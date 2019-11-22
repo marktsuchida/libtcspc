@@ -1,0 +1,2 @@
+subdir('DumpSPC')
+subdir('SPCToHistogram')
