@@ -249,10 +249,19 @@ public:
     }
 
     void HandleTimestamp(DecodedEvent const& event) override {
+        auto prevTimestamp = latestTimestamp;
         UpdateTimeRange(event.macrotime);
         // We could call ProcessPhotonsAndLines() to emit all lines that are
         // complete, but deferring can significantly improve performance when a
         // timestamp is sent for every macro-time overflow.
+
+        // Temporary: we need to process all buffered data based on time stamps
+        // only, because currently we don't receive a "finish" event from
+        // OpenScanLib when doing a finite-frame acquisition.
+        // To avoid inefficiency, limit the rate (arbitrary for now).
+        if (latestTimestamp > prevTimestamp + 800000) {
+            ProcessPhotonsAndLines();
+        }
     }
 
     void HandleDataLost(DataLostEvent const& event) override {
