@@ -122,7 +122,7 @@ public:
     void SendException(std::exception_ptr e) {
         {
             std::lock_guard<std::mutex> hold(mutex);
-            queue.emplace_back({});
+            queue.emplace_back(std::shared_ptr<EventBuffer<E>>());
             exception = e;
         }
     }

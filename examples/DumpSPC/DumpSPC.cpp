@@ -74,7 +74,7 @@ int DumpHeader(std::istream& input, std::ostream& output)
 {
     union {
         BHSPCFileHeader header;
-        char bytes[sizeof(header)];
+        char bytes[sizeof(BHSPCFileHeader)];
     } data;
 
     input.read(data.bytes, sizeof(data));

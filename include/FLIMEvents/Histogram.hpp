@@ -10,11 +10,12 @@
 #include <vector>
 
 
+// TODO This can be constexpr in VS2019 but not in VS2015.
 template <
     typename T,
     typename U,
     typename = std::enable_if_t<sizeof(T) >= sizeof(U)>>
-inline constexpr T SaturatingAdd(T a, U b) {
+inline T SaturatingAdd(T a, U b) {
     T c = a + b;
     if (c < a)
         c = -1;
