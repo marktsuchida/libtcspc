@@ -106,6 +106,35 @@ TEST_CASE("Frames are produced according to line markers", "[LineClockPixellator
         }
     }
 
+    SECTION("Photon placed correctly in 2x1 frame") {
+        // Delay = 5, time = 25, so pixels range over times [5, 15) and [15,
+        // 25) relative to the (single) line marker.
+        auto lcp = std::make_shared<LineClockPixellator>(2, 1, 1, 5, 20, output);
+
+        MarkerEvent lineMarker;
+        lineMarker.bits = 1 << 1;
+        lineMarker.macrotime = 100;
+        lcp->HandleMarker(lineMarker);
+        lcp->Flush();
+
+        ValidPhotonEvent photon;
+        memset(&photon, 0, sizeof(photon));
+
+        for (auto mt : { 104, 105, 114, 115, 124, 125 }) {
+            photon.macrotime = mt;
+            lcp->HandleValidPhoton(photon);
+        }
+
+        lcp->Flush();
+        REQUIRE(output->beginFrameCount == 1);
+        REQUIRE(output->endFrameCount == 1);
+        REQUIRE(output->pixelPhotons.size() == 4);
+        REQUIRE(output->pixelPhotons[0].x == 0);
+        REQUIRE(output->pixelPhotons[1].x == 0);
+        REQUIRE(output->pixelPhotons[2].x == 1);
+        REQUIRE(output->pixelPhotons[3].x == 1);
+    }
+
     // TODO Other things we might test
     // - 1x1 frame size edge case
     // - photons between lines discarded
