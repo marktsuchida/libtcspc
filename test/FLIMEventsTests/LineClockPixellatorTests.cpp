@@ -46,7 +46,7 @@ TEST_CASE("Frames are produced according to line markers", "[LineClockPixellator
     output->Reset();
 
     SECTION("2x2 frames with no photons") {
-        auto lcp = std::make_shared<LineClockPixellator>(2, 2, 10, 0, 20, output);
+        auto lcp = std::make_shared<LineClockPixellator>(2, 2, 10, 0, 20, 1, output);
 
         MarkerEvent lineMarker;
         lineMarker.bits = 1 << 1;
@@ -109,7 +109,7 @@ TEST_CASE("Frames are produced according to line markers", "[LineClockPixellator
     SECTION("Photon placed correctly in 2x1 frame") {
         // Delay = 5, time = 25, so pixels range over times [5, 15) and [15,
         // 25) relative to the (single) line marker.
-        auto lcp = std::make_shared<LineClockPixellator>(2, 1, 1, 5, 20, output);
+        auto lcp = std::make_shared<LineClockPixellator>(2, 1, 1, 5, 20, 1, output);
 
         MarkerEvent lineMarker;
         lineMarker.bits = 1 << 1;

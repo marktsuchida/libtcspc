@@ -37,6 +37,7 @@ class LineClockPixellator : public DecodedEventProcessor {
 
     int32_t const lineDelay; // in macro-time units
     uint32_t const lineTime; // in macro-time units
+    decltype(MarkerEvent::bits) const lineMarkerMask;
 
     uint64_t latestTimestamp; // Latest observed macro-time
 
@@ -224,13 +225,14 @@ private:
 public:
     LineClockPixellator(uint32_t pixelsPerLine, uint32_t linesPerFrame,
         uint32_t maxFrames,
-        int32_t lineDelay, uint32_t lineTime,
+        int32_t lineDelay, uint32_t lineTime, uint32_t lineMarkerBit,
         std::shared_ptr<PixelPhotonProcessor> downstream) :
         pixelsPerLine(pixelsPerLine),
         linesPerFrame(linesPerFrame),
         maxFrames(maxFrames),
         lineDelay(lineDelay),
         lineTime(lineTime),
+        lineMarkerMask(1 << lineMarkerBit),
         latestTimestamp(0),
         nextLine(0),
         currentLine(0),
@@ -291,7 +293,7 @@ public:
 
     void HandleMarker(MarkerEvent const& event) override {
         UpdateTimeRange(event.macrotime);
-        if (event.bits & (1 << 1)) { // TODO Configure marker bits
+        if (event.bits & lineMarkerMask) {
             EnqueueLineMarker(event.macrotime);
             // We could call ProcessPhotonsAndLines() for all markers, but that
             // may degrade performance if a non-line marker (e.g. an unused

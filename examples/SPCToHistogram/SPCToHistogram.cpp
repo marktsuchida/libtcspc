@@ -90,7 +90,7 @@ int main(int argc, char* argv[])
     cumulHisto.Clear();
 
     auto processor =
-        std::make_shared<LineClockPixellator>(width, height, maxFrames, lineDelay, lineTime,
+        std::make_shared<LineClockPixellator>(width, height, maxFrames, lineDelay, lineTime, 1,
             std::make_shared<Histogrammer<SampleType>>(std::move(frameHisto),
                 std::make_shared<HistogramAccumulator<SampleType>>(std::move(cumulHisto),
                     std::make_shared<HistogramSaver<SampleType>>(outFilename))));
