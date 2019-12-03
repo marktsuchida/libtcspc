@@ -4,6 +4,7 @@
 
 #include <cstdlib>
 #include <memory>
+#include <string>
 
 
 class DeviceEventDecoder {
@@ -77,5 +78,12 @@ public:
 
     virtual std::size_t GetEventSize() const noexcept = 0;
     virtual void HandleDeviceEvent(char const* event) = 0;
-    virtual void HandleFinish() = 0;
+
+    virtual void HandleError(std::string const& message) {
+        SendError(message);
+    }
+
+    virtual void HandleFinish() {
+        SendFinish();
+    }
 };

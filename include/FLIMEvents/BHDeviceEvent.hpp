@@ -262,10 +262,6 @@ public:
             SendValidPhoton(e);
         }
     }
-
-    void HandleFinish() {
-        SendFinish();
-    }
 };
 
 

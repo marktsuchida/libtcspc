@@ -187,10 +187,6 @@ public:
         e.valid = true;
         SendPhoton(e);
     }
-
-    void HandleFinish() override {
-        SendFinish();
-    }
 };
 
 
