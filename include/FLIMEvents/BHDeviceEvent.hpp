@@ -197,7 +197,8 @@ class BHEventDecoder : public DeviceEventDecoder {
     uint64_t lastMacrotime;
 
 public:
-    BHEventDecoder() :
+    BHEventDecoder(std::shared_ptr<DecodedEventProcessor> downstream) :
+        DeviceEventDecoder(downstream),
         macrotimeBase(0),
         lastMacrotime(0)
     {}

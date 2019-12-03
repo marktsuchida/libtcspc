@@ -95,8 +95,7 @@ int main(int argc, char* argv[])
                 std::make_shared<HistogramAccumulator<SampleType>>(std::move(cumulHisto),
                     std::make_shared<HistogramSaver<SampleType>>(outFilename))));
 
-    auto decoder = std::make_shared<BHSPCEventDecoder>();
-    decoder->SetDownstream(processor);
+    auto decoder = std::make_shared<BHSPCEventDecoder>(processor);
 
     EventStream<BHSPCEvent> stream;
     auto processorDone = std::async(std::launch::async, [&stream, decoder]{
@@ -106,7 +105,8 @@ int main(int argc, char* argv[])
             if (!eventBuffer) {
                 break;
             }
-            decoder->HandleDeviceEvents(eventBuffer->GetData(),
+            decoder->HandleDeviceEvents(
+                reinterpret_cast<char const*>(eventBuffer->GetData()),
                 eventBuffer->GetSize());
         }
         std::clock_t elapsed = std::clock() - start;

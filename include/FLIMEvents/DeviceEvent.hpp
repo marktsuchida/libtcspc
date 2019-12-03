@@ -7,7 +7,26 @@
 #include <string>
 
 
-class DeviceEventDecoder {
+class DeviceEventProcessor {
+public:
+    virtual ~DeviceEventProcessor() = default;
+
+    virtual std::size_t GetEventSize() const noexcept = 0;
+    virtual void HandleDeviceEvent(char const* event) = 0;
+    virtual void HandleError(std::string const& message) = 0;
+    virtual void HandleFinish() = 0;
+
+    virtual void HandleDeviceEvents(char const* events, std::size_t count) {
+        auto size = GetEventSize();
+        for (std::size_t i = 0; i < count; ++i) {
+            HandleDeviceEvent(events + i * size);
+        }
+    }
+};
+
+
+// A DeviceEventProcessor that sends decoded events downstream
+class DeviceEventDecoder : public DeviceEventProcessor {
     std::shared_ptr<DecodedEventProcessor> downstream;
 
 protected:
@@ -56,34 +75,15 @@ protected:
     }
 
 public:
-    virtual ~DeviceEventDecoder() = default;
+    explicit DeviceEventDecoder(std::shared_ptr<DecodedEventProcessor> downstream) :
+        downstream(downstream)
+    {}
 
-    void SetDownstream(std::shared_ptr<DecodedEventProcessor> downstream) {
-        this->downstream = downstream;
-    }
-
-    void HandleDeviceEvents(char const* events, std::size_t count) {
-        auto size = GetEventSize();
-        for (std::size_t i = 0; i < count; ++i) {
-            HandleDeviceEvent(events + i * size);
-        }
-    }
-
-    template <typename T>
-    void HandleDeviceEvents(T const* events, std::size_t count) {
-        for (std::size_t i = 0; i < count; ++i) {
-            HandleDeviceEvent(reinterpret_cast<char const*>(&events[i]));
-        }
-    }
-
-    virtual std::size_t GetEventSize() const noexcept = 0;
-    virtual void HandleDeviceEvent(char const* event) = 0;
-
-    virtual void HandleError(std::string const& message) {
+    void HandleError(std::string const& message) override {
         SendError(message);
     }
 
-    virtual void HandleFinish() {
+    void HandleFinish() override {
         SendFinish();
     }
 };

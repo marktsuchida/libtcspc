@@ -141,7 +141,8 @@ class PQT3EventDecoder : public DeviceEventDecoder {
     uint64_t lastNSync;
 
 public:
-    PQT3EventDecoder() :
+    PQT3EventDecoder(std::shared_ptr<DecodedEventProcessor> downstream) :
+        DeviceEventDecoder(downstream),
         nSyncBase(0),
         lastNSync(0)
     {}
