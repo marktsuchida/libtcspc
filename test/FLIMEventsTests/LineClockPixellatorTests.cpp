@@ -1,5 +1,5 @@
 #include <catch2/catch.hpp>
-#include "FLIMEvents/PixelPhotonEvent.hpp"
+#include "FLIMEvents/LineClockPixellator.hpp"
 
 
 TEST_CASE("Frames are produced according to line markers", "[LineClockPixellator]") {

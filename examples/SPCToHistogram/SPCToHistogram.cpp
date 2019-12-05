@@ -1,6 +1,6 @@
 #include "FLIMEvents/BHDeviceEvent.hpp"
 #include "FLIMEvents/Histogram.hpp"
-#include "FLIMEvents/PixelPhotonEvent.hpp"
+#include "FLIMEvents/LineClockPixellator.hpp"
 #include "FLIMEvents/StreamBuffer.hpp"
 #include "../BHSPCFile.hpp"
 

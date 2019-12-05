@@ -3,6 +3,7 @@ public_cpp_headers = files(
         'FLIMEvents/DecodedEvent.hpp',
         'FLIMEvents/DeviceEvent.hpp',
         'FLIMEvents/Histogram.hpp',
+        'FLIMEvents/LineClockPixellator.hpp',
         'FLIMEvents/PixelPhotonEvent.hpp',
         'FLIMEvents/PQT3DeviceEvent.hpp',
         'FLIMEvents/StreamBuffer.hpp',
