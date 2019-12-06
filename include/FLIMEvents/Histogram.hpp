@@ -27,10 +27,11 @@ template <
     typename T,
     typename = std::enable_if_t<std::is_unsigned<T>::value>>
 class Histogram {
-    uint32_t const timeBits;
-    uint32_t const inputTimeBits;
-    std::size_t const width;
-    std::size_t const height;
+    uint32_t timeBits;
+    uint32_t inputTimeBits;
+    bool reverseTime;
+    std::size_t width;
+    std::size_t height;
 
     std::unique_ptr<T[]> hist;
 
@@ -41,10 +42,14 @@ public:
     Histogram(Histogram&& rhs) = default;
     Histogram& operator=(Histogram&& rhs) = default;
 
+    // Default constructor creates a "moved out" object.
+    Histogram() = default;
+
     // Warning: Newly constructed histogram is not zeroed (for efficiency)
-    Histogram(uint32_t timeBits, uint32_t inputTimeBits, std::size_t width, std::size_t height) :
+    Histogram(uint32_t timeBits, uint32_t inputTimeBits, bool reverseTime, std::size_t width, std::size_t height) :
         timeBits(timeBits),
         inputTimeBits(inputTimeBits),
+        reverseTime(reverseTime),
         width(width),
         height(height),
         hist(std::make_unique<T[]>(GetNumberOfElements()))
@@ -54,12 +59,28 @@ public:
         }
     }
 
+    bool IsValid() const noexcept {
+        return hist.get();
+    }
+
     void Clear() noexcept {
         memset(hist.get(), 0, GetNumberOfElements() * sizeof(T));
     }
 
+    uint32_t GetTimeBits() const noexcept {
+        return timeBits;
+    }
+
     uint32_t GetNumberOfTimeBins() const noexcept {
         return 1 << timeBits;
+    }
+
+    std::size_t GetWidth() const noexcept {
+        return width;
+    }
+
+    std::size_t GetHeight() const noexcept {
+        return height;
     }
 
     std::size_t GetNumberOfElements() const noexcept {
@@ -67,28 +88,14 @@ public:
     }
 
     void Increment(std::size_t t, std::size_t x, std::size_t y) noexcept {
-        auto tReduced = t >> (inputTimeBits - timeBits);
-        auto index = (y * width + x) * GetNumberOfTimeBins() + tReduced;
+        auto tReduced = uint16_t(t >> (inputTimeBits - timeBits));
+        auto tReversed = reverseTime ? (1 << timeBits) - 1 - tReduced : tReduced;
+        auto index = (y * width + x) * GetNumberOfTimeBins() + tReversed;
         hist[index] = SaturatingAdd(hist[index], T(1));
     }
 
     T const* Get() const noexcept {
         return hist.get();
-    }
-
-    // TODO Might be better to construct intensity image on the fly along with
-    // the histogram (profile to determine)
-    template <
-        typename U,
-        typename = std::enable_if_t<std::is_unsigned<U>::value && sizeof(U) >= sizeof(T)>>
-    void AddToIntensityImage(U* image) {
-        std::size_t n = width * height;
-        auto nTimeBins = GetNumberOfTimeBins();
-        for (std::size_t i = 0; i < n; ++i) {
-            for (std::size_t t = 0; t < nTimeBins; ++t) {
-                image[i] = SaturatingAdd(image[i], hist[t + nTimeBins * i]);
-            }
-        }
     }
 
     Histogram& operator+=(Histogram<T> const& rhs) {
@@ -116,7 +123,10 @@ public:
 
     virtual void HandleError(std::string const& message) = 0;
     virtual void HandleFrame(Histogram<T> const& histogram) = 0;
-    virtual void HandleFinish() = 0;
+
+    // Upon finishing, the histogram is moved out of its producer.
+    // (It can then be saved, reused, etc.)
+    virtual void HandleFinish(Histogram<T>&& histogram, bool isCompleteFrame) = 0;
 };
 
 
@@ -124,27 +134,30 @@ public:
 template <typename T>
 class Histogrammer : public PixelPhotonProcessor {
     Histogram<T> histogram;
+    bool frameInProgress;
 
     std::shared_ptr<HistogramProcessor<T>> downstream;
 
 public:
     Histogrammer(Histogram<T>&& histogram, std::shared_ptr<HistogramProcessor<T>> downstream) :
         histogram(std::move(histogram)),
+        frameInProgress(false),
         downstream(downstream)
     {}
 
     void HandleBeginFrame() override {
         histogram.Clear();
+        frameInProgress = true;
     }
 
     void HandleEndFrame() override {
+        frameInProgress = false;
         if (downstream) {
             downstream->HandleFrame(histogram);
         }
     }
 
     void HandlePixelPhoton(PixelPhotonEvent const& event) override {
-        // TODO We are ignoring route for now
         histogram.Increment(event.microtime, event.x, event.y);
     }
 
@@ -157,7 +170,7 @@ public:
 
     void HandleFinish() override {
         if (downstream) {
-            downstream->HandleFinish();
+            downstream->HandleFinish(std::move(histogram), !frameInProgress);
             downstream.reset();
         }
     }
@@ -165,6 +178,7 @@ public:
 
 
 // Accumulate a series of histograms
+// Guarantees complete frame upon finish (all zeros if there was no frame).
 template <typename T>
 class HistogramAccumulator : public HistogramProcessor<T> {
     Histogram<T> cumulative;
@@ -191,9 +205,10 @@ public:
         }
     }
 
-    void HandleFinish() override {
+    void HandleFinish(Histogram<T>&& histogram, bool isCompleteFrame) override {
+        // We discard any incomplete frame from upstream
         if (downstream) {
-            downstream->HandleFinish();
+            downstream->HandleFinish(std::move(cumulative), true);
             downstream.reset();
         }
     }

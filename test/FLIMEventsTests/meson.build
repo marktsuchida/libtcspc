@@ -1,6 +1,7 @@
 flimevents_tests_srcs = [
     'BHDeviceEventTests.cpp',
     'FLIMEventsTests.cpp',
+    'HistogramTests.cpp',
     'LineClockPixellatorTests.cpp',
 ]
 

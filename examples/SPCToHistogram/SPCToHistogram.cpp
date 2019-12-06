@@ -24,13 +24,11 @@ void Usage() {
 template <typename T>
 class HistogramSaver : public HistogramProcessor<T> {
     std::size_t frameCount;
-    Histogram<T> const* lastHist;
     std::string const& outFilename;
 
 public:
     explicit HistogramSaver(std::string const& outFilename) :
         frameCount(0),
-        lastHist(nullptr),
         outFilename(outFilename)
     {}
 
@@ -41,11 +39,10 @@ public:
 
     void HandleFrame(Histogram<T> const& histogram) override {
         std::cerr << "Frame " << (frameCount++) << '\n';
-        lastHist = &histogram;
     }
 
-    void HandleFinish() override {
-        if (!lastHist) { // No frames
+    void HandleFinish(Histogram<T>&& histogram, bool isCompleteFrame) override {
+        if (!frameCount) { // No frames
             std::cerr << "No frames\n";
             return;
         }
@@ -56,8 +53,8 @@ public:
             std::exit(1);
         }
 
-        output.write(reinterpret_cast<const char*>(lastHist->Get()),
-            lastHist->GetNumberOfElements() * sizeof(T));
+        output.write(reinterpret_cast<const char*>(histogram.Get()),
+            histogram.GetNumberOfElements() * sizeof(T));
     }
 };
 
@@ -85,8 +82,8 @@ int main(int argc, char* argv[])
     using SampleType = uint16_t;
     int32_t inputBits = 12;
     int32_t histoBits = 8;
-    Histogram<SampleType> frameHisto(histoBits, inputBits, width, height);
-    Histogram<SampleType> cumulHisto(histoBits, inputBits, width, height);
+    Histogram<SampleType> frameHisto(histoBits, inputBits, true, width, height);
+    Histogram<SampleType> cumulHisto(histoBits, inputBits, true, width, height);
     cumulHisto.Clear();
 
     auto processor =
