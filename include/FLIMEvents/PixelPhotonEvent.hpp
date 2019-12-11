@@ -35,8 +35,9 @@ class BroadcastPixelPhotonProcessor : public PixelPhotonProcessor {
     std::array<std::shared_ptr<PixelPhotonProcessor>, N> downstreams;
 
 public:
+    // All downstreams must be non-null
     template <typename... T>
-    BroadcastPixelPhotonProcessor(T... downstreams) :
+    explicit BroadcastPixelPhotonProcessor(T... downstreams) :
         downstreams{ {downstreams...} }
     {}
 
