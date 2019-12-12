@@ -29,7 +29,7 @@ class LineClockPixellator : public DecodedEventProcessor {
     // If nextLine > currentLine, we are in currentLine.
     // If nextLine == currentLine, we are between (nextLine - 1) and nextLine.
 
-    // Start time of current line (valid between startTime and finish of line).
+    // Start time of current line, or -1 if no line started.
     uint64_t lineStartTime;
 
     // Buffer received photons until we can assign to pixel
@@ -76,9 +76,9 @@ private:
             }
             startTime = lineMarkerTime - minusDelay;
         }
-        if (startTime < lineStartTime + lineTime) {
-            throw Error("Pixels overlapping in time");
-        }
+		if (startTime < lineStartTime + lineTime && lineStartTime != -1) {
+			throw Error("Pixels overlapping in time");
+		}
         return startTime;
     }
 
@@ -215,7 +215,7 @@ public:
         latestTimestamp(0),
         nextLine(0),
         currentLine(0),
-        lineStartTime(0),
+        lineStartTime(-1),
         downstream(downstream)
     {
         if (pixelsPerLine < 1) {
