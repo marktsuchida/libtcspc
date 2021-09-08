@@ -77,7 +77,7 @@ int main(int argc, char* argv[])
     std::string inFilename(argv[5]);
     std::string outFilename(argv[6]);
 
-    uint32_t maxFrames = 30;
+    uint32_t maxFrames = UINT32_MAX;
 
     using SampleType = uint16_t;
     int32_t inputBits = 12;
