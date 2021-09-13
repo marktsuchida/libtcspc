@@ -3,7 +3,6 @@
 #include <cstdint>
 #include <string>
 
-
 /**
  * \brief Base class for logical TCSPC events (photons, markers, and
  * exceptional conditions).
@@ -22,7 +21,6 @@ struct DecodedEvent {
     uint64_t macrotime;
 };
 
-
 /**
  * \brief Event indicating loss of data due to buffer overflow.
  *
@@ -34,9 +32,7 @@ struct DecodedEvent {
  * device FIFO, DMA buffer, or any other stage involved in streaming data to
  * the computer.
  */
-struct DataLostEvent : public DecodedEvent {
-};
-
+struct DataLostEvent : public DecodedEvent {};
 
 struct BasePhotonEvent : public DecodedEvent {
     /**
@@ -59,20 +55,15 @@ struct BasePhotonEvent : public DecodedEvent {
     uint16_t route;
 };
 
-
 /**
  * \brief Event indicating a detected photon.
  */
-struct ValidPhotonEvent : public BasePhotonEvent {
-};
-
+struct ValidPhotonEvent : public BasePhotonEvent {};
 
 /**
  * \brief Event indicating an invalid photon, produced by some devices.
  */
-struct InvalidPhotonEvent : public BasePhotonEvent {
-};
-
+struct InvalidPhotonEvent : public BasePhotonEvent {};
 
 /**
  * \brief Event indicating a marker.
@@ -91,12 +82,11 @@ struct MarkerEvent : public DecodedEvent {
     uint16_t bits;
 };
 
-
 /**
  * \brief Receiver of decoded events.
  */
 class DecodedEventProcessor {
-public:
+  public:
     virtual ~DecodedEventProcessor() = default;
 
     /**
@@ -118,12 +108,12 @@ public:
      * Note that this function is generally only called when the timestamp is
      * not associated with an actual event (photon, marker, etc.).
      */
-    virtual void HandleTimestamp(DecodedEvent const& event) = 0;
+    virtual void HandleTimestamp(DecodedEvent const &event) = 0;
 
-    virtual void HandleValidPhoton(ValidPhotonEvent const& event) = 0;
-    virtual void HandleInvalidPhoton(InvalidPhotonEvent const& event) = 0;
-    virtual void HandleMarker(MarkerEvent const& event) = 0;
-    virtual void HandleDataLost(DataLostEvent const& event) = 0;
-    virtual void HandleError(std::string const& message) = 0;
+    virtual void HandleValidPhoton(ValidPhotonEvent const &event) = 0;
+    virtual void HandleInvalidPhoton(InvalidPhotonEvent const &event) = 0;
+    virtual void HandleMarker(MarkerEvent const &event) = 0;
+    virtual void HandleDataLost(DataLostEvent const &event) = 0;
+    virtual void HandleError(std::string const &message) = 0;
     virtual void HandleFinish() = 0;
 };

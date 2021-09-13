@@ -4,7 +4,6 @@
 #include <cstring>
 #include <stdexcept>
 
-
 // Note: The Becker & Hickl SPCM DLL has SPC_get_fifo_init_vars(), which should
 // be used when creating a file header for a measurement.
 
@@ -13,16 +12,14 @@
 // SPC-600/630 (4- or 6-byte) format. (Although it is probably possible to
 // guess accurately based on macro-time monotonicity.)
 
-
 struct BHSPCFileHeader {
     uint8_t bytes[4];
 
-    void Clear() noexcept {
-        memset(bytes, 0, sizeof(bytes));
-    }
+    void Clear() noexcept { memset(bytes, 0, sizeof(bytes)); }
 
     uint32_t GetMacroTimeUnitsTenthNs() const noexcept {
-        return bytes[0] | (uint32_t(bytes[1]) << 8) | (uint32_t(bytes[2]) << 16);
+        return bytes[0] | (uint32_t(bytes[1]) << 8) |
+               (uint32_t(bytes[2]) << 16);
     }
 
     void SetMacroTimeUnitsTenthNs(uint32_t value) {
@@ -46,32 +43,25 @@ struct BHSPCFileHeader {
         bytes[3] |= value << 3;
     }
 
-    bool GetDataValidFlag() const noexcept {
-        return bytes[3] & (1 << 7);
-    }
+    bool GetDataValidFlag() const noexcept { return bytes[3] & (1 << 7); }
 
     void SetDataValidFlag(bool valid) {
         if (valid) {
             bytes[3] |= 1 << 7;
-        }
-        else {
+        } else {
             bytes[3] &= ~(1 << 7);
         }
     }
 };
 
-
 // SPC-600/630 FIFO_32 file header happens to be identical to the standard FIFO
 // file header.
 using BHSPC600FileHeader32 = BHSPCFileHeader;
 
-
 struct BHSPC600FileHeader48 {
     uint8_t bytes[6];
 
-    void Clear() noexcept {
-        memset(bytes, 0, sizeof(bytes));
-    }
+    void Clear() noexcept { memset(bytes, 0, sizeof(bytes)); }
 
     uint32_t GetMacroTimeUnitsTenthNs() const noexcept {
         return bytes[2] | (uint32_t(bytes[3]) << 8);
@@ -85,9 +75,7 @@ struct BHSPC600FileHeader48 {
         bytes[3] = (value >> 8) & 0xff;
     }
 
-    uint8_t GetNumberOfRoutingBits() const noexcept {
-        return bytes[1] & 0x0f;
-    }
+    uint8_t GetNumberOfRoutingBits() const noexcept { return bytes[1] & 0x0f; }
 
     void SetNumberOfRoutingBits(uint8_t value) {
         if (value >= 1 << 4) {
@@ -97,15 +85,12 @@ struct BHSPC600FileHeader48 {
         bytes[1] |= value;
     }
 
-    bool GetDataValidFlag() const noexcept {
-        return bytes[1] & (1 << 4);
-    }
+    bool GetDataValidFlag() const noexcept { return bytes[1] & (1 << 4); }
 
     void SetDataValidFlag(bool valid) {
         if (valid) {
             bytes[1] |= 1 << 4;
-        }
-        else {
+        } else {
             bytes[1] &= ~(1 << 4);
         }
     }

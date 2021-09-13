@@ -1,6 +1,5 @@
-#include <catch2/catch.hpp>
 #include "FLIMEvents/Histogram.hpp"
-
+#include <catch2/catch.hpp>
 
 TEST_CASE("TimeBins", "[Histogram]") {
     Histogram<uint16_t> hist(8, 12, false, 1, 1);
@@ -22,7 +21,6 @@ TEST_CASE("TimeBins", "[Histogram]") {
     REQUIRE(data[254] == 1);
 }
 
-
 TEST_CASE("ReverseTimeBins", "[Histogram]") {
     Histogram<uint16_t> hist(8, 12, true, 1, 1);
     auto data = hist.Get();
@@ -42,7 +40,6 @@ TEST_CASE("ReverseTimeBins", "[Histogram]") {
     hist.Increment(4079, 0, 0);
     REQUIRE(data[1] == 1);
 }
-
 
 TEST_CASE("SingleTimeBin", "[Histogram]") {
     SECTION("Non-reversed") {

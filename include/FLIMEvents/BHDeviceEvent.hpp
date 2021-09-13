@@ -2,7 +2,6 @@
 
 #include "DeviceEvent.hpp"
 
-
 // Raw photon event data formats are documented in The bh TCSPC Handbook (see
 // section on FIFO Files in the chapter on Data file structure).
 
@@ -39,42 +38,31 @@ struct BHSPCEvent {
         return lo8 | (uint16_t(hi4) << 8);
     }
 
-    bool GetMarkerFlag() const noexcept {
-        return bytes[3] & (1 << 4);
-    }
+    bool GetMarkerFlag() const noexcept { return bytes[3] & (1 << 4); }
 
-    uint8_t GetMarkerBits() const noexcept {
-        return GetRoutingSignals();
-    }
+    uint8_t GetMarkerBits() const noexcept { return GetRoutingSignals(); }
 
-    bool GetGapFlag() const noexcept {
-        return bytes[3] & (1 << 5);
-    }
+    bool GetGapFlag() const noexcept { return bytes[3] & (1 << 5); }
 
     bool GetMacroTimeOverflowFlag() const noexcept {
         return bytes[3] & (1 << 6);
     }
 
-    bool GetInvalidFlag() const noexcept {
-        return bytes[3] & (1 << 7);
-    }
+    bool GetInvalidFlag() const noexcept { return bytes[3] & (1 << 7); }
 
     bool IsMultipleMacroTimeOverflow() const noexcept {
         // Although documentation is not clear, a marker can share an event
         // record with a (single) macro-time overflow, just as a photon can.
         return GetMacroTimeOverflowFlag() && GetInvalidFlag() &&
-            !GetMarkerFlag();
+               !GetMarkerFlag();
     }
 
     // Get the 27-bit macro timer overflow count
     uint32_t GetMultipleMacroTimeOverflowCount() const noexcept {
-        return bytes[0] |
-            (uint32_t(bytes[1]) << 8) |
-            (uint32_t(bytes[2]) << 16) |
-            (uint32_t(bytes[3] & 0x0f) << 24);
+        return bytes[0] | (uint32_t(bytes[1]) << 8) |
+               (uint32_t(bytes[2]) << 16) | (uint32_t(bytes[3] & 0x0f) << 24);
     }
 };
-
 
 /**
  * \brief Binary record interpretation for raw events from SPC-600/630 in
@@ -91,43 +79,29 @@ struct BHSPC600Event48 {
         return lo8 | (uint16_t(hi4) << 8);
     }
 
-    uint8_t GetRoutingSignals() const noexcept {
-        return bytes[3];
-    }
+    uint8_t GetRoutingSignals() const noexcept { return bytes[3]; }
 
     uint32_t GetMacroTime() const noexcept {
-        return bytes[4] | (uint32_t(bytes[5]) << 8) | (uint32_t(bytes[2]) << 16);
+        return bytes[4] | (uint32_t(bytes[5]) << 8) |
+               (uint32_t(bytes[2]) << 16);
     }
 
-    bool GetMarkerFlag() const noexcept {
-        return false;
-    }
+    bool GetMarkerFlag() const noexcept { return false; }
 
-    uint8_t GetMarkerBits() const noexcept {
-        return 0;
-    }
+    uint8_t GetMarkerBits() const noexcept { return 0; }
 
-    bool GetGapFlag() const noexcept {
-        return bytes[1] & (1 << 6);
-    }
+    bool GetGapFlag() const noexcept { return bytes[1] & (1 << 6); }
 
     bool GetMacroTimeOverflowFlag() const noexcept {
         return bytes[1] & (1 << 5);
     }
 
-    bool GetInvalidFlag() const noexcept {
-        return bytes[1] & (1 << 4);
-    }
+    bool GetInvalidFlag() const noexcept { return bytes[1] & (1 << 4); }
 
-    bool IsMultipleMacroTimeOverflow() const noexcept {
-        return false;
-    }
+    bool IsMultipleMacroTimeOverflow() const noexcept { return false; }
 
-    uint32_t GetMultipleMacroTimeOverflowCount() const noexcept {
-        return 0;
-    }
+    uint32_t GetMultipleMacroTimeOverflowCount() const noexcept { return 0; }
 };
-
 
 /**
  * \brief Binary record interpretation for raw events from SPC-600/630 in
@@ -138,9 +112,7 @@ struct BHSPC600Event32 {
 
     inline static uint64_t const MacroTimeOverflowPeriod = 1 << 17;
 
-    uint16_t GetADCValue() const noexcept {
-        return bytes[0];
-    }
+    uint16_t GetADCValue() const noexcept { return bytes[0]; }
 
     uint8_t GetRoutingSignals() const noexcept {
         return (bytes[3] & 0x0f) >> 1;
@@ -153,35 +125,22 @@ struct BHSPC600Event32 {
         return lo8 | (uint16_t(mid8) << 8) | (uint16_t(hi1) << 16);
     }
 
-    bool GetMarkerFlag() const noexcept {
-        return false;
-    }
+    bool GetMarkerFlag() const noexcept { return false; }
 
-    uint8_t GetMarkerBits() const noexcept {
-        return 0;
-    }
+    uint8_t GetMarkerBits() const noexcept { return 0; }
 
-    bool GetGapflag() const noexcept {
-        return bytes[3] & (1 << 5);
-    }
+    bool GetGapflag() const noexcept { return bytes[3] & (1 << 5); }
 
     bool GetMacroTimeOverflowFlag() const noexcept {
         return bytes[3] & (1 << 6);
     }
 
-    bool GetInvalidFlag() const noexcept {
-        return bytes[3] & (1 << 7);
-    }
+    bool GetInvalidFlag() const noexcept { return bytes[3] & (1 << 7); }
 
-    bool IsMultipleMacroTimeOverflow() const noexcept {
-        return false;
-    }
+    bool IsMultipleMacroTimeOverflow() const noexcept { return false; }
 
-    uint32_t GetMultipleMacroTimeOverflowCount() const noexcept {
-        return 0;
-    }
+    uint32_t GetMultipleMacroTimeOverflowCount() const noexcept { return 0; }
 };
-
 
 /**
  * \brief Decode BH SPC event stream.
@@ -191,28 +150,22 @@ struct BHSPC600Event32 {
  *
  * \tparam E binary record interpreter class
  */
-template <typename E>
-class BHEventDecoder : public DeviceEventDecoder {
+template <typename E> class BHEventDecoder : public DeviceEventDecoder {
     uint64_t macrotimeBase; // Time of last overflow
     uint64_t lastMacrotime;
 
-public:
-    BHEventDecoder(std::shared_ptr<DecodedEventProcessor> downstream) :
-        DeviceEventDecoder(downstream),
-        macrotimeBase(0),
-        lastMacrotime(0)
-    {}
+  public:
+    BHEventDecoder(std::shared_ptr<DecodedEventProcessor> downstream)
+        : DeviceEventDecoder(downstream), macrotimeBase(0), lastMacrotime(0) {}
 
-    std::size_t GetEventSize() const noexcept override {
-        return sizeof(E);
-    }
+    std::size_t GetEventSize() const noexcept override { return sizeof(E); }
 
-    void HandleDeviceEvent(char const* event) override {
-        E const* devEvt = reinterpret_cast<E const*>(event);
+    void HandleDeviceEvent(char const *event) override {
+        E const *devEvt = reinterpret_cast<E const *>(event);
 
         if (devEvt->IsMultipleMacroTimeOverflow()) {
             macrotimeBase += E::MacroTimeOverflowPeriod *
-                devEvt->GetMultipleMacroTimeOverflowCount();
+                             devEvt->GetMultipleMacroTimeOverflowCount();
 
             DecodedEvent e;
             e.macrotime = macrotimeBase;
@@ -254,8 +207,7 @@ public:
             e.microtime = devEvt->GetADCValue();
             e.route = devEvt->GetRoutingSignals();
             SendInvalidPhoton(e);
-        }
-        else {
+        } else {
             ValidPhotonEvent e;
             e.macrotime = macrotime;
             e.microtime = devEvt->GetADCValue();
@@ -264,7 +216,6 @@ public:
         }
     }
 };
-
 
 using BHSPCEventDecoder = BHEventDecoder<BHSPCEvent>;
 using BHSPC600Event48Decoder = BHEventDecoder<BHSPC600Event48>;

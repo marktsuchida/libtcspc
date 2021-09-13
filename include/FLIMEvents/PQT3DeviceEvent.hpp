@@ -21,7 +21,6 @@
 // names for static polymorphism. This allows PQT3EventDecoder<E> to handle 3
 // different formats with the same code.
 
-
 /**
  * \brief Binary record interpretation for PicoHarp T3 Format.
  *
@@ -32,9 +31,7 @@ struct PicoT3Event {
 
     static uint64_t const NSyncOverflowPeriod = 65536;
 
-    uint8_t GetChannel() const noexcept {
-        return uint8_t(bytes[3]) >> 4;
-    }
+    uint8_t GetChannel() const noexcept { return uint8_t(bytes[3]) >> 4; }
 
     uint16_t GetDTime() const noexcept {
         uint8_t lo8 = bytes[2];
@@ -46,27 +43,20 @@ struct PicoT3Event {
         return bytes[0] | (uint16_t(bytes[1]) << 8);
     }
 
-    bool IsSpecial() const noexcept {
-        return GetChannel() == 15;
-    }
+    bool IsSpecial() const noexcept { return GetChannel() == 15; }
 
     bool IsNSyncOverflow() const noexcept {
         return IsSpecial() && GetDTime() == 0;
     }
 
-    uint16_t GetNSyncOverflowCount() const noexcept {
-        return 1;
-    }
+    uint16_t GetNSyncOverflowCount() const noexcept { return 1; }
 
     bool IsExternalMarker() const noexcept {
         return IsSpecial() && GetDTime() != 0;
     }
 
-    uint16_t GetExternalMarkerBits() const noexcept {
-        return GetDTime();
-    }
+    uint16_t GetExternalMarkerBits() const noexcept { return GetDTime(); }
 };
-
 
 /**
  * \brief Binary record interpretation for HydraHarp, MultiHarp, and
@@ -75,19 +65,14 @@ struct PicoT3Event {
  * \tparam IsHydraV1 if true, interpret as HydraHarp V1 (RecType 0x00010304)
  * format, in which nsync overflow records always indicate a single overflow
  */
-template <bool IsHydraV1>
-struct HydraT3Event {
+template <bool IsHydraV1> struct HydraT3Event {
     uint8_t bytes[4];
 
     static uint64_t const NSyncOverflowPeriod = 1024;
 
-    bool GetSpecialFlag() const noexcept {
-        return bytes[3] & (1 << 7);
-    }
+    bool GetSpecialFlag() const noexcept { return bytes[3] & (1 << 7); }
 
-    uint8_t GetChannel() const noexcept {
-        return (bytes[3] & 0x7f) >> 1;
-    }
+    uint8_t GetChannel() const noexcept { return (bytes[3] & 0x7f) >> 1; }
 
     uint16_t GetDTime() const noexcept {
         uint8_t lo6 = uint8_t(bytes[1]) >> 2;
@@ -102,9 +87,7 @@ struct HydraT3Event {
         return lo8 | (uint16_t(hi2) << 8);
     }
 
-    bool IsSpecial() const noexcept {
-        return GetSpecialFlag();
-    }
+    bool IsSpecial() const noexcept { return GetSpecialFlag(); }
 
     bool IsNSyncOverflow() const noexcept {
         return IsSpecial() && GetChannel() == 63;
@@ -121,41 +104,33 @@ struct HydraT3Event {
         return IsSpecial() && GetChannel() != 63;
     }
 
-    uint8_t GetExternalMarkerBits() const noexcept {
-        return GetChannel();
-    }
+    uint8_t GetExternalMarkerBits() const noexcept { return GetChannel(); }
 };
 
-
 /**
- * \brief Decode PicoQuant T3 event stream. 
+ * \brief Decode PicoQuant T3 event stream.
  *
  * User code should normally use one of the following concrete classes:
  * PQPicoT3EventDecoder, PQHydraV1T3EventDecoder, PQHydraV2T3EventDecoder.
  *
  * \tparam E binary record interpreter class
  */
-template <typename E>
-class PQT3EventDecoder : public DeviceEventDecoder {
+template <typename E> class PQT3EventDecoder : public DeviceEventDecoder {
     uint64_t nSyncBase;
     uint64_t lastNSync;
 
-public:
-    PQT3EventDecoder(std::shared_ptr<DecodedEventProcessor> downstream) :
-        DeviceEventDecoder(downstream),
-        nSyncBase(0),
-        lastNSync(0)
-    {}
+  public:
+    PQT3EventDecoder(std::shared_ptr<DecodedEventProcessor> downstream)
+        : DeviceEventDecoder(downstream), nSyncBase(0), lastNSync(0) {}
 
-    std::size_t GetEventSize() const override {
-        return sizeof(E);
-    }
+    std::size_t GetEventSize() const override { return sizeof(E); }
 
-    void HandleDeviceEvent(char const* event) override {
-        E const* devEvt = reinterpret_cast<E const*>(event);
+    void HandleDeviceEvent(char const *event) override {
+        E const *devEvt = reinterpret_cast<E const *>(event);
 
         if (devEvt->IsNSyncOverflow()) {
-            nSyncBase += E::NSyncOverflowPeriod * devEvt->GetNSyncOverflowCount();
+            nSyncBase +=
+                E::NSyncOverflowPeriod * devEvt->GetNSyncOverflowCount();
 
             DecodedEvent e;
             e.macrotime = nSyncBase;
@@ -189,7 +164,6 @@ public:
         SendPhoton(e);
     }
 };
-
 
 using PQPicoT3EventDecoder = PQT3EventDecoder<PicoT3Event>;
 using PQHydraV1T3EventDecoder = PQT3EventDecoder<HydraT3Event<true>>;

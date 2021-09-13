@@ -7,46 +7,29 @@
 #include <mutex>
 #include <vector>
 
-
 // Fixed-capacity reusable memory to hold a bunch of photon events
 // E = event data type (plain struct or integer)
-template <typename E>
-class EventBuffer {
+template <typename E> class EventBuffer {
     std::size_t const capacity;
     std::size_t size;
     std::unique_ptr<E[]> events;
 
-public:
-    explicit EventBuffer(std::size_t capacity) :
-        capacity(capacity),
-        size(0),
-        events(new E[capacity])
-    {}
+  public:
+    explicit EventBuffer(std::size_t capacity)
+        : capacity(capacity), size(0), events(new E[capacity]) {}
 
-    std::size_t GetCapacity() const noexcept {
-        return capacity;
-    }
+    std::size_t GetCapacity() const noexcept { return capacity; }
 
-    std::size_t GetSize() const noexcept {
-        return size;
-    }
+    std::size_t GetSize() const noexcept { return size; }
 
-    void SetSize(std::size_t size) noexcept {
-        this->size = size;
-    }
+    void SetSize(std::size_t size) noexcept { this->size = size; }
 
-    E* GetData() noexcept {
-        return events.get();
-    }
+    E *GetData() noexcept { return events.get(); }
 
-    E const* GetData() const noexcept {
-        return events.get();
-    }
+    E const *GetData() const noexcept { return events.get(); }
 };
 
-
-template <typename E>
-class EventBufferPool {
+template <typename E> class EventBufferPool {
     std::size_t const bufferSize;
 
     std::mutex mutex;
@@ -56,10 +39,9 @@ class EventBufferPool {
         return std::make_unique<EventBuffer<E>>(bufferSize);
     }
 
-public:
-    explicit EventBufferPool(std::size_t size, std::size_t initialCount = 0) :
-        bufferSize(size)
-    {
+  public:
+    explicit EventBufferPool(std::size_t size, std::size_t initialCount = 0)
+        : bufferSize(size) {
         buffers.reserve(initialCount);
         for (std::size_t i = 0; i < initialCount; ++i) {
             buffers.emplace_back(MakeBuffer());
@@ -87,29 +69,25 @@ public:
 
         uptr->SetSize(0);
 
-        return { uptr.release(),
-            [this](auto ptr) {
-                if (!ptr)
-                    return;
+        return {uptr.release(), [this](auto ptr) {
+                    if (!ptr)
+                        return;
 
-                std::lock_guard<std::mutex> hold(mutex);
-                buffers.emplace_back(std::unique_ptr<EventBuffer<E>>(ptr));
-            }
-        };
+                    std::lock_guard<std::mutex> hold(mutex);
+                    buffers.emplace_back(std::unique_ptr<EventBuffer<E>>(ptr));
+                }};
     }
 };
 
-
 // A thread-safe queue of EventBuffer<E>, with non-blocking enqueue and
 // blocking dequeue.
-template <typename E>
-class EventStream {
+template <typename E> class EventStream {
     std::mutex mutex;
     std::condition_variable queueNotEmptyCondition;
     std::deque<std::shared_ptr<EventBuffer<E>>> queue;
     std::exception_ptr exception;
 
-public:
+  public:
     // Sending a null will terminate the stream
     void Send(std::shared_ptr<EventBuffer<E>> buffer) {
         {
