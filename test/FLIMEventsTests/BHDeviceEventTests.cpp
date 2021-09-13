@@ -1,5 +1,6 @@
 #include <catch2/catch.hpp>
 #include "FLIMEvents/BHDeviceEvent.hpp"
+#include <cstring>
 
 
 TEST_CASE("ADCValue", "[BHSPCEvent]") {

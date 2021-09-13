@@ -1,5 +1,6 @@
 #include <catch2/catch.hpp>
 #include "FLIMEvents/LineClockPixellator.hpp"
+#include <cstring>
 
 
 TEST_CASE("Frames are produced according to line markers", "[LineClockPixellator]") {

@@ -3,6 +3,7 @@ spctohistogram_srcs = [
 ]
 
 spctohistogram_exe = executable('SPCToHistogram',
-        spctohistogram_srcs,
-        include_directories: public_inc,
-        )
+    spctohistogram_srcs,
+    include_directories: public_inc,
+    dependencies: thread_dep,
+)

@@ -18,7 +18,7 @@
 struct BHSPCEvent {
     uint8_t bytes[4];
 
-    static uint64_t const MacroTimeOverflowPeriod = 1 << 12;
+    inline static uint64_t const MacroTimeOverflowPeriod = 1 << 12;
 
     uint16_t GetADCValue() const noexcept {
         uint8_t lo8 = bytes[2];
@@ -83,7 +83,7 @@ struct BHSPCEvent {
 struct BHSPC600Event48 {
     uint8_t bytes[6];
 
-    static uint64_t const MacroTimeOverflowPeriod = 1 << 24;
+    inline static uint64_t const MacroTimeOverflowPeriod = 1 << 24;
 
     uint16_t GetADCValue() const noexcept {
         uint8_t lo8 = bytes[0];
@@ -136,7 +136,7 @@ struct BHSPC600Event48 {
 struct BHSPC600Event32 {
     uint8_t bytes[4];
 
-    static uint64_t const MacroTimeOverflowPeriod = 1 << 17;
+    inline static uint64_t const MacroTimeOverflowPeriod = 1 << 17;
 
     uint16_t GetADCValue() const noexcept {
         return bytes[0];
