@@ -4,6 +4,7 @@
 #include "PixelPhotonEvent.hpp"
 
 #include <deque>
+#include <limits>
 #include <memory>
 #include <stdexcept>
 
@@ -76,7 +77,8 @@ private:
             }
             startTime = lineMarkerTime - minusDelay;
         }
-		if (startTime < lineStartTime + lineTime && lineStartTime != -1) {
+		if (startTime < lineStartTime + lineTime &&
+            lineStartTime != std::numeric_limits<decltype(lineStartTime)>::max()) {
 			throw Error("Pixels overlapping in time");
 		}
         return startTime;

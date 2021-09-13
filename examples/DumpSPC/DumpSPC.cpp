@@ -79,7 +79,7 @@ int DumpHeader(std::istream& input, std::ostream& output)
 
     input.read(data.bytes, sizeof(data));
     auto const bytesRead = input.gcount();
-    if (bytesRead < sizeof(data)) {
+    if (bytesRead < static_cast<decltype(bytesRead)>(sizeof(data))) {
         std::cerr << "File is shorter than required header size\n";
         return 1;
     }
