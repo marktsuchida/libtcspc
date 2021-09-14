@@ -1,6 +1,7 @@
 #include "../BHSPCFile.hpp"
 #include "FLIMEvents/BHDeviceEvent.hpp"
 
+#include <cstring>
 #include <fstream>
 #include <iomanip>
 #include <iostream>
@@ -65,19 +66,16 @@ class PrintProcessor : public DecodedEventProcessor {
 };
 
 int DumpHeader(std::istream &input, std::ostream &output) {
-    union {
-        BHSPCFileHeader header;
-        char bytes[sizeof(BHSPCFileHeader)];
-    } data;
-
-    input.read(data.bytes, sizeof(data));
-    auto const bytesRead = input.gcount();
-    if (bytesRead < static_cast<decltype(bytesRead)>(sizeof(data))) {
+    char bytes[sizeof(BHSPCFileHeader)];
+    input.read(bytes, sizeof(bytes));
+    size_t const bytesRead = input.gcount();
+    if (bytesRead < sizeof(bytes)) {
         std::cerr << "File is shorter than required header size\n";
         return 1;
     }
 
-    BHSPCFileHeader const &header = data.header;
+    BHSPCFileHeader header;
+    std::memcpy(&header, bytes, sizeof(header));
     output << "Macro-time units (0.1 ns): " << header.GetMacroTimeUnitsTenthNs()
            << '\n';
     output << "Number of routing bits: " << int(header.GetNumberOfRoutingBits())

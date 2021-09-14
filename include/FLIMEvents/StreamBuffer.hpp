@@ -70,7 +70,7 @@ template <typename E> class EventBufferPool {
         uptr->SetSize(0);
 
         return {uptr.release(), [this](auto ptr) {
-                    if (!ptr)
+                    if (ptr == nullptr)
                         return;
 
                     std::lock_guard<std::mutex> hold(mutex);

@@ -123,7 +123,7 @@ template <typename E> class PQT3EventDecoder : public DeviceEventDecoder {
     PQT3EventDecoder(std::shared_ptr<DecodedEventProcessor> downstream)
         : DeviceEventDecoder(downstream), nSyncBase(0), lastNSync(0) {}
 
-    std::size_t GetEventSize() const override { return sizeof(E); }
+    std::size_t GetEventSize() const noexcept override { return sizeof(E); }
 
     void HandleDeviceEvent(char const *event) override {
         E const *devEvt = reinterpret_cast<E const *>(event);
