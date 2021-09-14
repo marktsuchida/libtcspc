@@ -5,6 +5,7 @@
 #include <cstring>
 #include <deque>
 #include <memory>
+#include <stdexcept>
 #include <string>
 #include <type_traits>
 #include <vector>
