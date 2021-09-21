@@ -96,7 +96,7 @@ class LineClockPixellator : public DecodedEventProcessor {
             }
 
             if (downstream) {
-                downstream->HandleBeginFrame();
+                downstream->HandleEvent(BeginFrameEvent());
             }
         }
     }
@@ -107,7 +107,7 @@ class LineClockPixellator : public DecodedEventProcessor {
         bool endFrame = currentLine % linesPerFrame == 0;
         if (endFrame) {
             if (downstream) {
-                downstream->HandleEndFrame();
+                downstream->HandleEvent(EndFrameEvent());
             }
 
             // Check for last frame here to send finish as soon as possible.
@@ -131,7 +131,7 @@ class LineClockPixellator : public DecodedEventProcessor {
         newEvent.route = event.route;
         newEvent.microtime = event.microtime;
         if (downstream) {
-            downstream->HandlePixelPhoton(newEvent);
+            downstream->HandleEvent(newEvent);
         }
     }
 

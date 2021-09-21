@@ -122,19 +122,19 @@ template <typename T> class Histogrammer : public PixelPhotonProcessor {
         : histogram(std::move(histogram)), frameInProgress(false),
           downstream(downstream) {}
 
-    void HandleBeginFrame() override {
+    void HandleEvent(BeginFrameEvent const &) override {
         histogram.Clear();
         frameInProgress = true;
     }
 
-    void HandleEndFrame() override {
+    void HandleEvent(EndFrameEvent const &) override {
         frameInProgress = false;
         if (downstream) {
             downstream->HandleFrame(histogram);
         }
     }
 
-    void HandlePixelPhoton(PixelPhotonEvent const &event) override {
+    void HandleEvent(PixelPhotonEvent const &event) override {
         histogram.Increment(event.microtime, event.x, event.y);
     }
 

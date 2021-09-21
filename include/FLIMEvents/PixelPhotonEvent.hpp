@@ -15,14 +15,17 @@ struct PixelPhotonEvent {
     uint32_t frame;
 };
 
+struct BeginFrameEvent {};
+struct EndFrameEvent {};
+
 // Receiver of pixel-assigned photon events
 class PixelPhotonProcessor {
   public:
     virtual ~PixelPhotonProcessor() = default;
 
-    virtual void HandleBeginFrame() = 0;
-    virtual void HandleEndFrame() = 0;
-    virtual void HandlePixelPhoton(PixelPhotonEvent const &event) = 0;
+    virtual void HandleEvent(BeginFrameEvent const &event) = 0;
+    virtual void HandleEvent(EndFrameEvent const &event) = 0;
+    virtual void HandleEvent(PixelPhotonEvent const &event) = 0;
     virtual void HandleError(std::string const &message) = 0;
     virtual void HandleFinish() = 0;
 };
@@ -37,21 +40,21 @@ class BroadcastPixelPhotonProcessor : public PixelPhotonProcessor {
     explicit BroadcastPixelPhotonProcessor(T... downstreams)
         : downstreams{{downstreams...}} {}
 
-    void HandleBeginFrame() override {
+    void HandleEvent(BeginFrameEvent const &) override {
         for (auto &d : downstreams) {
-            d->HandleBeginFrame();
+            d->HandleEvent();
         }
     }
 
-    void HandleEndFrame() override {
+    void HandleEvent(EndFrameEvent const &) override {
         for (auto &d : downstreams) {
-            d->HandleEndFrame();
+            d->HandleEvent();
         }
     }
 
-    void HandlePixelPhoton(PixelPhotonEvent const &event) override {
+    void HandleEvent(PixelPhotonEvent const &event) override {
         for (auto &d : downstreams) {
-            d->HandlePixelPhoton(event);
+            d->HandleEvent(event);
         }
     }
 

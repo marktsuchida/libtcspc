@@ -20,23 +20,23 @@ class PixelPhotonRouter : public PixelPhotonProcessor {
         std::vector<std::shared_ptr<PixelPhotonProcessor>> downstreams)
         : downstreams(downstreams) {}
 
-    void HandleBeginFrame() override {
+    void HandleEvent(BeginFrameEvent const &event) override {
         for (auto &d : downstreams) {
             if (d) {
-                d->HandleBeginFrame();
+                d->HandleEvent(event);
             }
         }
     }
 
-    void HandleEndFrame() override {
+    void HandleEvent(EndFrameEvent const &event) override {
         for (auto &d : downstreams) {
             if (d) {
-                d->HandleEndFrame();
+                d->HandleEvent(event);
             }
         }
     }
 
-    void HandlePixelPhoton(PixelPhotonEvent const &event) override {
+    void HandleEvent(PixelPhotonEvent const &event) override {
         auto channel = event.route;
         std::shared_ptr<PixelPhotonProcessor> d;
         try {
@@ -45,7 +45,7 @@ class PixelPhotonRouter : public PixelPhotonProcessor {
             return;
         }
         if (d) {
-            d->HandlePixelPhoton(event);
+            d->HandleEvent(event);
         }
     }
 

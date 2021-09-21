@@ -22,11 +22,13 @@ TEST_CASE("Frames are produced according to line markers",
             finishCount = 0;
         }
 
-        void HandleBeginFrame() override { ++beginFrameCount; }
+        void HandleEvent(BeginFrameEvent const &) override {
+            ++beginFrameCount;
+        }
 
-        void HandleEndFrame() override { ++endFrameCount; }
+        void HandleEvent(EndFrameEvent const &) override { ++endFrameCount; }
 
-        void HandlePixelPhoton(PixelPhotonEvent const &event) override {
+        void HandleEvent(PixelPhotonEvent const &event) override {
             pixelPhotons.emplace_back(event);
         }
 
