@@ -169,7 +169,7 @@ template <typename E> class BHEventDecoder : public DeviceEventDecoder {
 
             TimestampEvent e;
             e.macrotime = macrotimeBase;
-            SendTimestamp(e);
+            EmitEvent(e);
             return;
         }
 
@@ -182,7 +182,7 @@ template <typename E> class BHEventDecoder : public DeviceEventDecoder {
         // Validate input: ensure macrotime increases monotonically (a common
         // assumption made by downstream processors)
         if (macrotime <= lastMacrotime) {
-            SendError("Non-monotonic macro-time encountered");
+            EmitError("Non-monotonic macro-time encountered");
             return;
         }
         lastMacrotime = macrotime;
@@ -190,14 +190,14 @@ template <typename E> class BHEventDecoder : public DeviceEventDecoder {
         if (devEvt->GetGapFlag()) {
             DataLostEvent e;
             e.macrotime = macrotime;
-            SendDataLost(e);
+            EmitEvent(e);
         }
 
         if (devEvt->GetMarkerFlag()) {
             MarkerEvent e;
             e.macrotime = macrotime;
             e.bits = devEvt->GetMarkerBits();
-            SendMarker(e);
+            EmitEvent(e);
             return;
         }
 
@@ -206,13 +206,13 @@ template <typename E> class BHEventDecoder : public DeviceEventDecoder {
             e.macrotime = macrotime;
             e.microtime = devEvt->GetADCValue();
             e.route = devEvt->GetRoutingSignals();
-            SendInvalidPhoton(e);
+            EmitEvent(e);
         } else {
             ValidPhotonEvent e;
             e.macrotime = macrotime;
             e.microtime = devEvt->GetADCValue();
             e.route = devEvt->GetRoutingSignals();
-            SendValidPhoton(e);
+            EmitEvent(e);
         }
     }
 };

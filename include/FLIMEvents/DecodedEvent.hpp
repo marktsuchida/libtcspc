@@ -109,11 +109,11 @@ class DecodedEventProcessor {
   public:
     virtual ~DecodedEventProcessor() = default;
 
-    virtual void HandleTimestamp(TimestampEvent const &event) = 0;
-    virtual void HandleValidPhoton(ValidPhotonEvent const &event) = 0;
-    virtual void HandleInvalidPhoton(InvalidPhotonEvent const &event) = 0;
-    virtual void HandleMarker(MarkerEvent const &event) = 0;
-    virtual void HandleDataLost(DataLostEvent const &event) = 0;
+    virtual void HandleEvent(TimestampEvent const &event) = 0;
+    virtual void HandleEvent(ValidPhotonEvent const &event) = 0;
+    virtual void HandleEvent(InvalidPhotonEvent const &event) = 0;
+    virtual void HandleEvent(MarkerEvent const &event) = 0;
+    virtual void HandleEvent(DataLostEvent const &event) = 0;
     virtual void HandleError(std::string const &message) = 0;
     virtual void HandleFinish() = 0;
 };

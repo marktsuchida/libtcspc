@@ -134,7 +134,7 @@ template <typename E> class PQT3EventDecoder : public DeviceEventDecoder {
 
             TimestampEvent e;
             e.macrotime = nSyncBase;
-            SendTimestamp(e);
+            EmitEvent(e);
             return;
         }
 
@@ -143,7 +143,7 @@ template <typename E> class PQT3EventDecoder : public DeviceEventDecoder {
         // Validate input: ensure nSync increases monotonically (a common
         // assumption made by downstream processors)
         if (nSync <= lastNSync) {
-            SendError("Non-monotonic nsync encountered");
+            EmitError("Non-monotonic nsync encountered");
             return;
         }
         lastNSync = nSync;
@@ -152,16 +152,15 @@ template <typename E> class PQT3EventDecoder : public DeviceEventDecoder {
             MarkerEvent e;
             e.macrotime = nSync;
             e.bits = devEvt->GetExternalMarkerBits();
-            SendMarker(e);
+            EmitEvent(e);
             return;
         }
 
-        PhotonEvent e;
+        ValidPhotonEvent e;
         e.macrotime = nSync;
         e.microtime = devEvt->GetDTime();
         e.route = devEvt->GetChannel();
-        e.valid = true;
-        SendPhoton(e);
+        EmitEvent(e);
     }
 };
 

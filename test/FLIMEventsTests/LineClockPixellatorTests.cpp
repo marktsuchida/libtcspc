@@ -47,21 +47,21 @@ TEST_CASE("Frames are produced according to line markers",
         MarkerEvent lineMarker;
         lineMarker.bits = 1 << 1;
         lineMarker.macrotime = 100;
-        lcp->HandleMarker(lineMarker);
+        lcp->HandleEvent(lineMarker);
         lcp->Flush();
 
         REQUIRE(output->beginFrameCount == 1);
         output->Reset();
 
         lineMarker.macrotime = 200;
-        lcp->HandleMarker(lineMarker);
+        lcp->HandleEvent(lineMarker);
         lcp->Flush();
         REQUIRE(output->beginFrameCount == 0);
         REQUIRE(output->endFrameCount == 0);
         output->Reset();
 
         lineMarker.macrotime = 300;
-        lcp->HandleMarker(lineMarker);
+        lcp->HandleEvent(lineMarker);
         lcp->Flush();
         REQUIRE(output->beginFrameCount == 1);
         REQUIRE(output->endFrameCount == 1);
@@ -70,7 +70,7 @@ TEST_CASE("Frames are produced according to line markers",
         SECTION("Last frame is incomplete if last line not started") {
             TimestampEvent timestamp;
             timestamp.macrotime = 1000000;
-            lcp->HandleTimestamp(timestamp);
+            lcp->HandleEvent(timestamp);
             lcp->Flush();
             REQUIRE(output->beginFrameCount == 0);
             REQUIRE(output->endFrameCount == 0);
@@ -79,7 +79,7 @@ TEST_CASE("Frames are produced according to line markers",
 
         SECTION("Last frame completion detected by last seen timestamp") {
             lineMarker.macrotime = 400;
-            lcp->HandleMarker(lineMarker);
+            lcp->HandleEvent(lineMarker);
             lcp->Flush();
             REQUIRE(output->beginFrameCount == 0);
             REQUIRE(output->endFrameCount == 0);
@@ -87,14 +87,14 @@ TEST_CASE("Frames are produced according to line markers",
 
             TimestampEvent timestamp;
             timestamp.macrotime = 419;
-            lcp->HandleTimestamp(timestamp);
+            lcp->HandleEvent(timestamp);
             lcp->Flush();
             REQUIRE(output->beginFrameCount == 0);
             REQUIRE(output->endFrameCount == 0);
             output->Reset();
 
             timestamp.macrotime = 420;
-            lcp->HandleTimestamp(timestamp);
+            lcp->HandleEvent(timestamp);
             lcp->Flush();
             REQUIRE(output->beginFrameCount == 0);
             REQUIRE(output->endFrameCount == 1);
@@ -111,7 +111,7 @@ TEST_CASE("Frames are produced according to line markers",
         MarkerEvent lineMarker;
         lineMarker.bits = 1 << 1;
         lineMarker.macrotime = 100;
-        lcp->HandleMarker(lineMarker);
+        lcp->HandleEvent(lineMarker);
         lcp->Flush();
 
         ValidPhotonEvent photon;
@@ -119,7 +119,7 @@ TEST_CASE("Frames are produced according to line markers",
 
         for (auto mt : {104, 105, 114, 115, 124, 125}) {
             photon.macrotime = mt;
-            lcp->HandleValidPhoton(photon);
+            lcp->HandleEvent(photon);
         }
 
         lcp->Flush();

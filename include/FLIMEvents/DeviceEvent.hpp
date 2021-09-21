@@ -28,44 +28,20 @@ class DeviceEventDecoder : public DeviceEventProcessor {
     std::shared_ptr<DecodedEventProcessor> downstream;
 
   protected:
-    void SendTimestamp(TimestampEvent const &event) {
+    template <typename E> void EmitEvent(E const &event) {
         if (downstream) {
-            downstream->HandleTimestamp(event);
+            downstream->HandleEvent(event);
         }
     }
 
-    void SendValidPhoton(ValidPhotonEvent const &event) {
-        if (downstream) {
-            downstream->HandleValidPhoton(event);
-        }
-    }
-
-    void SendInvalidPhoton(InvalidPhotonEvent const &event) {
-        if (downstream) {
-            downstream->HandleInvalidPhoton(event);
-        }
-    }
-
-    void SendMarker(MarkerEvent const &event) {
-        if (downstream) {
-            downstream->HandleMarker(event);
-        }
-    }
-
-    void SendDataLost(DataLostEvent const &event) {
-        if (downstream) {
-            downstream->HandleDataLost(event);
-        }
-    }
-
-    void SendError(std::string const &message) {
+    void EmitError(std::string const &message) {
         if (downstream) {
             downstream->HandleError(message);
             downstream.reset();
         }
     }
 
-    void SendFinish() {
+    void EmitFinish() {
         if (downstream) {
             downstream->HandleFinish();
             downstream.reset();
@@ -78,8 +54,8 @@ class DeviceEventDecoder : public DeviceEventProcessor {
         : downstream(downstream) {}
 
     void HandleError(std::string const &message) override {
-        SendError(message);
+        EmitError(message);
     }
 
-    void HandleFinish() override { SendFinish(); }
+    void HandleFinish() override { EmitFinish(); }
 };

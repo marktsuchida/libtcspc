@@ -219,7 +219,7 @@ class LineClockPixellator : public DecodedEventProcessor {
         }
     }
 
-    void HandleTimestamp(TimestampEvent const &event) override {
+    void HandleEvent(TimestampEvent const &event) override {
         auto prevTimestamp = latestTimestamp;
         UpdateTimeRange(event.macrotime);
         // We could call ProcessPhotonsAndLines() to emit all lines that are
@@ -235,7 +235,7 @@ class LineClockPixellator : public DecodedEventProcessor {
         }
     }
 
-    void HandleDataLost(DataLostEvent const &event) override {
+    void HandleEvent(DataLostEvent const &event) override {
         UpdateTimeRange(event.macrotime);
         ProcessPhotonsAndLines();
         if (downstream) {
@@ -245,7 +245,7 @@ class LineClockPixellator : public DecodedEventProcessor {
         }
     }
 
-    void HandleValidPhoton(ValidPhotonEvent const &event) override {
+    void HandleEvent(ValidPhotonEvent const &event) override {
         UpdateTimeRange(event.macrotime);
         EnqueuePhoton(event);
         // A small amount of buffering can improve performance (buffering
@@ -255,13 +255,13 @@ class LineClockPixellator : public DecodedEventProcessor {
         }
     }
 
-    void HandleInvalidPhoton(InvalidPhotonEvent const &event) override {
+    void HandleEvent(InvalidPhotonEvent const &event) override {
         UpdateTimeRange(event.macrotime);
         // We could call ProcessPhotonsAndLines() to emit all lines that are
         // complete, but deferring can improve performance.
     }
 
-    void HandleMarker(MarkerEvent const &event) override {
+    void HandleEvent(MarkerEvent const &event) override {
         UpdateTimeRange(event.macrotime);
         if (event.bits & lineMarkerMask) {
             EnqueueLineMarker(event.macrotime);

@@ -29,28 +29,28 @@ class PrintProcessor : public DecodedEventProcessor {
     explicit PrintProcessor(std::ostream &output)
         : count(0), lastMacrotime(0), output(output) {}
 
-    void HandleTimestamp(TimestampEvent const &event) override {
+    void HandleEvent(TimestampEvent const &event) override {
         // Do nothing
     }
 
-    void HandleDataLost(DataLostEvent const &event) override {
+    void HandleEvent(DataLostEvent const &event) override {
         PrintMacroTime(output, event.macrotime);
         output << " Data lost\n";
     }
 
-    void HandleValidPhoton(ValidPhotonEvent const &event) override {
+    void HandleEvent(ValidPhotonEvent const &event) override {
         PrintMacroTime(output, event.macrotime);
         output << " Photon: " << std::setw(5) << event.microtime << "; "
                << int(event.route) << '\n';
     }
 
-    void HandleInvalidPhoton(InvalidPhotonEvent const &event) override {
+    void HandleEvent(InvalidPhotonEvent const &event) override {
         PrintMacroTime(output, event.macrotime);
         output << " Invalid photon: " << std::setw(5) << event.microtime << "; "
                << int(event.route) << '\n';
     }
 
-    void HandleMarker(MarkerEvent const &event) override {
+    void HandleEvent(MarkerEvent const &event) override {
         PrintMacroTime(output, event.macrotime);
         output << ' ' << "Marker: " << int(event.bits) << '\n';
     }
