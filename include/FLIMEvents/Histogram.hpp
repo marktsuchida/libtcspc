@@ -131,7 +131,7 @@ template <typename T> class CumulativeHistogramProcessor {
 };
 
 // Collect pixel-assiend photon events into a series of histograms
-template <typename T> class Histogrammer : public PixelPhotonProcessor {
+template <typename T> class Histogrammer final : public PixelPhotonProcessor {
     Histogram<T> histogram;
     bool frameInProgress;
 
@@ -143,30 +143,30 @@ template <typename T> class Histogrammer : public PixelPhotonProcessor {
         : histogram(std::move(histogram)), frameInProgress(false),
           downstream(downstream) {}
 
-    void HandleEvent(BeginFrameEvent const &) override {
+    void HandleEvent(BeginFrameEvent const &) final {
         histogram.Clear();
         frameInProgress = true;
     }
 
-    void HandleEvent(EndFrameEvent const &) override {
+    void HandleEvent(EndFrameEvent const &) final {
         frameInProgress = false;
         if (downstream) {
             downstream->HandleEvent(FrameHistogramEvent<T>{histogram});
         }
     }
 
-    void HandleEvent(PixelPhotonEvent const &event) override {
+    void HandleEvent(PixelPhotonEvent const &event) final {
         histogram.Increment(event.microtime, event.x, event.y);
     }
 
-    void HandleError(std::string const &message) override {
+    void HandleError(std::string const &message) final {
         if (downstream) {
             downstream->HandleError(message);
             downstream.reset();
         }
     }
 
-    void HandleFinish() override {
+    void HandleFinish() final {
         if (downstream) {
             downstream->HandleFinish();
             downstream.reset();
@@ -177,7 +177,7 @@ template <typename T> class Histogrammer : public PixelPhotonProcessor {
 // Accumulate a series of histograms
 // Guarantees complete frame upon finish (all zeros if there was no frame).
 template <typename T>
-class HistogramAccumulator : public HistogramProcessor<T> {
+class HistogramAccumulator final : public HistogramProcessor<T> {
     Histogram<T> cumulative;
 
     std::shared_ptr<CumulativeHistogramProcessor<T>> downstream;
@@ -188,25 +188,25 @@ class HistogramAccumulator : public HistogramProcessor<T> {
         std::shared_ptr<CumulativeHistogramProcessor<T>> downstream)
         : cumulative(std::move(histogram)), downstream(downstream) {}
 
-    void HandleError(std::string const &message) override {
+    void HandleError(std::string const &message) final {
         if (downstream) {
             downstream->HandleError(message);
             downstream.reset();
         }
     }
 
-    void HandleEvent(FrameHistogramEvent<T> const &event) override {
+    void HandleEvent(FrameHistogramEvent<T> const &event) final {
         cumulative += event.histogram;
         if (downstream) {
             downstream->HandleEvent(FrameHistogramEvent<T>{cumulative});
         }
     }
 
-    void HandleEvent(IncompleteFrameHistogramEvent<T> const &) override {
+    void HandleEvent(IncompleteFrameHistogramEvent<T> const &) final {
         // Ignore incomplete frames
     }
 
-    void HandleFinish() override {
+    void HandleFinish() final {
         if (downstream) {
             downstream->HandleEvent(
                 FinalCumulativeHistogramEvent<T>{cumulative});

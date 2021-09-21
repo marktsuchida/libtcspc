@@ -150,7 +150,7 @@ struct BHSPC600Event32 {
  *
  * \tparam E binary record interpreter class
  */
-template <typename E> class BHEventDecoder : public DeviceEventDecoder {
+template <typename E> class BHEventDecoder final : public DeviceEventDecoder {
     uint64_t macrotimeBase; // Time of last overflow
     uint64_t lastMacrotime;
 
@@ -158,9 +158,9 @@ template <typename E> class BHEventDecoder : public DeviceEventDecoder {
     BHEventDecoder(std::shared_ptr<DecodedEventProcessor> downstream)
         : DeviceEventDecoder(downstream), macrotimeBase(0), lastMacrotime(0) {}
 
-    std::size_t GetEventSize() const noexcept override { return sizeof(E); }
+    std::size_t GetEventSize() const noexcept final { return sizeof(E); }
 
-    void HandleDeviceEvent(char const *event) override {
+    void HandleDeviceEvent(char const *event) final {
         E const *devEvt = reinterpret_cast<E const *>(event);
 
         if (devEvt->IsMultipleMacroTimeOverflow()) {

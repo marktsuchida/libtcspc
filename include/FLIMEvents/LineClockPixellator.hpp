@@ -219,7 +219,7 @@ class LineClockPixellator : public DecodedEventProcessor {
         }
     }
 
-    void HandleEvent(TimestampEvent const &event) override {
+    void HandleEvent(TimestampEvent const &event) final {
         auto prevTimestamp = latestTimestamp;
         UpdateTimeRange(event.macrotime);
         // We could call ProcessPhotonsAndLines() to emit all lines that are
@@ -235,7 +235,7 @@ class LineClockPixellator : public DecodedEventProcessor {
         }
     }
 
-    void HandleEvent(DataLostEvent const &event) override {
+    void HandleEvent(DataLostEvent const &event) final {
         UpdateTimeRange(event.macrotime);
         ProcessPhotonsAndLines();
         if (downstream) {
@@ -245,7 +245,7 @@ class LineClockPixellator : public DecodedEventProcessor {
         }
     }
 
-    void HandleEvent(ValidPhotonEvent const &event) override {
+    void HandleEvent(ValidPhotonEvent const &event) final {
         UpdateTimeRange(event.macrotime);
         EnqueuePhoton(event);
         // A small amount of buffering can improve performance (buffering
@@ -255,13 +255,13 @@ class LineClockPixellator : public DecodedEventProcessor {
         }
     }
 
-    void HandleEvent(InvalidPhotonEvent const &event) override {
+    void HandleEvent(InvalidPhotonEvent const &event) final {
         UpdateTimeRange(event.macrotime);
         // We could call ProcessPhotonsAndLines() to emit all lines that are
         // complete, but deferring can improve performance.
     }
 
-    void HandleEvent(MarkerEvent const &event) override {
+    void HandleEvent(MarkerEvent const &event) final {
         UpdateTimeRange(event.macrotime);
         if (event.bits & lineMarkerMask) {
             EnqueueLineMarker(event.macrotime);
@@ -272,7 +272,7 @@ class LineClockPixellator : public DecodedEventProcessor {
         }
     }
 
-    void HandleError(std::string const &message) override {
+    void HandleError(std::string const &message) final {
         ProcessPhotonsAndLines(); // Emit any buffered data
         if (downstream) {
             downstream->HandleError(message);
@@ -280,7 +280,7 @@ class LineClockPixellator : public DecodedEventProcessor {
         }
     }
 
-    void HandleFinish() override {
+    void HandleFinish() final {
         ProcessPhotonsAndLines(); // Emit any buffered data
 
         // Note we do _not_ end the current frame: if it is incomplete,

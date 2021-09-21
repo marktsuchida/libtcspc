@@ -115,7 +115,7 @@ template <bool IsHydraV1> struct HydraT3Event {
  *
  * \tparam E binary record interpreter class
  */
-template <typename E> class PQT3EventDecoder : public DeviceEventDecoder {
+template <typename E> class PQT3EventDecoder final : public DeviceEventDecoder {
     uint64_t nSyncBase;
     uint64_t lastNSync;
 
@@ -123,9 +123,9 @@ template <typename E> class PQT3EventDecoder : public DeviceEventDecoder {
     PQT3EventDecoder(std::shared_ptr<DecodedEventProcessor> downstream)
         : DeviceEventDecoder(downstream), nSyncBase(0), lastNSync(0) {}
 
-    std::size_t GetEventSize() const noexcept override { return sizeof(E); }
+    std::size_t GetEventSize() const noexcept final { return sizeof(E); }
 
-    void HandleDeviceEvent(char const *event) override {
+    void HandleDeviceEvent(char const *event) final {
         E const *devEvt = reinterpret_cast<E const *>(event);
 
         if (devEvt->IsNSyncOverflow()) {

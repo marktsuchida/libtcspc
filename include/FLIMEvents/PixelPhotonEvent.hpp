@@ -31,7 +31,7 @@ class PixelPhotonProcessor {
 };
 
 template <std::size_t N>
-class BroadcastPixelPhotonProcessor : public PixelPhotonProcessor {
+class BroadcastPixelPhotonProcessor final : public PixelPhotonProcessor {
     std::array<std::shared_ptr<PixelPhotonProcessor>, N> downstreams;
 
   public:
@@ -40,31 +40,31 @@ class BroadcastPixelPhotonProcessor : public PixelPhotonProcessor {
     explicit BroadcastPixelPhotonProcessor(T... downstreams)
         : downstreams{{downstreams...}} {}
 
-    void HandleEvent(BeginFrameEvent const &) override {
+    void HandleEvent(BeginFrameEvent const &) final {
         for (auto &d : downstreams) {
             d->HandleEvent();
         }
     }
 
-    void HandleEvent(EndFrameEvent const &) override {
+    void HandleEvent(EndFrameEvent const &) final {
         for (auto &d : downstreams) {
             d->HandleEvent();
         }
     }
 
-    void HandleEvent(PixelPhotonEvent const &event) override {
+    void HandleEvent(PixelPhotonEvent const &event) final {
         for (auto &d : downstreams) {
             d->HandleEvent(event);
         }
     }
 
-    void HandleError(std::string const &message) override {
+    void HandleError(std::string const &message) final {
         for (auto &d : downstreams) {
             d->HandleError(message);
         }
     }
 
-    void HandleFinish() override {
+    void HandleFinish() final {
         for (auto &d : downstreams) {
             d->HandleFinish();
         }

@@ -15,7 +15,7 @@ class DeviceEventProcessor {
     virtual void HandleError(std::string const &message) = 0;
     virtual void HandleFinish() = 0;
 
-    virtual void HandleDeviceEvents(char const *events, std::size_t count) {
+    void HandleDeviceEvents(char const *events, std::size_t count) {
         auto size = GetEventSize();
         for (std::size_t i = 0; i < count; ++i) {
             HandleDeviceEvent(events + i * size);
