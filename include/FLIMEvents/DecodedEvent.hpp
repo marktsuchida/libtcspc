@@ -22,6 +22,26 @@ struct DecodedEvent {
 };
 
 /**
+ * \brief Event to update macro-time stamp.
+ *
+ * Data sources emit this event to indicated that a macro-time stamp has been
+ * seen, without any associated event.
+ *
+ * This conveys useful information because timestamps are monotonic: if a
+ * timestamp is observed, it guarantees that all photons prior to that time
+ * have already been observed.
+ *
+ * Data sources reading raw device event streams should typically emit this
+ * event when a macro-time overflow occurs. Data sources that do not encode such
+ * overflows should emit this event once before finishing the stream, if the
+ * acquisition duration is known, to indicate the end time point.
+ *
+ * Note that this event is generally only emitted when the timestamp is not
+ * associated with an actual event (photon, marker, etc.).
+ */
+struct TimestampEvent : public DecodedEvent {};
+
+/**
  * \brief Event indicating loss of data due to buffer overflow.
  *
  * Event producers should continue to produce subsequent photon events, if any;
@@ -89,27 +109,7 @@ class DecodedEventProcessor {
   public:
     virtual ~DecodedEventProcessor() = default;
 
-    /**
-     * \brief Observe a macro-time stamp.
-     *
-     * Data sources call this function to indicated that a macro-time stamp has
-     * been seen, without any associated event.
-     *
-     * This conveys useful information because timestamps are monotonic: if a
-     * timestamp is observed, it guarantees that all photons prior to that time
-     * have already been observed.
-     *
-     * Data sources reading raw device event streams should typically call this
-     * function when a macro-time overflow event occurs. Data sources that do
-     * not encode such overflows should call this function once before
-     * finishing the stream, if the acquisition duration is known, to indicate
-     * the end time point.
-     *
-     * Note that this function is generally only called when the timestamp is
-     * not associated with an actual event (photon, marker, etc.).
-     */
-    virtual void HandleTimestamp(DecodedEvent const &event) = 0;
-
+    virtual void HandleTimestamp(TimestampEvent const &event) = 0;
     virtual void HandleValidPhoton(ValidPhotonEvent const &event) = 0;
     virtual void HandleInvalidPhoton(InvalidPhotonEvent const &event) = 0;
     virtual void HandleMarker(MarkerEvent const &event) = 0;

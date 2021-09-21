@@ -132,7 +132,7 @@ template <typename E> class PQT3EventDecoder : public DeviceEventDecoder {
             nSyncBase +=
                 E::NSyncOverflowPeriod * devEvt->GetNSyncOverflowCount();
 
-            DecodedEvent e;
+            TimestampEvent e;
             e.macrotime = nSyncBase;
             SendTimestamp(e);
             return;

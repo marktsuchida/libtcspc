@@ -68,7 +68,7 @@ TEST_CASE("Frames are produced according to line markers",
         output->Reset();
 
         SECTION("Last frame is incomplete if last line not started") {
-            DecodedEvent timestamp;
+            TimestampEvent timestamp;
             timestamp.macrotime = 1000000;
             lcp->HandleTimestamp(timestamp);
             lcp->Flush();
@@ -85,7 +85,7 @@ TEST_CASE("Frames are produced according to line markers",
             REQUIRE(output->endFrameCount == 0);
             output->Reset();
 
-            DecodedEvent timestamp;
+            TimestampEvent timestamp;
             timestamp.macrotime = 419;
             lcp->HandleTimestamp(timestamp);
             lcp->Flush();

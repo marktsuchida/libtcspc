@@ -167,7 +167,7 @@ template <typename E> class BHEventDecoder : public DeviceEventDecoder {
             macrotimeBase += E::MacroTimeOverflowPeriod *
                              devEvt->GetMultipleMacroTimeOverflowCount();
 
-            DecodedEvent e;
+            TimestampEvent e;
             e.macrotime = macrotimeBase;
             SendTimestamp(e);
             return;

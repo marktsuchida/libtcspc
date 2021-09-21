@@ -219,7 +219,7 @@ class LineClockPixellator : public DecodedEventProcessor {
         }
     }
 
-    void HandleTimestamp(DecodedEvent const &event) override {
+    void HandleTimestamp(TimestampEvent const &event) override {
         auto prevTimestamp = latestTimestamp;
         UpdateTimeRange(event.macrotime);
         // We could call ProcessPhotonsAndLines() to emit all lines that are

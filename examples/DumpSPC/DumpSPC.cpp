@@ -29,7 +29,7 @@ class PrintProcessor : public DecodedEventProcessor {
     explicit PrintProcessor(std::ostream &output)
         : count(0), lastMacrotime(0), output(output) {}
 
-    void HandleTimestamp(DecodedEvent const &event) override {
+    void HandleTimestamp(TimestampEvent const &event) override {
         // Do nothing
     }
 

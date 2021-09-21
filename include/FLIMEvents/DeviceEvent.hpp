@@ -28,7 +28,7 @@ class DeviceEventDecoder : public DeviceEventProcessor {
     std::shared_ptr<DecodedEventProcessor> downstream;
 
   protected:
-    void SendTimestamp(DecodedEvent const &event) {
+    void SendTimestamp(TimestampEvent const &event) {
         if (downstream) {
             downstream->HandleTimestamp(event);
         }
