@@ -10,17 +10,18 @@
 #include <type_traits>
 #include <vector>
 
-// TODO This can be constexpr in VS2019 but not in VS2015.
 template <typename T, typename U,
-          typename = std::enable_if_t<sizeof(T) >= sizeof(U)>>
-inline T SaturatingAdd(T a, U b) {
+          typename =
+              std::enable_if_t<std::is_unsigned_v<T> && std::is_unsigned_v<U> &&
+                               sizeof(T) >= sizeof(U)>>
+inline constexpr T SaturatingAdd(T a, U b) {
     T c = a + b;
     if (c < a)
         c = -1;
     return c;
 }
 
-template <typename T, typename = std::enable_if_t<std::is_unsigned<T>::value>>
+template <typename T, typename = std::enable_if_t<std::is_unsigned_v<T>>>
 class Histogram {
     uint32_t timeBits;
     uint32_t inputTimeBits;
