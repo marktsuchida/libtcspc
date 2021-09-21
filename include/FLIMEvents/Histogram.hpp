@@ -95,18 +95,39 @@ class Histogram {
     }
 };
 
+template <typename T> struct FrameHistogramEvent {
+    Histogram<T> const &histogram;
+};
+
+template <typename T> struct IncompleteFrameHistogramEvent {
+    Histogram<T> const &histogram;
+};
+
+template <typename T> struct FinalCumulativeHistogramEvent {
+    Histogram<T> const &histogram;
+};
+
 // Receiver of frame-by-frame histogram events
 template <typename T> class HistogramProcessor {
   public:
     virtual ~HistogramProcessor() = default;
 
-    virtual void HandleError(std::string const &message) = 0;
-    virtual void HandleFrame(Histogram<T> const &histogram) = 0;
+    virtual void HandleEvent(FrameHistogramEvent<T> const &event) = 0;
+    virtual void HandleEvent(IncompleteFrameHistogramEvent<T> const &event) = 0;
 
-    // Upon finishing, the histogram is moved out of its producer.
-    // (It can then be saved, reused, etc.)
-    virtual void HandleFinish(Histogram<T> &&histogram,
-                              bool isCompleteFrame) = 0;
+    virtual void HandleError(std::string const &message) = 0;
+    virtual void HandleFinish() = 0;
+};
+
+template <typename T> class CumulativeHistogramProcessor {
+  public:
+    virtual ~CumulativeHistogramProcessor() = default;
+
+    virtual void HandleEvent(FrameHistogramEvent<T> const &event) = 0;
+    virtual void HandleEvent(FinalCumulativeHistogramEvent<T> const &event) = 0;
+
+    virtual void HandleError(std::string const &message) = 0;
+    virtual void HandleFinish() = 0;
 };
 
 // Collect pixel-assiend photon events into a series of histograms
@@ -130,7 +151,7 @@ template <typename T> class Histogrammer : public PixelPhotonProcessor {
     void HandleEvent(EndFrameEvent const &) override {
         frameInProgress = false;
         if (downstream) {
-            downstream->HandleFrame(histogram);
+            downstream->HandleEvent(FrameHistogramEvent<T>{histogram});
         }
     }
 
@@ -147,7 +168,7 @@ template <typename T> class Histogrammer : public PixelPhotonProcessor {
 
     void HandleFinish() override {
         if (downstream) {
-            downstream->HandleFinish(std::move(histogram), !frameInProgress);
+            downstream->HandleFinish();
             downstream.reset();
         }
     }
@@ -159,11 +180,12 @@ template <typename T>
 class HistogramAccumulator : public HistogramProcessor<T> {
     Histogram<T> cumulative;
 
-    std::shared_ptr<HistogramProcessor<T>> downstream;
+    std::shared_ptr<CumulativeHistogramProcessor<T>> downstream;
 
   public:
-    HistogramAccumulator(Histogram<T> &&histogram,
-                         std::shared_ptr<HistogramProcessor<T>> downstream)
+    HistogramAccumulator(
+        Histogram<T> &&histogram,
+        std::shared_ptr<CumulativeHistogramProcessor<T>> downstream)
         : cumulative(std::move(histogram)), downstream(downstream) {}
 
     void HandleError(std::string const &message) override {
@@ -173,17 +195,22 @@ class HistogramAccumulator : public HistogramProcessor<T> {
         }
     }
 
-    void HandleFrame(Histogram<T> const &histogram) override {
-        cumulative += histogram;
+    void HandleEvent(FrameHistogramEvent<T> const &event) override {
+        cumulative += event.histogram;
         if (downstream) {
-            downstream->HandleFrame(cumulative);
+            downstream->HandleEvent(FrameHistogramEvent<T>{cumulative});
         }
     }
 
-    void HandleFinish(Histogram<T> &&histogram, bool isCompleteFrame) override {
-        // We discard any incomplete frame from upstream
+    void HandleEvent(IncompleteFrameHistogramEvent<T> const &) override {
+        // Ignore incomplete frames
+    }
+
+    void HandleFinish() override {
         if (downstream) {
-            downstream->HandleFinish(std::move(cumulative), true);
+            downstream->HandleEvent(
+                FinalCumulativeHistogramEvent<T>{cumulative});
+            downstream->HandleFinish();
             downstream.reset();
         }
     }

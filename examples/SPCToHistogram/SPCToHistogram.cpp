@@ -19,7 +19,8 @@ void Usage() {
         << "Currently the output contains only the raw cumulative histogram.\n";
 }
 
-template <typename T> class HistogramSaver : public HistogramProcessor<T> {
+template <typename T>
+class HistogramSaver : public CumulativeHistogramProcessor<T> {
     std::size_t frameCount;
     std::string const &outFilename;
 
@@ -32,11 +33,11 @@ template <typename T> class HistogramSaver : public HistogramProcessor<T> {
         std::exit(1);
     }
 
-    void HandleFrame(Histogram<T> const &histogram) override {
+    void HandleEvent(FrameHistogramEvent<T> const &) override {
         std::cerr << "Frame " << (frameCount++) << '\n';
     }
 
-    void HandleFinish(Histogram<T> &&histogram, bool isCompleteFrame) override {
+    void HandleEvent(FinalCumulativeHistogramEvent<T> const &event) override {
         if (!frameCount) { // No frames
             std::cerr << "No frames\n";
             return;
@@ -49,9 +50,12 @@ template <typename T> class HistogramSaver : public HistogramProcessor<T> {
             std::exit(1);
         }
 
+        auto &histogram = event.histogram;
         output.write(reinterpret_cast<const char *>(histogram.Get()),
                      histogram.GetNumberOfElements() * sizeof(T));
     }
+
+    void HandleFinish() override {}
 };
 
 int main(int argc, char *argv[]) {
