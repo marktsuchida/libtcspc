@@ -155,71 +155,83 @@ struct BHSPC600Event32 {
  *
  * \tparam E binary record interpreter class
  */
-template <typename E> class BHEventDecoder final : public DeviceEventDecoder {
+template <typename E>
+class BHEventDecoder final : public DeviceEventProcessor<E> {
     uint64_t macrotimeBase; // Time of last overflow
     uint64_t lastMacrotime;
 
+    std::shared_ptr<DecodedEventProcessor> downstream;
+
   public:
     BHEventDecoder(std::shared_ptr<DecodedEventProcessor> downstream)
-        : DeviceEventDecoder(downstream), macrotimeBase(0), lastMacrotime(0) {}
+        : macrotimeBase(0), lastMacrotime(0), downstream(downstream) {}
 
-    std::size_t GetEventSize() const noexcept final { return sizeof(E); }
+    void HandleEvent(E const &event) final {
+        if (!downstream)
+            return;
 
-    void HandleDeviceEvent(char const *event) final {
-        E const *devEvt = reinterpret_cast<E const *>(event);
-
-        if (devEvt->IsMultipleMacroTimeOverflow()) {
+        if (event.IsMultipleMacroTimeOverflow()) {
             macrotimeBase += E::MacroTimeOverflowPeriod *
-                             devEvt->GetMultipleMacroTimeOverflowCount();
+                             event.GetMultipleMacroTimeOverflowCount();
 
             TimestampEvent e;
             e.macrotime = macrotimeBase;
-            EmitEvent(e);
+            downstream->HandleEvent(e);
             return;
         }
 
-        if (devEvt->GetMacroTimeOverflowFlag()) {
+        if (event.GetMacroTimeOverflowFlag()) {
             macrotimeBase += E::MacroTimeOverflowPeriod;
         }
 
-        uint64_t macrotime = macrotimeBase + devEvt->GetMacroTime();
+        uint64_t macrotime = macrotimeBase + event.GetMacroTime();
 
         // Validate input: ensure macrotime increases monotonically (a common
         // assumption made by downstream processors)
         if (macrotime <= lastMacrotime) {
-            EmitError(std::make_exception_ptr(
+            downstream->HandleError(std::make_exception_ptr(
                 std::runtime_error("Non-monotonic macro-time encountered")));
             return;
         }
         lastMacrotime = macrotime;
 
-        if (devEvt->GetGapFlag()) {
+        if (event.GetGapFlag()) {
             DataLostEvent e;
             e.macrotime = macrotime;
-            EmitEvent(e);
+            downstream->HandleEvent(e);
         }
 
-        if (devEvt->GetMarkerFlag()) {
+        if (event.GetMarkerFlag()) {
             MarkerEvent e;
             e.macrotime = macrotime;
-            e.bits = devEvt->GetMarkerBits();
-            EmitEvent(e);
+            e.bits = event.GetMarkerBits();
+            downstream->HandleEvent(e);
             return;
         }
 
-        if (devEvt->GetInvalidFlag()) {
+        if (event.GetInvalidFlag()) {
             InvalidPhotonEvent e;
             e.macrotime = macrotime;
-            e.microtime = devEvt->GetADCValue();
-            e.route = devEvt->GetRoutingSignals();
-            EmitEvent(e);
+            e.microtime = event.GetADCValue();
+            e.route = event.GetRoutingSignals();
+            downstream->HandleEvent(e);
         } else {
             ValidPhotonEvent e;
             e.macrotime = macrotime;
-            e.microtime = devEvt->GetADCValue();
-            e.route = devEvt->GetRoutingSignals();
-            EmitEvent(e);
+            e.microtime = event.GetADCValue();
+            e.route = event.GetRoutingSignals();
+            downstream->HandleEvent(e);
         }
+    }
+
+    void HandleError(std::exception_ptr exception) final {
+        if (downstream)
+            downstream->HandleError(exception);
+    }
+
+    void HandleFinish() final {
+        if (downstream)
+            downstream->HandleFinish();
     }
 };
 

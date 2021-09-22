@@ -120,53 +120,64 @@ template <bool IsHydraV1> struct HydraT3Event {
  *
  * \tparam E binary record interpreter class
  */
-template <typename E> class PQT3EventDecoder final : public DeviceEventDecoder {
+template <typename E>
+class PQT3EventDecoder final : public DeviceEventProcessor<E> {
     uint64_t nSyncBase;
     uint64_t lastNSync;
 
+    std::shared_ptr<DecodedEventProcessor> downstream;
+
   public:
     PQT3EventDecoder(std::shared_ptr<DecodedEventProcessor> downstream)
-        : DeviceEventDecoder(downstream), nSyncBase(0), lastNSync(0) {}
+        : nSyncBase(0), lastNSync(0), downstream(downstream) {}
 
-    std::size_t GetEventSize() const noexcept final { return sizeof(E); }
+    void HandleDeviceEvent(E const &event) final {
+        if (!downstream)
+            return;
 
-    void HandleDeviceEvent(char const *event) final {
-        E const *devEvt = reinterpret_cast<E const *>(event);
-
-        if (devEvt->IsNSyncOverflow()) {
-            nSyncBase +=
-                E::NSyncOverflowPeriod * devEvt->GetNSyncOverflowCount();
+        if (event.IsNSyncOverflow()) {
+            nSyncBase += E::NSyncOverflowPeriod * event.GetNSyncOverflowCount();
 
             TimestampEvent e;
             e.macrotime = nSyncBase;
-            EmitEvent(e);
+            downstream->HandleEvent(e);
             return;
         }
 
-        uint64_t nSync = nSyncBase + devEvt->GetNSync();
+        uint64_t nSync = nSyncBase + event.GetNSync();
 
         // Validate input: ensure nSync increases monotonically (a common
         // assumption made by downstream processors)
         if (nSync <= lastNSync) {
-            EmitError(std::make_exception_ptr(
+            downstream->HandleError(std::make_exception_ptr(
                 std::runtime_error("Non-monotonic nsync encountered")));
             return;
         }
         lastNSync = nSync;
 
-        if (devEvt->IsExternalMarker()) {
+        if (event.IsExternalMarker()) {
             MarkerEvent e;
             e.macrotime = nSync;
-            e.bits = devEvt->GetExternalMarkerBits();
-            EmitEvent(e);
+            e.bits = event.GetExternalMarkerBits();
+            downstream->HandleEvent(e);
             return;
         }
 
         ValidPhotonEvent e;
         e.macrotime = nSync;
-        e.microtime = devEvt->GetDTime();
-        e.route = devEvt->GetChannel();
-        EmitEvent(e);
+        e.microtime = event.GetDTime();
+        e.route = event.GetChannel();
+        downstream->HandleEvent(e);
+    }
+
+    void HandleError(std::exception_ptr exception) final {
+        if (downstream)
+            downstream->HandleError(exception);
+    }
+
+    void HandleFinish() final {
+        if (downstream)
+            downstream->HandleFinish();
     }
 };
 

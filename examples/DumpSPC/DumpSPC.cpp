@@ -109,7 +109,7 @@ void DumpRawEvent(char const *rawEvent, std::ostream &output) {
 
 int DumpEvents(std::istream &input, std::ostream &output) {
     BHSPCEventDecoder decoder(std::make_shared<PrintProcessor>(output));
-    std::size_t const eventSize = decoder.GetEventSize();
+    constexpr std::size_t const eventSize = sizeof(BHSPCEvent);
 
     while (input.good()) {
         std::vector<char> event(eventSize);
@@ -123,7 +123,7 @@ int DumpEvents(std::istream &input, std::ostream &output) {
         }
 
         DumpRawEvent(event.data(), output);
-        decoder.HandleDeviceEvent(event.data());
+        decoder.HandleEvent(*reinterpret_cast<BHSPCEvent *>(event.data()));
     }
     decoder.HandleFinish();
 

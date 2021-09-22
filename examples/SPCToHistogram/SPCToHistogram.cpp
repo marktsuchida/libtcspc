@@ -107,9 +107,9 @@ int main(int argc, char *argv[]) {
             if (!eventBuffer) {
                 break;
             }
-            decoder->HandleDeviceEvents(
-                reinterpret_cast<char const *>(eventBuffer->GetData()),
-                eventBuffer->GetSize());
+            for (std::size_t i = 0; i < eventBuffer->GetSize(); ++i) {
+                decoder->HandleEvent(*(eventBuffer->GetData() + i));
+            }
         }
         std::clock_t elapsed = std::clock() - start;
 
