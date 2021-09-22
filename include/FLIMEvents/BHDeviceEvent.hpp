@@ -2,6 +2,11 @@
 
 #include "DeviceEvent.hpp"
 
+#include <cstddef>
+#include <cstdint>
+#include <exception>
+#include <memory>
+
 // Raw photon event data formats are documented in The bh TCSPC Handbook (see
 // section on FIFO Files in the chapter on Data file structure).
 
@@ -182,7 +187,8 @@ template <typename E> class BHEventDecoder final : public DeviceEventDecoder {
         // Validate input: ensure macrotime increases monotonically (a common
         // assumption made by downstream processors)
         if (macrotime <= lastMacrotime) {
-            EmitError("Non-monotonic macro-time encountered");
+            EmitError(std::make_exception_ptr(
+                std::runtime_error("Non-monotonic macro-time encountered")));
             return;
         }
         lastMacrotime = macrotime;

@@ -1,6 +1,12 @@
 #include "FLIMEvents/LineClockPixellator.hpp"
+
 #include <catch2/catch.hpp>
+
 #include <cstring>
+#include <exception>
+#include <memory>
+#include <string>
+#include <vector>
 
 TEST_CASE("Frames are produced according to line markers",
           "[LineClockPixellator]") {
@@ -32,8 +38,12 @@ TEST_CASE("Frames are produced according to line markers",
             pixelPhotons.emplace_back(event);
         }
 
-        void HandleError(std::string const &message) override {
-            errors.emplace_back(message);
+        void HandleError(std::exception_ptr exception) override {
+            try {
+                std::rethrow_exception(exception);
+            } catch (std::exception const &e) {
+                errors.emplace_back(e.what());
+            }
         }
 
         void HandleFinish() override { ++finishCount; }

@@ -4,6 +4,7 @@
 
 #include <cstring>
 #include <deque>
+#include <exception>
 #include <memory>
 #include <stdexcept>
 #include <string>
@@ -116,7 +117,7 @@ template <typename T> class HistogramProcessor {
     virtual void HandleEvent(FrameHistogramEvent<T> const &event) = 0;
     virtual void HandleEvent(IncompleteFrameHistogramEvent<T> const &event) = 0;
 
-    virtual void HandleError(std::string const &message) = 0;
+    virtual void HandleError(std::exception_ptr exception) = 0;
     virtual void HandleFinish() = 0;
 };
 
@@ -127,7 +128,7 @@ template <typename T> class CumulativeHistogramProcessor {
     virtual void HandleEvent(FrameHistogramEvent<T> const &event) = 0;
     virtual void HandleEvent(FinalCumulativeHistogramEvent<T> const &event) = 0;
 
-    virtual void HandleError(std::string const &message) = 0;
+    virtual void HandleError(std::exception_ptr exception) = 0;
     virtual void HandleFinish() = 0;
 };
 
@@ -160,9 +161,9 @@ template <typename T> class Histogrammer final : public PixelPhotonProcessor {
         histogram.Increment(event.microtime, event.x, event.y);
     }
 
-    void HandleError(std::string const &message) final {
+    void HandleError(std::exception_ptr exception) final {
         if (downstream) {
-            downstream->HandleError(message);
+            downstream->HandleError(exception);
             downstream.reset();
         }
     }
@@ -189,9 +190,9 @@ class HistogramAccumulator final : public HistogramProcessor<T> {
         std::shared_ptr<CumulativeHistogramProcessor<T>> downstream)
         : cumulative(std::move(histogram)), downstream(downstream) {}
 
-    void HandleError(std::string const &message) final {
+    void HandleError(std::exception_ptr exception) final {
         if (downstream) {
-            downstream->HandleError(message);
+            downstream->HandleError(exception);
             downstream.reset();
         }
     }

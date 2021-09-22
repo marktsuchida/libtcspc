@@ -2,6 +2,7 @@
 #include "FLIMEvents/BHDeviceEvent.hpp"
 
 #include <cstring>
+#include <exception>
 #include <fstream>
 #include <iomanip>
 #include <iostream>
@@ -55,9 +56,13 @@ class PrintProcessor : public DecodedEventProcessor {
         output << ' ' << "Marker: " << int(event.bits) << '\n';
     }
 
-    void HandleError(std::string const &message) override {
-        std::cerr << "Invalid data: " << message << '\n';
-        std::exit(1);
+    void HandleError(std::exception_ptr exception) override {
+        try {
+            std::rethrow_exception(exception);
+        } catch (std::exception const &e) {
+            std::cerr << "Invalid data: " << e.what() << '\n';
+            std::exit(1);
+        }
     }
 
     void HandleFinish() override {

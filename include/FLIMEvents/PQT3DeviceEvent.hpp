@@ -2,6 +2,11 @@
 
 #include "DeviceEvent.hpp"
 
+#include <cstddef>
+#include <cstdint>
+#include <exception>
+#include <memory>
+
 // I implemented PicoQuant event types to verify that the framework can handle
 // a good range of raw event stream formats. But it has not been excercised.
 #error "This code is untested; use only after testing"
@@ -143,7 +148,8 @@ template <typename E> class PQT3EventDecoder final : public DeviceEventDecoder {
         // Validate input: ensure nSync increases monotonically (a common
         // assumption made by downstream processors)
         if (nSync <= lastNSync) {
-            EmitError("Non-monotonic nsync encountered");
+            EmitError(std::make_exception_ptr(
+                std::runtime_error("Non-monotonic nsync encountered")));
             return;
         }
         lastNSync = nSync;

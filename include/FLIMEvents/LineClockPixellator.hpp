@@ -4,6 +4,7 @@
 #include "PixelPhotonEvent.hpp"
 
 #include <deque>
+#include <exception>
 #include <limits>
 #include <memory>
 #include <stdexcept>
@@ -40,11 +41,6 @@ class LineClockPixellator : public DecodedEventProcessor {
 
     std::shared_ptr<PixelPhotonProcessor> downstream;
 
-    struct Error {
-        std::string message;
-        explicit Error(std::string m) : message(m) {}
-    };
-
   private:
     void UpdateTimeRange(uint64_t macrotime) { latestTimestamp = macrotime; }
 
@@ -69,14 +65,14 @@ class LineClockPixellator : public DecodedEventProcessor {
         } else {
             uint64_t minusDelay = -lineDelay;
             if (lineMarkerTime < minusDelay) {
-                throw Error("Pixel at negative time");
+                throw std::runtime_error("Pixel at negative time");
             }
             startTime = lineMarkerTime - minusDelay;
         }
         if (startTime < lineStartTime + lineTime &&
             lineStartTime !=
                 std::numeric_limits<decltype(lineStartTime)>::max()) {
-            throw Error("Pixels overlapping in time");
+            throw std::runtime_error("Pixels overlapping in time");
         }
         return startTime;
     }
@@ -191,9 +187,9 @@ class LineClockPixellator : public DecodedEventProcessor {
         try {
             while (ProcessLinePhotons())
                 ;
-        } catch (Error const &e) {
+        } catch (std::exception const &) {
             if (downstream) {
-                downstream->HandleError(e.message);
+                downstream->HandleError(std::current_exception());
                 downstream.reset();
             }
         }
@@ -239,8 +235,8 @@ class LineClockPixellator : public DecodedEventProcessor {
         UpdateTimeRange(event.macrotime);
         ProcessPhotonsAndLines();
         if (downstream) {
-            downstream->HandleError(
-                "Data lost due to device buffer (FIFO) overflow");
+            downstream->HandleError(std::make_exception_ptr(std::runtime_error(
+                "Data lost due to device buffer (FIFO) overflow")));
             downstream.reset();
         }
     }
@@ -272,10 +268,10 @@ class LineClockPixellator : public DecodedEventProcessor {
         }
     }
 
-    void HandleError(std::string const &message) final {
+    void HandleError(std::exception_ptr exception) final {
         ProcessPhotonsAndLines(); // Emit any buffered data
         if (downstream) {
-            downstream->HandleError(message);
+            downstream->HandleError(exception);
             downstream.reset();
         }
     }

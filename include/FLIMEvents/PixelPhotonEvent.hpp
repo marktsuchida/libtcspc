@@ -4,6 +4,7 @@
 
 #include <array>
 #include <cstdlib>
+#include <exception>
 #include <memory>
 #include <string>
 
@@ -26,7 +27,7 @@ class PixelPhotonProcessor {
     virtual void HandleEvent(BeginFrameEvent const &event) = 0;
     virtual void HandleEvent(EndFrameEvent const &event) = 0;
     virtual void HandleEvent(PixelPhotonEvent const &event) = 0;
-    virtual void HandleError(std::string const &message) = 0;
+    virtual void HandleError(std::exception_ptr exception) = 0;
     virtual void HandleFinish() = 0;
 };
 
@@ -58,9 +59,9 @@ class BroadcastPixelPhotonProcessor final : public PixelPhotonProcessor {
         }
     }
 
-    void HandleError(std::string const &message) final {
+    void HandleError(std::exception_ptr exception) final {
         for (auto &d : downstreams) {
-            d->HandleError(message);
+            d->HandleError(exception);
         }
     }
 

@@ -3,6 +3,7 @@
 #include "DecodedEvent.hpp"
 
 #include <cstdlib>
+#include <exception>
 #include <memory>
 #include <string>
 
@@ -12,7 +13,7 @@ class DeviceEventProcessor {
 
     virtual std::size_t GetEventSize() const noexcept = 0;
     virtual void HandleDeviceEvent(char const *event) = 0;
-    virtual void HandleError(std::string const &message) = 0;
+    virtual void HandleError(std::exception_ptr exception) = 0;
     virtual void HandleFinish() = 0;
 
     void HandleDeviceEvents(char const *events, std::size_t count) {
@@ -34,9 +35,9 @@ class DeviceEventDecoder : public DeviceEventProcessor {
         }
     }
 
-    void EmitError(std::string const &message) {
+    void EmitError(std::exception_ptr exception) {
         if (downstream) {
-            downstream->HandleError(message);
+            downstream->HandleError(exception);
             downstream.reset();
         }
     }
@@ -53,8 +54,8 @@ class DeviceEventDecoder : public DeviceEventProcessor {
         std::shared_ptr<DecodedEventProcessor> downstream)
         : downstream(downstream) {}
 
-    void HandleError(std::string const &message) override {
-        EmitError(message);
+    void HandleError(std::exception_ptr exception) override {
+        EmitError(exception);
     }
 
     void HandleFinish() override { EmitFinish(); }

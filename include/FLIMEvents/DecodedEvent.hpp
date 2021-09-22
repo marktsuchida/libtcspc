@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstdint>
+#include <exception>
 #include <string>
 
 /**
@@ -114,6 +115,6 @@ class DecodedEventProcessor {
     virtual void HandleEvent(InvalidPhotonEvent const &event) = 0;
     virtual void HandleEvent(MarkerEvent const &event) = 0;
     virtual void HandleEvent(DataLostEvent const &event) = 0;
-    virtual void HandleError(std::string const &message) = 0;
+    virtual void HandleError(std::exception_ptr exception) = 0;
     virtual void HandleFinish() = 0;
 };

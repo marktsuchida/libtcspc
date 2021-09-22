@@ -100,13 +100,13 @@ template <typename E> class EventStream {
     void SendException(std::exception_ptr e) {
         {
             std::lock_guard<std::mutex> hold(mutex);
-            queue.emplace_back(std::shared_ptr<EventBuffer<E>>());
+            queue.emplace_back({});
             exception = e;
         }
     }
 
     // A null shared pointer return value indicates that the stream has been
-    // terminated. Subsequent calls will block forever.
+    // terminated. Behavior is undefined if subsequent calls are made.
     // Throws if upstream sent an exception.
     std::shared_ptr<EventBuffer<E>> ReceiveBlocking() {
         std::unique_lock<std::mutex> lock(mutex);

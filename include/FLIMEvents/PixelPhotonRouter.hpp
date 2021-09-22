@@ -2,6 +2,7 @@
 
 #include "PixelPhotonEvent.hpp"
 
+#include <exception>
 #include <memory>
 #include <stdexcept>
 #include <vector>
@@ -49,10 +50,10 @@ class PixelPhotonRouter final : public PixelPhotonProcessor {
         }
     }
 
-    void HandleError(std::string const &message) final {
+    void HandleError(std::exception_ptr exception) final {
         for (auto &d : downstreams) {
             if (d) {
-                d->HandleError(message);
+                d->HandleError(exception);
             }
         }
     }

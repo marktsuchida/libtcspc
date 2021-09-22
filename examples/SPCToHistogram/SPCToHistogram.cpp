@@ -5,6 +5,7 @@
 #include "FLIMEvents/StreamBuffer.hpp"
 
 #include <ctime>
+#include <exception>
 #include <fstream>
 #include <future>
 #include <iostream>
@@ -28,9 +29,13 @@ class HistogramSaver : public CumulativeHistogramProcessor<T> {
     explicit HistogramSaver(std::string const &outFilename)
         : frameCount(0), outFilename(outFilename) {}
 
-    void HandleError(std::string const &message) override {
-        std::cerr << message << '\n';
-        std::exit(1);
+    void HandleError(std::exception_ptr exception) override {
+        try {
+            std::rethrow_exception(exception);
+        } catch (std::exception const &e) {
+            std::cerr << e.what() << '\n';
+            std::exit(1);
+        }
     }
 
     void HandleEvent(FrameHistogramEvent<T> const &) override {
