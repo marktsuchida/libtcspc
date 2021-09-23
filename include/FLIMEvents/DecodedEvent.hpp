@@ -1,8 +1,8 @@
 #pragma once
 
+#include "DynamicPolymorphism.hpp"
+
 #include <cstdint>
-#include <exception>
-#include <string>
 
 /**
  * \brief Base class for logical TCSPC events (photons, markers, and
@@ -103,18 +103,5 @@ struct MarkerEvent : public DecodedEvent {
     uint16_t bits;
 };
 
-/**
- * \brief Receiver of decoded events.
- */
-class DecodedEventProcessor {
-  public:
-    virtual ~DecodedEventProcessor() = default;
-
-    virtual void HandleEvent(TimestampEvent const &event) = 0;
-    virtual void HandleEvent(ValidPhotonEvent const &event) = 0;
-    virtual void HandleEvent(InvalidPhotonEvent const &event) = 0;
-    virtual void HandleEvent(MarkerEvent const &event) = 0;
-    virtual void HandleEvent(DataLostEvent const &event) = 0;
-    virtual void HandleError(std::exception_ptr exception) = 0;
-    virtual void HandleFinish() = 0;
-};
+using DecodedEvents = EventSet<TimestampEvent, DataLostEvent, ValidPhotonEvent,
+                               InvalidPhotonEvent, MarkerEvent>;

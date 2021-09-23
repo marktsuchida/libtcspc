@@ -1,12 +1,8 @@
 #pragma once
 
-#include "DecodedEvent.hpp"
+#include "DynamicPolymorphism.hpp"
 
-#include <array>
-#include <cstdlib>
-#include <exception>
-#include <memory>
-#include <string>
+#include <cstdint>
 
 struct PixelPhotonEvent {
     uint16_t microtime;
@@ -19,55 +15,5 @@ struct PixelPhotonEvent {
 struct BeginFrameEvent {};
 struct EndFrameEvent {};
 
-// Receiver of pixel-assigned photon events
-class PixelPhotonProcessor {
-  public:
-    virtual ~PixelPhotonProcessor() = default;
-
-    virtual void HandleEvent(BeginFrameEvent const &event) = 0;
-    virtual void HandleEvent(EndFrameEvent const &event) = 0;
-    virtual void HandleEvent(PixelPhotonEvent const &event) = 0;
-    virtual void HandleError(std::exception_ptr exception) = 0;
-    virtual void HandleFinish() = 0;
-};
-
-template <std::size_t N>
-class BroadcastPixelPhotonProcessor final : public PixelPhotonProcessor {
-    std::array<std::shared_ptr<PixelPhotonProcessor>, N> downstreams;
-
-  public:
-    // All downstreams must be non-null
-    template <typename... T>
-    explicit BroadcastPixelPhotonProcessor(T... downstreams)
-        : downstreams{{downstreams...}} {}
-
-    void HandleEvent(BeginFrameEvent const &) final {
-        for (auto &d : downstreams) {
-            d->HandleEvent();
-        }
-    }
-
-    void HandleEvent(EndFrameEvent const &) final {
-        for (auto &d : downstreams) {
-            d->HandleEvent();
-        }
-    }
-
-    void HandleEvent(PixelPhotonEvent const &event) final {
-        for (auto &d : downstreams) {
-            d->HandleEvent(event);
-        }
-    }
-
-    void HandleError(std::exception_ptr exception) final {
-        for (auto &d : downstreams) {
-            d->HandleError(exception);
-        }
-    }
-
-    void HandleFinish() final {
-        for (auto &d : downstreams) {
-            d->HandleFinish();
-        }
-    }
-};
+using PixelPhotonEvents =
+    EventSet<PixelPhotonEvent, BeginFrameEvent, EndFrameEvent>;

@@ -1,11 +1,12 @@
 #pragma once
 
+#include "DecodedEvent.hpp"
 #include "DeviceEvent.hpp"
 
-#include <cstddef>
 #include <cstdint>
 #include <exception>
-#include <memory>
+#include <stdexcept>
+#include <utility>
 
 // Raw photon event data formats are documented in The bh TCSPC Handbook (see
 // section on FIFO Files in the chapter on Data file structure).
@@ -155,28 +156,27 @@ struct BHSPC600Event32 {
  *
  * \tparam E binary record interpreter class
  */
-template <typename E>
-class BHEventDecoder final : public DeviceEventProcessor<E> {
+template <typename E, typename D> class BHEventDecoder {
     uint64_t macrotimeBase; // Time of last overflow
     uint64_t lastMacrotime;
 
-    std::shared_ptr<DecodedEventProcessor> downstream;
+    D downstream;
 
   public:
-    BHEventDecoder(std::shared_ptr<DecodedEventProcessor> downstream)
-        : macrotimeBase(0), lastMacrotime(0), downstream(downstream) {}
+    explicit BHEventDecoder(D &&downstream)
+        : macrotimeBase(0), lastMacrotime(0),
+          downstream(std::move(downstream)) {}
 
-    void HandleEvent(E const &event) final {
-        if (!downstream)
-            return;
+    // Rule of zero
 
+    void HandleEvent(E const &event) {
         if (event.IsMultipleMacroTimeOverflow()) {
             macrotimeBase += E::MacroTimeOverflowPeriod *
                              event.GetMultipleMacroTimeOverflowCount();
 
             TimestampEvent e;
             e.macrotime = macrotimeBase;
-            downstream->HandleEvent(e);
+            downstream.HandleEvent(e);
             return;
         }
 
@@ -189,7 +189,7 @@ class BHEventDecoder final : public DeviceEventProcessor<E> {
         // Validate input: ensure macrotime increases monotonically (a common
         // assumption made by downstream processors)
         if (macrotime <= lastMacrotime) {
-            downstream->HandleError(std::make_exception_ptr(
+            downstream.HandleEnd(std::make_exception_ptr(
                 std::runtime_error("Non-monotonic macro-time encountered")));
             return;
         }
@@ -198,14 +198,14 @@ class BHEventDecoder final : public DeviceEventProcessor<E> {
         if (event.GetGapFlag()) {
             DataLostEvent e;
             e.macrotime = macrotime;
-            downstream->HandleEvent(e);
+            downstream.HandleEvent(e);
         }
 
         if (event.GetMarkerFlag()) {
             MarkerEvent e;
             e.macrotime = macrotime;
             e.bits = event.GetMarkerBits();
-            downstream->HandleEvent(e);
+            downstream.HandleEvent(e);
             return;
         }
 
@@ -214,27 +214,27 @@ class BHEventDecoder final : public DeviceEventProcessor<E> {
             e.macrotime = macrotime;
             e.microtime = event.GetADCValue();
             e.route = event.GetRoutingSignals();
-            downstream->HandleEvent(e);
+            downstream.HandleEvent(e);
         } else {
             ValidPhotonEvent e;
             e.macrotime = macrotime;
             e.microtime = event.GetADCValue();
             e.route = event.GetRoutingSignals();
-            downstream->HandleEvent(e);
+            downstream.HandleEvent(e);
         }
     }
 
-    void HandleError(std::exception_ptr exception) final {
-        if (downstream)
-            downstream->HandleError(exception);
-    }
-
-    void HandleFinish() final {
-        if (downstream)
-            downstream->HandleFinish();
-    }
+    void HandleEnd(std::exception_ptr error) { downstream.HandleEnd(error); }
 };
 
-using BHSPCEventDecoder = BHEventDecoder<BHSPCEvent>;
-using BHSPC600Event48Decoder = BHEventDecoder<BHSPC600Event48>;
-using BHSPC600Event32Decoder = BHEventDecoder<BHSPC600Event32>;
+template <typename D> using BHSPCEventDecoder = BHEventDecoder<BHSPCEvent, D>;
+
+template <typename D>
+using BHSPC600Event48Decoder = BHEventDecoder<BHSPC600Event48, D>;
+
+template <typename D>
+using BHSPC600Event32Decoder = BHEventDecoder<BHSPC600Event32, D>;
+
+using BHSPCEvents = DeviceEvents<BHSPCEvent>;
+using BHSPC600Events48 = DeviceEvents<BHSPC600Event48>;
+using BHSPC600Events32 = DeviceEvents<BHSPC600Event32>;

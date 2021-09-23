@@ -10,7 +10,7 @@
 #include <stdexcept>
 
 // Assign pixels to photons using line clock only
-class LineClockPixellator : public DecodedEventProcessor {
+template <typename D> class LineClockPixellator {
     uint32_t const pixelsPerLine;
     uint32_t const linesPerFrame;
     uint32_t const maxFrames;
@@ -39,20 +39,21 @@ class LineClockPixellator : public DecodedEventProcessor {
     // Buffer line marks until we are ready to process
     std::deque<uint64_t> pendingLines; // marker macro-times
 
-    std::shared_ptr<PixelPhotonProcessor> downstream;
+    D downstream;
+    bool streamEnded = false;
 
   private:
     void UpdateTimeRange(uint64_t macrotime) { latestTimestamp = macrotime; }
 
     void EnqueuePhoton(ValidPhotonEvent const &event) {
-        if (!downstream) {
+        if (streamEnded) {
             return; // Avoid buffering post-error
         }
         pendingPhotons.emplace_back(event);
     }
 
     void EnqueueLineMarker(uint64_t macrotime) {
-        if (!downstream) {
+        if (streamEnded) {
             return; // Avoid buffering post-error
         }
         pendingLines.emplace_back(macrotime);
@@ -85,14 +86,14 @@ class LineClockPixellator : public DecodedEventProcessor {
         if (newFrame) {
             // Check for last frame here in case maxFrames == 0.
             if (currentLine / linesPerFrame == maxFrames) {
-                if (downstream) {
-                    downstream->HandleFinish();
-                    downstream.reset();
+                if (!streamEnded) {
+                    downstream.HandleEnd({});
+                    streamEnded = true;
                 }
             }
 
-            if (downstream) {
-                downstream->HandleEvent(BeginFrameEvent());
+            if (!streamEnded) {
+                downstream.HandleEvent(BeginFrameEvent());
             }
         }
     }
@@ -102,16 +103,16 @@ class LineClockPixellator : public DecodedEventProcessor {
 
         bool endFrame = currentLine % linesPerFrame == 0;
         if (endFrame) {
-            if (downstream) {
-                downstream->HandleEvent(EndFrameEvent());
+            if (!streamEnded) {
+                downstream.HandleEvent(EndFrameEvent());
             }
 
             // Check for last frame here to send finish as soon as possible.
             // (The case of maxFrames == 0 is not handled here.)
             if (currentLine / linesPerFrame == maxFrames) {
-                if (downstream) {
-                    downstream->HandleFinish();
-                    downstream.reset();
+                if (!streamEnded) {
+                    downstream.HandleEnd({});
+                    streamEnded = true;
                 }
             }
         }
@@ -126,8 +127,8 @@ class LineClockPixellator : public DecodedEventProcessor {
             static_cast<uint32_t>(pixelsPerLine * timeInLine / lineTime);
         newEvent.route = event.route;
         newEvent.microtime = event.microtime;
-        if (downstream) {
-            downstream->HandleEvent(newEvent);
+        if (!streamEnded) {
+            downstream.HandleEvent(newEvent);
         }
     }
 
@@ -181,29 +182,29 @@ class LineClockPixellator : public DecodedEventProcessor {
     // emitted and all frames (and, internally, lines) for which we have seen
     // all photons have been finished.
     void ProcessPhotonsAndLines() {
-        if (!downstream) {
+        if (streamEnded)
             return;
-        }
+
         try {
             while (ProcessLinePhotons())
                 ;
         } catch (std::exception const &) {
-            if (downstream) {
-                downstream->HandleError(std::current_exception());
-                downstream.reset();
+            if (!streamEnded) {
+                downstream.HandleEnd(std::current_exception());
+                streamEnded = true;
             }
         }
     }
 
   public:
-    LineClockPixellator(uint32_t pixelsPerLine, uint32_t linesPerFrame,
-                        uint32_t maxFrames, int32_t lineDelay,
-                        uint32_t lineTime, uint32_t lineMarkerBit,
-                        std::shared_ptr<PixelPhotonProcessor> downstream)
+    explicit LineClockPixellator(uint32_t pixelsPerLine, uint32_t linesPerFrame,
+                                 uint32_t maxFrames, int32_t lineDelay,
+                                 uint32_t lineTime, uint32_t lineMarkerBit,
+                                 D &&downstream)
         : pixelsPerLine(pixelsPerLine), linesPerFrame(linesPerFrame),
           maxFrames(maxFrames), lineDelay(lineDelay), lineTime(lineTime),
           lineMarkerMask(1 << lineMarkerBit), latestTimestamp(0), nextLine(0),
-          currentLine(0), lineStartTime(-1), downstream(downstream) {
+          currentLine(0), lineStartTime(-1), downstream(std::move(downstream)) {
         if (pixelsPerLine < 1) {
             throw std::invalid_argument("pixelsPerLine must be positive");
         }
@@ -215,7 +216,7 @@ class LineClockPixellator : public DecodedEventProcessor {
         }
     }
 
-    void HandleEvent(TimestampEvent const &event) final {
+    void HandleEvent(TimestampEvent const &event) {
         auto prevTimestamp = latestTimestamp;
         UpdateTimeRange(event.macrotime);
         // We could call ProcessPhotonsAndLines() to emit all lines that are
@@ -231,17 +232,17 @@ class LineClockPixellator : public DecodedEventProcessor {
         }
     }
 
-    void HandleEvent(DataLostEvent const &event) final {
+    void HandleEvent(DataLostEvent const &event) {
         UpdateTimeRange(event.macrotime);
         ProcessPhotonsAndLines();
-        if (downstream) {
-            downstream->HandleError(std::make_exception_ptr(std::runtime_error(
+        if (!streamEnded) {
+            downstream.HandleEnd(std::make_exception_ptr(std::runtime_error(
                 "Data lost due to device buffer (FIFO) overflow")));
-            downstream.reset();
+            streamEnded = true;
         }
     }
 
-    void HandleEvent(ValidPhotonEvent const &event) final {
+    void HandleEvent(ValidPhotonEvent const &event) {
         UpdateTimeRange(event.macrotime);
         EnqueuePhoton(event);
         // A small amount of buffering can improve performance (buffering
@@ -251,13 +252,13 @@ class LineClockPixellator : public DecodedEventProcessor {
         }
     }
 
-    void HandleEvent(InvalidPhotonEvent const &event) final {
+    void HandleEvent(InvalidPhotonEvent const &event) {
         UpdateTimeRange(event.macrotime);
         // We could call ProcessPhotonsAndLines() to emit all lines that are
         // complete, but deferring can improve performance.
     }
 
-    void HandleEvent(MarkerEvent const &event) final {
+    void HandleEvent(MarkerEvent const &event) {
         UpdateTimeRange(event.macrotime);
         if (event.bits & lineMarkerMask) {
             EnqueueLineMarker(event.macrotime);
@@ -268,23 +269,11 @@ class LineClockPixellator : public DecodedEventProcessor {
         }
     }
 
-    void HandleError(std::exception_ptr exception) final {
+    void HandleEnd(std::exception_ptr error) {
         ProcessPhotonsAndLines(); // Emit any buffered data
-        if (downstream) {
-            downstream->HandleError(exception);
-            downstream.reset();
-        }
-    }
-
-    void HandleFinish() final {
-        ProcessPhotonsAndLines(); // Emit any buffered data
-
-        // Note we do _not_ end the current frame: if it is incomplete,
-        // downstream decides what to do with it.
-
-        if (downstream) {
-            downstream->HandleFinish();
-            downstream.reset();
+        if (!streamEnded) {
+            downstream.HandleEnd(error);
+            streamEnded = true;
         }
     }
 

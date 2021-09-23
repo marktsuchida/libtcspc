@@ -20,8 +20,7 @@ void Usage() {
         << "Currently the output contains only the raw cumulative histogram.\n";
 }
 
-template <typename T>
-class HistogramSaver : public CumulativeHistogramProcessor<T> {
+template <typename T> class HistogramSaver {
     std::size_t frameCount;
     std::string const &outFilename;
 
@@ -29,20 +28,22 @@ class HistogramSaver : public CumulativeHistogramProcessor<T> {
     explicit HistogramSaver(std::string const &outFilename)
         : frameCount(0), outFilename(outFilename) {}
 
-    void HandleError(std::exception_ptr exception) override {
-        try {
-            std::rethrow_exception(exception);
-        } catch (std::exception const &e) {
-            std::cerr << e.what() << '\n';
-            std::exit(1);
+    void HandleEnd(std::exception_ptr error) {
+        if (error) {
+            try {
+                std::rethrow_exception(error);
+            } catch (std::exception const &e) {
+                std::cerr << e.what() << '\n';
+                std::exit(1);
+            }
         }
     }
 
-    void HandleEvent(FrameHistogramEvent<T> const &) override {
+    void HandleEvent(FrameHistogramEvent<T> const &) {
         std::cerr << "Frame " << (frameCount++) << '\n';
     }
 
-    void HandleEvent(FinalCumulativeHistogramEvent<T> const &event) override {
+    void HandleEvent(FinalCumulativeHistogramEvent<T> const &event) {
         if (!frameCount) { // No frames
             std::cerr << "No frames\n";
             return;
@@ -59,8 +60,6 @@ class HistogramSaver : public CumulativeHistogramProcessor<T> {
         output.write(reinterpret_cast<const char *>(histogram.Get()),
                      histogram.GetNumberOfElements() * sizeof(T));
     }
-
-    void HandleFinish() override {}
 };
 
 int main(int argc, char *argv[]) {
@@ -89,18 +88,24 @@ int main(int argc, char *argv[]) {
     Histogram<SampleType> cumulHisto(histoBits, inputBits, true, width, height);
     cumulHisto.Clear();
 
-    auto processor = std::make_shared<LineClockPixellator>(
-        width, height, maxFrames, lineDelay, lineTime, 1,
-        std::make_shared<Histogrammer<SampleType>>(
-            std::move(frameHisto),
-            std::make_shared<HistogramAccumulator<SampleType>>(
-                std::move(cumulHisto),
-                std::make_shared<HistogramSaver<SampleType>>(outFilename))));
+    // Construct pipeline from tail to head
 
-    auto decoder = std::make_shared<BHSPCEventDecoder>(processor);
+    HistogramSaver<SampleType> saver(outFilename);
+
+    HistogramAccumulator<SampleType, decltype(saver)> accumulator(
+        std::move(cumulHisto), std::move(saver));
+
+    Histogrammer<SampleType, decltype(accumulator)> histogrammer(
+        std::move(frameHisto), std::move(accumulator));
+
+    LineClockPixellator<decltype(histogrammer)> pixellator(
+        width, height, maxFrames, lineDelay, lineTime, 1,
+        std::move(histogrammer));
+
+    BHSPCEventDecoder<decltype(pixellator)> decoder(std::move(pixellator));
 
     EventStream<BHSPCEvent> stream;
-    auto processorDone = std::async(std::launch::async, [&stream, decoder] {
+    auto processorDone = std::async(std::launch::async, [&stream, &decoder] {
         std::clock_t start = std::clock();
         for (;;) {
             auto eventBuffer = stream.ReceiveBlocking();
@@ -108,7 +113,7 @@ int main(int argc, char *argv[]) {
                 break;
             }
             for (std::size_t i = 0; i < eventBuffer->GetSize(); ++i) {
-                decoder->HandleEvent(*(eventBuffer->GetData() + i));
+                decoder.HandleEvent(*(eventBuffer->GetData() + i));
             }
         }
         std::clock_t elapsed = std::clock() - start;
@@ -116,7 +121,7 @@ int main(int argc, char *argv[]) {
         std::cerr << "Approx histogram CPU time: "
                   << 1000.0 * elapsed / CLOCKS_PER_SEC << " ms\n";
 
-        decoder->HandleFinish();
+        decoder.HandleEnd({});
     });
 
     std::fstream input(inFilename, std::fstream::binary | std::fstream::in);

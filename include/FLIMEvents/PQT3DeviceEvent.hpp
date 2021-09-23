@@ -1,11 +1,11 @@
 #pragma once
 
+#include "DecodedEvent.hpp"
 #include "DeviceEvent.hpp"
 
-#include <cstddef>
 #include <cstdint>
 #include <exception>
-#include <memory>
+#include <utility>
 
 // I implemented PicoQuant event types to verify that the framework can handle
 // a good range of raw event stream formats. But it has not been excercised.
@@ -112,6 +112,9 @@ template <bool IsHydraV1> struct HydraT3Event {
     uint8_t GetExternalMarkerBits() const noexcept { return GetChannel(); }
 };
 
+using HydraV1T3Event = HydraT3Event<true>;
+using HydraV2T3Event = HydraT3Event<false>;
+
 /**
  * \brief Decode PicoQuant T3 event stream.
  *
@@ -120,27 +123,24 @@ template <bool IsHydraV1> struct HydraT3Event {
  *
  * \tparam E binary record interpreter class
  */
-template <typename E>
+template <typename E, typename D>
 class PQT3EventDecoder final : public DeviceEventProcessor<E> {
     uint64_t nSyncBase;
     uint64_t lastNSync;
 
-    std::shared_ptr<DecodedEventProcessor> downstream;
+    D downstream;
 
   public:
-    PQT3EventDecoder(std::shared_ptr<DecodedEventProcessor> downstream)
-        : nSyncBase(0), lastNSync(0), downstream(downstream) {}
+    explicit PQT3EventDecoder(D &&downstream)
+        : nSyncBase(0), lastNSync(0), downstream(std::move(downstream)) {}
 
-    void HandleDeviceEvent(E const &event) final {
-        if (!downstream)
-            return;
-
+    void HandleDeviceEvent(E const &event) {
         if (event.IsNSyncOverflow()) {
             nSyncBase += E::NSyncOverflowPeriod * event.GetNSyncOverflowCount();
 
             TimestampEvent e;
             e.macrotime = nSyncBase;
-            downstream->HandleEvent(e);
+            downstream.HandleEvent(e);
             return;
         }
 
@@ -149,7 +149,7 @@ class PQT3EventDecoder final : public DeviceEventProcessor<E> {
         // Validate input: ensure nSync increases monotonically (a common
         // assumption made by downstream processors)
         if (nSync <= lastNSync) {
-            downstream->HandleError(std::make_exception_ptr(
+            downstream.HandleError(std::make_exception_ptr(
                 std::runtime_error("Non-monotonic nsync encountered")));
             return;
         }
@@ -159,7 +159,7 @@ class PQT3EventDecoder final : public DeviceEventProcessor<E> {
             MarkerEvent e;
             e.macrotime = nSync;
             e.bits = event.GetExternalMarkerBits();
-            downstream->HandleEvent(e);
+            downstream.HandleEvent(e);
             return;
         }
 
@@ -167,20 +167,23 @@ class PQT3EventDecoder final : public DeviceEventProcessor<E> {
         e.macrotime = nSync;
         e.microtime = event.GetDTime();
         e.route = event.GetChannel();
-        downstream->HandleEvent(e);
+        downstream.HandleEvent(e);
     }
 
-    void HandleError(std::exception_ptr exception) final {
-        if (downstream)
-            downstream->HandleError(exception);
-    }
-
-    void HandleFinish() final {
-        if (downstream)
-            downstream->HandleFinish();
+    void HandleEnd(std::exception_ptr error) final {
+        downstream.HandleError(error);
     }
 };
 
-using PQPicoT3EventDecoder = PQT3EventDecoder<PicoT3Event>;
-using PQHydraV1T3EventDecoder = PQT3EventDecoder<HydraT3Event<true>>;
-using PQHydraV2T3EventDecoder = PQT3EventDecoder<HydraT3Event<false>>;
+template <typename D>
+using PQPicoT3EventDecoder = PQT3EventDecoder<PicoT3Event, D>;
+
+template <typename D>
+using PQHydraV1T3EventDecoder = PQT3EventDecoder<HydraV1T3Event, D>;
+
+template <typename D>
+using PQHydraV2T3EventDecoder = PQT3EventDecoder<HydraV2T3Event, D>;
+
+using PQT3Events = DeviceEvents<PicoT3Event>;
+using PQHydraV1T3Events = DeviceEvents<HydraV1T3Event>;
+using PQHydraV2T3Events = DeviceEvents<HydraV2T3Event>;

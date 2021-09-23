@@ -1,5 +1,6 @@
 #pragma once
 
+#include "DynamicPolymorphism.hpp"
 #include "PixelPhotonEvent.hpp"
 
 #include <cstring>
@@ -43,8 +44,8 @@ class Histogram {
     Histogram() = default;
 
     // Warning: Newly constructed histogram is not zeroed (for efficiency)
-    Histogram(uint32_t timeBits, uint32_t inputTimeBits, bool reverseTime,
-              std::size_t width, std::size_t height)
+    explicit Histogram(uint32_t timeBits, uint32_t inputTimeBits,
+                       bool reverseTime, std::size_t width, std::size_t height)
         : timeBits(timeBits), inputTimeBits(inputTimeBits),
           reverseTime(reverseTime), width(width), height(height),
           hist(std::make_unique<T[]>(GetNumberOfElements())) {
@@ -109,111 +110,70 @@ template <typename T> struct FinalCumulativeHistogramEvent {
     Histogram<T> const &histogram;
 };
 
-// Receiver of frame-by-frame histogram events
-template <typename T> class HistogramProcessor {
-  public:
-    virtual ~HistogramProcessor() = default;
+template <typename T>
+using FrameHistogramEvents =
+    EventSet<FrameHistogramEvent<T>, IncompleteFrameHistogramEvent<T>>;
 
-    virtual void HandleEvent(FrameHistogramEvent<T> const &event) = 0;
-    virtual void HandleEvent(IncompleteFrameHistogramEvent<T> const &event) = 0;
-
-    virtual void HandleError(std::exception_ptr exception) = 0;
-    virtual void HandleFinish() = 0;
-};
-
-template <typename T> class CumulativeHistogramProcessor {
-  public:
-    virtual ~CumulativeHistogramProcessor() = default;
-
-    virtual void HandleEvent(FrameHistogramEvent<T> const &event) = 0;
-    virtual void HandleEvent(FinalCumulativeHistogramEvent<T> const &event) = 0;
-
-    virtual void HandleError(std::exception_ptr exception) = 0;
-    virtual void HandleFinish() = 0;
-};
+template <typename T>
+using CumulativeHistogramEvents =
+    EventSet<FrameHistogramEvent<T>, FinalCumulativeHistogramEvent<T>>;
 
 // Collect pixel-assiend photon events into a series of histograms
-template <typename T> class Histogrammer final : public PixelPhotonProcessor {
+template <typename T, typename D> class Histogrammer {
     Histogram<T> histogram;
     bool frameInProgress;
 
-    std::shared_ptr<HistogramProcessor<T>> downstream;
+    D downstream;
 
   public:
-    Histogrammer(Histogram<T> &&histogram,
-                 std::shared_ptr<HistogramProcessor<T>> downstream)
+    explicit Histogrammer(Histogram<T> &&histogram, D &&downstream)
         : histogram(std::move(histogram)), frameInProgress(false),
-          downstream(downstream) {}
+          downstream(std::move(downstream)) {}
 
-    void HandleEvent(BeginFrameEvent const &) final {
+    // Rule of zero
+
+    void HandleEvent(BeginFrameEvent const &) {
         histogram.Clear();
         frameInProgress = true;
     }
 
-    void HandleEvent(EndFrameEvent const &) final {
+    void HandleEvent(EndFrameEvent const &) {
         frameInProgress = false;
-        if (downstream) {
-            downstream->HandleEvent(FrameHistogramEvent<T>{histogram});
-        }
+        downstream.HandleEvent(FrameHistogramEvent<T>{histogram});
     }
 
-    void HandleEvent(PixelPhotonEvent const &event) final {
+    void HandleEvent(PixelPhotonEvent const &event) {
         histogram.Increment(event.microtime, event.x, event.y);
     }
 
-    void HandleError(std::exception_ptr exception) final {
-        if (downstream) {
-            downstream->HandleError(exception);
-            downstream.reset();
-        }
-    }
-
-    void HandleFinish() final {
-        if (downstream) {
-            downstream->HandleFinish();
-            downstream.reset();
-        }
-    }
+    void HandleEnd(std::exception_ptr error) { downstream.HandleEnd(error); }
 };
 
 // Accumulate a series of histograms
 // Guarantees complete frame upon finish (all zeros if there was no frame).
-template <typename T>
-class HistogramAccumulator final : public HistogramProcessor<T> {
+template <typename T, typename D> class HistogramAccumulator {
     Histogram<T> cumulative;
 
-    std::shared_ptr<CumulativeHistogramProcessor<T>> downstream;
+    D downstream;
 
   public:
-    HistogramAccumulator(
-        Histogram<T> &&histogram,
-        std::shared_ptr<CumulativeHistogramProcessor<T>> downstream)
-        : cumulative(std::move(histogram)), downstream(downstream) {}
+    explicit HistogramAccumulator(Histogram<T> &&histogram, D &&downstream)
+        : cumulative(std::move(histogram)), downstream(std::move(downstream)) {}
 
-    void HandleError(std::exception_ptr exception) final {
-        if (downstream) {
-            downstream->HandleError(exception);
-            downstream.reset();
-        }
-    }
-
-    void HandleEvent(FrameHistogramEvent<T> const &event) final {
+    void HandleEvent(FrameHistogramEvent<T> const &event) {
         cumulative += event.histogram;
-        if (downstream) {
-            downstream->HandleEvent(FrameHistogramEvent<T>{cumulative});
-        }
+        downstream.HandleEvent(FrameHistogramEvent<T>{cumulative});
     }
 
-    void HandleEvent(IncompleteFrameHistogramEvent<T> const &) final {
+    void HandleEvent(IncompleteFrameHistogramEvent<T> const &) {
         // Ignore incomplete frames
     }
 
-    void HandleFinish() final {
-        if (downstream) {
-            downstream->HandleEvent(
+    void HandleEnd(std::exception_ptr error) {
+        if (!error) {
+            downstream.HandleEvent(
                 FinalCumulativeHistogramEvent<T>{cumulative});
-            downstream->HandleFinish();
-            downstream.reset();
         }
+        downstream.HandleEnd(error);
     }
 };

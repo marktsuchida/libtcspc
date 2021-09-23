@@ -1,5 +1,7 @@
 #include "../BHSPCFile.hpp"
+
 #include "FLIMEvents/BHDeviceEvent.hpp"
+#include "FLIMEvents/DecodedEvent.hpp"
 
 #include <cstring>
 #include <exception>
@@ -9,7 +11,7 @@
 #include <memory>
 #include <vector>
 
-class PrintProcessor : public DecodedEventProcessor {
+class PrintProcessor {
     uint32_t count;
     uint64_t lastMacrotime;
     std::ostream &output;
@@ -30,43 +32,41 @@ class PrintProcessor : public DecodedEventProcessor {
     explicit PrintProcessor(std::ostream &output)
         : count(0), lastMacrotime(0), output(output) {}
 
-    void HandleEvent(TimestampEvent const &event) override {
+    void HandleEvent(TimestampEvent const &event) {
         // Do nothing
     }
 
-    void HandleEvent(DataLostEvent const &event) override {
+    void HandleEvent(DataLostEvent const &event) {
         PrintMacroTime(output, event.macrotime);
         output << " Data lost\n";
     }
 
-    void HandleEvent(ValidPhotonEvent const &event) override {
+    void HandleEvent(ValidPhotonEvent const &event) {
         PrintMacroTime(output, event.macrotime);
         output << " Photon: " << std::setw(5) << event.microtime << "; "
                << int(event.route) << '\n';
     }
 
-    void HandleEvent(InvalidPhotonEvent const &event) override {
+    void HandleEvent(InvalidPhotonEvent const &event) {
         PrintMacroTime(output, event.macrotime);
         output << " Invalid photon: " << std::setw(5) << event.microtime << "; "
                << int(event.route) << '\n';
     }
 
-    void HandleEvent(MarkerEvent const &event) override {
+    void HandleEvent(MarkerEvent const &event) {
         PrintMacroTime(output, event.macrotime);
         output << ' ' << "Marker: " << int(event.bits) << '\n';
     }
 
-    void HandleError(std::exception_ptr exception) override {
-        try {
-            std::rethrow_exception(exception);
-        } catch (std::exception const &e) {
-            std::cerr << "Invalid data: " << e.what() << '\n';
-            std::exit(1);
+    void HandleEnd(std::exception_ptr error) {
+        if (error) {
+            try {
+                std::rethrow_exception(error);
+            } catch (std::exception const &e) {
+                std::cerr << "Invalid data: " << e.what() << '\n';
+                std::exit(1);
+            }
         }
-    }
-
-    void HandleFinish() override {
-        // Ignore
     }
 };
 
@@ -108,7 +108,8 @@ void DumpRawEvent(char const *rawEvent, std::ostream &output) {
 }
 
 int DumpEvents(std::istream &input, std::ostream &output) {
-    BHSPCEventDecoder decoder(std::make_shared<PrintProcessor>(output));
+    PrintProcessor pp(output);
+    BHSPCEventDecoder<decltype(pp)> decoder(std::move(pp));
     constexpr std::size_t const eventSize = sizeof(BHSPCEvent);
 
     while (input.good()) {
@@ -125,7 +126,7 @@ int DumpEvents(std::istream &input, std::ostream &output) {
         DumpRawEvent(event.data(), output);
         decoder.HandleEvent(*reinterpret_cast<BHSPCEvent *>(event.data()));
     }
-    decoder.HandleFinish();
+    decoder.HandleEnd({});
 
     return 0;
 }

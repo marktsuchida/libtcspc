@@ -1,68 +1,45 @@
 #pragma once
 
+#include "BroadcastProcessor.hpp"
 #include "PixelPhotonEvent.hpp"
 
 #include <exception>
-#include <memory>
 #include <stdexcept>
-#include <vector>
+#include <tuple>
+#include <utility>
 
-class PixelPhotonRouter final : public PixelPhotonProcessor {
-    // Indexed by channel number
-    std::vector<std::shared_ptr<PixelPhotonProcessor>> downstreams;
+template <typename... Ds> class PixelPhotonRouter {
+    std::tuple<Ds...> downstreams;
 
-  public:
-    // Downstreams indexed by channel number; may be null
-    template <typename... T>
-    explicit PixelPhotonRouter(T... downstreams)
-        : downstreams{{downstreams...}} {}
-
-    explicit PixelPhotonRouter(
-        std::vector<std::shared_ptr<PixelPhotonProcessor>> downstreams)
-        : downstreams(downstreams) {}
-
-    void HandleEvent(BeginFrameEvent const &event) final {
-        for (auto &d : downstreams) {
-            if (d) {
-                d->HandleEvent(event);
-            }
-        }
-    }
-
-    void HandleEvent(EndFrameEvent const &event) final {
-        for (auto &d : downstreams) {
-            if (d) {
-                d->HandleEvent(event);
-            }
-        }
-    }
-
-    void HandleEvent(PixelPhotonEvent const &event) final {
-        auto channel = event.route;
-        std::shared_ptr<PixelPhotonProcessor> d;
-        try {
-            d = downstreams.at(channel);
-        } catch (std::out_of_range const &) {
+  private:
+    template <size_t N = 0>
+    void HandlePixelPhotonForChannel(size_t channel,
+                                     PixelPhotonEvent const &event) {
+        if (channel == N) {
+            downstreams.get<N>().HandleEvent(event);
             return;
         }
-        if (d) {
-            d->HandleEvent(event);
+
+        if constexpr (N + 1 < std::tuple_size_v<decltype(sinks)>) {
+            HandlePixelPhotonForChannel<N + 1>(channel, event);
         }
     }
 
-    void HandleError(std::exception_ptr exception) final {
-        for (auto &d : downstreams) {
-            if (d) {
-                d->HandleError(exception);
-            }
-        }
+  public:
+    explicit PixelPhotonRouter(Ds &&... downstreams)
+        : downstreams{std::move<Ds>(downstreams)...} {}
+
+    template <typename E> void HandleEvent(E const &event) {
+        std::apply([&](auto &... s) { (..., s.HandleEvent(event)); },
+                   downstreams);
     }
 
-    void HandleFinish() final {
-        for (auto &d : downstreams) {
-            if (d) {
-                d->HandleFinish();
-            }
-        }
+    void HandleEvent(PixelPhotonEvent const &event) {
+        HandlePixelPhotonForChannel(event.route, event);
+    }
+
+    void HandleEnd(std::exception_ptr error) {
+        std::apply([&](auto &... s) { (..., s.HandleEnd(error)); },
+                   downstreams);
     }
 };

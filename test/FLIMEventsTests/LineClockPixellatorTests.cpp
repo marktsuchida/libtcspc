@@ -12,7 +12,7 @@ TEST_CASE("Frames are produced according to line markers",
           "[LineClockPixellator]") {
     // We could use a mocking framework (e.g. Trompeloeil), but this is simple
     // enough to do manually.
-    class MockProcessor : public PixelPhotonProcessor {
+    class MockProcessor {
       public:
         unsigned beginFrameCount;
         unsigned endFrameCount;
@@ -28,120 +28,128 @@ TEST_CASE("Frames are produced according to line markers",
             finishCount = 0;
         }
 
-        void HandleEvent(BeginFrameEvent const &) override {
-            ++beginFrameCount;
-        }
+        void HandleEvent(BeginFrameEvent const &) { ++beginFrameCount; }
 
-        void HandleEvent(EndFrameEvent const &) override { ++endFrameCount; }
+        void HandleEvent(EndFrameEvent const &) { ++endFrameCount; }
 
-        void HandleEvent(PixelPhotonEvent const &event) override {
+        void HandleEvent(PixelPhotonEvent const &event) {
             pixelPhotons.emplace_back(event);
         }
 
-        void HandleError(std::exception_ptr exception) override {
-            try {
-                std::rethrow_exception(exception);
-            } catch (std::exception const &e) {
-                errors.emplace_back(e.what());
+        void HandleEnd(std::exception_ptr error) {
+            if (error) {
+                try {
+                    std::rethrow_exception(error);
+                } catch (std::exception const &e) {
+                    errors.emplace_back(e.what());
+                }
+            } else {
+                ++finishCount;
             }
         }
-
-        void HandleFinish() override { ++finishCount; }
     };
 
-    auto output = std::make_shared<MockProcessor>();
-    output->Reset();
+    using VirtualMockProcessor =
+        PixelPhotonEvents::VirtualWrappedProcessorType<MockProcessor>;
+
+    auto sharedOutput = std::make_shared<VirtualMockProcessor>();
+    auto &output = sharedOutput->Wrapped();
+    output.Reset();
 
     SECTION("2x2 frames with no photons") {
-        auto lcp =
-            std::make_shared<LineClockPixellator>(2, 2, 10, 0, 20, 1, output);
+        PixelPhotonEvents::PolymorphicProcessorType polymorphic(sharedOutput);
+
+        LineClockPixellator<decltype(polymorphic)> lcp(2, 2, 10, 0, 20, 1,
+                                                       std::move(polymorphic));
 
         MarkerEvent lineMarker;
         lineMarker.bits = 1 << 1;
         lineMarker.macrotime = 100;
-        lcp->HandleEvent(lineMarker);
-        lcp->Flush();
+        lcp.HandleEvent(lineMarker);
+        lcp.Flush();
 
-        REQUIRE(output->beginFrameCount == 1);
-        output->Reset();
+        REQUIRE(output.beginFrameCount == 1);
+        output.Reset();
 
         lineMarker.macrotime = 200;
-        lcp->HandleEvent(lineMarker);
-        lcp->Flush();
-        REQUIRE(output->beginFrameCount == 0);
-        REQUIRE(output->endFrameCount == 0);
-        output->Reset();
+        lcp.HandleEvent(lineMarker);
+        lcp.Flush();
+        REQUIRE(output.beginFrameCount == 0);
+        REQUIRE(output.endFrameCount == 0);
+        output.Reset();
 
         lineMarker.macrotime = 300;
-        lcp->HandleEvent(lineMarker);
-        lcp->Flush();
-        REQUIRE(output->beginFrameCount == 1);
-        REQUIRE(output->endFrameCount == 1);
-        output->Reset();
+        lcp.HandleEvent(lineMarker);
+        lcp.Flush();
+        REQUIRE(output.beginFrameCount == 1);
+        REQUIRE(output.endFrameCount == 1);
+        output.Reset();
 
         SECTION("Last frame is incomplete if last line not started") {
             TimestampEvent timestamp;
             timestamp.macrotime = 1000000;
-            lcp->HandleEvent(timestamp);
-            lcp->Flush();
-            REQUIRE(output->beginFrameCount == 0);
-            REQUIRE(output->endFrameCount == 0);
-            output->Reset();
+            lcp.HandleEvent(timestamp);
+            lcp.Flush();
+            REQUIRE(output.beginFrameCount == 0);
+            REQUIRE(output.endFrameCount == 0);
+            output.Reset();
         }
 
         SECTION("Last frame completion detected by last seen timestamp") {
             lineMarker.macrotime = 400;
-            lcp->HandleEvent(lineMarker);
-            lcp->Flush();
-            REQUIRE(output->beginFrameCount == 0);
-            REQUIRE(output->endFrameCount == 0);
-            output->Reset();
+            lcp.HandleEvent(lineMarker);
+            lcp.Flush();
+            REQUIRE(output.beginFrameCount == 0);
+            REQUIRE(output.endFrameCount == 0);
+            output.Reset();
 
             TimestampEvent timestamp;
             timestamp.macrotime = 419;
-            lcp->HandleEvent(timestamp);
-            lcp->Flush();
-            REQUIRE(output->beginFrameCount == 0);
-            REQUIRE(output->endFrameCount == 0);
-            output->Reset();
+            lcp.HandleEvent(timestamp);
+            lcp.Flush();
+            REQUIRE(output.beginFrameCount == 0);
+            REQUIRE(output.endFrameCount == 0);
+            output.Reset();
 
             timestamp.macrotime = 420;
-            lcp->HandleEvent(timestamp);
-            lcp->Flush();
-            REQUIRE(output->beginFrameCount == 0);
-            REQUIRE(output->endFrameCount == 1);
-            output->Reset();
+            lcp.HandleEvent(timestamp);
+            lcp.Flush();
+            REQUIRE(output.beginFrameCount == 0);
+            REQUIRE(output.endFrameCount == 1);
+            output.Reset();
         }
     }
 
     SECTION("Photon placed correctly in 2x1 frame") {
+        PixelPhotonEvents::PolymorphicProcessorType polymorphic(sharedOutput);
+
         // Delay = 5, time = 25, so pixels range over times [5, 15) and [15,
         // 25) relative to the (single) line marker.
-        auto lcp =
-            std::make_shared<LineClockPixellator>(2, 1, 1, 5, 20, 1, output);
+        LineClockPixellator<decltype(polymorphic)> lcp(2, 1, 1, 5, 20, 1,
+                                                       std::move(polymorphic));
 
         MarkerEvent lineMarker;
         lineMarker.bits = 1 << 1;
         lineMarker.macrotime = 100;
-        lcp->HandleEvent(lineMarker);
-        lcp->Flush();
+        lcp.HandleEvent(lineMarker);
+        lcp.Flush();
 
         ValidPhotonEvent photon;
         memset(&photon, 0, sizeof(photon));
 
         for (auto mt : {104, 105, 114, 115, 124, 125}) {
             photon.macrotime = mt;
-            lcp->HandleEvent(photon);
+            lcp.HandleEvent(photon);
         }
 
-        lcp->Flush();
-        REQUIRE(output->beginFrameCount == 1);
-        REQUIRE(output->endFrameCount == 1);
-        REQUIRE(output->pixelPhotons.size() == 4);
-        REQUIRE(output->pixelPhotons[0].x == 0);
-        REQUIRE(output->pixelPhotons[1].x == 0);
-        REQUIRE(output->pixelPhotons[2].x == 1);
-        REQUIRE(output->pixelPhotons[3].x == 1);
+        lcp.Flush();
+        REQUIRE(output.beginFrameCount == 1);
+        REQUIRE(output.endFrameCount == 1);
+        REQUIRE(output.pixelPhotons.size() == 4);
+        REQUIRE(output.pixelPhotons[0].x == 0);
+        REQUIRE(output.pixelPhotons[1].x == 0);
+        REQUIRE(output.pixelPhotons[2].x == 1);
+        REQUIRE(output.pixelPhotons[3].x == 1);
     }
 
     // TODO Other things we might test
