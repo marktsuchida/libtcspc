@@ -4,6 +4,8 @@
 #include <tuple>
 #include <utility>
 
+namespace flimevt {
+
 template <typename... Ds> class BroadcastProcessor {
     std::tuple<Ds...> downstreams;
 
@@ -21,3 +23,5 @@ template <typename... Ds> class BroadcastProcessor {
                    downstreams);
     }
 };
+
+} // namespace flimevt

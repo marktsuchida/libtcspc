@@ -12,6 +12,8 @@
 #include <type_traits>
 #include <vector>
 
+namespace flimevt {
+
 template <typename T, typename U,
           typename =
               std::enable_if_t<std::is_unsigned_v<T> && std::is_unsigned_v<U> &&
@@ -177,3 +179,5 @@ template <typename T, typename D> class HistogramAccumulator {
         downstream.HandleEnd(error);
     }
 };
+
+} // namespace flimevt

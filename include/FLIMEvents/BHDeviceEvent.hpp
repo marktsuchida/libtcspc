@@ -8,6 +8,8 @@
 #include <stdexcept>
 #include <utility>
 
+namespace flimevt {
+
 // Raw photon event data formats are documented in The bh TCSPC Handbook (see
 // section on FIFO Files in the chapter on Data file structure).
 
@@ -238,3 +240,5 @@ using BHSPC600Event32Decoder = BHEventDecoder<BHSPC600Event32, D>;
 using BHSPCEvents = DeviceEvents<BHSPCEvent>;
 using BHSPC600Events48 = DeviceEvents<BHSPC600Event48>;
 using BHSPC600Events32 = DeviceEvents<BHSPC600Event32>;
+
+} // namespace flimevt

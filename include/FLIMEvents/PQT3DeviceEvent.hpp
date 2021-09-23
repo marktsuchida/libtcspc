@@ -7,6 +7,8 @@
 #include <exception>
 #include <utility>
 
+namespace flimevt {
+
 // I implemented PicoQuant event types to verify that the framework can handle
 // a good range of raw event stream formats. But it has not been excercised.
 #error "This code is untested; use only after testing"
@@ -187,3 +189,5 @@ using PQHydraV2T3EventDecoder = PQT3EventDecoder<HydraV2T3Event, D>;
 using PQT3Events = DeviceEvents<PicoT3Event>;
 using PQHydraV1T3Events = DeviceEvents<HydraV1T3Event>;
 using PQHydraV2T3Events = DeviceEvents<HydraV2T3Event>;
+
+} // namespace flimevt

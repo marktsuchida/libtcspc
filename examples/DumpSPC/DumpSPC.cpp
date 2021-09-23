@@ -32,28 +32,28 @@ class PrintProcessor {
     explicit PrintProcessor(std::ostream &output)
         : count(0), lastMacrotime(0), output(output) {}
 
-    void HandleEvent(TimestampEvent const &event) {
+    void HandleEvent(flimevt::TimestampEvent const &event) {
         // Do nothing
     }
 
-    void HandleEvent(DataLostEvent const &event) {
+    void HandleEvent(flimevt::DataLostEvent const &event) {
         PrintMacroTime(output, event.macrotime);
         output << " Data lost\n";
     }
 
-    void HandleEvent(ValidPhotonEvent const &event) {
+    void HandleEvent(flimevt::ValidPhotonEvent const &event) {
         PrintMacroTime(output, event.macrotime);
         output << " Photon: " << std::setw(5) << event.microtime << "; "
                << int(event.route) << '\n';
     }
 
-    void HandleEvent(InvalidPhotonEvent const &event) {
+    void HandleEvent(flimevt::InvalidPhotonEvent const &event) {
         PrintMacroTime(output, event.macrotime);
         output << " Invalid photon: " << std::setw(5) << event.microtime << "; "
                << int(event.route) << '\n';
     }
 
-    void HandleEvent(MarkerEvent const &event) {
+    void HandleEvent(flimevt::MarkerEvent const &event) {
         PrintMacroTime(output, event.macrotime);
         output << ' ' << "Marker: " << int(event.bits) << '\n';
     }
@@ -91,7 +91,8 @@ int DumpHeader(std::istream &input, std::ostream &output) {
 }
 
 void DumpRawEvent(char const *rawEvent, std::ostream &output) {
-    BHSPCEvent const &event = *reinterpret_cast<BHSPCEvent const *>(rawEvent);
+    flimevt::BHSPCEvent const &event =
+        *reinterpret_cast<flimevt::BHSPCEvent const *>(rawEvent);
 
     uint8_t route = event.GetRoutingSignals();
     output << (route & (1 << 3) ? 'x' : '_') << (route & (1 << 2) ? 'x' : '_')
@@ -109,8 +110,8 @@ void DumpRawEvent(char const *rawEvent, std::ostream &output) {
 
 int DumpEvents(std::istream &input, std::ostream &output) {
     PrintProcessor pp(output);
-    BHSPCEventDecoder<decltype(pp)> decoder(std::move(pp));
-    constexpr std::size_t const eventSize = sizeof(BHSPCEvent);
+    flimevt::BHSPCEventDecoder<decltype(pp)> decoder(std::move(pp));
+    constexpr std::size_t const eventSize = sizeof(flimevt::BHSPCEvent);
 
     while (input.good()) {
         std::vector<char> event(eventSize);
@@ -124,7 +125,8 @@ int DumpEvents(std::istream &input, std::ostream &output) {
         }
 
         DumpRawEvent(event.data(), output);
-        decoder.HandleEvent(*reinterpret_cast<BHSPCEvent *>(event.data()));
+        decoder.HandleEvent(
+            *reinterpret_cast<flimevt::BHSPCEvent *>(event.data()));
     }
     decoder.HandleEnd({});
 

@@ -4,6 +4,8 @@
 
 #include <cstdint>
 
+namespace flimevt {
+
 /**
  * \brief Base class for logical TCSPC events (photons, markers, and
  * exceptional conditions).
@@ -105,3 +107,5 @@ struct MarkerEvent : public DecodedEvent {
 
 using DecodedEvents = EventSet<TimestampEvent, DataLostEvent, ValidPhotonEvent,
                                InvalidPhotonEvent, MarkerEvent>;
+
+} // namespace flimevt

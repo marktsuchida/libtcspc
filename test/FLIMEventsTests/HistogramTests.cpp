@@ -1,6 +1,8 @@
 #include "FLIMEvents/Histogram.hpp"
 #include <catch2/catch.hpp>
 
+using namespace flimevt;
+
 TEST_CASE("TimeBins", "[Histogram]") {
     Histogram<uint16_t> hist(8, 12, false, 1, 1);
     auto data = hist.Get();

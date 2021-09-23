@@ -4,6 +4,8 @@
 
 #include <cstdint>
 
+namespace flimevt {
+
 struct PixelPhotonEvent {
     uint16_t microtime;
     uint16_t route;
@@ -17,3 +19,5 @@ struct EndFrameEvent {};
 
 using PixelPhotonEvents =
     EventSet<PixelPhotonEvent, BeginFrameEvent, EndFrameEvent>;
+
+} // namespace flimevt

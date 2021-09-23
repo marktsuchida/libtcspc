@@ -7,6 +7,8 @@
 #include <mutex>
 #include <vector>
 
+namespace flimevt {
+
 // Fixed-capacity reusable memory to hold a bunch of photon events
 // E = event data type (plain struct or integer)
 template <typename E> class EventBuffer {
@@ -121,3 +123,5 @@ template <typename E> class EventStream {
         return ret;
     }
 };
+
+} // namespace flimevt

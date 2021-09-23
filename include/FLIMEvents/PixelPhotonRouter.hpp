@@ -8,6 +8,8 @@
 #include <tuple>
 #include <utility>
 
+namespace flimevt {
+
 template <typename... Ds> class PixelPhotonRouter {
     std::tuple<Ds...> downstreams;
 
@@ -43,3 +45,5 @@ template <typename... Ds> class PixelPhotonRouter {
                    downstreams);
     }
 };
+
+} // namespace flimevt

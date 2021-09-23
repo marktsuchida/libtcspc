@@ -39,11 +39,11 @@ template <typename T> class HistogramSaver {
         }
     }
 
-    void HandleEvent(FrameHistogramEvent<T> const &) {
+    void HandleEvent(flimevt::FrameHistogramEvent<T> const &) {
         std::cerr << "Frame " << (frameCount++) << '\n';
     }
 
-    void HandleEvent(FinalCumulativeHistogramEvent<T> const &event) {
+    void HandleEvent(flimevt::FinalCumulativeHistogramEvent<T> const &event) {
         if (!frameCount) { // No frames
             std::cerr << "No frames\n";
             return;
@@ -84,27 +84,30 @@ int main(int argc, char *argv[]) {
     using SampleType = uint16_t;
     int32_t inputBits = 12;
     int32_t histoBits = 8;
-    Histogram<SampleType> frameHisto(histoBits, inputBits, true, width, height);
-    Histogram<SampleType> cumulHisto(histoBits, inputBits, true, width, height);
+    flimevt::Histogram<SampleType> frameHisto(histoBits, inputBits, true, width,
+                                              height);
+    flimevt::Histogram<SampleType> cumulHisto(histoBits, inputBits, true, width,
+                                              height);
     cumulHisto.Clear();
 
     // Construct pipeline from tail to head
 
     HistogramSaver<SampleType> saver(outFilename);
 
-    HistogramAccumulator<SampleType, decltype(saver)> accumulator(
+    flimevt::HistogramAccumulator<SampleType, decltype(saver)> accumulator(
         std::move(cumulHisto), std::move(saver));
 
-    Histogrammer<SampleType, decltype(accumulator)> histogrammer(
+    flimevt::Histogrammer<SampleType, decltype(accumulator)> histogrammer(
         std::move(frameHisto), std::move(accumulator));
 
-    LineClockPixellator<decltype(histogrammer)> pixellator(
+    flimevt::LineClockPixellator<decltype(histogrammer)> pixellator(
         width, height, maxFrames, lineDelay, lineTime, 1,
         std::move(histogrammer));
 
-    BHSPCEventDecoder<decltype(pixellator)> decoder(std::move(pixellator));
+    flimevt::BHSPCEventDecoder<decltype(pixellator)> decoder(
+        std::move(pixellator));
 
-    EventStream<BHSPCEvent> stream;
+    flimevt::EventStream<flimevt::BHSPCEvent> stream;
     auto processorDone = std::async(std::launch::async, [&stream, &decoder] {
         std::clock_t start = std::clock();
         for (;;) {
@@ -130,14 +133,14 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
-    EventBufferPool<BHSPCEvent> pool(48 * 1024);
+    flimevt::EventBufferPool<flimevt::BHSPCEvent> pool(48 * 1024);
 
     input.seekg(sizeof(BHSPCFileHeader));
     while (input.good()) {
         auto buf = pool.CheckOut();
-        auto const maxSize = buf->GetCapacity() * sizeof(BHSPCEvent);
+        auto const maxSize = buf->GetCapacity() * sizeof(flimevt::BHSPCEvent);
         input.read(reinterpret_cast<char *>(buf->GetData()), maxSize);
-        auto const readSize = input.gcount() / sizeof(BHSPCEvent);
+        auto const readSize = input.gcount() / sizeof(flimevt::BHSPCEvent);
         buf->SetSize(static_cast<std::size_t>(readSize));
         stream.Send(buf);
     }

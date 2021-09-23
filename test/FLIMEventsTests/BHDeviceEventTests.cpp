@@ -2,6 +2,8 @@
 #include <catch2/catch.hpp>
 #include <cstring>
 
+using namespace flimevt;
+
 TEST_CASE("ADCValue", "[BHSPCEvent]") {
     union {
         BHSPCEvent event;

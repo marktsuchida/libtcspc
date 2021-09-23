@@ -8,6 +8,8 @@
 #include <string>
 #include <vector>
 
+using namespace flimevt;
+
 TEST_CASE("Frames are produced according to line markers",
           "[LineClockPixellator]") {
     // We could use a mocking framework (e.g. Trompeloeil), but this is simple

@@ -5,6 +5,8 @@
 #include <string>
 #include <utility>
 
+namespace flimevt {
+
 // Interface for processor consuming Events
 template <typename... Events> class VirtualProcessor;
 
@@ -103,3 +105,5 @@ template <typename... Events> class EventSet {
     using VirtualWrappedProcessorType =
         VirtualWrappedProcessor<Proc, Events...>;
 };
+
+} // namespace flimevt

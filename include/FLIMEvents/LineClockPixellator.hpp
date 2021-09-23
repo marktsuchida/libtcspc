@@ -9,6 +9,8 @@
 #include <memory>
 #include <stdexcept>
 
+namespace flimevt {
+
 // Assign pixels to photons using line clock only
 template <typename D> class LineClockPixellator {
     uint32_t const pixelsPerLine;
@@ -280,3 +282,5 @@ template <typename D> class LineClockPixellator {
     // Emit all buffered data (for testing)
     void Flush() { ProcessPhotonsAndLines(); }
 };
+
+} // namespace flimevt
