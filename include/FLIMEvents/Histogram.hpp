@@ -14,6 +14,8 @@
 
 namespace flimevt {
 
+namespace internal {
+
 template <typename T, typename U,
           typename =
               std::enable_if_t<std::is_unsigned_v<T> && std::is_unsigned_v<U> &&
@@ -24,6 +26,8 @@ inline constexpr T SaturatingAdd(T a, U b) {
         c = -1;
     return c;
 }
+
+} // namespace internal
 
 template <typename T, typename = std::enable_if_t<std::is_unsigned_v<T>>>
 class Histogram {
@@ -80,7 +84,7 @@ class Histogram {
         auto tReversed =
             reverseTime ? (1 << timeBits) - 1 - tReduced : tReduced;
         auto index = (y * width + x) * GetNumberOfTimeBins() + tReversed;
-        hist[index] = SaturatingAdd(hist[index], T(1));
+        hist[index] = internal::SaturatingAdd(hist[index], T(1));
     }
 
     T const *Get() const noexcept { return hist.get(); }
@@ -93,7 +97,7 @@ class Histogram {
 
         std::size_t n = GetNumberOfElements();
         for (std::size_t i = 0; i < n; ++i) {
-            hist[i] = SaturatingAdd(hist[i], rhs.hist[i]);
+            hist[i] = internal::SaturatingAdd(hist[i], rhs.hist[i]);
         }
 
         return *this;

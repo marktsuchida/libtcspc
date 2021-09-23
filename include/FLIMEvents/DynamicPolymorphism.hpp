@@ -7,6 +7,8 @@
 
 namespace flimevt {
 
+namespace internal {
+
 // Interface for processor consuming Events
 template <typename... Events> class VirtualProcessor;
 
@@ -92,18 +94,20 @@ template <typename... Events> class PolymorphicProcessor {
     void HandleEnd(std::exception_ptr error) { proc->HandleEnd(error); }
 };
 
+} // namespace internal
+
 // Type to express collection of events
 template <typename... Events> class EventSet {
     EventSet();
 
   public:
-    using VirtualProcessorInterface = VirtualProcessor<Events...>;
+    using VirtualProcessor = internal::VirtualProcessor<Events...>;
 
-    using PolymorphicProcessorType = PolymorphicProcessor<Events...>;
+    using PolymorphicProcessor = internal::PolymorphicProcessor<Events...>;
 
     template <typename Proc>
-    using VirtualWrappedProcessorType =
-        VirtualWrappedProcessor<Proc, Events...>;
+    using VirtualWrappedProcessor =
+        internal::VirtualWrappedProcessor<Proc, Events...>;
 };
 
 } // namespace flimevt
