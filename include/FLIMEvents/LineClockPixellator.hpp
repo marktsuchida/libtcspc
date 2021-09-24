@@ -45,7 +45,9 @@ template <typename D> class LineClockPixellator {
     bool streamEnded = false;
 
   private:
-    void UpdateTimeRange(uint64_t macrotime) { latestTimestamp = macrotime; }
+    void UpdateTimeRange(uint64_t macrotime) noexcept {
+        latestTimestamp = macrotime;
+    }
 
     void EnqueuePhoton(ValidPhotonEvent const &event) {
         if (streamEnded) {
@@ -183,7 +185,7 @@ template <typename D> class LineClockPixellator {
     // When this function returns, all photons that can be emitted have been
     // emitted and all frames (and, internally, lines) for which we have seen
     // all photons have been finished.
-    void ProcessPhotonsAndLines() {
+    void ProcessPhotonsAndLines() noexcept {
         if (streamEnded)
             return;
 
@@ -218,7 +220,7 @@ template <typename D> class LineClockPixellator {
         }
     }
 
-    void HandleEvent(TimestampEvent const &event) {
+    void HandleEvent(TimestampEvent const &event) noexcept {
         auto prevTimestamp = latestTimestamp;
         UpdateTimeRange(event.macrotime);
         // We could call ProcessPhotonsAndLines() to emit all lines that are
@@ -234,7 +236,7 @@ template <typename D> class LineClockPixellator {
         }
     }
 
-    void HandleEvent(DataLostEvent const &event) {
+    void HandleEvent(DataLostEvent const &event) noexcept {
         UpdateTimeRange(event.macrotime);
         ProcessPhotonsAndLines();
         if (!streamEnded) {
@@ -244,9 +246,14 @@ template <typename D> class LineClockPixellator {
         }
     }
 
-    void HandleEvent(ValidPhotonEvent const &event) {
+    void HandleEvent(ValidPhotonEvent const &event) noexcept {
         UpdateTimeRange(event.macrotime);
-        EnqueuePhoton(event);
+        try {
+            EnqueuePhoton(event);
+        } catch (std::exception const &) {
+            downstream.HandleEnd(std::current_exception());
+            streamEnded = true;
+        }
         // A small amount of buffering can improve performance (buffering
         // larger numbers is less effective)
         if (pendingPhotons.size() > 64) {
@@ -254,16 +261,21 @@ template <typename D> class LineClockPixellator {
         }
     }
 
-    void HandleEvent(InvalidPhotonEvent const &event) {
+    void HandleEvent(InvalidPhotonEvent const &event) noexcept {
         UpdateTimeRange(event.macrotime);
         // We could call ProcessPhotonsAndLines() to emit all lines that are
         // complete, but deferring can improve performance.
     }
 
-    void HandleEvent(MarkerEvent const &event) {
+    void HandleEvent(MarkerEvent const &event) noexcept {
         UpdateTimeRange(event.macrotime);
         if (event.bits & lineMarkerMask) {
-            EnqueueLineMarker(event.macrotime);
+            try {
+                EnqueueLineMarker(event.macrotime);
+            } catch (std::exception const &) {
+                downstream.HandleEnd(std::current_exception());
+                streamEnded = true;
+            }
             // We could call ProcessPhotonsAndLines() for all markers, but that
             // may degrade performance if a non-line marker (e.g. an unused
             // pixel marker) is frequent.
@@ -271,7 +283,7 @@ template <typename D> class LineClockPixellator {
         }
     }
 
-    void HandleEnd(std::exception_ptr error) {
+    void HandleEnd(std::exception_ptr error) noexcept {
         ProcessPhotonsAndLines(); // Emit any buffered data
         if (!streamEnded) {
             downstream.HandleEnd(error);

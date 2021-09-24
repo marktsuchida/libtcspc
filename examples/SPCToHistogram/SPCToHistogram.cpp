@@ -111,12 +111,17 @@ int main(int argc, char *argv[]) {
     auto processorDone = std::async(std::launch::async, [&stream, &decoder] {
         std::clock_t start = std::clock();
         for (;;) {
-            auto eventBuffer = stream.ReceiveBlocking();
-            if (!eventBuffer) {
-                break;
-            }
-            for (std::size_t i = 0; i < eventBuffer->GetSize(); ++i) {
-                decoder.HandleEvent(*(eventBuffer->GetData() + i));
+            try {
+                auto eventBuffer = stream.ReceiveBlocking();
+                if (!eventBuffer) {
+                    break;
+                }
+                for (std::size_t i = 0; i < eventBuffer->GetSize(); ++i) {
+                    decoder.HandleEvent(*(eventBuffer->GetData() + i));
+                }
+            } catch (std::exception const &) {
+                decoder.HandleEnd(std::current_exception());
+                return;
             }
         }
         std::clock_t elapsed = std::clock() - start;

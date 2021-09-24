@@ -15,13 +15,13 @@ template <typename... Events> class VirtualProcessor;
 template <> class VirtualProcessor<> {
   public:
     virtual ~VirtualProcessor() = default;
-    virtual void HandleEnd(std::exception_ptr) = 0;
+    virtual void HandleEnd(std::exception_ptr) noexcept = 0;
 };
 
 template <typename Event0>
 class VirtualProcessor<Event0> : public VirtualProcessor<> {
   public:
-    virtual void HandleEvent(Event0 const &) = 0;
+    virtual void HandleEvent(Event0 const &) noexcept = 0;
 };
 
 template <typename Event0, typename Event1, typename... Events>
@@ -31,7 +31,7 @@ class VirtualProcessor<Event0, Event1, Events...>
 
   public:
     using BaseType::HandleEvent; // Import overload set
-    virtual void HandleEvent(Event0 const &) = 0;
+    virtual void HandleEvent(Event0 const &) noexcept = 0;
 };
 
 // Internal impl of VirtualWrappedProcessor
@@ -50,7 +50,9 @@ class VirtualWrappedProcessorImpl<Interface, Proc> : public Interface {
     explicit VirtualWrappedProcessorImpl(Args &&... args)
         : proc(std::forward<Args>(args)...) {}
 
-    void HandleEnd(std::exception_ptr error) final { proc.HandleEnd(error); }
+    void HandleEnd(std::exception_ptr error) noexcept final {
+        proc.HandleEnd(error);
+    }
 
     Proc &Wrapped() { return proc; }
 };
@@ -66,7 +68,9 @@ class VirtualWrappedProcessorImpl<Interface, Proc, Event0, Events...>
 
   public:
     using BaseType::HandleEvent; // Import overload set
-    void HandleEvent(Event0 const &event) final { proc.HandleEvent(event); }
+    void HandleEvent(Event0 const &event) noexcept final {
+        proc.HandleEvent(event);
+    }
 };
 
 // Wrap Proc in dynamically polymorphic class implementing
@@ -87,11 +91,11 @@ template <typename... Events> class PolymorphicProcessor {
 
     template <typename E,
               typename = std::enable_if_t<(... || std::is_same_v<E, Events>)>>
-    void HandleEvent(E const &event) {
+    void HandleEvent(E const &event) noexcept {
         proc->HandleEvent(event);
     }
 
-    void HandleEnd(std::exception_ptr error) {
+    void HandleEnd(std::exception_ptr error) noexcept {
         proc->HandleEnd(error);
 
         // No more calls will be made to proc, so avoid holding onto it

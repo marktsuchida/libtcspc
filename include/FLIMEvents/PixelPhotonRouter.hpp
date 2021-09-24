@@ -16,7 +16,7 @@ template <typename... Ds> class PixelPhotonRouter {
   private:
     template <size_t N = 0>
     void HandlePixelPhotonForChannel(size_t channel,
-                                     PixelPhotonEvent const &event) {
+                                     PixelPhotonEvent const &event) noexcept {
         if (channel == N) {
             downstreams.get<N>().HandleEvent(event);
             return;
@@ -31,16 +31,16 @@ template <typename... Ds> class PixelPhotonRouter {
     explicit PixelPhotonRouter(Ds &&... downstreams)
         : downstreams{std::move<Ds>(downstreams)...} {}
 
-    template <typename E> void HandleEvent(E const &event) {
+    template <typename E> void HandleEvent(E const &event) noexcept {
         std::apply([&](auto &... s) { (..., s.HandleEvent(event)); },
                    downstreams);
     }
 
-    void HandleEvent(PixelPhotonEvent const &event) {
+    void HandleEvent(PixelPhotonEvent const &event) noexcept {
         HandlePixelPhotonForChannel(event.route, event);
     }
 
-    void HandleEnd(std::exception_ptr error) {
+    void HandleEnd(std::exception_ptr error) noexcept {
         std::apply([&](auto &... s) { (..., s.HandleEnd(error)); },
                    downstreams);
     }

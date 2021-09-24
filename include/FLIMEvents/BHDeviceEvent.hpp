@@ -171,7 +171,7 @@ template <typename E, typename D> class BHEventDecoder {
 
     // Rule of zero
 
-    void HandleEvent(E const &event) {
+    void HandleEvent(E const &event) noexcept {
         if (event.IsMultipleMacroTimeOverflow()) {
             macrotimeBase += E::MacroTimeOverflowPeriod *
                              event.GetMultipleMacroTimeOverflowCount();
@@ -226,7 +226,9 @@ template <typename E, typename D> class BHEventDecoder {
         }
     }
 
-    void HandleEnd(std::exception_ptr error) { downstream.HandleEnd(error); }
+    void HandleEnd(std::exception_ptr error) noexcept {
+        downstream.HandleEnd(error);
+    }
 };
 
 template <typename D> using BHSPCEventDecoder = BHEventDecoder<BHSPCEvent, D>;

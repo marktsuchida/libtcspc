@@ -136,7 +136,7 @@ class PQT3EventDecoder final : public DeviceEventProcessor<E> {
     explicit PQT3EventDecoder(D &&downstream)
         : nSyncBase(0), lastNSync(0), downstream(std::move(downstream)) {}
 
-    void HandleDeviceEvent(E const &event) {
+    void HandleDeviceEvent(E const &event) noexcept {
         if (event.IsNSyncOverflow()) {
             nSyncBase += E::NSyncOverflowPeriod * event.GetNSyncOverflowCount();
 
@@ -172,7 +172,7 @@ class PQT3EventDecoder final : public DeviceEventProcessor<E> {
         downstream.HandleEvent(e);
     }
 
-    void HandleEnd(std::exception_ptr error) final {
+    void HandleEnd(std::exception_ptr error) noexcept {
         downstream.HandleError(error);
     }
 };

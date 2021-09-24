@@ -20,7 +20,7 @@ template <typename T, typename U,
           typename =
               std::enable_if_t<std::is_unsigned_v<T> && std::is_unsigned_v<U> &&
                                sizeof(T) >= sizeof(U)>>
-inline constexpr T SaturatingAdd(T a, U b) {
+inline constexpr T SaturatingAdd(T a, U b) noexcept {
     T c = a + b;
     if (c < a)
         c = -1;
@@ -89,7 +89,7 @@ class Histogram {
 
     T const *Get() const noexcept { return hist.get(); }
 
-    Histogram &operator+=(Histogram<T> const &rhs) {
+    Histogram &operator+=(Histogram<T> const &rhs) noexcept {
         if (rhs.timeBits != timeBits || rhs.width != width ||
             rhs.height != height) {
             abort(); // Programming error
@@ -138,21 +138,23 @@ template <typename T, typename D> class Histogrammer {
 
     // Rule of zero
 
-    void HandleEvent(BeginFrameEvent const &) {
+    void HandleEvent(BeginFrameEvent const &) noexcept {
         histogram.Clear();
         frameInProgress = true;
     }
 
-    void HandleEvent(EndFrameEvent const &) {
+    void HandleEvent(EndFrameEvent const &) noexcept {
         frameInProgress = false;
         downstream.HandleEvent(FrameHistogramEvent<T>{histogram});
     }
 
-    void HandleEvent(PixelPhotonEvent const &event) {
+    void HandleEvent(PixelPhotonEvent const &event) noexcept {
         histogram.Increment(event.microtime, event.x, event.y);
     }
 
-    void HandleEnd(std::exception_ptr error) { downstream.HandleEnd(error); }
+    void HandleEnd(std::exception_ptr error) noexcept {
+        downstream.HandleEnd(error);
+    }
 };
 
 // Accumulate a series of histograms
@@ -166,16 +168,16 @@ template <typename T, typename D> class HistogramAccumulator {
     explicit HistogramAccumulator(Histogram<T> &&histogram, D &&downstream)
         : cumulative(std::move(histogram)), downstream(std::move(downstream)) {}
 
-    void HandleEvent(FrameHistogramEvent<T> const &event) {
+    void HandleEvent(FrameHistogramEvent<T> const &event) noexcept {
         cumulative += event.histogram;
         downstream.HandleEvent(FrameHistogramEvent<T>{cumulative});
     }
 
-    void HandleEvent(IncompleteFrameHistogramEvent<T> const &) {
+    void HandleEvent(IncompleteFrameHistogramEvent<T> const &) noexcept {
         // Ignore incomplete frames
     }
 
-    void HandleEnd(std::exception_ptr error) {
+    void HandleEnd(std::exception_ptr error) noexcept {
         if (!error) {
             downstream.HandleEvent(
                 FinalCumulativeHistogramEvent<T>{cumulative});
