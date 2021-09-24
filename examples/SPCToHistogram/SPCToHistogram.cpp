@@ -90,22 +90,13 @@ int main(int argc, char *argv[]) {
                                               height);
     cumulHisto.Clear();
 
-    // Construct pipeline from tail to head
-
-    HistogramSaver<SampleType> saver(outFilename);
-
-    flimevt::HistogramAccumulator<SampleType, decltype(saver)> accumulator(
-        std::move(cumulHisto), std::move(saver));
-
-    flimevt::Histogrammer<SampleType, decltype(accumulator)> histogrammer(
-        std::move(frameHisto), std::move(accumulator));
-
-    flimevt::LineClockPixellator<decltype(histogrammer)> pixellator(
+    // Construct pipeline
+    flimevt::BHSPCEventDecoder decoder(flimevt::LineClockPixellator(
         width, height, maxFrames, lineDelay, lineTime, 1,
-        std::move(histogrammer));
-
-    flimevt::BHSPCEventDecoder<decltype(pixellator)> decoder(
-        std::move(pixellator));
+        flimevt::Histogrammer(std::move(frameHisto),
+                              flimevt::HistogramAccumulator(
+                                  std::move(cumulHisto),
+                                  HistogramSaver<SampleType>(outFilename)))));
 
     flimevt::EventStream<flimevt::BHSPCEvent> stream;
     auto processorDone = std::async(std::launch::async, [&stream, &decoder] {
