@@ -104,16 +104,47 @@ class Histogram {
     }
 };
 
+// Events for emitting histograms are non-copyable and non-movable to prevent
+// buffering, as they contain the histogram by reference and are therefore only
+// valid for the duration of the HandleEvent() call.
+
 template <typename T> struct FrameHistogramEvent {
     Histogram<T> const &histogram;
+
+    FrameHistogramEvent(FrameHistogramEvent const &) = delete;
+    FrameHistogramEvent &operator=(FrameHistogramEvent const &) = delete;
+    FrameHistogramEvent(FrameHistogramEvent &&) = delete;
+    FrameHistogramEvent &operator=(FrameHistogramEvent &&) = delete;
 };
 
 template <typename T> struct IncompleteFrameHistogramEvent {
     Histogram<T> const &histogram;
+
+    IncompleteFrameHistogramEvent(IncompleteFrameHistogramEvent const &) =
+        delete;
+
+    IncompleteFrameHistogramEvent &
+    operator=(IncompleteFrameHistogramEvent const &) = delete;
+
+    IncompleteFrameHistogramEvent(IncompleteFrameHistogramEvent &&) = delete;
+
+    IncompleteFrameHistogramEvent &
+    operator=(IncompleteFrameHistogramEvent &&) = delete;
 };
 
 template <typename T> struct FinalCumulativeHistogramEvent {
     Histogram<T> const &histogram;
+
+    FinalCumulativeHistogramEvent(FinalCumulativeHistogramEvent const &) =
+        delete;
+
+    FinalCumulativeHistogramEvent &
+    operator=(FinalCumulativeHistogramEvent const &) = delete;
+
+    FinalCumulativeHistogramEvent(FinalCumulativeHistogramEvent &&) = delete;
+
+    FinalCumulativeHistogramEvent &
+    operator=(FinalCumulativeHistogramEvent &&) = delete;
 };
 
 template <typename T>
