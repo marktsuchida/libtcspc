@@ -1,8 +1,8 @@
 #include "../BHSPCFile.hpp"
 #include "FLIMEvents/BHDeviceEvent.hpp"
+#include "FLIMEvents/EventBuffer.hpp"
 #include "FLIMEvents/Histogram.hpp"
 #include "FLIMEvents/LineClockPixellator.hpp"
-#include "FLIMEvents/StreamBuffer.hpp"
 
 #include <ctime>
 #include <exception>
@@ -98,30 +98,15 @@ int main(int argc, char *argv[]) {
                                   std::move(cumulHisto),
                                   HistogramSaver<SampleType>(outFilename)))));
 
-    flimevt::EventStream<flimevt::BHSPCEvent> stream;
-    auto processorDone = std::async(std::launch::async, [&stream, &decoder] {
-        std::clock_t start = std::clock();
-        for (;;) {
-            try {
-                auto eventBuffer = stream.ReceiveBlocking();
-                if (!eventBuffer) {
-                    break;
-                }
-                for (std::size_t i = 0; i < eventBuffer->GetSize(); ++i) {
-                    decoder.HandleEvent(*(eventBuffer->GetData() + i));
-                }
-            } catch (std::exception const &) {
-                decoder.HandleEnd(std::current_exception());
-                return;
-            }
-        }
-        std::clock_t elapsed = std::clock() - start;
+    flimevt::EventArrayDemultiplexer<flimevt::BHSPCEvent, decltype(decoder)>
+        processor(std::move(decoder));
 
-        std::cerr << "Approx histogram CPU time: "
-                  << 1000.0 * elapsed / CLOCKS_PER_SEC << " ms\n";
+    flimevt::EventBuffer<decltype(processor)::EventArrayType,
+                         decltype(processor)>
+        buffer(std::move(processor));
 
-        decoder.HandleEnd({});
-    });
+    auto processorDone =
+        std::async(std::launch::async, [&] { buffer.PumpDownstream(); });
 
     std::fstream input(inFilename, std::fstream::binary | std::fstream::in);
     if (!input.is_open()) {
@@ -129,18 +114,18 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
-    flimevt::EventBufferPool<flimevt::BHSPCEvent> pool(48 * 1024);
+    flimevt::EventArrayPool<flimevt::BHSPCEvent> pool(48 * 1024, 2);
 
     input.seekg(sizeof(BHSPCFileHeader));
     while (input.good()) {
-        auto buf = pool.CheckOut();
-        auto const maxSize = buf->GetCapacity() * sizeof(flimevt::BHSPCEvent);
-        input.read(reinterpret_cast<char *>(buf->GetData()), maxSize);
+        auto arr = pool.CheckOut();
+        auto const maxSize = arr->GetCapacity() * sizeof(flimevt::BHSPCEvent);
+        input.read(reinterpret_cast<char *>(arr->GetData()), maxSize);
         auto const readSize = input.gcount() / sizeof(flimevt::BHSPCEvent);
-        buf->SetSize(static_cast<std::size_t>(readSize));
-        stream.Send(buf);
+        arr->SetSize(static_cast<std::size_t>(readSize));
+        buffer.HandleEvent(arr);
     }
-    stream.Send({});
+    buffer.HandleEnd({});
 
     processorDone.get();
     return 0;
