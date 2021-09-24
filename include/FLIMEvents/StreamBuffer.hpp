@@ -105,6 +105,7 @@ template <typename E> class EventStream {
             queue.emplace_back({});
             exception = e;
         }
+        queueNotEmptyCondition.notify_one();
     }
 
     // A null shared pointer return value indicates that the stream has been
