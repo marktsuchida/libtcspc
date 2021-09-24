@@ -91,7 +91,12 @@ template <typename... Events> class PolymorphicProcessor {
         proc->HandleEvent(event);
     }
 
-    void HandleEnd(std::exception_ptr error) { proc->HandleEnd(error); }
+    void HandleEnd(std::exception_ptr error) {
+        proc->HandleEnd(error);
+
+        // No more calls will be made to proc, so avoid holding onto it
+        proc.reset();
+    }
 };
 
 } // namespace internal
