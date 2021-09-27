@@ -184,6 +184,9 @@ template <typename T, typename D> class Histogrammer {
     }
 
     void HandleEnd(std::exception_ptr error) noexcept {
+        if (frameInProgress) {
+            downstream.HandleEvent(IncompleteFrameHistogramEvent<T>{histogram});
+        }
         downstream.HandleEnd(error);
     }
 };
