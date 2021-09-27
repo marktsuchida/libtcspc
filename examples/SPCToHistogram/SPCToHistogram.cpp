@@ -93,10 +93,11 @@ int main(int argc, char *argv[]) {
     // Construct pipeline
     flimevt::BHSPCEventDecoder decoder(flimevt::LineClockPixellator(
         width, height, maxFrames, lineDelay, lineTime, 1,
-        flimevt::Histogrammer(std::move(frameHisto),
-                              flimevt::HistogramAccumulator(
-                                  std::move(cumulHisto),
-                                  HistogramSaver<SampleType>(outFilename)))));
+        flimevt::SequentialHistogrammer(
+            std::move(frameHisto),
+            flimevt::HistogramAccumulator(
+                std::move(cumulHisto),
+                HistogramSaver<SampleType>(outFilename)))));
 
     flimevt::EventArrayDemultiplexer<flimevt::BHSPCEvent, decltype(decoder)>
         processor(std::move(decoder));

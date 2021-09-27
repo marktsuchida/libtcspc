@@ -3,7 +3,8 @@
 #include "DynamicPolymorphism.hpp"
 #include "PixelPhotonEvent.hpp"
 
-#include <cstring>
+#include <algorithm>
+#include <cassert>
 #include <deque>
 #include <exception>
 #include <memory>
@@ -64,10 +65,14 @@ class Histogram {
     bool IsValid() const noexcept { return hist.get(); }
 
     void Clear() noexcept {
-        memset(hist.get(), 0, GetNumberOfElements() * sizeof(T));
+        std::fill_n(hist.get(), GetNumberOfElements(), T(0));
     }
 
     uint32_t GetTimeBits() const noexcept { return timeBits; }
+
+    uint32_t GetInputTimeBits() const noexcept { return inputTimeBits; }
+
+    bool GetReverseTime() const noexcept { return reverseTime; }
 
     uint32_t GetNumberOfTimeBins() const noexcept { return 1 << timeBits; }
 
@@ -88,6 +93,8 @@ class Histogram {
     }
 
     T const *Get() const noexcept { return hist.get(); }
+
+    T *Get() noexcept { return hist.get(); }
 
     Histogram &operator+=(Histogram<T> const &rhs) noexcept {
         if (rhs.timeBits != timeBits || rhs.width != width ||
@@ -188,6 +195,69 @@ template <typename T, typename D> class Histogrammer {
             downstream.HandleEvent(IncompleteFrameHistogramEvent<T>{histogram});
         }
         downstream.HandleEnd(error);
+    }
+};
+
+// Same as Histogrammer, but requires incoming pixel photon events to be in
+// sequential pixel order. Accesses frame histogram memory sequentially,
+// although the performance gain from this may not be significant.
+template <typename T, typename D> class SequentialHistogrammer {
+    Histogram<T> histogram;
+
+    std::size_t binsPerPixel;
+    Histogram<T> pixelHist;
+
+    std::size_t pixelNo; // Within frame
+
+    D downstream;
+
+  public:
+    explicit SequentialHistogrammer(Histogram<T> &&histogram, D &&downstream)
+        : histogram(std::move(histogram)),
+          binsPerPixel(this->histogram.GetNumberOfTimeBins()),
+          pixelHist(this->histogram.GetTimeBits(),
+                    this->histogram.GetInputTimeBits(),
+                    this->histogram.GetReverseTime(), 1, 1),
+          pixelNo(this->histogram.GetWidth() * this->histogram.GetHeight()),
+          downstream(std::move(downstream)) {}
+
+    void HandleEvent(BeginFrameEvent const &) noexcept {
+        pixelNo = 0;
+        pixelHist.Clear();
+    }
+
+    void HandleEvent(EndFrameEvent const &) noexcept {
+        SkipToPixelNo(histogram.GetWidth() * histogram.GetHeight());
+        downstream.HandleEvent(FrameHistogramEvent<T>{histogram});
+    }
+
+    void HandleEvent(PixelPhotonEvent const &event) noexcept {
+        SkipToPixelNo(event.x + histogram.GetWidth() * event.y);
+        pixelHist.Increment(event.microtime, 0, 0);
+    }
+
+    void HandleEnd(std::exception_ptr error) noexcept {
+        if (pixelNo < histogram.GetWidth() * histogram.GetHeight()) {
+            downstream.HandleEvent(IncompleteFrameHistogramEvent<T>{histogram});
+        }
+        downstream.HandleEnd(error);
+    }
+
+  private:
+    void SkipToPixelNo(std::size_t newPixelNo) noexcept {
+        assert(pixelNo <= newPixelNo);
+        if (pixelNo < newPixelNo) {
+            std::copy_n(pixelHist.Get(), binsPerPixel,
+                        &histogram.Get()[pixelNo * binsPerPixel]);
+            ++pixelNo;
+            pixelHist.Clear();
+        }
+
+        std::size_t const nSkippedPixels = newPixelNo - pixelNo;
+        std::fill_n(&histogram.Get()[pixelNo * binsPerPixel],
+                    binsPerPixel * nSkippedPixels, T(0));
+        pixelNo += nSkippedPixels;
+        assert(pixelNo == newPixelNo);
     }
 };
 
