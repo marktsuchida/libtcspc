@@ -238,7 +238,13 @@ template <typename T, typename D> class SequentialHistogrammer {
     }
 
     void HandleEnd(std::exception_ptr error) noexcept {
-        if (pixelNo < histogram.GetWidth() * histogram.GetHeight()) {
+        std::size_t const nPixels =
+            histogram.GetWidth() * histogram.GetHeight();
+        if (pixelNo < nPixels) {
+            // Clear unfilled portion of incomplete frame
+            std::fill_n(&histogram.Get()[pixelNo * binsPerPixel],
+                        (nPixels - pixelNo) * binsPerPixel, T(0));
+
             downstream.HandleEvent(
                 IncompleteFrameHistogramEvent<T>{histogram});
         }
