@@ -97,15 +97,16 @@ class Histogram {
     T *Get() noexcept { return hist.get(); }
 
     Histogram &operator+=(Histogram<T> const &rhs) noexcept {
-        if (rhs.timeBits != timeBits || rhs.width != width ||
-            rhs.height != height) {
-            abort(); // Programming error
-        }
+        assert(rhs.timeBits == timeBits && rhs.width == width &&
+               rhs.height == height);
 
-        std::size_t n = GetNumberOfElements();
-        for (std::size_t i = 0; i < n; ++i) {
-            hist[i] = internal::SaturatingAdd(hist[i], rhs.hist[i]);
-        }
+        // Note: using std::execution::par_unseq for this transform did not
+        // improve run time of a typical decode-and-histogram workflow, but did
+        // double CPU time. (GCC 9 + libtbb, Ubuntu 20.04)
+        std::transform(hist.get(), hist.get() + GetNumberOfElements(),
+                       rhs.hist.get(), hist.get(), [](T const &a, T const &b) {
+                           return internal::SaturatingAdd(a, b);
+                       });
 
         return *this;
     }
