@@ -21,7 +21,7 @@ struct DecodedEvent {
      * conversion to physical (or other) units (which may result in loss of the
      * exact raw data) is not the concern of this library.
      */
-    uint64_t macrotime;
+    std::uint64_t macrotime;
 };
 
 /**
@@ -66,7 +66,7 @@ struct BasePhotonEvent : public DecodedEvent {
      * not be inverted: the raw format produced by the device should be
      * recorded here.
      */
-    uint16_t microtime;
+    std::uint16_t microtime;
 
     /**
      * \brief The route, or channel, of the photon.
@@ -75,7 +75,7 @@ struct BasePhotonEvent : public DecodedEvent {
      * the number of routing bits supported by the device (_not_ necessarily
      * the number of routing bits enabled for the acquisition).
      */
-    uint16_t route;
+    std::uint16_t route;
 };
 
 /**
@@ -102,7 +102,7 @@ struct InvalidPhotonEvent : public BasePhotonEvent {};
  * these external markers.
  */
 struct MarkerEvent : public DecodedEvent {
-    uint16_t bits;
+    std::uint16_t bits;
 };
 
 using DecodedEvents = EventSet<TimestampEvent, DataLostEvent, ValidPhotonEvent,

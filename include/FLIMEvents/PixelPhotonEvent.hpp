@@ -7,11 +7,11 @@
 namespace flimevt {
 
 struct PixelPhotonEvent {
-    uint16_t microtime;
-    uint16_t route;
-    uint32_t x;
-    uint32_t y;
-    uint32_t frame;
+    std::uint16_t microtime;
+    std::uint16_t route;
+    std::uint32_t x;
+    std::uint32_t y;
+    std::uint32_t frame;
 };
 
 struct BeginFrameEvent {};

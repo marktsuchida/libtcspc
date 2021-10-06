@@ -68,22 +68,22 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
-    uint32_t width = 0;
+    std::uint32_t width = 0;
     std::istringstream(argv[1]) >> width;
-    uint32_t height = 0;
+    std::uint32_t height = 0;
     std::istringstream(argv[2]) >> height;
-    uint32_t lineDelay = 0;
+    std::uint32_t lineDelay = 0;
     std::istringstream(argv[3]) >> lineDelay;
-    uint32_t lineTime = 0;
+    std::uint32_t lineTime = 0;
     std::istringstream(argv[4]) >> lineTime;
     std::string inFilename(argv[5]);
     std::string outFilename(argv[6]);
 
-    uint32_t maxFrames = UINT32_MAX;
+    std::uint32_t maxFrames = UINT32_MAX;
 
-    using SampleType = uint16_t;
-    int32_t inputBits = 12;
-    int32_t histoBits = 8;
+    using SampleType = std::uint16_t;
+    std::int32_t inputBits = 12;
+    std::int32_t histoBits = 8;
     flimevt::Histogram<SampleType> frameHisto(histoBits, inputBits, true,
                                               width, height);
     flimevt::Histogram<SampleType> cumulHisto(histoBits, inputBits, true,

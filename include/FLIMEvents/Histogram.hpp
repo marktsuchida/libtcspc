@@ -32,8 +32,8 @@ inline constexpr T SaturatingAdd(T a, U b) noexcept {
 
 template <typename T, typename = std::enable_if_t<std::is_unsigned_v<T>>>
 class Histogram {
-    uint32_t timeBits;
-    uint32_t inputTimeBits;
+    std::uint32_t timeBits;
+    std::uint32_t inputTimeBits;
     bool reverseTime;
     std::size_t width;
     std::size_t height;
@@ -51,7 +51,7 @@ class Histogram {
     Histogram() = default;
 
     // Warning: Newly constructed histogram is not zeroed (for efficiency)
-    explicit Histogram(uint32_t timeBits, uint32_t inputTimeBits,
+    explicit Histogram(std::uint32_t timeBits, std::uint32_t inputTimeBits,
                        bool reverseTime, std::size_t width, std::size_t height)
         : timeBits(timeBits), inputTimeBits(inputTimeBits),
           reverseTime(reverseTime), width(width), height(height),
@@ -68,13 +68,15 @@ class Histogram {
         std::fill_n(hist.get(), GetNumberOfElements(), T(0));
     }
 
-    uint32_t GetTimeBits() const noexcept { return timeBits; }
+    std::uint32_t GetTimeBits() const noexcept { return timeBits; }
 
-    uint32_t GetInputTimeBits() const noexcept { return inputTimeBits; }
+    std::uint32_t GetInputTimeBits() const noexcept { return inputTimeBits; }
 
     bool GetReverseTime() const noexcept { return reverseTime; }
 
-    uint32_t GetNumberOfTimeBins() const noexcept { return 1 << timeBits; }
+    std::uint32_t GetNumberOfTimeBins() const noexcept {
+        return 1 << timeBits;
+    }
 
     std::size_t GetWidth() const noexcept { return width; }
 
@@ -85,7 +87,7 @@ class Histogram {
     }
 
     void Increment(std::size_t t, std::size_t x, std::size_t y) noexcept {
-        auto tReduced = uint16_t(t >> (inputTimeBits - timeBits));
+        auto tReduced = std::uint16_t(t >> (inputTimeBits - timeBits));
         auto tReversed =
             reverseTime ? (1 << timeBits) - 1 - tReduced : tReduced;
         auto index = (y * width + x) * GetNumberOfTimeBins() + tReversed;

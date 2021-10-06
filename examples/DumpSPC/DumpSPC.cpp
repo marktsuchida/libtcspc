@@ -12,15 +12,15 @@
 #include <vector>
 
 class PrintProcessor {
-    uint32_t count;
-    uint64_t lastMacrotime;
+    std::uint32_t count;
+    std::uint64_t lastMacrotime;
     std::ostream &output;
 
-    void PrintMacroTime(std::ostream &output, uint64_t macrotime) {
+    void PrintMacroTime(std::ostream &output, std::uint64_t macrotime) {
         output << std::setw(6) << (count++) << ' ';
         output << std::setw(20) << macrotime;
         if (lastMacrotime > 0) {
-            uint64_t delta = macrotime - lastMacrotime;
+            std::uint64_t delta = macrotime - lastMacrotime;
             output << " (+" << std::setw(16) << delta << ")";
         } else {
             output << "                    ";
@@ -94,7 +94,7 @@ void DumpRawEvent(char const *rawEvent, std::ostream &output) {
     flimevt::BHSPCEvent const &event =
         *reinterpret_cast<flimevt::BHSPCEvent const *>(rawEvent);
 
-    uint8_t route = event.GetRoutingSignals();
+    std::uint8_t route = event.GetRoutingSignals();
     output << (route & (1 << 3) ? 'x' : '_') << (route & (1 << 2) ? 'x' : '_')
            << (route & (1 << 1) ? 'x' : '_') << (route & (1 << 0) ? 'x' : '_')
            << ' ' << (event.GetInvalidFlag() ? 'I' : '_')

@@ -5,7 +5,7 @@
 using namespace flimevt;
 
 TEST_CASE("TimeBins", "[Histogram]") {
-    Histogram<uint16_t> hist(8, 12, false, 1, 1);
+    Histogram<std::uint16_t> hist(8, 12, false, 1, 1);
     auto data = hist.Get();
     hist.Clear();
 
@@ -25,7 +25,7 @@ TEST_CASE("TimeBins", "[Histogram]") {
 }
 
 TEST_CASE("ReverseTimeBins", "[Histogram]") {
-    Histogram<uint16_t> hist(8, 12, true, 1, 1);
+    Histogram<std::uint16_t> hist(8, 12, true, 1, 1);
     auto data = hist.Get();
     hist.Clear();
 
@@ -46,7 +46,7 @@ TEST_CASE("ReverseTimeBins", "[Histogram]") {
 
 TEST_CASE("SingleTimeBin", "[Histogram]") {
     SECTION("Non-reversed") {
-        Histogram<uint16_t> hist(0, 7, false, 1, 1);
+        Histogram<std::uint16_t> hist(0, 7, false, 1, 1);
         auto data = hist.Get();
         hist.Clear();
 
@@ -57,7 +57,7 @@ TEST_CASE("SingleTimeBin", "[Histogram]") {
     }
 
     SECTION("Reversed") {
-        Histogram<uint16_t> hist(0, 7, false, 1, 1);
+        Histogram<std::uint16_t> hist(0, 7, false, 1, 1);
         auto data = hist.Get();
         hist.Clear();
 

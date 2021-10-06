@@ -23,32 +23,32 @@ namespace flimevt {
  * SPC-600 and SPC-630.
  */
 struct BHSPCEvent {
-    uint8_t bytes[4];
+    std::uint8_t bytes[4];
 
-    inline static uint64_t const MacroTimeOverflowPeriod = 1 << 12;
+    inline static std::uint64_t const MacroTimeOverflowPeriod = 1 << 12;
 
-    uint16_t GetADCValue() const noexcept {
-        uint8_t lo8 = bytes[2];
-        uint8_t hi4 = bytes[3] & 0x0f;
-        return lo8 | (uint16_t(hi4) << 8);
+    std::uint16_t GetADCValue() const noexcept {
+        std::uint8_t lo8 = bytes[2];
+        std::uint8_t hi4 = bytes[3] & 0x0f;
+        return lo8 | (std::uint16_t(hi4) << 8);
     }
 
-    uint8_t GetRoutingSignals() const noexcept {
+    std::uint8_t GetRoutingSignals() const noexcept {
         // The documentation somewhat confusingly says that these bits are
         // "inverted", but what they mean is that the TTL inputs are active
         // low. The bits in the FIFO data are not inverted.
         return bytes[1] >> 4;
     }
 
-    uint16_t GetMacroTime() const noexcept {
-        uint8_t lo8 = bytes[0];
-        uint8_t hi4 = bytes[1] & 0x0f;
-        return lo8 | (uint16_t(hi4) << 8);
+    std::uint16_t GetMacroTime() const noexcept {
+        std::uint8_t lo8 = bytes[0];
+        std::uint8_t hi4 = bytes[1] & 0x0f;
+        return lo8 | (std::uint16_t(hi4) << 8);
     }
 
     bool GetMarkerFlag() const noexcept { return bytes[3] & (1 << 4); }
 
-    uint8_t GetMarkerBits() const noexcept { return GetRoutingSignals(); }
+    std::uint8_t GetMarkerBits() const noexcept { return GetRoutingSignals(); }
 
     bool GetGapFlag() const noexcept { return bytes[3] & (1 << 5); }
 
@@ -66,9 +66,10 @@ struct BHSPCEvent {
     }
 
     // Get the 27-bit macro timer overflow count
-    uint32_t GetMultipleMacroTimeOverflowCount() const noexcept {
-        return bytes[0] | (uint32_t(bytes[1]) << 8) |
-               (uint32_t(bytes[2]) << 16) | (uint32_t(bytes[3] & 0x0f) << 24);
+    std::uint32_t GetMultipleMacroTimeOverflowCount() const noexcept {
+        return bytes[0] | (std::uint32_t(bytes[1]) << 8) |
+               (std::uint32_t(bytes[2]) << 16) |
+               (std::uint32_t(bytes[3] & 0x0f) << 24);
     }
 };
 
@@ -77,26 +78,26 @@ struct BHSPCEvent {
  * 4096-channel mode.
  */
 struct BHSPC600Event48 {
-    uint8_t bytes[6];
+    std::uint8_t bytes[6];
 
-    inline static uint64_t const MacroTimeOverflowPeriod = 1 << 24;
+    inline static std::uint64_t const MacroTimeOverflowPeriod = 1 << 24;
 
-    uint16_t GetADCValue() const noexcept {
-        uint8_t lo8 = bytes[0];
-        uint8_t hi4 = bytes[1] & 0x0f;
-        return lo8 | (uint16_t(hi4) << 8);
+    std::uint16_t GetADCValue() const noexcept {
+        std::uint8_t lo8 = bytes[0];
+        std::uint8_t hi4 = bytes[1] & 0x0f;
+        return lo8 | (std::uint16_t(hi4) << 8);
     }
 
-    uint8_t GetRoutingSignals() const noexcept { return bytes[3]; }
+    std::uint8_t GetRoutingSignals() const noexcept { return bytes[3]; }
 
-    uint32_t GetMacroTime() const noexcept {
-        return bytes[4] | (uint32_t(bytes[5]) << 8) |
-               (uint32_t(bytes[2]) << 16);
+    std::uint32_t GetMacroTime() const noexcept {
+        return bytes[4] | (std::uint32_t(bytes[5]) << 8) |
+               (std::uint32_t(bytes[2]) << 16);
     }
 
     bool GetMarkerFlag() const noexcept { return false; }
 
-    uint8_t GetMarkerBits() const noexcept { return 0; }
+    std::uint8_t GetMarkerBits() const noexcept { return 0; }
 
     bool GetGapFlag() const noexcept { return bytes[1] & (1 << 6); }
 
@@ -108,7 +109,9 @@ struct BHSPC600Event48 {
 
     bool IsMultipleMacroTimeOverflow() const noexcept { return false; }
 
-    uint32_t GetMultipleMacroTimeOverflowCount() const noexcept { return 0; }
+    std::uint32_t GetMultipleMacroTimeOverflowCount() const noexcept {
+        return 0;
+    }
 };
 
 /**
@@ -116,26 +119,26 @@ struct BHSPC600Event48 {
  * 256-channel mode.
  */
 struct BHSPC600Event32 {
-    uint8_t bytes[4];
+    std::uint8_t bytes[4];
 
-    inline static uint64_t const MacroTimeOverflowPeriod = 1 << 17;
+    inline static std::uint64_t const MacroTimeOverflowPeriod = 1 << 17;
 
-    uint16_t GetADCValue() const noexcept { return bytes[0]; }
+    std::uint16_t GetADCValue() const noexcept { return bytes[0]; }
 
-    uint8_t GetRoutingSignals() const noexcept {
+    std::uint8_t GetRoutingSignals() const noexcept {
         return (bytes[3] & 0x0f) >> 1;
     }
 
-    uint32_t GetMacroTime() const noexcept {
-        uint8_t lo8 = bytes[1];
-        uint8_t mid8 = bytes[2];
-        uint8_t hi1 = bytes[3] & 0x01;
-        return lo8 | (uint16_t(mid8) << 8) | (uint16_t(hi1) << 16);
+    std::uint32_t GetMacroTime() const noexcept {
+        std::uint8_t lo8 = bytes[1];
+        std::uint8_t mid8 = bytes[2];
+        std::uint8_t hi1 = bytes[3] & 0x01;
+        return lo8 | (std::uint16_t(mid8) << 8) | (std::uint16_t(hi1) << 16);
     }
 
     bool GetMarkerFlag() const noexcept { return false; }
 
-    uint8_t GetMarkerBits() const noexcept { return 0; }
+    std::uint8_t GetMarkerBits() const noexcept { return 0; }
 
     bool GetGapflag() const noexcept { return bytes[3] & (1 << 5); }
 
@@ -147,7 +150,9 @@ struct BHSPC600Event32 {
 
     bool IsMultipleMacroTimeOverflow() const noexcept { return false; }
 
-    uint32_t GetMultipleMacroTimeOverflowCount() const noexcept { return 0; }
+    std::uint32_t GetMultipleMacroTimeOverflowCount() const noexcept {
+        return 0;
+    }
 };
 
 /**
@@ -159,8 +164,8 @@ struct BHSPC600Event32 {
  * \tparam E binary record interpreter class
  */
 template <typename E, typename D> class BHEventDecoder {
-    uint64_t macrotimeBase; // Time of last overflow
-    uint64_t lastMacrotime;
+    std::uint64_t macrotimeBase; // Time of last overflow
+    std::uint64_t lastMacrotime;
 
     D downstream;
 
@@ -186,7 +191,7 @@ template <typename E, typename D> class BHEventDecoder {
             macrotimeBase += E::MacroTimeOverflowPeriod;
         }
 
-        uint64_t macrotime = macrotimeBase + event.GetMacroTime();
+        std::uint64_t macrotime = macrotimeBase + event.GetMacroTime();
 
         // Validate input: ensure macrotime increases monotonically (a common
         // assumption made by downstream processors)

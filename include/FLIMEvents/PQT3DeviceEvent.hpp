@@ -37,18 +37,20 @@ namespace flimevt {
 struct PicoT3Event {
     char bytes[4];
 
-    static uint64_t const NSyncOverflowPeriod = 65536;
+    static std::uint64_t const NSyncOverflowPeriod = 65536;
 
-    uint8_t GetChannel() const noexcept { return uint8_t(bytes[3]) >> 4; }
-
-    uint16_t GetDTime() const noexcept {
-        uint8_t lo8 = bytes[2];
-        uint8_t hi4 = bytes[3] & 0x0f;
-        return lo8 | (uint16_t(hi4) << 8);
+    std::uint8_t GetChannel() const noexcept {
+        return std::uint8_t(bytes[3]) >> 4;
     }
 
-    uint16_t GetNSync() const noexcept {
-        return bytes[0] | (uint16_t(bytes[1]) << 8);
+    std::uint16_t GetDTime() const noexcept {
+        std::uint8_t lo8 = bytes[2];
+        std::uint8_t hi4 = bytes[3] & 0x0f;
+        return lo8 | (std::uint16_t(hi4) << 8);
+    }
+
+    std::uint16_t GetNSync() const noexcept {
+        return bytes[0] | (std::uint16_t(bytes[1]) << 8);
     }
 
     bool IsSpecial() const noexcept { return GetChannel() == 15; }
@@ -57,13 +59,13 @@ struct PicoT3Event {
         return IsSpecial() && GetDTime() == 0;
     }
 
-    uint16_t GetNSyncOverflowCount() const noexcept { return 1; }
+    std::uint16_t GetNSyncOverflowCount() const noexcept { return 1; }
 
     bool IsExternalMarker() const noexcept {
         return IsSpecial() && GetDTime() != 0;
     }
 
-    uint16_t GetExternalMarkerBits() const noexcept { return GetDTime(); }
+    std::uint16_t GetExternalMarkerBits() const noexcept { return GetDTime(); }
 };
 
 /**
@@ -74,25 +76,25 @@ struct PicoT3Event {
  * format, in which nsync overflow records always indicate a single overflow
  */
 template <bool IsHydraV1> struct HydraT3Event {
-    uint8_t bytes[4];
+    std::uint8_t bytes[4];
 
-    static uint64_t const NSyncOverflowPeriod = 1024;
+    static std::uint64_t const NSyncOverflowPeriod = 1024;
 
     bool GetSpecialFlag() const noexcept { return bytes[3] & (1 << 7); }
 
-    uint8_t GetChannel() const noexcept { return (bytes[3] & 0x7f) >> 1; }
+    std::uint8_t GetChannel() const noexcept { return (bytes[3] & 0x7f) >> 1; }
 
-    uint16_t GetDTime() const noexcept {
-        uint8_t lo6 = uint8_t(bytes[1]) >> 2;
-        uint8_t mid8 = bytes[2];
-        uint8_t hi1 = bytes[3] & 0x01;
-        return lo6 | (uint16_t(mid8) << 6) | (uint16_t(hi1) << 14);
+    std::uint16_t GetDTime() const noexcept {
+        std::uint8_t lo6 = std::uint8_t(bytes[1]) >> 2;
+        std::uint8_t mid8 = bytes[2];
+        std::uint8_t hi1 = bytes[3] & 0x01;
+        return lo6 | (std::uint16_t(mid8) << 6) | (std::uint16_t(hi1) << 14);
     }
 
-    uint16_t GetNSync() const noexcept {
-        uint8_t lo8 = bytes[0];
-        uint8_t hi2 = bytes[1] & 0x03;
-        return lo8 | (uint16_t(hi2) << 8);
+    std::uint16_t GetNSync() const noexcept {
+        std::uint8_t lo8 = bytes[0];
+        std::uint8_t hi2 = bytes[1] & 0x03;
+        return lo8 | (std::uint16_t(hi2) << 8);
     }
 
     bool IsSpecial() const noexcept { return GetSpecialFlag(); }
@@ -101,7 +103,7 @@ template <bool IsHydraV1> struct HydraT3Event {
         return IsSpecial() && GetChannel() == 63;
     }
 
-    uint16_t GetNSyncOverflowCount() const noexcept {
+    std::uint16_t GetNSyncOverflowCount() const noexcept {
         if (IsHydraV1 || GetNSync() == 0) {
             return 1;
         }
@@ -112,7 +114,9 @@ template <bool IsHydraV1> struct HydraT3Event {
         return IsSpecial() && GetChannel() != 63;
     }
 
-    uint8_t GetExternalMarkerBits() const noexcept { return GetChannel(); }
+    std::uint8_t GetExternalMarkerBits() const noexcept {
+        return GetChannel();
+    }
 };
 
 using HydraV1T3Event = HydraT3Event<true>;
@@ -127,8 +131,8 @@ using HydraV2T3Event = HydraT3Event<false>;
  * \tparam E binary record interpreter class
  */
 template <typename E, typename D> class PQT3EventDecoder {
-    uint64_t nSyncBase;
-    uint64_t lastNSync;
+    std::uint64_t nSyncBase;
+    std::uint64_t lastNSync;
 
     D downstream;
 
@@ -147,7 +151,7 @@ template <typename E, typename D> class PQT3EventDecoder {
             return;
         }
 
-        uint64_t nSync = nSyncBase + event.GetNSync();
+        std::uint64_t nSync = nSyncBase + event.GetNSync();
 
         // Validate input: ensure nSync increases monotonically (a common
         // assumption made by downstream processors)

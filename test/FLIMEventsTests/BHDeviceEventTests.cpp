@@ -9,7 +9,7 @@ using namespace flimevt;
 TEST_CASE("ADCValue", "[BHSPCEvent]") {
     union {
         BHSPCEvent event;
-        uint8_t bytes[4];
+        std::uint8_t bytes[4];
     } u;
     memset(u.bytes, 0, 4);
 
@@ -33,7 +33,7 @@ TEST_CASE("ADCValue", "[BHSPCEvent]") {
 TEST_CASE("RoutingSignals", "[BHSPCEvent]") {
     union {
         BHSPCEvent event;
-        uint8_t bytes[4];
+        std::uint8_t bytes[4];
     } u;
     memset(u.bytes, 0, 4);
 
@@ -64,7 +64,7 @@ TEST_CASE("MacroTime", "[BHSPCEvent]") {
 
     union {
         BHSPCEvent event;
-        uint8_t bytes[4];
+        std::uint8_t bytes[4];
     } u;
     memset(u.bytes, 0, 4);
 
@@ -88,7 +88,7 @@ TEST_CASE("MacroTime", "[BHSPCEvent]") {
 TEST_CASE("Flags", "[BHSPCEvent]") {
     union {
         BHSPCEvent event;
-        uint8_t bytes[4];
+        std::uint8_t bytes[4];
     } u;
     memset(u.bytes, 0, 4);
 
@@ -110,16 +110,16 @@ TEST_CASE("Flags", "[BHSPCEvent]") {
 TEST_CASE("MacroTimeOverflow", "[BHSPCEvent]") {
     union {
         BHSPCEvent event;
-        uint8_t bytes[4];
+        std::uint8_t bytes[4];
     } u;
     memset(u.bytes, 0, 4);
 
     // The GAP flag is orthogonal to macro-time overflow. Test all combinations
     // of the other 3 flags. (Although it is expected that INVALID is always
     // set when MARK is set.)
-    uint8_t const INVALID = 1 << 7;
-    uint8_t const MTOV = 1 << 6;
-    uint8_t const MARK = 1 << 4;
+    std::uint8_t const INVALID = 1 << 7;
+    std::uint8_t const MTOV = 1 << 6;
+    std::uint8_t const MARK = 1 << 4;
 
     u.bytes[3] = 0; // Valid photon, no overflow
     REQUIRE(!u.event.IsMultipleMacroTimeOverflow());
@@ -142,7 +142,7 @@ TEST_CASE("MacroTimeOverflow", "[BHSPCEvent]") {
 TEST_CASE("MacroTimeOverflowCount", "[BHSPCEvent]") {
     union {
         BHSPCEvent event;
-        uint8_t bytes[4];
+        std::uint8_t bytes[4];
     } u;
     memset(u.bytes, 0, 4);
 
