@@ -1,5 +1,6 @@
-#include "FLIMEvents/DynamicPolymorphism.hpp"
 #include "FLIMEvents/LineClockPixellator.hpp"
+
+#include "FLIMEvents/DynamicPolymorphism.hpp"
 
 #include <catch2/catch.hpp>
 

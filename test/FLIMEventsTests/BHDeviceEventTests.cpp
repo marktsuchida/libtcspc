@@ -1,5 +1,7 @@
 #include "FLIMEvents/BHDeviceEvent.hpp"
+
 #include <catch2/catch.hpp>
+
 #include <cstring>
 
 using namespace flimevt;

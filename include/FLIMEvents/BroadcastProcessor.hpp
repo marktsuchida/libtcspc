@@ -10,7 +10,7 @@ template <typename... Ds> class BroadcastProcessor {
     std::tuple<Ds...> downstreams;
 
   public:
-    explicit BroadcastPixelPhotonProcessor(Ds &&...downstreams)
+    explicit BroadcastProcessor(Ds &&...downstreams)
         : downstreams{std::move<Ds>(downstreams)...} {}
 
     template <typename E> void HandleEvent(E const &event) noexcept {

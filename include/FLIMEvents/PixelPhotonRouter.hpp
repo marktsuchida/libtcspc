@@ -18,11 +18,11 @@ template <typename... Ds> class PixelPhotonRouter {
     void HandlePixelPhotonForChannel(size_t channel,
                                      PixelPhotonEvent const &event) noexcept {
         if (channel == N) {
-            downstreams.get<N>().HandleEvent(event);
+            downstreams.template get<N>().HandleEvent(event);
             return;
         }
 
-        if constexpr (N + 1 < std::tuple_size_v<decltype(sinks)>) {
+        if constexpr (N + 1 < std::tuple_size_v<decltype(downstreams)>) {
             HandlePixelPhotonForChannel<N + 1>(channel, event);
         }
     }

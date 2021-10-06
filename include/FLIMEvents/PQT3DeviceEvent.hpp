@@ -5,13 +5,14 @@
 
 #include <cstdint>
 #include <exception>
+#include <stdexcept>
 #include <utility>
 
 namespace flimevt {
 
-// I implemented PicoQuant event types to verify that the framework can handle
-// a good range of raw event stream formats. But it has not been excercised.
-#error "This code is untested; use only after testing"
+// WARNING: I implemented PicoQuant event types to verify that the framework
+// can handle a good range of raw event stream formats. But it has not been
+// excercised.
 
 // PicoQuant raw photon event ("TTTR") formats are documented in the html files
 // contained in this repository:
@@ -101,7 +102,7 @@ template <bool IsHydraV1> struct HydraT3Event {
     }
 
     uint16_t GetNSyncOverflowCount() const noexcept {
-        if (IsHydraHarpV1 || GetNSync() == 0) {
+        if (IsHydraV1 || GetNSync() == 0) {
             return 1;
         }
         return GetNSync();
@@ -125,8 +126,7 @@ using HydraV2T3Event = HydraT3Event<false>;
  *
  * \tparam E binary record interpreter class
  */
-template <typename E, typename D>
-class PQT3EventDecoder final : public DeviceEventProcessor<E> {
+template <typename E, typename D> class PQT3EventDecoder {
     uint64_t nSyncBase;
     uint64_t lastNSync;
 

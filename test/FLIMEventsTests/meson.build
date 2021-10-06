@@ -1,8 +1,17 @@
 flimevents_tests_srcs = [
     'BHDeviceEventTests.cpp',
-    'FLIMEventsTests.cpp',
+    'BroadcastProcessorTests.cpp',
+    'DecodedEventTests.cpp',
+    'DeviceEventTests.cpp',
+    'DynamicPolymorphismTests.cpp',
+    'EventBufferTests.cpp',
+    'EventSetTests.cpp',
     'HistogramTests.cpp',
     'LineClockPixellatorTests.cpp',
+    'PixelPhotonEventTests.cpp',
+    'PixelPhotonRouterTests.cpp',
+    'PQT3DeviceEventTests.cpp',
+    'main.cpp',
 ]
 
 flimevents_tests_exe = executable(
