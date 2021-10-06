@@ -37,7 +37,7 @@ namespace flimevt {
 struct PicoT3Event {
     char bytes[4];
 
-    static std::uint64_t const NSyncOverflowPeriod = 65536;
+    static Macrotime const NSyncOverflowPeriod = 65536;
 
     std::uint8_t GetChannel() const noexcept {
         return std::uint8_t(bytes[3]) >> 4;
@@ -78,7 +78,7 @@ struct PicoT3Event {
 template <bool IsHydraV1> struct HydraT3Event {
     std::uint8_t bytes[4];
 
-    static std::uint64_t const NSyncOverflowPeriod = 1024;
+    static Macrotime const NSyncOverflowPeriod = 1024;
 
     bool GetSpecialFlag() const noexcept { return bytes[3] & (1 << 7); }
 
@@ -131,8 +131,8 @@ using HydraV2T3Event = HydraT3Event<false>;
  * \tparam E binary record interpreter class
  */
 template <typename E, typename D> class PQT3EventDecoder {
-    std::uint64_t nSyncBase;
-    std::uint64_t lastNSync;
+    Macrotime nSyncBase;
+    Macrotime lastNSync;
 
     D downstream;
 
@@ -151,7 +151,7 @@ template <typename E, typename D> class PQT3EventDecoder {
             return;
         }
 
-        std::uint64_t nSync = nSyncBase + event.GetNSync();
+        Macrotime nSync = nSyncBase + event.GetNSync();
 
         // Validate input: ensure nSync increases monotonically (a common
         // assumption made by downstream processors)

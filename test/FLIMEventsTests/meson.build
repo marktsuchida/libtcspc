@@ -1,6 +1,7 @@
 flimevents_tests_srcs = [
     'BHDeviceEventTests.cpp',
     'BroadcastProcessorTests.cpp',
+    'CommonTests.cpp',
     'DecodedEventTests.cpp',
     'DeviceEventTests.cpp',
     'DynamicPolymorphismTests.cpp',

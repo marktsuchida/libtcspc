@@ -1,6 +1,7 @@
 #include "../BHSPCFile.hpp"
 
 #include "FLIMEvents/BHDeviceEvent.hpp"
+#include "FLIMEvents/Common.hpp"
 #include "FLIMEvents/DecodedEvent.hpp"
 
 #include <cstring>
@@ -13,14 +14,14 @@
 
 class PrintProcessor {
     std::uint32_t count;
-    std::uint64_t lastMacrotime;
+    flimevt::Macrotime lastMacrotime;
     std::ostream &output;
 
-    void PrintMacroTime(std::ostream &output, std::uint64_t macrotime) {
+    void PrintMacroTime(std::ostream &output, flimevt::Macrotime macrotime) {
         output << std::setw(6) << (count++) << ' ';
         output << std::setw(20) << macrotime;
         if (lastMacrotime > 0) {
-            std::uint64_t delta = macrotime - lastMacrotime;
+            auto delta = macrotime - lastMacrotime;
             output << " (+" << std::setw(16) << delta << ")";
         } else {
             output << "                    ";

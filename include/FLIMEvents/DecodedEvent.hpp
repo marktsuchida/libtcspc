@@ -1,5 +1,6 @@
 #pragma once
 
+#include "Common.hpp"
 #include "EventSet.hpp"
 
 #include <cstdint>
@@ -21,7 +22,7 @@ struct DecodedEvent {
      * conversion to physical (or other) units (which may result in loss of the
      * exact raw data) is not the concern of this library.
      */
-    std::uint64_t macrotime;
+    Macrotime macrotime;
 };
 
 /**

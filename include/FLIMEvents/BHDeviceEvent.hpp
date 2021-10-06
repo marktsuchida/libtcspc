@@ -1,5 +1,6 @@
 #pragma once
 
+#include "Common.hpp"
 #include "DecodedEvent.hpp"
 #include "DeviceEvent.hpp"
 
@@ -25,7 +26,7 @@ namespace flimevt {
 struct BHSPCEvent {
     std::uint8_t bytes[4];
 
-    inline static std::uint64_t const MacroTimeOverflowPeriod = 1 << 12;
+    inline static Macrotime const MacroTimeOverflowPeriod = 1 << 12;
 
     std::uint16_t GetADCValue() const noexcept {
         std::uint8_t lo8 = bytes[2];
@@ -80,7 +81,7 @@ struct BHSPCEvent {
 struct BHSPC600Event48 {
     std::uint8_t bytes[6];
 
-    inline static std::uint64_t const MacroTimeOverflowPeriod = 1 << 24;
+    inline static Macrotime const MacroTimeOverflowPeriod = 1 << 24;
 
     std::uint16_t GetADCValue() const noexcept {
         std::uint8_t lo8 = bytes[0];
@@ -121,7 +122,7 @@ struct BHSPC600Event48 {
 struct BHSPC600Event32 {
     std::uint8_t bytes[4];
 
-    inline static std::uint64_t const MacroTimeOverflowPeriod = 1 << 17;
+    inline static Macrotime const MacroTimeOverflowPeriod = 1 << 17;
 
     std::uint16_t GetADCValue() const noexcept { return bytes[0]; }
 
@@ -164,8 +165,8 @@ struct BHSPC600Event32 {
  * \tparam E binary record interpreter class
  */
 template <typename E, typename D> class BHEventDecoder {
-    std::uint64_t macrotimeBase; // Time of last overflow
-    std::uint64_t lastMacrotime;
+    Macrotime macrotimeBase; // Time of last overflow
+    Macrotime lastMacrotime;
 
     D downstream;
 
@@ -191,7 +192,7 @@ template <typename E, typename D> class BHEventDecoder {
             macrotimeBase += E::MacroTimeOverflowPeriod;
         }
 
-        std::uint64_t macrotime = macrotimeBase + event.GetMacroTime();
+        Macrotime macrotime = macrotimeBase + event.GetMacroTime();
 
         // Validate input: ensure macrotime increases monotonically (a common
         // assumption made by downstream processors)

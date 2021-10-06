@@ -21,7 +21,7 @@ template <typename D> class LineClockPixellator {
     std::uint32_t const lineTime; // in macro-time units
     decltype(MarkerEvent::bits) const lineMarkerMask;
 
-    std::uint64_t latestTimestamp; // Latest observed macro-time
+    Macrotime latestTimestamp; // Latest observed macro-time
 
     // Cumulative line numbers (no reset on new frame)
     std::uint64_t nextLine;    // Incremented on line startTime
@@ -33,19 +33,19 @@ template <typename D> class LineClockPixellator {
     // If nextLine == currentLine, we are between (nextLine - 1) and nextLine.
 
     // Start time of current line, or -1 if no line started.
-    std::uint64_t lineStartTime;
+    Macrotime lineStartTime;
 
     // Buffer received photons until we can assign to pixel
     std::deque<ValidPhotonEvent> pendingPhotons;
 
     // Buffer line marks until we are ready to process
-    std::deque<std::uint64_t> pendingLines; // marker macro-times
+    std::deque<Macrotime> pendingLines; // marker macro-times
 
     D downstream;
     bool streamEnded = false;
 
   private:
-    void UpdateTimeRange(std::uint64_t macrotime) noexcept {
+    void UpdateTimeRange(Macrotime macrotime) noexcept {
         latestTimestamp = macrotime;
     }
 
@@ -56,19 +56,19 @@ template <typename D> class LineClockPixellator {
         pendingPhotons.emplace_back(event);
     }
 
-    void EnqueueLineMarker(std::uint64_t macrotime) {
+    void EnqueueLineMarker(Macrotime macrotime) {
         if (streamEnded) {
             return; // Avoid buffering post-error
         }
         pendingLines.emplace_back(macrotime);
     }
 
-    std::uint64_t CheckLineStart(std::uint64_t lineMarkerTime) {
-        std::uint64_t startTime;
+    Macrotime CheckLineStart(Macrotime lineMarkerTime) {
+        Macrotime startTime;
         if (lineDelay >= 0) {
             startTime = lineMarkerTime + lineDelay;
         } else {
-            std::uint64_t minusDelay = -lineDelay;
+            Macrotime minusDelay = -lineDelay;
             if (lineMarkerTime < minusDelay) {
                 throw std::runtime_error("Pixel at negative time");
             }
@@ -82,7 +82,7 @@ template <typename D> class LineClockPixellator {
         return startTime;
     }
 
-    void StartLine(std::uint64_t lineMarkerTime) {
+    void StartLine(Macrotime lineMarkerTime) {
         lineStartTime = CheckLineStart(lineMarkerTime);
         ++nextLine;
 
@@ -147,7 +147,7 @@ template <typename D> class LineClockPixellator {
                 // Nothing to do until a new line can be started
                 return false;
             }
-            std::uint64_t lineMarkerTime = pendingLines.front();
+            Macrotime lineMarkerTime = pendingLines.front();
             pendingLines.pop_front();
 
             StartLine(lineMarkerTime);
