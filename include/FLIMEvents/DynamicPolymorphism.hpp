@@ -1,8 +1,10 @@
 #pragma once
 
+#include "EventSet.hpp"
+
 #include <exception>
 #include <memory>
-#include <string>
+#include <type_traits>
 #include <utility>
 
 namespace flimevt {
@@ -106,18 +108,17 @@ template <typename... Events> class PolymorphicProcessor {
 
 } // namespace internal
 
-// Type to express collection of events
-template <typename... Events> class EventSet {
-    EventSet();
+template <typename ESet>
+using VirtualProcessor =
+    typename ESet::template TemplateOfEvents<internal::VirtualProcessor>;
 
-  public:
-    using VirtualProcessor = internal::VirtualProcessor<Events...>;
+template <typename ESet>
+using PolymorphicProcessor =
+    typename ESet::template TemplateOfEvents<internal::PolymorphicProcessor>;
 
-    using PolymorphicProcessor = internal::PolymorphicProcessor<Events...>;
-
-    template <typename Proc>
-    using VirtualWrappedProcessor =
-        internal::VirtualWrappedProcessor<Proc, Events...>;
-};
+template <typename Proc, typename ESet>
+using VirtualWrappedProcessor =
+    typename ESet::template TemplateOfEvents<internal::VirtualWrappedProcessor,
+                                             Proc>;
 
 } // namespace flimevt

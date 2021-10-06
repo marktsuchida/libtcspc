@@ -5,6 +5,7 @@ public_cpp_headers = files(
     'FLIMEvents/DeviceEvent.hpp',
     'FLIMEvents/DynamicPolymorphism.hpp',
     'FLIMEvents/EventBuffer.hpp',
+    'FLIMEvents/EventSet.hpp',
     'FLIMEvents/Histogram.hpp',
     'FLIMEvents/LineClockPixellator.hpp',
     'FLIMEvents/PixelPhotonEvent.hpp',

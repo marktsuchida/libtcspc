@@ -1,6 +1,6 @@
 #pragma once
 
-#include "DynamicPolymorphism.hpp"
+#include "EventSet.hpp"
 
 namespace flimevt {
 

@@ -1,3 +1,4 @@
+#include "FLIMEvents/DynamicPolymorphism.hpp"
 #include "FLIMEvents/LineClockPixellator.hpp"
 
 #include <catch2/catch.hpp>
@@ -52,14 +53,14 @@ TEST_CASE("Frames are produced according to line markers",
     };
 
     using VirtualMockProcessor =
-        PixelPhotonEvents::VirtualWrappedProcessor<MockProcessor>;
+        VirtualWrappedProcessor<MockProcessor, PixelPhotonEvents>;
 
     auto sharedOutput = std::make_shared<VirtualMockProcessor>();
     auto &output = sharedOutput->Wrapped();
     output.Reset();
 
     SECTION("2x2 frames with no photons") {
-        PixelPhotonEvents::PolymorphicProcessor polymorphic(sharedOutput);
+        PolymorphicProcessor<PixelPhotonEvents> polymorphic(sharedOutput);
 
         LineClockPixellator<decltype(polymorphic)> lcp(2, 2, 10, 0, 20, 1,
                                                        std::move(polymorphic));
@@ -123,7 +124,7 @@ TEST_CASE("Frames are produced according to line markers",
     }
 
     SECTION("Photon placed correctly in 2x1 frame") {
-        PixelPhotonEvents::PolymorphicProcessor polymorphic(sharedOutput);
+        PolymorphicProcessor<PixelPhotonEvents> polymorphic(sharedOutput);
 
         // Delay = 5, time = 25, so pixels range over times [5, 15) and [15,
         // 25) relative to the (single) line marker.
