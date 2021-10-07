@@ -123,4 +123,25 @@ template <typename UnhastenedSet, typename D> class HastenEvents {
     }
 };
 
+template <typename RetimedSet, typename UnchangedSet, typename D>
+class DelayHastenEvents {
+    using Hastener = HastenEvents<UnchangedSet, D>;
+    using Delayer = DelayEvents<RetimedSet, Hastener>;
+    Delayer proc;
+
+  public:
+    explicit DelayHastenEvents(Macrotime delta, D &&downstream)
+        : proc(Delayer(
+              delta > 0 ? delta : 0,
+              Hastener(delta < 0 ? -delta : 0, std::move(downstream)))){};
+
+    template <typename E> void HandleEvent(E const &event) noexcept {
+        proc.HandleEvent(event);
+    }
+
+    void HandleEnd(std::exception_ptr error) noexcept {
+        proc.HandleEnd(error);
+    }
+};
+
 } // namespace flimevt

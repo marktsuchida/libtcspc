@@ -2,7 +2,9 @@
 
 #include "ProcessorTestFixture.hpp"
 
+#include <algorithm>
 #include <exception>
+#include <iterator>
 #include <ostream>
 #include <stdexcept>
 #include <type_traits>
@@ -67,6 +69,16 @@ auto MakeHastenFixture(Macrotime delta) {
     auto makeProc = [delta](auto &&downstream) {
         using D = std::remove_reference_t<decltype(downstream)>;
         return HastenEvents<Events23, D>(delta, std::move(downstream));
+    };
+
+    return test::MakeProcessorTestFixture<AllEvents, AllEvents>(makeProc);
+}
+
+auto MakeDelayHastenFixture(Macrotime delta) {
+    auto makeProc = [delta](auto &&downstream) {
+        using D = std::remove_reference_t<decltype(downstream)>;
+        return DelayHastenEvents<Events01, Events23, D>(delta,
+                                                        std::move(downstream));
     };
 
     return test::MakeProcessorTestFixture<AllEvents, AllEvents>(makeProc);
@@ -582,4 +594,28 @@ TEST_CASE("Hasten by 2") {
                                  });
         REQUIRE(f.DidEnd());
     }
+}
+
+TEST_CASE("DelayHastenEvents Sanity", "[DelayHastenEvents]") {
+    Macrotime delta = GENERATE(-2, -1, 0, 1, 2);
+    auto f = MakeDelayHastenFixture(delta);
+
+    OutVec o = f.FeedEvents({
+        Event2{-3},
+        Event0{0},
+        Event2{3},
+        Event0{6},
+    });
+    OutVec o1 = f.FeedEnd({});
+
+    std::copy(o1.cbegin(), o1.cend(), std::back_inserter(o));
+
+    REQUIRE(o == OutVec{
+                     Event2{-3},
+                     Event0{0 + delta},
+                     Event2{3},
+                     Event0{6 + delta},
+                 });
+
+    REQUIRE(f.DidEnd());
 }
