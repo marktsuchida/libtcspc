@@ -1,5 +1,7 @@
 #include "FLIMEvents/DelayHastenProcessor.hpp"
 
+#include "FLIMEvents/EventSet.hpp"
+#include "FLIMEvents/NoopProcessor.hpp"
 #include "ProcessorTestFixture.hpp"
 
 #include <algorithm>
@@ -47,6 +49,14 @@ std::ostream &operator<<(std::ostream &os,
 #include <catch2/catch.hpp>
 
 using namespace flimevt;
+
+static_assert(HandlesEventSetV<
+              DelayProcessor<Events01, NoopProcessor<AllEvents>>, AllEvents>);
+static_assert(HandlesEventSetV<
+              HastenProcessor<Events01, NoopProcessor<AllEvents>>, AllEvents>);
+static_assert(HandlesEventSetV<DelayHastenProcessor<Events01, Events23,
+                                                    NoopProcessor<AllEvents>>,
+                               AllEvents>);
 
 template <typename E,
           typename = std::enable_if_t<ContainsEventV<AllEvents, E>>>

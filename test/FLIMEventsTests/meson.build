@@ -8,6 +8,7 @@ flimevents_tests_srcs = [
     'EventSetTests.cpp',
     'HistogramTests.cpp',
     'LineClockPixellatorTests.cpp',
+    'NoopProcessorTests.cpp',
     'PixelPhotonEventsTests.cpp',
     'PixelPhotonRouterTests.cpp',
     'PQT3DeviceEventsTests.cpp',

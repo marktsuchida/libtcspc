@@ -1,6 +1,8 @@
 #include "FLIMEvents/LineClockPixellator.hpp"
 
 #include "FLIMEvents/DynamicPolymorphism.hpp"
+#include "FLIMEvents/EventSet.hpp"
+#include "FLIMEvents/NoopProcessor.hpp"
 
 #include <catch2/catch.hpp>
 
@@ -11,6 +13,10 @@
 #include <vector>
 
 using namespace flimevt;
+
+static_assert(
+    HandlesEventSetV<LineClockPixellator<NoopProcessor<PixelPhotonEvents>>,
+                     TCSPCEvents>);
 
 TEST_CASE("Frames are produced according to line markers",
           "[LineClockPixellator]") {

@@ -140,7 +140,7 @@ template <typename E, typename D> class PQT3EventDecoder {
     explicit PQT3EventDecoder(D &&downstream)
         : nSyncBase(0), lastNSync(0), downstream(std::move(downstream)) {}
 
-    void HandleDeviceEvent(E const &event) noexcept {
+    void HandleEvent(E const &event) noexcept {
         if (event.IsNSyncOverflow()) {
             nSyncBase +=
                 E::NSyncOverflowPeriod * event.GetNSyncOverflowCount();
@@ -191,7 +191,7 @@ using PQHydraV1T3EventDecoder = PQT3EventDecoder<HydraV1T3Event, D>;
 template <typename D>
 using PQHydraV2T3EventDecoder = PQT3EventDecoder<HydraV2T3Event, D>;
 
-using PQT3Events = EventSet<PicoT3Event>;
+using PQPicoT3Events = EventSet<PicoT3Event>;
 using PQHydraV1T3Events = EventSet<HydraV1T3Event>;
 using PQHydraV2T3Events = EventSet<HydraV2T3Event>;
 

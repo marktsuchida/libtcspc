@@ -1,10 +1,21 @@
 #include "FLIMEvents/BHDeviceEvents.hpp"
 
+#include "FLIMEvents/EventSet.hpp"
+#include "FLIMEvents/NoopProcessor.hpp"
+
 #include <catch2/catch.hpp>
 
 #include <cstring>
 
 using namespace flimevt;
+
+using TCSPCNoop = NoopProcessor<TCSPCEvents>;
+
+static_assert(HandlesEventSetV<BHSPCEventDecoder<TCSPCNoop>, BHSPCEvents>);
+static_assert(
+    HandlesEventSetV<BHSPC600Event48Decoder<TCSPCNoop>, BHSPC600Events48>);
+static_assert(
+    HandlesEventSetV<BHSPC600Event32Decoder<TCSPCNoop>, BHSPC600Events32>);
 
 TEST_CASE("ADCValue", "[BHSPCEvent]") {
     union {
