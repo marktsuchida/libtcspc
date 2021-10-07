@@ -14,7 +14,7 @@ namespace flimevt {
  * These are "logical" events in the sense that vendor-specific encoding and
  * clock overflow counters have been decoded and processed.
  */
-struct DecodedEvent {
+struct TCSPCEvent {
     /**
      * \brief The absolute macro-time of this event.
      *
@@ -43,7 +43,7 @@ struct DecodedEvent {
  * Note that this event is generally only emitted when the timestamp is not
  * associated with an actual event (photon, marker, etc.).
  */
-struct TimestampEvent : public DecodedEvent {};
+struct TimestampEvent : public TCSPCEvent {};
 
 /**
  * \brief Event indicating loss of data due to buffer overflow.
@@ -56,9 +56,9 @@ struct TimestampEvent : public DecodedEvent {};
  * device FIFO, DMA buffer, or any other stage involved in streaming data to
  * the computer.
  */
-struct DataLostEvent : public DecodedEvent {};
+struct DataLostEvent : public TCSPCEvent {};
 
-struct BasePhotonEvent : public DecodedEvent {
+struct BasePhotonEvent : public TCSPCEvent {
     /**
      * \brief Micro-time, or difference time, of the photon.
      *
@@ -102,11 +102,11 @@ struct InvalidPhotonEvent : public BasePhotonEvent {};
  * Becker & Hickl calls these (frame, line, or pixel) markers. PicoQuant calls
  * these external markers.
  */
-struct MarkerEvent : public DecodedEvent {
+struct MarkerEvent : public TCSPCEvent {
     std::uint16_t bits;
 };
 
-using DecodedEvents = EventSet<TimestampEvent, DataLostEvent, ValidPhotonEvent,
-                               InvalidPhotonEvent, MarkerEvent>;
+using TCSPCEvents = EventSet<TimestampEvent, DataLostEvent, ValidPhotonEvent,
+                             InvalidPhotonEvent, MarkerEvent>;
 
 } // namespace flimevt

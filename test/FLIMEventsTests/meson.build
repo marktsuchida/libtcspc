@@ -2,7 +2,6 @@ flimevents_tests_srcs = [
     'BHDeviceEventTests.cpp',
     'BroadcastProcessorTests.cpp',
     'CommonTests.cpp',
-    'DecodedEventTests.cpp',
     'DelayHastenEventsTests.cpp',
     'DynamicPolymorphismTests.cpp',
     'EventBufferTests.cpp',
@@ -12,6 +11,7 @@ flimevents_tests_srcs = [
     'PixelPhotonEventTests.cpp',
     'PixelPhotonRouterTests.cpp',
     'PQT3DeviceEventTests.cpp',
+    'TCSPCEventsTests.cpp',
     'main.cpp',
 ]
 

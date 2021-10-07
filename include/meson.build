@@ -2,7 +2,6 @@ public_cpp_headers = files(
     'FLIMEvents/BHDeviceEvent.hpp',
     'FLIMEvents/BroadcastProcessor.hpp',
     'FLIMEvents/Common.hpp',
-    'FLIMEvents/DecodedEvent.hpp',
     'FLIMEvents/DelayHastenEvents.hpp',
     'FLIMEvents/DynamicPolymorphism.hpp',
     'FLIMEvents/EventBuffer.hpp',
@@ -12,6 +11,7 @@ public_cpp_headers = files(
     'FLIMEvents/PixelPhotonEvent.hpp',
     'FLIMEvents/PixelPhotonRouter.hpp',
     'FLIMEvents/PQT3DeviceEvent.hpp',
+    'FLIMEvents/TCSPCEvents.hpp',
 )
 
 install_headers(public_cpp_headers, subdir: 'FLIMEvents')

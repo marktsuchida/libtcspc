@@ -1,8 +1,8 @@
 #pragma once
 
 #include "Common.hpp"
-#include "DecodedEvent.hpp"
 #include "EventSet.hpp"
+#include "TCSPCEvents.hpp"
 
 #include <cstdint>
 #include <exception>

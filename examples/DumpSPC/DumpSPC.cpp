@@ -2,7 +2,7 @@
 
 #include "FLIMEvents/BHDeviceEvent.hpp"
 #include "FLIMEvents/Common.hpp"
-#include "FLIMEvents/DecodedEvent.hpp"
+#include "FLIMEvents/TCSPCEvents.hpp"
 
 #include <cstring>
 #include <exception>
