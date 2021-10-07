@@ -11,7 +11,6 @@ namespace flimevt {
 
 namespace internal {
 
-// Interface for processor consuming Events
 template <typename... Events> class VirtualProcessor;
 
 template <> class VirtualProcessor<> {
@@ -36,7 +35,6 @@ class VirtualProcessor<Event0, Event1, Events...>
     virtual void HandleEvent(Event0 const &) noexcept = 0;
 };
 
-// Internal impl of VirtualWrappedProcessor
 template <typename Interface, typename Proc, typename... Events>
 class VirtualWrappedProcessorImpl;
 
@@ -76,24 +74,35 @@ class VirtualWrappedProcessorImpl<Interface, Proc, Event0, Events...>
     }
 };
 
-// Wrap Proc in dynamically polymorphic class implementing
-// VirtualProcessor<Events...>
 template <typename Proc, typename... Events>
 using VirtualWrappedProcessor =
     VirtualWrappedProcessorImpl<VirtualProcessor<Events...>, Proc, Events...>;
 
+} // namespace internal
+
+// Interface for dynamically polymorphic processor consuming event set
+template <typename ESet>
+using VirtualProcessor =
+    typename ESet::template TemplateOfEvents<internal::VirtualProcessor>;
+
+// Wrap Proc in dynamically polymorphic class implementing
+// VirtualProcessor<ESet>
+template <typename Proc, typename ESet>
+using VirtualWrappedProcessor =
+    typename ESet::template TemplateOfEvents<internal::VirtualWrappedProcessor,
+                                             Proc>;
+
 // Wrap dynamically polymorphic proc in static class
-template <typename... Events> class PolymorphicProcessor {
-    std::shared_ptr<VirtualProcessor<Events...>> proc;
+template <typename ESet> class PolymorphicProcessor {
+    std::shared_ptr<VirtualProcessor<ESet>> proc;
 
   public:
-    PolymorphicProcessor(std::shared_ptr<VirtualProcessor<Events...>> proc)
+    PolymorphicProcessor(std::shared_ptr<VirtualProcessor<ESet>> proc)
         : proc(proc) {}
 
     // Rule of zero
 
-    template <typename E,
-              typename = std::enable_if_t<(... || std::is_same_v<E, Events>)>>
+    template <typename E, typename = std::enable_if_t<ContainsEventV<ESet, E>>>
     void HandleEvent(E const &event) noexcept {
         proc->HandleEvent(event);
     }
@@ -105,20 +114,5 @@ template <typename... Events> class PolymorphicProcessor {
         proc.reset();
     }
 };
-
-} // namespace internal
-
-template <typename ESet>
-using VirtualProcessor =
-    typename ESet::template TemplateOfEvents<internal::VirtualProcessor>;
-
-template <typename ESet>
-using PolymorphicProcessor =
-    typename ESet::template TemplateOfEvents<internal::PolymorphicProcessor>;
-
-template <typename Proc, typename ESet>
-using VirtualWrappedProcessor =
-    typename ESet::template TemplateOfEvents<internal::VirtualWrappedProcessor,
-                                             Proc>;
 
 } // namespace flimevt
