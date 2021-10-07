@@ -2,7 +2,7 @@ public_cpp_headers = files(
     'FLIMEvents/BHDeviceEvents.hpp',
     'FLIMEvents/BroadcastProcessor.hpp',
     'FLIMEvents/Common.hpp',
-    'FLIMEvents/DelayHastenEvents.hpp',
+    'FLIMEvents/DelayHastenProcessor.hpp',
     'FLIMEvents/DynamicPolymorphism.hpp',
     'FLIMEvents/EventBuffer.hpp',
     'FLIMEvents/EventSet.hpp',

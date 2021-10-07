@@ -1,4 +1,4 @@
-#include "FLIMEvents/DelayHastenEvents.hpp"
+#include "FLIMEvents/DelayHastenProcessor.hpp"
 
 #include "ProcessorTestFixture.hpp"
 
@@ -58,7 +58,7 @@ bool operator==(E const &lhs, E const &rhs) {
 auto MakeDelayFixture(Macrotime delta) {
     auto makeProc = [delta](auto &&downstream) {
         using D = std::remove_reference_t<decltype(downstream)>;
-        return DelayEvents<Events01, D>(delta, std::move(downstream));
+        return DelayProcessor<Events01, D>(delta, std::move(downstream));
     };
 
     return test::MakeProcessorTestFixture<AllEvents, AllEvents>(makeProc);
@@ -68,7 +68,7 @@ auto MakeDelayFixture(Macrotime delta) {
 auto MakeHastenFixture(Macrotime delta) {
     auto makeProc = [delta](auto &&downstream) {
         using D = std::remove_reference_t<decltype(downstream)>;
-        return HastenEvents<Events23, D>(delta, std::move(downstream));
+        return HastenProcessor<Events23, D>(delta, std::move(downstream));
     };
 
     return test::MakeProcessorTestFixture<AllEvents, AllEvents>(makeProc);
@@ -77,8 +77,8 @@ auto MakeHastenFixture(Macrotime delta) {
 auto MakeDelayHastenFixture(Macrotime delta) {
     auto makeProc = [delta](auto &&downstream) {
         using D = std::remove_reference_t<decltype(downstream)>;
-        return DelayHastenEvents<Events01, Events23, D>(delta,
-                                                        std::move(downstream));
+        return DelayHastenProcessor<Events01, Events23, D>(
+            delta, std::move(downstream));
     };
 
     return test::MakeProcessorTestFixture<AllEvents, AllEvents>(makeProc);
@@ -86,7 +86,7 @@ auto MakeDelayHastenFixture(Macrotime delta) {
 
 using OutVec = std::vector<flimevt::EventVariant<AllEvents>>;
 
-TEST_CASE("Delay uniform streams", "[DelayEvents]") {
+TEST_CASE("Delay uniform streams", "[DelayProcessor]") {
     Macrotime delta = GENERATE(0, 1, 2);
     auto f = MakeDelayFixture(delta);
 
@@ -150,7 +150,7 @@ TEST_CASE("Delay uniform streams", "[DelayEvents]") {
     }
 }
 
-TEST_CASE("Hasten uniform streams", "[HastenEvents]") {
+TEST_CASE("Hasten uniform streams", "[HastenProcessor]") {
     Macrotime delta = GENERATE(0, 1, 2);
     auto f = MakeHastenFixture(delta);
 
@@ -214,7 +214,7 @@ TEST_CASE("Hasten uniform streams", "[HastenEvents]") {
     }
 }
 
-TEST_CASE("Delay by 0", "[DelayEvents]") {
+TEST_CASE("Delay by 0", "[DelayProcessor]") {
     auto f = MakeDelayFixture(0);
 
     SECTION("Equal timestamps") {
@@ -268,7 +268,7 @@ TEST_CASE("Delay by 0", "[DelayEvents]") {
     }
 }
 
-TEST_CASE("Hasten by 0", "[HastenEvents]") {
+TEST_CASE("Hasten by 0", "[HastenProcessor]") {
     auto f = MakeHastenFixture(0);
 
     SECTION("Equal timestamps") {
@@ -596,7 +596,7 @@ TEST_CASE("Hasten by 2") {
     }
 }
 
-TEST_CASE("DelayHastenEvents Sanity", "[DelayHastenEvents]") {
+TEST_CASE("DelayHastenProcessor Sanity", "[DelayHastenProcessor]") {
     Macrotime delta = GENERATE(-2, -1, 0, 1, 2);
     auto f = MakeDelayHastenFixture(delta);
 

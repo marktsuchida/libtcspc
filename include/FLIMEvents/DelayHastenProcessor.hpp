@@ -12,14 +12,14 @@
 
 namespace flimevt {
 
-template <typename DelayedSet, typename D> class DelayEvents {
+template <typename DelayedSet, typename D> class DelayProcessor {
     Macrotime delta;
     std::queue<EventVariant<DelayedSet>> pending;
     D downstream;
     bool streamEnded = false;
 
   public:
-    explicit DelayEvents(Macrotime delta, D &&downstream)
+    explicit DelayProcessor(Macrotime delta, D &&downstream)
         : delta(delta), downstream(std::move(downstream)) {
         assert(delta >= 0);
     }
@@ -67,14 +67,14 @@ template <typename DelayedSet, typename D> class DelayEvents {
     }
 };
 
-template <typename UnhastenedSet, typename D> class HastenEvents {
+template <typename UnhastenedSet, typename D> class HastenProcessor {
     Macrotime delta;
     std::queue<EventVariant<UnhastenedSet>> pending;
     D downstream;
     bool streamEnded = false;
 
   public:
-    explicit HastenEvents(Macrotime delta, D &&downstream)
+    explicit HastenProcessor(Macrotime delta, D &&downstream)
         : delta(delta), downstream(std::move(downstream)) {
         assert(delta >= 0);
     }
@@ -124,13 +124,13 @@ template <typename UnhastenedSet, typename D> class HastenEvents {
 };
 
 template <typename RetimedSet, typename UnchangedSet, typename D>
-class DelayHastenEvents {
-    using Hastener = HastenEvents<UnchangedSet, D>;
-    using Delayer = DelayEvents<RetimedSet, Hastener>;
+class DelayHastenProcessor {
+    using Hastener = HastenProcessor<UnchangedSet, D>;
+    using Delayer = DelayProcessor<RetimedSet, Hastener>;
     Delayer proc;
 
   public:
-    explicit DelayHastenEvents(Macrotime delta, D &&downstream)
+    explicit DelayHastenProcessor(Macrotime delta, D &&downstream)
         : proc(Delayer(
               delta > 0 ? delta : 0,
               Hastener(delta < 0 ? -delta : 0, std::move(downstream)))){};
