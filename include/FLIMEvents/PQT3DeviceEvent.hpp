@@ -1,7 +1,7 @@
 #pragma once
 
 #include "DecodedEvent.hpp"
-#include "DeviceEvent.hpp"
+#include "EventSet.hpp"
 
 #include <cstdint>
 #include <exception>
@@ -191,8 +191,8 @@ using PQHydraV1T3EventDecoder = PQT3EventDecoder<HydraV1T3Event, D>;
 template <typename D>
 using PQHydraV2T3EventDecoder = PQT3EventDecoder<HydraV2T3Event, D>;
 
-using PQT3Events = DeviceEvents<PicoT3Event>;
-using PQHydraV1T3Events = DeviceEvents<HydraV1T3Event>;
-using PQHydraV2T3Events = DeviceEvents<HydraV2T3Event>;
+using PQT3Events = EventSet<PicoT3Event>;
+using PQHydraV1T3Events = EventSet<HydraV1T3Event>;
+using PQHydraV2T3Events = EventSet<HydraV2T3Event>;
 
 } // namespace flimevt

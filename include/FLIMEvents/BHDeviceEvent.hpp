@@ -2,7 +2,7 @@
 
 #include "Common.hpp"
 #include "DecodedEvent.hpp"
-#include "DeviceEvent.hpp"
+#include "EventSet.hpp"
 
 #include <cstdint>
 #include <exception>
@@ -263,8 +263,8 @@ class BHSPC600Event32Decoder : public BHEventDecoder<BHSPC600Event32, D> {
 template <typename D>
 BHSPC600Event32Decoder(D &&) -> BHSPC600Event32Decoder<D>;
 
-using BHSPCEvents = DeviceEvents<BHSPCEvent>;
-using BHSPC600Events48 = DeviceEvents<BHSPC600Event48>;
-using BHSPC600Events32 = DeviceEvents<BHSPC600Event32>;
+using BHSPCEvents = EventSet<BHSPCEvent>;
+using BHSPC600Events48 = EventSet<BHSPC600Event48>;
+using BHSPC600Events32 = EventSet<BHSPC600Event32>;
 
 } // namespace flimevt
