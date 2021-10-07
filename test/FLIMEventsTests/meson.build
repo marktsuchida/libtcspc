@@ -3,6 +3,7 @@ flimevents_tests_srcs = [
     'BroadcastProcessorTests.cpp',
     'CommonTests.cpp',
     'DecodedEventTests.cpp',
+    'DelayHastenEventsTests.cpp',
     'DeviceEventTests.cpp',
     'DynamicPolymorphismTests.cpp',
     'EventBufferTests.cpp',
