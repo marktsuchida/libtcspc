@@ -1,7 +1,9 @@
 public_cpp_headers = files(
     'FLIMEvents/BHDeviceEvent.hpp',
     'FLIMEvents/BroadcastProcessor.hpp',
+    'FLIMEvents/Common.hpp',
     'FLIMEvents/DecodedEvent.hpp',
+    'FLIMEvents/DelayHastenEvents.hpp',
     'FLIMEvents/DynamicPolymorphism.hpp',
     'FLIMEvents/EventBuffer.hpp',
     'FLIMEvents/EventSet.hpp',
