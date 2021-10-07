@@ -1,6 +1,6 @@
 #include "../BHSPCFile.hpp"
 
-#include "FLIMEvents/BHDeviceEvent.hpp"
+#include "FLIMEvents/BHDeviceEvents.hpp"
 #include "FLIMEvents/Common.hpp"
 #include "FLIMEvents/TCSPCEvents.hpp"
 

@@ -1,5 +1,5 @@
 flimevents_tests_srcs = [
-    'BHDeviceEventTests.cpp',
+    'BHDeviceEventsTests.cpp',
     'BroadcastProcessorTests.cpp',
     'CommonTests.cpp',
     'DelayHastenEventsTests.cpp',
@@ -8,9 +8,9 @@ flimevents_tests_srcs = [
     'EventSetTests.cpp',
     'HistogramTests.cpp',
     'LineClockPixellatorTests.cpp',
-    'PixelPhotonEventTests.cpp',
+    'PixelPhotonEventsTests.cpp',
     'PixelPhotonRouterTests.cpp',
-    'PQT3DeviceEventTests.cpp',
+    'PQT3DeviceEventsTests.cpp',
     'TCSPCEventsTests.cpp',
     'main.cpp',
 ]

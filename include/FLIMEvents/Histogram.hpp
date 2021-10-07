@@ -1,7 +1,7 @@
 #pragma once
 
 #include "EventSet.hpp"
-#include "PixelPhotonEvent.hpp"
+#include "PixelPhotonEvents.hpp"
 
 #include <algorithm>
 #include <cassert>

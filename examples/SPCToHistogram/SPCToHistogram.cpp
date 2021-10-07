@@ -1,5 +1,5 @@
 #include "../BHSPCFile.hpp"
-#include "FLIMEvents/BHDeviceEvent.hpp"
+#include "FLIMEvents/BHDeviceEvents.hpp"
 #include "FLIMEvents/EventBuffer.hpp"
 #include "FLIMEvents/Histogram.hpp"
 #include "FLIMEvents/LineClockPixellator.hpp"

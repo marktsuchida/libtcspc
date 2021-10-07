@@ -1,7 +1,7 @@
 #pragma once
 
 #include "BroadcastProcessor.hpp"
-#include "PixelPhotonEvent.hpp"
+#include "PixelPhotonEvents.hpp"
 
 #include <exception>
 #include <stdexcept>

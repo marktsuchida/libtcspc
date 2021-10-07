@@ -1,5 +1,5 @@
 public_cpp_headers = files(
-    'FLIMEvents/BHDeviceEvent.hpp',
+    'FLIMEvents/BHDeviceEvents.hpp',
     'FLIMEvents/BroadcastProcessor.hpp',
     'FLIMEvents/Common.hpp',
     'FLIMEvents/DelayHastenEvents.hpp',
@@ -8,9 +8,9 @@ public_cpp_headers = files(
     'FLIMEvents/EventSet.hpp',
     'FLIMEvents/Histogram.hpp',
     'FLIMEvents/LineClockPixellator.hpp',
-    'FLIMEvents/PixelPhotonEvent.hpp',
+    'FLIMEvents/PixelPhotonEvents.hpp',
     'FLIMEvents/PixelPhotonRouter.hpp',
-    'FLIMEvents/PQT3DeviceEvent.hpp',
+    'FLIMEvents/PQT3DeviceEvents.hpp',
     'FLIMEvents/TCSPCEvents.hpp',
 )
 

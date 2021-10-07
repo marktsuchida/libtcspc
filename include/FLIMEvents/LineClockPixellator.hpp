@@ -1,6 +1,6 @@
 #pragma once
 
-#include "PixelPhotonEvent.hpp"
+#include "PixelPhotonEvents.hpp"
 #include "TCSPCEvents.hpp"
 
 #include <deque>

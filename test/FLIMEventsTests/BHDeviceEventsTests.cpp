@@ -1,4 +1,4 @@
-#include "FLIMEvents/BHDeviceEvent.hpp"
+#include "FLIMEvents/BHDeviceEvents.hpp"
 
 #include <catch2/catch.hpp>
 
