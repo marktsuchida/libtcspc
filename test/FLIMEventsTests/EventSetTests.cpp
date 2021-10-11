@@ -5,6 +5,10 @@ using namespace flimevt;
 struct MyEvent1 {};
 struct MyEvent2 {};
 
+static_assert(std::is_same_v<EventVariant<EventSet<>>, std::variant<>>);
+static_assert(std::is_same_v<EventVariant<EventSet<MyEvent1, MyEvent2>>,
+                             std::variant<MyEvent1, MyEvent2>>);
+
 static_assert(!ContainsEventV<EventSet<>, MyEvent1>);
 static_assert(ContainsEventV<EventSet<MyEvent1>, MyEvent1>);
 static_assert(!ContainsEventV<EventSet<MyEvent2>, MyEvent1>);

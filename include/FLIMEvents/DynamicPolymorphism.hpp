@@ -1,5 +1,6 @@
 #pragma once
 
+#include "ApplyClassTemplateToTupleElements.hpp"
 #include "EventSet.hpp"
 
 #include <exception>
@@ -83,14 +84,14 @@ using VirtualWrappedProcessor =
 // Interface for dynamically polymorphic processor consuming event set
 template <typename ESet>
 using VirtualProcessor =
-    typename ESet::template TemplateOfEvents<internal::VirtualProcessor>;
+    ApplyClassTemplateToTupleElementsT<internal::VirtualProcessor, ESet>;
 
 // Wrap Proc in dynamically polymorphic class implementing
 // VirtualProcessor<ESet>
 template <typename Proc, typename ESet>
 using VirtualWrappedProcessor =
-    typename ESet::template TemplateOfEvents<internal::VirtualWrappedProcessor,
-                                             Proc>;
+    ApplyClassTemplateToTupleElementsT<internal::VirtualWrappedProcessor, ESet,
+                                       Proc>;
 
 // Wrap dynamically polymorphic proc in static class
 template <typename ESet> class PolymorphicProcessor {

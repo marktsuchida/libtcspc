@@ -1,22 +1,18 @@
 #pragma once
 
+#include "ApplyClassTemplateToTupleElements.hpp"
+
 #include <exception>
+#include <tuple>
 #include <type_traits>
 #include <variant>
 
 namespace flimevt {
 
-// Type to express collection of events
-template <typename... Events> class EventSet {
-    EventSet() = delete;
-
-  public:
-    template <template <typename...> typename Tmpl, typename... Args>
-    using TemplateOfEvents = Tmpl<Args..., Events...>;
-};
+template <typename... Events> using EventSet = std::tuple<Events...>;
 
 template <typename ESet>
-using EventVariant = typename ESet::template TemplateOfEvents<std::variant>;
+using EventVariant = ApplyClassTemplateToTupleElementsT<std::variant, ESet>;
 
 namespace internal {
 
@@ -27,7 +23,8 @@ struct EventIsOneOf : std::disjunction<std::is_same<Event, Events>...> {};
 
 template <typename ESet, typename Event>
 struct ContainsEvent
-    : ESet::template TemplateOfEvents<internal::EventIsOneOf, Event> {};
+    : ApplyClassTemplateToTupleElementsT<internal::EventIsOneOf, ESet, Event> {
+};
 
 template <typename ESet, typename Event>
 static constexpr bool ContainsEventV = ContainsEvent<ESet, Event>::value;
@@ -70,7 +67,8 @@ struct HandlesEventsAndEnd
 
 template <typename Proc, typename ESet>
 struct HandlesEventSet
-    : ESet::template TemplateOfEvents<internal::HandlesEventsAndEnd, Proc> {};
+    : ApplyClassTemplateToTupleElementsT<internal::HandlesEventsAndEnd, ESet,
+                                         Proc> {};
 
 template <typename Proc, typename ESet>
 static constexpr bool HandlesEventSetV = HandlesEventSet<Proc, ESet>::value;

@@ -1,4 +1,5 @@
 flimevents_tests_srcs = [
+    'ApplyClassTemplateToTupleElementsTest.cpp',
     'BHDeviceEventsTests.cpp',
     'BroadcastProcessorTests.cpp',
     'CommonTests.cpp',

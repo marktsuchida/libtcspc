@@ -1,4 +1,5 @@
 public_cpp_headers = files(
+    'FLIMEvents/ApplyClassTemplateToTupleElements.hpp',
     'FLIMEvents/BHDeviceEvents.hpp',
     'FLIMEvents/BroadcastProcessor.hpp',
     'FLIMEvents/Common.hpp',
