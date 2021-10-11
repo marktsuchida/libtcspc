@@ -73,4 +73,11 @@ struct HandlesEventSet
 template <typename Proc, typename ESet>
 static constexpr bool HandlesEventSetV = HandlesEventSet<Proc, ESet>::value;
 
+template <typename... ESets> struct ConcatEventSet {
+    using type = decltype(std::tuple_cat(std::declval<ESets>()...));
+};
+
+template <typename... ESets>
+using ConcatEventSetT = typename ConcatEventSet<ESets...>::type;
+
 } // namespace flimevt

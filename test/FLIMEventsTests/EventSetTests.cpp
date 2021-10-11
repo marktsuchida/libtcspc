@@ -40,3 +40,7 @@ static_assert(HandlesEventSetV<MyEvent1SetProcessor, EventSet<MyEvent1>>);
 static_assert(!HandlesEventSetV<MyEvent1SetProcessor, EventSet<MyEvent2>>);
 static_assert(
     !HandlesEventSetV<MyEvent1SetProcessor, EventSet<MyEvent1, MyEvent2>>);
+
+static_assert(
+    std::is_same_v<ConcatEventSetT<EventSet<MyEvent1>, EventSet<MyEvent2>>,
+                   EventSet<MyEvent1, MyEvent2>>);
