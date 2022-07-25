@@ -8,7 +8,8 @@ flimevents_tests_srcs = [
 flimevents_tests_exe = executable(
     'FLIMEventsTests',
     flimevents_tests_srcs,
-    include_directories: [public_inc, catch2_inc],
+    include_directories: [public_inc],
+    dependencies: [catch2_dep],
 )
 
 test('FLIMEvents Tests', flimevents_tests_exe)
