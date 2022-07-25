@@ -28,11 +28,11 @@ template <typename... Ds> class PixelPhotonRouter {
     }
 
   public:
-    explicit PixelPhotonRouter(Ds &&... downstreams)
+    explicit PixelPhotonRouter(Ds &&...downstreams)
         : downstreams{std::move<Ds>(downstreams)...} {}
 
     template <typename E> void HandleEvent(E const &event) noexcept {
-        std::apply([&](auto &... s) { (..., s.HandleEvent(event)); },
+        std::apply([&](auto &...s) { (..., s.HandleEvent(event)); },
                    downstreams);
     }
 
@@ -41,7 +41,7 @@ template <typename... Ds> class PixelPhotonRouter {
     }
 
     void HandleEnd(std::exception_ptr error) noexcept {
-        std::apply([&](auto &... s) { (..., s.HandleEnd(error)); },
+        std::apply([&](auto &...s) { (..., s.HandleEnd(error)); },
                    downstreams);
     }
 };

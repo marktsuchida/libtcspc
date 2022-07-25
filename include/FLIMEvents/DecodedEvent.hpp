@@ -35,9 +35,9 @@ struct DecodedEvent {
  * have already been observed.
  *
  * Data sources reading raw device event streams should typically emit this
- * event when a macro-time overflow occurs. Data sources that do not encode such
- * overflows should emit this event once before finishing the stream, if the
- * acquisition duration is known, to indicate the end time point.
+ * event when a macro-time overflow occurs. Data sources that do not encode
+ * such overflows should emit this event once before finishing the stream, if
+ * the acquisition duration is known, to indicate the end time point.
  *
  * Note that this event is generally only emitted when the timestamp is not
  * associated with an actual event (photon, marker, etc.).

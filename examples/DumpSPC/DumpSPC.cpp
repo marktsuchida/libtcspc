@@ -49,8 +49,8 @@ class PrintProcessor {
 
     void HandleEvent(flimevt::InvalidPhotonEvent const &event) {
         PrintMacroTime(output, event.macrotime);
-        output << " Invalid photon: " << std::setw(5) << event.microtime << "; "
-               << int(event.route) << '\n';
+        output << " Invalid photon: " << std::setw(5) << event.microtime
+               << "; " << int(event.route) << '\n';
     }
 
     void HandleEvent(flimevt::MarkerEvent const &event) {
@@ -81,10 +81,10 @@ int DumpHeader(std::istream &input, std::ostream &output) {
 
     BHSPCFileHeader header;
     std::memcpy(&header, bytes, sizeof(header));
-    output << "Macro-time units (0.1 ns): " << header.GetMacroTimeUnitsTenthNs()
-           << '\n';
-    output << "Number of routing bits: " << int(header.GetNumberOfRoutingBits())
-           << '\n';
+    output << "Macro-time units (0.1 ns): "
+           << header.GetMacroTimeUnitsTenthNs() << '\n';
+    output << "Number of routing bits: "
+           << int(header.GetNumberOfRoutingBits()) << '\n';
     output << "Data is valid: " << header.GetDataValidFlag() << '\n';
 
     return 0;

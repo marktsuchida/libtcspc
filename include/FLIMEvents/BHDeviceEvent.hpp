@@ -245,7 +245,8 @@ class BHSPC600Event48Decoder : public BHEventDecoder<BHSPC600Event48, D> {
     using BHEventDecoder<BHSPC600Event48, D>::BHEventDecoder;
 };
 
-template <typename D> BHSPC600Event48Decoder(D &&) -> BHSPC600Event48Decoder<D>;
+template <typename D>
+BHSPC600Event48Decoder(D &&) -> BHSPC600Event48Decoder<D>;
 
 template <typename D>
 class BHSPC600Event32Decoder : public BHEventDecoder<BHSPC600Event32, D> {
@@ -253,7 +254,8 @@ class BHSPC600Event32Decoder : public BHEventDecoder<BHSPC600Event32, D> {
     using BHEventDecoder<BHSPC600Event32, D>::BHEventDecoder;
 };
 
-template <typename D> BHSPC600Event32Decoder(D &&) -> BHSPC600Event32Decoder<D>;
+template <typename D>
+BHSPC600Event32Decoder(D &&) -> BHSPC600Event32Decoder<D>;
 
 using BHSPCEvents = DeviceEvents<BHSPCEvent>;
 using BHSPC600Events48 = DeviceEvents<BHSPC600Event48>;

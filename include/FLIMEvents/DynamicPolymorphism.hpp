@@ -44,10 +44,11 @@ class VirtualWrappedProcessorImpl<Interface, Proc> : public Interface {
     Proc proc;
 
   public:
-    explicit VirtualWrappedProcessorImpl(Proc &&proc) : proc(std::move(proc)) {}
+    explicit VirtualWrappedProcessorImpl(Proc &&proc)
+        : proc(std::move(proc)) {}
 
     template <typename... Args>
-    explicit VirtualWrappedProcessorImpl(Args &&... args)
+    explicit VirtualWrappedProcessorImpl(Args &&...args)
         : proc(std::forward<Args>(args)...) {}
 
     void HandleEnd(std::exception_ptr error) noexcept final {

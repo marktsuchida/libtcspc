@@ -148,9 +148,9 @@ template <typename E, typename D> class EventBuffer {
 
     // To be called on processing thread. Blocks until end is received.
     void PumpDownstream() noexcept {
-        // Removal from the queue only takes place here; because std::deque does
-        // not move elements, we can safely access the contents of queue.front()
-        // with the mutex unlocked.
+        // Removal from the queue only takes place here; because std::deque
+        // does not move elements, we can safely access the contents of
+        // queue.front() with the mutex unlocked.
 
         std::unique_lock lock(mutex);
 

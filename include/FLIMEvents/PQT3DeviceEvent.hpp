@@ -138,7 +138,8 @@ class PQT3EventDecoder final : public DeviceEventProcessor<E> {
 
     void HandleDeviceEvent(E const &event) noexcept {
         if (event.IsNSyncOverflow()) {
-            nSyncBase += E::NSyncOverflowPeriod * event.GetNSyncOverflowCount();
+            nSyncBase +=
+                E::NSyncOverflowPeriod * event.GetNSyncOverflowCount();
 
             TimestampEvent e;
             e.macrotime = nSyncBase;

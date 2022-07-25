@@ -1,3 +1,0 @@
-# Note: These settings are used by meson's clang-format target, not by
-# clang-format itself.
-test/include/catch2/*

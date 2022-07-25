@@ -18,9 +18,9 @@ namespace flimevt {
 namespace internal {
 
 template <typename T, typename U,
-          typename =
-              std::enable_if_t<std::is_unsigned_v<T> && std::is_unsigned_v<U> &&
-                               sizeof(T) >= sizeof(U)>>
+          typename = std::enable_if_t<std::is_unsigned_v<T> &&
+                                      std::is_unsigned_v<U> &&
+                                      sizeof(T) >= sizeof(U)>>
 inline constexpr T SaturatingAdd(T a, U b) noexcept {
     T c = a + b;
     if (c < a)
@@ -192,7 +192,8 @@ template <typename T, typename D> class Histogrammer {
 
     void HandleEnd(std::exception_ptr error) noexcept {
         if (frameInProgress) {
-            downstream.HandleEvent(IncompleteFrameHistogramEvent<T>{histogram});
+            downstream.HandleEvent(
+                IncompleteFrameHistogramEvent<T>{histogram});
         }
         downstream.HandleEnd(error);
     }
@@ -238,7 +239,8 @@ template <typename T, typename D> class SequentialHistogrammer {
 
     void HandleEnd(std::exception_ptr error) noexcept {
         if (pixelNo < histogram.GetWidth() * histogram.GetHeight()) {
-            downstream.HandleEvent(IncompleteFrameHistogramEvent<T>{histogram});
+            downstream.HandleEvent(
+                IncompleteFrameHistogramEvent<T>{histogram});
         }
         downstream.HandleEnd(error);
     }
@@ -270,7 +272,8 @@ template <typename T, typename D> class HistogramAccumulator {
 
   public:
     explicit HistogramAccumulator(Histogram<T> &&histogram, D &&downstream)
-        : cumulative(std::move(histogram)), downstream(std::move(downstream)) {}
+        : cumulative(std::move(histogram)), downstream(std::move(downstream)) {
+    }
 
     void HandleEvent(FrameHistogramEvent<T> const &event) noexcept {
         cumulative += event.histogram;

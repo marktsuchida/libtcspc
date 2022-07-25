@@ -27,8 +27,8 @@ template <typename D> class LineClockPixellator {
     uint64_t nextLine;    // Incremented on line startTime
     uint64_t currentLine; // Incremented on line finish
     // "Line startTime" is reception of line marker, at which point the line
-    // startTime and finish macro-times are determined. "Line finish" is when we
-    // determine that all photons for the line have been emitted downstream.
+    // startTime and finish macro-times are determined. "Line finish" is when
+    // we determine that all photons for the line have been emitted downstream.
     // If nextLine > currentLine, we are in currentLine.
     // If nextLine == currentLine, we are between (nextLine - 1) and nextLine.
 
@@ -201,14 +201,15 @@ template <typename D> class LineClockPixellator {
     }
 
   public:
-    explicit LineClockPixellator(uint32_t pixelsPerLine, uint32_t linesPerFrame,
-                                 uint32_t maxFrames, int32_t lineDelay,
-                                 uint32_t lineTime, uint32_t lineMarkerBit,
-                                 D &&downstream)
+    explicit LineClockPixellator(uint32_t pixelsPerLine,
+                                 uint32_t linesPerFrame, uint32_t maxFrames,
+                                 int32_t lineDelay, uint32_t lineTime,
+                                 uint32_t lineMarkerBit, D &&downstream)
         : pixelsPerLine(pixelsPerLine), linesPerFrame(linesPerFrame),
           maxFrames(maxFrames), lineDelay(lineDelay), lineTime(lineTime),
           lineMarkerMask(1 << lineMarkerBit), latestTimestamp(0), nextLine(0),
-          currentLine(0), lineStartTime(-1), downstream(std::move(downstream)) {
+          currentLine(0), lineStartTime(-1),
+          downstream(std::move(downstream)) {
         if (pixelsPerLine < 1) {
             throw std::invalid_argument("pixelsPerLine must be positive");
         }
