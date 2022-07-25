@@ -1,2 +1,7 @@
-catch2_dep = dependency('catch2', fallback: 'catch2')
+catch2_dep = dependency(
+    'catch2',
+    required: get_option('tests'),
+    disabler: true
+)
+
 subdir('FLIMEventsTests')
