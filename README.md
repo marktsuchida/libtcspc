@@ -1,13 +1,11 @@
-FLIMEvents
-==========
+# FLIMEvents
 
-Status: alpha (as an independent library), used by OpenScan-BHSPC only
+**Status: not ready for general use**. An old version of the code is used by
+the OpenScan-BHSPC module (code for that version is embedded in that project).
 
 FLIMEvents is a C++ header-only library for handling live photon timestamp
 event streams produced by TCSPC hardware. It can decode the raw event records
-and produce FLIM histogram or intensity images. It is currently a subdirectory
-of OpenScan-BHSPC, and does not have a stable API. In the future, we might
-evolve this into a separate library.
+and produce FLIM histogram or intensity images.
 
 FLIMEvents supports Becker & Hickl event streams (called "FIFO" data by BH). It
 can also support PicoQuant event streams (called "TTTR" data by PicoQuant), but
@@ -15,77 +13,14 @@ this is untested.
 
 FLIMEvents has no external dependencies other than standard C++.
 
-At the moment, FLIMEvents is developed with Visual C++ 2019 on Windows (though
-it should be easy to make the code cross-platform; no platform APIs are used).
-
-
-How to build
-------------
+## How to build
 
 FLIMEvents is a header-only library, so there is nothing to build. Just add the
 `include/` directory to your project's include path.
 
 To build unit tests and examples, use Meson.
 
-On Windows, open `x64 Native Tools Command Prompt for VS 2019` (or equivalent
-for the desired architecture and VC++ version) from the Start menu. Change to
-the FLIMEvents root directory.
-
-To build from the command line, `meson build` will create the directory
-`build/` containing Ninja build files. Change into `build/` and type `ninja` to
-build; `ninja test` to run tests.
-
-To view and build as a Visual Studio project, use `meson build --backend vs`.
-This will generate a Visual Studio solution and project files.
-
-Meson builds do not create files outside of the given build directory (which
-can be named differently). To perform Release vs Debug builds, two separate
-build directories can be configured. Pass `--buildtype debug`, `--buildtype
-debugoptimized`, or `--buildtype release` to `meson`.
-
-For example:
-```
-meson build/release --buildtype release
-meson build/debug --buildtype debug
-meson build/debug-vs --backend vs --buildtype debug
-```
-
-
-Design overview
----------------
-
-In order to handle live event streams, FLIMEvents uses a stream buffer
-(`EventStream`, together with `EventBuffer` and `EventBufferPool`) to buffer
-raw events (in fixed-sized batches).
-
-Events can then be processed on a separate thread without blocking data
-acquisition. This is done by a series of "processor" objects, all of which
-operate in "push" mode (upstream processors call methods of downstream
-processors to propagate data).
-
-Currently, there are processors that cooperate to produce FLIM histograms.
-
-The abstract processor classes are `DecodedEventProcessor`, which receives
-information decoded from the raw event stream but otherwise uninterpreted;
-`PixelPhotonProcessor`, which receives photon events associated with pixel
-locations in a FLIM image; and `HistogramProcessor`, which receives
-frame-by-frame FLIM histogram images.
-
-Input to `DecodedEventProcessor` is produced by a `DeviceEventDecoder` object,
-examples of which are the concrete classes for Becker & Hickl and PicoQuant
-event data.
-
-The only concrete `DecodedEventProcessor` currently is `LineClockPixellator`,
-which uses line markers (together with necessary parameters) to assign photons
-to pixel locations, and to delimit frames in a multi-frame acquisition.
-
-The example program `SPCToHistogram` exercises the above classes to read a
-Becker & Hickl `.spc` file containing raw event data and produce a cumulative
-FLIM histogram.
-
-
-Performance
------------
+## Performance
 
 It should be noted that FLIMEvents benefits greatly from compiler optimization.
 With Visual C++, an improvement of over 50-fold was observed between Debug
@@ -93,21 +28,118 @@ With Visual C++, an improvement of over 50-fold was observed between Debug
 during acquisition, an optimized build may be important. (Note that the Meson
 build uses different flags by default.)
 
+## Non-goals
 
-Next steps and future plans
----------------------------
+FLIMEvents is about photon timestamps and histograms, not file I/O and metadata
+handling. Supporting reading/writing of vendor-specific file formats (such as
+`.spc`, `.sdt`, `.ptu`, `.phu`) is out of scope. A separate library should
+handle that (although the example programs breaks this rule for `.spc`).
 
-- FLIMEvents classes should be placed in namespaces
-- Multi-channel histograms
-- Pixel-clock-based pixel assignment
-- Support for Photon-HDF5 format (once it supports markers)
-- Histograms could be streamed (based on completion of each pixel)
+## Overview
 
+FLIMEvents takes TCSPC device-generated photon event streams and turns them
+into FLIM histogram images. This is done by using a generic event processing
+pipeline.
 
-Non-goals
----------
+### Namespace
 
-- FLIMEvents is about photon timestamps and histograms, not file I/O and
-  metadata handling. Supporting reading/writing of vendor-specific file formats
-  (such as `.spc`, `.sdt`, `.ptu`, `.phu`) is out of scope. A separate library
-  should handle that.
+Everything is in the `flimevents` namespace.
+
+### Events
+
+Events represent the data that is passed down the processing pipelines.
+
+Some of these form class hierarchies, but only to model common fields. They do
+not have virtual methods, and the inheritance relationship is not significant
+in how they are processed.
+
+Event classes are pure data and have public data members.
+
+Raw device envents:
+
+- These can be `memcpy()`ed from the raw data stream events
+- Becker-Hickl: `BHSPCEvent`, `BHSPC600Event48`, `BHSPC600Event32`
+  - Event sets `BHSPCEvents`, `BHSPC600Events48`, `BHSPC600Events32`
+- PicoQuant: `PicoT3Event`, `HydraV1T3Event`, `HydraV2T3Event`
+  - Event sets `PQT3Events`, `PQHydraV1T3Events`, `PQHydraV2T3Events`
+
+TCSPC events:
+
+- Abstract: `DecodedEvent`, `BasePhotonEvent`
+- Concrete: `ValidPhotonEvent`, `InvalidPhotonEvent`, `DataLostEvent`,
+  `MarkerEvent`, `TimestampEvent`
+- Event set `DecodedEvents`
+
+Pixel-assigned photon events:
+
+- `PixelPhotonEvent`, `BeginFrameEvent`, `EndFrameEvent`
+- Event set `PixelPhotonEvents`
+
+Histogram events:
+
+- `FrameHistogramEvent`, `IncompleteFrameHistogramEvent`,
+  `FinalCumulativeHistogramEvent`
+- Event sets `FrameHistogramEvents`, `CumulativeHistogramEvents`
+
+Generic:
+
+- `EventArray<E>`
+
+### Processors
+
+Processors are just classes with the following member functions:
+
+- `void HandleEvent(E const& event) noexcept` -- a statically polymorphic
+  (i.e., overloaded for different event types) function, for each event in the
+  event set that is processed by the processor
+- `void HandleEnd(std::exception_ptr error) noexcept` -- `error` is the null
+  value (default-constructed `exception_ptr`) when the event stream ends
+  successfully
+
+The last argument to the constructor of a processor is usually `D&&
+downstream`, a reference to the downstream processor that will handle the
+events emitted by this processor. The downstream processor is moved into the
+processor.
+
+Raw device events to TCSPC events:
+
+- `BHSPCEventDecoder`, `BHSPC600Event48Decoder`, `BHSPC600Event32Decoder`,
+  `PQT3EventDecoder`
+
+TCSPC events to pixel photon events:
+
+- `LineClockPixellator`
+
+Pixel photon events to pixel photon events:
+
+- `PixelPhotonRouter`
+
+Pixel photon events to frame histogram events:
+
+- `Histogrammer`, `SequentialHistogrammer`
+
+Frame histogram events to cumulative histogram events:
+
+- `HistogramAccumulator`
+
+Generic processors:
+
+- `BroadcastProcessor` (`E` to `E`), `EventArrayDemultiplexer` (`EventArray<E>`
+  to `E`), `EventBuffer` (`E` to `EventArray<E>`)
+
+### Upstream buffering
+
+Usually it is a good idea to buffer incoming events (from hardware) before
+processing, so as not to cause a hardware buffer overflow when the incoming
+event rate temporarily exceeds the processing rate (processing may include slow
+or high-jitter tasks such as writing to disk). For this, `EventBuffer` is used.
+
+It is just a processor that bunches a given event into the corresponding
+`EventArray` event, except that it internally buffers the event arrays and only
+emits them when its `void PumpDownstream() noexcept` member function is called.
+
+All other processors do not buffer events (except when needed for the
+processing itself), and processing completes synchronously during the
+`PumpDownstream` call. Thus, `PumpDownstream` should be called on a different
+thread from the thread reading from the device and sending them to
+`EventBuffer`.
