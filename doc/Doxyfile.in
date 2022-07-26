@@ -1,0 +1,9 @@
+PROJECT_NAME           = FLIMEvents
+PROJECT_BRIEF          = "Streaming FLIM data processing in C++"
+INPUT                  = @DOXYGEN_INPUT@
+STRIP_FROM_PATH        = @DOXYGEN_INPUT@
+OUTPUT_DIRECTORY       = @DOXYGEN_OUTPUT@
+GENERATE_LATEX         = NO
+HAVE_DOT               = NO
+RECURSIVE              = YES
+SORT_BRIEF_DOCS        = NO
