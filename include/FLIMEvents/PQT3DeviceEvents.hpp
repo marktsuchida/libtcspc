@@ -25,7 +25,7 @@ namespace flimevt {
 // Note that code here is written to run on little- or big-endian machines; see
 // https://commandcenter.blogspot.com/2012/04/byte-order-fallacy.html
 
-// The two T3 formats (PicoT3Event and HydraT3Event) use matching member
+// The two T3 formats (PQPicoT3Event and PQHydraT3Event) use matching member
 // names for static polymorphism. This allows PQT3EventDecoder<E> to handle 3
 // different formats with the same code.
 
@@ -34,7 +34,7 @@ namespace flimevt {
  *
  * RecType 0x00010303.
  */
-struct PicoT3Event {
+struct PQPicoT3Event {
     char bytes[4];
 
     static Macrotime const NSyncOverflowPeriod = 65536;
@@ -75,7 +75,7 @@ struct PicoT3Event {
  * \tparam IsHydraV1 if true, interpret as HydraHarp V1 (RecType 0x00010304)
  * format, in which nsync overflow records always indicate a single overflow
  */
-template <bool IsHydraV1> struct HydraT3Event {
+template <bool IsHydraV1> struct PQHydraT3Event {
     std::uint8_t bytes[4];
 
     static Macrotime const NSyncOverflowPeriod = 1024;
@@ -119,9 +119,10 @@ template <bool IsHydraV1> struct HydraT3Event {
     }
 };
 
-using HydraV1T3Event = HydraT3Event<true>;
-using HydraV2T3Event = HydraT3Event<false>;
+using PQHydraV1T3Event = PQHydraT3Event<true>;
+using PQHydraV2T3Event = PQHydraT3Event<false>;
 
+namespace internal {
 /**
  * \brief Decode PicoQuant T3 event stream.
  *
@@ -181,18 +182,21 @@ template <typename E, typename D> class PQT3EventDecoder {
         downstream.HandleError(error);
     }
 };
+} // namespace internal
 
 template <typename D>
-using PQPicoT3EventDecoder = PQT3EventDecoder<PicoT3Event, D>;
+using PQPicoT3EventDecoder = internal::PQT3EventDecoder<PQPicoT3Event, D>;
 
 template <typename D>
-using PQHydraV1T3EventDecoder = PQT3EventDecoder<HydraV1T3Event, D>;
+using PQHydraV1T3EventDecoder =
+    internal::PQT3EventDecoder<PQHydraV1T3Event, D>;
 
 template <typename D>
-using PQHydraV2T3EventDecoder = PQT3EventDecoder<HydraV2T3Event, D>;
+using PQHydraV2T3EventDecoder =
+    internal::PQT3EventDecoder<PQHydraV2T3Event, D>;
 
-using PQPicoT3Events = EventSet<PicoT3Event>;
-using PQHydraV1T3Events = EventSet<HydraV1T3Event>;
-using PQHydraV2T3Events = EventSet<HydraV2T3Event>;
+using PQPicoT3Events = EventSet<PQPicoT3Event>;
+using PQHydraV1T3Events = EventSet<PQHydraV1T3Event>;
+using PQHydraV2T3Events = EventSet<PQHydraV2T3Event>;
 
 } // namespace flimevt

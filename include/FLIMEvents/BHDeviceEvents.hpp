@@ -156,6 +156,7 @@ struct BHSPC600Event32 {
     }
 };
 
+namespace internal {
 /**
  * \brief Decode BH SPC event stream.
  *
@@ -164,14 +165,14 @@ struct BHSPC600Event32 {
  *
  * \tparam E binary record interpreter class
  */
-template <typename E, typename D> class BHEventDecoder {
+template <typename E, typename D> class BaseBHEventDecoder {
     Macrotime macrotimeBase; // Time of last overflow
     Macrotime lastMacrotime;
 
     D downstream;
 
   public:
-    explicit BHEventDecoder(D &&downstream)
+    explicit BaseBHEventDecoder(D &&downstream)
         : macrotimeBase(0), lastMacrotime(0),
           downstream(std::move(downstream)) {}
 
@@ -236,28 +237,31 @@ template <typename E, typename D> class BHEventDecoder {
         downstream.HandleEnd(error);
     }
 };
+} // namespace internal
 
 template <typename D>
-class BHSPCEventDecoder : public BHEventDecoder<BHSPCEvent, D> {
+class BHSPCEventDecoder : public internal::BaseBHEventDecoder<BHSPCEvent, D> {
   public:
-    using BHEventDecoder<BHSPCEvent, D>::BHEventDecoder;
+    using internal::BaseBHEventDecoder<BHSPCEvent, D>::BaseBHEventDecoder;
 };
 
 template <typename D> BHSPCEventDecoder(D &&) -> BHSPCEventDecoder<D>;
 
 template <typename D>
-class BHSPC600Event48Decoder : public BHEventDecoder<BHSPC600Event48, D> {
+class BHSPC600Event48Decoder
+    : public internal::BaseBHEventDecoder<BHSPC600Event48, D> {
   public:
-    using BHEventDecoder<BHSPC600Event48, D>::BHEventDecoder;
+    using internal::BaseBHEventDecoder<BHSPC600Event48, D>::BaseBHEventDecoder;
 };
 
 template <typename D>
 BHSPC600Event48Decoder(D &&) -> BHSPC600Event48Decoder<D>;
 
 template <typename D>
-class BHSPC600Event32Decoder : public BHEventDecoder<BHSPC600Event32, D> {
+class BHSPC600Event32Decoder
+    : public internal::BaseBHEventDecoder<BHSPC600Event32, D> {
   public:
-    using BHEventDecoder<BHSPC600Event32, D>::BHEventDecoder;
+    using internal::BaseBHEventDecoder<BHSPC600Event32, D>::BaseBHEventDecoder;
 };
 
 template <typename D>
