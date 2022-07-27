@@ -7,12 +7,13 @@ public_cpp_headers = files(
     'FLIMEvents/DynamicPolymorphism.hpp',
     'FLIMEvents/EventBuffer.hpp',
     'FLIMEvents/EventSet.hpp',
+    'FLIMEvents/FLIMEvents.hpp',
     'FLIMEvents/Histogram.hpp',
     'FLIMEvents/LineClockPixellator.hpp',
     'FLIMEvents/NoopProcessor.hpp',
+    'FLIMEvents/PQT3DeviceEvents.hpp',
     'FLIMEvents/PixelPhotonEvents.hpp',
     'FLIMEvents/PixelPhotonRouter.hpp',
-    'FLIMEvents/PQT3DeviceEvents.hpp',
     'FLIMEvents/TCSPCEvents.hpp',
 )
 

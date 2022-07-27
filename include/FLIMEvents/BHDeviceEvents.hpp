@@ -158,9 +158,9 @@ struct BHSPC600Event32 {
 
 namespace internal {
 /**
- * \brief Decode BH SPC event stream.
+ * \brief Implementation of BH SPC event stream decoders.
  *
- * User code should normally use one of the following concrete classes:
+ * User code should use one of the following concrete classes:
  * BHSPCEventDecoder, BHSPC600Event48Decoder, BHSPC600Event32Decoder.
  *
  * \tparam E binary record interpreter class
@@ -239,6 +239,9 @@ template <typename E, typename D> class BaseBHEventDecoder {
 };
 } // namespace internal
 
+/**
+ * \brief Decoder for raw BH SPC events.
+ */
 template <typename D>
 class BHSPCEventDecoder : public internal::BaseBHEventDecoder<BHSPCEvent, D> {
   public:
@@ -247,6 +250,9 @@ class BHSPCEventDecoder : public internal::BaseBHEventDecoder<BHSPCEvent, D> {
 
 template <typename D> BHSPCEventDecoder(D &&) -> BHSPCEventDecoder<D>;
 
+/**
+ * \brief Decoder for raw BH SPC-600/630 events in 4096-channel mode.
+ */
 template <typename D>
 class BHSPC600Event48Decoder
     : public internal::BaseBHEventDecoder<BHSPC600Event48, D> {
@@ -257,6 +263,9 @@ class BHSPC600Event48Decoder
 template <typename D>
 BHSPC600Event48Decoder(D &&) -> BHSPC600Event48Decoder<D>;
 
+/**
+ * \brief Decoder for raw BH SPC-600/630 events in 256-channel mode.
+ */
 template <typename D>
 class BHSPC600Event32Decoder
     : public internal::BaseBHEventDecoder<BHSPC600Event32, D> {
@@ -267,8 +276,19 @@ class BHSPC600Event32Decoder
 template <typename D>
 BHSPC600Event32Decoder(D &&) -> BHSPC600Event32Decoder<D>;
 
+/**
+ * \brief Event set for raw BH SPC data stream.
+ */
 using BHSPCEvents = EventSet<BHSPCEvent>;
+
+/**
+ * \brief Event set for raw BH SPC-600/630 data stream in 4096-channel mode.
+ */
 using BHSPC600Events48 = EventSet<BHSPC600Event48>;
+
+/**
+ * \brief Event set for raw BH SPC-600/630 data stream in 256-channel mode.
+ */
 using BHSPC600Events32 = EventSet<BHSPC600Event32>;
 
 } // namespace flimevt

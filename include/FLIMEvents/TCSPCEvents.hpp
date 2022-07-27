@@ -58,6 +58,9 @@ struct TimestampEvent : public TCSPCEvent {};
  */
 struct DataLostEvent : public TCSPCEvent {};
 
+/**
+ * \brief Abstract base class for valid and invalid photon events.
+ */
 struct BasePhotonEvent : public TCSPCEvent {
     /**
      * \brief Micro-time, or difference time, of the photon.

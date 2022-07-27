@@ -69,8 +69,8 @@ struct PQPicoT3Event {
 };
 
 /**
- * \brief Binary record interpretation for HydraHarp, MultiHarp, and
- * TimeHarp260 T3 format.
+ * \brief Abstract base class for binary record interpretation for HydraHarp,
+ * MultiHarp, and TimeHarp260 T3 format.
  *
  * \tparam IsHydraV1 if true, interpret as HydraHarp V1 (RecType 0x00010304)
  * format, in which nsync overflow records always indicate a single overflow
@@ -119,14 +119,22 @@ template <bool IsHydraV1> struct PQHydraT3Event {
     }
 };
 
+/**
+ * \brief Binary record interpretation for HydraHarp V1 T3 format.
+ */
 using PQHydraV1T3Event = PQHydraT3Event<true>;
+
+/**
+ * \brief Binary record interpretation for HydraHarp V2, MultiHarp, and
+ * TimeHarp260 T3 format.
+ */
 using PQHydraV2T3Event = PQHydraT3Event<false>;
 
 namespace internal {
 /**
- * \brief Decode PicoQuant T3 event stream.
+ * \brief Decoder for PicoQuant T3 data stream.
  *
- * User code should normally use one of the following concrete classes:
+ * User code should use one of the following concrete classes:
  * PQPicoT3EventDecoder, PQHydraV1T3EventDecoder, PQHydraV2T3EventDecoder.
  *
  * \tparam E binary record interpreter class
@@ -184,19 +192,41 @@ template <typename E, typename D> class PQT3EventDecoder {
 };
 } // namespace internal
 
+/**
+ * \brief Decoder for PicoQuant PicoHarp T3 data stream.
+ */
 template <typename D>
 using PQPicoT3EventDecoder = internal::PQT3EventDecoder<PQPicoT3Event, D>;
 
+/**
+ * \brief Decoder for PicoQuant HydraHarp V1 T3 data stream.
+ */
 template <typename D>
 using PQHydraV1T3EventDecoder =
     internal::PQT3EventDecoder<PQHydraV1T3Event, D>;
 
+/**
+ * \brief Decoder for PicoQuant HydraHarp V2, MultiHarp, and TimeHarp260 T3
+ * data stream.
+ */
 template <typename D>
 using PQHydraV2T3EventDecoder =
     internal::PQT3EventDecoder<PQHydraV2T3Event, D>;
 
+/**
+ * \brief Event set for PicoQuant PicoHarp T3 data stream.
+ */
 using PQPicoT3Events = EventSet<PQPicoT3Event>;
+
+/**
+ * \brief Event set for PicoQuant HydraHarp V1 T3 data stream.
+ */
 using PQHydraV1T3Events = EventSet<PQHydraV1T3Event>;
+
+/**
+ * \brief Event set for PicoQuant HydraHarp V2, MultiHarp, and TimeHarp260 T3
+ * data stream.
+ */
 using PQHydraV2T3Events = EventSet<PQHydraV2T3Event>;
 
 } // namespace flimevt
