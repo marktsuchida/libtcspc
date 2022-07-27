@@ -65,10 +65,10 @@ Raw device envents:
 
 TCSPC events:
 
-- Abstract: `DecodedEvent`, `BasePhotonEvent`
+- Abstract: `TCSPCEvent`, `BasePhotonEvent`
 - Concrete: `ValidPhotonEvent`, `InvalidPhotonEvent`, `DataLostEvent`,
   `MarkerEvent`, `TimestampEvent`
-- Event set `DecodedEvents`
+- Event set `TCSPCEvents`
 
 Pixel-assigned photon events:
 
