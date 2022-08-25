@@ -19,7 +19,7 @@ template <typename D> class LineClockPixellator {
 
     std::int32_t const lineDelay; // in macro-time units
     std::uint32_t const lineTime; // in macro-time units
-    decltype(MarkerEvent::bits) const lineMarkerMask;
+    std::int32_t const lineMarkerChannel;
 
     Macrotime latestTimestamp; // Latest observed macro-time
 
@@ -202,16 +202,14 @@ template <typename D> class LineClockPixellator {
     }
 
   public:
-    explicit LineClockPixellator(std::uint32_t pixelsPerLine,
-                                 std::uint32_t linesPerFrame,
-                                 std::uint32_t maxFrames,
-                                 std::int32_t lineDelay,
-                                 std::uint32_t lineTime,
-                                 std::uint32_t lineMarkerBit, D &&downstream)
+    explicit LineClockPixellator(
+        std::uint32_t pixelsPerLine, std::uint32_t linesPerFrame,
+        std::uint32_t maxFrames, std::int32_t lineDelay,
+        std::uint32_t lineTime, std::int32_t lineMarkerChannel, D &&downstream)
         : pixelsPerLine(pixelsPerLine), linesPerFrame(linesPerFrame),
           maxFrames(maxFrames), lineDelay(lineDelay), lineTime(lineTime),
-          lineMarkerMask(1 << lineMarkerBit), latestTimestamp(0), nextLine(0),
-          currentLine(0), lineStartTime(-1),
+          lineMarkerChannel(lineMarkerChannel), latestTimestamp(0),
+          nextLine(0), currentLine(0), lineStartTime(-1),
           downstream(std::move(downstream)) {
         if (pixelsPerLine < 1) {
             throw std::invalid_argument("pixelsPerLine must be positive");
@@ -273,7 +271,7 @@ template <typename D> class LineClockPixellator {
 
     void HandleEvent(MarkerEvent const &event) noexcept {
         UpdateTimeRange(event.macrotime);
-        if (event.bits & lineMarkerMask) {
+        if (event.channel == lineMarkerChannel) {
             try {
                 EnqueueLineMarker(event.macrotime);
             } catch (std::exception const &) {

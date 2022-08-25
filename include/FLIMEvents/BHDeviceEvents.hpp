@@ -213,8 +213,12 @@ template <typename E, typename D> class BaseBHEventDecoder {
         if (event.GetMarkerFlag()) {
             MarkerEvent e;
             e.macrotime = macrotime;
-            e.bits = event.GetMarkerBits();
-            downstream.HandleEvent(e);
+            std::uint32_t bits = event.GetMarkerBits();
+            while (bits) {
+                e.channel = internal::CountTrailingZeros32(bits);
+                downstream.HandleEvent(e);
+                bits = bits & (bits - 1); // Clear the handled bit
+            }
             return;
         }
 

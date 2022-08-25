@@ -73,7 +73,7 @@ TEST_CASE("Frames are produced according to line markers",
                                                        std::move(polymorphic));
 
         MarkerEvent lineMarker;
-        lineMarker.bits = 1 << 1;
+        lineMarker.channel = 1;
         lineMarker.macrotime = 100;
         lcp.HandleEvent(lineMarker);
         lcp.Flush();
@@ -139,7 +139,7 @@ TEST_CASE("Frames are produced according to line markers",
                                                        std::move(polymorphic));
 
         MarkerEvent lineMarker;
-        lineMarker.bits = 1 << 1;
+        lineMarker.channel = 1;
         lineMarker.macrotime = 100;
         lcp.HandleEvent(lineMarker);
         lcp.Flush();

@@ -174,8 +174,12 @@ template <typename E, typename D> class PQT3EventDecoder {
         if (event.IsExternalMarker()) {
             MarkerEvent e;
             e.macrotime = nSync;
-            e.bits = event.GetExternalMarkerBits();
-            downstream.HandleEvent(e);
+            std::uint32_t bits = event.GetExternalMarkerBits();
+            while (bits) {
+                e.channel = internal::CountTrailingZeros32(bits);
+                downstream.HandleEvent(e);
+                bits = bits & (bits - 1); // Clear the handled bit
+            }
             return;
         }
 

@@ -56,7 +56,7 @@ class PrintProcessor {
 
     void HandleEvent(flimevt::MarkerEvent const &event) {
         PrintMacroTime(output, event.macrotime);
-        output << ' ' << "Marker: " << int(event.bits) << '\n';
+        output << ' ' << "Marker: " << int(event.channel) << '\n';
     }
 
     void HandleEnd(std::exception_ptr error) {
