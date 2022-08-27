@@ -190,7 +190,7 @@ template <typename T, typename D> class Histogrammer {
     }
 
     void HandleEvent(PixelPhotonEvent const &event) noexcept {
-        histogram.Increment(event.microtime, event.x, event.y);
+        histogram.Increment(event.nanotime, event.x, event.y);
     }
 
     void HandleEnd(std::exception_ptr error) noexcept {
@@ -237,7 +237,7 @@ template <typename T, typename D> class SequentialHistogrammer {
 
     void HandleEvent(PixelPhotonEvent const &event) noexcept {
         SkipToPixelNo(event.x + histogram.GetWidth() * event.y);
-        pixelHist.Increment(event.microtime, 0, 0);
+        pixelHist.Increment(event.nanotime, 0, 0);
     }
 
     void HandleEnd(std::exception_ptr error) noexcept {

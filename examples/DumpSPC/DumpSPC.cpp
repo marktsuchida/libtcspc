@@ -44,14 +44,14 @@ class PrintProcessor {
 
     void HandleEvent(flimevt::ValidPhotonEvent const &event) {
         PrintMacroTime(output, event.macrotime);
-        output << " Photon: " << std::setw(5) << event.microtime << "; "
+        output << " Photon: " << std::setw(5) << event.nanotime << "; "
                << int(event.route) << '\n';
     }
 
     void HandleEvent(flimevt::InvalidPhotonEvent const &event) {
         PrintMacroTime(output, event.macrotime);
-        output << " Invalid photon: " << std::setw(5) << event.microtime
-               << "; " << int(event.route) << '\n';
+        output << " Invalid photon: " << std::setw(5) << event.nanotime << "; "
+               << int(event.route) << '\n';
     }
 
     void HandleEvent(flimevt::MarkerEvent const &event) {
