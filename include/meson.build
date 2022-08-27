@@ -17,6 +17,7 @@ public_cpp_headers = files(
     'FLIMEvents/PixelPhotonRouter.hpp',
     'FLIMEvents/SplitEvents.hpp',
     'FLIMEvents/TCSPCEvents.hpp',
+    'FLIMEvents/TimeDelay.hpp',
 )
 
 install_headers(public_cpp_headers, subdir: 'FLIMEvents')

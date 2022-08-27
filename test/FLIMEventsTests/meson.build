@@ -16,6 +16,7 @@ flimevents_tests_srcs = [
     'PixelPhotonRouterTests.cpp',
     'SplitEventsTests.cpp',
     'TCSPCEventsTests.cpp',
+    'TimeDelayTests.cpp',
     'main.cpp',
 ]
 
