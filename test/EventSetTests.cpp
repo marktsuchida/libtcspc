@@ -1,46 +1,46 @@
 #include "FLIMEvents/EventSet.hpp"
 
-using namespace flimevt;
+#include "TestEvents.hpp"
 
-struct MyEvent1 {};
-struct MyEvent2 {};
+using namespace flimevt;
+using namespace flimevt::test;
 
 static_assert(std::is_same_v<EventVariant<EventSet<>>, std::variant<>>);
-static_assert(std::is_same_v<EventVariant<EventSet<MyEvent1, MyEvent2>>,
-                             std::variant<MyEvent1, MyEvent2>>);
+static_assert(std::is_same_v<EventVariant<EventSet<Event<0>, Event<1>>>,
+                             std::variant<Event<0>, Event<1>>>);
 
-static_assert(!ContainsEventV<EventSet<>, MyEvent1>);
-static_assert(ContainsEventV<EventSet<MyEvent1>, MyEvent1>);
-static_assert(!ContainsEventV<EventSet<MyEvent2>, MyEvent1>);
-static_assert(ContainsEventV<EventSet<MyEvent1, MyEvent2>, MyEvent1>);
-static_assert(ContainsEventV<EventSet<MyEvent1, MyEvent2>, MyEvent2>);
+static_assert(!ContainsEventV<EventSet<>, Event<0>>);
+static_assert(ContainsEventV<EventSet<Event<0>>, Event<0>>);
+static_assert(!ContainsEventV<EventSet<Event<1>>, Event<0>>);
+static_assert(ContainsEventV<EventSet<Event<0>, Event<1>>, Event<0>>);
+static_assert(ContainsEventV<EventSet<Event<0>, Event<1>>, Event<1>>);
 
 struct MyEvent1Processor {
-    void HandleEvent(MyEvent1 const &) noexcept {}
+    void HandleEvent(Event<0> const &) noexcept {}
 };
 
-static_assert(HandlesEventV<MyEvent1Processor, MyEvent1>);
-static_assert(!HandlesEventV<MyEvent1Processor, MyEvent2>);
+static_assert(HandlesEventV<MyEvent1Processor, Event<0>>);
+static_assert(!HandlesEventV<MyEvent1Processor, Event<1>>);
 static_assert(!HandlesEndV<MyEvent1Processor>);
-static_assert(!HandlesEventSetV<MyEvent1Processor, EventSet<MyEvent1>>);
+static_assert(!HandlesEventSetV<MyEvent1Processor, EventSet<Event<0>>>);
 
 struct MyEndProcessor {
     void HandleEnd(std::exception_ptr) noexcept {}
 };
 
-static_assert(!HandlesEventV<MyEndProcessor, MyEvent1>);
+static_assert(!HandlesEventV<MyEndProcessor, Event<0>>);
 static_assert(HandlesEndV<MyEndProcessor>);
 static_assert(HandlesEventSetV<MyEndProcessor, EventSet<>>);
 
 struct MyEvent1SetProcessor : MyEvent1Processor, MyEndProcessor {};
 
-static_assert(HandlesEventV<MyEvent1SetProcessor, MyEvent1>);
+static_assert(HandlesEventV<MyEvent1SetProcessor, Event<0>>);
 static_assert(HandlesEndV<MyEvent1SetProcessor>);
-static_assert(HandlesEventSetV<MyEvent1SetProcessor, EventSet<MyEvent1>>);
-static_assert(!HandlesEventSetV<MyEvent1SetProcessor, EventSet<MyEvent2>>);
+static_assert(HandlesEventSetV<MyEvent1SetProcessor, EventSet<Event<0>>>);
+static_assert(!HandlesEventSetV<MyEvent1SetProcessor, EventSet<Event<1>>>);
 static_assert(
-    !HandlesEventSetV<MyEvent1SetProcessor, EventSet<MyEvent1, MyEvent2>>);
+    !HandlesEventSetV<MyEvent1SetProcessor, EventSet<Event<0>, Event<1>>>);
 
 static_assert(
-    std::is_same_v<ConcatEventSetT<EventSet<MyEvent1>, EventSet<MyEvent2>>,
-                   EventSet<MyEvent1, MyEvent2>>);
+    std::is_same_v<ConcatEventSetT<EventSet<Event<0>>, EventSet<Event<1>>>,
+                   EventSet<Event<0>, Event<1>>>);

@@ -2,11 +2,11 @@
 
 #include "FLIMEvents/EventSet.hpp"
 #include "FLIMEvents/NoopProcessor.hpp"
+#include "TestEvents.hpp"
 
 using namespace flimevt;
-
-struct MyEvent {};
+using namespace flimevt::test;
 
 static_assert(
-    HandlesEventSetV<EventBuffer<MyEvent, NoopProcessor<EventSet<MyEvent>>>,
-                     EventSet<MyEvent>>);
+    HandlesEventSetV<EventBuffer<Event<0>, NoopProcessor<EventSet<Event<0>>>>,
+                     EventSet<Event<0>>>);
