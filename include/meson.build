@@ -10,10 +10,12 @@ public_cpp_headers = files(
     'FLIMEvents/FLIMEvents.hpp',
     'FLIMEvents/Histogram.hpp',
     'FLIMEvents/LineClockPixellator.hpp',
+    'FLIMEvents/Merge.hpp',
     'FLIMEvents/NoopProcessor.hpp',
     'FLIMEvents/PQT3DeviceEvents.hpp',
     'FLIMEvents/PixelPhotonEvents.hpp',
     'FLIMEvents/PixelPhotonRouter.hpp',
+    'FLIMEvents/SplitEvents.hpp',
     'FLIMEvents/TCSPCEvents.hpp',
 )
 
