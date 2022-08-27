@@ -10,6 +10,7 @@
 #include <catch2/catch.hpp>
 
 using namespace flimevt;
+using namespace flimevt::test;
 
 static_assert(HandlesEventSetV<SplitEvents<Events01, NoopProcessor<Events01>,
                                            NoopProcessor<Events01>>,
@@ -22,7 +23,7 @@ auto MakeSplitEventsFixtureOutput0() {
         return SplitEvents<Events23, D0, D1>(std::move(downstream), D1());
     };
 
-    return test::MakeProcessorTestFixture<Events0123, Events01>(makeProc);
+    return MakeProcessorTestFixture<Events0123, Events01>(makeProc);
 }
 
 auto MakeSplitEventsFixtureOutput1() {
@@ -32,7 +33,7 @@ auto MakeSplitEventsFixtureOutput1() {
         return SplitEvents<Events23, D0, D1>(D0(), std::move(downstream));
     };
 
-    return test::MakeProcessorTestFixture<Events0123, Events23>(makeProc);
+    return MakeProcessorTestFixture<Events0123, Events23>(makeProc);
 }
 
 using OutVec01 = std::vector<EventVariant<Events01>>;

@@ -16,6 +16,7 @@
 #include <catch2/catch.hpp>
 
 using namespace flimevt;
+using namespace flimevt::test;
 
 static_assert(
     HandlesEventSetV<DelayProcessor<Events01, NoopProcessor<Events0123>>,
@@ -34,7 +35,7 @@ auto MakeDelayFixture(Macrotime delta) {
         return DelayProcessor<Events01, D>(delta, std::move(downstream));
     };
 
-    return test::MakeProcessorTestFixture<Events0123, Events0123>(makeProc);
+    return MakeProcessorTestFixture<Events0123, Events0123>(makeProc);
 }
 
 // Make fixture to test hastening Event01
@@ -44,7 +45,7 @@ auto MakeHastenFixture(Macrotime delta) {
         return HastenProcessor<Events23, D>(delta, std::move(downstream));
     };
 
-    return test::MakeProcessorTestFixture<Events0123, Events0123>(makeProc);
+    return MakeProcessorTestFixture<Events0123, Events0123>(makeProc);
 }
 
 auto MakeDelayHastenFixture(Macrotime delta) {
@@ -54,7 +55,7 @@ auto MakeDelayHastenFixture(Macrotime delta) {
             delta, std::move(downstream));
     };
 
-    return test::MakeProcessorTestFixture<Events0123, Events0123>(makeProc);
+    return MakeProcessorTestFixture<Events0123, Events0123>(makeProc);
 }
 
 using OutVec = std::vector<flimevt::EventVariant<Events0123>>;

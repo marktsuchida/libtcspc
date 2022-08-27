@@ -11,6 +11,7 @@
 #include <catch2/catch.hpp>
 
 using namespace flimevt;
+using namespace flimevt::test;
 
 static_assert(
     HandlesEventSetV<
@@ -32,7 +33,7 @@ auto MakeMergeFixture(Macrotime maxShift) {
             std::move(input0), std::move(input1));
     };
 
-    return test::MakeProcessorTestFixture<Events0123, Events0123>(makeProc);
+    return MakeProcessorTestFixture<Events0123, Events0123>(makeProc);
 }
 
 // Processor to inject an error after N events are passed through
@@ -70,7 +71,7 @@ auto MakeMergeFixtureErrorOnInput0(Macrotime maxShift, int eventsBeforeError) {
             std::move(error0), std::move(input1));
     };
 
-    return test::MakeProcessorTestFixture<Events0123, Events0123>(makeProc);
+    return MakeProcessorTestFixture<Events0123, Events0123>(makeProc);
 }
 
 auto MakeMergeFixtureErrorOnInput1(Macrotime maxShift, int eventsBeforeError) {
@@ -82,7 +83,7 @@ auto MakeMergeFixtureErrorOnInput1(Macrotime maxShift, int eventsBeforeError) {
             std::move(input0), std::move(error1));
     };
 
-    return test::MakeProcessorTestFixture<Events0123, Events0123>(makeProc);
+    return MakeProcessorTestFixture<Events0123, Events0123>(makeProc);
 }
 
 using OutVec = std::vector<EventVariant<Events0123>>;

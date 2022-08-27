@@ -10,12 +10,13 @@
 #include <catch2/catch.hpp>
 
 using namespace flimevt;
+using namespace flimevt::test;
 
 using Events = Events01;
 using OutVec = std::vector<EventVariant<Events>>;
 
 auto MakeTimeDelayFixture(Macrotime delta) {
-    return test::MakeProcessorTestFixture<Events, Events>(
+    return MakeProcessorTestFixture<Events, Events>(
         [delta](auto &&downstream) {
             return TimeDelay(delta, std::move(downstream));
         });
