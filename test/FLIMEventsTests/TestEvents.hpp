@@ -10,8 +10,6 @@
 namespace flimevt::test {
 
 template <unsigned N> struct Event { Macrotime macrotime; };
-using Events0 = EventSet<Event<0>>;
-using Events1 = EventSet<Event<1>>;
 using Events01 = EventSet<Event<0>, Event<1>>;
 using Events23 = EventSet<Event<2>, Event<3>>;
 using Events0123 = EventSet<Event<0>, Event<1>, Event<2>, Event<3>>;
