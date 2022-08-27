@@ -110,20 +110,14 @@ template <typename ESet, typename D> class MergeImpl {
 
 } // namespace internal
 
-template <unsigned Ch, typename ESet, typename D> class MergeInput;
-
-template <typename ESet, typename D>
-auto MakeMerge(Macrotime maxTimeShift, D &&downstream)
-    -> std::pair<MergeInput<0, ESet, D>, MergeInput<1, ESet, D>>;
-
 template <unsigned Ch, typename ESet, typename D> class MergeInput {
     std::shared_ptr<internal::MergeImpl<ESet, D>> impl;
 
     explicit MergeInput(std::shared_ptr<internal::MergeImpl<ESet, D>> impl)
         : impl(impl) {}
 
-    friend auto MakeMerge<ESet, D>(Macrotime maxTimeShift, D &&downstream)
-        -> std::pair<MergeInput<0, ESet, D>, MergeInput<1, ESet, D>>;
+    template <typename MESet, typename MD>
+    friend auto MakeMerge(Macrotime maxTimeShift, MD &&downstream);
 
   public:
     MergeInput(MergeInput const &) = delete;
@@ -142,8 +136,7 @@ template <unsigned Ch, typename ESet, typename D> class MergeInput {
 };
 
 template <typename ESet, typename D>
-auto MakeMerge(Macrotime maxTimeShift, D &&downstream)
-    -> std::pair<MergeInput<0, ESet, D>, MergeInput<1, ESet, D>> {
+auto MakeMerge(Macrotime maxTimeShift, D &&downstream) {
     auto p = std::make_shared<internal::MergeImpl<ESet, D>>(
         maxTimeShift, std::move(downstream));
     return std::make_pair(MergeInput<0, ESet, D>(p),
