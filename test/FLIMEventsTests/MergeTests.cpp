@@ -90,36 +90,54 @@ using OutVec = std::vector<EventVariant<Events0123>>;
 
 TEST_CASE("Merge with error on one input", "[Merge]") {
     SECTION("Input0 error with no events pending") {
+        bool furtherInputOnInput1 = GENERATE(false, true);
+        bool endInput1 = GENERATE(false, true);
+
         auto f = MakeMergeFixtureErrorOnInput0(1000, 0);
         f.FeedEvents({
             Event<0>{0}, // Fixture will convert to error
         });
         REQUIRE(f.Output() == OutVec{});
-        f.FeedEvents({
-            Event<2>{1}, // Further input ignored on other input
-        });
-        REQUIRE(f.Output() == OutVec{});
+        if (furtherInputOnInput1) {
+            f.FeedEvents({
+                Event<2>{1},
+            });
+            REQUIRE(f.Output() == OutVec{});
+        }
+        if (endInput1) {
+            f.FeedEnd({});
+            REQUIRE(f.Output() == OutVec{});
+        }
         REQUIRE_THROWS_MATCHES(f.DidEnd(), std::runtime_error,
                                Catch::Message("injected error"));
     }
 
     SECTION("Input1 error with no events pending") {
+        bool furtherInputOnInput0 = GENERATE(false, true);
+        bool endInput0 = GENERATE(false, true);
+
         auto f = MakeMergeFixtureErrorOnInput1(1000, 0);
         f.FeedEvents({
             Event<2>{0}, // Fixture will convert to error
         });
         REQUIRE(f.Output() == OutVec{});
-        f.FeedEvents({
-            Event<0>{1}, // Further input ignored on other input
-        });
-        REQUIRE(f.Output() == OutVec{});
-        f.FeedEnd({});
-        REQUIRE(f.Output() == OutVec{});
+        if (furtherInputOnInput0) {
+            f.FeedEvents({
+                Event<0>{1}, // Further input ignored on other input
+            });
+            REQUIRE(f.Output() == OutVec{});
+        }
+        if (endInput0) {
+            f.FeedEnd({});
+            REQUIRE(f.Output() == OutVec{});
+        }
         REQUIRE_THROWS_MATCHES(f.DidEnd(), std::runtime_error,
                                Catch::Message("injected error"));
     }
 
     SECTION("Input0 error with input0 events pending") {
+        bool endInput1 = GENERATE(false, true);
+
         auto f = MakeMergeFixtureErrorOnInput0(1000, 1);
         f.FeedEvents({
             Event<0>{0},
@@ -129,13 +147,17 @@ TEST_CASE("Merge with error on one input", "[Merge]") {
             Event<0>{1}, // Fixture will convert to error
         });
         REQUIRE(f.Output() == OutVec{});
-        f.FeedEnd({});
-        REQUIRE(f.Output() == OutVec{});
+        if (endInput1) {
+            f.FeedEnd({});
+            REQUIRE(f.Output() == OutVec{});
+        }
         REQUIRE_THROWS_MATCHES(f.DidEnd(), std::runtime_error,
                                Catch::Message("injected error"));
     }
 
     SECTION("Input0 error with input1 events pending") {
+        bool endInput1 = GENERATE(false, true);
+
         auto f = MakeMergeFixtureErrorOnInput0(1000, 0);
         f.FeedEvents({
             Event<2>{0},
@@ -145,8 +167,10 @@ TEST_CASE("Merge with error on one input", "[Merge]") {
             Event<0>{1}, // Fixture will convert to error
         });
         REQUIRE(f.Output() == OutVec{});
-        f.FeedEnd({});
-        REQUIRE(f.Output() == OutVec{});
+        if (endInput1) {
+            f.FeedEnd({});
+            REQUIRE(f.Output() == OutVec{});
+        }
         REQUIRE_THROWS_MATCHES(f.DidEnd(), std::runtime_error,
                                Catch::Message("injected error"));
     }
