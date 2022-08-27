@@ -10,21 +10,21 @@
 // Note: Code reading .spc files must know a priori the format: there is no way
 // to determine based on file contents whether it is standard format or
 // SPC-600/630 (4- or 6-byte) format. (Although it is probably possible to
-// guess accurately based on macro-time monotonicity.)
+// guess accurately based on macrotime monotonicity.)
 
 struct BHSPCFileHeader {
     std::uint8_t bytes[4];
 
     void Clear() noexcept { memset(bytes, 0, sizeof(bytes)); }
 
-    std::uint32_t GetMacroTimeUnitsTenthNs() const noexcept {
+    std::uint32_t GetMacrotimeUnitsTenthNs() const noexcept {
         return bytes[0] | (std::uint32_t(bytes[1]) << 8) |
                (std::uint32_t(bytes[2]) << 16);
     }
 
-    void SetMacroTimeUnitsTenthNs(std::uint32_t value) {
+    void SetMacrotimeUnitsTenthNs(std::uint32_t value) {
         if (value >= 1 << 24) {
-            throw std::out_of_range("Macro-time units out of range");
+            throw std::out_of_range("Macrotime units out of range");
         }
         bytes[0] = value & 0xff;
         bytes[1] = (value >> 8) & 0xff;
@@ -63,13 +63,13 @@ struct BHSPC600FileHeader48 {
 
     void Clear() noexcept { memset(bytes, 0, sizeof(bytes)); }
 
-    std::uint32_t GetMacroTimeUnitsTenthNs() const noexcept {
+    std::uint32_t GetMacrotimeUnitsTenthNs() const noexcept {
         return bytes[2] | (std::uint32_t(bytes[3]) << 8);
     }
 
-    void SetMacroTimeUnitsTenthsNs(std::uint32_t value) {
+    void SetMacrotimeUnitsTenthsNs(std::uint32_t value) {
         if (value >= 1 << 16) {
-            throw std::out_of_range("Macro-time units out of range");
+            throw std::out_of_range("Macrotime units out of range");
         }
         bytes[2] = value & 0xff;
         bytes[3] = (value >> 8) & 0xff;

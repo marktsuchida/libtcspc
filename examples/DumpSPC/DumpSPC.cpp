@@ -17,7 +17,7 @@ class PrintProcessor {
     flimevt::Macrotime lastMacrotime;
     std::ostream &output;
 
-    void PrintMacroTime(std::ostream &output, flimevt::Macrotime macrotime) {
+    void PrintMacrotime(std::ostream &output, flimevt::Macrotime macrotime) {
         output << std::setw(6) << (count++) << ' ';
         output << std::setw(20) << macrotime;
         if (lastMacrotime > 0) {
@@ -38,24 +38,24 @@ class PrintProcessor {
     }
 
     void HandleEvent(flimevt::DataLostEvent const &event) {
-        PrintMacroTime(output, event.macrotime);
+        PrintMacrotime(output, event.macrotime);
         output << " Data lost\n";
     }
 
     void HandleEvent(flimevt::ValidPhotonEvent const &event) {
-        PrintMacroTime(output, event.macrotime);
+        PrintMacrotime(output, event.macrotime);
         output << " Photon: " << std::setw(5) << event.nanotime << "; "
                << int(event.route) << '\n';
     }
 
     void HandleEvent(flimevt::InvalidPhotonEvent const &event) {
-        PrintMacroTime(output, event.macrotime);
+        PrintMacrotime(output, event.macrotime);
         output << " Invalid photon: " << std::setw(5) << event.nanotime << "; "
                << int(event.route) << '\n';
     }
 
     void HandleEvent(flimevt::MarkerEvent const &event) {
-        PrintMacroTime(output, event.macrotime);
+        PrintMacrotime(output, event.macrotime);
         output << ' ' << "Marker: " << int(event.channel) << '\n';
     }
 
@@ -82,8 +82,8 @@ int DumpHeader(std::istream &input, std::ostream &output) {
 
     BHSPCFileHeader header;
     std::memcpy(&header, bytes, sizeof(header));
-    output << "Macro-time units (0.1 ns): "
-           << header.GetMacroTimeUnitsTenthNs() << '\n';
+    output << "Macrotime units (0.1 ns): " << header.GetMacrotimeUnitsTenthNs()
+           << '\n';
     output << "Number of routing bits: "
            << int(header.GetNumberOfRoutingBits()) << '\n';
     output << "Data is valid: " << header.GetDataValidFlag() << '\n';
@@ -99,12 +99,12 @@ void DumpRawEvent(char const *rawEvent, std::ostream &output) {
     output << (route & (1 << 3) ? 'x' : '_') << (route & (1 << 2) ? 'x' : '_')
            << (route & (1 << 1) ? 'x' : '_') << (route & (1 << 0) ? 'x' : '_')
            << ' ' << (event.GetInvalidFlag() ? 'I' : '_')
-           << (event.GetMacroTimeOverflowFlag() ? 'O' : '_')
+           << (event.GetMacrotimeOverflowFlag() ? 'O' : '_')
            << (event.GetGapFlag() ? 'G' : '_')
            << (event.GetMarkerFlag() ? 'M' : '_');
-    if (event.IsMultipleMacroTimeOverflow()) {
+    if (event.IsMultipleMacrotimeOverflow()) {
         output << ' ' << std::setw(4)
-               << event.GetMultipleMacroTimeOverflowCount();
+               << event.GetMultipleMacrotimeOverflowCount();
     }
     output << '\n';
 }

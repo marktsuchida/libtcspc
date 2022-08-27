@@ -16,9 +16,9 @@ namespace flimevt {
  */
 struct TCSPCEvent {
     /**
-     * \brief The absolute macro-time of this event.
+     * \brief The absolute macrotime of this event.
      *
-     * The macro-time is in device- and configuration-specific units;
+     * The macrotime is in device- and configuration-specific units;
      * conversion to physical (or other) units (which may result in loss of the
      * exact raw data) is not the concern of this library.
      */
@@ -26,9 +26,9 @@ struct TCSPCEvent {
 };
 
 /**
- * \brief Event to update macro-time stamp.
+ * \brief Event to update macrotime stamp.
  *
- * Data sources emit this event to indicated that a macro-time stamp has been
+ * Data sources emit this event to indicated that a macrotime stamp has been
  * seen, without any associated event.
  *
  * This conveys useful information because timestamps are monotonic: if a
@@ -36,7 +36,7 @@ struct TCSPCEvent {
  * have already been observed.
  *
  * Data sources reading raw device event streams should typically emit this
- * event when a macro-time overflow occurs. Data sources that do not encode
+ * event when a macrotime overflow occurs. Data sources that do not encode
  * such overflows should emit this event once before finishing the stream, if
  * the acquisition duration is known, to indicate the end time point.
  *

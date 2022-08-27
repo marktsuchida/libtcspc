@@ -26,7 +26,7 @@ namespace flimevt {
 struct BHSPCEvent {
     std::uint8_t bytes[4];
 
-    inline static Macrotime const MacroTimeOverflowPeriod = 1 << 12;
+    inline static Macrotime const MacrotimeOverflowPeriod = 1 << 12;
 
     std::uint16_t GetADCValue() const noexcept {
         std::uint8_t lo8 = bytes[2];
@@ -41,7 +41,7 @@ struct BHSPCEvent {
         return bytes[1] >> 4;
     }
 
-    std::uint16_t GetMacroTime() const noexcept {
+    std::uint16_t GetMacrotime() const noexcept {
         std::uint8_t lo8 = bytes[0];
         std::uint8_t hi4 = bytes[1] & 0x0f;
         return lo8 | (std::uint16_t(hi4) << 8);
@@ -53,21 +53,21 @@ struct BHSPCEvent {
 
     bool GetGapFlag() const noexcept { return bytes[3] & (1 << 5); }
 
-    bool GetMacroTimeOverflowFlag() const noexcept {
+    bool GetMacrotimeOverflowFlag() const noexcept {
         return bytes[3] & (1 << 6);
     }
 
     bool GetInvalidFlag() const noexcept { return bytes[3] & (1 << 7); }
 
-    bool IsMultipleMacroTimeOverflow() const noexcept {
+    bool IsMultipleMacrotimeOverflow() const noexcept {
         // Although documentation is not clear, a marker can share an event
-        // record with a (single) macro-time overflow, just as a photon can.
-        return GetMacroTimeOverflowFlag() && GetInvalidFlag() &&
+        // record with a (single) macrotime overflow, just as a photon can.
+        return GetMacrotimeOverflowFlag() && GetInvalidFlag() &&
                !GetMarkerFlag();
     }
 
     // Get the 27-bit macro timer overflow count
-    std::uint32_t GetMultipleMacroTimeOverflowCount() const noexcept {
+    std::uint32_t GetMultipleMacrotimeOverflowCount() const noexcept {
         return bytes[0] | (std::uint32_t(bytes[1]) << 8) |
                (std::uint32_t(bytes[2]) << 16) |
                (std::uint32_t(bytes[3] & 0x0f) << 24);
@@ -81,7 +81,7 @@ struct BHSPCEvent {
 struct BHSPC600Event48 {
     std::uint8_t bytes[6];
 
-    inline static Macrotime const MacroTimeOverflowPeriod = 1 << 24;
+    inline static Macrotime const MacrotimeOverflowPeriod = 1 << 24;
 
     std::uint16_t GetADCValue() const noexcept {
         std::uint8_t lo8 = bytes[0];
@@ -91,7 +91,7 @@ struct BHSPC600Event48 {
 
     std::uint8_t GetRoutingSignals() const noexcept { return bytes[3]; }
 
-    std::uint32_t GetMacroTime() const noexcept {
+    std::uint32_t GetMacrotime() const noexcept {
         return bytes[4] | (std::uint32_t(bytes[5]) << 8) |
                (std::uint32_t(bytes[2]) << 16);
     }
@@ -102,15 +102,15 @@ struct BHSPC600Event48 {
 
     bool GetGapFlag() const noexcept { return bytes[1] & (1 << 6); }
 
-    bool GetMacroTimeOverflowFlag() const noexcept {
+    bool GetMacrotimeOverflowFlag() const noexcept {
         return bytes[1] & (1 << 5);
     }
 
     bool GetInvalidFlag() const noexcept { return bytes[1] & (1 << 4); }
 
-    bool IsMultipleMacroTimeOverflow() const noexcept { return false; }
+    bool IsMultipleMacrotimeOverflow() const noexcept { return false; }
 
-    std::uint32_t GetMultipleMacroTimeOverflowCount() const noexcept {
+    std::uint32_t GetMultipleMacrotimeOverflowCount() const noexcept {
         return 0;
     }
 };
@@ -122,7 +122,7 @@ struct BHSPC600Event48 {
 struct BHSPC600Event32 {
     std::uint8_t bytes[4];
 
-    inline static Macrotime const MacroTimeOverflowPeriod = 1 << 17;
+    inline static Macrotime const MacrotimeOverflowPeriod = 1 << 17;
 
     std::uint16_t GetADCValue() const noexcept { return bytes[0]; }
 
@@ -130,7 +130,7 @@ struct BHSPC600Event32 {
         return (bytes[3] & 0x0f) >> 1;
     }
 
-    std::uint32_t GetMacroTime() const noexcept {
+    std::uint32_t GetMacrotime() const noexcept {
         std::uint8_t lo8 = bytes[1];
         std::uint8_t mid8 = bytes[2];
         std::uint8_t hi1 = bytes[3] & 0x01;
@@ -143,15 +143,15 @@ struct BHSPC600Event32 {
 
     bool GetGapflag() const noexcept { return bytes[3] & (1 << 5); }
 
-    bool GetMacroTimeOverflowFlag() const noexcept {
+    bool GetMacrotimeOverflowFlag() const noexcept {
         return bytes[3] & (1 << 6);
     }
 
     bool GetInvalidFlag() const noexcept { return bytes[3] & (1 << 7); }
 
-    bool IsMultipleMacroTimeOverflow() const noexcept { return false; }
+    bool IsMultipleMacrotimeOverflow() const noexcept { return false; }
 
-    std::uint32_t GetMultipleMacroTimeOverflowCount() const noexcept {
+    std::uint32_t GetMultipleMacrotimeOverflowCount() const noexcept {
         return 0;
     }
 };
@@ -179,9 +179,9 @@ template <typename E, typename D> class BaseBHEventDecoder {
     // Rule of zero
 
     void HandleEvent(E const &event) noexcept {
-        if (event.IsMultipleMacroTimeOverflow()) {
-            macrotimeBase += E::MacroTimeOverflowPeriod *
-                             event.GetMultipleMacroTimeOverflowCount();
+        if (event.IsMultipleMacrotimeOverflow()) {
+            macrotimeBase += E::MacrotimeOverflowPeriod *
+                             event.GetMultipleMacrotimeOverflowCount();
 
             TimestampEvent e;
             e.macrotime = macrotimeBase;
@@ -189,17 +189,17 @@ template <typename E, typename D> class BaseBHEventDecoder {
             return;
         }
 
-        if (event.GetMacroTimeOverflowFlag()) {
-            macrotimeBase += E::MacroTimeOverflowPeriod;
+        if (event.GetMacrotimeOverflowFlag()) {
+            macrotimeBase += E::MacrotimeOverflowPeriod;
         }
 
-        Macrotime macrotime = macrotimeBase + event.GetMacroTime();
+        Macrotime macrotime = macrotimeBase + event.GetMacrotime();
 
         // Validate input: ensure macrotime increases monotonically (a common
         // assumption made by downstream processors)
         if (macrotime <= lastMacrotime) {
             downstream.HandleEnd(std::make_exception_ptr(
-                std::runtime_error("Non-monotonic macro-time encountered")));
+                std::runtime_error("Non-monotonic macrotime encountered")));
             return;
         }
         lastMacrotime = macrotime;

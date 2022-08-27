@@ -17,17 +17,17 @@ template <typename D> class LineClockPixellator {
     std::uint32_t const linesPerFrame;
     std::uint32_t const maxFrames;
 
-    std::int32_t const lineDelay; // in macro-time units
-    std::uint32_t const lineTime; // in macro-time units
+    std::int32_t const lineDelay; // in macrotime units
+    std::uint32_t const lineTime; // in macrotime units
     std::int32_t const lineMarkerChannel;
 
-    Macrotime latestTimestamp; // Latest observed macro-time
+    Macrotime latestTimestamp; // Latest observed macrotime
 
     // Cumulative line numbers (no reset on new frame)
     std::uint64_t nextLine;    // Incremented on line startTime
     std::uint64_t currentLine; // Incremented on line finish
     // "Line startTime" is reception of line marker, at which point the line
-    // startTime and finish macro-times are determined. "Line finish" is when
+    // startTime and finish macrotimes are determined. "Line finish" is when
     // we determine that all photons for the line have been emitted downstream.
     // If nextLine > currentLine, we are in currentLine.
     // If nextLine == currentLine, we are between (nextLine - 1) and nextLine.
@@ -39,7 +39,7 @@ template <typename D> class LineClockPixellator {
     std::deque<ValidPhotonEvent> pendingPhotons;
 
     // Buffer line marks until we are ready to process
-    std::deque<Macrotime> pendingLines; // marker macro-times
+    std::deque<Macrotime> pendingLines; // marker macrotimes
 
     D downstream;
     bool streamEnded = false;
@@ -227,7 +227,7 @@ template <typename D> class LineClockPixellator {
         UpdateTimeRange(event.macrotime);
         // We could call ProcessPhotonsAndLines() to emit all lines that are
         // complete, but deferring can significantly improve performance when a
-        // timestamp is sent for every macro-time overflow.
+        // timestamp is sent for every macrotime overflow.
 
         // Temporary: we need to process all buffered data based on time stamps
         // only, because currently we don't receive a "finish" event from

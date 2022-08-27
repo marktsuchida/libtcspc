@@ -16,7 +16,7 @@ void Usage() {
     std::cerr
         << "Test driver for histogramming.\n"
         << "Usage: SPCToHistogram <width> <height> <lineDelay> <lineTime> input.spc output.raw\n"
-        << "where <lineDelay> and <lineTime> are in macro-time units.\n"
+        << "where <lineDelay> and <lineTime> are in macrotime units.\n"
         << "Currently the output contains only the raw cumulative histogram.\n";
 }
 
