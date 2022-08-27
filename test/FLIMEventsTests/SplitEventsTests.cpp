@@ -44,43 +44,59 @@ TEST_CASE("Split events", "[SplitEvents]") {
     auto f1 = MakeSplitEventsFixtureOutput1();
 
     SECTION("Empty stream yields empty streams") {
-        REQUIRE(f0.FeedEnd({}) == OutVec01{});
+        f0.FeedEnd({});
+        REQUIRE(f0.Output() == OutVec01{});
         REQUIRE(f0.DidEnd());
-        REQUIRE(f1.FeedEnd({}) == OutVec23{});
+
+        f1.FeedEnd({});
+        REQUIRE(f1.Output() == OutVec23{});
         REQUIRE(f1.DidEnd());
     }
 
     SECTION("Errors propagate to both streams") {
-        REQUIRE(f0.FeedEnd(std::make_exception_ptr(
-                    std::runtime_error("test"))) == OutVec01{});
+        f0.FeedEnd(std::make_exception_ptr(std::runtime_error("test")));
+        REQUIRE(f0.Output() == OutVec01{});
         REQUIRE_THROWS_MATCHES(f0.DidEnd(), std::runtime_error,
                                Catch::Message("test"));
-        REQUIRE(f1.FeedEnd(std::make_exception_ptr(
-                    std::runtime_error("test"))) == OutVec23{});
+
+        f1.FeedEnd(std::make_exception_ptr(std::runtime_error("test")));
+        REQUIRE(f1.Output() == OutVec23{});
         REQUIRE_THROWS_MATCHES(f1.DidEnd(), std::runtime_error,
                                Catch::Message("test"));
     }
 
     SECTION("Events are split") {
         // Event<0> goes to output 0 only
-        REQUIRE(f0.FeedEvents({
-                    Event<0>{0},
-                }) == OutVec01{
-                          Event<0>{0},
-                      });
-        REQUIRE(f1.FeedEvents({
-                    Event<0>{0},
-                }) == OutVec23{});
+        f0.FeedEvents({
+            Event<0>{0},
+        });
+        REQUIRE(f0.Output() == OutVec01{
+                                   Event<0>{0},
+                               });
+        f1.FeedEvents({
+            Event<0>{0},
+        });
+        REQUIRE(f1.Output() == OutVec23{});
 
         // Event<0> goes to output 1 only
-        REQUIRE(f0.FeedEvents({
-                    Event<2>{0},
-                }) == OutVec01{});
-        REQUIRE(f1.FeedEvents({
-                    Event<2>{0},
-                }) == OutVec23{
-                          Event<2>{0},
+        f0.FeedEvents({
+            Event<2>{0},
+        });
+        REQUIRE(f0.Output() == OutVec01{});
 
-                      });
+        f1.FeedEvents({
+            Event<2>{0},
+        });
+        REQUIRE(f1.Output() == OutVec23{
+                                   Event<2>{0},
+                               });
+
+        f0.FeedEnd({});
+        REQUIRE(f0.Output() == OutVec01{});
+        REQUIRE(f0.DidEnd());
+
+        f1.FeedEnd({});
+        REQUIRE(f1.Output() == OutVec23{});
+        REQUIRE(f1.DidEnd());
     }
 }

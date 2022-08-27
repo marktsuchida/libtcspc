@@ -6,7 +6,7 @@
 
 #include <cassert>
 #include <exception>
-#include <sstream>
+#include <stdexcept>
 #include <utility>
 #include <variant>
 #include <vector>
@@ -71,25 +71,32 @@ class ProcessorTestFixture {
     using OutputVectorType = std::vector<EventVariant<OutputEventSet>>;
 
     // Feed the given input events and return the resulting output events
-    OutputVectorType
-    FeedEvents(std::vector<EventVariant<InputEventSet>> inputs) {
-        result.outputs.clear();
+    void FeedEvents(std::vector<EventVariant<InputEventSet>> inputs) {
+        if (!result.outputs.empty())
+            throw std::logic_error("Unchecked output remains");
         for (auto const &input : inputs) {
             std::visit([&](auto &&i) { proc.HandleEvent(i); }, input);
         }
-        return result.outputs;
     }
 
     // Feed "end of stream" and return the resulting output events
-    OutputVectorType FeedEnd(std::exception_ptr error) {
-        result.outputs.clear();
+    void FeedEnd(std::exception_ptr error) {
+        if (!result.outputs.empty())
+            throw std::logic_error("Unchecked output remains");
         proc.HandleEnd(error);
-        return result.outputs;
+    }
+
+    OutputVectorType Output() {
+        auto ret = result.outputs;
+        result.outputs.clear();
+        return ret;
     }
 
     // Test whether the output reached "end of stream". Throws if end was
     // reached with an error.
     bool DidEnd() {
+        if (!result.outputs.empty())
+            throw std::logic_error("Unchecked output remains");
         if (result.error)
             std::rethrow_exception(result.error);
         return result.didEnd;

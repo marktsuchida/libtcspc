@@ -25,44 +25,52 @@ auto MakeTimeDelayFixture(Macrotime delta) {
 TEST_CASE("Time delay", "[TimeDelay]") {
     SECTION("Zero delay is noop") {
         auto f = MakeTimeDelayFixture(0);
-        REQUIRE(f.FeedEvents({
-                    Event<0>{0},
-                }) == OutVec{
-                          Event<0>{0},
-                      });
-        REQUIRE(f.FeedEnd({}) == OutVec{});
+        f.FeedEvents({
+            Event<0>{0},
+        });
+        REQUIRE(f.Output() == OutVec{
+                                  Event<0>{0},
+                              });
+        f.FeedEnd({});
+        REQUIRE(f.Output() == OutVec{});
         REQUIRE(f.DidEnd());
     }
 
     SECTION("Delay +1") {
         auto f = MakeTimeDelayFixture(1);
-        REQUIRE(f.FeedEvents({
-                    Event<0>{0},
-                }) == OutVec{
-                          Event<0>{1},
-                      });
-        REQUIRE(f.FeedEvents({
-                    Event<1>{1},
-                }) == OutVec{
-                          Event<1>{2},
-                      });
-        REQUIRE(f.FeedEnd({}) == OutVec{});
+        f.FeedEvents({
+            Event<0>{0},
+        });
+        REQUIRE(f.Output() == OutVec{
+                                  Event<0>{1},
+                              });
+        f.FeedEvents({
+            Event<1>{1},
+        });
+        REQUIRE(f.Output() == OutVec{
+                                  Event<1>{2},
+                              });
+        f.FeedEnd({});
+        REQUIRE(f.Output() == OutVec{});
         REQUIRE(f.DidEnd());
     }
 
     SECTION("Delay -1") {
         auto f = MakeTimeDelayFixture(-1);
-        REQUIRE(f.FeedEvents({
-                    Event<0>{0},
-                }) == OutVec{
-                          Event<0>{-1},
-                      });
-        REQUIRE(f.FeedEvents({
-                    Event<1>{1},
-                }) == OutVec{
-                          Event<1>{0},
-                      });
-        REQUIRE(f.FeedEnd({}) == OutVec{});
+        f.FeedEvents({
+            Event<0>{0},
+        });
+        REQUIRE(f.Output() == OutVec{
+                                  Event<0>{-1},
+                              });
+        f.FeedEvents({
+            Event<1>{1},
+        });
+        REQUIRE(f.Output() == OutVec{
+                                  Event<1>{0},
+                              });
+        f.FeedEnd({});
+        REQUIRE(f.Output() == OutVec{});
         REQUIRE(f.DidEnd());
     }
 }
