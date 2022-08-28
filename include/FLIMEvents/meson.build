@@ -14,7 +14,6 @@ public_cpp_headers = files(
     'NoopProcessor.hpp',
     'PQT3DeviceEvents.hpp',
     'PixelPhotonEvents.hpp',
-    'PixelPhotonRouter.hpp',
     'RoutePhotons.hpp',
     'SplitEvents.hpp',
     'TCSPCEvents.hpp',

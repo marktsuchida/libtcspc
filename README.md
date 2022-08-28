@@ -112,10 +112,6 @@ TCSPC events to pixel photon events:
 
 Pixel photon events to pixel photon events:
 
-- `PixelPhotonRouter`
-
-Pixel photon events to frame histogram events:
-
 - `Histogrammer`, `SequentialHistogrammer`
 
 Frame histogram events to cumulative histogram events:

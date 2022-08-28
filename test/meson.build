@@ -19,7 +19,6 @@ flimevents_tests_srcs = [
     'NoopProcessorTests.cpp',
     'PQT3DeviceEventsTests.cpp',
     'PixelPhotonEventsTests.cpp',
-    'PixelPhotonRouterTests.cpp',
     'RoutePhotonsTests.cpp',
     'SplitEventsTests.cpp',
     'TCSPCEventsTests.cpp',
