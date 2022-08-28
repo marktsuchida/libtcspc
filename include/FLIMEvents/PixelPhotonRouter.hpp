@@ -37,7 +37,7 @@ template <typename... Ds> class PixelPhotonRouter {
     }
 
     void HandleEvent(PixelPhotonEvent const &event) noexcept {
-        HandlePixelPhotonForChannel(event.route, event);
+        HandlePixelPhotonForChannel(event.channel, event);
     }
 
     void HandleEnd(std::exception_ptr error) noexcept {

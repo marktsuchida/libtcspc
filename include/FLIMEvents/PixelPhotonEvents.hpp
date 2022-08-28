@@ -8,7 +8,7 @@ namespace flimevt {
 
 struct PixelPhotonEvent {
     std::uint16_t nanotime;
-    std::uint16_t route;
+    std::int16_t channel;
     std::uint32_t x;
     std::uint32_t y;
     std::uint32_t frame;

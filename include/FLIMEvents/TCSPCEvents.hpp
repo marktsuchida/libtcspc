@@ -90,13 +90,11 @@ struct BasePhotonEvent : public TCSPCEvent {
     std::uint16_t nanotime;
 
     /**
-     * \brief The route, or channel, of the photon.
+     * \brief The channel, or routing signals, of the photon.
      *
-     * The lower N bits contain the routing signal for the photon, where N is
-     * the number of routing bits supported by the device (_not_ necessarily
-     * the number of routing bits enabled for the acquisition).
+     * The channel number may be negative.
      */
-    std::uint16_t route;
+    std::int16_t channel;
 };
 
 /**
@@ -107,12 +105,12 @@ struct ValidPhotonEvent : public BasePhotonEvent {};
 inline bool operator==(ValidPhotonEvent const &lhs,
                        ValidPhotonEvent const &rhs) {
     return lhs.macrotime == rhs.macrotime && lhs.nanotime == rhs.nanotime &&
-           lhs.route == rhs.route;
+           lhs.channel == rhs.channel;
 }
 
 inline std::ostream &operator<<(std::ostream &s, ValidPhotonEvent const &e) {
     return s << "ValidPhoton(" << e.macrotime << ", " << e.nanotime << ", "
-             << e.route << ')';
+             << e.channel << ')';
 }
 
 /**
@@ -123,12 +121,12 @@ struct InvalidPhotonEvent : public BasePhotonEvent {};
 inline bool operator==(InvalidPhotonEvent const &lhs,
                        InvalidPhotonEvent const &rhs) {
     return lhs.macrotime == rhs.macrotime && lhs.nanotime == rhs.nanotime &&
-           lhs.route == rhs.route;
+           lhs.channel == rhs.channel;
 }
 
 inline std::ostream &operator<<(std::ostream &s, InvalidPhotonEvent const &e) {
     return s << "InvalidPhoton(" << e.macrotime << ", " << e.nanotime << ", "
-             << e.route << ')';
+             << e.channel << ')';
 }
 
 /**

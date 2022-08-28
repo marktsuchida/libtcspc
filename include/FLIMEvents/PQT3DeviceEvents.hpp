@@ -186,7 +186,7 @@ template <typename E, typename D> class PQT3EventDecoder {
         ValidPhotonEvent e;
         e.macrotime = nSync;
         e.nanotime = event.GetDTime();
-        e.route = event.GetChannel();
+        e.channel = event.GetChannel();
         downstream.HandleEvent(e);
     }
 

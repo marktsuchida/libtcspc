@@ -226,13 +226,13 @@ template <typename E, typename D> class BaseBHEventDecoder {
             InvalidPhotonEvent e;
             e.macrotime = macrotime;
             e.nanotime = event.GetADCValue();
-            e.route = event.GetRoutingSignals();
+            e.channel = event.GetRoutingSignals();
             downstream.HandleEvent(e);
         } else {
             ValidPhotonEvent e;
             e.macrotime = macrotime;
             e.nanotime = event.GetADCValue();
-            e.route = event.GetRoutingSignals();
+            e.channel = event.GetRoutingSignals();
             downstream.HandleEvent(e);
         }
     }
