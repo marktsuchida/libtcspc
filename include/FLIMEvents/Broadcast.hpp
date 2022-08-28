@@ -6,6 +6,11 @@
 
 namespace flimevt {
 
+/**
+ * \brief Processor that broadcasts events to multiple downstream processors.
+ *
+ * \tparam Ds downstream processor classes
+ */
 template <typename... Ds> class Broadcast {
     std::tuple<Ds...> downstreams;
 

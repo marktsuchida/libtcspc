@@ -10,6 +10,21 @@
 
 namespace flimevt {
 
+/**
+ * \brief Processor that converts MarkerEvent with specific channel to a
+ * specified event type.
+ *
+ * This can be used, for example, to convert specific marker events into events
+ * representing frame, line, or pixel markers for FLIM. Each instance converts
+ * a single marker channel to a single event type.
+ *
+ * The output event type \c EOut must have a \c macrotime field of type
+ * \c Macrotime, and must be brace-initializable with a macrotime value (as in
+ * \c EOut{123} ).
+ *
+ * \tparam EOut output event type for matching marker events
+ * \tparam D downstream processor type
+ */
 template <typename EOut, typename D> class TranslateMarker {
     std::uint32_t const chan;
     D downstream;
@@ -20,6 +35,12 @@ template <typename EOut, typename D> class TranslateMarker {
                   "EOut must be initializeable with macrotime");
 
   public:
+    /**
+     * \brief Construct with marker channel and downstream processor.
+     *
+     * \param channel channel of marker events to convert to EOut events
+     * \param downstream downstream processor (moved out)
+     */
     explicit TranslateMarker(std::uint32_t channel, D &&downstream)
         : chan(channel), downstream(std::move(downstream)) {}
 

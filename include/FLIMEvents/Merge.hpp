@@ -5,6 +5,7 @@
 
 #include <exception>
 #include <queue>
+#include <type_traits>
 #include <utility>
 
 namespace flimevt {
@@ -110,6 +111,15 @@ template <typename ESet, typename D> class MergeImpl {
 
 } // namespace internal
 
+/**
+ * \brief Processor proxying input to a merge processor.
+ *
+ * \see flimevt::MakeMerge()
+ *
+ * \tparam Ch 0 or 1
+ * \tparam ESet the event set handled by the merge processor
+ * \tparam D downstream processor type
+ */
 template <unsigned Ch, typename ESet, typename D> class MergeInput {
     std::shared_ptr<internal::MergeImpl<ESet, D>> impl;
 
@@ -125,7 +135,8 @@ template <unsigned Ch, typename ESet, typename D> class MergeInput {
     MergeInput &operator=(MergeInput const &) = delete;
     MergeInput &operator=(MergeInput &&) = default;
 
-    template <typename E> void HandleEvent(E const &event) noexcept {
+    template <typename E, typename = std::enable_if_t<ContainsEventV<ESet, E>>>
+    void HandleEvent(E const &event) noexcept {
         impl->template HandleEvent<Ch>(event);
     }
 
@@ -135,6 +146,19 @@ template <unsigned Ch, typename ESet, typename D> class MergeInput {
     }
 };
 
+/**
+ * \brief Create a processor that merges two event streams.
+ *
+ * The merged stream will be produced in increasing macrotime order, provided
+ * that the two input streams have events in increasing macrotime order and the
+ * time shift between them does not exceed maxTimeShift.
+ *
+ * \tparam ESet the event set handled by the merge processor
+ * \tparam D downstream processor type
+ * \param maxTimeShift the maximum time shift between the two input streams
+ * \param downstream downstream processor (will be moved out)
+ * \return std::pair of MergeInput processors
+ */
 template <typename ESet, typename D>
 auto MakeMerge(Macrotime maxTimeShift, D &&downstream) {
     auto p = std::make_shared<internal::MergeImpl<ESet, D>>(

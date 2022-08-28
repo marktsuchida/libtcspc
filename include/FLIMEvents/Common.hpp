@@ -8,9 +8,23 @@
 
 namespace flimevt {
 
-// We used a signed integer to represent macrotime (both duration and
-// timepoint), because it is plenty large enough and also allows handling
-// negative time.
+/**
+ * \brief Signed 64-bit integer type representing macrotime.
+ *
+ * The macrotime is the monotonically increasing timestamp assigned to events
+ * by time tagging hardware, after processing to eliminate wraparounds.
+ *
+ * We used a signed integer type because negative times can arise (for example
+ * if a negative delay is applied to events).
+ *
+ * The physical units of the macrotime is dependent on the input data and it is
+ * the user's responsibility to interpret correctly. FLIMEvents is designed to
+ * use integer values without scaling and does not handle physical units.
+ *
+ * It is assumed that macrotime values never overflow. The maximum
+ * representable value is over 9E18. If the macrotime units are picoseconds,
+ * this corresponds to about 3 and a half months.
+ */
 using Macrotime = std::int64_t;
 
 namespace internal {

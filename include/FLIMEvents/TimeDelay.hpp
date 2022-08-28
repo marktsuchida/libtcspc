@@ -5,11 +5,22 @@
 
 namespace flimevt {
 
+/**
+ * \brief Processor that applies a macrotime offset to all events.
+ *
+ * \tparam D downstream processor type
+ */
 template <typename D> class TimeDelay {
     Macrotime delta;
     D downstream;
 
   public:
+    /**
+     * \brief Construct with macrotime offset and downstream processor.
+     *
+     * \param delta macrotime offset to apply (can be negative)
+     * \param downstream downstream processor (moved out)
+     */
     explicit TimeDelay(Macrotime delta, D &&downstream)
         : delta(delta), downstream(std::move(downstream)) {}
 

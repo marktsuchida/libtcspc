@@ -157,14 +157,9 @@ struct BHSPC600Event32 {
 };
 
 namespace internal {
-/**
- * \brief Implementation of BH SPC event stream decoders.
- *
- * User code should use one of the following concrete classes:
- * DecodeBHSPC, DecodeBHSPC600_48, DecodeBHSPC600_32.
- *
- * \tparam E binary record interpreter class
- */
+
+// Common implementation for DecodeBHSPC, DecodeBHSPC600_48, DecodeBHSPC600_32.
+// E is the binary record event class.
 template <typename E, typename D> class BaseDecodeBHSPC {
     Macrotime macrotimeBase; // Time of last overflow
     Macrotime lastMacrotime;
@@ -244,7 +239,11 @@ template <typename E, typename D> class BaseDecodeBHSPC {
 } // namespace internal
 
 /**
- * \brief Decode raw BH SPC events.
+ * \brief Processor that decodes raw BH SPC (most models) events.
+ *
+ * \see DecodeBHSPC()
+ *
+ * \tparam D downstream processor type
  */
 template <typename D>
 class DecodeBHSPC : public internal::BaseDecodeBHSPC<BHSPCEvent, D> {
@@ -252,10 +251,21 @@ class DecodeBHSPC : public internal::BaseDecodeBHSPC<BHSPCEvent, D> {
     using internal::BaseDecodeBHSPC<BHSPCEvent, D>::BaseDecodeBHSPC;
 };
 
-template <typename D> DecodeBHSPC(D &&) -> DecodeBHSPC<D>;
+/**
+ * \brief Deduction guide for constructing a DecodeBHSPC processor.
+ *
+ * \tparam D downstream processor type
+ * \param downstream downstream processor (moved out)
+ */
+template <typename D> DecodeBHSPC(D &&downstream) -> DecodeBHSPC<D>;
 
 /**
- * \brief Decode raw BH SPC-600/630 events in 4096-channel mode.
+ * \brief Processor that decodes raw BH SPC-600/630 events in 4096-channel
+ * mode.
+ *
+ * \see DecodeBHSPC600_48()
+ *
+ * \tparam D downstream processor type
  */
 template <typename D>
 class DecodeBHSPC600_48
@@ -264,10 +274,21 @@ class DecodeBHSPC600_48
     using internal::BaseDecodeBHSPC<BHSPC600Event48, D>::BaseDecodeBHSPC;
 };
 
-template <typename D> DecodeBHSPC600_48(D &&) -> DecodeBHSPC600_48<D>;
+/**
+ * \brief Deduction guide for constructing a DecodeBHSPC600_48 processor.
+ *
+ * \tparam D downstream processor type
+ * \param downstream downstream processor (moved out)
+ */
+template <typename D>
+DecodeBHSPC600_48(D &&downstream) -> DecodeBHSPC600_48<D>;
 
 /**
- * \brief Decode raw BH SPC-600/630 events in 256-channel mode.
+ * \brief Processor that decodes raw BH SPC-600/630 events in 256-channel mode.
+ *
+ * \see DecodeBHSPC600_32()
+ *
+ * \tparam D downstream processor type
  */
 template <typename D>
 class DecodeBHSPC600_32
@@ -276,7 +297,14 @@ class DecodeBHSPC600_32
     using internal::BaseDecodeBHSPC<BHSPC600Event32, D>::BaseDecodeBHSPC;
 };
 
-template <typename D> DecodeBHSPC600_32(D &&) -> DecodeBHSPC600_32<D>;
+/**
+ * \brief Deduction guide for constructing a DecodeBHSPC600_32 processor.
+ *
+ * \tparam D downstream processor type
+ * \param downstream downstream processor (moved out)
+ */
+template <typename D>
+DecodeBHSPC600_32(D &&downstream) -> DecodeBHSPC600_32<D>;
 
 /**
  * \brief Event set for raw BH SPC data stream.

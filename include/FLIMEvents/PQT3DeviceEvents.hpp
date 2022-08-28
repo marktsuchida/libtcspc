@@ -10,10 +10,6 @@
 
 namespace flimevt {
 
-// WARNING: I implemented PicoQuant event types to verify that the framework
-// can handle a good range of raw event stream formats. But it has not been
-// excercised.
-
 // PicoQuant raw photon event ("TTTR") formats are documented in the html files
 // contained in this repository:
 // https://github.com/PicoQuant/PicoQuant-Time-Tagged-File-Format-Demos
@@ -131,14 +127,10 @@ using PQHydraV1T3Event = PQHydraT3Event<true>;
 using PQHydraV2T3Event = PQHydraT3Event<false>;
 
 namespace internal {
-/**
- * \brief Decode PicoQuant T3 data stream.
- *
- * User code should use one of the following concrete classes:
- * DecodePQPicoT3, DecodePQHydraV1T3, DecodePQHydraV2T3.
- *
- * \tparam E binary record interpreter class
- */
+
+// Common implementation for DecodePQPicoT3, DecodePQHydraV1T3,
+// DecodePQHydraV2T3.
+// E is the binary record event class.
 template <typename E, typename D> class BaseDecodePQT3Event {
     Macrotime nSyncBase;
     Macrotime lastNSync;
@@ -197,23 +189,74 @@ template <typename E, typename D> class BaseDecodePQT3Event {
 } // namespace internal
 
 /**
- * \brief Decode PicoQuant PicoHarp T3 data stream.
+ * \brief Processor that decodes PicoQuant PicoHarp T3 events.
+ *
+ * \see DecodePQPicoT3()
+ *
+ * \tparam D downstream processor type
  */
 template <typename D>
-using DecodePQPicoT3 = internal::BaseDecodePQT3Event<PQPicoT3Event, D>;
+class DecodePQPicoT3 : public internal::BaseDecodePQT3Event<PQPicoT3Event, D> {
+  public:
+    using internal::BaseDecodePQT3Event<PQPicoT3Event, D>::BaseDecodePQT3Event;
+};
 
 /**
- * \brief Decode PicoQuant HydraHarp V1 T3 data stream.
+ * \brief Deduction guide for constructing a DecodePQPicoT3 processor.
+ *
+ * \tparam D downstream processor type
+ * \param downstream downstream processor (moved out)
  */
-template <typename D>
-using DecodePQHydraV1T3 = internal::BaseDecodePQT3Event<PQHydraV1T3Event, D>;
+template <typename D> DecodePQPicoT3(D &&downstream) -> DecodePQPicoT3<D>;
 
 /**
- * \brief Decode PicoQuant HydraHarp V2, MultiHarp, and TimeHarp260 T3
- * data stream.
+ * \brief Processor that decodes PicoQuant HydraHarp V1 T3 events.
+ *
+ * \see DecodePQHydraV1T3()
+ *
+ * \tparam D downstream processor type
  */
 template <typename D>
-using DecodePQHydraV2T3 = internal::BaseDecodePQT3Event<PQHydraV2T3Event, D>;
+class DecodePQHydraV1T3
+    : public internal::BaseDecodePQT3Event<PQHydraV1T3Event, D> {
+  public:
+    using internal::BaseDecodePQT3Event<PQHydraV1T3Event,
+                                        D>::BaseDecodePQT3Event;
+};
+
+/**
+ * \brief Deduction guide for constructing a DecodePQHydraV1T3 processor.
+ *
+ * \tparam D downstream processor type
+ * \param downstream downstream processor (moved out)
+ */
+template <typename D>
+DecodePQHydraV1T3(D &&downstream) -> DecodePQHydraV1T3<D>;
+
+/**
+ * \brief Processor that decodes PicoQuant HydraHarp V2, MultiHarp, and
+ * TimeHarp260 T3 events.
+ *
+ * \see DecodePQHydraV2T3()
+ *
+ * \tparam D downstream processor type
+ */
+template <typename D>
+class DecodePQHydraV2T3
+    : public internal::BaseDecodePQT3Event<PQHydraV2T3Event, D> {
+  public:
+    using internal::BaseDecodePQT3Event<PQHydraV2T3Event,
+                                        D>::BaseDecodePQT3Event;
+};
+
+/**
+ * \brief Deduction guide for constructing a DecodePQHydraV2T3 processor.
+ *
+ * \tparam D downstream processor type
+ * \param downstream downstream processor (moved out)
+ */
+template <typename D>
+DecodePQHydraV2T3(D &&downstream) -> DecodePQHydraV2T3<D>;
 
 /**
  * \brief Event set for PicoQuant PicoHarp T3 data stream.

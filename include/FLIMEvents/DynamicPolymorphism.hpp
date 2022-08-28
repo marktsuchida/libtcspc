@@ -81,23 +81,57 @@ using VirtualWrappedProcessor =
 
 } // namespace internal
 
-// Interface for dynamically polymorphic processor consuming event set
+/**
+ * \brief Abstract base class defining interface for dynamically polymorphic
+ * processors.
+ *
+ * Dynamically polymorphic processors have virtual \c HandleEvent and \c
+ * HandleEnd functions.
+ *
+ * \see PolymorphicProcessor
+ * \see VirtualWrappedProcessor
+ *
+ * \tparam ESet the event set handled by implementations of this interface
+ */
 template <typename ESet>
 using VirtualProcessor =
     ApplyClassTemplateToTupleElementsT<internal::VirtualProcessor, ESet>;
 
-// Wrap Proc in dynamically polymorphic class implementing
-// VirtualProcessor<ESet>
+/**
+ * \brief A dynamically polymorphic wrapper for a given processor type.
+ *
+ * A \c VirtualWrappedProcessor with a given event set is derived from
+ * \ref VirtualProcessor with the same event set, and has virtual \c
+ * HandleEvent and \c HandleEnd functions.
+ *
+ * \tparam Proc the processor to wrap
+ * \tparam ESet the event set handled by the processor
+ */
 template <typename Proc, typename ESet>
 using VirtualWrappedProcessor =
     ApplyClassTemplateToTupleElementsT<internal::VirtualWrappedProcessor, ESet,
                                        Proc>;
 
-// Wrap dynamically polymorphic proc in static class
+/**
+ * \brief Processor that invokes a dynamically polymorphic processor.
+ *
+ * This is a regular processor that contains a reference (\c shared_ptr) to a
+ * dynamically polymorphic processor whose type can be determined at run time.
+ *
+ * \see VirtualProcessor
+ *
+ * \tparam ESet the event set handled by the processor
+ */
 template <typename ESet> class PolymorphicProcessor {
     std::shared_ptr<VirtualProcessor<ESet>> proc;
 
   public:
+    /**
+     * \brief Construct with the given dynamically polymorphic processor.
+     *
+     * \param proc the dynamically polymorphic processor that will handle
+     * events and end-of-stream
+     */
     PolymorphicProcessor(std::shared_ptr<VirtualProcessor<ESet>> proc)
         : proc(proc) {}
 
