@@ -111,7 +111,7 @@ void DumpRawEvent(char const *rawEvent, std::ostream &output) {
 
 int DumpEvents(std::istream &input, std::ostream &output) {
     PrintProcessor pp(output);
-    flimevt::BHSPCEventDecoder<decltype(pp)> decoder(std::move(pp));
+    flimevt::DecodeBHSPC<decltype(pp)> decoder(std::move(pp));
     constexpr std::size_t const eventSize = sizeof(flimevt::BHSPCEvent);
 
     while (input.good()) {

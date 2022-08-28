@@ -161,18 +161,18 @@ namespace internal {
  * \brief Implementation of BH SPC event stream decoders.
  *
  * User code should use one of the following concrete classes:
- * BHSPCEventDecoder, BHSPC600Event48Decoder, BHSPC600Event32Decoder.
+ * DecodeBHSPC, DecodeBHSPC600_48, DecodeBHSPC600_32.
  *
  * \tparam E binary record interpreter class
  */
-template <typename E, typename D> class BaseBHEventDecoder {
+template <typename E, typename D> class BaseDecodeBHSPC {
     Macrotime macrotimeBase; // Time of last overflow
     Macrotime lastMacrotime;
 
     D downstream;
 
   public:
-    explicit BaseBHEventDecoder(D &&downstream)
+    explicit BaseDecodeBHSPC(D &&downstream)
         : macrotimeBase(0), lastMacrotime(0),
           downstream(std::move(downstream)) {}
 
@@ -244,41 +244,39 @@ template <typename E, typename D> class BaseBHEventDecoder {
 } // namespace internal
 
 /**
- * \brief Decoder for raw BH SPC events.
+ * \brief Decode raw BH SPC events.
  */
 template <typename D>
-class BHSPCEventDecoder : public internal::BaseBHEventDecoder<BHSPCEvent, D> {
+class DecodeBHSPC : public internal::BaseDecodeBHSPC<BHSPCEvent, D> {
   public:
-    using internal::BaseBHEventDecoder<BHSPCEvent, D>::BaseBHEventDecoder;
+    using internal::BaseDecodeBHSPC<BHSPCEvent, D>::BaseDecodeBHSPC;
 };
 
-template <typename D> BHSPCEventDecoder(D &&) -> BHSPCEventDecoder<D>;
+template <typename D> DecodeBHSPC(D &&) -> DecodeBHSPC<D>;
 
 /**
- * \brief Decoder for raw BH SPC-600/630 events in 4096-channel mode.
+ * \brief Decode raw BH SPC-600/630 events in 4096-channel mode.
  */
 template <typename D>
-class BHSPC600Event48Decoder
-    : public internal::BaseBHEventDecoder<BHSPC600Event48, D> {
+class DecodeBHSPC600_48
+    : public internal::BaseDecodeBHSPC<BHSPC600Event48, D> {
   public:
-    using internal::BaseBHEventDecoder<BHSPC600Event48, D>::BaseBHEventDecoder;
+    using internal::BaseDecodeBHSPC<BHSPC600Event48, D>::BaseDecodeBHSPC;
 };
 
-template <typename D>
-BHSPC600Event48Decoder(D &&) -> BHSPC600Event48Decoder<D>;
+template <typename D> DecodeBHSPC600_48(D &&) -> DecodeBHSPC600_48<D>;
 
 /**
- * \brief Decoder for raw BH SPC-600/630 events in 256-channel mode.
+ * \brief Decode raw BH SPC-600/630 events in 256-channel mode.
  */
 template <typename D>
-class BHSPC600Event32Decoder
-    : public internal::BaseBHEventDecoder<BHSPC600Event32, D> {
+class DecodeBHSPC600_32
+    : public internal::BaseDecodeBHSPC<BHSPC600Event32, D> {
   public:
-    using internal::BaseBHEventDecoder<BHSPC600Event32, D>::BaseBHEventDecoder;
+    using internal::BaseDecodeBHSPC<BHSPC600Event32, D>::BaseDecodeBHSPC;
 };
 
-template <typename D>
-BHSPC600Event32Decoder(D &&) -> BHSPC600Event32Decoder<D>;
+template <typename D> DecodeBHSPC600_32(D &&) -> DecodeBHSPC600_32<D>;
 
 /**
  * \brief Event set for raw BH SPC data stream.

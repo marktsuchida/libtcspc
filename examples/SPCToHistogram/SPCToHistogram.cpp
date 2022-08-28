@@ -91,7 +91,7 @@ int main(int argc, char *argv[]) {
     cumulHisto.Clear();
 
     // Construct pipeline
-    flimevt::BHSPCEventDecoder decoder(flimevt::LineClockPixellator(
+    flimevt::DecodeBHSPC decoder(flimevt::LineClockPixellator(
         width, height, maxFrames, lineDelay, lineTime, 1,
         flimevt::SequentialHistogrammer(
             std::move(frameHisto),

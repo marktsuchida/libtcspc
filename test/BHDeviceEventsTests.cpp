@@ -11,11 +11,11 @@ using namespace flimevt;
 
 using DiscardTCSPC = DiscardAll<TCSPCEvents>;
 
-static_assert(HandlesEventSetV<BHSPCEventDecoder<DiscardTCSPC>, BHSPCEvents>);
+static_assert(HandlesEventSetV<DecodeBHSPC<DiscardTCSPC>, BHSPCEvents>);
 static_assert(
-    HandlesEventSetV<BHSPC600Event48Decoder<DiscardTCSPC>, BHSPC600Events48>);
+    HandlesEventSetV<DecodeBHSPC600_48<DiscardTCSPC>, BHSPC600Events48>);
 static_assert(
-    HandlesEventSetV<BHSPC600Event32Decoder<DiscardTCSPC>, BHSPC600Events32>);
+    HandlesEventSetV<DecodeBHSPC600_32<DiscardTCSPC>, BHSPC600Events32>);
 
 TEST_CASE("ADCValue", "[BHSPCEvent]") {
     union {

@@ -26,8 +26,8 @@ namespace flimevt {
 // https://commandcenter.blogspot.com/2012/04/byte-order-fallacy.html
 
 // The two T3 formats (PQPicoT3Event and PQHydraT3Event) use matching member
-// names for static polymorphism. This allows PQT3EventDecoder<E> to handle 3
-// different formats with the same code.
+// names for static polymorphism. This allows BaseDecodePQT3Event<E> to handle
+// 3 different formats with the same code.
 
 /**
  * \brief Binary record interpretation for PicoHarp T3 Format.
@@ -132,21 +132,21 @@ using PQHydraV2T3Event = PQHydraT3Event<false>;
 
 namespace internal {
 /**
- * \brief Decoder for PicoQuant T3 data stream.
+ * \brief Decode PicoQuant T3 data stream.
  *
  * User code should use one of the following concrete classes:
- * PQPicoT3EventDecoder, PQHydraV1T3EventDecoder, PQHydraV2T3EventDecoder.
+ * DecodePQPicoT3, DecodePQHydraV1T3, DecodePQHydraV2T3.
  *
  * \tparam E binary record interpreter class
  */
-template <typename E, typename D> class PQT3EventDecoder {
+template <typename E, typename D> class BaseDecodePQT3Event {
     Macrotime nSyncBase;
     Macrotime lastNSync;
 
     D downstream;
 
   public:
-    explicit PQT3EventDecoder(D &&downstream)
+    explicit BaseDecodePQT3Event(D &&downstream)
         : nSyncBase(0), lastNSync(0), downstream(std::move(downstream)) {}
 
     void HandleEvent(E const &event) noexcept {
@@ -197,25 +197,23 @@ template <typename E, typename D> class PQT3EventDecoder {
 } // namespace internal
 
 /**
- * \brief Decoder for PicoQuant PicoHarp T3 data stream.
+ * \brief Decode PicoQuant PicoHarp T3 data stream.
  */
 template <typename D>
-using PQPicoT3EventDecoder = internal::PQT3EventDecoder<PQPicoT3Event, D>;
+using DecodePQPicoT3 = internal::BaseDecodePQT3Event<PQPicoT3Event, D>;
 
 /**
- * \brief Decoder for PicoQuant HydraHarp V1 T3 data stream.
+ * \brief Decode PicoQuant HydraHarp V1 T3 data stream.
  */
 template <typename D>
-using PQHydraV1T3EventDecoder =
-    internal::PQT3EventDecoder<PQHydraV1T3Event, D>;
+using DecodePQHydraV1T3 = internal::BaseDecodePQT3Event<PQHydraV1T3Event, D>;
 
 /**
- * \brief Decoder for PicoQuant HydraHarp V2, MultiHarp, and TimeHarp260 T3
+ * \brief Decode PicoQuant HydraHarp V2, MultiHarp, and TimeHarp260 T3
  * data stream.
  */
 template <typename D>
-using PQHydraV2T3EventDecoder =
-    internal::PQT3EventDecoder<PQHydraV2T3Event, D>;
+using DecodePQHydraV2T3 = internal::BaseDecodePQT3Event<PQHydraV2T3Event, D>;
 
 /**
  * \brief Event set for PicoQuant PicoHarp T3 data stream.

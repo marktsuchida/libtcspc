@@ -103,8 +103,7 @@ processor.
 
 Raw device events to TCSPC events:
 
-- `BHSPCEventDecoder`, `BHSPC600Event48Decoder`, `BHSPC600Event32Decoder`,
-  `PQT3EventDecoder`
+- `DecodeBHSPC`, `DecodeBHSPC600_48`, `DecodeBHSPC600_32`
 
 TCSPC events to pixel photon events:
 
