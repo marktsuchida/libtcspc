@@ -22,8 +22,8 @@ namespace flimevt {
 // https://commandcenter.blogspot.com/2012/04/byte-order-fallacy.html
 
 // The two T3 formats (PQPicoT3Event and PQHydraT3Event) use matching member
-// names for static polymorphism. This allows BaseDecodePQT3Event<E> to handle
-// 3 different formats with the same code.
+// names for static polymorphism. This allows BaseDecodePQT3<E> to handle 3
+// different formats with the same code.
 
 /**
  * \brief Binary record interpretation for PicoHarp T3 Format.
@@ -131,14 +131,14 @@ namespace internal {
 // Common implementation for DecodePQPicoT3, DecodePQHydraV1T3,
 // DecodePQHydraV2T3.
 // E is the binary record event class.
-template <typename E, typename D> class BaseDecodePQT3Event {
+template <typename E, typename D> class BaseDecodePQT3 {
     Macrotime nSyncBase;
     Macrotime lastNSync;
 
     D downstream;
 
   public:
-    explicit BaseDecodePQT3Event(D &&downstream)
+    explicit BaseDecodePQT3(D &&downstream)
         : nSyncBase(0), lastNSync(0), downstream(std::move(downstream)) {}
 
     void HandleEvent(E const &event) noexcept {
@@ -196,9 +196,9 @@ template <typename E, typename D> class BaseDecodePQT3Event {
  * \tparam D downstream processor type
  */
 template <typename D>
-class DecodePQPicoT3 : public internal::BaseDecodePQT3Event<PQPicoT3Event, D> {
+class DecodePQPicoT3 : public internal::BaseDecodePQT3<PQPicoT3Event, D> {
   public:
-    using internal::BaseDecodePQT3Event<PQPicoT3Event, D>::BaseDecodePQT3Event;
+    using internal::BaseDecodePQT3<PQPicoT3Event, D>::BaseDecodePQT3;
 };
 
 /**
@@ -218,10 +218,9 @@ template <typename D> DecodePQPicoT3(D &&downstream) -> DecodePQPicoT3<D>;
  */
 template <typename D>
 class DecodePQHydraV1T3
-    : public internal::BaseDecodePQT3Event<PQHydraV1T3Event, D> {
+    : public internal::BaseDecodePQT3<PQHydraV1T3Event, D> {
   public:
-    using internal::BaseDecodePQT3Event<PQHydraV1T3Event,
-                                        D>::BaseDecodePQT3Event;
+    using internal::BaseDecodePQT3<PQHydraV1T3Event, D>::BaseDecodePQT3;
 };
 
 /**
@@ -243,10 +242,9 @@ DecodePQHydraV1T3(D &&downstream) -> DecodePQHydraV1T3<D>;
  */
 template <typename D>
 class DecodePQHydraV2T3
-    : public internal::BaseDecodePQT3Event<PQHydraV2T3Event, D> {
+    : public internal::BaseDecodePQT3<PQHydraV2T3Event, D> {
   public:
-    using internal::BaseDecodePQT3Event<PQHydraV2T3Event,
-                                        D>::BaseDecodePQT3Event;
+    using internal::BaseDecodePQT3<PQHydraV2T3Event, D>::BaseDecodePQT3;
 };
 
 /**
