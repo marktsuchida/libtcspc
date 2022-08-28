@@ -4,6 +4,7 @@
 #include "EventSet.hpp"
 
 #include <cstdint>
+#include <ostream>
 
 namespace flimevt {
 
@@ -45,6 +46,14 @@ struct TCSPCEvent {
  */
 struct TimestampEvent : public TCSPCEvent {};
 
+inline bool operator==(TimestampEvent const &lhs, TimestampEvent const &rhs) {
+    return lhs.macrotime == rhs.macrotime;
+}
+
+inline std::ostream &operator<<(std::ostream &s, TimestampEvent const &e) {
+    return s << "Timestamp(" << e.macrotime << ')';
+}
+
 /**
  * \brief Event indicating loss of data due to buffer overflow.
  *
@@ -57,6 +66,14 @@ struct TimestampEvent : public TCSPCEvent {};
  * the computer.
  */
 struct DataLostEvent : public TCSPCEvent {};
+
+inline bool operator==(DataLostEvent const &lhs, DataLostEvent const &rhs) {
+    return lhs.macrotime == rhs.macrotime;
+}
+
+inline std::ostream &operator<<(std::ostream &s, DataLostEvent const &e) {
+    return s << "DataLost(" << e.macrotime << ')';
+}
 
 /**
  * \brief Abstract base class for valid and invalid photon events.
@@ -87,10 +104,32 @@ struct BasePhotonEvent : public TCSPCEvent {
  */
 struct ValidPhotonEvent : public BasePhotonEvent {};
 
+inline bool operator==(ValidPhotonEvent const &lhs,
+                       ValidPhotonEvent const &rhs) {
+    return lhs.macrotime == rhs.macrotime && lhs.nanotime == rhs.nanotime &&
+           lhs.route == rhs.route;
+}
+
+inline std::ostream &operator<<(std::ostream &s, ValidPhotonEvent const &e) {
+    return s << "ValidPhoton(" << e.macrotime << ", " << e.nanotime << ", "
+             << e.route << ')';
+}
+
 /**
  * \brief Event indicating an invalid photon, produced by some devices.
  */
 struct InvalidPhotonEvent : public BasePhotonEvent {};
+
+inline bool operator==(InvalidPhotonEvent const &lhs,
+                       InvalidPhotonEvent const &rhs) {
+    return lhs.macrotime == rhs.macrotime && lhs.nanotime == rhs.nanotime &&
+           lhs.route == rhs.route;
+}
+
+inline std::ostream &operator<<(std::ostream &s, InvalidPhotonEvent const &e) {
+    return s << "InvalidPhoton(" << e.macrotime << ", " << e.nanotime << ", "
+             << e.route << ')';
+}
 
 /**
  * \brief Event indicating a marker.
@@ -120,7 +159,22 @@ struct MarkerEvent : public TCSPCEvent {
     std::int32_t channel;
 };
 
+inline bool operator==(MarkerEvent const &lhs, MarkerEvent const &rhs) {
+    return lhs.macrotime == rhs.macrotime && lhs.channel == rhs.channel;
+}
+
+inline std::ostream &operator<<(std::ostream &s, MarkerEvent const &e) {
+    return s << "Marker(" << e.macrotime << ", " << e.channel << ')';
+}
+
 using TCSPCEvents = EventSet<TimestampEvent, DataLostEvent, ValidPhotonEvent,
                              InvalidPhotonEvent, MarkerEvent>;
+
+inline std::ostream &
+operator<<(std::ostream &os,
+           flimevt::EventVariant<flimevt::TCSPCEvents> const &event) {
+    return std::visit([&](auto const &e) -> std::ostream & { return os << e; },
+                      event);
+}
 
 } // namespace flimevt

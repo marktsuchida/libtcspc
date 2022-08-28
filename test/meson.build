@@ -23,6 +23,7 @@ flimevents_tests_srcs = [
     'SplitEventsTests.cpp',
     'TCSPCEventsTests.cpp',
     'TimeDelayTests.cpp',
+    'TranslateMarkerTests.cpp',
     'main.cpp',
 ]
 

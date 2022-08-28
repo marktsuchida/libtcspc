@@ -18,6 +18,7 @@ public_cpp_headers = files(
     'SplitEvents.hpp',
     'TCSPCEvents.hpp',
     'TimeDelay.hpp',
+    'TranslateMarker.hpp',
 )
 
 install_headers(public_cpp_headers, subdir: 'FLIMEvents')
