@@ -7,7 +7,7 @@ catch2_dep = dependency(
 flimevents_tests_srcs = [
     'ApplyClassTemplateToTupleElementsTest.cpp',
     'BHDeviceEventsTests.cpp',
-    'BroadcastProcessorTests.cpp',
+    'BroadcastTests.cpp',
     'CommonTests.cpp',
     'DelayHastenProcessorTests.cpp',
     'DynamicPolymorphismTests.cpp',

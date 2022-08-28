@@ -6,11 +6,11 @@
 
 namespace flimevt {
 
-template <typename... Ds> class BroadcastProcessor {
+template <typename... Ds> class Broadcast {
     std::tuple<Ds...> downstreams;
 
   public:
-    explicit BroadcastProcessor(Ds &&...downstreams)
+    explicit Broadcast(Ds &&...downstreams)
         : downstreams{std::move<Ds>(downstreams)...} {}
 
     template <typename E> void HandleEvent(E const &event) noexcept {

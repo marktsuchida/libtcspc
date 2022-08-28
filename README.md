@@ -120,8 +120,8 @@ Frame histogram events to cumulative histogram events:
 
 Generic processors:
 
-- `BroadcastProcessor` (`E` to `E`), `EventArrayDemultiplexer` (`EventArray<E>`
-  to `E`), `EventBuffer` (`E` to `EventArray<E>`)
+- `Broadcast` (`E` to `E`), `EventArrayDemultiplexer` (`EventArray<E>` to `E`),
+  `EventBuffer` (`E` to `EventArray<E>`)
 
 ### Upstream buffering
 

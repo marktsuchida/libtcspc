@@ -1,7 +1,7 @@
 public_cpp_headers = files(
     'ApplyClassTemplateToTupleElements.hpp',
     'BHDeviceEvents.hpp',
-    'BroadcastProcessor.hpp',
+    'Broadcast.hpp',
     'Common.hpp',
     'DelayHastenProcessor.hpp',
     'DynamicPolymorphism.hpp',
