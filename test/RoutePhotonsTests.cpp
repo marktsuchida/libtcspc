@@ -1,6 +1,6 @@
 #include "FLIMEvents/RoutePhotons.hpp"
 
-#include "FLIMEvents/NoopProcessor.hpp"
+#include "FLIMEvents/Discard.hpp"
 #include "ProcessorTestFixture.hpp"
 
 #include <catch2/catch.hpp>
@@ -11,8 +11,9 @@ using namespace flimevt::test;
 auto MakeRoutePhotonsFixtureOutput0(
     std::vector<std::int16_t> const &channels) {
     auto makeProc = [&channels](auto &&downstream) {
-        auto noop = NoopProcessor<TCSPCEvents>();
-        return RoutePhotons(channels, std::move(downstream), std::move(noop));
+        auto discard = DiscardAll<TCSPCEvents>();
+        return RoutePhotons(channels, std::move(downstream),
+                            std::move(discard));
     };
 
     return MakeProcessorTestFixture<TCSPCEvents, TCSPCEvents>(makeProc);
@@ -21,8 +22,9 @@ auto MakeRoutePhotonsFixtureOutput0(
 auto MakeRoutePhotonsFixtureOutput1(
     std::vector<std::int16_t> const &channels) {
     auto makeProc = [&channels](auto &&downstream) {
-        auto noop = NoopProcessor<TCSPCEvents>();
-        return RoutePhotons(channels, std::move(noop), std::move(downstream));
+        auto discard = DiscardAll<TCSPCEvents>();
+        return RoutePhotons(channels, std::move(discard),
+                            std::move(downstream));
     };
 
     return MakeProcessorTestFixture<TCSPCEvents, TCSPCEvents>(makeProc);
@@ -31,9 +33,9 @@ auto MakeRoutePhotonsFixtureOutput1(
 auto MakeRoutePhotonsFixtureOutput2(
     std::vector<std::int16_t> const &channels) {
     auto makeProc = [&channels](auto &&downstream) {
-        auto noop0 = NoopProcessor<TCSPCEvents>();
-        auto noop1 = NoopProcessor<TCSPCEvents>();
-        return RoutePhotons(channels, std::move(noop0), std::move(noop1),
+        auto discard0 = DiscardAll<TCSPCEvents>();
+        auto discard1 = DiscardAll<TCSPCEvents>();
+        return RoutePhotons(channels, std::move(discard0), std::move(discard1),
                             std::move(downstream));
     };
 

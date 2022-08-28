@@ -1,6 +1,6 @@
 #include "FLIMEvents/Merge.hpp"
 
-#include "FLIMEvents/NoopProcessor.hpp"
+#include "FLIMEvents/Discard.hpp"
 #include "FLIMEvents/SplitEvents.hpp"
 #include "ProcessorTestFixture.hpp"
 #include "TestEvents.hpp"
@@ -15,12 +15,12 @@ using namespace flimevt::test;
 
 static_assert(
     HandlesEventSetV<
-        decltype(MakeMerge<Events0123>(0, NoopProcessor<Events0123>()).first),
+        decltype(MakeMerge<Events0123>(0, DiscardAll<Events0123>()).first),
         Events0123>);
 
 static_assert(
     HandlesEventSetV<
-        decltype(MakeMerge<Events0123>(0, NoopProcessor<Events0123>()).second),
+        decltype(MakeMerge<Events0123>(0, DiscardAll<Events0123>()).second),
         Events0123>);
 
 // Instead of coming up with a 2-input test fixture, we rely on SplitEvents for

@@ -1,7 +1,7 @@
 #include "FLIMEvents/BHDeviceEvents.hpp"
 
+#include "FLIMEvents/Discard.hpp"
 #include "FLIMEvents/EventSet.hpp"
-#include "FLIMEvents/NoopProcessor.hpp"
 
 #include <catch2/catch.hpp>
 
@@ -9,13 +9,13 @@
 
 using namespace flimevt;
 
-using TCSPCNoop = NoopProcessor<TCSPCEvents>;
+using DiscardTCSPC = DiscardAll<TCSPCEvents>;
 
-static_assert(HandlesEventSetV<BHSPCEventDecoder<TCSPCNoop>, BHSPCEvents>);
+static_assert(HandlesEventSetV<BHSPCEventDecoder<DiscardTCSPC>, BHSPCEvents>);
 static_assert(
-    HandlesEventSetV<BHSPC600Event48Decoder<TCSPCNoop>, BHSPC600Events48>);
+    HandlesEventSetV<BHSPC600Event48Decoder<DiscardTCSPC>, BHSPC600Events48>);
 static_assert(
-    HandlesEventSetV<BHSPC600Event32Decoder<TCSPCNoop>, BHSPC600Events32>);
+    HandlesEventSetV<BHSPC600Event32Decoder<DiscardTCSPC>, BHSPC600Events32>);
 
 TEST_CASE("ADCValue", "[BHSPCEvent]") {
     union {

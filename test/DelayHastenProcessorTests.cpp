@@ -1,7 +1,7 @@
 #include "FLIMEvents/DelayHastenProcessor.hpp"
 
+#include "FLIMEvents/Discard.hpp"
 #include "FLIMEvents/EventSet.hpp"
-#include "FLIMEvents/NoopProcessor.hpp"
 #include "ProcessorTestFixture.hpp"
 #include "TestEvents.hpp"
 
@@ -18,15 +18,13 @@
 using namespace flimevt;
 using namespace flimevt::test;
 
-static_assert(
-    HandlesEventSetV<DelayProcessor<Events01, NoopProcessor<Events0123>>,
-                     Events0123>);
-static_assert(
-    HandlesEventSetV<HastenProcessor<Events01, NoopProcessor<Events0123>>,
-                     Events0123>);
-static_assert(HandlesEventSetV<DelayHastenProcessor<Events01, Events23,
-                                                    NoopProcessor<Events0123>>,
-                               Events0123>);
+static_assert(HandlesEventSetV<
+              DelayProcessor<Events01, DiscardAll<Events0123>>, Events0123>);
+static_assert(HandlesEventSetV<
+              HastenProcessor<Events01, DiscardAll<Events0123>>, Events0123>);
+static_assert(HandlesEventSetV<
+              DelayHastenProcessor<Events01, Events23, DiscardAll<Events0123>>,
+              Events0123>);
 
 // Make fixture to test delaying Events01
 auto MakeDelayFixture(Macrotime delta) {

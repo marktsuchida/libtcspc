@@ -1,7 +1,7 @@
 #include "FLIMEvents/DynamicPolymorphism.hpp"
 
+#include "FLIMEvents/Discard.hpp"
 #include "FLIMEvents/EventSet.hpp"
-#include "FLIMEvents/NoopProcessor.hpp"
 #include "TestEvents.hpp"
 
 using namespace flimevt;
@@ -23,15 +23,15 @@ static_assert(HandlesEventSetV<VirtualProcessor<EventSet<Event<0>>>,
 static_assert(HandlesEventSetV<VirtualProcessor<Events01>, Events01>);
 
 static_assert(HandlesEventSetV<
-              VirtualWrappedProcessor<NoopProcessor<EventSet<>>, EventSet<>>,
+              VirtualWrappedProcessor<DiscardAll<EventSet<>>, EventSet<>>,
               EventSet<>>);
 static_assert(!HandlesEventSetV<
-              VirtualWrappedProcessor<NoopProcessor<EventSet<>>, EventSet<>>,
+              VirtualWrappedProcessor<DiscardAll<EventSet<>>, EventSet<>>,
               EventSet<Event<0>>>);
 static_assert(
-    HandlesEventSetV<VirtualWrappedProcessor<NoopProcessor<EventSet<Event<0>>>,
+    HandlesEventSetV<VirtualWrappedProcessor<DiscardAll<EventSet<Event<0>>>,
                                              EventSet<Event<0>>>,
                      EventSet<Event<0>>>);
 static_assert(
-    HandlesEventSetV<
-        VirtualWrappedProcessor<NoopProcessor<Events01>, Events01>, Events01>);
+    HandlesEventSetV<VirtualWrappedProcessor<DiscardAll<Events01>, Events01>,
+                     Events01>);

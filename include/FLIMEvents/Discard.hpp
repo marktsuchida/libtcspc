@@ -7,7 +7,7 @@
 
 namespace flimevt {
 
-template <typename ESet> class NoopProcessor {
+template <typename ESet> class DiscardAll {
   public:
     template <typename E, typename = std::enable_if_t<ContainsEventV<ESet, E>>>
     void HandleEvent(E const &) noexcept {}

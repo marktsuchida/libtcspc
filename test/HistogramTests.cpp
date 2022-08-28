@@ -1,7 +1,7 @@
 #include "FLIMEvents/Histogram.hpp"
 
+#include "FLIMEvents/Discard.hpp"
 #include "FLIMEvents/EventSet.hpp"
-#include "FLIMEvents/NoopProcessor.hpp"
 
 #include <catch2/catch.hpp>
 
@@ -9,19 +9,18 @@ using namespace flimevt;
 
 static_assert(
     HandlesEventSetV<
-        Histogrammer<unsigned, NoopProcessor<FrameHistogramEvents<unsigned>>>,
+        Histogrammer<unsigned, DiscardAll<FrameHistogramEvents<unsigned>>>,
         PixelPhotonEvents>);
 
-static_assert(HandlesEventSetV<
-              SequentialHistogrammer<
-                  unsigned, NoopProcessor<FrameHistogramEvents<unsigned>>>,
-              PixelPhotonEvents>);
-
 static_assert(
-    HandlesEventSetV<
-        HistogramAccumulator<
-            unsigned, NoopProcessor<CumulativeHistogramEvents<unsigned>>>,
-        FrameHistogramEvents<unsigned>>);
+    HandlesEventSetV<SequentialHistogrammer<
+                         unsigned, DiscardAll<FrameHistogramEvents<unsigned>>>,
+                     PixelPhotonEvents>);
+
+static_assert(HandlesEventSetV<
+              HistogramAccumulator<
+                  unsigned, DiscardAll<CumulativeHistogramEvents<unsigned>>>,
+              FrameHistogramEvents<unsigned>>);
 
 TEST_CASE("TimeBins", "[Histogram]") {
     Histogram<std::uint16_t> hist(8, 12, false, 1, 1);

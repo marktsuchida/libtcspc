@@ -1,6 +1,6 @@
 #include "FLIMEvents/SplitEvents.hpp"
 
-#include "FLIMEvents/NoopProcessor.hpp"
+#include "FLIMEvents/Discard.hpp"
 #include "ProcessorTestFixture.hpp"
 #include "TestEvents.hpp"
 
@@ -12,14 +12,14 @@
 using namespace flimevt;
 using namespace flimevt::test;
 
-static_assert(HandlesEventSetV<SplitEvents<Events01, NoopProcessor<Events01>,
-                                           NoopProcessor<Events01>>,
+static_assert(HandlesEventSetV<SplitEvents<Events01, DiscardAll<Events01>,
+                                           DiscardAll<Events01>>,
                                Events01>);
 
 auto MakeSplitEventsFixtureOutput0() {
     auto makeProc = [](auto &&downstream) {
         using D0 = std::remove_reference_t<decltype(downstream)>;
-        using D1 = NoopProcessor<Events23>;
+        using D1 = DiscardAll<Events23>;
         return SplitEvents<Events23, D0, D1>(std::move(downstream), D1());
     };
 
@@ -28,7 +28,7 @@ auto MakeSplitEventsFixtureOutput0() {
 
 auto MakeSplitEventsFixtureOutput1() {
     auto makeProc = [](auto &&downstream) {
-        using D0 = NoopProcessor<Events01>;
+        using D0 = DiscardAll<Events01>;
         using D1 = std::remove_reference_t<decltype(downstream)>;
         return SplitEvents<Events23, D0, D1>(D0(), std::move(downstream));
     };
