@@ -1,6 +1,5 @@
 #pragma once
 
-#include "BroadcastProcessor.hpp"
 #include "PixelPhotonEvents.hpp"
 
 #include <exception>
@@ -9,6 +8,8 @@
 #include <utility>
 
 namespace flimevt {
+
+// Note: This legacy processor does not handle negative channel numbers.
 
 template <typename... Ds> class PixelPhotonRouter {
     std::tuple<Ds...> downstreams;

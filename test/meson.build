@@ -20,6 +20,7 @@ flimevents_tests_srcs = [
     'PQT3DeviceEventsTests.cpp',
     'PixelPhotonEventsTests.cpp',
     'PixelPhotonRouterTests.cpp',
+    'RoutePhotonsTests.cpp',
     'SplitEventsTests.cpp',
     'TCSPCEventsTests.cpp',
     'TimeDelayTests.cpp',
