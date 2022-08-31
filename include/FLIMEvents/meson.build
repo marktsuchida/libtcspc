@@ -9,6 +9,7 @@ public_cpp_headers = files(
     'EventBuffer.hpp',
     'EventSet.hpp',
     'FLIMEvents.hpp',
+    'Gate.hpp',
     'Histogram.hpp',
     'LineClockPixellator.hpp',
     'Merge.hpp',

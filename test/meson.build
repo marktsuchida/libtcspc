@@ -14,6 +14,7 @@ flimevents_tests_srcs = [
     'DynamicPolymorphismTests.cpp',
     'EventBufferTests.cpp',
     'EventSetTests.cpp',
+    'GateTests.cpp',
     'HistogramTests.cpp',
     'LineClockPixellatorTests.cpp',
     'MergeTests.cpp',
