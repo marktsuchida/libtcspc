@@ -3,6 +3,7 @@ public_cpp_headers = files(
     'BHDeviceEvents.hpp',
     'Broadcast.hpp',
     'Common.hpp',
+    'Count.hpp',
     'DelayHastenProcessor.hpp',
     'Discard.hpp',
     'DynamicPolymorphism.hpp',
