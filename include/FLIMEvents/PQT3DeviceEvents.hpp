@@ -31,7 +31,7 @@ namespace flimevt {
  * RecType 0x00010303.
  */
 struct PQPicoT3Event {
-    char bytes[4];
+    unsigned char bytes[4];
 
     inline static constexpr Macrotime NSyncOverflowPeriod = 65536;
 
@@ -72,7 +72,7 @@ struct PQPicoT3Event {
  * format, in which nsync overflow records always indicate a single overflow
  */
 template <bool IsHydraV1> struct PQHydraT3Event {
-    std::uint8_t bytes[4];
+    unsigned char bytes[4];
 
     inline static constexpr Macrotime NSyncOverflowPeriod = 1024;
 

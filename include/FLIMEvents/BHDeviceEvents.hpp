@@ -24,7 +24,7 @@ namespace flimevt {
  * SPC-600 and SPC-630.
  */
 struct BHSPCEvent {
-    std::uint8_t bytes[4];
+    unsigned char bytes[4];
 
     inline static constexpr Macrotime MacrotimeOverflowPeriod = 1 << 12;
 
@@ -79,7 +79,7 @@ struct BHSPCEvent {
  * 4096-channel mode.
  */
 struct BHSPC600Event48 {
-    std::uint8_t bytes[6];
+    unsigned char bytes[6];
 
     inline static constexpr Macrotime MacrotimeOverflowPeriod = 1 << 24;
 
@@ -120,7 +120,7 @@ struct BHSPC600Event48 {
  * 256-channel mode.
  */
 struct BHSPC600Event32 {
-    std::uint8_t bytes[4];
+    unsigned char bytes[4];
 
     inline static constexpr Macrotime MacrotimeOverflowPeriod = 1 << 17;
 
