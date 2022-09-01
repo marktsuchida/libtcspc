@@ -33,7 +33,7 @@ namespace flimevt {
 struct PQPicoT3Event {
     char bytes[4];
 
-    static Macrotime const NSyncOverflowPeriod = 65536;
+    inline static constexpr Macrotime NSyncOverflowPeriod = 65536;
 
     std::uint8_t GetChannel() const noexcept {
         return std::uint8_t(bytes[3]) >> 4;
@@ -74,7 +74,7 @@ struct PQPicoT3Event {
 template <bool IsHydraV1> struct PQHydraT3Event {
     std::uint8_t bytes[4];
 
-    static Macrotime const NSyncOverflowPeriod = 1024;
+    inline static constexpr Macrotime NSyncOverflowPeriod = 1024;
 
     bool GetSpecialFlag() const noexcept { return bytes[3] & (1 << 7); }
 

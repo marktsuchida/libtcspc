@@ -26,7 +26,7 @@ namespace flimevt {
 struct BHSPCEvent {
     std::uint8_t bytes[4];
 
-    inline static Macrotime const MacrotimeOverflowPeriod = 1 << 12;
+    inline static constexpr Macrotime MacrotimeOverflowPeriod = 1 << 12;
 
     std::uint16_t GetADCValue() const noexcept {
         std::uint8_t lo8 = bytes[2];
@@ -81,7 +81,7 @@ struct BHSPCEvent {
 struct BHSPC600Event48 {
     std::uint8_t bytes[6];
 
-    inline static Macrotime const MacrotimeOverflowPeriod = 1 << 24;
+    inline static constexpr Macrotime MacrotimeOverflowPeriod = 1 << 24;
 
     std::uint16_t GetADCValue() const noexcept {
         std::uint8_t lo8 = bytes[0];
@@ -122,7 +122,7 @@ struct BHSPC600Event48 {
 struct BHSPC600Event32 {
     std::uint8_t bytes[4];
 
-    inline static Macrotime const MacrotimeOverflowPeriod = 1 << 17;
+    inline static constexpr Macrotime MacrotimeOverflowPeriod = 1 << 17;
 
     std::uint16_t GetADCValue() const noexcept { return bytes[0]; }
 
