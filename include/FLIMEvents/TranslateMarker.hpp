@@ -26,7 +26,7 @@ namespace flimevt {
  * \tparam D downstream processor type
  */
 template <typename EOut, typename D> class TranslateMarker {
-    std::uint32_t const chan;
+    std::int32_t const chan;
     D downstream;
 
     static_assert(std::is_same_v<decltype(EOut{0}.macrotime), Macrotime>,
@@ -41,7 +41,7 @@ template <typename EOut, typename D> class TranslateMarker {
      * \param channel channel of marker events to convert to EOut events
      * \param downstream downstream processor (moved out)
      */
-    explicit TranslateMarker(std::uint32_t channel, D &&downstream)
+    explicit TranslateMarker(std::int32_t channel, D &&downstream)
         : chan(channel), downstream(std::move(downstream)) {}
 
     void HandleEvent(MarkerEvent const &event) noexcept {
