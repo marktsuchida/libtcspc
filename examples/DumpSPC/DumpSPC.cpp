@@ -35,6 +35,7 @@ class PrintProcessor {
 
     void HandleEvent(flimevt::TimestampEvent const &event) {
         // Do nothing
+        (void)event;
     }
 
     void HandleEvent(flimevt::DataLostEvent const &event) {
