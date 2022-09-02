@@ -1,6 +1,7 @@
 #pragma once
 
 #include "EventSet.hpp"
+#include "ReadBytes.hpp"
 #include "TCSPCEvents.hpp"
 
 #include <cstdint>
@@ -36,17 +37,15 @@ struct PQPicoT3Event {
     inline static constexpr Macrotime NSyncOverflowPeriod = 65536;
 
     std::uint8_t GetChannel() const noexcept {
-        return std::uint8_t(bytes[3]) >> 4;
+        return unsigned(bytes[3]) >> 4;
     }
 
     std::uint16_t GetDTime() const noexcept {
-        std::uint8_t lo8 = bytes[2];
-        std::uint8_t hi4 = bytes[3] & 0x0f;
-        return lo8 | (std::uint16_t(hi4) << 8);
+        return unsigned(internal::ReadU16LE(&bytes[2])) & 0x0fffU;
     }
 
     std::uint16_t GetNSync() const noexcept {
-        return bytes[0] | (std::uint16_t(bytes[1]) << 8);
+        return internal::ReadU16LE(&bytes[0]);
     }
 
     bool IsSpecial() const noexcept { return GetChannel() == 15; }
@@ -76,21 +75,23 @@ template <bool IsHydraV1> struct PQHydraT3Event {
 
     inline static constexpr Macrotime NSyncOverflowPeriod = 1024;
 
-    bool GetSpecialFlag() const noexcept { return bytes[3] & (1 << 7); }
+    bool GetSpecialFlag() const noexcept {
+        return unsigned(bytes[3]) & (1U << 7);
+    }
 
-    std::uint8_t GetChannel() const noexcept { return (bytes[3] & 0x7f) >> 1; }
+    std::uint8_t GetChannel() const noexcept {
+        return (unsigned(bytes[3]) & 0x7fU) >> 1;
+    }
 
     std::uint16_t GetDTime() const noexcept {
-        std::uint8_t lo6 = std::uint8_t(bytes[1]) >> 2;
-        std::uint8_t mid8 = bytes[2];
-        std::uint8_t hi1 = bytes[3] & 0x01;
-        return lo6 | (std::uint16_t(mid8) << 6) | (std::uint16_t(hi1) << 14);
+        auto lo6 = unsigned(bytes[1]) >> 2;
+        auto mid8 = unsigned(bytes[2]);
+        auto hi1 = unsigned(bytes[3]) & 1U;
+        return lo6 | (mid8 << 6) | (hi1 << 14);
     }
 
     std::uint16_t GetNSync() const noexcept {
-        std::uint8_t lo8 = bytes[0];
-        std::uint8_t hi2 = bytes[1] & 0x03;
-        return lo8 | (std::uint16_t(hi2) << 8);
+        return unsigned(internal::ReadU16LE(&bytes[0])) & 0x03ffU;
     }
 
     bool IsSpecial() const noexcept { return GetSpecialFlag(); }

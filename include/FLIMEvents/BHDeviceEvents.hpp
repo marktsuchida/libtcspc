@@ -2,6 +2,7 @@
 
 #include "Common.hpp"
 #include "EventSet.hpp"
+#include "ReadBytes.hpp"
 #include "TCSPCEvents.hpp"
 
 #include <cstdint>
@@ -38,26 +39,28 @@ struct BHSPCEvent {
         // The documentation somewhat confusingly says that these bits are
         // "inverted", but what they mean is that the TTL inputs are active
         // low. The bits in the FIFO data are not inverted.
-        return bytes[1] >> 4;
+        return unsigned(bytes[1]) >> 4;
     }
 
     std::uint16_t GetMacrotime() const noexcept {
-        std::uint8_t lo8 = bytes[0];
-        std::uint8_t hi4 = bytes[1] & 0x0f;
-        return lo8 | (std::uint16_t(hi4) << 8);
+        return unsigned(internal::ReadU16LE(&bytes[0])) & 0x0fffU;
     }
 
-    bool GetMarkerFlag() const noexcept { return bytes[3] & (1 << 4); }
+    bool GetMarkerFlag() const noexcept {
+        return unsigned(bytes[3]) & (1U << 4);
+    }
 
     std::uint8_t GetMarkerBits() const noexcept { return GetRoutingSignals(); }
 
-    bool GetGapFlag() const noexcept { return bytes[3] & (1 << 5); }
+    bool GetGapFlag() const noexcept { return unsigned(bytes[3]) & (1U << 5); }
 
     bool GetMacrotimeOverflowFlag() const noexcept {
-        return bytes[3] & (1 << 6);
+        return unsigned(bytes[3]) & (1U << 6);
     }
 
-    bool GetInvalidFlag() const noexcept { return bytes[3] & (1 << 7); }
+    bool GetInvalidFlag() const noexcept {
+        return unsigned(bytes[3]) & (1U << 7);
+    }
 
     bool IsMultipleMacrotimeOverflow() const noexcept {
         // Although documentation is not clear, a marker can share an event
@@ -66,11 +69,9 @@ struct BHSPCEvent {
                !GetMarkerFlag();
     }
 
-    // Get the 27-bit macro timer overflow count
+    // Get the 28-bit macro timer overflow count
     std::uint32_t GetMultipleMacrotimeOverflowCount() const noexcept {
-        return bytes[0] | (std::uint32_t(bytes[1]) << 8) |
-               (std::uint32_t(bytes[2]) << 16) |
-               (std::uint32_t(bytes[3] & 0x0f) << 24);
+        return internal::ReadU32LE(&bytes[0]) & 0x0fffffffU;
     }
 };
 
@@ -84,29 +85,31 @@ struct BHSPC600Event48 {
     inline static constexpr Macrotime MacrotimeOverflowPeriod = 1 << 24;
 
     std::uint16_t GetADCValue() const noexcept {
-        std::uint8_t lo8 = bytes[0];
-        std::uint8_t hi4 = bytes[1] & 0x0f;
-        return lo8 | (std::uint16_t(hi4) << 8);
+        return unsigned(internal::ReadU16LE(&bytes[0])) & 0x0fffU;
     }
 
     std::uint8_t GetRoutingSignals() const noexcept { return bytes[3]; }
 
     std::uint32_t GetMacrotime() const noexcept {
-        return bytes[4] | (std::uint32_t(bytes[5]) << 8) |
-               (std::uint32_t(bytes[2]) << 16);
+        auto lo8 = unsigned(bytes[4]);
+        auto mid8 = unsigned(bytes[5]);
+        auto hi8 = unsigned(bytes[2]);
+        return lo8 | (mid8 << 8) | (hi8 << 16);
     }
 
     bool GetMarkerFlag() const noexcept { return false; }
 
     std::uint8_t GetMarkerBits() const noexcept { return 0; }
 
-    bool GetGapFlag() const noexcept { return bytes[1] & (1 << 6); }
+    bool GetGapFlag() const noexcept { return unsigned(bytes[1]) & (1U << 6); }
 
     bool GetMacrotimeOverflowFlag() const noexcept {
-        return bytes[1] & (1 << 5);
+        return unsigned(bytes[1]) & (1U << 5);
     }
 
-    bool GetInvalidFlag() const noexcept { return bytes[1] & (1 << 4); }
+    bool GetInvalidFlag() const noexcept {
+        return unsigned(bytes[1]) & (1U << 4);
+    }
 
     bool IsMultipleMacrotimeOverflow() const noexcept { return false; }
 
@@ -131,23 +134,25 @@ struct BHSPC600Event32 {
     }
 
     std::uint32_t GetMacrotime() const noexcept {
-        std::uint8_t lo8 = bytes[1];
-        std::uint8_t mid8 = bytes[2];
-        std::uint8_t hi1 = bytes[3] & 0x01;
-        return lo8 | (std::uint16_t(mid8) << 8) | (std::uint16_t(hi1) << 16);
+        auto lo8 = unsigned(bytes[1]);
+        auto mid8 = unsigned(bytes[2]);
+        auto hi1 = unsigned(bytes[3]) & 1U;
+        return lo8 | (mid8 << 8) | (hi1 << 16);
     }
 
     bool GetMarkerFlag() const noexcept { return false; }
 
     std::uint8_t GetMarkerBits() const noexcept { return 0; }
 
-    bool GetGapflag() const noexcept { return bytes[3] & (1 << 5); }
+    bool GetGapflag() const noexcept { return unsigned(bytes[3]) & (1U << 5); }
 
     bool GetMacrotimeOverflowFlag() const noexcept {
-        return bytes[3] & (1 << 6);
+        return unsigned(bytes[3]) & (1U << 6);
     }
 
-    bool GetInvalidFlag() const noexcept { return bytes[3] & (1 << 7); }
+    bool GetInvalidFlag() const noexcept {
+        return unsigned(bytes[3]) & (1U << 7);
+    }
 
     bool IsMultipleMacrotimeOverflow() const noexcept { return false; }
 

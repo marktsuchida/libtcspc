@@ -21,6 +21,7 @@ flimevents_tests_srcs = [
     'MergeTests.cpp',
     'PQT3DeviceEventsTests.cpp',
     'PixelPhotonEventsTests.cpp',
+    'ReadBytesTests.cpp',
     'RoutePhotonsTests.cpp',
     'SplitEventsTests.cpp',
     'TCSPCEventsTests.cpp',

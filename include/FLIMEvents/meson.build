@@ -16,6 +16,7 @@ public_cpp_headers = files(
     'Merge.hpp',
     'PQT3DeviceEvents.hpp',
     'PixelPhotonEvents.hpp',
+    'ReadBytes.hpp',
     'RoutePhotons.hpp',
     'SplitEvents.hpp',
     'TCSPCEvents.hpp',
