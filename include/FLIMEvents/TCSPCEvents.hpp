@@ -69,9 +69,9 @@ inline std::ostream &operator<<(std::ostream &s, DataLostEvent const &e) {
 }
 
 /**
- * \brief Abstract base class for valid and invalid TCSPC photon events.
+ * \brief Event indicating a detected photon.
  */
-struct BasePhotonEvent : public BaseTimeTaggedEvent {
+struct ValidPhotonEvent : public BaseTimeTaggedEvent {
     /**
      * \brief Nanotime (a.k.a. difference time, microtime) of the photon.
      *
@@ -89,11 +89,6 @@ struct BasePhotonEvent : public BaseTimeTaggedEvent {
      */
     std::int16_t channel;
 };
-
-/**
- * \brief TCSPC event indicating a detected photon.
- */
-struct ValidPhotonEvent : public BasePhotonEvent {};
 
 inline bool operator==(ValidPhotonEvent const &lhs,
                        ValidPhotonEvent const &rhs) {
