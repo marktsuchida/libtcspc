@@ -35,17 +35,26 @@ template <typename ESet, typename D> class MergeImpl {
 
     D downstream;
 
-    // Precondition: pending is not empty
-    Macrotime FrontMacrotime() const noexcept {
-        return std::visit([](auto const &e) { return e.macrotime; },
-                          pending.front());
+    template <unsigned C> bool IsPendingOnOther() const noexcept {
+        return pendingOn1 == (C == 0);
     }
 
-    // Precondition: pending is not empty
-    void EmitFront() noexcept {
-        std::visit([&](auto const &e) { downstream.HandleEvent(e); },
-                   pending.front());
-        pending.pop();
+    template <unsigned C> void SetPendingOn() noexcept {
+        pendingOn1 = (C == 1);
+    }
+
+    // Emit pending while predicate is true.
+    // P: bool(Macrotime const &)
+    template <typename P> void EmitPending(P predicate) noexcept {
+        while (!pending.empty() && std::visit(
+                                       [&](auto const &e) {
+                                           bool p = predicate(e.macrotime);
+                                           if (p)
+                                               downstream.HandleEvent(e);
+                                           return p;
+                                       },
+                                       pending.front()))
+            pending.pop();
     }
 
   public:
@@ -62,15 +71,14 @@ template <typename ESet, typename D> class MergeImpl {
         if (canceled)
             return;
 
-        if (pendingOn1 == (Ch == 0)) {
+        if (IsPendingOnOther<Ch>()) {
             // Emit any older events pending on the other input.
             Macrotime cutoff = event.macrotime;
             // Emit events from input 0 before events from input 1 when they
             // have equal macrotime.
             if constexpr (Ch == 0)
                 --cutoff;
-            while (!pending.empty() && FrontMacrotime() <= cutoff)
-                EmitFront();
+            EmitPending([=](auto t) { return t <= cutoff; });
 
             // If events still pending on the other input, they are newer (or
             // not older), so we can emit the current event first.
@@ -82,15 +90,14 @@ template <typename ESet, typename D> class MergeImpl {
             // If we are still here, we have no more events pending from the
             // other input, but will now enqueue the current event on this
             // input.
-            pendingOn1 = (Ch == 1);
+            SetPendingOn<Ch>();
         }
 
         // Emit any events on the same input if they are older than the maximum
         // allowed time shift between the inputs.
         // TODO Guard against underflow
         Macrotime oldEnough = event.macrotime - maxTimeShift;
-        while (!pending.empty() && FrontMacrotime() < oldEnough)
-            EmitFront();
+        EmitPending([=](auto t) { return t < oldEnough; });
 
         pending.push(event);
     }
@@ -105,10 +112,8 @@ template <typename ESet, typename D> class MergeImpl {
             canceled = true;
         if (otherInputEnded || canceled) {
             // Emit pending events if both streams are complete (had no error).
-            if (!error && otherInputEnded) {
-                while (!pending.empty())
-                    EmitFront();
-            }
+            if (!error && otherInputEnded)
+                EmitPending([]([[maybe_unused]] auto t) { return true; });
 
             downstream.HandleEnd(error);
         }
