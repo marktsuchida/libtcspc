@@ -6,6 +6,7 @@
 
 #include "FLIMEvents/TranslateMarker.hpp"
 
+#include "FLIMEvents/TimeTaggedEvents.hpp"
 #include "ProcessorTestFixture.hpp"
 #include "TestEvents.hpp"
 
@@ -23,11 +24,12 @@ using OEvents = EventSet<MarkerEvent, Event<0>, Event<1>>;
 using OutVec = std::vector<EventVariant<OEvents>>;
 
 auto MakeTranslateMarkerFixture(std::int32_t channel) {
-    return MakeProcessorTestFixture<IEvents, OEvents>([channel](
-                                                          auto &&downstream) {
-        using D = std::remove_reference_t<decltype(downstream)>;
-        return TranslateMarker<Event<0>, D>(channel, std::move(downstream));
-    });
+    return MakeProcessorTestFixture<IEvents, OEvents>(
+        [channel](auto &&downstream) {
+            using D = std::remove_reference_t<decltype(downstream)>;
+            return TranslateMarker<MarkerEvent, Event<0>, D>(
+                channel, std::move(downstream));
+        });
 }
 
 TEST_CASE("Translate marker", "[TranslateMarker]") {
