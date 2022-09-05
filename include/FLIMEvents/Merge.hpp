@@ -10,6 +10,7 @@
 #include "EventSet.hpp"
 
 #include <exception>
+#include <limits>
 #include <queue>
 #include <type_traits>
 #include <utility>
@@ -95,9 +96,12 @@ template <typename ESet, typename D> class MergeImpl {
 
         // Emit any events on the same input if they are older than the maximum
         // allowed time shift between the inputs.
-        // TODO Guard against underflow
-        Macrotime oldEnough = event.macrotime - maxTimeShift;
-        EmitPending([=](auto t) { return t < oldEnough; });
+        // Guard against integer underflow.
+        constexpr auto macrotimeMin = std::numeric_limits<Macrotime>::min();
+        if (maxTimeShift > event.macrotime - macrotimeMin) {
+            Macrotime oldEnough = event.macrotime - maxTimeShift;
+            EmitPending([=](auto t) { return t < oldEnough; });
+        }
 
         pending.push(event);
     }
