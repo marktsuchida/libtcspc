@@ -48,7 +48,7 @@ inline std::ostream &operator<<(std::ostream &s, TimeReachedEvent const &e) {
 }
 
 /**
- * \brief TCSPC event indicating loss of data due to buffer overflow.
+ * \brief Event indicating loss of data due to buffer overflow.
  *
  * Event producers should continue to produce subsequent photon events, if any;
  * it is the event processor's responsibility to cancel processing, if that is
@@ -107,25 +107,6 @@ inline std::ostream &operator<<(std::ostream &s, ValidPhotonEvent const &e) {
 }
 
 /**
- * \brief TCSPC event indicating an invalid photon, produced by some devices.
- *
- * These events should be discarded for processing, but can be retained in
- * order to reproduce the original data stream.
- */
-struct InvalidPhotonEvent : public BasePhotonEvent {};
-
-inline bool operator==(InvalidPhotonEvent const &lhs,
-                       InvalidPhotonEvent const &rhs) {
-    return lhs.macrotime == rhs.macrotime && lhs.nanotime == rhs.nanotime &&
-           lhs.channel == rhs.channel;
-}
-
-inline std::ostream &operator<<(std::ostream &s, InvalidPhotonEvent const &e) {
-    return s << "InvalidPhoton(" << e.macrotime << ", " << e.nanotime << ", "
-             << e.channel << ')';
-}
-
-/**
  * \brief TCSPC event indicating a marker.
  *
  * These events indicate the timing of some process (e.g. laser scanning) in
@@ -164,8 +145,8 @@ inline std::ostream &operator<<(std::ostream &s, MarkerEvent const &e) {
 /**
  * \brief Event set containing all TCSPC events.
  */
-using TCSPCEvents = EventSet<TimeReachedEvent, DataLostEvent, ValidPhotonEvent,
-                             InvalidPhotonEvent, MarkerEvent>;
+using TCSPCEvents =
+    EventSet<TimeReachedEvent, DataLostEvent, ValidPhotonEvent, MarkerEvent>;
 
 inline std::ostream &
 operator<<(std::ostream &os,

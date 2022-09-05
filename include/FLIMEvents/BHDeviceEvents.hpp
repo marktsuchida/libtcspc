@@ -223,10 +223,8 @@ template <typename E, typename D> class BaseDecodeBHSPC {
         }
 
         if (event.GetInvalidFlag()) {
-            InvalidPhotonEvent e;
+            TimeReachedEvent e;
             e.macrotime = macrotime;
-            e.nanotime = event.GetADCValue();
-            e.channel = event.GetRoutingSignals();
             downstream.HandleEvent(e);
         } else {
             ValidPhotonEvent e;

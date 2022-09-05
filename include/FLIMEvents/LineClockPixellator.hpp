@@ -263,12 +263,6 @@ template <typename D> class LineClockPixellator {
         }
     }
 
-    void HandleEvent(InvalidPhotonEvent const &event) noexcept {
-        UpdateTimeRange(event.macrotime);
-        // We could call ProcessPhotonsAndLines() to emit all lines that are
-        // complete, but deferring can improve performance.
-    }
-
     void HandleEvent(MarkerEvent const &event) noexcept {
         UpdateTimeRange(event.macrotime);
         if (event.channel == lineMarkerChannel) {
