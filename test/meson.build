@@ -16,6 +16,7 @@ flimevents_tests_srcs = [
     'EventBufferTests.cpp',
     'EventSetTests.cpp',
     'GateTests.cpp',
+    'GenerateTimingsTests.cpp',
     'HistogramTests.cpp',
     'LineClockPixellatorTests.cpp',
     'MergeTests.cpp',

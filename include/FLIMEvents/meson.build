@@ -11,6 +11,7 @@ public_cpp_headers = files(
     'EventSet.hpp',
     'FLIMEvents.hpp',
     'Gate.hpp',
+    'GenerateTimings.hpp',
     'Histogram.hpp',
     'LineClockPixellator.hpp',
     'Merge.hpp',
