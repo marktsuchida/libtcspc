@@ -45,7 +45,7 @@ class PrintProcessor {
 
     void HandleEvent(flimevt::TimeCorrelatedCountEvent const &event) {
         PrintMacrotime(output, event.macrotime);
-        output << " Photon: " << std::setw(5) << event.nanotime << "; "
+        output << " Photon: " << std::setw(5) << event.difftime << "; "
                << int(event.channel) << '\n';
     }
 

@@ -131,7 +131,7 @@ template <typename D> class LineClockPixellator {
         newEvent.x =
             static_cast<std::uint32_t>(pixelsPerLine * timeInLine / lineTime);
         newEvent.channel = event.channel;
-        newEvent.nanotime = event.nanotime;
+        newEvent.difftime = event.difftime;
         if (!streamEnded) {
             downstream.HandleEvent(newEvent);
         }

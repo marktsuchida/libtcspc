@@ -178,7 +178,7 @@ template <typename E, typename D> class BaseDecodePQT3 {
 
         TimeCorrelatedCountEvent e;
         e.macrotime = nSync;
-        e.nanotime = event.GetDTime();
+        e.difftime = event.GetDTime();
         e.channel = event.GetChannel();
         downstream.HandleEvent(e);
     }

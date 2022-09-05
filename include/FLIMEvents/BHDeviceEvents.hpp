@@ -229,7 +229,7 @@ template <typename E, typename D> class BaseDecodeBHSPC {
         } else {
             TimeCorrelatedCountEvent e;
             e.macrotime = macrotime;
-            e.nanotime = event.GetADCValue();
+            e.difftime = event.GetADCValue();
             e.channel = event.GetRoutingSignals();
             downstream.HandleEvent(e);
         }
