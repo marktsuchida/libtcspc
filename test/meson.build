@@ -24,6 +24,7 @@ flimevents_tests_srcs = [
     'ReadBytesTests.cpp',
     'RoutePhotonsTests.cpp',
     'SplitEventsTests.cpp',
+    'SwabianTagEventTests.cpp',
     'TCSPCEventsTests.cpp',
     'TimeDelayTests.cpp',
     'TranslateMarkerTests.cpp',

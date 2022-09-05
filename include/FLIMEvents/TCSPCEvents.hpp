@@ -57,6 +57,9 @@ inline std::ostream &operator<<(std::ostream &s, TimeReachedEvent const &e) {
  * Different vendors use different terminology: the overflow may occur in the
  * device FIFO, DMA buffer, or any other stage involved in streaming data to
  * the computer.
+ *
+ * The macrotime may have skipped some elapsed time when this event occurs;
+ * both counts and markers may have been lost.
  */
 struct DataLostEvent : public BaseTimeTaggedEvent {};
 
@@ -67,6 +70,54 @@ inline bool operator==(DataLostEvent const &lhs, DataLostEvent const &rhs) {
 inline std::ostream &operator<<(std::ostream &s, DataLostEvent const &e) {
     return s << "DataLost(" << e.macrotime << ')';
 }
+
+/**
+ * \brief Event indicating beginning of interval in which counts were lost.
+ *
+ * The interval must be ended with a subsequent EndLostIntervalEvent.
+ *
+ * Unlike with DataLostEvent, the macrotime must remain consistent before,
+ * during, and after the lost interval.
+ *
+ * If detected events during the interval could be counted (but not
+ * time-tagged), they should be indicated by UntaggedCountsEvent.
+ */
+struct BeginLostIntervalEvent : public BaseTimeTaggedEvent {};
+
+/**
+ * \brief Event indicating end of interval in which counts were lost.
+ */
+struct EndLostIntervalEvent : public BaseTimeTaggedEvent {};
+
+/**
+ * \brief Event indicating number of counts that could not be time-tagged.
+ *
+ * This event should only occur between BeginLostIntervalEvent and
+ * EndLostIntervalEvent.
+ */
+struct UntaggedCountsEvent : public BaseTimeTaggedEvent {
+    /**
+     * \brief Number of counts that were detected but could not be time-tagged.
+     */
+    std::uint32_t count;
+
+    /**
+     * \brief The channel on which the counts were detected.
+     */
+    std::int16_t channel;
+};
+
+/**
+ * \brief Event indicating a detected count.
+ */
+struct TimeTaggedCountEvent : public BaseTimeTaggedEvent {
+    /**
+     * \brief The channel on which the count was detected.
+     *
+     * The channel number may be negative.
+     */
+    std::int16_t channel;
+};
 
 /**
  * \brief Event indicating a detected count (typically photon) with difference
