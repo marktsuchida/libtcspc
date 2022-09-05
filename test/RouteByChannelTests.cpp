@@ -1,7 +1,13 @@
 #include "FLIMEvents/RouteByChannel.hpp"
 
 #include "FLIMEvents/Discard.hpp"
+#include "FLIMEvents/TimeTaggedEvents.hpp"
 #include "ProcessorTestFixture.hpp"
+
+#include <cstdint>
+#include <type_traits>
+#include <utility>
+#include <vector>
 
 #include <catch2/catch.hpp>
 
@@ -11,9 +17,10 @@ using namespace flimevt::test;
 auto MakeRouteByChannelFixtureOutput0(
     std::vector<std::int16_t> const &channels) {
     auto makeProc = [&channels](auto &&downstream) {
-        auto discard = DiscardAll<TCSPCEvents>();
-        return RouteByChannel(channels, std::move(downstream),
-                              std::move(discard));
+        using D0 = std::remove_reference_t<decltype(downstream)>;
+        using D1 = DiscardAll<TCSPCEvents>;
+        return RouteByChannel<TimeCorrelatedCountEvent, D0, D1>(
+            channels, std::move(downstream), D1());
     };
 
     return MakeProcessorTestFixture<TCSPCEvents, TCSPCEvents>(makeProc);
@@ -22,9 +29,10 @@ auto MakeRouteByChannelFixtureOutput0(
 auto MakeRouteByChannelFixtureOutput1(
     std::vector<std::int16_t> const &channels) {
     auto makeProc = [&channels](auto &&downstream) {
-        auto discard = DiscardAll<TCSPCEvents>();
-        return RouteByChannel(channels, std::move(discard),
-                              std::move(downstream));
+        using D0 = DiscardAll<TCSPCEvents>;
+        using D1 = std::remove_reference_t<decltype(downstream)>;
+        return RouteByChannel<TimeCorrelatedCountEvent, D0, D1>(
+            channels, D0(), std::move(downstream));
     };
 
     return MakeProcessorTestFixture<TCSPCEvents, TCSPCEvents>(makeProc);
@@ -33,10 +41,10 @@ auto MakeRouteByChannelFixtureOutput1(
 auto MakeRouteByChannelFixtureOutput2(
     std::vector<std::int16_t> const &channels) {
     auto makeProc = [&channels](auto &&downstream) {
-        auto discard0 = DiscardAll<TCSPCEvents>();
-        auto discard1 = DiscardAll<TCSPCEvents>();
-        return RouteByChannel(channels, std::move(discard0),
-                              std::move(discard1), std::move(downstream));
+        using D01 = DiscardAll<TCSPCEvents>;
+        using D2 = std::remove_reference_t<decltype(downstream)>;
+        return RouteByChannel<TimeCorrelatedCountEvent, D01, D01, D2>(
+            channels, D01(), D01(), std::move(downstream));
     };
 
     return MakeProcessorTestFixture<TCSPCEvents, TCSPCEvents>(makeProc);

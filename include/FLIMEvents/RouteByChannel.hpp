@@ -1,7 +1,5 @@
 #pragma once
 
-#include "TimeTaggedEvents.hpp"
-
 #include <algorithm>
 #include <cstddef>
 #include <cstdint>
@@ -13,35 +11,28 @@
 
 namespace flimevt {
 
-// Route valid photons to downstreams according to channel.
-// Channel index is position of channel in the channels vector.
-// If channel is not in channels vector, photon is ignored.
-// If channel index exceeds max index of downstreams, photon is ignored.
-
 /**
- * \brief Processor that routes valid photon events to downstream processors
- * according to channel.
+ * \brief Processor that routes events to downstream processors according to
+ * channel.
  *
- * This processor holds a mapping from channel numbers to contiguous indices
- * starting at zero. If a TimeCorrelatedCountEvent is received with channel \e
- * c and \e c maps to index \e i, then the event is sent to the downstream
- * processor at position \e i.
+ * This processor holds multiple downstream processors and a mapping from
+ * channel numbers to downstream indices. Events of type \c ERoute are passed
+ * only to the downstream indexed by the mapped channel number.
  *
- * If the channel does not map to an index, or there is no processor at the
- * index, then the TimeCorrelatedCountEvent is discarded.
+ * If the channel does not map to a downstream index, or there is no processor
+ * at the mapped index, then the \c ERoute event is discarded.
  *
- * Events other than TimeCorrelatedCountEvent are broadcast to all downstream
- * processors.
+ * Events other than \c ERoute are broadcast to all downstream processors.
  *
+ * \tparam ERouted event type to route by channel
  * \tparam Ds downstream processor types
  */
-template <typename... Ds> class RouteByChannel {
+template <typename ERouted, typename... Ds> class RouteByChannel {
     std::vector<std::int16_t> const channels;
     std::tuple<Ds...> downstreams;
 
     template <std::size_t I = 0>
-    void HandlePhoton(std::size_t index,
-                      TimeCorrelatedCountEvent const &event) noexcept {
+    void HandlePhoton(std::size_t index, ERouted const &event) noexcept {
         if (index == I) {
             std::get<I>(downstreams).HandleEvent(event);
             return;
@@ -54,15 +45,15 @@ template <typename... Ds> class RouteByChannel {
     /**
      * \brief Construct with channel mapping and downstream processors.
      *
-     * The channel mapping is specified as a std::vector of channel numbers.
+     * The channel mapping is specified as an std::vector of channel numbers.
      * The channel at index \e i in the vector is mapped to downstream index \e
-     * i.
+     * i. (This has the limitation that only one channel can be mapped to each
+     * downstream.)
      *
-     * Thus, if channels contains <tt>{ 5, -3 }</tt> and a
-     * TimeCorrelatedCountEvent is received with channel \c -3, then it is
-     * routed to downstream processor 1 (counting from 0). If fewer than 2
-     * downstream processors were given, such a TimeCorrelatedCountEvent would
-     * be discarded.
+     * Thus, if channels contains <tt>{5, -3}</tt> and an \c ERouted event is
+     * received with channel equal to \c -3, then it is routed to downstream
+     * processor 1 (counting from 0). If fewer than 2 downstream processors
+     * were given, such an \c ERouted event would be discarded.
      *
      * \param channels channel mapping
      * \param downstreams downstream processors (moved out)
@@ -71,7 +62,7 @@ template <typename... Ds> class RouteByChannel {
                             Ds &&...downstreams)
         : channels(channels), downstreams{std::move(downstreams)...} {}
 
-    void HandleEvent(TimeCorrelatedCountEvent const &event) noexcept {
+    void HandleEvent(ERouted const &event) noexcept {
         auto chan = event.channel;
         auto it = std::find(channels.cbegin(), channels.cend(), chan);
         if (it != channels.cend())
