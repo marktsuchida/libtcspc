@@ -147,7 +147,7 @@ template <typename E, typename D> class BaseDecodePQT3 {
             nSyncBase +=
                 E::NSyncOverflowPeriod * event.GetNSyncOverflowCount();
 
-            TimestampEvent e;
+            TimeReachedEvent e;
             e.macrotime = nSyncBase;
             downstream.HandleEvent(e);
             return;

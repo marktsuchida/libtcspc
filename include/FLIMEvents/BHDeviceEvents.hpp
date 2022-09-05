@@ -183,7 +183,7 @@ template <typename E, typename D> class BaseDecodeBHSPC {
             macrotimeBase += E::MacrotimeOverflowPeriod *
                              event.GetMultipleMacrotimeOverflowCount();
 
-            TimestampEvent e;
+            TimeReachedEvent e;
             e.macrotime = macrotimeBase;
             downstream.HandleEvent(e);
             return;

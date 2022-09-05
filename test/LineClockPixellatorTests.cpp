@@ -96,7 +96,7 @@ TEST_CASE("Frames are produced according to line markers",
         output.Reset();
 
         SECTION("Last frame is incomplete if last line not started") {
-            TimestampEvent timestamp;
+            TimeReachedEvent timestamp;
             timestamp.macrotime = 1000000;
             lcp.HandleEvent(timestamp);
             lcp.Flush();
@@ -113,7 +113,7 @@ TEST_CASE("Frames are produced according to line markers",
             REQUIRE(output.endFrameCount == 0);
             output.Reset();
 
-            TimestampEvent timestamp;
+            TimeReachedEvent timestamp;
             timestamp.macrotime = 419;
             lcp.HandleEvent(timestamp);
             lcp.Flush();

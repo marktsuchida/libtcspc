@@ -222,7 +222,7 @@ template <typename D> class LineClockPixellator {
         }
     }
 
-    void HandleEvent(TimestampEvent const &event) noexcept {
+    void HandleEvent(TimeReachedEvent const &event) noexcept {
         auto prevTimestamp = latestTimestamp;
         UpdateTimeRange(event.macrotime);
         // We could call ProcessPhotonsAndLines() to emit all lines that are

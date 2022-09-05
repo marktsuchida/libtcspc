@@ -19,7 +19,7 @@ struct BaseTimeTaggedEvent {
 };
 
 /**
- * \brief TCSPC event indicating latest macrotime stamp.
+ * \brief Event indicating latest macrotime reached.
  *
  * Data sources emit this event to indicated that a macrotime stamp has been
  * seen, without any associated event.
@@ -36,14 +36,15 @@ struct BaseTimeTaggedEvent {
  * Note that this event is generally only emitted when the timestamp is not
  * associated with an actual event (photon, marker, etc.).
  */
-struct TimestampEvent : public BaseTimeTaggedEvent {};
+struct TimeReachedEvent : public BaseTimeTaggedEvent {};
 
-inline bool operator==(TimestampEvent const &lhs, TimestampEvent const &rhs) {
+inline bool operator==(TimeReachedEvent const &lhs,
+                       TimeReachedEvent const &rhs) {
     return lhs.macrotime == rhs.macrotime;
 }
 
-inline std::ostream &operator<<(std::ostream &s, TimestampEvent const &e) {
-    return s << "Timestamp(" << e.macrotime << ')';
+inline std::ostream &operator<<(std::ostream &s, TimeReachedEvent const &e) {
+    return s << "TimeReached(" << e.macrotime << ')';
 }
 
 /**
@@ -163,7 +164,7 @@ inline std::ostream &operator<<(std::ostream &s, MarkerEvent const &e) {
 /**
  * \brief Event set containing all TCSPC events.
  */
-using TCSPCEvents = EventSet<TimestampEvent, DataLostEvent, ValidPhotonEvent,
+using TCSPCEvents = EventSet<TimeReachedEvent, DataLostEvent, ValidPhotonEvent,
                              InvalidPhotonEvent, MarkerEvent>;
 
 inline std::ostream &

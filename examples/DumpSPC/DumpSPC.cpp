@@ -33,7 +33,7 @@ class PrintProcessor {
     explicit PrintProcessor(std::ostream &output)
         : count(0), lastMacrotime(0), output(output) {}
 
-    void HandleEvent(flimevt::TimestampEvent const &event) {
+    void HandleEvent(flimevt::TimeReachedEvent const &event) {
         // Do nothing
         (void)event;
     }
