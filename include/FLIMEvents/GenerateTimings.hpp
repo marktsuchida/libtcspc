@@ -73,13 +73,13 @@ template <typename ETrig, typename PGen, typename D> class GenerateTimings {
         : generator(std::move(generator)), downstream(std::move(downstream)) {}
 
     void HandleEvent(ETrig const &event) noexcept {
-        Emit([&event](Macrotime t) { return t < event.macrotime; });
+        Emit([now = event.macrotime](auto t) { return t < now; });
         generator.Trigger(event.macrotime);
         downstream.HandleEvent(event);
     }
 
     template <typename E> void HandleEvent(E const &event) noexcept {
-        Emit([&event](Macrotime t) { return t <= event.macrotime; });
+        Emit([now = event.macrotime](auto t) { return t <= now; });
         downstream.HandleEvent(event);
     }
 
