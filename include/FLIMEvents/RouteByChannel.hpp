@@ -35,7 +35,7 @@ namespace flimevt {
  *
  * \tparam Ds downstream processor types
  */
-template <typename... Ds> class RoutePhotons {
+template <typename... Ds> class RouteByChannel {
     std::vector<std::int16_t> const channels;
     std::tuple<Ds...> downstreams;
 
@@ -67,8 +67,8 @@ template <typename... Ds> class RoutePhotons {
      * \param channels channel mapping
      * \param downstreams downstream processors (moved out)
      */
-    explicit RoutePhotons(std::vector<std::int16_t> const &channels,
-                          Ds &&...downstreams)
+    explicit RouteByChannel(std::vector<std::int16_t> const &channels,
+                            Ds &&...downstreams)
         : channels(channels), downstreams{std::move(downstreams)...} {}
 
     void HandleEvent(TimeCorrelatedCountEvent const &event) noexcept {

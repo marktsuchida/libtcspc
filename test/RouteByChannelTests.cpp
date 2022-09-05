@@ -1,4 +1,4 @@
-#include "FLIMEvents/RoutePhotons.hpp"
+#include "FLIMEvents/RouteByChannel.hpp"
 
 #include "FLIMEvents/Discard.hpp"
 #include "ProcessorTestFixture.hpp"
@@ -8,35 +8,35 @@
 using namespace flimevt;
 using namespace flimevt::test;
 
-auto MakeRoutePhotonsFixtureOutput0(
+auto MakeRouteByChannelFixtureOutput0(
     std::vector<std::int16_t> const &channels) {
     auto makeProc = [&channels](auto &&downstream) {
         auto discard = DiscardAll<TCSPCEvents>();
-        return RoutePhotons(channels, std::move(downstream),
-                            std::move(discard));
+        return RouteByChannel(channels, std::move(downstream),
+                              std::move(discard));
     };
 
     return MakeProcessorTestFixture<TCSPCEvents, TCSPCEvents>(makeProc);
 }
 
-auto MakeRoutePhotonsFixtureOutput1(
+auto MakeRouteByChannelFixtureOutput1(
     std::vector<std::int16_t> const &channels) {
     auto makeProc = [&channels](auto &&downstream) {
         auto discard = DiscardAll<TCSPCEvents>();
-        return RoutePhotons(channels, std::move(discard),
-                            std::move(downstream));
+        return RouteByChannel(channels, std::move(discard),
+                              std::move(downstream));
     };
 
     return MakeProcessorTestFixture<TCSPCEvents, TCSPCEvents>(makeProc);
 }
 
-auto MakeRoutePhotonsFixtureOutput2(
+auto MakeRouteByChannelFixtureOutput2(
     std::vector<std::int16_t> const &channels) {
     auto makeProc = [&channels](auto &&downstream) {
         auto discard0 = DiscardAll<TCSPCEvents>();
         auto discard1 = DiscardAll<TCSPCEvents>();
-        return RoutePhotons(channels, std::move(discard0), std::move(discard1),
-                            std::move(downstream));
+        return RouteByChannel(channels, std::move(discard0),
+                              std::move(discard1), std::move(downstream));
     };
 
     return MakeProcessorTestFixture<TCSPCEvents, TCSPCEvents>(makeProc);
@@ -44,8 +44,8 @@ auto MakeRoutePhotonsFixtureOutput2(
 
 using OutVec = std::vector<EventVariant<TCSPCEvents>>;
 
-TEST_CASE("Route photons", "[RoutePhotons]") {
-    auto f0 = MakeRoutePhotonsFixtureOutput0({5, -3});
+TEST_CASE("Route photons", "[RouteByChannel]") {
+    auto f0 = MakeRouteByChannelFixtureOutput0({5, -3});
     f0.FeedEvents({
         TimeCorrelatedCountEvent{{100}, 123, 5},
     });
@@ -70,7 +70,7 @@ TEST_CASE("Route photons", "[RoutePhotons]") {
     REQUIRE(f0.Output() == OutVec{});
     REQUIRE(f0.DidEnd());
 
-    auto f1 = MakeRoutePhotonsFixtureOutput1({5, -3});
+    auto f1 = MakeRouteByChannelFixtureOutput1({5, -3});
     f1.FeedEvents({
         TimeCorrelatedCountEvent{{100}, 123, 5},
     });
@@ -95,7 +95,7 @@ TEST_CASE("Route photons", "[RoutePhotons]") {
     REQUIRE(f1.Output() == OutVec{});
     REQUIRE(f1.DidEnd());
 
-    auto f2 = MakeRoutePhotonsFixtureOutput2({5, -3});
+    auto f2 = MakeRouteByChannelFixtureOutput2({5, -3});
     f2.FeedEvents({
         TimeCorrelatedCountEvent{{100}, 123, 5},
     });

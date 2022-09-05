@@ -18,7 +18,7 @@ public_cpp_headers = files(
     'PQT3DeviceEvents.hpp',
     'PixelPhotonEvents.hpp',
     'ReadBytes.hpp',
-    'RoutePhotons.hpp',
+    'RouteByChannel.hpp',
     'SplitEvents.hpp',
     'SwabianTagEvent.hpp',
     'TimeDelay.hpp',
