@@ -176,7 +176,7 @@ template <typename E, typename D> class BaseDecodePQT3 {
             return;
         }
 
-        ValidPhotonEvent e;
+        TimeCorrelatedCountEvent e;
         e.macrotime = nSync;
         e.nanotime = event.GetDTime();
         e.channel = event.GetChannel();

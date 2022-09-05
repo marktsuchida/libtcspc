@@ -36,7 +36,7 @@ template <typename D> class LineClockPixellator {
     Macrotime lineStartTime;
 
     // Buffer received photons until we can assign to pixel
-    std::deque<ValidPhotonEvent> pendingPhotons;
+    std::deque<TimeCorrelatedCountEvent> pendingPhotons;
 
     // Buffer line marks until we are ready to process
     std::deque<Macrotime> pendingLines; // marker macrotimes
@@ -49,7 +49,7 @@ template <typename D> class LineClockPixellator {
         latestTimestamp = macrotime;
     }
 
-    void EnqueuePhoton(ValidPhotonEvent const &event) {
+    void EnqueuePhoton(TimeCorrelatedCountEvent const &event) {
         if (streamEnded) {
             return; // Avoid buffering post-error
         }
@@ -122,7 +122,7 @@ template <typename D> class LineClockPixellator {
         }
     }
 
-    void EmitPhoton(ValidPhotonEvent const &event) {
+    void EmitPhoton(TimeCorrelatedCountEvent const &event) {
         PixelPhotonEvent newEvent;
         newEvent.frame =
             static_cast<std::uint32_t>(currentLine / linesPerFrame);
@@ -248,7 +248,7 @@ template <typename D> class LineClockPixellator {
         }
     }
 
-    void HandleEvent(ValidPhotonEvent const &event) noexcept {
+    void HandleEvent(TimeCorrelatedCountEvent const &event) noexcept {
         UpdateTimeRange(event.macrotime);
         try {
             EnqueuePhoton(event);

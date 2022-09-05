@@ -227,7 +227,7 @@ template <typename E, typename D> class BaseDecodeBHSPC {
             e.macrotime = macrotime;
             downstream.HandleEvent(e);
         } else {
-            ValidPhotonEvent e;
+            TimeCorrelatedCountEvent e;
             e.macrotime = macrotime;
             e.nanotime = event.GetADCValue();
             e.channel = event.GetRoutingSignals();

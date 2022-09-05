@@ -43,7 +43,7 @@ class PrintProcessor {
         output << " Data lost\n";
     }
 
-    void HandleEvent(flimevt::ValidPhotonEvent const &event) {
+    void HandleEvent(flimevt::TimeCorrelatedCountEvent const &event) {
         PrintMacrotime(output, event.macrotime);
         output << " Photon: " << std::setw(5) << event.nanotime << "; "
                << int(event.channel) << '\n';

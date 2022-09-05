@@ -23,14 +23,14 @@ namespace flimevt {
  * according to channel.
  *
  * This processor holds a mapping from channel numbers to contiguous indices
- * starting at zero. If a ValidPhotonEvent is received with channel \e c and \e
- * c maps to index \e i, then the event is sent to the downstream processor at
- * position \e i.
+ * starting at zero. If a TimeCorrelatedCountEvent is received with channel \e
+ * c and \e c maps to index \e i, then the event is sent to the downstream
+ * processor at position \e i.
  *
  * If the channel does not map to an index, or there is no processor at the
- * index, then the ValidPhotonEvent is discarded.
+ * index, then the TimeCorrelatedCountEvent is discarded.
  *
- * Events other than ValidPhotonEvent are broadcast to all downstream
+ * Events other than TimeCorrelatedCountEvent are broadcast to all downstream
  * processors.
  *
  * \tparam Ds downstream processor types
@@ -41,7 +41,7 @@ template <typename... Ds> class RoutePhotons {
 
     template <std::size_t I = 0>
     void HandlePhoton(std::size_t index,
-                      ValidPhotonEvent const &event) noexcept {
+                      TimeCorrelatedCountEvent const &event) noexcept {
         if (index == I) {
             std::get<I>(downstreams).HandleEvent(event);
             return;
@@ -58,10 +58,11 @@ template <typename... Ds> class RoutePhotons {
      * The channel at index \e i in the vector is mapped to downstream index \e
      * i.
      *
-     * Thus, if channels contains <tt>{ 5, -3 }</tt> and a ValidPhotonEvent is
-     * received with channel \c -3, then it is routed to downstream processor 1
-     * (counting from 0). If fewer than 2 downstream processors were given,
-     * such a ValidPhotonEvent would be discarded.
+     * Thus, if channels contains <tt>{ 5, -3 }</tt> and a
+     * TimeCorrelatedCountEvent is received with channel \c -3, then it is
+     * routed to downstream processor 1 (counting from 0). If fewer than 2
+     * downstream processors were given, such a TimeCorrelatedCountEvent would
+     * be discarded.
      *
      * \param channels channel mapping
      * \param downstreams downstream processors (moved out)
@@ -70,7 +71,7 @@ template <typename... Ds> class RoutePhotons {
                           Ds &&...downstreams)
         : channels(channels), downstreams{std::move(downstreams)...} {}
 
-    void HandleEvent(ValidPhotonEvent const &event) noexcept {
+    void HandleEvent(TimeCorrelatedCountEvent const &event) noexcept {
         auto chan = event.channel;
         auto it = std::find(channels.cbegin(), channels.cend(), chan);
         if (it != channels.cend())

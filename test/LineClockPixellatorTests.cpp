@@ -144,7 +144,7 @@ TEST_CASE("Frames are produced according to line markers",
         lcp.HandleEvent(lineMarker);
         lcp.Flush();
 
-        ValidPhotonEvent photon;
+        TimeCorrelatedCountEvent photon;
         memset(&photon, 0, sizeof(photon));
 
         for (auto mt : {104, 105, 114, 115, 124, 125}) {

@@ -69,9 +69,9 @@ inline std::ostream &operator<<(std::ostream &s, DataLostEvent const &e) {
 }
 
 /**
- * \brief Event indicating a detected photon.
+ * \brief Event indicating a detected count (typically photon) with nanotime.
  */
-struct ValidPhotonEvent : public BaseTimeTaggedEvent {
+struct TimeCorrelatedCountEvent : public BaseTimeTaggedEvent {
     /**
      * \brief Nanotime (a.k.a. difference time, microtime) of the photon.
      *
@@ -90,15 +90,16 @@ struct ValidPhotonEvent : public BaseTimeTaggedEvent {
     std::int16_t channel;
 };
 
-inline bool operator==(ValidPhotonEvent const &lhs,
-                       ValidPhotonEvent const &rhs) {
+inline bool operator==(TimeCorrelatedCountEvent const &lhs,
+                       TimeCorrelatedCountEvent const &rhs) {
     return lhs.macrotime == rhs.macrotime && lhs.nanotime == rhs.nanotime &&
            lhs.channel == rhs.channel;
 }
 
-inline std::ostream &operator<<(std::ostream &s, ValidPhotonEvent const &e) {
-    return s << "ValidPhoton(" << e.macrotime << ", " << e.nanotime << ", "
-             << e.channel << ')';
+inline std::ostream &operator<<(std::ostream &s,
+                                TimeCorrelatedCountEvent const &e) {
+    return s << "TimeCorrelatedCount(" << e.macrotime << ", " << e.nanotime
+             << ", " << e.channel << ')';
 }
 
 /**
@@ -140,8 +141,8 @@ inline std::ostream &operator<<(std::ostream &s, MarkerEvent const &e) {
 /**
  * \brief Event set containing all TCSPC events.
  */
-using TCSPCEvents =
-    EventSet<TimeReachedEvent, DataLostEvent, ValidPhotonEvent, MarkerEvent>;
+using TCSPCEvents = EventSet<TimeReachedEvent, DataLostEvent,
+                             TimeCorrelatedCountEvent, MarkerEvent>;
 
 inline std::ostream &
 operator<<(std::ostream &os,
