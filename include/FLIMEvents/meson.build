@@ -21,8 +21,8 @@ public_cpp_headers = files(
     'RoutePhotons.hpp',
     'SplitEvents.hpp',
     'SwabianTagEvent.hpp',
-    'TCSPCEvents.hpp',
     'TimeDelay.hpp',
+    'TimeTaggedEvents.hpp',
     'TranslateMarker.hpp',
 )
 

@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Common.hpp"
-#include "TCSPCEvents.hpp"
+#include "TimeTaggedEvents.hpp"
 
 #include <cstdint>
 #include <exception>

@@ -26,8 +26,8 @@ flimevents_tests_srcs = [
     'RoutePhotonsTests.cpp',
     'SplitEventsTests.cpp',
     'SwabianTagEventTests.cpp',
-    'TCSPCEventsTests.cpp',
     'TimeDelayTests.cpp',
+    'TimeTaggedEventsTests.cpp',
     'TranslateMarkerTests.cpp',
     'main.cpp',
 ]

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "TCSPCEvents.hpp"
+#include "TimeTaggedEvents.hpp"
 
 #include <algorithm>
 #include <cstddef>

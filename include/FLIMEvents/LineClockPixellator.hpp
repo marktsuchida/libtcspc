@@ -1,7 +1,7 @@
 #pragma once
 
 #include "PixelPhotonEvents.hpp"
-#include "TCSPCEvents.hpp"
+#include "TimeTaggedEvents.hpp"
 
 #include <deque>
 #include <exception>
