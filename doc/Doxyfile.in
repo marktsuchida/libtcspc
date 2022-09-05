@@ -1,3 +1,7 @@
+# This file is part of FLIMEvents
+# Copyright 2019-2022 Board of Regents of the University of Wisconsin System
+# SPDX-License-Identifier: MIT
+
 PROJECT_NAME           = FLIMEvents
 PROJECT_BRIEF          = "Streaming FLIM data processing in C++"
 INPUT                  = @DOXYGEN_INPUT@

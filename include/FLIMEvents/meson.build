@@ -1,3 +1,7 @@
+# This file is part of FLIMEvents
+# Copyright 2019-2022 Board of Regents of the University of Wisconsin System
+# SPDX-License-Identifier: MIT
+
 public_cpp_headers = files(
     'ApplyClassTemplateToTupleElements.hpp',
     'BHDeviceEvents.hpp',

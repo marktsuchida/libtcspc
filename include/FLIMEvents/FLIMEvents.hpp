@@ -1,3 +1,9 @@
+/*
+ * This file is part of FLIMEvents
+ * Copyright 2019-2022 Board of Regents of the University of Wisconsin System
+ * SPDX-License-Identifier: MIT
+ */
+
 #pragma once
 
 // This file may be used in the future to include all the main headers.
