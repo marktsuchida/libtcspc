@@ -9,19 +9,11 @@
 namespace flimevt {
 
 /**
- * \brief Base class for logical TCSPC events (photons, markers, and
- * exceptional conditions).
- *
- * These are "logical" events in the sense that vendor-specific encoding and
- * clock overflow counters have been decoded and processed.
+ * \brief Base class for events with a hardware-assigned timestamp.
  */
-struct TCSPCEvent {
+struct BaseTimeTaggedEvent {
     /**
      * \brief The absolute macrotime of this event.
-     *
-     * The macrotime is in device- and configuration-specific units;
-     * conversion to physical (or other) units (which may result in loss of the
-     * exact raw data) is not the concern of this library.
      */
     Macrotime macrotime;
 };
@@ -44,7 +36,7 @@ struct TCSPCEvent {
  * Note that this event is generally only emitted when the timestamp is not
  * associated with an actual event (photon, marker, etc.).
  */
-struct TimestampEvent : public TCSPCEvent {};
+struct TimestampEvent : public BaseTimeTaggedEvent {};
 
 inline bool operator==(TimestampEvent const &lhs, TimestampEvent const &rhs) {
     return lhs.macrotime == rhs.macrotime;
@@ -65,7 +57,7 @@ inline std::ostream &operator<<(std::ostream &s, TimestampEvent const &e) {
  * device FIFO, DMA buffer, or any other stage involved in streaming data to
  * the computer.
  */
-struct DataLostEvent : public TCSPCEvent {};
+struct DataLostEvent : public BaseTimeTaggedEvent {};
 
 inline bool operator==(DataLostEvent const &lhs, DataLostEvent const &rhs) {
     return lhs.macrotime == rhs.macrotime;
@@ -78,7 +70,7 @@ inline std::ostream &operator<<(std::ostream &s, DataLostEvent const &e) {
 /**
  * \brief Abstract base class for valid and invalid TCSPC photon events.
  */
-struct BasePhotonEvent : public TCSPCEvent {
+struct BasePhotonEvent : public BaseTimeTaggedEvent {
     /**
      * \brief Nanotime (a.k.a. difference time, microtime) of the photon.
      *
@@ -148,7 +140,7 @@ inline std::ostream &operator<<(std::ostream &s, InvalidPhotonEvent const &e) {
  * ordering should be made deterministic when arbitrarily determined by
  * software).
  */
-struct MarkerEvent : public TCSPCEvent {
+struct MarkerEvent : public BaseTimeTaggedEvent {
     /**
      * \brief Input channel of the marker.
      *
