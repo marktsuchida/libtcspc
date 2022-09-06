@@ -35,7 +35,7 @@ using Macrotime = std::int64_t;
 
 namespace internal {
 
-inline int CountTrailingZeros32Nonintrinsic(std::uint32_t x) {
+constexpr int CountTrailingZeros32Nonintrinsic(std::uint32_t x) noexcept {
     int r = 0;
     while ((x & 1) == 0) {
         x >>= 1;
@@ -47,7 +47,7 @@ inline int CountTrailingZeros32Nonintrinsic(std::uint32_t x) {
 // Return the number of trailing zero bits in x. Behavior is undefined if x is
 // zero.
 // TODO: In C++20, replace with std::countr_zero()
-inline int CountTrailingZeros32(std::uint32_t const x) {
+inline int CountTrailingZeros32(std::uint32_t const x) noexcept {
 #ifdef __GNUC__
     return __builtin_ctz(x);
 #elif defined(_MSC_VER)

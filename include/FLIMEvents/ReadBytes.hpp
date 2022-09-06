@@ -25,7 +25,7 @@ namespace flimevt::internal {
 // https://commandcenter.blogspot.com/2012/04/byte-order-fallacy.html
 // (but note the need for extra casts for it to actually work correctly).
 
-inline bool IsLittleEndian() {
+inline bool IsLittleEndian() noexcept {
     // Note: in C++20 this can be replaced with std::endian checks, and be made
     // constexpr.
     union {
@@ -35,7 +35,7 @@ inline bool IsLittleEndian() {
     return bool(t.c);
 }
 
-inline bool UseMemcpy() {
+inline bool UseMemcpy() noexcept {
 #ifdef _MSC_VER
     return IsLittleEndian();
 #else
@@ -43,33 +43,35 @@ inline bool UseMemcpy() {
 #endif
 }
 
-inline std::uint16_t ReadU16LE_Memcpy(unsigned char const *bytes) {
+inline std::uint16_t ReadU16LE_Memcpy(unsigned char const *bytes) noexcept {
     assert(IsLittleEndian());
     std::uint16_t ret;
     std::memcpy(&ret, bytes, 2);
     return ret;
 }
 
-inline std::uint32_t ReadU32LE_Memcpy(unsigned char const *bytes) {
+inline std::uint32_t ReadU32LE_Memcpy(unsigned char const *bytes) noexcept {
     assert(IsLittleEndian());
     std::uint32_t ret;
     std::memcpy(&ret, bytes, 4);
     return ret;
 }
 
-inline std::uint64_t ReadU64LE_Memcpy(unsigned char const *bytes) {
+inline std::uint64_t ReadU64LE_Memcpy(unsigned char const *bytes) noexcept {
     assert(IsLittleEndian());
     std::uint64_t ret;
     std::memcpy(&ret, bytes, 8);
     return ret;
 }
 
-inline std::uint16_t ReadU16LE_Generic(unsigned char const *bytes) {
+constexpr std::uint16_t
+ReadU16LE_Generic(unsigned char const *bytes) noexcept {
     // unsigned is at least as wide as uint16_t
     return std::uint16_t(unsigned(bytes[0]) | (unsigned(bytes[1]) << 8));
 }
 
-inline std::uint32_t ReadU32LE_Generic(unsigned char const *bytes) {
+constexpr std::uint32_t
+ReadU32LE_Generic(unsigned char const *bytes) noexcept {
     using u32 = std::uint32_t;
     if constexpr (sizeof(u32) < sizeof(unsigned)) {
         // u32 would be promoted to int if we don't cast to unsigned
@@ -81,7 +83,8 @@ inline std::uint32_t ReadU32LE_Generic(unsigned char const *bytes) {
     }
 }
 
-inline std::uint64_t ReadU64LE_Generic(unsigned char const *bytes) {
+constexpr std::uint64_t
+ReadU64LE_Generic(unsigned char const *bytes) noexcept {
     using u64 = std::uint64_t;
     if constexpr (sizeof(u64) < sizeof(unsigned)) {
         // u64 would be promoted to int if we don't cast to unsigned
@@ -98,42 +101,44 @@ inline std::uint64_t ReadU64LE_Generic(unsigned char const *bytes) {
 }
 
 // For completeness
-inline std::uint8_t ReadU8LE(unsigned char const *bytes) { return bytes[0]; }
+constexpr std::uint8_t ReadU8LE(unsigned char const *bytes) noexcept {
+    return bytes[0];
+}
 
-inline std::uint16_t ReadU16LE(unsigned char const *bytes) {
+inline std::uint16_t ReadU16LE(unsigned char const *bytes) noexcept {
     if (UseMemcpy())
         return ReadU16LE_Memcpy(bytes);
     else
         return ReadU16LE_Generic(bytes);
 }
 
-inline std::uint32_t ReadU32LE(unsigned char const *bytes) {
+inline std::uint32_t ReadU32LE(unsigned char const *bytes) noexcept {
     if (UseMemcpy())
         return ReadU32LE_Memcpy(bytes);
     else
         return ReadU32LE_Generic(bytes);
 }
 
-inline std::uint64_t ReadU64LE(unsigned char const *bytes) {
+inline std::uint64_t ReadU64LE(unsigned char const *bytes) noexcept {
     if (UseMemcpy())
         return ReadU64LE_Memcpy(bytes);
     else
         return ReadU64LE_Generic(bytes);
 }
 
-inline std::int8_t ReadI8LE(unsigned char const *bytes) {
+inline std::int8_t ReadI8LE(unsigned char const *bytes) noexcept {
     return std::int8_t(ReadU8LE(bytes));
 }
 
-inline std::int16_t ReadI16LE(unsigned char const *bytes) {
+inline std::int16_t ReadI16LE(unsigned char const *bytes) noexcept {
     return std::int16_t(ReadU16LE(bytes));
 }
 
-inline std::int32_t ReadI32LE(unsigned char const *bytes) {
+inline std::int32_t ReadI32LE(unsigned char const *bytes) noexcept {
     return std::int32_t(ReadU32LE(bytes));
 }
 
-inline std::int64_t ReadI64LE(unsigned char const *bytes) {
+inline std::int64_t ReadI64LE(unsigned char const *bytes) noexcept {
     return std::int64_t(ReadU64LE(bytes));
 }
 
