@@ -105,7 +105,7 @@ int main(int argc, char *argv[]) {
                 std::move(cumulHisto),
                 HistogramSaver<SampleType>(outFilename)))));
 
-    flimevt::EventArrayDemultiplexer<flimevt::BHSPCEvent, decltype(decoder)>
+    flimevt::DemultiplexEventArray<flimevt::BHSPCEvent, decltype(decoder)>
         processor(std::move(decoder));
 
     flimevt::EventBuffer<decltype(processor)::EventArrayType,

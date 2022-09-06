@@ -144,7 +144,7 @@ template <typename E> class EventArrayPool {
  * \tparam E the event type
  * \tparam D downstream processor type
  */
-template <typename E, typename D> class EventArrayDemultiplexer {
+template <typename E, typename D> class DemultiplexEventArray {
     D downstream;
 
   public:
@@ -158,7 +158,7 @@ template <typename E, typename D> class EventArrayDemultiplexer {
      *
      * \param downstream downstream processor (moved out)
      */
-    explicit EventArrayDemultiplexer(D &&downstream)
+    explicit DemultiplexEventArray(D &&downstream)
         : downstream(std::move(downstream)) {}
 
     /** \brief Processor interface */
