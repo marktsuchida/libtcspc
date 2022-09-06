@@ -38,34 +38,65 @@ namespace flimevt {
  * RecType 0x00010303.
  */
 struct PQPicoT3Event {
+    /**
+     * \brief Bytes of the 32-bit raw device event.
+     */
     unsigned char bytes[4];
 
+    /**
+     * \brief The nsync overflow period of this event type.
+     */
     static constexpr Macrotime NSyncOverflowPeriod = 65536;
 
+    /**
+     * \brief Read the channel if this event represents a photon.
+     */
     std::uint8_t GetChannel() const noexcept {
         return unsigned(bytes[3]) >> 4;
     }
 
+    /**
+     * \brief Read the difference time if this event represents a photon.
+     */
     std::uint16_t GetDTime() const noexcept {
         return unsigned(internal::ReadU16LE(&bytes[2])) & 0x0fffU;
     }
 
+    /**
+     * \brief Read the nsync counter value (no rollover correction).
+     */
     std::uint16_t GetNSync() const noexcept {
         return internal::ReadU16LE(&bytes[0]);
     }
 
+    /**
+     * \brief Determine if this event is a non-photon event.
+     */
     bool IsSpecial() const noexcept { return GetChannel() == 15; }
 
+    /**
+     * \brief Determine if this event represents an nsync overflow.
+     */
     bool IsNSyncOverflow() const noexcept {
         return IsSpecial() && GetDTime() == 0;
     }
 
+    /**
+     * \brief Read the nsync overflow count if this event represents an nsync
+     * overflow.
+     */
     std::uint16_t GetNSyncOverflowCount() const noexcept { return 1; }
 
+    /**
+     * \brief Determine if this event represents markers.
+     */
     bool IsExternalMarker() const noexcept {
         return IsSpecial() && GetDTime() != 0;
     }
 
+    /**
+     * \brief Read the marker bits (mask) if this event represents markers.
+     */
     std::uint16_t GetExternalMarkerBits() const noexcept { return GetDTime(); }
 };
 
@@ -77,18 +108,26 @@ struct PQPicoT3Event {
  * format, in which nsync overflow records always indicate a single overflow
  */
 template <bool IsHydraV1> struct PQHydraT3Event {
+    /**
+     * \brief Bytes of the 32-bit raw device event.
+     */
     unsigned char bytes[4];
 
+    /**
+     * \brief The nsync overflow period of this event type.
+     */
     static constexpr Macrotime NSyncOverflowPeriod = 1024;
 
-    bool GetSpecialFlag() const noexcept {
-        return unsigned(bytes[3]) & (1U << 7);
-    }
-
+    /**
+     * \brief Read the channel if this event represents a photon.
+     */
     std::uint8_t GetChannel() const noexcept {
         return (unsigned(bytes[3]) & 0x7fU) >> 1;
     }
 
+    /**
+     * \brief Read the difference time if this event represents a photon.
+     */
     std::uint16_t GetDTime() const noexcept {
         auto lo6 = unsigned(bytes[1]) >> 2;
         auto mid8 = unsigned(bytes[2]);
@@ -96,16 +135,29 @@ template <bool IsHydraV1> struct PQHydraT3Event {
         return lo6 | (mid8 << 6) | (hi1 << 14);
     }
 
+    /**
+     * \brief Read the nsync counter value (no rollover correction).
+     */
     std::uint16_t GetNSync() const noexcept {
         return unsigned(internal::ReadU16LE(&bytes[0])) & 0x03ffU;
     }
 
-    bool IsSpecial() const noexcept { return GetSpecialFlag(); }
+    /**
+     * \brief Determine if this event is a non-photon event.
+     */
+    bool IsSpecial() const noexcept { return unsigned(bytes[3]) & (1U << 7); }
 
+    /**
+     * \brief Determine if this event represents an nsync overflow.
+     */
     bool IsNSyncOverflow() const noexcept {
         return IsSpecial() && GetChannel() == 63;
     }
 
+    /**
+     * \brief Read the nsync overflow count if this event represents an nsync
+     * overflow.
+     */
     std::uint16_t GetNSyncOverflowCount() const noexcept {
         if (IsHydraV1 || GetNSync() == 0) {
             return 1;
@@ -113,10 +165,16 @@ template <bool IsHydraV1> struct PQHydraT3Event {
         return GetNSync();
     }
 
+    /**
+     * \brief Determine if this event represents markers.
+     */
     bool IsExternalMarker() const noexcept {
         return IsSpecial() && GetChannel() != 63;
     }
 
+    /**
+     * \brief Read the marker bits (mask) if this event represents markers.
+     */
     std::uint8_t GetExternalMarkerBits() const noexcept {
         return GetChannel();
     }

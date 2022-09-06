@@ -25,8 +25,14 @@ namespace flimevt {
  * Time Tagger C++ API.
  */
 struct SwabianTagEvent {
+    /**
+     * \brief Bytes of the 16-byte format from Swabian API.
+     */
     unsigned char bytes[16];
 
+    /**
+     * \brief 8-bit type for the type field.
+     */
     enum class Type : std::uint8_t {
         TimeTag = 0,
         Error = 1,
@@ -35,28 +41,50 @@ struct SwabianTagEvent {
         MissedEvents = 4,
     };
 
+    /**
+     * \brief Read the event type.
+     */
     Type GetType() const noexcept { return Type(bytes[0]); }
 
     // bytes[1] is reserved, to be written zero.
 
+    /**
+     * \brief Read the missed event count if this is a missed events event.
+     */
     std::uint16_t GetMissedEventCount() const noexcept {
         return internal::ReadU16LE(&bytes[2]);
     }
 
+    /**
+     * \brief Read the channel if this is a time tag or missed events event.
+     */
     std::int32_t GetChannel() const noexcept {
         return internal::ReadI32LE(&bytes[4]);
     }
 
+    /**
+     * \brief Read the time (picoseconds).
+     */
     std::int64_t GetTime() const noexcept {
         return internal::ReadI64LE(&bytes[8]);
     }
 };
 
+/**
+ * \brief Processor that decodes Swabian Tag events.
+ *
+ * \tparam D downstream processor type
+ */
 template <typename D> class DecodeSwabianTags {
     bool hadError = false;
     D downstream;
 
   public:
+    /**
+     * \brief Construct with downstream processor.
+     *
+     * \param downstream downstream processor (moved out)
+     */
     explicit DecodeSwabianTags(D &&downstream)
         : downstream(std::move(downstream)) {}
 

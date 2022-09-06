@@ -31,14 +31,28 @@ namespace flimevt {
  * SPC-600 and SPC-630.
  */
 struct BHSPCEvent {
+    /**
+     * \brief Bytes of the 32-bit raw device event.
+     */
     unsigned char bytes[4];
 
+    /**
+     * \brief The macrotime overflow period of this event type.
+     */
     static constexpr Macrotime MacrotimeOverflowPeriod = 1 << 12;
 
+    /**
+     * \brief Read the ADC value (i.e., difference time) if this event
+     * represents a photon.
+     */
     std::uint16_t GetADCValue() const noexcept {
         return unsigned(internal::ReadU16LE(&bytes[2])) & 0x0fffU;
     }
 
+    /**
+     * \brief Read the routing signals (usually the detector channel) if this
+     * event represents a photon.
+     */
     std::uint8_t GetRoutingSignals() const noexcept {
         // The documentation somewhat confusingly says that these bits are
         // "inverted", but what they mean is that the TTL inputs are active
@@ -46,26 +60,47 @@ struct BHSPCEvent {
         return unsigned(bytes[1]) >> 4;
     }
 
+    /**
+     * \brief Read the macrotime counter value (no rollover correction).
+     */
     std::uint16_t GetMacrotime() const noexcept {
         return unsigned(internal::ReadU16LE(&bytes[0])) & 0x0fffU;
     }
 
+    /**
+     * \brief Read the 'marker' flag.
+     */
     bool GetMarkerFlag() const noexcept {
         return unsigned(bytes[3]) & (1U << 4);
     }
 
+    /**
+     * \brief Read the marker bits (mask) if this event represents markers.
+     */
     std::uint8_t GetMarkerBits() const noexcept { return GetRoutingSignals(); }
 
+    /**
+     * \brief Read the 'gap' (data lost) flag.
+     */
     bool GetGapFlag() const noexcept { return unsigned(bytes[3]) & (1U << 5); }
 
+    /**
+     * \brief Read the 'macrotime overflow' flag.
+     */
     bool GetMacrotimeOverflowFlag() const noexcept {
         return unsigned(bytes[3]) & (1U << 6);
     }
 
+    /**
+     * \brief Read the 'invalid' flag.
+     */
     bool GetInvalidFlag() const noexcept {
         return unsigned(bytes[3]) & (1U << 7);
     }
 
+    /**
+     * \brief Determine if this event represents multiple macrotime overflows.
+     */
     bool IsMultipleMacrotimeOverflow() const noexcept {
         // Although documentation is not clear, a marker can share an event
         // record with a (single) macrotime overflow, just as a photon can.
@@ -73,7 +108,10 @@ struct BHSPCEvent {
                !GetMarkerFlag();
     }
 
-    // Get the 28-bit macro timer overflow count
+    /**
+     * \brief Read the macrotime overflow count if this event represents
+     * multiple macrotime overflows.
+     */
     std::uint32_t GetMultipleMacrotimeOverflowCount() const noexcept {
         return internal::ReadU32LE(&bytes[0]) & 0x0fffffffU;
     }
@@ -84,16 +122,33 @@ struct BHSPCEvent {
  * 4096-channel mode.
  */
 struct BHSPC600Event48 {
+    /**
+     * \brief Bytes of the 48-bit raw device event.
+     */
     unsigned char bytes[6];
 
+    /**
+     * \brief The macrotime overflow period of this event type.
+     */
     static constexpr Macrotime MacrotimeOverflowPeriod = 1 << 24;
 
+    /**
+     * \brief Read the ADC value (i.e., difference time) if this event
+     * represents a photon.
+     */
     std::uint16_t GetADCValue() const noexcept {
         return unsigned(internal::ReadU16LE(&bytes[0])) & 0x0fffU;
     }
 
+    /**
+     * \brief Read the routing signals (usually the detector channel) if this
+     * event represents a photon.
+     */
     std::uint8_t GetRoutingSignals() const noexcept { return bytes[3]; }
 
+    /**
+     * \brief Read the macrotime counter value (no rollover correction).
+     */
     std::uint32_t GetMacrotime() const noexcept {
         auto lo8 = unsigned(bytes[4]);
         auto mid8 = unsigned(bytes[5]);
@@ -101,22 +156,44 @@ struct BHSPC600Event48 {
         return lo8 | (mid8 << 8) | (hi8 << 16);
     }
 
+    /**
+     * \brief Read the 'marker' flag.
+     */
     bool GetMarkerFlag() const noexcept { return false; }
 
+    /**
+     * \brief Read the marker bits (mask) if this event represents markers.
+     */
     std::uint8_t GetMarkerBits() const noexcept { return 0; }
 
+    /**
+     * \brief Read the 'gap' (data lost) flag.
+     */
     bool GetGapFlag() const noexcept { return unsigned(bytes[1]) & (1U << 6); }
 
+    /**
+     * \brief Read the 'macrotime overflow' flag.
+     */
     bool GetMacrotimeOverflowFlag() const noexcept {
         return unsigned(bytes[1]) & (1U << 5);
     }
 
+    /**
+     * \brief Read the 'invalid' flag.
+     */
     bool GetInvalidFlag() const noexcept {
         return unsigned(bytes[1]) & (1U << 4);
     }
 
+    /**
+     * \brief Determine if this event represents multiple macrotime overflows.
+     */
     bool IsMultipleMacrotimeOverflow() const noexcept { return false; }
 
+    /**
+     * \brief Read the macrotime overflow count if this event represents
+     * multiple macrotime overflows.
+     */
     std::uint32_t GetMultipleMacrotimeOverflowCount() const noexcept {
         return 0;
     }
@@ -127,16 +204,33 @@ struct BHSPC600Event48 {
  * 256-channel mode.
  */
 struct BHSPC600Event32 {
+    /**
+     * \brief Bytes of the 32-bit raw device event.
+     */
     unsigned char bytes[4];
 
+    /**
+     * \brief The macrotime overflow period of this event type.
+     */
     static constexpr Macrotime MacrotimeOverflowPeriod = 1 << 17;
 
+    /**
+     * \brief Read the ADC value (i.e., difference time) if this event
+     * represents a photon.
+     */
     std::uint16_t GetADCValue() const noexcept { return bytes[0]; }
 
+    /**
+     * \brief Read the routing signals (usually the detector channel) if this
+     * event represents a photon.
+     */
     std::uint8_t GetRoutingSignals() const noexcept {
         return (bytes[3] & 0x0f) >> 1;
     }
 
+    /**
+     * \brief Read the macrotime counter value (no rollover correction).
+     */
     std::uint32_t GetMacrotime() const noexcept {
         auto lo8 = unsigned(bytes[1]);
         auto mid8 = unsigned(bytes[2]);
@@ -144,22 +238,44 @@ struct BHSPC600Event32 {
         return lo8 | (mid8 << 8) | (hi1 << 16);
     }
 
+    /**
+     * \brief Read the 'marker' flag.
+     */
     bool GetMarkerFlag() const noexcept { return false; }
 
+    /**
+     * \brief Read the marker bits (mask) if this event represents markers.
+     */
     std::uint8_t GetMarkerBits() const noexcept { return 0; }
 
+    /**
+     * \brief Read the 'gap' (data lost) flag.
+     */
     bool GetGapflag() const noexcept { return unsigned(bytes[3]) & (1U << 5); }
 
+    /**
+     * \brief Read the 'macrotime overflow' flag.
+     */
     bool GetMacrotimeOverflowFlag() const noexcept {
         return unsigned(bytes[3]) & (1U << 6);
     }
 
+    /**
+     * \brief Read the 'invalid' flag.
+     */
     bool GetInvalidFlag() const noexcept {
         return unsigned(bytes[3]) & (1U << 7);
     }
 
+    /**
+     * \brief Determine if this event represents multiple macrotime overflows.
+     */
     bool IsMultipleMacrotimeOverflow() const noexcept { return false; }
 
+    /**
+     * \brief Read the macrotime overflow count if this event represents
+     * multiple macrotime overflows.
+     */
     std::uint32_t GetMultipleMacrotimeOverflowCount() const noexcept {
         return 0;
     }
