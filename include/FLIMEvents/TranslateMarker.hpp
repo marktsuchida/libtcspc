@@ -54,6 +54,7 @@ template <typename EMarker, typename EOut, typename D> class TranslateMarker {
     explicit TranslateMarker(std::int32_t channel, D &&downstream)
         : chan(channel), downstream(std::move(downstream)) {}
 
+    /** \brief Processor interface */
     void HandleEvent(EMarker const &event) noexcept {
         if (event.channel == chan) {
             EOut e{event.macrotime};
@@ -63,10 +64,12 @@ template <typename EMarker, typename EOut, typename D> class TranslateMarker {
         }
     }
 
+    /** \brief Processor interface */
     template <typename E> void HandleEvent(E const &event) noexcept {
         downstream.HandleEvent(event);
     }
 
+    /** \brief Processor interface */
     void HandleEnd(std::exception_ptr error) noexcept {
         downstream.HandleEnd(error);
     }

@@ -72,17 +72,20 @@ template <typename ETrig, typename PGen, typename D> class GenerateTimings {
     explicit GenerateTimings(PGen &&generator, D &&downstream)
         : generator(std::move(generator)), downstream(std::move(downstream)) {}
 
+    /** \brief Processor interface */
     void HandleEvent(ETrig const &event) noexcept {
         Emit([now = event.macrotime](auto t) { return t < now; });
         generator.Trigger(event.macrotime);
         downstream.HandleEvent(event);
     }
 
+    /** \brief Processor interface */
     template <typename E> void HandleEvent(E const &event) noexcept {
         Emit([now = event.macrotime](auto t) { return t <= now; });
         downstream.HandleEvent(event);
     }
 
+    /** \brief Processor interface */
     void HandleEnd(std::exception_ptr error) noexcept {
         // Note that we do _not_ generate the remaining timings. Usually timing
         // events beyond the end of the event stream are not useful, and not
@@ -100,15 +103,19 @@ template <typename ETrig, typename PGen, typename D> class GenerateTimings {
  */
 template <typename EOut> class NullTimingGenerator {
   public:
+    /** \brief Timing generator interface */
     using OutputEventType = EOut;
 
+    /** \brief Timing generator interface */
     void Trigger(Macrotime starttime) noexcept { (void)starttime; }
 
+    /** \brief Timing generator interface */
     bool Peek(Macrotime &macrotime) const noexcept {
         (void)macrotime;
         return false;
     }
 
+    /** \brief Timing generator interface */
     void Pop(EOut &event) noexcept {
         (void)event;
         assert(false);
@@ -128,6 +135,7 @@ template <typename EOut> class OneShotTimingGenerator {
     Macrotime const delay;
 
   public:
+    /** \brief Timing generator interface */
     using OutputEventType = EOut;
 
     /**
@@ -139,16 +147,19 @@ template <typename EOut> class OneShotTimingGenerator {
         assert(delay >= 0);
     }
 
+    /** \brief Timing generator interface */
     void Trigger(Macrotime starttime) noexcept {
         next = starttime + delay;
         pending = true;
     }
 
+    /** \brief Timing generator interface */
     bool Peek(Macrotime &macrotime) const noexcept {
         macrotime = next;
         return pending;
     }
 
+    /** \brief Timing generator interface */
     void Pop(EOut &event) noexcept {
         event.macrotime = next;
         pending = false;
@@ -172,6 +183,7 @@ template <typename EOut> class LinearTimingGenerator {
     std::size_t const count;
 
   public:
+    /** \brief Timing generator interface */
     using OutputEventType = EOut;
 
     /**
@@ -191,16 +203,19 @@ template <typename EOut> class LinearTimingGenerator {
         assert(interval > 0);
     }
 
+    /** \brief Timing generator interface */
     void Trigger(Macrotime starttime) noexcept {
         next = starttime + delay;
         remaining = count;
     }
 
+    /** \brief Timing generator interface */
     bool Peek(Macrotime &macrotime) const noexcept {
         macrotime = next;
         return remaining > 0;
     }
 
+    /** \brief Timing generator interface */
     void Pop(EOut &event) noexcept {
         event.macrotime = next;
         next += interval;

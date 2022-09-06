@@ -75,6 +75,7 @@ class CountEvent {
         assert(limit > 0);
     }
 
+    /** \brief Processor interface */
     void HandleEvent(EIn const &event) noexcept {
         if constexpr (!EmitAfter) {
             if (count == thresh)
@@ -93,15 +94,18 @@ class CountEvent {
             count = 0;
     }
 
+    /** \brief Processor interface */
     void HandleEvent(EReset const &event) noexcept {
         count = 0;
         downstream.HandleEvent(event);
     }
 
+    /** \brief Processor interface */
     template <typename E> void HandleEvent(E const &event) noexcept {
         downstream.HandleEvent(event);
     }
 
+    /** \brief Processor interface */
     void HandleEnd(std::exception_ptr error) noexcept {
         downstream.HandleEnd(error);
     }

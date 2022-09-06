@@ -54,20 +54,25 @@ class GateEvents {
     explicit GateEvents(D &&downstream)
         : GateEvents(false, std::move(downstream)) {}
 
+    /** \brief Processor interface */
     template <typename E> void HandleEvent(E const &event) noexcept {
         if (!ContainsEventV<ESet, E> || open)
             downstream.HandleEvent(event);
     }
 
+    /** \brief Processor interface */
     void HandleEvent(EOpen const &event) noexcept {
         open = true;
         downstream.HandleEvent(event);
     }
+
+    /** \brief Processor interface */
     void HandleEvent(EClose const &event) noexcept {
         open = false;
         downstream.HandleEvent(event);
     }
 
+    /** \brief Processor interface */
     void HandleEnd(std::exception_ptr error) noexcept {
         downstream.HandleEnd(error);
     }

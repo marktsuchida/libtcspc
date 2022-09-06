@@ -150,11 +150,13 @@ template <unsigned Ch, typename ESet, typename D> class MergeInput {
     MergeInput &operator=(MergeInput const &) = delete;
     MergeInput &operator=(MergeInput &&) = default;
 
+    /** \brief Processor interface */
     template <typename E, typename = std::enable_if_t<ContainsEventV<ESet, E>>>
     void HandleEvent(E const &event) noexcept {
         impl->template HandleEvent<Ch>(event);
     }
 
+    /** \brief Processor interface */
     void HandleEnd(std::exception_ptr error) noexcept {
         impl->template HandleEnd<Ch>(error);
         impl.reset();

@@ -38,6 +38,7 @@ template <typename ESet, typename D0, typename D1> class SplitEvents {
         : downstream0(std::move(downstream0)),
           downstream1(std::move(downstream1)) {}
 
+    /** \brief Processor interface */
     template <typename E> void HandleEvent(E const &event) noexcept {
         if constexpr (ContainsEventV<ESet, E>)
             downstream1.HandleEvent(event);
@@ -45,6 +46,7 @@ template <typename ESet, typename D0, typename D1> class SplitEvents {
             downstream0.HandleEvent(event);
     }
 
+    /** \brief Processor interface */
     void HandleEnd(std::exception_ptr error) noexcept {
         downstream0.HandleEnd(error);
         downstream1.HandleEnd(error);

@@ -60,6 +60,7 @@ template <typename D> class DecodeSwabianTags {
     explicit DecodeSwabianTags(D &&downstream)
         : downstream(std::move(downstream)) {}
 
+    /** \brief Processor interface */
     void HandleEvent(SwabianTagEvent const &event) noexcept {
         if (hadError)
             return;
@@ -104,6 +105,7 @@ template <typename D> class DecodeSwabianTags {
         }
     }
 
+    /** \brief Processor interface */
     void HandleEnd(std::exception_ptr error) noexcept {
         downstream.HandleEnd(error);
     }

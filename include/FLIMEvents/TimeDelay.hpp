@@ -30,12 +30,14 @@ template <typename D> class TimeDelay {
     explicit TimeDelay(Macrotime delta, D &&downstream)
         : delta(delta), downstream(std::move(downstream)) {}
 
+    /** \brief Processor interface */
     template <typename E> void HandleEvent(E const &event) noexcept {
         E copy(event);
         copy.macrotime += delta;
         downstream.HandleEvent(copy);
     }
 
+    /** \brief Processor interface */
     void HandleEnd(std::exception_ptr error) noexcept {
         downstream.HandleEnd(error);
     }

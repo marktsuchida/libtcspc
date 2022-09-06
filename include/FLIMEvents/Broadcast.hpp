@@ -24,11 +24,13 @@ template <typename... Ds> class Broadcast {
     explicit Broadcast(Ds &&...downstreams)
         : downstreams{std::move<Ds>(downstreams)...} {}
 
+    /** \brief Processor interface */
     template <typename E> void HandleEvent(E const &event) noexcept {
         std::apply([&](auto &...s) { (..., s.HandleEvent(event)); },
                    downstreams);
     }
 
+    /** \brief Processor interface */
     void HandleEnd(std::exception_ptr error) noexcept {
         std::apply([&](auto &...s) { (..., s.HandleEnd(error)); },
                    downstreams);

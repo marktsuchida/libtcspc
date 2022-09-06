@@ -99,12 +99,14 @@ template <typename E, typename D> class EventArrayDemultiplexer {
     explicit EventArrayDemultiplexer(D &&downstream)
         : downstream(std::move(downstream)) {}
 
+    /** \brief Processor interface */
     void HandleEvent(EventArrayType const &eventArray) noexcept {
         std::for_each_n(
             eventArray->GetData(), eventArray->GetSize(),
             [&](auto const &event) { downstream.HandleEvent(event); });
     }
 
+    /** \brief Processor interface */
     void HandleEnd(std::exception_ptr error) noexcept {
         downstream.HandleEnd(error);
     }
@@ -124,6 +126,7 @@ template <typename E, typename D> class EventBuffer {
   public:
     explicit EventBuffer(D &&downstream) : downstream(std::move(downstream)) {}
 
+    /** \brief Processor interface */
     void HandleEvent(E const &event) noexcept {
         {
             std::scoped_lock lock(mutex);
@@ -140,6 +143,7 @@ template <typename E, typename D> class EventBuffer {
         hasItemCondition.notify_one();
     }
 
+    /** \brief Processor interface */
     void HandleEnd(std::exception_ptr error) noexcept {
         {
             std::scoped_lock lock(mutex);

@@ -18,8 +18,10 @@ namespace flimevt {
  */
 class DiscardAny {
   public:
+    /** \brief Processor interface */
     template <typename E> void HandleEvent(E const &) noexcept {}
 
+    /** \brief Processor interface */
     void HandleEnd(std::exception_ptr) noexcept {}
 };
 
@@ -30,9 +32,11 @@ class DiscardAny {
  */
 template <typename ESet> class DiscardAll {
   public:
+    /** \brief Processor interface */
     template <typename E, typename = std::enable_if_t<ContainsEventV<ESet, E>>>
     void HandleEvent(E const &) noexcept {}
 
+    /** \brief Processor interface */
     void HandleEnd(std::exception_ptr) noexcept {}
 };
 

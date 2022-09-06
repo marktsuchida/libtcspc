@@ -68,6 +68,7 @@ template <typename ERouted, typename... Ds> class RouteByChannel {
                             Ds &&...downstreams)
         : channels(channels), downstreams{std::move(downstreams)...} {}
 
+    /** \brief Processor interface */
     void HandleEvent(ERouted const &event) noexcept {
         auto chan = event.channel;
         auto it = std::find(channels.cbegin(), channels.cend(), chan);
@@ -75,11 +76,13 @@ template <typename ERouted, typename... Ds> class RouteByChannel {
             HandlePhoton(std::distance(channels.cbegin(), it), event);
     }
 
+    /** \brief Processor interface */
     template <typename E> void HandleEvent(E const &event) noexcept {
         std::apply([&](auto &...s) { (..., s.HandleEvent(event)); },
                    downstreams);
     }
 
+    /** \brief Processor interface */
     void HandleEnd(std::exception_ptr error) noexcept {
         std::apply([&](auto &...s) { (..., s.HandleEnd(error)); },
                    downstreams);

@@ -143,11 +143,13 @@ template <typename ESet> class PolymorphicProcessor {
 
     // Rule of zero
 
+    /** \brief Processor interface */
     template <typename E, typename = std::enable_if_t<ContainsEventV<ESet, E>>>
     void HandleEvent(E const &event) noexcept {
         proc->HandleEvent(event);
     }
 
+    /** \brief Processor interface */
     void HandleEnd(std::exception_ptr error) noexcept {
         proc->HandleEnd(error);
 
