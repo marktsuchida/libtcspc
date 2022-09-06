@@ -101,7 +101,8 @@ using VirtualWrappedProcessor =
  */
 template <typename ESet>
 using VirtualProcessor =
-    ApplyClassTemplateToTupleElementsT<internal::VirtualProcessor, ESet>;
+    internal::ApplyClassTemplateToTupleElementsT<internal::VirtualProcessor,
+                                                 ESet>;
 
 /**
  * \brief A dynamically polymorphic wrapper for a given processor type.
@@ -114,9 +115,8 @@ using VirtualProcessor =
  * \tparam ESet the event set handled by the processor
  */
 template <typename Proc, typename ESet>
-using VirtualWrappedProcessor =
-    ApplyClassTemplateToTupleElementsT<internal::VirtualWrappedProcessor, ESet,
-                                       Proc>;
+using VirtualWrappedProcessor = internal::ApplyClassTemplateToTupleElementsT<
+    internal::VirtualWrappedProcessor, ESet, Proc>;
 
 /**
  * \brief Processor that invokes a dynamically polymorphic processor.

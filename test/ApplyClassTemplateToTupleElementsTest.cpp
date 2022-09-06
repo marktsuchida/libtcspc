@@ -6,7 +6,7 @@
 
 #include "FLIMEvents/ApplyClassTemplateToTupleElements.hpp"
 
-using namespace flimevt;
+using namespace flimevt::internal;
 
 template <typename... Ts> struct Test {};
 
