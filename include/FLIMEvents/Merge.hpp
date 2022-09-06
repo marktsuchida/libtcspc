@@ -108,19 +108,16 @@ template <typename ESet, typename D> class MergeImpl {
 
     template <unsigned Ch> void HandleEnd(std::exception_ptr error) noexcept {
         inputEnded[Ch] = true;
-        if (canceled)
+        if (canceled) // Other input already had an error
             return;
 
         bool otherInputEnded = inputEnded[1 - Ch];
-        if (error && !otherInputEnded)
+        if (otherInputEnded && !error) // They had finished; now we did, too
+            EmitPending([]([[maybe_unused]] auto t) { return true; });
+        if (!otherInputEnded && error) // We errored first
             canceled = true;
-        if (otherInputEnded || canceled) {
-            // Emit pending events if both streams are complete (had no error).
-            if (!error && otherInputEnded)
-                EmitPending([]([[maybe_unused]] auto t) { return true; });
-
+        if (otherInputEnded || error) // The stream has ended now
             downstream.HandleEnd(error);
-        }
     }
 };
 
