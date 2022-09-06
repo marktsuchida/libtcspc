@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: MIT
  */
 
-#include "FLIMEvents/EventBuffer.hpp"
+#include "FLIMEvents/Buffer.hpp"
 
 #include "FLIMEvents/Discard.hpp"
 #include "FLIMEvents/EventSet.hpp"
