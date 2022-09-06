@@ -178,6 +178,9 @@ inline constexpr bool HandlesEventSetV = HandlesEventSet<Proc, ESet>::value;
  * \tparam ESets the event set types to concatenate
  */
 template <typename... ESets> struct ConcatEventSet {
+    /**
+     * \brief Returned type of the metafunction.
+     */
     using type = decltype(std::tuple_cat(std::declval<ESets>()...));
 };
 

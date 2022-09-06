@@ -21,6 +21,11 @@ template <typename... Ds> class Broadcast {
     std::tuple<Ds...> downstreams;
 
   public:
+    /**
+     * \brief Construct with downstream processors.
+     *
+     * \param downstreams downstream processors (moved out)
+     */
     explicit Broadcast(Ds &&...downstreams)
         : downstreams{std::move<Ds>(downstreams)...} {}
 

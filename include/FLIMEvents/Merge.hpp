@@ -145,9 +145,13 @@ template <unsigned Ch, typename ESet, typename D> class MergeInput {
     friend auto MakeMerge(Macrotime maxTimeShift, MD &&downstream);
 
   public:
+    /** \brief Noncopyable */
     MergeInput(MergeInput const &) = delete;
-    MergeInput(MergeInput &&) = default;
+    /** \brief Noncopyable */
     MergeInput &operator=(MergeInput const &) = delete;
+    /** \brief Move constructor */
+    MergeInput(MergeInput &&) = default;
+    /** \brief Move assignment operator */
     MergeInput &operator=(MergeInput &&) = default;
 
     /** \brief Processor interface */
