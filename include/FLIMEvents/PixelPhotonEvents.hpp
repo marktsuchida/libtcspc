@@ -10,6 +10,8 @@
 
 #include <cstdint>
 
+//! \cond TO_BE_REMOVED
+
 namespace flimevt {
 
 struct PixelPhotonEvent {
@@ -27,3 +29,5 @@ using PixelPhotonEvents =
     EventSet<PixelPhotonEvent, BeginFrameEvent, EndFrameEvent>;
 
 } // namespace flimevt
+
+//! \endcond

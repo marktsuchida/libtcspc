@@ -19,6 +19,8 @@
 #include <type_traits>
 #include <vector>
 
+//! \cond TO_BE_REMOVED
+
 namespace flimevt {
 
 namespace internal {
@@ -309,3 +311,5 @@ template <typename T, typename D> class HistogramAccumulator {
 };
 
 } // namespace flimevt
+
+//! \endcond

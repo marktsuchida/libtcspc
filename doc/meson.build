@@ -21,7 +21,7 @@ doc_install_dir = get_option('datadir') / 'doc/FLIMEvents'
 if doxygen.found()
     custom_target(
         'docs',
-        command: [doxygen, doxyfile],
+        command: [doxygen, '-q', doxyfile],
         depend_files: [public_cpp_headers],
         output: ['apidoc'],
         install: true,

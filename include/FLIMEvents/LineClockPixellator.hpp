@@ -15,6 +15,8 @@
 #include <memory>
 #include <stdexcept>
 
+//! \cond TO_BE_REMOVED
+
 namespace flimevt {
 
 // Assign pixels to photons using line clock only
@@ -298,3 +300,5 @@ template <typename D> class LineClockPixellator {
 };
 
 } // namespace flimevt
+
+//! \endcond

@@ -16,6 +16,8 @@
 #include <type_traits>
 #include <variant>
 
+//! \cond TO_BE_REMOVED
+
 namespace flimevt {
 
 template <typename DelayedSet, typename D> class DelayProcessor {
@@ -151,3 +153,5 @@ class DelayHastenProcessor {
 };
 
 } // namespace flimevt
+
+//! \endcond
