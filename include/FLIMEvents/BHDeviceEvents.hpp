@@ -36,9 +36,7 @@ struct BHSPCEvent {
     static constexpr Macrotime MacrotimeOverflowPeriod = 1 << 12;
 
     std::uint16_t GetADCValue() const noexcept {
-        std::uint8_t lo8 = bytes[2];
-        std::uint8_t hi4 = bytes[3] & 0x0f;
-        return lo8 | (std::uint16_t(hi4) << 8);
+        return unsigned(internal::ReadU16LE(&bytes[2])) & 0x0fffU;
     }
 
     std::uint8_t GetRoutingSignals() const noexcept {
