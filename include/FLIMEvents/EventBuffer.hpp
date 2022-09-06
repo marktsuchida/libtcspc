@@ -186,7 +186,7 @@ template <typename E, typename D> class DemultiplexEventArray {
  * \tparam E the event type
  * \tparam D downstream processor type
  */
-template <typename E, typename D> class EventBuffer {
+template <typename E, typename D> class BufferEvent {
     std::mutex mutex;
     std::condition_variable hasItemCondition; // item = event or end
 
@@ -202,7 +202,7 @@ template <typename E, typename D> class EventBuffer {
      *
      * \param downstream downstream processor (moved out)
      */
-    explicit EventBuffer(D &&downstream) : downstream(std::move(downstream)) {}
+    explicit BufferEvent(D &&downstream) : downstream(std::move(downstream)) {}
 
     /** \brief Processor interface */
     void HandleEvent(E const &event) noexcept {

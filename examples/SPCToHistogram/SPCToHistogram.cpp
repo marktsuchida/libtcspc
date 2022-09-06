@@ -108,7 +108,7 @@ int main(int argc, char *argv[]) {
     flimevt::DemultiplexEventArray<flimevt::BHSPCEvent, decltype(decoder)>
         processor(std::move(decoder));
 
-    flimevt::EventBuffer<decltype(processor)::EventArrayType,
+    flimevt::BufferEvent<decltype(processor)::EventArrayType,
                          decltype(processor)>
         buffer(std::move(processor));
 
