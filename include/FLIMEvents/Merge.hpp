@@ -116,8 +116,16 @@ template <typename ESet, typename D> class MergeImpl {
             EmitPending([]([[maybe_unused]] auto t) { return true; });
         if (!otherInputEnded && error) // We errored first
             canceled = true;
-        if (otherInputEnded || error) // The stream has ended now
+        if (otherInputEnded || error) { // The stream has ended now
+            {
+                // Release queue memory. We cannot access the std::deque of the
+                // std::queue, but we can swap it with an empty one.
+                decltype(pending) q;
+                pending.swap(q);
+            }
+
             downstream.HandleEnd(error);
+        }
     }
 };
 
