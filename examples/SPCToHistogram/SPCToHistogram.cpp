@@ -105,10 +105,15 @@ int main(int argc, char *argv[]) {
                 std::move(cumulHisto),
                 HistogramSaver<SampleType>(outFilename)))));
 
-    flimevt::DemultiplexEventArray<flimevt::BHSPCEvent, decltype(decoder)>
-        processor(std::move(decoder));
+    flimevt::Unbatch<std::vector<flimevt::BHSPCEvent>, flimevt::BHSPCEvent,
+                     decltype(decoder)>
+        demux(std::move(decoder));
 
-    flimevt::BufferEvent<decltype(processor)::EventArrayType,
+    flimevt::DereferencePointer<
+        std::shared_ptr<std::vector<flimevt::BHSPCEvent>>, decltype(demux)>
+        processor(std::move(demux));
+
+    flimevt::BufferEvent<std::shared_ptr<std::vector<flimevt::BHSPCEvent>>,
                          decltype(processor)>
         buffer(std::move(processor));
 
@@ -121,15 +126,18 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
-    flimevt::EventArrayPool<flimevt::BHSPCEvent> pool(48 * 1024, 2);
+    flimevt::ObjectPool<std::vector<flimevt::BHSPCEvent>> pool(2);
+
+    constexpr std::size_t batchCapacity = 48 * 1024;
+    constexpr auto maxSize = batchCapacity * sizeof(flimevt::BHSPCEvent);
 
     input.seekg(sizeof(BHSPCFileHeader));
     while (input.good()) {
         auto arr = pool.CheckOut();
-        auto const maxSize = arr->GetCapacity() * sizeof(flimevt::BHSPCEvent);
-        input.read(reinterpret_cast<char *>(arr->GetData()), maxSize);
+        arr->resize(batchCapacity);
+        input.read(reinterpret_cast<char *>(arr->data()), maxSize);
         auto const readSize = input.gcount() / sizeof(flimevt::BHSPCEvent);
-        arr->SetSize(static_cast<std::size_t>(readSize));
+        arr->resize(static_cast<std::size_t>(readSize));
         buffer.HandleEvent(arr);
     }
     buffer.HandleEnd({});

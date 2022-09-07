@@ -12,160 +12,132 @@
 #include <memory>
 #include <mutex>
 #include <queue>
+#include <utility>
 #include <vector>
 
 namespace flimevt {
 
 /**
- * \brief Fixed-capacity reusable array to hold events for buffering.
+ * \brief Memory pool holding objects for reuse.
  *
- * \tparam E the event type to store
- */
-template <typename E> class EventArray {
-    std::size_t const capacity;
-    std::size_t size;
-    std::unique_ptr<E[]> events;
-
-  public:
-    /**
-     * \brief Construct with capacity.
-     *
-     * \param capacity the maximum number of \c E events held by the array
-     */
-    explicit EventArray(std::size_t capacity)
-        : capacity(capacity), size(0), events(new E[capacity]) {}
-
-    /**
-     * \brief Return the capacity.
-     */
-    std::size_t GetCapacity() const noexcept { return capacity; }
-
-    /**
-     * \brief Return the number of \c E events contained in this array.
-     */
-    std::size_t GetSize() const noexcept { return size; }
-
-    /**
-     * \brief Set the number of \c E events contained in this array.
-     *
-     * The actual data is not altered; uninitialized garbage will result if the
-     * size is expanded.
-     */
-    void SetSize(std::size_t size) noexcept { this->size = size; }
-
-    /**
-     * \brief Return a mutable pointer to the event array buffer.
-     */
-    E *GetData() noexcept { return events.get(); }
-
-    /**
-     * \brief Return a const pointer to the event array buffer.
-     */
-    E const *GetData() const noexcept { return events.get(); }
-};
-
-/**
- * \brief Memory pool holding event arrays for reuse.
+ * In other words, a free list of \c T instances that automatically allocates
+ * additional instances on demand.
  *
- * In other words, a free list of EventArray instances that automatically
- * allocates additional instances on demand.
- *
- * Note that behavior is undefined unless all checked out buffers are released
+ * Note that behavior is undefined unless all checked out objects are released
  * before the pool is destroyed.
  *
- * \tparam E the event type
+ * \tparam T the object type
  */
-template <typename E> class EventArrayPool {
-    std::size_t const bufferSize;
-
+template <typename T> class ObjectPool {
     std::mutex mutex;
-    std::vector<std::unique_ptr<EventArray<E>>> buffers;
-
-    std::unique_ptr<EventArray<E>> MakeBuffer() {
-        return std::make_unique<EventArray<E>>(bufferSize);
-    }
+    std::vector<std::unique_ptr<T>> buffers;
 
   public:
     /**
-     * \brief Construct with array size and initial count.
+     * \brief Construct with initial count.
      *
-     * \param size capacity of the \c EventArray instances
-     * \param initialCount number of \c EventArray instances to pre-allocate
+     * \param initialCount number of \c T instances to pre-allocate
      */
-    explicit EventArrayPool(std::size_t size, std::size_t initialCount = 0)
-        : bufferSize(size) {
+    explicit ObjectPool(std::size_t initialCount = 0) {
         buffers.reserve(initialCount);
         for (std::size_t i = 0; i < initialCount; ++i) {
-            buffers.emplace_back(MakeBuffer());
+            buffers.emplace_back(std::make_unique<T>());
         }
     }
 
     /**
-     * \brief Obrain an event array for use.
+     * \brief Obtain an object for use.
      *
      * The returned shared pointer has a deleter that will automatically return
-     * (check in) the event array back to this pool.
+     * (check in) the object back to this pool.
      *
-     * Note that all checked out buffers must be released (by allowing all
+     * Note that all checked out objects must be released (by allowing all
      * shared pointers to be destroyed) before the pool is destroyed.
      *
-     * \return shared pointer to the event array
+     * \return shared pointer to the checked out object
      */
-    std::shared_ptr<EventArray<E>> CheckOut() {
-        std::unique_ptr<EventArray<E>> uptr;
+    std::shared_ptr<T> CheckOut() {
+        std::unique_ptr<T> uptr;
 
         {
-            std::lock_guard<std::mutex> hold(mutex);
+            std::scoped_lock hold(mutex);
             if (!buffers.empty()) {
                 uptr = std::move(buffers.back());
                 buffers.pop_back();
             }
         }
 
-        if (!uptr) {
-            uptr = MakeBuffer();
-        }
-
-        uptr->SetSize(0);
+        if (!uptr)
+            uptr = std::make_unique<T>();
 
         return {uptr.release(), [this](auto ptr) {
-                    if (ptr == nullptr)
-                        return;
-
-                    std::lock_guard<std::mutex> hold(mutex);
-                    buffers.emplace_back(std::unique_ptr<EventArray<E>>(ptr));
+                    if (ptr != nullptr) {
+                        std::scoped_lock hold(mutex);
+                        buffers.emplace_back(std::unique_ptr<T>(ptr));
+                    }
                 }};
     }
 };
 
 /**
- * \brief Processor transforming event arrays to individual events.
+ * \brief Processor dereferencing a pointers to events.
  *
- * \tparam E the event type
+ * This can be used, for example, to convert \c shared_pointer<E> to \c E for
+ * some even type \c E.
+ *
+ * \tparam P the event pointer type
  * \tparam D downstream processor type
  */
-template <typename E, typename D> class DemultiplexEventArray {
+template <typename P, typename D> class DereferencePointer {
     D downstream;
 
   public:
     /**
-     * \brief The event array type.
+     * \brief The type of the dereferenced event.
      */
-    using EventArrayType = std::shared_ptr<EventArray<E>>;
+    using EventType = decltype(*std::declval<P>);
 
+    /**
+     * \brief Construct with downstream processor.
+     *
+     * \param downstream downstream processor (moved out)
+     */
+    explicit DereferencePointer(D &&downstream)
+        : downstream(std::move(downstream)) {}
+
+    /** \brief Processor interface */
+    void HandleEvent(P const &eventPtr) noexcept {
+        downstream.HandleEvent(*eventPtr);
+    }
+
+    /** \brief Processor interface */
+    void HandleEnd(std::exception_ptr error) noexcept {
+        downstream.HandleEnd(error);
+    }
+};
+
+/**
+ * \brief Processor transforming batches of events to individual events.
+ *
+ * \tparam V event container type
+ * \tparam E the event type
+ * \tparam D downstream processor type
+ */
+template <typename V, typename E, typename D> class Unbatch {
+    D downstream;
+
+  public:
     /**
      * Construct with downstream processor.
      *
      * \param downstream downstream processor (moved out)
      */
-    explicit DemultiplexEventArray(D &&downstream)
-        : downstream(std::move(downstream)) {}
+    explicit Unbatch(D &&downstream) : downstream(std::move(downstream)) {}
 
     /** \brief Processor interface */
-    void HandleEvent(EventArrayType const &eventArray) noexcept {
-        std::for_each_n(
-            eventArray->GetData(), eventArray->GetSize(),
-            [&](auto const &event) { downstream.HandleEvent(event); });
+    void HandleEvent(V const &events) noexcept {
+        for (auto const &event : events)
+            downstream.HandleEvent(event);
     }
 
     /** \brief Processor interface */
