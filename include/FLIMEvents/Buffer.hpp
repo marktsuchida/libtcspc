@@ -234,8 +234,8 @@ template <typename E, typename D> class BufferEvent {
         std::unique_lock lock(mutex);
 
         for (;;) {
-            while (shared_queue.empty() && !streamEnded)
-                hasItemCondition.wait(lock);
+            hasItemCondition.wait(
+                lock, [&] { return !shared_queue.empty() || streamEnded; });
 
             if (shared_queue.empty()) { // Implying stream ended
                 std::exception_ptr error;
