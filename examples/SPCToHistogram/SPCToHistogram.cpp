@@ -13,10 +13,10 @@
 #include <ctime>
 #include <exception>
 #include <fstream>
-#include <future>
 #include <iostream>
 #include <memory>
 #include <sstream>
+#include <thread>
 
 void Usage() {
     std::cerr
@@ -117,8 +117,7 @@ int main(int argc, char *argv[]) {
                          decltype(processor)>
         buffer(std::move(processor));
 
-    auto processorDone =
-        std::async(std::launch::async, [&] { buffer.PumpDownstream(); });
+    std::thread procThread([&] { buffer.PumpDownstream(); });
 
     std::fstream input(inFilename, std::fstream::binary | std::fstream::in);
     if (!input.is_open()) {
@@ -142,6 +141,6 @@ int main(int argc, char *argv[]) {
     }
     buffer.HandleEnd({});
 
-    processorDone.get();
+    procThread.join();
     return 0;
 }
