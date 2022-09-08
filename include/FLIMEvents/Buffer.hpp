@@ -9,6 +9,7 @@
 #include <algorithm>
 #include <condition_variable>
 #include <exception>
+#include <iterator>
 #include <memory>
 #include <mutex>
 #include <queue>
@@ -40,9 +41,8 @@ template <typename T> class ObjectPool {
      */
     explicit ObjectPool(std::size_t initialCount = 0) {
         buffers.reserve(initialCount);
-        for (std::size_t i = 0; i < initialCount; ++i) {
-            buffers.emplace_back(std::make_unique<T>());
-        }
+        std::generate_n(std::back_inserter(buffers), initialCount,
+                        [] { return std::make_unique<T>(); });
     }
 
     /**
