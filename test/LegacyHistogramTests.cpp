@@ -28,8 +28,8 @@ static_assert(HandlesEventSetV<
                   unsigned, DiscardAll<CumulativeHistogramEvents<unsigned>>>,
               FrameHistogramEvents<unsigned>>);
 
-TEST_CASE("TimeBins", "[Histogram]") {
-    Histogram<std::uint16_t> hist(8, 12, false, 1, 1);
+TEST_CASE("TimeBins", "[LegacyHistogram]") {
+    LegacyHistogram<std::uint16_t> hist(8, 12, false, 1, 1);
     auto data = hist.Get();
     hist.Clear();
 
@@ -48,8 +48,8 @@ TEST_CASE("TimeBins", "[Histogram]") {
     REQUIRE(data[254] == 1);
 }
 
-TEST_CASE("ReverseTimeBins", "[Histogram]") {
-    Histogram<std::uint16_t> hist(8, 12, true, 1, 1);
+TEST_CASE("ReverseTimeBins", "[LegacyHistogram]") {
+    LegacyHistogram<std::uint16_t> hist(8, 12, true, 1, 1);
     auto data = hist.Get();
     hist.Clear();
 
@@ -68,9 +68,9 @@ TEST_CASE("ReverseTimeBins", "[Histogram]") {
     REQUIRE(data[1] == 1);
 }
 
-TEST_CASE("SingleTimeBin", "[Histogram]") {
+TEST_CASE("SingleTimeBin", "[LegacyHistogram]") {
     SECTION("Non-reversed") {
-        Histogram<std::uint16_t> hist(0, 7, false, 1, 1);
+        LegacyHistogram<std::uint16_t> hist(0, 7, false, 1, 1);
         auto data = hist.Get();
         hist.Clear();
 
@@ -81,7 +81,7 @@ TEST_CASE("SingleTimeBin", "[Histogram]") {
     }
 
     SECTION("Reversed") {
-        Histogram<std::uint16_t> hist(0, 7, false, 1, 1);
+        LegacyHistogram<std::uint16_t> hist(0, 7, false, 1, 1);
         auto data = hist.Get();
         hist.Clear();
 

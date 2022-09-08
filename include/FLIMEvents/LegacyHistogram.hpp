@@ -39,7 +39,7 @@ inline constexpr T SaturatingAdd(T a, U b) noexcept {
 } // namespace internal
 
 template <typename T, typename = std::enable_if_t<std::is_unsigned_v<T>>>
-class Histogram {
+class LegacyHistogram {
     std::uint32_t timeBits;
     std::uint32_t inputTimeBits;
     bool reverseTime;
@@ -49,18 +49,19 @@ class Histogram {
     std::unique_ptr<T[]> hist;
 
   public:
-    ~Histogram() = default;
-    Histogram(Histogram const &rhs) = delete;
-    Histogram &operator=(Histogram const &rhs) = delete;
-    Histogram(Histogram &&rhs) = default;
-    Histogram &operator=(Histogram &&rhs) = default;
+    ~LegacyHistogram() = default;
+    LegacyHistogram(LegacyHistogram const &rhs) = delete;
+    LegacyHistogram &operator=(LegacyHistogram const &rhs) = delete;
+    LegacyHistogram(LegacyHistogram &&rhs) = default;
+    LegacyHistogram &operator=(LegacyHistogram &&rhs) = default;
 
     // Default constructor creates a "moved out" object.
-    Histogram() = default;
+    LegacyHistogram() = default;
 
     // Warning: Newly constructed histogram is not zeroed (for efficiency)
-    explicit Histogram(std::uint32_t timeBits, std::uint32_t inputTimeBits,
-                       bool reverseTime, std::size_t width, std::size_t height)
+    explicit LegacyHistogram(std::uint32_t timeBits,
+                             std::uint32_t inputTimeBits, bool reverseTime,
+                             std::size_t width, std::size_t height)
         : timeBits(timeBits), inputTimeBits(inputTimeBits),
           reverseTime(reverseTime), width(width), height(height),
           hist(std::make_unique<T[]>(GetNumberOfElements())) {
@@ -106,7 +107,7 @@ class Histogram {
 
     T *Get() noexcept { return hist.get(); }
 
-    Histogram &operator+=(Histogram<T> const &rhs) noexcept {
+    LegacyHistogram &operator+=(LegacyHistogram<T> const &rhs) noexcept {
         assert(rhs.timeBits == timeBits && rhs.width == width &&
                rhs.height == height);
 
@@ -127,7 +128,7 @@ class Histogram {
 // valid for the duration of the HandleEvent() call.
 
 template <typename T> struct FrameHistogramEvent {
-    Histogram<T> const &histogram;
+    LegacyHistogram<T> const &histogram;
 
     FrameHistogramEvent(FrameHistogramEvent const &) = delete;
     FrameHistogramEvent &operator=(FrameHistogramEvent const &) = delete;
@@ -136,7 +137,7 @@ template <typename T> struct FrameHistogramEvent {
 };
 
 template <typename T> struct IncompleteFrameHistogramEvent {
-    Histogram<T> const &histogram;
+    LegacyHistogram<T> const &histogram;
 
     IncompleteFrameHistogramEvent(IncompleteFrameHistogramEvent const &) =
         delete;
@@ -151,7 +152,7 @@ template <typename T> struct IncompleteFrameHistogramEvent {
 };
 
 template <typename T> struct FinalCumulativeHistogramEvent {
-    Histogram<T> const &histogram;
+    LegacyHistogram<T> const &histogram;
 
     FinalCumulativeHistogramEvent(FinalCumulativeHistogramEvent const &) =
         delete;
@@ -175,13 +176,13 @@ using CumulativeHistogramEvents =
 
 // Collect pixel-assiend photon events into a series of histograms
 template <typename T, typename D> class Histogrammer {
-    Histogram<T> histogram;
+    LegacyHistogram<T> histogram;
     bool frameInProgress;
 
     D downstream;
 
   public:
-    explicit Histogrammer(Histogram<T> &&histogram, D &&downstream)
+    explicit Histogrammer(LegacyHistogram<T> &&histogram, D &&downstream)
         : histogram(std::move(histogram)), frameInProgress(false),
           downstream(std::move(downstream)) {}
 
@@ -214,17 +215,18 @@ template <typename T, typename D> class Histogrammer {
 // sequential pixel order. Accesses frame histogram memory sequentially,
 // although the performance gain from this may not be significant.
 template <typename T, typename D> class SequentialHistogrammer {
-    Histogram<T> histogram;
+    LegacyHistogram<T> histogram;
 
     std::size_t binsPerPixel;
-    Histogram<T> pixelHist;
+    LegacyHistogram<T> pixelHist;
 
     std::size_t pixelNo; // Within frame
 
     D downstream;
 
   public:
-    explicit SequentialHistogrammer(Histogram<T> &&histogram, D &&downstream)
+    explicit SequentialHistogrammer(LegacyHistogram<T> &&histogram,
+                                    D &&downstream)
         : histogram(std::move(histogram)),
           binsPerPixel(this->histogram.GetNumberOfTimeBins()),
           pixelHist(this->histogram.GetTimeBits(),
@@ -283,12 +285,13 @@ template <typename T, typename D> class SequentialHistogrammer {
 // Accumulate a series of histograms
 // Guarantees complete frame upon finish (all zeros if there was no frame).
 template <typename T, typename D> class HistogramAccumulator {
-    Histogram<T> cumulative;
+    LegacyHistogram<T> cumulative;
 
     D downstream;
 
   public:
-    explicit HistogramAccumulator(Histogram<T> &&histogram, D &&downstream)
+    explicit HistogramAccumulator(LegacyHistogram<T> &&histogram,
+                                  D &&downstream)
         : cumulative(std::move(histogram)), downstream(std::move(downstream)) {
     }
 

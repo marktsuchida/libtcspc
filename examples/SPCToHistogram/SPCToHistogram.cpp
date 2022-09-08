@@ -90,10 +90,10 @@ int main(int argc, char *argv[]) {
     using SampleType = std::uint16_t;
     std::int32_t inputBits = 12;
     std::int32_t histoBits = 8;
-    flimevt::Histogram<SampleType> frameHisto(histoBits, inputBits, true,
-                                              width, height);
-    flimevt::Histogram<SampleType> cumulHisto(histoBits, inputBits, true,
-                                              width, height);
+    flimevt::LegacyHistogram<SampleType> frameHisto(histoBits, inputBits, true,
+                                                    width, height);
+    flimevt::LegacyHistogram<SampleType> cumulHisto(histoBits, inputBits, true,
+                                                    width, height);
     cumulHisto.Clear();
 
     // Construct pipeline
