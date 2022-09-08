@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: MIT
  */
 
-#include "FLIMEvents/Histogram.hpp"
+#include "FLIMEvents/LegacyHistogram.hpp"
 
 #include "FLIMEvents/Discard.hpp"
 #include "FLIMEvents/EventSet.hpp"

@@ -21,7 +21,7 @@ flimevents_tests_srcs = [
     'EventSetTests.cpp',
     'GateTests.cpp',
     'GenerateTimingsTests.cpp',
-    'HistogramTests.cpp',
+    'LegacyHistogramTests.cpp',
     'LineClockPixellatorTests.cpp',
     'MergeTests.cpp',
     'PQT3DeviceEventsTests.cpp',

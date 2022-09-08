@@ -16,7 +16,7 @@ public_cpp_headers = files(
     'FLIMEvents.hpp',
     'Gate.hpp',
     'GenerateTimings.hpp',
-    'Histogram.hpp',
+    'LegacyHistogram.hpp',
     'LineClockPixellator.hpp',
     'Merge.hpp',
     'PQT3DeviceEvents.hpp',

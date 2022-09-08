@@ -7,7 +7,7 @@
 #include "../BHSPCFile.hpp"
 #include "FLIMEvents/BHDeviceEvents.hpp"
 #include "FLIMEvents/Buffer.hpp"
-#include "FLIMEvents/Histogram.hpp"
+#include "FLIMEvents/LegacyHistogram.hpp"
 #include "FLIMEvents/LineClockPixellator.hpp"
 
 #include <ctime>
