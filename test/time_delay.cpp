@@ -8,8 +8,8 @@
 
 #include "flimevt/common.hpp"
 
-#include "ProcessorTestFixture.hpp"
-#include "TestEvents.hpp"
+#include "processor_test_fixture.hpp"
+#include "test_events.hpp"
 
 #include <utility>
 #include <vector>

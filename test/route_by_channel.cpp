@@ -9,7 +9,7 @@
 #include "flimevt/discard.hpp"
 #include "flimevt/time_tagged_events.hpp"
 
-#include "ProcessorTestFixture.hpp"
+#include "processor_test_fixture.hpp"
 
 #include <cstdint>
 #include <type_traits>

@@ -9,8 +9,8 @@
 #include "flimevt/event_set.hpp"
 #include "flimevt/time_tagged_events.hpp"
 
-#include "ProcessorTestFixture.hpp"
-#include "TestEvents.hpp"
+#include "processor_test_fixture.hpp"
+#include "test_events.hpp"
 
 #include <catch2/catch.hpp>
 

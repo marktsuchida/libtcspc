@@ -9,8 +9,8 @@
 #include "flimevt/discard.hpp"
 #include "flimevt/split.hpp"
 
-#include "ProcessorTestFixture.hpp"
-#include "TestEvents.hpp"
+#include "processor_test_fixture.hpp"
+#include "test_events.hpp"
 
 #include <type_traits>
 #include <typeinfo>

@@ -6,7 +6,7 @@
 
 #include "flimevt/event_set.hpp"
 
-#include "TestEvents.hpp"
+#include "test_events.hpp"
 
 using namespace flimevt;
 using namespace flimevt::test;
