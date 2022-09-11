@@ -4,6 +4,8 @@
  * SPDX-License-Identifier: MIT
  */
 
+#include "flimevt/flimevt.hpp"
+
 #define CATCH_CONFIG_MAIN
 #ifdef _MSC_VER
 #define CATCH_CONFIG_WINDOWS_CRTDBG
