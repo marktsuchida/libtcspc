@@ -4,10 +4,11 @@
  * SPDX-License-Identifier: MIT
  */
 
-#include "FLIMEvents/Merge.hpp"
+#include "flimevt/merge.hpp"
 
-#include "FLIMEvents/Discard.hpp"
-#include "FLIMEvents/SplitEvents.hpp"
+#include "flimevt/discard.hpp"
+#include "flimevt/split.hpp"
+
 #include "ProcessorTestFixture.hpp"
 #include "TestEvents.hpp"
 

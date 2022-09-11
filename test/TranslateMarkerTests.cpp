@@ -4,9 +4,10 @@
  * SPDX-License-Identifier: MIT
  */
 
-#include "FLIMEvents/TranslateMarker.hpp"
+#include "flimevt/translate_marker.hpp"
 
-#include "FLIMEvents/TimeTaggedEvents.hpp"
+#include "flimevt/time_tagged_events.hpp"
+
 #include "ProcessorTestFixture.hpp"
 #include "TestEvents.hpp"
 

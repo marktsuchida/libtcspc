@@ -4,4 +4,4 @@
  * SPDX-License-Identifier: MIT
  */
 
-#include "FLIMEvents/TimeTaggedEvents.hpp"
+#include "flimevt/time_tagged_events.hpp"

@@ -6,8 +6,8 @@
 
 #pragma once
 
-#include "Common.hpp"
-#include "EventSet.hpp"
+#include "common.hpp"
+#include "event_set.hpp"
 
 #include <cstdint>
 #include <ostream>

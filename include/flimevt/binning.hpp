@@ -6,9 +6,9 @@
 
 #pragma once
 
-#include "Common.hpp"
-#include "HistogramEvents.hpp"
-#include "TimeTaggedEvents.hpp"
+#include "common.hpp"
+#include "histogram_events.hpp"
+#include "time_tagged_events.hpp"
 
 #include <cstddef>
 #include <exception>

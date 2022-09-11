@@ -4,10 +4,11 @@
  * SPDX-License-Identifier: MIT
  */
 
-#include "FLIMEvents/DynamicPolymorphism.hpp"
+#include "flimevt/dynamic_polymorphism.hpp"
 
-#include "FLIMEvents/Discard.hpp"
-#include "FLIMEvents/EventSet.hpp"
+#include "flimevt/discard.hpp"
+#include "flimevt/event_set.hpp"
+
 #include "TestEvents.hpp"
 
 using namespace flimevt;

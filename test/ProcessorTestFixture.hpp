@@ -6,7 +6,7 @@
 
 #pragma once
 
-#include "FLIMEvents/EventSet.hpp"
+#include "flimevt/event_set.hpp"
 
 #include <catch2/catch.hpp>
 

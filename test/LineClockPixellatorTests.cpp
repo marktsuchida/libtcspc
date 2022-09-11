@@ -4,11 +4,11 @@
  * SPDX-License-Identifier: MIT
  */
 
-#include "FLIMEvents/LineClockPixellator.hpp"
+#include "flimevt/line_clock_pixellator.hpp"
 
-#include "FLIMEvents/Discard.hpp"
-#include "FLIMEvents/DynamicPolymorphism.hpp"
-#include "FLIMEvents/EventSet.hpp"
+#include "flimevt/discard.hpp"
+#include "flimevt/dynamic_polymorphism.hpp"
+#include "flimevt/event_set.hpp"
 
 #include <catch2/catch.hpp>
 

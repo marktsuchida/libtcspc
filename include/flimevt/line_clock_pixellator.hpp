@@ -6,8 +6,8 @@
 
 #pragma once
 
-#include "PixelPhotonEvents.hpp"
-#include "TimeTaggedEvents.hpp"
+#include "pixel_photon_events.hpp"
+#include "time_tagged_events.hpp"
 
 #include <deque>
 #include <exception>

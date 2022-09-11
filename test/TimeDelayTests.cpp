@@ -4,9 +4,10 @@
  * SPDX-License-Identifier: MIT
  */
 
-#include "FLIMEvents/TimeDelay.hpp"
+#include "flimevt/time_delay.hpp"
 
-#include "FLIMEvents/Common.hpp"
+#include "flimevt/common.hpp"
+
 #include "ProcessorTestFixture.hpp"
 #include "TestEvents.hpp"
 

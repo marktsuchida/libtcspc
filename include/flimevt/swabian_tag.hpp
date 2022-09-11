@@ -6,8 +6,8 @@
 
 #pragma once
 
-#include "ReadBytes.hpp"
-#include "TimeTaggedEvents.hpp"
+#include "read_bytes.hpp"
+#include "time_tagged_events.hpp"
 
 #include <cstdint>
 #include <exception>

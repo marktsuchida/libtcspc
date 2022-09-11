@@ -6,7 +6,7 @@
 
 #pragma once
 
-#include "EventSet.hpp"
+#include "event_set.hpp"
 
 #include <exception>
 #include <type_traits>

@@ -4,10 +4,11 @@
  * SPDX-License-Identifier: MIT
  */
 
-#include "FLIMEvents/DelayHastenProcessor.hpp"
+#include "flimevt/delay_hasten.hpp"
 
-#include "FLIMEvents/Discard.hpp"
-#include "FLIMEvents/EventSet.hpp"
+#include "flimevt/discard.hpp"
+#include "flimevt/event_set.hpp"
+
 #include "ProcessorTestFixture.hpp"
 #include "TestEvents.hpp"
 

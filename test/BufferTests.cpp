@@ -4,10 +4,11 @@
  * SPDX-License-Identifier: MIT
  */
 
-#include "FLIMEvents/Buffer.hpp"
+#include "flimevt/buffer.hpp"
 
-#include "FLIMEvents/Discard.hpp"
-#include "FLIMEvents/EventSet.hpp"
+#include "flimevt/discard.hpp"
+#include "flimevt/event_set.hpp"
+
 #include "TestEvents.hpp"
 
 using namespace flimevt;

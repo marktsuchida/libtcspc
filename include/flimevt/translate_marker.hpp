@@ -6,8 +6,8 @@
 
 #pragma once
 
-#include "Common.hpp"
-#include "TimeTaggedEvents.hpp"
+#include "common.hpp"
+#include "time_tagged_events.hpp"
 
 #include <cstdint>
 #include <exception>

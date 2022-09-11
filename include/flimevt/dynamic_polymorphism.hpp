@@ -6,8 +6,8 @@
 
 #pragma once
 
-#include "ApplyClassTemplateToTupleElements.hpp"
-#include "EventSet.hpp"
+#include "apply_class_template.hpp"
+#include "event_set.hpp"
 
 #include <exception>
 #include <memory>

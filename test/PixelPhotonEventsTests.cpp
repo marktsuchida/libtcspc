@@ -4,4 +4,4 @@
  * SPDX-License-Identifier: MIT
  */
 
-#include "FLIMEvents/PixelPhotonEvents.hpp"
+#include "flimevt/pixel_photon_events.hpp"

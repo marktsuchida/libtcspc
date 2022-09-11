@@ -6,10 +6,10 @@
 
 #pragma once
 
-#include "Binning.hpp"
-#include "Common.hpp"
-#include "HistogramEvents.hpp"
-#include "TimeTaggedEvents.hpp"
+#include "binning.hpp"
+#include "common.hpp"
+#include "histogram_events.hpp"
+#include "time_tagged_events.hpp"
 
 #include <algorithm>
 #include <cstddef>

@@ -6,8 +6,8 @@
 
 #pragma once
 
-#include "FLIMEvents/Common.hpp"
-#include "FLIMEvents/EventSet.hpp"
+#include "flimevt/common.hpp"
+#include "flimevt/event_set.hpp"
 
 #include <ostream>
 #include <type_traits>

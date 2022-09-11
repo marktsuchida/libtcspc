@@ -6,9 +6,9 @@
 
 #pragma once
 
-#include "EventSet.hpp"
-#include "ReadBytes.hpp"
-#include "TimeTaggedEvents.hpp"
+#include "event_set.hpp"
+#include "read_bytes.hpp"
+#include "time_tagged_events.hpp"
 
 #include <cstdint>
 #include <exception>

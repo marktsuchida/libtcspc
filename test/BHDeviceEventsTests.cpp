@@ -4,10 +4,10 @@
  * SPDX-License-Identifier: MIT
  */
 
-#include "FLIMEvents/BHDeviceEvents.hpp"
+#include "flimevt/bh_spc.hpp"
 
-#include "FLIMEvents/Discard.hpp"
-#include "FLIMEvents/EventSet.hpp"
+#include "flimevt/discard.hpp"
+#include "flimevt/event_set.hpp"
 
 #include <catch2/catch.hpp>
 

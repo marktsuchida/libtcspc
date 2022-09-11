@@ -4,9 +4,10 @@
  * SPDX-License-Identifier: MIT
  */
 
-#include "FLIMEvents/Count.hpp"
+#include "flimevt/count.hpp"
 
-#include "FLIMEvents/EventSet.hpp"
+#include "flimevt/event_set.hpp"
+
 #include "ProcessorTestFixture.hpp"
 #include "TestEvents.hpp"
 

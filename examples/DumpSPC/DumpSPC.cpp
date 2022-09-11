@@ -6,9 +6,9 @@
 
 #include "../BHSPCFile.hpp"
 
-#include "FLIMEvents/BHDeviceEvents.hpp"
-#include "FLIMEvents/Common.hpp"
-#include "FLIMEvents/TimeTaggedEvents.hpp"
+#include "flimevt/bh_spc.hpp"
+#include "flimevt/common.hpp"
+#include "flimevt/time_tagged_events.hpp"
 
 #include <cstring>
 #include <exception>

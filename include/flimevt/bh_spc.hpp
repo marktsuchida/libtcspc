@@ -6,10 +6,10 @@
 
 #pragma once
 
-#include "Common.hpp"
-#include "EventSet.hpp"
-#include "ReadBytes.hpp"
-#include "TimeTaggedEvents.hpp"
+#include "common.hpp"
+#include "event_set.hpp"
+#include "read_bytes.hpp"
+#include "time_tagged_events.hpp"
 
 #include <cstdint>
 #include <exception>

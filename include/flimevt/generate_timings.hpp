@@ -6,7 +6,7 @@
 
 #pragma once
 
-#include "Common.hpp"
+#include "common.hpp"
 
 #include <cassert>
 #include <cstddef>

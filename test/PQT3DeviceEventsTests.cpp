@@ -4,10 +4,10 @@
  * SPDX-License-Identifier: MIT
  */
 
-#include "FLIMEvents/PQT3DeviceEvents.hpp"
+#include "flimevt/picoquant_t3.hpp"
 
-#include "FLIMEvents/Discard.hpp"
-#include "FLIMEvents/EventSet.hpp"
+#include "flimevt/discard.hpp"
+#include "flimevt/event_set.hpp"
 
 using namespace flimevt;
 

@@ -4,10 +4,11 @@
  * SPDX-License-Identifier: MIT
  */
 
-#include "FLIMEvents/RouteByChannel.hpp"
+#include "flimevt/route_by_channel.hpp"
 
-#include "FLIMEvents/Discard.hpp"
-#include "FLIMEvents/TimeTaggedEvents.hpp"
+#include "flimevt/discard.hpp"
+#include "flimevt/time_tagged_events.hpp"
+
 #include "ProcessorTestFixture.hpp"
 
 #include <cstdint>

@@ -4,4 +4,4 @@
  * SPDX-License-Identifier: MIT
  */
 
-#include "FLIMEvents/HistogramEvents.hpp"
+#include "flimevt/histogram_events.hpp"

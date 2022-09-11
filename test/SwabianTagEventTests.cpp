@@ -4,4 +4,4 @@
  * SPDX-License-Identifier: MIT
  */
 
-#include "FLIMEvents/SwabianTagEvent.hpp"
+#include "flimevt/swabian_tag.hpp"

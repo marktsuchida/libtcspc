@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: MIT
  */
 
-#include "FLIMEvents/ApplyClassTemplateToTupleElements.hpp"
+#include "flimevt/apply_class_template.hpp"
 
 using namespace flimevt::internal;
 

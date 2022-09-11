@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: MIT
  */
 
-#include "FLIMEvents/Common.hpp"
+#include "flimevt/common.hpp"
 
 #include <catch2/catch.hpp>
 

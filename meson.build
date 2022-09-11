@@ -15,7 +15,7 @@ thread_dep = dependency('threads')
 
 public_inc = include_directories('include')
 
-subdir('include/FLIMEvents')
+subdir('include/flimevt')
 subdir('doc')
 subdir('test')
 subdir('examples')

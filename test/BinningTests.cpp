@@ -4,10 +4,11 @@
  * SPDX-License-Identifier: MIT
  */
 
-#include "FLIMEvents/Binning.hpp"
+#include "flimevt/binning.hpp"
 
-#include "FLIMEvents/EventSet.hpp"
-#include "FLIMEvents/TimeTaggedEvents.hpp"
+#include "flimevt/event_set.hpp"
+#include "flimevt/time_tagged_events.hpp"
+
 #include "ProcessorTestFixture.hpp"
 #include "TestEvents.hpp"
 

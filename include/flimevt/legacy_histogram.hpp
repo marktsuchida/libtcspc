@@ -6,8 +6,8 @@
 
 #pragma once
 
-#include "EventSet.hpp"
-#include "PixelPhotonEvents.hpp"
+#include "event_set.hpp"
+#include "pixel_photon_events.hpp"
 
 #include <algorithm>
 #include <cassert>

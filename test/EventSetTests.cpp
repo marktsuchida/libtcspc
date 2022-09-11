@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: MIT
  */
 
-#include "FLIMEvents/EventSet.hpp"
+#include "flimevt/event_set.hpp"
 
 #include "TestEvents.hpp"
 
