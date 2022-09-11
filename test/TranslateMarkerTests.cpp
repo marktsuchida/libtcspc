@@ -24,7 +24,7 @@ using OEvents = event_set<marker_event, test_event<0>, test_event<1>>;
 using OutVec = std::vector<event_variant<OEvents>>;
 
 auto MakeTranslateMarkerFixture(std::int32_t channel) {
-    return MakeProcessorTestFixture<IEvents, OEvents>(
+    return make_processor_test_fixture<IEvents, OEvents>(
         [channel](auto &&downstream) {
             using D = std::remove_reference_t<decltype(downstream)>;
             return translate_marker<marker_event, test_event<0>, D>(
@@ -35,25 +35,25 @@ auto MakeTranslateMarkerFixture(std::int32_t channel) {
 TEST_CASE("Translate marker", "[translate_marker]") {
     auto f = MakeTranslateMarkerFixture(0);
 
-    f.FeedEvents({
+    f.feed_events({
         marker_event{{100}, 0},
     });
-    REQUIRE(f.Output() == OutVec{
+    REQUIRE(f.output() == OutVec{
                               test_event<0>{100},
                           });
-    f.FeedEvents({
+    f.feed_events({
         marker_event{{200}, 1},
     });
-    REQUIRE(f.Output() == OutVec{
+    REQUIRE(f.output() == OutVec{
                               marker_event{{200}, 1},
                           });
-    f.FeedEvents({
+    f.feed_events({
         test_event<1>{300},
     });
-    REQUIRE(f.Output() == OutVec{
+    REQUIRE(f.output() == OutVec{
                               test_event<1>{300},
                           });
-    f.FeedEnd({});
-    REQUIRE(f.Output() == OutVec{});
-    REQUIRE(f.DidEnd());
+    f.feed_end({});
+    REQUIRE(f.output() == OutVec{});
+    REQUIRE(f.did_end());
 }

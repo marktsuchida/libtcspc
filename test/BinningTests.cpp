@@ -26,7 +26,7 @@ using DataMapOutput = event_set<datapoint_event<std::uint16_t>, test_event<0>>;
 using DataMapOutVec = std::vector<event_variant<DataMapOutput>>;
 
 auto MakeMapDifftimeToDatapointsFixture() {
-    return MakeProcessorTestFixture<DataMapInput, DataMapOutput>(
+    return make_processor_test_fixture<DataMapInput, DataMapOutput>(
         [](auto &&downstream) {
             using D = std::remove_reference_t<decltype(downstream)>;
             return map_to_datapoints<difftime_data_mapper, D>(
@@ -37,21 +37,21 @@ auto MakeMapDifftimeToDatapointsFixture() {
 TEST_CASE("Map to datapoints", "[map_to_datapoints]") {
     auto f = MakeMapDifftimeToDatapointsFixture();
 
-    f.FeedEvents({
+    f.feed_events({
         test_event<0>{42},
     });
-    REQUIRE(f.Output() == DataMapOutVec{
+    REQUIRE(f.output() == DataMapOutVec{
                               test_event<0>{42},
                           });
-    f.FeedEvents({
+    f.feed_events({
         time_correlated_count_event{{123}, 42, 0},
     });
-    REQUIRE(f.Output() == DataMapOutVec{
+    REQUIRE(f.output() == DataMapOutVec{
                               datapoint_event<std::uint16_t>{123, 42},
                           });
-    f.FeedEnd({});
-    REQUIRE(f.Output() == DataMapOutVec{});
-    REQUIRE(f.DidEnd());
+    f.feed_end({});
+    REQUIRE(f.output() == DataMapOutVec{});
+    REQUIRE(f.did_end());
 }
 
 using BinInput = event_set<datapoint_event<int>, test_event<0>>;
@@ -67,7 +67,7 @@ template <typename F> auto MakeMapToBinsFixture(F mapFunc) {
             return f(d);
         }
     };
-    return MakeProcessorTestFixture<BinInput, BinOutput>(
+    return make_processor_test_fixture<BinInput, BinOutput>(
         [=](auto &&downstream) {
             using D = std::remove_reference_t<decltype(downstream)>;
             return map_to_bins<BinMapper, D>(BinMapper{mapFunc},
@@ -80,31 +80,31 @@ TEST_CASE("Map to bins", "[MapToBin]") {
         []([[maybe_unused]] int d) -> std::optional<unsigned> {
             return std::nullopt;
         });
-    f.FeedEvents({
+    f.feed_events({
         test_event<0>{42},
     });
-    REQUIRE(f.Output() == BinOutVec{
+    REQUIRE(f.output() == BinOutVec{
                               test_event<0>{42},
                           });
-    f.FeedEvents({
+    f.feed_events({
         datapoint_event<int>{123, 0},
     });
-    REQUIRE(f.Output() == BinOutVec{});
-    f.FeedEnd({});
-    REQUIRE(f.Output() == BinOutVec{});
-    REQUIRE(f.DidEnd());
+    REQUIRE(f.output() == BinOutVec{});
+    f.feed_end({});
+    REQUIRE(f.output() == BinOutVec{});
+    REQUIRE(f.did_end());
 
     auto g = MakeMapToBinsFixture(
         [](int d) -> std::optional<unsigned> { return d + 123; });
-    g.FeedEvents({
+    g.feed_events({
         datapoint_event<int>{123, 0},
     });
-    REQUIRE(g.Output() == BinOutVec{
+    REQUIRE(g.output() == BinOutVec{
                               bin_increment_event<unsigned>{123, 123},
                           });
-    g.FeedEnd({});
-    REQUIRE(g.Output() == BinOutVec{});
-    REQUIRE(g.DidEnd());
+    g.feed_end({});
+    REQUIRE(g.output() == BinOutVec{});
+    REQUIRE(g.did_end());
 }
 
 using i32 = std::int32_t;
@@ -377,7 +377,7 @@ using BatchOutput = event_set<bin_increment_batch_event<unsigned>, Other>;
 using BatchOutVec = std::vector<event_variant<BatchOutput>>;
 
 auto MakeBatchBinIncrementsFixture() {
-    return MakeProcessorTestFixture<BatchInput, BatchOutput>(
+    return make_processor_test_fixture<BatchInput, BatchOutput>(
         [](auto &&downstream) {
             using D = std::remove_reference_t<decltype(downstream)>;
             return batch_bin_increments<unsigned, Start, Stop, D>(
@@ -389,73 +389,73 @@ TEST_CASE("Batch bin increments", "[batch_bin_increments]") {
     auto f = MakeBatchBinIncrementsFixture();
 
     SECTION("Pass through unrelated") {
-        f.FeedEvents({
+        f.feed_events({
             Other{42},
         });
-        REQUIRE(f.Output() == BatchOutVec{
+        REQUIRE(f.output() == BatchOutVec{
                                   Other{42},
                               });
-        f.FeedEnd({});
-        REQUIRE(f.Output() == BatchOutVec{});
-        REQUIRE(f.DidEnd());
+        f.feed_end({});
+        REQUIRE(f.output() == BatchOutVec{});
+        REQUIRE(f.did_end());
     }
 
     SECTION("Stop before first start ignored") {
-        f.FeedEvents({
+        f.feed_events({
             Stop{42},
         });
-        REQUIRE(f.Output() == BatchOutVec{});
-        f.FeedEnd({});
-        REQUIRE(f.Output() == BatchOutVec{});
-        REQUIRE(f.DidEnd());
+        REQUIRE(f.output() == BatchOutVec{});
+        f.feed_end({});
+        REQUIRE(f.output() == BatchOutVec{});
+        REQUIRE(f.did_end());
     }
 
     SECTION("Start with no stop ignored") {
-        f.FeedEvents({
+        f.feed_events({
             Start{42},
         });
-        REQUIRE(f.Output() == BatchOutVec{});
-        f.FeedEvents({
+        REQUIRE(f.output() == BatchOutVec{});
+        f.feed_events({
             bin_increment_event<unsigned>{43, 123},
         });
-        REQUIRE(f.Output() == BatchOutVec{});
-        f.FeedEnd({});
-        REQUIRE(f.Output() == BatchOutVec{});
-        REQUIRE(f.DidEnd());
+        REQUIRE(f.output() == BatchOutVec{});
+        f.feed_end({});
+        REQUIRE(f.output() == BatchOutVec{});
+        REQUIRE(f.did_end());
     }
 
     SECTION("Events passed only between start and stop") {
-        f.FeedEvents({
+        f.feed_events({
             Start{42},
         });
-        REQUIRE(f.Output() == BatchOutVec{});
-        f.FeedEvents({
+        REQUIRE(f.output() == BatchOutVec{});
+        f.feed_events({
             bin_increment_event<unsigned>{43, 123},
         });
-        REQUIRE(f.Output() == BatchOutVec{});
-        f.FeedEvents({
+        REQUIRE(f.output() == BatchOutVec{});
+        f.feed_events({
             Stop{44},
         });
-        REQUIRE(f.Output() ==
+        REQUIRE(f.output() ==
                 BatchOutVec{
                     bin_increment_batch_event<unsigned>{42, 44, {123}},
                 });
-        f.FeedEvents({
+        f.feed_events({
             Start{45},
         });
-        REQUIRE(f.Output() == BatchOutVec{});
-        f.FeedEvents({
+        REQUIRE(f.output() == BatchOutVec{});
+        f.feed_events({
             bin_increment_event<unsigned>{46, 124},
         });
-        REQUIRE(f.Output() == BatchOutVec{});
-        f.FeedEvents({
+        REQUIRE(f.output() == BatchOutVec{});
+        f.feed_events({
             bin_increment_event<unsigned>{47, 125},
         });
-        REQUIRE(f.Output() == BatchOutVec{});
-        f.FeedEvents({
+        REQUIRE(f.output() == BatchOutVec{});
+        f.feed_events({
             Stop{48},
         });
-        REQUIRE(f.Output() ==
+        REQUIRE(f.output() ==
                 BatchOutVec{
                     bin_increment_batch_event<unsigned>{45, 48, {124, 125}},
                 });

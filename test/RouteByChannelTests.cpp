@@ -29,7 +29,7 @@ auto MakeRouteByChannelFixtureOutput0(
             channels, std::move(downstream), D1());
     };
 
-    return MakeProcessorTestFixture<tcspc_events, tcspc_events>(makeProc);
+    return make_processor_test_fixture<tcspc_events, tcspc_events>(makeProc);
 }
 
 auto MakeRouteByChannelFixtureOutput1(
@@ -41,7 +41,7 @@ auto MakeRouteByChannelFixtureOutput1(
             channels, D0(), std::move(downstream));
     };
 
-    return MakeProcessorTestFixture<tcspc_events, tcspc_events>(makeProc);
+    return make_processor_test_fixture<tcspc_events, tcspc_events>(makeProc);
 }
 
 auto MakeRouteByChannelFixtureOutput2(
@@ -53,82 +53,82 @@ auto MakeRouteByChannelFixtureOutput2(
             channels, D01(), D01(), std::move(downstream));
     };
 
-    return MakeProcessorTestFixture<tcspc_events, tcspc_events>(makeProc);
+    return make_processor_test_fixture<tcspc_events, tcspc_events>(makeProc);
 }
 
 using OutVec = std::vector<event_variant<tcspc_events>>;
 
 TEST_CASE("Route photons", "[route_by_channel]") {
     auto f0 = MakeRouteByChannelFixtureOutput0({5, -3});
-    f0.FeedEvents({
+    f0.feed_events({
         time_correlated_count_event{{100}, 123, 5},
     });
-    REQUIRE(f0.Output() == OutVec{
+    REQUIRE(f0.output() == OutVec{
                                time_correlated_count_event{{100}, 123, 5},
                            });
-    f0.FeedEvents({
+    f0.feed_events({
         time_correlated_count_event{{101}, 123, -3},
     });
-    REQUIRE(f0.Output() == OutVec{});
-    f0.FeedEvents({
+    REQUIRE(f0.output() == OutVec{});
+    f0.feed_events({
         time_correlated_count_event{{102}, 124, 0},
     });
-    REQUIRE(f0.Output() == OutVec{});
-    f0.FeedEvents({
+    REQUIRE(f0.output() == OutVec{});
+    f0.feed_events({
         marker_event{{103}, 0},
     });
-    REQUIRE(f0.Output() == OutVec{
+    REQUIRE(f0.output() == OutVec{
                                marker_event{{103}, 0},
                            });
-    f0.FeedEnd({});
-    REQUIRE(f0.Output() == OutVec{});
-    REQUIRE(f0.DidEnd());
+    f0.feed_end({});
+    REQUIRE(f0.output() == OutVec{});
+    REQUIRE(f0.did_end());
 
     auto f1 = MakeRouteByChannelFixtureOutput1({5, -3});
-    f1.FeedEvents({
+    f1.feed_events({
         time_correlated_count_event{{100}, 123, 5},
     });
-    REQUIRE(f1.Output() == OutVec{});
-    f1.FeedEvents({
+    REQUIRE(f1.output() == OutVec{});
+    f1.feed_events({
         time_correlated_count_event{{101}, 123, -3},
     });
-    REQUIRE(f1.Output() == OutVec{
+    REQUIRE(f1.output() == OutVec{
                                time_correlated_count_event{{101}, 123, -3},
                            });
-    f1.FeedEvents({
+    f1.feed_events({
         time_correlated_count_event{{102}, 124, 0},
     });
-    REQUIRE(f1.Output() == OutVec{});
-    f1.FeedEvents({
+    REQUIRE(f1.output() == OutVec{});
+    f1.feed_events({
         marker_event{{103}, 0},
     });
-    REQUIRE(f1.Output() == OutVec{
+    REQUIRE(f1.output() == OutVec{
                                marker_event{{103}, 0},
                            });
-    f1.FeedEnd({});
-    REQUIRE(f1.Output() == OutVec{});
-    REQUIRE(f1.DidEnd());
+    f1.feed_end({});
+    REQUIRE(f1.output() == OutVec{});
+    REQUIRE(f1.did_end());
 
     auto f2 = MakeRouteByChannelFixtureOutput2({5, -3});
-    f2.FeedEvents({
+    f2.feed_events({
         time_correlated_count_event{{100}, 123, 5},
     });
-    REQUIRE(f2.Output() == OutVec{});
-    f2.FeedEvents({
+    REQUIRE(f2.output() == OutVec{});
+    f2.feed_events({
         time_correlated_count_event{{101}, 123, -3},
     });
-    REQUIRE(f2.Output() == OutVec{});
-    f2.FeedEvents({
+    REQUIRE(f2.output() == OutVec{});
+    f2.feed_events({
         time_correlated_count_event{{102}, 124, 0},
     });
-    REQUIRE(f2.Output() == OutVec{});
-    f2.FeedEvents({
+    REQUIRE(f2.output() == OutVec{});
+    f2.feed_events({
         marker_event{{103}, 0},
     });
-    REQUIRE(f2.Output() == OutVec{
+    REQUIRE(f2.output() == OutVec{
                                marker_event{{103}, 0},
                            });
-    f2.FeedEnd({});
-    REQUIRE(f2.Output() == OutVec{});
-    REQUIRE(f2.DidEnd());
+    f2.feed_end({});
+    REQUIRE(f2.output() == OutVec{});
+    REQUIRE(f2.did_end());
 }

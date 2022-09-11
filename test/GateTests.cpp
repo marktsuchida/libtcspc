@@ -27,7 +27,7 @@ using Events = test_events_0123;
 using OutVec = std::vector<event_variant<Events>>;
 
 auto MakeGateEventsFixture(bool initiallyOpen) {
-    return MakeProcessorTestFixture<Events, Events>(
+    return make_processor_test_fixture<Events, Events>(
         [initiallyOpen](auto &&downstream) {
             using D = std::remove_reference_t<decltype(downstream)>;
             return gate_events<GatedSet, Open, Close, D>(
@@ -40,82 +40,82 @@ TEST_CASE("Gate events", "[gate_events]") {
     auto f = MakeGateEventsFixture(initiallyOpen);
 
     SECTION("Initial state") {
-        f.FeedEvents({
+        f.feed_events({
             Gated{},
         });
         if (initiallyOpen) {
-            REQUIRE(f.Output() == OutVec{
+            REQUIRE(f.output() == OutVec{
                                       Gated{},
                                   });
         } else {
-            REQUIRE(f.Output() == OutVec{});
+            REQUIRE(f.output() == OutVec{});
         }
-        f.FeedEnd({});
-        REQUIRE(f.Output() == OutVec{});
-        REQUIRE(f.DidEnd());
+        f.feed_end({});
+        REQUIRE(f.output() == OutVec{});
+        REQUIRE(f.did_end());
     }
 
     SECTION("Pass through unrelated events") {
-        f.FeedEvents({
+        f.feed_events({
             Other{},
         });
-        REQUIRE(f.Output() == OutVec{
+        REQUIRE(f.output() == OutVec{
                                   Other{},
                               });
-        f.FeedEnd({});
-        REQUIRE(f.Output() == OutVec{});
-        REQUIRE(f.DidEnd());
+        f.feed_end({});
+        REQUIRE(f.output() == OutVec{});
+        REQUIRE(f.did_end());
     }
 
     SECTION("Pass through open/close") {
-        f.FeedEvents({
+        f.feed_events({
             Open{},
         });
-        REQUIRE(f.Output() == OutVec{
+        REQUIRE(f.output() == OutVec{
                                   Open{},
                               });
-        f.FeedEvents({
+        f.feed_events({
             Close{},
         });
-        REQUIRE(f.Output() == OutVec{
+        REQUIRE(f.output() == OutVec{
                                   Close{},
                               });
-        f.FeedEnd({});
-        REQUIRE(f.Output() == OutVec{});
-        REQUIRE(f.DidEnd());
+        f.feed_end({});
+        REQUIRE(f.output() == OutVec{});
+        REQUIRE(f.did_end());
     }
 
     SECTION("Gate closed") {
-        f.FeedEvents({
+        f.feed_events({
             Close{},
         });
-        REQUIRE(f.Output() == OutVec{
+        REQUIRE(f.output() == OutVec{
                                   Close{},
                               });
-        f.FeedEvents({
+        f.feed_events({
             Gated{},
         });
-        REQUIRE(f.Output() == OutVec{});
-        f.FeedEnd({});
-        REQUIRE(f.Output() == OutVec{});
-        REQUIRE(f.DidEnd());
+        REQUIRE(f.output() == OutVec{});
+        f.feed_end({});
+        REQUIRE(f.output() == OutVec{});
+        REQUIRE(f.did_end());
     }
 
     SECTION("Gate open") {
-        f.FeedEvents({
+        f.feed_events({
             Open{},
         });
-        REQUIRE(f.Output() == OutVec{
+        REQUIRE(f.output() == OutVec{
                                   Open{},
                               });
-        f.FeedEvents({
+        f.feed_events({
             Gated{},
         });
-        REQUIRE(f.Output() == OutVec{
+        REQUIRE(f.output() == OutVec{
                                   Gated{},
                               });
-        f.FeedEnd({});
-        REQUIRE(f.Output() == OutVec{});
-        REQUIRE(f.DidEnd());
+        f.feed_end({});
+        REQUIRE(f.output() == OutVec{});
+        REQUIRE(f.did_end());
     }
 }

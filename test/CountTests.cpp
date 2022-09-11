@@ -20,7 +20,7 @@ using namespace flimevt;
 using namespace flimevt::test;
 
 using Input = test_event<0>;
-using Output = test_event<1>;
+using output = test_event<1>;
 using Reset = test_event<2>;
 using Other = test_event<3>;
 using Events = test_events_0123;
@@ -28,10 +28,10 @@ using OutVec = std::vector<event_variant<Events>>;
 
 template <bool EmitAfter>
 auto MakeCountEventFixture(std::uint64_t threshold, std::uint64_t limit) {
-    return MakeProcessorTestFixture<Events, Events>(
+    return make_processor_test_fixture<Events, Events>(
         [threshold, limit](auto &&downstream) {
             using D = std::remove_reference_t<decltype(downstream)>;
-            return count_event<Input, Reset, Output, EmitAfter, D>(
+            return count_event<Input, Reset, output, EmitAfter, D>(
                 threshold, limit, std::move(downstream));
         });
 }
@@ -40,196 +40,196 @@ TEST_CASE("Count event", "[count_event]") {
     SECTION("Threshold 0, limit 1") {
         SECTION("Emit before") {
             auto f = MakeCountEventFixture<false>(0, 1);
-            f.FeedEvents({
+            f.feed_events({
                 Input{42},
             });
-            REQUIRE(f.Output() == OutVec{
-                                      Output{42},
+            REQUIRE(f.output() == OutVec{
+                                      output{42},
                                       Input{42},
                                   });
-            f.FeedEvents({
+            f.feed_events({
                 Input{43},
             });
-            REQUIRE(f.Output() == OutVec{
-                                      Output{43},
+            REQUIRE(f.output() == OutVec{
+                                      output{43},
                                       Input{43},
                                   });
-            f.FeedEvents({
+            f.feed_events({
                 Reset{44},
             });
-            REQUIRE(f.Output() == OutVec{
+            REQUIRE(f.output() == OutVec{
                                       Reset{44},
                                   });
-            f.FeedEvents({
+            f.feed_events({
                 Input{45},
             });
-            REQUIRE(f.Output() == OutVec{
-                                      Output{45},
+            REQUIRE(f.output() == OutVec{
+                                      output{45},
                                       Input{45},
                                   });
-            f.FeedEvents({
+            f.feed_events({
                 Other{46},
             });
-            REQUIRE(f.Output() == OutVec{
+            REQUIRE(f.output() == OutVec{
                                       Other{46},
                                   });
-            f.FeedEnd({});
-            REQUIRE(f.Output() == OutVec{});
-            REQUIRE(f.DidEnd());
+            f.feed_end({});
+            REQUIRE(f.output() == OutVec{});
+            REQUIRE(f.did_end());
         }
 
         SECTION("Emit after") {
             auto f = MakeCountEventFixture<true>(0, 1);
-            f.FeedEvents({
+            f.feed_events({
                 Input{42},
             });
-            REQUIRE(f.Output() == OutVec{
+            REQUIRE(f.output() == OutVec{
                                       Input{42},
                                   });
-            f.FeedEvents({
+            f.feed_events({
                 Input{42},
             });
-            REQUIRE(f.Output() == OutVec{
+            REQUIRE(f.output() == OutVec{
                                       Input{42},
                                   });
-            f.FeedEnd({});
-            REQUIRE(f.Output() == OutVec{});
-            REQUIRE(f.DidEnd());
+            f.feed_end({});
+            REQUIRE(f.output() == OutVec{});
+            REQUIRE(f.did_end());
         }
     }
 
     SECTION("Threshold 1, limit 1") {
         SECTION("Emit before") {
             auto f = MakeCountEventFixture<false>(1, 1);
-            f.FeedEvents({
+            f.feed_events({
                 Input{42},
             });
-            REQUIRE(f.Output() == OutVec{
+            REQUIRE(f.output() == OutVec{
                                       Input{42},
                                   });
-            f.FeedEvents({
+            f.feed_events({
                 Input{42},
             });
-            REQUIRE(f.Output() == OutVec{
+            REQUIRE(f.output() == OutVec{
                                       Input{42},
                                   });
-            f.FeedEnd({});
-            REQUIRE(f.Output() == OutVec{});
-            REQUIRE(f.DidEnd());
+            f.feed_end({});
+            REQUIRE(f.output() == OutVec{});
+            REQUIRE(f.did_end());
         }
 
         SECTION("Emit after") {
             auto f = MakeCountEventFixture<true>(1, 1);
-            f.FeedEvents({
+            f.feed_events({
                 Input{42},
             });
-            REQUIRE(f.Output() == OutVec{
+            REQUIRE(f.output() == OutVec{
                                       Input{42},
-                                      Output{42},
+                                      output{42},
                                   });
-            f.FeedEvents({
+            f.feed_events({
                 Input{42},
             });
-            REQUIRE(f.Output() == OutVec{
+            REQUIRE(f.output() == OutVec{
                                       Input{42},
-                                      Output{42},
+                                      output{42},
                                   });
-            f.FeedEnd({});
-            REQUIRE(f.Output() == OutVec{});
-            REQUIRE(f.DidEnd());
+            f.feed_end({});
+            REQUIRE(f.output() == OutVec{});
+            REQUIRE(f.did_end());
         }
     }
 
     SECTION("Threshold 1, limit 2") {
         SECTION("Emit before") {
             auto f = MakeCountEventFixture<false>(1, 2);
-            f.FeedEvents({
+            f.feed_events({
                 Input{42},
             });
-            REQUIRE(f.Output() == OutVec{
+            REQUIRE(f.output() == OutVec{
                                       Input{42},
                                   });
-            f.FeedEvents({
+            f.feed_events({
                 Input{43},
             });
-            REQUIRE(f.Output() == OutVec{
-                                      Output{43},
+            REQUIRE(f.output() == OutVec{
+                                      output{43},
                                       Input{43},
                                   });
-            f.FeedEvents({
+            f.feed_events({
                 Input{44},
             });
-            REQUIRE(f.Output() == OutVec{
+            REQUIRE(f.output() == OutVec{
                                       Input{44},
                                   });
-            f.FeedEvents({
+            f.feed_events({
                 Reset{},
             });
-            REQUIRE(f.Output() == OutVec{
+            REQUIRE(f.output() == OutVec{
                                       Reset{},
                                   });
-            f.FeedEvents({
+            f.feed_events({
                 Input{45},
             });
-            REQUIRE(f.Output() == OutVec{
+            REQUIRE(f.output() == OutVec{
                                       Input{45},
                                   });
-            f.FeedEvents({
+            f.feed_events({
                 Input{46},
             });
-            REQUIRE(f.Output() == OutVec{
-                                      Output{46},
+            REQUIRE(f.output() == OutVec{
+                                      output{46},
                                       Input{46},
                                   });
-            f.FeedEnd({});
-            REQUIRE(f.Output() == OutVec{});
-            REQUIRE(f.DidEnd());
+            f.feed_end({});
+            REQUIRE(f.output() == OutVec{});
+            REQUIRE(f.did_end());
         }
 
         SECTION("Emit after") {
             auto f = MakeCountEventFixture<true>(1, 2);
-            f.FeedEvents({
+            f.feed_events({
                 Input{42},
             });
-            REQUIRE(f.Output() == OutVec{
+            REQUIRE(f.output() == OutVec{
                                       Input{42},
-                                      Output{42},
+                                      output{42},
                                   });
-            f.FeedEvents({
+            f.feed_events({
                 Input{43},
             });
-            REQUIRE(f.Output() == OutVec{
+            REQUIRE(f.output() == OutVec{
                                       Input{43},
                                   });
-            f.FeedEvents({
+            f.feed_events({
                 Input{44},
             });
-            REQUIRE(f.Output() == OutVec{
+            REQUIRE(f.output() == OutVec{
                                       Input{44},
-                                      Output{44},
+                                      output{44},
                                   });
-            f.FeedEvents({
+            f.feed_events({
                 Reset{},
             });
-            REQUIRE(f.Output() == OutVec{
+            REQUIRE(f.output() == OutVec{
                                       Reset{},
                                   });
-            f.FeedEvents({
+            f.feed_events({
                 Input{45},
             });
-            REQUIRE(f.Output() == OutVec{
+            REQUIRE(f.output() == OutVec{
                                       Input{45},
-                                      Output{45},
+                                      output{45},
                                   });
-            f.FeedEvents({
+            f.feed_events({
                 Input{46},
             });
-            REQUIRE(f.Output() == OutVec{
+            REQUIRE(f.output() == OutVec{
                                       Input{46},
                                   });
-            f.FeedEnd({});
-            REQUIRE(f.Output() == OutVec{});
-            REQUIRE(f.DidEnd());
+            f.feed_end({});
+            REQUIRE(f.output() == OutVec{});
+            REQUIRE(f.did_end());
         }
     }
 }

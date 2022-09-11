@@ -43,7 +43,7 @@ auto MakeDelayFixture(macrotime delta) {
                                                   std::move(downstream));
     };
 
-    return MakeProcessorTestFixture<test_events_0123, test_events_0123>(
+    return make_processor_test_fixture<test_events_0123, test_events_0123>(
         makeProc);
 }
 
@@ -55,7 +55,7 @@ auto MakeHastenFixture(macrotime delta) {
                                                    std::move(downstream));
     };
 
-    return MakeProcessorTestFixture<test_events_0123, test_events_0123>(
+    return make_processor_test_fixture<test_events_0123, test_events_0123>(
         makeProc);
 }
 
@@ -66,7 +66,7 @@ auto MakeDelayHastenFixture(macrotime delta) {
             delta, std::move(downstream));
     };
 
-    return MakeProcessorTestFixture<test_events_0123, test_events_0123>(
+    return make_processor_test_fixture<test_events_0123, test_events_0123>(
         makeProc);
 }
 
@@ -77,73 +77,73 @@ TEST_CASE("Delay uniform streams", "[delay_processor]") {
     auto f = MakeDelayFixture(delta);
 
     SECTION("Empty stream yields empty stream") {
-        f.FeedEnd({});
-        REQUIRE(f.Output() == OutVec{});
-        REQUIRE(f.DidEnd());
+        f.feed_end({});
+        REQUIRE(f.output() == OutVec{});
+        REQUIRE(f.did_end());
     }
 
     SECTION("Empty stream with error yields empty stream with error") {
-        f.FeedEnd(std::make_exception_ptr(std::runtime_error("test")));
-        REQUIRE(f.Output() == OutVec{});
-        REQUIRE_THROWS_MATCHES(f.DidEnd(), std::runtime_error,
+        f.feed_end(std::make_exception_ptr(std::runtime_error("test")));
+        REQUIRE(f.output() == OutVec{});
+        REQUIRE_THROWS_MATCHES(f.did_end(), std::runtime_error,
                                Catch::Message("test"));
     }
 
     SECTION("Undelayed events are unbuffered") {
-        f.FeedEvents({
+        f.feed_events({
             test_event<2>{0},
         });
-        REQUIRE(f.Output() == OutVec{
+        REQUIRE(f.output() == OutVec{
                                   test_event<2>{0},
                               });
-        f.FeedEvents({
+        f.feed_events({
             test_event<3>{0},
         });
-        REQUIRE(f.Output() == OutVec{
+        REQUIRE(f.output() == OutVec{
                                   test_event<3>{0},
                               });
-        f.FeedEvents({
+        f.feed_events({
             test_event<2>{0},
         });
-        REQUIRE(f.Output() == OutVec{
+        REQUIRE(f.output() == OutVec{
                                   test_event<2>{0},
                               });
-        f.FeedEvents({
+        f.feed_events({
             test_event<3>{0},
         });
-        REQUIRE(f.Output() == OutVec{
+        REQUIRE(f.output() == OutVec{
                                   test_event<3>{0},
                               });
-        f.FeedEnd({});
-        REQUIRE(f.Output() == OutVec{});
-        REQUIRE(f.DidEnd());
+        f.feed_end({});
+        REQUIRE(f.output() == OutVec{});
+        REQUIRE(f.did_end());
     }
 
     SECTION("Delayed events are buffered") {
-        f.FeedEvents({
+        f.feed_events({
             test_event<0>{0},
         });
-        REQUIRE(f.Output() == OutVec{});
-        f.FeedEvents({
+        REQUIRE(f.output() == OutVec{});
+        f.feed_events({
             test_event<1>{0},
         });
-        REQUIRE(f.Output() == OutVec{});
-        f.FeedEvents({
+        REQUIRE(f.output() == OutVec{});
+        f.feed_events({
             test_event<0>{0},
         });
-        REQUIRE(f.Output() == OutVec{});
-        f.FeedEvents({
+        REQUIRE(f.output() == OutVec{});
+        f.feed_events({
             test_event<1>{0},
         });
-        REQUIRE(f.Output() == OutVec{});
-        f.FeedEnd({});
-        REQUIRE(f.Output() == OutVec{
+        REQUIRE(f.output() == OutVec{});
+        f.feed_end({});
+        REQUIRE(f.output() == OutVec{
                                   test_event<0>{delta},
                                   test_event<1>{delta},
                                   test_event<0>{delta},
                                   test_event<1>{delta},
                               });
-        REQUIRE(f.DidEnd());
+        REQUIRE(f.did_end());
     }
 }
 
@@ -152,73 +152,73 @@ TEST_CASE("Hasten uniform streams", "[hasten_processor]") {
     auto f = MakeHastenFixture(delta);
 
     SECTION("Empty stream yields empty stream") {
-        f.FeedEnd({});
-        REQUIRE(f.Output() == OutVec{});
-        REQUIRE(f.DidEnd());
+        f.feed_end({});
+        REQUIRE(f.output() == OutVec{});
+        REQUIRE(f.did_end());
     }
 
     SECTION("Empty stream with error yields empty stream with error") {
-        f.FeedEnd(std::make_exception_ptr(std::runtime_error("test")));
-        REQUIRE(f.Output() == OutVec{});
-        REQUIRE_THROWS_MATCHES(f.DidEnd(), std::runtime_error,
+        f.feed_end(std::make_exception_ptr(std::runtime_error("test")));
+        REQUIRE(f.output() == OutVec{});
+        REQUIRE_THROWS_MATCHES(f.did_end(), std::runtime_error,
                                Catch::Message("test"));
     }
 
     SECTION("Hastened events are unbuffered") {
-        f.FeedEvents({
+        f.feed_events({
             test_event<0>{0},
         });
-        REQUIRE(f.Output() == OutVec{
+        REQUIRE(f.output() == OutVec{
                                   test_event<0>{-delta},
                               });
-        f.FeedEvents({
+        f.feed_events({
             test_event<1>{0},
         });
-        REQUIRE(f.Output() == OutVec{
+        REQUIRE(f.output() == OutVec{
                                   test_event<1>{-delta},
                               });
-        f.FeedEvents({
+        f.feed_events({
             test_event<0>{0},
         });
-        REQUIRE(f.Output() == OutVec{
+        REQUIRE(f.output() == OutVec{
                                   test_event<0>{-delta},
                               });
-        f.FeedEvents({
+        f.feed_events({
             test_event<1>{0},
         });
-        REQUIRE(f.Output() == OutVec{
+        REQUIRE(f.output() == OutVec{
                                   test_event<1>{-delta},
                               });
-        f.FeedEnd({});
-        REQUIRE(f.Output() == OutVec{});
-        REQUIRE(f.DidEnd());
+        f.feed_end({});
+        REQUIRE(f.output() == OutVec{});
+        REQUIRE(f.did_end());
     }
 
     SECTION("Unhastened events are buffered") {
-        f.FeedEvents({
+        f.feed_events({
             test_event<2>{0},
         });
-        REQUIRE(f.Output() == OutVec{});
-        f.FeedEvents({
+        REQUIRE(f.output() == OutVec{});
+        f.feed_events({
             test_event<3>{0},
         });
-        REQUIRE(f.Output() == OutVec{});
-        f.FeedEvents({
+        REQUIRE(f.output() == OutVec{});
+        f.feed_events({
             test_event<2>{0},
         });
-        REQUIRE(f.Output() == OutVec{});
-        f.FeedEvents({
+        REQUIRE(f.output() == OutVec{});
+        f.feed_events({
             test_event<3>{0},
         });
-        REQUIRE(f.Output() == OutVec{});
-        f.FeedEnd({});
-        REQUIRE(f.Output() == OutVec{
+        REQUIRE(f.output() == OutVec{});
+        f.feed_end({});
+        REQUIRE(f.output() == OutVec{
                                   test_event<2>{0},
                                   test_event<3>{0},
                                   test_event<2>{0},
                                   test_event<3>{0},
                               });
-        REQUIRE(f.DidEnd());
+        REQUIRE(f.did_end());
     }
 }
 
@@ -226,63 +226,63 @@ TEST_CASE("Delay by 0", "[delay_processor]") {
     auto f = MakeDelayFixture(0);
 
     SECTION("Equal timestamps") {
-        f.FeedEvents({
+        f.feed_events({
             test_event<0>{0},
         });
-        REQUIRE(f.Output() == OutVec{});
-        f.FeedEvents({
+        REQUIRE(f.output() == OutVec{});
+        f.feed_events({
             test_event<2>{0},
         });
-        REQUIRE(f.Output() == OutVec{
+        REQUIRE(f.output() == OutVec{
                                   test_event<0>{0},
                                   test_event<2>{0},
                               });
 
-        f.FeedEvents({
+        f.feed_events({
             test_event<0>{0},
         });
-        REQUIRE(f.Output() == OutVec{});
-        f.FeedEvents({
+        REQUIRE(f.output() == OutVec{});
+        f.feed_events({
             test_event<2>{0},
         });
-        REQUIRE(f.Output() == OutVec{
+        REQUIRE(f.output() == OutVec{
                                   test_event<0>{0},
                                   test_event<2>{0},
                               });
 
-        f.FeedEnd({});
-        REQUIRE(f.Output() == OutVec{});
-        REQUIRE(f.DidEnd());
+        f.feed_end({});
+        REQUIRE(f.output() == OutVec{});
+        REQUIRE(f.did_end());
     }
 
     SECTION("Increment of 1") {
-        f.FeedEvents({
+        f.feed_events({
             test_event<0>{0},
         });
-        REQUIRE(f.Output() == OutVec{});
-        f.FeedEvents({
+        REQUIRE(f.output() == OutVec{});
+        f.feed_events({
             test_event<2>{1},
         });
-        REQUIRE(f.Output() == OutVec{
+        REQUIRE(f.output() == OutVec{
                                   test_event<0>{0},
                                   test_event<2>{1},
                               });
 
-        f.FeedEvents({
+        f.feed_events({
             test_event<0>{2},
         });
-        REQUIRE(f.Output() == OutVec{});
-        f.FeedEvents({
+        REQUIRE(f.output() == OutVec{});
+        f.feed_events({
             test_event<2>{3},
         });
-        REQUIRE(f.Output() == OutVec{
+        REQUIRE(f.output() == OutVec{
                                   test_event<0>{2},
                                   test_event<2>{3},
                               });
 
-        f.FeedEnd({});
-        REQUIRE(f.Output() == OutVec{});
-        REQUIRE(f.DidEnd());
+        f.feed_end({});
+        REQUIRE(f.output() == OutVec{});
+        REQUIRE(f.did_end());
     }
 }
 
@@ -290,64 +290,64 @@ TEST_CASE("Hasten by 0", "[hasten_processor]") {
     auto f = MakeHastenFixture(0);
 
     SECTION("Equal timestamps") {
-        f.FeedEvents({
+        f.feed_events({
             test_event<2>{0},
         });
-        REQUIRE(f.Output() == OutVec{});
-        f.FeedEvents({
+        REQUIRE(f.output() == OutVec{});
+        f.feed_events({
             test_event<0>{0},
         });
-        REQUIRE(f.Output() == OutVec{
+        REQUIRE(f.output() == OutVec{
                                   test_event<0>{0},
                               });
 
-        f.FeedEvents({
+        f.feed_events({
             test_event<2>{0},
         });
-        REQUIRE(f.Output() == OutVec{});
-        f.FeedEvents({
+        REQUIRE(f.output() == OutVec{});
+        f.feed_events({
             test_event<0>{0},
         });
-        REQUIRE(f.Output() == OutVec{
+        REQUIRE(f.output() == OutVec{
                                   test_event<0>{0},
                               });
 
-        f.FeedEnd({});
-        REQUIRE(f.Output() == OutVec{
+        f.feed_end({});
+        REQUIRE(f.output() == OutVec{
                                   test_event<2>{0},
                                   test_event<2>{0},
                               });
-        REQUIRE(f.DidEnd());
+        REQUIRE(f.did_end());
     }
 
     SECTION("Increment of 1") {
-        f.FeedEvents({
+        f.feed_events({
             test_event<2>{0},
         });
-        REQUIRE(f.Output() == OutVec{});
-        f.FeedEvents({
+        REQUIRE(f.output() == OutVec{});
+        f.feed_events({
             test_event<0>{1},
         });
-        REQUIRE(f.Output() == OutVec{
+        REQUIRE(f.output() == OutVec{
                                   test_event<2>{0},
                                   test_event<0>{1},
                               });
 
-        f.FeedEvents({
+        f.feed_events({
             test_event<2>{2},
         });
-        REQUIRE(f.Output() == OutVec{});
-        f.FeedEvents({
+        REQUIRE(f.output() == OutVec{});
+        f.feed_events({
             test_event<0>{3},
         });
-        REQUIRE(f.Output() == OutVec{
+        REQUIRE(f.output() == OutVec{
                                   test_event<2>{2},
                                   test_event<0>{3},
                               });
 
-        f.FeedEnd({});
-        REQUIRE(f.Output() == OutVec{});
-        REQUIRE(f.DidEnd());
+        f.feed_end({});
+        REQUIRE(f.output() == OutVec{});
+        REQUIRE(f.did_end());
     }
 }
 
@@ -355,64 +355,64 @@ TEST_CASE("Delay by 1") {
     auto f = MakeDelayFixture(1);
 
     SECTION("Equal timestamps") {
-        f.FeedEvents({
+        f.feed_events({
             test_event<0>{0},
         });
-        REQUIRE(f.Output() == OutVec{});
-        f.FeedEvents({
+        REQUIRE(f.output() == OutVec{});
+        f.feed_events({
             test_event<2>{0},
         });
-        REQUIRE(f.Output() == OutVec{
+        REQUIRE(f.output() == OutVec{
                                   test_event<2>{0},
                               });
 
-        f.FeedEvents({
+        f.feed_events({
             test_event<0>{1},
         });
-        REQUIRE(f.Output() == OutVec{});
-        f.FeedEvents({
+        REQUIRE(f.output() == OutVec{});
+        f.feed_events({
             test_event<2>{1},
         });
-        REQUIRE(f.Output() == OutVec{
+        REQUIRE(f.output() == OutVec{
                                   test_event<0>{1},
                                   test_event<2>{1},
                               });
 
-        f.FeedEnd({});
-        REQUIRE(f.Output() == OutVec{
+        f.feed_end({});
+        REQUIRE(f.output() == OutVec{
                                   test_event<0>{2},
                               });
-        REQUIRE(f.DidEnd());
+        REQUIRE(f.did_end());
     }
 
     SECTION("Increment of 1") {
-        f.FeedEvents({
+        f.feed_events({
             test_event<0>{0},
         });
-        REQUIRE(f.Output() == OutVec{});
-        f.FeedEvents({
+        REQUIRE(f.output() == OutVec{});
+        f.feed_events({
             test_event<2>{1},
         });
-        REQUIRE(f.Output() == OutVec{
+        REQUIRE(f.output() == OutVec{
                                   test_event<0>{1},
                                   test_event<2>{1},
                               });
 
-        f.FeedEvents({
+        f.feed_events({
             test_event<0>{2},
         });
-        REQUIRE(f.Output() == OutVec{});
-        f.FeedEvents({
+        REQUIRE(f.output() == OutVec{});
+        f.feed_events({
             test_event<2>{3},
         });
-        REQUIRE(f.Output() == OutVec{
+        REQUIRE(f.output() == OutVec{
                                   test_event<0>{3},
                                   test_event<2>{3},
                               });
 
-        f.FeedEnd({});
-        REQUIRE(f.Output() == OutVec{});
-        REQUIRE(f.DidEnd());
+        f.feed_end({});
+        REQUIRE(f.output() == OutVec{});
+        REQUIRE(f.did_end());
     }
 }
 
@@ -420,65 +420,65 @@ TEST_CASE("Hasten by 1") {
     auto f = MakeHastenFixture(1);
 
     SECTION("Equal timestamps") {
-        f.FeedEvents({
+        f.feed_events({
             test_event<2>{0},
         });
-        REQUIRE(f.Output() == OutVec{});
-        f.FeedEvents({
+        REQUIRE(f.output() == OutVec{});
+        f.feed_events({
             test_event<0>{0},
         });
-        REQUIRE(f.Output() == OutVec{
+        REQUIRE(f.output() == OutVec{
                                   test_event<0>{-1},
                               });
 
-        f.FeedEvents({
+        f.feed_events({
             test_event<2>{1},
         });
-        REQUIRE(f.Output() == OutVec{});
-        f.FeedEvents({
+        REQUIRE(f.output() == OutVec{});
+        f.feed_events({
             test_event<0>{1},
         });
-        REQUIRE(f.Output() == OutVec{
+        REQUIRE(f.output() == OutVec{
                                   test_event<0>{0},
                               });
 
-        f.FeedEnd({});
-        REQUIRE(f.Output() == OutVec{
+        f.feed_end({});
+        REQUIRE(f.output() == OutVec{
                                   test_event<2>{0},
                                   test_event<2>{1},
                               });
-        REQUIRE(f.DidEnd());
+        REQUIRE(f.did_end());
     }
 
     SECTION("Increment of 1") {
-        f.FeedEvents({
+        f.feed_events({
             test_event<2>{0},
         });
-        REQUIRE(f.Output() == OutVec{});
-        f.FeedEvents({
+        REQUIRE(f.output() == OutVec{});
+        f.feed_events({
             test_event<0>{1},
         });
-        REQUIRE(f.Output() == OutVec{
+        REQUIRE(f.output() == OutVec{
                                   test_event<0>{0},
                               });
 
-        f.FeedEvents({
+        f.feed_events({
             test_event<2>{2},
         });
-        REQUIRE(f.Output() == OutVec{});
-        f.FeedEvents({
+        REQUIRE(f.output() == OutVec{});
+        f.feed_events({
             test_event<0>{3},
         });
-        REQUIRE(f.Output() == OutVec{
+        REQUIRE(f.output() == OutVec{
                                   test_event<2>{0},
                                   test_event<0>{2},
                               });
 
-        f.FeedEnd({});
-        REQUIRE(f.Output() == OutVec{
+        f.feed_end({});
+        REQUIRE(f.output() == OutVec{
                                   test_event<2>{2},
                               });
-        REQUIRE(f.DidEnd());
+        REQUIRE(f.did_end());
     }
 }
 
@@ -486,95 +486,95 @@ TEST_CASE("Delay by 2") {
     auto f = MakeDelayFixture(2);
 
     SECTION("Equal timestamps") {
-        f.FeedEvents({
+        f.feed_events({
             test_event<0>{0},
         });
-        REQUIRE(f.Output() == OutVec{});
-        f.FeedEvents({
+        REQUIRE(f.output() == OutVec{});
+        f.feed_events({
             test_event<2>{0},
         });
-        REQUIRE(f.Output() == OutVec{
+        REQUIRE(f.output() == OutVec{
                                   test_event<2>{0},
                               });
 
-        f.FeedEvents({
+        f.feed_events({
             test_event<0>{1},
         });
-        REQUIRE(f.Output() == OutVec{});
-        f.FeedEvents({
+        REQUIRE(f.output() == OutVec{});
+        f.feed_events({
             test_event<2>{1},
         });
-        REQUIRE(f.Output() == OutVec{
+        REQUIRE(f.output() == OutVec{
                                   test_event<2>{1},
                               });
 
-        f.FeedEvents({
+        f.feed_events({
             test_event<0>{2},
         });
-        REQUIRE(f.Output() == OutVec{});
-        f.FeedEvents({
+        REQUIRE(f.output() == OutVec{});
+        f.feed_events({
             test_event<2>{2},
         });
-        REQUIRE(f.Output() == OutVec{
+        REQUIRE(f.output() == OutVec{
                                   test_event<0>{2},
                                   test_event<2>{2},
                               });
 
-        f.FeedEvents({
+        f.feed_events({
             test_event<2>{3},
         });
-        REQUIRE(f.Output() == OutVec{
+        REQUIRE(f.output() == OutVec{
                                   test_event<0>{3},
                                   test_event<2>{3},
                               });
 
-        f.FeedEnd({});
-        REQUIRE(f.Output() == OutVec{
+        f.feed_end({});
+        REQUIRE(f.output() == OutVec{
                                   test_event<0>{4},
                               });
-        REQUIRE(f.DidEnd());
+        REQUIRE(f.did_end());
     }
 
     SECTION("Increment of 1") {
-        f.FeedEvents({
+        f.feed_events({
             test_event<0>{0},
         });
-        REQUIRE(f.Output() == OutVec{});
-        f.FeedEvents({
+        REQUIRE(f.output() == OutVec{});
+        f.feed_events({
             test_event<2>{1},
         });
-        REQUIRE(f.Output() == OutVec{
+        REQUIRE(f.output() == OutVec{
                                   test_event<2>{1},
                               });
-        f.FeedEvents({
+        f.feed_events({
             test_event<0>{2},
         });
-        REQUIRE(f.Output() == OutVec{});
-        f.FeedEvents({
+        REQUIRE(f.output() == OutVec{});
+        f.feed_events({
             test_event<2>{3},
         });
-        REQUIRE(f.Output() == OutVec{
+        REQUIRE(f.output() == OutVec{
                                   test_event<0>{2},
                                   test_event<2>{3},
                               });
 
-        f.FeedEvents({
+        f.feed_events({
             test_event<0>{4},
         });
-        REQUIRE(f.Output() == OutVec{});
-        f.FeedEvents({
+        REQUIRE(f.output() == OutVec{});
+        f.feed_events({
             test_event<2>{5},
         });
-        REQUIRE(f.Output() == OutVec{
+        REQUIRE(f.output() == OutVec{
                                   test_event<0>{4},
                                   test_event<2>{5},
                               });
 
-        f.FeedEnd({});
-        REQUIRE(f.Output() == OutVec{
+        f.feed_end({});
+        REQUIRE(f.output() == OutVec{
                                   test_event<0>{6},
                               });
-        REQUIRE(f.DidEnd());
+        REQUIRE(f.did_end());
     }
 }
 
@@ -582,95 +582,95 @@ TEST_CASE("Hasten by 2") {
     auto f = MakeHastenFixture(2);
 
     SECTION("Equal timestamps") {
-        f.FeedEvents({
+        f.feed_events({
             test_event<2>{0},
         });
-        REQUIRE(f.Output() == OutVec{});
-        f.FeedEvents({
+        REQUIRE(f.output() == OutVec{});
+        f.feed_events({
             test_event<0>{0},
         });
-        REQUIRE(f.Output() == OutVec{
+        REQUIRE(f.output() == OutVec{
                                   test_event<0>{-2},
                               });
 
-        f.FeedEvents({
+        f.feed_events({
             test_event<2>{1},
         });
-        REQUIRE(f.Output() == OutVec{});
-        f.FeedEvents({
+        REQUIRE(f.output() == OutVec{});
+        f.feed_events({
             test_event<0>{1},
         });
-        REQUIRE(f.Output() == OutVec{
+        REQUIRE(f.output() == OutVec{
                                   test_event<0>{-1},
                               });
 
-        f.FeedEvents({
+        f.feed_events({
             test_event<2>{2},
         });
-        REQUIRE(f.Output() == OutVec{});
-        f.FeedEvents({
+        REQUIRE(f.output() == OutVec{});
+        f.feed_events({
             test_event<0>{2},
         });
-        REQUIRE(f.Output() == OutVec{
+        REQUIRE(f.output() == OutVec{
                                   test_event<0>{0},
                               });
 
-        f.FeedEvents({
+        f.feed_events({
             test_event<0>{3},
         });
-        REQUIRE(f.Output() == OutVec{
+        REQUIRE(f.output() == OutVec{
                                   test_event<2>{0},
                                   test_event<0>{1},
                               });
 
-        f.FeedEnd({});
-        REQUIRE(f.Output() == OutVec{
+        f.feed_end({});
+        REQUIRE(f.output() == OutVec{
                                   test_event<2>{1},
                                   test_event<2>{2},
                               });
-        REQUIRE(f.DidEnd());
+        REQUIRE(f.did_end());
     }
 
     SECTION("Increment of 1") {
-        f.FeedEvents({
+        f.feed_events({
             test_event<2>{0},
         });
-        REQUIRE(f.Output() == OutVec{});
-        f.FeedEvents({
+        REQUIRE(f.output() == OutVec{});
+        f.feed_events({
             test_event<0>{1},
         });
-        REQUIRE(f.Output() == OutVec{
+        REQUIRE(f.output() == OutVec{
                                   test_event<0>{-1},
                               });
-        f.FeedEvents({
+        f.feed_events({
             test_event<2>{2},
         });
-        REQUIRE(f.Output() == OutVec{});
-        f.FeedEvents({
+        REQUIRE(f.output() == OutVec{});
+        f.feed_events({
             test_event<0>{3},
         });
-        REQUIRE(f.Output() == OutVec{
+        REQUIRE(f.output() == OutVec{
                                   test_event<2>{0},
                                   test_event<0>{1},
                               });
 
-        f.FeedEvents({
+        f.feed_events({
             test_event<2>{4},
         });
-        REQUIRE(f.Output() == OutVec{});
-        f.FeedEvents({
+        REQUIRE(f.output() == OutVec{});
+        f.feed_events({
             test_event<0>{5},
         });
-        REQUIRE(f.Output() == OutVec{
+        REQUIRE(f.output() == OutVec{
                                   test_event<2>{2},
                                   test_event<0>{3},
                               });
 
-        f.FeedEnd({});
-        REQUIRE(f.Output() == OutVec{
+        f.feed_end({});
+        REQUIRE(f.output() == OutVec{
                                   test_event<2>{4},
                               });
-        REQUIRE(f.DidEnd());
+        REQUIRE(f.did_end());
     }
 }
 
@@ -680,15 +680,15 @@ TEST_CASE("delay_hasten_processor Sanity", "[delay_hasten_processor]") {
 
     // Ignore output timing; only check content.
 
-    f.FeedEvents({
+    f.feed_events({
         test_event<2>{-3},
         test_event<0>{0},
         test_event<2>{3},
         test_event<0>{6},
     });
-    OutVec o = f.Output();
-    f.FeedEnd({});
-    OutVec o1 = f.Output();
+    OutVec o = f.output();
+    f.feed_end({});
+    OutVec o1 = f.output();
 
     std::copy(o1.cbegin(), o1.cend(), std::back_inserter(o));
 
@@ -699,5 +699,5 @@ TEST_CASE("delay_hasten_processor Sanity", "[delay_hasten_processor]") {
                      test_event<0>{6 + delta},
                  });
 
-    REQUIRE(f.DidEnd());
+    REQUIRE(f.did_end());
 }

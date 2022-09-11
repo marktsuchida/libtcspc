@@ -22,7 +22,7 @@ namespace flimevt::test {
 
 namespace internal {
 
-template <typename OutputEventSet> class LoggingMockProcessor {
+template <typename OutputEventSet> class logging_mock_processor {
   public:
     struct Result {
         std::vector<event_variant<OutputEventSet>> outputs;
@@ -34,7 +34,7 @@ template <typename OutputEventSet> class LoggingMockProcessor {
     Result &outputs;
 
   public:
-    explicit LoggingMockProcessor(Result &outputs) noexcept
+    explicit logging_mock_processor(Result &outputs) noexcept
         : outputs(outputs) {}
 
     template <typename E> void handle_event(E const &event) noexcept {
@@ -58,14 +58,14 @@ template <typename OutputEventSet> class LoggingMockProcessor {
 // Wrap a processor-under-test so that output events resulting from each
 // (sequence of) input event can be examined.
 template <typename InputEventSet, typename OutputEventSet, typename Proc>
-class ProcessorTestFixture {
-    using MockDownstream = internal::LoggingMockProcessor<OutputEventSet>;
+class processor_test_fixture {
+    using MockDownstream = internal::logging_mock_processor<OutputEventSet>;
 
     Proc proc;
     typename MockDownstream::Result result;
 
     template <typename F>
-    explicit ProcessorTestFixture(F procFactory)
+    explicit processor_test_fixture(F procFactory)
         : proc(procFactory(MockDownstream(result))) {}
 
   public:
@@ -73,13 +73,13 @@ class ProcessorTestFixture {
     // Creation requires a factory function template in order to deduce Proc
     // while using the given InputEventSet and OutputEventSet.
     template <typename IES, typename OES, typename F>
-    friend auto MakeProcessorTestFixture(F procFactory);
+    friend auto make_processor_test_fixture(F procFactory);
 
-    using OutputVectorType = std::vector<event_variant<OutputEventSet>>;
+    using output_vector_type = std::vector<event_variant<OutputEventSet>>;
 
     // Feed multiple events (old-style); all past outputs must have been
     // checked
-    void FeedEvents(std::vector<event_variant<InputEventSet>> inputs) {
+    void feed_events(std::vector<event_variant<InputEventSet>> inputs) {
         if (!result.outputs.empty())
             throw std::logic_error("Unchecked output remains");
         for (auto const &input : inputs) {
@@ -88,7 +88,7 @@ class ProcessorTestFixture {
     }
 
     // Feed one event; all past outputs must have been checked
-    template <typename E> void Feed(E const &event) {
+    template <typename E> void feed(E const &event) {
         static_assert(contains_event_v<InputEventSet, E>);
         if (!result.outputs.empty())
             throw std::logic_error("Unchecked output remains");
@@ -96,21 +96,21 @@ class ProcessorTestFixture {
     }
 
     // Feed "end of stream" and return the resulting output events
-    void FeedEnd(std::exception_ptr error) {
+    void feed_end(std::exception_ptr error) {
         if (!result.outputs.empty())
             throw std::logic_error("Unchecked output remains");
         proc.handle_end(error);
     }
 
     // Old-style output checking (requires operator<< on variant to print)
-    OutputVectorType Output() {
+    output_vector_type output() {
         auto ret = result.outputs;
         result.outputs.clear();
         return ret;
     }
 
     // New-style output checking
-    template <typename E> bool Check(E const &event) {
+    template <typename E> bool check(E const &event) {
         if (result.outputs.empty())
             throw std::logic_error("No output pending");
         event_variant<OutputEventSet> expected = event;
@@ -128,7 +128,7 @@ class ProcessorTestFixture {
 
     // Test whether the output reached "end of stream". Throws if end was
     // reached with an error.
-    bool DidEnd() {
+    bool did_end() {
         if (!result.outputs.empty())
             throw std::logic_error("Unchecked output remains");
         if (result.error)
@@ -137,15 +137,15 @@ class ProcessorTestFixture {
     }
 };
 
-// Create a ProcessorTestFixture. procFactory must be a callable taking an
+// Create a processor_test_fixture. procFactory must be a callable taking an
 // rvalue ref to a downstream processor and returning an instance of the
 // processor-under-test.
 template <typename InputEventSet, typename OutputEventSet, typename F>
-auto MakeProcessorTestFixture(F procFactory) {
-    using MockDownstream = internal::LoggingMockProcessor<OutputEventSet>;
+auto make_processor_test_fixture(F procFactory) {
+    using MockDownstream = internal::logging_mock_processor<OutputEventSet>;
     using Proc = std::invoke_result_t<F, MockDownstream>;
 
-    return ProcessorTestFixture<InputEventSet, OutputEventSet, Proc>(
+    return processor_test_fixture<InputEventSet, OutputEventSet, Proc>(
         procFactory);
 }
 

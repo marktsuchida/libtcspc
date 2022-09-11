@@ -42,7 +42,7 @@ auto MakeMergeFixture(macrotime maxShift) {
                                               std::move(input1));
     };
 
-    return MakeProcessorTestFixture<test_events_0123, test_events_0123>(
+    return make_processor_test_fixture<test_events_0123, test_events_0123>(
         makeProc);
 }
 
@@ -82,7 +82,7 @@ auto MakeMergeFixtureErrorOnInput0(macrotime maxShift, int eventsBeforeError) {
                                               std::move(input1));
     };
 
-    return MakeProcessorTestFixture<test_events_0123, test_events_0123>(
+    return make_processor_test_fixture<test_events_0123, test_events_0123>(
         makeProc);
 }
 
@@ -96,7 +96,7 @@ auto MakeMergeFixtureErrorOnInput1(macrotime maxShift, int eventsBeforeError) {
                                               std::move(error1));
     };
 
-    return MakeProcessorTestFixture<test_events_0123, test_events_0123>(
+    return make_processor_test_fixture<test_events_0123, test_events_0123>(
         makeProc);
 }
 
@@ -108,21 +108,21 @@ TEST_CASE("Merge with error on one input", "[Merge]") {
         bool endInput1 = GENERATE(false, true);
 
         auto f = MakeMergeFixtureErrorOnInput0(1000, 0);
-        f.FeedEvents({
+        f.feed_events({
             test_event<0>{0}, // Fixture will convert to error
         });
-        REQUIRE(f.Output() == OutVec{});
+        REQUIRE(f.output() == OutVec{});
         if (furtherInputOnInput1) {
-            f.FeedEvents({
+            f.feed_events({
                 test_event<2>{1},
             });
-            REQUIRE(f.Output() == OutVec{});
+            REQUIRE(f.output() == OutVec{});
         }
         if (endInput1) {
-            f.FeedEnd({});
-            REQUIRE(f.Output() == OutVec{});
+            f.feed_end({});
+            REQUIRE(f.output() == OutVec{});
         }
-        REQUIRE_THROWS_MATCHES(f.DidEnd(), std::runtime_error,
+        REQUIRE_THROWS_MATCHES(f.did_end(), std::runtime_error,
                                Catch::Message("injected error"));
     }
 
@@ -131,21 +131,21 @@ TEST_CASE("Merge with error on one input", "[Merge]") {
         bool endInput0 = GENERATE(false, true);
 
         auto f = MakeMergeFixtureErrorOnInput1(1000, 0);
-        f.FeedEvents({
+        f.feed_events({
             test_event<2>{0}, // Fixture will convert to error
         });
-        REQUIRE(f.Output() == OutVec{});
+        REQUIRE(f.output() == OutVec{});
         if (furtherInputOnInput0) {
-            f.FeedEvents({
+            f.feed_events({
                 test_event<0>{1}, // Further input ignored on other input
             });
-            REQUIRE(f.Output() == OutVec{});
+            REQUIRE(f.output() == OutVec{});
         }
         if (endInput0) {
-            f.FeedEnd({});
-            REQUIRE(f.Output() == OutVec{});
+            f.feed_end({});
+            REQUIRE(f.output() == OutVec{});
         }
-        REQUIRE_THROWS_MATCHES(f.DidEnd(), std::runtime_error,
+        REQUIRE_THROWS_MATCHES(f.did_end(), std::runtime_error,
                                Catch::Message("injected error"));
     }
 
@@ -153,19 +153,19 @@ TEST_CASE("Merge with error on one input", "[Merge]") {
         bool endInput1 = GENERATE(false, true);
 
         auto f = MakeMergeFixtureErrorOnInput0(1000, 1);
-        f.FeedEvents({
+        f.feed_events({
             test_event<0>{0},
         });
-        REQUIRE(f.Output() == OutVec{});
-        f.FeedEvents({
+        REQUIRE(f.output() == OutVec{});
+        f.feed_events({
             test_event<0>{1}, // Fixture will convert to error
         });
-        REQUIRE(f.Output() == OutVec{});
+        REQUIRE(f.output() == OutVec{});
         if (endInput1) {
-            f.FeedEnd({});
-            REQUIRE(f.Output() == OutVec{});
+            f.feed_end({});
+            REQUIRE(f.output() == OutVec{});
         }
-        REQUIRE_THROWS_MATCHES(f.DidEnd(), std::runtime_error,
+        REQUIRE_THROWS_MATCHES(f.did_end(), std::runtime_error,
                                Catch::Message("injected error"));
     }
 
@@ -173,19 +173,19 @@ TEST_CASE("Merge with error on one input", "[Merge]") {
         bool endInput1 = GENERATE(false, true);
 
         auto f = MakeMergeFixtureErrorOnInput0(1000, 0);
-        f.FeedEvents({
+        f.feed_events({
             test_event<2>{0},
         });
-        REQUIRE(f.Output() == OutVec{});
-        f.FeedEvents({
+        REQUIRE(f.output() == OutVec{});
+        f.feed_events({
             test_event<0>{1}, // Fixture will convert to error
         });
-        REQUIRE(f.Output() == OutVec{});
+        REQUIRE(f.output() == OutVec{});
         if (endInput1) {
-            f.FeedEnd({});
-            REQUIRE(f.Output() == OutVec{});
+            f.feed_end({});
+            REQUIRE(f.output() == OutVec{});
         }
-        REQUIRE_THROWS_MATCHES(f.DidEnd(), std::runtime_error,
+        REQUIRE_THROWS_MATCHES(f.did_end(), std::runtime_error,
                                Catch::Message("injected error"));
     }
 }
@@ -194,122 +194,122 @@ TEST_CASE("Merge", "[Merge]") {
     auto f = MakeMergeFixture(1000);
 
     SECTION("Empty streams yield empty stream") {
-        f.FeedEnd({});
-        REQUIRE(f.Output() == OutVec{});
+        f.feed_end({});
+        REQUIRE(f.output() == OutVec{});
     }
 
     SECTION("Errors on both inputs") {
-        f.FeedEnd(std::make_exception_ptr(std::runtime_error("test")));
-        REQUIRE(f.Output() == OutVec{});
-        REQUIRE_THROWS_MATCHES(f.DidEnd(), std::runtime_error,
+        f.feed_end(std::make_exception_ptr(std::runtime_error("test")));
+        REQUIRE(f.output() == OutVec{});
+        REQUIRE_THROWS_MATCHES(f.did_end(), std::runtime_error,
                                Catch::Message("test"));
     }
 
     SECTION("Input0 events are emitted before input1 events") {
-        f.FeedEvents({
+        f.feed_events({
             test_event<2>{42},
         });
-        REQUIRE(f.Output() == OutVec{});
-        f.FeedEvents({
+        REQUIRE(f.output() == OutVec{});
+        f.feed_events({
             test_event<0>{42},
         });
-        REQUIRE(f.Output() == OutVec{
+        REQUIRE(f.output() == OutVec{
                                   test_event<0>{42},
                               });
-        f.FeedEvents({
+        f.feed_events({
             test_event<3>{42},
         });
-        REQUIRE(f.Output() == OutVec{});
-        f.FeedEvents({
+        REQUIRE(f.output() == OutVec{});
+        f.feed_events({
             test_event<1>{42},
         });
-        REQUIRE(f.Output() == OutVec{
+        REQUIRE(f.output() == OutVec{
                                   test_event<1>{42},
                               });
-        f.FeedEnd({});
-        REQUIRE(f.Output() == OutVec{
+        f.feed_end({});
+        REQUIRE(f.output() == OutVec{
                                   test_event<2>{42},
                                   test_event<3>{42},
                               });
-        REQUIRE(f.DidEnd());
+        REQUIRE(f.did_end());
     }
 
     SECTION("Already sorted in macrotime order") {
-        f.FeedEvents({
+        f.feed_events({
             test_event<0>{1},
         });
-        REQUIRE(f.Output() == OutVec{});
-        f.FeedEvents({
+        REQUIRE(f.output() == OutVec{});
+        f.feed_events({
             test_event<2>{2},
         });
-        REQUIRE(f.Output() == OutVec{test_event<0>{1}});
-        f.FeedEvents({
+        REQUIRE(f.output() == OutVec{test_event<0>{1}});
+        f.feed_events({
             test_event<0>{3},
         });
-        REQUIRE(f.Output() == OutVec{test_event<2>{2}});
-        f.FeedEnd({});
-        REQUIRE(f.Output() == OutVec{
+        REQUIRE(f.output() == OutVec{test_event<2>{2}});
+        f.feed_end({});
+        REQUIRE(f.output() == OutVec{
                                   test_event<0>{3},
                               });
-        REQUIRE(f.DidEnd());
+        REQUIRE(f.did_end());
     }
 
     SECTION("Delayed input0 sorted by macrotime") {
-        f.FeedEvents({
+        f.feed_events({
             test_event<0>{2},
         });
-        REQUIRE(f.Output() == OutVec{});
-        f.FeedEvents({
+        REQUIRE(f.output() == OutVec{});
+        f.feed_events({
             test_event<2>{1},
         });
-        REQUIRE(f.Output() == OutVec{
+        REQUIRE(f.output() == OutVec{
                                   test_event<2>{1},
                               });
-        f.FeedEvents({
+        f.feed_events({
             test_event<0>{4},
         });
-        REQUIRE(f.Output() == OutVec{});
-        f.FeedEvents({
+        REQUIRE(f.output() == OutVec{});
+        f.feed_events({
             test_event<2>{3},
         });
-        REQUIRE(f.Output() == OutVec{
+        REQUIRE(f.output() == OutVec{
                                   test_event<0>{2},
                                   test_event<2>{3},
                               });
-        f.FeedEnd({});
-        REQUIRE(f.Output() == OutVec{
+        f.feed_end({});
+        REQUIRE(f.output() == OutVec{
                                   test_event<0>{4},
                               });
-        REQUIRE(f.DidEnd());
+        REQUIRE(f.did_end());
     }
 
     SECTION("Delayed input1 sorted by macrotime") {
-        f.FeedEvents({
+        f.feed_events({
             test_event<2>{2},
         });
-        REQUIRE(f.Output() == OutVec{});
-        f.FeedEvents({
+        REQUIRE(f.output() == OutVec{});
+        f.feed_events({
             test_event<0>{1},
         });
-        REQUIRE(f.Output() == OutVec{
+        REQUIRE(f.output() == OutVec{
                                   test_event<0>{1},
                               });
-        f.FeedEvents({
+        f.feed_events({
             test_event<2>{4},
         });
-        REQUIRE(f.Output() == OutVec{});
-        f.FeedEvents({
+        REQUIRE(f.output() == OutVec{});
+        f.feed_events({
             test_event<0>{3},
         });
-        REQUIRE(f.Output() == OutVec{
+        REQUIRE(f.output() == OutVec{
                                   test_event<2>{2},
                                   test_event<0>{3},
                               });
-        f.FeedEnd({});
-        REQUIRE(f.Output() == OutVec{
+        f.feed_end({});
+        REQUIRE(f.output() == OutVec{
                                   test_event<2>{4},
                               });
-        REQUIRE(f.DidEnd());
+        REQUIRE(f.did_end());
     }
 }
 
@@ -317,44 +317,44 @@ TEST_CASE("Merge max time shift", "[Merge]") {
     auto f = MakeMergeFixture(10);
 
     SECTION("Input0 emitted after exceeding max time shift") {
-        f.FeedEvents({
+        f.feed_events({
             test_event<0>{0},
         });
-        REQUIRE(f.Output() == OutVec{});
-        f.FeedEvents({
+        REQUIRE(f.output() == OutVec{});
+        f.feed_events({
             test_event<0>{10},
         });
-        REQUIRE(f.Output() == OutVec{});
-        f.FeedEvents({
+        REQUIRE(f.output() == OutVec{});
+        f.feed_events({
             test_event<0>{11},
         });
-        REQUIRE(f.Output() == OutVec{test_event<0>{0}});
-        f.FeedEnd({});
-        REQUIRE(f.Output() == OutVec{
+        REQUIRE(f.output() == OutVec{test_event<0>{0}});
+        f.feed_end({});
+        REQUIRE(f.output() == OutVec{
                                   test_event<0>{10},
                                   test_event<0>{11},
                               });
-        REQUIRE(f.DidEnd());
+        REQUIRE(f.did_end());
     }
 
     SECTION("Input1 emitted after exceeding max time shift") {
-        f.FeedEvents({
+        f.feed_events({
             test_event<1>{0},
         });
-        REQUIRE(f.Output() == OutVec{});
-        f.FeedEvents({
+        REQUIRE(f.output() == OutVec{});
+        f.feed_events({
             test_event<1>{10},
         });
-        REQUIRE(f.Output() == OutVec{});
-        f.FeedEvents({
+        REQUIRE(f.output() == OutVec{});
+        f.feed_events({
             test_event<1>{11},
         });
-        REQUIRE(f.Output() == OutVec{test_event<1>{0}});
-        f.FeedEnd({});
-        REQUIRE(f.Output() == OutVec{
+        REQUIRE(f.output() == OutVec{test_event<1>{0}});
+        f.feed_end({});
+        REQUIRE(f.output() == OutVec{
                                   test_event<1>{10},
                                   test_event<1>{11},
                               });
-        REQUIRE(f.DidEnd());
+        REQUIRE(f.did_end());
     }
 }
