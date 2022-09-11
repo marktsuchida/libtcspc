@@ -40,9 +40,9 @@ inline constexpr T saturating_add(T a, U b) noexcept {
 
 template <typename T, typename = std::enable_if_t<std::is_unsigned_v<T>>>
 class legacy_histogram {
-    std::uint32_t timeBits;
-    std::uint32_t inputTimeBits;
-    bool reverseTime;
+    std::uint32_t time_bits;
+    std::uint32_t input_time_bits;
+    bool reverse_time;
     std::size_t width;
     std::size_t height;
 
@@ -59,13 +59,13 @@ class legacy_histogram {
     legacy_histogram() = default;
 
     // Warning: Newly constructed histogram is not zeroed (for efficiency)
-    explicit legacy_histogram(std::uint32_t timeBits,
-                              std::uint32_t inputTimeBits, bool reverseTime,
+    explicit legacy_histogram(std::uint32_t time_bits,
+                              std::uint32_t input_time_bits, bool reverse_time,
                               std::size_t width, std::size_t height)
-        : timeBits(timeBits), inputTimeBits(inputTimeBits),
-          reverseTime(reverseTime), width(width), height(height),
+        : time_bits(time_bits), input_time_bits(input_time_bits),
+          reverse_time(reverse_time), width(width), height(height),
           hist(std::make_unique<T[]>(get_number_of_elements())) {
-        if (timeBits > inputTimeBits) {
+        if (time_bits > input_time_bits) {
             throw std::invalid_argument(
                 "Histogram time bits must not be greater than input bits");
         }
@@ -77,16 +77,16 @@ class legacy_histogram {
         std::fill_n(hist.get(), get_number_of_elements(), T(0));
     }
 
-    std::uint32_t get_time_bits() const noexcept { return timeBits; }
+    std::uint32_t get_time_bits() const noexcept { return time_bits; }
 
     std::uint32_t get_input_time_bits() const noexcept {
-        return inputTimeBits;
+        return input_time_bits;
     }
 
-    bool get_reverse_time() const noexcept { return reverseTime; }
+    bool get_reverse_time() const noexcept { return reverse_time; }
 
     std::uint32_t get_number_of_time_bins() const noexcept {
-        return 1 << timeBits;
+        return 1 << time_bits;
     }
 
     std::size_t get_width() const noexcept { return width; }
@@ -98,10 +98,10 @@ class legacy_histogram {
     }
 
     void increment(std::size_t t, std::size_t x, std::size_t y) noexcept {
-        auto tReduced = std::uint16_t(t >> (inputTimeBits - timeBits));
-        auto tReversed =
-            reverseTime ? (1 << timeBits) - 1 - tReduced : tReduced;
-        auto index = (y * width + x) * get_number_of_time_bins() + tReversed;
+        auto t_reduced = std::uint16_t(t >> (input_time_bits - time_bits));
+        auto t_reversed =
+            reverse_time ? (1 << time_bits) - 1 - t_reduced : t_reduced;
+        auto index = (y * width + x) * get_number_of_time_bins() + t_reversed;
         hist[index] = internal::saturating_add(hist[index], T(1));
     }
 
@@ -110,7 +110,7 @@ class legacy_histogram {
     T *get() noexcept { return hist.get(); }
 
     legacy_histogram &operator+=(legacy_histogram<T> const &rhs) noexcept {
-        assert(rhs.timeBits == timeBits && rhs.width == width &&
+        assert(rhs.time_bits == time_bits && rhs.width == width &&
                rhs.height == height);
 
         // Note: using std::execution::par_unseq for this transform did not
@@ -181,24 +181,24 @@ using cumulative_histogram_events =
 // Collect pixel-assiend photon events into a series of histograms
 template <typename T, typename D> class histogrammer {
     legacy_histogram<T> histogram;
-    bool frameInProgress;
+    bool frame_in_progress;
 
     D downstream;
 
   public:
     explicit histogrammer(legacy_histogram<T> &&histogram, D &&downstream)
-        : histogram(std::move(histogram)), frameInProgress(false),
+        : histogram(std::move(histogram)), frame_in_progress(false),
           downstream(std::move(downstream)) {}
 
     // Rule of zero
 
     void handle_event(begin_frame_event const &) noexcept {
         histogram.clear();
-        frameInProgress = true;
+        frame_in_progress = true;
     }
 
     void handle_event(end_frame_event const &) noexcept {
-        frameInProgress = false;
+        frame_in_progress = false;
         downstream.handle_event(frame_histogram_event<T>{histogram});
     }
 
@@ -207,7 +207,7 @@ template <typename T, typename D> class histogrammer {
     }
 
     void handle_end(std::exception_ptr error) noexcept {
-        if (frameInProgress) {
+        if (frame_in_progress) {
             downstream.handle_event(
                 incomplete_frame_histogram_event<T>{histogram});
         }
@@ -221,10 +221,10 @@ template <typename T, typename D> class histogrammer {
 template <typename T, typename D> class sequential_histogrammer {
     legacy_histogram<T> histogram;
 
-    std::size_t binsPerPixel;
-    legacy_histogram<T> pixelHist;
+    std::size_t bins_per_pixel;
+    legacy_histogram<T> pixel_hist;
 
-    std::size_t pixelNo; // Within frame
+    std::size_t pixel_no; // Within frame
 
     D downstream;
 
@@ -232,35 +232,35 @@ template <typename T, typename D> class sequential_histogrammer {
     explicit sequential_histogrammer(legacy_histogram<T> &&histogram,
                                      D &&downstream)
         : histogram(std::move(histogram)),
-          binsPerPixel(this->histogram.get_number_of_time_bins()),
-          pixelHist(this->histogram.get_time_bits(),
-                    this->histogram.get_input_time_bits(),
-                    this->histogram.get_reverse_time(), 1, 1),
-          pixelNo(this->histogram.get_width() * this->histogram.get_height()),
+          bins_per_pixel(this->histogram.get_number_of_time_bins()),
+          pixel_hist(this->histogram.get_time_bits(),
+                     this->histogram.get_input_time_bits(),
+                     this->histogram.get_reverse_time(), 1, 1),
+          pixel_no(this->histogram.get_width() * this->histogram.get_height()),
           downstream(std::move(downstream)) {}
 
     void handle_event(begin_frame_event const &) noexcept {
-        pixelNo = 0;
-        pixelHist.clear();
+        pixel_no = 0;
+        pixel_hist.clear();
     }
 
     void handle_event(end_frame_event const &) noexcept {
-        SkipToPixelNo(histogram.get_width() * histogram.get_height());
+        skip_to_pixel_no(histogram.get_width() * histogram.get_height());
         downstream.handle_event(frame_histogram_event<T>{histogram});
     }
 
     void handle_event(pixel_photon_event const &event) noexcept {
-        SkipToPixelNo(event.x + histogram.get_width() * event.y);
-        pixelHist.increment(event.difftime, 0, 0);
+        skip_to_pixel_no(event.x + histogram.get_width() * event.y);
+        pixel_hist.increment(event.difftime, 0, 0);
     }
 
     void handle_end(std::exception_ptr error) noexcept {
-        std::size_t const nPixels =
+        std::size_t const n_pixels =
             histogram.get_width() * histogram.get_height();
-        if (pixelNo < nPixels) {
+        if (pixel_no < n_pixels) {
             // Clear unfilled portion of incomplete frame
-            std::fill_n(&histogram.get()[pixelNo * binsPerPixel],
-                        (nPixels - pixelNo) * binsPerPixel, T(0));
+            std::fill_n(&histogram.get()[pixel_no * bins_per_pixel],
+                        (n_pixels - pixel_no) * bins_per_pixel, T(0));
 
             downstream.handle_event(
                 incomplete_frame_histogram_event<T>{histogram});
@@ -269,20 +269,20 @@ template <typename T, typename D> class sequential_histogrammer {
     }
 
   private:
-    void SkipToPixelNo(std::size_t newPixelNo) noexcept {
-        assert(pixelNo <= newPixelNo);
-        if (pixelNo < newPixelNo) {
-            std::copy_n(pixelHist.get(), binsPerPixel,
-                        &histogram.get()[pixelNo * binsPerPixel]);
-            ++pixelNo;
-            pixelHist.clear();
+    void skip_to_pixel_no(std::size_t new_pixel_no) noexcept {
+        assert(pixel_no <= new_pixel_no);
+        if (pixel_no < new_pixel_no) {
+            std::copy_n(pixel_hist.get(), bins_per_pixel,
+                        &histogram.get()[pixel_no * bins_per_pixel]);
+            ++pixel_no;
+            pixel_hist.clear();
         }
 
-        std::size_t const nSkippedPixels = newPixelNo - pixelNo;
-        std::fill_n(&histogram.get()[pixelNo * binsPerPixel],
-                    binsPerPixel * nSkippedPixels, T(0));
-        pixelNo += nSkippedPixels;
-        assert(pixelNo == newPixelNo);
+        std::size_t const n_skipped_pixels = new_pixel_no - pixel_no;
+        std::fill_n(&histogram.get()[pixel_no * bins_per_pixel],
+                    bins_per_pixel * n_skipped_pixels, T(0));
+        pixel_no += n_skipped_pixels;
+        assert(pixel_no == new_pixel_no);
     }
 };
 

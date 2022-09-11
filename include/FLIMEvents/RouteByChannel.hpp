@@ -38,13 +38,13 @@ template <typename ERouted, typename... Ds> class route_by_channel {
     std::tuple<Ds...> downstreams;
 
     template <std::size_t I = 0>
-    void HandlePhoton(std::size_t index, ERouted const &event) noexcept {
+    void handle_photon(std::size_t index, ERouted const &event) noexcept {
         if (index == I) {
             std::get<I>(downstreams).handle_event(event);
             return;
         }
         if constexpr (I + 1 < std::tuple_size_v<decltype(downstreams)>)
-            HandlePhoton<I + 1>(index, event);
+            handle_photon<I + 1>(index, event);
     }
 
   public:
@@ -73,7 +73,7 @@ template <typename ERouted, typename... Ds> class route_by_channel {
         auto chan = event.channel;
         auto it = std::find(channels.cbegin(), channels.cend(), chan);
         if (it != channels.cend())
-            HandlePhoton(std::distance(channels.cbegin(), it), event);
+            handle_photon(std::distance(channels.cbegin(), it), event);
     }
 
     /** \brief Processor interface */

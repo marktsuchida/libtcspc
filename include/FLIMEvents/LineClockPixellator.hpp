@@ -21,170 +21,172 @@ namespace flimevt {
 
 // Assign pixels to photons using line clock only
 template <typename D> class line_clock_pixellator {
-    std::uint32_t const pixelsPerLine;
-    std::uint32_t const linesPerFrame;
-    std::uint32_t const maxFrames;
+    std::uint32_t const pixels_per_line;
+    std::uint32_t const lines_per_frame;
+    std::uint32_t const max_frames;
 
-    std::int32_t const lineDelay; // in macrotime units
-    std::uint32_t const lineTime; // in macrotime units
-    std::int32_t const lineMarkerChannel;
+    std::int32_t const line_delay; // in macrotime units
+    std::uint32_t const line_time; // in macrotime units
+    std::int32_t const line_marker_channel;
 
-    macrotime latestTimestamp; // Latest observed macrotime
+    macrotime latest_timestamp; // Latest observed macrotime
 
     // Cumulative line numbers (no reset on new frame)
-    std::uint64_t nextLine;    // Incremented on line startTime
-    std::uint64_t currentLine; // Incremented on line finish
-    // "Line startTime" is reception of line marker, at which point the line
-    // startTime and finish macrotimes are determined. "Line finish" is when
+    std::uint64_t next_line;    // Incremented on line start_time
+    std::uint64_t current_line; // Incremented on line finish
+    // "Line start_time" is reception of line marker, at which point the line
+    // start_time and finish macrotimes are determined. "Line finish" is when
     // we determine that all photons for the line have been emitted downstream.
-    // If nextLine > currentLine, we are in currentLine.
-    // If nextLine == currentLine, we are between (nextLine - 1) and nextLine.
+    // If next_line > current_line, we are in current_line.
+    // If next_line == current_line, we are between (next_line - 1) and
+    // next_line.
 
     // Start time of current line, or -1 if no line started.
-    macrotime lineStartTime;
+    macrotime line_start_time;
 
     // Buffer received photons until we can assign to pixel
-    std::deque<time_correlated_count_event> pendingPhotons;
+    std::deque<time_correlated_count_event> pending_photons;
 
     // Buffer line marks until we are ready to process
-    std::deque<macrotime> pendingLines; // marker macrotimes
+    std::deque<macrotime> pending_lines; // marker macrotimes
 
     D downstream;
-    bool streamEnded = false;
+    bool stream_ended = false;
 
   private:
-    void UpdateTimeRange(macrotime macrotime) noexcept {
-        latestTimestamp = macrotime;
+    void update_time_range(macrotime macrotime) noexcept {
+        latest_timestamp = macrotime;
     }
 
-    void EnqueuePhoton(time_correlated_count_event const &event) {
-        if (streamEnded) {
+    void enqueue_photon(time_correlated_count_event const &event) {
+        if (stream_ended) {
             return; // Avoid buffering post-error
         }
-        pendingPhotons.emplace_back(event);
+        pending_photons.emplace_back(event);
     }
 
-    void EnqueueLineMarker(macrotime macrotime) {
-        if (streamEnded) {
+    void enqueue_line_marker(macrotime macrotime) {
+        if (stream_ended) {
             return; // Avoid buffering post-error
         }
-        pendingLines.emplace_back(macrotime);
+        pending_lines.emplace_back(macrotime);
     }
 
-    macrotime CheckLineStart(macrotime lineMarkerTime) {
-        macrotime startTime;
-        if (lineDelay >= 0) {
-            startTime = lineMarkerTime + lineDelay;
+    macrotime check_line_start(macrotime line_marker_time) {
+        macrotime start_time;
+        if (line_delay >= 0) {
+            start_time = line_marker_time + line_delay;
         } else {
-            macrotime minusDelay = -lineDelay;
-            if (lineMarkerTime < minusDelay) {
+            macrotime minus_delay = -line_delay;
+            if (line_marker_time < minus_delay) {
                 throw std::runtime_error("Pixel at negative time");
             }
-            startTime = lineMarkerTime - minusDelay;
+            start_time = line_marker_time - minus_delay;
         }
-        if (startTime < lineStartTime + lineTime &&
-            lineStartTime !=
-                std::numeric_limits<decltype(lineStartTime)>::max()) {
+        if (start_time < line_start_time + line_time &&
+            line_start_time !=
+                std::numeric_limits<decltype(line_start_time)>::max()) {
             throw std::runtime_error("Pixels overlapping in time");
         }
-        return startTime;
+        return start_time;
     }
 
-    void StartLine(macrotime lineMarkerTime) {
-        lineStartTime = CheckLineStart(lineMarkerTime);
-        ++nextLine;
+    void start_line(macrotime line_marker_time) {
+        line_start_time = check_line_start(line_marker_time);
+        ++next_line;
 
-        bool newFrame = currentLine % linesPerFrame == 0;
-        if (newFrame) {
-            // Check for last frame here in case maxFrames == 0.
-            if (currentLine / linesPerFrame == maxFrames) {
-                if (!streamEnded) {
+        bool new_frame = current_line % lines_per_frame == 0;
+        if (new_frame) {
+            // Check for last frame here in case max_frames == 0.
+            if (current_line / lines_per_frame == max_frames) {
+                if (!stream_ended) {
                     downstream.handle_end({});
-                    streamEnded = true;
+                    stream_ended = true;
                 }
             }
 
-            if (!streamEnded) {
+            if (!stream_ended) {
                 downstream.handle_event(begin_frame_event());
             }
         }
     }
 
-    void FinishLine() {
-        ++currentLine;
+    void finish_line() {
+        ++current_line;
 
-        bool endFrame = currentLine % linesPerFrame == 0;
-        if (endFrame) {
-            if (!streamEnded) {
+        bool end_frame = current_line % lines_per_frame == 0;
+        if (end_frame) {
+            if (!stream_ended) {
                 downstream.handle_event(end_frame_event());
             }
 
             // Check for last frame here to send finish as soon as possible.
-            // (The case of maxFrames == 0 is not handled here.)
-            if (currentLine / linesPerFrame == maxFrames) {
-                if (!streamEnded) {
+            // (The case of max_frames == 0 is not handled here.)
+            if (current_line / lines_per_frame == max_frames) {
+                if (!stream_ended) {
                     downstream.handle_end({});
-                    streamEnded = true;
+                    stream_ended = true;
                 }
             }
         }
     }
 
-    void EmitPhoton(time_correlated_count_event const &event) {
-        pixel_photon_event newEvent;
-        newEvent.frame =
-            static_cast<std::uint32_t>(currentLine / linesPerFrame);
-        newEvent.y = static_cast<std::uint32_t>(currentLine % linesPerFrame);
-        auto timeInLine = event.macrotime - lineStartTime;
-        newEvent.x =
-            static_cast<std::uint32_t>(pixelsPerLine * timeInLine / lineTime);
-        newEvent.channel = event.channel;
-        newEvent.difftime = event.difftime;
-        if (!streamEnded) {
-            downstream.handle_event(newEvent);
+    void emit_photon(time_correlated_count_event const &event) {
+        pixel_photon_event new_event;
+        new_event.frame =
+            static_cast<std::uint32_t>(current_line / lines_per_frame);
+        new_event.y =
+            static_cast<std::uint32_t>(current_line % lines_per_frame);
+        auto time_in_line = event.macrotime - line_start_time;
+        new_event.x = static_cast<std::uint32_t>(pixels_per_line *
+                                                 time_in_line / line_time);
+        new_event.channel = event.channel;
+        new_event.difftime = event.difftime;
+        if (!stream_ended) {
+            downstream.handle_event(new_event);
         }
     }
 
     // If in line, process photons in current line.
-    // If between lines, startTime line if possible and do same.
+    // If between lines, start_time line if possible and do same.
     // Finish line if possible.
     // Return false if nothing more to process.
-    bool ProcessLinePhotons() {
-        if (nextLine == currentLine) { // Between lines
-            if (pendingLines.empty()) {
+    bool process_line_photons() {
+        if (next_line == current_line) { // Between lines
+            if (pending_lines.empty()) {
                 // Nothing to do until a new line can be started
                 return false;
             }
-            macrotime lineMarkerTime = pendingLines.front();
-            pendingLines.pop_front();
+            macrotime line_marker_time = pending_lines.front();
+            pending_lines.pop_front();
 
-            StartLine(lineMarkerTime);
+            start_line(line_marker_time);
         }
         // Else we are already in a line
 
         // Discard all photons before current line
-        while (!pendingPhotons.empty()) {
-            auto const &photon = pendingPhotons.front();
-            if (photon.macrotime >= lineStartTime) {
+        while (!pending_photons.empty()) {
+            auto const &photon = pending_photons.front();
+            if (photon.macrotime >= line_start_time) {
                 break;
             }
-            pendingPhotons.pop_front();
+            pending_photons.pop_front();
         }
 
         // Emit all buffered photons for current line
-        auto lineEndTime = lineStartTime + lineTime;
-        while (!pendingPhotons.empty()) {
-            auto const &photon = pendingPhotons.front();
-            if (photon.macrotime >= lineEndTime) {
+        auto line_end_time = line_start_time + line_time;
+        while (!pending_photons.empty()) {
+            auto const &photon = pending_photons.front();
+            if (photon.macrotime >= line_end_time) {
                 break;
             }
-            EmitPhoton(photon);
-            pendingPhotons.pop_front();
+            emit_photon(photon);
+            pending_photons.pop_front();
         }
 
         // Finish line if we have seen all photons within it
-        if (latestTimestamp >= lineEndTime) {
-            FinishLine();
+        if (latest_timestamp >= line_end_time) {
+            finish_line();
             return true; // There may be more lines to process
         } else {
             return false; // Still in line but no more photons
@@ -194,46 +196,49 @@ template <typename D> class line_clock_pixellator {
     // When this function returns, all photons that can be emitted have been
     // emitted and all frames (and, internally, lines) for which we have seen
     // all photons have been finished.
-    void ProcessPhotonsAndLines() noexcept {
-        if (streamEnded)
+    void process_photons_and_lines() noexcept {
+        if (stream_ended)
             return;
 
         try {
-            while (ProcessLinePhotons())
+            while (process_line_photons())
                 ;
         } catch (std::exception const &) {
-            if (!streamEnded) {
+            if (!stream_ended) {
                 downstream.handle_end(std::current_exception());
-                streamEnded = true;
+                stream_ended = true;
             }
         }
     }
 
   public:
-    explicit line_clock_pixellator(
-        std::uint32_t pixelsPerLine, std::uint32_t linesPerFrame,
-        std::uint32_t maxFrames, std::int32_t lineDelay,
-        std::uint32_t lineTime, std::int32_t lineMarkerChannel, D &&downstream)
-        : pixelsPerLine(pixelsPerLine), linesPerFrame(linesPerFrame),
-          maxFrames(maxFrames), lineDelay(lineDelay), lineTime(lineTime),
-          lineMarkerChannel(lineMarkerChannel), latestTimestamp(0),
-          nextLine(0), currentLine(0), lineStartTime(-1),
+    explicit line_clock_pixellator(std::uint32_t pixels_per_line,
+                                   std::uint32_t lines_per_frame,
+                                   std::uint32_t max_frames,
+                                   std::int32_t line_delay,
+                                   std::uint32_t line_time,
+                                   std::int32_t line_marker_channel,
+                                   D &&downstream)
+        : pixels_per_line(pixels_per_line), lines_per_frame(lines_per_frame),
+          max_frames(max_frames), line_delay(line_delay), line_time(line_time),
+          line_marker_channel(line_marker_channel), latest_timestamp(0),
+          next_line(0), current_line(0), line_start_time(-1),
           downstream(std::move(downstream)) {
-        if (pixelsPerLine < 1) {
-            throw std::invalid_argument("pixelsPerLine must be positive");
+        if (pixels_per_line < 1) {
+            throw std::invalid_argument("pixels_per_line must be positive");
         }
-        if (linesPerFrame < 1) {
-            throw std::invalid_argument("linesPerFrame must be positive");
+        if (lines_per_frame < 1) {
+            throw std::invalid_argument("lines_per_frame must be positive");
         }
-        if (lineTime < 1) {
-            throw std::invalid_argument("lineTime must be positive");
+        if (line_time < 1) {
+            throw std::invalid_argument("line_time must be positive");
         }
     }
 
     void handle_event(time_reached_event const &event) noexcept {
-        auto prevTimestamp = latestTimestamp;
-        UpdateTimeRange(event.macrotime);
-        // We could call ProcessPhotonsAndLines() to emit all lines that are
+        auto prev_timestamp = latest_timestamp;
+        update_time_range(event.macrotime);
+        // We could call process_photons_and_lines() to emit all lines that are
         // complete, but deferring can significantly improve performance when a
         // timestamp is sent for every macrotime overflow.
 
@@ -241,62 +246,62 @@ template <typename D> class line_clock_pixellator {
         // only, because currently we don't receive a "finish" event from
         // OpenScanLib when doing a finite-frame acquisition.
         // To avoid inefficiency, limit the rate (arbitrary for now).
-        if (latestTimestamp > prevTimestamp + 800000) {
-            ProcessPhotonsAndLines();
+        if (latest_timestamp > prev_timestamp + 800000) {
+            process_photons_and_lines();
         }
     }
 
     void handle_event(data_lost_event const &event) noexcept {
-        UpdateTimeRange(event.macrotime);
-        ProcessPhotonsAndLines();
-        if (!streamEnded) {
+        update_time_range(event.macrotime);
+        process_photons_and_lines();
+        if (!stream_ended) {
             downstream.handle_end(std::make_exception_ptr(std::runtime_error(
                 "Data lost due to device buffer (FIFO) overflow")));
-            streamEnded = true;
+            stream_ended = true;
         }
     }
 
     void handle_event(time_correlated_count_event const &event) noexcept {
-        UpdateTimeRange(event.macrotime);
+        update_time_range(event.macrotime);
         try {
-            EnqueuePhoton(event);
+            enqueue_photon(event);
         } catch (std::exception const &) {
             downstream.handle_end(std::current_exception());
-            streamEnded = true;
+            stream_ended = true;
         }
         // A small amount of buffering can improve performance (buffering
         // larger numbers is less effective)
-        if (pendingPhotons.size() > 64) {
-            ProcessPhotonsAndLines();
+        if (pending_photons.size() > 64) {
+            process_photons_and_lines();
         }
     }
 
     void handle_event(marker_event const &event) noexcept {
-        UpdateTimeRange(event.macrotime);
-        if (event.channel == lineMarkerChannel) {
+        update_time_range(event.macrotime);
+        if (event.channel == line_marker_channel) {
             try {
-                EnqueueLineMarker(event.macrotime);
+                enqueue_line_marker(event.macrotime);
             } catch (std::exception const &) {
                 downstream.handle_end(std::current_exception());
-                streamEnded = true;
+                stream_ended = true;
             }
-            // We could call ProcessPhotonsAndLines() for all markers, but that
-            // may degrade performance if a non-line marker (e.g. an unused
-            // pixel marker) is frequent.
-            ProcessPhotonsAndLines();
+            // We could call process_photons_and_lines() for all markers, but
+            // that may degrade performance if a non-line marker (e.g. an
+            // unused pixel marker) is frequent.
+            process_photons_and_lines();
         }
     }
 
     void handle_end(std::exception_ptr error) noexcept {
-        ProcessPhotonsAndLines(); // Emit any buffered data
-        if (!streamEnded) {
+        process_photons_and_lines(); // Emit any buffered data
+        if (!stream_ended) {
             downstream.handle_end(error);
-            streamEnded = true;
+            stream_ended = true;
         }
     }
 
     // Emit all buffered data (for testing)
-    void flush() { ProcessPhotonsAndLines(); }
+    void flush() { process_photons_and_lines(); }
 };
 
 } // namespace flimevt

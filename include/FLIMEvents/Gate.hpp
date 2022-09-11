@@ -39,12 +39,12 @@ class gate_events {
     /**
      * \brief Construct with initial state and downstream processor.
      *
-     * \param initiallyOpen whether the gate is open before the first \c EOpen
+     * \param initially_open whether the gate is open before the first \c EOpen
      * or \c EClose event is received
      * \param downstream downstream processor (moved out)
      */
-    explicit gate_events(bool initiallyOpen, D &&downstream)
-        : open(initiallyOpen), downstream(std::move(downstream)) {}
+    explicit gate_events(bool initially_open, D &&downstream)
+        : open(initially_open), downstream(std::move(downstream)) {}
 
     /**
      * \brief Construct initially closed with downstream processor.

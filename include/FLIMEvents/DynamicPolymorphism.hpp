@@ -35,10 +35,10 @@ class virtual_processor<Event0> : public virtual_processor<> {
 template <typename Event0, typename Event1, typename... Events>
 class virtual_processor<Event0, Event1, Events...>
     : public virtual_processor<Event1, Events...> {
-    using BaseType = virtual_processor<Event1, Events...>;
+    using base_type = virtual_processor<Event1, Events...>;
 
   public:
-    using BaseType::handle_event; // Import overload set
+    using base_type::handle_event; // Import overload set
     virtual void handle_event(Event0 const &) noexcept = 0;
 };
 
@@ -69,14 +69,14 @@ template <typename Interface, typename Proc, typename Event0,
           typename... Events>
 class virtual_wrapped_processor_impl<Interface, Proc, Event0, Events...>
     : public virtual_wrapped_processor_impl<Interface, Proc, Events...> {
-    using BaseType =
+    using base_type =
         virtual_wrapped_processor_impl<Interface, Proc, Events...>;
 
   protected:
-    using BaseType::proc;
+    using base_type::proc;
 
   public:
-    using BaseType::handle_event; // Import overload set
+    using base_type::handle_event; // Import overload set
     void handle_event(Event0 const &event) noexcept final {
         proc.handle_event(event);
     }

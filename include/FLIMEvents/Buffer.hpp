@@ -37,11 +37,11 @@ template <typename T> class object_pool {
     /**
      * \brief Construct with initial count.
      *
-     * \param initialCount number of \c T instances to pre-allocate
+     * \param initial_count number of \c T instances to pre-allocate
      */
-    explicit object_pool(std::size_t initialCount = 0) {
-        buffers.reserve(initialCount);
-        std::generate_n(std::back_inserter(buffers), initialCount,
+    explicit object_pool(std::size_t initial_count = 0) {
+        buffers.reserve(initial_count);
+        std::generate_n(std::back_inserter(buffers), initial_count,
                         [] { return std::make_unique<T>(); });
     }
 
@@ -106,8 +106,8 @@ template <typename P, typename D> class dereference_pointer {
         : downstream(std::move(downstream)) {}
 
     /** \brief Processor interface */
-    void handle_event(P const &eventPtr) noexcept {
-        downstream.handle_event(*eventPtr);
+    void handle_event(P const &event_ptr) noexcept {
+        downstream.handle_event(*event_ptr);
     }
 
     /** \brief Processor interface */
@@ -160,10 +160,10 @@ template <typename V, typename E, typename D> class unbatch {
  */
 template <typename E, typename D> class buffer_event {
     std::mutex mutex;
-    std::condition_variable hasItemCondition; // item = event or end
+    std::condition_variable has_item_condition; // item = event or end
 
     std::queue<E> shared_queue;
-    bool streamEnded = false;
+    bool stream_ended = false;
     std::exception_ptr queued_error;
 
     // To reduce lock contention on the shared_queue, we use a second queue
@@ -199,30 +199,30 @@ template <typename E, typename D> class buffer_event {
     void handle_event(E const &event) noexcept {
         {
             std::scoped_lock lock(mutex);
-            if (streamEnded)
+            if (stream_ended)
                 return;
 
             try {
                 shared_queue.push(event);
             } catch (std::exception const &) {
-                streamEnded = true;
+                stream_ended = true;
                 queued_error = std::current_exception();
             }
         }
-        hasItemCondition.notify_one();
+        has_item_condition.notify_one();
     }
 
     /** \brief Processor interface */
     void handle_end(std::exception_ptr error) noexcept {
         {
             std::scoped_lock lock(mutex);
-            if (streamEnded)
+            if (stream_ended)
                 return;
 
-            streamEnded = true;
+            stream_ended = true;
             queued_error = error;
         }
-        hasItemCondition.notify_one();
+        has_item_condition.notify_one();
     }
 
     /**
@@ -235,8 +235,8 @@ template <typename E, typename D> class buffer_event {
         std::unique_lock lock(mutex);
 
         for (;;) {
-            hasItemCondition.wait(
-                lock, [&] { return !shared_queue.empty() || streamEnded; });
+            has_item_condition.wait(
+                lock, [&] { return !shared_queue.empty() || stream_ended; });
 
             if (shared_queue.empty()) { // Implying stream ended
                 std::exception_ptr error;

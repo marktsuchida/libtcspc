@@ -199,40 +199,40 @@ namespace internal {
 // decode_pq_hydra_v2_t3.
 // E is the binary record event class.
 template <typename E, typename D> class base_decode_pq_t3 {
-    macrotime nSyncBase;
-    macrotime lastNSync;
+    macrotime nsync_base;
+    macrotime last_nsync;
 
     D downstream;
 
   public:
     explicit base_decode_pq_t3(D &&downstream)
-        : nSyncBase(0), lastNSync(0), downstream(std::move(downstream)) {}
+        : nsync_base(0), last_nsync(0), downstream(std::move(downstream)) {}
 
     void handle_event(E const &event) noexcept {
         if (event.is_nsync_overflow()) {
-            nSyncBase +=
+            nsync_base +=
                 E::nsync_overflow_period * event.get_nsync_overflow_count();
 
             time_reached_event e;
-            e.macrotime = nSyncBase;
+            e.macrotime = nsync_base;
             downstream.handle_event(e);
             return;
         }
 
-        macrotime nSync = nSyncBase + event.get_nsync();
+        macrotime nsync = nsync_base + event.get_nsync();
 
-        // Validate input: ensure nSync increases monotonically (a common
+        // Validate input: ensure nsync increases monotonically (a common
         // assumption made by downstream processors)
-        if (nSync <= lastNSync) {
+        if (nsync <= last_nsync) {
             downstream.HandleError(std::make_exception_ptr(
                 std::runtime_error("Non-monotonic nsync encountered")));
             return;
         }
-        lastNSync = nSync;
+        last_nsync = nsync;
 
         if (event.is_external_marker()) {
             marker_event e;
-            e.macrotime = nSync;
+            e.macrotime = nsync;
             std::uint32_t bits = event.get_external_marker_bits();
             while (bits) {
                 e.channel = internal::count_trailing_zeros_32(bits);
@@ -243,7 +243,7 @@ template <typename E, typename D> class base_decode_pq_t3 {
         }
 
         time_correlated_count_event e;
-        e.macrotime = nSync;
+        e.macrotime = nsync;
         e.difftime = event.get_dtime();
         e.channel = event.get_channel();
         downstream.handle_event(e);

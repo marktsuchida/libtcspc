@@ -292,43 +292,43 @@ namespace internal {
 // Common implementation for decode_bh_spc, decode_bh_spc_600_48,
 // decode_bh_spc_600_32. E is the binary record event class.
 template <typename E, typename D> class base_decode_bh_spc {
-    macrotime macrotimeBase; // Time of last overflow
-    macrotime lastMacrotime;
+    macrotime macrotime_base; // Time of last overflow
+    macrotime last_macrotime;
 
     D downstream;
 
   public:
     explicit base_decode_bh_spc(D &&downstream)
-        : macrotimeBase(0), lastMacrotime(0),
+        : macrotime_base(0), last_macrotime(0),
           downstream(std::move(downstream)) {}
 
     // Rule of zero
 
     void handle_event(E const &event) noexcept {
         if (event.is_multiple_macrotime_overflow()) {
-            macrotimeBase += E::macrotime_overflow_period *
-                             event.get_multiple_macrotime_overflow_count();
+            macrotime_base += E::macrotime_overflow_period *
+                              event.get_multiple_macrotime_overflow_count();
 
             time_reached_event e;
-            e.macrotime = macrotimeBase;
+            e.macrotime = macrotime_base;
             downstream.handle_event(e);
             return;
         }
 
         if (event.get_macrotime_overflow_flag()) {
-            macrotimeBase += E::macrotime_overflow_period;
+            macrotime_base += E::macrotime_overflow_period;
         }
 
-        macrotime macrotime = macrotimeBase + event.get_macrotime();
+        macrotime macrotime = macrotime_base + event.get_macrotime();
 
         // Validate input: ensure macrotime increases monotonically (a common
         // assumption made by downstream processors)
-        if (macrotime <= lastMacrotime) {
+        if (macrotime <= last_macrotime) {
             downstream.handle_end(std::make_exception_ptr(
                 std::runtime_error("Non-monotonic macrotime encountered")));
             return;
         }
-        lastMacrotime = macrotime;
+        last_macrotime = macrotime;
 
         if (event.get_gap_flag()) {
             data_lost_event e;

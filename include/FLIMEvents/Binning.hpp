@@ -126,7 +126,7 @@ class difftime_data_mapper {
  * \tparam D downstream processor type
  */
 template <typename M, typename D> class map_to_bins {
-    M const binMapper;
+    M const bin_mapper;
     D downstream;
 
     static_assert(
@@ -147,15 +147,16 @@ template <typename M, typename D> class map_to_bins {
     /**
      * \brief Construct with bin mapper and downstream processor.
      *
-     * \param binMapper the bin mapper (moved out)
+     * \param bin_mapper the bin mapper (moved out)
      * \param downstream downstream processor (moved out)
      */
-    explicit map_to_bins(M &&binMapper, D &&downstream)
-        : binMapper(std::move(binMapper)), downstream(std::move(downstream)) {}
+    explicit map_to_bins(M &&bin_mapper, D &&downstream)
+        : bin_mapper(std::move(bin_mapper)),
+          downstream(std::move(downstream)) {}
 
     /** \brief Processor interface **/
     void handle_event(datapoint_event<data_type> const &event) noexcept {
-        auto bin = std::invoke(binMapper, event.value);
+        auto bin = std::invoke(bin_mapper, event.value);
         if (bin) {
             bin_increment_event<bin_index_type> e{event.macrotime,
                                                   bin.value()};
@@ -228,11 +229,11 @@ class power_of_2_bin_mapper {
             else
                 return d >> shift;
         }();
-        constexpr data_type maxBinIndex = (1 << NHistoBits) - 1;
-        if (bin > maxBinIndex)
+        constexpr data_type max_bin_index = (1 << NHistoBits) - 1;
+        if (bin > max_bin_index)
             return std::nullopt;
         if constexpr (Flip)
-            bin = maxBinIndex - bin;
+            bin = max_bin_index - bin;
         return bin_index_type(bin);
     }
 };
@@ -247,8 +248,8 @@ class power_of_2_bin_mapper {
  */
 template <typename TData, typename TBinIndex> class linear_bin_mapper {
     TData const offset;
-    TData const binWidth;
-    TBinIndex const maxBinIndex;
+    TData const bin_width;
+    TBinIndex const max_bin_index;
     bool const clamp;
 
     static_assert(std::is_integral_v<TData>, "TData must be an integer type");
@@ -264,40 +265,41 @@ template <typename TData, typename TBinIndex> class linear_bin_mapper {
     /**
      * \brief Construct with parameters.
      *
-     * <tt>(binCount - 1)</tt> must be in the range of \c bin_index_type.
+     * \c max_bin_index must be in the range of \c bin_index_type.
      *
-     * A negative \c binWidth value (together with a positive \c offset value)
+     * A negative \c bin_width value (together with a positive \c offset value)
      * can be used to flip the histogram, provided that \c data_type is a
      * signed type with sufficient range.
      *
      * \param offset minimum value mapped to the first bin
-     * \param binWidth width of each bin (in datapoint units); must not be 0
-     * \param maxBinIndex number of bins minus one (must not be negative)
+     * \param bin_width width of each bin (in datapoint units); must not be 0
+     * \param max_bin_index number of bins minus one (must not be negative)
      * \param clamp if true, include datapoints outside of the mapped range in
      * the first and last bins
      */
-    explicit linear_bin_mapper(data_type offset, data_type binWidth,
-                               bin_index_type maxBinIndex, bool clamp = false)
-        : offset(offset), binWidth(binWidth), maxBinIndex(maxBinIndex),
+    explicit linear_bin_mapper(data_type offset, data_type bin_width,
+                               bin_index_type max_bin_index,
+                               bool clamp = false)
+        : offset(offset), bin_width(bin_width), max_bin_index(max_bin_index),
           clamp(clamp) {
-        assert(binWidth != 0);
+        assert(bin_width != 0);
     }
 
     /** \brief Bin mapper interface */
     std::size_t get_n_bins() const noexcept {
-        return std::size_t(maxBinIndex) + 1;
+        return std::size_t(max_bin_index) + 1;
     }
 
     /** \brief Bin mapper interface */
     std::optional<bin_index_type> operator()(data_type d) const noexcept {
         d -= offset;
         // Check sign before dividing to avoid rounding to zero in division.
-        if ((d < 0 && binWidth > 0) || (d > 0 && binWidth < 0))
+        if ((d < 0 && bin_width > 0) || (d > 0 && bin_width < 0))
             return clamp ? std::make_optional(bin_index_type{0})
                          : std::nullopt;
-        d /= binWidth;
-        if (std::uint64_t(d) > maxBinIndex)
-            return clamp ? std::make_optional(maxBinIndex) : std::nullopt;
+        d /= bin_width;
+        if (std::uint64_t(d) > max_bin_index)
+            return clamp ? std::make_optional(max_bin_index) : std::nullopt;
         return d;
     }
 };
@@ -312,7 +314,7 @@ template <typename TData, typename TBinIndex> class linear_bin_mapper {
  */
 template <typename TBinIndex, typename EStart, typename EStop, typename D>
 class batch_bin_increments {
-    bool inBatch = false;
+    bool in_batch = false;
     bin_increment_batch_event<TBinIndex> batch;
 
     D downstream;
@@ -327,23 +329,23 @@ class batch_bin_increments {
 
     /** \brief Processor interface **/
     void handle_event(bin_increment_event<TBinIndex> const &event) noexcept {
-        if (inBatch)
+        if (in_batch)
             batch.binIndices.push_back(event.binIndex);
     }
 
     /** \brief Processor interface **/
     void handle_event(EStart const &event) noexcept {
         batch.binIndices.clear();
-        inBatch = true;
+        in_batch = true;
         batch.start = event.macrotime;
     }
 
     /** \brief Processor interface **/
     void handle_event(EStop const &event) noexcept {
-        if (inBatch) {
+        if (in_batch) {
             batch.stop = event.macrotime;
             downstream.handle_event(batch);
-            inBatch = false;
+            in_batch = false;
         }
     }
 

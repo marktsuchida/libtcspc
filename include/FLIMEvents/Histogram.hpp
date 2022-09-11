@@ -91,31 +91,31 @@ class histogram {
     bool finished = false; // No longer processing; downstream ended
     histogram_event<TBin> hist;
 
-    TBin const maxPerBin;
+    TBin const max_per_bin;
 
     D downstream;
 
-    void EmitAccumulated(bool hadData, bool endOfStream) noexcept {
+    void emit_accumulated(bool had_data, bool end_of_stream) noexcept {
         accumulated_histogram_event<TBin> e;
-        e.start = hadData ? hist.start : 0;
-        e.stop = hadData ? hist.stop : 0;
+        e.start = had_data ? hist.start : 0;
+        e.stop = had_data ? hist.stop : 0;
         e.histogram.swap(hist.histogram);
         e.total = hist.total;
         e.saturated = hist.saturated;
-        e.has_data = hadData;
-        e.is_end_of_stream = endOfStream;
+        e.has_data = had_data;
+        e.is_end_of_stream = end_of_stream;
         downstream.handle_event(e);
         hist.histogram.swap(e.histogram);
     }
 
-    void Reset() noexcept {
+    void reset() noexcept {
         started = false;
         std::fill(hist.histogram.begin(), hist.histogram.end(), TBin{0});
         hist.total = 0;
         hist.saturated = 0;
     }
 
-    void Finish(std::exception_ptr error) noexcept {
+    void finish(std::exception_ptr error) noexcept {
         finished = true;
         downstream.handle_end(error);
         hist.histogram.clear();
@@ -127,14 +127,14 @@ class histogram {
      * \brief Construct with number of bins, maximum count, and downstream
      * processor.
      *
-     * \param numBins number of bins in the histogram (must match the bin
+     * \param num_bins number of bins in the histogram (must match the bin
      * mapper used upstream)
-     * \param maxPerBin maximum value allowed in each bin
+     * \param max_per_bin maximum value allowed in each bin
      * \param downstream downstream processor (moved out)
      */
-    explicit histogram(std::size_t numBins, TBin maxPerBin, D &&downstream)
-        : maxPerBin(maxPerBin), downstream(std::move(downstream)) {
-        hist.histogram.resize(numBins);
+    explicit histogram(std::size_t num_bins, TBin max_per_bin, D &&downstream)
+        : max_per_bin(max_per_bin), downstream(std::move(downstream)) {
+        hist.histogram.resize(num_bins);
     }
 
     /**
@@ -143,26 +143,26 @@ class histogram {
      * The maximum value allowed in each bin is set to the maximum supported by
      * \c TBin.
      *
-     * \param numBins number of bins in the histogram (must match the bin
+     * \param num_bins number of bins in the histogram (must match the bin
      * mapper used upstream)
      * \param downstream downstream processor (moved out)
      */
-    explicit histogram(std::size_t numBins, D &&downstream)
-        : histogram(numBins, std::numeric_limits<TBin>::max(),
+    explicit histogram(std::size_t num_bins, D &&downstream)
+        : histogram(num_bins, std::numeric_limits<TBin>::max(),
                     std::move(downstream)) {}
 
     /** \brief Processor interface **/
     void handle_event(bin_increment_event<TBinIndex> const &event) noexcept {
         if (finished)
             return;
-        bool justStarted = !started;
+        bool just_started = !started;
         if (!started) {
             hist.start = event.macrotime;
             started = true;
         }
 
         TBin &bin = hist.histogram[event.binIndex];
-        if (bin < maxPerBin) {
+        if (bin < max_per_bin) {
             ++hist.total;
             ++bin;
             hist.stop = event.macrotime;
@@ -173,19 +173,19 @@ class histogram {
             hist.stop = event.macrotime;
             downstream.handle_event(hist);
         } else if constexpr (std::is_same_v<Ovfl, reset_on_overflow>) {
-            if (justStarted) { // maxPerBin == 0
-                Finish(std::make_exception_ptr(histogram_overflow_error(
+            if (just_started) { // max_per_bin == 0
+                finish(std::make_exception_ptr(histogram_overflow_error(
                     "Histogram bin overflowed on first increment")));
             } else {
-                EmitAccumulated(true, false);
-                Reset();
+                emit_accumulated(true, false);
+                reset();
                 handle_event(event);
             }
         } else if constexpr (std::is_same_v<Ovfl, stop_on_overflow>) {
-            EmitAccumulated(!justStarted, true);
-            Finish({});
+            emit_accumulated(!just_started, true);
+            finish({});
         } else if constexpr (std::is_same_v<Ovfl, error_on_overflow>) {
-            Finish(std::make_exception_ptr(
+            finish(std::make_exception_ptr(
                 histogram_overflow_error("Histogram bin overflowed")));
         } else {
             static_assert(
@@ -197,8 +197,8 @@ class histogram {
     /** \brief Processor interface **/
     void handle_event([[maybe_unused]] EReset const &event) noexcept {
         if (!finished) {
-            EmitAccumulated(started, false);
-            Reset();
+            emit_accumulated(started, false);
+            reset();
         }
     }
 
@@ -210,8 +210,8 @@ class histogram {
     /** \brief Processor interface **/
     void handle_end(std::exception_ptr error) noexcept {
         if (!finished) {
-            EmitAccumulated(started, true);
-            Finish(error);
+            emit_accumulated(started, true);
+            finish(error);
         }
     }
 };
@@ -237,11 +237,11 @@ class histogram_in_batches {
     bool finished = false; // No longer processing; downstream ended
     histogram_event<TBin> hist;
 
-    TBin const maxPerBin;
+    TBin const max_per_bin;
 
     D downstream;
 
-    void Finish(std::exception_ptr error) noexcept {
+    void finish(std::exception_ptr error) noexcept {
         finished = true;
         downstream.handle_end(error);
         hist.histogram.clear();
@@ -253,15 +253,15 @@ class histogram_in_batches {
      * \brief Construct with number of bins, maximum count, and downstream
      * processor.
      *
-     * \param numBins number of bins in the histogram (must match the bin
+     * \param num_bins number of bins in the histogram (must match the bin
      * mapper used upstream)
-     * \param maxPerBin maximum value allowed in each bin
+     * \param max_per_bin maximum value allowed in each bin
      * \param downstream downstream processor (moved out)
      */
-    explicit histogram_in_batches(std::size_t numBins, TBin maxPerBin,
+    explicit histogram_in_batches(std::size_t num_bins, TBin max_per_bin,
                                   D &&downstream)
-        : maxPerBin(maxPerBin), downstream(std::move(downstream)) {
-        hist.histogram.resize(numBins);
+        : max_per_bin(max_per_bin), downstream(std::move(downstream)) {
+        hist.histogram.resize(num_bins);
     }
 
     /**
@@ -270,12 +270,12 @@ class histogram_in_batches {
      * The maximum value allowed in each bin is set to the maximum supported by
      * \c TBin.
      *
-     * \param numBins number of bins in the histogram (must match the bin
+     * \param num_bins number of bins in the histogram (must match the bin
      * mapper used upstream)
      * \param downstream downstream processor (moved out)
      */
-    explicit histogram_in_batches(std::size_t numBins, D &&downstream)
-        : histogram_in_batches(numBins, std::numeric_limits<TBin>::max(),
+    explicit histogram_in_batches(std::size_t num_bins, D &&downstream)
+        : histogram_in_batches(num_bins, std::numeric_limits<TBin>::max(),
                                std::move(downstream)) {}
 
     /** \brief Processor interface **/
@@ -290,9 +290,9 @@ class histogram_in_batches {
         hist.total = 0;
         hist.saturated = 0;
 
-        for (auto binIndex : event.binIndices) {
-            TBin &bin = hist.histogram[binIndex];
-            if (bin < maxPerBin) {
+        for (auto bin_index : event.binIndices) {
+            TBin &bin = hist.histogram[bin_index];
+            if (bin < max_per_bin) {
                 ++hist.total;
                 ++bin;
             } else if constexpr (std::is_same_v<Ovfl, saturate_on_overflow>) {
@@ -307,7 +307,7 @@ class histogram_in_batches {
                     internal::false_for_type<Ovfl>::value,
                     "stop_on_overflow is not applicable to histogram_in_batches");
             } else if constexpr (std::is_same_v<Ovfl, error_on_overflow>) {
-                Finish(std::make_exception_ptr(
+                finish(std::make_exception_ptr(
                     histogram_overflow_error("Histogram bin overflowed")));
                 return;
             } else {
@@ -328,7 +328,7 @@ class histogram_in_batches {
     /** \brief Processor interface **/
     void handle_end(std::exception_ptr error) noexcept {
         if (!finished)
-            Finish(error);
+            finish(error);
     }
 };
 
@@ -364,38 +364,39 @@ class accumulate_histograms {
     bool finished = false; // No longer processing; downstream ended
     histogram_event<TBin> hist;
 
-    TBin const maxPerBin;
+    TBin const max_per_bin;
 
     D downstream;
 
-    template <typename It> void RollBackIncrements(It begin, It end) noexcept {
+    template <typename It>
+    void roll_back_increments(It begin, It end) noexcept {
         for (auto it = begin; it != end; ++it) {
             --hist.total;
             --hist.histogram[*it];
         }
     }
 
-    void EmitAccumulated(bool hadBatches, bool endOfStream) noexcept {
+    void emit_accumulated(bool had_batches, bool end_of_stream) noexcept {
         accumulated_histogram_event<TBin> e;
-        e.start = hadBatches ? hist.start : 0;
-        e.stop = hadBatches ? hist.stop : 0;
+        e.start = had_batches ? hist.start : 0;
+        e.stop = had_batches ? hist.stop : 0;
         e.histogram.swap(hist.histogram);
         e.total = hist.total;
         e.saturated = hist.saturated;
-        e.has_data = hadBatches;
-        e.is_end_of_stream = endOfStream;
+        e.has_data = had_batches;
+        e.is_end_of_stream = end_of_stream;
         downstream.handle_event(e);
         hist.histogram.swap(e.histogram);
     }
 
-    void Reset() noexcept {
+    void reset() noexcept {
         started = false;
         std::fill(hist.histogram.begin(), hist.histogram.end(), TBin{0});
         hist.total = 0;
         hist.saturated = 0;
     }
 
-    void Finish(std::exception_ptr error) noexcept {
+    void finish(std::exception_ptr error) noexcept {
         finished = true;
         downstream.handle_end(error);
         hist.histogram.clear();
@@ -407,15 +408,15 @@ class accumulate_histograms {
      * \brief Construct with number of bins, maximum count, and downstream
      * processor.
      *
-     * \param numBins number of bins in the histogram (must match the bin
+     * \param num_bins number of bins in the histogram (must match the bin
      * mapper used upstream)
-     * \param maxPerBin maximum value allowed in each bin
+     * \param max_per_bin maximum value allowed in each bin
      * \param downstream downstream processor (moved out)
      */
-    explicit accumulate_histograms(std::size_t numBins, TBin maxPerBin,
+    explicit accumulate_histograms(std::size_t num_bins, TBin max_per_bin,
                                    D &&downstream)
-        : maxPerBin(maxPerBin), downstream(std::move(downstream)) {
-        hist.histogram.resize(numBins);
+        : max_per_bin(max_per_bin), downstream(std::move(downstream)) {
+        hist.histogram.resize(num_bins);
     }
 
     /**
@@ -424,12 +425,12 @@ class accumulate_histograms {
      * The maximum value allowed in each bin is set to the maximum supported by
      * \c TBin.
      *
-     * \param numBins number of bins in the histogram (must match the bin
+     * \param num_bins number of bins in the histogram (must match the bin
      * mapper used upstream)
      * \param downstream downstream processor (moved out)
      */
-    explicit accumulate_histograms(std::size_t numBins, D &&downstream)
-        : accumulate_histograms(numBins, std::numeric_limits<TBin>::max(),
+    explicit accumulate_histograms(std::size_t num_bins, D &&downstream)
+        : accumulate_histograms(num_bins, std::numeric_limits<TBin>::max(),
                                 std::move(downstream)) {}
 
     /** \brief Processor interface **/
@@ -437,39 +438,40 @@ class accumulate_histograms {
     handle_event(bin_increment_batch_event<TBinIndex> const &event) noexcept {
         if (finished)
             return;
-        bool justStarted = !started;
+        bool just_started = !started;
         if (!started) {
             hist.start = event.start;
             started = true;
         }
 
-        for (auto binIndexIt = event.binIndices.cbegin();
-             binIndexIt != event.binIndices.cend(); ++binIndexIt) {
-            TBin &bin = hist.histogram[*binIndexIt];
-            if (bin < maxPerBin) {
+        for (auto bin_index_it = event.binIndices.cbegin();
+             bin_index_it != event.binIndices.cend(); ++bin_index_it) {
+            TBin &bin = hist.histogram[*bin_index_it];
+            if (bin < max_per_bin) {
                 ++hist.total;
                 ++bin;
             } else if constexpr (std::is_same_v<Ovfl, saturate_on_overflow>) {
                 ++hist.total;
                 ++hist.saturated;
             } else if constexpr (std::is_same_v<Ovfl, reset_on_overflow>) {
-                if (justStarted) {
-                    Finish(std::make_exception_ptr(histogram_overflow_error(
+                if (just_started) {
+                    finish(std::make_exception_ptr(histogram_overflow_error(
                         "Histogram bin overflowed on a single batch")));
                 } else {
-                    RollBackIncrements(event.binIndices.cbegin(), binIndexIt);
-                    EmitAccumulated(true, false);
-                    Reset();
+                    roll_back_increments(event.binIndices.cbegin(),
+                                         bin_index_it);
+                    emit_accumulated(true, false);
+                    reset();
                     handle_event(event);
                 }
                 return;
             } else if constexpr (std::is_same_v<Ovfl, stop_on_overflow>) {
-                RollBackIncrements(event.binIndices.cbegin(), binIndexIt);
-                EmitAccumulated(!justStarted, true);
-                Finish({});
+                roll_back_increments(event.binIndices.cbegin(), bin_index_it);
+                emit_accumulated(!just_started, true);
+                finish({});
                 return;
             } else if constexpr (std::is_same_v<Ovfl, error_on_overflow>) {
-                Finish(std::make_exception_ptr(
+                finish(std::make_exception_ptr(
                     histogram_overflow_error("Histogram bin overflowed")));
                 return;
             } else {
@@ -486,8 +488,8 @@ class accumulate_histograms {
     /** \brief Processor interface **/
     void handle_event([[maybe_unused]] EReset const &event) noexcept {
         if (!finished) {
-            EmitAccumulated(started, false);
-            Reset();
+            emit_accumulated(started, false);
+            reset();
         }
     }
 
@@ -499,8 +501,8 @@ class accumulate_histograms {
     /** \brief Processor interface **/
     void handle_end(std::exception_ptr error) noexcept {
         if (!finished) {
-            EmitAccumulated(started, true);
-            Finish(error);
+            emit_accumulated(started, true);
+            finish(error);
         }
     }
 };

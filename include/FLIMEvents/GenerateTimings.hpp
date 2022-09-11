@@ -50,7 +50,7 @@ template <typename ETrig, typename PGen, typename D> class generate_timings {
     D downstream;
 
     // P: bool(macrotime const &)
-    template <typename P> void Emit(P predicate) noexcept {
+    template <typename P> void emit(P predicate) noexcept {
         macrotime t;
         while (generator.peek(t) && predicate(t)) {
             typename PGen::output_event_type e{};
@@ -74,14 +74,14 @@ template <typename ETrig, typename PGen, typename D> class generate_timings {
 
     /** \brief Processor interface */
     void handle_event(ETrig const &event) noexcept {
-        Emit([now = event.macrotime](auto t) { return t < now; });
+        emit([now = event.macrotime](auto t) { return t < now; });
         generator.trigger(event.macrotime);
         downstream.handle_event(event);
     }
 
     /** \brief Processor interface */
     template <typename E> void handle_event(E const &event) noexcept {
-        Emit([now = event.macrotime](auto t) { return t <= now; });
+        emit([now = event.macrotime](auto t) { return t <= now; });
         downstream.handle_event(event);
     }
 

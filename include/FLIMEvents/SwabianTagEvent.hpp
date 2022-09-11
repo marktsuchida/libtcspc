@@ -76,7 +76,7 @@ struct swabian_tag_event {
  * \tparam D downstream processor type
  */
 template <typename D> class decode_swabian_tags {
-    bool hadError = false;
+    bool had_error = false;
     D downstream;
 
   public:
@@ -90,7 +90,7 @@ template <typename D> class decode_swabian_tags {
 
     /** \brief Processor interface */
     void handle_event(swabian_tag_event const &event) noexcept {
-        if (hadError)
+        if (had_error)
             return;
 
         using tag_type = swabian_tag_event::tag_type;
@@ -105,7 +105,7 @@ template <typename D> class decode_swabian_tags {
         case tag_type::error:
             downstream.handle_end(std::make_exception_ptr(
                 std::runtime_error("Error tag in input")));
-            hadError = true;
+            had_error = true;
             break;
         case tag_type::overflow_begin: {
             begin_lost_interval_event e;
@@ -128,7 +128,7 @@ template <typename D> class decode_swabian_tags {
         default:
             downstream.handle_end(std::make_exception_ptr(
                 std::runtime_error("Unknown Swabian event type")));
-            hadError = true;
+            had_error = true;
             break;
         }
     }
