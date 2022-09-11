@@ -18,17 +18,17 @@
 // SPC-600/630 (4- or 6-byte) format. (Although it is probably possible to
 // guess accurately based on macrotime monotonicity.)
 
-struct BHSPCFileHeader {
+struct bh_spc_file_header {
     std::uint8_t bytes[4];
 
-    void Clear() noexcept { memset(bytes, 0, sizeof(bytes)); }
+    void clear() noexcept { memset(bytes, 0, sizeof(bytes)); }
 
-    std::uint32_t GetMacrotimeUnitsTenthNs() const noexcept {
+    std::uint32_t get_macrotime_units_tenths_ns() const noexcept {
         return bytes[0] | (std::uint32_t(bytes[1]) << 8) |
                (std::uint32_t(bytes[2]) << 16);
     }
 
-    void SetMacrotimeUnitsTenthNs(std::uint32_t value) {
+    void set_macrotime_units_tenths_ns(std::uint32_t value) {
         if (value >= 1 << 24) {
             throw std::out_of_range("Macrotime units out of range");
         }
@@ -37,11 +37,11 @@ struct BHSPCFileHeader {
         bytes[2] = (value >> 16) & 0xff;
     }
 
-    std::uint8_t GetNumberOfRoutingBits() const noexcept {
+    std::uint8_t get_number_of_routing_bits() const noexcept {
         return (bytes[3] >> 3) & 0x0f;
     }
 
-    void SetNumberOfRoutingBits(std::uint8_t value) {
+    void set_number_of_routing_bits(std::uint8_t value) {
         if (value >= 1 << 4) {
             throw std::out_of_range("Number of routing bits out of range");
         }
@@ -49,9 +49,9 @@ struct BHSPCFileHeader {
         bytes[3] |= value << 3;
     }
 
-    bool GetDataValidFlag() const noexcept { return bytes[3] & (1 << 7); }
+    bool get_data_valid_flag() const noexcept { return bytes[3] & (1 << 7); }
 
-    void SetDataValidFlag(bool valid) {
+    void set_data_valid_flag(bool valid) {
         if (valid) {
             bytes[3] |= 1 << 7;
         } else {
@@ -62,18 +62,18 @@ struct BHSPCFileHeader {
 
 // SPC-600/630 FIFO_32 file header happens to be identical to the standard FIFO
 // file header.
-using BHSPC600FileHeader32 = BHSPCFileHeader;
+using bh_spc_600_file_header_32 = bh_spc_file_header;
 
-struct BHSPC600FileHeader48 {
+struct bh_spc_600_file_header_48 {
     std::uint8_t bytes[6];
 
-    void Clear() noexcept { memset(bytes, 0, sizeof(bytes)); }
+    void clear() noexcept { memset(bytes, 0, sizeof(bytes)); }
 
-    std::uint32_t GetMacrotimeUnitsTenthNs() const noexcept {
+    std::uint32_t get_macrotime_units_tenths_ns() const noexcept {
         return bytes[2] | (std::uint32_t(bytes[3]) << 8);
     }
 
-    void SetMacrotimeUnitsTenthsNs(std::uint32_t value) {
+    void set_macrotime_units_tenths_ns(std::uint32_t value) {
         if (value >= 1 << 16) {
             throw std::out_of_range("Macrotime units out of range");
         }
@@ -81,11 +81,11 @@ struct BHSPC600FileHeader48 {
         bytes[3] = (value >> 8) & 0xff;
     }
 
-    std::uint8_t GetNumberOfRoutingBits() const noexcept {
+    std::uint8_t get_number_of_routing_bits() const noexcept {
         return bytes[1] & 0x0f;
     }
 
-    void SetNumberOfRoutingBits(std::uint8_t value) {
+    void set_number_of_routing_bits(std::uint8_t value) {
         if (value >= 1 << 4) {
             throw std::out_of_range("Number of routing bits out of range");
         }
@@ -93,9 +93,9 @@ struct BHSPC600FileHeader48 {
         bytes[1] |= value;
     }
 
-    bool GetDataValidFlag() const noexcept { return bytes[1] & (1 << 4); }
+    bool get_data_valid_flag() const noexcept { return bytes[1] & (1 << 4); }
 
-    void SetDataValidFlag(bool valid) {
+    void set_data_valid_flag(bool valid) {
         if (valid) {
             bytes[1] |= 1 << 4;
         } else {

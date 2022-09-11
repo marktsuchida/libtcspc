@@ -18,26 +18,26 @@
 #include <memory>
 #include <vector>
 
-class PrintProcessor {
+class print_processor {
     std::uint32_t count;
-    flimevt::macrotime lastMacrotime;
+    flimevt::macrotime last_macrotime;
     std::ostream &output;
 
-    void PrintMacrotime(std::ostream &output, flimevt::macrotime macrotime) {
+    void print_macrotime(std::ostream &output, flimevt::macrotime macrotime) {
         output << std::setw(6) << (count++) << ' ';
         output << std::setw(20) << macrotime;
-        if (lastMacrotime > 0) {
-            auto delta = macrotime - lastMacrotime;
+        if (last_macrotime > 0) {
+            auto delta = macrotime - last_macrotime;
             output << " (+" << std::setw(16) << delta << ")";
         } else {
             output << "                    ";
         }
-        lastMacrotime = macrotime;
+        last_macrotime = macrotime;
     }
 
   public:
-    explicit PrintProcessor(std::ostream &output)
-        : count(0), lastMacrotime(0), output(output) {}
+    explicit print_processor(std::ostream &output)
+        : count(0), last_macrotime(0), output(output) {}
 
     void handle_event(flimevt::time_reached_event const &event) {
         // Do nothing
@@ -45,18 +45,18 @@ class PrintProcessor {
     }
 
     void handle_event(flimevt::data_lost_event const &event) {
-        PrintMacrotime(output, event.macrotime);
+        print_macrotime(output, event.macrotime);
         output << " Data lost\n";
     }
 
     void handle_event(flimevt::time_correlated_count_event const &event) {
-        PrintMacrotime(output, event.macrotime);
+        print_macrotime(output, event.macrotime);
         output << " Photon: " << std::setw(5) << event.difftime << "; "
                << int(event.channel) << '\n';
     }
 
     void handle_event(flimevt::marker_event const &event) {
-        PrintMacrotime(output, event.macrotime);
+        print_macrotime(output, event.macrotime);
         output << ' ' << "Marker: " << int(event.channel) << '\n';
     }
 
@@ -72,29 +72,29 @@ class PrintProcessor {
     }
 };
 
-int DumpHeader(std::istream &input, std::ostream &output) {
-    char bytes[sizeof(BHSPCFileHeader)];
+int dump_header(std::istream &input, std::ostream &output) {
+    char bytes[sizeof(bh_spc_file_header)];
     input.read(bytes, sizeof(bytes));
-    size_t const bytesRead = input.gcount();
-    if (bytesRead < sizeof(bytes)) {
+    size_t const bytes_read = input.gcount();
+    if (bytes_read < sizeof(bytes)) {
         std::cerr << "File is shorter than required header size\n";
         return 1;
     }
 
-    BHSPCFileHeader header;
+    bh_spc_file_header header;
     std::memcpy(&header, bytes, sizeof(header));
-    output << "Macrotime units (0.1 ns): " << header.GetMacrotimeUnitsTenthNs()
-           << '\n';
+    output << "Macrotime units (0.1 ns): "
+           << header.get_macrotime_units_tenths_ns() << '\n';
     output << "Number of routing bits: "
-           << int(header.GetNumberOfRoutingBits()) << '\n';
-    output << "Data is valid: " << header.GetDataValidFlag() << '\n';
+           << int(header.get_number_of_routing_bits()) << '\n';
+    output << "Data is valid: " << header.get_data_valid_flag() << '\n';
 
     return 0;
 }
 
-void DumpRawEvent(char const *rawEvent, std::ostream &output) {
+void dump_raw_event(char const *raw_event, std::ostream &output) {
     flimevt::bh_spc_event const &event =
-        *reinterpret_cast<flimevt::bh_spc_event const *>(rawEvent);
+        *reinterpret_cast<flimevt::bh_spc_event const *>(raw_event);
 
     std::uint8_t route = event.get_routing_signals();
     output << (route & (1 << 3) ? 'x' : '_') << (route & (1 << 2) ? 'x' : '_')
@@ -110,23 +110,23 @@ void DumpRawEvent(char const *rawEvent, std::ostream &output) {
     output << '\n';
 }
 
-int DumpEvents(std::istream &input, std::ostream &output) {
-    PrintProcessor pp(output);
+int dump_events(std::istream &input, std::ostream &output) {
+    print_processor pp(output);
     flimevt::decode_bh_spc<decltype(pp)> decoder(std::move(pp));
     constexpr std::size_t const eventSize = sizeof(flimevt::bh_spc_event);
 
     while (input.good()) {
         std::vector<char> event(eventSize);
         input.read(event.data(), eventSize);
-        auto const bytesRead = input.gcount();
-        if (bytesRead == 0) {
+        auto const bytes_read = input.gcount();
+        if (bytes_read == 0) {
             break;
-        } else if (static_cast<std::size_t>(bytesRead) < eventSize) {
-            std::cerr << bytesRead << " extra bytes at end of file\n";
+        } else if (static_cast<std::size_t>(bytes_read) < eventSize) {
+            std::cerr << bytes_read << " extra bytes at end of file\n";
             return 1;
         }
 
-        DumpRawEvent(event.data(), output);
+        dump_raw_event(event.data(), output);
         decoder.handle_event(
             *reinterpret_cast<flimevt::bh_spc_event *>(event.data()));
     }
@@ -135,12 +135,12 @@ int DumpEvents(std::istream &input, std::ostream &output) {
     return 0;
 }
 
-int Dump(std::istream &input, std::ostream &output) {
-    int ret = DumpHeader(input, output);
+int dump(std::istream &input, std::ostream &output) {
+    int ret = dump_header(input, output);
     if (ret)
         return ret;
 
-    ret = DumpEvents(input, output);
+    ret = dump_events(input, output);
     if (ret)
         return ret;
 
@@ -155,7 +155,7 @@ int main(int argc, char *argv[]) {
     }
 
     if (argc < 2) {
-        return Dump(std::cin, std::cout);
+        return dump(std::cin, std::cout);
     }
 
     auto filename = argv[1];
@@ -165,5 +165,5 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
-    return Dump(input, std::cout);
+    return dump(input, std::cout);
 }

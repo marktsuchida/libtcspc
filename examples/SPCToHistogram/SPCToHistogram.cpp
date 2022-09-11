@@ -18,21 +18,21 @@
 #include <sstream>
 #include <thread>
 
-void Usage() {
+void usage() {
     std::cerr
         << "Test driver for histogramming.\n"
-        << "Usage: SPCToHistogram <width> <height> <lineDelay> <lineTime> input.spc output.raw\n"
-        << "where <lineDelay> and <lineTime> are in macrotime units.\n"
+        << "Usage: SPCToHistogram <width> <height> <line_delay> <line_time> input.spc output.raw\n"
+        << "where <line_delay> and <line_time> are in macrotime units.\n"
         << "Currently the output contains only the raw cumulative histogram.\n";
 }
 
-template <typename T> class HistogramSaver {
-    std::size_t frameCount;
-    std::string const &outFilename;
+template <typename T> class histogram_saver {
+    std::size_t frame_count;
+    std::string const &out_filename;
 
   public:
-    explicit HistogramSaver(std::string const &outFilename)
-        : frameCount(0), outFilename(outFilename) {}
+    explicit histogram_saver(std::string const &out_filename)
+        : frame_count(0), out_filename(out_filename) {}
 
     void handle_end(std::exception_ptr error) {
         if (error) {
@@ -46,20 +46,20 @@ template <typename T> class HistogramSaver {
     }
 
     void handle_event(flimevt::frame_histogram_event<T> const &) {
-        std::cerr << "Frame " << (frameCount++) << '\n';
+        std::cerr << "Frame " << (frame_count++) << '\n';
     }
 
     void
     handle_event(flimevt::final_cumulative_histogram_event<T> const &event) {
-        if (!frameCount) { // No frames
+        if (!frame_count) { // No frames
             std::cerr << "No frames\n";
             return;
         }
 
-        std::fstream output(outFilename,
+        std::fstream output(out_filename,
                             std::fstream::binary | std::fstream::out);
         if (!output.is_open()) {
-            std::cerr << "Cannot open " << outFilename << '\n';
+            std::cerr << "Cannot open " << out_filename << '\n';
             std::exit(1);
         }
 
@@ -71,7 +71,7 @@ template <typename T> class HistogramSaver {
 
 int main(int argc, char *argv[]) {
     if (argc != 7) {
-        Usage();
+        usage();
         return 1;
     }
 
@@ -79,32 +79,32 @@ int main(int argc, char *argv[]) {
     std::istringstream(argv[1]) >> width;
     std::uint32_t height = 0;
     std::istringstream(argv[2]) >> height;
-    std::uint32_t lineDelay = 0;
-    std::istringstream(argv[3]) >> lineDelay;
-    std::uint32_t lineTime = 0;
-    std::istringstream(argv[4]) >> lineTime;
-    std::string inFilename(argv[5]);
-    std::string outFilename(argv[6]);
+    std::uint32_t line_delay = 0;
+    std::istringstream(argv[3]) >> line_delay;
+    std::uint32_t line_time = 0;
+    std::istringstream(argv[4]) >> line_time;
+    std::string in_filename(argv[5]);
+    std::string out_filename(argv[6]);
 
-    std::uint32_t maxFrames = UINT32_MAX;
+    std::uint32_t max_frames = UINT32_MAX;
 
-    using SampleType = std::uint16_t;
-    std::int32_t inputBits = 12;
-    std::int32_t histoBits = 8;
-    flimevt::legacy_histogram<SampleType> frameHisto(histoBits, inputBits,
-                                                     true, width, height);
-    flimevt::legacy_histogram<SampleType> cumulHisto(histoBits, inputBits,
-                                                     true, width, height);
-    cumulHisto.clear();
+    using sample_type = std::uint16_t;
+    std::int32_t input_bits = 12;
+    std::int32_t histo_bits = 8;
+    flimevt::legacy_histogram<sample_type> frame_histo(histo_bits, input_bits,
+                                                       true, width, height);
+    flimevt::legacy_histogram<sample_type> cumul_histo(histo_bits, input_bits,
+                                                       true, width, height);
+    cumul_histo.clear();
 
     // Construct pipeline
     flimevt::decode_bh_spc decoder(flimevt::line_clock_pixellator(
-        width, height, maxFrames, lineDelay, lineTime, 1,
+        width, height, max_frames, line_delay, line_time, 1,
         flimevt::sequential_histogrammer(
-            std::move(frameHisto),
+            std::move(frame_histo),
             flimevt::histogram_accumulator(
-                std::move(cumulHisto),
-                HistogramSaver<SampleType>(outFilename)))));
+                std::move(cumul_histo),
+                histogram_saver<sample_type>(out_filename)))));
 
     flimevt::unbatch<std::vector<flimevt::bh_spc_event>, flimevt::bh_spc_event,
                      decltype(decoder)>
@@ -118,30 +118,30 @@ int main(int argc, char *argv[]) {
                           decltype(processor)>
         buffer(std::move(processor));
 
-    std::thread procThread([&] { buffer.pump_downstream(); });
+    std::thread proc_thread([&] { buffer.pump_downstream(); });
 
-    std::fstream input(inFilename, std::fstream::binary | std::fstream::in);
+    std::fstream input(in_filename, std::fstream::binary | std::fstream::in);
     if (!input.is_open()) {
-        std::cerr << "Cannot open " << inFilename << '\n';
+        std::cerr << "Cannot open " << in_filename << '\n';
         return 1;
     }
 
     flimevt::object_pool<std::vector<flimevt::bh_spc_event>> pool(2);
 
-    constexpr std::size_t batchCapacity = 48 * 1024;
-    constexpr auto maxSize = batchCapacity * sizeof(flimevt::bh_spc_event);
+    constexpr std::size_t batch_capacity = 48 * 1024;
+    constexpr auto max_size = batch_capacity * sizeof(flimevt::bh_spc_event);
 
-    input.seekg(sizeof(BHSPCFileHeader));
+    input.seekg(sizeof(bh_spc_file_header));
     while (input.good()) {
         auto arr = pool.check_out();
-        arr->resize(batchCapacity);
-        input.read(reinterpret_cast<char *>(arr->data()), maxSize);
+        arr->resize(batch_capacity);
+        input.read(reinterpret_cast<char *>(arr->data()), max_size);
         auto const readSize = input.gcount() / sizeof(flimevt::bh_spc_event);
         arr->resize(static_cast<std::size_t>(readSize));
         buffer.handle_event(arr);
     }
     buffer.handle_end({});
 
-    procThread.join();
+    proc_thread.join();
     return 0;
 }
