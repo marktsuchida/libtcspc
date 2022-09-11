@@ -12,6 +12,7 @@
 
 #include <cassert>
 #include <exception>
+#include <iostream>
 #include <stdexcept>
 #include <utility>
 #include <variant>
@@ -76,13 +77,22 @@ class ProcessorTestFixture {
 
     using OutputVectorType = std::vector<EventVariant<OutputEventSet>>;
 
-    // Feed the given input events and return the resulting output events
+    // Feed multiple events (old-style); all past outputs must have been
+    // checked
     void FeedEvents(std::vector<EventVariant<InputEventSet>> inputs) {
         if (!result.outputs.empty())
             throw std::logic_error("Unchecked output remains");
         for (auto const &input : inputs) {
             std::visit([&](auto &&i) { proc.HandleEvent(i); }, input);
         }
+    }
+
+    // Feed one event; all past outputs must have been checked
+    template <typename E> void Feed(E const &event) {
+        static_assert(ContainsEventV<InputEventSet, E>);
+        if (!result.outputs.empty())
+            throw std::logic_error("Unchecked output remains");
+        proc.HandleEvent(event);
     }
 
     // Feed "end of stream" and return the resulting output events
@@ -92,9 +102,27 @@ class ProcessorTestFixture {
         proc.HandleEnd(error);
     }
 
+    // Old-style output checking (requires operator<< on variant to print)
     OutputVectorType Output() {
         auto ret = result.outputs;
         result.outputs.clear();
+        return ret;
+    }
+
+    // New-style output checking
+    template <typename E> bool Check(E const &event) {
+        if (result.outputs.empty())
+            throw std::logic_error("No output pending");
+        EventVariant<OutputEventSet> expected = event;
+        EventVariant<OutputEventSet> &output = result.outputs.front();
+        bool ret = (output == expected);
+        if (!ret) {
+            std::cerr << "Expected output: " << event << '\n';
+            std::visit(
+                [&](auto &&o) { std::cerr << "Actual output: " << o << '\n'; },
+                output);
+        }
+        result.outputs.erase(result.outputs.begin());
         return ret;
     }
 

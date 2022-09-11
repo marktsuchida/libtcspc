@@ -11,6 +11,7 @@ catch2_dep = dependency(
 flimevents_tests_srcs = [
     'ApplyClassTemplateToTupleElementsTests.cpp',
     'BHDeviceEventsTests.cpp',
+    'BinningTests.cpp',
     'BroadcastTests.cpp',
     'BufferTests.cpp',
     'CommonTests.cpp',
@@ -21,6 +22,8 @@ flimevents_tests_srcs = [
     'EventSetTests.cpp',
     'GateTests.cpp',
     'GenerateTimingsTests.cpp',
+    'HistogramEventsTests.cpp',
+    'HistogramTests.cpp',
     'LegacyHistogramTests.cpp',
     'LineClockPixellatorTests.cpp',
     'MergeTests.cpp',

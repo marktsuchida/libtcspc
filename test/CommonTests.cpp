@@ -8,9 +8,11 @@
 
 #include <catch2/catch.hpp>
 
-TEST_CASE("CountTrailingZeros32", "[Common]") {
-    using namespace flimevt::internal;
+using namespace flimevt::internal;
 
+static_assert(!FalseForType<int>::value);
+
+TEST_CASE("CountTrailingZeros32", "[Common]") {
     REQUIRE(CountTrailingZeros32(1) == 0);
     REQUIRE(CountTrailingZeros32Nonintrinsic(1) == 0);
 

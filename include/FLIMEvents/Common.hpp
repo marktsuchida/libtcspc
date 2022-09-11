@@ -7,6 +7,7 @@
 #pragma once
 
 #include <cstdint>
+#include <type_traits>
 
 #ifdef _MSC_VER
 #include <intrin.h>
@@ -34,6 +35,10 @@ namespace flimevt {
 using Macrotime = std::int64_t;
 
 namespace internal {
+
+// A "false" template metafunction that can be used with static_assert in
+// constexpr-if branches (by pretending that it may not always be false).
+template <typename T> struct FalseForType : std::false_type {};
 
 constexpr int CountTrailingZeros32Nonintrinsic(std::uint32_t x) noexcept {
     int r = 0;

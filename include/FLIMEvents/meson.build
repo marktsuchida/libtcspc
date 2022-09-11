@@ -5,6 +5,7 @@
 public_cpp_headers = files(
     'ApplyClassTemplateToTupleElements.hpp',
     'BHDeviceEvents.hpp',
+    'Binning.hpp',
     'Broadcast.hpp',
     'Buffer.hpp',
     'Common.hpp',
@@ -16,6 +17,8 @@ public_cpp_headers = files(
     'FLIMEvents.hpp',
     'Gate.hpp',
     'GenerateTimings.hpp',
+    'Histogram.hpp',
+    'HistogramEvents.hpp',
     'LegacyHistogram.hpp',
     'LineClockPixellator.hpp',
     'Merge.hpp',
