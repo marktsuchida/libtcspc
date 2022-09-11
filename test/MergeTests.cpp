@@ -20,26 +20,30 @@ using namespace flimevt;
 using namespace flimevt::test;
 
 static_assert(
-    handles_event_set_v<
-        decltype(make_merge<Events0123>(0, discard_all<Events0123>()).first),
-        Events0123>);
+    handles_event_set_v<decltype(make_merge<test_events_0123>(
+                                     0, discard_all<test_events_0123>())
+                                     .first),
+                        test_events_0123>);
 
 static_assert(
-    handles_event_set_v<
-        decltype(make_merge<Events0123>(0, discard_all<Events0123>()).second),
-        Events0123>);
+    handles_event_set_v<decltype(make_merge<test_events_0123>(
+                                     0, discard_all<test_events_0123>())
+                                     .second),
+                        test_events_0123>);
 
 // Instead of coming up with a 2-input test fixture, we rely on split_events
 // for the input.
 auto MakeMergeFixture(macrotime maxShift) {
     auto makeProc = [maxShift](auto &&downstream) {
         auto [input0, input1] =
-            make_merge<Events0123>(maxShift, std::move(downstream));
-        return split_events<Events23, decltype(input0), decltype(input1)>(
-            std::move(input0), std::move(input1));
+            make_merge<test_events_0123>(maxShift, std::move(downstream));
+        return split_events<test_events_23, decltype(input0),
+                            decltype(input1)>(std::move(input0),
+                                              std::move(input1));
     };
 
-    return MakeProcessorTestFixture<Events0123, Events0123>(makeProc);
+    return MakeProcessorTestFixture<test_events_0123, test_events_0123>(
+        makeProc);
 }
 
 // Processor to inject an error after N events are passed through
@@ -71,28 +75,32 @@ template <typename D> class InjectError {
 auto MakeMergeFixtureErrorOnInput0(macrotime maxShift, int eventsBeforeError) {
     auto makeProc = [maxShift, eventsBeforeError](auto &&downstream) {
         auto [input0, input1] =
-            make_merge<Events0123>(maxShift, std::move(downstream));
+            make_merge<test_events_0123>(maxShift, std::move(downstream));
         auto error0 = InjectError(eventsBeforeError, std::move(input0));
-        return split_events<Events23, decltype(error0), decltype(input1)>(
-            std::move(error0), std::move(input1));
+        return split_events<test_events_23, decltype(error0),
+                            decltype(input1)>(std::move(error0),
+                                              std::move(input1));
     };
 
-    return MakeProcessorTestFixture<Events0123, Events0123>(makeProc);
+    return MakeProcessorTestFixture<test_events_0123, test_events_0123>(
+        makeProc);
 }
 
 auto MakeMergeFixtureErrorOnInput1(macrotime maxShift, int eventsBeforeError) {
     auto makeProc = [maxShift, eventsBeforeError](auto &&downstream) {
         auto [input0, input1] =
-            make_merge<Events0123>(maxShift, std::move(downstream));
+            make_merge<test_events_0123>(maxShift, std::move(downstream));
         auto error1 = InjectError(eventsBeforeError, std::move(input1));
-        return split_events<Events23, decltype(input0), decltype(error1)>(
-            std::move(input0), std::move(error1));
+        return split_events<test_events_23, decltype(input0),
+                            decltype(error1)>(std::move(input0),
+                                              std::move(error1));
     };
 
-    return MakeProcessorTestFixture<Events0123, Events0123>(makeProc);
+    return MakeProcessorTestFixture<test_events_0123, test_events_0123>(
+        makeProc);
 }
 
-using OutVec = std::vector<event_variant<Events0123>>;
+using OutVec = std::vector<event_variant<test_events_0123>>;
 
 TEST_CASE("Merge with error on one input", "[Merge]") {
     SECTION("Input0 error with no events pending") {
@@ -101,12 +109,12 @@ TEST_CASE("Merge with error on one input", "[Merge]") {
 
         auto f = MakeMergeFixtureErrorOnInput0(1000, 0);
         f.FeedEvents({
-            Event<0>{0}, // Fixture will convert to error
+            test_event<0>{0}, // Fixture will convert to error
         });
         REQUIRE(f.Output() == OutVec{});
         if (furtherInputOnInput1) {
             f.FeedEvents({
-                Event<2>{1},
+                test_event<2>{1},
             });
             REQUIRE(f.Output() == OutVec{});
         }
@@ -124,12 +132,12 @@ TEST_CASE("Merge with error on one input", "[Merge]") {
 
         auto f = MakeMergeFixtureErrorOnInput1(1000, 0);
         f.FeedEvents({
-            Event<2>{0}, // Fixture will convert to error
+            test_event<2>{0}, // Fixture will convert to error
         });
         REQUIRE(f.Output() == OutVec{});
         if (furtherInputOnInput0) {
             f.FeedEvents({
-                Event<0>{1}, // Further input ignored on other input
+                test_event<0>{1}, // Further input ignored on other input
             });
             REQUIRE(f.Output() == OutVec{});
         }
@@ -146,11 +154,11 @@ TEST_CASE("Merge with error on one input", "[Merge]") {
 
         auto f = MakeMergeFixtureErrorOnInput0(1000, 1);
         f.FeedEvents({
-            Event<0>{0},
+            test_event<0>{0},
         });
         REQUIRE(f.Output() == OutVec{});
         f.FeedEvents({
-            Event<0>{1}, // Fixture will convert to error
+            test_event<0>{1}, // Fixture will convert to error
         });
         REQUIRE(f.Output() == OutVec{});
         if (endInput1) {
@@ -166,11 +174,11 @@ TEST_CASE("Merge with error on one input", "[Merge]") {
 
         auto f = MakeMergeFixtureErrorOnInput0(1000, 0);
         f.FeedEvents({
-            Event<2>{0},
+            test_event<2>{0},
         });
         REQUIRE(f.Output() == OutVec{});
         f.FeedEvents({
-            Event<0>{1}, // Fixture will convert to error
+            test_event<0>{1}, // Fixture will convert to error
         });
         REQUIRE(f.Output() == OutVec{});
         if (endInput1) {
@@ -199,107 +207,107 @@ TEST_CASE("Merge", "[Merge]") {
 
     SECTION("Input0 events are emitted before input1 events") {
         f.FeedEvents({
-            Event<2>{42},
+            test_event<2>{42},
         });
         REQUIRE(f.Output() == OutVec{});
         f.FeedEvents({
-            Event<0>{42},
+            test_event<0>{42},
         });
         REQUIRE(f.Output() == OutVec{
-                                  Event<0>{42},
+                                  test_event<0>{42},
                               });
         f.FeedEvents({
-            Event<3>{42},
+            test_event<3>{42},
         });
         REQUIRE(f.Output() == OutVec{});
         f.FeedEvents({
-            Event<1>{42},
+            test_event<1>{42},
         });
         REQUIRE(f.Output() == OutVec{
-                                  Event<1>{42},
+                                  test_event<1>{42},
                               });
         f.FeedEnd({});
         REQUIRE(f.Output() == OutVec{
-                                  Event<2>{42},
-                                  Event<3>{42},
+                                  test_event<2>{42},
+                                  test_event<3>{42},
                               });
         REQUIRE(f.DidEnd());
     }
 
     SECTION("Already sorted in macrotime order") {
         f.FeedEvents({
-            Event<0>{1},
+            test_event<0>{1},
         });
         REQUIRE(f.Output() == OutVec{});
         f.FeedEvents({
-            Event<2>{2},
+            test_event<2>{2},
         });
-        REQUIRE(f.Output() == OutVec{Event<0>{1}});
+        REQUIRE(f.Output() == OutVec{test_event<0>{1}});
         f.FeedEvents({
-            Event<0>{3},
+            test_event<0>{3},
         });
-        REQUIRE(f.Output() == OutVec{Event<2>{2}});
+        REQUIRE(f.Output() == OutVec{test_event<2>{2}});
         f.FeedEnd({});
         REQUIRE(f.Output() == OutVec{
-                                  Event<0>{3},
+                                  test_event<0>{3},
                               });
         REQUIRE(f.DidEnd());
     }
 
     SECTION("Delayed input0 sorted by macrotime") {
         f.FeedEvents({
-            Event<0>{2},
+            test_event<0>{2},
         });
         REQUIRE(f.Output() == OutVec{});
         f.FeedEvents({
-            Event<2>{1},
+            test_event<2>{1},
         });
         REQUIRE(f.Output() == OutVec{
-                                  Event<2>{1},
+                                  test_event<2>{1},
                               });
         f.FeedEvents({
-            Event<0>{4},
+            test_event<0>{4},
         });
         REQUIRE(f.Output() == OutVec{});
         f.FeedEvents({
-            Event<2>{3},
+            test_event<2>{3},
         });
         REQUIRE(f.Output() == OutVec{
-                                  Event<0>{2},
-                                  Event<2>{3},
+                                  test_event<0>{2},
+                                  test_event<2>{3},
                               });
         f.FeedEnd({});
         REQUIRE(f.Output() == OutVec{
-                                  Event<0>{4},
+                                  test_event<0>{4},
                               });
         REQUIRE(f.DidEnd());
     }
 
     SECTION("Delayed input1 sorted by macrotime") {
         f.FeedEvents({
-            Event<2>{2},
+            test_event<2>{2},
         });
         REQUIRE(f.Output() == OutVec{});
         f.FeedEvents({
-            Event<0>{1},
+            test_event<0>{1},
         });
         REQUIRE(f.Output() == OutVec{
-                                  Event<0>{1},
+                                  test_event<0>{1},
                               });
         f.FeedEvents({
-            Event<2>{4},
+            test_event<2>{4},
         });
         REQUIRE(f.Output() == OutVec{});
         f.FeedEvents({
-            Event<0>{3},
+            test_event<0>{3},
         });
         REQUIRE(f.Output() == OutVec{
-                                  Event<2>{2},
-                                  Event<0>{3},
+                                  test_event<2>{2},
+                                  test_event<0>{3},
                               });
         f.FeedEnd({});
         REQUIRE(f.Output() == OutVec{
-                                  Event<2>{4},
+                                  test_event<2>{4},
                               });
         REQUIRE(f.DidEnd());
     }
@@ -310,42 +318,42 @@ TEST_CASE("Merge max time shift", "[Merge]") {
 
     SECTION("Input0 emitted after exceeding max time shift") {
         f.FeedEvents({
-            Event<0>{0},
+            test_event<0>{0},
         });
         REQUIRE(f.Output() == OutVec{});
         f.FeedEvents({
-            Event<0>{10},
+            test_event<0>{10},
         });
         REQUIRE(f.Output() == OutVec{});
         f.FeedEvents({
-            Event<0>{11},
+            test_event<0>{11},
         });
-        REQUIRE(f.Output() == OutVec{Event<0>{0}});
+        REQUIRE(f.Output() == OutVec{test_event<0>{0}});
         f.FeedEnd({});
         REQUIRE(f.Output() == OutVec{
-                                  Event<0>{10},
-                                  Event<0>{11},
+                                  test_event<0>{10},
+                                  test_event<0>{11},
                               });
         REQUIRE(f.DidEnd());
     }
 
     SECTION("Input1 emitted after exceeding max time shift") {
         f.FeedEvents({
-            Event<1>{0},
+            test_event<1>{0},
         });
         REQUIRE(f.Output() == OutVec{});
         f.FeedEvents({
-            Event<1>{10},
+            test_event<1>{10},
         });
         REQUIRE(f.Output() == OutVec{});
         f.FeedEvents({
-            Event<1>{11},
+            test_event<1>{11},
         });
-        REQUIRE(f.Output() == OutVec{Event<1>{0}});
+        REQUIRE(f.Output() == OutVec{test_event<1>{0}});
         f.FeedEnd({});
         REQUIRE(f.Output() == OutVec{
-                                  Event<1>{10},
-                                  Event<1>{11},
+                                  test_event<1>{10},
+                                  test_event<1>{11},
                               });
         REQUIRE(f.DidEnd());
     }

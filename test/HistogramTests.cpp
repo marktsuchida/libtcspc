@@ -20,8 +20,8 @@
 using namespace flimevt;
 using namespace flimevt::test;
 
-using Reset = Event<0>;
-using Other = Event<1>;
+using Reset = test_event<0>;
+using Other = test_event<1>;
 using Bins = event_set<bin_increment_event<unsigned>, Reset, Other>;
 using Batches = event_set<bin_increment_batch_event<unsigned>, Reset, Other>;
 using BatchesNoReset = event_set<bin_increment_batch_event<unsigned>, Other>;

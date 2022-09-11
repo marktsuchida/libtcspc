@@ -15,37 +15,38 @@
 
 namespace flimevt::test {
 
-template <unsigned N> struct Event { macrotime macrotime; };
-using Events01 = event_set<Event<0>, Event<1>>;
-using Events23 = event_set<Event<2>, Event<3>>;
-using Events0123 = event_set<Event<0>, Event<1>, Event<2>, Event<3>>;
+template <unsigned N> struct test_event { macrotime macrotime; };
+using test_events_01 = event_set<test_event<0>, test_event<1>>;
+using test_events_23 = event_set<test_event<2>, test_event<3>>;
+using test_events_0123 =
+    event_set<test_event<0>, test_event<1>, test_event<2>, test_event<3>>;
 
 template <typename E,
-          typename = std::enable_if_t<contains_event_v<Events0123, E>>>
+          typename = std::enable_if_t<contains_event_v<test_events_0123, E>>>
 inline std::ostream &operator<<(std::ostream &os, E const &e) {
     return os << typeid(e).name() << '{' << e.macrotime << '}';
 }
 
 inline std::ostream &operator<<(std::ostream &os,
-                                event_variant<Events01> const &event) {
+                                event_variant<test_events_01> const &event) {
     return std::visit([&](auto const &e) -> std::ostream & { return os << e; },
                       event);
 }
 
 inline std::ostream &operator<<(std::ostream &os,
-                                event_variant<Events23> const &event) {
+                                event_variant<test_events_23> const &event) {
     return std::visit([&](auto const &e) -> std::ostream & { return os << e; },
                       event);
 }
 
 inline std::ostream &operator<<(std::ostream &os,
-                                event_variant<Events0123> const &event) {
+                                event_variant<test_events_0123> const &event) {
     return std::visit([&](auto const &e) -> std::ostream & { return os << e; },
                       event);
 }
 
 template <typename E,
-          typename = std::enable_if_t<contains_event_v<Events0123, E>>>
+          typename = std::enable_if_t<contains_event_v<test_events_0123, E>>>
 inline bool operator==(E const &lhs, E const &rhs) {
     return lhs.macrotime == rhs.macrotime;
 }

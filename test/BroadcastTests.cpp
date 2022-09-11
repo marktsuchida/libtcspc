@@ -18,14 +18,16 @@ static_assert(handles_event_set_v<broadcast<>, event_set<>>);
 static_assert(
     handles_event_set_v<broadcast<discard_all<event_set<>>>, event_set<>>);
 
-static_assert(handles_event_set_v<broadcast<discard_all<event_set<Event<0>>>>,
-                                  event_set<Event<0>>>);
-
-static_assert(handles_event_set_v<broadcast<discard_all<event_set<Event<0>>>,
-                                            discard_all<event_set<Event<0>>>>,
-                                  event_set<Event<0>>>);
+static_assert(
+    handles_event_set_v<broadcast<discard_all<event_set<test_event<0>>>>,
+                        event_set<test_event<0>>>);
 
 static_assert(
-    handles_event_set_v<broadcast<discard_all<event_set<Event<0>>>,
-                                  discard_all<event_set<Event<0>, Event<1>>>>,
-                        event_set<Event<0>>>);
+    handles_event_set_v<broadcast<discard_all<event_set<test_event<0>>>,
+                                  discard_all<event_set<test_event<0>>>>,
+                        event_set<test_event<0>>>);
+
+static_assert(handles_event_set_v<
+              broadcast<discard_all<event_set<test_event<0>>>,
+                        discard_all<event_set<test_event<0>, test_event<1>>>>,
+              event_set<test_event<0>>>);

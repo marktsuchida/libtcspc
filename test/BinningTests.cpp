@@ -21,8 +21,8 @@
 using namespace flimevt;
 using namespace flimevt::test;
 
-using DataMapInput = event_set<time_correlated_count_event, Event<0>>;
-using DataMapOutput = event_set<datapoint_event<std::uint16_t>, Event<0>>;
+using DataMapInput = event_set<time_correlated_count_event, test_event<0>>;
+using DataMapOutput = event_set<datapoint_event<std::uint16_t>, test_event<0>>;
 using DataMapOutVec = std::vector<event_variant<DataMapOutput>>;
 
 auto MakeMapDifftimeToDatapointsFixture() {
@@ -38,10 +38,10 @@ TEST_CASE("Map to datapoints", "[map_to_datapoints]") {
     auto f = MakeMapDifftimeToDatapointsFixture();
 
     f.FeedEvents({
-        Event<0>{42},
+        test_event<0>{42},
     });
     REQUIRE(f.Output() == DataMapOutVec{
-                              Event<0>{42},
+                              test_event<0>{42},
                           });
     f.FeedEvents({
         time_correlated_count_event{{123}, 42, 0},
@@ -54,8 +54,8 @@ TEST_CASE("Map to datapoints", "[map_to_datapoints]") {
     REQUIRE(f.DidEnd());
 }
 
-using BinInput = event_set<datapoint_event<int>, Event<0>>;
-using BinOutput = event_set<bin_increment_event<unsigned>, Event<0>>;
+using BinInput = event_set<datapoint_event<int>, test_event<0>>;
+using BinOutput = event_set<bin_increment_event<unsigned>, test_event<0>>;
 using BinOutVec = std::vector<event_variant<BinOutput>>;
 
 template <typename F> auto MakeMapToBinsFixture(F mapFunc) {
@@ -81,10 +81,10 @@ TEST_CASE("Map to bins", "[MapToBin]") {
             return std::nullopt;
         });
     f.FeedEvents({
-        Event<0>{42},
+        test_event<0>{42},
     });
     REQUIRE(f.Output() == BinOutVec{
-                              Event<0>{42},
+                              test_event<0>{42},
                           });
     f.FeedEvents({
         datapoint_event<int>{123, 0},
@@ -368,9 +368,9 @@ TEST_CASE("Linear bin mapping", "[linear_bin_mapper]") {
     REQUIRE(checkClamped(flipped(65535), 0));
 }
 
-using Start = Event<0>;
-using Stop = Event<1>;
-using Other = Event<2>;
+using Start = test_event<0>;
+using Stop = test_event<1>;
+using Other = test_event<2>;
 using BatchInput =
     event_set<bin_increment_event<unsigned>, Start, Stop, Other>;
 using BatchOutput = event_set<bin_increment_batch_event<unsigned>, Other>;

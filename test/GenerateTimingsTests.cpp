@@ -17,10 +17,10 @@
 using namespace flimevt;
 using namespace flimevt::test;
 
-using trigger = Event<0>;
-using Output = Event<1>;
-using Other = Event<2>;
-using Events = Events0123;
+using trigger = test_event<0>;
+using Output = test_event<1>;
+using Other = test_event<2>;
+using Events = test_events_0123;
 using OutVec = std::vector<event_variant<Events>>;
 
 template <typename PGen> auto MakeGenerateTimingsFixture(PGen &&generator) {

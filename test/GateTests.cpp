@@ -18,12 +18,12 @@
 using namespace flimevt;
 using namespace flimevt::test;
 
-using Open = Event<0>;
-using Close = Event<1>;
-using Gated = Event<2>;
+using Open = test_event<0>;
+using Close = test_event<1>;
+using Gated = test_event<2>;
 using GatedSet = event_set<Gated>;
-using Other = Event<3>;
-using Events = Events0123;
+using Other = test_event<3>;
+using Events = test_events_0123;
 using OutVec = std::vector<event_variant<Events>>;
 
 auto MakeGateEventsFixture(bool initiallyOpen) {

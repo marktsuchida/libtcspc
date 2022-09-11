@@ -19,11 +19,11 @@
 using namespace flimevt;
 using namespace flimevt::test;
 
-using Input = Event<0>;
-using Output = Event<1>;
-using Reset = Event<2>;
-using Other = Event<3>;
-using Events = Events0123;
+using Input = test_event<0>;
+using Output = test_event<1>;
+using Reset = test_event<2>;
+using Other = test_event<3>;
+using Events = test_events_0123;
 using OutVec = std::vector<event_variant<Events>>;
 
 template <bool EmitAfter>

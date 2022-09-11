@@ -18,7 +18,7 @@
 using namespace flimevt;
 using namespace flimevt::test;
 
-using Events = Events01;
+using Events = test_events_01;
 using OutVec = std::vector<event_variant<Events>>;
 
 auto MakeTimeDelayFixture(macrotime delta) {
@@ -32,10 +32,10 @@ TEST_CASE("Time delay", "[time_delay]") {
     SECTION("Zero delay is noop") {
         auto f = MakeTimeDelayFixture(0);
         f.FeedEvents({
-            Event<0>{0},
+            test_event<0>{0},
         });
         REQUIRE(f.Output() == OutVec{
-                                  Event<0>{0},
+                                  test_event<0>{0},
                               });
         f.FeedEnd({});
         REQUIRE(f.Output() == OutVec{});
@@ -45,16 +45,16 @@ TEST_CASE("Time delay", "[time_delay]") {
     SECTION("Delay +1") {
         auto f = MakeTimeDelayFixture(1);
         f.FeedEvents({
-            Event<0>{0},
+            test_event<0>{0},
         });
         REQUIRE(f.Output() == OutVec{
-                                  Event<0>{1},
+                                  test_event<0>{1},
                               });
         f.FeedEvents({
-            Event<1>{1},
+            test_event<1>{1},
         });
         REQUIRE(f.Output() == OutVec{
-                                  Event<1>{2},
+                                  test_event<1>{2},
                               });
         f.FeedEnd({});
         REQUIRE(f.Output() == OutVec{});
@@ -64,16 +64,16 @@ TEST_CASE("Time delay", "[time_delay]") {
     SECTION("Delay -1") {
         auto f = MakeTimeDelayFixture(-1);
         f.FeedEvents({
-            Event<0>{0},
+            test_event<0>{0},
         });
         REQUIRE(f.Output() == OutVec{
-                                  Event<0>{-1},
+                                  test_event<0>{-1},
                               });
         f.FeedEvents({
-            Event<1>{1},
+            test_event<1>{1},
         });
         REQUIRE(f.Output() == OutVec{
-                                  Event<1>{0},
+                                  test_event<1>{0},
                               });
         f.FeedEnd({});
         REQUIRE(f.Output() == OutVec{});

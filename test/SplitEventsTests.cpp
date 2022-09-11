@@ -18,32 +18,37 @@
 using namespace flimevt;
 using namespace flimevt::test;
 
-static_assert(handles_event_set_v<split_events<Events01, discard_all<Events01>,
-                                               discard_all<Events01>>,
-                                  Events01>);
+static_assert(handles_event_set_v<
+              split_events<test_events_01, discard_all<test_events_01>,
+                           discard_all<test_events_01>>,
+              test_events_01>);
 
 auto MakeSplitEventsFixtureOutput0() {
     auto makeProc = [](auto &&downstream) {
         using D0 = std::remove_reference_t<decltype(downstream)>;
-        using D1 = discard_all<Events23>;
-        return split_events<Events23, D0, D1>(std::move(downstream), D1());
+        using D1 = discard_all<test_events_23>;
+        return split_events<test_events_23, D0, D1>(std::move(downstream),
+                                                    D1());
     };
 
-    return MakeProcessorTestFixture<Events0123, Events01>(makeProc);
+    return MakeProcessorTestFixture<test_events_0123, test_events_01>(
+        makeProc);
 }
 
 auto MakeSplitEventsFixtureOutput1() {
     auto makeProc = [](auto &&downstream) {
-        using D0 = discard_all<Events01>;
+        using D0 = discard_all<test_events_01>;
         using D1 = std::remove_reference_t<decltype(downstream)>;
-        return split_events<Events23, D0, D1>(D0(), std::move(downstream));
+        return split_events<test_events_23, D0, D1>(D0(),
+                                                    std::move(downstream));
     };
 
-    return MakeProcessorTestFixture<Events0123, Events23>(makeProc);
+    return MakeProcessorTestFixture<test_events_0123, test_events_23>(
+        makeProc);
 }
 
-using OutVec01 = std::vector<event_variant<Events01>>;
-using OutVec23 = std::vector<event_variant<Events23>>;
+using OutVec01 = std::vector<event_variant<test_events_01>>;
+using OutVec23 = std::vector<event_variant<test_events_23>>;
 
 TEST_CASE("Split events", "[split_events]") {
     auto f0 = MakeSplitEventsFixtureOutput0();
@@ -72,29 +77,29 @@ TEST_CASE("Split events", "[split_events]") {
     }
 
     SECTION("Events are split") {
-        // Event<0> goes to output 0 only
+        // test_event<0> goes to output 0 only
         f0.FeedEvents({
-            Event<0>{0},
+            test_event<0>{0},
         });
         REQUIRE(f0.Output() == OutVec01{
-                                   Event<0>{0},
+                                   test_event<0>{0},
                                });
         f1.FeedEvents({
-            Event<0>{0},
+            test_event<0>{0},
         });
         REQUIRE(f1.Output() == OutVec23{});
 
-        // Event<0> goes to output 1 only
+        // test_event<0> goes to output 1 only
         f0.FeedEvents({
-            Event<2>{0},
+            test_event<2>{0},
         });
         REQUIRE(f0.Output() == OutVec01{});
 
         f1.FeedEvents({
-            Event<2>{0},
+            test_event<2>{0},
         });
         REQUIRE(f1.Output() == OutVec23{
-                                   Event<2>{0},
+                                   test_event<2>{0},
                                });
 
         f0.FeedEnd({});
