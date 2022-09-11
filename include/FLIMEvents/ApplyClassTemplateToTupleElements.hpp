@@ -42,13 +42,13 @@ template <typename... Args> struct apply_class_template_curried {
 
 // Metafunction; given Tup = std::tuple<T, U>, return Tmpl<Args..., T, U>.
 template <template <typename...> typename Tmpl, typename Tup, typename... Args>
-using apply_class_template_to_tuple_elements =
+using apply_class_template =
     typename really_internal::apply_class_template_curried<Args...>::
         template apply_class_template_to_tuple_n_elements<
             Tmpl, Tup, std::tuple_size_v<Tup>>;
 
 template <template <typename...> typename Tmpl, typename Tup, typename... Args>
-using apply_class_template_to_tuple_elements_t =
-    typename apply_class_template_to_tuple_elements<Tmpl, Tup, Args...>::type;
+using apply_class_template_t =
+    typename apply_class_template<Tmpl, Tup, Args...>::type;
 
 } // namespace flimevt::internal

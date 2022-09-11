@@ -36,8 +36,7 @@ template <typename... Events> using event_set = std::tuple<Events...>;
  * hold
  */
 template <typename ESet>
-using event_variant =
-    internal::apply_class_template_to_tuple_elements_t<std::variant, ESet>;
+using event_variant = internal::apply_class_template_t<std::variant, ESet>;
 
 namespace internal {
 
@@ -58,8 +57,9 @@ struct event_is_one_of : std::disjunction<std::is_same<Event, Events>...> {};
  * \tparam Event an event type to check
  */
 template <typename ESet, typename Event>
-struct contains_event : internal::apply_class_template_to_tuple_elements_t<
-                            internal::event_is_one_of, ESet, Event> {};
+struct contains_event
+    : internal::apply_class_template_t<internal::event_is_one_of, ESet,
+                                       Event> {};
 
 /**
  * \brief Helper variable to get the result of contains_event
@@ -154,9 +154,9 @@ struct handles_events_and_end
  * \tparam ESet the event set to check
  */
 template <typename Proc, typename ESet>
-struct handles_event_set : internal::apply_class_template_to_tuple_elements_t<
-                               internal::handles_events_and_end, ESet, Proc> {
-};
+struct handles_event_set
+    : internal::apply_class_template_t<internal::handles_events_and_end, ESet,
+                                       Proc> {};
 
 /**
  * \brief Helper variable to get the result of handles_event_set.
