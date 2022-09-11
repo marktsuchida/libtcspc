@@ -61,44 +61,14 @@ in how they are processed.
 
 Event classes are pure data and have public data members.
 
-Raw device envents:
-
-- These can be `memcpy()`ed from the raw data stream events
-- Becker-Hickl: `BHSPCEvent`, `BHSPC600Event48`, `BHSPC600Event32`
-  - Event sets `BHSPCEvents`, `BHSPC600Events48`, `BHSPC600Events32`
-- PicoQuant: `PicoT3Event`, `HydraV1T3Event`, `HydraV2T3Event`
-  - Event sets `PQT3Events`, `PQHydraV1T3Events`, `PQHydraV2T3Events`
-
-TCSPC events:
-
-- Abstract: `TCSPCEvent`, `BasePhotonEvent`
-- Concrete: `ValidPhotonEvent`, `InvalidPhotonEvent`, `DataLostEvent`,
-  `MarkerEvent`, `TimestampEvent`
-- Event set `TCSPCEvents`
-
-Pixel-assigned photon events:
-
-- `PixelPhotonEvent`, `BeginFrameEvent`, `EndFrameEvent`
-- Event set `PixelPhotonEvents`
-
-Histogram events:
-
-- `FrameHistogramEvent`, `IncompleteFrameHistogramEvent`,
-  `FinalCumulativeHistogramEvent`
-- Event sets `FrameHistogramEvents`, `CumulativeHistogramEvents`
-
-Generic:
-
-- `EventArray<E>`
-
 ### Processors
 
 Processors are just classes with the following member functions:
 
-- `void HandleEvent(E const& event) noexcept` -- a statically polymorphic
+- `void handle_event(E const& event) noexcept` -- a statically polymorphic
   (i.e., overloaded for different event types) function, for each event in the
   event set that is processed by the processor
-- `void HandleEnd(std::exception_ptr error) noexcept` -- `error` is the null
+- `void handle_end(std::exception_ptr error) noexcept` -- `error` is the null
   value (default-constructed `exception_ptr`) when the event stream ends
   successfully
 
@@ -106,41 +76,3 @@ The last argument to the constructor of a processor is usually `D&&
 downstream`, a reference to the downstream processor that will handle the
 events emitted by this processor. The downstream processor is moved into the
 processor.
-
-Raw device events to TCSPC events:
-
-- `DecodeBHSPC`, `DecodeBHSPC600_48`, `DecodeBHSPC600_32`
-
-TCSPC events to pixel photon events:
-
-- `LineClockPixellator`
-
-Pixel photon events to pixel photon events:
-
-- `Histogrammer`, `SequentialHistogrammer`
-
-Frame histogram events to cumulative histogram events:
-
-- `HistogramAccumulator`
-
-Generic processors:
-
-- `Broadcast` (`E` to `E`), `EventArrayDemultiplexer` (`EventArray<E>` to `E`),
-  `EventBuffer` (`E` to `EventArray<E>`)
-
-### Upstream buffering
-
-Usually it is a good idea to buffer incoming events (from hardware) before
-processing, so as not to cause a hardware buffer overflow when the incoming
-event rate temporarily exceeds the processing rate (processing may include slow
-or high-jitter tasks such as writing to disk). For this, `EventBuffer` is used.
-
-It is just a processor that bunches a given event into the corresponding
-`EventArray` event, except that it internally buffers the event arrays and only
-emits them when its `void PumpDownstream() noexcept` member function is called.
-
-All other processors do not buffer events (except when needed for the
-processing itself), and processing completes synchronously during the
-`PumpDownstream` call. Thus, `PumpDownstream` should be called on a different
-thread from the thread reading from the device and sending them to
-`EventBuffer`.
