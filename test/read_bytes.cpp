@@ -18,7 +18,7 @@ TEST_CASE("Read u16", "[ReadBytes]") {
 
     SECTION("Zero") {
         data[0] = data[1] = 0;
-        REQUIRE(f(data) == 0U);
+        REQUIRE(f(data) == 0u);
     }
 
     SECTION("Low byte") {
@@ -32,7 +32,7 @@ TEST_CASE("Read u16", "[ReadBytes]") {
         unsigned x = GENERATE(0x01, 0x7f, 0x80, 0xff);
         data[0] = 0;
         data[1] = x;
-        REQUIRE(f(data) == x * 0x100U);
+        REQUIRE(f(data) == x * 0x100u);
     }
 }
 
@@ -44,7 +44,7 @@ TEST_CASE("Read u32", "[ReadBytes]") {
     memset(data, 0, 4);
     int byte = GENERATE(0, 1, 2, 3);
 
-    SECTION("Zero") { REQUIRE(f(data) == 0U); }
+    SECTION("Zero") { REQUIRE(f(data) == 0u); }
 
     SECTION("Single byte") {
         unsigned x = GENERATE(0x01, 0x7f, 0x80, 0xff);
@@ -57,7 +57,7 @@ TEST_CASE("Read u32", "[ReadBytes]") {
         data[1] = 2;
         data[2] = 3;
         data[3] = 4;
-        REQUIRE(f(data) == 0x04030201U);
+        REQUIRE(f(data) == 0x04030201u);
     }
 }
 
@@ -69,7 +69,7 @@ TEST_CASE("Read u64", "[ReadBytes]") {
     memset(data, 0, 8);
     int byte = GENERATE(0, 1, 2, 3, 4, 5, 6, 7);
 
-    SECTION("Zero") { REQUIRE(f(data) == 0U); }
+    SECTION("Zero") { REQUIRE(f(data) == 0u); }
 
     SECTION("Single byte") {
         unsigned x = GENERATE(0x01, 0x7f, 0x80, 0xff);
@@ -86,6 +86,6 @@ TEST_CASE("Read u64", "[ReadBytes]") {
         data[5] = 6;
         data[6] = 7;
         data[7] = 8;
-        REQUIRE(f(data) == 0x0807060504030201ULL);
+        REQUIRE(f(data) == 0x0807060504030201uLL);
     }
 }

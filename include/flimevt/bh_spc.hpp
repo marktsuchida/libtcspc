@@ -46,7 +46,7 @@ struct bh_spc_event {
      * represents a photon.
      */
     std::uint16_t get_adc_value() const noexcept {
-        return unsigned(internal::read_u16le(&bytes[2])) & 0x0fffU;
+        return unsigned(internal::read_u16le(&bytes[2])) & 0x0fffu;
     }
 
     /**
@@ -64,14 +64,14 @@ struct bh_spc_event {
      * \brief Read the macrotime counter value (no rollover correction).
      */
     std::uint16_t get_macrotime() const noexcept {
-        return unsigned(internal::read_u16le(&bytes[0])) & 0x0fffU;
+        return unsigned(internal::read_u16le(&bytes[0])) & 0x0fffu;
     }
 
     /**
      * \brief Read the 'marker' flag.
      */
     bool get_marker_flag() const noexcept {
-        return unsigned(bytes[3]) & (1U << 4);
+        return unsigned(bytes[3]) & (1u << 4);
     }
 
     /**
@@ -85,21 +85,21 @@ struct bh_spc_event {
      * \brief Read the 'gap' (data lost) flag.
      */
     bool get_gap_flag() const noexcept {
-        return unsigned(bytes[3]) & (1U << 5);
+        return unsigned(bytes[3]) & (1u << 5);
     }
 
     /**
      * \brief Read the 'macrotime overflow' flag.
      */
     bool get_macrotime_overflow_flag() const noexcept {
-        return unsigned(bytes[3]) & (1U << 6);
+        return unsigned(bytes[3]) & (1u << 6);
     }
 
     /**
      * \brief Read the 'invalid' flag.
      */
     bool get_invalid_flag() const noexcept {
-        return unsigned(bytes[3]) & (1U << 7);
+        return unsigned(bytes[3]) & (1u << 7);
     }
 
     /**
@@ -117,7 +117,7 @@ struct bh_spc_event {
      * multiple macrotime overflows.
      */
     std::uint32_t get_multiple_macrotime_overflow_count() const noexcept {
-        return internal::read_u32le(&bytes[0]) & 0x0fffffffU;
+        return internal::read_u32le(&bytes[0]) & 0x0fffffffu;
     }
 };
 
@@ -141,7 +141,7 @@ struct bh_spc_600_event_48 {
      * represents a photon.
      */
     std::uint16_t get_adc_value() const noexcept {
-        return unsigned(internal::read_u16le(&bytes[0])) & 0x0fffU;
+        return unsigned(internal::read_u16le(&bytes[0])) & 0x0fffu;
     }
 
     /**
@@ -174,21 +174,21 @@ struct bh_spc_600_event_48 {
      * \brief Read the 'gap' (data lost) flag.
      */
     bool get_gap_flag() const noexcept {
-        return unsigned(bytes[1]) & (1U << 6);
+        return unsigned(bytes[1]) & (1u << 6);
     }
 
     /**
      * \brief Read the 'macrotime overflow' flag.
      */
     bool get_macrotime_overflow_flag() const noexcept {
-        return unsigned(bytes[1]) & (1U << 5);
+        return unsigned(bytes[1]) & (1u << 5);
     }
 
     /**
      * \brief Read the 'invalid' flag.
      */
     bool get_invalid_flag() const noexcept {
-        return unsigned(bytes[1]) & (1U << 4);
+        return unsigned(bytes[1]) & (1u << 4);
     }
 
     /**
@@ -240,7 +240,7 @@ struct bh_spc_600_event_32 {
     std::uint32_t get_macrotime() const noexcept {
         auto lo8 = unsigned(bytes[1]);
         auto mid8 = unsigned(bytes[2]);
-        auto hi1 = unsigned(bytes[3]) & 1U;
+        auto hi1 = unsigned(bytes[3]) & 1u;
         return lo8 | (mid8 << 8) | (hi1 << 16);
     }
 
@@ -258,21 +258,21 @@ struct bh_spc_600_event_32 {
      * \brief Read the 'gap' (data lost) flag.
      */
     bool get_gap_flag() const noexcept {
-        return unsigned(bytes[3]) & (1U << 5);
+        return unsigned(bytes[3]) & (1u << 5);
     }
 
     /**
      * \brief Read the 'macrotime overflow' flag.
      */
     bool get_macrotime_overflow_flag() const noexcept {
-        return unsigned(bytes[3]) & (1U << 6);
+        return unsigned(bytes[3]) & (1u << 6);
     }
 
     /**
      * \brief Read the 'invalid' flag.
      */
     bool get_invalid_flag() const noexcept {
-        return unsigned(bytes[3]) & (1U << 7);
+        return unsigned(bytes[3]) & (1u << 7);
     }
 
     /**

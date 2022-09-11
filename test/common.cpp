@@ -28,6 +28,6 @@ TEST_CASE("count_trailing_zeros_32", "[Common]") {
     REQUIRE(count_trailing_zeros_32(6) == 1);
     REQUIRE(count_trailing_zeros_32_nonintrinsic(6) == 1);
 
-    REQUIRE(count_trailing_zeros_32(1U << 31) == 31);
-    REQUIRE(count_trailing_zeros_32_nonintrinsic(1U << 31) == 31);
+    REQUIRE(count_trailing_zeros_32(1u << 31) == 31);
+    REQUIRE(count_trailing_zeros_32_nonintrinsic(1u << 31) == 31);
 }

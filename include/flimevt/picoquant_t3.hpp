@@ -59,7 +59,7 @@ struct pq_pico_t3_event {
      * \brief Read the difference time if this event represents a photon.
      */
     std::uint16_t get_dtime() const noexcept {
-        return unsigned(internal::read_u16le(&bytes[2])) & 0x0fffU;
+        return unsigned(internal::read_u16le(&bytes[2])) & 0x0fffu;
     }
 
     /**
@@ -124,7 +124,7 @@ template <bool IsHydraV1> struct pq_hydra_t3_event {
      * \brief Read the channel if this event represents a photon.
      */
     std::uint8_t get_channel() const noexcept {
-        return (unsigned(bytes[3]) & 0x7fU) >> 1;
+        return (unsigned(bytes[3]) & 0x7fu) >> 1;
     }
 
     /**
@@ -133,7 +133,7 @@ template <bool IsHydraV1> struct pq_hydra_t3_event {
     std::uint16_t get_dtime() const noexcept {
         auto lo6 = unsigned(bytes[1]) >> 2;
         auto mid8 = unsigned(bytes[2]);
-        auto hi1 = unsigned(bytes[3]) & 1U;
+        auto hi1 = unsigned(bytes[3]) & 1u;
         return lo6 | (mid8 << 6) | (hi1 << 14);
     }
 
@@ -141,13 +141,13 @@ template <bool IsHydraV1> struct pq_hydra_t3_event {
      * \brief Read the nsync counter value (no rollover correction).
      */
     std::uint16_t get_nsync() const noexcept {
-        return unsigned(internal::read_u16le(&bytes[0])) & 0x03ffU;
+        return unsigned(internal::read_u16le(&bytes[0])) & 0x03ffu;
     }
 
     /**
      * \brief Determine if this event is a non-photon event.
      */
-    bool is_special() const noexcept { return unsigned(bytes[3]) & (1U << 7); }
+    bool is_special() const noexcept { return unsigned(bytes[3]) & (1u << 7); }
 
     /**
      * \brief Determine if this event represents an nsync overflow.
