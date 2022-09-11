@@ -28,28 +28,28 @@ TEST_CASE("Frames are produced according to line markers",
           "[line_clock_pixellator]") {
     // We could use a mocking framework (e.g. Trompeloeil), but this is simple
     // enough to do manually.
-    class MockProcessor {
+    class mock_processor {
       public:
-        unsigned beginFrameCount;
-        unsigned endFrameCount;
-        std::vector<pixel_photon_event> pixelPhotons;
+        unsigned begin_frame_count;
+        unsigned end_frame_count;
+        std::vector<pixel_photon_event> pixel_photons;
         std::vector<std::string> errors;
-        unsigned finishCount;
+        unsigned finish_count;
 
-        void Reset() {
-            beginFrameCount = 0;
-            endFrameCount = 0;
-            pixelPhotons.clear();
+        void reset() {
+            begin_frame_count = 0;
+            end_frame_count = 0;
+            pixel_photons.clear();
             errors.clear();
-            finishCount = 0;
+            finish_count = 0;
         }
 
-        void handle_event(begin_frame_event const &) { ++beginFrameCount; }
+        void handle_event(begin_frame_event const &) { ++begin_frame_count; }
 
-        void handle_event(end_frame_event const &) { ++endFrameCount; }
+        void handle_event(end_frame_event const &) { ++end_frame_count; }
 
         void handle_event(pixel_photon_event const &event) {
-            pixelPhotons.emplace_back(event);
+            pixel_photons.emplace_back(event);
         }
 
         void handle_end(std::exception_ptr error) {
@@ -60,94 +60,94 @@ TEST_CASE("Frames are produced according to line markers",
                     errors.emplace_back(e.what());
                 }
             } else {
-                ++finishCount;
+                ++finish_count;
             }
         }
     };
 
-    using VirtualMockProcessor =
-        virtual_wrapped_processor<MockProcessor, pixel_photon_events>;
+    using virtual_mock_processor =
+        virtual_wrapped_processor<mock_processor, pixel_photon_events>;
 
-    auto sharedOutput = std::make_shared<VirtualMockProcessor>();
-    auto &output = sharedOutput->wrapped();
-    output.Reset();
+    auto shared_output = std::make_shared<virtual_mock_processor>();
+    auto &output = shared_output->wrapped();
+    output.reset();
 
     SECTION("2x2 frames with no photons") {
-        polymorphic_processor<pixel_photon_events> polymorphic(sharedOutput);
+        polymorphic_processor<pixel_photon_events> polymorphic(shared_output);
 
         line_clock_pixellator<decltype(polymorphic)> lcp(
             2, 2, 10, 0, 20, 1, std::move(polymorphic));
 
-        marker_event lineMarker;
-        lineMarker.channel = 1;
-        lineMarker.macrotime = 100;
-        lcp.handle_event(lineMarker);
+        marker_event line_marker;
+        line_marker.channel = 1;
+        line_marker.macrotime = 100;
+        lcp.handle_event(line_marker);
         lcp.flush();
 
-        REQUIRE(output.beginFrameCount == 1);
-        output.Reset();
+        REQUIRE(output.begin_frame_count == 1);
+        output.reset();
 
-        lineMarker.macrotime = 200;
-        lcp.handle_event(lineMarker);
+        line_marker.macrotime = 200;
+        lcp.handle_event(line_marker);
         lcp.flush();
-        REQUIRE(output.beginFrameCount == 0);
-        REQUIRE(output.endFrameCount == 0);
-        output.Reset();
+        REQUIRE(output.begin_frame_count == 0);
+        REQUIRE(output.end_frame_count == 0);
+        output.reset();
 
-        lineMarker.macrotime = 300;
-        lcp.handle_event(lineMarker);
+        line_marker.macrotime = 300;
+        lcp.handle_event(line_marker);
         lcp.flush();
-        REQUIRE(output.beginFrameCount == 1);
-        REQUIRE(output.endFrameCount == 1);
-        output.Reset();
+        REQUIRE(output.begin_frame_count == 1);
+        REQUIRE(output.end_frame_count == 1);
+        output.reset();
 
         SECTION("Last frame is incomplete if last line not started") {
             time_reached_event timestamp;
             timestamp.macrotime = 1000000;
             lcp.handle_event(timestamp);
             lcp.flush();
-            REQUIRE(output.beginFrameCount == 0);
-            REQUIRE(output.endFrameCount == 0);
-            output.Reset();
+            REQUIRE(output.begin_frame_count == 0);
+            REQUIRE(output.end_frame_count == 0);
+            output.reset();
         }
 
         SECTION("Last frame completion detected by last seen timestamp") {
-            lineMarker.macrotime = 400;
-            lcp.handle_event(lineMarker);
+            line_marker.macrotime = 400;
+            lcp.handle_event(line_marker);
             lcp.flush();
-            REQUIRE(output.beginFrameCount == 0);
-            REQUIRE(output.endFrameCount == 0);
-            output.Reset();
+            REQUIRE(output.begin_frame_count == 0);
+            REQUIRE(output.end_frame_count == 0);
+            output.reset();
 
             time_reached_event timestamp;
             timestamp.macrotime = 419;
             lcp.handle_event(timestamp);
             lcp.flush();
-            REQUIRE(output.beginFrameCount == 0);
-            REQUIRE(output.endFrameCount == 0);
-            output.Reset();
+            REQUIRE(output.begin_frame_count == 0);
+            REQUIRE(output.end_frame_count == 0);
+            output.reset();
 
             timestamp.macrotime = 420;
             lcp.handle_event(timestamp);
             lcp.flush();
-            REQUIRE(output.beginFrameCount == 0);
-            REQUIRE(output.endFrameCount == 1);
-            output.Reset();
+            REQUIRE(output.begin_frame_count == 0);
+            REQUIRE(output.end_frame_count == 1);
+            output.reset();
         }
     }
 
     SECTION("Photon placed correctly in 2x1 frame") {
-        polymorphic_processor<pixel_photon_events> polymorphic(sharedOutput);
+        polymorphic_processor<pixel_photon_events> polymorphic(shared_output);
 
         // Delay = 5, time = 25, so pixels range over times [5, 15) and [15,
         // 25) relative to the (single) line marker.
         line_clock_pixellator<decltype(polymorphic)> lcp(
             2, 1, 1, 5, 20, 1, std::move(polymorphic));
 
-        marker_event lineMarker;
-        lineMarker.channel = 1;
-        lineMarker.macrotime = 100;
-        lcp.handle_event(lineMarker);
+        marker_event line_marker;
+        line_marker.channel = 1;
+        line_marker.macrotime = 100;
+        lcp.handle_event(line_marker);
         lcp.flush();
 
         time_correlated_count_event photon;
@@ -159,13 +159,13 @@ TEST_CASE("Frames are produced according to line markers",
         }
 
         lcp.flush();
-        REQUIRE(output.beginFrameCount == 1);
-        REQUIRE(output.endFrameCount == 1);
-        REQUIRE(output.pixelPhotons.size() == 4);
-        REQUIRE(output.pixelPhotons[0].x == 0);
-        REQUIRE(output.pixelPhotons[1].x == 0);
-        REQUIRE(output.pixelPhotons[2].x == 1);
-        REQUIRE(output.pixelPhotons[3].x == 1);
+        REQUIRE(output.begin_frame_count == 1);
+        REQUIRE(output.end_frame_count == 1);
+        REQUIRE(output.pixel_photons.size() == 4);
+        REQUIRE(output.pixel_photons[0].x == 0);
+        REQUIRE(output.pixel_photons[1].x == 0);
+        REQUIRE(output.pixel_photons[2].x == 1);
+        REQUIRE(output.pixel_photons[3].x == 1);
     }
 
     // TODO Other things we might test

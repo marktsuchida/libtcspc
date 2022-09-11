@@ -18,11 +18,11 @@
 using namespace flimevt;
 using namespace flimevt::test;
 
-using Events = test_events_01;
-using OutVec = std::vector<event_variant<Events>>;
+using test_events = test_events_01;
+using out_vec = std::vector<event_variant<test_events>>;
 
-auto MakeTimeDelayFixture(macrotime delta) {
-    return make_processor_test_fixture<Events, Events>(
+auto make_time_delay_fixture(macrotime delta) {
+    return make_processor_test_fixture<test_events, test_events>(
         [delta](auto &&downstream) {
             return time_delay(delta, std::move(downstream));
         });
@@ -30,53 +30,53 @@ auto MakeTimeDelayFixture(macrotime delta) {
 
 TEST_CASE("Time delay", "[time_delay]") {
     SECTION("Zero delay is noop") {
-        auto f = MakeTimeDelayFixture(0);
+        auto f = make_time_delay_fixture(0);
         f.feed_events({
             test_event<0>{0},
         });
-        REQUIRE(f.output() == OutVec{
+        REQUIRE(f.output() == out_vec{
                                   test_event<0>{0},
                               });
         f.feed_end({});
-        REQUIRE(f.output() == OutVec{});
+        REQUIRE(f.output() == out_vec{});
         REQUIRE(f.did_end());
     }
 
     SECTION("Delay +1") {
-        auto f = MakeTimeDelayFixture(1);
+        auto f = make_time_delay_fixture(1);
         f.feed_events({
             test_event<0>{0},
         });
-        REQUIRE(f.output() == OutVec{
+        REQUIRE(f.output() == out_vec{
                                   test_event<0>{1},
                               });
         f.feed_events({
             test_event<1>{1},
         });
-        REQUIRE(f.output() == OutVec{
+        REQUIRE(f.output() == out_vec{
                                   test_event<1>{2},
                               });
         f.feed_end({});
-        REQUIRE(f.output() == OutVec{});
+        REQUIRE(f.output() == out_vec{});
         REQUIRE(f.did_end());
     }
 
     SECTION("Delay -1") {
-        auto f = MakeTimeDelayFixture(-1);
+        auto f = make_time_delay_fixture(-1);
         f.feed_events({
             test_event<0>{0},
         });
-        REQUIRE(f.output() == OutVec{
+        REQUIRE(f.output() == out_vec{
                                   test_event<0>{-1},
                               });
         f.feed_events({
             test_event<1>{1},
         });
-        REQUIRE(f.output() == OutVec{
+        REQUIRE(f.output() == out_vec{
                                   test_event<1>{0},
                               });
         f.feed_end({});
-        REQUIRE(f.output() == OutVec{});
+        REQUIRE(f.output() == out_vec{});
         REQUIRE(f.did_end());
     }
 }

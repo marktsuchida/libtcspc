@@ -11,8 +11,8 @@
 using namespace flimevt::internal;
 
 TEST_CASE("Read u16", "[ReadBytes]") {
-    bool useMemcpy = GENERATE(false, true);
-    auto f = useMemcpy ? read_u16le_memcpy : read_u16le_generic;
+    bool use_memcpy = GENERATE(false, true);
+    auto f = use_memcpy ? read_u16le_memcpy : read_u16le_generic;
 
     unsigned char data[2];
 
@@ -37,8 +37,8 @@ TEST_CASE("Read u16", "[ReadBytes]") {
 }
 
 TEST_CASE("Read u32", "[ReadBytes]") {
-    bool useMemcpy = GENERATE(false, true);
-    auto f = useMemcpy ? read_u32le_memcpy : read_u32le_generic;
+    bool use_memcpy = GENERATE(false, true);
+    auto f = use_memcpy ? read_u32le_memcpy : read_u32le_generic;
 
     unsigned char data[4];
     memset(data, 0, 4);
@@ -62,8 +62,8 @@ TEST_CASE("Read u32", "[ReadBytes]") {
 }
 
 TEST_CASE("Read u64", "[ReadBytes]") {
-    bool useMemcpy = GENERATE(false, true);
-    auto f = useMemcpy ? read_u64le_memcpy : read_u64le_generic;
+    bool use_memcpy = GENERATE(false, true);
+    auto f = use_memcpy ? read_u64le_memcpy : read_u64le_generic;
 
     unsigned char data[8];
     memset(data, 0, 8);

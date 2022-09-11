@@ -19,12 +19,12 @@
 using namespace flimevt;
 using namespace flimevt::test;
 
-using IEvents = event_set<marker_event, test_event<1>>;
-using OEvents = event_set<marker_event, test_event<0>, test_event<1>>;
-using OutVec = std::vector<event_variant<OEvents>>;
+using inputs = event_set<marker_event, test_event<1>>;
+using outputs = event_set<marker_event, test_event<0>, test_event<1>>;
+using out_vec = std::vector<event_variant<outputs>>;
 
-auto MakeTranslateMarkerFixture(std::int32_t channel) {
-    return make_processor_test_fixture<IEvents, OEvents>(
+auto make_translate_marker_fixture(std::int32_t channel) {
+    return make_processor_test_fixture<inputs, outputs>(
         [channel](auto &&downstream) {
             using D = std::remove_reference_t<decltype(downstream)>;
             return translate_marker<marker_event, test_event<0>, D>(
@@ -33,27 +33,27 @@ auto MakeTranslateMarkerFixture(std::int32_t channel) {
 }
 
 TEST_CASE("Translate marker", "[translate_marker]") {
-    auto f = MakeTranslateMarkerFixture(0);
+    auto f = make_translate_marker_fixture(0);
 
     f.feed_events({
         marker_event{{100}, 0},
     });
-    REQUIRE(f.output() == OutVec{
+    REQUIRE(f.output() == out_vec{
                               test_event<0>{100},
                           });
     f.feed_events({
         marker_event{{200}, 1},
     });
-    REQUIRE(f.output() == OutVec{
+    REQUIRE(f.output() == out_vec{
                               marker_event{{200}, 1},
                           });
     f.feed_events({
         test_event<1>{300},
     });
-    REQUIRE(f.output() == OutVec{
+    REQUIRE(f.output() == out_vec{
                               test_event<1>{300},
                           });
     f.feed_end({});
-    REQUIRE(f.output() == OutVec{});
+    REQUIRE(f.output() == out_vec{});
     REQUIRE(f.did_end());
 }

@@ -33,32 +33,32 @@ static_assert(
 
 // Instead of coming up with a 2-input test fixture, we rely on split_events
 // for the input.
-auto MakeMergeFixture(macrotime maxShift) {
-    auto makeProc = [maxShift](auto &&downstream) {
+auto make_merge_fixture(macrotime max_shift) {
+    auto make_proc = [max_shift](auto &&downstream) {
         auto [input0, input1] =
-            make_merge<test_events_0123>(maxShift, std::move(downstream));
+            make_merge<test_events_0123>(max_shift, std::move(downstream));
         return split_events<test_events_23, decltype(input0),
                             decltype(input1)>(std::move(input0),
                                               std::move(input1));
     };
 
     return make_processor_test_fixture<test_events_0123, test_events_0123>(
-        makeProc);
+        make_proc);
 }
 
 // Processor to inject an error after N events are passed through
-template <typename D> class InjectError {
-    int eventsToEmitBeforeError;
+template <typename D> class inject_error {
+    int events_to_emit_before_error;
     bool finished = false;
     D downstream;
 
   public:
-    explicit InjectError(int eventsBeforeError, D &&downstream)
-        : eventsToEmitBeforeError(eventsBeforeError),
+    explicit inject_error(int events_before_error, D &&downstream)
+        : events_to_emit_before_error(events_before_error),
           downstream(std::move(downstream)) {}
 
     template <typename E> void handle_event(E const &event) noexcept {
-        if (eventsToEmitBeforeError-- > 0) {
+        if (events_to_emit_before_error-- > 0) {
             downstream.handle_event(event);
         } else {
             downstream.handle_end(
@@ -67,123 +67,125 @@ template <typename D> class InjectError {
     }
 
     void handle_end(std::exception_ptr error) noexcept {
-        if (eventsToEmitBeforeError > 0)
+        if (events_to_emit_before_error > 0)
             downstream.handle_end(error);
     }
 };
 
-auto MakeMergeFixtureErrorOnInput0(macrotime maxShift, int eventsBeforeError) {
-    auto makeProc = [maxShift, eventsBeforeError](auto &&downstream) {
+auto make_merge_fixture_error_on_input0(macrotime max_shift,
+                                        int events_before_error) {
+    auto make_proc = [max_shift, events_before_error](auto &&downstream) {
         auto [input0, input1] =
-            make_merge<test_events_0123>(maxShift, std::move(downstream));
-        auto error0 = InjectError(eventsBeforeError, std::move(input0));
+            make_merge<test_events_0123>(max_shift, std::move(downstream));
+        auto error0 = inject_error(events_before_error, std::move(input0));
         return split_events<test_events_23, decltype(error0),
                             decltype(input1)>(std::move(error0),
                                               std::move(input1));
     };
 
     return make_processor_test_fixture<test_events_0123, test_events_0123>(
-        makeProc);
+        make_proc);
 }
 
-auto MakeMergeFixtureErrorOnInput1(macrotime maxShift, int eventsBeforeError) {
-    auto makeProc = [maxShift, eventsBeforeError](auto &&downstream) {
+auto make_merge_fixture_error_on_input1(macrotime max_shift,
+                                        int events_before_error) {
+    auto make_proc = [max_shift, events_before_error](auto &&downstream) {
         auto [input0, input1] =
-            make_merge<test_events_0123>(maxShift, std::move(downstream));
-        auto error1 = InjectError(eventsBeforeError, std::move(input1));
+            make_merge<test_events_0123>(max_shift, std::move(downstream));
+        auto error1 = inject_error(events_before_error, std::move(input1));
         return split_events<test_events_23, decltype(input0),
                             decltype(error1)>(std::move(input0),
                                               std::move(error1));
     };
 
     return make_processor_test_fixture<test_events_0123, test_events_0123>(
-        makeProc);
+        make_proc);
 }
 
-using OutVec = std::vector<event_variant<test_events_0123>>;
+using out_vec = std::vector<event_variant<test_events_0123>>;
 
 TEST_CASE("Merge with error on one input", "[Merge]") {
     SECTION("Input0 error with no events pending") {
-        bool furtherInputOnInput1 = GENERATE(false, true);
-        bool endInput1 = GENERATE(false, true);
+        bool further_input_on_input1 = GENERATE(false, true);
+        bool end_input1 = GENERATE(false, true);
 
-        auto f = MakeMergeFixtureErrorOnInput0(1000, 0);
+        auto f = make_merge_fixture_error_on_input0(1000, 0);
         f.feed_events({
             test_event<0>{0}, // Fixture will convert to error
         });
-        REQUIRE(f.output() == OutVec{});
-        if (furtherInputOnInput1) {
+        REQUIRE(f.output() == out_vec{});
+        if (further_input_on_input1) {
             f.feed_events({
                 test_event<2>{1},
             });
-            REQUIRE(f.output() == OutVec{});
+            REQUIRE(f.output() == out_vec{});
         }
-        if (endInput1) {
+        if (end_input1) {
             f.feed_end({});
-            REQUIRE(f.output() == OutVec{});
+            REQUIRE(f.output() == out_vec{});
         }
         REQUIRE_THROWS_MATCHES(f.did_end(), std::runtime_error,
                                Catch::Message("injected error"));
     }
 
     SECTION("Input1 error with no events pending") {
-        bool furtherInputOnInput0 = GENERATE(false, true);
-        bool endInput0 = GENERATE(false, true);
+        bool further_input_on_input0 = GENERATE(false, true);
+        bool end_input0 = GENERATE(false, true);
 
-        auto f = MakeMergeFixtureErrorOnInput1(1000, 0);
+        auto f = make_merge_fixture_error_on_input1(1000, 0);
         f.feed_events({
             test_event<2>{0}, // Fixture will convert to error
         });
-        REQUIRE(f.output() == OutVec{});
-        if (furtherInputOnInput0) {
+        REQUIRE(f.output() == out_vec{});
+        if (further_input_on_input0) {
             f.feed_events({
                 test_event<0>{1}, // Further input ignored on other input
             });
-            REQUIRE(f.output() == OutVec{});
+            REQUIRE(f.output() == out_vec{});
         }
-        if (endInput0) {
+        if (end_input0) {
             f.feed_end({});
-            REQUIRE(f.output() == OutVec{});
+            REQUIRE(f.output() == out_vec{});
         }
         REQUIRE_THROWS_MATCHES(f.did_end(), std::runtime_error,
                                Catch::Message("injected error"));
     }
 
     SECTION("Input0 error with input0 events pending") {
-        bool endInput1 = GENERATE(false, true);
+        bool end_input1 = GENERATE(false, true);
 
-        auto f = MakeMergeFixtureErrorOnInput0(1000, 1);
+        auto f = make_merge_fixture_error_on_input0(1000, 1);
         f.feed_events({
             test_event<0>{0},
         });
-        REQUIRE(f.output() == OutVec{});
+        REQUIRE(f.output() == out_vec{});
         f.feed_events({
             test_event<0>{1}, // Fixture will convert to error
         });
-        REQUIRE(f.output() == OutVec{});
-        if (endInput1) {
+        REQUIRE(f.output() == out_vec{});
+        if (end_input1) {
             f.feed_end({});
-            REQUIRE(f.output() == OutVec{});
+            REQUIRE(f.output() == out_vec{});
         }
         REQUIRE_THROWS_MATCHES(f.did_end(), std::runtime_error,
                                Catch::Message("injected error"));
     }
 
     SECTION("Input0 error with input1 events pending") {
-        bool endInput1 = GENERATE(false, true);
+        bool end_input1 = GENERATE(false, true);
 
-        auto f = MakeMergeFixtureErrorOnInput0(1000, 0);
+        auto f = make_merge_fixture_error_on_input0(1000, 0);
         f.feed_events({
             test_event<2>{0},
         });
-        REQUIRE(f.output() == OutVec{});
+        REQUIRE(f.output() == out_vec{});
         f.feed_events({
             test_event<0>{1}, // Fixture will convert to error
         });
-        REQUIRE(f.output() == OutVec{});
-        if (endInput1) {
+        REQUIRE(f.output() == out_vec{});
+        if (end_input1) {
             f.feed_end({});
-            REQUIRE(f.output() == OutVec{});
+            REQUIRE(f.output() == out_vec{});
         }
         REQUIRE_THROWS_MATCHES(f.did_end(), std::runtime_error,
                                Catch::Message("injected error"));
@@ -191,16 +193,16 @@ TEST_CASE("Merge with error on one input", "[Merge]") {
 }
 
 TEST_CASE("Merge", "[Merge]") {
-    auto f = MakeMergeFixture(1000);
+    auto f = make_merge_fixture(1000);
 
     SECTION("Empty streams yield empty stream") {
         f.feed_end({});
-        REQUIRE(f.output() == OutVec{});
+        REQUIRE(f.output() == out_vec{});
     }
 
     SECTION("Errors on both inputs") {
         f.feed_end(std::make_exception_ptr(std::runtime_error("test")));
-        REQUIRE(f.output() == OutVec{});
+        REQUIRE(f.output() == out_vec{});
         REQUIRE_THROWS_MATCHES(f.did_end(), std::runtime_error,
                                Catch::Message("test"));
     }
@@ -209,25 +211,25 @@ TEST_CASE("Merge", "[Merge]") {
         f.feed_events({
             test_event<2>{42},
         });
-        REQUIRE(f.output() == OutVec{});
+        REQUIRE(f.output() == out_vec{});
         f.feed_events({
             test_event<0>{42},
         });
-        REQUIRE(f.output() == OutVec{
+        REQUIRE(f.output() == out_vec{
                                   test_event<0>{42},
                               });
         f.feed_events({
             test_event<3>{42},
         });
-        REQUIRE(f.output() == OutVec{});
+        REQUIRE(f.output() == out_vec{});
         f.feed_events({
             test_event<1>{42},
         });
-        REQUIRE(f.output() == OutVec{
+        REQUIRE(f.output() == out_vec{
                                   test_event<1>{42},
                               });
         f.feed_end({});
-        REQUIRE(f.output() == OutVec{
+        REQUIRE(f.output() == out_vec{
                                   test_event<2>{42},
                                   test_event<3>{42},
                               });
@@ -238,17 +240,17 @@ TEST_CASE("Merge", "[Merge]") {
         f.feed_events({
             test_event<0>{1},
         });
-        REQUIRE(f.output() == OutVec{});
+        REQUIRE(f.output() == out_vec{});
         f.feed_events({
             test_event<2>{2},
         });
-        REQUIRE(f.output() == OutVec{test_event<0>{1}});
+        REQUIRE(f.output() == out_vec{test_event<0>{1}});
         f.feed_events({
             test_event<0>{3},
         });
-        REQUIRE(f.output() == OutVec{test_event<2>{2}});
+        REQUIRE(f.output() == out_vec{test_event<2>{2}});
         f.feed_end({});
-        REQUIRE(f.output() == OutVec{
+        REQUIRE(f.output() == out_vec{
                                   test_event<0>{3},
                               });
         REQUIRE(f.did_end());
@@ -258,26 +260,26 @@ TEST_CASE("Merge", "[Merge]") {
         f.feed_events({
             test_event<0>{2},
         });
-        REQUIRE(f.output() == OutVec{});
+        REQUIRE(f.output() == out_vec{});
         f.feed_events({
             test_event<2>{1},
         });
-        REQUIRE(f.output() == OutVec{
+        REQUIRE(f.output() == out_vec{
                                   test_event<2>{1},
                               });
         f.feed_events({
             test_event<0>{4},
         });
-        REQUIRE(f.output() == OutVec{});
+        REQUIRE(f.output() == out_vec{});
         f.feed_events({
             test_event<2>{3},
         });
-        REQUIRE(f.output() == OutVec{
+        REQUIRE(f.output() == out_vec{
                                   test_event<0>{2},
                                   test_event<2>{3},
                               });
         f.feed_end({});
-        REQUIRE(f.output() == OutVec{
+        REQUIRE(f.output() == out_vec{
                                   test_event<0>{4},
                               });
         REQUIRE(f.did_end());
@@ -287,26 +289,26 @@ TEST_CASE("Merge", "[Merge]") {
         f.feed_events({
             test_event<2>{2},
         });
-        REQUIRE(f.output() == OutVec{});
+        REQUIRE(f.output() == out_vec{});
         f.feed_events({
             test_event<0>{1},
         });
-        REQUIRE(f.output() == OutVec{
+        REQUIRE(f.output() == out_vec{
                                   test_event<0>{1},
                               });
         f.feed_events({
             test_event<2>{4},
         });
-        REQUIRE(f.output() == OutVec{});
+        REQUIRE(f.output() == out_vec{});
         f.feed_events({
             test_event<0>{3},
         });
-        REQUIRE(f.output() == OutVec{
+        REQUIRE(f.output() == out_vec{
                                   test_event<2>{2},
                                   test_event<0>{3},
                               });
         f.feed_end({});
-        REQUIRE(f.output() == OutVec{
+        REQUIRE(f.output() == out_vec{
                                   test_event<2>{4},
                               });
         REQUIRE(f.did_end());
@@ -314,23 +316,23 @@ TEST_CASE("Merge", "[Merge]") {
 }
 
 TEST_CASE("Merge max time shift", "[Merge]") {
-    auto f = MakeMergeFixture(10);
+    auto f = make_merge_fixture(10);
 
     SECTION("Input0 emitted after exceeding max time shift") {
         f.feed_events({
             test_event<0>{0},
         });
-        REQUIRE(f.output() == OutVec{});
+        REQUIRE(f.output() == out_vec{});
         f.feed_events({
             test_event<0>{10},
         });
-        REQUIRE(f.output() == OutVec{});
+        REQUIRE(f.output() == out_vec{});
         f.feed_events({
             test_event<0>{11},
         });
-        REQUIRE(f.output() == OutVec{test_event<0>{0}});
+        REQUIRE(f.output() == out_vec{test_event<0>{0}});
         f.feed_end({});
-        REQUIRE(f.output() == OutVec{
+        REQUIRE(f.output() == out_vec{
                                   test_event<0>{10},
                                   test_event<0>{11},
                               });
@@ -341,17 +343,17 @@ TEST_CASE("Merge max time shift", "[Merge]") {
         f.feed_events({
             test_event<1>{0},
         });
-        REQUIRE(f.output() == OutVec{});
+        REQUIRE(f.output() == out_vec{});
         f.feed_events({
             test_event<1>{10},
         });
-        REQUIRE(f.output() == OutVec{});
+        REQUIRE(f.output() == out_vec{});
         f.feed_events({
             test_event<1>{11},
         });
-        REQUIRE(f.output() == OutVec{test_event<1>{0}});
+        REQUIRE(f.output() == out_vec{test_event<1>{0}});
         f.feed_end({});
-        REQUIRE(f.output() == OutVec{
+        REQUIRE(f.output() == out_vec{
                                   test_event<1>{10},
                                   test_event<1>{11},
                               });

@@ -24,21 +24,21 @@ namespace internal {
 
 template <typename OutputEventSet> class logging_mock_processor {
   public:
-    struct Result {
+    struct result {
         std::vector<event_variant<OutputEventSet>> outputs;
-        bool didEnd = false;
+        bool did_end = false;
         std::exception_ptr error;
     };
 
   private:
-    Result &outputs;
+    result &outputs;
 
   public:
-    explicit logging_mock_processor(Result &outputs) noexcept
+    explicit logging_mock_processor(result &outputs) noexcept
         : outputs(outputs) {}
 
     template <typename E> void handle_event(E const &event) noexcept {
-        assert(!outputs.didEnd);
+        assert(!outputs.did_end);
         try {
             outputs.outputs.push_back(event);
         } catch (std::exception const &exc) {
@@ -47,8 +47,8 @@ template <typename OutputEventSet> class logging_mock_processor {
     }
 
     void handle_end(std::exception_ptr error) noexcept {
-        assert(!outputs.didEnd);
-        outputs.didEnd = true;
+        assert(!outputs.did_end);
+        outputs.did_end = true;
         outputs.error = error;
     }
 };
@@ -59,21 +59,22 @@ template <typename OutputEventSet> class logging_mock_processor {
 // (sequence of) input event can be examined.
 template <typename InputEventSet, typename OutputEventSet, typename Proc>
 class processor_test_fixture {
-    using MockDownstream = internal::logging_mock_processor<OutputEventSet>;
+    using mock_downstream_type =
+        internal::logging_mock_processor<OutputEventSet>;
 
     Proc proc;
-    typename MockDownstream::Result result;
+    typename mock_downstream_type::result result;
 
     template <typename F>
-    explicit processor_test_fixture(F procFactory)
-        : proc(procFactory(MockDownstream(result))) {}
+    explicit processor_test_fixture(F proc_factory)
+        : proc(proc_factory(mock_downstream_type(result))) {}
 
   public:
     // Create an instance.
     // Creation requires a factory function template in order to deduce Proc
     // while using the given InputEventSet and OutputEventSet.
     template <typename IES, typename OES, typename F>
-    friend auto make_processor_test_fixture(F procFactory);
+    friend auto make_processor_test_fixture(F proc_factory);
 
     using output_vector_type = std::vector<event_variant<OutputEventSet>>;
 
@@ -133,20 +134,21 @@ class processor_test_fixture {
             throw std::logic_error("Unchecked output remains");
         if (result.error)
             std::rethrow_exception(result.error);
-        return result.didEnd;
+        return result.did_end;
     }
 };
 
-// Create a processor_test_fixture. procFactory must be a callable taking an
+// Create a processor_test_fixture. proc_factory must be a callable taking an
 // rvalue ref to a downstream processor and returning an instance of the
 // processor-under-test.
 template <typename InputEventSet, typename OutputEventSet, typename F>
-auto make_processor_test_fixture(F procFactory) {
-    using MockDownstream = internal::logging_mock_processor<OutputEventSet>;
-    using Proc = std::invoke_result_t<F, MockDownstream>;
+auto make_processor_test_fixture(F proc_factory) {
+    using mock_downstream_type =
+        internal::logging_mock_processor<OutputEventSet>;
+    using Proc = std::invoke_result_t<F, mock_downstream_type>;
 
     return processor_test_fixture<InputEventSet, OutputEventSet, Proc>(
-        procFactory);
+        proc_factory);
 }
 
 } // namespace flimevt::test

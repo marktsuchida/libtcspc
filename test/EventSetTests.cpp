@@ -24,33 +24,33 @@ static_assert(
 static_assert(
     contains_event_v<event_set<test_event<0>, test_event<1>>, test_event<1>>);
 
-struct MyEvent1Processor {
+struct my_event1_processor {
     void handle_event(test_event<0> const &) noexcept {}
 };
 
-static_assert(handles_event_v<MyEvent1Processor, test_event<0>>);
-static_assert(!handles_event_v<MyEvent1Processor, test_event<1>>);
-static_assert(!handles_end_v<MyEvent1Processor>);
+static_assert(handles_event_v<my_event1_processor, test_event<0>>);
+static_assert(!handles_event_v<my_event1_processor, test_event<1>>);
+static_assert(!handles_end_v<my_event1_processor>);
 static_assert(
-    !handles_event_set_v<MyEvent1Processor, event_set<test_event<0>>>);
+    !handles_event_set_v<my_event1_processor, event_set<test_event<0>>>);
 
-struct MyEndProcessor {
+struct my_end_processor {
     void handle_end(std::exception_ptr) noexcept {}
 };
 
-static_assert(!handles_event_v<MyEndProcessor, test_event<0>>);
-static_assert(handles_end_v<MyEndProcessor>);
-static_assert(handles_event_set_v<MyEndProcessor, event_set<>>);
+static_assert(!handles_event_v<my_end_processor, test_event<0>>);
+static_assert(handles_end_v<my_end_processor>);
+static_assert(handles_event_set_v<my_end_processor, event_set<>>);
 
-struct MyEvent1SetProcessor : MyEvent1Processor, MyEndProcessor {};
+struct my_event1_set_processor : my_event1_processor, my_end_processor {};
 
-static_assert(handles_event_v<MyEvent1SetProcessor, test_event<0>>);
-static_assert(handles_end_v<MyEvent1SetProcessor>);
+static_assert(handles_event_v<my_event1_set_processor, test_event<0>>);
+static_assert(handles_end_v<my_event1_set_processor>);
 static_assert(
-    handles_event_set_v<MyEvent1SetProcessor, event_set<test_event<0>>>);
+    handles_event_set_v<my_event1_set_processor, event_set<test_event<0>>>);
 static_assert(
-    !handles_event_set_v<MyEvent1SetProcessor, event_set<test_event<1>>>);
-static_assert(!handles_event_set_v<MyEvent1SetProcessor,
+    !handles_event_set_v<my_event1_set_processor, event_set<test_event<1>>>);
+static_assert(!handles_event_set_v<my_event1_set_processor,
                                    event_set<test_event<0>, test_event<1>>>);
 
 static_assert(std::is_same_v<concat_event_set_t<event_set<test_event<0>>,
