@@ -14,14 +14,14 @@ namespace flimevt::internal {
 
 // Internal functions to read integers from little-endian data streams.
 
-// We provide 2 implementations of each ReadU*LE() function, "Generic" and
-// "Memcpy". The "Generic" way is endian-agnostic but is poorly optimized by
-// some compilers, including MSVC at the time of writing. The "Memcpy" way is
+// We provide 2 implementations of each read_u*le() function, "_generic" and
+// "_memcpy". The "_generic" way is endian-agnostic but is poorly optimized by
+// some compilers, including MSVC at the time of writing. The "_memcpy" way is
 // only implemented for little-endian targets (for now).
 
 // All variants work with any (lack of) alignment.
 
-// For the "Generic" implementations, see
+// For the "_generic" implementations, see
 // https://commandcenter.blogspot.com/2012/04/byte-order-fallacy.html
 // (but note the need for extra casts for it to actually work correctly).
 

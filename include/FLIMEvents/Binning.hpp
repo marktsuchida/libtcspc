@@ -330,12 +330,12 @@ class batch_bin_increments {
     /** \brief Processor interface **/
     void handle_event(bin_increment_event<TBinIndex> const &event) noexcept {
         if (in_batch)
-            batch.binIndices.push_back(event.binIndex);
+            batch.bin_indices.push_back(event.bin_index);
     }
 
     /** \brief Processor interface **/
     void handle_event(EStart const &event) noexcept {
-        batch.binIndices.clear();
+        batch.bin_indices.clear();
         in_batch = true;
         batch.start = event.macrotime;
     }
@@ -356,8 +356,8 @@ class batch_bin_increments {
 
     /** \brief Processor interface **/
     void handle_end(std::exception_ptr error) noexcept {
-        batch.binIndices.clear();
-        batch.binIndices.shrink_to_fit();
+        batch.bin_indices.clear();
+        batch.bin_indices.shrink_to_fit();
         downstream.handle_end(error);
     }
 };

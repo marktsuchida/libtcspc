@@ -63,21 +63,21 @@ template <typename TBinIndex> struct bin_increment_event {
     /**
      * \brief The histogram bin index to which the data value was mapped.
      */
-    TBinIndex binIndex;
+    TBinIndex bin_index;
 };
 
 /** \brief Equality operator for bin_increment_event. */
 template <typename T>
 constexpr bool operator==(bin_increment_event<T> const &lhs,
                           bin_increment_event<T> const &rhs) noexcept {
-    return lhs.macrotime == rhs.macrotime && lhs.binIndex == rhs.binIndex;
+    return lhs.macrotime == rhs.macrotime && lhs.bin_index == rhs.bin_index;
 }
 
 /** \brief Stream insertion operator for bin_increment_event. */
 template <typename T>
 inline std::ostream &operator<<(std::ostream &s,
                                 bin_increment_event<T> const &e) {
-    return s << "bin_increment(" << e.macrotime << ", " << e.binIndex << ')';
+    return s << "bin_increment(" << e.macrotime << ", " << e.bin_index << ')';
 }
 
 /**
@@ -102,7 +102,7 @@ template <typename TBinIndex> struct bin_increment_batch_event {
     /**
      * \brief The bin indices for the datapoints in the batch.
      */
-    std::vector<TBinIndex> binIndices;
+    std::vector<TBinIndex> bin_indices;
 };
 
 /** \brief Equality operator for bin_increment_batch_event. */
@@ -111,7 +111,7 @@ template <typename T>
 bool operator==(bin_increment_batch_event<T> const &lhs,
                 bin_increment_batch_event<T> const &rhs) noexcept {
     return lhs.start == rhs.start && lhs.stop == rhs.stop &&
-           lhs.binIndices == rhs.binIndices;
+           lhs.bin_indices == rhs.bin_indices;
 }
 
 /** \brief Stream insertion operator for bin_increment_batch_event. */
@@ -119,7 +119,7 @@ template <typename T>
 inline std::ostream &operator<<(std::ostream &s,
                                 bin_increment_batch_event<T> const &e) {
     return s << "bin_increment_batch(" << e.start << ", " << e.stop << ", "
-             << e.binIndices << ')';
+             << e.bin_indices << ')';
 }
 
 /**

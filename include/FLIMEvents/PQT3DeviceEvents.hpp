@@ -224,7 +224,7 @@ template <typename E, typename D> class base_decode_pq_t3 {
         // Validate input: ensure nsync increases monotonically (a common
         // assumption made by downstream processors)
         if (nsync <= last_nsync) {
-            downstream.HandleError(std::make_exception_ptr(
+            downstream.handle_end(std::make_exception_ptr(
                 std::runtime_error("Non-monotonic nsync encountered")));
             return;
         }
@@ -250,7 +250,7 @@ template <typename E, typename D> class base_decode_pq_t3 {
     }
 
     void handle_end(std::exception_ptr error) noexcept {
-        downstream.HandleError(error);
+        downstream.handle_end(error);
     }
 };
 } // namespace internal

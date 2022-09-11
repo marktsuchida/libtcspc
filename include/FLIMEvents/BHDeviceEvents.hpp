@@ -257,7 +257,9 @@ struct bh_spc_600_event_32 {
     /**
      * \brief Read the 'gap' (data lost) flag.
      */
-    bool GetGapflag() const noexcept { return unsigned(bytes[3]) & (1U << 5); }
+    bool get_gap_flag() const noexcept {
+        return unsigned(bytes[3]) & (1U << 5);
+    }
 
     /**
      * \brief Read the 'macrotime overflow' flag.

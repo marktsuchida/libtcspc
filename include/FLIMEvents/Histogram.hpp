@@ -161,7 +161,7 @@ class histogram {
             started = true;
         }
 
-        TBin &bin = hist.histogram[event.binIndex];
+        TBin &bin = hist.histogram[event.bin_index];
         if (bin < max_per_bin) {
             ++hist.total;
             ++bin;
@@ -290,7 +290,7 @@ class histogram_in_batches {
         hist.total = 0;
         hist.saturated = 0;
 
-        for (auto bin_index : event.binIndices) {
+        for (auto bin_index : event.bin_indices) {
             TBin &bin = hist.histogram[bin_index];
             if (bin < max_per_bin) {
                 ++hist.total;
@@ -444,8 +444,8 @@ class accumulate_histograms {
             started = true;
         }
 
-        for (auto bin_index_it = event.binIndices.cbegin();
-             bin_index_it != event.binIndices.cend(); ++bin_index_it) {
+        for (auto bin_index_it = event.bin_indices.cbegin();
+             bin_index_it != event.bin_indices.cend(); ++bin_index_it) {
             TBin &bin = hist.histogram[*bin_index_it];
             if (bin < max_per_bin) {
                 ++hist.total;
@@ -458,7 +458,7 @@ class accumulate_histograms {
                     finish(std::make_exception_ptr(histogram_overflow_error(
                         "Histogram bin overflowed on a single batch")));
                 } else {
-                    roll_back_increments(event.binIndices.cbegin(),
+                    roll_back_increments(event.bin_indices.cbegin(),
                                          bin_index_it);
                     emit_accumulated(true, false);
                     reset();
@@ -466,7 +466,7 @@ class accumulate_histograms {
                 }
                 return;
             } else if constexpr (std::is_same_v<Ovfl, stop_on_overflow>) {
-                roll_back_increments(event.binIndices.cbegin(), bin_index_it);
+                roll_back_increments(event.bin_indices.cbegin(), bin_index_it);
                 emit_accumulated(!just_started, true);
                 finish({});
                 return;
