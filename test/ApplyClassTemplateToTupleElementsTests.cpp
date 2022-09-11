@@ -10,15 +10,16 @@ using namespace flimevt::internal;
 
 template <typename... Ts> struct Test {};
 
-static_assert(std::is_same_v<ApplyClassTemplateToTupleElementsT<
+static_assert(std::is_same_v<apply_class_template_to_tuple_elements_t<
                                  Test, std::tuple<>, unsigned, double>,
                              Test<unsigned, double>>);
 
-static_assert(std::is_same_v<
-              ApplyClassTemplateToTupleElementsT<Test, std::tuple<int, float>>,
-              Test<int, float>>);
+static_assert(
+    std::is_same_v<
+        apply_class_template_to_tuple_elements_t<Test, std::tuple<int, float>>,
+        Test<int, float>>);
 
 static_assert(
-    std::is_same_v<ApplyClassTemplateToTupleElementsT<
+    std::is_same_v<apply_class_template_to_tuple_elements_t<
                        Test, std::tuple<int, float>, unsigned, double>,
                    Test<unsigned, double, int, float>>);

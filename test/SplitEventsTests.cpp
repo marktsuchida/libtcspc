@@ -18,15 +18,15 @@
 using namespace flimevt;
 using namespace flimevt::test;
 
-static_assert(HandlesEventSetV<SplitEvents<Events01, DiscardAll<Events01>,
-                                           DiscardAll<Events01>>,
-                               Events01>);
+static_assert(handles_event_set_v<split_events<Events01, discard_all<Events01>,
+                                               discard_all<Events01>>,
+                                  Events01>);
 
 auto MakeSplitEventsFixtureOutput0() {
     auto makeProc = [](auto &&downstream) {
         using D0 = std::remove_reference_t<decltype(downstream)>;
-        using D1 = DiscardAll<Events23>;
-        return SplitEvents<Events23, D0, D1>(std::move(downstream), D1());
+        using D1 = discard_all<Events23>;
+        return split_events<Events23, D0, D1>(std::move(downstream), D1());
     };
 
     return MakeProcessorTestFixture<Events0123, Events01>(makeProc);
@@ -34,18 +34,18 @@ auto MakeSplitEventsFixtureOutput0() {
 
 auto MakeSplitEventsFixtureOutput1() {
     auto makeProc = [](auto &&downstream) {
-        using D0 = DiscardAll<Events01>;
+        using D0 = discard_all<Events01>;
         using D1 = std::remove_reference_t<decltype(downstream)>;
-        return SplitEvents<Events23, D0, D1>(D0(), std::move(downstream));
+        return split_events<Events23, D0, D1>(D0(), std::move(downstream));
     };
 
     return MakeProcessorTestFixture<Events0123, Events23>(makeProc);
 }
 
-using OutVec01 = std::vector<EventVariant<Events01>>;
-using OutVec23 = std::vector<EventVariant<Events23>>;
+using OutVec01 = std::vector<event_variant<Events01>>;
+using OutVec23 = std::vector<event_variant<Events23>>;
 
-TEST_CASE("Split events", "[SplitEvents]") {
+TEST_CASE("Split events", "[split_events]") {
     auto f0 = MakeSplitEventsFixtureOutput0();
     auto f1 = MakeSplitEventsFixtureOutput1();
 

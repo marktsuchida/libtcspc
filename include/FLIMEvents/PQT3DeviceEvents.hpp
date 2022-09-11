@@ -28,16 +28,16 @@ namespace flimevt {
 // Note that code here is written to run on little- or big-endian machines; see
 // https://commandcenter.blogspot.com/2012/04/byte-order-fallacy.html
 
-// The two T3 formats (PQPicoT3Event and PQHydraT3Event) use matching member
-// names for static polymorphism. This allows BaseDecodePQT3<E> to handle 3
-// different formats with the same code.
+// The two T3 formats (pq_pico_t3_event and pq_hydra_t3_event) use matching
+// member names for static polymorphism. This allows base_decode_pq_t3<E> to
+// handle 3 different formats with the same code.
 
 /**
  * \brief Binary record interpretation for PicoHarp T3 Format.
  *
  * RecType 0x00010303.
  */
-struct PQPicoT3Event {
+struct pq_pico_t3_event {
     /**
      * \brief Bytes of the 32-bit raw device event.
      */
@@ -46,58 +46,60 @@ struct PQPicoT3Event {
     /**
      * \brief The nsync overflow period of this event type.
      */
-    static constexpr Macrotime NSyncOverflowPeriod = 65536;
+    static constexpr macrotime nsync_overflow_period = 65536;
 
     /**
      * \brief Read the channel if this event represents a photon.
      */
-    std::uint8_t GetChannel() const noexcept {
+    std::uint8_t get_channel() const noexcept {
         return unsigned(bytes[3]) >> 4;
     }
 
     /**
      * \brief Read the difference time if this event represents a photon.
      */
-    std::uint16_t GetDTime() const noexcept {
-        return unsigned(internal::ReadU16LE(&bytes[2])) & 0x0fffU;
+    std::uint16_t get_dtime() const noexcept {
+        return unsigned(internal::read_u16le(&bytes[2])) & 0x0fffU;
     }
 
     /**
      * \brief Read the nsync counter value (no rollover correction).
      */
-    std::uint16_t GetNSync() const noexcept {
-        return internal::ReadU16LE(&bytes[0]);
+    std::uint16_t get_nsync() const noexcept {
+        return internal::read_u16le(&bytes[0]);
     }
 
     /**
      * \brief Determine if this event is a non-photon event.
      */
-    bool IsSpecial() const noexcept { return GetChannel() == 15; }
+    bool is_special() const noexcept { return get_channel() == 15; }
 
     /**
      * \brief Determine if this event represents an nsync overflow.
      */
-    bool IsNSyncOverflow() const noexcept {
-        return IsSpecial() && GetDTime() == 0;
+    bool is_nsync_overflow() const noexcept {
+        return is_special() && get_dtime() == 0;
     }
 
     /**
      * \brief Read the nsync overflow count if this event represents an nsync
      * overflow.
      */
-    std::uint16_t GetNSyncOverflowCount() const noexcept { return 1; }
+    std::uint16_t get_nsync_overflow_count() const noexcept { return 1; }
 
     /**
      * \brief Determine if this event represents markers.
      */
-    bool IsExternalMarker() const noexcept {
-        return IsSpecial() && GetDTime() != 0;
+    bool is_external_marker() const noexcept {
+        return is_special() && get_dtime() != 0;
     }
 
     /**
      * \brief Read the marker bits (mask) if this event represents markers.
      */
-    std::uint16_t GetExternalMarkerBits() const noexcept { return GetDTime(); }
+    std::uint16_t get_external_marker_bits() const noexcept {
+        return get_dtime();
+    }
 };
 
 /**
@@ -107,7 +109,7 @@ struct PQPicoT3Event {
  * \tparam IsHydraV1 if true, interpret as HydraHarp V1 (RecType 0x00010304)
  * format, in which nsync overflow records always indicate a single overflow
  */
-template <bool IsHydraV1> struct PQHydraT3Event {
+template <bool IsHydraV1> struct pq_hydra_t3_event {
     /**
      * \brief Bytes of the 32-bit raw device event.
      */
@@ -116,19 +118,19 @@ template <bool IsHydraV1> struct PQHydraT3Event {
     /**
      * \brief The nsync overflow period of this event type.
      */
-    static constexpr Macrotime NSyncOverflowPeriod = 1024;
+    static constexpr macrotime nsync_overflow_period = 1024;
 
     /**
      * \brief Read the channel if this event represents a photon.
      */
-    std::uint8_t GetChannel() const noexcept {
+    std::uint8_t get_channel() const noexcept {
         return (unsigned(bytes[3]) & 0x7fU) >> 1;
     }
 
     /**
      * \brief Read the difference time if this event represents a photon.
      */
-    std::uint16_t GetDTime() const noexcept {
+    std::uint16_t get_dtime() const noexcept {
         auto lo6 = unsigned(bytes[1]) >> 2;
         auto mid8 = unsigned(bytes[2]);
         auto hi1 = unsigned(bytes[3]) & 1U;
@@ -138,86 +140,86 @@ template <bool IsHydraV1> struct PQHydraT3Event {
     /**
      * \brief Read the nsync counter value (no rollover correction).
      */
-    std::uint16_t GetNSync() const noexcept {
-        return unsigned(internal::ReadU16LE(&bytes[0])) & 0x03ffU;
+    std::uint16_t get_nsync() const noexcept {
+        return unsigned(internal::read_u16le(&bytes[0])) & 0x03ffU;
     }
 
     /**
      * \brief Determine if this event is a non-photon event.
      */
-    bool IsSpecial() const noexcept { return unsigned(bytes[3]) & (1U << 7); }
+    bool is_special() const noexcept { return unsigned(bytes[3]) & (1U << 7); }
 
     /**
      * \brief Determine if this event represents an nsync overflow.
      */
-    bool IsNSyncOverflow() const noexcept {
-        return IsSpecial() && GetChannel() == 63;
+    bool is_nsync_overflow() const noexcept {
+        return is_special() && get_channel() == 63;
     }
 
     /**
      * \brief Read the nsync overflow count if this event represents an nsync
      * overflow.
      */
-    std::uint16_t GetNSyncOverflowCount() const noexcept {
-        if (IsHydraV1 || GetNSync() == 0) {
+    std::uint16_t get_nsync_overflow_count() const noexcept {
+        if (IsHydraV1 || get_nsync() == 0) {
             return 1;
         }
-        return GetNSync();
+        return get_nsync();
     }
 
     /**
      * \brief Determine if this event represents markers.
      */
-    bool IsExternalMarker() const noexcept {
-        return IsSpecial() && GetChannel() != 63;
+    bool is_external_marker() const noexcept {
+        return is_special() && get_channel() != 63;
     }
 
     /**
      * \brief Read the marker bits (mask) if this event represents markers.
      */
-    std::uint8_t GetExternalMarkerBits() const noexcept {
-        return GetChannel();
+    std::uint8_t get_external_marker_bits() const noexcept {
+        return get_channel();
     }
 };
 
 /**
  * \brief Binary record interpretation for HydraHarp V1 T3 format.
  */
-using PQHydraV1T3Event = PQHydraT3Event<true>;
+using pq_hydra_v1_t3_event = pq_hydra_t3_event<true>;
 
 /**
  * \brief Binary record interpretation for HydraHarp V2, MultiHarp, and
  * TimeHarp260 T3 format.
  */
-using PQHydraV2T3Event = PQHydraT3Event<false>;
+using pq_hydra_v2_t3_event = pq_hydra_t3_event<false>;
 
 namespace internal {
 
-// Common implementation for DecodePQPicoT3, DecodePQHydraV1T3,
-// DecodePQHydraV2T3.
+// Common implementation for decode_pq_pico_t3, decode_pq_hydra_v1_t3,
+// decode_pq_hydra_v2_t3.
 // E is the binary record event class.
-template <typename E, typename D> class BaseDecodePQT3 {
-    Macrotime nSyncBase;
-    Macrotime lastNSync;
+template <typename E, typename D> class base_decode_pq_t3 {
+    macrotime nSyncBase;
+    macrotime lastNSync;
 
     D downstream;
 
   public:
-    explicit BaseDecodePQT3(D &&downstream)
+    explicit base_decode_pq_t3(D &&downstream)
         : nSyncBase(0), lastNSync(0), downstream(std::move(downstream)) {}
 
-    void HandleEvent(E const &event) noexcept {
-        if (event.IsNSyncOverflow()) {
+    void handle_event(E const &event) noexcept {
+        if (event.is_nsync_overflow()) {
             nSyncBase +=
-                E::NSyncOverflowPeriod * event.GetNSyncOverflowCount();
+                E::nsync_overflow_period * event.get_nsync_overflow_count();
 
-            TimeReachedEvent e;
+            time_reached_event e;
             e.macrotime = nSyncBase;
-            downstream.HandleEvent(e);
+            downstream.handle_event(e);
             return;
         }
 
-        Macrotime nSync = nSyncBase + event.GetNSync();
+        macrotime nSync = nSyncBase + event.get_nsync();
 
         // Validate input: ensure nSync increases monotonically (a common
         // assumption made by downstream processors)
@@ -228,26 +230,26 @@ template <typename E, typename D> class BaseDecodePQT3 {
         }
         lastNSync = nSync;
 
-        if (event.IsExternalMarker()) {
-            MarkerEvent e;
+        if (event.is_external_marker()) {
+            marker_event e;
             e.macrotime = nSync;
-            std::uint32_t bits = event.GetExternalMarkerBits();
+            std::uint32_t bits = event.get_external_marker_bits();
             while (bits) {
-                e.channel = internal::CountTrailingZeros32(bits);
-                downstream.HandleEvent(e);
+                e.channel = internal::count_trailing_zeros_32(bits);
+                downstream.handle_event(e);
                 bits = bits & (bits - 1); // Clear the handled bit
             }
             return;
         }
 
-        TimeCorrelatedCountEvent e;
+        time_correlated_count_event e;
         e.macrotime = nSync;
-        e.difftime = event.GetDTime();
-        e.channel = event.GetChannel();
-        downstream.HandleEvent(e);
+        e.difftime = event.get_dtime();
+        e.channel = event.get_channel();
+        downstream.handle_event(e);
     }
 
-    void HandleEnd(std::exception_ptr error) noexcept {
+    void handle_end(std::exception_ptr error) noexcept {
         downstream.HandleError(error);
     }
 };
@@ -256,85 +258,89 @@ template <typename E, typename D> class BaseDecodePQT3 {
 /**
  * \brief Processor that decodes PicoQuant PicoHarp T3 events.
  *
- * \see DecodePQPicoT3()
+ * \see decode_pq_pico_t3()
  *
  * \tparam D downstream processor type
  */
 template <typename D>
-class DecodePQPicoT3 : public internal::BaseDecodePQT3<PQPicoT3Event, D> {
+class decode_pq_pico_t3
+    : public internal::base_decode_pq_t3<pq_pico_t3_event, D> {
   public:
-    using internal::BaseDecodePQT3<PQPicoT3Event, D>::BaseDecodePQT3;
+    using internal::base_decode_pq_t3<pq_pico_t3_event, D>::base_decode_pq_t3;
 };
 
 /**
- * \brief Deduction guide for constructing a DecodePQPicoT3 processor.
+ * \brief Deduction guide for constructing a decode_pq_pico_t3 processor.
  *
  * \tparam D downstream processor type
  * \param downstream downstream processor (moved out)
  */
-template <typename D> DecodePQPicoT3(D &&downstream) -> DecodePQPicoT3<D>;
+template <typename D>
+decode_pq_pico_t3(D &&downstream) -> decode_pq_pico_t3<D>;
 
 /**
  * \brief Processor that decodes PicoQuant HydraHarp V1 T3 events.
  *
- * \see DecodePQHydraV1T3()
+ * \see decode_pq_hydra_v1_t3()
  *
  * \tparam D downstream processor type
  */
 template <typename D>
-class DecodePQHydraV1T3
-    : public internal::BaseDecodePQT3<PQHydraV1T3Event, D> {
+class decode_pq_hydra_v1_t3
+    : public internal::base_decode_pq_t3<pq_hydra_v1_t3_event, D> {
   public:
-    using internal::BaseDecodePQT3<PQHydraV1T3Event, D>::BaseDecodePQT3;
+    using internal::base_decode_pq_t3<pq_hydra_v1_t3_event,
+                                      D>::base_decode_pq_t3;
 };
 
 /**
- * \brief Deduction guide for constructing a DecodePQHydraV1T3 processor.
+ * \brief Deduction guide for constructing a decode_pq_hydra_v1_t3 processor.
  *
  * \tparam D downstream processor type
  * \param downstream downstream processor (moved out)
  */
 template <typename D>
-DecodePQHydraV1T3(D &&downstream) -> DecodePQHydraV1T3<D>;
+decode_pq_hydra_v1_t3(D &&downstream) -> decode_pq_hydra_v1_t3<D>;
 
 /**
  * \brief Processor that decodes PicoQuant HydraHarp V2, MultiHarp, and
  * TimeHarp260 T3 events.
  *
- * \see DecodePQHydraV2T3()
+ * \see decode_pq_hydra_v2_t3()
  *
  * \tparam D downstream processor type
  */
 template <typename D>
-class DecodePQHydraV2T3
-    : public internal::BaseDecodePQT3<PQHydraV2T3Event, D> {
+class decode_pq_hydra_v2_t3
+    : public internal::base_decode_pq_t3<pq_hydra_v2_t3_event, D> {
   public:
-    using internal::BaseDecodePQT3<PQHydraV2T3Event, D>::BaseDecodePQT3;
+    using internal::base_decode_pq_t3<pq_hydra_v2_t3_event,
+                                      D>::base_decode_pq_t3;
 };
 
 /**
- * \brief Deduction guide for constructing a DecodePQHydraV2T3 processor.
+ * \brief Deduction guide for constructing a decode_pq_hydra_v2_t3 processor.
  *
  * \tparam D downstream processor type
  * \param downstream downstream processor (moved out)
  */
 template <typename D>
-DecodePQHydraV2T3(D &&downstream) -> DecodePQHydraV2T3<D>;
+decode_pq_hydra_v2_t3(D &&downstream) -> decode_pq_hydra_v2_t3<D>;
 
 /**
  * \brief Event set for PicoQuant PicoHarp T3 data stream.
  */
-using PQPicoT3Events = EventSet<PQPicoT3Event>;
+using pq_pico_t3_events = event_set<pq_pico_t3_event>;
 
 /**
  * \brief Event set for PicoQuant HydraHarp V1 T3 data stream.
  */
-using PQHydraV1T3Events = EventSet<PQHydraV1T3Event>;
+using pq_hydra_v1_t3_events = event_set<pq_hydra_v1_t3_event>;
 
 /**
  * \brief Event set for PicoQuant HydraHarp V2, MultiHarp, and TimeHarp260 T3
  * data stream.
  */
-using PQHydraV2T3Events = EventSet<PQHydraV2T3Event>;
+using pq_hydra_v2_t3_events = event_set<pq_hydra_v2_t3_event>;
 
 } // namespace flimevt

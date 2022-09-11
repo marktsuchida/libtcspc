@@ -33,14 +33,14 @@ namespace flimevt {
  * \tparam ERouted event type to route by channel
  * \tparam Ds downstream processor types
  */
-template <typename ERouted, typename... Ds> class RouteByChannel {
+template <typename ERouted, typename... Ds> class route_by_channel {
     std::vector<std::int16_t> const channels;
     std::tuple<Ds...> downstreams;
 
     template <std::size_t I = 0>
     void HandlePhoton(std::size_t index, ERouted const &event) noexcept {
         if (index == I) {
-            std::get<I>(downstreams).HandleEvent(event);
+            std::get<I>(downstreams).handle_event(event);
             return;
         }
         if constexpr (I + 1 < std::tuple_size_v<decltype(downstreams)>)
@@ -64,12 +64,12 @@ template <typename ERouted, typename... Ds> class RouteByChannel {
      * \param channels channel mapping
      * \param downstreams downstream processors (moved out)
      */
-    explicit RouteByChannel(std::vector<std::int16_t> const &channels,
-                            Ds &&...downstreams)
+    explicit route_by_channel(std::vector<std::int16_t> const &channels,
+                              Ds &&...downstreams)
         : channels(channels), downstreams{std::move(downstreams)...} {}
 
     /** \brief Processor interface */
-    void HandleEvent(ERouted const &event) noexcept {
+    void handle_event(ERouted const &event) noexcept {
         auto chan = event.channel;
         auto it = std::find(channels.cbegin(), channels.cend(), chan);
         if (it != channels.cend())
@@ -77,14 +77,14 @@ template <typename ERouted, typename... Ds> class RouteByChannel {
     }
 
     /** \brief Processor interface */
-    template <typename E> void HandleEvent(E const &event) noexcept {
-        std::apply([&](auto &...s) { (..., s.HandleEvent(event)); },
+    template <typename E> void handle_event(E const &event) noexcept {
+        std::apply([&](auto &...s) { (..., s.handle_event(event)); },
                    downstreams);
     }
 
     /** \brief Processor interface */
-    void HandleEnd(std::exception_ptr error) noexcept {
-        std::apply([&](auto &...s) { (..., s.HandleEnd(error)); },
+    void handle_end(std::exception_ptr error) noexcept {
+        std::apply([&](auto &...s) { (..., s.handle_end(error)); },
                    downstreams);
     }
 };

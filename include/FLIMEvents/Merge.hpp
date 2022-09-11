@@ -21,7 +21,7 @@ namespace internal {
 
 // Internal implementation of merge processor. This processor is owned by the
 // two input processors via shared_ptr.
-template <typename ESet, typename D> class MergeImpl {
+template <typename ESet, typename D> class merge_impl {
     // When events have equal macrotime, those originating from input 0 are
     // emitted before those originating from input1. Within the same input, the
     // order is preserved.
@@ -31,8 +31,8 @@ template <typename ESet, typename D> class MergeImpl {
     bool pendingOn1 = false; // Pending on input 0 if false
     bool inputEnded[2] = {false, false};
     bool canceled = false; // Received error on one input
-    std::queue<EventVariant<ESet>> pending;
-    Macrotime const maxTimeShift;
+    std::queue<event_variant<ESet>> pending;
+    macrotime const maxTimeShift;
 
     D downstream;
 
@@ -45,13 +45,13 @@ template <typename ESet, typename D> class MergeImpl {
     }
 
     // Emit pending while predicate is true.
-    // P: bool(Macrotime const &)
+    // P: bool(macrotime const &)
     template <typename P> void EmitPending(P predicate) noexcept {
         while (!pending.empty() && std::visit(
                                        [&](auto const &e) {
                                            bool p = predicate(e.macrotime);
                                            if (p)
-                                               downstream.HandleEvent(e);
+                                               downstream.handle_event(e);
                                            return p;
                                        },
                                        pending.front()))
@@ -59,22 +59,22 @@ template <typename ESet, typename D> class MergeImpl {
     }
 
   public:
-    MergeImpl(MergeImpl const &) = delete;
-    MergeImpl &operator=(MergeImpl const &) = delete;
+    merge_impl(merge_impl const &) = delete;
+    merge_impl &operator=(merge_impl const &) = delete;
 
-    explicit MergeImpl(Macrotime maxTimeShift, D &&downstream)
+    explicit merge_impl(macrotime maxTimeShift, D &&downstream)
         : maxTimeShift(maxTimeShift), downstream(std::move(downstream)) {
         assert(maxTimeShift >= 0);
     }
 
     template <unsigned Ch, typename E>
-    void HandleEvent(E const &event) noexcept {
+    void handle_event(E const &event) noexcept {
         if (canceled)
             return;
 
         if (IsPendingOnOther<Ch>()) {
             // Emit any older events pending on the other input.
-            Macrotime cutoff = event.macrotime;
+            macrotime cutoff = event.macrotime;
             // Emit events from input 0 before events from input 1 when they
             // have equal macrotime.
             if constexpr (Ch == 0)
@@ -84,7 +84,7 @@ template <typename ESet, typename D> class MergeImpl {
             // If events still pending on the other input, they are newer (or
             // not older), so we can emit the current event first.
             if (!pending.empty()) {
-                downstream.HandleEvent(event);
+                downstream.handle_event(event);
                 return;
             }
 
@@ -97,16 +97,16 @@ template <typename ESet, typename D> class MergeImpl {
         // Emit any events on the same input if they are older than the maximum
         // allowed time shift between the inputs.
         // Guard against integer underflow.
-        constexpr auto macrotimeMin = std::numeric_limits<Macrotime>::min();
+        constexpr auto macrotimeMin = std::numeric_limits<macrotime>::min();
         if (maxTimeShift > event.macrotime - macrotimeMin) {
-            Macrotime oldEnough = event.macrotime - maxTimeShift;
+            macrotime oldEnough = event.macrotime - maxTimeShift;
             EmitPending([=](auto t) { return t < oldEnough; });
         }
 
         pending.push(event);
     }
 
-    template <unsigned Ch> void HandleEnd(std::exception_ptr error) noexcept {
+    template <unsigned Ch> void handle_end(std::exception_ptr error) noexcept {
         inputEnded[Ch] = true;
         if (canceled) // Other input already had an error
             return;
@@ -124,7 +124,7 @@ template <typename ESet, typename D> class MergeImpl {
                 pending.swap(q);
             }
 
-            downstream.HandleEnd(error);
+            downstream.handle_end(error);
         }
     }
 };
@@ -134,40 +134,41 @@ template <typename ESet, typename D> class MergeImpl {
 /**
  * \brief Processor proxying input to a merge processor.
  *
- * \see flimevt::MakeMerge()
+ * \see flimevt::make_merge()
  *
  * \tparam Ch 0 or 1
  * \tparam ESet the event set handled by the merge processor
  * \tparam D downstream processor type
  */
-template <unsigned Ch, typename ESet, typename D> class MergeInput {
-    std::shared_ptr<internal::MergeImpl<ESet, D>> impl;
+template <unsigned Ch, typename ESet, typename D> class merge_input {
+    std::shared_ptr<internal::merge_impl<ESet, D>> impl;
 
-    explicit MergeInput(std::shared_ptr<internal::MergeImpl<ESet, D>> impl)
+    explicit merge_input(std::shared_ptr<internal::merge_impl<ESet, D>> impl)
         : impl(impl) {}
 
     template <typename MESet, typename MD>
-    friend auto MakeMerge(Macrotime maxTimeShift, MD &&downstream);
+    friend auto make_merge(macrotime maxTimeShift, MD &&downstream);
 
   public:
     /** \brief Noncopyable */
-    MergeInput(MergeInput const &) = delete;
+    merge_input(merge_input const &) = delete;
     /** \brief Noncopyable */
-    MergeInput &operator=(MergeInput const &) = delete;
+    merge_input &operator=(merge_input const &) = delete;
     /** \brief Move constructor */
-    MergeInput(MergeInput &&) = default;
+    merge_input(merge_input &&) = default;
     /** \brief Move assignment operator */
-    MergeInput &operator=(MergeInput &&) = default;
+    merge_input &operator=(merge_input &&) = default;
 
     /** \brief Processor interface */
-    template <typename E, typename = std::enable_if_t<ContainsEventV<ESet, E>>>
-    void HandleEvent(E const &event) noexcept {
-        impl->template HandleEvent<Ch>(event);
+    template <typename E,
+              typename = std::enable_if_t<contains_event_v<ESet, E>>>
+    void handle_event(E const &event) noexcept {
+        impl->template handle_event<Ch>(event);
     }
 
     /** \brief Processor interface */
-    void HandleEnd(std::exception_ptr error) noexcept {
-        impl->template HandleEnd<Ch>(error);
+    void handle_end(std::exception_ptr error) noexcept {
+        impl->template handle_end<Ch>(error);
         impl.reset();
     }
 };
@@ -183,14 +184,14 @@ template <unsigned Ch, typename ESet, typename D> class MergeInput {
  * \tparam D downstream processor type
  * \param maxTimeShift the maximum time shift between the two input streams
  * \param downstream downstream processor (will be moved out)
- * \return std::pair of MergeInput processors
+ * \return std::pair of merge_input processors
  */
 template <typename ESet, typename D>
-auto MakeMerge(Macrotime maxTimeShift, D &&downstream) {
-    auto p = std::make_shared<internal::MergeImpl<ESet, D>>(
+auto make_merge(macrotime maxTimeShift, D &&downstream) {
+    auto p = std::make_shared<internal::merge_impl<ESet, D>>(
         maxTimeShift, std::move(downstream));
-    return std::make_pair(MergeInput<0, ESet, D>(p),
-                          MergeInput<1, ESet, D>(p));
+    return std::make_pair(merge_input<0, ESet, D>(p),
+                          merge_input<1, ESet, D>(p));
 }
 
 } // namespace flimevt

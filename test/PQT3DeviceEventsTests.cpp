@@ -11,10 +11,11 @@
 
 using namespace flimevt;
 
-using DiscardTCSPC = DiscardAll<TCSPCEvents>;
+using DiscardTCSPC = discard_all<tcspc_events>;
 
-static_assert(HandlesEventSetV<DecodePQPicoT3<DiscardTCSPC>, PQPicoT3Events>);
 static_assert(
-    HandlesEventSetV<DecodePQHydraV1T3<DiscardTCSPC>, PQHydraV1T3Events>);
-static_assert(
-    HandlesEventSetV<DecodePQHydraV2T3<DiscardTCSPC>, PQHydraV2T3Events>);
+    handles_event_set_v<decode_pq_pico_t3<DiscardTCSPC>, pq_pico_t3_events>);
+static_assert(handles_event_set_v<decode_pq_hydra_v1_t3<DiscardTCSPC>,
+                                  pq_hydra_v1_t3_events>);
+static_assert(handles_event_set_v<decode_pq_hydra_v2_t3<DiscardTCSPC>,
+                                  pq_hydra_v2_t3_events>);

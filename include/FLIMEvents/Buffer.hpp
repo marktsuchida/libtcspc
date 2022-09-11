@@ -29,7 +29,7 @@ namespace flimevt {
  *
  * \tparam T the object type
  */
-template <typename T> class ObjectPool {
+template <typename T> class object_pool {
     std::mutex mutex;
     std::vector<std::unique_ptr<T>> buffers;
 
@@ -39,7 +39,7 @@ template <typename T> class ObjectPool {
      *
      * \param initialCount number of \c T instances to pre-allocate
      */
-    explicit ObjectPool(std::size_t initialCount = 0) {
+    explicit object_pool(std::size_t initialCount = 0) {
         buffers.reserve(initialCount);
         std::generate_n(std::back_inserter(buffers), initialCount,
                         [] { return std::make_unique<T>(); });
@@ -56,7 +56,7 @@ template <typename T> class ObjectPool {
      *
      * \return shared pointer to the checked out object
      */
-    std::shared_ptr<T> CheckOut() {
+    std::shared_ptr<T> check_out() {
         std::unique_ptr<T> uptr;
 
         {
@@ -88,31 +88,31 @@ template <typename T> class ObjectPool {
  * \tparam P the event pointer type
  * \tparam D downstream processor type
  */
-template <typename P, typename D> class DereferencePointer {
+template <typename P, typename D> class dereference_pointer {
     D downstream;
 
   public:
     /**
      * \brief The type of the dereferenced event.
      */
-    using EventType = decltype(*std::declval<P>);
+    using event_type = decltype(*std::declval<P>);
 
     /**
      * \brief Construct with downstream processor.
      *
      * \param downstream downstream processor (moved out)
      */
-    explicit DereferencePointer(D &&downstream)
+    explicit dereference_pointer(D &&downstream)
         : downstream(std::move(downstream)) {}
 
     /** \brief Processor interface */
-    void HandleEvent(P const &eventPtr) noexcept {
-        downstream.HandleEvent(*eventPtr);
+    void handle_event(P const &eventPtr) noexcept {
+        downstream.handle_event(*eventPtr);
     }
 
     /** \brief Processor interface */
-    void HandleEnd(std::exception_ptr error) noexcept {
-        downstream.HandleEnd(error);
+    void handle_end(std::exception_ptr error) noexcept {
+        downstream.handle_end(error);
     }
 };
 
@@ -123,7 +123,7 @@ template <typename P, typename D> class DereferencePointer {
  * \tparam E the event type
  * \tparam D downstream processor type
  */
-template <typename V, typename E, typename D> class Unbatch {
+template <typename V, typename E, typename D> class unbatch {
     D downstream;
 
   public:
@@ -132,17 +132,17 @@ template <typename V, typename E, typename D> class Unbatch {
      *
      * \param downstream downstream processor (moved out)
      */
-    explicit Unbatch(D &&downstream) : downstream(std::move(downstream)) {}
+    explicit unbatch(D &&downstream) : downstream(std::move(downstream)) {}
 
     /** \brief Processor interface */
-    void HandleEvent(V const &events) noexcept {
+    void handle_event(V const &events) noexcept {
         for (auto const &event : events)
-            downstream.HandleEvent(event);
+            downstream.handle_event(event);
     }
 
     /** \brief Processor interface */
-    void HandleEnd(std::exception_ptr error) noexcept {
-        downstream.HandleEnd(error);
+    void handle_end(std::exception_ptr error) noexcept {
+        downstream.handle_end(error);
     }
 };
 
@@ -150,7 +150,7 @@ template <typename V, typename E, typename D> class Unbatch {
  * \brief A pseudo-processor that buffers events.
  *
  * This receives events of type \c E from upstream like a normal processor, but
- * stores them in a buffer. By calling PumpDownstream() on a different thread,
+ * stores them in a buffer. By calling pump_downstream() on a different thread,
  * the buffered events can be sent downstream on that thread.
  *
  * Usually \c E should be EventArray in order to reduce overhead.
@@ -158,7 +158,7 @@ template <typename V, typename E, typename D> class Unbatch {
  * \tparam E the event type
  * \tparam D downstream processor type
  */
-template <typename E, typename D> class BufferEvent {
+template <typename E, typename D> class buffer_event {
     std::mutex mutex;
     std::condition_variable hasItemCondition; // item = event or end
 
@@ -192,10 +192,11 @@ template <typename E, typename D> class BufferEvent {
      *
      * \param downstream downstream processor (moved out)
      */
-    explicit BufferEvent(D &&downstream) : downstream(std::move(downstream)) {}
+    explicit buffer_event(D &&downstream)
+        : downstream(std::move(downstream)) {}
 
     /** \brief Processor interface */
-    void HandleEvent(E const &event) noexcept {
+    void handle_event(E const &event) noexcept {
         {
             std::scoped_lock lock(mutex);
             if (streamEnded)
@@ -212,7 +213,7 @@ template <typename E, typename D> class BufferEvent {
     }
 
     /** \brief Processor interface */
-    void HandleEnd(std::exception_ptr error) noexcept {
+    void handle_end(std::exception_ptr error) noexcept {
         {
             std::scoped_lock lock(mutex);
             if (streamEnded)
@@ -230,7 +231,7 @@ template <typename E, typename D> class BufferEvent {
      * This function blocks until the upstream has singaled the end of stream
      * and all events have been emitted downstream.
      */
-    void PumpDownstream() noexcept {
+    void pump_downstream() noexcept {
         std::unique_lock lock(mutex);
 
         for (;;) {
@@ -241,7 +242,7 @@ template <typename E, typename D> class BufferEvent {
                 std::exception_ptr error;
                 std::swap(error, queued_error);
                 lock.unlock();
-                downstream.HandleEnd(error);
+                downstream.handle_end(error);
                 return;
             }
 
@@ -250,7 +251,7 @@ template <typename E, typename D> class BufferEvent {
             lock.unlock();
 
             while (!emit_queue.empty()) {
-                downstream.HandleEvent(emit_queue.front());
+                downstream.handle_event(emit_queue.front());
                 emit_queue.pop();
             }
 

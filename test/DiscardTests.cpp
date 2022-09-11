@@ -12,6 +12,6 @@
 using namespace flimevt;
 using namespace flimevt::test;
 
-static_assert(HandlesEventSetV<DiscardAll<EventSet<>>, EventSet<>>);
-static_assert(HandlesEventSetV<DiscardAll<Events01>, Events01>);
-static_assert(!HandlesEventSetV<DiscardAll<Events01>, Events23>);
+static_assert(handles_event_set_v<discard_all<event_set<>>, event_set<>>);
+static_assert(handles_event_set_v<discard_all<Events01>, Events01>);
+static_assert(!handles_event_set_v<discard_all<Events01>, Events23>);

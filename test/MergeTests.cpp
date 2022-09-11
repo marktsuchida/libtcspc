@@ -20,22 +20,22 @@ using namespace flimevt;
 using namespace flimevt::test;
 
 static_assert(
-    HandlesEventSetV<
-        decltype(MakeMerge<Events0123>(0, DiscardAll<Events0123>()).first),
+    handles_event_set_v<
+        decltype(make_merge<Events0123>(0, discard_all<Events0123>()).first),
         Events0123>);
 
 static_assert(
-    HandlesEventSetV<
-        decltype(MakeMerge<Events0123>(0, DiscardAll<Events0123>()).second),
+    handles_event_set_v<
+        decltype(make_merge<Events0123>(0, discard_all<Events0123>()).second),
         Events0123>);
 
-// Instead of coming up with a 2-input test fixture, we rely on SplitEvents for
-// the input.
-auto MakeMergeFixture(Macrotime maxShift) {
+// Instead of coming up with a 2-input test fixture, we rely on split_events
+// for the input.
+auto MakeMergeFixture(macrotime maxShift) {
     auto makeProc = [maxShift](auto &&downstream) {
         auto [input0, input1] =
-            MakeMerge<Events0123>(maxShift, std::move(downstream));
-        return SplitEvents<Events23, decltype(input0), decltype(input1)>(
+            make_merge<Events0123>(maxShift, std::move(downstream));
+        return split_events<Events23, decltype(input0), decltype(input1)>(
             std::move(input0), std::move(input1));
     };
 
@@ -53,46 +53,46 @@ template <typename D> class InjectError {
         : eventsToEmitBeforeError(eventsBeforeError),
           downstream(std::move(downstream)) {}
 
-    template <typename E> void HandleEvent(E const &event) noexcept {
+    template <typename E> void handle_event(E const &event) noexcept {
         if (eventsToEmitBeforeError-- > 0) {
-            downstream.HandleEvent(event);
+            downstream.handle_event(event);
         } else {
-            downstream.HandleEnd(
+            downstream.handle_end(
                 std::make_exception_ptr(std::runtime_error("injected error")));
         }
     }
 
-    void HandleEnd(std::exception_ptr error) noexcept {
+    void handle_end(std::exception_ptr error) noexcept {
         if (eventsToEmitBeforeError > 0)
-            downstream.HandleEnd(error);
+            downstream.handle_end(error);
     }
 };
 
-auto MakeMergeFixtureErrorOnInput0(Macrotime maxShift, int eventsBeforeError) {
+auto MakeMergeFixtureErrorOnInput0(macrotime maxShift, int eventsBeforeError) {
     auto makeProc = [maxShift, eventsBeforeError](auto &&downstream) {
         auto [input0, input1] =
-            MakeMerge<Events0123>(maxShift, std::move(downstream));
+            make_merge<Events0123>(maxShift, std::move(downstream));
         auto error0 = InjectError(eventsBeforeError, std::move(input0));
-        return SplitEvents<Events23, decltype(error0), decltype(input1)>(
+        return split_events<Events23, decltype(error0), decltype(input1)>(
             std::move(error0), std::move(input1));
     };
 
     return MakeProcessorTestFixture<Events0123, Events0123>(makeProc);
 }
 
-auto MakeMergeFixtureErrorOnInput1(Macrotime maxShift, int eventsBeforeError) {
+auto MakeMergeFixtureErrorOnInput1(macrotime maxShift, int eventsBeforeError) {
     auto makeProc = [maxShift, eventsBeforeError](auto &&downstream) {
         auto [input0, input1] =
-            MakeMerge<Events0123>(maxShift, std::move(downstream));
+            make_merge<Events0123>(maxShift, std::move(downstream));
         auto error1 = InjectError(eventsBeforeError, std::move(input1));
-        return SplitEvents<Events23, decltype(input0), decltype(error1)>(
+        return split_events<Events23, decltype(input0), decltype(error1)>(
             std::move(input0), std::move(error1));
     };
 
     return MakeProcessorTestFixture<Events0123, Events0123>(makeProc);
 }
 
-using OutVec = std::vector<EventVariant<Events0123>>;
+using OutVec = std::vector<event_variant<Events0123>>;
 
 TEST_CASE("Merge with error on one input", "[Merge]") {
     SECTION("Input0 error with no events pending") {

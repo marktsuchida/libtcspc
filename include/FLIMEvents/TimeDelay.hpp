@@ -16,8 +16,8 @@ namespace flimevt {
  *
  * \tparam D downstream processor type
  */
-template <typename D> class TimeDelay {
-    Macrotime delta;
+template <typename D> class time_delay {
+    macrotime delta;
     D downstream;
 
   public:
@@ -27,19 +27,19 @@ template <typename D> class TimeDelay {
      * \param delta macrotime offset to apply (can be negative)
      * \param downstream downstream processor (moved out)
      */
-    explicit TimeDelay(Macrotime delta, D &&downstream)
+    explicit time_delay(macrotime delta, D &&downstream)
         : delta(delta), downstream(std::move(downstream)) {}
 
     /** \brief Processor interface */
-    template <typename E> void HandleEvent(E const &event) noexcept {
+    template <typename E> void handle_event(E const &event) noexcept {
         E copy(event);
         copy.macrotime += delta;
-        downstream.HandleEvent(copy);
+        downstream.handle_event(copy);
     }
 
     /** \brief Processor interface */
-    void HandleEnd(std::exception_ptr error) noexcept {
-        downstream.HandleEnd(error);
+    void handle_end(std::exception_ptr error) noexcept {
+        downstream.handle_end(error);
     }
 };
 

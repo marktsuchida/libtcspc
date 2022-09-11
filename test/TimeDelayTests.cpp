@@ -19,16 +19,16 @@ using namespace flimevt;
 using namespace flimevt::test;
 
 using Events = Events01;
-using OutVec = std::vector<EventVariant<Events>>;
+using OutVec = std::vector<event_variant<Events>>;
 
-auto MakeTimeDelayFixture(Macrotime delta) {
+auto MakeTimeDelayFixture(macrotime delta) {
     return MakeProcessorTestFixture<Events, Events>(
         [delta](auto &&downstream) {
-            return TimeDelay(delta, std::move(downstream));
+            return time_delay(delta, std::move(downstream));
         });
 }
 
-TEST_CASE("Time delay", "[TimeDelay]") {
+TEST_CASE("Time delay", "[time_delay]") {
     SECTION("Zero delay is noop") {
         auto f = MakeTimeDelayFixture(0);
         f.FeedEvents({

@@ -13,6 +13,6 @@
 using namespace flimevt;
 using namespace flimevt::test;
 
-static_assert(
-    HandlesEventSetV<BufferEvent<Event<0>, DiscardAll<EventSet<Event<0>>>>,
-                     EventSet<Event<0>>>);
+static_assert(handles_event_set_v<
+              buffer_event<Event<0>, discard_all<event_set<Event<0>>>>,
+              event_set<Event<0>>>);

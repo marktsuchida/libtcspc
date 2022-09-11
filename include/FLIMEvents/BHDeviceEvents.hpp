@@ -30,7 +30,7 @@ namespace flimevt {
  * This interprets the FIFO format used by most BH SPC models, except for
  * SPC-600 and SPC-630.
  */
-struct BHSPCEvent {
+struct bh_spc_event {
     /**
      * \brief Bytes of the 32-bit raw device event.
      */
@@ -39,21 +39,21 @@ struct BHSPCEvent {
     /**
      * \brief The macrotime overflow period of this event type.
      */
-    static constexpr Macrotime MacrotimeOverflowPeriod = 1 << 12;
+    static constexpr macrotime macrotime_overflow_period = 1 << 12;
 
     /**
      * \brief Read the ADC value (i.e., difference time) if this event
      * represents a photon.
      */
-    std::uint16_t GetADCValue() const noexcept {
-        return unsigned(internal::ReadU16LE(&bytes[2])) & 0x0fffU;
+    std::uint16_t get_adc_value() const noexcept {
+        return unsigned(internal::read_u16le(&bytes[2])) & 0x0fffU;
     }
 
     /**
      * \brief Read the routing signals (usually the detector channel) if this
      * event represents a photon.
      */
-    std::uint8_t GetRoutingSignals() const noexcept {
+    std::uint8_t get_routing_signals() const noexcept {
         // The documentation somewhat confusingly says that these bits are
         // "inverted", but what they mean is that the TTL inputs are active
         // low. The bits in the FIFO data are not inverted.
@@ -63,57 +63,61 @@ struct BHSPCEvent {
     /**
      * \brief Read the macrotime counter value (no rollover correction).
      */
-    std::uint16_t GetMacrotime() const noexcept {
-        return unsigned(internal::ReadU16LE(&bytes[0])) & 0x0fffU;
+    std::uint16_t get_macrotime() const noexcept {
+        return unsigned(internal::read_u16le(&bytes[0])) & 0x0fffU;
     }
 
     /**
      * \brief Read the 'marker' flag.
      */
-    bool GetMarkerFlag() const noexcept {
+    bool get_marker_flag() const noexcept {
         return unsigned(bytes[3]) & (1U << 4);
     }
 
     /**
      * \brief Read the marker bits (mask) if this event represents markers.
      */
-    std::uint8_t GetMarkerBits() const noexcept { return GetRoutingSignals(); }
+    std::uint8_t get_marker_bits() const noexcept {
+        return get_routing_signals();
+    }
 
     /**
      * \brief Read the 'gap' (data lost) flag.
      */
-    bool GetGapFlag() const noexcept { return unsigned(bytes[3]) & (1U << 5); }
+    bool get_gap_flag() const noexcept {
+        return unsigned(bytes[3]) & (1U << 5);
+    }
 
     /**
      * \brief Read the 'macrotime overflow' flag.
      */
-    bool GetMacrotimeOverflowFlag() const noexcept {
+    bool get_macrotime_overflow_flag() const noexcept {
         return unsigned(bytes[3]) & (1U << 6);
     }
 
     /**
      * \brief Read the 'invalid' flag.
      */
-    bool GetInvalidFlag() const noexcept {
+    bool get_invalid_flag() const noexcept {
         return unsigned(bytes[3]) & (1U << 7);
     }
 
     /**
      * \brief Determine if this event represents multiple macrotime overflows.
      */
-    bool IsMultipleMacrotimeOverflow() const noexcept {
+    bool is_multiple_macrotime_overflow() const noexcept {
         // Although documentation is not clear, a marker can share an event
         // record with a (single) macrotime overflow, just as a photon can.
-        return GetMacrotimeOverflowFlag() && GetInvalidFlag() &&
-               !GetMarkerFlag();
+        return get_macrotime_overflow_flag() && get_invalid_flag() &&
+               !get_marker_flag();
     }
 
     /**
      * \brief Read the macrotime overflow count if this event represents
      * multiple macrotime overflows.
      */
-    std::uint32_t GetMultipleMacrotimeOverflowCount() const noexcept {
-        return internal::ReadU32LE(&bytes[0]) & 0x0fffffffU;
+    std::uint32_t get_multiple_macrotime_overflow_count() const noexcept {
+        return internal::read_u32le(&bytes[0]) & 0x0fffffffU;
     }
 };
 
@@ -121,7 +125,7 @@ struct BHSPCEvent {
  * \brief Binary record interpretation for raw events from SPC-600/630 in
  * 4096-channel mode.
  */
-struct BHSPC600Event48 {
+struct bh_spc_600_event_48 {
     /**
      * \brief Bytes of the 48-bit raw device event.
      */
@@ -130,26 +134,26 @@ struct BHSPC600Event48 {
     /**
      * \brief The macrotime overflow period of this event type.
      */
-    static constexpr Macrotime MacrotimeOverflowPeriod = 1 << 24;
+    static constexpr macrotime macrotime_overflow_period = 1 << 24;
 
     /**
      * \brief Read the ADC value (i.e., difference time) if this event
      * represents a photon.
      */
-    std::uint16_t GetADCValue() const noexcept {
-        return unsigned(internal::ReadU16LE(&bytes[0])) & 0x0fffU;
+    std::uint16_t get_adc_value() const noexcept {
+        return unsigned(internal::read_u16le(&bytes[0])) & 0x0fffU;
     }
 
     /**
      * \brief Read the routing signals (usually the detector channel) if this
      * event represents a photon.
      */
-    std::uint8_t GetRoutingSignals() const noexcept { return bytes[3]; }
+    std::uint8_t get_routing_signals() const noexcept { return bytes[3]; }
 
     /**
      * \brief Read the macrotime counter value (no rollover correction).
      */
-    std::uint32_t GetMacrotime() const noexcept {
+    std::uint32_t get_macrotime() const noexcept {
         auto lo8 = unsigned(bytes[4]);
         auto mid8 = unsigned(bytes[5]);
         auto hi8 = unsigned(bytes[2]);
@@ -159,42 +163,44 @@ struct BHSPC600Event48 {
     /**
      * \brief Read the 'marker' flag.
      */
-    bool GetMarkerFlag() const noexcept { return false; }
+    bool get_marker_flag() const noexcept { return false; }
 
     /**
      * \brief Read the marker bits (mask) if this event represents markers.
      */
-    std::uint8_t GetMarkerBits() const noexcept { return 0; }
+    std::uint8_t get_marker_bits() const noexcept { return 0; }
 
     /**
      * \brief Read the 'gap' (data lost) flag.
      */
-    bool GetGapFlag() const noexcept { return unsigned(bytes[1]) & (1U << 6); }
+    bool get_gap_flag() const noexcept {
+        return unsigned(bytes[1]) & (1U << 6);
+    }
 
     /**
      * \brief Read the 'macrotime overflow' flag.
      */
-    bool GetMacrotimeOverflowFlag() const noexcept {
+    bool get_macrotime_overflow_flag() const noexcept {
         return unsigned(bytes[1]) & (1U << 5);
     }
 
     /**
      * \brief Read the 'invalid' flag.
      */
-    bool GetInvalidFlag() const noexcept {
+    bool get_invalid_flag() const noexcept {
         return unsigned(bytes[1]) & (1U << 4);
     }
 
     /**
      * \brief Determine if this event represents multiple macrotime overflows.
      */
-    bool IsMultipleMacrotimeOverflow() const noexcept { return false; }
+    bool is_multiple_macrotime_overflow() const noexcept { return false; }
 
     /**
      * \brief Read the macrotime overflow count if this event represents
      * multiple macrotime overflows.
      */
-    std::uint32_t GetMultipleMacrotimeOverflowCount() const noexcept {
+    std::uint32_t get_multiple_macrotime_overflow_count() const noexcept {
         return 0;
     }
 };
@@ -203,7 +209,7 @@ struct BHSPC600Event48 {
  * \brief Binary record interpretation for raw events from SPC-600/630 in
  * 256-channel mode.
  */
-struct BHSPC600Event32 {
+struct bh_spc_600_event_32 {
     /**
      * \brief Bytes of the 32-bit raw device event.
      */
@@ -212,26 +218,26 @@ struct BHSPC600Event32 {
     /**
      * \brief The macrotime overflow period of this event type.
      */
-    static constexpr Macrotime MacrotimeOverflowPeriod = 1 << 17;
+    static constexpr macrotime macrotime_overflow_period = 1 << 17;
 
     /**
      * \brief Read the ADC value (i.e., difference time) if this event
      * represents a photon.
      */
-    std::uint16_t GetADCValue() const noexcept { return bytes[0]; }
+    std::uint16_t get_adc_value() const noexcept { return bytes[0]; }
 
     /**
      * \brief Read the routing signals (usually the detector channel) if this
      * event represents a photon.
      */
-    std::uint8_t GetRoutingSignals() const noexcept {
+    std::uint8_t get_routing_signals() const noexcept {
         return (bytes[3] & 0x0f) >> 1;
     }
 
     /**
      * \brief Read the macrotime counter value (no rollover correction).
      */
-    std::uint32_t GetMacrotime() const noexcept {
+    std::uint32_t get_macrotime() const noexcept {
         auto lo8 = unsigned(bytes[1]);
         auto mid8 = unsigned(bytes[2]);
         auto hi1 = unsigned(bytes[3]) & 1U;
@@ -241,12 +247,12 @@ struct BHSPC600Event32 {
     /**
      * \brief Read the 'marker' flag.
      */
-    bool GetMarkerFlag() const noexcept { return false; }
+    bool get_marker_flag() const noexcept { return false; }
 
     /**
      * \brief Read the marker bits (mask) if this event represents markers.
      */
-    std::uint8_t GetMarkerBits() const noexcept { return 0; }
+    std::uint8_t get_marker_bits() const noexcept { return 0; }
 
     /**
      * \brief Read the 'gap' (data lost) flag.
@@ -256,107 +262,107 @@ struct BHSPC600Event32 {
     /**
      * \brief Read the 'macrotime overflow' flag.
      */
-    bool GetMacrotimeOverflowFlag() const noexcept {
+    bool get_macrotime_overflow_flag() const noexcept {
         return unsigned(bytes[3]) & (1U << 6);
     }
 
     /**
      * \brief Read the 'invalid' flag.
      */
-    bool GetInvalidFlag() const noexcept {
+    bool get_invalid_flag() const noexcept {
         return unsigned(bytes[3]) & (1U << 7);
     }
 
     /**
      * \brief Determine if this event represents multiple macrotime overflows.
      */
-    bool IsMultipleMacrotimeOverflow() const noexcept { return false; }
+    bool is_multiple_macrotime_overflow() const noexcept { return false; }
 
     /**
      * \brief Read the macrotime overflow count if this event represents
      * multiple macrotime overflows.
      */
-    std::uint32_t GetMultipleMacrotimeOverflowCount() const noexcept {
+    std::uint32_t get_multiple_macrotime_overflow_count() const noexcept {
         return 0;
     }
 };
 
 namespace internal {
 
-// Common implementation for DecodeBHSPC, DecodeBHSPC600_48, DecodeBHSPC600_32.
-// E is the binary record event class.
-template <typename E, typename D> class BaseDecodeBHSPC {
-    Macrotime macrotimeBase; // Time of last overflow
-    Macrotime lastMacrotime;
+// Common implementation for decode_bh_spc, decode_bh_spc_600_48,
+// decode_bh_spc_600_32. E is the binary record event class.
+template <typename E, typename D> class base_decode_bh_spc {
+    macrotime macrotimeBase; // Time of last overflow
+    macrotime lastMacrotime;
 
     D downstream;
 
   public:
-    explicit BaseDecodeBHSPC(D &&downstream)
+    explicit base_decode_bh_spc(D &&downstream)
         : macrotimeBase(0), lastMacrotime(0),
           downstream(std::move(downstream)) {}
 
     // Rule of zero
 
-    void HandleEvent(E const &event) noexcept {
-        if (event.IsMultipleMacrotimeOverflow()) {
-            macrotimeBase += E::MacrotimeOverflowPeriod *
-                             event.GetMultipleMacrotimeOverflowCount();
+    void handle_event(E const &event) noexcept {
+        if (event.is_multiple_macrotime_overflow()) {
+            macrotimeBase += E::macrotime_overflow_period *
+                             event.get_multiple_macrotime_overflow_count();
 
-            TimeReachedEvent e;
+            time_reached_event e;
             e.macrotime = macrotimeBase;
-            downstream.HandleEvent(e);
+            downstream.handle_event(e);
             return;
         }
 
-        if (event.GetMacrotimeOverflowFlag()) {
-            macrotimeBase += E::MacrotimeOverflowPeriod;
+        if (event.get_macrotime_overflow_flag()) {
+            macrotimeBase += E::macrotime_overflow_period;
         }
 
-        Macrotime macrotime = macrotimeBase + event.GetMacrotime();
+        macrotime macrotime = macrotimeBase + event.get_macrotime();
 
         // Validate input: ensure macrotime increases monotonically (a common
         // assumption made by downstream processors)
         if (macrotime <= lastMacrotime) {
-            downstream.HandleEnd(std::make_exception_ptr(
+            downstream.handle_end(std::make_exception_ptr(
                 std::runtime_error("Non-monotonic macrotime encountered")));
             return;
         }
         lastMacrotime = macrotime;
 
-        if (event.GetGapFlag()) {
-            DataLostEvent e;
+        if (event.get_gap_flag()) {
+            data_lost_event e;
             e.macrotime = macrotime;
-            downstream.HandleEvent(e);
+            downstream.handle_event(e);
         }
 
-        if (event.GetMarkerFlag()) {
-            MarkerEvent e;
+        if (event.get_marker_flag()) {
+            marker_event e;
             e.macrotime = macrotime;
-            std::uint32_t bits = event.GetMarkerBits();
+            std::uint32_t bits = event.get_marker_bits();
             while (bits) {
-                e.channel = internal::CountTrailingZeros32(bits);
-                downstream.HandleEvent(e);
+                e.channel = internal::count_trailing_zeros_32(bits);
+                downstream.handle_event(e);
                 bits = bits & (bits - 1); // Clear the handled bit
             }
             return;
         }
 
-        if (event.GetInvalidFlag()) {
-            TimeReachedEvent e;
+        if (event.get_invalid_flag()) {
+            time_reached_event e;
             e.macrotime = macrotime;
-            downstream.HandleEvent(e);
+            downstream.handle_event(e);
         } else {
-            TimeCorrelatedCountEvent e;
+            time_correlated_count_event e;
             e.macrotime = macrotime;
-            e.difftime = event.GetADCValue();
-            e.channel = event.GetRoutingSignals();
-            downstream.HandleEvent(e);
+            e.difftime = event.get_adc_value();
+            e.channel = event.get_routing_signals();
+            downstream.handle_event(e);
         }
     }
 
-    void HandleEnd(std::exception_ptr error) noexcept {
-        downstream.HandleEnd(error);
+    void handle_end(std::exception_ptr error) noexcept {
+        downstream.handle_end(error);
     }
 };
 } // namespace internal
@@ -364,84 +370,86 @@ template <typename E, typename D> class BaseDecodeBHSPC {
 /**
  * \brief Processor that decodes raw BH SPC (most models) events.
  *
- * \see DecodeBHSPC()
+ * \see decode_bh_spc()
  *
  * \tparam D downstream processor type
  */
 template <typename D>
-class DecodeBHSPC : public internal::BaseDecodeBHSPC<BHSPCEvent, D> {
+class decode_bh_spc : public internal::base_decode_bh_spc<bh_spc_event, D> {
   public:
-    using internal::BaseDecodeBHSPC<BHSPCEvent, D>::BaseDecodeBHSPC;
+    using internal::base_decode_bh_spc<bh_spc_event, D>::base_decode_bh_spc;
 };
 
 /**
- * \brief Deduction guide for constructing a DecodeBHSPC processor.
+ * \brief Deduction guide for constructing a decode_bh_spc processor.
  *
  * \tparam D downstream processor type
  * \param downstream downstream processor (moved out)
  */
-template <typename D> DecodeBHSPC(D &&downstream) -> DecodeBHSPC<D>;
+template <typename D> decode_bh_spc(D &&downstream) -> decode_bh_spc<D>;
 
 /**
  * \brief Processor that decodes raw BH SPC-600/630 events in 4096-channel
  * mode.
  *
- * \see DecodeBHSPC600_48()
+ * \see decode_bh_spc_600_48()
  *
  * \tparam D downstream processor type
  */
 template <typename D>
-class DecodeBHSPC600_48
-    : public internal::BaseDecodeBHSPC<BHSPC600Event48, D> {
+class decode_bh_spc_600_48
+    : public internal::base_decode_bh_spc<bh_spc_600_event_48, D> {
   public:
-    using internal::BaseDecodeBHSPC<BHSPC600Event48, D>::BaseDecodeBHSPC;
+    using internal::base_decode_bh_spc<bh_spc_600_event_48,
+                                       D>::base_decode_bh_spc;
 };
 
 /**
- * \brief Deduction guide for constructing a DecodeBHSPC600_48 processor.
+ * \brief Deduction guide for constructing a decode_bh_spc_600_48 processor.
  *
  * \tparam D downstream processor type
  * \param downstream downstream processor (moved out)
  */
 template <typename D>
-DecodeBHSPC600_48(D &&downstream) -> DecodeBHSPC600_48<D>;
+decode_bh_spc_600_48(D &&downstream) -> decode_bh_spc_600_48<D>;
 
 /**
  * \brief Processor that decodes raw BH SPC-600/630 events in 256-channel mode.
  *
- * \see DecodeBHSPC600_32()
+ * \see decode_bh_spc_600_32()
  *
  * \tparam D downstream processor type
  */
 template <typename D>
-class DecodeBHSPC600_32
-    : public internal::BaseDecodeBHSPC<BHSPC600Event32, D> {
+class decode_bh_spc_600_32
+    : public internal::base_decode_bh_spc<bh_spc_600_event_32, D> {
   public:
-    using internal::BaseDecodeBHSPC<BHSPC600Event32, D>::BaseDecodeBHSPC;
+    using internal::base_decode_bh_spc<bh_spc_600_event_32,
+                                       D>::base_decode_bh_spc;
 };
 
 /**
- * \brief Deduction guide for constructing a DecodeBHSPC600_32 processor.
+ * \brief Deduction guide for constructing a decode_bh_spc_600_32 processor.
  *
  * \tparam D downstream processor type
  * \param downstream downstream processor (moved out)
  */
 template <typename D>
-DecodeBHSPC600_32(D &&downstream) -> DecodeBHSPC600_32<D>;
+decode_bh_spc_600_32(D &&downstream) -> decode_bh_spc_600_32<D>;
 
 /**
  * \brief Event set for raw BH SPC data stream.
  */
-using BHSPCEvents = EventSet<BHSPCEvent>;
+using bh_spc_events = event_set<bh_spc_event>;
 
 /**
  * \brief Event set for raw BH SPC-600/630 data stream in 4096-channel mode.
  */
-using BHSPC600Events48 = EventSet<BHSPC600Event48>;
+using bh_spc_600_events_48 = event_set<bh_spc_600_event_48>;
 
 /**
  * \brief Event set for raw BH SPC-600/630 data stream in 256-channel mode.
  */
-using BHSPC600Events32 = EventSet<BHSPC600Event32>;
+using bh_spc_600_events_32 = event_set<bh_spc_600_event_32>;
 
 } // namespace flimevt

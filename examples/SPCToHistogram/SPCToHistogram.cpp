@@ -34,7 +34,7 @@ template <typename T> class HistogramSaver {
     explicit HistogramSaver(std::string const &outFilename)
         : frameCount(0), outFilename(outFilename) {}
 
-    void HandleEnd(std::exception_ptr error) {
+    void handle_end(std::exception_ptr error) {
         if (error) {
             try {
                 std::rethrow_exception(error);
@@ -45,11 +45,12 @@ template <typename T> class HistogramSaver {
         }
     }
 
-    void HandleEvent(flimevt::FrameHistogramEvent<T> const &) {
+    void handle_event(flimevt::frame_histogram_event<T> const &) {
         std::cerr << "Frame " << (frameCount++) << '\n';
     }
 
-    void HandleEvent(flimevt::FinalCumulativeHistogramEvent<T> const &event) {
+    void
+    handle_event(flimevt::final_cumulative_histogram_event<T> const &event) {
         if (!frameCount) { // No frames
             std::cerr << "No frames\n";
             return;
@@ -63,8 +64,8 @@ template <typename T> class HistogramSaver {
         }
 
         auto &histogram = event.histogram;
-        output.write(reinterpret_cast<const char *>(histogram.Get()),
-                     histogram.GetNumberOfElements() * sizeof(T));
+        output.write(reinterpret_cast<const char *>(histogram.get()),
+                     histogram.get_number_of_elements() * sizeof(T));
     }
 };
 
@@ -90,34 +91,34 @@ int main(int argc, char *argv[]) {
     using SampleType = std::uint16_t;
     std::int32_t inputBits = 12;
     std::int32_t histoBits = 8;
-    flimevt::LegacyHistogram<SampleType> frameHisto(histoBits, inputBits, true,
-                                                    width, height);
-    flimevt::LegacyHistogram<SampleType> cumulHisto(histoBits, inputBits, true,
-                                                    width, height);
-    cumulHisto.Clear();
+    flimevt::legacy_histogram<SampleType> frameHisto(histoBits, inputBits,
+                                                     true, width, height);
+    flimevt::legacy_histogram<SampleType> cumulHisto(histoBits, inputBits,
+                                                     true, width, height);
+    cumulHisto.clear();
 
     // Construct pipeline
-    flimevt::DecodeBHSPC decoder(flimevt::LineClockPixellator(
+    flimevt::decode_bh_spc decoder(flimevt::line_clock_pixellator(
         width, height, maxFrames, lineDelay, lineTime, 1,
-        flimevt::SequentialHistogrammer(
+        flimevt::sequential_histogrammer(
             std::move(frameHisto),
-            flimevt::HistogramAccumulator(
+            flimevt::histogram_accumulator(
                 std::move(cumulHisto),
                 HistogramSaver<SampleType>(outFilename)))));
 
-    flimevt::Unbatch<std::vector<flimevt::BHSPCEvent>, flimevt::BHSPCEvent,
+    flimevt::unbatch<std::vector<flimevt::bh_spc_event>, flimevt::bh_spc_event,
                      decltype(decoder)>
         demux(std::move(decoder));
 
-    flimevt::DereferencePointer<
-        std::shared_ptr<std::vector<flimevt::BHSPCEvent>>, decltype(demux)>
+    flimevt::dereference_pointer<
+        std::shared_ptr<std::vector<flimevt::bh_spc_event>>, decltype(demux)>
         processor(std::move(demux));
 
-    flimevt::BufferEvent<std::shared_ptr<std::vector<flimevt::BHSPCEvent>>,
-                         decltype(processor)>
+    flimevt::buffer_event<std::shared_ptr<std::vector<flimevt::bh_spc_event>>,
+                          decltype(processor)>
         buffer(std::move(processor));
 
-    std::thread procThread([&] { buffer.PumpDownstream(); });
+    std::thread procThread([&] { buffer.pump_downstream(); });
 
     std::fstream input(inFilename, std::fstream::binary | std::fstream::in);
     if (!input.is_open()) {
@@ -125,21 +126,21 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
-    flimevt::ObjectPool<std::vector<flimevt::BHSPCEvent>> pool(2);
+    flimevt::object_pool<std::vector<flimevt::bh_spc_event>> pool(2);
 
     constexpr std::size_t batchCapacity = 48 * 1024;
-    constexpr auto maxSize = batchCapacity * sizeof(flimevt::BHSPCEvent);
+    constexpr auto maxSize = batchCapacity * sizeof(flimevt::bh_spc_event);
 
     input.seekg(sizeof(BHSPCFileHeader));
     while (input.good()) {
-        auto arr = pool.CheckOut();
+        auto arr = pool.check_out();
         arr->resize(batchCapacity);
         input.read(reinterpret_cast<char *>(arr->data()), maxSize);
-        auto const readSize = input.gcount() / sizeof(flimevt::BHSPCEvent);
+        auto const readSize = input.gcount() / sizeof(flimevt::bh_spc_event);
         arr->resize(static_cast<std::size_t>(readSize));
-        buffer.HandleEvent(arr);
+        buffer.handle_event(arr);
     }
-    buffer.HandleEnd({});
+    buffer.handle_end({});
 
     procThread.join();
     return 0;

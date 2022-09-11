@@ -25,7 +25,7 @@ namespace flimevt::internal {
 // https://commandcenter.blogspot.com/2012/04/byte-order-fallacy.html
 // (but note the need for extra casts for it to actually work correctly).
 
-inline bool IsLittleEndian() noexcept {
+inline bool is_little_endian() noexcept {
     // Note: in C++20 this can be replaced with std::endian checks, and be made
     // constexpr.
     union {
@@ -35,43 +35,43 @@ inline bool IsLittleEndian() noexcept {
     return bool(t.c);
 }
 
-inline bool UseMemcpy() noexcept {
+inline bool use_memcpy() noexcept {
 #ifdef _MSC_VER
-    return IsLittleEndian();
+    return is_little_endian();
 #else
     return false;
 #endif
 }
 
-inline std::uint16_t ReadU16LE_Memcpy(unsigned char const *bytes) noexcept {
-    assert(IsLittleEndian());
+inline std::uint16_t read_u16le_memcpy(unsigned char const *bytes) noexcept {
+    assert(is_little_endian());
     std::uint16_t ret;
     std::memcpy(&ret, bytes, 2);
     return ret;
 }
 
-inline std::uint32_t ReadU32LE_Memcpy(unsigned char const *bytes) noexcept {
-    assert(IsLittleEndian());
+inline std::uint32_t read_u32le_memcpy(unsigned char const *bytes) noexcept {
+    assert(is_little_endian());
     std::uint32_t ret;
     std::memcpy(&ret, bytes, 4);
     return ret;
 }
 
-inline std::uint64_t ReadU64LE_Memcpy(unsigned char const *bytes) noexcept {
-    assert(IsLittleEndian());
+inline std::uint64_t read_u64le_memcpy(unsigned char const *bytes) noexcept {
+    assert(is_little_endian());
     std::uint64_t ret;
     std::memcpy(&ret, bytes, 8);
     return ret;
 }
 
 constexpr std::uint16_t
-ReadU16LE_Generic(unsigned char const *bytes) noexcept {
+read_u16le_generic(unsigned char const *bytes) noexcept {
     // unsigned is at least as wide as uint16_t
     return std::uint16_t(unsigned(bytes[0]) | (unsigned(bytes[1]) << 8));
 }
 
 constexpr std::uint32_t
-ReadU32LE_Generic(unsigned char const *bytes) noexcept {
+read_u32le_generic(unsigned char const *bytes) noexcept {
     using u32 = std::uint32_t;
     if constexpr (sizeof(u32) < sizeof(unsigned)) {
         // u32 would be promoted to int if we don't cast to unsigned
@@ -84,7 +84,7 @@ ReadU32LE_Generic(unsigned char const *bytes) noexcept {
 }
 
 constexpr std::uint64_t
-ReadU64LE_Generic(unsigned char const *bytes) noexcept {
+read_u64le_generic(unsigned char const *bytes) noexcept {
     using u64 = std::uint64_t;
     if constexpr (sizeof(u64) < sizeof(unsigned)) {
         // u64 would be promoted to int if we don't cast to unsigned
@@ -101,45 +101,45 @@ ReadU64LE_Generic(unsigned char const *bytes) noexcept {
 }
 
 // For completeness
-constexpr std::uint8_t ReadU8LE(unsigned char const *bytes) noexcept {
+constexpr std::uint8_t read_u8le(unsigned char const *bytes) noexcept {
     return bytes[0];
 }
 
-inline std::uint16_t ReadU16LE(unsigned char const *bytes) noexcept {
-    if (UseMemcpy())
-        return ReadU16LE_Memcpy(bytes);
+inline std::uint16_t read_u16le(unsigned char const *bytes) noexcept {
+    if (use_memcpy())
+        return read_u16le_memcpy(bytes);
     else
-        return ReadU16LE_Generic(bytes);
+        return read_u16le_generic(bytes);
 }
 
-inline std::uint32_t ReadU32LE(unsigned char const *bytes) noexcept {
-    if (UseMemcpy())
-        return ReadU32LE_Memcpy(bytes);
+inline std::uint32_t read_u32le(unsigned char const *bytes) noexcept {
+    if (use_memcpy())
+        return read_u32le_memcpy(bytes);
     else
-        return ReadU32LE_Generic(bytes);
+        return read_u32le_generic(bytes);
 }
 
-inline std::uint64_t ReadU64LE(unsigned char const *bytes) noexcept {
-    if (UseMemcpy())
-        return ReadU64LE_Memcpy(bytes);
+inline std::uint64_t read_u64le(unsigned char const *bytes) noexcept {
+    if (use_memcpy())
+        return read_u64le_memcpy(bytes);
     else
-        return ReadU64LE_Generic(bytes);
+        return read_u64le_generic(bytes);
 }
 
-inline std::int8_t ReadI8LE(unsigned char const *bytes) noexcept {
-    return std::int8_t(ReadU8LE(bytes));
+inline std::int8_t read_i8le(unsigned char const *bytes) noexcept {
+    return std::int8_t(read_u8le(bytes));
 }
 
-inline std::int16_t ReadI16LE(unsigned char const *bytes) noexcept {
-    return std::int16_t(ReadU16LE(bytes));
+inline std::int16_t read_i16le(unsigned char const *bytes) noexcept {
+    return std::int16_t(read_u16le(bytes));
 }
 
-inline std::int32_t ReadI32LE(unsigned char const *bytes) noexcept {
-    return std::int32_t(ReadU32LE(bytes));
+inline std::int32_t read_i32le(unsigned char const *bytes) noexcept {
+    return std::int32_t(read_u32le(bytes));
 }
 
-inline std::int64_t ReadI64LE(unsigned char const *bytes) noexcept {
-    return std::int64_t(ReadU64LE(bytes));
+inline std::int64_t read_i64le(unsigned char const *bytes) noexcept {
+    return std::int64_t(read_u64le(bytes));
 }
 
 } // namespace flimevt::internal

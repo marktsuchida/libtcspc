@@ -24,19 +24,19 @@ using Output = Event<1>;
 using Reset = Event<2>;
 using Other = Event<3>;
 using Events = Events0123;
-using OutVec = std::vector<EventVariant<Events>>;
+using OutVec = std::vector<event_variant<Events>>;
 
 template <bool EmitAfter>
 auto MakeCountEventFixture(std::uint64_t threshold, std::uint64_t limit) {
     return MakeProcessorTestFixture<Events, Events>(
         [threshold, limit](auto &&downstream) {
             using D = std::remove_reference_t<decltype(downstream)>;
-            return CountEvent<Input, Reset, Output, EmitAfter, D>(
+            return count_event<Input, Reset, Output, EmitAfter, D>(
                 threshold, limit, std::move(downstream));
         });
 }
 
-TEST_CASE("Count event", "[CountEvent]") {
+TEST_CASE("Count event", "[count_event]") {
     SECTION("Threshold 0, limit 1") {
         SECTION("Emit before") {
             auto f = MakeCountEventFixture<false>(0, 1);

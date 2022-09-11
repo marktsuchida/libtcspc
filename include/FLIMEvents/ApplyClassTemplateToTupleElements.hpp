@@ -15,25 +15,25 @@ namespace flimevt::internal {
 
 namespace really_internal {
 
-template <typename... Args> struct ApplyClassTemplateCurried {
+template <typename... Args> struct apply_class_template_curried {
     // Tmpl<T...> where T... is the first N element types of Tup, followed by
     // Ts.
     template <template <typename...> typename Tmpl, typename Tup,
               std::size_t N, typename... Ts>
-    struct ApplyClassTemplateToTupleNElements {
+    struct apply_class_template_to_tuple_n_elements {
       private:
         using Tn = std::remove_reference_t<decltype(std::get<N - 1>(
             std::declval<Tup>()))>;
 
       public:
         using type =
-            typename ApplyClassTemplateToTupleNElements<Tmpl, Tup, N - 1, Tn,
-                                                        Ts...>::type;
+            typename apply_class_template_to_tuple_n_elements<Tmpl, Tup, N - 1,
+                                                              Tn, Ts...>::type;
     };
 
     template <template <typename...> typename Tmpl, typename Tup,
               typename... Ts>
-    struct ApplyClassTemplateToTupleNElements<Tmpl, Tup, 0, Ts...> {
+    struct apply_class_template_to_tuple_n_elements<Tmpl, Tup, 0, Ts...> {
         using type = Tmpl<Args..., Ts...>;
     };
 };
@@ -42,13 +42,13 @@ template <typename... Args> struct ApplyClassTemplateCurried {
 
 // Metafunction; given Tup = std::tuple<T, U>, return Tmpl<Args..., T, U>.
 template <template <typename...> typename Tmpl, typename Tup, typename... Args>
-using ApplyClassTemplateToTupleElements =
-    typename really_internal::ApplyClassTemplateCurried<Args...>::
-        template ApplyClassTemplateToTupleNElements<Tmpl, Tup,
-                                                    std::tuple_size_v<Tup>>;
+using apply_class_template_to_tuple_elements =
+    typename really_internal::apply_class_template_curried<Args...>::
+        template apply_class_template_to_tuple_n_elements<
+            Tmpl, Tup, std::tuple_size_v<Tup>>;
 
 template <template <typename...> typename Tmpl, typename Tup, typename... Args>
-using ApplyClassTemplateToTupleElementsT =
-    typename ApplyClassTemplateToTupleElements<Tmpl, Tup, Args...>::type;
+using apply_class_template_to_tuple_elements_t =
+    typename apply_class_template_to_tuple_elements<Tmpl, Tup, Args...>::type;
 
 } // namespace flimevt::internal

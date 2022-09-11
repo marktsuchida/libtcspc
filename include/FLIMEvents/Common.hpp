@@ -32,15 +32,15 @@ namespace flimevt {
  * representable value is over 9E18. If the macrotime units are picoseconds,
  * this corresponds to about 3 and a half months.
  */
-using Macrotime = std::int64_t;
+using macrotime = std::int64_t;
 
 namespace internal {
 
 // A "false" template metafunction that can be used with static_assert in
 // constexpr-if branches (by pretending that it may not always be false).
-template <typename T> struct FalseForType : std::false_type {};
+template <typename T> struct false_for_type : std::false_type {};
 
-constexpr int CountTrailingZeros32Nonintrinsic(std::uint32_t x) noexcept {
+constexpr int count_trailing_zeros_32_nonintrinsic(std::uint32_t x) noexcept {
     int r = 0;
     while ((x & 1) == 0) {
         x >>= 1;
@@ -52,7 +52,7 @@ constexpr int CountTrailingZeros32Nonintrinsic(std::uint32_t x) noexcept {
 // Return the number of trailing zero bits in x. Behavior is undefined if x is
 // zero.
 // TODO: In C++20, replace with std::countr_zero()
-inline int CountTrailingZeros32(std::uint32_t const x) noexcept {
+inline int count_trailing_zeros_32(std::uint32_t const x) noexcept {
 #ifdef __GNUC__
     return __builtin_ctz(x);
 #elif defined(_MSC_VER)
@@ -60,7 +60,7 @@ inline int CountTrailingZeros32(std::uint32_t const x) noexcept {
     _BitScanForward(&r, x);
     return (int)r;
 #else
-    return CountTrailingZeros32Nonintrinsic(x);
+    return count_trailing_zeros_32_nonintrinsic(x);
 #endif
 }
 

@@ -13,18 +13,19 @@
 using namespace flimevt;
 using namespace flimevt::test;
 
-static_assert(HandlesEventSetV<Broadcast<>, EventSet<>>);
-
-static_assert(HandlesEventSetV<Broadcast<DiscardAll<EventSet<>>>, EventSet<>>);
-
-static_assert(HandlesEventSetV<Broadcast<DiscardAll<EventSet<Event<0>>>>,
-                               EventSet<Event<0>>>);
-
-static_assert(HandlesEventSetV<Broadcast<DiscardAll<EventSet<Event<0>>>,
-                                         DiscardAll<EventSet<Event<0>>>>,
-                               EventSet<Event<0>>>);
+static_assert(handles_event_set_v<broadcast<>, event_set<>>);
 
 static_assert(
-    HandlesEventSetV<Broadcast<DiscardAll<EventSet<Event<0>>>,
-                               DiscardAll<EventSet<Event<0>, Event<1>>>>,
-                     EventSet<Event<0>>>);
+    handles_event_set_v<broadcast<discard_all<event_set<>>>, event_set<>>);
+
+static_assert(handles_event_set_v<broadcast<discard_all<event_set<Event<0>>>>,
+                                  event_set<Event<0>>>);
+
+static_assert(handles_event_set_v<broadcast<discard_all<event_set<Event<0>>>,
+                                            discard_all<event_set<Event<0>>>>,
+                                  event_set<Event<0>>>);
+
+static_assert(
+    handles_event_set_v<broadcast<discard_all<event_set<Event<0>>>,
+                                  discard_all<event_set<Event<0>, Event<1>>>>,
+                        event_set<Event<0>>>);

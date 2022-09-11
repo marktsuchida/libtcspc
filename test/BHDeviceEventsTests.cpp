@@ -15,118 +15,118 @@
 
 using namespace flimevt;
 
-using DiscardTCSPC = DiscardAll<TCSPCEvents>;
+using DiscardTCSPC = discard_all<tcspc_events>;
 
-static_assert(HandlesEventSetV<DecodeBHSPC<DiscardTCSPC>, BHSPCEvents>);
-static_assert(
-    HandlesEventSetV<DecodeBHSPC600_48<DiscardTCSPC>, BHSPC600Events48>);
-static_assert(
-    HandlesEventSetV<DecodeBHSPC600_32<DiscardTCSPC>, BHSPC600Events32>);
+static_assert(handles_event_set_v<decode_bh_spc<DiscardTCSPC>, bh_spc_events>);
+static_assert(handles_event_set_v<decode_bh_spc_600_48<DiscardTCSPC>,
+                                  bh_spc_600_events_48>);
+static_assert(handles_event_set_v<decode_bh_spc_600_32<DiscardTCSPC>,
+                                  bh_spc_600_events_32>);
 
-TEST_CASE("ADCValue", "[BHSPCEvent]") {
+TEST_CASE("ADCValue", "[bh_spc_event]") {
     union {
-        BHSPCEvent event;
+        bh_spc_event event;
         std::uint8_t bytes[4];
     } u;
     memset(u.bytes, 0, 4);
 
-    REQUIRE(u.event.GetADCValue() == 0);
+    REQUIRE(u.event.get_adc_value() == 0);
 
     u.bytes[2] = 0xff;
-    REQUIRE(u.event.GetADCValue() == 0xff);
+    REQUIRE(u.event.get_adc_value() == 0xff);
 
     u.bytes[3] = 0x0f;
-    REQUIRE(u.event.GetADCValue() == 4095);
+    REQUIRE(u.event.get_adc_value() == 4095);
 
     u.bytes[2] = 0;
-    REQUIRE(u.event.GetADCValue() == 0xf00);
+    REQUIRE(u.event.get_adc_value() == 0xf00);
 
     u.bytes[0] = 0xff;
     u.bytes[1] = 0xff;
     u.bytes[3] = 0xf0;
-    REQUIRE(u.event.GetADCValue() == 0);
+    REQUIRE(u.event.get_adc_value() == 0);
 }
 
-TEST_CASE("RoutingSignals", "[BHSPCEvent]") {
+TEST_CASE("RoutingSignals", "[bh_spc_event]") {
     union {
-        BHSPCEvent event;
+        bh_spc_event event;
         std::uint8_t bytes[4];
     } u;
     memset(u.bytes, 0, 4);
 
-    REQUIRE(u.event.GetRoutingSignals() == 0);
-    REQUIRE(u.event.GetMarkerBits() == 0);
+    REQUIRE(u.event.get_routing_signals() == 0);
+    REQUIRE(u.event.get_marker_bits() == 0);
 
     u.bytes[1] = 0x10;
-    REQUIRE(u.event.GetRoutingSignals() == 1);
-    REQUIRE(u.event.GetMarkerBits() == 1);
+    REQUIRE(u.event.get_routing_signals() == 1);
+    REQUIRE(u.event.get_marker_bits() == 1);
     u.bytes[1] = 0x20;
-    REQUIRE(u.event.GetRoutingSignals() == 2);
-    REQUIRE(u.event.GetMarkerBits() == 2);
+    REQUIRE(u.event.get_routing_signals() == 2);
+    REQUIRE(u.event.get_marker_bits() == 2);
     u.bytes[1] = 0x40;
-    REQUIRE(u.event.GetRoutingSignals() == 4);
-    REQUIRE(u.event.GetMarkerBits() == 4);
+    REQUIRE(u.event.get_routing_signals() == 4);
+    REQUIRE(u.event.get_marker_bits() == 4);
     u.bytes[1] = 0x80;
-    REQUIRE(u.event.GetRoutingSignals() == 8);
-    REQUIRE(u.event.GetMarkerBits() == 8);
+    REQUIRE(u.event.get_routing_signals() == 8);
+    REQUIRE(u.event.get_marker_bits() == 8);
 
     u.bytes[0] = u.bytes[2] = u.bytes[3] = 0xff;
     u.bytes[1] = 0x0f;
-    REQUIRE(u.event.GetRoutingSignals() == 0);
-    REQUIRE(u.event.GetMarkerBits() == 0);
+    REQUIRE(u.event.get_routing_signals() == 0);
+    REQUIRE(u.event.get_marker_bits() == 0);
 }
 
-TEST_CASE("Macrotime", "[BHSPCEvent]") {
-    REQUIRE(BHSPCEvent::MacrotimeOverflowPeriod == 4096);
+TEST_CASE("Macrotime", "[bh_spc_event]") {
+    REQUIRE(bh_spc_event::macrotime_overflow_period == 4096);
 
     union {
-        BHSPCEvent event;
+        bh_spc_event event;
         std::uint8_t bytes[4];
     } u;
     memset(u.bytes, 0, 4);
 
-    REQUIRE(u.event.GetMacrotime() == 0);
+    REQUIRE(u.event.get_macrotime() == 0);
 
     u.bytes[0] = 0xff;
-    REQUIRE(u.event.GetMacrotime() == 0xff);
+    REQUIRE(u.event.get_macrotime() == 0xff);
 
     u.bytes[1] = 0x0f;
-    REQUIRE(u.event.GetMacrotime() == 4095);
+    REQUIRE(u.event.get_macrotime() == 4095);
 
     u.bytes[0] = 0;
-    REQUIRE(u.event.GetMacrotime() == 0xf00);
+    REQUIRE(u.event.get_macrotime() == 0xf00);
 
     u.bytes[1] = 0xf0;
     u.bytes[2] = 0xff;
     u.bytes[3] = 0xff;
-    REQUIRE(u.event.GetMacrotime() == 0);
+    REQUIRE(u.event.get_macrotime() == 0);
 }
 
-TEST_CASE("Flags", "[BHSPCEvent]") {
+TEST_CASE("Flags", "[bh_spc_event]") {
     union {
-        BHSPCEvent event;
+        bh_spc_event event;
         std::uint8_t bytes[4];
     } u;
     memset(u.bytes, 0, 4);
 
-    REQUIRE(!u.event.GetInvalidFlag());
-    REQUIRE(!u.event.GetMacrotimeOverflowFlag());
-    REQUIRE(!u.event.GetGapFlag());
-    REQUIRE(!u.event.GetMarkerFlag());
+    REQUIRE(!u.event.get_invalid_flag());
+    REQUIRE(!u.event.get_macrotime_overflow_flag());
+    REQUIRE(!u.event.get_gap_flag());
+    REQUIRE(!u.event.get_marker_flag());
 
     u.bytes[3] = 1 << 7;
-    REQUIRE(u.event.GetInvalidFlag());
+    REQUIRE(u.event.get_invalid_flag());
     u.bytes[3] = 1 << 6;
-    REQUIRE(u.event.GetMacrotimeOverflowFlag());
+    REQUIRE(u.event.get_macrotime_overflow_flag());
     u.bytes[3] = 1 << 5;
-    REQUIRE(u.event.GetGapFlag());
+    REQUIRE(u.event.get_gap_flag());
     u.bytes[3] = 1 << 4;
-    REQUIRE(u.event.GetMarkerFlag());
+    REQUIRE(u.event.get_marker_flag());
 }
 
-TEST_CASE("MacrotimeOverflow", "[BHSPCEvent]") {
+TEST_CASE("MacrotimeOverflow", "[bh_spc_event]") {
     union {
-        BHSPCEvent event;
+        bh_spc_event event;
         std::uint8_t bytes[4];
     } u;
     memset(u.bytes, 0, 4);
@@ -139,53 +139,53 @@ TEST_CASE("MacrotimeOverflow", "[BHSPCEvent]") {
     std::uint8_t const MARK = 1 << 4;
 
     u.bytes[3] = 0; // Valid photon, no overflow
-    REQUIRE(!u.event.IsMultipleMacrotimeOverflow());
+    REQUIRE(!u.event.is_multiple_macrotime_overflow());
     u.bytes[3] = MARK; // Mark, no overflow (not expected)
-    REQUIRE(!u.event.IsMultipleMacrotimeOverflow());
+    REQUIRE(!u.event.is_multiple_macrotime_overflow());
     u.bytes[3] = MTOV; // Valid photon, single overflow
-    REQUIRE(!u.event.IsMultipleMacrotimeOverflow());
+    REQUIRE(!u.event.is_multiple_macrotime_overflow());
     u.bytes[3] = MTOV | MARK; // Marker, single overflow (not expected)
-    REQUIRE(!u.event.IsMultipleMacrotimeOverflow());
+    REQUIRE(!u.event.is_multiple_macrotime_overflow());
     u.bytes[3] = INVALID; // Invalid photon, no overflow
-    REQUIRE(!u.event.IsMultipleMacrotimeOverflow());
+    REQUIRE(!u.event.is_multiple_macrotime_overflow());
     u.bytes[3] = INVALID | MARK; // Mark, no overflow
-    REQUIRE(!u.event.IsMultipleMacrotimeOverflow());
+    REQUIRE(!u.event.is_multiple_macrotime_overflow());
     u.bytes[3] = INVALID | MTOV; // Multiple overflow
-    REQUIRE(u.event.IsMultipleMacrotimeOverflow());
+    REQUIRE(u.event.is_multiple_macrotime_overflow());
     u.bytes[3] = INVALID | MTOV | MARK; // Marker, single overflow
-    REQUIRE(!u.event.IsMultipleMacrotimeOverflow());
+    REQUIRE(!u.event.is_multiple_macrotime_overflow());
 }
 
-TEST_CASE("MacrotimeOverflowCount", "[BHSPCEvent]") {
+TEST_CASE("MacrotimeOverflowCount", "[bh_spc_event]") {
     union {
-        BHSPCEvent event;
+        bh_spc_event event;
         std::uint8_t bytes[4];
     } u;
     memset(u.bytes, 0, 4);
 
-    REQUIRE(u.event.GetMultipleMacrotimeOverflowCount() == 0);
+    REQUIRE(u.event.get_multiple_macrotime_overflow_count() == 0);
 
     u.bytes[0] = 1;
-    REQUIRE(u.event.GetMultipleMacrotimeOverflowCount() == 1);
+    REQUIRE(u.event.get_multiple_macrotime_overflow_count() == 1);
     u.bytes[0] = 0x80;
-    REQUIRE(u.event.GetMultipleMacrotimeOverflowCount() == 128);
+    REQUIRE(u.event.get_multiple_macrotime_overflow_count() == 128);
     u.bytes[0] = 0;
 
     u.bytes[1] = 1;
-    REQUIRE(u.event.GetMultipleMacrotimeOverflowCount() == 256);
+    REQUIRE(u.event.get_multiple_macrotime_overflow_count() == 256);
     u.bytes[1] = 0x80;
-    REQUIRE(u.event.GetMultipleMacrotimeOverflowCount() == 32768);
+    REQUIRE(u.event.get_multiple_macrotime_overflow_count() == 32768);
     u.bytes[1] = 0;
 
     u.bytes[2] = 1;
-    REQUIRE(u.event.GetMultipleMacrotimeOverflowCount() == 65536);
+    REQUIRE(u.event.get_multiple_macrotime_overflow_count() == 65536);
     u.bytes[2] = 0x80;
-    REQUIRE(u.event.GetMultipleMacrotimeOverflowCount() == 8388608);
+    REQUIRE(u.event.get_multiple_macrotime_overflow_count() == 8388608);
     u.bytes[2] = 0;
 
     u.bytes[3] = 1;
-    REQUIRE(u.event.GetMultipleMacrotimeOverflowCount() == 16777216);
+    REQUIRE(u.event.get_multiple_macrotime_overflow_count() == 16777216);
     u.bytes[3] = 0x08;
-    REQUIRE(u.event.GetMultipleMacrotimeOverflowCount() == 134217728);
+    REQUIRE(u.event.get_multiple_macrotime_overflow_count() == 134217728);
     u.bytes[3] = 0;
 }

@@ -52,7 +52,7 @@ namespace flimevt {
  */
 template <typename EIn, typename EReset, typename EOut, bool EmitAfter,
           typename D>
-class CountEvent {
+class count_event {
     std::uint64_t count = 0;
     std::uint64_t const thresh;
     std::uint64_t const limit;
@@ -69,25 +69,25 @@ class CountEvent {
      * std::uint64_t{-1} if automatic reset is not desired); must be positive
      * \param downstream downstream processor (moved out)
      */
-    explicit CountEvent(std::uint64_t threshold, std::uint64_t limit,
-                        D &&downstream)
+    explicit count_event(std::uint64_t threshold, std::uint64_t limit,
+                         D &&downstream)
         : thresh(threshold), limit(limit), downstream(std::move(downstream)) {
         assert(limit > 0);
     }
 
     /** \brief Processor interface */
-    void HandleEvent(EIn const &event) noexcept {
+    void handle_event(EIn const &event) noexcept {
         if constexpr (!EmitAfter) {
             if (count == thresh)
-                downstream.HandleEvent(EOut{event.macrotime});
+                downstream.handle_event(EOut{event.macrotime});
         }
 
-        downstream.HandleEvent(event);
+        downstream.handle_event(event);
         ++count;
 
         if constexpr (EmitAfter) {
             if (count == thresh)
-                downstream.HandleEvent(EOut{event.macrotime});
+                downstream.handle_event(EOut{event.macrotime});
         }
 
         if (count == limit)
@@ -95,19 +95,19 @@ class CountEvent {
     }
 
     /** \brief Processor interface */
-    void HandleEvent(EReset const &event) noexcept {
+    void handle_event(EReset const &event) noexcept {
         count = 0;
-        downstream.HandleEvent(event);
+        downstream.handle_event(event);
     }
 
     /** \brief Processor interface */
-    template <typename E> void HandleEvent(E const &event) noexcept {
-        downstream.HandleEvent(event);
+    template <typename E> void handle_event(E const &event) noexcept {
+        downstream.handle_event(event);
     }
 
     /** \brief Processor interface */
-    void HandleEnd(std::exception_ptr error) noexcept {
-        downstream.HandleEnd(error);
+    void handle_end(std::exception_ptr error) noexcept {
+        downstream.handle_end(error);
     }
 };
 

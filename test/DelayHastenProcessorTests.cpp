@@ -24,48 +24,50 @@
 using namespace flimevt;
 using namespace flimevt::test;
 
-static_assert(HandlesEventSetV<
-              DelayProcessor<Events01, DiscardAll<Events0123>>, Events0123>);
-static_assert(HandlesEventSetV<
-              HastenProcessor<Events01, DiscardAll<Events0123>>, Events0123>);
-static_assert(HandlesEventSetV<
-              DelayHastenProcessor<Events01, Events23, DiscardAll<Events0123>>,
-              Events0123>);
+static_assert(handles_event_set_v<
+              delay_processor<Events01, discard_all<Events0123>>, Events0123>);
+static_assert(
+    handles_event_set_v<hasten_processor<Events01, discard_all<Events0123>>,
+                        Events0123>);
+static_assert(
+    handles_event_set_v<
+        delay_hasten_processor<Events01, Events23, discard_all<Events0123>>,
+        Events0123>);
 
 // Make fixture to test delaying Events01
-auto MakeDelayFixture(Macrotime delta) {
+auto MakeDelayFixture(macrotime delta) {
     auto makeProc = [delta](auto &&downstream) {
         using D = std::remove_reference_t<decltype(downstream)>;
-        return DelayProcessor<Events01, D>(delta, std::move(downstream));
+        return delay_processor<Events01, D>(delta, std::move(downstream));
     };
 
     return MakeProcessorTestFixture<Events0123, Events0123>(makeProc);
 }
 
 // Make fixture to test hastening Event01
-auto MakeHastenFixture(Macrotime delta) {
+auto MakeHastenFixture(macrotime delta) {
     auto makeProc = [delta](auto &&downstream) {
         using D = std::remove_reference_t<decltype(downstream)>;
-        return HastenProcessor<Events23, D>(delta, std::move(downstream));
+        return hasten_processor<Events23, D>(delta, std::move(downstream));
     };
 
     return MakeProcessorTestFixture<Events0123, Events0123>(makeProc);
 }
 
-auto MakeDelayHastenFixture(Macrotime delta) {
+auto MakeDelayHastenFixture(macrotime delta) {
     auto makeProc = [delta](auto &&downstream) {
         using D = std::remove_reference_t<decltype(downstream)>;
-        return DelayHastenProcessor<Events01, Events23, D>(
+        return delay_hasten_processor<Events01, Events23, D>(
             delta, std::move(downstream));
     };
 
     return MakeProcessorTestFixture<Events0123, Events0123>(makeProc);
 }
 
-using OutVec = std::vector<flimevt::EventVariant<Events0123>>;
+using OutVec = std::vector<flimevt::event_variant<Events0123>>;
 
-TEST_CASE("Delay uniform streams", "[DelayProcessor]") {
-    Macrotime delta = GENERATE(0, 1, 2);
+TEST_CASE("Delay uniform streams", "[delay_processor]") {
+    macrotime delta = GENERATE(0, 1, 2);
     auto f = MakeDelayFixture(delta);
 
     SECTION("Empty stream yields empty stream") {
@@ -139,8 +141,8 @@ TEST_CASE("Delay uniform streams", "[DelayProcessor]") {
     }
 }
 
-TEST_CASE("Hasten uniform streams", "[HastenProcessor]") {
-    Macrotime delta = GENERATE(0, 1, 2);
+TEST_CASE("Hasten uniform streams", "[hasten_processor]") {
+    macrotime delta = GENERATE(0, 1, 2);
     auto f = MakeHastenFixture(delta);
 
     SECTION("Empty stream yields empty stream") {
@@ -214,7 +216,7 @@ TEST_CASE("Hasten uniform streams", "[HastenProcessor]") {
     }
 }
 
-TEST_CASE("Delay by 0", "[DelayProcessor]") {
+TEST_CASE("Delay by 0", "[delay_processor]") {
     auto f = MakeDelayFixture(0);
 
     SECTION("Equal timestamps") {
@@ -278,7 +280,7 @@ TEST_CASE("Delay by 0", "[DelayProcessor]") {
     }
 }
 
-TEST_CASE("Hasten by 0", "[HastenProcessor]") {
+TEST_CASE("Hasten by 0", "[hasten_processor]") {
     auto f = MakeHastenFixture(0);
 
     SECTION("Equal timestamps") {
@@ -666,8 +668,8 @@ TEST_CASE("Hasten by 2") {
     }
 }
 
-TEST_CASE("DelayHastenProcessor Sanity", "[DelayHastenProcessor]") {
-    Macrotime delta = GENERATE(-2, -1, 0, 1, 2);
+TEST_CASE("delay_hasten_processor Sanity", "[delay_hasten_processor]") {
+    macrotime delta = GENERATE(-2, -1, 0, 1, 2);
     auto f = MakeDelayHastenFixture(delta);
 
     // Ignore output timing; only check content.

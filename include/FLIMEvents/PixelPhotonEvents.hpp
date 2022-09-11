@@ -14,7 +14,7 @@
 
 namespace flimevt {
 
-struct PixelPhotonEvent {
+struct pixel_photon_event {
     std::uint16_t difftime;
     std::int16_t channel;
     std::uint32_t x;
@@ -22,11 +22,11 @@ struct PixelPhotonEvent {
     std::uint32_t frame;
 };
 
-struct BeginFrameEvent {};
-struct EndFrameEvent {};
+struct begin_frame_event {};
+struct end_frame_event {};
 
-using PixelPhotonEvents =
-    EventSet<PixelPhotonEvent, BeginFrameEvent, EndFrameEvent>;
+using pixel_photon_events =
+    event_set<pixel_photon_event, begin_frame_event, end_frame_event>;
 
 } // namespace flimevt
 

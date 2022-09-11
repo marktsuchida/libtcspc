@@ -19,33 +19,33 @@
 using namespace flimevt;
 using namespace flimevt::test;
 
-using IEvents = EventSet<MarkerEvent, Event<1>>;
-using OEvents = EventSet<MarkerEvent, Event<0>, Event<1>>;
-using OutVec = std::vector<EventVariant<OEvents>>;
+using IEvents = event_set<marker_event, Event<1>>;
+using OEvents = event_set<marker_event, Event<0>, Event<1>>;
+using OutVec = std::vector<event_variant<OEvents>>;
 
 auto MakeTranslateMarkerFixture(std::int32_t channel) {
     return MakeProcessorTestFixture<IEvents, OEvents>(
         [channel](auto &&downstream) {
             using D = std::remove_reference_t<decltype(downstream)>;
-            return TranslateMarker<MarkerEvent, Event<0>, D>(
+            return translate_marker<marker_event, Event<0>, D>(
                 channel, std::move(downstream));
         });
 }
 
-TEST_CASE("Translate marker", "[TranslateMarker]") {
+TEST_CASE("Translate marker", "[translate_marker]") {
     auto f = MakeTranslateMarkerFixture(0);
 
     f.FeedEvents({
-        MarkerEvent{{100}, 0},
+        marker_event{{100}, 0},
     });
     REQUIRE(f.Output() == OutVec{
                               Event<0>{100},
                           });
     f.FeedEvents({
-        MarkerEvent{{200}, 1},
+        marker_event{{200}, 1},
     });
     REQUIRE(f.Output() == OutVec{
-                              MarkerEvent{{200}, 1},
+                              marker_event{{200}, 1},
                           });
     f.FeedEvents({
         Event<1>{300},

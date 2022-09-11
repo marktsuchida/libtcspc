@@ -30,7 +30,7 @@ namespace flimevt {
  * \tparam D downstream processor type
  */
 template <typename ESet, typename EOpen, typename EClose, typename D>
-class GateEvents {
+class gate_events {
     bool open;
 
     D downstream;
@@ -43,7 +43,7 @@ class GateEvents {
      * or \c EClose event is received
      * \param downstream downstream processor (moved out)
      */
-    explicit GateEvents(bool initiallyOpen, D &&downstream)
+    explicit gate_events(bool initiallyOpen, D &&downstream)
         : open(initiallyOpen), downstream(std::move(downstream)) {}
 
     /**
@@ -51,30 +51,30 @@ class GateEvents {
      *
      * \param downstream downstream processor (moved out)
      */
-    explicit GateEvents(D &&downstream)
-        : GateEvents(false, std::move(downstream)) {}
+    explicit gate_events(D &&downstream)
+        : gate_events(false, std::move(downstream)) {}
 
     /** \brief Processor interface */
-    template <typename E> void HandleEvent(E const &event) noexcept {
-        if (!ContainsEventV<ESet, E> || open)
-            downstream.HandleEvent(event);
+    template <typename E> void handle_event(E const &event) noexcept {
+        if (!contains_event_v<ESet, E> || open)
+            downstream.handle_event(event);
     }
 
     /** \brief Processor interface */
-    void HandleEvent(EOpen const &event) noexcept {
+    void handle_event(EOpen const &event) noexcept {
         open = true;
-        downstream.HandleEvent(event);
+        downstream.handle_event(event);
     }
 
     /** \brief Processor interface */
-    void HandleEvent(EClose const &event) noexcept {
+    void handle_event(EClose const &event) noexcept {
         open = false;
-        downstream.HandleEvent(event);
+        downstream.handle_event(event);
     }
 
     /** \brief Processor interface */
-    void HandleEnd(std::exception_ptr error) noexcept {
-        downstream.HandleEnd(error);
+    void handle_end(std::exception_ptr error) noexcept {
+        downstream.handle_end(error);
     }
 };
 

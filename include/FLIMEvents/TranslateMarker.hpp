@@ -28,19 +28,19 @@ namespace flimevt {
  * channel.
  *
  * The output event type \c EOut must have a \c macrotime field of type
- * \c Macrotime, and must be brace-initializable with a macrotime value (as in
+ * \c macrotime, and must be brace-initializable with a macrotime value (as in
  * \c EOut{123} ).
  *
  * \tparam EMarker marker event type
  * \tparam EOut output event type for matching marker events
  * \tparam D downstream processor type
  */
-template <typename EMarker, typename EOut, typename D> class TranslateMarker {
+template <typename EMarker, typename EOut, typename D> class translate_marker {
     std::int32_t const chan;
     D downstream;
 
-    static_assert(std::is_same_v<decltype(EOut{0}.macrotime), Macrotime>,
-                  "EOut must have a macrotime field of type Macrotime");
+    static_assert(std::is_same_v<decltype(EOut{0}.macrotime), macrotime>,
+                  "EOut must have a macrotime field of type macrotime");
     static_assert(EOut{42}.macrotime == 42,
                   "EOut must be initializeable with macrotime");
 
@@ -51,27 +51,27 @@ template <typename EMarker, typename EOut, typename D> class TranslateMarker {
      * \param channel channel of marker events to convert to EOut events
      * \param downstream downstream processor (moved out)
      */
-    explicit TranslateMarker(std::int32_t channel, D &&downstream)
+    explicit translate_marker(std::int32_t channel, D &&downstream)
         : chan(channel), downstream(std::move(downstream)) {}
 
     /** \brief Processor interface */
-    void HandleEvent(EMarker const &event) noexcept {
+    void handle_event(EMarker const &event) noexcept {
         if (event.channel == chan) {
             EOut e{event.macrotime};
-            downstream.HandleEvent(e);
+            downstream.handle_event(e);
         } else {
-            downstream.HandleEvent(event);
+            downstream.handle_event(event);
         }
     }
 
     /** \brief Processor interface */
-    template <typename E> void HandleEvent(E const &event) noexcept {
-        downstream.HandleEvent(event);
+    template <typename E> void handle_event(E const &event) noexcept {
+        downstream.handle_event(event);
     }
 
     /** \brief Processor interface */
-    void HandleEnd(std::exception_ptr error) noexcept {
-        downstream.HandleEnd(error);
+    void handle_end(std::exception_ptr error) noexcept {
+        downstream.handle_end(error);
     }
 };
 

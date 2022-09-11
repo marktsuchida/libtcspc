@@ -17,7 +17,7 @@ namespace flimevt {
  *
  * \tparam Ds downstream processor classes
  */
-template <typename... Ds> class Broadcast {
+template <typename... Ds> class broadcast {
     std::tuple<Ds...> downstreams;
 
   public:
@@ -26,18 +26,18 @@ template <typename... Ds> class Broadcast {
      *
      * \param downstreams downstream processors (moved out)
      */
-    explicit Broadcast(Ds &&...downstreams)
+    explicit broadcast(Ds &&...downstreams)
         : downstreams{std::move<Ds>(downstreams)...} {}
 
     /** \brief Processor interface */
-    template <typename E> void HandleEvent(E const &event) noexcept {
-        std::apply([&](auto &...s) { (..., s.HandleEvent(event)); },
+    template <typename E> void handle_event(E const &event) noexcept {
+        std::apply([&](auto &...s) { (..., s.handle_event(event)); },
                    downstreams);
     }
 
     /** \brief Processor interface */
-    void HandleEnd(std::exception_ptr error) noexcept {
-        std::apply([&](auto &...s) { (..., s.HandleEnd(error)); },
+    void handle_end(std::exception_ptr error) noexcept {
+        std::apply([&](auto &...s) { (..., s.handle_end(error)); },
                    downstreams);
     }
 };

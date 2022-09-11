@@ -23,25 +23,25 @@ namespace flimevt {
 /**
  * \brief Processor that maps arbitrary timestamped events to datapoint events.
  *
- * Incoming events of type \c EventType are mapped to \c
- * DatapointEvent<DataType>. \c EventType and \c DataType are deduced from the
- * type of \c M (the data mapper).
+ * Incoming events of type \c event_type are mapped to \c
+ * datapoint_event<data_type>. \c event_type and \c data_type are deduced from
+ * the type of \c M (the data mapper).
  *
- * The data mapper must define member types \c EventType and \c DataType, plus
- * the function call operator <tt>DataType operator()(EventType const &) const
- * noexcept</tt>.
+ * The data mapper must define member types \c event_type and \c data_type,
+ * plus the function call operator <tt>data_type operator()(event_type const &)
+ * const noexcept</tt>.
  *
- * \c DataType can be any copyable type accepted by the bin mapper used
+ * \c data_type can be any copyable type accepted by the bin mapper used
  * downstream. Typically it is a numeric type.
  *
  * All other events are passed through.
  *
- * \see DifftimeDataMapper
+ * \see difftime_data_mapper
  *
  * \tparam M type of data mapper
  * \tparam D downstream processor type
  */
-template <typename M, typename D> class MapToDatapoints {
+template <typename M, typename D> class map_to_datapoints {
     M const mapper;
     D downstream;
 
@@ -49,12 +49,12 @@ template <typename M, typename D> class MapToDatapoints {
     /**
      * \brief Type of events being mapped to datapoints.
      */
-    using EventType = typename M::EventType;
+    using event_type = typename M::event_type;
 
     /**
      * \brief Data type of the produced datapoints.
      */
-    using DataType = typename M::DataType;
+    using data_type = typename M::data_type;
 
     /**
      * \brief Construct with data mapper and downstream processor.
@@ -62,41 +62,41 @@ template <typename M, typename D> class MapToDatapoints {
      * \param mapper the data mapper (moved out)
      * \param downstream downstream processor (moved out)
      */
-    explicit MapToDatapoints(M &&mapper, D &&downstream)
+    explicit map_to_datapoints(M &&mapper, D &&downstream)
         : mapper(std::move(mapper)), downstream(std::move(downstream)) {}
 
     /** \brief Processor interface **/
-    void HandleEvent(EventType const &event) noexcept {
-        DatapointEvent<DataType> e{event.macrotime,
-                                   std::invoke(mapper, event)};
-        downstream.HandleEvent(e);
+    void handle_event(event_type const &event) noexcept {
+        datapoint_event<data_type> e{event.macrotime,
+                                     std::invoke(mapper, event)};
+        downstream.handle_event(e);
     }
 
     /** \brief Processor interface **/
-    template <typename E> void HandleEvent(E const &event) noexcept {
-        downstream.HandleEvent(event);
+    template <typename E> void handle_event(E const &event) noexcept {
+        downstream.handle_event(event);
     }
 
     /** \brief Processor interface **/
-    void HandleEnd(std::exception_ptr error) noexcept {
-        downstream.HandleEnd(error);
+    void handle_end(std::exception_ptr error) noexcept {
+        downstream.handle_end(error);
     }
 };
 
 /**
  * \brief Data mapper mapping difference time to the data value.
  *
- * \see MapToDatapoints
+ * \see map_to_datapoints
  */
-class DifftimeDataMapper {
+class difftime_data_mapper {
   public:
     /** \brief Data mapper interface */
-    using EventType = TimeCorrelatedCountEvent;
+    using event_type = time_correlated_count_event;
     /** \brief Data mapper interface */
-    using DataType = decltype(std::declval<EventType>().difftime);
+    using data_type = decltype(std::declval<event_type>().difftime);
 
     /** \brief Data mapper interface */
-    DataType operator()(EventType const &event) const noexcept {
+    data_type operator()(event_type const &event) const noexcept {
         return event.difftime;
     }
 };
@@ -104,45 +104,45 @@ class DifftimeDataMapper {
 /**
  * \brief Processor that maps datapoints to histogram bin indices.
  *
- * Incoming events of type \c DatapointEvent<DataType> are mapped to \c
- * BinIncrementEvent<BinIndexType>. \c DataType and \c BinIndexType are deduced
- * from the type of \c M (the bin mapper).
+ * Incoming events of type \c datapoint_event<data_type> are mapped to \c
+ * bin_increment_event<bin_index_type>. \c data_type and \c bin_index_type are
+ * deduced from the type of \c M (the bin mapper).
  *
- * The bin mapper must define member types \c DataType and \c BinIndexType,
- * plus the function call operator <tt>std::optional<BinIndexType>
- * operator()(DataType) const noexcept</tt>.
+ * The bin mapper must define member types \c data_type and \c bin_index_type,
+ * plus the function call operator <tt>std::optional<bin_index_type>
+ * operator()(data_type) const noexcept</tt>.
  *
- * Bin mappers should also implement <tt>std::size_t GetNBins() const
+ * Bin mappers should also implement <tt>std::size_t get_n_bins() const
  * noexcept</tt>.
  *
- * \c BinIndexType must be an unsigned integer type.
+ * \c bin_index_type must be an unsigned integer type.
  *
  * All other events are passed through.
  *
- * \see LinearBinMapper
- * \see PowerOf2BinMapper
+ * \see linear_bin_mapper
+ * \see power_of_2_bin_mapper
  *
  * \tparam M type of bin mapper
  * \tparam D downstream processor type
  */
-template <typename M, typename D> class MapToBins {
+template <typename M, typename D> class map_to_bins {
     M const binMapper;
     D downstream;
 
     static_assert(
-        std::is_unsigned_v<typename M::BinIndexType>,
-        "The bin mapper's BinIndexType must be an unsigned integer type");
+        std::is_unsigned_v<typename M::bin_index_type>,
+        "The bin mapper's bin_index_type must be an unsigned integer type");
 
   public:
     /**
      * \brief Data type of the mapped datapoint.
      */
-    using DataType = typename M::DataType;
+    using data_type = typename M::data_type;
 
     /**
      * \brief Type used for histogram bin indices.
      */
-    using BinIndexType = typename M::BinIndexType;
+    using bin_index_type = typename M::bin_index_type;
 
     /**
      * \brief Construct with bin mapper and downstream processor.
@@ -150,26 +150,27 @@ template <typename M, typename D> class MapToBins {
      * \param binMapper the bin mapper (moved out)
      * \param downstream downstream processor (moved out)
      */
-    explicit MapToBins(M &&binMapper, D &&downstream)
+    explicit map_to_bins(M &&binMapper, D &&downstream)
         : binMapper(std::move(binMapper)), downstream(std::move(downstream)) {}
 
     /** \brief Processor interface **/
-    void HandleEvent(DatapointEvent<DataType> const &event) noexcept {
+    void handle_event(datapoint_event<data_type> const &event) noexcept {
         auto bin = std::invoke(binMapper, event.value);
         if (bin) {
-            BinIncrementEvent<BinIndexType> e{event.macrotime, bin.value()};
-            downstream.HandleEvent(e);
+            bin_increment_event<bin_index_type> e{event.macrotime,
+                                                  bin.value()};
+            downstream.handle_event(e);
         }
     }
 
     /** \brief Processor interface **/
-    template <typename E> void HandleEvent(E const &event) noexcept {
-        downstream.HandleEvent(event);
+    template <typename E> void handle_event(E const &event) noexcept {
+        downstream.handle_event(event);
     }
 
     /** \brief Processor interface **/
-    void HandleEnd(std::exception_ptr error) noexcept {
-        downstream.HandleEnd(error);
+    void handle_end(std::exception_ptr error) noexcept {
+        downstream.handle_end(error);
     }
 };
 
@@ -187,7 +188,7 @@ template <typename M, typename D> class MapToBins {
  *
  * Datapoints outside of the mapped range are discarded.
  *
- * \see MapToBins
+ * \see map_to_bins
  *
  * \tparam TData the data type from which to map
  * \tparam TBinIndex the type used for bin indices
@@ -197,7 +198,7 @@ template <typename M, typename D> class MapToBins {
  */
 template <typename TData, typename TBinIndex, unsigned NDataBits,
           unsigned NHistoBits, bool Flip = false>
-class PowerOf2BinMapper {
+class power_of_2_bin_mapper {
     static_assert(std::is_unsigned_v<TData>,
                   "TData must be an unsigned integer type");
     static_assert(std::is_unsigned_v<TBinIndex>,
@@ -205,46 +206,46 @@ class PowerOf2BinMapper {
 
   public:
     /** \brief Bin mapper interface */
-    using DataType = TData;
+    using data_type = TData;
     /** \brief Bin mapper interface */
-    using BinIndexType = TBinIndex;
+    using bin_index_type = TBinIndex;
 
     /** \brief Bin mapper interface */
-    std::size_t GetNBins() const noexcept {
+    std::size_t get_n_bins() const noexcept {
         return std::size_t{1} << NHistoBits;
     }
 
     /** \brief Bin mapper interface */
-    std::optional<BinIndexType> operator()(DataType d) const noexcept {
-        static_assert(sizeof(DataType) >= sizeof(BinIndexType));
-        static_assert(NDataBits <= 8 * sizeof(DataType));
-        static_assert(NHistoBits <= 8 * sizeof(BinIndexType));
+    std::optional<bin_index_type> operator()(data_type d) const noexcept {
+        static_assert(sizeof(data_type) >= sizeof(bin_index_type));
+        static_assert(NDataBits <= 8 * sizeof(data_type));
+        static_assert(NHistoBits <= 8 * sizeof(bin_index_type));
         static_assert(NDataBits >= NHistoBits);
         constexpr int shift = NDataBits - NHistoBits;
         auto bin = [&] {
-            if constexpr (shift >= 8 * sizeof(DataType))
+            if constexpr (shift >= 8 * sizeof(data_type))
                 return 0;
             else
                 return d >> shift;
         }();
-        constexpr DataType maxBinIndex = (1 << NHistoBits) - 1;
+        constexpr data_type maxBinIndex = (1 << NHistoBits) - 1;
         if (bin > maxBinIndex)
             return std::nullopt;
         if constexpr (Flip)
             bin = maxBinIndex - bin;
-        return BinIndexType(bin);
+        return bin_index_type(bin);
     }
 };
 
 /**
  * \brief Bin mapper for linear histograms of arbitrary size.
  *
- * \see MapToBins
+ * \see map_to_bins
  *
  * \tparam TData the data type from which to map
  * \tparam TBinIndex the type used for bin indices
  */
-template <typename TData, typename TBinIndex> class LinearBinMapper {
+template <typename TData, typename TBinIndex> class linear_bin_mapper {
     TData const offset;
     TData const binWidth;
     TBinIndex const maxBinIndex;
@@ -256,18 +257,18 @@ template <typename TData, typename TBinIndex> class LinearBinMapper {
 
   public:
     /** \brief Bin mapper interface */
-    using DataType = TData;
+    using data_type = TData;
     /** \brief Bin mapper interface */
-    using BinIndexType = TBinIndex;
+    using bin_index_type = TBinIndex;
 
     /**
      * \brief Construct with parameters.
      *
-     * <tt>(binCount - 1)</tt> must be in the range of \c BinIndexType.
+     * <tt>(binCount - 1)</tt> must be in the range of \c bin_index_type.
      *
      * A negative \c binWidth value (together with a positive \c offset value)
-     * can be used to flip the histogram, provided that \c DataType is a signed
-     * type with sufficient range.
+     * can be used to flip the histogram, provided that \c data_type is a
+     * signed type with sufficient range.
      *
      * \param offset minimum value mapped to the first bin
      * \param binWidth width of each bin (in datapoint units); must not be 0
@@ -275,24 +276,25 @@ template <typename TData, typename TBinIndex> class LinearBinMapper {
      * \param clamp if true, include datapoints outside of the mapped range in
      * the first and last bins
      */
-    explicit LinearBinMapper(DataType offset, DataType binWidth,
-                             BinIndexType maxBinIndex, bool clamp = false)
+    explicit linear_bin_mapper(data_type offset, data_type binWidth,
+                               bin_index_type maxBinIndex, bool clamp = false)
         : offset(offset), binWidth(binWidth), maxBinIndex(maxBinIndex),
           clamp(clamp) {
         assert(binWidth != 0);
     }
 
     /** \brief Bin mapper interface */
-    std::size_t GetNBins() const noexcept {
+    std::size_t get_n_bins() const noexcept {
         return std::size_t(maxBinIndex) + 1;
     }
 
     /** \brief Bin mapper interface */
-    std::optional<BinIndexType> operator()(DataType d) const noexcept {
+    std::optional<bin_index_type> operator()(data_type d) const noexcept {
         d -= offset;
         // Check sign before dividing to avoid rounding to zero in division.
         if ((d < 0 && binWidth > 0) || (d > 0 && binWidth < 0))
-            return clamp ? std::make_optional(BinIndexType{0}) : std::nullopt;
+            return clamp ? std::make_optional(bin_index_type{0})
+                         : std::nullopt;
         d /= binWidth;
         if (std::uint64_t(d) > maxBinIndex)
             return clamp ? std::make_optional(maxBinIndex) : std::nullopt;
@@ -309,9 +311,9 @@ template <typename TData, typename TBinIndex> class LinearBinMapper {
  * \tparam D downstream processor type
  */
 template <typename TBinIndex, typename EStart, typename EStop, typename D>
-class BatchBinIncrements {
+class batch_bin_increments {
     bool inBatch = false;
-    BinIncrementBatchEvent<TBinIndex> batch;
+    bin_increment_batch_event<TBinIndex> batch;
 
     D downstream;
 
@@ -321,40 +323,40 @@ class BatchBinIncrements {
      *
      * \param downstream downstream processor (moved out)
      */
-    explicit BatchBinIncrements(D &&downstream) : downstream(downstream) {}
+    explicit batch_bin_increments(D &&downstream) : downstream(downstream) {}
 
     /** \brief Processor interface **/
-    void HandleEvent(BinIncrementEvent<TBinIndex> const &event) noexcept {
+    void handle_event(bin_increment_event<TBinIndex> const &event) noexcept {
         if (inBatch)
             batch.binIndices.push_back(event.binIndex);
     }
 
     /** \brief Processor interface **/
-    void HandleEvent(EStart const &event) noexcept {
+    void handle_event(EStart const &event) noexcept {
         batch.binIndices.clear();
         inBatch = true;
         batch.start = event.macrotime;
     }
 
     /** \brief Processor interface **/
-    void HandleEvent(EStop const &event) noexcept {
+    void handle_event(EStop const &event) noexcept {
         if (inBatch) {
             batch.stop = event.macrotime;
-            downstream.HandleEvent(batch);
+            downstream.handle_event(batch);
             inBatch = false;
         }
     }
 
     /** \brief Processor interface **/
-    template <typename E> void HandleEvent(E const &event) noexcept {
-        downstream.HandleEvent(event);
+    template <typename E> void handle_event(E const &event) noexcept {
+        downstream.handle_event(event);
     }
 
     /** \brief Processor interface **/
-    void HandleEnd(std::exception_ptr error) noexcept {
+    void handle_end(std::exception_ptr error) noexcept {
         batch.binIndices.clear();
         batch.binIndices.shrink_to_fit();
-        downstream.HandleEnd(error);
+        downstream.handle_end(error);
     }
 };
 

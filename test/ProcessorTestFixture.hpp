@@ -25,7 +25,7 @@ namespace internal {
 template <typename OutputEventSet> class LoggingMockProcessor {
   public:
     struct Result {
-        std::vector<EventVariant<OutputEventSet>> outputs;
+        std::vector<event_variant<OutputEventSet>> outputs;
         bool didEnd = false;
         std::exception_ptr error;
     };
@@ -37,7 +37,7 @@ template <typename OutputEventSet> class LoggingMockProcessor {
     explicit LoggingMockProcessor(Result &outputs) noexcept
         : outputs(outputs) {}
 
-    template <typename E> void HandleEvent(E const &event) noexcept {
+    template <typename E> void handle_event(E const &event) noexcept {
         assert(!outputs.didEnd);
         try {
             outputs.outputs.push_back(event);
@@ -46,7 +46,7 @@ template <typename OutputEventSet> class LoggingMockProcessor {
         }
     }
 
-    void HandleEnd(std::exception_ptr error) noexcept {
+    void handle_end(std::exception_ptr error) noexcept {
         assert(!outputs.didEnd);
         outputs.didEnd = true;
         outputs.error = error;
@@ -75,31 +75,31 @@ class ProcessorTestFixture {
     template <typename IES, typename OES, typename F>
     friend auto MakeProcessorTestFixture(F procFactory);
 
-    using OutputVectorType = std::vector<EventVariant<OutputEventSet>>;
+    using OutputVectorType = std::vector<event_variant<OutputEventSet>>;
 
     // Feed multiple events (old-style); all past outputs must have been
     // checked
-    void FeedEvents(std::vector<EventVariant<InputEventSet>> inputs) {
+    void FeedEvents(std::vector<event_variant<InputEventSet>> inputs) {
         if (!result.outputs.empty())
             throw std::logic_error("Unchecked output remains");
         for (auto const &input : inputs) {
-            std::visit([&](auto &&i) { proc.HandleEvent(i); }, input);
+            std::visit([&](auto &&i) { proc.handle_event(i); }, input);
         }
     }
 
     // Feed one event; all past outputs must have been checked
     template <typename E> void Feed(E const &event) {
-        static_assert(ContainsEventV<InputEventSet, E>);
+        static_assert(contains_event_v<InputEventSet, E>);
         if (!result.outputs.empty())
             throw std::logic_error("Unchecked output remains");
-        proc.HandleEvent(event);
+        proc.handle_event(event);
     }
 
     // Feed "end of stream" and return the resulting output events
     void FeedEnd(std::exception_ptr error) {
         if (!result.outputs.empty())
             throw std::logic_error("Unchecked output remains");
-        proc.HandleEnd(error);
+        proc.handle_end(error);
     }
 
     // Old-style output checking (requires operator<< on variant to print)
@@ -113,8 +113,8 @@ class ProcessorTestFixture {
     template <typename E> bool Check(E const &event) {
         if (result.outputs.empty())
             throw std::logic_error("No output pending");
-        EventVariant<OutputEventSet> expected = event;
-        EventVariant<OutputEventSet> &output = result.outputs.front();
+        event_variant<OutputEventSet> expected = event;
+        event_variant<OutputEventSet> &output = result.outputs.front();
         bool ret = (output == expected);
         if (!ret) {
             std::cerr << "Expected output: " << event << '\n';

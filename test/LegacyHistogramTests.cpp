@@ -14,80 +14,81 @@
 using namespace flimevt;
 
 static_assert(
-    HandlesEventSetV<
-        Histogrammer<unsigned, DiscardAll<FrameHistogramEvents<unsigned>>>,
-        PixelPhotonEvents>);
+    handles_event_set_v<
+        histogrammer<unsigned, discard_all<frame_histogram_events<unsigned>>>,
+        pixel_photon_events>);
+
+static_assert(handles_event_set_v<
+              sequential_histogrammer<
+                  unsigned, discard_all<frame_histogram_events<unsigned>>>,
+              pixel_photon_events>);
 
 static_assert(
-    HandlesEventSetV<SequentialHistogrammer<
-                         unsigned, DiscardAll<FrameHistogramEvents<unsigned>>>,
-                     PixelPhotonEvents>);
+    handles_event_set_v<
+        histogram_accumulator<
+            unsigned, discard_all<cumulative_histogram_events<unsigned>>>,
+        frame_histogram_events<unsigned>>);
 
-static_assert(HandlesEventSetV<
-              HistogramAccumulator<
-                  unsigned, DiscardAll<CumulativeHistogramEvents<unsigned>>>,
-              FrameHistogramEvents<unsigned>>);
+TEST_CASE("TimeBins", "[legacy_histogram]") {
+    legacy_histogram<std::uint16_t> hist(8, 12, false, 1, 1);
+    auto data = hist.get();
+    hist.clear();
 
-TEST_CASE("TimeBins", "[LegacyHistogram]") {
-    LegacyHistogram<std::uint16_t> hist(8, 12, false, 1, 1);
-    auto data = hist.Get();
-    hist.Clear();
-
-    hist.Increment(0, 0, 0);
+    hist.increment(0, 0, 0);
     REQUIRE(data[0] == 1);
-    hist.Increment(15, 0, 0);
+    hist.increment(15, 0, 0);
     REQUIRE(data[0] == 2);
-    hist.Increment(16, 0, 0);
+    hist.increment(16, 0, 0);
     REQUIRE(data[1] == 1);
 
-    hist.Increment(4095, 0, 0);
+    hist.increment(4095, 0, 0);
     REQUIRE(data[255] == 1);
-    hist.Increment(4080, 0, 0);
+    hist.increment(4080, 0, 0);
     REQUIRE(data[255] == 2);
-    hist.Increment(4079, 0, 0);
+    hist.increment(4079, 0, 0);
     REQUIRE(data[254] == 1);
 }
 
-TEST_CASE("ReverseTimeBins", "[LegacyHistogram]") {
-    LegacyHistogram<std::uint16_t> hist(8, 12, true, 1, 1);
-    auto data = hist.Get();
-    hist.Clear();
+TEST_CASE("ReverseTimeBins", "[legacy_histogram]") {
+    legacy_histogram<std::uint16_t> hist(8, 12, true, 1, 1);
+    auto data = hist.get();
+    hist.clear();
 
-    hist.Increment(0, 0, 0);
+    hist.increment(0, 0, 0);
     REQUIRE(data[255] == 1);
-    hist.Increment(15, 0, 0);
+    hist.increment(15, 0, 0);
     REQUIRE(data[255] == 2);
-    hist.Increment(16, 0, 0);
+    hist.increment(16, 0, 0);
     REQUIRE(data[254] == 1);
 
-    hist.Increment(4095, 0, 0);
+    hist.increment(4095, 0, 0);
     REQUIRE(data[0] == 1);
-    hist.Increment(4080, 0, 0);
+    hist.increment(4080, 0, 0);
     REQUIRE(data[0] == 2);
-    hist.Increment(4079, 0, 0);
+    hist.increment(4079, 0, 0);
     REQUIRE(data[1] == 1);
 }
 
-TEST_CASE("SingleTimeBin", "[LegacyHistogram]") {
+TEST_CASE("SingleTimeBin", "[legacy_histogram]") {
     SECTION("Non-reversed") {
-        LegacyHistogram<std::uint16_t> hist(0, 7, false, 1, 1);
-        auto data = hist.Get();
-        hist.Clear();
+        legacy_histogram<std::uint16_t> hist(0, 7, false, 1, 1);
+        auto data = hist.get();
+        hist.clear();
 
-        hist.Increment(0, 0, 0);
+        hist.increment(0, 0, 0);
         REQUIRE(data[0] == 1);
-        hist.Increment(127, 0, 0);
+        hist.increment(127, 0, 0);
         REQUIRE(data[0] == 2);
     }
 
     SECTION("Reversed") {
-        LegacyHistogram<std::uint16_t> hist(0, 7, false, 1, 1);
-        auto data = hist.Get();
-        hist.Clear();
+        legacy_histogram<std::uint16_t> hist(0, 7, false, 1, 1);
+        auto data = hist.get();
+        hist.clear();
 
-        hist.Increment(0, 0, 0);
+        hist.increment(0, 0, 0);
         REQUIRE(data[0] == 1);
-        hist.Increment(127, 0, 0);
+        hist.increment(127, 0, 0);
         REQUIRE(data[0] == 2);
     }
 }

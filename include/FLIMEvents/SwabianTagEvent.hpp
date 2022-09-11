@@ -24,7 +24,7 @@ namespace flimevt {
  * This has the same size and memory layout as the 'Tag' struct in the Swabian
  * Time Tagger C++ API.
  */
-struct SwabianTagEvent {
+struct swabian_tag_event {
     /**
      * \brief Bytes of the 16-byte format from Swabian API.
      */
@@ -33,40 +33,40 @@ struct SwabianTagEvent {
     /**
      * \brief 8-bit type for the type field.
      */
-    enum class Type : std::uint8_t {
-        TimeTag = 0,
-        Error = 1,
-        OverflowBegin = 2,
-        OverflowEnd = 3,
-        MissedEvents = 4,
+    enum class tag_type : std::uint8_t {
+        time_tag = 0,
+        error = 1,
+        overflow_begin = 2,
+        overflow_end = 3,
+        missed_events = 4,
     };
 
     /**
      * \brief Read the event type.
      */
-    Type GetType() const noexcept { return Type(bytes[0]); }
+    tag_type get_type() const noexcept { return tag_type(bytes[0]); }
 
     // bytes[1] is reserved, to be written zero.
 
     /**
      * \brief Read the missed event count if this is a missed events event.
      */
-    std::uint16_t GetMissedEventCount() const noexcept {
-        return internal::ReadU16LE(&bytes[2]);
+    std::uint16_t get_missed_event_count() const noexcept {
+        return internal::read_u16le(&bytes[2]);
     }
 
     /**
      * \brief Read the channel if this is a time tag or missed events event.
      */
-    std::int32_t GetChannel() const noexcept {
-        return internal::ReadI32LE(&bytes[4]);
+    std::int32_t get_channel() const noexcept {
+        return internal::read_i32le(&bytes[4]);
     }
 
     /**
      * \brief Read the time (picoseconds).
      */
-    std::int64_t GetTime() const noexcept {
-        return internal::ReadI64LE(&bytes[8]);
+    std::int64_t get_time() const noexcept {
+        return internal::read_i64le(&bytes[8]);
     }
 };
 
@@ -75,7 +75,7 @@ struct SwabianTagEvent {
  *
  * \tparam D downstream processor type
  */
-template <typename D> class DecodeSwabianTags {
+template <typename D> class decode_swabian_tags {
     bool hadError = false;
     D downstream;
 
@@ -85,48 +85,48 @@ template <typename D> class DecodeSwabianTags {
      *
      * \param downstream downstream processor (moved out)
      */
-    explicit DecodeSwabianTags(D &&downstream)
+    explicit decode_swabian_tags(D &&downstream)
         : downstream(std::move(downstream)) {}
 
     /** \brief Processor interface */
-    void HandleEvent(SwabianTagEvent const &event) noexcept {
+    void handle_event(swabian_tag_event const &event) noexcept {
         if (hadError)
             return;
 
-        using Type = SwabianTagEvent::Type;
-        switch (event.GetType()) {
-        case Type::TimeTag: {
-            TimeTaggedCountEvent e;
-            e.macrotime = event.GetTime();
-            e.channel = event.GetChannel();
-            downstream.HandleEvent(e);
+        using tag_type = swabian_tag_event::tag_type;
+        switch (event.get_type()) {
+        case tag_type::time_tag: {
+            time_tagged_count_event e;
+            e.macrotime = event.get_time();
+            e.channel = event.get_channel();
+            downstream.handle_event(e);
             break;
         }
-        case Type::Error:
-            downstream.HandleEnd(std::make_exception_ptr(
+        case tag_type::error:
+            downstream.handle_end(std::make_exception_ptr(
                 std::runtime_error("Error tag in input")));
             hadError = true;
             break;
-        case Type::OverflowBegin: {
-            BeginLostIntervalEvent e;
-            e.macrotime = event.GetTime();
-            downstream.HandleEvent(e);
+        case tag_type::overflow_begin: {
+            begin_lost_interval_event e;
+            e.macrotime = event.get_time();
+            downstream.handle_event(e);
             break;
         }
-        case Type::OverflowEnd: {
-            EndLostIntervalEvent e;
-            e.macrotime = event.GetTime();
-            downstream.HandleEvent(e);
+        case tag_type::overflow_end: {
+            end_lost_interval_event e;
+            e.macrotime = event.get_time();
+            downstream.handle_event(e);
             break;
         }
-        case Type::MissedEvents: {
-            UntaggedCountsEvent e;
-            e.macrotime = event.GetTime();
-            e.count = event.GetMissedEventCount();
+        case tag_type::missed_events: {
+            untagged_counts_event e;
+            e.macrotime = event.get_time();
+            e.count = event.get_missed_event_count();
             break;
         }
         default:
-            downstream.HandleEnd(std::make_exception_ptr(
+            downstream.handle_end(std::make_exception_ptr(
                 std::runtime_error("Unknown Swabian event type")));
             hadError = true;
             break;
@@ -134,8 +134,8 @@ template <typename D> class DecodeSwabianTags {
     }
 
     /** \brief Processor interface */
-    void HandleEnd(std::exception_ptr error) noexcept {
-        downstream.HandleEnd(error);
+    void handle_end(std::exception_ptr error) noexcept {
+        downstream.handle_end(error);
     }
 };
 

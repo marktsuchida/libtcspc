@@ -17,45 +17,45 @@
 using namespace flimevt;
 using namespace flimevt::test;
 
-using Trigger = Event<0>;
+using trigger = Event<0>;
 using Output = Event<1>;
 using Other = Event<2>;
 using Events = Events0123;
-using OutVec = std::vector<EventVariant<Events>>;
+using OutVec = std::vector<event_variant<Events>>;
 
 template <typename PGen> auto MakeGenerateTimingsFixture(PGen &&generator) {
     return MakeProcessorTestFixture<Events, Events>(
         [&generator](auto &&downstream) {
             using D = std::remove_reference_t<decltype(downstream)>;
-            return GenerateTimings<Trigger, PGen, D>(std::move(generator),
-                                                     std::move(downstream));
+            return generate_timings<trigger, PGen, D>(std::move(generator),
+                                                      std::move(downstream));
         });
 }
 
-TEST_CASE("Generate null timing", "[GenerateTimings]") {
-    auto g = NullTimingGenerator<Output>();
+TEST_CASE("Generate null timing", "[generate_timings]") {
+    auto g = null_timing_generator<Output>();
     auto f = MakeGenerateTimingsFixture(std::move(g));
 
     f.FeedEvents({
-        Trigger{42},
+        trigger{42},
     });
     REQUIRE(f.Output() == OutVec{
-                              Trigger{42},
+                              trigger{42},
                           });
     f.FeedEvents({
-        Trigger{43},
+        trigger{43},
     });
     REQUIRE(f.Output() == OutVec{
-                              Trigger{43},
+                              trigger{43},
                           });
     f.FeedEnd({});
     REQUIRE(f.Output() == OutVec{});
     REQUIRE(f.DidEnd());
 }
 
-TEST_CASE("Generate one-shot timing", "[GenerateTimings]") {
-    Macrotime delay = GENERATE(0, 1, 2);
-    auto g = OneShotTimingGenerator<Output>(delay);
+TEST_CASE("Generate one-shot timing", "[generate_timings]") {
+    macrotime delay = GENERATE(0, 1, 2);
+    auto g = one_shot_timing_generator<Output>(delay);
     auto f = MakeGenerateTimingsFixture(std::move(g));
 
     SECTION("No trigger, no output") {
@@ -74,10 +74,10 @@ TEST_CASE("Generate one-shot timing", "[GenerateTimings]") {
 
     SECTION("Delayed output") {
         f.FeedEvents({
-            Trigger{42},
+            trigger{42},
         });
         REQUIRE(f.Output() == OutVec{
-                                  Trigger{42},
+                                  trigger{42},
                               });
         SECTION("Nothing more") {}
         SECTION("Output generated") {
@@ -99,10 +99,10 @@ TEST_CASE("Generate one-shot timing", "[GenerateTimings]") {
         }
         SECTION("Output not generated when overlapping with next trigger") {
             f.FeedEvents({
-                Trigger{42 + delay},
+                trigger{42 + delay},
             });
             REQUIRE(f.Output() == OutVec{
-                                      Trigger{42 + delay},
+                                      trigger{42 + delay},
                                   });
             SECTION("Nothing more") {}
             SECTION("Retrigger produces output") {
@@ -121,25 +121,25 @@ TEST_CASE("Generate one-shot timing", "[GenerateTimings]") {
     }
 }
 
-TEST_CASE("Generate linear timing", "[GenerateTimings]") {
-    Macrotime delay = GENERATE(0, 1, 2);
-    Macrotime interval = GENERATE(1, 2);
+TEST_CASE("Generate linear timing", "[generate_timings]") {
+    macrotime delay = GENERATE(0, 1, 2);
+    macrotime interval = GENERATE(1, 2);
 
     SECTION("Count of 0") {
-        auto g = LinearTimingGenerator<Output>(delay, interval, 0);
+        auto g = linear_timing_generator<Output>(delay, interval, 0);
         auto f = MakeGenerateTimingsFixture(std::move(g));
 
         f.FeedEvents({
-            Trigger{42},
+            trigger{42},
         });
         REQUIRE(f.Output() == OutVec{
-                                  Trigger{42},
+                                  trigger{42},
                               });
         f.FeedEvents({
-            Trigger{43 + delay},
+            trigger{43 + delay},
         });
         REQUIRE(f.Output() == OutVec{
-                                  Trigger{43 + delay},
+                                  trigger{43 + delay},
                               });
         f.FeedEnd({});
         REQUIRE(f.Output() == OutVec{});
@@ -147,15 +147,15 @@ TEST_CASE("Generate linear timing", "[GenerateTimings]") {
     }
 
     SECTION("Count of 1") {
-        auto g = LinearTimingGenerator<Output>(delay, interval, 1);
+        auto g = linear_timing_generator<Output>(delay, interval, 1);
         auto f = MakeGenerateTimingsFixture(std::move(g));
 
         SECTION("Delayed output") {
             f.FeedEvents({
-                Trigger{42},
+                trigger{42},
             });
             REQUIRE(f.Output() == OutVec{
-                                      Trigger{42},
+                                      trigger{42},
                                   });
             SECTION("Nothing more") {}
             SECTION("Output generated") {
@@ -191,14 +191,14 @@ TEST_CASE("Generate linear timing", "[GenerateTimings]") {
     }
 
     SECTION("Count of 2") {
-        auto g = LinearTimingGenerator<Output>(delay, interval, 2);
+        auto g = linear_timing_generator<Output>(delay, interval, 2);
         auto f = MakeGenerateTimingsFixture(std::move(g));
 
         f.FeedEvents({
-            Trigger{42},
+            trigger{42},
         });
         REQUIRE(f.Output() == OutVec{
-                                  Trigger{42},
+                                  trigger{42},
                               });
         if (delay > 0) {
             f.FeedEvents({

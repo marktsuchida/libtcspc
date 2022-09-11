@@ -24,61 +24,61 @@ auto MakeRouteByChannelFixtureOutput0(
     std::vector<std::int16_t> const &channels) {
     auto makeProc = [&channels](auto &&downstream) {
         using D0 = std::remove_reference_t<decltype(downstream)>;
-        using D1 = DiscardAll<TCSPCEvents>;
-        return RouteByChannel<TimeCorrelatedCountEvent, D0, D1>(
+        using D1 = discard_all<tcspc_events>;
+        return route_by_channel<time_correlated_count_event, D0, D1>(
             channels, std::move(downstream), D1());
     };
 
-    return MakeProcessorTestFixture<TCSPCEvents, TCSPCEvents>(makeProc);
+    return MakeProcessorTestFixture<tcspc_events, tcspc_events>(makeProc);
 }
 
 auto MakeRouteByChannelFixtureOutput1(
     std::vector<std::int16_t> const &channels) {
     auto makeProc = [&channels](auto &&downstream) {
-        using D0 = DiscardAll<TCSPCEvents>;
+        using D0 = discard_all<tcspc_events>;
         using D1 = std::remove_reference_t<decltype(downstream)>;
-        return RouteByChannel<TimeCorrelatedCountEvent, D0, D1>(
+        return route_by_channel<time_correlated_count_event, D0, D1>(
             channels, D0(), std::move(downstream));
     };
 
-    return MakeProcessorTestFixture<TCSPCEvents, TCSPCEvents>(makeProc);
+    return MakeProcessorTestFixture<tcspc_events, tcspc_events>(makeProc);
 }
 
 auto MakeRouteByChannelFixtureOutput2(
     std::vector<std::int16_t> const &channels) {
     auto makeProc = [&channels](auto &&downstream) {
-        using D01 = DiscardAll<TCSPCEvents>;
+        using D01 = discard_all<tcspc_events>;
         using D2 = std::remove_reference_t<decltype(downstream)>;
-        return RouteByChannel<TimeCorrelatedCountEvent, D01, D01, D2>(
+        return route_by_channel<time_correlated_count_event, D01, D01, D2>(
             channels, D01(), D01(), std::move(downstream));
     };
 
-    return MakeProcessorTestFixture<TCSPCEvents, TCSPCEvents>(makeProc);
+    return MakeProcessorTestFixture<tcspc_events, tcspc_events>(makeProc);
 }
 
-using OutVec = std::vector<EventVariant<TCSPCEvents>>;
+using OutVec = std::vector<event_variant<tcspc_events>>;
 
-TEST_CASE("Route photons", "[RouteByChannel]") {
+TEST_CASE("Route photons", "[route_by_channel]") {
     auto f0 = MakeRouteByChannelFixtureOutput0({5, -3});
     f0.FeedEvents({
-        TimeCorrelatedCountEvent{{100}, 123, 5},
+        time_correlated_count_event{{100}, 123, 5},
     });
     REQUIRE(f0.Output() == OutVec{
-                               TimeCorrelatedCountEvent{{100}, 123, 5},
+                               time_correlated_count_event{{100}, 123, 5},
                            });
     f0.FeedEvents({
-        TimeCorrelatedCountEvent{{101}, 123, -3},
+        time_correlated_count_event{{101}, 123, -3},
     });
     REQUIRE(f0.Output() == OutVec{});
     f0.FeedEvents({
-        TimeCorrelatedCountEvent{{102}, 124, 0},
+        time_correlated_count_event{{102}, 124, 0},
     });
     REQUIRE(f0.Output() == OutVec{});
     f0.FeedEvents({
-        MarkerEvent{{103}, 0},
+        marker_event{{103}, 0},
     });
     REQUIRE(f0.Output() == OutVec{
-                               MarkerEvent{{103}, 0},
+                               marker_event{{103}, 0},
                            });
     f0.FeedEnd({});
     REQUIRE(f0.Output() == OutVec{});
@@ -86,24 +86,24 @@ TEST_CASE("Route photons", "[RouteByChannel]") {
 
     auto f1 = MakeRouteByChannelFixtureOutput1({5, -3});
     f1.FeedEvents({
-        TimeCorrelatedCountEvent{{100}, 123, 5},
+        time_correlated_count_event{{100}, 123, 5},
     });
     REQUIRE(f1.Output() == OutVec{});
     f1.FeedEvents({
-        TimeCorrelatedCountEvent{{101}, 123, -3},
+        time_correlated_count_event{{101}, 123, -3},
     });
     REQUIRE(f1.Output() == OutVec{
-                               TimeCorrelatedCountEvent{{101}, 123, -3},
+                               time_correlated_count_event{{101}, 123, -3},
                            });
     f1.FeedEvents({
-        TimeCorrelatedCountEvent{{102}, 124, 0},
+        time_correlated_count_event{{102}, 124, 0},
     });
     REQUIRE(f1.Output() == OutVec{});
     f1.FeedEvents({
-        MarkerEvent{{103}, 0},
+        marker_event{{103}, 0},
     });
     REQUIRE(f1.Output() == OutVec{
-                               MarkerEvent{{103}, 0},
+                               marker_event{{103}, 0},
                            });
     f1.FeedEnd({});
     REQUIRE(f1.Output() == OutVec{});
@@ -111,22 +111,22 @@ TEST_CASE("Route photons", "[RouteByChannel]") {
 
     auto f2 = MakeRouteByChannelFixtureOutput2({5, -3});
     f2.FeedEvents({
-        TimeCorrelatedCountEvent{{100}, 123, 5},
+        time_correlated_count_event{{100}, 123, 5},
     });
     REQUIRE(f2.Output() == OutVec{});
     f2.FeedEvents({
-        TimeCorrelatedCountEvent{{101}, 123, -3},
+        time_correlated_count_event{{101}, 123, -3},
     });
     REQUIRE(f2.Output() == OutVec{});
     f2.FeedEvents({
-        TimeCorrelatedCountEvent{{102}, 124, 0},
+        time_correlated_count_event{{102}, 124, 0},
     });
     REQUIRE(f2.Output() == OutVec{});
     f2.FeedEvents({
-        MarkerEvent{{103}, 0},
+        marker_event{{103}, 0},
     });
     REQUIRE(f2.Output() == OutVec{
-                               MarkerEvent{{103}, 0},
+                               marker_event{{103}, 0},
                            });
     f2.FeedEnd({});
     REQUIRE(f2.Output() == OutVec{});

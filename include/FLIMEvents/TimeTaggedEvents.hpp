@@ -17,11 +17,11 @@ namespace flimevt {
 /**
  * \brief Base class for events with a hardware-assigned timestamp.
  */
-struct BaseTimeTaggedEvent {
+struct base_time_tagged_event {
     /**
      * \brief The absolute macrotime of this event.
      */
-    Macrotime macrotime;
+    macrotime macrotime;
 };
 
 /**
@@ -42,17 +42,17 @@ struct BaseTimeTaggedEvent {
  * Note that this event is generally only emitted when the timestamp is not
  * associated with an actual event (photon, marker, etc.).
  */
-struct TimeReachedEvent : public BaseTimeTaggedEvent {};
+struct time_reached_event : public base_time_tagged_event {};
 
-/** \brief Equality operator for TimeReachedEvent. */
-constexpr bool operator==(TimeReachedEvent const &lhs,
-                          TimeReachedEvent const &rhs) noexcept {
+/** \brief Equality operator for time_reached_event. */
+constexpr bool operator==(time_reached_event const &lhs,
+                          time_reached_event const &rhs) noexcept {
     return lhs.macrotime == rhs.macrotime;
 }
 
-/** \brief Stream insertion operator for TimeReachedEvent. */
-inline std::ostream &operator<<(std::ostream &s, TimeReachedEvent const &e) {
-    return s << "TimeReached(" << e.macrotime << ')';
+/** \brief Stream insertion operator for time_reached_event. */
+inline std::ostream &operator<<(std::ostream &s, time_reached_event const &e) {
+    return s << "time_reached(" << e.macrotime << ')';
 }
 
 /**
@@ -69,74 +69,74 @@ inline std::ostream &operator<<(std::ostream &s, TimeReachedEvent const &e) {
  * The macrotime may have skipped some elapsed time when this event occurs;
  * both counts and markers may have been lost.
  */
-struct DataLostEvent : public BaseTimeTaggedEvent {};
+struct data_lost_event : public base_time_tagged_event {};
 
-/** \brief Equality operator for DataLostEvent. */
-constexpr bool operator==(DataLostEvent const &lhs,
-                          DataLostEvent const &rhs) noexcept {
+/** \brief Equality operator for data_lost_event. */
+constexpr bool operator==(data_lost_event const &lhs,
+                          data_lost_event const &rhs) noexcept {
     return lhs.macrotime == rhs.macrotime;
 }
 
-/** \brief Stream insertion operator for DataLostEvent. */
-inline std::ostream &operator<<(std::ostream &s, DataLostEvent const &e) {
-    return s << "DataLost(" << e.macrotime << ')';
+/** \brief Stream insertion operator for data_lost_event. */
+inline std::ostream &operator<<(std::ostream &s, data_lost_event const &e) {
+    return s << "data_lost(" << e.macrotime << ')';
 }
 
 /**
  * \brief Event indicating beginning of interval in which counts were lost.
  *
- * The interval must be ended with a subsequent EndLostIntervalEvent.
+ * The interval must be ended with a subsequent end_lost_interval_event.
  *
- * Unlike with DataLostEvent, the macrotime must remain consistent before,
+ * Unlike with data_lost_event, the macrotime must remain consistent before,
  * during, and after the lost interval.
  *
  * If detected events during the interval could be counted (but not
- * time-tagged), they should be indicated by UntaggedCountsEvent.
+ * time-tagged), they should be indicated by untagged_counts_event.
  */
-struct BeginLostIntervalEvent : public BaseTimeTaggedEvent {};
+struct begin_lost_interval_event : public base_time_tagged_event {};
 
-/** \brief Equality operator for BeginLostIntervalEvent. */
-constexpr bool operator==(BeginLostIntervalEvent const &lhs,
-                          BeginLostIntervalEvent const &rhs) noexcept {
+/** \brief Equality operator for begin_lost_interval_event. */
+constexpr bool operator==(begin_lost_interval_event const &lhs,
+                          begin_lost_interval_event const &rhs) noexcept {
     (void)lhs;
     (void)rhs;
     return true;
 }
 
-/** \brief Stream insertion operator for BeginLostIntervalEvent. */
+/** \brief Stream insertion operator for begin_lost_interval_event. */
 inline std::ostream &operator<<(std::ostream &s,
-                                BeginLostIntervalEvent const &e) {
+                                begin_lost_interval_event const &e) {
     (void)e;
-    return s << "BeginLostIntervalEvent()";
+    return s << "begin_lost_interval()";
 }
 
 /**
  * \brief Event indicating end of interval in which counts were lost.
  */
-struct EndLostIntervalEvent : public BaseTimeTaggedEvent {};
+struct end_lost_interval_event : public base_time_tagged_event {};
 
-/** \brief Equality operator for EndLostIntervalEvent. */
-constexpr bool operator==(EndLostIntervalEvent const &lhs,
-                          EndLostIntervalEvent const &rhs) noexcept {
+/** \brief Equality operator for end_lost_interval_event. */
+constexpr bool operator==(end_lost_interval_event const &lhs,
+                          end_lost_interval_event const &rhs) noexcept {
     (void)lhs;
     (void)rhs;
     return true;
 }
 
-/** \brief Stream insertion operator for EndLostIntervalEvent. */
+/** \brief Stream insertion operator for end_lost_interval_event. */
 inline std::ostream &operator<<(std::ostream &s,
-                                EndLostIntervalEvent const &e) {
+                                end_lost_interval_event const &e) {
     (void)e;
-    return s << "EndLostIntervalEvent()";
+    return s << "end_lost_interval()";
 }
 
 /**
  * \brief Event indicating number of counts that could not be time-tagged.
  *
- * This event should only occur between BeginLostIntervalEvent and
- * EndLostIntervalEvent.
+ * This event should only occur between begin_lost_interval_event and
+ * end_lost_interval_event.
  */
-struct UntaggedCountsEvent : public BaseTimeTaggedEvent {
+struct untagged_counts_event : public base_time_tagged_event {
     /**
      * \brief Number of counts that were detected but could not be time-tagged.
      */
@@ -148,24 +148,24 @@ struct UntaggedCountsEvent : public BaseTimeTaggedEvent {
     std::int16_t channel;
 };
 
-/** \brief Equality operator for UntaggedCountsEvent. */
-constexpr bool operator==(UntaggedCountsEvent const &lhs,
-                          UntaggedCountsEvent const &rhs) noexcept {
+/** \brief Equality operator for untagged_counts_event. */
+constexpr bool operator==(untagged_counts_event const &lhs,
+                          untagged_counts_event const &rhs) noexcept {
     return lhs.macrotime == rhs.macrotime && lhs.count == rhs.count &&
            lhs.channel == rhs.channel;
 }
 
-/** \brief Stream insertion operator for UntaggedCountsEvent. */
+/** \brief Stream insertion operator for untagged_counts_event. */
 inline std::ostream &operator<<(std::ostream &s,
-                                UntaggedCountsEvent const &e) {
-    return s << "UntaggedCounts(" << e.macrotime << ", " << e.count << ", "
+                                untagged_counts_event const &e) {
+    return s << "untagged_counts(" << e.macrotime << ", " << e.count << ", "
              << e.channel << ')';
 }
 
 /**
  * \brief Event indicating a detected count.
  */
-struct TimeTaggedCountEvent : public BaseTimeTaggedEvent {
+struct time_tagged_count_event : public base_time_tagged_event {
     /**
      * \brief The channel on which the count was detected.
      *
@@ -174,23 +174,24 @@ struct TimeTaggedCountEvent : public BaseTimeTaggedEvent {
     std::int16_t channel;
 };
 
-/** \brief Equality operator for TimeTaggedCountEvent. */
-constexpr bool operator==(TimeTaggedCountEvent const &lhs,
-                          TimeTaggedCountEvent const &rhs) noexcept {
+/** \brief Equality operator for time_tagged_count_event. */
+constexpr bool operator==(time_tagged_count_event const &lhs,
+                          time_tagged_count_event const &rhs) noexcept {
     return lhs.macrotime == rhs.macrotime && lhs.channel == rhs.channel;
 }
 
-/** \brief Stream insertion operator for TimeTaggedCountEvent. */
+/** \brief Stream insertion operator for time_tagged_count_event. */
 inline std::ostream &operator<<(std::ostream &s,
-                                TimeTaggedCountEvent const &e) {
-    return s << "TimeTaggedCount(" << e.macrotime << ", " << e.channel << ')';
+                                time_tagged_count_event const &e) {
+    return s << "time_tagged_count(" << e.macrotime << ", " << e.channel
+             << ')';
 }
 
 /**
  * \brief Event indicating a detected count (typically photon) with difference
  * time.
  */
-struct TimeCorrelatedCountEvent : public BaseTimeTaggedEvent {
+struct time_correlated_count_event : public base_time_tagged_event {
     /**
      * \brief Difference time (a.k.a. microtime, nanotime) of the photon.
      *
@@ -208,17 +209,17 @@ struct TimeCorrelatedCountEvent : public BaseTimeTaggedEvent {
     std::int16_t channel;
 };
 
-/** \brief Equality operator for TimeCorrelatedCountEvent. */
-constexpr bool operator==(TimeCorrelatedCountEvent const &lhs,
-                          TimeCorrelatedCountEvent const &rhs) noexcept {
+/** \brief Equality operator for time_correlated_count_event. */
+constexpr bool operator==(time_correlated_count_event const &lhs,
+                          time_correlated_count_event const &rhs) noexcept {
     return lhs.macrotime == rhs.macrotime && lhs.difftime == rhs.difftime &&
            lhs.channel == rhs.channel;
 }
 
-/** \brief Stream insertion operator for TimeCorrelatedCountEvent. */
+/** \brief Stream insertion operator for time_correlated_count_event. */
 inline std::ostream &operator<<(std::ostream &s,
-                                TimeCorrelatedCountEvent const &e) {
-    return s << "TimeCorrelatedCount(" << e.macrotime << ", " << e.difftime
+                                time_correlated_count_event const &e) {
+    return s << "time_correlated_count(" << e.macrotime << ", " << e.difftime
              << ", " << e.channel << ')';
 }
 
@@ -233,12 +234,12 @@ inline std::ostream &operator<<(std::ostream &s,
  *
  * Some devices produce single events with potentially multiple markers on
  * different channels, using, e.g., a bitmask. In such cases, a separate
- * MarkerEvent must be generated for each channel, bearing the same macrotime.
+ * marker_event must be generated for each channel, bearing the same macrotime.
  * Ordering of simultaneous marker events within the stream is undefined (but
  * ordering should be made deterministic when arbitrarily determined by
  * software).
  */
-struct MarkerEvent : public BaseTimeTaggedEvent {
+struct marker_event : public base_time_tagged_event {
     /**
      * \brief Input channel of the marker.
      *
@@ -250,27 +251,27 @@ struct MarkerEvent : public BaseTimeTaggedEvent {
     std::int32_t channel;
 };
 
-/** \brief Equality operator for MarkerEvent. */
-constexpr bool operator==(MarkerEvent const &lhs,
-                          MarkerEvent const &rhs) noexcept {
+/** \brief Equality operator for marker_event. */
+constexpr bool operator==(marker_event const &lhs,
+                          marker_event const &rhs) noexcept {
     return lhs.macrotime == rhs.macrotime && lhs.channel == rhs.channel;
 }
 
-/** \brief Stream insertion operator for MarkerEvent. */
-inline std::ostream &operator<<(std::ostream &s, MarkerEvent const &e) {
-    return s << "Marker(" << e.macrotime << ", " << e.channel << ')';
+/** \brief Stream insertion operator for marker_event. */
+inline std::ostream &operator<<(std::ostream &s, marker_event const &e) {
+    return s << "marker(" << e.macrotime << ", " << e.channel << ')';
 }
 
 /**
  * \brief Event set containing all TCSPC events.
  */
-using TCSPCEvents = EventSet<TimeReachedEvent, DataLostEvent,
-                             TimeCorrelatedCountEvent, MarkerEvent>;
+using tcspc_events = event_set<time_reached_event, data_lost_event,
+                               time_correlated_count_event, marker_event>;
 
 /** \brief Stream insertion operator for TCSPC event variant. */
 inline std::ostream &
 operator<<(std::ostream &os,
-           flimevt::EventVariant<flimevt::TCSPCEvents> const &event) {
+           flimevt::event_variant<flimevt::tcspc_events> const &event) {
     return std::visit([&](auto const &e) -> std::ostream & { return os << e; },
                       event);
 }

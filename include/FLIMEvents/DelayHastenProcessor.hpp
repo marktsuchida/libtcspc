@@ -20,29 +20,29 @@
 
 namespace flimevt {
 
-template <typename DelayedSet, typename D> class DelayProcessor {
-    Macrotime delta;
-    std::queue<EventVariant<DelayedSet>> pending;
+template <typename DelayedSet, typename D> class delay_processor {
+    macrotime delta;
+    std::queue<event_variant<DelayedSet>> pending;
     D downstream;
     bool streamEnded = false;
 
   public:
-    explicit DelayProcessor(Macrotime delta, D &&downstream)
+    explicit delay_processor(macrotime delta, D &&downstream)
         : delta(delta), downstream(std::move(downstream)) {
         assert(delta >= 0);
     }
 
-    template <typename E> void HandleEvent(E const &event) noexcept {
+    template <typename E> void handle_event(E const &event) noexcept {
         if (streamEnded)
             return;
 
-        if constexpr (ContainsEventV<DelayedSet, E>) {
+        if constexpr (contains_event_v<DelayedSet, E>) {
             try {
                 E delayed(event);
                 delayed.macrotime += delta;
                 pending.push(delayed);
             } catch (std::exception const &) {
-                downstream.HandleEnd(std::current_exception());
+                downstream.handle_end(std::current_exception());
                 streamEnded = true;
             }
         } else {
@@ -52,50 +52,50 @@ template <typename DelayedSet, typename D> class DelayProcessor {
                                                       event.macrotime;
                                            },
                                            pending.front())) {
-                std::visit([&](auto const &e) { downstream.HandleEvent(e); },
+                std::visit([&](auto const &e) { downstream.handle_event(e); },
                            pending.front());
                 pending.pop();
             }
 
-            downstream.HandleEvent(event);
+            downstream.handle_event(event);
         }
     }
 
-    void HandleEnd(std::exception_ptr error) noexcept {
+    void handle_end(std::exception_ptr error) noexcept {
         if (streamEnded)
             return;
 
         while (!pending.empty()) {
-            std::visit([&](auto const &e) { downstream.HandleEvent(e); },
+            std::visit([&](auto const &e) { downstream.handle_event(e); },
                        pending.front());
             pending.pop();
         }
 
-        downstream.HandleEnd(error);
+        downstream.handle_end(error);
     }
 };
 
-template <typename UnhastenedSet, typename D> class HastenProcessor {
-    Macrotime delta;
-    std::queue<EventVariant<UnhastenedSet>> pending;
+template <typename UnhastenedSet, typename D> class hasten_processor {
+    macrotime delta;
+    std::queue<event_variant<UnhastenedSet>> pending;
     D downstream;
     bool streamEnded = false;
 
   public:
-    explicit HastenProcessor(Macrotime delta, D &&downstream)
+    explicit hasten_processor(macrotime delta, D &&downstream)
         : delta(delta), downstream(std::move(downstream)) {
         assert(delta >= 0);
     }
 
-    template <typename E> void HandleEvent(E const &event) noexcept {
+    template <typename E> void handle_event(E const &event) noexcept {
         if (streamEnded)
             return;
 
-        if constexpr (ContainsEventV<UnhastenedSet, E>) {
+        if constexpr (contains_event_v<UnhastenedSet, E>) {
             try {
                 pending.push(event);
             } catch (std::exception const &) {
-                downstream.HandleEnd(std::current_exception());
+                downstream.handle_end(std::current_exception());
                 streamEnded = true;
             }
         } else {
@@ -108,47 +108,47 @@ template <typename UnhastenedSet, typename D> class HastenProcessor {
                                                       hastened.macrotime;
                                            },
                                            pending.front())) {
-                std::visit([&](auto const &e) { downstream.HandleEvent(e); },
+                std::visit([&](auto const &e) { downstream.handle_event(e); },
                            pending.front());
                 pending.pop();
             }
 
-            downstream.HandleEvent(hastened);
+            downstream.handle_event(hastened);
         }
     }
 
-    void HandleEnd(std::exception_ptr error) noexcept {
+    void handle_end(std::exception_ptr error) noexcept {
         if (streamEnded)
             return;
 
         while (!pending.empty()) {
-            std::visit([&](auto const &e) { downstream.HandleEvent(e); },
+            std::visit([&](auto const &e) { downstream.handle_event(e); },
                        pending.front());
             pending.pop();
         }
 
-        downstream.HandleEnd(error);
+        downstream.handle_end(error);
     }
 };
 
 template <typename RetimedSet, typename UnchangedSet, typename D>
-class DelayHastenProcessor {
-    using Hastener = HastenProcessor<UnchangedSet, D>;
-    using Delayer = DelayProcessor<RetimedSet, Hastener>;
+class delay_hasten_processor {
+    using Hastener = hasten_processor<UnchangedSet, D>;
+    using Delayer = delay_processor<RetimedSet, Hastener>;
     Delayer proc;
 
   public:
-    explicit DelayHastenProcessor(Macrotime delta, D &&downstream)
+    explicit delay_hasten_processor(macrotime delta, D &&downstream)
         : proc(Delayer(
               delta > 0 ? delta : 0,
               Hastener(delta < 0 ? -delta : 0, std::move(downstream)))){};
 
-    template <typename E> void HandleEvent(E const &event) noexcept {
-        proc.HandleEvent(event);
+    template <typename E> void handle_event(E const &event) noexcept {
+        proc.handle_event(event);
     }
 
-    void HandleEnd(std::exception_ptr error) noexcept {
-        proc.HandleEnd(error);
+    void handle_end(std::exception_ptr error) noexcept {
+        proc.handle_end(error);
     }
 };
 

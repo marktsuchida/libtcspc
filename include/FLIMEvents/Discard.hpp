@@ -16,13 +16,13 @@ namespace flimevt {
 /**
  * \brief Processor that sinks any event and does nothing.
  */
-class DiscardAny {
+class discard_any {
   public:
     /** \brief Processor interface */
-    template <typename E> void HandleEvent(E const &) noexcept {}
+    template <typename E> void handle_event(E const &) noexcept {}
 
     /** \brief Processor interface */
-    void HandleEnd(std::exception_ptr) noexcept {}
+    void handle_end(std::exception_ptr) noexcept {}
 };
 
 /**
@@ -30,14 +30,15 @@ class DiscardAny {
  *
  * \tparam ESet the set of events to consume.
  */
-template <typename ESet> class DiscardAll {
+template <typename ESet> class discard_all {
   public:
     /** \brief Processor interface */
-    template <typename E, typename = std::enable_if_t<ContainsEventV<ESet, E>>>
-    void HandleEvent(E const &) noexcept {}
+    template <typename E,
+              typename = std::enable_if_t<contains_event_v<ESet, E>>>
+    void handle_event(E const &) noexcept {}
 
     /** \brief Processor interface */
-    void HandleEnd(std::exception_ptr) noexcept {}
+    void handle_end(std::exception_ptr) noexcept {}
 };
 
 } // namespace flimevt

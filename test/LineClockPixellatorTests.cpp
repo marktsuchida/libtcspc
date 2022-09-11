@@ -20,19 +20,19 @@
 
 using namespace flimevt;
 
-static_assert(
-    HandlesEventSetV<LineClockPixellator<DiscardAll<PixelPhotonEvents>>,
-                     TCSPCEvents>);
+static_assert(handles_event_set_v<
+              line_clock_pixellator<discard_all<pixel_photon_events>>,
+              tcspc_events>);
 
 TEST_CASE("Frames are produced according to line markers",
-          "[LineClockPixellator]") {
+          "[line_clock_pixellator]") {
     // We could use a mocking framework (e.g. Trompeloeil), but this is simple
     // enough to do manually.
     class MockProcessor {
       public:
         unsigned beginFrameCount;
         unsigned endFrameCount;
-        std::vector<PixelPhotonEvent> pixelPhotons;
+        std::vector<pixel_photon_event> pixelPhotons;
         std::vector<std::string> errors;
         unsigned finishCount;
 
@@ -44,15 +44,15 @@ TEST_CASE("Frames are produced according to line markers",
             finishCount = 0;
         }
 
-        void HandleEvent(BeginFrameEvent const &) { ++beginFrameCount; }
+        void handle_event(begin_frame_event const &) { ++beginFrameCount; }
 
-        void HandleEvent(EndFrameEvent const &) { ++endFrameCount; }
+        void handle_event(end_frame_event const &) { ++endFrameCount; }
 
-        void HandleEvent(PixelPhotonEvent const &event) {
+        void handle_event(pixel_photon_event const &event) {
             pixelPhotons.emplace_back(event);
         }
 
-        void HandleEnd(std::exception_ptr error) {
+        void handle_end(std::exception_ptr error) {
             if (error) {
                 try {
                     std::rethrow_exception(error);
@@ -66,46 +66,46 @@ TEST_CASE("Frames are produced according to line markers",
     };
 
     using VirtualMockProcessor =
-        VirtualWrappedProcessor<MockProcessor, PixelPhotonEvents>;
+        virtual_wrapped_processor<MockProcessor, pixel_photon_events>;
 
     auto sharedOutput = std::make_shared<VirtualMockProcessor>();
-    auto &output = sharedOutput->Wrapped();
+    auto &output = sharedOutput->wrapped();
     output.Reset();
 
     SECTION("2x2 frames with no photons") {
-        PolymorphicProcessor<PixelPhotonEvents> polymorphic(sharedOutput);
+        polymorphic_processor<pixel_photon_events> polymorphic(sharedOutput);
 
-        LineClockPixellator<decltype(polymorphic)> lcp(2, 2, 10, 0, 20, 1,
-                                                       std::move(polymorphic));
+        line_clock_pixellator<decltype(polymorphic)> lcp(
+            2, 2, 10, 0, 20, 1, std::move(polymorphic));
 
-        MarkerEvent lineMarker;
+        marker_event lineMarker;
         lineMarker.channel = 1;
         lineMarker.macrotime = 100;
-        lcp.HandleEvent(lineMarker);
-        lcp.Flush();
+        lcp.handle_event(lineMarker);
+        lcp.flush();
 
         REQUIRE(output.beginFrameCount == 1);
         output.Reset();
 
         lineMarker.macrotime = 200;
-        lcp.HandleEvent(lineMarker);
-        lcp.Flush();
+        lcp.handle_event(lineMarker);
+        lcp.flush();
         REQUIRE(output.beginFrameCount == 0);
         REQUIRE(output.endFrameCount == 0);
         output.Reset();
 
         lineMarker.macrotime = 300;
-        lcp.HandleEvent(lineMarker);
-        lcp.Flush();
+        lcp.handle_event(lineMarker);
+        lcp.flush();
         REQUIRE(output.beginFrameCount == 1);
         REQUIRE(output.endFrameCount == 1);
         output.Reset();
 
         SECTION("Last frame is incomplete if last line not started") {
-            TimeReachedEvent timestamp;
+            time_reached_event timestamp;
             timestamp.macrotime = 1000000;
-            lcp.HandleEvent(timestamp);
-            lcp.Flush();
+            lcp.handle_event(timestamp);
+            lcp.flush();
             REQUIRE(output.beginFrameCount == 0);
             REQUIRE(output.endFrameCount == 0);
             output.Reset();
@@ -113,23 +113,23 @@ TEST_CASE("Frames are produced according to line markers",
 
         SECTION("Last frame completion detected by last seen timestamp") {
             lineMarker.macrotime = 400;
-            lcp.HandleEvent(lineMarker);
-            lcp.Flush();
+            lcp.handle_event(lineMarker);
+            lcp.flush();
             REQUIRE(output.beginFrameCount == 0);
             REQUIRE(output.endFrameCount == 0);
             output.Reset();
 
-            TimeReachedEvent timestamp;
+            time_reached_event timestamp;
             timestamp.macrotime = 419;
-            lcp.HandleEvent(timestamp);
-            lcp.Flush();
+            lcp.handle_event(timestamp);
+            lcp.flush();
             REQUIRE(output.beginFrameCount == 0);
             REQUIRE(output.endFrameCount == 0);
             output.Reset();
 
             timestamp.macrotime = 420;
-            lcp.HandleEvent(timestamp);
-            lcp.Flush();
+            lcp.handle_event(timestamp);
+            lcp.flush();
             REQUIRE(output.beginFrameCount == 0);
             REQUIRE(output.endFrameCount == 1);
             output.Reset();
@@ -137,28 +137,28 @@ TEST_CASE("Frames are produced according to line markers",
     }
 
     SECTION("Photon placed correctly in 2x1 frame") {
-        PolymorphicProcessor<PixelPhotonEvents> polymorphic(sharedOutput);
+        polymorphic_processor<pixel_photon_events> polymorphic(sharedOutput);
 
         // Delay = 5, time = 25, so pixels range over times [5, 15) and [15,
         // 25) relative to the (single) line marker.
-        LineClockPixellator<decltype(polymorphic)> lcp(2, 1, 1, 5, 20, 1,
-                                                       std::move(polymorphic));
+        line_clock_pixellator<decltype(polymorphic)> lcp(
+            2, 1, 1, 5, 20, 1, std::move(polymorphic));
 
-        MarkerEvent lineMarker;
+        marker_event lineMarker;
         lineMarker.channel = 1;
         lineMarker.macrotime = 100;
-        lcp.HandleEvent(lineMarker);
-        lcp.Flush();
+        lcp.handle_event(lineMarker);
+        lcp.flush();
 
-        TimeCorrelatedCountEvent photon;
+        time_correlated_count_event photon;
         memset(&photon, 0, sizeof(photon));
 
         for (auto mt : {104, 105, 114, 115, 124, 125}) {
             photon.macrotime = mt;
-            lcp.HandleEvent(photon);
+            lcp.handle_event(photon);
         }
 
-        lcp.Flush();
+        lcp.flush();
         REQUIRE(output.beginFrameCount == 1);
         REQUIRE(output.endFrameCount == 1);
         REQUIRE(output.pixelPhotons.size() == 4);

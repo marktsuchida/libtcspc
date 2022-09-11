@@ -20,10 +20,10 @@
 
 class PrintProcessor {
     std::uint32_t count;
-    flimevt::Macrotime lastMacrotime;
+    flimevt::macrotime lastMacrotime;
     std::ostream &output;
 
-    void PrintMacrotime(std::ostream &output, flimevt::Macrotime macrotime) {
+    void PrintMacrotime(std::ostream &output, flimevt::macrotime macrotime) {
         output << std::setw(6) << (count++) << ' ';
         output << std::setw(20) << macrotime;
         if (lastMacrotime > 0) {
@@ -39,28 +39,28 @@ class PrintProcessor {
     explicit PrintProcessor(std::ostream &output)
         : count(0), lastMacrotime(0), output(output) {}
 
-    void HandleEvent(flimevt::TimeReachedEvent const &event) {
+    void handle_event(flimevt::time_reached_event const &event) {
         // Do nothing
         (void)event;
     }
 
-    void HandleEvent(flimevt::DataLostEvent const &event) {
+    void handle_event(flimevt::data_lost_event const &event) {
         PrintMacrotime(output, event.macrotime);
         output << " Data lost\n";
     }
 
-    void HandleEvent(flimevt::TimeCorrelatedCountEvent const &event) {
+    void handle_event(flimevt::time_correlated_count_event const &event) {
         PrintMacrotime(output, event.macrotime);
         output << " Photon: " << std::setw(5) << event.difftime << "; "
                << int(event.channel) << '\n';
     }
 
-    void HandleEvent(flimevt::MarkerEvent const &event) {
+    void handle_event(flimevt::marker_event const &event) {
         PrintMacrotime(output, event.macrotime);
         output << ' ' << "Marker: " << int(event.channel) << '\n';
     }
 
-    void HandleEnd(std::exception_ptr error) {
+    void handle_end(std::exception_ptr error) {
         if (error) {
             try {
                 std::rethrow_exception(error);
@@ -93,27 +93,27 @@ int DumpHeader(std::istream &input, std::ostream &output) {
 }
 
 void DumpRawEvent(char const *rawEvent, std::ostream &output) {
-    flimevt::BHSPCEvent const &event =
-        *reinterpret_cast<flimevt::BHSPCEvent const *>(rawEvent);
+    flimevt::bh_spc_event const &event =
+        *reinterpret_cast<flimevt::bh_spc_event const *>(rawEvent);
 
-    std::uint8_t route = event.GetRoutingSignals();
+    std::uint8_t route = event.get_routing_signals();
     output << (route & (1 << 3) ? 'x' : '_') << (route & (1 << 2) ? 'x' : '_')
            << (route & (1 << 1) ? 'x' : '_') << (route & (1 << 0) ? 'x' : '_')
-           << ' ' << (event.GetInvalidFlag() ? 'I' : '_')
-           << (event.GetMacrotimeOverflowFlag() ? 'O' : '_')
-           << (event.GetGapFlag() ? 'G' : '_')
-           << (event.GetMarkerFlag() ? 'M' : '_');
-    if (event.IsMultipleMacrotimeOverflow()) {
+           << ' ' << (event.get_invalid_flag() ? 'I' : '_')
+           << (event.get_macrotime_overflow_flag() ? 'O' : '_')
+           << (event.get_gap_flag() ? 'G' : '_')
+           << (event.get_marker_flag() ? 'M' : '_');
+    if (event.is_multiple_macrotime_overflow()) {
         output << ' ' << std::setw(4)
-               << event.GetMultipleMacrotimeOverflowCount();
+               << event.get_multiple_macrotime_overflow_count();
     }
     output << '\n';
 }
 
 int DumpEvents(std::istream &input, std::ostream &output) {
     PrintProcessor pp(output);
-    flimevt::DecodeBHSPC<decltype(pp)> decoder(std::move(pp));
-    constexpr std::size_t const eventSize = sizeof(flimevt::BHSPCEvent);
+    flimevt::decode_bh_spc<decltype(pp)> decoder(std::move(pp));
+    constexpr std::size_t const eventSize = sizeof(flimevt::bh_spc_event);
 
     while (input.good()) {
         std::vector<char> event(eventSize);
@@ -127,10 +127,10 @@ int DumpEvents(std::istream &input, std::ostream &output) {
         }
 
         DumpRawEvent(event.data(), output);
-        decoder.HandleEvent(
-            *reinterpret_cast<flimevt::BHSPCEvent *>(event.data()));
+        decoder.handle_event(
+            *reinterpret_cast<flimevt::bh_spc_event *>(event.data()));
     }
-    decoder.HandleEnd({});
+    decoder.handle_end({});
 
     return 0;
 }

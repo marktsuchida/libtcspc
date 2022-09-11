@@ -23,7 +23,7 @@ namespace flimevt {
  *
  * \tparam Events the event types
  */
-template <typename... Events> using EventSet = std::tuple<Events...>;
+template <typename... Events> using event_set = std::tuple<Events...>;
 
 /**
  * \brief A variant type for events.
@@ -36,13 +36,13 @@ template <typename... Events> using EventSet = std::tuple<Events...>;
  * hold
  */
 template <typename ESet>
-using EventVariant =
-    internal::ApplyClassTemplateToTupleElementsT<std::variant, ESet>;
+using event_variant =
+    internal::apply_class_template_to_tuple_elements_t<std::variant, ESet>;
 
 namespace internal {
 
 template <typename Event, typename... Events>
-struct EventIsOneOf : std::disjunction<std::is_same<Event, Events>...> {};
+struct event_is_one_of : std::disjunction<std::is_same<Event, Events>...> {};
 
 } // namespace internal
 
@@ -52,24 +52,23 @@ struct EventIsOneOf : std::disjunction<std::is_same<Event, Events>...> {};
  *
  * The result is provided in the member constant \c value.
  *
- * \see ContainsEventV
+ * \see contains_event_v
  *
  * \tparam ESet an event set type to check
  * \tparam Event an event type to check
  */
 template <typename ESet, typename Event>
-struct ContainsEvent
-    : internal::ApplyClassTemplateToTupleElementsT<internal::EventIsOneOf,
-                                                   ESet, Event> {};
+struct contains_event : internal::apply_class_template_to_tuple_elements_t<
+                            internal::event_is_one_of, ESet, Event> {};
 
 /**
- * \brief Helper variable to get the result of ContainsEvent
+ * \brief Helper variable to get the result of contains_event
  *
  * \tparam ESet an event set type to check
  * \tparam Event an event type to check
  */
 template <typename ESet, typename Event>
-inline constexpr bool ContainsEventV = ContainsEvent<ESet, Event>::value;
+inline constexpr bool contains_event_v = contains_event<ESet, Event>::value;
 
 /**
  * \brief Metafunction to check whether the given processor handles the given
@@ -77,29 +76,29 @@ inline constexpr bool ContainsEventV = ContainsEvent<ESet, Event>::value;
  *
  * The result is provided in the member constant \c value.
  *
- * \see HandlesEventV
+ * \see handles_event_v
  *
  * \tparam Proc a processor type to check
  * \tparam Event an event type to check
  */
 template <typename Proc, typename Event, typename = void>
-struct HandlesEvent : std::false_type {};
+struct handles_event : std::false_type {};
 
 template <typename Proc, typename Event>
-struct HandlesEvent<Proc, Event,
-                    std::void_t<decltype(std::declval<Proc>().HandleEvent(
-                        std::declval<Event>()))>>
-    : std::is_same<void, decltype(std::declval<Proc>().HandleEvent(
+struct handles_event<Proc, Event,
+                     std::void_t<decltype(std::declval<Proc>().handle_event(
+                         std::declval<Event>()))>>
+    : std::is_same<void, decltype(std::declval<Proc>().handle_event(
                              std::declval<Event>()))> {};
 
 /**
- * \brief Helper variable to get the result of HandlesEvent.
+ * \brief Helper variable to get the result of handles_event.
  *
  * \tparam Proc a processor type to check
  * \tparam Event an event type to check
  */
 template <typename Proc, typename Event>
-inline constexpr bool HandlesEventV = HandlesEvent<Proc, Event>::value;
+inline constexpr bool handles_event_v = handles_event<Proc, Event>::value;
 
 /**
  * \brief Metafunction to check whether the given processor handles end of
@@ -110,35 +109,35 @@ inline constexpr bool HandlesEventV = HandlesEvent<Proc, Event>::value;
  *
  * The result is provided in the member constant \c value.
  *
- * \see HandlesEndV
+ * \see handles_end_v
  *
  * \tparam Proc a processor type to check
  */
 template <typename Proc, typename = void>
-struct HandlesEnd : std::false_type {};
+struct handles_end : std::false_type {};
 
 template <typename Proc>
-struct HandlesEnd<Proc, std::void_t<decltype(std::declval<Proc>().HandleEnd(
-                            std::declval<std::exception_ptr>()))>>
-    : std::is_same<void, decltype(std::declval<Proc>().HandleEnd(
+struct handles_end<Proc, std::void_t<decltype(std::declval<Proc>().handle_end(
+                             std::declval<std::exception_ptr>()))>>
+    : std::is_same<void, decltype(std::declval<Proc>().handle_end(
                              std::declval<std::exception_ptr>()))> {};
 
 /**
- * \brief Helper variable to get the result of HandlesEnd.
+ * \brief Helper variable to get the result of handles_end.
  *
  * \tparam Proc a processor type to check
  */
 template <typename Proc>
-inline constexpr bool HandlesEndV = HandlesEnd<Proc>::value;
+inline constexpr bool handles_end_v = handles_end<Proc>::value;
 
 namespace internal {
 
 template <typename Proc, typename... Events>
-struct HandlesEvents : std::conjunction<HandlesEvent<Proc, Events>...> {};
+struct handles_events : std::conjunction<handles_event<Proc, Events>...> {};
 
 template <typename Proc, typename... Events>
-struct HandlesEventsAndEnd
-    : std::conjunction<HandlesEvents<Proc, Events...>, HandlesEnd<Proc>> {};
+struct handles_events_and_end
+    : std::conjunction<handles_events<Proc, Events...>, handles_end<Proc>> {};
 
 } // namespace internal
 
@@ -155,17 +154,19 @@ struct HandlesEventsAndEnd
  * \tparam ESet the event set to check
  */
 template <typename Proc, typename ESet>
-struct HandlesEventSet : internal::ApplyClassTemplateToTupleElementsT<
-                             internal::HandlesEventsAndEnd, ESet, Proc> {};
+struct handles_event_set : internal::apply_class_template_to_tuple_elements_t<
+                               internal::handles_events_and_end, ESet, Proc> {
+};
 
 /**
- * \brief Helper variable to get the result of HandlesEventSet.
+ * \brief Helper variable to get the result of handles_event_set.
  *
  * \tparam Proc the processor type to check
  * \tparam ESet the event set to check
  */
 template <typename Proc, typename ESet>
-inline constexpr bool HandlesEventSetV = HandlesEventSet<Proc, ESet>::value;
+inline constexpr bool handles_event_set_v =
+    handles_event_set<Proc, ESet>::value;
 
 /**
  * \brief Metafunction to concatenate event sets
@@ -177,7 +178,7 @@ inline constexpr bool HandlesEventSetV = HandlesEventSet<Proc, ESet>::value;
  *
  * \tparam ESets the event set types to concatenate
  */
-template <typename... ESets> struct ConcatEventSet {
+template <typename... ESets> struct concat_event_set {
     /**
      * \brief Returned type of the metafunction.
      */
@@ -185,11 +186,11 @@ template <typename... ESets> struct ConcatEventSet {
 };
 
 /**
- * \brief Helper typedef to get the result of ConcatEventSet.
+ * \brief Helper typedef to get the result of concat_event_set.
  *
  * \tparam ESets the event set types to concatenate
  */
 template <typename... ESets>
-using ConcatEventSetT = typename ConcatEventSet<ESets...>::type;
+using concat_event_set_t = typename concat_event_set<ESets...>::type;
 
 } // namespace flimevt

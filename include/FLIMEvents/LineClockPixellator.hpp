@@ -20,7 +20,7 @@
 namespace flimevt {
 
 // Assign pixels to photons using line clock only
-template <typename D> class LineClockPixellator {
+template <typename D> class line_clock_pixellator {
     std::uint32_t const pixelsPerLine;
     std::uint32_t const linesPerFrame;
     std::uint32_t const maxFrames;
@@ -29,7 +29,7 @@ template <typename D> class LineClockPixellator {
     std::uint32_t const lineTime; // in macrotime units
     std::int32_t const lineMarkerChannel;
 
-    Macrotime latestTimestamp; // Latest observed macrotime
+    macrotime latestTimestamp; // Latest observed macrotime
 
     // Cumulative line numbers (no reset on new frame)
     std::uint64_t nextLine;    // Incremented on line startTime
@@ -41,42 +41,42 @@ template <typename D> class LineClockPixellator {
     // If nextLine == currentLine, we are between (nextLine - 1) and nextLine.
 
     // Start time of current line, or -1 if no line started.
-    Macrotime lineStartTime;
+    macrotime lineStartTime;
 
     // Buffer received photons until we can assign to pixel
-    std::deque<TimeCorrelatedCountEvent> pendingPhotons;
+    std::deque<time_correlated_count_event> pendingPhotons;
 
     // Buffer line marks until we are ready to process
-    std::deque<Macrotime> pendingLines; // marker macrotimes
+    std::deque<macrotime> pendingLines; // marker macrotimes
 
     D downstream;
     bool streamEnded = false;
 
   private:
-    void UpdateTimeRange(Macrotime macrotime) noexcept {
+    void UpdateTimeRange(macrotime macrotime) noexcept {
         latestTimestamp = macrotime;
     }
 
-    void EnqueuePhoton(TimeCorrelatedCountEvent const &event) {
+    void EnqueuePhoton(time_correlated_count_event const &event) {
         if (streamEnded) {
             return; // Avoid buffering post-error
         }
         pendingPhotons.emplace_back(event);
     }
 
-    void EnqueueLineMarker(Macrotime macrotime) {
+    void EnqueueLineMarker(macrotime macrotime) {
         if (streamEnded) {
             return; // Avoid buffering post-error
         }
         pendingLines.emplace_back(macrotime);
     }
 
-    Macrotime CheckLineStart(Macrotime lineMarkerTime) {
-        Macrotime startTime;
+    macrotime CheckLineStart(macrotime lineMarkerTime) {
+        macrotime startTime;
         if (lineDelay >= 0) {
             startTime = lineMarkerTime + lineDelay;
         } else {
-            Macrotime minusDelay = -lineDelay;
+            macrotime minusDelay = -lineDelay;
             if (lineMarkerTime < minusDelay) {
                 throw std::runtime_error("Pixel at negative time");
             }
@@ -90,7 +90,7 @@ template <typename D> class LineClockPixellator {
         return startTime;
     }
 
-    void StartLine(Macrotime lineMarkerTime) {
+    void StartLine(macrotime lineMarkerTime) {
         lineStartTime = CheckLineStart(lineMarkerTime);
         ++nextLine;
 
@@ -99,13 +99,13 @@ template <typename D> class LineClockPixellator {
             // Check for last frame here in case maxFrames == 0.
             if (currentLine / linesPerFrame == maxFrames) {
                 if (!streamEnded) {
-                    downstream.HandleEnd({});
+                    downstream.handle_end({});
                     streamEnded = true;
                 }
             }
 
             if (!streamEnded) {
-                downstream.HandleEvent(BeginFrameEvent());
+                downstream.handle_event(begin_frame_event());
             }
         }
     }
@@ -116,22 +116,22 @@ template <typename D> class LineClockPixellator {
         bool endFrame = currentLine % linesPerFrame == 0;
         if (endFrame) {
             if (!streamEnded) {
-                downstream.HandleEvent(EndFrameEvent());
+                downstream.handle_event(end_frame_event());
             }
 
             // Check for last frame here to send finish as soon as possible.
             // (The case of maxFrames == 0 is not handled here.)
             if (currentLine / linesPerFrame == maxFrames) {
                 if (!streamEnded) {
-                    downstream.HandleEnd({});
+                    downstream.handle_end({});
                     streamEnded = true;
                 }
             }
         }
     }
 
-    void EmitPhoton(TimeCorrelatedCountEvent const &event) {
-        PixelPhotonEvent newEvent;
+    void EmitPhoton(time_correlated_count_event const &event) {
+        pixel_photon_event newEvent;
         newEvent.frame =
             static_cast<std::uint32_t>(currentLine / linesPerFrame);
         newEvent.y = static_cast<std::uint32_t>(currentLine % linesPerFrame);
@@ -141,7 +141,7 @@ template <typename D> class LineClockPixellator {
         newEvent.channel = event.channel;
         newEvent.difftime = event.difftime;
         if (!streamEnded) {
-            downstream.HandleEvent(newEvent);
+            downstream.handle_event(newEvent);
         }
     }
 
@@ -155,7 +155,7 @@ template <typename D> class LineClockPixellator {
                 // Nothing to do until a new line can be started
                 return false;
             }
-            Macrotime lineMarkerTime = pendingLines.front();
+            macrotime lineMarkerTime = pendingLines.front();
             pendingLines.pop_front();
 
             StartLine(lineMarkerTime);
@@ -203,14 +203,14 @@ template <typename D> class LineClockPixellator {
                 ;
         } catch (std::exception const &) {
             if (!streamEnded) {
-                downstream.HandleEnd(std::current_exception());
+                downstream.handle_end(std::current_exception());
                 streamEnded = true;
             }
         }
     }
 
   public:
-    explicit LineClockPixellator(
+    explicit line_clock_pixellator(
         std::uint32_t pixelsPerLine, std::uint32_t linesPerFrame,
         std::uint32_t maxFrames, std::int32_t lineDelay,
         std::uint32_t lineTime, std::int32_t lineMarkerChannel, D &&downstream)
@@ -230,7 +230,7 @@ template <typename D> class LineClockPixellator {
         }
     }
 
-    void HandleEvent(TimeReachedEvent const &event) noexcept {
+    void handle_event(time_reached_event const &event) noexcept {
         auto prevTimestamp = latestTimestamp;
         UpdateTimeRange(event.macrotime);
         // We could call ProcessPhotonsAndLines() to emit all lines that are
@@ -246,22 +246,22 @@ template <typename D> class LineClockPixellator {
         }
     }
 
-    void HandleEvent(DataLostEvent const &event) noexcept {
+    void handle_event(data_lost_event const &event) noexcept {
         UpdateTimeRange(event.macrotime);
         ProcessPhotonsAndLines();
         if (!streamEnded) {
-            downstream.HandleEnd(std::make_exception_ptr(std::runtime_error(
+            downstream.handle_end(std::make_exception_ptr(std::runtime_error(
                 "Data lost due to device buffer (FIFO) overflow")));
             streamEnded = true;
         }
     }
 
-    void HandleEvent(TimeCorrelatedCountEvent const &event) noexcept {
+    void handle_event(time_correlated_count_event const &event) noexcept {
         UpdateTimeRange(event.macrotime);
         try {
             EnqueuePhoton(event);
         } catch (std::exception const &) {
-            downstream.HandleEnd(std::current_exception());
+            downstream.handle_end(std::current_exception());
             streamEnded = true;
         }
         // A small amount of buffering can improve performance (buffering
@@ -271,13 +271,13 @@ template <typename D> class LineClockPixellator {
         }
     }
 
-    void HandleEvent(MarkerEvent const &event) noexcept {
+    void handle_event(marker_event const &event) noexcept {
         UpdateTimeRange(event.macrotime);
         if (event.channel == lineMarkerChannel) {
             try {
                 EnqueueLineMarker(event.macrotime);
             } catch (std::exception const &) {
-                downstream.HandleEnd(std::current_exception());
+                downstream.handle_end(std::current_exception());
                 streamEnded = true;
             }
             // We could call ProcessPhotonsAndLines() for all markers, but that
@@ -287,16 +287,16 @@ template <typename D> class LineClockPixellator {
         }
     }
 
-    void HandleEnd(std::exception_ptr error) noexcept {
+    void handle_end(std::exception_ptr error) noexcept {
         ProcessPhotonsAndLines(); // Emit any buffered data
         if (!streamEnded) {
-            downstream.HandleEnd(error);
+            downstream.handle_end(error);
             streamEnded = true;
         }
     }
 
     // Emit all buffered data (for testing)
-    void Flush() { ProcessPhotonsAndLines(); }
+    void flush() { ProcessPhotonsAndLines(); }
 };
 
 } // namespace flimevt

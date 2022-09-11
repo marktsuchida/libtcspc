@@ -21,21 +21,21 @@ using namespace flimevt::test;
 using Open = Event<0>;
 using Close = Event<1>;
 using Gated = Event<2>;
-using GatedSet = EventSet<Gated>;
+using GatedSet = event_set<Gated>;
 using Other = Event<3>;
 using Events = Events0123;
-using OutVec = std::vector<EventVariant<Events>>;
+using OutVec = std::vector<event_variant<Events>>;
 
 auto MakeGateEventsFixture(bool initiallyOpen) {
     return MakeProcessorTestFixture<Events, Events>(
         [initiallyOpen](auto &&downstream) {
             using D = std::remove_reference_t<decltype(downstream)>;
-            return GateEvents<GatedSet, Open, Close, D>(initiallyOpen,
-                                                        std::move(downstream));
+            return gate_events<GatedSet, Open, Close, D>(
+                initiallyOpen, std::move(downstream));
         });
 }
 
-TEST_CASE("Gate events", "[GateEvents]") {
+TEST_CASE("Gate events", "[gate_events]") {
     bool initiallyOpen = GENERATE(false, true);
     auto f = MakeGateEventsFixture(initiallyOpen);
 
