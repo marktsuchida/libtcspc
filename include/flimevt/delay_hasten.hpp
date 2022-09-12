@@ -20,9 +20,9 @@
 
 namespace flimevt {
 
-template <typename DelayedSet, typename D> class delay_processor {
+template <typename EsDelayed, typename D> class delay_processor {
     macrotime delta;
-    std::queue<event_variant<DelayedSet>> pending;
+    std::queue<event_variant<EsDelayed>> pending;
     D downstream;
     bool stream_ended = false;
 
@@ -36,7 +36,7 @@ template <typename DelayedSet, typename D> class delay_processor {
         if (stream_ended)
             return;
 
-        if constexpr (contains_event_v<DelayedSet, E>) {
+        if constexpr (contains_event_v<EsDelayed, E>) {
             try {
                 E delayed(event);
                 delayed.macrotime += delta;
@@ -75,9 +75,9 @@ template <typename DelayedSet, typename D> class delay_processor {
     }
 };
 
-template <typename UnhastenedSet, typename D> class hasten_processor {
+template <typename EsUnchanged, typename D> class hasten_processor {
     macrotime delta;
-    std::queue<event_variant<UnhastenedSet>> pending;
+    std::queue<event_variant<EsUnchanged>> pending;
     D downstream;
     bool stream_ended = false;
 
@@ -91,7 +91,7 @@ template <typename UnhastenedSet, typename D> class hasten_processor {
         if (stream_ended)
             return;
 
-        if constexpr (contains_event_v<UnhastenedSet, E>) {
+        if constexpr (contains_event_v<EsUnchanged, E>) {
             try {
                 pending.push(event);
             } catch (std::exception const &) {
@@ -131,10 +131,10 @@ template <typename UnhastenedSet, typename D> class hasten_processor {
     }
 };
 
-template <typename RetimedSet, typename UnchangedSet, typename D>
+template <typename EsRetimes, typename EsUnchanged, typename D>
 class delay_hasten_processor {
-    using hastener_type = hasten_processor<UnchangedSet, D>;
-    using delayer_type = delay_processor<RetimedSet, hastener_type>;
+    using hastener_type = hasten_processor<EsUnchanged, D>;
+    using delayer_type = delay_processor<EsRetimes, hastener_type>;
     delayer_type proc;
 
   public:

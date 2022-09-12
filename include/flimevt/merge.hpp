@@ -21,7 +21,7 @@ namespace internal {
 
 // Internal implementation of merge processor. This processor is owned by the
 // two input processors via shared_ptr.
-template <typename ESet, typename D> class merge_impl {
+template <typename Es, typename D> class merge_impl {
     // When events have equal macrotime, those originating from input 0 are
     // emitted before those originating from input1. Within the same input, the
     // order is preserved.
@@ -31,7 +31,7 @@ template <typename ESet, typename D> class merge_impl {
     bool pending_on_1 = false; // Pending on input 0 if false
     bool input_ended[2] = {false, false};
     bool canceled = false; // Received error on one input
-    std::queue<event_variant<ESet>> pending;
+    std::queue<event_variant<Es>> pending;
     macrotime const max_time_shift;
 
     D downstream;
@@ -137,13 +137,13 @@ template <typename ESet, typename D> class merge_impl {
  * \see flimevt::make_merge()
  *
  * \tparam Ch 0 or 1
- * \tparam ESet the event set handled by the merge processor
+ * \tparam Es the event set handled by the merge processor
  * \tparam D downstream processor type
  */
-template <unsigned Ch, typename ESet, typename D> class merge_input {
-    std::shared_ptr<internal::merge_impl<ESet, D>> impl;
+template <unsigned Ch, typename Es, typename D> class merge_input {
+    std::shared_ptr<internal::merge_impl<Es, D>> impl;
 
-    explicit merge_input(std::shared_ptr<internal::merge_impl<ESet, D>> impl)
+    explicit merge_input(std::shared_ptr<internal::merge_impl<Es, D>> impl)
         : impl(impl) {}
 
     template <typename MESet, typename MD>
@@ -160,8 +160,7 @@ template <unsigned Ch, typename ESet, typename D> class merge_input {
     merge_input &operator=(merge_input &&) = default;
 
     /** \brief Processor interface */
-    template <typename E,
-              typename = std::enable_if_t<contains_event_v<ESet, E>>>
+    template <typename E, typename = std::enable_if_t<contains_event_v<Es, E>>>
     void handle_event(E const &event) noexcept {
         impl->template handle_event<Ch>(event);
     }
@@ -180,18 +179,17 @@ template <unsigned Ch, typename ESet, typename D> class merge_input {
  * that the two input streams have events in increasing macrotime order and the
  * time shift between them does not exceed max_time_shift.
  *
- * \tparam ESet the event set handled by the merge processor
+ * \tparam Es the event set handled by the merge processor
  * \tparam D downstream processor type
  * \param max_time_shift the maximum time shift between the two input streams
  * \param downstream downstream processor (will be moved out)
  * \return std::pair of merge_input processors
  */
-template <typename ESet, typename D>
+template <typename Es, typename D>
 auto make_merge(macrotime max_time_shift, D &&downstream) {
-    auto p = std::make_shared<internal::merge_impl<ESet, D>>(
+    auto p = std::make_shared<internal::merge_impl<Es, D>>(
         max_time_shift, std::move(downstream));
-    return std::make_pair(merge_input<0, ESet, D>(p),
-                          merge_input<1, ESet, D>(p));
+    return std::make_pair(merge_input<0, Es, D>(p), merge_input<1, Es, D>(p));
 }
 
 } // namespace flimevt

@@ -28,13 +28,12 @@ class discard_any {
 /**
  * \brief Processor that sinks a specified set of events and does nothing.
  *
- * \tparam ESet the set of events to consume.
+ * \tparam Es the set of events to consume.
  */
-template <typename ESet> class discard_all {
+template <typename Es> class discard_all {
   public:
     /** \brief Processor interface */
-    template <typename E,
-              typename = std::enable_if_t<contains_event_v<ESet, E>>>
+    template <typename E, typename = std::enable_if_t<contains_event_v<Es, E>>>
     void handle_event(E const &) noexcept {}
 
     /** \brief Processor interface */

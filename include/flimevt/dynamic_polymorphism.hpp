@@ -99,11 +99,11 @@ using virtual_wrapped_processor =
  * \see polymorphic_processor
  * \see virtual_wrapped_processor
  *
- * \tparam ESet the event set handled by implementations of this interface
+ * \tparam Es the event set handled by implementations of this interface
  */
-template <typename ESet>
+template <typename Es>
 using virtual_processor =
-    internal::apply_class_template_t<internal::virtual_processor, ESet>;
+    internal::apply_class_template_t<internal::virtual_processor, Es>;
 
 /**
  * \brief A dynamically polymorphic wrapper for a given processor type.
@@ -113,11 +113,11 @@ using virtual_processor =
  * handle_event and \c handle_end functions.
  *
  * \tparam Proc the processor to wrap
- * \tparam ESet the event set handled by the processor
+ * \tparam Es the event set handled by the processor
  */
-template <typename Proc, typename ESet>
+template <typename Proc, typename Es>
 using virtual_wrapped_processor =
-    internal::apply_class_template_t<internal::virtual_wrapped_processor, ESet,
+    internal::apply_class_template_t<internal::virtual_wrapped_processor, Es,
                                      Proc>;
 
 /**
@@ -128,10 +128,10 @@ using virtual_wrapped_processor =
  *
  * \see virtual_processor
  *
- * \tparam ESet the event set handled by the processor
+ * \tparam Es the event set handled by the processor
  */
-template <typename ESet> class polymorphic_processor {
-    std::shared_ptr<virtual_processor<ESet>> proc;
+template <typename Es> class polymorphic_processor {
+    std::shared_ptr<virtual_processor<Es>> proc;
 
   public:
     /**
@@ -140,14 +140,13 @@ template <typename ESet> class polymorphic_processor {
      * \param proc the dynamically polymorphic processor that will handle
      * events and end-of-stream
      */
-    polymorphic_processor(std::shared_ptr<virtual_processor<ESet>> proc)
+    polymorphic_processor(std::shared_ptr<virtual_processor<Es>> proc)
         : proc(proc) {}
 
     // Rule of zero
 
     /** \brief Processor interface */
-    template <typename E,
-              typename = std::enable_if_t<contains_event_v<ESet, E>>>
+    template <typename E, typename = std::enable_if_t<contains_event_v<Es, E>>>
     void handle_event(E const &event) noexcept {
         proc->handle_event(event);
     }

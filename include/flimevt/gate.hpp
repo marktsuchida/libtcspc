@@ -17,19 +17,19 @@ namespace flimevt {
 /**
  * \brief Processor that gates events depending on current state.
  *
- * Events belonging to \c ESet are gated: if an \c EOpen was received more
+ * Events belonging to \c Es are gated: if an \c EOpen was received more
  * recently than an \c EClose, they are passed through; otherwise they are
  * discarded.
  *
- * All events not in \c ESet are passed through (including \c EOpen and \c
+ * All events not in \c Es are passed through (including \c EOpen and \c
  * EClose).
  *
- * \tparam ESet event types to gate
+ * \tparam Es event types to gate
  * \tparam EOpen event type that opens the gate
  * \tparam EClose event type that closes the gate
  * \tparam D downstream processor type
  */
-template <typename ESet, typename EOpen, typename EClose, typename D>
+template <typename Es, typename EOpen, typename EClose, typename D>
 class gate_events {
     bool open;
 
@@ -56,7 +56,7 @@ class gate_events {
 
     /** \brief Processor interface */
     template <typename E> void handle_event(E const &event) noexcept {
-        if (!contains_event_v<ESet, E> || open)
+        if (!contains_event_v<Es, E> || open)
             downstream.handle_event(event);
     }
 

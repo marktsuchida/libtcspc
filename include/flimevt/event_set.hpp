@@ -32,16 +32,16 @@ template <typename... Events> using event_set = std::tuple<Events...>;
  * event set. It can be used to store more than one kind of event, for example
  * for buffering.
  *
- * \tparam ESet the event set type describing the events that the variant can
+ * \tparam Es the event set type describing the events that the variant can
  * hold
  */
-template <typename ESet>
-using event_variant = internal::apply_class_template_t<std::variant, ESet>;
+template <typename Es>
+using event_variant = internal::apply_class_template_t<std::variant, Es>;
 
 namespace internal {
 
-template <typename Event, typename... Events>
-struct event_is_one_of : std::disjunction<std::is_same<Event, Events>...> {};
+template <typename E, typename... Events>
+struct event_is_one_of : std::disjunction<std::is_same<E, Events>...> {};
 
 } // namespace internal
 
@@ -53,22 +53,21 @@ struct event_is_one_of : std::disjunction<std::is_same<Event, Events>...> {};
  *
  * \see contains_event_v
  *
- * \tparam ESet an event set type to check
- * \tparam Event an event type to check
+ * \tparam Es an event set type to check
+ * \tparam E an event type to check
  */
-template <typename ESet, typename Event>
+template <typename Es, typename E>
 struct contains_event
-    : internal::apply_class_template_t<internal::event_is_one_of, ESet,
-                                       Event> {};
+    : internal::apply_class_template_t<internal::event_is_one_of, Es, E> {};
 
 /**
  * \brief Helper variable to get the result of contains_event
  *
- * \tparam ESet an event set type to check
- * \tparam Event an event type to check
+ * \tparam Es an event set type to check
+ * \tparam E an event type to check
  */
-template <typename ESet, typename Event>
-inline constexpr bool contains_event_v = contains_event<ESet, Event>::value;
+template <typename Es, typename E>
+inline constexpr bool contains_event_v = contains_event<Es, E>::value;
 
 /**
  * \brief Metafunction to check whether the given processor handles the given
@@ -79,26 +78,26 @@ inline constexpr bool contains_event_v = contains_event<ESet, Event>::value;
  * \see handles_event_v
  *
  * \tparam Proc a processor type to check
- * \tparam Event an event type to check
+ * \tparam E an event type to check
  */
-template <typename Proc, typename Event, typename = void>
+template <typename Proc, typename E, typename = void>
 struct handles_event : std::false_type {};
 
-template <typename Proc, typename Event>
-struct handles_event<Proc, Event,
+template <typename Proc, typename E>
+struct handles_event<Proc, E,
                      std::void_t<decltype(std::declval<Proc>().handle_event(
-                         std::declval<Event>()))>>
+                         std::declval<E>()))>>
     : std::is_same<void, decltype(std::declval<Proc>().handle_event(
-                             std::declval<Event>()))> {};
+                             std::declval<E>()))> {};
 
 /**
  * \brief Helper variable to get the result of handles_event.
  *
  * \tparam Proc a processor type to check
- * \tparam Event an event type to check
+ * \tparam E an event type to check
  */
-template <typename Proc, typename Event>
-inline constexpr bool handles_event_v = handles_event<Proc, Event>::value;
+template <typename Proc, typename E>
+inline constexpr bool handles_event_v = handles_event<Proc, E>::value;
 
 /**
  * \brief Metafunction to check whether the given processor handles end of
@@ -151,22 +150,21 @@ struct handles_events_and_end
  * The result is provided in the member constant \c value.
  *
  * \tparam Proc the processor type to check
- * \tparam ESet the event set to check
+ * \tparam Es the event set to check
  */
-template <typename Proc, typename ESet>
+template <typename Proc, typename Es>
 struct handles_event_set
-    : internal::apply_class_template_t<internal::handles_events_and_end, ESet,
+    : internal::apply_class_template_t<internal::handles_events_and_end, Es,
                                        Proc> {};
 
 /**
  * \brief Helper variable to get the result of handles_event_set.
  *
  * \tparam Proc the processor type to check
- * \tparam ESet the event set to check
+ * \tparam Es the event set to check
  */
-template <typename Proc, typename ESet>
-inline constexpr bool handles_event_set_v =
-    handles_event_set<Proc, ESet>::value;
+template <typename Proc, typename Es>
+inline constexpr bool handles_event_set_v = handles_event_set<Proc, Es>::value;
 
 /**
  * \brief Metafunction to concatenate event sets
