@@ -26,25 +26,33 @@ namespace flimevt {
  * \brief Histogram overflow strategy tag to request saturating addition on
  * overflowed bins.
  */
-struct saturate_on_overflow {};
+struct saturate_on_overflow {
+    explicit saturate_on_overflow() = default;
+};
 
 /**
  * \brief Histogram overflow strategy tag to request resetting the histogram
  * when a bin is about to overflow.
  */
-struct reset_on_overflow {};
+struct reset_on_overflow {
+    explicit reset_on_overflow() = default;
+};
 
 /**
  * \brief Histogram overflow strategy tag to request ending the processing when
  * a bin is about to overflow.
  */
-struct stop_on_overflow {};
+struct stop_on_overflow {
+    explicit stop_on_overflow() = default;
+};
 
 /**
  * \brief Histogram overflow strategy tag to request treating bin overflows as
  * errors.
  */
-struct error_on_overflow {};
+struct error_on_overflow {
+    explicit error_on_overflow() = default;
+};
 
 /**
  * \brief Error raised when a histogram bin overflows.
