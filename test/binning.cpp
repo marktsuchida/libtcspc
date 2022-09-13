@@ -75,7 +75,7 @@ template <typename F> auto make_map_to_bins_fixture(F map_func) {
         });
 }
 
-TEST_CASE("Map to bins", "[MapToBin]") {
+TEST_CASE("Map to bins", "[map_to_bin]") {
     auto f = make_map_to_bins_fixture(
         []([[maybe_unused]] int d) -> std::optional<unsigned> {
             return std::nullopt;

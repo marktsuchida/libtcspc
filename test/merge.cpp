@@ -104,7 +104,7 @@ auto make_merge_fixture_error_on_input1(macrotime max_shift,
 
 using out_vec = std::vector<event_variant<test_events_0123>>;
 
-TEST_CASE("Merge with error on one input", "[Merge]") {
+TEST_CASE("Merge with error on one input", "[merge]") {
     SECTION("Input0 error with no events pending") {
         bool further_input_on_input1 = GENERATE(false, true);
         bool end_input1 = GENERATE(false, true);
@@ -192,7 +192,7 @@ TEST_CASE("Merge with error on one input", "[Merge]") {
     }
 }
 
-TEST_CASE("Merge", "[Merge]") {
+TEST_CASE("Merge", "[merge]") {
     auto f = make_merge_fixture(1000);
 
     SECTION("Empty streams yield empty stream") {
@@ -315,7 +315,7 @@ TEST_CASE("Merge", "[Merge]") {
     }
 }
 
-TEST_CASE("Merge max time shift", "[Merge]") {
+TEST_CASE("Merge max time shift", "[merge]") {
     auto f = make_merge_fixture(10);
 
     SECTION("Input0 emitted after exceeding max time shift") {

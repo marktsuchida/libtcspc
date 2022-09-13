@@ -12,7 +12,7 @@ using namespace flimevt::internal;
 
 static_assert(!false_for_type<int>::value);
 
-TEST_CASE("count_trailing_zeros_32", "[Common]") {
+TEST_CASE("count_trailing_zeros_32", "[common]") {
     REQUIRE(count_trailing_zeros_32(1) == 0);
     REQUIRE(count_trailing_zeros_32_nonintrinsic(1) == 0);
 
