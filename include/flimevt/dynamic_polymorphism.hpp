@@ -76,6 +76,8 @@ class virtual_wrapped_processor_impl<Interface, Proc, Event0, Events...>
     using base_type::proc;
 
   public:
+    using base_type::base_type;
+
     using base_type::handle_event; // Import overload set
     void handle_event(Event0 const &event) noexcept final {
         proc.handle_event(event);

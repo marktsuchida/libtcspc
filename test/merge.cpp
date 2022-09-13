@@ -6,357 +6,251 @@
 
 #include "flimevt/merge.hpp"
 
-#include "flimevt/discard.hpp"
-#include "flimevt/split.hpp"
-
-#include "processor_test_fixture.hpp"
-#include "test_events.hpp"
-
-#include <type_traits>
-#include <typeinfo>
+#include "flimevt/dynamic_polymorphism.hpp"
+#include "flimevt/ref_processor.hpp"
+#include "flimevt/test_utils.hpp"
 
 #include <catch2/catch.hpp>
 
 using namespace flimevt;
-using namespace flimevt::test;
 
-static_assert(
-    handles_event_set_v<
-        decltype(merge<test_events_0123>(0, discard_all<test_events_0123>())
-                     .first),
-        test_events_0123>);
-
-static_assert(
-    handles_event_set_v<
-        decltype(merge<test_events_0123>(0, discard_all<test_events_0123>())
-                     .second),
-        test_events_0123>);
-
-// Instead of coming up with a 2-input test fixture, we rely on split_events
-// for the input.
-auto make_merge_fixture(macrotime max_shift) {
-    auto make_proc = [max_shift](auto &&downstream) {
-        auto [input0, input1] =
-            merge<test_events_0123>(max_shift, std::move(downstream));
-        return split_events<test_events_23>(std::move(input0),
-                                            std::move(input1));
-    };
-
-    return make_processor_test_fixture<test_events_0123, test_events_0123>(
-        make_proc);
-}
-
-// Processor to inject an error after N events are passed through
-template <typename D> class inject_error {
-    int events_to_emit_before_error;
-    bool finished = false;
-    D downstream;
-
-  public:
-    explicit inject_error(int events_before_error, D &&downstream)
-        : events_to_emit_before_error(events_before_error),
-          downstream(std::move(downstream)) {}
-
-    template <typename E> void handle_event(E const &event) noexcept {
-        if (events_to_emit_before_error-- > 0) {
-            downstream.handle_event(event);
-        } else {
-            downstream.handle_end(
-                std::make_exception_ptr(std::runtime_error("injected error")));
-        }
-    }
-
-    void handle_end(std::exception_ptr error) noexcept {
-        if (events_to_emit_before_error > 0)
-            downstream.handle_end(error);
-    }
-};
-
-auto make_merge_fixture_error_on_input0(macrotime max_shift,
-                                        int events_before_error) {
-    auto make_proc = [max_shift, events_before_error](auto &&downstream) {
-        auto [input0, input1] =
-            merge<test_events_0123>(max_shift, std::move(downstream));
-        auto error0 = inject_error(events_before_error, std::move(input0));
-        return split_events<test_events_23, decltype(error0),
-                            decltype(input1)>(std::move(error0),
-                                              std::move(input1));
-    };
-
-    return make_processor_test_fixture<test_events_0123, test_events_0123>(
-        make_proc);
-}
-
-auto make_merge_fixture_error_on_input1(macrotime max_shift,
-                                        int events_before_error) {
-    auto make_proc = [max_shift, events_before_error](auto &&downstream) {
-        auto [input0, input1] =
-            merge<test_events_0123>(max_shift, std::move(downstream));
-        auto error1 = inject_error(events_before_error, std::move(input1));
-        return split_events<test_events_23, decltype(input0),
-                            decltype(error1)>(std::move(input0),
-                                              std::move(error1));
-    };
-
-    return make_processor_test_fixture<test_events_0123, test_events_0123>(
-        make_proc);
-}
-
-using out_vec = std::vector<event_variant<test_events_0123>>;
+using e0 = timestamped_test_event<0>;
+using e1 = timestamped_test_event<1>;
+using e2 = timestamped_test_event<2>;
+using e3 = timestamped_test_event<3>;
+using all_events = event_set<e0, e1, e2, e3>;
 
 TEST_CASE("Merge with error on one input", "[merge]") {
-    SECTION("Input0 error with no events pending") {
-        bool further_input_on_input1 = GENERATE(false, true);
-        bool end_input1 = GENERATE(false, true);
+    // The two merge inputs have different types. Wrap them so they can be
+    // swapped for symmetric tests.
+    // in_0 -> ref -> min0 -> merge_impl -> out
+    // in_x -> dyn_x -> v0/1 -> rmin0/1 -> min0/1 -> merge_impl -> out
+    //         poly     wrap     ref
 
-        auto f = make_merge_fixture_error_on_input0(1000, 0);
-        f.feed_events({
-            test_event<0>{0}, // Fixture will convert to error
-        });
-        REQUIRE(f.output() == out_vec{});
-        if (further_input_on_input1) {
-            f.feed_events({
-                test_event<2>{1},
-            });
-            REQUIRE(f.output() == out_vec{});
+    auto out = capture_output<all_events>();
+    auto [min0, min1] = merge<all_events>(1000, ref_processor(out));
+
+    auto rmin0 = ref_processor(min0);
+    auto rmin1 = ref_processor(min1);
+    using vproc_type = virtual_processor<all_events>;
+    std::shared_ptr<vproc_type> v0 = std::make_shared<
+        virtual_wrapped_processor<decltype(rmin0), all_events>>(
+        std::move(rmin0));
+    std::shared_ptr<vproc_type> v1 = std::make_shared<
+        virtual_wrapped_processor<decltype(rmin1), all_events>>(
+        std::move(rmin1));
+    int x = GENERATE(0, 1);
+    using dynproc_type = polymorphic_processor<all_events>;
+    dynproc_type dyn_x(x ? v1 : v0);
+    dynproc_type dyn_y(x ? v0 : v1);
+
+    auto in_0 = feed_input<all_events>(ref_processor(min0));
+    in_0.require_output_checked(out);
+    auto in_1 = feed_input<all_events>(ref_processor(min1));
+    in_1.require_output_checked(out);
+    auto in_x = feed_input<all_events>(std::move(dyn_x));
+    in_x.require_output_checked(out);
+    auto in_y = feed_input<all_events>(std::move(dyn_y));
+    in_y.require_output_checked(out);
+
+    SECTION("Error on in_x with no pending events") {
+        in_x.feed_end(std::make_exception_ptr(std::runtime_error("test")));
+        REQUIRE_THROWS_AS(out.check_end(), std::runtime_error);
+
+        // Other input must accept up to end of stream, but not emit anything
+
+        SECTION("No further input") {
+            in_y.feed_end();
+            REQUIRE_THROWS_AS(out.check_end(), std::runtime_error);
         }
-        if (end_input1) {
-            f.feed_end({});
-            REQUIRE(f.output() == out_vec{});
+
+        SECTION("Further input on in_y") {
+            in_y.feed(e2{});
+            in_y.feed_end();
+            REQUIRE_THROWS_AS(out.check_end(), std::runtime_error);
         }
-        REQUIRE_THROWS_MATCHES(f.did_end(), std::runtime_error,
-                               Catch::Message("injected error"));
     }
 
-    SECTION("Input1 error with no events pending") {
-        bool further_input_on_input0 = GENERATE(false, true);
-        bool end_input0 = GENERATE(false, true);
+    SECTION("Error on in_x with events pending on in_x") {
+        in_x.feed(e0{0});
+        REQUIRE(out.check_not_end());
+        in_x.feed_end(std::make_exception_ptr(std::runtime_error("test")));
+        // Pending events are discarded
+        REQUIRE_THROWS_AS(out.check_end(), std::runtime_error);
 
-        auto f = make_merge_fixture_error_on_input1(1000, 0);
-        f.feed_events({
-            test_event<2>{0}, // Fixture will convert to error
-        });
-        REQUIRE(f.output() == out_vec{});
-        if (further_input_on_input0) {
-            f.feed_events({
-                test_event<0>{1}, // Further input ignored on other input
-            });
-            REQUIRE(f.output() == out_vec{});
+        // Other input must accept up to end of stream, but not emit anything
+
+        SECTION("No further input") {
+            in_y.feed_end();
+            REQUIRE_THROWS_AS(out.check_end(), std::runtime_error);
         }
-        if (end_input0) {
-            f.feed_end({});
-            REQUIRE(f.output() == out_vec{});
+
+        SECTION("Further input on in_y") {
+            in_y.feed(e2{});
+            in_y.feed_end();
+            REQUIRE_THROWS_AS(out.check_end(), std::runtime_error);
         }
-        REQUIRE_THROWS_MATCHES(f.did_end(), std::runtime_error,
-                               Catch::Message("injected error"));
     }
 
-    SECTION("Input0 error with input0 events pending") {
-        bool end_input1 = GENERATE(false, true);
+    SECTION("Error on in_x with events pending on in_y") {
+        in_y.feed(e0{0});
+        REQUIRE(out.check_not_end());
+        in_x.feed_end(std::make_exception_ptr(std::runtime_error("test")));
+        // Pending events are discarded
+        REQUIRE_THROWS_AS(out.check_end(), std::runtime_error);
 
-        auto f = make_merge_fixture_error_on_input0(1000, 1);
-        f.feed_events({
-            test_event<0>{0},
-        });
-        REQUIRE(f.output() == out_vec{});
-        f.feed_events({
-            test_event<0>{1}, // Fixture will convert to error
-        });
-        REQUIRE(f.output() == out_vec{});
-        if (end_input1) {
-            f.feed_end({});
-            REQUIRE(f.output() == out_vec{});
+        // Other input must accept up to end of stream, but not emit anything
+
+        SECTION("No further input") {
+            in_y.feed_end();
+            REQUIRE_THROWS_AS(out.check_end(), std::runtime_error);
         }
-        REQUIRE_THROWS_MATCHES(f.did_end(), std::runtime_error,
-                               Catch::Message("injected error"));
-    }
 
-    SECTION("Input0 error with input1 events pending") {
-        bool end_input1 = GENERATE(false, true);
-
-        auto f = make_merge_fixture_error_on_input0(1000, 0);
-        f.feed_events({
-            test_event<2>{0},
-        });
-        REQUIRE(f.output() == out_vec{});
-        f.feed_events({
-            test_event<0>{1}, // Fixture will convert to error
-        });
-        REQUIRE(f.output() == out_vec{});
-        if (end_input1) {
-            f.feed_end({});
-            REQUIRE(f.output() == out_vec{});
+        SECTION("Further input on in_y") {
+            in_y.feed(e2{});
+            in_y.feed_end();
+            REQUIRE_THROWS_AS(out.check_end(), std::runtime_error);
         }
-        REQUIRE_THROWS_MATCHES(f.did_end(), std::runtime_error,
-                               Catch::Message("injected error"));
-    }
-}
-
-TEST_CASE("Merge", "[merge]") {
-    auto f = make_merge_fixture(1000);
-
-    SECTION("Empty streams yield empty stream") {
-        f.feed_end({});
-        REQUIRE(f.output() == out_vec{});
     }
 
-    SECTION("Errors on both inputs") {
-        f.feed_end(std::make_exception_ptr(std::runtime_error("test")));
-        REQUIRE(f.output() == out_vec{});
-        REQUIRE_THROWS_MATCHES(f.did_end(), std::runtime_error,
-                               Catch::Message("test"));
+    SECTION("Empty yields empty") {
+        in_x.feed_end();
+        REQUIRE(out.check_not_end());
+        in_y.feed_end();
+        REQUIRE(out.check_end());
     }
 
-    SECTION("Input0 events are emitted before input1 events") {
-        f.feed_events({
-            test_event<2>{42},
-        });
-        REQUIRE(f.output() == out_vec{});
-        f.feed_events({
-            test_event<0>{42},
-        });
-        REQUIRE(f.output() == out_vec{
-                                  test_event<0>{42},
-                              });
-        f.feed_events({
-            test_event<3>{42},
-        });
-        REQUIRE(f.output() == out_vec{});
-        f.feed_events({
-            test_event<1>{42},
-        });
-        REQUIRE(f.output() == out_vec{
-                                  test_event<1>{42},
-                              });
-        f.feed_end({});
-        REQUIRE(f.output() == out_vec{
-                                  test_event<2>{42},
-                                  test_event<3>{42},
-                              });
-        REQUIRE(f.did_end());
+    SECTION("Error on both inputs") {
+        in_x.feed_end(std::make_exception_ptr(std::runtime_error("test_x")));
+        REQUIRE_THROWS_AS(out.check_end(), std::runtime_error);
+        in_y.feed_end(std::make_exception_ptr(std::runtime_error("test_y")));
+        REQUIRE_THROWS_AS(out.check_end(), std::runtime_error);
     }
 
-    SECTION("Already sorted in macrotime order") {
-        f.feed_events({
-            test_event<0>{1},
-        });
-        REQUIRE(f.output() == out_vec{});
-        f.feed_events({
-            test_event<2>{2},
-        });
-        REQUIRE(f.output() == out_vec{test_event<0>{1}});
-        f.feed_events({
-            test_event<0>{3},
-        });
-        REQUIRE(f.output() == out_vec{test_event<2>{2}});
-        f.feed_end({});
-        REQUIRE(f.output() == out_vec{
-                                  test_event<0>{3},
-                              });
-        REQUIRE(f.did_end());
+    SECTION("Events from in_0 emitted before those from in_1") {
+        in_1.feed(e1{42});
+        in_0.feed(e0{42});
+        REQUIRE(out.check(e0{42}));
+        in_1.feed(e3{42});
+        in_0.feed(e2{42});
+        REQUIRE(out.check(e2{42}));
+
+        SECTION("End in_0 first") {
+            in_0.feed_end();
+            REQUIRE(out.check(e1{42}));
+            REQUIRE(out.check(e3{42}));
+            REQUIRE(out.check_not_end());
+            in_1.feed_end();
+            REQUIRE(out.check_end());
+        }
+
+        SECTION("End in_1 first") {
+            in_1.feed_end();
+            REQUIRE(out.check_not_end());
+            in_0.feed_end();
+            REQUIRE(out.check(e1{42}));
+            REQUIRE(out.check(e3{42}));
+            REQUIRE(out.check_end());
+        }
     }
 
-    SECTION("Delayed input0 sorted by macrotime") {
-        f.feed_events({
-            test_event<0>{2},
-        });
-        REQUIRE(f.output() == out_vec{});
-        f.feed_events({
-            test_event<2>{1},
-        });
-        REQUIRE(f.output() == out_vec{
-                                  test_event<2>{1},
-                              });
-        f.feed_events({
-            test_event<0>{4},
-        });
-        REQUIRE(f.output() == out_vec{});
-        f.feed_events({
-            test_event<2>{3},
-        });
-        REQUIRE(f.output() == out_vec{
-                                  test_event<0>{2},
-                                  test_event<2>{3},
-                              });
-        f.feed_end({});
-        REQUIRE(f.output() == out_vec{
-                                  test_event<0>{4},
-                              });
-        REQUIRE(f.did_end());
+    SECTION("Events in macrotime order") {
+        in_x.feed(e0{1});
+        in_y.feed(e1{2});
+        REQUIRE(out.check(e0{1}));
+        in_x.feed(e0{3});
+        REQUIRE(out.check(e1{2}));
+
+        SECTION("End in_x first") {
+            in_x.feed_end();
+            REQUIRE(out.check_not_end());
+            in_y.feed_end();
+            REQUIRE(out.check(e0{3}));
+            REQUIRE(out.check_end());
+        }
+
+        SECTION("End in_y first") {
+            in_y.feed_end();
+            REQUIRE(out.check(e0{3}));
+            REQUIRE(out.check_not_end());
+            in_x.feed_end();
+            REQUIRE(out.check_end());
+        }
     }
 
-    SECTION("Delayed input1 sorted by macrotime") {
-        f.feed_events({
-            test_event<2>{2},
-        });
-        REQUIRE(f.output() == out_vec{});
-        f.feed_events({
-            test_event<0>{1},
-        });
-        REQUIRE(f.output() == out_vec{
-                                  test_event<0>{1},
-                              });
-        f.feed_events({
-            test_event<2>{4},
-        });
-        REQUIRE(f.output() == out_vec{});
-        f.feed_events({
-            test_event<0>{3},
-        });
-        REQUIRE(f.output() == out_vec{
-                                  test_event<2>{2},
-                                  test_event<0>{3},
-                              });
-        f.feed_end({});
-        REQUIRE(f.output() == out_vec{
-                                  test_event<2>{4},
-                              });
-        REQUIRE(f.did_end());
+    SECTION("Delayed on in_x") {
+        in_x.feed(e0{2});
+        in_y.feed(e1{1});
+        REQUIRE(out.check(e1{1}));
+        in_x.feed(e0{4});
+        in_y.feed(e1{3});
+        REQUIRE(out.check(e0{2}));
+        REQUIRE(out.check(e1{3}));
+
+        SECTION("End in_x first") {
+            in_x.feed_end();
+            REQUIRE(out.check_not_end());
+            in_y.feed_end();
+            REQUIRE(out.check(e0{4}));
+            REQUIRE(out.check_end());
+        }
+
+        SECTION("End in_y first") {
+            in_y.feed_end();
+            REQUIRE(out.check(e0{4}));
+            REQUIRE(out.check_not_end());
+            in_x.feed_end();
+            REQUIRE(out.check_end());
+        }
     }
 }
 
 TEST_CASE("Merge max time shift", "[merge]") {
-    auto f = make_merge_fixture(10);
+    // in_x -> dyn_x -> v0/1 -> min0 -> merge_impl -> out
+    //         poly     wrap
 
-    SECTION("Input0 emitted after exceeding max time shift") {
-        f.feed_events({
-            test_event<0>{0},
-        });
-        REQUIRE(f.output() == out_vec{});
-        f.feed_events({
-            test_event<0>{10},
-        });
-        REQUIRE(f.output() == out_vec{});
-        f.feed_events({
-            test_event<0>{11},
-        });
-        REQUIRE(f.output() == out_vec{test_event<0>{0}});
-        f.feed_end({});
-        REQUIRE(f.output() == out_vec{
-                                  test_event<0>{10},
-                                  test_event<0>{11},
-                              });
-        REQUIRE(f.did_end());
-    }
+    auto out = capture_output<all_events>();
+    auto [min0, min1] = merge<all_events>(10, ref_processor(out));
 
-    SECTION("Input1 emitted after exceeding max time shift") {
-        f.feed_events({
-            test_event<1>{0},
-        });
-        REQUIRE(f.output() == out_vec{});
-        f.feed_events({
-            test_event<1>{10},
-        });
-        REQUIRE(f.output() == out_vec{});
-        f.feed_events({
-            test_event<1>{11},
-        });
-        REQUIRE(f.output() == out_vec{test_event<1>{0}});
-        f.feed_end({});
-        REQUIRE(f.output() == out_vec{
-                                  test_event<1>{10},
-                                  test_event<1>{11},
-                              });
-        REQUIRE(f.did_end());
+    using vproc_type = virtual_processor<all_events>;
+    std::shared_ptr<vproc_type> v0 = std::make_shared<
+        virtual_wrapped_processor<decltype(min0), all_events>>(
+        std::move(min0));
+    std::shared_ptr<vproc_type> v1 = std::make_shared<
+        virtual_wrapped_processor<decltype(min1), all_events>>(
+        std::move(min1));
+    int x = GENERATE(0, 1);
+    using dynproc_type = polymorphic_processor<all_events>;
+    dynproc_type dyn_x(x ? v1 : v0);
+    dynproc_type dyn_y(x ? v0 : v1);
+
+    auto in_x = feed_input<all_events>(std::move(dyn_x));
+    in_x.require_output_checked(out);
+    auto in_y = feed_input<all_events>(std::move(dyn_y));
+    in_y.require_output_checked(out);
+
+    SECTION("in_x emitted after exceeding max time shift") {
+        in_x.feed(e0{0});
+        in_x.feed(e0{10});
+        in_x.feed(e0{11});
+        REQUIRE(out.check(e0{0}));
+
+        SECTION("End in_x first") {
+            in_x.feed_end();
+            REQUIRE(out.check_not_end());
+            in_y.feed_end();
+            REQUIRE(out.check(e0{10}));
+            REQUIRE(out.check(e0{11}));
+            REQUIRE(out.check_end());
+        }
+
+        SECTION("End in_y first") {
+            in_y.feed_end();
+            REQUIRE(out.check(e0{10}));
+            REQUIRE(out.check(e0{11}));
+            REQUIRE(out.check_not_end());
+            in_x.feed_end();
+            REQUIRE(out.check_end());
+        }
     }
 }

@@ -103,6 +103,27 @@ template <typename Es> class capture_output {
         return false;
     }
 
+    bool check_not_end() {
+        assert(!end_of_life);
+        if (!output.empty()) {
+            end_of_life = true;
+            if (!suppress_output) {
+                std::cerr << "expected no output\n";
+                dump_output();
+            }
+            return false;
+        }
+        if (ended) {
+            end_of_life = true;
+            if (!suppress_output) {
+                std::cerr << "expected not end-of-stream\n";
+                std::cerr << "found end-of-stream\n";
+            }
+            return false;
+        }
+        return true;
+    }
+
     bool check_end() {
         assert(!end_of_life);
         if (!output.empty()) {
@@ -173,6 +194,19 @@ template <> class capture_output<event_set<>> {
 
         if (error)
             std::rethrow_exception(error);
+        return true;
+    }
+
+    bool check_not_end() {
+        assert(!end_of_life);
+        if (ended) {
+            end_of_life = true;
+            if (!suppress_output) {
+                std::cerr << "expected not end-of-stream\n";
+                std::cerr << "found end-of-stream\n";
+            }
+            return false;
+        }
         return true;
     }
 };

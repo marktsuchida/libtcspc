@@ -30,7 +30,7 @@ template <typename Es, typename D> class merge_impl {
     // other input at any given time.
     bool pending_on_1 = false; // Pending on input 0 if false
     bool input_ended[2] = {false, false};
-    bool canceled = false; // Received error on one input
+    bool ended_with_error = false;
     std::queue<event_variant<Es>> pending;
     macrotime const max_time_shift;
 
@@ -69,7 +69,7 @@ template <typename Es, typename D> class merge_impl {
 
     template <unsigned Ch, typename E>
     void handle_event(E const &event) noexcept {
-        if (canceled)
+        if (ended_with_error)
             return;
 
         if (is_pending_on_other<Ch>()) {
@@ -109,18 +109,18 @@ template <typename Es, typename D> class merge_impl {
 
     template <unsigned Ch> void handle_end(std::exception_ptr error) noexcept {
         input_ended[Ch] = true;
-        if (canceled) // Other input already had an error
+        if (ended_with_error)
             return;
 
-        bool other_input_ended = input_ended[1 - Ch];
-        if (other_input_ended && !error) // They had finished; now we did, too
+        if (error)
+            ended_with_error = true;
+        else if (is_pending_on_other<Ch>())
             emit_pending([]([[maybe_unused]] auto t) { return true; });
-        if (!other_input_ended && error) // We errored first
-            canceled = true;
-        if (other_input_ended || error) { // The stream has ended now
+
+        bool other_input_ended = input_ended[1 - Ch];
+        if (other_input_ended || error) { // The output stream has ended now.
             {
-                // Release queue memory. We cannot access the std::deque of the
-                // std::queue, but we can swap it with an empty one.
+                // Release queue memory.
                 decltype(pending) q;
                 pending.swap(q);
             }
