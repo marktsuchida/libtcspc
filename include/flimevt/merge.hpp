@@ -98,7 +98,8 @@ template <typename Es, typename D> class merge_impl {
         // allowed time shift between the inputs.
         // Guard against integer underflow.
         constexpr auto macrotime_min = std::numeric_limits<macrotime>::min();
-        if (max_time_shift > event.macrotime - macrotime_min) {
+        if (event.macrotime >= 0 ||
+            max_time_shift > event.macrotime - macrotime_min) {
             macrotime old_enough = event.macrotime - max_time_shift;
             emit_pending([=](auto t) { return t < old_enough; });
         }
