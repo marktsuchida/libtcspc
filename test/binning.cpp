@@ -7,109 +7,83 @@
 #include "flimevt/binning.hpp"
 
 #include "flimevt/event_set.hpp"
+#include "flimevt/ref_processor.hpp"
+#include "flimevt/test_utils.hpp"
 #include "flimevt/time_tagged_events.hpp"
-
-#include "processor_test_fixture.hpp"
-#include "test_events.hpp"
 
 #include <catch2/catch.hpp>
 
 #include <limits>
-#include <type_traits>
 #include <utility>
-#include <vector>
 
 using namespace flimevt;
-using namespace flimevt::test;
-
-using data_map_inputs = event_set<time_correlated_count_event, test_event<0>>;
-using data_map_outputs =
-    event_set<datapoint_event<std::uint16_t>, test_event<0>>;
-using data_map_out_vec = std::vector<event_variant<data_map_outputs>>;
-
-auto make_map_difftime_to_datapoints_fixture() {
-    return make_processor_test_fixture<data_map_inputs, data_map_outputs>(
-        [](auto &&downstream) {
-            return map_to_datapoints(difftime_data_mapper(),
-                                     std::move(downstream));
-        });
-}
-
-TEST_CASE("Map to datapoints", "[map_to_datapoints]") {
-    auto f = make_map_difftime_to_datapoints_fixture();
-
-    f.feed_events({
-        test_event<0>{42},
-    });
-    REQUIRE(f.output() == data_map_out_vec{
-                              test_event<0>{42},
-                          });
-    f.feed_events({
-        time_correlated_count_event{{123}, 42, 0},
-    });
-    REQUIRE(f.output() == data_map_out_vec{
-                              datapoint_event<std::uint16_t>{123, 42},
-                          });
-    f.feed_end({});
-    REQUIRE(f.output() == data_map_out_vec{});
-    REQUIRE(f.did_end());
-}
-
-using bin_inputs = event_set<datapoint_event<int>, test_event<0>>;
-using bin_outputs = event_set<bin_increment_event<unsigned>, test_event<0>>;
-using bin_out_vec = std::vector<event_variant<bin_outputs>>;
-
-template <typename F> auto make_map_to_bins_fixture(F map_func) {
-    struct mock_bin_mapper {
-        using data_type = int;
-        using bin_index_type = unsigned;
-        F f;
-        std::optional<unsigned> operator()(int d) const noexcept {
-            return f(d);
-        }
-    };
-    return make_processor_test_fixture<bin_inputs, bin_outputs>(
-        [=](auto &&downstream) {
-            return map_to_bins(mock_bin_mapper{map_func},
-                               std::move(downstream));
-        });
-}
-
-TEST_CASE("Map to bins", "[map_to_bin]") {
-    auto f = make_map_to_bins_fixture(
-        []([[maybe_unused]] int d) -> std::optional<unsigned> {
-            return std::nullopt;
-        });
-    f.feed_events({
-        test_event<0>{42},
-    });
-    REQUIRE(f.output() == bin_out_vec{
-                              test_event<0>{42},
-                          });
-    f.feed_events({
-        datapoint_event<int>{123, 0},
-    });
-    REQUIRE(f.output() == bin_out_vec{});
-    f.feed_end({});
-    REQUIRE(f.output() == bin_out_vec{});
-    REQUIRE(f.did_end());
-
-    auto g = make_map_to_bins_fixture(
-        [](int d) -> std::optional<unsigned> { return d + 123; });
-    g.feed_events({
-        datapoint_event<int>{123, 0},
-    });
-    REQUIRE(g.output() == bin_out_vec{
-                              bin_increment_event<unsigned>{123, 123},
-                          });
-    g.feed_end({});
-    REQUIRE(g.output() == bin_out_vec{});
-    REQUIRE(g.did_end());
-}
 
 using i32 = std::int32_t;
 using u32 = std::uint32_t;
 using u16 = std::uint16_t;
+
+using start_event = timestamped_test_event<0>;
+using stop_event = timestamped_test_event<1>;
+using misc_event = timestamped_test_event<2>;
+
+TEST_CASE("Map to datapoints", "[map_to_datapoints][difftime_data_mapper]") {
+    auto out = capture_output<event_set<datapoint_event<u16>, misc_event>>();
+    auto in = feed_input<event_set<time_correlated_count_event, misc_event>>(
+        map_to_datapoints(difftime_data_mapper(), ref_processor(out)));
+    in.require_output_checked(out);
+
+    in.feed(misc_event{42});
+    REQUIRE(out.check(misc_event{42}));
+    in.feed(time_correlated_count_event{{123}, 42, 0});
+    REQUIRE(out.check(datapoint_event<u16>{123, 42}));
+    in.feed_end();
+    REQUIRE(out.check_end());
+}
+
+TEST_CASE("Map to bins", "[map_to_bin]") {
+    SECTION("Out of range") {
+        struct null_bin_mapper {
+            using data_type = i32;
+            using bin_index_type = u32;
+            std::optional<unsigned>
+            operator()([[maybe_unused]] int d) const noexcept {
+                return std::nullopt;
+            }
+        };
+
+        auto out =
+            capture_output<event_set<bin_increment_event<u32>, misc_event>>();
+        auto in = feed_input<event_set<datapoint_event<i32>, misc_event>>(
+            map_to_bins(null_bin_mapper(), ref_processor(out)));
+        in.require_output_checked(out);
+
+        in.feed(misc_event{42});
+        REQUIRE(out.check(misc_event{42}));
+        in.feed(datapoint_event<i32>{43, 123});
+        in.feed_end();
+        REQUIRE(out.check_end());
+    }
+
+    SECTION("Simple mapping") {
+        struct add_42_bin_mapper {
+            using data_type = i32;
+            using bin_index_type = u32;
+            std::optional<unsigned> operator()(int d) const noexcept {
+                return unsigned(d) + 42u;
+            }
+        };
+
+        auto out = capture_output<event_set<bin_increment_event<u32>>>();
+        auto in = feed_input<event_set<datapoint_event<i32>>>(
+            map_to_bins(add_42_bin_mapper(), ref_processor(out)));
+        in.require_output_checked(out);
+
+        in.feed(datapoint_event<i32>{0, 10});
+        REQUIRE(out.check(bin_increment_event<u32>{0, 52}));
+        in.feed_end();
+        REQUIRE(out.check_end());
+    }
+}
 
 TEST_CASE("Power-of-2 bin mapping", "[power_of_2_bin_mapper]") {
     power_of_2_bin_mapper<u32, u16, 0, 0, false> m00;
@@ -368,96 +342,45 @@ TEST_CASE("Linear bin mapping", "[linear_bin_mapper]") {
     REQUIRE(check_clamped(flipped(65535), 0));
 }
 
-using start_event = test_event<0>;
-using stop_event = test_event<1>;
-using other_event = test_event<2>;
-using batch_inputs = event_set<bin_increment_event<unsigned>, start_event,
-                               stop_event, other_event>;
-using batch_outputs =
-    event_set<bin_increment_batch_event<unsigned>, other_event>;
-using batch_out_vec = std::vector<event_variant<batch_outputs>>;
-
-auto make_batch_bin_increments_fixture() {
-    return make_processor_test_fixture<batch_inputs, batch_outputs>(
-        [](auto &&downstream) {
-            return batch_bin_increments<unsigned, start_event, stop_event>(
-                std::move(downstream));
-        });
-}
-
 TEST_CASE("Batch bin increments", "[batch_bin_increments]") {
-    auto f = make_batch_bin_increments_fixture();
+    auto out = capture_output<
+        event_set<bin_increment_batch_event<u32>, misc_event>>();
+    auto in = feed_input<event_set<bin_increment_event<u32>, start_event,
+                                   stop_event, misc_event>>(
+        batch_bin_increments<u32, start_event, stop_event>(
+            ref_processor(out)));
 
     SECTION("Pass through unrelated") {
-        f.feed_events({
-            other_event{42},
-        });
-        REQUIRE(f.output() == batch_out_vec{
-                                  other_event{42},
-                              });
-        f.feed_end({});
-        REQUIRE(f.output() == batch_out_vec{});
-        REQUIRE(f.did_end());
+        in.feed(misc_event{42});
+        REQUIRE(out.check(misc_event{42}));
+        in.feed_end();
+        REQUIRE(out.check_end());
     }
 
     SECTION("Stop before first start ignored") {
-        f.feed_events({
-            stop_event{42},
-        });
-        REQUIRE(f.output() == batch_out_vec{});
-        f.feed_end({});
-        REQUIRE(f.output() == batch_out_vec{});
-        REQUIRE(f.did_end());
+        in.feed(stop_event{42});
+        in.feed_end();
+        REQUIRE(out.check_end());
     }
 
     SECTION("Start with no stop ignored") {
-        f.feed_events({
-            start_event{42},
-        });
-        REQUIRE(f.output() == batch_out_vec{});
-        f.feed_events({
-            bin_increment_event<unsigned>{43, 123},
-        });
-        REQUIRE(f.output() == batch_out_vec{});
-        f.feed_end({});
-        REQUIRE(f.output() == batch_out_vec{});
-        REQUIRE(f.did_end());
+        in.feed(start_event{42});
+        in.feed(bin_increment_event<u32>{43, 123});
+        in.feed_end();
+        REQUIRE(out.check_end());
     }
 
     SECTION("Events passed only between start and stop") {
-        f.feed_events({
-            start_event{42},
-        });
-        REQUIRE(f.output() == batch_out_vec{});
-        f.feed_events({
-            bin_increment_event<unsigned>{43, 123},
-        });
-        REQUIRE(f.output() == batch_out_vec{});
-        f.feed_events({
-            stop_event{44},
-        });
-        REQUIRE(f.output() ==
-                batch_out_vec{
-                    bin_increment_batch_event<unsigned>{42, 44, {123}},
-                });
-        f.feed_events({
-            start_event{45},
-        });
-        REQUIRE(f.output() == batch_out_vec{});
-        f.feed_events({
-            bin_increment_event<unsigned>{46, 124},
-        });
-        REQUIRE(f.output() == batch_out_vec{});
-        f.feed_events({
-            bin_increment_event<unsigned>{47, 125},
-        });
-        REQUIRE(f.output() == batch_out_vec{});
-        f.feed_events({
-            stop_event{48},
-        });
-        REQUIRE(f.output() ==
-                batch_out_vec{
-                    bin_increment_batch_event<unsigned>{45, 48, {124, 125}},
-                });
+        in.feed(start_event{42});
+        in.feed(bin_increment_event<u32>{43, 123});
+        in.feed(stop_event{44});
+        REQUIRE(out.check(bin_increment_batch_event<u32>{42, 44, {123}}));
+        in.feed(start_event{45});
+        in.feed(bin_increment_event<u32>{46, 124});
+        in.feed(bin_increment_event<u32>{47, 125});
+        in.feed(stop_event{48});
+        REQUIRE(out.check(bin_increment_batch_event<u32>{45, 48, {124, 125}}));
+        in.feed_end();
+        REQUIRE(out.check_end());
     }
 }

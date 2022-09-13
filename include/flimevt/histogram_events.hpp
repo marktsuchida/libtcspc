@@ -14,6 +14,16 @@
 
 namespace flimevt {
 
+namespace internal {
+template <typename T>
+inline void print_vector(std::ostream &s, std::vector<T> const &v) {
+    s << "{ ";
+    for (auto const &e : v)
+        s << e << ", ";
+    s << "}";
+}
+} // namespace internal
+
 /**
  * \brief Event representing a datapoint for histogramming.
  *
@@ -118,8 +128,9 @@ bool operator==(bin_increment_batch_event<T> const &lhs,
 template <typename T>
 inline std::ostream &operator<<(std::ostream &s,
                                 bin_increment_batch_event<T> const &e) {
-    return s << "bin_increment_batch(" << e.start << ", " << e.stop << ", "
-             << e.bin_indices << ')';
+    s << "bin_increment_batch(" << e.start << ", " << e.stop << ", ";
+    internal::print_vector(s, e.bin_indices);
+    return s << ')';
 }
 
 /**
@@ -183,16 +194,6 @@ constexpr bool operator==(histogram_event<T> const &lhs,
            lhs.histogram == rhs.histogram && lhs.total == rhs.total &&
            lhs.saturated == rhs.saturated;
 }
-
-namespace internal {
-template <typename T>
-inline void print_vector(std::ostream &s, std::vector<T> const &v) {
-    s << "{ ";
-    for (auto const &e : v)
-        s << e << ", ";
-    s << "}";
-}
-} // namespace internal
 
 /** \brief Stream insertion operator for histogram_event. */
 template <typename T>
