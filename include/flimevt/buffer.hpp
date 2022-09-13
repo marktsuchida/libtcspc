@@ -79,85 +79,79 @@ template <typename T> class object_pool {
     }
 };
 
+namespace internal {
+
+template <typename P, typename D> class dereference_pointer {
+    D downstream;
+
+  public:
+    using event_type = decltype(*std::declval<P>);
+
+    explicit dereference_pointer(D &&downstream)
+        : downstream(std::move(downstream)) {}
+
+    void handle_event(P const &event_ptr) noexcept {
+        downstream.handle_event(*event_ptr);
+    }
+
+    void handle_end(std::exception_ptr error) noexcept {
+        downstream.handle_end(error);
+    }
+};
+
+} // namespace internal
+
 /**
- * \brief Processor dereferencing a pointers to events.
+ * \brief Create a processor dereferencing a pointers to events.
  *
  * This can be used, for example, to convert \c shared_pointer<E> to \c E for
  * some even type \c E.
  *
  * \tparam P the event pointer type
  * \tparam D downstream processor type
+ * \param downstream downstream processor (moved out)
+ * \return dereference-pointer processor
  */
-template <typename P, typename D> class dereference_pointer {
-    D downstream;
+template <typename P, typename D> auto dereference_pointer(D &&downstream) {
+    return internal::dereference_pointer<P, D>(std::forward<D>(downstream));
+}
 
-  public:
-    /**
-     * \brief The type of the dereferenced event.
-     */
-    using event_type = decltype(*std::declval<P>);
+namespace internal {
 
-    /**
-     * \brief Construct with downstream processor.
-     *
-     * \param downstream downstream processor (moved out)
-     */
-    explicit dereference_pointer(D &&downstream)
-        : downstream(std::move(downstream)) {}
-
-    /** \brief Processor interface */
-    void handle_event(P const &event_ptr) noexcept {
-        downstream.handle_event(*event_ptr);
-    }
-
-    /** \brief Processor interface */
-    void handle_end(std::exception_ptr error) noexcept {
-        downstream.handle_end(error);
-    }
-};
-
-/**
- * \brief Processor transforming batches of events to individual events.
- *
- * \tparam V event container type
- * \tparam E the event type
- * \tparam D downstream processor type
- */
 template <typename V, typename E, typename D> class unbatch {
     D downstream;
 
   public:
-    /**
-     * Construct with downstream processor.
-     *
-     * \param downstream downstream processor (moved out)
-     */
     explicit unbatch(D &&downstream) : downstream(std::move(downstream)) {}
 
-    /** \brief Processor interface */
     void handle_event(V const &events) noexcept {
         for (auto const &event : events)
             downstream.handle_event(event);
     }
 
-    /** \brief Processor interface */
     void handle_end(std::exception_ptr error) noexcept {
         downstream.handle_end(error);
     }
 };
 
+} // namespace internal
+
 /**
- * \brief A pseudo-processor that buffers events.
+ * \brief Create a processor transforming batches of events to individual
+ * events.
  *
- * This receives events of type \c E from upstream like a normal processor, but
- * stores them in a buffer. By calling pump_downstream() on a different thread,
- * the buffered events can be sent downstream on that thread.
- *
- * Usually \c E should be EventArray in order to reduce overhead.
- *
+ * \tparam V event container type
  * \tparam E the event type
  * \tparam D downstream processor type
+ * \param downstream downstream processor (moved out)
+ * \return unbatch processor
  */
+template <typename V, typename E, typename D> auto unbatch(D &&downstream) {
+    return internal::unbatch<V, E, D>(std::forward<D>(downstream));
+}
+
+namespace internal {
+
 template <typename E, typename D> class buffer_event {
     std::mutex mutex;
     std::condition_variable has_item_condition; // item = event or end
@@ -187,15 +181,9 @@ template <typename E, typename D> class buffer_event {
     D downstream;
 
   public:
-    /**
-     * \brief Construct with downstream processor.
-     *
-     * \param downstream downstream processor (moved out)
-     */
     explicit buffer_event(D &&downstream)
         : downstream(std::move(downstream)) {}
 
-    /** \brief Processor interface */
     void handle_event(E const &event) noexcept {
         {
             std::scoped_lock lock(mutex);
@@ -212,7 +200,6 @@ template <typename E, typename D> class buffer_event {
         has_item_condition.notify_one();
     }
 
-    /** \brief Processor interface */
     void handle_end(std::exception_ptr error) noexcept {
         {
             std::scoped_lock lock(mutex);
@@ -225,12 +212,6 @@ template <typename E, typename D> class buffer_event {
         has_item_condition.notify_one();
     }
 
-    /**
-     * \brief Send buffered events downstream on the caller's thread.
-     *
-     * This function blocks until the upstream has singaled the end of stream
-     * and all events have been emitted downstream.
-     */
     void pump_downstream() noexcept {
         std::unique_lock lock(mutex);
 
@@ -259,5 +240,27 @@ template <typename E, typename D> class buffer_event {
         }
     }
 };
+
+} // namespace internal
+
+/**
+ * \brief Create a pseudo-processor that buffers events.
+ *
+ * This receives events of type \c E from upstream like a normal processor, but
+ * stores them in a buffer. By calling <tt>void pump_downstream() noexcept</tt>
+ * on a different thread, the buffered events can be sent downstream on that
+ * thread. The \c pump_downstream function blocks until the upstream has
+ * signaled the end of stream and all events have been emitted downstream.
+ *
+ * Usually \c E should be EventArray in order to reduce overhead.
+ *
+ * \tparam E the event type
+ * \tparam D downstream processor type
+ * \param downstream downstream processor (moved out)
+ * \return buffer-events pseudo-processor
+ */
+template <typename E, typename D> auto buffer_event(D &&downstream) {
+    return internal::buffer_event<E, D>(std::forward<D>(downstream));
+}
 
 } // namespace flimevt

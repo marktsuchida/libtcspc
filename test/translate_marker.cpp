@@ -11,7 +11,7 @@
 #include "processor_test_fixture.hpp"
 #include "test_events.hpp"
 
-#include <type_traits>
+#include <cstdint>
 #include <utility>
 #include <vector>
 
@@ -27,8 +27,7 @@ using out_vec = std::vector<event_variant<outputs>>;
 auto make_translate_marker_fixture(std::int32_t channel) {
     return make_processor_test_fixture<inputs, outputs>(
         [channel](auto &&downstream) {
-            using D = std::remove_reference_t<decltype(downstream)>;
-            return translate_marker<marker_event, test_event<0>, D>(
+            return translate_marker<marker_event, test_event<0>>(
                 channel, std::move(downstream));
         });
 }

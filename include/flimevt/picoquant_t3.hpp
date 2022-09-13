@@ -235,7 +235,7 @@ template <typename E, typename D> class base_decode_pq_t3 {
             e.macrotime = nsync;
             std::uint32_t bits = event.get_external_marker_bits();
             while (bits) {
-                e.channel = internal::count_trailing_zeros_32(bits);
+                e.channel = count_trailing_zeros_32(bits);
                 downstream.handle_event(e);
                 bits = bits & (bits - 1); // Clear the handled bit
             }
@@ -256,91 +256,40 @@ template <typename E, typename D> class base_decode_pq_t3 {
 } // namespace internal
 
 /**
- * \brief Processor that decodes PicoQuant PicoHarp T3 events.
- *
- * \see decode_pq_pico_t3()
- *
- * \tparam D downstream processor type
- */
-template <typename D>
-class decode_pq_pico_t3
-    : public internal::base_decode_pq_t3<pq_pico_t3_event, D> {
-  public:
-    using internal::base_decode_pq_t3<pq_pico_t3_event, D>::base_decode_pq_t3;
-};
-
-/**
- * \brief Deduction guide for constructing a decode_pq_pico_t3 processor.
+ * \brief Create a processor that decodes PicoQuant PicoHarp T3 events.
  *
  * \tparam D downstream processor type
  * \param downstream downstream processor (moved out)
+ * \return decode-pq-pico-t3 processor
  */
-template <typename D>
-decode_pq_pico_t3(D &&downstream) -> decode_pq_pico_t3<D>;
+template <typename D> auto decode_pq_pico_t3(D &&downstream) {
+    return internal::base_decode_pq_t3<pq_pico_t3_event, D>(
+        std::forward<D>(downstream));
+}
 
 /**
- * \brief Processor that decodes PicoQuant HydraHarp V1 T3 events.
- *
- * \see decode_pq_hydra_v1_t3()
- *
- * \tparam D downstream processor type
- */
-template <typename D>
-class decode_pq_hydra_v1_t3
-    : public internal::base_decode_pq_t3<pq_hydra_v1_t3_event, D> {
-  public:
-    using internal::base_decode_pq_t3<pq_hydra_v1_t3_event,
-                                      D>::base_decode_pq_t3;
-};
-
-/**
- * \brief Deduction guide for constructing a decode_pq_hydra_v1_t3 processor.
+ * \brief Create a processor that decodes PicoQuant HydraHarp V1 T3 events.
  *
  * \tparam D downstream processor type
  * \param downstream downstream processor (moved out)
+ * \return decode-pq-hydra-v1-t3 processor
  */
-template <typename D>
-decode_pq_hydra_v1_t3(D &&downstream) -> decode_pq_hydra_v1_t3<D>;
+template <typename D> auto decode_pq_hydra_v1_t3(D &&downstream) {
+    return internal::base_decode_pq_t3<pq_hydra_v1_t3_event, D>(
+        std::forward<D>(downstream));
+}
 
 /**
- * \brief Processor that decodes PicoQuant HydraHarp V2, MultiHarp, and
- * TimeHarp260 T3 events.
- *
- * \see decode_pq_hydra_v2_t3()
- *
- * \tparam D downstream processor type
- */
-template <typename D>
-class decode_pq_hydra_v2_t3
-    : public internal::base_decode_pq_t3<pq_hydra_v2_t3_event, D> {
-  public:
-    using internal::base_decode_pq_t3<pq_hydra_v2_t3_event,
-                                      D>::base_decode_pq_t3;
-};
-
-/**
- * \brief Deduction guide for constructing a decode_pq_hydra_v2_t3 processor.
+ * \brief Create a processor that decodes PicoQuant HydraHarp V2, MultiHarp,
+ * and TimeHarp260 T3 events.
  *
  * \tparam D downstream processor type
  * \param downstream downstream processor (moved out)
+ * \return decode-pq-hydra-v2-t3 processor
  */
-template <typename D>
-decode_pq_hydra_v2_t3(D &&downstream) -> decode_pq_hydra_v2_t3<D>;
-
-/**
- * \brief Event set for PicoQuant PicoHarp T3 data stream.
- */
-using pq_pico_t3_events = event_set<pq_pico_t3_event>;
-
-/**
- * \brief Event set for PicoQuant HydraHarp V1 T3 data stream.
- */
-using pq_hydra_v1_t3_events = event_set<pq_hydra_v1_t3_event>;
-
-/**
- * \brief Event set for PicoQuant HydraHarp V2, MultiHarp, and TimeHarp260 T3
- * data stream.
- */
-using pq_hydra_v2_t3_events = event_set<pq_hydra_v2_t3_event>;
+template <typename D> auto decode_pq_hydra_v2_t3(D &&downstream) {
+    return internal::base_decode_pq_t3<pq_hydra_v2_t3_event, D>(
+        std::forward<D>(downstream));
+}
 
 } // namespace flimevt

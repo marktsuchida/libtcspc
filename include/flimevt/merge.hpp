@@ -129,48 +129,31 @@ template <typename Es, typename D> class merge_impl {
     }
 };
 
-} // namespace internal
-
-/**
- * \brief Processor proxying input to a merge processor.
- *
- * \see flimevt::make_merge()
- *
- * \tparam Ch 0 or 1
- * \tparam Es the event set handled by the merge processor
- * \tparam D downstream processor type
- */
 template <unsigned Ch, typename Es, typename D> class merge_input {
-    std::shared_ptr<internal::merge_impl<Es, D>> impl;
-
-    explicit merge_input(std::shared_ptr<internal::merge_impl<Es, D>> impl)
-        : impl(impl) {}
-
-    template <typename MESet, typename MD>
-    friend auto make_merge(macrotime max_time_shift, MD &&downstream);
+    std::shared_ptr<merge_impl<Es, D>> impl;
 
   public:
-    /** \brief Noncopyable */
+    explicit merge_input(std::shared_ptr<merge_impl<Es, D>> impl)
+        : impl(impl) {}
+
+    // Movable but not copyable
     merge_input(merge_input const &) = delete;
-    /** \brief Noncopyable */
     merge_input &operator=(merge_input const &) = delete;
-    /** \brief Move constructor */
     merge_input(merge_input &&) = default;
-    /** \brief Move assignment operator */
     merge_input &operator=(merge_input &&) = default;
 
-    /** \brief Processor interface */
     template <typename E, typename = std::enable_if_t<contains_event_v<Es, E>>>
     void handle_event(E const &event) noexcept {
         impl->template handle_event<Ch>(event);
     }
 
-    /** \brief Processor interface */
     void handle_end(std::exception_ptr error) noexcept {
         impl->template handle_end<Ch>(error);
         impl.reset();
     }
 };
+
+} // namespace internal
 
 /**
  * \brief Create a processor that merges two event streams.
@@ -183,13 +166,14 @@ template <unsigned Ch, typename Es, typename D> class merge_input {
  * \tparam D downstream processor type
  * \param max_time_shift the maximum time shift between the two input streams
  * \param downstream downstream processor (will be moved out)
- * \return std::pair of merge_input processors
+ * \return std::pair of the two processors serving as the input to merge
  */
 template <typename Es, typename D>
-auto make_merge(macrotime max_time_shift, D &&downstream) {
+auto merge(macrotime max_time_shift, D &&downstream) {
     auto p = std::make_shared<internal::merge_impl<Es, D>>(
         max_time_shift, std::move(downstream));
-    return std::make_pair(merge_input<0, Es, D>(p), merge_input<1, Es, D>(p));
+    return std::make_pair(internal::merge_input<0, Es, D>(p),
+                          internal::merge_input<1, Es, D>(p));
 }
 
 } // namespace flimevt

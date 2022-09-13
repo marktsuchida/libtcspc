@@ -20,6 +20,8 @@
 
 namespace flimevt {
 
+namespace internal {
+
 template <typename EsDelayed, typename D> class delay_processor {
     macrotime delta;
     std::queue<event_variant<EsDelayed>> pending;
@@ -74,6 +76,16 @@ template <typename EsDelayed, typename D> class delay_processor {
         downstream.handle_end(error);
     }
 };
+
+} // namespace internal
+
+template <typename EsDelayed, typename D>
+auto delay_processor(macrotime delta, D &&downstream) {
+    return internal::delay_processor<EsDelayed, D>(
+        delta, std::forward<D>(downstream));
+}
+
+namespace internal {
 
 template <typename EsUnchanged, typename D> class hasten_processor {
     macrotime delta;
@@ -131,10 +143,20 @@ template <typename EsUnchanged, typename D> class hasten_processor {
     }
 };
 
-template <typename EsRetimes, typename EsUnchanged, typename D>
+} // namespace internal
+
+template <typename EsUnchanged, typename D>
+auto hasten_processor(macrotime delta, D &&downstream) {
+    return internal::hasten_processor<EsUnchanged, D>(
+        delta, std::forward<D>(downstream));
+}
+
+namespace internal {
+
+template <typename EsRetimed, typename EsUnchanged, typename D>
 class delay_hasten_processor {
     using hastener_type = hasten_processor<EsUnchanged, D>;
-    using delayer_type = delay_processor<EsRetimes, hastener_type>;
+    using delayer_type = delay_processor<EsRetimed, hastener_type>;
     delayer_type proc;
 
   public:
@@ -151,6 +173,14 @@ class delay_hasten_processor {
         proc.handle_end(error);
     }
 };
+
+} // namespace internal
+
+template <typename EsRetimed, typename EsUnchanged, typename D>
+auto delay_hasten_processor(macrotime delta, D &&downstream) {
+    return internal::delay_hasten_processor<EsRetimed, EsUnchanged, D>(
+        delta, std::forward<D>(downstream));
+}
 
 } // namespace flimevt
 

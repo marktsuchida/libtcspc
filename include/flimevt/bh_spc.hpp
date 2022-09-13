@@ -343,7 +343,7 @@ template <typename E, typename D> class base_decode_bh_spc {
             e.macrotime = macrotime;
             std::uint32_t bits = event.get_marker_bits();
             while (bits) {
-                e.channel = internal::count_trailing_zeros_32(bits);
+                e.channel = count_trailing_zeros_32(bits);
                 downstream.handle_event(e);
                 bits = bits & (bits - 1); // Clear the handled bit
             }
@@ -370,88 +370,42 @@ template <typename E, typename D> class base_decode_bh_spc {
 } // namespace internal
 
 /**
- * \brief Processor that decodes raw BH SPC (most models) events.
- *
- * \see decode_bh_spc()
- *
- * \tparam D downstream processor type
- */
-template <typename D>
-class decode_bh_spc : public internal::base_decode_bh_spc<bh_spc_event, D> {
-  public:
-    using internal::base_decode_bh_spc<bh_spc_event, D>::base_decode_bh_spc;
-};
-
-/**
- * \brief Deduction guide for constructing a decode_bh_spc processor.
+ * \brief Create a processor that decodes Becker & Hickl SPC (most models) FIFO
+ * records.
  *
  * \tparam D downstream processor type
  * \param downstream downstream processor (moved out)
+ * \return decode-bh-spc processor
  */
-template <typename D> decode_bh_spc(D &&downstream) -> decode_bh_spc<D>;
+template <typename D> auto decode_bh_spc(D &&downstream) {
+    return internal::base_decode_bh_spc<bh_spc_event, D>(
+        std::forward<D>(downstream));
+}
 
 /**
- * \brief Processor that decodes raw BH SPC-600/630 events in 4096-channel
- * mode.
- *
- * \see decode_bh_spc_600_48()
- *
- * \tparam D downstream processor type
- */
-template <typename D>
-class decode_bh_spc_600_48
-    : public internal::base_decode_bh_spc<bh_spc_600_event_48, D> {
-  public:
-    using internal::base_decode_bh_spc<bh_spc_600_event_48,
-                                       D>::base_decode_bh_spc;
-};
-
-/**
- * \brief Deduction guide for constructing a decode_bh_spc_600_48 processor.
+ * \brief Create a processor that decodes Becker & Hickl SPC-600/630
+ * 4096-channel mode FIFO records.
  *
  * \tparam D downstream processor type
  * \param downstream downstream processor (moved out)
+ * \return decode-bh-spc-600-48 processor
  */
-template <typename D>
-decode_bh_spc_600_48(D &&downstream) -> decode_bh_spc_600_48<D>;
+template <typename D> auto decode_bh_spc_600_48(D &&downstream) {
+    return internal::base_decode_bh_spc<bh_spc_600_event_48, D>(
+        std::forward<D>(downstream));
+}
 
 /**
- * \brief Processor that decodes raw BH SPC-600/630 events in 256-channel mode.
- *
- * \see decode_bh_spc_600_32()
- *
- * \tparam D downstream processor type
- */
-template <typename D>
-class decode_bh_spc_600_32
-    : public internal::base_decode_bh_spc<bh_spc_600_event_32, D> {
-  public:
-    using internal::base_decode_bh_spc<bh_spc_600_event_32,
-                                       D>::base_decode_bh_spc;
-};
-
-/**
- * \brief Deduction guide for constructing a decode_bh_spc_600_32 processor.
+ * \brief Create a processor that decodes Becker & Hickl SPC-600/630
+ * 256-channel mode FIFO records.
  *
  * \tparam D downstream processor type
  * \param downstream downstream processor (moved out)
+ * \return decode-bh-spc-600-32 processor
  */
-template <typename D>
-decode_bh_spc_600_32(D &&downstream) -> decode_bh_spc_600_32<D>;
-
-/**
- * \brief Event set for raw BH SPC data stream.
- */
-using bh_spc_events = event_set<bh_spc_event>;
-
-/**
- * \brief Event set for raw BH SPC-600/630 data stream in 4096-channel mode.
- */
-using bh_spc_600_events_48 = event_set<bh_spc_600_event_48>;
-
-/**
- * \brief Event set for raw BH SPC-600/630 data stream in 256-channel mode.
- */
-using bh_spc_600_events_32 = event_set<bh_spc_600_event_32>;
+template <typename D> auto decode_bh_spc_600_32(D &&downstream) {
+    return internal::base_decode_bh_spc<bh_spc_600_event_32, D>(
+        std::forward<D>(downstream));
+}
 
 } // namespace flimevt

@@ -30,8 +30,7 @@ using out_vec = std::vector<event_variant<test_events>>;
 auto make_gate_events_fixture(bool initially_open) {
     return make_processor_test_fixture<test_events, test_events>(
         [initially_open](auto &&downstream) {
-            using D = std::remove_reference_t<decltype(downstream)>;
-            return gate_events<gated_events, open_event, close_event, D>(
+            return gate_events<gated_events, open_event, close_event>(
                 initially_open, std::move(downstream));
         });
 }

@@ -20,8 +20,39 @@
 
 namespace flimevt {
 
+namespace internal {
+
+template <typename M, typename D> class map_to_datapoints {
+    M const mapper;
+    D downstream;
+
+  public:
+    using event_type = typename M::event_type;
+    using data_type = typename M::data_type;
+
+    explicit map_to_datapoints(M &&mapper, D &&downstream)
+        : mapper(std::move(mapper)), downstream(std::move(downstream)) {}
+
+    void handle_event(event_type const &event) noexcept {
+        datapoint_event<data_type> e{event.macrotime,
+                                     std::invoke(mapper, event)};
+        downstream.handle_event(e);
+    }
+
+    template <typename E> void handle_event(E const &event) noexcept {
+        downstream.handle_event(event);
+    }
+
+    void handle_end(std::exception_ptr error) noexcept {
+        downstream.handle_end(error);
+    }
+};
+
+} // namespace internal
+
 /**
- * \brief Processor that maps arbitrary timestamped events to datapoint events.
+ * \brief Create a processor that maps arbitrary timestamped events to
+ * datapoint events.
  *
  * Incoming events of type \c event_type are mapped to \c
  * datapoint_event<data_type>. \c event_type and \c data_type are deduced from
@@ -36,52 +67,17 @@ namespace flimevt {
  *
  * All other events are passed through.
  *
- * \see difftime_data_mapper
- *
  * \tparam M type of data mapper
  * \tparam D downstream processor type
+ * \param mapper the data mapper (moved out)
+ * \param downstream downstream processor (moved out)
+ * \return map-to-datapoints processor
  */
-template <typename M, typename D> class map_to_datapoints {
-    M const mapper;
-    D downstream;
-
-  public:
-    /**
-     * \brief Type of events being mapped to datapoints.
-     */
-    using event_type = typename M::event_type;
-
-    /**
-     * \brief Data type of the produced datapoints.
-     */
-    using data_type = typename M::data_type;
-
-    /**
-     * \brief Construct with data mapper and downstream processor.
-     *
-     * \param mapper the data mapper (moved out)
-     * \param downstream downstream processor (moved out)
-     */
-    explicit map_to_datapoints(M &&mapper, D &&downstream)
-        : mapper(std::move(mapper)), downstream(std::move(downstream)) {}
-
-    /** \brief Processor interface **/
-    void handle_event(event_type const &event) noexcept {
-        datapoint_event<data_type> e{event.macrotime,
-                                     std::invoke(mapper, event)};
-        downstream.handle_event(e);
-    }
-
-    /** \brief Processor interface **/
-    template <typename E> void handle_event(E const &event) noexcept {
-        downstream.handle_event(event);
-    }
-
-    /** \brief Processor interface **/
-    void handle_end(std::exception_ptr error) noexcept {
-        downstream.handle_end(error);
-    }
-};
+template <typename M, typename D>
+auto map_to_datapoints(M &&mapper, D &&downstream) {
+    return internal::map_to_datapoints<M, D>(std::forward<M>(mapper),
+                                             std::forward<D>(downstream));
+}
 
 /**
  * \brief Data mapper mapping difference time to the data value.
@@ -101,8 +97,46 @@ class difftime_data_mapper {
     }
 };
 
+namespace internal {
+
+template <typename M, typename D> class map_to_bins {
+    M const bin_mapper;
+    D downstream;
+
+    static_assert(
+        std::is_unsigned_v<typename M::bin_index_type>,
+        "The bin mapper's bin_index_type must be an unsigned integer type");
+
+  public:
+    using data_type = typename M::data_type;
+    using bin_index_type = typename M::bin_index_type;
+
+    explicit map_to_bins(M &&bin_mapper, D &&downstream)
+        : bin_mapper(std::move(bin_mapper)),
+          downstream(std::move(downstream)) {}
+
+    void handle_event(datapoint_event<data_type> const &event) noexcept {
+        auto bin = std::invoke(bin_mapper, event.value);
+        if (bin) {
+            bin_increment_event<bin_index_type> e{event.macrotime,
+                                                  bin.value()};
+            downstream.handle_event(e);
+        }
+    }
+
+    template <typename E> void handle_event(E const &event) noexcept {
+        downstream.handle_event(event);
+    }
+
+    void handle_end(std::exception_ptr error) noexcept {
+        downstream.handle_end(error);
+    }
+};
+
+} // namespace internal
+
 /**
- * \brief Processor that maps datapoints to histogram bin indices.
+ * \brief Create a processor that maps datapoints to histogram bin indices.
  *
  * Incoming events of type \c datapoint_event<data_type> are mapped to \c
  * bin_increment_event<bin_index_type>. \c data_type and \c bin_index_type are
@@ -124,56 +158,15 @@ class difftime_data_mapper {
  *
  * \tparam M type of bin mapper
  * \tparam D downstream processor type
+ * \param bin_mapper the bin mapper (moved out)
+ * \param downstream downstream processor (moved out)
+ * \return map-to-bin processor
  */
-template <typename M, typename D> class map_to_bins {
-    M const bin_mapper;
-    D downstream;
-
-    static_assert(
-        std::is_unsigned_v<typename M::bin_index_type>,
-        "The bin mapper's bin_index_type must be an unsigned integer type");
-
-  public:
-    /**
-     * \brief Data type of the mapped datapoint.
-     */
-    using data_type = typename M::data_type;
-
-    /**
-     * \brief Type used for histogram bin indices.
-     */
-    using bin_index_type = typename M::bin_index_type;
-
-    /**
-     * \brief Construct with bin mapper and downstream processor.
-     *
-     * \param bin_mapper the bin mapper (moved out)
-     * \param downstream downstream processor (moved out)
-     */
-    explicit map_to_bins(M &&bin_mapper, D &&downstream)
-        : bin_mapper(std::move(bin_mapper)),
-          downstream(std::move(downstream)) {}
-
-    /** \brief Processor interface **/
-    void handle_event(datapoint_event<data_type> const &event) noexcept {
-        auto bin = std::invoke(bin_mapper, event.value);
-        if (bin) {
-            bin_increment_event<bin_index_type> e{event.macrotime,
-                                                  bin.value()};
-            downstream.handle_event(e);
-        }
-    }
-
-    /** \brief Processor interface **/
-    template <typename E> void handle_event(E const &event) noexcept {
-        downstream.handle_event(event);
-    }
-
-    /** \brief Processor interface **/
-    void handle_end(std::exception_ptr error) noexcept {
-        downstream.handle_end(error);
-    }
-};
+template <typename M, typename D>
+auto map_to_bins(M &&bin_mapper, D &&downstream) {
+    return internal::map_to_bins<M, D>(std::forward<M>(bin_mapper),
+                                       std::forward<D>(downstream));
+}
 
 /**
  * \brief Bin mapper that discards the least significant bits.
@@ -304,14 +297,8 @@ template <typename TData, typename TBinIndex> class linear_bin_mapper {
     }
 };
 
-/**
- * \brief Processor collecting binned data into batches.
- *
- * \tparam TBinIndex the bin index type
- * \tparam EStart start-of-batch event type
- * \tparam EStop end-of-batch event type
- * \tparam D downstream processor type
- */
+namespace internal {
+
 template <typename TBinIndex, typename EStart, typename EStop, typename D>
 class batch_bin_increments {
     bool in_batch = false;
@@ -361,5 +348,23 @@ class batch_bin_increments {
         downstream.handle_end(error);
     }
 };
+
+} // namespace internal
+
+/**
+ * \brief Create a processor collecting binned data into batches.
+ *
+ * \tparam TBinIndex the bin index type
+ * \tparam EStart start-of-batch event type
+ * \tparam EStop end-of-batch event type
+ * \tparam D downstream processor type
+ * \param downstream downstream processor (moved out)
+ * \return batch-bin-increments processor
+ */
+template <typename TBinIndex, typename EStart, typename EStop, typename D>
+auto batch_bin_increments(D &&downstream) {
+    return internal::batch_bin_increments<TBinIndex, EStart, EStop, D>(
+        std::forward<D>(downstream));
+}
 
 } // namespace flimevt

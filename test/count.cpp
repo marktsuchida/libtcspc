@@ -31,10 +31,9 @@ template <bool EmitAfter>
 auto make_count_event_fixture(std::uint64_t threshold, std::uint64_t limit) {
     return make_processor_test_fixture<test_events, test_events>(
         [threshold, limit](auto &&downstream) {
-            using D = std::remove_reference_t<decltype(downstream)>;
             return count_event<input_event, reset_event, output_event,
-                               EmitAfter, D>(threshold, limit,
-                                             std::move(downstream));
+                               EmitAfter>(threshold, limit,
+                                          std::move(downstream));
         });
 }
 

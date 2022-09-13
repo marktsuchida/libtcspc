@@ -25,23 +25,23 @@
 using namespace flimevt;
 using namespace flimevt::test;
 
-static_assert(handles_event_set_v<
-              delay_processor<test_events_01, discard_all<test_events_0123>>,
-              test_events_0123>);
-static_assert(handles_event_set_v<
-              hasten_processor<test_events_01, discard_all<test_events_0123>>,
-              test_events_0123>);
 static_assert(
-    handles_event_set_v<delay_hasten_processor<test_events_01, test_events_23,
-                                               discard_all<test_events_0123>>,
+    handles_event_set_v<flimevt::internal::delay_processor<
+                            test_events_01, discard_all<test_events_0123>>,
                         test_events_0123>);
+static_assert(
+    handles_event_set_v<flimevt::internal::hasten_processor<
+                            test_events_01, discard_all<test_events_0123>>,
+                        test_events_0123>);
+static_assert(handles_event_set_v<flimevt::internal::delay_hasten_processor<
+                                      test_events_01, test_events_23,
+                                      discard_all<test_events_0123>>,
+                                  test_events_0123>);
 
 // Make fixture to test delaying test_events_01
 auto make_delay_fixture(macrotime delta) {
     auto make_proc = [delta](auto &&downstream) {
-        using D = std::remove_reference_t<decltype(downstream)>;
-        return delay_processor<test_events_01, D>(delta,
-                                                  std::move(downstream));
+        return delay_processor<test_events_01>(delta, std::move(downstream));
     };
 
     return make_processor_test_fixture<test_events_0123, test_events_0123>(
@@ -51,9 +51,7 @@ auto make_delay_fixture(macrotime delta) {
 // Make fixture to test hastening Event01
 auto make_hasten_fixture(macrotime delta) {
     auto make_proc = [delta](auto &&downstream) {
-        using D = std::remove_reference_t<decltype(downstream)>;
-        return hasten_processor<test_events_23, D>(delta,
-                                                   std::move(downstream));
+        return hasten_processor<test_events_23>(delta, std::move(downstream));
     };
 
     return make_processor_test_fixture<test_events_0123, test_events_0123>(
@@ -62,8 +60,7 @@ auto make_hasten_fixture(macrotime delta) {
 
 auto make_delay_hasten_fixture(macrotime delta) {
     auto make_proc = [delta](auto &&downstream) {
-        using D = std::remove_reference_t<decltype(downstream)>;
-        return delay_hasten_processor<test_events_01, test_events_23, D>(
+        return delay_hasten_processor<test_events_01, test_events_23>(
             delta, std::move(downstream));
     };
 

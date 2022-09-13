@@ -98,25 +98,21 @@ int main(int argc, char *argv[]) {
     cumul_histo.clear();
 
     // Construct pipeline
-    flimevt::decode_bh_spc decoder(flimevt::line_clock_pixellator(
-        width, height, max_frames, line_delay, line_time, 1,
-        flimevt::sequential_histogrammer(
-            std::move(frame_histo),
-            flimevt::histogram_accumulator(
-                std::move(cumul_histo),
-                histogram_saver<sample_type>(out_filename)))));
-
-    flimevt::unbatch<std::vector<flimevt::bh_spc_event>, flimevt::bh_spc_event,
-                     decltype(decoder)>
-        demux(std::move(decoder));
-
-    flimevt::dereference_pointer<
-        std::shared_ptr<std::vector<flimevt::bh_spc_event>>, decltype(demux)>
-        processor(std::move(demux));
-
-    flimevt::buffer_event<std::shared_ptr<std::vector<flimevt::bh_spc_event>>,
-                          decltype(processor)>
-        buffer(std::move(processor));
+    // clang-format off
+    auto buffer =
+        flimevt::buffer_event<
+                std::shared_ptr<std::vector<flimevt::bh_spc_event>>>(
+        flimevt::dereference_pointer<
+                std::shared_ptr<std::vector<flimevt::bh_spc_event>>>(
+        flimevt::unbatch<
+                std::vector<flimevt::bh_spc_event>, flimevt::bh_spc_event>(
+        flimevt::decode_bh_spc(
+        flimevt::line_clock_pixellator(
+                width, height, max_frames, line_delay, line_time, 1,
+        flimevt::sequential_histogrammer(std::move(frame_histo),
+        flimevt::histogram_accumulator(std::move(cumul_histo),
+        histogram_saver<sample_type>(out_filename))))))));
+    // clang-format on
 
     std::thread proc_thread([&] { buffer.pump_downstream(); });
 

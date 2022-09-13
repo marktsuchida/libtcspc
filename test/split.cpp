@@ -19,17 +19,16 @@
 using namespace flimevt;
 using namespace flimevt::test;
 
-static_assert(handles_event_set_v<
-              split_events<test_events_01, discard_all<test_events_01>,
-                           discard_all<test_events_01>>,
-              test_events_01>);
+static_assert(
+    handles_event_set_v<flimevt::internal::split_events<
+                            test_events_01, discard_all<test_events_01>,
+                            discard_all<test_events_01>>,
+                        test_events_01>);
 
 auto make_split_events_fixture_output0() {
     auto make_proc = [](auto &&downstream) {
-        using D0 = std::remove_reference_t<decltype(downstream)>;
-        using D1 = discard_all<test_events_23>;
-        return split_events<test_events_23, D0, D1>(std::move(downstream),
-                                                    D1());
+        return split_events<test_events_23>(std::move(downstream),
+                                            discard_all<test_events_23>());
     };
 
     return make_processor_test_fixture<test_events_0123, test_events_01>(
@@ -38,10 +37,8 @@ auto make_split_events_fixture_output0() {
 
 auto make_split_events_fixture_output1() {
     auto make_proc = [](auto &&downstream) {
-        using D0 = discard_all<test_events_01>;
-        using D1 = std::remove_reference_t<decltype(downstream)>;
-        return split_events<test_events_23, D0, D1>(D0(),
-                                                    std::move(downstream));
+        return split_events<test_events_23>(discard_all<test_events_01>(),
+                                            std::move(downstream));
     };
 
     return make_processor_test_fixture<test_events_0123, test_events_23>(

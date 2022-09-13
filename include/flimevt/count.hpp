@@ -14,9 +14,61 @@
 
 namespace flimevt {
 
+namespace internal {
+
+template <typename EIn, typename EReset, typename EOut, bool EmitAfter,
+          typename D>
+class count_event {
+    std::uint64_t count = 0;
+    std::uint64_t const thresh;
+    std::uint64_t const limit;
+
+    D downstream;
+
+  public:
+    explicit count_event(std::uint64_t threshold, std::uint64_t limit,
+                         D &&downstream)
+        : thresh(threshold), limit(limit), downstream(std::move(downstream)) {
+        assert(limit > 0);
+    }
+
+    void handle_event(EIn const &event) noexcept {
+        if constexpr (!EmitAfter) {
+            if (count == thresh)
+                downstream.handle_event(EOut{event.macrotime});
+        }
+
+        downstream.handle_event(event);
+        ++count;
+
+        if constexpr (EmitAfter) {
+            if (count == thresh)
+                downstream.handle_event(EOut{event.macrotime});
+        }
+
+        if (count == limit)
+            count = 0;
+    }
+
+    void handle_event(EReset const &event) noexcept {
+        count = 0;
+        downstream.handle_event(event);
+    }
+
+    template <typename E> void handle_event(E const &event) noexcept {
+        downstream.handle_event(event);
+    }
+
+    void handle_end(std::exception_ptr error) noexcept {
+        downstream.handle_end(error);
+    }
+};
+
+} // namespace internal
+
 /**
- * \brief Processor that counts a specific event and emits an event when the
- * count reaches a threshold.
+ * \brief Create a processor that counts a specific event and emits an event
+ * when the count reaches a threshold.
  *
  * All events (including \c EIn and \c EReset) are passed through.
  *
@@ -49,66 +101,18 @@ namespace flimevt {
  * \tparam EOut the event type to emit when the count reaches the threshold
  * \tparam EmitAfter whether to emit \c EOut after passing through \c EIn
  * \tparam D downstream processor type
+ * \param threshold the count value at which to emit \c EOut
+ * \param limit the count value at which to reset to zero (set to \c
+ * std::uint64_t{-1} if automatic reset is not desired); must be positive
+ * \param downstream downstream processor (moved out)
+ * \return count-event processor
  */
 template <typename EIn, typename EReset, typename EOut, bool EmitAfter,
           typename D>
-class count_event {
-    std::uint64_t count = 0;
-    std::uint64_t const thresh;
-    std::uint64_t const limit;
-
-    D downstream;
-
-  public:
-    /**
-     * \brief Construct with threshold and limit values and downstream
-     * processor.
-     *
-     * \param threshold the count value at which to emit \c EOut
-     * \param limit the count value at which to reset to zero (set to \c
-     * std::uint64_t{-1} if automatic reset is not desired); must be positive
-     * \param downstream downstream processor (moved out)
-     */
-    explicit count_event(std::uint64_t threshold, std::uint64_t limit,
-                         D &&downstream)
-        : thresh(threshold), limit(limit), downstream(std::move(downstream)) {
-        assert(limit > 0);
-    }
-
-    /** \brief Processor interface */
-    void handle_event(EIn const &event) noexcept {
-        if constexpr (!EmitAfter) {
-            if (count == thresh)
-                downstream.handle_event(EOut{event.macrotime});
-        }
-
-        downstream.handle_event(event);
-        ++count;
-
-        if constexpr (EmitAfter) {
-            if (count == thresh)
-                downstream.handle_event(EOut{event.macrotime});
-        }
-
-        if (count == limit)
-            count = 0;
-    }
-
-    /** \brief Processor interface */
-    void handle_event(EReset const &event) noexcept {
-        count = 0;
-        downstream.handle_event(event);
-    }
-
-    /** \brief Processor interface */
-    template <typename E> void handle_event(E const &event) noexcept {
-        downstream.handle_event(event);
-    }
-
-    /** \brief Processor interface */
-    void handle_end(std::exception_ptr error) noexcept {
-        downstream.handle_end(error);
-    }
-};
+auto count_event(std::uint64_t threshold, std::uint64_t limit,
+                 D &&downstream) {
+    return internal::count_event<EIn, EReset, EOut, EmitAfter, D>(
+        threshold, limit, std::forward<D>(downstream));
+}
 
 } // namespace flimevt

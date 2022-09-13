@@ -30,9 +30,8 @@ using data_map_out_vec = std::vector<event_variant<data_map_outputs>>;
 auto make_map_difftime_to_datapoints_fixture() {
     return make_processor_test_fixture<data_map_inputs, data_map_outputs>(
         [](auto &&downstream) {
-            using D = std::remove_reference_t<decltype(downstream)>;
-            return map_to_datapoints<difftime_data_mapper, D>(
-                difftime_data_mapper(), std::move(downstream));
+            return map_to_datapoints(difftime_data_mapper(),
+                                     std::move(downstream));
         });
 }
 
@@ -71,9 +70,8 @@ template <typename F> auto make_map_to_bins_fixture(F map_func) {
     };
     return make_processor_test_fixture<bin_inputs, bin_outputs>(
         [=](auto &&downstream) {
-            using D = std::remove_reference_t<decltype(downstream)>;
-            return map_to_bins<mock_bin_mapper, D>(mock_bin_mapper{map_func},
-                                                   std::move(downstream));
+            return map_to_bins(mock_bin_mapper{map_func},
+                               std::move(downstream));
         });
 }
 
@@ -382,8 +380,7 @@ using batch_out_vec = std::vector<event_variant<batch_outputs>>;
 auto make_batch_bin_increments_fixture() {
     return make_processor_test_fixture<batch_inputs, batch_outputs>(
         [](auto &&downstream) {
-            using D = std::remove_reference_t<decltype(downstream)>;
-            return batch_bin_increments<unsigned, start_event, stop_event, D>(
+            return batch_bin_increments<unsigned, start_event, stop_event>(
                 std::move(downstream));
         });
 }

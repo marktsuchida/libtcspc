@@ -38,8 +38,7 @@ template <typename Ovfl>
 auto make_histogram_fixture(std::size_t n_bins, unsigned bin_max) {
     return make_processor_test_fixture<bin_events, hist_events>(
         [=](auto &&downstream) {
-            using D = std::remove_reference_t<decltype(downstream)>;
-            return histogram<unsigned, unsigned, reset_event, Ovfl, D>(
+            return histogram<unsigned, unsigned, reset_event, Ovfl>(
                 n_bins, bin_max, std::move(downstream));
         });
 }
@@ -193,8 +192,7 @@ template <typename Ovfl>
 auto make_histogram_in_batches_fixture(std::size_t n_bins, unsigned bin_max) {
     return make_processor_test_fixture<batch_events_no_reset, hist_events>(
         [=](auto &&downstream) {
-            using D = std::remove_reference_t<decltype(downstream)>;
-            return histogram_in_batches<unsigned, unsigned, Ovfl, D>(
+            return histogram_in_batches<unsigned, unsigned, Ovfl>(
                 n_bins, bin_max, std::move(downstream));
         });
 }
@@ -279,8 +277,7 @@ template <typename Ovfl>
 auto make_accumulate_histograms_fixture(std::size_t n_bins, unsigned bin_max) {
     return make_processor_test_fixture<batch_events,
                                        hist_events>([=](auto &&downstream) {
-        using D = std::remove_reference_t<decltype(downstream)>;
-        return accumulate_histograms<unsigned, unsigned, reset_event, Ovfl, D>(
+        return accumulate_histograms<unsigned, unsigned, reset_event, Ovfl>(
             n_bins, bin_max, std::move(downstream));
     });
 }

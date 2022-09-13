@@ -15,15 +15,6 @@
 
 using namespace flimevt;
 
-using discard_tcspc = discard_all<tcspc_events>;
-
-static_assert(
-    handles_event_set_v<decode_bh_spc<discard_tcspc>, bh_spc_events>);
-static_assert(handles_event_set_v<decode_bh_spc_600_48<discard_tcspc>,
-                                  bh_spc_600_events_48>);
-static_assert(handles_event_set_v<decode_bh_spc_600_32<discard_tcspc>,
-                                  bh_spc_600_events_32>);
-
 TEST_CASE("ADCValue", "[bh_spc_event]") {
     union {
         bh_spc_event event;

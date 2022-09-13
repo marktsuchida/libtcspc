@@ -21,26 +21,25 @@ using namespace flimevt;
 using namespace flimevt::test;
 
 static_assert(
-    handles_event_set_v<decltype(make_merge<test_events_0123>(
-                                     0, discard_all<test_events_0123>())
-                                     .first),
-                        test_events_0123>);
+    handles_event_set_v<
+        decltype(merge<test_events_0123>(0, discard_all<test_events_0123>())
+                     .first),
+        test_events_0123>);
 
 static_assert(
-    handles_event_set_v<decltype(make_merge<test_events_0123>(
-                                     0, discard_all<test_events_0123>())
-                                     .second),
-                        test_events_0123>);
+    handles_event_set_v<
+        decltype(merge<test_events_0123>(0, discard_all<test_events_0123>())
+                     .second),
+        test_events_0123>);
 
 // Instead of coming up with a 2-input test fixture, we rely on split_events
 // for the input.
 auto make_merge_fixture(macrotime max_shift) {
     auto make_proc = [max_shift](auto &&downstream) {
         auto [input0, input1] =
-            make_merge<test_events_0123>(max_shift, std::move(downstream));
-        return split_events<test_events_23, decltype(input0),
-                            decltype(input1)>(std::move(input0),
-                                              std::move(input1));
+            merge<test_events_0123>(max_shift, std::move(downstream));
+        return split_events<test_events_23>(std::move(input0),
+                                            std::move(input1));
     };
 
     return make_processor_test_fixture<test_events_0123, test_events_0123>(
@@ -77,7 +76,7 @@ auto make_merge_fixture_error_on_input0(macrotime max_shift,
                                         int events_before_error) {
     auto make_proc = [max_shift, events_before_error](auto &&downstream) {
         auto [input0, input1] =
-            make_merge<test_events_0123>(max_shift, std::move(downstream));
+            merge<test_events_0123>(max_shift, std::move(downstream));
         auto error0 = inject_error(events_before_error, std::move(input0));
         return split_events<test_events_23, decltype(error0),
                             decltype(input1)>(std::move(error0),
@@ -92,7 +91,7 @@ auto make_merge_fixture_error_on_input1(macrotime max_shift,
                                         int events_before_error) {
     auto make_proc = [max_shift, events_before_error](auto &&downstream) {
         auto [input0, input1] =
-            make_merge<test_events_0123>(max_shift, std::move(downstream));
+            merge<test_events_0123>(max_shift, std::move(downstream));
         auto error1 = inject_error(events_before_error, std::move(input1));
         return split_events<test_events_23, decltype(input0),
                             decltype(error1)>(std::move(input0),

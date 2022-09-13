@@ -15,8 +15,50 @@
 
 namespace flimevt {
 
+namespace internal {
+
+template <typename ETrig, typename PGen, typename D> class generate_timings {
+    PGen generator;
+    D downstream;
+
+    // P: bool(macrotime const &)
+    template <typename P> void emit(P predicate) noexcept {
+        macrotime t;
+        while (generator.peek(t) && predicate(t)) {
+            typename PGen::output_event_type e{};
+            generator.pop(e);
+            downstream.handle_event(e);
+        }
+    }
+
+  public:
+    explicit generate_timings(PGen &&generator, D &&downstream)
+        : generator(std::move(generator)), downstream(std::move(downstream)) {}
+
+    void handle_event(ETrig const &event) noexcept {
+        emit([now = event.macrotime](auto t) { return t < now; });
+        generator.trigger(event.macrotime);
+        downstream.handle_event(event);
+    }
+
+    template <typename E> void handle_event(E const &event) noexcept {
+        emit([now = event.macrotime](auto t) { return t <= now; });
+        downstream.handle_event(event);
+    }
+
+    void handle_end(std::exception_ptr error) noexcept {
+        // Note that we do _not_ generate the remaining timings. Usually timing
+        // events beyond the end of the event stream are not useful, and not
+        // generating them means that infinite generators can be used.
+        downstream.handle_end(error);
+    }
+};
+
+} // namespace internal
+
 /**
- * \brief Processor that generates timing events in response to a trigger.
+ * \brief Create a processor that generates timing events in response to a
+ * trigger.
  *
  * All events are passed through.
  *
@@ -40,59 +82,22 @@ namespace flimevt {
  * - <tt>void pop(output_event_type &event) noexcept</tt>, which generates the
  *   next event into the argument.
  *
+ * The generator must not produce any events before the first time it is
+ * triggered.
+ *
  * \tparam ETrig even type that triggers a new round of pattern generation by
  * resetting the pattern generator
  * \tparam PGen timing pattern generator type
  * \tparam D downstream processor type
+ * \param generator the timing pattern generator (moved out)
+ * \param downstream downstream processor (moved out)
+ * \return a new generate_timings processor
  */
-template <typename ETrig, typename PGen, typename D> class generate_timings {
-    PGen generator;
-    D downstream;
-
-    // P: bool(macrotime const &)
-    template <typename P> void emit(P predicate) noexcept {
-        macrotime t;
-        while (generator.peek(t) && predicate(t)) {
-            typename PGen::output_event_type e{};
-            generator.pop(e);
-            downstream.handle_event(e);
-        }
-    }
-
-  public:
-    /**
-     * \brief Construct with pattern generator and downstream.
-     *
-     * The generator must be in a state where it generates no events until the
-     * next trigger.
-     *
-     * \param generator the timing pattern generator (moved out)
-     * \param downstream downstream processor (moved out)
-     */
-    explicit generate_timings(PGen &&generator, D &&downstream)
-        : generator(std::move(generator)), downstream(std::move(downstream)) {}
-
-    /** \brief Processor interface */
-    void handle_event(ETrig const &event) noexcept {
-        emit([now = event.macrotime](auto t) { return t < now; });
-        generator.trigger(event.macrotime);
-        downstream.handle_event(event);
-    }
-
-    /** \brief Processor interface */
-    template <typename E> void handle_event(E const &event) noexcept {
-        emit([now = event.macrotime](auto t) { return t <= now; });
-        downstream.handle_event(event);
-    }
-
-    /** \brief Processor interface */
-    void handle_end(std::exception_ptr error) noexcept {
-        // Note that we do _not_ generate the remaining timings. Usually timing
-        // events beyond the end of the event stream are not useful, and not
-        // generating them means that infinite generators can be used.
-        downstream.handle_end(error);
-    }
-};
+template <typename ETrig, typename PGen, typename D>
+auto generate_timings(PGen &&generator, D &&downstream) {
+    return internal::generate_timings<ETrig, PGen, D>(
+        std::forward<PGen>(generator), std::forward<D>(downstream));
+}
 
 /**
  * \brief Timing generator that generates no output events.

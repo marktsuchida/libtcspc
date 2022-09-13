@@ -70,25 +70,16 @@ struct swabian_tag_event {
     }
 };
 
-/**
- * \brief Processor that decodes Swabian Tag events.
- *
- * \tparam D downstream processor type
- */
+namespace internal {
+
 template <typename D> class decode_swabian_tags {
     bool had_error = false;
     D downstream;
 
   public:
-    /**
-     * \brief Construct with downstream processor.
-     *
-     * \param downstream downstream processor (moved out)
-     */
     explicit decode_swabian_tags(D &&downstream)
         : downstream(std::move(downstream)) {}
 
-    /** \brief Processor interface */
     void handle_event(swabian_tag_event const &event) noexcept {
         if (had_error)
             return;
@@ -133,10 +124,22 @@ template <typename D> class decode_swabian_tags {
         }
     }
 
-    /** \brief Processor interface */
     void handle_end(std::exception_ptr error) noexcept {
         downstream.handle_end(error);
     }
 };
+
+} // namespace internal
+
+/**
+ * \brief Create a processor that decodes Swabian Tag events.
+ *
+ * \tparam D downstream processor type
+ * \param downstream downstream processor (moved out)
+ * \return decode-swabian-tags processor
+ */
+template <typename D> auto decode_swabian_tags(D &&downstream) {
+    return internal::decode_swabian_tags<D>(std::forward<D>(downstream));
+}
 
 } // namespace flimevt

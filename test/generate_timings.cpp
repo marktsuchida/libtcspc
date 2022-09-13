@@ -27,9 +27,8 @@ using out_vec = std::vector<event_variant<test_events>>;
 template <typename PGen> auto make_generate_timings_fixture(PGen &&generator) {
     return make_processor_test_fixture<test_events, test_events>(
         [&generator](auto &&downstream) {
-            using D = std::remove_reference_t<decltype(downstream)>;
-            return generate_timings<trigger_event, PGen, D>(
-                std::move(generator), std::move(downstream));
+            return generate_timings<trigger_event>(std::move(generator),
+                                                   std::move(downstream));
         });
 }
 

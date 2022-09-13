@@ -68,30 +68,8 @@ class histogram_overflow_error : public std::runtime_error {
     using std::runtime_error::runtime_error;
 };
 
-/**
- * \brief Processor that creates a histogram of datapoints.
- *
- * Every incoming \c bin_increment_event<TBinIndex> causes the matching bin in
- * the histogram to be incremented. On every update, the current histogram is
- * emitted as a \c histogram_event<TBin> event.
- *
- * When a reset occurs (via incoming \c EReset or by overflowing when \c Ovfl
- * is reset_on_overflow), the stored histogram is cleared and restarted.
- *
- * An \c accumulated_histogram_event<TBin> is emitted before each reset and
- * before successful end of stream, containing the same data as the previous \c
- * histogram_event<TBin> (or empty if there was none since the start or last
- * reset).
- *
- * Behavior is undefined if an incoming \c bin_increment_event contains a bin
- * index beyond the size of the histogram.
- *
- * \tparam TBinIndex the bin index type
- * \tparam TBin the data type of the histogram bins
- * \tparam EReset type of event causing histogram to reset
- * \tparam Ovfl strategy tag type to select how to handle bin overflows
- * \tparam D downstream processor type
- */
+namespace internal {
+
 template <typename TBinIndex, typename TBin, typename EReset, typename Ovfl,
           typename D>
 class histogram {
@@ -131,35 +109,11 @@ class histogram {
     }
 
   public:
-    /**
-     * \brief Construct with number of bins, maximum count, and downstream
-     * processor.
-     *
-     * \param num_bins number of bins in the histogram (must match the bin
-     * mapper used upstream)
-     * \param max_per_bin maximum value allowed in each bin
-     * \param downstream downstream processor (moved out)
-     */
     explicit histogram(std::size_t num_bins, TBin max_per_bin, D &&downstream)
         : max_per_bin(max_per_bin), downstream(std::move(downstream)) {
         hist.histogram.resize(num_bins);
     }
 
-    /**
-     * \brief Construct with number of bins and downstream processor.
-     *
-     * The maximum value allowed in each bin is set to the maximum supported by
-     * \c TBin.
-     *
-     * \param num_bins number of bins in the histogram (must match the bin
-     * mapper used upstream)
-     * \param downstream downstream processor (moved out)
-     */
-    explicit histogram(std::size_t num_bins, D &&downstream)
-        : histogram(num_bins, std::numeric_limits<TBin>::max(),
-                    std::move(downstream)) {}
-
-    /** \brief Processor interface **/
     void handle_event(bin_increment_event<TBinIndex> const &event) noexcept {
         if (finished)
             return;
@@ -202,7 +156,6 @@ class histogram {
         }
     }
 
-    /** \brief Processor interface **/
     void handle_event([[maybe_unused]] EReset const &event) noexcept {
         if (!finished) {
             emit_accumulated(started, false);
@@ -210,12 +163,10 @@ class histogram {
         }
     }
 
-    /** \brief Processor interface **/
     template <typename E> void handle_event(E const &event) noexcept {
         downstream.handle_event(event);
     }
 
-    /** \brief Processor interface **/
     void handle_end(std::exception_ptr error) noexcept {
         if (!finished) {
             emit_accumulated(started, true);
@@ -224,22 +175,46 @@ class histogram {
     }
 };
 
+} // namespace internal
+
 /**
- * \brief Processor that creates histograms of each batch of datapoints.
+ * \brief Create a processor that collects a histogram of datapoints.
  *
- * Each incoming \c bin_increment_batch_event<TBinIndex> results in a \c
- * histogram_event<TBin> for that batch to be emitted.
+ * Every incoming \c bin_increment_event<TBinIndex> causes the matching bin in
+ * the histogram to be incremented. On every update, the current histogram is
+ * emitted as a \c histogram_event<TBin> event.
  *
- * There is no "reset" feature because there is nothing to reset.
+ * When a reset occurs (via incoming \c EReset or by overflowing when \c Ovfl
+ * is reset_on_overflow), the stored histogram is cleared and restarted.
  *
- * Behavior is undefined if an incoming \c bin_increment_batch_event contains a
- * bin index beyond the size of the histogram.
+ * An \c accumulated_histogram_event<TBin> is emitted before each reset and
+ * before successful end of stream, containing the same data as the previous \c
+ * histogram_event<TBin> (or empty if there was none since the start or last
+ * reset).
+ *
+ * Behavior is undefined if an incoming \c bin_increment_event contains a bin
+ * index beyond the size of the histogram.
  *
  * \tparam TBinIndex the bin index type
  * \tparam TBin the data type of the histogram bins
+ * \tparam EReset type of event causing histogram to reset
  * \tparam Ovfl strategy tag type to select how to handle bin overflows
  * \tparam D downstream processor type
+ * \param num_bins number of bins in the histogram (must match the bin
+ * mapper used upstream)
+ * \param max_per_bin maximum value allowed in each bin
+ * \param downstream downstream processor (moved out)
+ * \return histogram processor
  */
+template <typename TBinIndex, typename TBin, typename EReset, typename Ovfl,
+          typename D>
+auto histogram(std::size_t num_bins, TBin max_per_bin, D &&downstream) {
+    return internal::histogram<TBinIndex, TBin, EReset, Ovfl, D>(
+        num_bins, max_per_bin, std ::forward<D>(downstream));
+}
+
+namespace internal {
+
 template <typename TBinIndex, typename TBin, typename Ovfl, typename D>
 class histogram_in_batches {
     bool finished = false; // No longer processing; downstream ended
@@ -257,36 +232,12 @@ class histogram_in_batches {
     }
 
   public:
-    /**
-     * \brief Construct with number of bins, maximum count, and downstream
-     * processor.
-     *
-     * \param num_bins number of bins in the histogram (must match the bin
-     * mapper used upstream)
-     * \param max_per_bin maximum value allowed in each bin
-     * \param downstream downstream processor (moved out)
-     */
     explicit histogram_in_batches(std::size_t num_bins, TBin max_per_bin,
                                   D &&downstream)
         : max_per_bin(max_per_bin), downstream(std::move(downstream)) {
         hist.histogram.resize(num_bins);
     }
 
-    /**
-     * \brief Construct with number of bins and downstream processor.
-     *
-     * The maximum value allowed in each bin is set to the maximum supported by
-     * \c TBin.
-     *
-     * \param num_bins number of bins in the histogram (must match the bin
-     * mapper used upstream)
-     * \param downstream downstream processor (moved out)
-     */
-    explicit histogram_in_batches(std::size_t num_bins, D &&downstream)
-        : histogram_in_batches(num_bins, std::numeric_limits<TBin>::max(),
-                               std::move(downstream)) {}
-
-    /** \brief Processor interface **/
     void
     handle_event(bin_increment_batch_event<TBinIndex> const &event) noexcept {
         if (finished)
@@ -328,43 +279,49 @@ class histogram_in_batches {
         downstream.handle_event(hist);
     }
 
-    /** \brief Processor interface **/
     template <typename E> void handle_event(E const &event) noexcept {
         downstream.handle_event(event);
     }
 
-    /** \brief Processor interface **/
     void handle_end(std::exception_ptr error) noexcept {
         if (!finished)
             finish(error);
     }
 };
 
+} // namespace internal
+
 /**
- * \brief Processor that creates a histogram accumulated over batches of
+ * \brief Create a proecssor that computes a histogram of each batch of
  * datapoints.
  *
- * Every incoming \c bin_increment_event<TBinIndex> is histogrammed and added
- * to the accumulated histogram. On every update, the current accumulated
- * histogram is emitted as a \c histogram_event<TBin> event.
+ * Each incoming \c bin_increment_batch_event<TBinIndex> results in a \c
+ * histogram_event<TBin> for that batch to be emitted.
  *
- * When a reset occurs (via incoming \c EReset or by overflowing when \c Ovfl
- * is reset_on_overflow), and when the incoming stream ends, the accumulated
- * histogram up to the previous batch (not including counts from any incomplete
- * batch) is emitted as a \c accumulated_histogram_event<TBin> event. (Its
- * contents are the same as the preceding \c histogram_event<TBin>, except that
- * an empty \c accumulated_histogram_event<TBin> is emitted even if there were
- * no batches since the start or last reset.)
+ * There is no "reset" feature because there is nothing to reset.
  *
  * Behavior is undefined if an incoming \c bin_increment_batch_event contains a
  * bin index beyond the size of the histogram.
  *
  * \tparam TBinIndex the bin index type
  * \tparam TBin the data type of the histogram bins
- * \tparam EReset type of event causing histogram to reset
  * \tparam Ovfl strategy tag type to select how to handle bin overflows
  * \tparam D downstream processor type
+ * \param num_bins number of bins in the histogram (must match the bin
+ * mapper used upstream)
+ * \param max_per_bin maximum value allowed in each bin
+ * \param downstream downstream processor (moved out)
+ * \return histogram-in-batches processor
  */
+template <typename TBinIndex, typename TBin, typename Ovfl, typename D>
+auto histogram_in_batches(std::size_t num_bins, TBin max_per_bin,
+                          D &&downstream) {
+    return internal::histogram_in_batches<TBinIndex, TBin, Ovfl, D>(
+        num_bins, max_per_bin, std::forward<D>(downstream));
+}
+
+namespace internal {
+
 template <typename TBinIndex, typename TBin, typename EReset, typename Ovfl,
           typename D>
 class accumulate_histograms {
@@ -412,36 +369,12 @@ class accumulate_histograms {
     }
 
   public:
-    /**
-     * \brief Construct with number of bins, maximum count, and downstream
-     * processor.
-     *
-     * \param num_bins number of bins in the histogram (must match the bin
-     * mapper used upstream)
-     * \param max_per_bin maximum value allowed in each bin
-     * \param downstream downstream processor (moved out)
-     */
     explicit accumulate_histograms(std::size_t num_bins, TBin max_per_bin,
                                    D &&downstream)
         : max_per_bin(max_per_bin), downstream(std::move(downstream)) {
         hist.histogram.resize(num_bins);
     }
 
-    /**
-     * \brief Construct with number of bins and downstream processor.
-     *
-     * The maximum value allowed in each bin is set to the maximum supported by
-     * \c TBin.
-     *
-     * \param num_bins number of bins in the histogram (must match the bin
-     * mapper used upstream)
-     * \param downstream downstream processor (moved out)
-     */
-    explicit accumulate_histograms(std::size_t num_bins, D &&downstream)
-        : accumulate_histograms(num_bins, std::numeric_limits<TBin>::max(),
-                                std::move(downstream)) {}
-
-    /** \brief Processor interface **/
     void
     handle_event(bin_increment_batch_event<TBinIndex> const &event) noexcept {
         if (finished)
@@ -493,7 +426,6 @@ class accumulate_histograms {
         downstream.handle_event(hist);
     }
 
-    /** \brief Processor interface **/
     void handle_event([[maybe_unused]] EReset const &event) noexcept {
         if (!finished) {
             emit_accumulated(started, false);
@@ -501,12 +433,10 @@ class accumulate_histograms {
         }
     }
 
-    /** \brief Processor interface **/
     template <typename E> void handle_event(E const &event) noexcept {
         downstream.handle_event(event);
     }
 
-    /** \brief Processor interface **/
     void handle_end(std::exception_ptr error) noexcept {
         if (!finished) {
             emit_accumulated(started, true);
@@ -514,5 +444,45 @@ class accumulate_histograms {
         }
     }
 };
+
+} // namespace internal
+
+/**
+ * \brief Create a processor that collects a histogram accumulated over batches
+ * of datapoints.
+ *
+ * Every incoming \c bin_increment_event<TBinIndex> is histogrammed and added
+ * to the accumulated histogram. On every update, the current accumulated
+ * histogram is emitted as a \c histogram_event<TBin> event.
+ *
+ * When a reset occurs (via incoming \c EReset or by overflowing when \c Ovfl
+ * is reset_on_overflow), and when the incoming stream ends, the accumulated
+ * histogram up to the previous batch (not including counts from any incomplete
+ * batch) is emitted as a \c accumulated_histogram_event<TBin> event. (Its
+ * contents are the same as the preceding \c histogram_event<TBin>, except that
+ * an empty \c accumulated_histogram_event<TBin> is emitted even if there were
+ * no batches since the start or last reset.)
+ *
+ * Behavior is undefined if an incoming \c bin_increment_batch_event contains a
+ * bin index beyond the size of the histogram.
+ *
+ * \tparam TBinIndex the bin index type
+ * \tparam TBin the data type of the histogram bins
+ * \tparam EReset type of event causing histogram to reset
+ * \tparam Ovfl strategy tag type to select how to handle bin overflows
+ * \tparam D downstream processor type
+ * \param num_bins number of bins in the histogram (must match the bin
+ * mapper used upstream)
+ * \param max_per_bin maximum value allowed in each bin
+ * \param downstream downstream processor (moved out)
+ * \return accumulate-histograms processor
+ */
+template <typename TBinIndex, typename TBin, typename EReset, typename Ovfl,
+          typename D>
+auto accumulate_histograms(std::size_t num_bins, TBin max_per_bin,
+                           D &&downstream) {
+    return internal::accumulate_histograms<TBinIndex, TBin, EReset, Ovfl, D>(
+        num_bins, max_per_bin, std::forward<D>(downstream));
+}
 
 } // namespace flimevt
