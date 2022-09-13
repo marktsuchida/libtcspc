@@ -6,106 +6,76 @@
 
 #include "flimevt/split.hpp"
 
-#include "flimevt/discard.hpp"
-
-#include "processor_test_fixture.hpp"
-#include "test_events.hpp"
-
-#include <type_traits>
-#include <typeinfo>
+#include "flimevt/ref_processor.hpp"
+#include "flimevt/test_utils.hpp"
 
 #include <catch2/catch.hpp>
 
 using namespace flimevt;
-using namespace flimevt::test;
 
-static_assert(
-    handles_event_set_v<flimevt::internal::split_events<
-                            test_events_01, discard_all<test_events_01>,
-                            discard_all<test_events_01>>,
-                        test_events_01>);
-
-auto make_split_events_fixture_output0() {
-    auto make_proc = [](auto &&downstream) {
-        return split_events<test_events_23>(std::move(downstream),
-                                            discard_all<test_events_23>());
-    };
-
-    return make_processor_test_fixture<test_events_0123, test_events_01>(
-        make_proc);
-}
-
-auto make_split_events_fixture_output1() {
-    auto make_proc = [](auto &&downstream) {
-        return split_events<test_events_23>(discard_all<test_events_01>(),
-                                            std::move(downstream));
-    };
-
-    return make_processor_test_fixture<test_events_0123, test_events_23>(
-        make_proc);
-}
-
-using out_vec_01 = std::vector<event_variant<test_events_01>>;
-using out_vec_23 = std::vector<event_variant<test_events_23>>;
+using e0 = empty_test_event<0>;
+using e1 = empty_test_event<1>;
+using e2 = empty_test_event<2>;
+using e3 = empty_test_event<3>;
 
 TEST_CASE("Split events", "[split_events]") {
-    auto f0 = make_split_events_fixture_output0();
-    auto f1 = make_split_events_fixture_output1();
+    auto out0 = capture_output<event_set<e0, e1>>();
+    auto out1 = capture_output<event_set<e2, e3>>();
+    auto in =
+        feed_input<event_set<e0, e1, e2, e3>>(split_events<event_set<e2, e3>>(
+            ref_processor(out0), ref_processor(out1)));
+    in.require_output_checked(out0);
+    in.require_output_checked(out1);
 
     SECTION("Empty stream yields empty streams") {
-        f0.feed_end({});
-        REQUIRE(f0.output() == out_vec_01{});
-        REQUIRE(f0.did_end());
-
-        f1.feed_end({});
-        REQUIRE(f1.output() == out_vec_23{});
-        REQUIRE(f1.did_end());
+        in.feed_end();
+        REQUIRE(out0.check_end());
+        REQUIRE(out1.check_end());
     }
 
     SECTION("Errors propagate to both streams") {
-        f0.feed_end(std::make_exception_ptr(std::runtime_error("test")));
-        REQUIRE(f0.output() == out_vec_01{});
-        REQUIRE_THROWS_MATCHES(f0.did_end(), std::runtime_error,
-                               Catch::Message("test"));
-
-        f1.feed_end(std::make_exception_ptr(std::runtime_error("test")));
-        REQUIRE(f1.output() == out_vec_23{});
-        REQUIRE_THROWS_MATCHES(f1.did_end(), std::runtime_error,
-                               Catch::Message("test"));
+        in.feed_end(std::make_exception_ptr(std::runtime_error("test")));
+        REQUIRE_THROWS_AS(out0.check_end(), std::runtime_error);
+        REQUIRE_THROWS_AS(out1.check_end(), std::runtime_error);
     }
 
     SECTION("Events are split") {
-        // test_event<0> goes to output 0 only
-        f0.feed_events({
-            test_event<0>{0},
-        });
-        REQUIRE(f0.output() == out_vec_01{
-                                   test_event<0>{0},
-                               });
-        f1.feed_events({
-            test_event<0>{0},
-        });
-        REQUIRE(f1.output() == out_vec_23{});
-
-        // test_event<0> goes to output 1 only
-        f0.feed_events({
-            test_event<2>{0},
-        });
-        REQUIRE(f0.output() == out_vec_01{});
-
-        f1.feed_events({
-            test_event<2>{0},
-        });
-        REQUIRE(f1.output() == out_vec_23{
-                                   test_event<2>{0},
-                               });
-
-        f0.feed_end({});
-        REQUIRE(f0.output() == out_vec_01{});
-        REQUIRE(f0.did_end());
-
-        f1.feed_end({});
-        REQUIRE(f1.output() == out_vec_23{});
-        REQUIRE(f1.did_end());
+        in.feed(e0{});
+        REQUIRE(out0.check(e0{}));
+        in.feed(e2{});
+        REQUIRE(out1.check(e2{}));
+        in.feed_end();
+        REQUIRE(out0.check_end());
+        REQUIRE(out1.check_end());
     }
+}
+
+TEST_CASE("Split events, empty on out0", "[split_events]") {
+    auto out0 = capture_output<event_set<>>();
+    auto out1 = capture_output<event_set<e0>>();
+    auto in = feed_input<event_set<e0>>(
+        split_events<event_set<e0>>(ref_processor(out0), ref_processor(out1)));
+    in.require_output_checked(out0);
+    in.require_output_checked(out1);
+
+    in.feed(e0{});
+    REQUIRE(out1.check(e0{}));
+    in.feed_end();
+    REQUIRE(out0.check_end());
+    REQUIRE(out1.check_end());
+}
+
+TEST_CASE("Split events, empty on out1", "[split_events]") {
+    auto out0 = capture_output<event_set<e0>>();
+    auto out1 = capture_output<event_set<>>();
+    auto in = feed_input<event_set<e0>>(
+        split_events<event_set<>>(ref_processor(out0), ref_processor(out1)));
+    in.require_output_checked(out0);
+    in.require_output_checked(out1);
+
+    in.feed(e0{});
+    REQUIRE(out0.check(e0{}));
+    in.feed_end();
+    REQUIRE(out0.check_end());
+    REQUIRE(out1.check_end());
 }
