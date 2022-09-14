@@ -7,124 +7,38 @@
 #include "flimevt/route_by_channel.hpp"
 
 #include "flimevt/discard.hpp"
+#include "flimevt/ref_processor.hpp"
+#include "flimevt/test_utils.hpp"
 #include "flimevt/time_tagged_events.hpp"
-
-#include "processor_test_fixture.hpp"
-
-#include <cstdint>
-#include <type_traits>
-#include <utility>
-#include <vector>
 
 #include <catch2/catch.hpp>
 
 using namespace flimevt;
-using namespace flimevt::test;
 
-auto make_route_by_channel_fixture_output0(
-    std::vector<std::int16_t> const &channels) {
-    auto make_proc = [&channels](auto &&downstream) {
-        return route_by_channel<time_correlated_count_event>(
-            channels, std::move(downstream), discard_all<tcspc_events>());
-    };
-
-    return make_processor_test_fixture<tcspc_events, tcspc_events>(make_proc);
-}
-
-auto make_route_by_channel_fixture_output1(
-    std::vector<std::int16_t> const &channels) {
-    auto make_proc = [&channels](auto &&downstream) {
-        return route_by_channel<time_correlated_count_event>(
-            channels, discard_all<tcspc_events>(), std::move(downstream));
-    };
-
-    return make_processor_test_fixture<tcspc_events, tcspc_events>(make_proc);
-}
-
-auto make_route_by_channel_fixture_output2(
-    std::vector<std::int16_t> const &channels) {
-    auto make_proc = [&channels](auto &&downstream) {
-        return route_by_channel<time_correlated_count_event>(
-            channels, discard_all<tcspc_events>(), discard_all<tcspc_events>(),
-            std::move(downstream));
-    };
-
-    return make_processor_test_fixture<tcspc_events, tcspc_events>(make_proc);
-}
-
-using out_vec = std::vector<event_variant<tcspc_events>>;
+using tc_event = time_correlated_count_event;
 
 TEST_CASE("Route photons", "[route_by_channel]") {
-    auto f0 = make_route_by_channel_fixture_output0({5, -3});
-    f0.feed_events({
-        time_correlated_count_event{{100}, 123, 5},
-    });
-    REQUIRE(f0.output() == out_vec{
-                               time_correlated_count_event{{100}, 123, 5},
-                           });
-    f0.feed_events({
-        time_correlated_count_event{{101}, 123, -3},
-    });
-    REQUIRE(f0.output() == out_vec{});
-    f0.feed_events({
-        time_correlated_count_event{{102}, 124, 0},
-    });
-    REQUIRE(f0.output() == out_vec{});
-    f0.feed_events({
-        marker_event{{103}, 0},
-    });
-    REQUIRE(f0.output() == out_vec{
-                               marker_event{{103}, 0},
-                           });
-    f0.feed_end({});
-    REQUIRE(f0.output() == out_vec{});
-    REQUIRE(f0.did_end());
+    auto out0 = capture_output<event_set<tc_event, marker_event>>();
+    auto out1 = capture_output<event_set<tc_event, marker_event>>();
+    auto out2 = capture_output<event_set<tc_event, marker_event>>();
+    auto in = feed_input<event_set<tc_event, marker_event>>(
+        route_by_channel<tc_event>({5, -3}, ref_processor(out0),
+                                   ref_processor(out1), ref_processor(out2)));
+    in.require_output_checked(out0);
+    in.require_output_checked(out1);
+    in.require_output_checked(out2);
 
-    auto f1 = make_route_by_channel_fixture_output1({5, -3});
-    f1.feed_events({
-        time_correlated_count_event{{100}, 123, 5},
-    });
-    REQUIRE(f1.output() == out_vec{});
-    f1.feed_events({
-        time_correlated_count_event{{101}, 123, -3},
-    });
-    REQUIRE(f1.output() == out_vec{
-                               time_correlated_count_event{{101}, 123, -3},
-                           });
-    f1.feed_events({
-        time_correlated_count_event{{102}, 124, 0},
-    });
-    REQUIRE(f1.output() == out_vec{});
-    f1.feed_events({
-        marker_event{{103}, 0},
-    });
-    REQUIRE(f1.output() == out_vec{
-                               marker_event{{103}, 0},
-                           });
-    f1.feed_end({});
-    REQUIRE(f1.output() == out_vec{});
-    REQUIRE(f1.did_end());
-
-    auto f2 = make_route_by_channel_fixture_output2({5, -3});
-    f2.feed_events({
-        time_correlated_count_event{{100}, 123, 5},
-    });
-    REQUIRE(f2.output() == out_vec{});
-    f2.feed_events({
-        time_correlated_count_event{{101}, 123, -3},
-    });
-    REQUIRE(f2.output() == out_vec{});
-    f2.feed_events({
-        time_correlated_count_event{{102}, 124, 0},
-    });
-    REQUIRE(f2.output() == out_vec{});
-    f2.feed_events({
-        marker_event{{103}, 0},
-    });
-    REQUIRE(f2.output() == out_vec{
-                               marker_event{{103}, 0},
-                           });
-    f2.feed_end({});
-    REQUIRE(f2.output() == out_vec{});
-    REQUIRE(f2.did_end());
+    in.feed(tc_event{{100}, 123, 5});
+    REQUIRE(out0.check(tc_event{{100}, 123, 5}));
+    in.feed(tc_event{{101}, 123, -3});
+    REQUIRE(out1.check(tc_event{{101}, 123, -3}));
+    in.feed(tc_event{{102}, 124, 0});
+    in.feed(marker_event{{103}, 0});
+    REQUIRE(out0.check(marker_event{{103}, 0}));
+    REQUIRE(out1.check(marker_event{{103}, 0}));
+    REQUIRE(out2.check(marker_event{{103}, 0}));
+    in.feed_end();
+    REQUIRE(out0.check_end());
+    REQUIRE(out1.check_end());
+    REQUIRE(out2.check_end());
 }

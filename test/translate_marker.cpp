@@ -6,54 +6,30 @@
 
 #include "flimevt/translate_marker.hpp"
 
+#include "flimevt/ref_processor.hpp"
+#include "flimevt/test_utils.hpp"
 #include "flimevt/time_tagged_events.hpp"
-
-#include "processor_test_fixture.hpp"
-#include "test_events.hpp"
-
-#include <cstdint>
-#include <utility>
-#include <vector>
 
 #include <catch2/catch.hpp>
 
 using namespace flimevt;
-using namespace flimevt::test;
 
-using inputs = event_set<marker_event, test_event<1>>;
-using outputs = event_set<marker_event, test_event<0>, test_event<1>>;
-using out_vec = std::vector<event_variant<outputs>>;
-
-auto make_translate_marker_fixture(std::int32_t channel) {
-    return make_processor_test_fixture<inputs, outputs>(
-        [channel](auto &&downstream) {
-            return translate_marker<marker_event, test_event<0>>(
-                channel, std::move(downstream));
-        });
-}
+using output_event = timestamped_test_event<0>;
+using misc_event = timestamped_test_event<1>;
 
 TEST_CASE("Translate marker", "[translate_marker]") {
-    auto f = make_translate_marker_fixture(0);
+    auto out =
+        capture_output<event_set<marker_event, output_event, misc_event>>();
+    auto in = feed_input<event_set<marker_event, misc_event>>(
+        translate_marker<marker_event, output_event>(0, ref_processor(out)));
+    in.require_output_checked(out);
 
-    f.feed_events({
-        marker_event{{100}, 0},
-    });
-    REQUIRE(f.output() == out_vec{
-                              test_event<0>{100},
-                          });
-    f.feed_events({
-        marker_event{{200}, 1},
-    });
-    REQUIRE(f.output() == out_vec{
-                              marker_event{{200}, 1},
-                          });
-    f.feed_events({
-        test_event<1>{300},
-    });
-    REQUIRE(f.output() == out_vec{
-                              test_event<1>{300},
-                          });
-    f.feed_end({});
-    REQUIRE(f.output() == out_vec{});
-    REQUIRE(f.did_end());
+    in.feed(marker_event{{100}, 0});
+    REQUIRE(out.check(output_event{100}));
+    in.feed(marker_event{{200}, 1});
+    REQUIRE(out.check(marker_event{{200}, 1}));
+    in.feed(misc_event{300});
+    REQUIRE(out.check(misc_event{300}));
+    in.feed_end();
+    REQUIRE(out.check_end());
 }

@@ -6,696 +6,348 @@
 
 #include "flimevt/delay_hasten.hpp"
 
-#include "flimevt/discard.hpp"
 #include "flimevt/event_set.hpp"
+#include "flimevt/ref_processor.hpp"
+#include "flimevt/test_utils.hpp"
 
-#include "processor_test_fixture.hpp"
-#include "test_events.hpp"
-
-#include <algorithm>
 #include <exception>
-#include <iterator>
 #include <stdexcept>
-#include <type_traits>
-#include <utility>
-#include <vector>
 
 #include <catch2/catch.hpp>
 
 using namespace flimevt;
-using namespace flimevt::test;
 
-static_assert(
-    handles_event_set_v<flimevt::internal::delay_processor<
-                            test_events_01, discard_all<test_events_0123>>,
-                        test_events_0123>);
-static_assert(
-    handles_event_set_v<flimevt::internal::hasten_processor<
-                            test_events_01, discard_all<test_events_0123>>,
-                        test_events_0123>);
-static_assert(handles_event_set_v<flimevt::internal::delay_hasten_processor<
-                                      test_events_01, test_events_23,
-                                      discard_all<test_events_0123>>,
-                                  test_events_0123>);
-
-// Make fixture to test delaying test_events_01
-auto make_delay_fixture(macrotime delta) {
-    auto make_proc = [delta](auto &&downstream) {
-        return delay_processor<test_events_01>(delta, std::move(downstream));
-    };
-
-    return make_processor_test_fixture<test_events_0123, test_events_0123>(
-        make_proc);
-}
-
-// Make fixture to test hastening Event01
-auto make_hasten_fixture(macrotime delta) {
-    auto make_proc = [delta](auto &&downstream) {
-        return hasten_processor<test_events_23>(delta, std::move(downstream));
-    };
-
-    return make_processor_test_fixture<test_events_0123, test_events_0123>(
-        make_proc);
-}
-
-auto make_delay_hasten_fixture(macrotime delta) {
-    auto make_proc = [delta](auto &&downstream) {
-        return delay_hasten_processor<test_events_01, test_events_23>(
-            delta, std::move(downstream));
-    };
-
-    return make_processor_test_fixture<test_events_0123, test_events_0123>(
-        make_proc);
-}
-
-using out_vec = std::vector<flimevt::event_variant<test_events_0123>>;
+using e0 = timestamped_test_event<0>;
+using e1 = timestamped_test_event<1>;
+using e2 = timestamped_test_event<2>;
+using e3 = timestamped_test_event<3>;
 
 TEST_CASE("Delay uniform streams", "[delay_processor]") {
     macrotime delta = GENERATE(0, 1, 2);
-    auto f = make_delay_fixture(delta);
+    auto out = capture_output<event_set<e0, e1, e2, e3>>();
+    auto in = feed_input<event_set<e0, e1, e2, e3>>(
+        delay_processor<event_set<e0, e1>>(delta, ref_processor(out)));
+    in.require_output_checked(out);
 
     SECTION("Empty stream yields empty stream") {
-        f.feed_end({});
-        REQUIRE(f.output() == out_vec{});
-        REQUIRE(f.did_end());
+        in.feed_end();
+        REQUIRE(out.check_end());
     }
 
     SECTION("Empty stream with error yields empty stream with error") {
-        f.feed_end(std::make_exception_ptr(std::runtime_error("test")));
-        REQUIRE(f.output() == out_vec{});
-        REQUIRE_THROWS_MATCHES(f.did_end(), std::runtime_error,
-                               Catch::Message("test"));
+        in.feed_end(std::make_exception_ptr(std::runtime_error("test")));
+        REQUIRE_THROWS_AS(out.check_end(), std::runtime_error);
     }
 
     SECTION("Undelayed events are unbuffered") {
-        f.feed_events({
-            test_event<2>{0},
-        });
-        REQUIRE(f.output() == out_vec{
-                                  test_event<2>{0},
-                              });
-        f.feed_events({
-            test_event<3>{0},
-        });
-        REQUIRE(f.output() == out_vec{
-                                  test_event<3>{0},
-                              });
-        f.feed_events({
-            test_event<2>{0},
-        });
-        REQUIRE(f.output() == out_vec{
-                                  test_event<2>{0},
-                              });
-        f.feed_events({
-            test_event<3>{0},
-        });
-        REQUIRE(f.output() == out_vec{
-                                  test_event<3>{0},
-                              });
-        f.feed_end({});
-        REQUIRE(f.output() == out_vec{});
-        REQUIRE(f.did_end());
+        in.feed(e2{0});
+        REQUIRE(out.check(e2{0}));
+        in.feed(e3{0});
+        REQUIRE(out.check(e3{0}));
+        in.feed(e2{0});
+        REQUIRE(out.check(e2{0}));
+        in.feed(e3{0});
+        REQUIRE(out.check(e3{0}));
+        in.feed_end();
+        REQUIRE(out.check_end());
     }
 
     SECTION("Delayed events are buffered") {
-        f.feed_events({
-            test_event<0>{0},
-        });
-        REQUIRE(f.output() == out_vec{});
-        f.feed_events({
-            test_event<1>{0},
-        });
-        REQUIRE(f.output() == out_vec{});
-        f.feed_events({
-            test_event<0>{0},
-        });
-        REQUIRE(f.output() == out_vec{});
-        f.feed_events({
-            test_event<1>{0},
-        });
-        REQUIRE(f.output() == out_vec{});
-        f.feed_end({});
-        REQUIRE(f.output() == out_vec{
-                                  test_event<0>{delta},
-                                  test_event<1>{delta},
-                                  test_event<0>{delta},
-                                  test_event<1>{delta},
-                              });
-        REQUIRE(f.did_end());
+        in.feed(e0{0});
+        in.feed(e1{0});
+        in.feed(e0{0});
+        in.feed(e1{0});
+        in.feed_end();
+        REQUIRE(out.check(e0{delta}));
+        REQUIRE(out.check(e1{delta}));
+        REQUIRE(out.check(e0{delta}));
+        REQUIRE(out.check(e1{delta}));
+        REQUIRE(out.check_end());
     }
 }
 
 TEST_CASE("Hasten uniform streams", "[hasten_processor]") {
     macrotime delta = GENERATE(0, 1, 2);
-    auto f = make_hasten_fixture(delta);
+    auto out = capture_output<event_set<e0, e1, e2, e3>>();
+    auto in = feed_input<event_set<e0, e1, e2, e3>>(
+        hasten_processor<event_set<e2, e3>>(delta, ref_processor(out)));
+    in.require_output_checked(out);
 
     SECTION("Empty stream yields empty stream") {
-        f.feed_end({});
-        REQUIRE(f.output() == out_vec{});
-        REQUIRE(f.did_end());
+        in.feed_end();
+        REQUIRE(out.check_end());
     }
 
     SECTION("Empty stream with error yields empty stream with error") {
-        f.feed_end(std::make_exception_ptr(std::runtime_error("test")));
-        REQUIRE(f.output() == out_vec{});
-        REQUIRE_THROWS_MATCHES(f.did_end(), std::runtime_error,
-                               Catch::Message("test"));
+        in.feed_end(std::make_exception_ptr(std::runtime_error("test")));
+        REQUIRE_THROWS_AS(out.check_end(), std::runtime_error);
     }
 
     SECTION("Hastened events are unbuffered") {
-        f.feed_events({
-            test_event<0>{0},
-        });
-        REQUIRE(f.output() == out_vec{
-                                  test_event<0>{-delta},
-                              });
-        f.feed_events({
-            test_event<1>{0},
-        });
-        REQUIRE(f.output() == out_vec{
-                                  test_event<1>{-delta},
-                              });
-        f.feed_events({
-            test_event<0>{0},
-        });
-        REQUIRE(f.output() == out_vec{
-                                  test_event<0>{-delta},
-                              });
-        f.feed_events({
-            test_event<1>{0},
-        });
-        REQUIRE(f.output() == out_vec{
-                                  test_event<1>{-delta},
-                              });
-        f.feed_end({});
-        REQUIRE(f.output() == out_vec{});
-        REQUIRE(f.did_end());
+        in.feed(e0{0});
+        REQUIRE(out.check(e0{-delta}));
+        in.feed(e1{0});
+        REQUIRE(out.check(e1{-delta}));
+        in.feed(e0{0});
+        REQUIRE(out.check(e0{-delta}));
+        in.feed(e1{0});
+        REQUIRE(out.check(e1{-delta}));
+        in.feed_end();
+        REQUIRE(out.check_end());
     }
 
     SECTION("Unhastened events are buffered") {
-        f.feed_events({
-            test_event<2>{0},
-        });
-        REQUIRE(f.output() == out_vec{});
-        f.feed_events({
-            test_event<3>{0},
-        });
-        REQUIRE(f.output() == out_vec{});
-        f.feed_events({
-            test_event<2>{0},
-        });
-        REQUIRE(f.output() == out_vec{});
-        f.feed_events({
-            test_event<3>{0},
-        });
-        REQUIRE(f.output() == out_vec{});
-        f.feed_end({});
-        REQUIRE(f.output() == out_vec{
-                                  test_event<2>{0},
-                                  test_event<3>{0},
-                                  test_event<2>{0},
-                                  test_event<3>{0},
-                              });
-        REQUIRE(f.did_end());
+        in.feed(e2{0});
+        in.feed(e3{0});
+        in.feed(e2{0});
+        in.feed(e3{0});
+        in.feed_end();
+        REQUIRE(out.check(e2{0}));
+        REQUIRE(out.check(e3{0}));
+        REQUIRE(out.check(e2{0}));
+        REQUIRE(out.check(e3{0}));
+        REQUIRE(out.check_end());
     }
 }
 
 TEST_CASE("Delay by 0", "[delay_processor]") {
-    auto f = make_delay_fixture(0);
+    auto out = capture_output<event_set<e0, e1>>();
+    auto in = feed_input<event_set<e0, e1>>(
+        delay_processor<event_set<e0>>(0, ref_processor(out)));
+    in.require_output_checked(out);
 
     SECTION("Equal timestamps") {
-        f.feed_events({
-            test_event<0>{0},
-        });
-        REQUIRE(f.output() == out_vec{});
-        f.feed_events({
-            test_event<2>{0},
-        });
-        REQUIRE(f.output() == out_vec{
-                                  test_event<0>{0},
-                                  test_event<2>{0},
-                              });
-
-        f.feed_events({
-            test_event<0>{0},
-        });
-        REQUIRE(f.output() == out_vec{});
-        f.feed_events({
-            test_event<2>{0},
-        });
-        REQUIRE(f.output() == out_vec{
-                                  test_event<0>{0},
-                                  test_event<2>{0},
-                              });
-
-        f.feed_end({});
-        REQUIRE(f.output() == out_vec{});
-        REQUIRE(f.did_end());
+        in.feed(e0{0});
+        in.feed(e1{0});
+        REQUIRE(out.check(e0{0}));
+        REQUIRE(out.check(e1{0}));
+        in.feed(e0{0});
+        in.feed(e1{0});
+        REQUIRE(out.check(e0{0}));
+        REQUIRE(out.check(e1{0}));
+        in.feed_end();
+        REQUIRE(out.check_end());
     }
 
     SECTION("Increment of 1") {
-        f.feed_events({
-            test_event<0>{0},
-        });
-        REQUIRE(f.output() == out_vec{});
-        f.feed_events({
-            test_event<2>{1},
-        });
-        REQUIRE(f.output() == out_vec{
-                                  test_event<0>{0},
-                                  test_event<2>{1},
-                              });
-
-        f.feed_events({
-            test_event<0>{2},
-        });
-        REQUIRE(f.output() == out_vec{});
-        f.feed_events({
-            test_event<2>{3},
-        });
-        REQUIRE(f.output() == out_vec{
-                                  test_event<0>{2},
-                                  test_event<2>{3},
-                              });
-
-        f.feed_end({});
-        REQUIRE(f.output() == out_vec{});
-        REQUIRE(f.did_end());
+        in.feed(e0{0});
+        in.feed(e1{1});
+        REQUIRE(out.check(e0{0}));
+        REQUIRE(out.check(e1{1}));
+        in.feed(e0{2});
+        in.feed(e1{3});
+        REQUIRE(out.check(e0{2}));
+        REQUIRE(out.check(e1{3}));
+        in.feed_end();
+        REQUIRE(out.check_end());
     }
 }
 
 TEST_CASE("Hasten by 0", "[hasten_processor]") {
-    auto f = make_hasten_fixture(0);
+    auto out = capture_output<event_set<e0, e1>>();
+    auto in = feed_input<event_set<e0, e1>>(
+        hasten_processor<event_set<e1>>(0, ref_processor(out)));
+    in.require_output_checked(out);
 
     SECTION("Equal timestamps") {
-        f.feed_events({
-            test_event<2>{0},
-        });
-        REQUIRE(f.output() == out_vec{});
-        f.feed_events({
-            test_event<0>{0},
-        });
-        REQUIRE(f.output() == out_vec{
-                                  test_event<0>{0},
-                              });
-
-        f.feed_events({
-            test_event<2>{0},
-        });
-        REQUIRE(f.output() == out_vec{});
-        f.feed_events({
-            test_event<0>{0},
-        });
-        REQUIRE(f.output() == out_vec{
-                                  test_event<0>{0},
-                              });
-
-        f.feed_end({});
-        REQUIRE(f.output() == out_vec{
-                                  test_event<2>{0},
-                                  test_event<2>{0},
-                              });
-        REQUIRE(f.did_end());
+        in.feed(e1{0});
+        in.feed(e0{0});
+        REQUIRE(out.check(e0{0}));
+        in.feed(e1{0});
+        in.feed(e0{0});
+        REQUIRE(out.check(e0{0}));
+        in.feed_end();
+        REQUIRE(out.check(e1{0}));
+        REQUIRE(out.check(e1{0}));
+        REQUIRE(out.check_end());
     }
 
     SECTION("Increment of 1") {
-        f.feed_events({
-            test_event<2>{0},
-        });
-        REQUIRE(f.output() == out_vec{});
-        f.feed_events({
-            test_event<0>{1},
-        });
-        REQUIRE(f.output() == out_vec{
-                                  test_event<2>{0},
-                                  test_event<0>{1},
-                              });
-
-        f.feed_events({
-            test_event<2>{2},
-        });
-        REQUIRE(f.output() == out_vec{});
-        f.feed_events({
-            test_event<0>{3},
-        });
-        REQUIRE(f.output() == out_vec{
-                                  test_event<2>{2},
-                                  test_event<0>{3},
-                              });
-
-        f.feed_end({});
-        REQUIRE(f.output() == out_vec{});
-        REQUIRE(f.did_end());
+        in.feed(e1{0});
+        in.feed(e0{1});
+        REQUIRE(out.check(e1{0}));
+        REQUIRE(out.check(e0{1}));
+        in.feed(e1{2});
+        in.feed(e0{3});
+        REQUIRE(out.check(e1{2}));
+        REQUIRE(out.check(e0{3}));
+        in.feed_end();
+        REQUIRE(out.check_end());
     }
 }
 
-TEST_CASE("Delay by 1") {
-    auto f = make_delay_fixture(1);
+TEST_CASE("Delay by 1", "[delay_processor]") {
+    auto out = capture_output<event_set<e0, e1>>();
+    auto in = feed_input<event_set<e0, e1>>(
+        delay_processor<event_set<e0>>(1, ref_processor(out)));
+    in.require_output_checked(out);
 
     SECTION("Equal timestamps") {
-        f.feed_events({
-            test_event<0>{0},
-        });
-        REQUIRE(f.output() == out_vec{});
-        f.feed_events({
-            test_event<2>{0},
-        });
-        REQUIRE(f.output() == out_vec{
-                                  test_event<2>{0},
-                              });
-
-        f.feed_events({
-            test_event<0>{1},
-        });
-        REQUIRE(f.output() == out_vec{});
-        f.feed_events({
-            test_event<2>{1},
-        });
-        REQUIRE(f.output() == out_vec{
-                                  test_event<0>{1},
-                                  test_event<2>{1},
-                              });
-
-        f.feed_end({});
-        REQUIRE(f.output() == out_vec{
-                                  test_event<0>{2},
-                              });
-        REQUIRE(f.did_end());
+        in.feed(e0{0});
+        in.feed(e1{0});
+        REQUIRE(out.check(e1{0}));
+        in.feed(e0{1});
+        in.feed(e1{1});
+        REQUIRE(out.check(e0{1}));
+        REQUIRE(out.check(e1{1}));
+        in.feed_end();
+        REQUIRE(out.check(e0{2}));
+        REQUIRE(out.check_end());
     }
 
     SECTION("Increment of 1") {
-        f.feed_events({
-            test_event<0>{0},
-        });
-        REQUIRE(f.output() == out_vec{});
-        f.feed_events({
-            test_event<2>{1},
-        });
-        REQUIRE(f.output() == out_vec{
-                                  test_event<0>{1},
-                                  test_event<2>{1},
-                              });
-
-        f.feed_events({
-            test_event<0>{2},
-        });
-        REQUIRE(f.output() == out_vec{});
-        f.feed_events({
-            test_event<2>{3},
-        });
-        REQUIRE(f.output() == out_vec{
-                                  test_event<0>{3},
-                                  test_event<2>{3},
-                              });
-
-        f.feed_end({});
-        REQUIRE(f.output() == out_vec{});
-        REQUIRE(f.did_end());
+        in.feed(e0{0});
+        in.feed(e1{1});
+        REQUIRE(out.check(e0{1}));
+        REQUIRE(out.check(e1{1}));
+        in.feed(e0{2});
+        in.feed(e1{3});
+        REQUIRE(out.check(e0{3}));
+        REQUIRE(out.check(e1{3}));
+        in.feed_end();
+        REQUIRE(out.check_end());
     }
 }
 
-TEST_CASE("Hasten by 1") {
-    auto f = make_hasten_fixture(1);
+TEST_CASE("Hasten by 1", "[hasten_processor]") {
+    auto out = capture_output<event_set<e0, e1>>();
+    auto in = feed_input<event_set<e0, e1>>(
+        hasten_processor<event_set<e1>>(1, ref_processor(out)));
+    in.require_output_checked(out);
 
     SECTION("Equal timestamps") {
-        f.feed_events({
-            test_event<2>{0},
-        });
-        REQUIRE(f.output() == out_vec{});
-        f.feed_events({
-            test_event<0>{0},
-        });
-        REQUIRE(f.output() == out_vec{
-                                  test_event<0>{-1},
-                              });
-
-        f.feed_events({
-            test_event<2>{1},
-        });
-        REQUIRE(f.output() == out_vec{});
-        f.feed_events({
-            test_event<0>{1},
-        });
-        REQUIRE(f.output() == out_vec{
-                                  test_event<0>{0},
-                              });
-
-        f.feed_end({});
-        REQUIRE(f.output() == out_vec{
-                                  test_event<2>{0},
-                                  test_event<2>{1},
-                              });
-        REQUIRE(f.did_end());
+        in.feed(e1{0});
+        in.feed(e0{0});
+        REQUIRE(out.check(e0{-1}));
+        in.feed(e1{1});
+        in.feed(e0{1});
+        REQUIRE(out.check(e0{0}));
+        in.feed_end();
+        REQUIRE(out.check(e1{0}));
+        REQUIRE(out.check(e1{1}));
+        REQUIRE(out.check_end());
     }
 
     SECTION("Increment of 1") {
-        f.feed_events({
-            test_event<2>{0},
-        });
-        REQUIRE(f.output() == out_vec{});
-        f.feed_events({
-            test_event<0>{1},
-        });
-        REQUIRE(f.output() == out_vec{
-                                  test_event<0>{0},
-                              });
-
-        f.feed_events({
-            test_event<2>{2},
-        });
-        REQUIRE(f.output() == out_vec{});
-        f.feed_events({
-            test_event<0>{3},
-        });
-        REQUIRE(f.output() == out_vec{
-                                  test_event<2>{0},
-                                  test_event<0>{2},
-                              });
-
-        f.feed_end({});
-        REQUIRE(f.output() == out_vec{
-                                  test_event<2>{2},
-                              });
-        REQUIRE(f.did_end());
+        in.feed(e1{0});
+        in.feed(e0{1});
+        REQUIRE(out.check(e0{0}));
+        in.feed(e1{2});
+        in.feed(e0{3});
+        REQUIRE(out.check(e1{0}));
+        REQUIRE(out.check(e0{2}));
+        in.feed_end();
+        REQUIRE(out.check(e1{2}));
+        REQUIRE(out.check_end());
     }
 }
 
-TEST_CASE("Delay by 2") {
-    auto f = make_delay_fixture(2);
+TEST_CASE("Delay by 2", "[delay_processor]") {
+    auto out = capture_output<event_set<e0, e1>>();
+    auto in = feed_input<event_set<e0, e1>>(
+        delay_processor<event_set<e0>>(2, ref_processor(out)));
+    in.require_output_checked(out);
 
     SECTION("Equal timestamps") {
-        f.feed_events({
-            test_event<0>{0},
-        });
-        REQUIRE(f.output() == out_vec{});
-        f.feed_events({
-            test_event<2>{0},
-        });
-        REQUIRE(f.output() == out_vec{
-                                  test_event<2>{0},
-                              });
-
-        f.feed_events({
-            test_event<0>{1},
-        });
-        REQUIRE(f.output() == out_vec{});
-        f.feed_events({
-            test_event<2>{1},
-        });
-        REQUIRE(f.output() == out_vec{
-                                  test_event<2>{1},
-                              });
-
-        f.feed_events({
-            test_event<0>{2},
-        });
-        REQUIRE(f.output() == out_vec{});
-        f.feed_events({
-            test_event<2>{2},
-        });
-        REQUIRE(f.output() == out_vec{
-                                  test_event<0>{2},
-                                  test_event<2>{2},
-                              });
-
-        f.feed_events({
-            test_event<2>{3},
-        });
-        REQUIRE(f.output() == out_vec{
-                                  test_event<0>{3},
-                                  test_event<2>{3},
-                              });
-
-        f.feed_end({});
-        REQUIRE(f.output() == out_vec{
-                                  test_event<0>{4},
-                              });
-        REQUIRE(f.did_end());
+        in.feed(e0{0});
+        in.feed(e1{0});
+        REQUIRE(out.check(e1{0}));
+        in.feed(e0{1});
+        in.feed(e1{1});
+        REQUIRE(out.check(e1{1}));
+        in.feed(e0{2});
+        in.feed(e1{2});
+        REQUIRE(out.check(e0{2}));
+        REQUIRE(out.check(e1{2}));
+        in.feed(e1{3});
+        REQUIRE(out.check(e0{3}));
+        REQUIRE(out.check(e1{3}));
+        in.feed_end();
+        REQUIRE(out.check(e0{4}));
+        REQUIRE(out.check_end());
     }
 
     SECTION("Increment of 1") {
-        f.feed_events({
-            test_event<0>{0},
-        });
-        REQUIRE(f.output() == out_vec{});
-        f.feed_events({
-            test_event<2>{1},
-        });
-        REQUIRE(f.output() == out_vec{
-                                  test_event<2>{1},
-                              });
-        f.feed_events({
-            test_event<0>{2},
-        });
-        REQUIRE(f.output() == out_vec{});
-        f.feed_events({
-            test_event<2>{3},
-        });
-        REQUIRE(f.output() == out_vec{
-                                  test_event<0>{2},
-                                  test_event<2>{3},
-                              });
-
-        f.feed_events({
-            test_event<0>{4},
-        });
-        REQUIRE(f.output() == out_vec{});
-        f.feed_events({
-            test_event<2>{5},
-        });
-        REQUIRE(f.output() == out_vec{
-                                  test_event<0>{4},
-                                  test_event<2>{5},
-                              });
-
-        f.feed_end({});
-        REQUIRE(f.output() == out_vec{
-                                  test_event<0>{6},
-                              });
-        REQUIRE(f.did_end());
+        in.feed(e0{0});
+        in.feed(e1{1});
+        REQUIRE(out.check(e1{1}));
+        in.feed(e0{2});
+        in.feed(e1{3});
+        REQUIRE(out.check(e0{2}));
+        REQUIRE(out.check(e1{3}));
+        in.feed(e0{4});
+        in.feed(e1{5});
+        REQUIRE(out.check(e0{4}));
+        REQUIRE(out.check(e1{5}));
+        in.feed_end();
+        REQUIRE(out.check(e0{6}));
+        REQUIRE(out.check_end());
     }
 }
 
-TEST_CASE("Hasten by 2") {
-    auto f = make_hasten_fixture(2);
+TEST_CASE("Hasten by 2", "[hasten_processor]") {
+    auto out = capture_output<event_set<e0, e1>>();
+    auto in = feed_input<event_set<e0, e1>>(
+        hasten_processor<event_set<e1>>(2, ref_processor(out)));
+    in.require_output_checked(out);
 
     SECTION("Equal timestamps") {
-        f.feed_events({
-            test_event<2>{0},
-        });
-        REQUIRE(f.output() == out_vec{});
-        f.feed_events({
-            test_event<0>{0},
-        });
-        REQUIRE(f.output() == out_vec{
-                                  test_event<0>{-2},
-                              });
-
-        f.feed_events({
-            test_event<2>{1},
-        });
-        REQUIRE(f.output() == out_vec{});
-        f.feed_events({
-            test_event<0>{1},
-        });
-        REQUIRE(f.output() == out_vec{
-                                  test_event<0>{-1},
-                              });
-
-        f.feed_events({
-            test_event<2>{2},
-        });
-        REQUIRE(f.output() == out_vec{});
-        f.feed_events({
-            test_event<0>{2},
-        });
-        REQUIRE(f.output() == out_vec{
-                                  test_event<0>{0},
-                              });
-
-        f.feed_events({
-            test_event<0>{3},
-        });
-        REQUIRE(f.output() == out_vec{
-                                  test_event<2>{0},
-                                  test_event<0>{1},
-                              });
-
-        f.feed_end({});
-        REQUIRE(f.output() == out_vec{
-                                  test_event<2>{1},
-                                  test_event<2>{2},
-                              });
-        REQUIRE(f.did_end());
+        in.feed(e1{0});
+        in.feed(e0{0});
+        REQUIRE(out.check(e0{-2}));
+        in.feed(e1{1});
+        in.feed(e0{1});
+        REQUIRE(out.check(e0{-1}));
+        in.feed(e1{2});
+        in.feed(e0{2});
+        REQUIRE(out.check(e0{0}));
+        in.feed(e0{3});
+        REQUIRE(out.check(e1{0}));
+        REQUIRE(out.check(e0{1}));
+        in.feed_end();
+        REQUIRE(out.check(e1{1}));
+        REQUIRE(out.check(e1{2}));
+        REQUIRE(out.check_end());
     }
 
     SECTION("Increment of 1") {
-        f.feed_events({
-            test_event<2>{0},
-        });
-        REQUIRE(f.output() == out_vec{});
-        f.feed_events({
-            test_event<0>{1},
-        });
-        REQUIRE(f.output() == out_vec{
-                                  test_event<0>{-1},
-                              });
-        f.feed_events({
-            test_event<2>{2},
-        });
-        REQUIRE(f.output() == out_vec{});
-        f.feed_events({
-            test_event<0>{3},
-        });
-        REQUIRE(f.output() == out_vec{
-                                  test_event<2>{0},
-                                  test_event<0>{1},
-                              });
-
-        f.feed_events({
-            test_event<2>{4},
-        });
-        REQUIRE(f.output() == out_vec{});
-        f.feed_events({
-            test_event<0>{5},
-        });
-        REQUIRE(f.output() == out_vec{
-                                  test_event<2>{2},
-                                  test_event<0>{3},
-                              });
-
-        f.feed_end({});
-        REQUIRE(f.output() == out_vec{
-                                  test_event<2>{4},
-                              });
-        REQUIRE(f.did_end());
+        in.feed(e1{0});
+        in.feed(e0{1});
+        REQUIRE(out.check(e0{-1}));
+        in.feed(e1{2});
+        in.feed(e0{3});
+        REQUIRE(out.check(e1{0}));
+        REQUIRE(out.check(e0{1}));
+        in.feed(e1{4});
+        in.feed(e0{5});
+        REQUIRE(out.check(e1{2}));
+        REQUIRE(out.check(e0{3}));
+        in.feed_end();
+        REQUIRE(out.check(e1{4}));
+        REQUIRE(out.check_end());
     }
 }
 
-TEST_CASE("delay_hasten_processor Sanity", "[delay_hasten_processor]") {
+TEST_CASE("Delay-hasten basic test", "[delay_hasten_processor]") {
     macrotime delta = GENERATE(-2, -1, 0, 1, 2);
-    auto f = make_delay_hasten_fixture(delta);
+    auto out = capture_output<event_set<e0, e1>>();
+    auto in = feed_input<event_set<e0, e1>>(
+        delay_hasten_processor<event_set<e0>, event_set<e1>>(
+            delta, ref_processor(out)));
+    in.require_output_checked(out);
 
-    // Ignore output timing; only check content.
+    // N.B. Because of the extraneous 0-hasten or 0-delay processor, the
+    // buffering behavior differs from a separate delay_processor or
+    // hasten_processor. This test is therefore overconstrained.
 
-    f.feed_events({
-        test_event<2>{-3},
-        test_event<0>{0},
-        test_event<2>{3},
-        test_event<0>{6},
-    });
-    out_vec o = f.output();
-    f.feed_end({});
-    out_vec o1 = f.output();
-
-    std::copy(o1.cbegin(), o1.cend(), std::back_inserter(o));
-
-    REQUIRE(o == out_vec{
-                     test_event<2>{-3},
-                     test_event<0>{0 + delta},
-                     test_event<2>{3},
-                     test_event<0>{6 + delta},
-                 });
-
-    REQUIRE(f.did_end());
+    in.feed(e1{-3});
+    in.feed(e0{0});
+    in.feed(e1{3});
+    REQUIRE(out.check(e1{-3}));
+    REQUIRE(out.check(e0{0 + delta}));
+    in.feed(e0{6});
+    in.feed_end();
+    REQUIRE(out.check(e1{3}));
+    REQUIRE(out.check(e0{6 + delta}));
+    REQUIRE(out.check_end());
 }

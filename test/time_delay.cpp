@@ -7,77 +7,52 @@
 #include "flimevt/time_delay.hpp"
 
 #include "flimevt/common.hpp"
-
-#include "processor_test_fixture.hpp"
-#include "test_events.hpp"
-
-#include <utility>
-#include <vector>
+#include "flimevt/ref_processor.hpp"
+#include "flimevt/test_utils.hpp"
 
 #include <catch2/catch.hpp>
 
 using namespace flimevt;
-using namespace flimevt::test;
 
-using test_events = test_events_01;
-using out_vec = std::vector<event_variant<test_events>>;
-
-auto make_time_delay_fixture(macrotime delta) {
-    return make_processor_test_fixture<test_events, test_events>(
-        [delta](auto &&downstream) {
-            return time_delay(delta, std::move(downstream));
-        });
-}
+using e0 = timestamped_test_event<0>;
+using e1 = timestamped_test_event<1>;
 
 TEST_CASE("Time delay", "[time_delay]") {
+    auto out = capture_output<event_set<e0, e1>>();
+
     SECTION("Zero delay is noop") {
-        auto f = make_time_delay_fixture(0);
-        f.feed_events({
-            test_event<0>{0},
-        });
-        REQUIRE(f.output() == out_vec{
-                                  test_event<0>{0},
-                              });
-        f.feed_end({});
-        REQUIRE(f.output() == out_vec{});
-        REQUIRE(f.did_end());
+        auto in = feed_input<event_set<e0>>(time_delay(0, ref_processor(out)));
+        in.require_output_checked(out);
+
+        in.feed(e0{0});
+        REQUIRE(out.check(e0{0}));
+        in.feed_end();
+        REQUIRE(out.check_end());
     }
 
     SECTION("Delay +1") {
-        auto f = make_time_delay_fixture(1);
-        f.feed_events({
-            test_event<0>{0},
-        });
-        REQUIRE(f.output() == out_vec{
-                                  test_event<0>{1},
-                              });
-        f.feed_events({
-            test_event<1>{1},
-        });
-        REQUIRE(f.output() == out_vec{
-                                  test_event<1>{2},
-                              });
-        f.feed_end({});
-        REQUIRE(f.output() == out_vec{});
-        REQUIRE(f.did_end());
+        auto in =
+            feed_input<event_set<e0, e1>>(time_delay(1, ref_processor(out)));
+        in.require_output_checked(out);
+
+        in.feed(e0{0});
+        REQUIRE(out.check(e0{1}));
+        in.feed(e1{1});
+        REQUIRE(out.check(e1{2}));
+        in.feed_end();
+        REQUIRE(out.check_end());
     }
 
     SECTION("Delay -1") {
-        auto f = make_time_delay_fixture(-1);
-        f.feed_events({
-            test_event<0>{0},
-        });
-        REQUIRE(f.output() == out_vec{
-                                  test_event<0>{-1},
-                              });
-        f.feed_events({
-            test_event<1>{1},
-        });
-        REQUIRE(f.output() == out_vec{
-                                  test_event<1>{0},
-                              });
-        f.feed_end({});
-        REQUIRE(f.output() == out_vec{});
-        REQUIRE(f.did_end());
+        auto in =
+            feed_input<event_set<e0, e1>>(time_delay(-1, ref_processor(out)));
+        in.require_output_checked(out);
+
+        in.feed(e0{0});
+        REQUIRE(out.check(e0{-1}));
+        in.feed(e1{1});
+        REQUIRE(out.check(e1{0}));
+        in.feed_end();
+        REQUIRE(out.check_end());
     }
 }

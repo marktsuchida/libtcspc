@@ -7,115 +7,66 @@
 #include "flimevt/gate.hpp"
 
 #include "flimevt/event_set.hpp"
-
-#include "processor_test_fixture.hpp"
-#include "test_events.hpp"
-
-#include <type_traits>
-#include <vector>
+#include "flimevt/ref_processor.hpp"
+#include "flimevt/test_utils.hpp"
 
 #include <catch2/catch.hpp>
 
 using namespace flimevt;
-using namespace flimevt::test;
 
-using open_event = test_event<0>;
-using close_event = test_event<1>;
-using gated_event = test_event<2>;
-using gated_events = event_set<gated_event>;
-using other_event = test_event<3>;
-using test_events = test_events_0123;
-using out_vec = std::vector<event_variant<test_events>>;
-
-auto make_gate_events_fixture(bool initially_open) {
-    return make_processor_test_fixture<test_events, test_events>(
-        [initially_open](auto &&downstream) {
-            return gate_events<gated_events, open_event, close_event>(
-                initially_open, std::move(downstream));
-        });
-}
+using open_event = empty_test_event<0>;
+using close_event = empty_test_event<1>;
+using gated_event = empty_test_event<2>;
+using misc_event = empty_test_event<3>;
 
 TEST_CASE("Gate events", "[gate_events]") {
     bool initially_open = GENERATE(false, true);
-    auto f = make_gate_events_fixture(initially_open);
+    auto out = capture_output<
+        event_set<open_event, close_event, gated_event, misc_event>>();
+    auto in = feed_input<
+        event_set<open_event, close_event, gated_event, misc_event>>(
+        gate_events<event_set<gated_event>, open_event, close_event>(
+            initially_open, ref_processor(out)));
+    in.require_output_checked(out);
 
     SECTION("Initial state") {
-        f.feed_events({
-            gated_event{},
-        });
-        if (initially_open) {
-            REQUIRE(f.output() == out_vec{
-                                      gated_event{},
-                                  });
-        } else {
-            REQUIRE(f.output() == out_vec{});
-        }
-        f.feed_end({});
-        REQUIRE(f.output() == out_vec{});
-        REQUIRE(f.did_end());
+        in.feed(gated_event{});
+        if (initially_open)
+            REQUIRE(out.check(gated_event{}));
+        in.feed_end();
+        REQUIRE(out.check_end());
     }
 
     SECTION("Pass through unrelated events") {
-        f.feed_events({
-            other_event{},
-        });
-        REQUIRE(f.output() == out_vec{
-                                  other_event{},
-                              });
-        f.feed_end({});
-        REQUIRE(f.output() == out_vec{});
-        REQUIRE(f.did_end());
+        in.feed(misc_event{});
+        REQUIRE(out.check(misc_event{}));
+        in.feed_end();
+        REQUIRE(out.check_end());
     }
 
     SECTION("Pass through open/close") {
-        f.feed_events({
-            open_event{},
-        });
-        REQUIRE(f.output() == out_vec{
-                                  open_event{},
-                              });
-        f.feed_events({
-            close_event{},
-        });
-        REQUIRE(f.output() == out_vec{
-                                  close_event{},
-                              });
-        f.feed_end({});
-        REQUIRE(f.output() == out_vec{});
-        REQUIRE(f.did_end());
+        in.feed(open_event{});
+        REQUIRE(out.check(open_event{}));
+        in.feed(close_event{});
+        REQUIRE(out.check(close_event{}));
+        in.feed_end();
+        REQUIRE(out.check_end());
     }
 
     SECTION("Gate closed") {
-        f.feed_events({
-            close_event{},
-        });
-        REQUIRE(f.output() == out_vec{
-                                  close_event{},
-                              });
-        f.feed_events({
-            gated_event{},
-        });
-        REQUIRE(f.output() == out_vec{});
-        f.feed_end({});
-        REQUIRE(f.output() == out_vec{});
-        REQUIRE(f.did_end());
+        in.feed(close_event{});
+        REQUIRE(out.check(close_event{}));
+        in.feed(gated_event{});
+        in.feed_end();
+        REQUIRE(out.check_end());
     }
 
     SECTION("Gate open") {
-        f.feed_events({
-            open_event{},
-        });
-        REQUIRE(f.output() == out_vec{
-                                  open_event{},
-                              });
-        f.feed_events({
-            gated_event{},
-        });
-        REQUIRE(f.output() == out_vec{
-                                  gated_event{},
-                              });
-        f.feed_end({});
-        REQUIRE(f.output() == out_vec{});
-        REQUIRE(f.did_end());
+        in.feed(open_event{});
+        REQUIRE(out.check(open_event{}));
+        in.feed(gated_event{});
+        REQUIRE(out.check(gated_event{}));
+        in.feed_end();
+        REQUIRE(out.check_end());
     }
 }
