@@ -349,6 +349,7 @@ TEST_CASE("Batch bin increments", "[batch_bin_increments]") {
                                    stop_event, misc_event>>(
         batch_bin_increments<u32, start_event, stop_event>(
             ref_processor(out)));
+    in.require_output_checked(out);
 
     SECTION("Pass through unrelated") {
         in.feed(misc_event{42});

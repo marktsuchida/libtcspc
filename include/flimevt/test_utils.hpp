@@ -103,7 +103,7 @@ template <typename Es> class capture_output {
         return false;
     }
 
-    bool check_not_end() {
+    [[nodiscard]] bool check_not_end() {
         assert(!end_of_life);
         if (!output.empty()) {
             end_of_life = true;
@@ -124,7 +124,7 @@ template <typename Es> class capture_output {
         return true;
     }
 
-    bool check_end() {
+    [[nodiscard]] bool check_end() {
         assert(!end_of_life);
         if (!output.empty()) {
             end_of_life = true;
@@ -181,7 +181,7 @@ template <> class capture_output<event_set<>> {
         this->error = error;
     }
 
-    bool check_end() {
+    [[nodiscard]] bool check_end() {
         assert(!end_of_life);
         if (!ended) {
             end_of_life = true;
@@ -197,7 +197,7 @@ template <> class capture_output<event_set<>> {
         return true;
     }
 
-    bool check_not_end() {
+    [[nodiscard]] bool check_not_end() {
         assert(!end_of_life);
         if (ended) {
             end_of_life = true;
@@ -220,6 +220,9 @@ template <typename Es, typename D> class feed_input {
         "processor under test must handle the specified input events and end-of-stream");
 
     void require_outputs_checked() {
+        if (output_checks.empty())
+            throw std::logic_error(
+                "feed_input has no registered capture_output to check");
         for (auto &check : output_checks) {
             if (!check())
                 throw std::logic_error("unchecked output remains");
