@@ -5,8 +5,3 @@
  */
 
 #include "flimevt/picoquant_t3.hpp"
-
-#include "flimevt/discard.hpp"
-#include "flimevt/event_set.hpp"
-
-using namespace flimevt;

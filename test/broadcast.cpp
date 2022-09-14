@@ -8,11 +8,12 @@
 
 #include "flimevt/discard.hpp"
 #include "flimevt/event_set.hpp"
-
-#include "test_events.hpp"
+#include "flimevt/test_utils.hpp"
 
 using namespace flimevt;
-using namespace flimevt::test;
+
+using e0 = empty_test_event<0>;
+using e1 = empty_test_event<1>;
 
 static_assert(handles_event_set_v<internal::broadcast<>, event_set<>>);
 
@@ -20,16 +21,14 @@ static_assert(handles_event_set_v<
               internal::broadcast<discard_all<event_set<>>>, event_set<>>);
 
 static_assert(handles_event_set_v<
-              internal::broadcast<discard_all<event_set<test_event<0>>>>,
-              event_set<test_event<0>>>);
+              internal::broadcast<discard_all<event_set<e0>>>, event_set<e0>>);
 
-static_assert(handles_event_set_v<
-              internal::broadcast<discard_all<event_set<test_event<0>>>,
-                                  discard_all<event_set<test_event<0>>>>,
-              event_set<test_event<0>>>);
+static_assert(
+    handles_event_set_v<internal::broadcast<discard_all<event_set<e0>>,
+                                            discard_all<event_set<e0>>>,
+                        event_set<e0>>);
 
-static_assert(handles_event_set_v<
-              internal::broadcast<
-                  discard_all<event_set<test_event<0>>>,
-                  discard_all<event_set<test_event<0>, test_event<1>>>>,
-              event_set<test_event<0>>>);
+static_assert(
+    handles_event_set_v<internal::broadcast<discard_all<event_set<e0>>,
+                                            discard_all<event_set<e0, e1>>>,
+                        event_set<e0>>);

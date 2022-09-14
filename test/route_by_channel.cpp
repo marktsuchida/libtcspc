@@ -6,7 +6,6 @@
 
 #include "flimevt/route_by_channel.hpp"
 
-#include "flimevt/discard.hpp"
 #include "flimevt/ref_processor.hpp"
 #include "flimevt/test_utils.hpp"
 #include "flimevt/time_tagged_events.hpp"

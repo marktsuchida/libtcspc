@@ -6,12 +6,10 @@
 
 #include "flimevt/bh_spc.hpp"
 
-#include "flimevt/discard.hpp"
-#include "flimevt/event_set.hpp"
+#include <cstdint>
+#include <cstring>
 
 #include <catch2/catch.hpp>
-
-#include <cstring>
 
 using namespace flimevt;
 
@@ -20,7 +18,7 @@ TEST_CASE("ADCValue", "[bh_spc_event]") {
         bh_spc_event event;
         std::uint8_t bytes[4];
     } u;
-    memset(u.bytes, 0, 4);
+    std::memset(u.bytes, 0, 4);
 
     REQUIRE(u.event.get_adc_value() == 0);
 
@@ -44,7 +42,7 @@ TEST_CASE("RoutingSignals", "[bh_spc_event]") {
         bh_spc_event event;
         std::uint8_t bytes[4];
     } u;
-    memset(u.bytes, 0, 4);
+    std::memset(u.bytes, 0, 4);
 
     REQUIRE(u.event.get_routing_signals() == 0);
     REQUIRE(u.event.get_marker_bits() == 0);
@@ -75,7 +73,7 @@ TEST_CASE("Macrotime", "[bh_spc_event]") {
         bh_spc_event event;
         std::uint8_t bytes[4];
     } u;
-    memset(u.bytes, 0, 4);
+    std::memset(u.bytes, 0, 4);
 
     REQUIRE(u.event.get_macrotime() == 0);
 
@@ -99,7 +97,7 @@ TEST_CASE("Flags", "[bh_spc_event]") {
         bh_spc_event event;
         std::uint8_t bytes[4];
     } u;
-    memset(u.bytes, 0, 4);
+    std::memset(u.bytes, 0, 4);
 
     REQUIRE(!u.event.get_invalid_flag());
     REQUIRE(!u.event.get_macrotime_overflow_flag());
@@ -121,7 +119,7 @@ TEST_CASE("MacrotimeOverflow", "[bh_spc_event]") {
         bh_spc_event event;
         std::uint8_t bytes[4];
     } u;
-    memset(u.bytes, 0, 4);
+    std::memset(u.bytes, 0, 4);
 
     // The GAP flag is orthogonal to macrotime overflow. Test all combinations
     // of the other 3 flags. (Although it is expected that INVALID is always
@@ -153,7 +151,7 @@ TEST_CASE("MacrotimeOverflowCount", "[bh_spc_event]") {
         bh_spc_event event;
         std::uint8_t bytes[4];
     } u;
-    memset(u.bytes, 0, 4);
+    std::memset(u.bytes, 0, 4);
 
     REQUIRE(u.event.get_multiple_macrotime_overflow_count() == 0);
 

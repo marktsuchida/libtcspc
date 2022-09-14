@@ -5,16 +5,3 @@
  */
 
 #include "flimevt/buffer.hpp"
-
-#include "flimevt/discard.hpp"
-#include "flimevt/event_set.hpp"
-
-#include "test_events.hpp"
-
-using namespace flimevt;
-using namespace flimevt::test;
-
-static_assert(handles_event_set_v<
-              internal::buffer_event<test_event<0>,
-                                     discard_all<event_set<test_event<0>>>>,
-              event_set<test_event<0>>>);
