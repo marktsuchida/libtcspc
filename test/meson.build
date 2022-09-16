@@ -24,6 +24,7 @@ flimevents_tests_srcs = [
     'gate.cpp',
     'generate_timings.cpp',
     'histogram.cpp',
+    'histogram_array.cpp',
     'histogram_events.cpp',
     'legacy_histogram.cpp',
     'line_clock_pixellator.cpp',

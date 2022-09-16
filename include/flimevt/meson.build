@@ -18,6 +18,7 @@ public_cpp_headers = files(
     'gate.hpp',
     'generate_timings.hpp',
     'histogram.hpp',
+    'histogram_array.hpp',
     'histogram_events.hpp',
     'legacy_histogram.hpp',
     'line_clock_pixellator.hpp',

@@ -21,13 +21,15 @@
 namespace flimevt {
 
 namespace internal {
-template <typename T>
-inline void print_vector(std::ostream &s, std::vector<T> const &v) {
+
+template <typename It>
+inline void print_range(std::ostream &s, It first, It last) {
     s << "{ ";
-    for (auto const &e : v)
-        s << e << ", ";
-    s << "}";
+    while (first != last)
+        s << *first++ << ", ";
+    s << '}';
 }
+
 } // namespace internal
 
 /**
@@ -135,7 +137,7 @@ template <typename T>
 inline std::ostream &operator<<(std::ostream &s,
                                 bin_increment_batch_event<T> const &e) {
     s << "bin_increment_batch(" << e.start << ", " << e.stop << ", ";
-    internal::print_vector(s, e.bin_indices);
+    internal::print_range(s, e.bin_indices.begin(), e.bin_indices.end());
     return s << ')';
 }
 
@@ -205,7 +207,7 @@ constexpr bool operator==(histogram_event<T> const &lhs,
 template <typename T>
 inline std::ostream &operator<<(std::ostream &s, histogram_event<T> const &e) {
     s << "histogram(" << e.start << ", " << e.stop << ", ";
-    internal::print_vector(s, e.histogram);
+    internal::print_range(s, e.histogram.begin(), e.histogram.end());
     return s << ", " << e.total << ", " << e.saturated << ')';
 }
 
@@ -286,7 +288,7 @@ template <typename T>
 inline std::ostream &operator<<(std::ostream &s,
                                 accumulated_histogram_event<T> const &e) {
     s << "accumulated_histogram(" << e.start << ", " << e.stop << ", ";
-    internal::print_vector(s, e.histogram);
+    internal::print_range(s, e.histogram.begin(), e.histogram.end());
     return s << ", " << e.total << ", " << e.saturated << ", " << e.has_data
              << ", " << e.is_end_of_stream << ')';
 }
@@ -394,7 +396,7 @@ template <typename TBinIndex> class base_bin_increment_batch_journal_event {
         using pointer = value_type const *;
         using iterator_category = std::input_iterator_tag;
 
-        const_iterator &operator++() {
+        const_iterator &operator++() noexcept {
             assert(encoded_indices_iter != encoded_indices_end);
 
             for (;;) {
@@ -414,13 +416,13 @@ template <typename TBinIndex> class base_bin_increment_batch_journal_event {
             return *this;
         }
 
-        const_iterator operator++(int) {
+        const_iterator operator++(int) noexcept {
             const_iterator ret = *this;
             ++(*this);
             return ret;
         }
 
-        value_type operator*() const {
+        value_type operator*() const noexcept {
             assert(encoded_indices_iter != encoded_indices_end);
 
             std::size_t batch_index = prev_batch_index;
@@ -440,14 +442,14 @@ template <typename TBinIndex> class base_bin_increment_batch_journal_event {
                     bin_indices_iter + batch_size};
         }
 
-        bool operator==(const_iterator other) const {
+        bool operator==(const_iterator other) const noexcept {
             return prev_batch_index == other.prev_batch_index &&
                    encoded_indices_iter == other.encoded_indices_iter &&
                    encoded_indices_end == other.encoded_indices_end &&
                    bin_indices_iter == other.bin_indices_iter;
         }
 
-        bool operator!=(const_iterator other) const {
+        bool operator!=(const_iterator other) const noexcept {
             return !(*this == other);
         }
     };
@@ -474,6 +476,15 @@ template <typename TBinIndex> class base_bin_increment_batch_journal_event {
         using std::swap;
         swap(*this, other);
     }
+
+    bool operator==(
+        base_bin_increment_batch_journal_event const &other) const noexcept {
+        return t_start == other.t_start && t_stop == other.t_stop &&
+               n_batches == other.n_batches &&
+               last_stored_index == other.last_stored_index &&
+               encoded_indices == other.encoded_indices &&
+               all_bin_indices == other.all_bin_indices;
+    }
 };
 
 } // namespace internal
@@ -497,5 +508,46 @@ class bin_increment_batch_journal_event
 template <typename TBinIndex>
 class partial_bin_increment_batch_journal_event
     : public internal::base_bin_increment_batch_journal_event<TBinIndex> {};
+
+namespace internal {
+
+template <typename T>
+inline void print_journal_content(
+    std::ostream &s,
+    internal::base_bin_increment_batch_journal_event<T> const &je) {
+    s << "{ ";
+    for (auto [index, begin, end] : je) {
+        s << '(' << index << ", ";
+        print_range(s, begin, end);
+        s << ')';
+    }
+    s << '}';
+}
+
+} // namespace internal
+
+/** \brief Stream insertion operator for bin_increment_batch_journal_event */
+template <typename T>
+inline std::ostream &
+operator<<(std::ostream &s, bin_increment_batch_journal_event<T> const &e) {
+    s << "bin_increment_batch_journal_event(" << e.start() << ", " << e.stop()
+      << ", " << e.num_batches() << ", ";
+    internal::print_journal_content(s, e);
+    return s << ')';
+}
+
+/**
+ * \brief Stream insertion operator for
+ * partial_bin_increment_batch_journal_event
+ */
+template <typename T>
+inline std::ostream &
+operator<<(std::ostream &s,
+           partial_bin_increment_batch_journal_event<T> const &e) {
+    s << "partial_bin_increment_batch_journal_event(" << e.start() << ", "
+      << e.stop() << ", " << e.num_batches() << ", ";
+    internal::print_journal_content(s, e);
+    return s << ')';
+}
 
 } // namespace flimevt

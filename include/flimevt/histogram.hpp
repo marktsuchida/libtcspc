@@ -9,7 +9,6 @@
 #include "binning.hpp"
 #include "common.hpp"
 #include "histogram_events.hpp"
-#include "time_tagged_events.hpp"
 
 #include <algorithm>
 #include <cstddef>
