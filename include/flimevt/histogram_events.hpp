@@ -8,8 +8,14 @@
 
 #include "common.hpp"
 
+#include <algorithm>
+#include <cassert>
+#include <cstddef>
 #include <cstdint>
+#include <iterator>
 #include <ostream>
+#include <tuple>
+#include <utility>
 #include <vector>
 
 namespace flimevt {
@@ -284,5 +290,212 @@ inline std::ostream &operator<<(std::ostream &s,
     return s << ", " << e.total << ", " << e.saturated << ", " << e.has_data
              << ", " << e.is_end_of_stream << ')';
 }
+
+namespace internal {
+
+template <typename TBinIndex> class base_bin_increment_batch_journal_event {
+    macrotime t_start = 0; // = start of first batch
+    macrotime t_stop = 0;  // = stop of last batch
+    std::size_t n_batches = 0;
+
+    // Index of last non-empty batch. We use -1, not 0, as initial value so
+    // that the first entry in encoded_indices has a positive delta.
+    std::size_t last_stored_index = -1;
+
+    // Delta- and run-length-encoded batch indices of stored batches, storing
+    // delta (index diff since last non-empty batch) and count (batch size). If
+    // delta or count exceeds 255, use extra entries:
+    // E.g., delta = 300: (255, 0), (45, count)
+    // E.g., count = 300: (delta, 255), (0, 45)
+    // E.g., delta = 270, value = 500: (255, 0), (15, 255), (0, 245)
+    std::vector<std::pair<std::uint8_t, std::uint8_t>> encoded_indices;
+
+    // The bin indices from all batches, concatenated.
+    std::vector<TBinIndex> all_bin_indices;
+
+  public:
+    // Rule of zero, default constructor.
+
+    std::size_t num_batches() const noexcept { return n_batches; }
+
+    macrotime start() const noexcept { return t_start; }
+    macrotime stop() const noexcept { return t_stop; }
+    void start(macrotime t) noexcept { t_start = t; }
+    void stop(macrotime t) noexcept { t_stop = t; }
+
+    void clear() noexcept {
+        t_start = t_stop = 0;
+        n_batches = 0;
+        last_stored_index = -1;
+        encoded_indices.clear();
+        all_bin_indices.clear();
+    }
+
+    void clear_and_shrink_to_fit() {
+        t_start = t_stop = 0;
+        n_batches = 0;
+        last_stored_index = -1;
+        encoded_indices.clear();
+        encoded_indices.shrink_to_fit();
+        all_bin_indices.clear();
+        all_bin_indices.shrink_to_fit();
+    }
+
+    void append_batch(std::vector<TBinIndex> const &bin_indices) {
+        std::size_t const elem_index = n_batches;
+        if (std::size_t batch_size = bin_indices.size(); batch_size > 0) {
+            std::size_t delta = elem_index - last_stored_index;
+            while (delta > 255) {
+                encoded_indices.emplace_back(255, 0);
+                delta -= 255;
+            }
+            while (batch_size > 255) {
+                encoded_indices.emplace_back(delta, 255);
+                batch_size -= 255;
+                delta = 0;
+            }
+            encoded_indices.emplace_back(delta, batch_size);
+            last_stored_index = elem_index;
+
+            all_bin_indices.insert(all_bin_indices.end(), bin_indices.begin(),
+                                   bin_indices.end());
+        }
+        n_batches = elem_index + 1;
+    }
+
+    class const_iterator {
+        // Constant iterator yielding tuples (batch_index, bin_index_begin,
+        // bin_index_end).
+        //
+        // Our iterator, when dereferenced, yields the value type (the above
+        // tuple) directly instead of a reference. For this reason in can only
+        // be an input iterator, not a forward iterator. (Forward iterators are
+        // required to return a reference when dereferenced.)
+
+        using bin_index_vector_type = std::vector<TBinIndex>;
+        using encoded_index_vector_type =
+            std::vector<std::pair<std::uint8_t, std::uint8_t>>;
+
+        std::size_t prev_batch_index = -1;
+        typename encoded_index_vector_type::const_iterator
+            encoded_indices_iter;
+        typename encoded_index_vector_type::const_iterator encoded_indices_end;
+        typename bin_index_vector_type::const_iterator bin_indices_iter;
+
+        friend class base_bin_increment_batch_journal_event;
+
+      public:
+        using value_type =
+            std::tuple<std::size_t,
+                       typename bin_index_vector_type::const_iterator,
+                       typename bin_index_vector_type::const_iterator>;
+        using difference_type = std::ptrdiff_t;
+        using reference = value_type const &;
+        using pointer = value_type const *;
+        using iterator_category = std::input_iterator_tag;
+
+        const_iterator &operator++() {
+            assert(encoded_indices_iter != encoded_indices_end);
+
+            for (;;) {
+                prev_batch_index += encoded_indices_iter->first;
+                if (encoded_indices_iter->second != 0)
+                    break;
+                ++encoded_indices_iter;
+            }
+
+            std::size_t batch_size = encoded_indices_iter->second;
+            while (++encoded_indices_iter != encoded_indices_end &&
+                   encoded_indices_iter->first == 0)
+                batch_size += encoded_indices_iter->second;
+
+            bin_indices_iter += batch_size;
+
+            return *this;
+        }
+
+        const_iterator operator++(int) {
+            const_iterator ret = *this;
+            ++(*this);
+            return ret;
+        }
+
+        value_type operator*() const {
+            assert(encoded_indices_iter != encoded_indices_end);
+
+            std::size_t batch_index = prev_batch_index;
+            auto tmp_iter = encoded_indices_iter;
+            for (;;) {
+                batch_index += tmp_iter->first;
+                if (tmp_iter->second != 0)
+                    break;
+                ++tmp_iter;
+            }
+
+            std::size_t batch_size = tmp_iter->second;
+            while (++tmp_iter != encoded_indices_end && tmp_iter->first == 0)
+                batch_size += tmp_iter->second;
+
+            return {batch_index, bin_indices_iter,
+                    bin_indices_iter + batch_size};
+        }
+
+        bool operator==(const_iterator other) const {
+            return prev_batch_index == other.prev_batch_index &&
+                   encoded_indices_iter == other.encoded_indices_iter &&
+                   encoded_indices_end == other.encoded_indices_end &&
+                   bin_indices_iter == other.bin_indices_iter;
+        }
+
+        bool operator!=(const_iterator other) const {
+            return !(*this == other);
+        }
+    };
+
+    const_iterator begin() const noexcept {
+        const_iterator ret;
+        ret.prev_batch_index = -1;
+        ret.encoded_indices_iter = encoded_indices.cbegin();
+        ret.encoded_indices_end = encoded_indices.cend();
+        ret.bin_indices_iter = all_bin_indices.cbegin();
+        return ret;
+    }
+
+    const_iterator end() const noexcept {
+        const_iterator ret;
+        ret.prev_batch_index = last_stored_index;
+        ret.encoded_indices_iter = encoded_indices.cend();
+        ret.encoded_indices_end = encoded_indices.cend();
+        ret.bin_indices_iter = all_bin_indices.cend();
+        return ret;
+    }
+
+    void swap(base_bin_increment_batch_journal_event &other) noexcept {
+        using std::swap;
+        swap(*this, other);
+    }
+};
+
+} // namespace internal
+
+/**
+ * \brief Event carrying the journal for bin increment batches for a whole
+ * frame.
+ *
+ * \tparam TBinIndex bin index type
+ */
+template <typename TBinIndex>
+class bin_increment_batch_journal_event
+    : public internal::base_bin_increment_batch_journal_event<TBinIndex> {};
+
+/**
+ * \brief Event carrying the journal for bin increment batches for an
+ * incomplete frame.
+ *
+ * \tparam TBinIndex bin index type
+ */
+template <typename TBinIndex>
+class partial_bin_increment_batch_journal_event
+    : public internal::base_bin_increment_batch_journal_event<TBinIndex> {};
 
 } // namespace flimevt
