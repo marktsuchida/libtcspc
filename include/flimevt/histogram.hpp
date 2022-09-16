@@ -80,8 +80,8 @@ class histogram {
 
     D downstream;
 
-    void emit_accumulated(bool had_data, bool end_of_stream) noexcept {
-        accumulated_histogram_event<TBin> e;
+    void emit_concluding(bool had_data, bool end_of_stream) noexcept {
+        concluding_histogram_event<TBin> e;
         e.start = had_data ? hist.start : 0;
         e.stop = had_data ? hist.stop : 0;
         e.histogram.swap(hist.histogram);
@@ -138,12 +138,12 @@ class histogram {
                 finish(std::make_exception_ptr(histogram_overflow_error(
                     "Histogram bin overflowed on first increment")));
             } else {
-                emit_accumulated(true, false);
+                emit_concluding(true, false);
                 reset();
                 handle_event(event);
             }
         } else if constexpr (std::is_same_v<Ovfl, stop_on_overflow>) {
-            emit_accumulated(!just_started, true);
+            emit_concluding(!just_started, true);
             finish({});
         } else if constexpr (std::is_same_v<Ovfl, error_on_overflow>) {
             finish(std::make_exception_ptr(
@@ -157,7 +157,7 @@ class histogram {
 
     void handle_event([[maybe_unused]] EReset const &event) noexcept {
         if (!finished) {
-            emit_accumulated(started, false);
+            emit_concluding(started, false);
             reset();
         }
     }
@@ -168,7 +168,7 @@ class histogram {
 
     void handle_end(std::exception_ptr error) noexcept {
         if (!finished) {
-            emit_accumulated(started, true);
+            emit_concluding(started, true);
             finish(error);
         }
     }
@@ -186,7 +186,7 @@ class histogram {
  * When a reset occurs (via incoming \c EReset or by overflowing when \c Ovfl
  * is reset_on_overflow), the stored histogram is cleared and restarted.
  *
- * An \c accumulated_histogram_event<TBin> is emitted before each reset and
+ * A \c concluding_histogram_event<TBin> is emitted before each reset and
  * before successful end of stream, containing the same data as the previous \c
  * histogram_event<TBin> (or empty if there was none since the start or last
  * reset).
@@ -340,8 +340,8 @@ class accumulate_histograms {
         }
     }
 
-    void emit_accumulated(bool had_batches, bool end_of_stream) noexcept {
-        accumulated_histogram_event<TBin> e;
+    void emit_concluding(bool had_batches, bool end_of_stream) noexcept {
+        concluding_histogram_event<TBin> e;
         e.start = had_batches ? hist.start : 0;
         e.stop = had_batches ? hist.stop : 0;
         e.histogram.swap(hist.histogram);
@@ -400,14 +400,14 @@ class accumulate_histograms {
                 } else {
                     roll_back_increments(event.bin_indices.cbegin(),
                                          bin_index_it);
-                    emit_accumulated(true, false);
+                    emit_concluding(true, false);
                     reset();
                     handle_event(event);
                 }
                 return;
             } else if constexpr (std::is_same_v<Ovfl, stop_on_overflow>) {
                 roll_back_increments(event.bin_indices.cbegin(), bin_index_it);
-                emit_accumulated(!just_started, true);
+                emit_concluding(!just_started, true);
                 finish({});
                 return;
             } else if constexpr (std::is_same_v<Ovfl, error_on_overflow>) {
@@ -427,7 +427,7 @@ class accumulate_histograms {
 
     void handle_event([[maybe_unused]] EReset const &event) noexcept {
         if (!finished) {
-            emit_accumulated(started, false);
+            emit_concluding(started, false);
             reset();
         }
     }
@@ -438,7 +438,7 @@ class accumulate_histograms {
 
     void handle_end(std::exception_ptr error) noexcept {
         if (!finished) {
-            emit_accumulated(started, true);
+            emit_concluding(started, true);
             finish(error);
         }
     }
@@ -457,10 +457,10 @@ class accumulate_histograms {
  * When a reset occurs (via incoming \c EReset or by overflowing when \c Ovfl
  * is reset_on_overflow), and when the incoming stream ends, the accumulated
  * histogram up to the previous batch (not including counts from any incomplete
- * batch) is emitted as a \c accumulated_histogram_event<TBin> event. (Its
- * contents are the same as the preceding \c histogram_event<TBin>, except that
- * an empty \c accumulated_histogram_event<TBin> is emitted even if there were
- * no batches since the start or last reset.)
+ * batch) is emitted as a \c concluding_histogram_event<TBin>. (Its contents
+ * are the same as the preceding \c histogram_event<TBin>, except that an empty
+ * \c concluding_histogram_event<TBin> is emitted even if there were no batches
+ * since the start or last reset.)
  *
  * Behavior is undefined if an incoming \c bin_increment_batch_event contains a
  * bin index beyond the size of the histogram.

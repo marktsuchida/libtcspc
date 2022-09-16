@@ -212,16 +212,16 @@ inline std::ostream &operator<<(std::ostream &s, histogram_event<T> const &e) {
 }
 
 /**
- * \brief Event representing the final result of accumulating histograms.
+ * \brief Event representing the final result of histogramming.
  *
- * This event is emitted by accumulate_histograms once per accumulation (that
- * is, before each reset or end of stream) to provide the accumulated result.
- * The contained histogram covers only whole batches; counts from any partial
- * batch are not included.
+ * This event is emitted by histogram and accumulate_histograms once per
+ * accumulation (that is, before each reset or end of stream) to provide the
+ * accumulated result. The contained histogram covers only whole batches;
+ * counts from any partial batch are not included.
  *
  * \tparam TBin the data type of the histogram bins
  */
-template <typename TBin> struct accumulated_histogram_event {
+template <typename TBin> struct concluding_histogram_event {
     /**
      * \brief The macrotime of the start of the accumulation.
      *
@@ -273,21 +273,21 @@ template <typename TBin> struct accumulated_histogram_event {
     bool is_end_of_stream = false;
 };
 
-/** \brief Equality operator for accumulated_histogram_event. */
+/** \brief Equality operator for concluding_histogram_event. */
 template <typename T>
-constexpr bool operator==(accumulated_histogram_event<T> const &lhs,
-                          accumulated_histogram_event<T> const &rhs) noexcept {
+constexpr bool operator==(concluding_histogram_event<T> const &lhs,
+                          concluding_histogram_event<T> const &rhs) noexcept {
     return lhs.start == rhs.start && lhs.stop == rhs.stop &&
            lhs.histogram == rhs.histogram && lhs.total == rhs.total &&
            lhs.saturated == rhs.saturated && lhs.has_data == rhs.has_data &&
            lhs.is_end_of_stream == rhs.is_end_of_stream;
 }
 
-/** \brief Stream insertion operator for accumulated_histogram_event. */
+/** \brief Stream insertion operator for concluding_histogram_event. */
 template <typename T>
 inline std::ostream &operator<<(std::ostream &s,
-                                accumulated_histogram_event<T> const &e) {
-    s << "accumulated_histogram(" << e.start << ", " << e.stop << ", ";
+                                concluding_histogram_event<T> const &e) {
+    s << "concluding_histogram(" << e.start << ", " << e.stop << ", ";
     internal::print_range(s, e.histogram.begin(), e.histogram.end());
     return s << ", " << e.total << ", " << e.saturated << ", " << e.has_data
              << ", " << e.is_end_of_stream << ')';
