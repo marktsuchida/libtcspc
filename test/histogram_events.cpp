@@ -12,64 +12,61 @@
 
 using namespace flimevt;
 
-TEST_CASE("Journal basic operations", "[bin_increment_batch_journal_event]") {
-    bin_increment_batch_journal_event<std::uint16_t> e;
-    REQUIRE(e.num_batches() == 0);
-    REQUIRE(e.start() == 0);
-    REQUIRE(e.stop() == 0);
-    REQUIRE(e.begin() == e.end());
+using u16 = std::uint16_t;
 
-    e.append_batch({std::uint16_t(42)});
-    REQUIRE(e.num_batches() == 1);
+TEST_CASE("Journal basic operations", "[bin_increment_batch_journal]") {
+    bin_increment_batch_journal<u16> j;
+    REQUIRE(j.num_batches() == 0);
+    REQUIRE(j.begin() == j.end());
 
-    partial_bin_increment_batch_journal_event<std::uint16_t> e2;
-    e.swap(e2);
-    REQUIRE(e.num_batches() == 0);
-    REQUIRE(e2.num_batches() == 1);
-    e2.swap(e);
-    REQUIRE(e.num_batches() == 1);
-    REQUIRE(e2.num_batches() == 0);
+    j.append_batch({u16(42)});
+    REQUIRE(j.num_batches() == 1);
 
-    e.clear();
-    REQUIRE(e.num_batches() == 0);
+    bin_increment_batch_journal<u16> j2;
+    j.swap(j2);
+    REQUIRE(j.num_batches() == 0);
+    REQUIRE(j2.num_batches() == 1);
+    j2.swap(j);
+    REQUIRE(j.num_batches() == 1);
+    REQUIRE(j2.num_batches() == 0);
 
-    e.start(100);
-    REQUIRE(e.start() == 100);
-    e.stop(200);
-    REQUIRE(e.stop() == 200);
-    e.clear_and_shrink_to_fit();
-    REQUIRE(e.start() == 0);
-    REQUIRE(e.stop() == 0);
+    bin_increment_batch_journal<u16> j3 = j;
+    REQUIRE(j3.num_batches() == 1);
+
+    j.clear();
+    REQUIRE(j.num_batches() == 0);
+    j3.clear_and_shrink_to_fit();
+    REQUIRE(j3.num_batches() == 0);
 }
 
-TEST_CASE("Journal iterator", "[bin_increment_batch_journal_event]") {
-    bin_increment_batch_journal_event<std::uint16_t> e;
+TEST_CASE("Journal iterator", "[bin_increment_batch_journal]") {
+    bin_increment_batch_journal<u16> j;
 
     SECTION("Empty") {
-        for ([[maybe_unused]] auto [index, begin, end] : e) {
+        for ([[maybe_unused]] auto [index, begin, end] : j) {
             REQUIRE(false);
         }
 
-        e.append_batch({});
-        e.append_batch({});
-        REQUIRE(e.num_batches() == 2);
-        REQUIRE(e.begin() == e.end());
+        j.append_batch({});
+        j.append_batch({});
+        REQUIRE(j.num_batches() == 2);
+        REQUIRE(j.begin() == j.end());
     }
 
     SECTION("Start with non-empty batch") {
-        e.append_batch({42});
+        j.append_batch({42});
         {
-            auto it = e.begin();
-            REQUIRE(it != e.end());
+            auto it = j.begin();
+            REQUIRE(it != j.end());
             auto [index, begin, end] = *it;
             REQUIRE(index == 0);
             REQUIRE(std::distance(begin, end) == 1);
             REQUIRE(*begin == 42);
         }
 
-        e.append_batch({43, 44});
+        j.append_batch({43, 44});
         {
-            auto it = e.begin();
+            auto it = j.begin();
             {
                 auto [index, begin, end] = *it;
                 REQUIRE(index == 0);
@@ -77,7 +74,7 @@ TEST_CASE("Journal iterator", "[bin_increment_batch_journal_event]") {
                 REQUIRE(*begin == 42);
             }
             ++it;
-            REQUIRE(it != e.end());
+            REQUIRE(it != j.end());
             {
                 auto [index, begin, end] = *it;
                 REQUIRE(index == 1);
@@ -90,12 +87,12 @@ TEST_CASE("Journal iterator", "[bin_increment_batch_journal_event]") {
     }
 
     SECTION("Start with empty batch") {
-        e.append_batch({});
-        REQUIRE(e.num_batches() == 1);
-        REQUIRE(e.begin() == e.end());
-        e.append_batch({42});
-        auto it = e.begin();
-        REQUIRE(it != e.end());
+        j.append_batch({});
+        REQUIRE(j.num_batches() == 1);
+        REQUIRE(j.begin() == j.end());
+        j.append_batch({42});
+        auto it = j.begin();
+        REQUIRE(it != j.end());
         auto [index, begin, end] = *it;
         REQUIRE(index == 1);
         REQUIRE(std::distance(begin, end) == 1);
@@ -103,15 +100,15 @@ TEST_CASE("Journal iterator", "[bin_increment_batch_journal_event]") {
     }
 
     SECTION("Start with 2 empty batches") {
-        e.append_batch({});
-        REQUIRE(e.num_batches() == 1);
-        REQUIRE(e.begin() == e.end());
-        e.append_batch({});
-        REQUIRE(e.num_batches() == 2);
-        REQUIRE(e.begin() == e.end());
-        e.append_batch({42});
-        auto it = e.begin();
-        REQUIRE(it != e.end());
+        j.append_batch({});
+        REQUIRE(j.num_batches() == 1);
+        REQUIRE(j.begin() == j.end());
+        j.append_batch({});
+        REQUIRE(j.num_batches() == 2);
+        REQUIRE(j.begin() == j.end());
+        j.append_batch({42});
+        auto it = j.begin();
+        REQUIRE(it != j.end());
         auto [index, begin, end] = *it;
         REQUIRE(index == 2);
         REQUIRE(std::distance(begin, end) == 1);
@@ -120,11 +117,11 @@ TEST_CASE("Journal iterator", "[bin_increment_batch_journal_event]") {
 
     SECTION("Start with 255 empty batches") {
         for (int i = 0; i < 255; ++i)
-            e.append_batch({});
-        e.append_batch({42});
-        REQUIRE(e.num_batches() == 256);
-        auto it = e.begin();
-        REQUIRE(it != e.end());
+            j.append_batch({});
+        j.append_batch({42});
+        REQUIRE(j.num_batches() == 256);
+        auto it = j.begin();
+        REQUIRE(it != j.end());
         auto [index, begin, end] = *it;
         REQUIRE(index == 255);
         REQUIRE(std::distance(begin, end) == 1);
@@ -133,11 +130,11 @@ TEST_CASE("Journal iterator", "[bin_increment_batch_journal_event]") {
 
     SECTION("Start with 256 empty batches") {
         for (int i = 0; i < 256; ++i)
-            e.append_batch({});
-        e.append_batch({42});
-        REQUIRE(e.num_batches() == 257);
-        auto it = e.begin();
-        REQUIRE(it != e.end());
+            j.append_batch({});
+        j.append_batch({42});
+        REQUIRE(j.num_batches() == 257);
+        auto it = j.begin();
+        REQUIRE(it != j.end());
         auto [index, begin, end] = *it;
         REQUIRE(index == 256);
         REQUIRE(std::distance(begin, end) == 1);
@@ -145,11 +142,11 @@ TEST_CASE("Journal iterator", "[bin_increment_batch_journal_event]") {
     }
 
     SECTION("Start with batch of size 255") {
-        std::vector<std::uint16_t> batch(255, 42);
-        e.append_batch(batch);
-        REQUIRE(e.num_batches() == 1);
-        auto it = e.begin();
-        REQUIRE(it != e.end());
+        std::vector<u16> batch(255, 42);
+        j.append_batch(batch);
+        REQUIRE(j.num_batches() == 1);
+        auto it = j.begin();
+        REQUIRE(it != j.end());
         auto [index, begin, end] = *it;
         REQUIRE(index == 0);
         REQUIRE(std::distance(begin, end) == 255);
@@ -157,11 +154,11 @@ TEST_CASE("Journal iterator", "[bin_increment_batch_journal_event]") {
     }
 
     SECTION("Start with batch of size 256") {
-        std::vector<std::uint16_t> batch(256, 42);
-        e.append_batch(batch);
-        REQUIRE(e.num_batches() == 1);
-        auto it = e.begin();
-        REQUIRE(it != e.end());
+        std::vector<u16> batch(256, 42);
+        j.append_batch(batch);
+        REQUIRE(j.num_batches() == 1);
+        auto it = j.begin();
+        REQUIRE(it != j.end());
         auto [index, begin, end] = *it;
         REQUIRE(index == 0);
         REQUIRE(std::distance(begin, end) == 256);
@@ -169,14 +166,14 @@ TEST_CASE("Journal iterator", "[bin_increment_batch_journal_event]") {
     }
 
     SECTION("Batch of size 256 following 255 empty batches") {
-        std::vector<std::uint16_t> batch(256, 123);
-        e.append_batch({42});
+        std::vector<u16> batch(256, 123);
+        j.append_batch({42});
         for (int i = 0; i < 255; ++i)
-            e.append_batch({});
-        e.append_batch(batch);
-        REQUIRE(e.num_batches() == 257);
-        auto it = e.begin();
-        REQUIRE(it != e.end());
+            j.append_batch({});
+        j.append_batch(batch);
+        REQUIRE(j.num_batches() == 257);
+        auto it = j.begin();
+        REQUIRE(it != j.end());
         {
             auto [index, begin, end] = *it;
             REQUIRE(index == 0);
@@ -184,7 +181,7 @@ TEST_CASE("Journal iterator", "[bin_increment_batch_journal_event]") {
             REQUIRE(*begin == 42);
         }
         ++it;
-        REQUIRE(it != e.end());
+        REQUIRE(it != j.end());
         {
             auto [index, begin, end] = *it;
             REQUIRE(index == 256);

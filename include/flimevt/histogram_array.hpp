@@ -24,7 +24,7 @@ namespace internal {
 template <typename TBinIndex, typename EStart, typename D>
 class journal_bin_increment_batches {
     bool started = false;
-    bin_increment_batch_journal_event<TBinIndex> journal;
+    bin_increment_batch_journal_event<TBinIndex> je;
 
     std::size_t const batches_per_cycle;
 
@@ -42,28 +42,30 @@ class journal_bin_increment_batches {
         if (!started)
             return;
 
-        if (journal.num_batches() == 0)
-            journal.start(event.start);
+        if (je.journal.num_batches() == 0)
+            je.start = event.start;
 
-        journal.append_batch(event.bin_indices);
+        je.journal.append_batch(event.bin_indices);
         downstream.handle_event(event);
 
-        if (journal.num_batches() == batches_per_cycle) {
-            journal.stop(event.stop);
-            downstream.handle_event(journal);
+        if (je.journal.num_batches() == batches_per_cycle) {
+            je.stop = event.stop;
+            downstream.handle_event(je);
             started = false;
         }
     }
 
     void handle_event(EStart const &event) noexcept {
         if (started) {
-            partial_bin_increment_batch_journal_event<TBinIndex> e;
-            e.swap(journal);
+            partial_bin_increment_batch_journal_event<TBinIndex> e{
+                je.start, je.stop, {}};
+            e.journal.swap(je.journal);
             downstream.handle_event(e);
-            journal.swap(e);
+            je.journal.swap(e.journal);
         }
         started = true;
-        journal.clear();
+        je.start = je.stop = 0;
+        je.journal.clear();
         downstream.handle_event(event);
     }
 
@@ -73,12 +75,13 @@ class journal_bin_increment_batches {
 
     void handle_end(std::exception_ptr error) noexcept {
         if (started) {
-            partial_bin_increment_batch_journal_event<TBinIndex> e;
-            e.swap(journal);
+            partial_bin_increment_batch_journal_event<TBinIndex> e{
+                je.start, je.stop, {}};
+            e.journal.swap(je.journal);
             downstream.handle_event(e);
-            journal.swap(e);
+            je.journal.swap(e.journal);
         }
-        journal.clear_and_shrink_to_fit();
+        je.journal.clear_and_shrink_to_fit();
         downstream.handle_end(error);
     }
 };

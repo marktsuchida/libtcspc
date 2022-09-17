@@ -293,12 +293,13 @@ inline std::ostream &operator<<(std::ostream &s,
              << ", " << e.is_end_of_stream << ')';
 }
 
-namespace internal {
-
-template <typename TBinIndex> class base_bin_increment_batch_journal_event {
-    macrotime t_start = 0; // = start of first batch
-    macrotime t_stop = 0;  // = stop of last batch
-    std::size_t n_batches = 0;
+/**
+ * \brief Data structure representing a log of bin increment batches.
+ *
+ * \tparam TBinIndex bin index type
+ */
+template <typename TBinIndex> class bin_increment_batch_journal {
+    std::size_t n_batches = 0; // Including empty batches.
 
     // Index of last non-empty batch. We use -1, not 0, as initial value so
     // that the first entry in encoded_indices has a positive delta.
@@ -316,36 +317,51 @@ template <typename TBinIndex> class base_bin_increment_batch_journal_event {
     std::vector<TBinIndex> all_bin_indices;
 
   public:
-    // Rule of zero, default constructor.
+    // Rule of zero
 
+    /**
+     * \brief Return the number of batches journaled.
+     *
+     * \return the number of batches stored
+     */
     std::size_t num_batches() const noexcept { return n_batches; }
 
-    macrotime start() const noexcept { return t_start; }
-    macrotime stop() const noexcept { return t_stop; }
-    void start(macrotime t) noexcept { t_start = t; }
-    void stop(macrotime t) noexcept { t_stop = t; }
-
+    /**
+     * \brief Clear this journal.
+     */
     void clear() noexcept {
-        t_start = t_stop = 0;
         n_batches = 0;
         last_stored_index = -1;
         encoded_indices.clear();
         all_bin_indices.clear();
     }
 
+    /**
+     * \brief Clear this journal and release memory.
+     */
     void clear_and_shrink_to_fit() {
-        t_start = t_stop = 0;
         n_batches = 0;
         last_stored_index = -1;
+
+        // Optimizers work better when the clear() and shrink_to_fit() are
+        // juxtaposed.
         encoded_indices.clear();
         encoded_indices.shrink_to_fit();
         all_bin_indices.clear();
         all_bin_indices.shrink_to_fit();
     }
 
-    void append_batch(std::vector<TBinIndex> const &bin_indices) {
+    /**
+     * \brief Append a bin increment batch to this journal.
+     *
+     * \tparam It random access iterator type
+     * \param first iterator pointing to begining of batch (bin indices)
+     * \param last iterator pointing to past-end of batch
+     */
+    template <typename It> void append_batch(It first, It last) {
         std::size_t const elem_index = n_batches;
-        if (std::size_t batch_size = bin_indices.size(); batch_size > 0) {
+        if (std::size_t batch_size = std::distance(first, last);
+            batch_size > 0) {
             std::size_t delta = elem_index - last_stored_index;
             while (delta > 255) {
                 encoded_indices.emplace_back(255, 0);
@@ -359,12 +375,39 @@ template <typename TBinIndex> class base_bin_increment_batch_journal_event {
             encoded_indices.emplace_back(delta, batch_size);
             last_stored_index = elem_index;
 
-            all_bin_indices.insert(all_bin_indices.end(), bin_indices.begin(),
-                                   bin_indices.end());
+            all_bin_indices.insert(all_bin_indices.end(), first, last);
         }
         n_batches = elem_index + 1;
     }
 
+    /**
+     * \brief Append a bin increment batch to this journal.
+     *
+     * This is a convenience function taking a vector instead of iterator pair.
+     *
+     * \param batch the bin increment batch to append (bin indices)
+     */
+    void append_batch(std::vector<TBinIndex> const &batch) {
+        append_batch(batch.begin(), batch.end());
+    }
+
+    /**
+     * \brief Constant iterator for bin_increment_batch_journal.
+     *
+     * Satisfies the requirements for input iterator.
+     *
+     * The iterator, when dereferenced, yields the triple (std::tuple)
+     * (batch_index, batch_begin, batch_end), where batch_index is the index
+     * (std::size_t) of the batch (order appended to the journal), and
+     * batch_begin and batch_end are an iterator pair pointing to the range of
+     * bin indices (TBinIndex) belonging to the batch.
+     *
+     * For efficiency reasons, empty batches are skipped over. If you need to
+     * take action for empty batches, you need to store the batch_index as you
+     * iterate and check if it is consecutive.
+     *
+     * There is no non-const iterator because iteration is read-only.
+     */
     class const_iterator {
         // Constant iterator yielding tuples (batch_index, bin_index_begin,
         // bin_index_end).
@@ -384,18 +427,42 @@ template <typename TBinIndex> class base_bin_increment_batch_journal_event {
         typename encoded_index_vector_type::const_iterator encoded_indices_end;
         typename bin_index_vector_type::const_iterator bin_indices_iter;
 
-        friend class base_bin_increment_batch_journal_event;
+        friend class bin_increment_batch_journal;
+
+        explicit const_iterator(
+            std::size_t prev_batch_index,
+            typename encoded_index_vector_type::const_iterator
+                encoded_indices_iter,
+            typename encoded_index_vector_type::const_iterator
+                encoded_indices_end,
+            typename bin_index_vector_type::const_iterator
+                bin_indices_iter) noexcept
+            : prev_batch_index(prev_batch_index),
+              encoded_indices_iter(encoded_indices_iter),
+              encoded_indices_end(encoded_indices_end),
+              bin_indices_iter(bin_indices_iter) {}
 
       public:
+        /** \brief Iterator value type. */
         using value_type =
             std::tuple<std::size_t,
                        typename bin_index_vector_type::const_iterator,
                        typename bin_index_vector_type::const_iterator>;
+
+        /** \brief Iterator difference type. */
         using difference_type = std::ptrdiff_t;
+        /** \brief Iterator reference type. */
         using reference = value_type const &;
+        /** \brief Iterator pointer type. */
         using pointer = value_type const *;
+        /** \brief Iterator category tag. */
         using iterator_category = std::input_iterator_tag;
 
+        const_iterator() = delete;
+
+        // Rule of zero
+
+        /** \brief Iterator pre-increment operator. */
         const_iterator &operator++() noexcept {
             assert(encoded_indices_iter != encoded_indices_end);
 
@@ -416,12 +483,14 @@ template <typename TBinIndex> class base_bin_increment_batch_journal_event {
             return *this;
         }
 
+        /** \brief Iterator post-increment operator. */
         const_iterator operator++(int) noexcept {
             const_iterator ret = *this;
             ++(*this);
             return ret;
         }
 
+        /** \brief Iterator dereference operator. */
         value_type operator*() const noexcept {
             assert(encoded_indices_iter != encoded_indices_end);
 
@@ -442,6 +511,7 @@ template <typename TBinIndex> class base_bin_increment_batch_journal_event {
                     bin_indices_iter + batch_size};
         }
 
+        /** \brief Equality operator. */
         bool operator==(const_iterator other) const noexcept {
             return prev_batch_index == other.prev_batch_index &&
                    encoded_indices_iter == other.encoded_indices_iter &&
@@ -449,45 +519,65 @@ template <typename TBinIndex> class base_bin_increment_batch_journal_event {
                    bin_indices_iter == other.bin_indices_iter;
         }
 
+        /** \brief Inequality operator. */
         bool operator!=(const_iterator other) const noexcept {
             return !(*this == other);
         }
     };
 
+    /**
+     * \brief Return a constant iterator for the beginning of the journal.
+     *
+     * \return constant input iterator pointing to beginning
+     */
     const_iterator begin() const noexcept {
-        const_iterator ret;
-        ret.prev_batch_index = -1;
-        ret.encoded_indices_iter = encoded_indices.cbegin();
-        ret.encoded_indices_end = encoded_indices.cend();
-        ret.bin_indices_iter = all_bin_indices.cbegin();
-        return ret;
+        return const_iterator(-1, encoded_indices.cbegin(),
+                              encoded_indices.cend(),
+                              all_bin_indices.cbegin());
     }
 
+    /**
+     * \brief Return a constant iterator for the past-end of the journal.
+     *
+     * \return constant input iterator pointing to past-end
+     */
     const_iterator end() const noexcept {
-        const_iterator ret;
-        ret.prev_batch_index = last_stored_index;
-        ret.encoded_indices_iter = encoded_indices.cend();
-        ret.encoded_indices_end = encoded_indices.cend();
-        ret.bin_indices_iter = all_bin_indices.cend();
-        return ret;
+        return const_iterator(last_stored_index, encoded_indices.cend(),
+                              encoded_indices.cend(), all_bin_indices.cend());
     }
 
-    void swap(base_bin_increment_batch_journal_event &other) noexcept {
+    /**
+     * \brief Swap the contents of this journal with another.
+     *
+     * \param other the ohter journal
+     */
+    void swap(bin_increment_batch_journal &other) noexcept {
         using std::swap;
         swap(*this, other);
     }
 
-    bool operator==(
-        base_bin_increment_batch_journal_event const &other) const noexcept {
-        return t_start == other.t_start && t_stop == other.t_stop &&
-               n_batches == other.n_batches &&
+    /** \brief Equality operator. */
+    bool operator==(bin_increment_batch_journal const &other) const noexcept {
+        return n_batches == other.n_batches &&
                last_stored_index == other.last_stored_index &&
                encoded_indices == other.encoded_indices &&
                all_bin_indices == other.all_bin_indices;
     }
 };
 
-} // namespace internal
+/** \brief Stream insertion operator for bin_increment_batch_journal. */
+template <typename T>
+inline std::ostream &operator<<(std::ostream &s,
+                                bin_increment_batch_journal<T> const &j) {
+
+    s << "journal(" << j.num_batches() << ", { ";
+    for (auto [index, begin, end] : j) {
+        s << '(' << index << ", ";
+        internal::print_range(s, begin, end);
+        s << ')';
+    }
+    return s << "})";
+}
 
 /**
  * \brief Event carrying the journal for bin increment batches for a whole
@@ -495,9 +585,29 @@ template <typename TBinIndex> class base_bin_increment_batch_journal_event {
  *
  * \tparam TBinIndex bin index type
  */
-template <typename TBinIndex>
-class bin_increment_batch_journal_event
-    : public internal::base_bin_increment_batch_journal_event<TBinIndex> {};
+template <typename TBinIndex> struct bin_increment_batch_journal_event {
+    /**
+     * \brief The macrotime of the start of the first batch recorded.
+     */
+    macrotime start = 0;
+
+    /**
+     * \brief The macrotime of the end of the last batch recorded.
+     */
+    macrotime stop = 0;
+
+    /**
+     * \brief The journal containing bin indices for each batch.
+     */
+    bin_increment_batch_journal<TBinIndex> journal;
+
+    /** \brief Equality operator. */
+    bool
+    operator==(bin_increment_batch_journal_event const &other) const noexcept {
+        return start == other.start && stop == other.stop &&
+               journal == other.journal;
+    }
+};
 
 /**
  * \brief Event carrying the journal for bin increment batches for an
@@ -506,48 +616,48 @@ class bin_increment_batch_journal_event
  * \tparam TBinIndex bin index type
  */
 template <typename TBinIndex>
-class partial_bin_increment_batch_journal_event
-    : public internal::base_bin_increment_batch_journal_event<TBinIndex> {};
+struct partial_bin_increment_batch_journal_event {
+    /**
+     * \brief The macrotime of the start of the first batch recorded.
+     */
+    macrotime start = 0;
 
-namespace internal {
+    /**
+     * \brief The macrotime of the end of the last batch recorded.
+     */
+    macrotime stop = 0;
 
-template <typename T>
-inline void print_journal_content(
-    std::ostream &s,
-    internal::base_bin_increment_batch_journal_event<T> const &je) {
-    s << "{ ";
-    for (auto [index, begin, end] : je) {
-        s << '(' << index << ", ";
-        print_range(s, begin, end);
-        s << ')';
+    /**
+     * \brief The journal containing bin indices for each batch.
+     */
+    bin_increment_batch_journal<TBinIndex> journal;
+
+    /** \brief Equality operator. */
+    bool operator==(partial_bin_increment_batch_journal_event const &other)
+        const noexcept {
+        return start == other.start && stop == other.stop &&
+               journal == other.journal;
     }
-    s << '}';
-}
+};
 
-} // namespace internal
-
-/** \brief Stream insertion operator for bin_increment_batch_journal_event */
+/** \brief Stream insertion operator for bin_increment_batch_journal_event. */
 template <typename T>
 inline std::ostream &
 operator<<(std::ostream &s, bin_increment_batch_journal_event<T> const &e) {
-    s << "bin_increment_batch_journal_event(" << e.start() << ", " << e.stop()
-      << ", " << e.num_batches() << ", ";
-    internal::print_journal_content(s, e);
-    return s << ')';
+    return s << "bin_increment_batch_journal_event(" << e.start << ", "
+             << e.stop << ", " << e.journal << ')';
 }
 
 /**
  * \brief Stream insertion operator for
- * partial_bin_increment_batch_journal_event
+ * partial_bin_increment_batch_journal_event.
  */
 template <typename T>
 inline std::ostream &
 operator<<(std::ostream &s,
            partial_bin_increment_batch_journal_event<T> const &e) {
-    s << "partial_bin_increment_batch_journal_event(" << e.start() << ", "
-      << e.stop() << ", " << e.num_batches() << ", ";
-    internal::print_journal_content(s, e);
-    return s << ')';
+    return s << "partial_bin_increment_batch_journal_event(" << e.start << ", "
+             << e.stop << ", " << e.journal << ')';
 }
 
 } // namespace flimevt

@@ -46,42 +46,39 @@ TEST_CASE("Journal bin increment batches", "[journal_bin_increment_batches]") {
     }
 
     SECTION("Normal operation") {
-        bin_increment_batch_journal_event<u16> expected_journal;
+        bin_increment_batch_journal<u16> expected_journal;
 
         in.feed(start_event{42});
         REQUIRE(out.check(start_event{42}));
         in.feed(bin_increment_batch_event<u16>{43, 44, {123, 456}});
         REQUIRE(out.check(bin_increment_batch_event<u16>{43, 44, {123, 456}}));
-        expected_journal.start(43);
-        expected_journal.stop(44);
         expected_journal.append_batch({123, 456});
-        REQUIRE(out.check(expected_journal));
+        REQUIRE(out.check(
+            bin_increment_batch_journal_event<u16>{43, 44, expected_journal}));
 
         in.feed(start_event{45});
         REQUIRE(out.check(start_event{45}));
         in.feed(bin_increment_batch_event<u16>{46, 47, {789}});
         REQUIRE(out.check(bin_increment_batch_event<u16>{46, 47, {789}}));
         expected_journal.clear();
-        expected_journal.start(46);
-        expected_journal.stop(47);
         expected_journal.append_batch({789});
-        REQUIRE(out.check(expected_journal));
+        REQUIRE(out.check(
+            bin_increment_batch_journal_event<u16>{46, 47, expected_journal}));
 
         in.feed_end();
         REQUIRE(out.check_end());
     }
 
     SECTION("Ignore extra batches") {
-        bin_increment_batch_journal_event<u16> expected_journal;
+        bin_increment_batch_journal<u16> expected_journal;
 
         in.feed(start_event{42});
         REQUIRE(out.check(start_event{42}));
         in.feed(bin_increment_batch_event<u16>{43, 44, {123, 456}});
         REQUIRE(out.check(bin_increment_batch_event<u16>{43, 44, {123, 456}}));
-        expected_journal.start(43);
-        expected_journal.stop(44);
         expected_journal.append_batch({123, 456});
-        REQUIRE(out.check(expected_journal));
+        REQUIRE(out.check(
+            bin_increment_batch_journal_event<u16>{43, 44, expected_journal}));
 
         in.feed(bin_increment_batch_event<u16>{45, 46, {789}});
         in.feed(start_event{47});
@@ -89,22 +86,21 @@ TEST_CASE("Journal bin increment batches", "[journal_bin_increment_batches]") {
         in.feed(bin_increment_batch_event<u16>{48, 49, {234}});
         REQUIRE(out.check(bin_increment_batch_event<u16>{48, 49, {234}}));
         expected_journal.clear();
-        expected_journal.start(48);
-        expected_journal.stop(49);
         expected_journal.append_batch({234});
-        REQUIRE(out.check(expected_journal));
+        REQUIRE(out.check(
+            bin_increment_batch_journal_event<u16>{48, 49, expected_journal}));
     }
 
     SECTION("Emit partial cycle") {
-        partial_bin_increment_batch_journal_event<u16> expected_journal;
-
         in.feed(start_event{42});
         REQUIRE(out.check(start_event{42}));
         in.feed(start_event{43});
-        REQUIRE(out.check(expected_journal));
+        REQUIRE(out.check(
+            partial_bin_increment_batch_journal_event<u16>{0, 0, {}}));
         REQUIRE(out.check(start_event{43}));
         in.feed_end();
-        REQUIRE(out.check(expected_journal));
+        REQUIRE(out.check(
+            partial_bin_increment_batch_journal_event<u16>{0, 0, {}}));
         REQUIRE(out.check_end());
     }
 }
