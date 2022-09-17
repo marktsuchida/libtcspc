@@ -102,9 +102,9 @@ class histogram {
 
     void finish(std::exception_ptr error) noexcept {
         finished = true;
-        downstream.handle_end(error);
         hist.histogram.clear();
         hist.histogram.shrink_to_fit();
+        downstream.handle_end(error);
     }
 
   public:
@@ -163,7 +163,8 @@ class histogram {
     }
 
     template <typename E> void handle_event(E const &event) noexcept {
-        downstream.handle_event(event);
+        if (!finished)
+            downstream.handle_event(event);
     }
 
     void handle_end(std::exception_ptr error) noexcept {
@@ -225,9 +226,9 @@ class histogram_in_batches {
 
     void finish(std::exception_ptr error) noexcept {
         finished = true;
-        downstream.handle_end(error);
         hist.histogram.clear();
         hist.histogram.shrink_to_fit();
+        downstream.handle_end(error);
     }
 
   public:
@@ -279,7 +280,8 @@ class histogram_in_batches {
     }
 
     template <typename E> void handle_event(E const &event) noexcept {
-        downstream.handle_event(event);
+        if (!finished)
+            downstream.handle_event(event);
     }
 
     void handle_end(std::exception_ptr error) noexcept {
@@ -362,9 +364,9 @@ class accumulate_histograms {
 
     void finish(std::exception_ptr error) noexcept {
         finished = true;
-        downstream.handle_end(error);
         hist.histogram.clear();
         hist.histogram.shrink_to_fit();
+        downstream.handle_end(error);
     }
 
   public:
@@ -433,7 +435,8 @@ class accumulate_histograms {
     }
 
     template <typename E> void handle_event(E const &event) noexcept {
-        downstream.handle_event(event);
+        if (!finished)
+            downstream.handle_event(event);
     }
 
     void handle_end(std::exception_ptr error) noexcept {
