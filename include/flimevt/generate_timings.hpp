@@ -11,6 +11,7 @@
 #include <cassert>
 #include <cstddef>
 #include <exception>
+#include <optional>
 #include <utility>
 
 namespace flimevt {
@@ -23,10 +24,9 @@ template <typename ETrig, typename PGen, typename D> class generate_timings {
 
     // P: bool(macrotime const &)
     template <typename P> void emit(P predicate) noexcept {
-        macrotime t;
-        while (generator.peek(t) && predicate(t)) {
-            typename PGen::output_event_type e{};
-            generator.pop(e);
+        for (std::optional<macrotime> t = generator.peek();
+             t && predicate(t.value()); t = generator.peek()) {
+            typename PGen::output_event_type e = generator.pop();
             downstream.handle_event(e);
         }
     }
@@ -115,15 +115,12 @@ template <typename EOut> class null_timing_generator {
     void trigger(macrotime starttime) noexcept { (void)starttime; }
 
     /** \brief Timing generator interface */
-    bool peek(macrotime &macrotime) const noexcept {
-        (void)macrotime;
-        return false;
-    }
+    std::optional<macrotime> peek() const noexcept { return std::nullopt; }
 
     /** \brief Timing generator interface */
-    void pop(EOut &event) noexcept {
-        (void)event;
+    EOut pop() noexcept {
         assert(false);
+        // C++23: std::unreachable();
     }
 };
 
@@ -159,15 +156,18 @@ template <typename EOut> class one_shot_timing_generator {
     }
 
     /** \brief Timing generator interface */
-    bool peek(macrotime &macrotime) const noexcept {
-        macrotime = next;
-        return pending;
+    std::optional<macrotime> peek() const noexcept {
+        if (pending)
+            return next;
+        return std::nullopt;
     }
 
     /** \brief Timing generator interface */
-    void pop(EOut &event) noexcept {
+    EOut pop() noexcept {
+        EOut event;
         event.macrotime = next;
         pending = false;
+        return event;
     }
 };
 
@@ -215,16 +215,19 @@ template <typename EOut> class linear_timing_generator {
     }
 
     /** \brief Timing generator interface */
-    bool peek(macrotime &macrotime) const noexcept {
-        macrotime = next;
-        return remaining > 0;
+    std::optional<macrotime> peek() const noexcept {
+        if (remaining > 0)
+            return next;
+        return std::nullopt;
     }
 
     /** \brief Timing generator interface */
-    void pop(EOut &event) noexcept {
+    EOut pop() noexcept {
+        EOut event;
         event.macrotime = next;
         next += interval;
         --remaining;
+        return event;
     }
 };
 
