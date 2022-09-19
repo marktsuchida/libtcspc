@@ -118,10 +118,7 @@ template <typename EOut> class null_timing_generator {
     std::optional<macrotime> peek() const noexcept { return std::nullopt; }
 
     /** \brief Timing generator interface */
-    EOut pop() noexcept {
-        assert(false);
-        // C++23: std::unreachable();
-    }
+    EOut pop() noexcept { internal::unreachable(); }
 };
 
 /**

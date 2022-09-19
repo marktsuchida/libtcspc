@@ -36,6 +36,15 @@ using macrotime = std::int64_t;
 
 namespace internal {
 
+[[noreturn]] inline void unreachable() {
+    // C++23: std::unreachable()
+#if defined(__GNUC__)
+    __builtin_unreachable();
+#elif defined(_MSC_VER)
+    __assume(false);
+#endif
+}
+
 // A "false" template metafunction that can be used with static_assert in
 // constexpr-if branches (by pretending that it may not always be false).
 template <typename T> struct false_for_type : std::false_type {};
