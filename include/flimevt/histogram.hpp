@@ -72,6 +72,12 @@ namespace internal {
 template <typename TBinIndex, typename TBin, typename EReset, typename Ovfl,
           typename D>
 class histogram {
+    static_assert(std::is_same_v<Ovfl, saturate_on_overflow> ||
+                      std::is_same_v<Ovfl, reset_on_overflow> ||
+                      std::is_same_v<Ovfl, stop_on_overflow> ||
+                      std::is_same_v<Ovfl, error_on_overflow>,
+                  "Not an allowed overflow strategy for histogram");
+
     bool started = false;  // The current accumulation has seen an increment
     bool finished = false; // No longer processing; downstream ended
     histogram_event<TBin> hist;
@@ -81,14 +87,14 @@ class histogram {
     D downstream;
 
     void emit_concluding(bool had_data, bool end_of_stream) noexcept {
-        concluding_histogram_event<TBin> e;
-        e.start = had_data ? hist.start : 0;
-        e.stop = had_data ? hist.stop : 0;
+        concluding_histogram_event<TBin> e{had_data ? hist.start : 0,
+                                           had_data ? hist.stop : 0,
+                                           {}, // Swapped in below
+                                           hist.total,
+                                           hist.saturated,
+                                           had_data,
+                                           end_of_stream};
         e.histogram.swap(hist.histogram);
-        e.total = hist.total;
-        e.saturated = hist.saturated;
-        e.has_data = had_data;
-        e.is_end_of_stream = end_of_stream;
         downstream.handle_event(e);
         hist.histogram.swap(e.histogram);
     }
@@ -124,35 +130,31 @@ class histogram {
 
         TBin &bin = hist.histogram[event.bin_index];
         if (bin < max_per_bin) {
-            ++hist.total;
             ++bin;
-            hist.stop = event.macrotime;
-            downstream.handle_event(hist);
         } else if constexpr (std::is_same_v<Ovfl, saturate_on_overflow>) {
-            ++hist.total;
             ++hist.saturated;
-            hist.stop = event.macrotime;
-            downstream.handle_event(hist);
         } else if constexpr (std::is_same_v<Ovfl, reset_on_overflow>) {
             if (just_started) { // max_per_bin == 0
-                finish(std::make_exception_ptr(histogram_overflow_error(
+                return finish(std::make_exception_ptr(histogram_overflow_error(
                     "Histogram bin overflowed on first increment")));
             } else {
                 emit_concluding(true, false);
                 reset();
-                handle_event(event);
+                return handle_event(event); // Self-recurse max once
             }
         } else if constexpr (std::is_same_v<Ovfl, stop_on_overflow>) {
             emit_concluding(!just_started, true);
-            finish({});
+            return finish({});
         } else if constexpr (std::is_same_v<Ovfl, error_on_overflow>) {
-            finish(std::make_exception_ptr(
+            return finish(std::make_exception_ptr(
                 histogram_overflow_error("Histogram bin overflowed")));
         } else {
-            static_assert(
-                internal::false_for_type<Ovfl>::value,
-                "Histogram overflow strategy must be a known tag type");
+            static_assert(internal::false_for_type<Ovfl>::value);
         }
+
+        ++hist.total;
+        hist.stop = event.macrotime;
+        return downstream.handle_event(hist);
     }
 
     void handle_event([[maybe_unused]] EReset const &event) noexcept {
@@ -217,6 +219,10 @@ namespace internal {
 
 template <typename TBinIndex, typename TBin, typename Ovfl, typename D>
 class histogram_in_batches {
+    static_assert(std::is_same_v<Ovfl, saturate_on_overflow> ||
+                      std::is_same_v<Ovfl, error_on_overflow>,
+                  "Not an allowed overflow strategy for histogram_in_batches");
+
     bool finished = false; // No longer processing; downstream ended
     histogram_event<TBin> hist;
 
@@ -252,28 +258,17 @@ class histogram_in_batches {
         for (auto bin_index : event.bin_indices) {
             TBin &bin = hist.histogram[bin_index];
             if (bin < max_per_bin) {
-                ++hist.total;
                 ++bin;
             } else if constexpr (std::is_same_v<Ovfl, saturate_on_overflow>) {
-                ++hist.total;
                 ++hist.saturated;
-            } else if constexpr (std::is_same_v<Ovfl, reset_on_overflow>) {
-                static_assert(
-                    internal::false_for_type<Ovfl>::value,
-                    "reset_on_overflow is not applicable to histogram_in_batches");
-            } else if constexpr (std::is_same_v<Ovfl, stop_on_overflow>) {
-                static_assert(
-                    internal::false_for_type<Ovfl>::value,
-                    "stop_on_overflow is not applicable to histogram_in_batches");
             } else if constexpr (std::is_same_v<Ovfl, error_on_overflow>) {
-                finish(std::make_exception_ptr(
+                return finish(std::make_exception_ptr(
                     histogram_overflow_error("Histogram bin overflowed")));
-                return;
             } else {
-                static_assert(
-                    internal::false_for_type<Ovfl>::value,
-                    "Histogram overflow strategy must be a known tag type");
+                static_assert(internal::false_for_type<Ovfl>::value);
             }
+
+            ++hist.total;
         }
 
         downstream.handle_event(hist);
@@ -326,6 +321,13 @@ namespace internal {
 template <typename TBinIndex, typename TBin, typename EReset, typename Ovfl,
           typename D>
 class accumulate_histograms {
+    static_assert(
+        std::is_same_v<Ovfl, saturate_on_overflow> ||
+            std::is_same_v<Ovfl, reset_on_overflow> ||
+            std::is_same_v<Ovfl, stop_on_overflow> ||
+            std::is_same_v<Ovfl, error_on_overflow>,
+        "Not an allowed overflow strategy for accumulate_histograms");
+
     bool started = false;  // The current accumulation has seen a batch
     bool finished = false; // No longer processing; downstream ended
     histogram_event<TBin> hist;
@@ -343,14 +345,14 @@ class accumulate_histograms {
     }
 
     void emit_concluding(bool had_batches, bool end_of_stream) noexcept {
-        concluding_histogram_event<TBin> e;
-        e.start = had_batches ? hist.start : 0;
-        e.stop = had_batches ? hist.stop : 0;
+        concluding_histogram_event<TBin> e{had_batches ? hist.start : 0,
+                                           had_batches ? hist.stop : 0,
+                                           {}, // Swapped in below
+                                           hist.total,
+                                           hist.saturated,
+                                           had_batches,
+                                           end_of_stream};
         e.histogram.swap(hist.histogram);
-        e.total = hist.total;
-        e.saturated = hist.saturated;
-        e.has_data = had_batches;
-        e.is_end_of_stream = end_of_stream;
         downstream.handle_event(e);
         hist.histogram.swap(e.histogram);
     }
@@ -390,37 +392,33 @@ class accumulate_histograms {
              bin_index_it != event.bin_indices.cend(); ++bin_index_it) {
             TBin &bin = hist.histogram[*bin_index_it];
             if (bin < max_per_bin) {
-                ++hist.total;
                 ++bin;
             } else if constexpr (std::is_same_v<Ovfl, saturate_on_overflow>) {
-                ++hist.total;
                 ++hist.saturated;
             } else if constexpr (std::is_same_v<Ovfl, reset_on_overflow>) {
                 if (just_started) {
-                    finish(std::make_exception_ptr(histogram_overflow_error(
-                        "Histogram bin overflowed on a single batch")));
+                    return finish(
+                        std::make_exception_ptr(histogram_overflow_error(
+                            "Histogram bin overflowed on a single batch")));
                 } else {
                     roll_back_increments(event.bin_indices.cbegin(),
                                          bin_index_it);
                     emit_concluding(true, false);
                     reset();
-                    handle_event(event);
+                    return handle_event(event); // Self-recurse max once
                 }
-                return;
             } else if constexpr (std::is_same_v<Ovfl, stop_on_overflow>) {
                 roll_back_increments(event.bin_indices.cbegin(), bin_index_it);
                 emit_concluding(!just_started, true);
-                finish({});
-                return;
+                return finish({});
             } else if constexpr (std::is_same_v<Ovfl, error_on_overflow>) {
-                finish(std::make_exception_ptr(
+                return finish(std::make_exception_ptr(
                     histogram_overflow_error("Histogram bin overflowed")));
-                return;
             } else {
-                static_assert(
-                    internal::false_for_type<Ovfl>::value,
-                    "Histogram overflow strategy must be a known tag type");
+                static_assert(internal::false_for_type<Ovfl>::value);
             }
+
+            ++hist.total;
         }
 
         hist.stop = event.stop;
