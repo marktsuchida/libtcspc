@@ -13,59 +13,10 @@
 #include <algorithm>
 #include <cstddef>
 #include <exception>
-#include <limits>
-#include <stdexcept>
 #include <type_traits>
 #include <utility>
-#include <vector>
 
 namespace flimevt {
-
-/**
- * \brief Histogram overflow strategy tag to request saturating addition on
- * overflowed bins.
- */
-struct saturate_on_overflow {
-    explicit saturate_on_overflow() = default;
-};
-
-/**
- * \brief Histogram overflow strategy tag to request resetting the histogram
- * when a bin is about to overflow.
- */
-struct reset_on_overflow {
-    explicit reset_on_overflow() = default;
-};
-
-/**
- * \brief Histogram overflow strategy tag to request ending the processing when
- * a bin is about to overflow.
- */
-struct stop_on_overflow {
-    explicit stop_on_overflow() = default;
-};
-
-/**
- * \brief Histogram overflow strategy tag to request treating bin overflows as
- * errors.
- */
-struct error_on_overflow {
-    explicit error_on_overflow() = default;
-};
-
-/**
- * \brief Error raised when a histogram bin overflows.
- *
- * This error is raised when the error_on_overflow strategy is requested and
- * there was an overflow. It is also raised when reset_on_overflow is requested
- * but a reset would result in an infinite loop: in the case of histogram if
- * maximum per bin set to 0, or accumulate_histograms if a single batch
- * contains enough increments to overflow a bin.
- */
-class histogram_overflow_error : public std::runtime_error {
-  public:
-    using std::runtime_error::runtime_error;
-};
 
 namespace internal {
 

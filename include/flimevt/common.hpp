@@ -7,6 +7,7 @@
 #pragma once
 
 #include <cstdint>
+#include <stdexcept>
 #include <type_traits>
 
 #ifdef _MSC_VER
@@ -33,6 +34,76 @@ namespace flimevt {
  * this corresponds to about 3 and a half months.
  */
 using macrotime = std::int64_t;
+
+/**
+ * \brief An event type whose instances never occur.
+ *
+ * This can be used to configure unused inputs to processors.
+ */
+class never_event {
+    never_event() = delete;
+    never_event(never_event const &) = delete;
+    never_event &operator=(never_event const &) = delete;
+};
+
+/**
+ * \brief Histogram overflow strategy tag to request saturating addition on
+ * overflowed bins.
+ */
+struct saturate_on_overflow {
+    explicit saturate_on_overflow() = default;
+};
+
+/**
+ * \brief Histogram overflow strategy tag to request resetting the histogram
+ * when a bin is about to overflow.
+ */
+struct reset_on_overflow {
+    explicit reset_on_overflow() = default;
+};
+
+/**
+ * \brief Histogram overflow strategy tag to request ending the processing when
+ * a bin is about to overflow.
+ */
+struct stop_on_overflow {
+    explicit stop_on_overflow() = default;
+};
+
+/**
+ * \brief Histogram overflow strategy tag to request treating bin overflows as
+ * errors.
+ */
+struct error_on_overflow {
+    explicit error_on_overflow() = default;
+};
+
+/**
+ * \brief Error raised when a histogram bin overflows.
+ *
+ * This error is raised when the error_on_overflow strategy is requested and
+ * there was an overflow. It is also raised when reset_on_overflow is requested
+ * but a reset would result in an infinite loop: in the case of histogram if
+ * maximum per bin set to 0, or accumulate_histograms if a single batch
+ * contains enough increments to overflow a bin.
+ */
+class histogram_overflow_error : public std::runtime_error {
+  public:
+    using std::runtime_error::runtime_error;
+};
+
+/**
+ * \brief Error raised when histogram array cycle is incomplete.
+ *
+ * All but the last cycle before a reset or end-of-stream must be complete for
+ * processors computing histogram arrays. This exception is thrown if a
+ * new-cycle event is received before the current cycle has had the expected
+ * number of batches.
+ */
+class incomplete_array_cycle_error : public std::runtime_error {
+  public:
+    using std::runtime_error::runtime_error;
+};
 
 namespace internal {
 
