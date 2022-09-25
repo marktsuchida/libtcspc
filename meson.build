@@ -13,6 +13,8 @@ project(
 
 thread_dep = dependency('threads')
 
+gsl_dep = dependency('microsoft_gsl')
+
 public_inc = include_directories('include')
 
 subdir('include/flimevt')
