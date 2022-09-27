@@ -34,6 +34,7 @@ public_cpp_headers = files(
     'time_delay.hpp',
     'time_tagged_events.hpp',
     'translate_marker.hpp',
+    'vector_queue.hpp',
 )
 
 install_headers(public_cpp_headers, subdir: 'flimevt')

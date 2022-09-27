@@ -6,13 +6,14 @@
 
 #pragma once
 
+#include "vector_queue.hpp"
+
 #include <algorithm>
 #include <condition_variable>
 #include <exception>
 #include <iterator>
 #include <memory>
 #include <mutex>
-#include <queue>
 #include <utility>
 #include <vector>
 
@@ -156,7 +157,8 @@ template <typename E, typename D> class buffer_event {
     std::mutex mutex;
     std::condition_variable has_item_condition; // item = event or end
 
-    std::queue<E> shared_queue;
+    using queue_type = vector_queue<E>;
+    queue_type shared_queue;
     bool stream_ended = false;
     std::exception_ptr queued_error;
 
@@ -170,13 +172,7 @@ template <typename E, typename D> class buffer_event {
     // block while catching up on buffered events.
     // The emit_queue is always empty at resting, but we keep it in a data
     // member in order to reuse allocated memory.
-    // Note: Swapping the queues is not theoretically necessary when the queue
-    // is based on std::deque (which never invalidates iterators): the range of
-    // items could safely be accessed with the mutex released given that no
-    // other thread will remove elements. But std::queue only gives access to
-    // front() and in any case we may want to use something more efficient that
-    // deque in the future (which may reallocate), so let's keep it simple.
-    std::queue<E> emit_queue; // Invariant: always empty
+    queue_type emit_queue; // Invariant: always empty
 
     D downstream;
 

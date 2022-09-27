@@ -8,10 +8,10 @@
 
 #include "common.hpp"
 #include "event_set.hpp"
+#include "vector_queue.hpp"
 
 #include <exception>
 #include <limits>
-#include <queue>
 #include <type_traits>
 #include <utility>
 
@@ -31,7 +31,7 @@ template <typename Es, typename D> class merge_impl {
     bool pending_on_1 = false; // Pending on input 0 if false
     bool input_ended[2] = {false, false};
     bool ended_with_error = false;
-    std::queue<event_variant<Es>> pending;
+    vector_queue<event_variant<Es>> pending;
     macrotime const max_time_shift;
 
     D downstream;

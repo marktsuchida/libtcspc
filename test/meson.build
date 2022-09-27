@@ -40,6 +40,7 @@ flimevents_tests_srcs = [
     'time_delay.cpp',
     'time_tagged_events.cpp',
     'translate_marker.cpp',
+    'vector_queue.cpp',
 ]
 
 flimevents_tests_exe = executable(

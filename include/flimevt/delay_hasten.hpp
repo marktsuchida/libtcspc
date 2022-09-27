@@ -8,10 +8,10 @@
 
 #include "common.hpp"
 #include "event_set.hpp"
+#include "vector_queue.hpp"
 
 #include <cassert>
 #include <cstdint>
-#include <queue>
 #include <stdexcept>
 #include <type_traits>
 #include <variant>
@@ -24,7 +24,7 @@ namespace internal {
 
 template <typename EsDelayed, typename D> class delay_processor {
     macrotime delta;
-    std::queue<event_variant<EsDelayed>> pending;
+    vector_queue<event_variant<EsDelayed>> pending;
     D downstream;
     bool stream_ended = false;
 
@@ -89,7 +89,7 @@ namespace internal {
 
 template <typename EsUnchanged, typename D> class hasten_processor {
     macrotime delta;
-    std::queue<event_variant<EsUnchanged>> pending;
+    vector_queue<event_variant<EsUnchanged>> pending;
     D downstream;
     bool stream_ended = false;
 

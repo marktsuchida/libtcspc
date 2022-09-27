@@ -8,22 +8,23 @@
 
 #include "common.hpp"
 #include "event_set.hpp"
+#include "vector_queue.hpp"
 
 #include <cassert>
 #include <exception>
 #include <functional>
 #include <iostream>
-#include <queue>
 #include <stdexcept>
 #include <type_traits>
 #include <utility>
+#include <vector>
 
 namespace flimevt {
 
 namespace internal {
 
 template <typename Es> class capture_output {
-    std::queue<event_variant<Es>> output;
+    vector_queue<event_variant<Es>> output;
     bool ended = false;
     std::exception_ptr error;
     bool end_of_life = false; // Reported error; cannot reuse
