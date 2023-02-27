@@ -6,7 +6,9 @@
 
 #pragma once
 
+#include <cassert>
 #include <cstdint>
+#include <limits>
 #include <stdexcept>
 #include <type_traits>
 
@@ -142,6 +144,35 @@ inline int count_trailing_zeros_32(std::uint32_t const x) noexcept {
 #else
     return count_trailing_zeros_32_nonintrinsic(x);
 #endif
+}
+
+template <typename T, typename... U> struct is_any_of {
+    static constexpr bool value = (std::is_same_v<T, U> || ...);
+};
+
+template <typename T, typename... U>
+inline constexpr bool is_any_of_v = is_any_of<T, U...>::value;
+
+template <typename T, typename = std::enable_if_t<std::is_unsigned_v<T>>>
+inline constexpr auto as_signed(T i) -> std::make_signed_t<T> {
+    return static_cast<std::make_signed_t<T>>(i);
+}
+
+template <typename T, typename = std::enable_if_t<std::is_signed_v<T>>>
+inline constexpr auto as_unsigned(T i) -> std::make_unsigned_t<T> {
+    return static_cast<std::make_unsigned_t<T>>(i);
+}
+
+template <typename T, typename U> inline auto narrow(U i) -> T {
+    static_assert(std::is_integral_v<T>);
+    static_assert(std::is_integral_v<U>);
+    static_assert(std::is_signed_v<T> == std::is_signed_v<U>);
+    static_assert(sizeof(T) < sizeof(U));
+    assert(i <= std::numeric_limits<T>::max());
+    if constexpr (std::is_signed_v<T>) {
+        assert(i >= std::numeric_limits<T>::min());
+    }
+    return T(i);
 }
 
 } // namespace internal

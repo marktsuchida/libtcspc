@@ -4,6 +4,7 @@
 
 public_cpp_headers = files(
     'apply_class_template.hpp',
+    'autocopy_span.hpp',
     'bh_spc.hpp',
     'binning.hpp',
     'broadcast.hpp',
@@ -18,7 +19,7 @@ public_cpp_headers = files(
     'gate.hpp',
     'generate_timings.hpp',
     'histogram.hpp',
-    'histogram_array.hpp',
+    'histogram_elementwise.hpp',
     'histogram_events.hpp',
     'legacy_histogram.hpp',
     'line_clock_pixellator.hpp',

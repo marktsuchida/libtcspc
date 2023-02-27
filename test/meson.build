@@ -10,6 +10,7 @@ catch2_dep = dependency(
 
 flimevents_tests_srcs = [
     'apply_class_template.cpp',
+    'autocopy_span.cpp',
     'bh_spc.cpp',
     'binning.cpp',
     'broadcast.cpp',
@@ -24,8 +25,9 @@ flimevents_tests_srcs = [
     'gate.cpp',
     'generate_timings.cpp',
     'histogram.cpp',
-    'histogram_array.cpp',
+    'histogram_elementwise.cpp',
     'histogram_events.cpp',
+    'histogramming.cpp',
     'legacy_histogram.cpp',
     'line_clock_pixellator.cpp',
     'merge.cpp',
@@ -47,7 +49,10 @@ flimevents_tests_exe = executable(
     'FLIMEventsTests',
     flimevents_tests_srcs,
     include_directories: [public_inc],
-    dependencies: [catch2_dep],
+    dependencies: [
+        gsl_dep,
+        catch2_dep
+    ],
 )
 
 test('FLIMEvents Tests', flimevents_tests_exe)

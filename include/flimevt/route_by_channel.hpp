@@ -6,6 +6,8 @@
 
 #pragma once
 
+#include "common.hpp"
+
 #include <algorithm>
 #include <cstddef>
 #include <cstdint>
@@ -42,7 +44,8 @@ template <typename ERouted, typename... Ds> class route_by_channel {
         auto chan = event.channel;
         auto it = std::find(channels.cbegin(), channels.cend(), chan);
         if (it != channels.cend())
-            handle_photon(std::distance(channels.cbegin(), it), event);
+            handle_photon(as_unsigned(std::distance(channels.cbegin(), it)),
+                          event);
     }
 
     template <typename E> void handle_event(E const &event) noexcept {

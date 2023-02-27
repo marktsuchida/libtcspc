@@ -8,6 +8,7 @@ project(
     default_options: [
         'cpp_std=c++17',
         'warning_level=3',
+        'cpp_arg=-Wconversion',
     ],
 )
 
@@ -22,5 +23,8 @@ subdir('doc')
 subdir('test')
 subdir('examples')
 
-flimevents_dep = declare_dependency(include_directories: public_inc)
+flimevents_dep = declare_dependency(
+    include_directories: public_inc,
+    dependencies: [gsl_dep],
+)
 meson.override_dependency('FLIMEvents', flimevents_dep)

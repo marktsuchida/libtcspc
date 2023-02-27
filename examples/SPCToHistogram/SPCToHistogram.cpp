@@ -65,7 +65,8 @@ template <typename T> class histogram_saver {
 
         auto &histogram = event.histogram;
         output.write(reinterpret_cast<const char *>(histogram.get()),
-                     histogram.get_number_of_elements() * sizeof(T));
+                     static_cast<std::streamsize>(
+                         histogram.get_number_of_elements() * sizeof(T)));
     }
 };
 
@@ -89,8 +90,8 @@ int main(int argc, char *argv[]) {
     std::uint32_t max_frames = UINT32_MAX;
 
     using sample_type = std::uint16_t;
-    std::int32_t input_bits = 12;
-    std::int32_t histo_bits = 8;
+    std::uint32_t input_bits = 12;
+    std::uint32_t histo_bits = 8;
     flimevt::legacy_histogram<sample_type> frame_histo(histo_bits, input_bits,
                                                        true, width, height);
     flimevt::legacy_histogram<sample_type> cumul_histo(histo_bits, input_bits,
@@ -108,7 +109,7 @@ int main(int argc, char *argv[]) {
                 std::vector<flimevt::bh_spc_event>, flimevt::bh_spc_event>(
         flimevt::decode_bh_spc(
         flimevt::line_clock_pixellator(
-                width, height, max_frames, line_delay, line_time, 1,
+                width, height, max_frames, static_cast<std::int32_t>(line_delay), line_time, 1,
         flimevt::sequential_histogrammer(std::move(frame_histo),
         flimevt::histogram_accumulator(std::move(cumul_histo),
         histogram_saver<sample_type>(out_filename))))))));
@@ -132,7 +133,8 @@ int main(int argc, char *argv[]) {
         auto arr = pool.check_out();
         arr->resize(batch_capacity);
         input.read(reinterpret_cast<char *>(arr->data()), max_size);
-        auto const readSize = input.gcount() / sizeof(flimevt::bh_spc_event);
+        auto const readSize = static_cast<std::size_t>(input.gcount()) /
+                              sizeof(flimevt::bh_spc_event);
         arr->resize(static_cast<std::size_t>(readSize));
         buffer.handle_event(arr);
     }

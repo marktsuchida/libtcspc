@@ -57,7 +57,7 @@ struct bh_spc_event {
         // The documentation somewhat confusingly says that these bits are
         // "inverted", but what they mean is that the TTL inputs are active
         // low. The bits in the FIFO data are not inverted.
-        return unsigned(bytes[1]) >> 4;
+        return static_cast<std::uint8_t>(unsigned(bytes[1]) >> 4);
     }
 
     /**

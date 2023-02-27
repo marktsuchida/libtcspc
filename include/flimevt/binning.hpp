@@ -324,13 +324,13 @@ class batch_bin_increments {
     void handle_event(EStart const &event) noexcept {
         batch.bin_indices.clear();
         in_batch = true;
-        batch.start = event.macrotime;
+        batch.time_range.start = event.macrotime;
     }
 
     /** \brief Processor interface **/
     void handle_event(EStop const &event) noexcept {
         if (in_batch) {
-            batch.stop = event.macrotime;
+            batch.time_range.stop = event.macrotime;
             downstream.handle_event(batch);
             in_batch = false;
         }

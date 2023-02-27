@@ -6,6 +6,7 @@
 
 #pragma once
 
+#include "common.hpp"
 #include "event_set.hpp"
 #include "pixel_photon_events.hpp"
 
@@ -32,7 +33,7 @@ template <typename T, typename U,
 inline constexpr T saturating_add(T a, U b) noexcept {
     T c = a + b;
     if (c < a)
-        c = -1;
+        c = T(-1);
     return c;
 }
 
@@ -101,7 +102,8 @@ class legacy_histogram {
         auto t_reduced = std::uint16_t(t >> (input_time_bits - time_bits));
         auto t_reversed =
             reverse_time ? (1 << time_bits) - 1 - t_reduced : t_reduced;
-        auto index = (y * width + x) * get_number_of_time_bins() + t_reversed;
+        auto index = (y * width + x) * get_number_of_time_bins() +
+                     internal::as_unsigned(t_reversed);
         hist[index] = internal::saturating_add(hist[index], T(1));
     }
 

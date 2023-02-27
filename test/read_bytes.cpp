@@ -22,14 +22,14 @@ TEST_CASE("Read u16", "[read_bytes]") {
     }
 
     SECTION("Low byte") {
-        unsigned x = GENERATE(0x01, 0x7f, 0x80, 0xff);
+        auto x = GENERATE(std::uint8_t(0x01), 0x7f, 0x80, 0xff);
         data[0] = x;
         data[1] = 0;
         REQUIRE(f(data) == x);
     }
 
     SECTION("High byte") {
-        unsigned x = GENERATE(0x01, 0x7f, 0x80, 0xff);
+        auto x = GENERATE(std::uint8_t(0x01), 0x7f, 0x80, 0xff);
         data[0] = 0;
         data[1] = x;
         REQUIRE(f(data) == x * 0x100u);
@@ -47,7 +47,7 @@ TEST_CASE("Read u32", "[read_bytes]") {
     SECTION("Zero") { REQUIRE(f(data) == 0u); }
 
     SECTION("Single byte") {
-        unsigned x = GENERATE(0x01, 0x7f, 0x80, 0xff);
+        auto x = GENERATE(std::uint8_t(0x01), 0x7f, 0x80, 0xff);
         data[byte] = x;
         REQUIRE(f(data) == x * (1 << (8 * byte)));
     }
@@ -72,7 +72,7 @@ TEST_CASE("Read u64", "[read_bytes]") {
     SECTION("Zero") { REQUIRE(f(data) == 0u); }
 
     SECTION("Single byte") {
-        unsigned x = GENERATE(0x01, 0x7f, 0x80, 0xff);
+        auto x = GENERATE(std::uint8_t(0x01), 0x7f, 0x80, 0xff);
         data[byte] = x;
         REQUIRE(f(data) == x * (1ULL << (8 * byte)));
     }

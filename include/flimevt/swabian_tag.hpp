@@ -6,6 +6,7 @@
 
 #pragma once
 
+#include "common.hpp"
 #include "read_bytes.hpp"
 #include "time_tagged_events.hpp"
 
@@ -89,7 +90,7 @@ template <typename D> class decode_swabian_tags {
         case tag_type::time_tag: {
             time_tagged_count_event e;
             e.macrotime = event.get_time();
-            e.channel = event.get_channel();
+            e.channel = narrow<decltype(e.channel)>(event.get_channel());
             downstream.handle_event(e);
             break;
         }

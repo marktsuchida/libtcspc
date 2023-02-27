@@ -6,6 +6,8 @@
 
 #pragma once
 
+#include "common.hpp"
+
 #include <algorithm>
 #include <cassert>
 #include <cstddef>
@@ -55,7 +57,8 @@ template <typename T> class vector_queue {
 
     void expand_cap() {
         std::size_t siz = size();
-        std::size_t newcap = compute_enlarged_cap(std::distance(ptr, endptr));
+        std::size_t newcap =
+            compute_enlarged_cap(as_unsigned(std::distance(ptr, endptr)));
         auto alloc = std::allocator<T>();
         auto dtor = [&](T &v) { alloctraits::destroy(alloc, &v); };
 
@@ -71,7 +74,8 @@ template <typename T> class vector_queue {
             std::uninitialized_move(head, tail, newptr);
             std::for_each(head, tail, dtor);
         }
-        alloctraits::deallocate(alloc, ptr, std::distance(ptr, endptr));
+        alloctraits::deallocate(alloc, ptr,
+                                as_unsigned(std::distance(ptr, endptr)));
 
         ptr = newptr;
         endptr = newptr + newcap;
@@ -91,7 +95,8 @@ template <typename T> class vector_queue {
             std::for_each(head, tail, dtor);
         }
 
-        alloctraits::deallocate(alloc, ptr, std::distance(ptr, endptr));
+        alloctraits::deallocate(alloc, ptr,
+                                as_unsigned(std::distance(ptr, endptr)));
     }
 
     vector_queue()
@@ -143,8 +148,9 @@ template <typename T> class vector_queue {
 
     std::size_t size() const noexcept {
         if (head > tail)
-            return std::distance(head, endptr) + std::distance(ptr, tail);
-        return std::distance(head, tail);
+            return as_unsigned(std::distance(head, endptr) +
+                               std::distance(ptr, tail));
+        return as_unsigned(std::distance(head, tail));
     }
 
     T &front() noexcept {

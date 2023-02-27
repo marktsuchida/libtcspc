@@ -375,12 +375,13 @@ TEST_CASE("Batch bin increments", "[batch_bin_increments]") {
         in.feed(start_event{42});
         in.feed(bin_increment_event<u32>{43, 123});
         in.feed(stop_event{44});
-        REQUIRE(out.check(bin_increment_batch_event<u32>{42, 44, {123}}));
+        REQUIRE(out.check(bin_increment_batch_event<u32>{{42, 44}, {123}}));
         in.feed(start_event{45});
         in.feed(bin_increment_event<u32>{46, 124});
         in.feed(bin_increment_event<u32>{47, 125});
         in.feed(stop_event{48});
-        REQUIRE(out.check(bin_increment_batch_event<u32>{45, 48, {124, 125}}));
+        REQUIRE(
+            out.check(bin_increment_batch_event<u32>{{45, 48}, {124, 125}}));
         in.feed_end();
         REQUIRE(out.check_end());
     }

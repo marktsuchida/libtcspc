@@ -52,7 +52,7 @@ struct pq_pico_t3_event {
      * \brief Read the channel if this event represents a photon.
      */
     std::uint8_t get_channel() const noexcept {
-        return unsigned(bytes[3]) >> 4;
+        return static_cast<std::uint8_t>(unsigned(bytes[3]) >> 4);
     }
 
     /**
@@ -134,7 +134,7 @@ template <bool IsHydraV1> struct pq_hydra_t3_event {
         auto lo6 = unsigned(bytes[1]) >> 2;
         auto mid8 = unsigned(bytes[2]);
         auto hi1 = unsigned(bytes[3]) & 1u;
-        return lo6 | (mid8 << 6) | (hi1 << 14);
+        return static_cast<std::uint16_t>(lo6 | (mid8 << 6) | (hi1 << 14));
     }
 
     /**
