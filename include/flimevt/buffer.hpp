@@ -196,7 +196,7 @@ template <typename E, typename D> class buffer_event {
         has_item_condition.notify_one();
     }
 
-    void handle_end(std::exception_ptr error) noexcept {
+    void handle_end(std::exception_ptr const &error) noexcept {
         {
             std::scoped_lock lock(mutex);
             if (stream_ended)

@@ -59,7 +59,7 @@ class print_processor {
         output << ' ' << "Marker: " << int(event.channel) << '\n';
     }
 
-    void handle_end(std::exception_ptr error) {
+    void handle_end(std::exception_ptr const &error) {
         if (error) {
             try {
                 std::rethrow_exception(error);

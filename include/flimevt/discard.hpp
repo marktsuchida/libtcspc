@@ -22,7 +22,7 @@ class discard_any {
     template <typename E> void handle_event(E const &) noexcept {}
 
     /** \brief Processor interface */
-    void handle_end(std::exception_ptr) noexcept {}
+    void handle_end(std::exception_ptr const &) noexcept {}
 };
 
 /**
@@ -37,7 +37,7 @@ template <typename Es> class discard_all {
     void handle_event(E const &) noexcept {}
 
     /** \brief Processor interface */
-    void handle_end(std::exception_ptr) noexcept {}
+    void handle_end(std::exception_ptr const &) noexcept {}
 };
 
 } // namespace flimevt

@@ -33,7 +33,7 @@ static_assert(!handles_end_v<my_event1_processor>);
 static_assert(!handles_event_set_v<my_event1_processor, event_set<e0>>);
 
 struct my_end_processor {
-    void handle_end(std::exception_ptr) noexcept {}
+    void handle_end(std::exception_ptr const &) noexcept {}
 };
 
 static_assert(!handles_event_v<my_end_processor, e0>);

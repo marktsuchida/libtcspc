@@ -78,7 +78,7 @@ template <typename Es> class capture_output {
         }
     }
 
-    void handle_end(std::exception_ptr error) noexcept {
+    void handle_end(std::exception_ptr const &error) noexcept {
         assert(!end_of_life);
         assert(!ended);
         ended = true;
@@ -175,7 +175,7 @@ template <> class capture_output<event_set<>> {
         };
     }
 
-    void handle_end(std::exception_ptr error) noexcept {
+    void handle_end(std::exception_ptr const &error) noexcept {
         assert(!end_of_life);
         assert(!ended);
         ended = true;

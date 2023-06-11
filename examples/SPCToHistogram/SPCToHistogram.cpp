@@ -34,7 +34,7 @@ template <typename T> class histogram_saver {
     explicit histogram_saver(std::string const &out_filename)
         : out_filename(out_filename) {}
 
-    void handle_end(std::exception_ptr error) {
+    void handle_end(std::exception_ptr const &error) {
         if (error) {
             try {
                 std::rethrow_exception(error);
