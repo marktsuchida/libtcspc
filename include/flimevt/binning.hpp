@@ -205,7 +205,7 @@ class power_of_2_bin_mapper {
     using bin_index_type = TBinIndex;
 
     /** \brief Bin mapper interface */
-    std::size_t get_n_bins() const noexcept {
+    [[nodiscard]] std::size_t get_n_bins() const noexcept {
         return std::size_t{1} << NHistoBits;
     }
 
@@ -279,7 +279,7 @@ template <typename TData, typename TBinIndex> class linear_bin_mapper {
     }
 
     /** \brief Bin mapper interface */
-    std::size_t get_n_bins() const noexcept {
+    [[nodiscard]] std::size_t get_n_bins() const noexcept {
         return std::size_t(max_bin_index) + 1;
     }
 

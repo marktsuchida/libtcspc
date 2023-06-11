@@ -61,7 +61,9 @@ template <typename TBinIndex> class bin_increment_batch_journal {
      *
      * \return the number of batches stored
      */
-    std::size_t num_batches() const noexcept { return n_batches; }
+    [[nodiscard]] std::size_t num_batches() const noexcept {
+        return n_batches;
+    }
 
     /**
      * \brief Clear this journal.
@@ -422,11 +424,15 @@ class multi_histogram {
     }
 
     // True if any increment batches have been applied (and not rolled back).
-    bool is_started() const noexcept { return element_index > 0; }
+    [[nodiscard]] bool is_started() const noexcept {
+        return element_index > 0;
+    }
 
     // True if cycle is completed (applying further increment batches is
     // incorrect).
-    bool is_complete() const noexcept { return element_index >= num_elements; }
+    [[nodiscard]] bool is_complete() const noexcept {
+        return element_index >= num_elements;
+    }
 
     // True if every bin of every element histogram has been initialized
     // (cleared if requested; original value accepted otherwise). The
@@ -439,11 +445,13 @@ class multi_histogram {
     // - roll_back() was called at least once.
     // When clearing is not requested, the data is also consistent when no
     // operations have been performed yet.
-    bool is_consistent() const noexcept {
+    [[nodiscard]] bool is_consistent() const noexcept {
         return (not is_started() && not need_to_clear) || is_complete();
     }
 
-    std::size_t next_element_index() const noexcept { return element_index; }
+    [[nodiscard]] std::size_t next_element_index() const noexcept {
+        return element_index;
+    }
 
     gsl::span<bin_type> element_span(std::size_t index) noexcept {
         return hist_arr.subspan(num_bins * index, num_bins);
@@ -569,13 +577,19 @@ class multi_histogram_accumulation {
         : hist_arr(hist_array), cur_cycle(hist_array, max_per_bin, num_bins,
                                           num_elements, clear_first) {}
 
-    bool is_cycle_started() const noexcept { return cur_cycle.is_started(); }
+    [[nodiscard]] bool is_cycle_started() const noexcept {
+        return cur_cycle.is_started();
+    }
 
-    bool is_cycle_complete() const noexcept { return cur_cycle.is_complete(); }
+    [[nodiscard]] bool is_cycle_complete() const noexcept {
+        return cur_cycle.is_complete();
+    }
 
-    bool is_consistent() const noexcept { return cur_cycle.is_consistent(); }
+    [[nodiscard]] bool is_consistent() const noexcept {
+        return cur_cycle.is_consistent();
+    }
 
-    std::size_t next_element_index() const noexcept {
+    [[nodiscard]] std::size_t next_element_index() const noexcept {
         return cur_cycle.next_element_index();
     }
 
@@ -583,7 +597,9 @@ class multi_histogram_accumulation {
         return cur_cycle.element_span(index);
     }
 
-    std::size_t cycle_index() const noexcept { return cycle_idx; }
+    [[nodiscard]] std::size_t cycle_index() const noexcept {
+        return cycle_idx;
+    }
 
     // Finish the current cycle and start a new one. Must call once after
     // each cycle of element increment batches. Passing 'journal' (which is

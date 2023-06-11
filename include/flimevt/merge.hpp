@@ -36,7 +36,8 @@ template <typename Es, typename D> class merge_impl {
 
     D downstream;
 
-    template <unsigned C> bool is_pending_on_other() const noexcept {
+    template <unsigned C>
+    [[nodiscard]] bool is_pending_on_other() const noexcept {
         return pending_on_1 == (C == 0);
     }
 

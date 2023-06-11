@@ -39,7 +39,7 @@ template <typename T> class vector_queue {
     // don't currently allow allocator customization.
     using alloctraits = std::allocator_traits<std::allocator<T>>;
 
-    constexpr bool is_full() const noexcept {
+    [[nodiscard]] constexpr bool is_full() const noexcept {
         return !ptr || tail + 1 == head || (tail + 1 == endptr && head == ptr);
     }
 
@@ -146,7 +146,7 @@ template <typename T> class vector_queue {
 
     [[nodiscard]] bool empty() const noexcept { return head == tail; }
 
-    std::size_t size() const noexcept {
+    [[nodiscard]] std::size_t size() const noexcept {
         if (head > tail)
             return as_unsigned(std::distance(head, endptr) +
                                std::distance(ptr, tail));
