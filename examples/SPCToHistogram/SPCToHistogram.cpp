@@ -84,14 +84,14 @@ int main(int argc, char *argv[]) {
     std::istringstream(argv[3]) >> line_delay;
     std::uint32_t line_time = 0;
     std::istringstream(argv[4]) >> line_time;
-    std::string in_filename(argv[5]);
-    std::string out_filename(argv[6]);
+    std::string const in_filename(argv[5]);
+    std::string const out_filename(argv[6]);
 
-    std::uint32_t max_frames = UINT32_MAX;
+    std::uint32_t const max_frames = UINT32_MAX;
 
     using sample_type = std::uint16_t;
-    std::uint32_t input_bits = 12;
-    std::uint32_t histo_bits = 8;
+    std::uint32_t const input_bits = 12;
+    std::uint32_t const histo_bits = 8;
     flimevt::legacy_histogram<sample_type> frame_histo(histo_bits, input_bits,
                                                        true, width, height);
     flimevt::legacy_histogram<sample_type> cumul_histo(histo_bits, input_bits,

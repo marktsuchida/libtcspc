@@ -23,7 +23,7 @@ using e2 = timestamped_test_event<2>;
 using e3 = timestamped_test_event<3>;
 
 TEST_CASE("Delay uniform streams", "[delay_processor]") {
-    macrotime delta = GENERATE(0, 1, 2);
+    macrotime const delta = GENERATE(0, 1, 2);
     auto out = capture_output<event_set<e0, e1, e2, e3>>();
     auto in = feed_input<event_set<e0, e1, e2, e3>>(
         delay_processor<event_set<e0, e1>>(delta, ref_processor(out)));
@@ -67,7 +67,7 @@ TEST_CASE("Delay uniform streams", "[delay_processor]") {
 }
 
 TEST_CASE("Hasten uniform streams", "[hasten_processor]") {
-    macrotime delta = GENERATE(0, 1, 2);
+    macrotime const delta = GENERATE(0, 1, 2);
     auto out = capture_output<event_set<e0, e1, e2, e3>>();
     auto in = feed_input<event_set<e0, e1, e2, e3>>(
         hasten_processor<event_set<e2, e3>>(delta, ref_processor(out)));
@@ -329,7 +329,7 @@ TEST_CASE("Hasten by 2", "[hasten_processor]") {
 }
 
 TEST_CASE("Delay-hasten basic test", "[delay_hasten_processor]") {
-    macrotime delta = GENERATE(-2, -1, 0, 1, 2);
+    macrotime const delta = GENERATE(-2, -1, 0, 1, 2);
     auto out = capture_output<event_set<e0, e1>>();
     auto in = feed_input<event_set<e0, e1>>(
         delay_hasten_processor<event_set<e0>, event_set<e1>>(

@@ -204,7 +204,7 @@ TEMPLATE_TEST_CASE(
     auto max_per_bin = GENERATE(u8(0), 1, 255);
     std::vector<u8> data(num_bins, u8(123));
     {
-        single_histogram<u8, u8, TestType> shist(data, max_per_bin);
+        single_histogram<u8, u8, TestType> const shist(data, max_per_bin);
         CHECK(std::all_of(data.begin(), data.end(),
                           [](u8 e) { return e == 123; }));
     }
@@ -369,11 +369,11 @@ TEMPLATE_TEST_CASE(
     auto num_elements = GENERATE(std::size_t{0}, 1, 42);
     auto num_bins = GENERATE(std::size_t{0}, 1, 42, 255);
     auto max_per_bin = GENERATE(u8(0), 1, 255);
-    bool clear = GENERATE(false, true);
+    bool const clear = GENERATE(false, true);
     std::vector<u8> data(num_elements * num_bins, u8(123));
     {
-        multi_histogram<u8, u8, TestType> mhist(data, max_per_bin, num_bins,
-                                                num_elements, clear);
+        multi_histogram<u8, u8, TestType> const mhist(
+            data, max_per_bin, num_bins, num_elements, clear);
         CHECK(std::all_of(data.begin(), data.end(),
                           [](u8 e) { return e == 123; }));
     }
@@ -385,7 +385,7 @@ TEMPLATE_TEST_CASE(
     "multi_histogram: zero-element instance behaves as expected",
     "[multi_histogram]", saturate_on_internal_overflow,
     stop_on_internal_overflow) {
-    histogram_stats stats;
+    histogram_stats stats; // NOLINT(misc-const-correctness)
     multi_histogram<u8, u8, TestType> mhist({}, 0, 0, 0, true);
     CHECK(not mhist.is_started());
     CHECK(mhist.is_complete());
@@ -558,10 +558,10 @@ TEMPLATE_TEST_CASE(
     auto num_elements = GENERATE(std::size_t{0}, 1, 42);
     auto num_bins = GENERATE(std::size_t{0}, 1, 42, 255);
     auto max_per_bin = GENERATE(u8(0), 1, 255);
-    bool clear_first = GENERATE(false, true);
+    bool const clear_first = GENERATE(false, true);
     std::vector<u8> data(num_elements * num_bins, u8(123));
     {
-        multi_histogram_accumulation<u8, u8, TestType> mhista(
+        multi_histogram_accumulation<u8, u8, TestType> const mhista(
             data, max_per_bin, num_bins, num_elements, clear_first);
         CHECK(std::all_of(data.begin(), data.end(),
                           [](u8 e) { return e == 123; }));
@@ -574,7 +574,7 @@ TEMPLATE_TEST_CASE(
     "multi_histogram_accumulation: zero-element instance behaves as expected",
     "[multi_histogram_accumulation]", saturate_on_internal_overflow,
     stop_on_internal_overflow) {
-    histogram_stats stats;
+    histogram_stats stats; // NOLINT(misc-const-correctness)
     multi_histogram_accumulation<u8, u8, TestType> mhista({}, 0, 0, 0, true);
     CHECK(mhista.is_cycle_complete());
     CHECK(mhista.is_consistent());

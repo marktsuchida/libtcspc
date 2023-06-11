@@ -33,13 +33,13 @@ TEST_CASE("Merge with error on one input", "[merge]") {
     auto rmin0 = ref_processor(min0);
     auto rmin1 = ref_processor(min1);
     using vproc_type = virtual_processor<all_events>;
-    std::shared_ptr<vproc_type> v0 = std::make_shared<
+    std::shared_ptr<vproc_type> const v0 = std::make_shared<
         virtual_wrapped_processor<decltype(rmin0), all_events>>(
         std::move(rmin0));
-    std::shared_ptr<vproc_type> v1 = std::make_shared<
+    std::shared_ptr<vproc_type> const v1 = std::make_shared<
         virtual_wrapped_processor<decltype(rmin1), all_events>>(
         std::move(rmin1));
-    int x = GENERATE(0, 1);
+    int const x = GENERATE(0, 1);
     using dynproc_type = polymorphic_processor<all_events>;
     dynproc_type dyn_x(x ? v1 : v0);
     dynproc_type dyn_y(x ? v0 : v1);
@@ -213,13 +213,13 @@ TEST_CASE("Merge max time shift", "[merge]") {
     auto [min0, min1] = merge<all_events>(10, ref_processor(out));
 
     using vproc_type = virtual_processor<all_events>;
-    std::shared_ptr<vproc_type> v0 = std::make_shared<
+    std::shared_ptr<vproc_type> const v0 = std::make_shared<
         virtual_wrapped_processor<decltype(min0), all_events>>(
         std::move(min0));
-    std::shared_ptr<vproc_type> v1 = std::make_shared<
+    std::shared_ptr<vproc_type> const v1 = std::make_shared<
         virtual_wrapped_processor<decltype(min1), all_events>>(
         std::move(min1));
-    int x = GENERATE(0, 1);
+    int const x = GENERATE(0, 1);
     using dynproc_type = polymorphic_processor<all_events>;
     dynproc_type dyn_x(x ? v1 : v0);
     dynproc_type dyn_y(x ? v0 : v1);

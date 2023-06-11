@@ -16,7 +16,7 @@ using namespace flimevt;
 
 TEST_CASE("Autocopying span", "[autocopy_span]") {
     std::array a{1, 2, 3};
-    autocopy_span aspan(a); // CTAD check
+    autocopy_span const aspan(a); // CTAD check
 
     std::vector v{1, 2, 3};
 
@@ -46,7 +46,7 @@ TEST_CASE("Autocopying span", "[autocopy_span]") {
     REQUIRE(empty_copy.span().empty());
 
     // Conversion to gsl::span
-    gsl::span<int const> s(carr);
+    gsl::span<int const> const s(carr);
     REQUIRE(s[0] == 3);
 
     // Implicit conversion to gsl::span

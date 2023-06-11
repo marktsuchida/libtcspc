@@ -96,7 +96,7 @@ void dump_raw_event(char const *raw_event, std::ostream &output) {
     flimevt::bh_spc_event const &event =
         *reinterpret_cast<flimevt::bh_spc_event const *>(raw_event);
 
-    std::uint8_t route = event.get_routing_signals();
+    std::uint8_t const route = event.get_routing_signals();
     output << (route & (1 << 3) ? 'x' : '_') << (route & (1 << 2) ? 'x' : '_')
            << (route & (1 << 1) ? 'x' : '_') << (route & (1 << 0) ? 'x' : '_')
            << ' ' << (event.get_invalid_flag() ? 'I' : '_')

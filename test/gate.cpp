@@ -20,7 +20,7 @@ using gated_event = empty_test_event<2>;
 using misc_event = empty_test_event<3>;
 
 TEST_CASE("Gate events", "[gate_events]") {
-    bool initially_open = GENERATE(false, true);
+    bool const initially_open = GENERATE(false, true);
     auto out = capture_output<
         event_set<open_event, close_event, gated_event, misc_event>>();
     auto in = feed_input<
