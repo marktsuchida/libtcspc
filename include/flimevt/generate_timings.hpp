@@ -199,6 +199,7 @@ template <typename EOut> class linear_timing_generator {
      * positive)
      * \param count number of output events to generate for each trigger
      */
+    // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
     explicit linear_timing_generator(macrotime delay, macrotime interval,
                                      std::size_t count)
         : delay(delay), interval(interval), count(count) {
