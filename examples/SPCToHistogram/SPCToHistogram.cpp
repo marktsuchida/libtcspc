@@ -125,7 +125,7 @@ int main(int argc, char *argv[]) {
 
     flimevt::object_pool<std::vector<flimevt::bh_spc_event>> pool(2);
 
-    constexpr std::size_t batch_capacity = 48 * 1024;
+    constexpr std::size_t batch_capacity = std::size_t(48) * 1024;
     constexpr auto max_size = batch_capacity * sizeof(flimevt::bh_spc_event);
 
     input.seekg(sizeof(bh_spc_file_header));
