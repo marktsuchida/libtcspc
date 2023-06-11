@@ -154,7 +154,7 @@ template <bool IsHydraV1> struct pq_hydra_t3_event {
      * \brief Determine if this event is a non-photon event.
      */
     [[nodiscard]] auto is_special() const noexcept -> bool {
-        return unsigned(bytes[3]) & (1u << 7);
+        return (unsigned(bytes[3]) & (1u << 7)) != 0;
     }
 
     /**
@@ -243,7 +243,7 @@ template <typename E, typename D> class base_decode_pq_t3 {
         if (event.is_external_marker()) {
             marker_event e{{nsync}, 0};
             std::uint32_t bits = event.get_external_marker_bits();
-            while (bits) {
+            while (bits != 0) {
                 e.channel = count_trailing_zeros_32(bits);
                 downstream.handle_event(e);
                 bits = bits & (bits - 1); // Clear the handled bit

@@ -51,7 +51,7 @@ template <typename T> class histogram_saver {
 
     void
     handle_event(flimevt::final_cumulative_histogram_event<T> const &event) {
-        if (!frame_count) { // No frames
+        if (frame_count == 0) { // No frames
             std::cerr << "No frames\n";
             return;
         }

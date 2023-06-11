@@ -71,7 +71,7 @@ struct bh_spc_event {
      * \brief Read the 'marker' flag.
      */
     [[nodiscard]] auto get_marker_flag() const noexcept -> bool {
-        return unsigned(bytes[3]) & (1u << 4);
+        return (unsigned(bytes[3]) & (1u << 4)) != 0;
     }
 
     /**
@@ -85,21 +85,21 @@ struct bh_spc_event {
      * \brief Read the 'gap' (data lost) flag.
      */
     [[nodiscard]] auto get_gap_flag() const noexcept -> bool {
-        return unsigned(bytes[3]) & (1u << 5);
+        return (unsigned(bytes[3]) & (1u << 5)) != 0;
     }
 
     /**
      * \brief Read the 'macrotime overflow' flag.
      */
     [[nodiscard]] auto get_macrotime_overflow_flag() const noexcept -> bool {
-        return unsigned(bytes[3]) & (1u << 6);
+        return (unsigned(bytes[3]) & (1u << 6)) != 0;
     }
 
     /**
      * \brief Read the 'invalid' flag.
      */
     [[nodiscard]] auto get_invalid_flag() const noexcept -> bool {
-        return unsigned(bytes[3]) & (1u << 7);
+        return (unsigned(bytes[3]) & (1u << 7)) != 0;
     }
 
     /**
@@ -182,21 +182,21 @@ struct bh_spc_600_event_48 {
      * \brief Read the 'gap' (data lost) flag.
      */
     [[nodiscard]] auto get_gap_flag() const noexcept -> bool {
-        return unsigned(bytes[1]) & (1u << 6);
+        return (unsigned(bytes[1]) & (1u << 6)) != 0;
     }
 
     /**
      * \brief Read the 'macrotime overflow' flag.
      */
     [[nodiscard]] auto get_macrotime_overflow_flag() const noexcept -> bool {
-        return unsigned(bytes[1]) & (1u << 5);
+        return (unsigned(bytes[1]) & (1u << 5)) != 0;
     }
 
     /**
      * \brief Read the 'invalid' flag.
      */
     [[nodiscard]] auto get_invalid_flag() const noexcept -> bool {
-        return unsigned(bytes[1]) & (1u << 4);
+        return (unsigned(bytes[1]) & (1u << 4)) != 0;
     }
 
     /**
@@ -276,21 +276,21 @@ struct bh_spc_600_event_32 {
      * \brief Read the 'gap' (data lost) flag.
      */
     [[nodiscard]] auto get_gap_flag() const noexcept -> bool {
-        return unsigned(bytes[3]) & (1u << 5);
+        return (unsigned(bytes[3]) & (1u << 5)) != 0;
     }
 
     /**
      * \brief Read the 'macrotime overflow' flag.
      */
     [[nodiscard]] auto get_macrotime_overflow_flag() const noexcept -> bool {
-        return unsigned(bytes[3]) & (1u << 6);
+        return (unsigned(bytes[3]) & (1u << 6)) != 0;
     }
 
     /**
      * \brief Read the 'invalid' flag.
      */
     [[nodiscard]] auto get_invalid_flag() const noexcept -> bool {
-        return unsigned(bytes[3]) & (1u << 7);
+        return (unsigned(bytes[3]) & (1u << 7)) != 0;
     }
 
     /**
@@ -360,7 +360,7 @@ template <typename E, typename D> class base_decode_bh_spc {
         if (event.get_marker_flag()) {
             marker_event e{{macrotime}, 0};
             std::uint32_t bits = event.get_marker_bits();
-            while (bits) {
+            while (bits != 0) {
                 e.channel = count_trailing_zeros_32(bits);
                 downstream.handle_event(e);
                 bits = bits & (bits - 1); // Clear the handled bit

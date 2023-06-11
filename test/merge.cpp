@@ -39,8 +39,8 @@ TEST_CASE("Merge with error on one input", "[merge]") {
         virtual_wrapped_processor<decltype(rmin1), all_events>>(rmin1);
     int const x = GENERATE(0, 1);
     using dynproc_type = polymorphic_processor<all_events>;
-    dynproc_type dyn_x(x ? v1 : v0);
-    dynproc_type dyn_y(x ? v0 : v1);
+    dynproc_type dyn_x(x != 0 ? v1 : v0);
+    dynproc_type dyn_y(x != 0 ? v0 : v1);
 
     auto in_0 = feed_input<all_events>(ref_processor(min0));
     in_0.require_output_checked(out);
@@ -219,8 +219,8 @@ TEST_CASE("Merge max time shift", "[merge]") {
         std::move(min1));
     int const x = GENERATE(0, 1);
     using dynproc_type = polymorphic_processor<all_events>;
-    dynproc_type dyn_x(x ? v1 : v0);
-    dynproc_type dyn_y(x ? v0 : v1);
+    dynproc_type dyn_x(x != 0 ? v1 : v0);
+    dynproc_type dyn_y(x != 0 ? v0 : v1);
 
     auto in_x = feed_input<all_events>(std::move(dyn_x));
     in_x.require_output_checked(out);

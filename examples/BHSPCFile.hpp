@@ -52,7 +52,7 @@ struct bh_spc_file_header {
     }
 
     [[nodiscard]] auto get_data_valid_flag() const noexcept -> bool {
-        return bytes[3] & (1 << 7);
+        return (bytes[3] & (1 << 7)) != 0;
     }
 
     void set_data_valid_flag(bool valid) {
@@ -100,7 +100,7 @@ struct bh_spc_600_file_header_48 {
     }
 
     [[nodiscard]] auto get_data_valid_flag() const noexcept -> bool {
-        return bytes[1] & (1 << 4);
+        return (bytes[1] & (1 << 4)) != 0;
     }
 
     void set_data_valid_flag(bool valid) {

@@ -96,9 +96,11 @@ void dump_raw_event(char const *raw_event, std::ostream &output) {
         *reinterpret_cast<flimevt::bh_spc_event const *>(raw_event);
 
     std::uint8_t const route = event.get_routing_signals();
-    output << (route & (1 << 3) ? 'x' : '_') << (route & (1 << 2) ? 'x' : '_')
-           << (route & (1 << 1) ? 'x' : '_') << (route & (1 << 0) ? 'x' : '_')
-           << ' ' << (event.get_invalid_flag() ? 'I' : '_')
+    output << ((route & (1 << 3)) != 0 ? 'x' : '_')
+           << ((route & (1 << 2)) != 0 ? 'x' : '_')
+           << ((route & (1 << 1)) != 0 ? 'x' : '_')
+           << ((route & (1 << 0)) != 0 ? 'x' : '_') << ' '
+           << (event.get_invalid_flag() ? 'I' : '_')
            << (event.get_macrotime_overflow_flag() ? 'O' : '_')
            << (event.get_gap_flag() ? 'G' : '_')
            << (event.get_marker_flag() ? 'M' : '_');
@@ -135,11 +137,11 @@ auto dump_events(std::istream &input, std::ostream &output) -> int {
 
 auto dump(std::istream &input, std::ostream &output) -> int {
     int ret = dump_header(input, output);
-    if (ret)
+    if (ret != 0)
         return ret;
 
     ret = dump_events(input, output);
-    if (ret)
+    if (ret != 0)
         return ret;
 
     return 0;
