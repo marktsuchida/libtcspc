@@ -172,7 +172,7 @@ template <unsigned Ch, typename Es, typename D> class merge_input {
 template <typename Es, typename D>
 auto merge(macrotime max_time_shift, D &&downstream) {
     auto p = std::make_shared<internal::merge_impl<Es, D>>(
-        max_time_shift, std::move(downstream));
+        max_time_shift, std::forward<D>(downstream));
     return std::make_pair(internal::merge_input<0, Es, D>(p),
                           internal::merge_input<1, Es, D>(p));
 }
