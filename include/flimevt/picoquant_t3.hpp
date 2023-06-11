@@ -199,14 +199,14 @@ namespace internal {
 // decode_pq_hydra_v2_t3.
 // E is the binary record event class.
 template <typename E, typename D> class base_decode_pq_t3 {
-    macrotime nsync_base;
-    macrotime last_nsync;
+    macrotime nsync_base = 0;
+    macrotime last_nsync = 0;
 
     D downstream;
 
   public:
     explicit base_decode_pq_t3(D &&downstream)
-        : nsync_base(0), last_nsync(0), downstream(std::move(downstream)) {}
+        : downstream(std::move(downstream)) {}
 
     void handle_event(E const &event) noexcept {
         if (event.is_nsync_overflow()) {

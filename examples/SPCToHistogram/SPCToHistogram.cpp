@@ -27,12 +27,12 @@ void usage() {
 }
 
 template <typename T> class histogram_saver {
-    std::size_t frame_count;
+    std::size_t frame_count = 0;
     std::string const &out_filename;
 
   public:
     explicit histogram_saver(std::string const &out_filename)
-        : frame_count(0), out_filename(out_filename) {}
+        : out_filename(out_filename) {}
 
     void handle_end(std::exception_ptr error) {
         if (error) {

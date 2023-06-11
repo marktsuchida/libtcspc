@@ -294,15 +294,14 @@ namespace internal {
 // Common implementation for decode_bh_spc, decode_bh_spc_600_48,
 // decode_bh_spc_600_32. E is the binary record event class.
 template <typename E, typename D> class base_decode_bh_spc {
-    macrotime macrotime_base; // Time of last overflow
-    macrotime last_macrotime;
+    macrotime macrotime_base = 0; // Time of last overflow
+    macrotime last_macrotime = 0;
 
     D downstream;
 
   public:
     explicit base_decode_bh_spc(D &&downstream)
-        : macrotime_base(0), last_macrotime(0),
-          downstream(std::move(downstream)) {}
+        : downstream(std::move(downstream)) {}
 
     // Rule of zero
 

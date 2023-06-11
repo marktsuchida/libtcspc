@@ -177,8 +177,8 @@ template <typename EOut> class one_shot_timing_generator {
  * \tparam EOut output event type
  */
 template <typename EOut> class linear_timing_generator {
-    macrotime next;
-    std::size_t remaining;
+    macrotime next = 0;
+    std::size_t remaining = 0;
 
     macrotime const delay;
     macrotime const interval;
@@ -199,8 +199,7 @@ template <typename EOut> class linear_timing_generator {
      */
     explicit linear_timing_generator(macrotime delay, macrotime interval,
                                      std::size_t count)
-        : next(0), remaining(0), delay(delay), interval(interval),
-          count(count) {
+        : delay(delay), interval(interval), count(count) {
         assert(delay >= 0);
         assert(interval > 0);
     }

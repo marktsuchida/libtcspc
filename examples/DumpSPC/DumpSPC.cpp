@@ -19,8 +19,8 @@
 #include <vector>
 
 class print_processor {
-    std::uint32_t count;
-    flimevt::macrotime last_macrotime;
+    std::uint32_t count = 0;
+    flimevt::macrotime last_macrotime = 0;
     std::ostream &output;
 
     void print_macrotime(std::ostream &output, flimevt::macrotime macrotime) {
@@ -36,8 +36,7 @@ class print_processor {
     }
 
   public:
-    explicit print_processor(std::ostream &output)
-        : count(0), last_macrotime(0), output(output) {}
+    explicit print_processor(std::ostream &output) : output(output) {}
 
     void handle_event(flimevt::time_reached_event const &event) {
         // Do nothing
