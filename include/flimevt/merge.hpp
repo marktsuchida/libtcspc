@@ -37,7 +37,7 @@ template <typename Es, typename D> class merge_impl {
     D downstream;
 
     template <unsigned C>
-    [[nodiscard]] bool is_pending_on_other() const noexcept {
+    [[nodiscard]] auto is_pending_on_other() const noexcept -> bool {
         return pending_on_1 == (C == 0);
     }
 
@@ -61,7 +61,7 @@ template <typename Es, typename D> class merge_impl {
 
   public:
     merge_impl(merge_impl const &) = delete;
-    merge_impl &operator=(merge_impl const &) = delete;
+    auto operator=(merge_impl const &) -> merge_impl & = delete;
 
     explicit merge_impl(macrotime max_time_shift, D &&downstream)
         : max_time_shift(max_time_shift), downstream(std::move(downstream)) {
@@ -140,9 +140,9 @@ template <unsigned Ch, typename Es, typename D> class merge_input {
 
     // Movable but not copyable
     merge_input(merge_input const &) = delete;
-    merge_input &operator=(merge_input const &) = delete;
+    auto operator=(merge_input const &) -> merge_input & = delete;
     merge_input(merge_input &&) = default;
-    merge_input &operator=(merge_input &&) = default;
+    auto operator=(merge_input &&) -> merge_input & = default;
 
     template <typename E, typename = std::enable_if_t<contains_event_v<Es, E>>>
     void handle_event(E const &event) noexcept {

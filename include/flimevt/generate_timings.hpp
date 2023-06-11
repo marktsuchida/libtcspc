@@ -115,12 +115,12 @@ template <typename EOut> class null_timing_generator {
     void trigger(macrotime starttime) noexcept { (void)starttime; }
 
     /** \brief Timing generator interface */
-    [[nodiscard]] std::optional<macrotime> peek() const noexcept {
+    [[nodiscard]] auto peek() const noexcept -> std::optional<macrotime> {
         return std::nullopt;
     }
 
     /** \brief Timing generator interface */
-    EOut pop() noexcept { internal::unreachable(); }
+    auto pop() noexcept -> EOut { internal::unreachable(); }
 };
 
 /**
@@ -155,14 +155,14 @@ template <typename EOut> class one_shot_timing_generator {
     }
 
     /** \brief Timing generator interface */
-    [[nodiscard]] std::optional<macrotime> peek() const noexcept {
+    [[nodiscard]] auto peek() const noexcept -> std::optional<macrotime> {
         if (pending)
             return next;
         return std::nullopt;
     }
 
     /** \brief Timing generator interface */
-    EOut pop() noexcept {
+    auto pop() noexcept -> EOut {
         EOut event;
         event.macrotime = next;
         pending = false;
@@ -213,14 +213,14 @@ template <typename EOut> class linear_timing_generator {
     }
 
     /** \brief Timing generator interface */
-    [[nodiscard]] std::optional<macrotime> peek() const noexcept {
+    [[nodiscard]] auto peek() const noexcept -> std::optional<macrotime> {
         if (remaining > 0)
             return next;
         return std::nullopt;
     }
 
     /** \brief Timing generator interface */
-    EOut pop() noexcept {
+    auto pop() noexcept -> EOut {
         EOut event;
         event.macrotime = next;
         next += interval;

@@ -23,8 +23,8 @@ struct bh_spc_file_header {
 
     void clear() noexcept { memset(bytes, 0, sizeof(bytes)); }
 
-    [[nodiscard]] std::uint32_t
-    get_macrotime_units_tenths_ns() const noexcept {
+    [[nodiscard]] auto get_macrotime_units_tenths_ns() const noexcept
+        -> std::uint32_t {
         return bytes[0] | (std::uint32_t(bytes[1]) << 8) |
                (std::uint32_t(bytes[2]) << 16);
     }
@@ -38,7 +38,8 @@ struct bh_spc_file_header {
         bytes[2] = (value >> 16) & 0xff;
     }
 
-    [[nodiscard]] std::uint8_t get_number_of_routing_bits() const noexcept {
+    [[nodiscard]] auto get_number_of_routing_bits() const noexcept
+        -> std::uint8_t {
         return (bytes[3] >> 3) & 0x0f;
     }
 
@@ -50,7 +51,7 @@ struct bh_spc_file_header {
         bytes[3] |= value << 3;
     }
 
-    [[nodiscard]] bool get_data_valid_flag() const noexcept {
+    [[nodiscard]] auto get_data_valid_flag() const noexcept -> bool {
         return bytes[3] & (1 << 7);
     }
 
@@ -72,8 +73,8 @@ struct bh_spc_600_file_header_48 {
 
     void clear() noexcept { memset(bytes, 0, sizeof(bytes)); }
 
-    [[nodiscard]] std::uint32_t
-    get_macrotime_units_tenths_ns() const noexcept {
+    [[nodiscard]] auto get_macrotime_units_tenths_ns() const noexcept
+        -> std::uint32_t {
         return bytes[2] | (std::uint32_t(bytes[3]) << 8);
     }
 
@@ -85,7 +86,8 @@ struct bh_spc_600_file_header_48 {
         bytes[3] = (value >> 8) & 0xff;
     }
 
-    [[nodiscard]] std::uint8_t get_number_of_routing_bits() const noexcept {
+    [[nodiscard]] auto get_number_of_routing_bits() const noexcept
+        -> std::uint8_t {
         return bytes[1] & 0x0f;
     }
 
@@ -97,7 +99,7 @@ struct bh_spc_600_file_header_48 {
         bytes[1] |= value;
     }
 
-    [[nodiscard]] bool get_data_valid_flag() const noexcept {
+    [[nodiscard]] auto get_data_valid_flag() const noexcept -> bool {
         return bytes[1] & (1 << 4);
     }
 

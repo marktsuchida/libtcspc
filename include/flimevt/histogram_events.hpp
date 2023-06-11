@@ -46,19 +46,20 @@ struct histogram_stats {
     std::uint64_t saturated = 0;
 
     /** \brief Equality comparison operator. */
-    friend bool operator==(histogram_stats const &lhs,
-                           histogram_stats const &rhs) noexcept {
+    friend auto operator==(histogram_stats const &lhs,
+                           histogram_stats const &rhs) noexcept -> bool {
         return lhs.total == rhs.total && lhs.saturated == rhs.saturated;
     }
 
     /** \brief Inequality comparison operator. */
-    friend bool operator!=(histogram_stats const &lhs,
-                           histogram_stats const &rhs) noexcept {
+    friend auto operator!=(histogram_stats const &lhs,
+                           histogram_stats const &rhs) noexcept -> bool {
         return not(lhs == rhs);
     }
 
     /** \brief Stream insertion operator. */
-    friend std::ostream &operator<<(std::ostream &s, histogram_stats stats) {
+    friend auto operator<<(std::ostream &s, histogram_stats stats)
+        -> std::ostream & {
         return s << '{' << stats.total << ", " << stats.saturated << '}';
     }
 };
@@ -102,19 +103,20 @@ struct macrotime_range {
     }
 
     /** \brief Equality comparison operator. */
-    friend constexpr bool operator==(macrotime_range lhs,
-                                     macrotime_range rhs) noexcept {
+    friend constexpr auto operator==(macrotime_range lhs,
+                                     macrotime_range rhs) noexcept -> bool {
         return lhs.start == rhs.start && lhs.stop == rhs.stop;
     }
 
     /** \brief Inequality comparison operator. */
-    friend constexpr bool operator!=(macrotime_range lhs,
-                                     macrotime_range rhs) noexcept {
+    friend constexpr auto operator!=(macrotime_range lhs,
+                                     macrotime_range rhs) noexcept -> bool {
         return not(lhs == rhs);
     }
 
     /** \brief Stream insertion operator. */
-    friend std::ostream &operator<<(std::ostream &s, macrotime_range r) {
+    friend auto operator<<(std::ostream &s, macrotime_range r)
+        -> std::ostream & {
         return s << '{' << r.start << ", " << r.stop << '}';
     }
 };
@@ -157,20 +159,22 @@ template <typename TData> struct datapoint_event {
     data_type value;
 
     /** \brief Equality comparison operator. */
-    friend constexpr bool operator==(datapoint_event const &lhs,
-                                     datapoint_event const &rhs) noexcept {
+    friend constexpr auto operator==(datapoint_event const &lhs,
+                                     datapoint_event const &rhs) noexcept
+        -> bool {
         return lhs.macrotime == rhs.macrotime && lhs.value == rhs.value;
     }
 
     /** \brief Inequality comparison operator. */
-    friend constexpr bool operator!=(datapoint_event const &lhs,
-                                     datapoint_event const &rhs) noexcept {
+    friend constexpr auto operator!=(datapoint_event const &lhs,
+                                     datapoint_event const &rhs) noexcept
+        -> bool {
         return not(lhs == rhs);
     }
 
     /** \brief Stream insertion operator. */
-    friend std::ostream &operator<<(std::ostream &s,
-                                    datapoint_event const &e) {
+    friend auto operator<<(std::ostream &s, datapoint_event const &e)
+        -> std::ostream & {
         return s << "datapoint(" << e.macrotime << ", " << e.value << ')';
     }
 };
@@ -192,21 +196,23 @@ template <typename TBinIndex> struct bin_increment_event {
     TBinIndex bin_index;
 
     /** \brief Equality comparison operator. */
-    friend constexpr bool operator==(bin_increment_event const &lhs,
-                                     bin_increment_event const &rhs) noexcept {
+    friend constexpr auto operator==(bin_increment_event const &lhs,
+                                     bin_increment_event const &rhs) noexcept
+        -> bool {
         return lhs.macrotime == rhs.macrotime &&
                lhs.bin_index == rhs.bin_index;
     }
 
     /** \brief Inequality comparison operator. */
-    friend constexpr bool operator!=(bin_increment_event const &lhs,
-                                     bin_increment_event const &rhs) noexcept {
+    friend constexpr auto operator!=(bin_increment_event const &lhs,
+                                     bin_increment_event const &rhs) noexcept
+        -> bool {
         return not(lhs == rhs);
     }
 
     /** \brief Stream insertion operator. */
-    friend std::ostream &operator<<(std::ostream &s,
-                                    bin_increment_event const &e) {
+    friend auto operator<<(std::ostream &s, bin_increment_event const &e)
+        -> std::ostream & {
         return s << "bin_increment(" << e.macrotime << ", " << e.bin_index
                  << ')';
     }
@@ -232,21 +238,23 @@ template <typename TBinIndex> struct bin_increment_batch_event {
     std::vector<TBinIndex> bin_indices;
 
     /** \brief Equality comparison operator. */
-    friend bool operator==(bin_increment_batch_event const &lhs,
-                           bin_increment_batch_event const &rhs) noexcept {
+    friend auto operator==(bin_increment_batch_event const &lhs,
+                           bin_increment_batch_event const &rhs) noexcept
+        -> bool {
         return lhs.time_range == rhs.time_range &&
                lhs.bin_indices == rhs.bin_indices;
     }
 
     /** \brief Inequality comparison operator. */
-    friend bool operator!=(bin_increment_batch_event const &lhs,
-                           bin_increment_batch_event const &rhs) noexcept {
+    friend auto operator!=(bin_increment_batch_event const &lhs,
+                           bin_increment_batch_event const &rhs) noexcept
+        -> bool {
         return not(lhs == rhs);
     }
 
     /** \brief Stream insertion operator for bin_increment_batch_event. */
-    friend std::ostream &operator<<(std::ostream &s,
-                                    bin_increment_batch_event const &e) {
+    friend auto operator<<(std::ostream &s, bin_increment_batch_event const &e)
+        -> std::ostream & {
         s << "bin_increment_batch(" << e.time_range << ", ";
         internal::print_range(s, e.bin_indices.begin(), e.bin_indices.end());
         return s << ')';
@@ -277,21 +285,23 @@ template <typename TBin> struct histogram_event {
     histogram_stats stats;
 
     /** \brief Equality comparison operator. */
-    friend constexpr bool operator==(histogram_event const &lhs,
-                                     histogram_event const &rhs) noexcept {
+    friend constexpr auto operator==(histogram_event const &lhs,
+                                     histogram_event const &rhs) noexcept
+        -> bool {
         return lhs.time_range == rhs.time_range &&
                lhs.histogram == rhs.histogram && lhs.stats == rhs.stats;
     }
 
     /** \brief Inequality comparison operator. */
-    friend constexpr bool operator!=(histogram_event const &lhs,
-                                     histogram_event const &rhs) noexcept {
+    friend constexpr auto operator!=(histogram_event const &lhs,
+                                     histogram_event const &rhs) noexcept
+        -> bool {
         return not(lhs == rhs);
     }
 
     /** \brief Stream insertion operator. */
-    friend std::ostream &operator<<(std::ostream &s,
-                                    histogram_event const &e) {
+    friend auto operator<<(std::ostream &s, histogram_event const &e)
+        -> std::ostream & {
         s << "histogram(" << e.time_range << ", ";
         internal::print_range(s, e.histogram.span().begin(),
                               e.histogram.span().end());
@@ -340,9 +350,9 @@ template <typename TBin> struct concluding_histogram_event {
     bool is_end_of_stream = false;
 
     /** \brief Equality comparison operator. */
-    friend constexpr bool
+    friend constexpr auto
     operator==(concluding_histogram_event const &lhs,
-               concluding_histogram_event const &rhs) noexcept {
+               concluding_histogram_event const &rhs) noexcept -> bool {
         return lhs.time_range == rhs.time_range &&
                lhs.histogram == rhs.histogram && lhs.stats == rhs.stats &&
                lhs.cycle_count == rhs.cycle_count &&
@@ -350,15 +360,16 @@ template <typename TBin> struct concluding_histogram_event {
     }
 
     /** \brief Inequality comparison operator. */
-    friend constexpr bool
+    friend constexpr auto
     operator!=(concluding_histogram_event const &lhs,
-               concluding_histogram_event const &rhs) noexcept {
+               concluding_histogram_event const &rhs) noexcept -> bool {
         return not(lhs == rhs);
     }
 
     /** \brief Stream insertion operator. */
-    friend std::ostream &operator<<(std::ostream &s,
-                                    concluding_histogram_event const &e) {
+    friend auto operator<<(std::ostream &s,
+                           concluding_histogram_event const &e)
+        -> std::ostream & {
         s << "concluding_histogram(" << e.time_range << ", ";
         internal::print_range(s, e.histogram.span().begin(),
                               e.histogram.span().end());
@@ -406,8 +417,9 @@ template <typename TBin> struct element_histogram_event {
     std::uint64_t cycle_index = 0;
 
     /** \brief Equality comparison operator. */
-    friend bool operator==(element_histogram_event const &lhs,
-                           element_histogram_event const &rhs) noexcept {
+    friend auto operator==(element_histogram_event const &lhs,
+                           element_histogram_event const &rhs) noexcept
+        -> bool {
         return lhs.time_range == rhs.time_range &&
                lhs.element_index == rhs.element_index &&
                lhs.histogram == rhs.histogram && lhs.stats == rhs.stats &&
@@ -415,14 +427,15 @@ template <typename TBin> struct element_histogram_event {
     }
 
     /** \brief Inequality comparison operator. */
-    friend bool operator!=(element_histogram_event const &lhs,
-                           element_histogram_event const &rhs) noexcept {
+    friend auto operator!=(element_histogram_event const &lhs,
+                           element_histogram_event const &rhs) noexcept
+        -> bool {
         return not(lhs == rhs);
     }
 
     /** \brief Stream insertion operator. */
-    friend std::ostream &operator<<(std::ostream &s,
-                                    element_histogram_event e) {
+    friend auto operator<<(std::ostream &s, element_histogram_event e)
+        -> std::ostream & {
         s << "element_histogram(" << e.time_range << ", " << e.element_index
           << ", ";
         internal::print_range(s, e.histogram.span().begin(),
@@ -464,8 +477,8 @@ template <typename TBin> struct histogram_array_event {
     std::uint64_t cycles_accumulated = 0;
 
     /** \brief Equality comparison operator. */
-    friend bool operator==(histogram_array_event const &lhs,
-                           histogram_array_event const &rhs) noexcept {
+    friend auto operator==(histogram_array_event const &lhs,
+                           histogram_array_event const &rhs) noexcept -> bool {
         return lhs.time_range == rhs.time_range &&
                lhs.histogram_array == rhs.histogram_array &&
                lhs.stats == rhs.stats &&
@@ -473,13 +486,14 @@ template <typename TBin> struct histogram_array_event {
     }
 
     /** \brief Inequality comparison operator. */
-    friend bool operator!=(histogram_array_event const &lhs,
-                           histogram_array_event const &rhs) noexcept {
+    friend auto operator!=(histogram_array_event const &lhs,
+                           histogram_array_event const &rhs) noexcept -> bool {
         return not(lhs == rhs);
     }
 
     /** \brief Stream insertion operator. */
-    friend std::ostream &operator<<(std::ostream &s, histogram_array_event e) {
+    friend auto operator<<(std::ostream &s, histogram_array_event e)
+        -> std::ostream & {
         s << "histogram_array(" << e.time_range << ", ";
         internal::print_range(s, e.histogram_array.span().begin(),
                               e.histogram_array.span().end());
@@ -530,9 +544,9 @@ template <typename TBin> struct concluding_histogram_array_event {
     bool is_end_of_stream = false;
 
     /** \brief Equality comparison operator. */
-    friend bool
+    friend auto
     operator==(concluding_histogram_array_event const &lhs,
-               concluding_histogram_array_event const &rhs) noexcept {
+               concluding_histogram_array_event const &rhs) noexcept -> bool {
         return lhs.time_range == rhs.time_range &&
                lhs.histogram_array == rhs.histogram_array &&
                lhs.stats == rhs.stats &&
@@ -541,15 +555,15 @@ template <typename TBin> struct concluding_histogram_array_event {
     }
 
     /** \brief Inequality comparison operator. */
-    friend bool
+    friend auto
     operator!=(concluding_histogram_array_event const &lhs,
-               concluding_histogram_array_event const &rhs) noexcept {
+               concluding_histogram_array_event const &rhs) noexcept -> bool {
         return not(lhs == rhs);
     }
 
     /** \brief Stream insertion operator. */
-    friend std::ostream &operator<<(std::ostream &s,
-                                    concluding_histogram_array_event e) {
+    friend auto operator<<(std::ostream &s, concluding_histogram_array_event e)
+        -> std::ostream & {
         s << "concluding_histogram_array(" << e.time_range << ", ";
         internal::print_range(s, e.histogram_array.span().begin(),
                               e.histogram_array.span().end());

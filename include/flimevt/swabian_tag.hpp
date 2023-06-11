@@ -45,7 +45,7 @@ struct swabian_tag_event {
     /**
      * \brief Read the event type.
      */
-    [[nodiscard]] tag_type get_type() const noexcept {
+    [[nodiscard]] auto get_type() const noexcept -> tag_type {
         return tag_type(bytes[0]);
     }
 
@@ -54,21 +54,22 @@ struct swabian_tag_event {
     /**
      * \brief Read the missed event count if this is a missed events event.
      */
-    [[nodiscard]] std::uint16_t get_missed_event_count() const noexcept {
+    [[nodiscard]] auto get_missed_event_count() const noexcept
+        -> std::uint16_t {
         return internal::read_u16le(&bytes[2]);
     }
 
     /**
      * \brief Read the channel if this is a time tag or missed events event.
      */
-    [[nodiscard]] std::int32_t get_channel() const noexcept {
+    [[nodiscard]] auto get_channel() const noexcept -> std::int32_t {
         return internal::read_i32le(&bytes[4]);
     }
 
     /**
      * \brief Read the time (picoseconds).
      */
-    [[nodiscard]] std::int64_t get_time() const noexcept {
+    [[nodiscard]] auto get_time() const noexcept -> std::int64_t {
         return internal::read_i64le(&bytes[8]);
     }
 };

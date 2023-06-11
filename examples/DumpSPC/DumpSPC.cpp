@@ -71,7 +71,7 @@ class print_processor {
     }
 };
 
-int dump_header(std::istream &input, std::ostream &output) {
+auto dump_header(std::istream &input, std::ostream &output) -> int {
     char bytes[sizeof(bh_spc_file_header)];
     input.read(bytes, sizeof(bytes));
     auto const bytes_read = static_cast<std::size_t>(input.gcount());
@@ -109,7 +109,7 @@ void dump_raw_event(char const *raw_event, std::ostream &output) {
     output << '\n';
 }
 
-int dump_events(std::istream &input, std::ostream &output) {
+auto dump_events(std::istream &input, std::ostream &output) -> int {
     auto decoder = flimevt::decode_bh_spc(print_processor(output));
     constexpr std::size_t const eventSize = sizeof(flimevt::bh_spc_event);
 
@@ -133,7 +133,7 @@ int dump_events(std::istream &input, std::ostream &output) {
     return 0;
 }
 
-int dump(std::istream &input, std::ostream &output) {
+auto dump(std::istream &input, std::ostream &output) -> int {
     int ret = dump_header(input, output);
     if (ret)
         return ret;
@@ -145,7 +145,7 @@ int dump(std::istream &input, std::ostream &output) {
     return 0;
 }
 
-int main(int argc, char *argv[]) {
+auto main(int argc, char *argv[]) -> int {
 
     if (argc > 2) {
         std::cerr << "Too many arguments\n";

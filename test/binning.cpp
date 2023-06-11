@@ -45,8 +45,8 @@ TEST_CASE("Map to bins", "[map_to_bin]") {
         struct null_bin_mapper {
             using data_type = i32;
             using bin_index_type = u32;
-            std::optional<unsigned>
-            operator()([[maybe_unused]] int d) const noexcept {
+            auto operator()([[maybe_unused]] int d) const noexcept
+                -> std::optional<unsigned> {
                 return std::nullopt;
             }
         };
@@ -68,7 +68,7 @@ TEST_CASE("Map to bins", "[map_to_bin]") {
         struct add_42_bin_mapper {
             using data_type = i32;
             using bin_index_type = u32;
-            std::optional<unsigned> operator()(int d) const noexcept {
+            auto operator()(int d) const noexcept -> std::optional<unsigned> {
                 return unsigned(d) + 42u;
             }
         };

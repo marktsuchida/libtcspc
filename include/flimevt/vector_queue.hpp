@@ -39,11 +39,11 @@ template <typename T> class vector_queue {
     // don't currently allow allocator customization.
     using alloctraits = std::allocator_traits<std::allocator<T>>;
 
-    [[nodiscard]] constexpr bool is_full() const noexcept {
+    [[nodiscard]] constexpr auto is_full() const noexcept -> bool {
         return !ptr || tail + 1 == head || (tail + 1 == endptr && head == ptr);
     }
 
-    static std::size_t compute_enlarged_cap(std::size_t oldcap) {
+    static auto compute_enlarged_cap(std::size_t oldcap) -> std::size_t {
         auto alloc = std::allocator<T>();
         auto max_size = alloctraits::max_size(alloc);
         if (oldcap == max_size)
@@ -129,13 +129,13 @@ template <typename T> class vector_queue {
         other.ptr = other.endptr = other.head = other.tail = nullptr;
     }
 
-    vector_queue &operator=(vector_queue const &rhs) {
+    auto operator=(vector_queue const &rhs) -> vector_queue & {
         vector_queue t(rhs);
         swap(t);
         return *this;
     }
 
-    vector_queue &operator=(vector_queue &&rhs) noexcept {
+    auto operator=(vector_queue &&rhs) noexcept -> vector_queue & {
         ptr = rhs.ptr;
         endptr = rhs.endptr;
         head = rhs.head;
@@ -144,33 +144,33 @@ template <typename T> class vector_queue {
         return *this;
     }
 
-    [[nodiscard]] bool empty() const noexcept { return head == tail; }
+    [[nodiscard]] auto empty() const noexcept -> bool { return head == tail; }
 
-    [[nodiscard]] std::size_t size() const noexcept {
+    [[nodiscard]] auto size() const noexcept -> std::size_t {
         if (head > tail)
             return as_unsigned(std::distance(head, endptr) +
                                std::distance(ptr, tail));
         return as_unsigned(std::distance(head, tail));
     }
 
-    T &front() noexcept {
+    auto front() noexcept -> T & {
         assert(head != tail);
         return *head;
     }
 
-    T const &front() const noexcept {
+    auto front() const noexcept -> T const & {
         assert(head != tail);
         return *head;
     }
 
-    T &back() noexcept {
+    auto back() noexcept -> T & {
         assert(head != tail);
         if (tail == ptr)
             return *(endptr - 1);
         return *(tail - 1);
     }
 
-    T const &back() const noexcept {
+    auto back() const noexcept -> T const & {
         assert(head != tail);
         if (tail == ptr)
             return *(endptr - 1);

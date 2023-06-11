@@ -92,7 +92,7 @@ class difftime_data_mapper {
     using data_type = decltype(std::declval<event_type>().difftime);
 
     /** \brief Data mapper interface */
-    data_type operator()(event_type const &event) const noexcept {
+    auto operator()(event_type const &event) const noexcept -> data_type {
         return event.difftime;
     }
 };
@@ -205,12 +205,13 @@ class power_of_2_bin_mapper {
     using bin_index_type = TBinIndex;
 
     /** \brief Bin mapper interface */
-    [[nodiscard]] std::size_t get_n_bins() const noexcept {
+    [[nodiscard]] auto get_n_bins() const noexcept -> std::size_t {
         return std::size_t{1} << NHistoBits;
     }
 
     /** \brief Bin mapper interface */
-    std::optional<bin_index_type> operator()(data_type d) const noexcept {
+    auto operator()(data_type d) const noexcept
+        -> std::optional<bin_index_type> {
         static_assert(sizeof(data_type) >= sizeof(bin_index_type));
         static_assert(NDataBits <= 8 * sizeof(data_type));
         static_assert(NHistoBits <= 8 * sizeof(bin_index_type));
@@ -279,12 +280,13 @@ template <typename TData, typename TBinIndex> class linear_bin_mapper {
     }
 
     /** \brief Bin mapper interface */
-    [[nodiscard]] std::size_t get_n_bins() const noexcept {
+    [[nodiscard]] auto get_n_bins() const noexcept -> std::size_t {
         return std::size_t(max_bin_index) + 1;
     }
 
     /** \brief Bin mapper interface */
-    std::optional<bin_index_type> operator()(data_type d) const noexcept {
+    auto operator()(data_type d) const noexcept
+        -> std::optional<bin_index_type> {
         d -= offset;
         // Check sign before dividing to avoid rounding to zero in division.
         if ((d < 0 && bin_width > 0) || (d > 0 && bin_width < 0))

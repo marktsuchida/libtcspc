@@ -46,7 +46,7 @@ class never_event {
   public:
     never_event() = delete;
     never_event(never_event const &) = delete;
-    never_event &operator=(never_event const &) = delete;
+    auto operator=(never_event const &) -> never_event & = delete;
 };
 
 /**
@@ -123,7 +123,8 @@ namespace internal {
 // constexpr-if branches (by pretending that it may not always be false).
 template <typename T> struct false_for_type : std::false_type {};
 
-constexpr int count_trailing_zeros_32_nonintrinsic(std::uint32_t x) noexcept {
+constexpr auto count_trailing_zeros_32_nonintrinsic(std::uint32_t x) noexcept
+    -> int {
     int r = 0;
     while ((x & 1) == 0) {
         x >>= 1;
@@ -135,7 +136,7 @@ constexpr int count_trailing_zeros_32_nonintrinsic(std::uint32_t x) noexcept {
 // Return the number of trailing zero bits in x. Behavior is undefined if x is
 // zero.
 // TODO: In C++20, replace with std::countr_zero()
-inline int count_trailing_zeros_32(std::uint32_t const x) noexcept {
+inline auto count_trailing_zeros_32(std::uint32_t const x) noexcept -> int {
 #ifdef __GNUC__
     return __builtin_ctz(x);
 #elif defined(_MSC_VER)

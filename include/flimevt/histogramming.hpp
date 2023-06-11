@@ -61,7 +61,7 @@ template <typename TBinIndex> class bin_increment_batch_journal {
      *
      * \return the number of batches stored
      */
-    [[nodiscard]] std::size_t num_batches() const noexcept {
+    [[nodiscard]] auto num_batches() const noexcept -> std::size_t {
         return n_batches;
     }
 
@@ -90,7 +90,9 @@ template <typename TBinIndex> class bin_increment_batch_journal {
         all_bin_indices.shrink_to_fit();
     }
 
-    [[nodiscard]] bool empty() const noexcept { return n_batches == 0; }
+    [[nodiscard]] auto empty() const noexcept -> bool {
+        return n_batches == 0;
+    }
 
     /**
      * \brief Append a bin increment batch to this journal.
@@ -204,7 +206,7 @@ template <typename TBinIndex> class bin_increment_batch_journal {
         // Rule of zero
 
         /** \brief Iterator pre-increment operator. */
-        const_iterator &operator++() noexcept {
+        auto operator++() noexcept -> const_iterator & {
             assert(encoded_indices_iter != encoded_indices_end);
 
             for (;;) {
@@ -225,14 +227,14 @@ template <typename TBinIndex> class bin_increment_batch_journal {
         }
 
         /** \brief Iterator post-increment operator. */
-        const_iterator operator++(int) noexcept {
+        auto operator++(int) noexcept -> const_iterator {
             const_iterator ret = *this;
             ++(*this);
             return ret;
         }
 
         /** \brief Iterator dereference operator. */
-        value_type operator*() const noexcept {
+        auto operator*() const noexcept -> value_type {
             assert(encoded_indices_iter != encoded_indices_end);
 
             std::size_t batch_index = prev_batch_index;
@@ -253,7 +255,7 @@ template <typename TBinIndex> class bin_increment_batch_journal {
         }
 
         /** \brief Equality operator. */
-        bool operator==(const_iterator other) const noexcept {
+        auto operator==(const_iterator other) const noexcept -> bool {
             return prev_batch_index == other.prev_batch_index &&
                    encoded_indices_iter == other.encoded_indices_iter &&
                    encoded_indices_end == other.encoded_indices_end &&
@@ -261,7 +263,7 @@ template <typename TBinIndex> class bin_increment_batch_journal {
         }
 
         /** \brief Inequality operator. */
-        bool operator!=(const_iterator other) const noexcept {
+        auto operator!=(const_iterator other) const noexcept -> bool {
             return !(*this == other);
         }
     };
@@ -271,7 +273,7 @@ template <typename TBinIndex> class bin_increment_batch_journal {
      *
      * \return constant input iterator pointing to beginning
      */
-    const_iterator begin() const noexcept {
+    auto begin() const noexcept -> const_iterator {
         return const_iterator(std::size_t(-1), encoded_indices.cbegin(),
                               encoded_indices.cend(),
                               all_bin_indices.cbegin());
@@ -282,7 +284,7 @@ template <typename TBinIndex> class bin_increment_batch_journal {
      *
      * \return constant input iterator pointing to past-end
      */
-    const_iterator end() const noexcept {
+    auto end() const noexcept -> const_iterator {
         return const_iterator(last_stored_index, encoded_indices.cend(),
                               encoded_indices.cend(), all_bin_indices.cend());
     }
@@ -298,7 +300,8 @@ template <typename TBinIndex> class bin_increment_batch_journal {
     }
 
     /** \brief Equality operator. */
-    bool operator==(bin_increment_batch_journal const &other) const noexcept {
+    auto operator==(bin_increment_batch_journal const &other) const noexcept
+        -> bool {
         return n_batches == other.n_batches &&
                last_stored_index == other.last_stored_index &&
                encoded_indices == other.encoded_indices &&
@@ -306,8 +309,9 @@ template <typename TBinIndex> class bin_increment_batch_journal {
     }
 
     /** \brief Stream insertion operator. */
-    friend std::ostream &operator<<(std::ostream &s,
-                                    bin_increment_batch_journal const &j) {
+    friend auto operator<<(std::ostream &s,
+                           bin_increment_batch_journal const &j)
+        -> std::ostream & {
 
         s << "journal(" << j.num_batches() << ", { ";
         for (auto [index, begin, end] : j) {
@@ -353,15 +357,15 @@ class single_histogram {
     // Clear the histogram by setting all bins to zero.
     void clear() noexcept { std::fill(hist.begin(), hist.end(), bin_type(0)); }
 
-    bin_type max_per_bin() const noexcept { return bin_max; }
+    auto max_per_bin() const noexcept -> bin_type { return bin_max; }
 
     // Increment each bin in 'increments'. Return actual number of increments
     // applied. The return value always equals increments.size() if Ovfl is
     // saturate_on_internal_overflow. Otherwise, it is any value between 0 and
     // increments.size(), inclusive.
     template <typename S>
-    std::size_t apply_increments(gsl::span<bin_index_type const> increments,
-                                 S &stats) noexcept {
+    auto apply_increments(gsl::span<bin_index_type const> increments,
+                          S &stats) noexcept -> std::size_t {
         for (auto it = increments.begin(); it != increments.end(); ++it) {
             assert(*it >= 0 && *it < hist.size());
             bin_type &bin = hist[*it];
@@ -424,13 +428,13 @@ class multi_histogram {
     }
 
     // True if any increment batches have been applied (and not rolled back).
-    [[nodiscard]] bool is_started() const noexcept {
+    [[nodiscard]] auto is_started() const noexcept -> bool {
         return element_index > 0;
     }
 
     // True if cycle is completed (applying further increment batches is
     // incorrect).
-    [[nodiscard]] bool is_complete() const noexcept {
+    [[nodiscard]] auto is_complete() const noexcept -> bool {
         return element_index >= num_elements;
     }
 
@@ -445,22 +449,22 @@ class multi_histogram {
     // - roll_back() was called at least once.
     // When clearing is not requested, the data is also consistent when no
     // operations have been performed yet.
-    [[nodiscard]] bool is_consistent() const noexcept {
+    [[nodiscard]] auto is_consistent() const noexcept -> bool {
         return (not is_started() && not need_to_clear) || is_complete();
     }
 
-    [[nodiscard]] std::size_t next_element_index() const noexcept {
+    [[nodiscard]] auto next_element_index() const noexcept -> std::size_t {
         return element_index;
     }
 
-    gsl::span<bin_type> element_span(std::size_t index) noexcept {
+    auto element_span(std::size_t index) noexcept -> gsl::span<bin_type> {
         return hist_arr.subspan(num_bins * index, num_bins);
     }
 
     // Apply 'increments' to the next element of the array of histograms.
     template <typename S, typename J>
-    bool apply_increment_batch(gsl::span<bin_index_type const> batch, S &stats,
-                               J &journal) noexcept {
+    auto apply_increment_batch(gsl::span<bin_index_type const> batch, S &stats,
+                               J &journal) noexcept -> bool {
         static_assert(
             std::is_same_v<typename J::bin_index_type, bin_index_type>);
         assert(not is_complete());
@@ -577,27 +581,27 @@ class multi_histogram_accumulation {
         : hist_arr(hist_array), cur_cycle(hist_array, max_per_bin, num_bins,
                                           num_elements, clear_first) {}
 
-    [[nodiscard]] bool is_cycle_started() const noexcept {
+    [[nodiscard]] auto is_cycle_started() const noexcept -> bool {
         return cur_cycle.is_started();
     }
 
-    [[nodiscard]] bool is_cycle_complete() const noexcept {
+    [[nodiscard]] auto is_cycle_complete() const noexcept -> bool {
         return cur_cycle.is_complete();
     }
 
-    [[nodiscard]] bool is_consistent() const noexcept {
+    [[nodiscard]] auto is_consistent() const noexcept -> bool {
         return cur_cycle.is_consistent();
     }
 
-    [[nodiscard]] std::size_t next_element_index() const noexcept {
+    [[nodiscard]] auto next_element_index() const noexcept -> std::size_t {
         return cur_cycle.next_element_index();
     }
 
-    gsl::span<bin_type> element_span(std::size_t index) noexcept {
+    auto element_span(std::size_t index) noexcept -> gsl::span<bin_type> {
         return cur_cycle.element_span(index);
     }
 
-    [[nodiscard]] std::size_t cycle_index() const noexcept {
+    [[nodiscard]] auto cycle_index() const noexcept -> std::size_t {
         return cycle_idx;
     }
 
@@ -613,8 +617,8 @@ class multi_histogram_accumulation {
     }
 
     template <typename S, typename J>
-    bool apply_increment_batch(gsl::span<bin_index_type const> batch, S &stats,
-                               J &journal) noexcept {
+    auto apply_increment_batch(gsl::span<bin_index_type const> batch, S &stats,
+                               J &journal) noexcept -> bool {
         assert(not is_cycle_complete());
         return cur_cycle.apply_increment_batch(batch, stats, journal);
     }

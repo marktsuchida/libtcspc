@@ -63,7 +63,7 @@ class virtual_wrapped_processor_impl<Interface, Proc> : public Interface {
         proc.handle_end(error);
     }
 
-    Proc &wrapped() { return proc; }
+    auto wrapped() -> Proc & { return proc; }
 };
 
 template <typename Interface, typename Proc, typename Event0,

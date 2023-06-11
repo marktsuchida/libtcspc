@@ -90,28 +90,29 @@ template <typename T> class autocopy_span {
     autocopy_span(autocopy_span &&other) noexcept = default;
 
     /** \brief Copy assignment operator. */
-    autocopy_span &operator=(autocopy_span const &other) {
+    auto operator=(autocopy_span const &other) -> autocopy_span & {
         autocopy_span t(other);
         std::swap(*this, t);
         return *this;
     }
 
     /** \brief Move assignment operator. */
-    autocopy_span &operator=(autocopy_span &&other) noexcept = default;
+    auto operator=(autocopy_span &&other) noexcept
+        -> autocopy_span & = default;
 
     /**
      * \brief Get the span represented.
      *
      * \return the span
      */
-    gsl::span<const T> span() const noexcept { return s; }
+    auto span() const noexcept -> gsl::span<const T> { return s; }
 
     /**
      * \brief Get the span represented.
      *
      * \return the span
      */
-    gsl::span<T> span() noexcept { return s; }
+    auto span() noexcept -> gsl::span<T> { return s; }
 
     /**
      * \brief Implicit conversion to span.
@@ -124,15 +125,15 @@ template <typename T> class autocopy_span {
     operator gsl::span<T>() noexcept { return s; }
 
     /** \brief Equiality operator. */
-    friend bool operator==(autocopy_span const &lhs,
-                           autocopy_span const &rhs) noexcept {
+    friend auto operator==(autocopy_span const &lhs,
+                           autocopy_span const &rhs) noexcept -> bool {
         return lhs.s.size() == rhs.s.size() &&
                std::equal(lhs.s.begin(), lhs.s.end(), rhs.s.begin());
     }
 
     /** \brief Inequality operator. */
-    friend bool operator!=(autocopy_span const &lhs,
-                           autocopy_span const &rhs) noexcept {
+    friend auto operator!=(autocopy_span const &lhs,
+                           autocopy_span const &rhs) noexcept -> bool {
         return not(lhs == rhs);
     }
 };

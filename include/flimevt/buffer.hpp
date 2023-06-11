@@ -57,7 +57,7 @@ template <typename T> class object_pool {
      *
      * \return shared pointer to the checked out object
      */
-    std::shared_ptr<T> check_out() {
+    auto check_out() -> std::shared_ptr<T> {
         std::unique_ptr<T> uptr;
 
         {

@@ -47,10 +47,10 @@ template <typename Es> class capture_output {
     // to this.
     capture_output(capture_output const &src) = delete;
     capture_output(capture_output &&src) = delete;
-    capture_output &operator=(capture_output const &rhs) = delete;
-    capture_output &operator=(capture_output &&rhs) = delete;
+    auto operator=(capture_output const &rhs) -> capture_output & = delete;
+    auto operator=(capture_output &&rhs) -> capture_output & = delete;
 
-    std::function<bool()> output_check_thunk() {
+    auto output_check_thunk() -> std::function<bool()> {
         return [this] {
             assert(!end_of_life);
             if (!output.empty()) {
@@ -86,7 +86,7 @@ template <typename Es> class capture_output {
     }
 
     template <typename E, typename = std::enable_if_t<contains_event_v<Es, E>>>
-    bool check(E const &event) {
+    auto check(E const &event) -> bool {
         assert(!end_of_life);
         event_variant<Es> expected = event;
         if (!output.empty() && output.front() == expected) {
@@ -104,7 +104,7 @@ template <typename Es> class capture_output {
         return false;
     }
 
-    [[nodiscard]] bool check_not_end() {
+    [[nodiscard]] auto check_not_end() -> bool {
         assert(!end_of_life);
         if (!output.empty()) {
             end_of_life = true;
@@ -125,7 +125,7 @@ template <typename Es> class capture_output {
         return true;
     }
 
-    [[nodiscard]] bool check_end() {
+    [[nodiscard]] auto check_end() -> bool {
         assert(!end_of_life);
         if (!output.empty()) {
             end_of_life = true;
@@ -165,10 +165,10 @@ template <> class capture_output<event_set<>> {
     // to this.
     capture_output(capture_output const &src) = delete;
     capture_output(capture_output &&src) = delete;
-    capture_output &operator=(capture_output const &rhs) = delete;
-    capture_output &operator=(capture_output &&rhs) = delete;
+    auto operator=(capture_output const &rhs) -> capture_output & = delete;
+    auto operator=(capture_output &&rhs) -> capture_output & = delete;
 
-    std::function<bool()> output_check_thunk() {
+    auto output_check_thunk() -> std::function<bool()> {
         return [this] {
             assert(!end_of_life);
             return true;
@@ -182,7 +182,7 @@ template <> class capture_output<event_set<>> {
         this->error = error;
     }
 
-    [[nodiscard]] bool check_end() {
+    [[nodiscard]] auto check_end() -> bool {
         assert(!end_of_life);
         if (!ended) {
             end_of_life = true;
@@ -198,7 +198,7 @@ template <> class capture_output<event_set<>> {
         return true;
     }
 
-    [[nodiscard]] bool check_not_end() {
+    [[nodiscard]] auto check_not_end() -> bool {
         assert(!end_of_life);
         if (ended) {
             end_of_life = true;
@@ -284,22 +284,23 @@ template <int N> struct empty_test_event {};
 
 /** \brief Equality operator for empty test event. */
 template <int N>
-bool operator==([[maybe_unused]] empty_test_event<N> const &lhs,
-                [[maybe_unused]] empty_test_event<N> const &rhs) {
+auto operator==([[maybe_unused]] empty_test_event<N> const &lhs,
+                [[maybe_unused]] empty_test_event<N> const &rhs) -> bool {
     return true;
 }
 
 /** \brief Inequality operator for empty test event. */
 template <int N>
-bool operator!=(empty_test_event<N> const &lhs,
-                empty_test_event<N> const &rhs) {
+auto operator!=(empty_test_event<N> const &lhs, empty_test_event<N> const &rhs)
+    -> bool {
     return !(lhs == rhs);
 }
 
 /** \brief Stream insertion operator for empty test event. */
 template <int N>
-std::ostream &operator<<(std::ostream &strm,
-                         [[maybe_unused]] empty_test_event<N> const &e) {
+auto operator<<(std::ostream &strm,
+                [[maybe_unused]] empty_test_event<N> const &e)
+    -> std::ostream & {
     return strm << "empty_test_event<" << N << ">";
 }
 
@@ -315,22 +316,22 @@ template <int N> struct timestamped_test_event {
 
 /** \brief Equality operator for timestamped test event. */
 template <int N>
-bool operator==(timestamped_test_event<N> const &lhs,
-                timestamped_test_event<N> const &rhs) {
+auto operator==(timestamped_test_event<N> const &lhs,
+                timestamped_test_event<N> const &rhs) -> bool {
     return lhs.macrotime == rhs.macrotime;
 }
 
 /** \brief Inequality operator for timestamped test event. */
 template <int N>
-bool operator!=(timestamped_test_event<N> const &lhs,
-                timestamped_test_event<N> const &rhs) {
+auto operator!=(timestamped_test_event<N> const &lhs,
+                timestamped_test_event<N> const &rhs) -> bool {
     return !(lhs == rhs);
 }
 
 /** \brief Stream insertion operator for timestamped test event. */
 template <int N>
-std::ostream &operator<<(std::ostream &strm,
-                         timestamped_test_event<N> const &e) {
+auto operator<<(std::ostream &strm, timestamped_test_event<N> const &e)
+    -> std::ostream & {
     return strm << "timestamped_test_event<" << N << ">{" << e.macrotime
                 << "}";
 }

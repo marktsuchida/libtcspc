@@ -51,35 +51,35 @@ struct pq_pico_t3_event {
     /**
      * \brief Read the channel if this event represents a photon.
      */
-    [[nodiscard]] std::uint8_t get_channel() const noexcept {
+    [[nodiscard]] auto get_channel() const noexcept -> std::uint8_t {
         return static_cast<std::uint8_t>(unsigned(bytes[3]) >> 4);
     }
 
     /**
      * \brief Read the difference time if this event represents a photon.
      */
-    [[nodiscard]] std::uint16_t get_dtime() const noexcept {
+    [[nodiscard]] auto get_dtime() const noexcept -> std::uint16_t {
         return unsigned(internal::read_u16le(&bytes[2])) & 0x0fffu;
     }
 
     /**
      * \brief Read the nsync counter value (no rollover correction).
      */
-    [[nodiscard]] std::uint16_t get_nsync() const noexcept {
+    [[nodiscard]] auto get_nsync() const noexcept -> std::uint16_t {
         return internal::read_u16le(&bytes[0]);
     }
 
     /**
      * \brief Determine if this event is a non-photon event.
      */
-    [[nodiscard]] bool is_special() const noexcept {
+    [[nodiscard]] auto is_special() const noexcept -> bool {
         return get_channel() == 15;
     }
 
     /**
      * \brief Determine if this event represents an nsync overflow.
      */
-    [[nodiscard]] bool is_nsync_overflow() const noexcept {
+    [[nodiscard]] auto is_nsync_overflow() const noexcept -> bool {
         return is_special() && get_dtime() == 0;
     }
 
@@ -87,21 +87,23 @@ struct pq_pico_t3_event {
      * \brief Read the nsync overflow count if this event represents an nsync
      * overflow.
      */
-    [[nodiscard]] std::uint16_t get_nsync_overflow_count() const noexcept {
+    [[nodiscard]] auto get_nsync_overflow_count() const noexcept
+        -> std::uint16_t {
         return 1;
     }
 
     /**
      * \brief Determine if this event represents markers.
      */
-    [[nodiscard]] bool is_external_marker() const noexcept {
+    [[nodiscard]] auto is_external_marker() const noexcept -> bool {
         return is_special() && get_dtime() != 0;
     }
 
     /**
      * \brief Read the marker bits (mask) if this event represents markers.
      */
-    [[nodiscard]] std::uint16_t get_external_marker_bits() const noexcept {
+    [[nodiscard]] auto get_external_marker_bits() const noexcept
+        -> std::uint16_t {
         return get_dtime();
     }
 };
@@ -127,14 +129,14 @@ template <bool IsHydraV1> struct pq_hydra_t3_event {
     /**
      * \brief Read the channel if this event represents a photon.
      */
-    [[nodiscard]] std::uint8_t get_channel() const noexcept {
+    [[nodiscard]] auto get_channel() const noexcept -> std::uint8_t {
         return (unsigned(bytes[3]) & 0x7fu) >> 1;
     }
 
     /**
      * \brief Read the difference time if this event represents a photon.
      */
-    [[nodiscard]] std::uint16_t get_dtime() const noexcept {
+    [[nodiscard]] auto get_dtime() const noexcept -> std::uint16_t {
         auto lo6 = unsigned(bytes[1]) >> 2;
         auto mid8 = unsigned(bytes[2]);
         auto hi1 = unsigned(bytes[3]) & 1u;
@@ -144,21 +146,21 @@ template <bool IsHydraV1> struct pq_hydra_t3_event {
     /**
      * \brief Read the nsync counter value (no rollover correction).
      */
-    [[nodiscard]] std::uint16_t get_nsync() const noexcept {
+    [[nodiscard]] auto get_nsync() const noexcept -> std::uint16_t {
         return unsigned(internal::read_u16le(&bytes[0])) & 0x03ffu;
     }
 
     /**
      * \brief Determine if this event is a non-photon event.
      */
-    [[nodiscard]] bool is_special() const noexcept {
+    [[nodiscard]] auto is_special() const noexcept -> bool {
         return unsigned(bytes[3]) & (1u << 7);
     }
 
     /**
      * \brief Determine if this event represents an nsync overflow.
      */
-    [[nodiscard]] bool is_nsync_overflow() const noexcept {
+    [[nodiscard]] auto is_nsync_overflow() const noexcept -> bool {
         return is_special() && get_channel() == 63;
     }
 
@@ -166,7 +168,8 @@ template <bool IsHydraV1> struct pq_hydra_t3_event {
      * \brief Read the nsync overflow count if this event represents an nsync
      * overflow.
      */
-    [[nodiscard]] std::uint16_t get_nsync_overflow_count() const noexcept {
+    [[nodiscard]] auto get_nsync_overflow_count() const noexcept
+        -> std::uint16_t {
         if (IsHydraV1 || get_nsync() == 0) {
             return 1;
         }
@@ -176,14 +179,15 @@ template <bool IsHydraV1> struct pq_hydra_t3_event {
     /**
      * \brief Determine if this event represents markers.
      */
-    [[nodiscard]] bool is_external_marker() const noexcept {
+    [[nodiscard]] auto is_external_marker() const noexcept -> bool {
         return is_special() && get_channel() != 63;
     }
 
     /**
      * \brief Read the marker bits (mask) if this event represents markers.
      */
-    [[nodiscard]] std::uint8_t get_external_marker_bits() const noexcept {
+    [[nodiscard]] auto get_external_marker_bits() const noexcept
+        -> std::uint8_t {
         return get_channel();
     }
 };
