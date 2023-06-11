@@ -149,22 +149,26 @@ auto dump(std::istream &input, std::ostream &output) -> int {
 }
 
 auto main(int argc, char *argv[]) -> int {
+    try {
+        if (argc > 2) {
+            std::cerr << "Too many arguments\n";
+            return 1;
+        }
 
-    if (argc > 2) {
-        std::cerr << "Too many arguments\n";
+        if (argc < 2) {
+            return dump(std::cin, std::cout);
+        }
+
+        auto *filename = argv[1];
+        std::fstream input(filename, std::fstream::binary | std::fstream::in);
+        if (!input.is_open()) {
+            std::cerr << "Cannot open " << filename << '\n';
+            return 1;
+        }
+
+        return dump(input, std::cout);
+    } catch (std::exception const &e) {
+        std::cerr << e.what() << '\n';
         return 1;
     }
-
-    if (argc < 2) {
-        return dump(std::cin, std::cout);
-    }
-
-    auto *filename = argv[1];
-    std::fstream input(filename, std::fstream::binary | std::fstream::in);
-    if (!input.is_open()) {
-        std::cerr << "Cannot open " << filename << '\n';
-        return 1;
-    }
-
-    return dump(input, std::cout);
 }

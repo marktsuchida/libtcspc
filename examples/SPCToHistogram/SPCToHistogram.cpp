@@ -71,6 +71,8 @@ template <typename T> class histogram_saver {
     }
 };
 
+// Error handling is not implemented in this example.
+// NOLINTNEXTLINE(bugprone-exception-escape)
 auto main(int argc, char *argv[]) -> int {
     if (argc != 7) {
         usage();
