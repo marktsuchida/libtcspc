@@ -176,8 +176,8 @@ class histogram_elementwise_accumulate {
     // make much sense to use those overflow policies without the
     // cycle-atomic concluding array event. I don't want to increase unit test
     // code to test such cases, so disallow.
-    static_assert(not(not EmitConcluding &&
-                      is_any_of_v<reset_on_overflow, stop_on_overflow>),
+    static_assert(EmitConcluding ||
+                      not is_any_of_v<reset_on_overflow, stop_on_overflow>,
                   "EmitConcluding must be true for this overflow policy");
 
   private:
