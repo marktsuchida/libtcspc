@@ -43,6 +43,7 @@ using macrotime = std::int64_t;
  * This can be used to configure unused inputs to processors.
  */
 class never_event {
+  public:
     never_event() = delete;
     never_event(never_event const &) = delete;
     never_event &operator=(never_event const &) = delete;
