@@ -212,8 +212,7 @@ TEST_CASE("Linear bin mapping", "[linear_bin_mapper]") {
     auto check_clamped = [=](std::optional<u16> o, u16 clamped) {
         if (clamp)
             return o.value() == clamped;
-        else
-            return !o;
+        return !o;
     };
 
     linear_bin_mapper<i32, u16> const m010(0, 1, 0, clamp);

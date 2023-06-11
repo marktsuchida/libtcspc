@@ -117,9 +117,9 @@ auto dump_events(std::istream &input, std::ostream &output) -> int {
         std::vector<char> event(eventSize);
         input.read(event.data(), eventSize);
         auto const bytes_read = input.gcount();
-        if (bytes_read == 0) {
+        if (bytes_read == 0)
             break;
-        } else if (static_cast<std::size_t>(bytes_read) < eventSize) {
+        if (static_cast<std::size_t>(bytes_read) < eventSize) {
             std::cerr << bytes_read << " extra bytes at end of file\n";
             return 1;
         }

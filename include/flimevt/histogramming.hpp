@@ -477,19 +477,16 @@ class multi_histogram {
             journal.append_batch(batch);
             ++element_index;
             return true;
+        }
+        if constexpr (std::is_same_v<Ovfl, saturate_on_internal_overflow>) {
+            unreachable();
+        } else if constexpr (std::is_same_v<Ovfl, stop_on_internal_overflow>) {
+            // Always handle increment batches atomically.
+            single_hist.undo_increments(batch.first(n_applied), stats);
+            skip_remaining();
+            return false;
         } else {
-            if constexpr (std::is_same_v<Ovfl,
-                                         saturate_on_internal_overflow>) {
-                unreachable();
-            } else if constexpr (std::is_same_v<Ovfl,
-                                                stop_on_internal_overflow>) {
-                // Always handle increment batches atomically.
-                single_hist.undo_increments(batch.first(n_applied), stats);
-                skip_remaining();
-                return false;
-            } else {
-                static_assert(false_for_type<Ovfl>::value);
-            }
+            static_assert(false_for_type<Ovfl>::value);
         }
     }
 

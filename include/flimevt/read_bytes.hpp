@@ -111,22 +111,19 @@ constexpr auto read_u8le(unsigned char const *bytes) noexcept -> std::uint8_t {
 inline auto read_u16le(unsigned char const *bytes) noexcept -> std::uint16_t {
     if (use_memcpy())
         return read_u16le_memcpy(bytes);
-    else
-        return read_u16le_generic(bytes);
+    return read_u16le_generic(bytes);
 }
 
 inline auto read_u32le(unsigned char const *bytes) noexcept -> std::uint32_t {
     if (use_memcpy())
         return read_u32le_memcpy(bytes);
-    else
-        return read_u32le_generic(bytes);
+    return read_u32le_generic(bytes);
 }
 
 inline auto read_u64le(unsigned char const *bytes) noexcept -> std::uint64_t {
     if (use_memcpy())
         return read_u64le_memcpy(bytes);
-    else
-        return read_u64le_generic(bytes);
+    return read_u64le_generic(bytes);
 }
 
 inline auto read_i8le(unsigned char const *bytes) noexcept -> std::int8_t {
