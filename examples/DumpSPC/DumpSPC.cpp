@@ -75,7 +75,7 @@ class print_processor {
 int dump_header(std::istream &input, std::ostream &output) {
     char bytes[sizeof(bh_spc_file_header)];
     input.read(bytes, sizeof(bytes));
-    size_t const bytes_read = static_cast<std::size_t>(input.gcount());
+    auto const bytes_read = static_cast<std::size_t>(input.gcount());
     if (bytes_read < sizeof(bytes)) {
         std::cerr << "File is shorter than required header size\n";
         return 1;
