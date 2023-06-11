@@ -43,6 +43,7 @@ namespace flimevt {
  * \tparam T the array element type (typically numeric)
  */
 template <typename T> class autocopy_span {
+    // NOLINTNEXTLINE(cppcoreguidelines-avoid-c-arrays,modernize-avoid-c-arrays)
     std::unique_ptr<T[]> m;
     gsl::span<T> s;
 
@@ -68,6 +69,7 @@ template <typename T> class autocopy_span {
     autocopy_span(autocopy_span const &other)
         : m([&s = other.s] {
               using TMut = std::remove_cv_t<T>;
+              // NOLINTNEXTLINE(cppcoreguidelines-avoid-c-arrays,modernize-avoid-c-arrays)
               std::unique_ptr<TMut[]> r(new TMut[s.size()]);
               std::copy(s.begin(), s.end(), r.get());
               return r;

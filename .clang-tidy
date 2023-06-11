@@ -3,4 +3,34 @@
 # SPDX-License-Identifier: MIT
 
 ---
+Checks: >-
+    -*,
+    bugprone-*,
+    clang-analyzer-*,
+    clang-diagnostic-*,
+    cppcoreguidelines-*,
+    misc-*,
+    modernize-*,
+    performance-*,
+    portability-*,
+    readability-*,
+    -cppcoreguidelines-avoid-magic-numbers,
+    -readability-identifier-length,
+    -readability-magic-numbers,
+
+# Reasons for disabled checks:
+# [cppcoreguidelines-avoid-magic-numbers]
+#   See readability-magic-numbers
+# [readability-identifier-length]
+#   TBD
+# [readability-magic-numbers]
+#   Too many false positives from bit manipulation code where defining
+#   constants would be merely circuitous; and tests.
+
+CheckOptions:
+  bugprone-easily-swappable-parameters.MinimumLength: 3
+  misc-non-private-member-variables-in-classes.IgnoreClassesWithAllMemberVariablesBeingPublic: true
+  readability-braces-around-statements.ShortStatementLines: 3
+  readability-function-cognitive-complexity.IgnoreMacros: true
+  readability-uppercase-literal-suffix.NewSuffixes: L;uL;LL;uLL
 ...

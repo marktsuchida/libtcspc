@@ -36,8 +36,9 @@ class histogram_elementwise {
                            stop_on_internal_overflow>;
 
     bool finished = false;
-    // We use unique_ptr<T[]> rather than vector<T> because the latter cannot
-    // be allocated without zeroing.
+    // We use unique_ptr<T[]> rather than vector<T> because, among other
+    // things, the latter cannot be allocated without zeroing.
+    // NOLINTNEXTLINE(cppcoreguidelines-avoid-c-arrays,modernize-avoid-c-arrays)
     std::unique_ptr<bin_type[]> hist_arr_mem;
     gsl::span<bin_type> hist_arr;
     multi_histogram<bin_index_type, bin_type, internal_overflow_strategy>
@@ -192,6 +193,7 @@ class histogram_elementwise_accumulate {
                            null_journal<bin_index_type>>;
 
     bool finished = false;
+    // NOLINTNEXTLINE(cppcoreguidelines-avoid-c-arrays,modernize-avoid-c-arrays)
     std::unique_ptr<bin_type[]> hist_arr_mem;
     gsl::span<bin_type> hist_arr;
     multi_histogram_accumulation<bin_index_type, bin_type,

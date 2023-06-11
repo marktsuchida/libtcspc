@@ -11,6 +11,8 @@
 
 #include <catch2/catch.hpp>
 
+// NOLINTBEGIN
+
 using namespace flimevt;
 
 static_assert(
@@ -92,3 +94,5 @@ TEST_CASE("SingleTimeBin", "[legacy_histogram]") {
         REQUIRE(data[0] == 2);
     }
 }
+
+// NOLINTEND

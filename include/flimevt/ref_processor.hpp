@@ -19,7 +19,7 @@ namespace flimevt {
  * \tparam D downstream processor type
  */
 template <typename D> class ref_processor {
-    D &downstream;
+    D &downstream; // NOLINT(cppcoreguidelines-avoid-const-or-ref-data-members)
 
   public:
     /**

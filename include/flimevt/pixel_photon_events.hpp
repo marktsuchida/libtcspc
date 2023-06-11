@@ -11,6 +11,7 @@
 #include <cstdint>
 
 //! \cond TO_BE_REMOVED
+// NOLINTBEGIN
 
 namespace flimevt {
 
@@ -30,4 +31,5 @@ using pixel_photon_events =
 
 } // namespace flimevt
 
+// NOLINTEND
 //! \endcond

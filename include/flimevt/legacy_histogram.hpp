@@ -21,6 +21,7 @@
 #include <vector>
 
 //! \cond TO_BE_REMOVED
+// NOLINTBEGIN
 
 namespace flimevt {
 
@@ -321,4 +322,5 @@ template <typename T, typename D> class histogram_accumulator {
 
 } // namespace flimevt
 
+// NOLINTEND
 //! \endcond

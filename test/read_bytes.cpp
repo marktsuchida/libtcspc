@@ -48,6 +48,7 @@ TEST_CASE("Read u32", "[read_bytes]") {
 
     SECTION("Single byte") {
         auto x = GENERATE(std::uint8_t(0x01), 0x7f, 0x80, 0xff);
+        // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-constant-array-index)
         data[byte] = x;
         REQUIRE(f(data) == x * (1 << (8 * byte)));
     }
@@ -73,6 +74,7 @@ TEST_CASE("Read u64", "[read_bytes]") {
 
     SECTION("Single byte") {
         auto x = GENERATE(std::uint8_t(0x01), 0x7f, 0x80, 0xff);
+        // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-constant-array-index)
         data[byte] = x;
         REQUIRE(f(data) == x * (1ULL << (8 * byte)));
     }

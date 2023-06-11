@@ -25,8 +25,10 @@ TEST_CASE("Vector queue of int", "[vector_queue]") {
     REQUIRE(r.empty());
     REQUIRE(r.size() == 0);
     // Moved-out should be valid and empty
+    // NOLINTBEGIN(bugprone-use-after-move,clang-analyzer-cplusplus.Move)
     REQUIRE(p.empty());
     REQUIRE(p.size() == 0);
+    // NOLINTEND(bugprone-use-after-move,clang-analyzer-cplusplus.Move)
 
     q.push(42);
     REQUIRE(!q.empty());
@@ -37,6 +39,7 @@ TEST_CASE("Vector queue of int", "[vector_queue]") {
     REQUIRE(p.size() == 1);
     r = std::move(p);
     REQUIRE(r.size() == 1);
+    // NOLINTNEXTLINE(bugprone-use-after-move,clang-analyzer-cplusplus.Move)
     REQUIRE(p.size() == 0);
     r.pop();
     REQUIRE(r.empty());
@@ -75,6 +78,7 @@ TEST_CASE("Vector queue of int", "[vector_queue]") {
     REQUIRE(p.front() == 44);
     REQUIRE(p.back() == 45);
     r = std::move(p);
+    // NOLINTNEXTLINE(bugprone-use-after-move,clang-analyzer-cplusplus.Move)
     REQUIRE(p.empty());
     REQUIRE(r.size() == 2);
     REQUIRE(r.front() == 44);

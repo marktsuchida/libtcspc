@@ -40,6 +40,7 @@ class histogram {
                            stop_on_internal_overflow>;
 
     bool finished = false;
+    // NOLINTNEXTLINE(cppcoreguidelines-avoid-c-arrays,modernize-avoid-c-arrays)
     std::unique_ptr<bin_type[]> hist_mem;
     gsl::span<bin_type> hist;
     single_histogram<bin_index_type, bin_type, internal_overflow_strategy>

@@ -16,6 +16,7 @@
 #include <stdexcept>
 
 //! \cond TO_BE_REMOVED
+// NOLINTBEGIN
 
 namespace flimevt {
 
@@ -306,4 +307,5 @@ template <typename D> class line_clock_pixellator {
 
 } // namespace flimevt
 
+// NOLINTEND
 //! \endcond

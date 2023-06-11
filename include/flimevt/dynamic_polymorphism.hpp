@@ -48,6 +48,7 @@ class virtual_wrapped_processor_impl;
 template <typename Interface, typename Proc>
 class virtual_wrapped_processor_impl<Interface, Proc> : public Interface {
   protected:
+    // NOLINTNEXTLINE(cppcoreguidelines-non-private-member-variables-in-classes,misc-non-private-member-variables-in-classes)
     Proc proc;
 
   public:

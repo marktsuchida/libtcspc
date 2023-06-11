@@ -45,22 +45,22 @@ inline bool use_memcpy() noexcept {
 
 inline std::uint16_t read_u16le_memcpy(unsigned char const *bytes) noexcept {
     assert(is_little_endian());
-    std::uint16_t ret;
-    std::memcpy(&ret, bytes, 2);
+    std::uint16_t ret{};
+    std::memcpy(&ret, bytes, sizeof(ret));
     return ret;
 }
 
 inline std::uint32_t read_u32le_memcpy(unsigned char const *bytes) noexcept {
     assert(is_little_endian());
-    std::uint32_t ret;
-    std::memcpy(&ret, bytes, 4);
+    std::uint32_t ret{};
+    std::memcpy(&ret, bytes, sizeof(ret));
     return ret;
 }
 
 inline std::uint64_t read_u64le_memcpy(unsigned char const *bytes) noexcept {
     assert(is_little_endian());
-    std::uint64_t ret;
-    std::memcpy(&ret, bytes, 8);
+    std::uint64_t ret{};
+    std::memcpy(&ret, bytes, sizeof(ret));
     return ret;
 }
 

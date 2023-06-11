@@ -18,6 +18,8 @@
 #include <string>
 #include <vector>
 
+// NOLINTBEGIN
+
 using namespace flimevt;
 
 static_assert(handles_event_set_v<
@@ -176,3 +178,5 @@ TEST_CASE("Frames are produced according to line markers",
     // photons)
     //   - in particular, line spanning negative time
 }
+
+// NOLINTEND
