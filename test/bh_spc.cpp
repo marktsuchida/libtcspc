@@ -17,7 +17,7 @@ using namespace flimevt;
 static_assert(sizeof(bh_spc_event) == 4);
 
 TEST_CASE("ADCValue", "[bh_spc_event]") {
-    bh_spc_event event;
+    bh_spc_event event{};
 
     std::memcpy(&event, std::array<std::uint8_t, 4>{0, 0, 0, 0}.data(), 4);
     REQUIRE(event.get_adc_value() == 0);
@@ -38,7 +38,7 @@ TEST_CASE("ADCValue", "[bh_spc_event]") {
 }
 
 TEST_CASE("RoutingSignals", "[bh_spc_event]") {
-    bh_spc_event event;
+    bh_spc_event event{};
 
     std::memcpy(&event, std::array<std::uint8_t, 4>{0, 0, 0, 0}.data(), 4);
     REQUIRE(event.get_routing_signals() == 0);
@@ -69,7 +69,7 @@ TEST_CASE("RoutingSignals", "[bh_spc_event]") {
 TEST_CASE("Macrotime", "[bh_spc_event]") {
     REQUIRE(bh_spc_event::macrotime_overflow_period == 4096);
 
-    bh_spc_event event;
+    bh_spc_event event{};
 
     std::memcpy(&event, std::array<std::uint8_t, 4>{0, 0, 0, 0}.data(), 4);
     REQUIRE(event.get_macrotime() == 0);
@@ -90,7 +90,7 @@ TEST_CASE("Macrotime", "[bh_spc_event]") {
 }
 
 TEST_CASE("Flags", "[bh_spc_event]") {
-    bh_spc_event event;
+    bh_spc_event event{};
 
     std::memcpy(&event, std::array<std::uint8_t, 4>{0, 0, 0, 0}.data(), 4);
     REQUIRE_FALSE(event.get_invalid_flag());
@@ -113,7 +113,7 @@ TEST_CASE("Flags", "[bh_spc_event]") {
 }
 
 TEST_CASE("MacrotimeOverflow", "[bh_spc_event]") {
-    bh_spc_event event;
+    bh_spc_event event{};
 
     // The GAP flag is orthogonal to macrotime overflow. Test all combinations
     // of the other 3 flags. (Although it is expected that INVALID is always
@@ -164,7 +164,7 @@ TEST_CASE("MacrotimeOverflow", "[bh_spc_event]") {
 }
 
 TEST_CASE("MacrotimeOverflowCount", "[bh_spc_event]") {
-    bh_spc_event event;
+    bh_spc_event event{};
 
     std::memcpy(&event, std::array<std::uint8_t, 4>{0, 0, 0, 0}.data(), 4);
     REQUIRE(event.get_multiple_macrotime_overflow_count() == 0);

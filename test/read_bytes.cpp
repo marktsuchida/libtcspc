@@ -16,7 +16,7 @@ TEST_CASE("Read u16", "[read_bytes]") {
     bool const use_memcpy = GENERATE(false, true);
     auto f = use_memcpy ? read_u16le_memcpy : read_u16le_generic;
 
-    std::array<unsigned char, 2> data;
+    std::array<unsigned char, 2> data{};
 
     SECTION("Zero") {
         data = {0, 0};
@@ -40,7 +40,7 @@ TEST_CASE("Read u32", "[read_bytes]") {
     bool const use_memcpy = GENERATE(false, true);
     auto f = use_memcpy ? read_u32le_memcpy : read_u32le_generic;
 
-    std::array<unsigned char, 4> data;
+    std::array<unsigned char, 4> data{};
     memset(data.data(), 0, 4);
     std::size_t const byte = GENERATE(0u, 1u, 2u, 3u);
 
@@ -66,7 +66,7 @@ TEST_CASE("Read u64", "[read_bytes]") {
     bool const use_memcpy = GENERATE(false, true);
     auto f = use_memcpy ? read_u64le_memcpy : read_u64le_generic;
 
-    std::array<unsigned char, 8> data;
+    std::array<unsigned char, 8> data{};
     memset(data.data(), 0, 8);
     std::size_t const byte = GENERATE(0u, 1u, 2u, 3u, 4u, 5u, 6u, 7u);
 

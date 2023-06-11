@@ -73,7 +73,7 @@ class print_processor {
 };
 
 auto dump_header(std::istream &input, std::ostream &output) -> int {
-    std::array<char, sizeof(bh_spc_file_header)> bytes;
+    std::array<char, sizeof(bh_spc_file_header)> bytes{};
     input.read(bytes.data(), bytes.size());
     auto const bytes_read = static_cast<std::size_t>(input.gcount());
     if (bytes_read < bytes.size()) {
