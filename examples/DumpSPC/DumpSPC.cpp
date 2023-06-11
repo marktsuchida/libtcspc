@@ -38,7 +38,7 @@ class print_processor {
   public:
     explicit print_processor(std::ostream &output) : output(output) {}
 
-    void handle_event(flimevt::time_reached_event const &event) {
+    static void handle_event(flimevt::time_reached_event const &event) {
         // Do nothing
         (void)event;
     }
@@ -59,7 +59,7 @@ class print_processor {
         output << ' ' << "Marker: " << int(event.channel) << '\n';
     }
 
-    void handle_end(std::exception_ptr const &error) {
+    static void handle_end(std::exception_ptr const &error) {
         if (error) {
             try {
                 std::rethrow_exception(error);

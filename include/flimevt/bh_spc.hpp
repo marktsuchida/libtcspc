@@ -167,14 +167,14 @@ struct bh_spc_600_event_48 {
     /**
      * \brief Read the 'marker' flag.
      */
-    [[nodiscard]] auto get_marker_flag() const noexcept -> bool {
+    [[nodiscard]] static auto get_marker_flag() noexcept -> bool {
         return false;
     }
 
     /**
      * \brief Read the marker bits (mask) if this event represents markers.
      */
-    [[nodiscard]] auto get_marker_bits() const noexcept -> std::uint8_t {
+    [[nodiscard]] static auto get_marker_bits() noexcept -> std::uint8_t {
         return 0;
     }
 
@@ -202,7 +202,7 @@ struct bh_spc_600_event_48 {
     /**
      * \brief Determine if this event represents multiple macrotime overflows.
      */
-    [[nodiscard]] auto is_multiple_macrotime_overflow() const noexcept
+    [[nodiscard]] static auto is_multiple_macrotime_overflow() noexcept
         -> bool {
         return false;
     }
@@ -211,7 +211,7 @@ struct bh_spc_600_event_48 {
      * \brief Read the macrotime overflow count if this event represents
      * multiple macrotime overflows.
      */
-    [[nodiscard]] auto get_multiple_macrotime_overflow_count() const noexcept
+    [[nodiscard]] static auto get_multiple_macrotime_overflow_count() noexcept
         -> std::uint32_t {
         return 0;
     }
@@ -261,14 +261,14 @@ struct bh_spc_600_event_32 {
     /**
      * \brief Read the 'marker' flag.
      */
-    [[nodiscard]] auto get_marker_flag() const noexcept -> bool {
+    [[nodiscard]] static auto get_marker_flag() noexcept -> bool {
         return false;
     }
 
     /**
      * \brief Read the marker bits (mask) if this event represents markers.
      */
-    [[nodiscard]] auto get_marker_bits() const noexcept -> std::uint8_t {
+    [[nodiscard]] static auto get_marker_bits() noexcept -> std::uint8_t {
         return 0;
     }
 
@@ -296,7 +296,7 @@ struct bh_spc_600_event_32 {
     /**
      * \brief Determine if this event represents multiple macrotime overflows.
      */
-    [[nodiscard]] auto is_multiple_macrotime_overflow() const noexcept
+    [[nodiscard]] static auto is_multiple_macrotime_overflow() noexcept
         -> bool {
         return false;
     }
@@ -305,7 +305,7 @@ struct bh_spc_600_event_32 {
      * \brief Read the macrotime overflow count if this event represents
      * multiple macrotime overflows.
      */
-    [[nodiscard]] auto get_multiple_macrotime_overflow_count() const noexcept
+    [[nodiscard]] static auto get_multiple_macrotime_overflow_count() noexcept
         -> std::uint32_t {
         return 0;
     }

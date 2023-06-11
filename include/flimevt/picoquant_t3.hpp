@@ -87,7 +87,7 @@ struct pq_pico_t3_event {
      * \brief Read the nsync overflow count if this event represents an nsync
      * overflow.
      */
-    [[nodiscard]] auto get_nsync_overflow_count() const noexcept
+    [[nodiscard]] static auto get_nsync_overflow_count() noexcept
         -> std::uint16_t {
         return 1;
     }
