@@ -34,11 +34,9 @@ TEST_CASE("Merge with error on one input", "[merge]") {
     auto rmin1 = ref_processor(min1);
     using vproc_type = virtual_processor<all_events>;
     std::shared_ptr<vproc_type> const v0 = std::make_shared<
-        virtual_wrapped_processor<decltype(rmin0), all_events>>(
-        std::move(rmin0));
+        virtual_wrapped_processor<decltype(rmin0), all_events>>(rmin0);
     std::shared_ptr<vproc_type> const v1 = std::make_shared<
-        virtual_wrapped_processor<decltype(rmin1), all_events>>(
-        std::move(rmin1));
+        virtual_wrapped_processor<decltype(rmin1), all_events>>(rmin1);
     int const x = GENERATE(0, 1);
     using dynproc_type = polymorphic_processor<all_events>;
     dynproc_type dyn_x(x ? v1 : v0);
