@@ -14,6 +14,9 @@ using namespace flimevt::internal;
 
 TEST_CASE("Vector queue of int", "[vector_queue]") {
     vector_queue<int> q;
+
+    // NOLINTBEGIN(readability-container-size-empty)
+
     REQUIRE(q.empty());
     REQUIRE(q.size() == 0);
 
@@ -43,6 +46,8 @@ TEST_CASE("Vector queue of int", "[vector_queue]") {
     REQUIRE(p.size() == 0);
     r.pop();
     REQUIRE(r.empty());
+
+    // NOLINTEND(readability-container-size-empty)
 
     p = q;
     r.swap(p);
