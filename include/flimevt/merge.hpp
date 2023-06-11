@@ -141,8 +141,8 @@ template <unsigned Ch, typename Es, typename D> class merge_input {
     // Movable but not copyable
     merge_input(merge_input const &) = delete;
     auto operator=(merge_input const &) -> merge_input & = delete;
-    merge_input(merge_input &&) = default;
-    auto operator=(merge_input &&) -> merge_input & = default;
+    merge_input(merge_input &&) noexcept = default;
+    auto operator=(merge_input &&) noexcept -> merge_input & = default;
 
     template <typename E, typename = std::enable_if_t<contains_event_v<Es, E>>>
     void handle_event(E const &event) noexcept {
