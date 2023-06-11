@@ -311,8 +311,7 @@ template <typename E, typename D> class base_decode_bh_spc {
             macrotime_base += E::macrotime_overflow_period *
                               event.get_multiple_macrotime_overflow_count();
 
-            time_reached_event e;
-            e.macrotime = macrotime_base;
+            time_reached_event e{macrotime_base};
             downstream.handle_event(e);
             return;
         }
@@ -333,14 +332,12 @@ template <typename E, typename D> class base_decode_bh_spc {
         last_macrotime = macrotime;
 
         if (event.get_gap_flag()) {
-            data_lost_event e;
-            e.macrotime = macrotime;
+            data_lost_event e{macrotime};
             downstream.handle_event(e);
         }
 
         if (event.get_marker_flag()) {
-            marker_event e;
-            e.macrotime = macrotime;
+            marker_event e{{macrotime}, 0};
             std::uint32_t bits = event.get_marker_bits();
             while (bits) {
                 e.channel = count_trailing_zeros_32(bits);
@@ -351,14 +348,12 @@ template <typename E, typename D> class base_decode_bh_spc {
         }
 
         if (event.get_invalid_flag()) {
-            time_reached_event e;
-            e.macrotime = macrotime;
+            time_reached_event e{macrotime};
             downstream.handle_event(e);
         } else {
-            time_correlated_count_event e;
-            e.macrotime = macrotime;
-            e.difftime = event.get_adc_value();
-            e.channel = event.get_routing_signals();
+            time_correlated_count_event e{{macrotime},
+                                          event.get_adc_value(),
+                                          event.get_routing_signals()};
             downstream.handle_event(e);
         }
     }

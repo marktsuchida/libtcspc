@@ -88,9 +88,9 @@ template <typename D> class decode_swabian_tags {
         using tag_type = swabian_tag_event::tag_type;
         switch (event.get_type()) {
         case tag_type::time_tag: {
-            time_tagged_count_event e;
-            e.macrotime = event.get_time();
-            e.channel = narrow<decltype(e.channel)>(event.get_channel());
+            time_tagged_count_event e{
+                {event.get_time()},
+                narrow<decltype(e.channel)>(event.get_channel())};
             downstream.handle_event(e);
             break;
         }
@@ -112,9 +112,9 @@ template <typename D> class decode_swabian_tags {
             break;
         }
         case tag_type::missed_events: {
-            untagged_counts_event e;
-            e.macrotime = event.get_time();
-            e.count = event.get_missed_event_count();
+            untagged_counts_event e{
+                {event.get_time()}, event.get_missed_event_count(), 0};
+            downstream.handle_event(e);
             break;
         }
         default:

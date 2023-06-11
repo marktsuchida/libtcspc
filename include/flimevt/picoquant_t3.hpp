@@ -231,8 +231,7 @@ template <typename E, typename D> class base_decode_pq_t3 {
         last_nsync = nsync;
 
         if (event.is_external_marker()) {
-            marker_event e;
-            e.macrotime = nsync;
+            marker_event e{{nsync}, 0};
             std::uint32_t bits = event.get_external_marker_bits();
             while (bits) {
                 e.channel = count_trailing_zeros_32(bits);
@@ -242,10 +241,8 @@ template <typename E, typename D> class base_decode_pq_t3 {
             return;
         }
 
-        time_correlated_count_event e;
-        e.macrotime = nsync;
-        e.difftime = event.get_dtime();
-        e.channel = event.get_channel();
+        time_correlated_count_event e{nsync, event.get_dtime(),
+                                      event.get_channel()};
         downstream.handle_event(e);
     }
 

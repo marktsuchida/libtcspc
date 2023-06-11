@@ -17,7 +17,7 @@ TEST_CASE("ADCValue", "[bh_spc_event]") {
     union {
         bh_spc_event event;
         std::uint8_t bytes[4];
-    } u;
+    } u{};
     std::memset(u.bytes, 0, 4);
 
     REQUIRE(u.event.get_adc_value() == 0);
@@ -41,7 +41,7 @@ TEST_CASE("RoutingSignals", "[bh_spc_event]") {
     union {
         bh_spc_event event;
         std::uint8_t bytes[4];
-    } u;
+    } u{};
     std::memset(u.bytes, 0, 4);
 
     REQUIRE(u.event.get_routing_signals() == 0);
@@ -72,7 +72,7 @@ TEST_CASE("Macrotime", "[bh_spc_event]") {
     union {
         bh_spc_event event;
         std::uint8_t bytes[4];
-    } u;
+    } u{};
     std::memset(u.bytes, 0, 4);
 
     REQUIRE(u.event.get_macrotime() == 0);
@@ -96,7 +96,7 @@ TEST_CASE("Flags", "[bh_spc_event]") {
     union {
         bh_spc_event event;
         std::uint8_t bytes[4];
-    } u;
+    } u{};
     std::memset(u.bytes, 0, 4);
 
     REQUIRE(!u.event.get_invalid_flag());
@@ -118,7 +118,7 @@ TEST_CASE("MacrotimeOverflow", "[bh_spc_event]") {
     union {
         bh_spc_event event;
         std::uint8_t bytes[4];
-    } u;
+    } u{};
     std::memset(u.bytes, 0, 4);
 
     // The GAP flag is orthogonal to macrotime overflow. Test all combinations
@@ -150,7 +150,7 @@ TEST_CASE("MacrotimeOverflowCount", "[bh_spc_event]") {
     union {
         bh_spc_event event;
         std::uint8_t bytes[4];
-    } u;
+    } u{};
     std::memset(u.bytes, 0, 4);
 
     REQUIRE(u.event.get_multiple_macrotime_overflow_count() == 0);

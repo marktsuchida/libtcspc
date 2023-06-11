@@ -390,7 +390,7 @@ template <typename TBin> struct element_histogram_event {
     /**
      * \brief The index of the element (histogram) within the array.
      */
-    std::size_t element_index;
+    std::size_t element_index = 0;
 
     /**
      * \brief View of the histogram data.

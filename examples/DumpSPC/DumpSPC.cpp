@@ -81,7 +81,7 @@ int dump_header(std::istream &input, std::ostream &output) {
         return 1;
     }
 
-    bh_spc_file_header header;
+    bh_spc_file_header header{};
     std::memcpy(&header, bytes, sizeof(header));
     output << "Macrotime units (0.1 ns): "
            << header.get_macrotime_units_tenths_ns() << '\n';
