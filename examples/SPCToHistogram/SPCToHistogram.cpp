@@ -45,7 +45,8 @@ template <typename T> class histogram_saver {
         }
     }
 
-    void handle_event(flimevt::frame_histogram_event<T> const &) {
+    void handle_event(flimevt::frame_histogram_event<T> const &event) {
+        (void)event;
         std::cerr << "Frame " << (frame_count++) << '\n';
     }
 

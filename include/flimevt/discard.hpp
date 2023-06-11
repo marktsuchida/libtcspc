@@ -19,10 +19,12 @@ namespace flimevt {
 class discard_any {
   public:
     /** \brief Processor interface */
-    template <typename E> void handle_event(E const &) noexcept {}
+    template <typename E>
+    void handle_event([[maybe_unused]] E const &event) noexcept {}
 
     /** \brief Processor interface */
-    void handle_end(std::exception_ptr const &) noexcept {}
+    void
+    handle_end([[maybe_unused]] std::exception_ptr const &error) noexcept {}
 };
 
 /**
@@ -34,10 +36,11 @@ template <typename Es> class discard_all {
   public:
     /** \brief Processor interface */
     template <typename E, typename = std::enable_if_t<contains_event_v<Es, E>>>
-    void handle_event(E const &) noexcept {}
+    void handle_event([[maybe_unused]] E const &event) noexcept {}
 
     /** \brief Processor interface */
-    void handle_end(std::exception_ptr const &) noexcept {}
+    void
+    handle_end([[maybe_unused]] std::exception_ptr const &error) noexcept {}
 };
 
 } // namespace flimevt

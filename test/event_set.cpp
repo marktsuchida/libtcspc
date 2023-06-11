@@ -24,7 +24,7 @@ static_assert(contains_event_v<event_set<e0, e1>, e0>);
 static_assert(contains_event_v<event_set<e0, e1>, e1>);
 
 struct my_event1_processor {
-    void handle_event(e0 const &) noexcept {}
+    void handle_event([[maybe_unused]] e0 const &event) noexcept {}
 };
 
 static_assert(handles_event_v<my_event1_processor, e0>);
@@ -33,7 +33,8 @@ static_assert(!handles_end_v<my_event1_processor>);
 static_assert(!handles_event_set_v<my_event1_processor, event_set<e0>>);
 
 struct my_end_processor {
-    void handle_end(std::exception_ptr const &) noexcept {}
+    void
+    handle_end([[maybe_unused]] std::exception_ptr const &error) noexcept {}
 };
 
 static_assert(!handles_event_v<my_end_processor, e0>);
