@@ -6,6 +6,7 @@
 
 #pragma once
 
+#include <array>
 #include <cstdint>
 #include <cstring>
 #include <stdexcept>
@@ -19,9 +20,9 @@
 // guess accurately based on macrotime monotonicity.)
 
 struct bh_spc_file_header {
-    std::uint8_t bytes[4];
+    std::array<std::uint8_t, 4> bytes;
 
-    void clear() noexcept { memset(bytes, 0, sizeof(bytes)); }
+    void clear() noexcept { memset(bytes.data(), 0, bytes.size()); }
 
     [[nodiscard]] auto get_macrotime_units_tenths_ns() const noexcept
         -> std::uint32_t {
@@ -69,9 +70,9 @@ struct bh_spc_file_header {
 using bh_spc_600_file_header_32 = bh_spc_file_header;
 
 struct bh_spc_600_file_header_48 {
-    std::uint8_t bytes[6];
+    std::array<std::uint8_t, 6> bytes;
 
-    void clear() noexcept { memset(bytes, 0, sizeof(bytes)); }
+    void clear() noexcept { memset(bytes.data(), 0, bytes.size()); }
 
     [[nodiscard]] auto get_macrotime_units_tenths_ns() const noexcept
         -> std::uint32_t {

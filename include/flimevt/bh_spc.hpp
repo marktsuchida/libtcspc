@@ -11,6 +11,7 @@
 #include "read_bytes.hpp"
 #include "time_tagged_events.hpp"
 
+#include <array>
 #include <cstdint>
 #include <exception>
 #include <stdexcept>
@@ -34,7 +35,7 @@ struct bh_spc_event {
     /**
      * \brief Bytes of the 32-bit raw device event.
      */
-    unsigned char bytes[4];
+    std::array<unsigned char, 4> bytes;
 
     /**
      * \brief The macrotime overflow period of this event type.
@@ -131,7 +132,7 @@ struct bh_spc_600_event_48 {
     /**
      * \brief Bytes of the 48-bit raw device event.
      */
-    unsigned char bytes[6];
+    std::array<unsigned char, 6> bytes;
 
     /**
      * \brief The macrotime overflow period of this event type.
@@ -225,7 +226,7 @@ struct bh_spc_600_event_32 {
     /**
      * \brief Bytes of the 32-bit raw device event.
      */
-    unsigned char bytes[4];
+    std::array<unsigned char, 4> bytes;
 
     /**
      * \brief The macrotime overflow period of this event type.

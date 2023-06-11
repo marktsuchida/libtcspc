@@ -10,6 +10,7 @@
 #include "read_bytes.hpp"
 #include "time_tagged_events.hpp"
 
+#include <array>
 #include <cstdint>
 #include <exception>
 #include <stdexcept>
@@ -41,7 +42,7 @@ struct pq_pico_t3_event {
     /**
      * \brief Bytes of the 32-bit raw device event.
      */
-    unsigned char bytes[4];
+    std::array<unsigned char, 4> bytes;
 
     /**
      * \brief The nsync overflow period of this event type.
@@ -119,7 +120,7 @@ template <bool IsHydraV1> struct pq_hydra_t3_event {
     /**
      * \brief Bytes of the 32-bit raw device event.
      */
-    unsigned char bytes[4];
+    std::array<unsigned char, 4> bytes;
 
     /**
      * \brief The nsync overflow period of this event type.

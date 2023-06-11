@@ -10,6 +10,7 @@
 #include "flimevt/common.hpp"
 #include "flimevt/time_tagged_events.hpp"
 
+#include <array>
 #include <cstring>
 #include <exception>
 #include <fstream>
@@ -72,16 +73,16 @@ class print_processor {
 };
 
 auto dump_header(std::istream &input, std::ostream &output) -> int {
-    char bytes[sizeof(bh_spc_file_header)];
-    input.read(bytes, sizeof(bytes));
+    std::array<char, sizeof(bh_spc_file_header)> bytes;
+    input.read(bytes.data(), bytes.size());
     auto const bytes_read = static_cast<std::size_t>(input.gcount());
-    if (bytes_read < sizeof(bytes)) {
+    if (bytes_read < bytes.size()) {
         std::cerr << "File is shorter than required header size\n";
         return 1;
     }
 
     bh_spc_file_header header{};
-    std::memcpy(&header, bytes, sizeof(header));
+    std::memcpy(&header, bytes.data(), sizeof(header));
     output << "Macrotime units (0.1 ns): "
            << header.get_macrotime_units_tenths_ns() << '\n';
     output << "Number of routing bits: "

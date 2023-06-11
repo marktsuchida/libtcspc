@@ -10,6 +10,7 @@
 #include "event_set.hpp"
 #include "vector_queue.hpp"
 
+#include <array>
 #include <exception>
 #include <limits>
 #include <type_traits>
@@ -29,7 +30,7 @@ template <typename Es, typename D> class merge_impl {
     // that can be emitted, we only ever need to buffer events from one or the
     // other input at any given time.
     bool pending_on_1 = false; // Pending on input 0 if false
-    bool input_ended[2] = {false, false};
+    std::array<bool, 2> input_ended{false, false};
     bool ended_with_error = false;
     vector_queue<event_variant<Es>> pending;
     macrotime const max_time_shift;

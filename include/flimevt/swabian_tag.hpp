@@ -29,7 +29,7 @@ struct swabian_tag_event {
     /**
      * \brief Bytes of the 16-byte format from Swabian API.
      */
-    unsigned char bytes[16];
+    std::array<unsigned char, 16> bytes;
 
     /**
      * \brief 8-bit type for the type field.
