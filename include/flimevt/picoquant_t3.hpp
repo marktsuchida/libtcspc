@@ -67,7 +67,7 @@ struct pq_pico_t3_event {
      * \brief Read the nsync counter value (no rollover correction).
      */
     [[nodiscard]] auto get_nsync() const noexcept -> std::uint16_t {
-        return internal::read_u16le(&bytes[0]);
+        return internal::read_u16le(bytes.data());
     }
 
     /**
@@ -148,7 +148,7 @@ template <bool IsHydraV1> struct pq_hydra_t3_event {
      * \brief Read the nsync counter value (no rollover correction).
      */
     [[nodiscard]] auto get_nsync() const noexcept -> std::uint16_t {
-        return unsigned(internal::read_u16le(&bytes[0])) & 0x03ffu;
+        return unsigned(internal::read_u16le(bytes.data())) & 0x03ffu;
     }
 
     /**

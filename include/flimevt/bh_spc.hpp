@@ -65,7 +65,7 @@ struct bh_spc_event {
      * \brief Read the macrotime counter value (no rollover correction).
      */
     [[nodiscard]] auto get_macrotime() const noexcept -> std::uint16_t {
-        return unsigned(internal::read_u16le(&bytes[0])) & 0x0fffu;
+        return unsigned(internal::read_u16le(bytes.data())) & 0x0fffu;
     }
 
     /**
@@ -120,7 +120,7 @@ struct bh_spc_event {
      */
     [[nodiscard]] auto get_multiple_macrotime_overflow_count() const noexcept
         -> std::uint32_t {
-        return internal::read_u32le(&bytes[0]) & 0x0fffffffu;
+        return internal::read_u32le(bytes.data()) & 0x0fffffffu;
     }
 };
 
@@ -144,7 +144,7 @@ struct bh_spc_600_event_48 {
      * represents a photon.
      */
     [[nodiscard]] auto get_adc_value() const noexcept -> std::uint16_t {
-        return unsigned(internal::read_u16le(&bytes[0])) & 0x0fffu;
+        return unsigned(internal::read_u16le(bytes.data())) & 0x0fffu;
     }
 
     /**
