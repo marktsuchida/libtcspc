@@ -31,7 +31,7 @@ inline auto is_little_endian() noexcept -> bool {
     union {
         int i;
         char c;
-    } t{1};
+    } const t{1};
     return bool(t.c);
 }
 
