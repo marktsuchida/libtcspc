@@ -28,11 +28,10 @@ namespace flimevt::internal {
 inline auto is_little_endian() noexcept -> bool {
     // Note: in C++20 this can be replaced with std::endian checks, and be made
     // constexpr.
-    union {
-        int i;
-        char c;
-    } const t{1};
-    return bool(t.c);
+    int i = 1;
+    char c[sizeof(i)];             // NOLINT
+    std::memcpy(c, &i, sizeof(i)); // NOLINT
+    return c[0] != 0;
 }
 
 inline auto use_memcpy() noexcept -> bool {
