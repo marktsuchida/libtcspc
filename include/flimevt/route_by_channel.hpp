@@ -22,7 +22,7 @@ namespace flimevt {
 namespace internal {
 
 template <typename ERouted, typename... Ds> class route_by_channel {
-    std::vector<std::int16_t> const channels;
+    std::vector<std::int16_t> channels;
     std::tuple<Ds...> downstreams;
 
     template <std::size_t I = 0>

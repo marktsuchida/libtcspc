@@ -133,7 +133,7 @@ template <typename EOut> class null_timing_generator {
 template <typename EOut> class one_shot_timing_generator {
     bool pending = false;
     macrotime next = 0;
-    macrotime const delay;
+    macrotime delay;
 
   public:
     /** \brief Timing generator interface */
@@ -182,9 +182,9 @@ template <typename EOut> class linear_timing_generator {
     macrotime next = 0;
     std::size_t remaining = 0;
 
-    macrotime const delay;
-    macrotime const interval;
-    std::size_t const count;
+    macrotime delay;
+    macrotime interval;
+    std::size_t count;
 
   public:
     /** \brief Timing generator interface */

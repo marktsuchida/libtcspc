@@ -33,7 +33,7 @@ template <typename Es, typename D> class merge_impl {
     std::array<bool, 2> input_ended{false, false};
     bool ended_with_error = false;
     vector_queue<event_variant<Es>> pending;
-    macrotime const max_time_shift;
+    macrotime max_time_shift;
 
     D downstream;
 

@@ -26,13 +26,15 @@ void usage() {
         << "Currently the output contains only the raw cumulative histogram.\n";
 }
 
+// Not sure why this warning is issued on this line, but suppress.
+// NOLINTNEXTLINE(bugprone-exception-escape)
 template <typename T> class histogram_saver {
     std::size_t frame_count = 0;
-    std::string const &out_filename;
+    std::string out_filename;
 
   public:
-    explicit histogram_saver(std::string const &out_filename)
-        : out_filename(out_filename) {}
+    explicit histogram_saver(std::string out_filename)
+        : out_filename(std::move(out_filename)) {}
 
     void handle_end(std::exception_ptr const &error) {
         if (error) {

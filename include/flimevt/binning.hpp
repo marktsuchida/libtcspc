@@ -23,7 +23,7 @@ namespace flimevt {
 namespace internal {
 
 template <typename M, typename D> class map_to_datapoints {
-    M const mapper;
+    M mapper;
     D downstream;
 
   public:
@@ -100,7 +100,7 @@ class difftime_data_mapper {
 namespace internal {
 
 template <typename M, typename D> class map_to_bins {
-    M const bin_mapper;
+    M bin_mapper;
     D downstream;
 
     static_assert(
@@ -241,10 +241,10 @@ class power_of_2_bin_mapper {
  * \tparam TBinIndex the type used for bin indices
  */
 template <typename TData, typename TBinIndex> class linear_bin_mapper {
-    TData const offset;
-    TData const bin_width;
-    TBinIndex const max_bin_index;
-    bool const clamp;
+    TData offset;
+    TData bin_width;
+    TBinIndex max_bin_index;
+    bool clamp;
 
     static_assert(std::is_integral_v<TData>, "TData must be an integer type");
     static_assert(std::is_unsigned_v<TBinIndex>,

@@ -19,7 +19,7 @@ namespace flimevt {
 namespace internal {
 
 template <typename EMarker, typename EOut, typename D> class translate_marker {
-    std::int32_t const chan;
+    std::int32_t chan;
     D downstream;
 
     static_assert(std::is_same_v<decltype(EOut{0}.macrotime), macrotime>,

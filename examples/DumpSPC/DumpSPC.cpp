@@ -22,6 +22,8 @@
 class print_processor {
     std::uint32_t count = 0;
     flimevt::macrotime last_macrotime = 0;
+
+    // NOLINTNEXTLINE(cppcoreguidelines-avoid-const-or-ref-data-members)
     std::ostream &output;
 
     void print_macrotime(std::ostream &output, flimevt::macrotime macrotime) {

@@ -20,8 +20,8 @@ template <typename ETick, typename EFire, typename EReset, bool EmitAfter,
           typename D>
 class count_event {
     std::uint64_t count = 0;
-    std::uint64_t const thresh;
-    std::uint64_t const limit;
+    std::uint64_t thresh;
+    std::uint64_t limit;
 
     D downstream;
 
