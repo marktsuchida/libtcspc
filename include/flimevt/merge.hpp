@@ -61,13 +61,16 @@ template <typename Es, typename D> class merge_impl {
     }
 
   public:
-    merge_impl(merge_impl const &) = delete;
-    auto operator=(merge_impl const &) -> merge_impl & = delete;
-
     explicit merge_impl(macrotime max_time_shift, D &&downstream)
         : max_time_shift(max_time_shift), downstream(std::move(downstream)) {
         assert(max_time_shift >= 0);
     }
+
+    merge_impl(merge_impl const &) = delete;
+    auto operator=(merge_impl const &) -> merge_impl & = delete;
+    merge_impl(merge_impl &&) = delete;
+    auto operator=(merge_impl &&) -> merge_impl & = delete;
+    ~merge_impl() = default;
 
     template <unsigned Ch, typename E>
     void handle_event(E const &event) noexcept {
@@ -144,6 +147,7 @@ template <unsigned Ch, typename Es, typename D> class merge_input {
     auto operator=(merge_input const &) -> merge_input & = delete;
     merge_input(merge_input &&) noexcept = default;
     auto operator=(merge_input &&) noexcept -> merge_input & = default;
+    ~merge_input() = default;
 
     template <typename E, typename = std::enable_if_t<contains_event_v<Es, E>>>
     void handle_event(E const &event) noexcept {

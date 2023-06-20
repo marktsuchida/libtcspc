@@ -22,6 +22,11 @@ template <typename... Events> class virtual_processor;
 
 template <> class virtual_processor<> {
   public:
+    virtual_processor() = default;
+    virtual_processor(virtual_processor const &) = delete;
+    auto operator=(virtual_processor const &) = delete;
+    virtual_processor(virtual_processor &&) = delete;
+    auto operator=(virtual_processor &&) = delete;
     virtual ~virtual_processor() = default;
     virtual void handle_end(std::exception_ptr) noexcept = 0;
 };

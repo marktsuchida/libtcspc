@@ -49,6 +49,7 @@ template <typename Es> class capture_output {
     capture_output(capture_output &&src) = delete;
     auto operator=(capture_output const &rhs) -> capture_output & = delete;
     auto operator=(capture_output &&rhs) -> capture_output & = delete;
+    ~capture_output() = default;
 
     auto output_check_thunk() -> std::function<bool()> {
         return [this] {
@@ -167,6 +168,7 @@ template <> class capture_output<event_set<>> {
     capture_output(capture_output &&src) = delete;
     auto operator=(capture_output const &rhs) -> capture_output & = delete;
     auto operator=(capture_output &&rhs) -> capture_output & = delete;
+    ~capture_output() = default;
 
     auto output_check_thunk() -> std::function<bool()> {
         return [this] {

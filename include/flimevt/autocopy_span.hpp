@@ -100,6 +100,8 @@ template <typename T> class autocopy_span {
     auto operator=(autocopy_span &&other) noexcept
         -> autocopy_span & = default;
 
+    ~autocopy_span() = default; // Rule of 5
+
     /**
      * \brief Get the span represented.
      *
