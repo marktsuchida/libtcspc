@@ -159,6 +159,7 @@ auto main(int argc, char *argv[]) -> int {
             return dump(std::cin, std::cout);
         }
 
+        // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
         auto *filename = argv[1];
         std::fstream input(filename, std::fstream::binary | std::fstream::in);
         if (!input.is_open()) {

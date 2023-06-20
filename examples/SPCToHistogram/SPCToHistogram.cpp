@@ -79,6 +79,7 @@ auto main(int argc, char *argv[]) -> int {
         return 1;
     }
 
+    // NOLINTBEGIN(cppcoreguidelines-pro-bounds-pointer-arithmetic)
     std::uint32_t width = 0;
     std::istringstream(argv[1]) >> width;
     std::uint32_t height = 0;
@@ -89,6 +90,7 @@ auto main(int argc, char *argv[]) -> int {
     std::istringstream(argv[4]) >> line_time;
     std::string const in_filename(argv[5]);
     std::string const out_filename(argv[6]);
+    // NOLINTEND(cppcoreguidelines-pro-bounds-pointer-arithmetic)
 
     std::uint32_t const max_frames = UINT32_MAX;
 

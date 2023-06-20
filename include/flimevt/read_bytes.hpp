@@ -66,6 +66,8 @@ inline auto read_u64le_memcpy(unsigned char const *bytes) noexcept
     return ret;
 }
 
+// NOLINTBEGIN(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+
 constexpr auto read_u16le_generic(unsigned char const *bytes) noexcept
     -> std::uint16_t {
     // unsigned is at least as wide as uint16_t
@@ -106,6 +108,8 @@ constexpr auto read_u64le_generic(unsigned char const *bytes) noexcept
 constexpr auto read_u8le(unsigned char const *bytes) noexcept -> std::uint8_t {
     return bytes[0];
 }
+
+// NOLINTEND(cppcoreguidelines-pro-bounds-pointer-arithmetic)
 
 inline auto read_u16le(unsigned char const *bytes) noexcept -> std::uint16_t {
     if (use_memcpy())
