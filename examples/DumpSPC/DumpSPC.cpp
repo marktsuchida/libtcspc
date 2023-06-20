@@ -93,8 +93,8 @@ auto dump_header(std::istream &input, std::ostream &output) -> int {
 }
 
 void dump_raw_event(char const *raw_event, std::ostream &output) {
-    flimevt::bh_spc_event const &event =
-        *reinterpret_cast<flimevt::bh_spc_event const *>(raw_event);
+    flimevt::bh_spc_event event{};
+    std::memcpy(&event, raw_event, sizeof(event));
 
     std::uint8_t const route = event.get_routing_signals();
     output << ((route & (1 << 3)) != 0 ? 'x' : '_')
@@ -128,8 +128,9 @@ auto dump_events(std::istream &input, std::ostream &output) -> int {
         }
 
         dump_raw_event(event.data(), output);
-        decoder.handle_event(
-            *reinterpret_cast<flimevt::bh_spc_event *>(event.data()));
+        flimevt::bh_spc_event e{};
+        std::memcpy(&e, event.data(), sizeof(e));
+        decoder.handle_event(e);
     }
     decoder.handle_end({});
 

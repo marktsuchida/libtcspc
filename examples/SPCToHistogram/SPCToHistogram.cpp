@@ -65,6 +65,7 @@ template <typename T> class histogram_saver {
         }
 
         auto &histogram = event.histogram;
+        // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
         output.write(reinterpret_cast<const char *>(histogram.get()),
                      static_cast<std::streamsize>(
                          histogram.get_number_of_elements() * sizeof(T)));
@@ -137,6 +138,7 @@ auto main(int argc, char *argv[]) -> int {
     while (input.good()) {
         auto arr = pool.check_out();
         arr->resize(batch_capacity);
+        // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
         input.read(reinterpret_cast<char *>(arr->data()), max_size);
         auto const readSize = static_cast<std::size_t>(input.gcount()) /
                               sizeof(flimevt::bh_spc_event);
