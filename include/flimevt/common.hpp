@@ -46,9 +46,9 @@ class never_event {
   public:
     never_event() = delete;
     never_event(never_event const &) = delete;
-    auto operator=(never_event const &) -> never_event & = delete;
+    auto operator=(never_event const &) = delete;
     never_event(never_event &&) = delete;
-    auto operator=(never_event &&) -> never_event & = delete;
+    auto operator=(never_event &&) = delete;
     ~never_event() = delete;
 };
 

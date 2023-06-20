@@ -67,9 +67,9 @@ template <typename Es, typename D> class merge_impl {
     }
 
     merge_impl(merge_impl const &) = delete;
-    auto operator=(merge_impl const &) -> merge_impl & = delete;
+    auto operator=(merge_impl const &) = delete;
     merge_impl(merge_impl &&) = delete;
-    auto operator=(merge_impl &&) -> merge_impl & = delete;
+    auto operator=(merge_impl &&) = delete;
     ~merge_impl() = default;
 
     template <unsigned Ch, typename E>
@@ -144,7 +144,7 @@ template <unsigned Ch, typename Es, typename D> class merge_input {
 
     // Movable but not copyable
     merge_input(merge_input const &) = delete;
-    auto operator=(merge_input const &) -> merge_input & = delete;
+    auto operator=(merge_input const &) = delete;
     merge_input(merge_input &&) noexcept = default;
     auto operator=(merge_input &&) noexcept -> merge_input & = default;
     ~merge_input() = default;

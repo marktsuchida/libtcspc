@@ -45,10 +45,10 @@ template <typename Es> class capture_output {
 
     // Disallow move and copy because output check thunks will keep reference
     // to this.
-    capture_output(capture_output const &src) = delete;
-    capture_output(capture_output &&src) = delete;
-    auto operator=(capture_output const &rhs) -> capture_output & = delete;
-    auto operator=(capture_output &&rhs) -> capture_output & = delete;
+    capture_output(capture_output const &) = delete;
+    auto operator=(capture_output const &) = delete;
+    capture_output(capture_output &&) = delete;
+    auto operator=(capture_output &&) = delete;
     ~capture_output() = default;
 
     auto output_check_thunk() -> std::function<bool()> {
