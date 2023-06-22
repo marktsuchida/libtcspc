@@ -14,7 +14,7 @@ project(
 
 thread_dep = dependency('threads')
 
-gsl_dep = dependency('microsoft_gsl')
+tcb_span_dep = dependency('tcb_span')
 
 public_inc = include_directories('include')
 
@@ -25,6 +25,8 @@ subdir('examples')
 
 flimevents_dep = declare_dependency(
     include_directories: public_inc,
-    dependencies: [gsl_dep],
+    dependencies: [
+        tcb_span_dep,
+    ],
 )
 meson.override_dependency('FLIMEvents', flimevents_dep)

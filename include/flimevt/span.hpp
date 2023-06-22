@@ -6,19 +6,36 @@
 
 #pragma once
 
-#include <gsl/span>
-
-#include <cstddef>
+// Use std::span if C++20 or later.
+#if __has_include(<version>)
+#include <version>
+#if __cpp_lib_span >= 202002L
+#include <span>
+#define FLIMEVT_SPAN_USE_STD 1
 
 namespace flimevt {
 
 /**
- * \brief Span, similar to \c std::span.
+ * \brief Span, an alias or replacement for \c std::span.
  *
- * Currently, this is an alias for \c gsl::span. This may be replaced with
- * something compatible with C++20 \c std::span in the future.
+ * For C++20 and later, this is an alias of \c std::span.
+ * For C++17, this is replaced with a local implementation (tcbrindle/span).
  */
-template <class T, std::size_t Extent = gsl::dynamic_extent>
-using span = gsl::span<T, Extent>;
+template <class T, std::size_t Extent = std::dynamic_extent>
+using span = std::span<T, Extent>;
 
 } // namespace flimevt
+
+#endif // __cpp_lib_span
+#endif // <version>
+
+#if not FLIMEVT_SPAN_USE_STD
+
+#define TCB_SPAN_NAMESPACE_NAME flimevt
+
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wsign-conversion"
+#include <tcb/span.hpp>
+#pragma clang diagnostic pop
+
+#endif

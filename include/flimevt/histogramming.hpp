@@ -512,8 +512,6 @@ class multi_histogram {
         for (auto [index, begin, end] : journal) {
             single_histogram<bin_index_type, bin_type, Ovfl> single_hist(
                 hist_arr.subspan(num_bins * index, num_bins), max_per_bin);
-            // Unlike std::span, gsl::span lacks a constructor from generic
-            // contiguous iterators and only allows element pointers.
             single_hist.undo_increments({&*begin, &*end}, stats);
         }
         // Ensure the previously untouched tail of the span gets cleared, if

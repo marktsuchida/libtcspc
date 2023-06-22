@@ -50,7 +50,7 @@ flimevents_tests_exe = executable(
     flimevents_tests_srcs,
     include_directories: [public_inc],
     dependencies: [
-        gsl_dep,
+        tcb_span_dep,
         catch2_dep
     ],
 )

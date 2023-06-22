@@ -6,5 +6,5 @@
 !/.gitignore
 !/catch2.wrap
 !/catch2.wrap.license
-!/microsoft-gsl.wrap
-!/microsoft-gsl.wrap.license
+!/tcb-span.wrap
+!/tcb-span.wrap.license

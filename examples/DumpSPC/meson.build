@@ -11,7 +11,7 @@ dumpspc_exe = executable(
     dumpspc_srcs,
     include_directories: public_inc,
     dependencies: [
-        gsl_dep,
+        tcb_span_dep,
         thread_dep,
     ],
 )
