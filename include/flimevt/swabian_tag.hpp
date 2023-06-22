@@ -10,6 +10,7 @@
 #include "read_bytes.hpp"
 #include "time_tagged_events.hpp"
 
+#include <cstddef>
 #include <cstdint>
 #include <exception>
 
@@ -29,7 +30,7 @@ struct swabian_tag_event {
     /**
      * \brief Bytes of the 16-byte format from Swabian API.
      */
-    std::array<unsigned char, 16> bytes;
+    std::array<std::byte, 16> bytes;
 
     /**
      * \brief 8-bit type for the type field.
@@ -46,31 +47,31 @@ struct swabian_tag_event {
      * \brief Read the event type.
      */
     [[nodiscard]] auto get_type() const noexcept -> tag_type {
-        return tag_type(bytes[0]);
+        return tag_type(read_u8(byte_subspan<0, 1>(bytes)));
     }
 
-    // bytes[1] is reserved, to be written zero.
+    // bytes[1] is reserved and should be written zero.
 
     /**
      * \brief Read the missed event count if this is a missed events event.
      */
     [[nodiscard]] auto get_missed_event_count() const noexcept
         -> std::uint16_t {
-        return internal::read_u16le(&bytes[2]);
+        return read_u16le(byte_subspan<2, 2>(bytes));
     }
 
     /**
      * \brief Read the channel if this is a time tag or missed events event.
      */
     [[nodiscard]] auto get_channel() const noexcept -> std::int32_t {
-        return internal::read_i32le(&bytes[4]);
+        return read_i32le(byte_subspan<4, 4>(bytes));
     }
 
     /**
      * \brief Read the time (picoseconds).
      */
     [[nodiscard]] auto get_time() const noexcept -> std::int64_t {
-        return internal::read_i64le(&bytes[8]);
+        return read_i64le(byte_subspan<8, 8>(bytes));
     }
 };
 

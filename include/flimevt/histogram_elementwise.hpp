@@ -10,8 +10,7 @@
 #include "common.hpp"
 #include "histogram_events.hpp"
 #include "histogramming.hpp"
-
-#include <gsl/span>
+#include "span.hpp"
 
 #include <cstddef>
 #include <memory>
@@ -40,7 +39,7 @@ class histogram_elementwise {
     // things, the latter cannot be allocated without zeroing.
     // NOLINTNEXTLINE(cppcoreguidelines-avoid-c-arrays,modernize-avoid-c-arrays)
     std::unique_ptr<bin_type[]> hist_arr_mem;
-    gsl::span<bin_type> hist_arr;
+    span<bin_type> hist_arr;
     multi_histogram<bin_index_type, bin_type, internal_overflow_strategy>
         mhist;
     histogram_stats stats;
@@ -195,7 +194,7 @@ class histogram_elementwise_accumulate {
     bool finished = false;
     // NOLINTNEXTLINE(cppcoreguidelines-avoid-c-arrays,modernize-avoid-c-arrays)
     std::unique_ptr<bin_type[]> hist_arr_mem;
-    gsl::span<bin_type> hist_arr;
+    span<bin_type> hist_arr;
     multi_histogram_accumulation<bin_index_type, bin_type,
                                  internal_overflow_strategy>
         mhista;

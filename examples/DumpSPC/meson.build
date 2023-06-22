@@ -10,4 +10,8 @@ dumpspc_exe = executable(
     'DumpSPC',
     dumpspc_srcs,
     include_directories: public_inc,
+    dependencies: [
+        gsl_dep,
+        thread_dep,
+    ],
 )

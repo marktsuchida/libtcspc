@@ -6,7 +6,7 @@
 
 #pragma once
 
-#include <gsl/span>
+#include "span.hpp"
 
 #include <algorithm>
 #include <array>
@@ -45,7 +45,7 @@ namespace flimevt {
 template <typename T> class autocopy_span {
     // NOLINTNEXTLINE(cppcoreguidelines-avoid-c-arrays,modernize-avoid-c-arrays)
     std::unique_ptr<T[]> m;
-    gsl::span<T> s;
+    span<T> s;
 
   public:
     /**
@@ -59,7 +59,7 @@ template <typename T> class autocopy_span {
      * \param span a span that will outlive this instance, owned by the
      * creating code
      */
-    explicit autocopy_span(gsl::span<T> span) noexcept : s(span) {}
+    explicit autocopy_span(span<T> span) noexcept : s(span) {}
 
     /**
      * \brief Copy-construct.
@@ -107,24 +107,24 @@ template <typename T> class autocopy_span {
      *
      * \return the span
      */
-    auto span() const noexcept -> gsl::span<const T> { return s; }
+    auto span() const noexcept -> span<const T> { return s; }
 
     /**
      * \brief Get the span represented.
      *
      * \return the span
      */
-    auto span() noexcept -> gsl::span<T> { return s; }
+    auto span() noexcept -> flimevt::span<T> { return s; }
 
     /**
      * \brief Implicit conversion to span.
      */
-    operator gsl::span<const T>() const noexcept { return s; }
+    operator flimevt::span<const T>() const noexcept { return s; }
 
     /**
      * \brief Implicit conversion to span.
      */
-    operator gsl::span<T>() noexcept { return s; }
+    operator flimevt::span<T>() noexcept { return s; }
 
     /** \brief Equiality operator. */
     friend auto operator==(autocopy_span const &lhs,

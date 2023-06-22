@@ -9,8 +9,7 @@
 #include "autocopy_span.hpp"
 #include "common.hpp"
 #include "histogram_events.hpp"
-
-#include <gsl/span>
+#include "span.hpp"
 
 #include <algorithm>
 #include <iterator>
@@ -130,7 +129,7 @@ template <typename TBinIndex> class bin_increment_batch_journal {
      *
      * \param batch the bin increment batch to append (bin indices)
      */
-    void append_batch(gsl::span<TBinIndex const> batch) {
+    void append_batch(span<TBinIndex const> batch) {
         append_batch(batch.begin(), batch.end());
     }
 
@@ -326,8 +325,8 @@ template <typename TBinIndex> class bin_increment_batch_journal {
 // Can be used to disable journaling.
 template <typename BinIndex> struct null_journal {
     using bin_index_type = BinIndex;
-    void append_batch(
-        [[maybe_unused]] gsl::span<bin_index_type const> batch) noexcept {}
+    void
+    append_batch([[maybe_unused]] span<bin_index_type const> batch) noexcept {}
     void clear() noexcept {}
     void clear_and_shrink_to_fit() noexcept {}
 };
@@ -342,12 +341,12 @@ class single_histogram {
                               stop_on_internal_overflow>);
 
   private:
-    gsl::span<bin_type> hist;
+    span<bin_type> hist;
     bin_type bin_max = 0;
 
   public:
     // Attach to 'histogram' and allow bin values up to max_per_bin.
-    explicit single_histogram(gsl::span<bin_type> histogram,
+    explicit single_histogram(span<bin_type> histogram,
                               bin_type max_per_bin) noexcept
         : hist(histogram), bin_max(max_per_bin) {}
 
@@ -364,7 +363,7 @@ class single_histogram {
     // saturate_on_internal_overflow. Otherwise, it is any value between 0 and
     // increments.size(), inclusive.
     template <typename S>
-    auto apply_increments(gsl::span<bin_index_type const> increments,
+    auto apply_increments(span<bin_index_type const> increments,
                           S &stats) noexcept -> std::size_t {
         for (auto it = increments.begin(); it != increments.end(); ++it) {
             assert(*it >= 0 && *it < hist.size());
@@ -389,7 +388,7 @@ class single_histogram {
     // equal the values passed to apply_increments() in an immediately prior
     // call. Behavior undefined in saturate mode.
     template <typename S>
-    void undo_increments(gsl::span<bin_index_type const> increments,
+    void undo_increments(span<bin_index_type const> increments,
                          S &stats) noexcept {
         assert((std::is_same_v<Ovfl, stop_on_internal_overflow>));
         for (bin_index_type i : increments) {
@@ -411,7 +410,7 @@ class multi_histogram {
                               stop_on_internal_overflow>);
 
   private:
-    gsl::span<bin_type> hist_arr;
+    span<bin_type> hist_arr;
     std::size_t element_index = 0;
     bin_type max_per_bin = 0;
     std::size_t num_bins = 0;
@@ -419,9 +418,9 @@ class multi_histogram {
     bool need_to_clear = false;
 
   public:
-    explicit multi_histogram(gsl::span<bin_type> hist_array,
-                             bin_type max_per_bin, std::size_t num_bins,
-                             std::size_t num_elements, bool clear) noexcept
+    explicit multi_histogram(span<bin_type> hist_array, bin_type max_per_bin,
+                             std::size_t num_bins, std::size_t num_elements,
+                             bool clear) noexcept
         : hist_arr(hist_array), max_per_bin(max_per_bin), num_bins(num_bins),
           num_elements(num_elements), need_to_clear(clear) {
         assert(hist_array.size() == num_bins * num_elements);
@@ -457,13 +456,13 @@ class multi_histogram {
         return element_index;
     }
 
-    auto element_span(std::size_t index) noexcept -> gsl::span<bin_type> {
+    auto element_span(std::size_t index) noexcept -> span<bin_type> {
         return hist_arr.subspan(num_bins * index, num_bins);
     }
 
     // Apply 'increments' to the next element of the array of histograms.
     template <typename S, typename J>
-    auto apply_increment_batch(gsl::span<bin_index_type const> batch, S &stats,
+    auto apply_increment_batch(span<bin_index_type const> batch, S &stats,
                                J &journal) noexcept -> bool {
         static_assert(
             std::is_same_v<typename J::bin_index_type, bin_index_type>);
@@ -565,12 +564,12 @@ class multi_histogram_accumulation {
                               stop_on_internal_overflow>);
 
   private:
-    gsl::span<bin_type> hist_arr;
+    span<bin_type> hist_arr;
     std::size_t cycle_idx = 0;
     multi_histogram<bin_index_type, bin_type, Ovfl> cur_cycle;
 
   public:
-    explicit multi_histogram_accumulation(gsl::span<bin_type> hist_array,
+    explicit multi_histogram_accumulation(span<bin_type> hist_array,
                                           bin_type max_per_bin,
                                           std::size_t num_bins,
                                           std::size_t num_elements,
@@ -594,7 +593,7 @@ class multi_histogram_accumulation {
         return cur_cycle.next_element_index();
     }
 
-    auto element_span(std::size_t index) noexcept -> gsl::span<bin_type> {
+    auto element_span(std::size_t index) noexcept -> span<bin_type> {
         return cur_cycle.element_span(index);
     }
 
@@ -614,7 +613,7 @@ class multi_histogram_accumulation {
     }
 
     template <typename S, typename J>
-    auto apply_increment_batch(gsl::span<bin_index_type const> batch, S &stats,
+    auto apply_increment_batch(span<bin_index_type const> batch, S &stats,
                                J &journal) noexcept -> bool {
         assert(not is_cycle_complete());
         return cur_cycle.apply_increment_batch(batch, stats, journal);

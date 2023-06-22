@@ -9,9 +9,11 @@
 #include "common.hpp"
 #include "event_set.hpp"
 #include "read_bytes.hpp"
+#include "span.hpp"
 #include "time_tagged_events.hpp"
 
 #include <array>
+#include <cstddef>
 #include <cstdint>
 #include <exception>
 #include <stdexcept>
@@ -35,7 +37,7 @@ struct bh_spc_event {
     /**
      * \brief Bytes of the 32-bit raw device event.
      */
-    std::array<unsigned char, 4> bytes;
+    std::array<std::byte, 4> bytes;
 
     /**
      * \brief The macrotime overflow period of this event type.
@@ -47,7 +49,7 @@ struct bh_spc_event {
      * represents a photon.
      */
     [[nodiscard]] auto get_adc_value() const noexcept -> std::uint16_t {
-        return unsigned(internal::read_u16le(&bytes[2])) & 0x0fffu;
+        return read_u16le(byte_subspan<2, 2>(bytes)) & 0x0fffu;
     }
 
     /**
@@ -58,21 +60,21 @@ struct bh_spc_event {
         // The documentation somewhat confusingly says that these bits are
         // "inverted", but what they mean is that the TTL inputs are active
         // low. The bits in the FIFO data are not inverted.
-        return static_cast<std::uint8_t>(unsigned(bytes[1]) >> 4);
+        return read_u8(byte_subspan<1, 1>(bytes)) >> 4;
     }
 
     /**
      * \brief Read the macrotime counter value (no rollover correction).
      */
     [[nodiscard]] auto get_macrotime() const noexcept -> std::uint16_t {
-        return unsigned(internal::read_u16le(bytes.data())) & 0x0fffu;
+        return read_u16le(byte_subspan<0, 2>(bytes)) & 0x0fffu;
     }
 
     /**
      * \brief Read the 'marker' flag.
      */
     [[nodiscard]] auto get_marker_flag() const noexcept -> bool {
-        return (unsigned(bytes[3]) & (1u << 4)) != 0;
+        return (read_u8(byte_subspan<3, 1>(bytes)) & (1u << 4)) != 0;
     }
 
     /**
@@ -86,21 +88,21 @@ struct bh_spc_event {
      * \brief Read the 'gap' (data lost) flag.
      */
     [[nodiscard]] auto get_gap_flag() const noexcept -> bool {
-        return (unsigned(bytes[3]) & (1u << 5)) != 0;
+        return (read_u8(byte_subspan<3, 1>(bytes)) & (1u << 5)) != 0;
     }
 
     /**
      * \brief Read the 'macrotime overflow' flag.
      */
     [[nodiscard]] auto get_macrotime_overflow_flag() const noexcept -> bool {
-        return (unsigned(bytes[3]) & (1u << 6)) != 0;
+        return (read_u8(byte_subspan<3, 1>(bytes)) & (1u << 6)) != 0;
     }
 
     /**
      * \brief Read the 'invalid' flag.
      */
     [[nodiscard]] auto get_invalid_flag() const noexcept -> bool {
-        return (unsigned(bytes[3]) & (1u << 7)) != 0;
+        return (read_u8(byte_subspan<3, 1>(bytes)) & (1u << 7)) != 0;
     }
 
     /**
@@ -120,7 +122,7 @@ struct bh_spc_event {
      */
     [[nodiscard]] auto get_multiple_macrotime_overflow_count() const noexcept
         -> std::uint32_t {
-        return internal::read_u32le(bytes.data()) & 0x0fffffffu;
+        return read_u32le(byte_subspan<0, 4>(bytes)) & 0x0fffffffu;
     }
 };
 
@@ -132,7 +134,7 @@ struct bh_spc_600_event_48 {
     /**
      * \brief Bytes of the 48-bit raw device event.
      */
-    std::array<unsigned char, 6> bytes;
+    std::array<std::byte, 6> bytes;
 
     /**
      * \brief The macrotime overflow period of this event type.
@@ -144,7 +146,7 @@ struct bh_spc_600_event_48 {
      * represents a photon.
      */
     [[nodiscard]] auto get_adc_value() const noexcept -> std::uint16_t {
-        return unsigned(internal::read_u16le(bytes.data())) & 0x0fffu;
+        return read_u16le(byte_subspan<0, 2>(bytes)) & 0x0fffu;
     }
 
     /**
@@ -152,16 +154,16 @@ struct bh_spc_600_event_48 {
      * event represents a photon.
      */
     [[nodiscard]] auto get_routing_signals() const noexcept -> std::uint8_t {
-        return bytes[3];
+        return read_u8(byte_subspan<3, 1>(bytes));
     }
 
     /**
      * \brief Read the macrotime counter value (no rollover correction).
      */
     [[nodiscard]] auto get_macrotime() const noexcept -> std::uint32_t {
-        auto lo8 = unsigned(bytes[4]);
-        auto mid8 = unsigned(bytes[5]);
-        auto hi8 = unsigned(bytes[2]);
+        unsigned const lo8 = read_u8(byte_subspan<4, 1>(bytes));
+        unsigned const mid8 = read_u8(byte_subspan<5, 1>(bytes));
+        unsigned const hi8 = read_u8(byte_subspan<2, 1>(bytes));
         return lo8 | (mid8 << 8) | (hi8 << 16);
     }
 
@@ -183,21 +185,21 @@ struct bh_spc_600_event_48 {
      * \brief Read the 'gap' (data lost) flag.
      */
     [[nodiscard]] auto get_gap_flag() const noexcept -> bool {
-        return (unsigned(bytes[1]) & (1u << 6)) != 0;
+        return (read_u8(byte_subspan<1, 1>(bytes)) & (1u << 6)) != 0;
     }
 
     /**
      * \brief Read the 'macrotime overflow' flag.
      */
     [[nodiscard]] auto get_macrotime_overflow_flag() const noexcept -> bool {
-        return (unsigned(bytes[1]) & (1u << 5)) != 0;
+        return (read_u8(byte_subspan<1, 1>(bytes)) & (1u << 5)) != 0;
     }
 
     /**
      * \brief Read the 'invalid' flag.
      */
     [[nodiscard]] auto get_invalid_flag() const noexcept -> bool {
-        return (unsigned(bytes[1]) & (1u << 4)) != 0;
+        return (read_u8(byte_subspan<1, 1>(bytes)) & (1u << 4)) != 0;
     }
 
     /**
@@ -226,7 +228,7 @@ struct bh_spc_600_event_32 {
     /**
      * \brief Bytes of the 32-bit raw device event.
      */
-    std::array<unsigned char, 4> bytes;
+    std::array<std::byte, 4> bytes;
 
     /**
      * \brief The macrotime overflow period of this event type.
@@ -238,7 +240,7 @@ struct bh_spc_600_event_32 {
      * represents a photon.
      */
     [[nodiscard]] auto get_adc_value() const noexcept -> std::uint16_t {
-        return bytes[0];
+        return read_u8(byte_subspan<0, 1>(bytes));
     }
 
     /**
@@ -246,16 +248,16 @@ struct bh_spc_600_event_32 {
      * event represents a photon.
      */
     [[nodiscard]] auto get_routing_signals() const noexcept -> std::uint8_t {
-        return (bytes[3] & 0x0f) >> 1;
+        return (read_u8(byte_subspan<3, 1>(bytes)) & 0x0fu) >> 1;
     }
 
     /**
      * \brief Read the macrotime counter value (no rollover correction).
      */
     [[nodiscard]] auto get_macrotime() const noexcept -> std::uint32_t {
-        auto lo8 = unsigned(bytes[1]);
-        auto mid8 = unsigned(bytes[2]);
-        auto hi1 = unsigned(bytes[3]) & 1u;
+        unsigned const lo8 = read_u8(byte_subspan<1, 1>(bytes));
+        unsigned const mid8 = read_u8(byte_subspan<2, 1>(bytes));
+        unsigned const hi1 = read_u8(byte_subspan<3, 1>(bytes)) & 1u;
         return lo8 | (mid8 << 8) | (hi1 << 16);
     }
 
@@ -277,21 +279,21 @@ struct bh_spc_600_event_32 {
      * \brief Read the 'gap' (data lost) flag.
      */
     [[nodiscard]] auto get_gap_flag() const noexcept -> bool {
-        return (unsigned(bytes[3]) & (1u << 5)) != 0;
+        return (read_u8(byte_subspan<3, 1>(bytes)) & (1u << 5)) != 0;
     }
 
     /**
      * \brief Read the 'macrotime overflow' flag.
      */
     [[nodiscard]] auto get_macrotime_overflow_flag() const noexcept -> bool {
-        return (unsigned(bytes[3]) & (1u << 6)) != 0;
+        return (read_u8(byte_subspan<3, 1>(bytes)) & (1u << 6)) != 0;
     }
 
     /**
      * \brief Read the 'invalid' flag.
      */
     [[nodiscard]] auto get_invalid_flag() const noexcept -> bool {
-        return (unsigned(bytes[3]) & (1u << 7)) != 0;
+        return (read_u8(byte_subspan<3, 1>(bytes)) & (1u << 7)) != 0;
     }
 
     /**

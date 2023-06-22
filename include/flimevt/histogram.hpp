@@ -10,8 +10,7 @@
 #include "common.hpp"
 #include "histogram_events.hpp"
 #include "histogramming.hpp"
-
-#include <gsl/span>
+#include "span.hpp"
 
 #include <algorithm>
 #include <cstddef>
@@ -42,7 +41,7 @@ class histogram {
     bool finished = false;
     // NOLINTNEXTLINE(cppcoreguidelines-avoid-c-arrays,modernize-avoid-c-arrays)
     std::unique_ptr<bin_type[]> hist_mem;
-    gsl::span<bin_type> hist;
+    span<bin_type> hist;
     single_histogram<bin_index_type, bin_type, internal_overflow_strategy>
         shist;
     histogram_stats stats;

@@ -9,8 +9,6 @@
 #include "autocopy_span.hpp"
 #include "common.hpp"
 
-#include <gsl/span>
-
 #include <algorithm>
 #include <cassert>
 #include <cstddef>

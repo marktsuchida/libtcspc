@@ -6,11 +6,32 @@
 
 #pragma once
 
+#include "span.hpp"
+
+#include <array>
 #include <cassert>
+#include <cstddef>
 #include <cstdint>
 #include <cstring>
 
-namespace flimevt::internal {
+namespace flimevt {
+
+/**
+ * \brief A span of \c std::byte.
+ */
+template <std::size_t Extent> using byte_span = span<std::byte const, Extent>;
+
+/**
+ * \brief Get a subspan of an array of \c std::byte.
+ */
+template <std::size_t Offset, std::size_t Count, std::size_t Size>
+inline auto byte_subspan(std::array<std::byte, Size> const &bytes) noexcept
+    -> byte_span<Count> {
+    static_assert(Offset + Count <= Size);
+    return byte_span<Size>(bytes).template subspan<Offset, Count>();
+}
+
+namespace internal {
 
 // Internal functions to read integers from little-endian data streams.
 
@@ -42,39 +63,34 @@ inline auto use_memcpy() noexcept -> bool {
 #endif
 }
 
-inline auto read_u16le_memcpy(unsigned char const *bytes) noexcept
-    -> std::uint16_t {
+inline auto read_u16le_memcpy(byte_span<2> bytes) noexcept -> std::uint16_t {
     assert(is_little_endian());
     std::uint16_t ret{};
-    std::memcpy(&ret, bytes, sizeof(ret));
+    std::memcpy(&ret, bytes.data(), sizeof(ret));
     return ret;
 }
 
-inline auto read_u32le_memcpy(unsigned char const *bytes) noexcept
-    -> std::uint32_t {
+inline auto read_u32le_memcpy(byte_span<4> bytes) noexcept -> std::uint32_t {
     assert(is_little_endian());
     std::uint32_t ret{};
-    std::memcpy(&ret, bytes, sizeof(ret));
+    std::memcpy(&ret, bytes.data(), sizeof(ret));
     return ret;
 }
 
-inline auto read_u64le_memcpy(unsigned char const *bytes) noexcept
-    -> std::uint64_t {
+inline auto read_u64le_memcpy(byte_span<8> bytes) noexcept -> std::uint64_t {
     assert(is_little_endian());
     std::uint64_t ret{};
-    std::memcpy(&ret, bytes, sizeof(ret));
+    std::memcpy(&ret, bytes.data(), sizeof(ret));
     return ret;
 }
 
-// NOLINTBEGIN(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-
-constexpr auto read_u16le_generic(unsigned char const *bytes) noexcept
+constexpr auto read_u16le_generic(byte_span<2> bytes) noexcept
     -> std::uint16_t {
     // unsigned is at least as wide as uint16_t
     return std::uint16_t(unsigned(bytes[0]) | (unsigned(bytes[1]) << 8));
 }
 
-constexpr auto read_u32le_generic(unsigned char const *bytes) noexcept
+constexpr auto read_u32le_generic(byte_span<4> bytes) noexcept
     -> std::uint32_t {
     using u32 = std::uint32_t;
     if constexpr (sizeof(u32) < sizeof(unsigned)) {
@@ -87,7 +103,7 @@ constexpr auto read_u32le_generic(unsigned char const *bytes) noexcept
     }
 }
 
-constexpr auto read_u64le_generic(unsigned char const *bytes) noexcept
+constexpr auto read_u64le_generic(byte_span<8> bytes) noexcept
     -> std::uint64_t {
     using u64 = std::uint64_t;
     if constexpr (sizeof(u64) < sizeof(unsigned)) {
@@ -104,45 +120,68 @@ constexpr auto read_u64le_generic(unsigned char const *bytes) noexcept
     }
 }
 
-// For completeness
-constexpr auto read_u8le(unsigned char const *bytes) noexcept -> std::uint8_t {
-    return bytes[0];
+} // namespace internal
+
+/**
+ * \brief Read an 8-bit unsigned integer from a byte.
+ */
+constexpr auto read_u8(byte_span<1> bytes) noexcept -> std::uint8_t {
+    return std::uint8_t(bytes[0]);
 }
 
-// NOLINTEND(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-
-inline auto read_u16le(unsigned char const *bytes) noexcept -> std::uint16_t {
-    if (use_memcpy())
-        return read_u16le_memcpy(bytes);
-    return read_u16le_generic(bytes);
+/**
+ * \brief Read an little-endian 16-bit unsigned integer from bytes.
+ */
+inline auto read_u16le(byte_span<2> bytes) noexcept -> std::uint16_t {
+    if (internal::use_memcpy())
+        return internal::read_u16le_memcpy(bytes);
+    return internal::read_u16le_generic(bytes);
 }
 
-inline auto read_u32le(unsigned char const *bytes) noexcept -> std::uint32_t {
-    if (use_memcpy())
-        return read_u32le_memcpy(bytes);
-    return read_u32le_generic(bytes);
+/**
+ * \brief Read an little-endian 32-bit unsigned integer from bytes.
+ */
+inline auto read_u32le(byte_span<4> bytes) noexcept -> std::uint32_t {
+    if (internal::use_memcpy())
+        return internal::read_u32le_memcpy(bytes);
+    return internal::read_u32le_generic(bytes);
 }
 
-inline auto read_u64le(unsigned char const *bytes) noexcept -> std::uint64_t {
-    if (use_memcpy())
-        return read_u64le_memcpy(bytes);
-    return read_u64le_generic(bytes);
+/**
+ * \brief Read an little-endian 64-bit unsigned integer from bytes.
+ */
+inline auto read_u64le(byte_span<8> bytes) noexcept -> std::uint64_t {
+    if (internal::use_memcpy())
+        return internal::read_u64le_memcpy(bytes);
+    return internal::read_u64le_generic(bytes);
 }
 
-inline auto read_i8le(unsigned char const *bytes) noexcept -> std::int8_t {
-    return std::int8_t(read_u8le(bytes));
+/**
+ * \brief Read an 8-bit signed integer from a byte.
+ */
+inline auto read_i8(byte_span<1> bytes) noexcept -> std::int8_t {
+    return static_cast<std::int8_t>(read_u8(bytes));
 }
 
-inline auto read_i16le(unsigned char const *bytes) noexcept -> std::int16_t {
-    return std::int16_t(read_u16le(bytes));
+/**
+ * \brief Read an little-endian 16-bit signed integer from bytes.
+ */
+inline auto read_i16le(byte_span<2> bytes) noexcept -> std::int16_t {
+    return static_cast<std::int16_t>(read_u16le(bytes));
 }
 
-inline auto read_i32le(unsigned char const *bytes) noexcept -> std::int32_t {
-    return std::int32_t(read_u32le(bytes));
+/**
+ * \brief Read an little-endian 32-bit signed integer from bytes.
+ */
+inline auto read_i32le(byte_span<4> bytes) noexcept -> std::int32_t {
+    return static_cast<std::int32_t>(read_u32le(bytes));
 }
 
-inline auto read_i64le(unsigned char const *bytes) noexcept -> std::int64_t {
-    return std::int64_t(read_u64le(bytes));
+/**
+ * \brief Read an little-endian 64-bit signed integer from bytes.
+ */
+inline auto read_i64le(byte_span<8> bytes) noexcept -> std::int64_t {
+    return static_cast<std::int64_t>(read_u64le(bytes));
 }
 
-} // namespace flimevt::internal
+} // namespace flimevt

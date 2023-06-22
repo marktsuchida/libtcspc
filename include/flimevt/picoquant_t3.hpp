@@ -11,6 +11,7 @@
 #include "time_tagged_events.hpp"
 
 #include <array>
+#include <cstddef>
 #include <cstdint>
 #include <exception>
 #include <stdexcept>
@@ -42,7 +43,7 @@ struct pq_pico_t3_event {
     /**
      * \brief Bytes of the 32-bit raw device event.
      */
-    std::array<unsigned char, 4> bytes;
+    std::array<std::byte, 4> bytes;
 
     /**
      * \brief The nsync overflow period of this event type.
@@ -53,21 +54,21 @@ struct pq_pico_t3_event {
      * \brief Read the channel if this event represents a photon.
      */
     [[nodiscard]] auto get_channel() const noexcept -> std::uint8_t {
-        return static_cast<std::uint8_t>(unsigned(bytes[3]) >> 4);
+        return read_u8(byte_subspan<3, 1>(bytes)) >> 4;
     }
 
     /**
      * \brief Read the difference time if this event represents a photon.
      */
     [[nodiscard]] auto get_dtime() const noexcept -> std::uint16_t {
-        return unsigned(internal::read_u16le(&bytes[2])) & 0x0fffu;
+        return read_u16le(byte_subspan<2, 2>(bytes)) & 0x0fffu;
     }
 
     /**
      * \brief Read the nsync counter value (no rollover correction).
      */
     [[nodiscard]] auto get_nsync() const noexcept -> std::uint16_t {
-        return internal::read_u16le(bytes.data());
+        return read_u16le(byte_subspan<0, 2>(bytes));
     }
 
     /**
@@ -120,7 +121,7 @@ template <bool IsHydraV1> struct pq_hydra_t3_event {
     /**
      * \brief Bytes of the 32-bit raw device event.
      */
-    std::array<unsigned char, 4> bytes;
+    std::array<std::byte, 4> bytes;
 
     /**
      * \brief The nsync overflow period of this event type.
@@ -131,16 +132,16 @@ template <bool IsHydraV1> struct pq_hydra_t3_event {
      * \brief Read the channel if this event represents a photon.
      */
     [[nodiscard]] auto get_channel() const noexcept -> std::uint8_t {
-        return (unsigned(bytes[3]) & 0x7fu) >> 1;
+        return (read_u8(byte_subspan<3, 1>(bytes)) & 0x7fu) >> 1;
     }
 
     /**
      * \brief Read the difference time if this event represents a photon.
      */
     [[nodiscard]] auto get_dtime() const noexcept -> std::uint16_t {
-        auto lo6 = unsigned(bytes[1]) >> 2;
-        auto mid8 = unsigned(bytes[2]);
-        auto hi1 = unsigned(bytes[3]) & 1u;
+        unsigned const lo6 = read_u8(byte_subspan<1, 1>(bytes)) >> 2;
+        unsigned const mid8 = read_u8(byte_subspan<2, 1>(bytes));
+        unsigned const hi1 = read_u8(byte_subspan<3, 1>(bytes)) & 1u;
         return static_cast<std::uint16_t>(lo6 | (mid8 << 6) | (hi1 << 14));
     }
 
@@ -148,14 +149,14 @@ template <bool IsHydraV1> struct pq_hydra_t3_event {
      * \brief Read the nsync counter value (no rollover correction).
      */
     [[nodiscard]] auto get_nsync() const noexcept -> std::uint16_t {
-        return unsigned(internal::read_u16le(bytes.data())) & 0x03ffu;
+        return read_u16le(byte_subspan<0, 2>(bytes)) & 0x03ffu;
     }
 
     /**
      * \brief Determine if this event is a non-photon event.
      */
     [[nodiscard]] auto is_special() const noexcept -> bool {
-        return (unsigned(bytes[3]) & (1u << 7)) != 0;
+        return (read_u8(byte_subspan<3, 1>(bytes)) & (1u << 7)) != 0;
     }
 
     /**

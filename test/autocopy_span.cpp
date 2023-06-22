@@ -45,12 +45,12 @@ TEST_CASE("Autocopying span", "[autocopy_span]") {
     autocopy_span empty_copy(empty);
     REQUIRE(empty_copy.span().empty());
 
-    // Conversion to gsl::span
-    gsl::span<int const> const s(carr);
+    // Conversion to span
+    span<int const> const s(carr);
     REQUIRE(s[0] == 3);
 
-    // Implicit conversion to gsl::span
-    auto lamb = [](gsl::span<int const> s) { return s[0]; };
+    // Implicit conversion to span
+    auto lamb = [](span<int const> s) { return s[0]; };
     REQUIRE(lamb(carr) == 3);
 
     // Copying const to const
