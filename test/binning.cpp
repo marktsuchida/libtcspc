@@ -89,36 +89,36 @@ TEST_CASE("Power-of-2 bin mapping", "[power_of_2_bin_mapper]") {
     power_of_2_bin_mapper<u32, u16, 0, 0, false> const m00;
     REQUIRE(m00.get_n_bins() == 1);
     REQUIRE(m00(0).value() == 0);
-    REQUIRE(!m00(1));
+    REQUIRE_FALSE(m00(1));
 
     power_of_2_bin_mapper<u32, u16, 0, 0, true> const m00f;
     REQUIRE(m00f.get_n_bins() == 1);
     REQUIRE(m00f(0).value() == 0);
-    REQUIRE(!m00f(1));
+    REQUIRE_FALSE(m00f(1));
 
     power_of_2_bin_mapper<u32, u16, 1, 0, false> const m10;
     REQUIRE(m10.get_n_bins() == 1);
     REQUIRE(m10(0).value() == 0);
     REQUIRE(m10(1).value() == 0);
-    REQUIRE(!m10(2));
+    REQUIRE_FALSE(m10(2));
 
     power_of_2_bin_mapper<u32, u16, 1, 0, true> const m10f;
     REQUIRE(m10f.get_n_bins() == 1);
     REQUIRE(m10f(0).value() == 0);
     REQUIRE(m10f(1).value() == 0);
-    REQUIRE(!m10f(2));
+    REQUIRE_FALSE(m10f(2));
 
     power_of_2_bin_mapper<u32, u16, 1, 1, false> const m11;
     REQUIRE(m11.get_n_bins() == 2);
     REQUIRE(m11(0).value() == 0);
     REQUIRE(m11(1).value() == 1);
-    REQUIRE(!m11(2));
+    REQUIRE_FALSE(m11(2));
 
     power_of_2_bin_mapper<u32, u16, 1, 1, true> const m11f;
     REQUIRE(m11f.get_n_bins() == 2);
     REQUIRE(m11f(0).value() == 1);
     REQUIRE(m11f(1).value() == 0);
-    REQUIRE(!m11f(2));
+    REQUIRE_FALSE(m11f(2));
 
     power_of_2_bin_mapper<u32, u16, 2, 0, false> const m20;
     REQUIRE(m20.get_n_bins() == 1);
@@ -126,7 +126,7 @@ TEST_CASE("Power-of-2 bin mapping", "[power_of_2_bin_mapper]") {
     REQUIRE(m20(1).value() == 0);
     REQUIRE(m20(2).value() == 0);
     REQUIRE(m20(3).value() == 0);
-    REQUIRE(!m20(4));
+    REQUIRE_FALSE(m20(4));
 
     power_of_2_bin_mapper<u32, u16, 2, 0, true> const m20f;
     REQUIRE(m20f.get_n_bins() == 1);
@@ -134,7 +134,7 @@ TEST_CASE("Power-of-2 bin mapping", "[power_of_2_bin_mapper]") {
     REQUIRE(m20f(1).value() == 0);
     REQUIRE(m20f(2).value() == 0);
     REQUIRE(m20f(3).value() == 0);
-    REQUIRE(!m20f(4));
+    REQUIRE_FALSE(m20f(4));
 
     power_of_2_bin_mapper<u32, u16, 2, 1, false> const m21;
     REQUIRE(m21.get_n_bins() == 2);
@@ -142,7 +142,7 @@ TEST_CASE("Power-of-2 bin mapping", "[power_of_2_bin_mapper]") {
     REQUIRE(m21(1).value() == 0);
     REQUIRE(m21(2).value() == 1);
     REQUIRE(m21(3).value() == 1);
-    REQUIRE(!m21(4));
+    REQUIRE_FALSE(m21(4));
 
     power_of_2_bin_mapper<u32, u16, 2, 1, true> const m21f;
     REQUIRE(m21f.get_n_bins() == 2);
@@ -150,7 +150,7 @@ TEST_CASE("Power-of-2 bin mapping", "[power_of_2_bin_mapper]") {
     REQUIRE(m21f(1).value() == 1);
     REQUIRE(m21f(2).value() == 0);
     REQUIRE(m21f(3).value() == 0);
-    REQUIRE(!m21f(4));
+    REQUIRE_FALSE(m21f(4));
 
     power_of_2_bin_mapper<u32, u16, 2, 2, false> const m22;
     REQUIRE(m22.get_n_bins() == 4);
@@ -158,7 +158,7 @@ TEST_CASE("Power-of-2 bin mapping", "[power_of_2_bin_mapper]") {
     REQUIRE(m22(1).value() == 1);
     REQUIRE(m22(2).value() == 2);
     REQUIRE(m22(3).value() == 3);
-    REQUIRE(!m22(4));
+    REQUIRE_FALSE(m22(4));
 
     power_of_2_bin_mapper<u32, u16, 2, 2, true> const m22f;
     REQUIRE(m22f.get_n_bins() == 4);
@@ -166,7 +166,7 @@ TEST_CASE("Power-of-2 bin mapping", "[power_of_2_bin_mapper]") {
     REQUIRE(m22f(1).value() == 2);
     REQUIRE(m22f(2).value() == 1);
     REQUIRE(m22f(3).value() == 0);
-    REQUIRE(!m22f(4));
+    REQUIRE_FALSE(m22f(4));
 
     power_of_2_bin_mapper<u32, u16, 12, 8, false> const m12_8;
     REQUIRE(m12_8.get_n_bins() == 256);
@@ -174,7 +174,7 @@ TEST_CASE("Power-of-2 bin mapping", "[power_of_2_bin_mapper]") {
     REQUIRE(m12_8(15).value() == 0);
     REQUIRE(m12_8(16).value() == 1);
     REQUIRE(m12_8(4095).value() == 255);
-    REQUIRE(!m12_8(4096));
+    REQUIRE_FALSE(m12_8(4096));
 
     power_of_2_bin_mapper<u32, u16, 12, 8, true> const m12_8f;
     REQUIRE(m12_8f.get_n_bins() == 256);
@@ -182,7 +182,7 @@ TEST_CASE("Power-of-2 bin mapping", "[power_of_2_bin_mapper]") {
     REQUIRE(m12_8f(15).value() == 255);
     REQUIRE(m12_8f(16).value() == 254);
     REQUIRE(m12_8f(4095).value() == 0);
-    REQUIRE(!m12_8f(4096));
+    REQUIRE_FALSE(m12_8f(4096));
 
     power_of_2_bin_mapper<u32, u16, 16, 16, false> const m16_16;
     REQUIRE(m16_16.get_n_bins() == 65536);

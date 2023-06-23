@@ -387,7 +387,7 @@ TEMPLATE_TEST_CASE(
     stop_on_internal_overflow) {
     histogram_stats stats; // NOLINT(misc-const-correctness)
     multi_histogram<u8, u8, TestType> mhist({}, 0, 0, 0, true);
-    CHECK(not mhist.is_started());
+    CHECK_FALSE(mhist.is_started());
     CHECK(mhist.is_complete());
     CHECK(mhist.is_consistent());
     SECTION("Skip remaining") { mhist.skip_remaining(); }
@@ -463,10 +463,10 @@ TEST_CASE("multi_histogram: rolling back works and applies clearing",
     std::vector<u8> data(12, u8(123));
     multi_histogram<u8, u8, stop_on_internal_overflow> mhist(data, 255, 4, 3,
                                                              true);
-    CHECK(not mhist.is_consistent());
+    CHECK_FALSE(mhist.is_consistent());
     SECTION("Roll back no elements") {
         mhist.roll_back(journal, stats);
-        CHECK(not mhist.is_started());
+        CHECK_FALSE(mhist.is_started());
         CHECK(mhist.is_consistent());
         CHECK(std::all_of(data.begin(), data.end(),
                           [](u8 e) { return e == 0; }));
@@ -477,7 +477,7 @@ TEST_CASE("multi_histogram: rolling back works and applies clearing",
                                           journal));
         CHECK(mhist.is_started());
         mhist.roll_back(journal, stats);
-        CHECK(not mhist.is_started());
+        CHECK_FALSE(mhist.is_started());
         CHECK(mhist.is_consistent());
         CHECK(std::all_of(data.begin(), data.end(),
                           [](u8 e) { return e == 0; }));
@@ -540,8 +540,8 @@ TEST_CASE("multi_histogram: stop on overflow", "[multi_histogram]") {
                                                              true);
     CHECK(
         mhist.apply_increment_batch(std::array<u8, 2>{2, 1}, stats, journal));
-    CHECK(not mhist.apply_increment_batch(std::array<u8, 4>{1, 0, 1, 3}, stats,
-                                          journal));
+    CHECK_FALSE(mhist.apply_increment_batch(std::array<u8, 4>{1, 0, 1, 3},
+                                            stats, journal));
     CHECK(mhist.is_complete());
     CHECK(data == std::vector<u8>{0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0});
     CHECK(stats.total == 2);

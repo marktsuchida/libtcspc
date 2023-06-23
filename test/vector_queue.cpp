@@ -34,7 +34,7 @@ TEST_CASE("Vector queue of int", "[vector_queue]") {
     // NOLINTEND(bugprone-use-after-move,clang-analyzer-cplusplus.Move)
 
     q.push(42);
-    REQUIRE(!q.empty());
+    REQUIRE_FALSE(q.empty());
     REQUIRE(q.size() == 1);
     REQUIRE(q.front() == 42);
     REQUIRE(q.back() == 42);
@@ -51,22 +51,22 @@ TEST_CASE("Vector queue of int", "[vector_queue]") {
 
     p = q;
     r.swap(p);
-    REQUIRE(!r.empty());
+    REQUIRE_FALSE(r.empty());
     REQUIRE(r.size() == 1);
     REQUIRE(r.front() == 42);
 
     q.push(43); // (42, 43, -)
-    REQUIRE(!q.empty());
+    REQUIRE_FALSE(q.empty());
     REQUIRE(q.size() == 2);
     REQUIRE(q.front() == 42);
     REQUIRE(q.back() == 43);
     q.pop(); // (-, 43, -)
-    REQUIRE(!q.empty());
+    REQUIRE_FALSE(q.empty());
     REQUIRE(q.size() == 1);
     REQUIRE(q.front() == 43);
     REQUIRE(q.back() == 43);
     q.push(44); // (-, 43, 44)
-    REQUIRE(!q.empty());
+    REQUIRE_FALSE(q.empty());
     REQUIRE(q.size() == 2);
     REQUIRE(q.front() == 43);
     REQUIRE(q.back() == 44);

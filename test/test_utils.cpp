@@ -76,6 +76,6 @@ TEST_CASE("Short-circuited with event set", "[test_utils]") {
 
     SECTION("Expect the wrong event") {
         in.feed(e1{42});
-        REQUIRE(!out.check(e1{0}));
+        REQUIRE_FALSE(out.check(e1{0}));
     }
 }
