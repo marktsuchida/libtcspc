@@ -66,7 +66,7 @@ TEST_CASE("Read u32", "[read_bytes]") {
         auto x = GENERATE(std::uint8_t(0x01), 0x7f, 0x80, 0xff);
         // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-constant-array-index)
         data[byte] = x;
-        REQUIRE(f(byte_span_of_uchars(data)) == x * (1 << (8 * byte)));
+        REQUIRE(f(byte_span_of_uchars(data)) == x * (1u << (8 * byte)));
     }
 
     SECTION("Sanity") {
