@@ -333,7 +333,7 @@ class batch_bin_increments {
     void handle_event(EStop const &event) noexcept {
         if (in_batch) {
             batch.time_range.stop = event.macrotime;
-            downstream.handle_event(batch);
+            downstream.handle_event(std::as_const(batch));
             in_batch = false;
         }
     }

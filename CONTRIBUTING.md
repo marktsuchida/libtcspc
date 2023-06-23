@@ -161,12 +161,13 @@ types should be documented with Doxygen comments (follow existing practice).
     preserved), always wrap in `std::as_const()`.
     - Usually this is simply a safety check in case the downstream processor
       forgot to define the event handler parameter as by-value or `const &`.
-    - But this can potentially allow processors to define non-const versions of
-      event handlers if there is a case where destructively modifying the event
-      can result in better performance.
-      - This has not actually been exploited so far.
-    - Therefore, if the sent event (or its value) will _not_ ever be used
-      again, `std::as_const()` should not be applied.
+    - If the sent event (or its value) will _not_ ever be used again,
+      `std::as_const()` should not be applied.
+    - In theory, we could get better performance in a few cases by modifying
+      events in place. This would require all processors to implement rvalue
+      ref versions of `handle_event` in addition to the const lvalue ref
+      version. We do not currently take advantage of this, as it is not clear
+      that it will make a significant difference.
 - Ending the event stream
   - The downstream processor's `handle_end` may be called within event handlers
     and `handle_end`. It may not be called during processor construction or
