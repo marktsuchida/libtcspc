@@ -10,7 +10,7 @@
 #include <cstdint>
 #include <cstring>
 
-#include <catch2/catch.hpp>
+#include <catch2/catch_all.hpp>
 
 using namespace flimevt;
 

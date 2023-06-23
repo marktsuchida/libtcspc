@@ -2,12 +2,6 @@
 # Copyright 2019-2022 Board of Regents of the University of Wisconsin System
 # SPDX-License-Identifier: MIT
 
-catch2_dep = dependency(
-    'catch2',
-    required: get_option('tests'),
-    disabler: true
-)
-
 flimevents_tests_srcs = [
     'apply_class_template.cpp',
     'autocopy_span.cpp',
@@ -21,7 +15,6 @@ flimevents_tests_srcs = [
     'discard.cpp',
     'dynamic_polymorphism.cpp',
     'event_set.cpp',
-    'flimevt.cpp',
     'gate.cpp',
     'generate_timings.cpp',
     'histogram.cpp',
@@ -51,7 +44,7 @@ flimevents_tests_exe = executable(
     include_directories: [public_inc],
     dependencies: [
         tcb_span_dep,
-        catch2_dep
+        catch2_with_main_dep
     ],
 )
 

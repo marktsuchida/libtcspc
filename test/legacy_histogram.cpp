@@ -9,7 +9,7 @@
 #include "flimevt/discard.hpp"
 #include "flimevt/event_set.hpp"
 
-#include <catch2/catch.hpp>
+#include <catch2/catch_all.hpp>
 
 // NOLINTBEGIN
 

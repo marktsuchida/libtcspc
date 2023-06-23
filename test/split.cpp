@@ -9,7 +9,7 @@
 #include "flimevt/ref_processor.hpp"
 #include "flimevt/test_utils.hpp"
 
-#include <catch2/catch.hpp>
+#include <catch2/catch_all.hpp>
 
 using namespace flimevt;
 

@@ -10,7 +10,7 @@
 #include "flimevt/dynamic_polymorphism.hpp"
 #include "flimevt/event_set.hpp"
 
-#include <catch2/catch.hpp>
+#include <catch2/catch_all.hpp>
 
 #include <cstring>
 #include <exception>

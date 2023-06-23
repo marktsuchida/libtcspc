@@ -15,12 +15,15 @@ Checks: >-
     portability-*,
     readability-*,
     -cppcoreguidelines-avoid-magic-numbers,
+    -misc-use-anonymous-namespace,
     -readability-identifier-length,
     -readability-magic-numbers,
 
 # Reasons for disabled checks:
 # [cppcoreguidelines-avoid-magic-numbers]
 #   See readability-magic-numbers
+# [misc-use-anonymous-namespace]
+#   Too much noise from Catch2 and no way to selectively disable.
 # [readability-identifier-length]
 #   TBD
 # [readability-magic-numbers]
@@ -29,6 +32,7 @@ Checks: >-
 
 CheckOptions:
   bugprone-easily-swappable-parameters.MinimumLength: 3
+  cppcoreguidelines-avoid-do-while.IgnoreMacros: true
   misc-non-private-member-variables-in-classes.IgnoreClassesWithAllMemberVariablesBeingPublic: true
   readability-braces-around-statements.ShortStatementLines: 3
   readability-function-cognitive-complexity.IgnoreMacros: true
