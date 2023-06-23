@@ -19,7 +19,7 @@ namespace flimevt {
  * \tparam D downstream processor type
  */
 template <typename D> class ref_processor {
-    D &downstream; // NOLINT(cppcoreguidelines-avoid-const-or-ref-data-members)
+    D *downstream; // Not null.
 
   public:
     /**
@@ -30,16 +30,16 @@ template <typename D> class ref_processor {
      *
      * \param downstream downstream processor
      */
-    explicit ref_processor(D &downstream) : downstream(downstream) {}
+    explicit ref_processor(D &downstream) : downstream(&downstream) {}
 
     /** \brief Processor interface */
     template <typename E> void handle_event(E const &event) noexcept {
-        downstream.handle_event(event);
+        downstream->handle_event(event);
     }
 
     /** \brief Processor interface */
     void handle_end(std::exception_ptr const &error) noexcept {
-        downstream.handle_end(error);
+        downstream->handle_end(error);
     }
 };
 
