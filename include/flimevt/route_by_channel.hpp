@@ -9,20 +9,20 @@
 #include "common.hpp"
 
 #include <algorithm>
+#include <array>
 #include <cstddef>
 #include <cstdint>
 #include <exception>
 #include <iterator>
 #include <tuple>
 #include <utility>
-#include <vector>
 
 namespace flimevt {
 
 namespace internal {
 
 template <typename ERouted, typename... Ds> class route_by_channel {
-    std::vector<std::int16_t> channels;
+    std::array<std::int16_t, sizeof...(Ds)> channels;
     std::tuple<Ds...> downstreams;
 
     template <std::size_t I = 0>
@@ -36,8 +36,9 @@ template <typename ERouted, typename... Ds> class route_by_channel {
     }
 
   public:
-    explicit route_by_channel(std::vector<std::int16_t> const &channels,
-                              Ds &&...downstreams)
+    explicit route_by_channel(
+        std::array<std::int16_t, sizeof...(Ds)> const &channels,
+        Ds &&...downstreams)
         : channels(channels), downstreams{std::move(downstreams)...} {}
 
     void handle_event(ERouted const &event) noexcept {
@@ -69,20 +70,19 @@ template <typename ERouted, typename... Ds> class route_by_channel {
  * channel numbers to downstream indices. Events of type \c ERoute are passed
  * only to the downstream indexed by the mapped channel number.
  *
- * If the channel does not map to a downstream index, or there is no processor
- * at the mapped index, then the \c ERoute event is discarded.
+ * If the channel does not map to a downstream index, then the \c ERoute event
+ * is discarded.
  *
  * Events other than \c ERoute are broadcast to all downstream processors.
  *
- * The channel mapping is specified as an std::vector of channel numbers.
- * The channel at index \e i in the vector is mapped to downstream index \e
- * i. (This has the limitation that only one channel can be mapped to each
+ * The channel mapping is specified as an std::array of channel numbers.
+ * The channel at index \e i in the array is mapped to downstream index \e i.
+ * (This has the limitation that only one channel can be mapped to each
  * downstream.)
  *
  * Thus, if channels contains <tt>{5, -3}</tt> and an \c ERouted event is
  * received with channel equal to \c -3, then it is routed to downstream
- * processor 1 (counting from 0). If fewer than 2 downstream processors
- * were given, such an \c ERouted event would be discarded.
+ * processor 1 (counting from 0).
  *
  * \tparam ERouted event type to route by channel
  * \tparam Ds downstream processor types
@@ -91,7 +91,7 @@ template <typename ERouted, typename... Ds> class route_by_channel {
  * \return route-by-channel processor
  */
 template <typename ERouted, typename... Ds>
-auto route_by_channel(std::vector<std::int16_t> const &channels,
+auto route_by_channel(std::array<std::int16_t, sizeof...(Ds)> const &channels,
                       Ds &&...downstreams) {
     return internal::route_by_channel<ERouted, Ds...>(
         channels, std::forward<Ds>(downstreams)...);

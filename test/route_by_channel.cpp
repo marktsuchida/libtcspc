@@ -21,7 +21,7 @@ TEST_CASE("Route photons", "[route_by_channel]") {
     auto out1 = capture_output<event_set<tc_event, marker_event>>();
     auto out2 = capture_output<event_set<tc_event, marker_event>>();
     auto in = feed_input<event_set<tc_event, marker_event>>(
-        route_by_channel<tc_event>({5, -3}, ref_processor(out0),
+        route_by_channel<tc_event>({5, -3, -32768}, ref_processor(out0),
                                    ref_processor(out1), ref_processor(out2)));
     in.require_output_checked(out0);
     in.require_output_checked(out1);
