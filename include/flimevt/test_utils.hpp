@@ -245,7 +245,7 @@ template <typename Es, typename D> class feed_input {
         downstream.handle_event(event);
     }
 
-    void feed_end(std::exception_ptr error) {
+    void feed_end(std::exception_ptr const &error) {
         require_outputs_checked();
         downstream.handle_end(error);
     }

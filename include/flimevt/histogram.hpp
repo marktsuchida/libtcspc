@@ -61,7 +61,7 @@ class histogram {
         time_range.reset();
     }
 
-    void finish(std::exception_ptr error) noexcept {
+    void finish(std::exception_ptr const &error) noexcept {
         finished = true;
         hist_mem.reset();
         downstream.handle_end(error);
@@ -117,7 +117,7 @@ class histogram {
             downstream.handle_event(event);
     }
 
-    void handle_end(std::exception_ptr error) noexcept {
+    void handle_end(std::exception_ptr const &error) noexcept {
         if (finished)
             return;
         emit_concluding(true);

@@ -293,7 +293,7 @@ template <typename D> class line_clock_pixellator {
         }
     }
 
-    void handle_end(std::exception_ptr error) noexcept {
+    void handle_end(std::exception_ptr const &error) noexcept {
         process_photons_and_lines(); // Emit any buffered data
         if (!stream_ended) {
             downstream.handle_end(error);

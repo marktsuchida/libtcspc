@@ -31,7 +31,7 @@ template <typename Es, typename D0, typename D1> class split_events {
             downstream0.handle_event(event);
     }
 
-    void handle_end(std::exception_ptr error) noexcept {
+    void handle_end(std::exception_ptr const &error) noexcept {
         downstream0.handle_end(error);
         downstream1.handle_end(error);
     }

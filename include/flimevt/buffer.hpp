@@ -95,7 +95,7 @@ template <typename P, typename D> class dereference_pointer {
         downstream.handle_event(*event_ptr);
     }
 
-    void handle_end(std::exception_ptr error) noexcept {
+    void handle_end(std::exception_ptr const &error) noexcept {
         downstream.handle_end(error);
     }
 };
@@ -130,7 +130,7 @@ template <typename V, typename E, typename D> class unbatch {
             downstream.handle_event(event);
     }
 
-    void handle_end(std::exception_ptr error) noexcept {
+    void handle_end(std::exception_ptr const &error) noexcept {
         downstream.handle_end(error);
     }
 };

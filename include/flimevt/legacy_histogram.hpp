@@ -209,7 +209,7 @@ template <typename T, typename D> class histogrammer {
         histogram.increment(event.difftime, event.x, event.y);
     }
 
-    void handle_end(std::exception_ptr error) noexcept {
+    void handle_end(std::exception_ptr const &error) noexcept {
         if (frame_in_progress) {
             downstream.handle_event(
                 incomplete_frame_histogram_event<T>{histogram});
@@ -257,7 +257,7 @@ template <typename T, typename D> class sequential_histogrammer {
         pixel_hist.increment(event.difftime, 0, 0);
     }
 
-    void handle_end(std::exception_ptr error) noexcept {
+    void handle_end(std::exception_ptr const &error) noexcept {
         std::size_t const n_pixels =
             histogram.get_width() * histogram.get_height();
         if (pixel_no < n_pixels) {
@@ -311,7 +311,7 @@ template <typename T, typename D> class histogram_accumulator {
         // Ignore incomplete frames
     }
 
-    void handle_end(std::exception_ptr error) noexcept {
+    void handle_end(std::exception_ptr const &error) noexcept {
         if (!error) {
             downstream.handle_event(
                 final_cumulative_histogram_event<T>{cumulative});

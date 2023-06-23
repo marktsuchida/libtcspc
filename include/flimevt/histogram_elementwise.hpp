@@ -47,7 +47,7 @@ class histogram_elementwise {
     macrotime_range cycle_time_range;
     D downstream;
 
-    void finish(std::exception_ptr error) noexcept {
+    void finish(std::exception_ptr const &error) noexcept {
         finished = true;
         hist_arr_mem.reset();
         hist_arr = {};
@@ -103,7 +103,7 @@ class histogram_elementwise {
             downstream.handle_event(event);
     }
 
-    void handle_end(std::exception_ptr error) noexcept {
+    void handle_end(std::exception_ptr const &error) noexcept {
         if (not finished)
             finish(error);
     }
@@ -212,7 +212,7 @@ class histogram_elementwise_accumulate {
         downstream.handle_event(chae);
     }
 
-    void finish(std::exception_ptr error) noexcept {
+    void finish(std::exception_ptr const &error) noexcept {
         finished = true;
         hist_arr_mem.reset();
         hist_arr = {};
@@ -305,7 +305,7 @@ class histogram_elementwise_accumulate {
             downstream.handle_event(event);
     }
 
-    void handle_end(std::exception_ptr error) noexcept {
+    void handle_end(std::exception_ptr const &error) noexcept {
         if (finished)
             return;
         if constexpr (EmitConcluding) {

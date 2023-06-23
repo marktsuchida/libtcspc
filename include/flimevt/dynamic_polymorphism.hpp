@@ -28,7 +28,7 @@ template <> class virtual_processor<> {
     virtual_processor(virtual_processor &&) = delete;
     auto operator=(virtual_processor &&) = delete;
     virtual ~virtual_processor() = default;
-    virtual void handle_end(std::exception_ptr) noexcept = 0;
+    virtual void handle_end(std::exception_ptr const &) noexcept = 0;
 };
 
 template <typename Event0>
@@ -64,7 +64,7 @@ class virtual_wrapped_processor_impl<Interface, Proc> : public Interface {
     explicit virtual_wrapped_processor_impl(Args &&...args)
         : proc(std::forward<Args>(args)...) {}
 
-    void handle_end(std::exception_ptr error) noexcept final {
+    void handle_end(std::exception_ptr const &error) noexcept final {
         proc.handle_end(error);
     }
 
@@ -160,7 +160,7 @@ template <typename Es> class polymorphic_processor {
     }
 
     /** \brief Processor interface */
-    void handle_end(std::exception_ptr error) noexcept {
+    void handle_end(std::exception_ptr const &error) noexcept {
         proc->handle_end(error);
 
         // No more calls will be made to proc, so avoid holding onto it

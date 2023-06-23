@@ -455,7 +455,7 @@ template <typename E, typename D> class base_decode_bh_spc {
         }
     }
 
-    void handle_end(std::exception_ptr error) noexcept {
+    void handle_end(std::exception_ptr const &error) noexcept {
         downstream.handle_end(error);
     }
 };

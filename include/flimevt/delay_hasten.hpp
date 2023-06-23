@@ -63,7 +63,7 @@ template <typename EsDelayed, typename D> class delay_processor {
         }
     }
 
-    void handle_end(std::exception_ptr error) noexcept {
+    void handle_end(std::exception_ptr const &error) noexcept {
         if (stream_ended)
             return;
 
@@ -129,7 +129,7 @@ template <typename EsUnchanged, typename D> class hasten_processor {
         }
     }
 
-    void handle_end(std::exception_ptr error) noexcept {
+    void handle_end(std::exception_ptr const &error) noexcept {
         if (stream_ended)
             return;
 
@@ -169,7 +169,7 @@ class delay_hasten_processor {
         proc.handle_event(event);
     }
 
-    void handle_end(std::exception_ptr error) noexcept {
+    void handle_end(std::exception_ptr const &error) noexcept {
         proc.handle_end(error);
     }
 };

@@ -38,7 +38,7 @@ template <typename D> class ref_processor {
     }
 
     /** \brief Processor interface */
-    void handle_end(std::exception_ptr error) noexcept {
+    void handle_end(std::exception_ptr const &error) noexcept {
         downstream.handle_end(error);
     }
 };

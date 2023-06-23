@@ -54,7 +54,7 @@ TEST_CASE("Frames are produced according to line markers",
             pixel_photons.emplace_back(event);
         }
 
-        void handle_end(std::exception_ptr error) {
+        void handle_end(std::exception_ptr const &error) {
             if (error) {
                 try {
                     std::rethrow_exception(error);

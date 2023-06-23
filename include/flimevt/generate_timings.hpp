@@ -46,7 +46,7 @@ template <typename ETrig, typename PGen, typename D> class generate_timings {
         downstream.handle_event(event);
     }
 
-    void handle_end(std::exception_ptr error) noexcept {
+    void handle_end(std::exception_ptr const &error) noexcept {
         // Note that we do _not_ generate the remaining timings. Usually timing
         // events beyond the end of the event stream are not useful, and not
         // generating them means that infinite generators can be used.

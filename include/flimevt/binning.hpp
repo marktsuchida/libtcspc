@@ -43,7 +43,7 @@ template <typename M, typename D> class map_to_datapoints {
         downstream.handle_event(event);
     }
 
-    void handle_end(std::exception_ptr error) noexcept {
+    void handle_end(std::exception_ptr const &error) noexcept {
         downstream.handle_end(error);
     }
 };
@@ -128,7 +128,7 @@ template <typename M, typename D> class map_to_bins {
         downstream.handle_event(event);
     }
 
-    void handle_end(std::exception_ptr error) noexcept {
+    void handle_end(std::exception_ptr const &error) noexcept {
         downstream.handle_end(error);
     }
 };
@@ -344,7 +344,7 @@ class batch_bin_increments {
     }
 
     /** \brief Processor interface **/
-    void handle_end(std::exception_ptr error) noexcept {
+    void handle_end(std::exception_ptr const &error) noexcept {
         batch.bin_indices.clear();
         batch.bin_indices.shrink_to_fit();
         downstream.handle_end(error);

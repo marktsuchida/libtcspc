@@ -112,7 +112,8 @@ template <typename Es, typename D> class merge_impl {
         pending.push(event);
     }
 
-    template <unsigned Ch> void handle_end(std::exception_ptr error) noexcept {
+    template <unsigned Ch>
+    void handle_end(std::exception_ptr const &error) noexcept {
         input_ended[Ch] = true;
         if (ended_with_error)
             return;
@@ -154,7 +155,7 @@ template <unsigned Ch, typename Es, typename D> class merge_input {
         impl->template handle_event<Ch>(event);
     }
 
-    void handle_end(std::exception_ptr error) noexcept {
+    void handle_end(std::exception_ptr const &error) noexcept {
         impl->template handle_end<Ch>(error);
         impl.reset();
     }

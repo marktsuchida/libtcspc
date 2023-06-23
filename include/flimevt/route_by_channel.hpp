@@ -53,7 +53,7 @@ template <typename ERouted, typename... Ds> class route_by_channel {
                    downstreams);
     }
 
-    void handle_end(std::exception_ptr error) noexcept {
+    void handle_end(std::exception_ptr const &error) noexcept {
         std::apply([&](auto &...s) { (..., s.handle_end(error)); },
                    downstreams);
     }
