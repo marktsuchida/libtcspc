@@ -146,7 +146,7 @@ template <typename M, typename D> class map_to_bins {
  * plus the function call operator <tt>std::optional<bin_index_type>
  * operator()(data_type) const noexcept</tt>.
  *
- * Bin mappers should also implement <tt>std::size_t get_n_bins() const
+ * Bin mappers should also implement <tt>std::size_t n_bins() const
  * noexcept</tt>.
  *
  * \c bin_index_type must be an unsigned integer type.
@@ -205,7 +205,7 @@ class power_of_2_bin_mapper {
     using bin_index_type = TBinIndex;
 
     /** \brief Bin mapper interface */
-    [[nodiscard]] auto get_n_bins() const noexcept -> std::size_t {
+    [[nodiscard]] auto n_bins() const noexcept -> std::size_t {
         return std::size_t{1} << NHistoBits;
     }
 
@@ -280,7 +280,7 @@ template <typename TData, typename TBinIndex> class linear_bin_mapper {
     }
 
     /** \brief Bin mapper interface */
-    [[nodiscard]] auto get_n_bins() const noexcept -> std::size_t {
+    [[nodiscard]] auto n_bins() const noexcept -> std::size_t {
         return std::size_t(max_bin_index) + 1;
     }
 

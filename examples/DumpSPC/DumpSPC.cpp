@@ -98,18 +98,18 @@ void dump_raw_event(char const *raw_event, std::ostream &output) {
     flimevt::bh_spc_event event{};
     std::memcpy(&event, raw_event, sizeof(event));
 
-    std::uint8_t const route = event.get_routing_signals();
+    std::uint8_t const route = event.routing_signals();
     output << ((route & (1 << 3)) != 0 ? 'x' : '_')
            << ((route & (1 << 2)) != 0 ? 'x' : '_')
            << ((route & (1 << 1)) != 0 ? 'x' : '_')
            << ((route & (1 << 0)) != 0 ? 'x' : '_') << ' '
-           << (event.get_invalid_flag() ? 'I' : '_')
-           << (event.get_macrotime_overflow_flag() ? 'O' : '_')
-           << (event.get_gap_flag() ? 'G' : '_')
-           << (event.get_marker_flag() ? 'M' : '_');
+           << (event.invalid_flag() ? 'I' : '_')
+           << (event.macrotime_overflow_flag() ? 'O' : '_')
+           << (event.gap_flag() ? 'G' : '_')
+           << (event.marker_flag() ? 'M' : '_');
     if (event.is_multiple_macrotime_overflow()) {
         output << ' ' << std::setw(4)
-               << event.get_multiple_macrotime_overflow_count();
+               << event.multiple_macrotime_overflow_count();
     }
     output << '\n';
 }

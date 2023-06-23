@@ -48,7 +48,7 @@ struct bh_spc_event {
      * \brief Read the ADC value (i.e., difference time) if this event
      * represents a photon.
      */
-    [[nodiscard]] auto get_adc_value() const noexcept -> std::uint16_t {
+    [[nodiscard]] auto adc_value() const noexcept -> std::uint16_t {
         return read_u16le(byte_subspan<2, 2>(bytes)) & 0x0fffu;
     }
 
@@ -56,7 +56,7 @@ struct bh_spc_event {
      * \brief Read the routing signals (usually the detector channel) if this
      * event represents a photon.
      */
-    [[nodiscard]] auto get_routing_signals() const noexcept -> std::uint8_t {
+    [[nodiscard]] auto routing_signals() const noexcept -> std::uint8_t {
         // The documentation somewhat confusingly says that these bits are
         // "inverted", but what they mean is that the TTL inputs are active
         // low. The bits in the FIFO data are not inverted.
@@ -66,42 +66,42 @@ struct bh_spc_event {
     /**
      * \brief Read the macrotime counter value (no rollover correction).
      */
-    [[nodiscard]] auto get_macrotime() const noexcept -> std::uint16_t {
+    [[nodiscard]] auto macrotime() const noexcept -> std::uint16_t {
         return read_u16le(byte_subspan<0, 2>(bytes)) & 0x0fffu;
     }
 
     /**
      * \brief Read the 'marker' flag.
      */
-    [[nodiscard]] auto get_marker_flag() const noexcept -> bool {
+    [[nodiscard]] auto marker_flag() const noexcept -> bool {
         return (read_u8(byte_subspan<3, 1>(bytes)) & (1u << 4)) != 0;
     }
 
     /**
      * \brief Read the marker bits (mask) if this event represents markers.
      */
-    [[nodiscard]] auto get_marker_bits() const noexcept -> std::uint8_t {
-        return get_routing_signals();
+    [[nodiscard]] auto marker_bits() const noexcept -> std::uint8_t {
+        return routing_signals();
     }
 
     /**
      * \brief Read the 'gap' (data lost) flag.
      */
-    [[nodiscard]] auto get_gap_flag() const noexcept -> bool {
+    [[nodiscard]] auto gap_flag() const noexcept -> bool {
         return (read_u8(byte_subspan<3, 1>(bytes)) & (1u << 5)) != 0;
     }
 
     /**
      * \brief Read the 'macrotime overflow' flag.
      */
-    [[nodiscard]] auto get_macrotime_overflow_flag() const noexcept -> bool {
+    [[nodiscard]] auto macrotime_overflow_flag() const noexcept -> bool {
         return (read_u8(byte_subspan<3, 1>(bytes)) & (1u << 6)) != 0;
     }
 
     /**
      * \brief Read the 'invalid' flag.
      */
-    [[nodiscard]] auto get_invalid_flag() const noexcept -> bool {
+    [[nodiscard]] auto invalid_flag() const noexcept -> bool {
         return (read_u8(byte_subspan<3, 1>(bytes)) & (1u << 7)) != 0;
     }
 
@@ -112,15 +112,14 @@ struct bh_spc_event {
         -> bool {
         // Although documentation is not clear, a marker can share an event
         // record with a (single) macrotime overflow, just as a photon can.
-        return get_macrotime_overflow_flag() && get_invalid_flag() &&
-               !get_marker_flag();
+        return macrotime_overflow_flag() && invalid_flag() && !marker_flag();
     }
 
     /**
      * \brief Read the macrotime overflow count if this event represents
      * multiple macrotime overflows.
      */
-    [[nodiscard]] auto get_multiple_macrotime_overflow_count() const noexcept
+    [[nodiscard]] auto multiple_macrotime_overflow_count() const noexcept
         -> std::uint32_t {
         return read_u32le(byte_subspan<0, 4>(bytes)) & 0x0fffffffu;
     }
@@ -145,7 +144,7 @@ struct bh_spc_600_event_48 {
      * \brief Read the ADC value (i.e., difference time) if this event
      * represents a photon.
      */
-    [[nodiscard]] auto get_adc_value() const noexcept -> std::uint16_t {
+    [[nodiscard]] auto adc_value() const noexcept -> std::uint16_t {
         return read_u16le(byte_subspan<0, 2>(bytes)) & 0x0fffu;
     }
 
@@ -153,14 +152,14 @@ struct bh_spc_600_event_48 {
      * \brief Read the routing signals (usually the detector channel) if this
      * event represents a photon.
      */
-    [[nodiscard]] auto get_routing_signals() const noexcept -> std::uint8_t {
+    [[nodiscard]] auto routing_signals() const noexcept -> std::uint8_t {
         return read_u8(byte_subspan<3, 1>(bytes));
     }
 
     /**
      * \brief Read the macrotime counter value (no rollover correction).
      */
-    [[nodiscard]] auto get_macrotime() const noexcept -> std::uint32_t {
+    [[nodiscard]] auto macrotime() const noexcept -> std::uint32_t {
         unsigned const lo8 = read_u8(byte_subspan<4, 1>(bytes));
         unsigned const mid8 = read_u8(byte_subspan<5, 1>(bytes));
         unsigned const hi8 = read_u8(byte_subspan<2, 1>(bytes));
@@ -170,35 +169,33 @@ struct bh_spc_600_event_48 {
     /**
      * \brief Read the 'marker' flag.
      */
-    [[nodiscard]] static auto get_marker_flag() noexcept -> bool {
-        return false;
-    }
+    [[nodiscard]] static auto marker_flag() noexcept -> bool { return false; }
 
     /**
      * \brief Read the marker bits (mask) if this event represents markers.
      */
-    [[nodiscard]] static auto get_marker_bits() noexcept -> std::uint8_t {
+    [[nodiscard]] static auto marker_bits() noexcept -> std::uint8_t {
         return 0;
     }
 
     /**
      * \brief Read the 'gap' (data lost) flag.
      */
-    [[nodiscard]] auto get_gap_flag() const noexcept -> bool {
+    [[nodiscard]] auto gap_flag() const noexcept -> bool {
         return (read_u8(byte_subspan<1, 1>(bytes)) & (1u << 6)) != 0;
     }
 
     /**
      * \brief Read the 'macrotime overflow' flag.
      */
-    [[nodiscard]] auto get_macrotime_overflow_flag() const noexcept -> bool {
+    [[nodiscard]] auto macrotime_overflow_flag() const noexcept -> bool {
         return (read_u8(byte_subspan<1, 1>(bytes)) & (1u << 5)) != 0;
     }
 
     /**
      * \brief Read the 'invalid' flag.
      */
-    [[nodiscard]] auto get_invalid_flag() const noexcept -> bool {
+    [[nodiscard]] auto invalid_flag() const noexcept -> bool {
         return (read_u8(byte_subspan<1, 1>(bytes)) & (1u << 4)) != 0;
     }
 
@@ -214,7 +211,7 @@ struct bh_spc_600_event_48 {
      * \brief Read the macrotime overflow count if this event represents
      * multiple macrotime overflows.
      */
-    [[nodiscard]] static auto get_multiple_macrotime_overflow_count() noexcept
+    [[nodiscard]] static auto multiple_macrotime_overflow_count() noexcept
         -> std::uint32_t {
         return 0;
     }
@@ -239,7 +236,7 @@ struct bh_spc_600_event_32 {
      * \brief Read the ADC value (i.e., difference time) if this event
      * represents a photon.
      */
-    [[nodiscard]] auto get_adc_value() const noexcept -> std::uint16_t {
+    [[nodiscard]] auto adc_value() const noexcept -> std::uint16_t {
         return read_u8(byte_subspan<0, 1>(bytes));
     }
 
@@ -247,14 +244,14 @@ struct bh_spc_600_event_32 {
      * \brief Read the routing signals (usually the detector channel) if this
      * event represents a photon.
      */
-    [[nodiscard]] auto get_routing_signals() const noexcept -> std::uint8_t {
+    [[nodiscard]] auto routing_signals() const noexcept -> std::uint8_t {
         return (read_u8(byte_subspan<3, 1>(bytes)) & 0x0fu) >> 1;
     }
 
     /**
      * \brief Read the macrotime counter value (no rollover correction).
      */
-    [[nodiscard]] auto get_macrotime() const noexcept -> std::uint32_t {
+    [[nodiscard]] auto macrotime() const noexcept -> std::uint32_t {
         unsigned const lo8 = read_u8(byte_subspan<1, 1>(bytes));
         unsigned const mid8 = read_u8(byte_subspan<2, 1>(bytes));
         unsigned const hi1 = read_u8(byte_subspan<3, 1>(bytes)) & 1u;
@@ -264,35 +261,33 @@ struct bh_spc_600_event_32 {
     /**
      * \brief Read the 'marker' flag.
      */
-    [[nodiscard]] static auto get_marker_flag() noexcept -> bool {
-        return false;
-    }
+    [[nodiscard]] static auto marker_flag() noexcept -> bool { return false; }
 
     /**
      * \brief Read the marker bits (mask) if this event represents markers.
      */
-    [[nodiscard]] static auto get_marker_bits() noexcept -> std::uint8_t {
+    [[nodiscard]] static auto marker_bits() noexcept -> std::uint8_t {
         return 0;
     }
 
     /**
      * \brief Read the 'gap' (data lost) flag.
      */
-    [[nodiscard]] auto get_gap_flag() const noexcept -> bool {
+    [[nodiscard]] auto gap_flag() const noexcept -> bool {
         return (read_u8(byte_subspan<3, 1>(bytes)) & (1u << 5)) != 0;
     }
 
     /**
      * \brief Read the 'macrotime overflow' flag.
      */
-    [[nodiscard]] auto get_macrotime_overflow_flag() const noexcept -> bool {
+    [[nodiscard]] auto macrotime_overflow_flag() const noexcept -> bool {
         return (read_u8(byte_subspan<3, 1>(bytes)) & (1u << 6)) != 0;
     }
 
     /**
      * \brief Read the 'invalid' flag.
      */
-    [[nodiscard]] auto get_invalid_flag() const noexcept -> bool {
+    [[nodiscard]] auto invalid_flag() const noexcept -> bool {
         return (read_u8(byte_subspan<3, 1>(bytes)) & (1u << 7)) != 0;
     }
 
@@ -308,7 +303,7 @@ struct bh_spc_600_event_32 {
      * \brief Read the macrotime overflow count if this event represents
      * multiple macrotime overflows.
      */
-    [[nodiscard]] static auto get_multiple_macrotime_overflow_count() noexcept
+    [[nodiscard]] static auto multiple_macrotime_overflow_count() noexcept
         -> std::uint32_t {
         return 0;
     }
@@ -333,18 +328,18 @@ template <typename E, typename D> class base_decode_bh_spc {
     void handle_event(E const &event) noexcept {
         if (event.is_multiple_macrotime_overflow()) {
             macrotime_base += E::macrotime_overflow_period *
-                              event.get_multiple_macrotime_overflow_count();
+                              event.multiple_macrotime_overflow_count();
 
             time_reached_event e{macrotime_base};
             downstream.handle_event(e);
             return;
         }
 
-        if (event.get_macrotime_overflow_flag()) {
+        if (event.macrotime_overflow_flag()) {
             macrotime_base += E::macrotime_overflow_period;
         }
 
-        macrotime macrotime = macrotime_base + event.get_macrotime();
+        macrotime macrotime = macrotime_base + event.macrotime();
 
         // Validate input: ensure macrotime increases monotonically (a common
         // assumption made by downstream processors)
@@ -355,14 +350,14 @@ template <typename E, typename D> class base_decode_bh_spc {
         }
         last_macrotime = macrotime;
 
-        if (event.get_gap_flag()) {
+        if (event.gap_flag()) {
             data_lost_event e{macrotime};
             downstream.handle_event(e);
         }
 
-        if (event.get_marker_flag()) {
+        if (event.marker_flag()) {
             marker_event e{{macrotime}, 0};
-            std::uint32_t bits = event.get_marker_bits();
+            std::uint32_t bits = event.marker_bits();
             while (bits != 0) {
                 e.channel = count_trailing_zeros_32(bits);
                 downstream.handle_event(e);
@@ -371,13 +366,12 @@ template <typename E, typename D> class base_decode_bh_spc {
             return;
         }
 
-        if (event.get_invalid_flag()) {
+        if (event.invalid_flag()) {
             time_reached_event e{macrotime};
             downstream.handle_event(e);
         } else {
-            time_correlated_count_event e{{macrotime},
-                                          event.get_adc_value(),
-                                          event.get_routing_signals()};
+            time_correlated_count_event e{
+                {macrotime}, event.adc_value(), event.routing_signals()};
             downstream.handle_event(e);
         }
     }
