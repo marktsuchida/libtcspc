@@ -14,6 +14,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <exception>
+#include <ostream>
 #include <stdexcept>
 #include <utility>
 
@@ -107,6 +108,26 @@ struct pq_pico_t3_event {
     [[nodiscard]] auto external_marker_bits() const noexcept -> std::uint16_t {
         return dtime();
     }
+
+    /** \brief Equality comparison operator. */
+    friend auto operator==(pq_pico_t3_event const &lhs,
+                           pq_pico_t3_event const &rhs) noexcept -> bool {
+        return lhs.bytes == rhs.bytes;
+    }
+
+    /** \brief Inequality comparison operator. */
+    friend auto operator!=(pq_pico_t3_event const &lhs,
+                           pq_pico_t3_event const &rhs) noexcept -> bool {
+        return not(lhs == rhs);
+    }
+
+    /** \brief Stream insertion operator. */
+    friend auto operator<<(std::ostream &strm, pq_pico_t3_event const &e)
+        -> std::ostream & {
+        return strm << "pq_pico_t3(channel=" << e.channel()
+                    << ", dtime=" << e.dtime() << ", nsync=" << e.nsync()
+                    << ")";
+    }
 };
 
 /**
@@ -188,6 +209,28 @@ template <bool IsHydraV1> struct pq_hydra_t3_event {
      */
     [[nodiscard]] auto external_marker_bits() const noexcept -> std::uint8_t {
         return channel();
+    }
+
+    /** \brief Equality comparison operator. */
+    friend auto operator==(pq_hydra_t3_event const &lhs,
+                           pq_hydra_t3_event const &rhs) noexcept -> bool {
+        return lhs.bytes == rhs.bytes;
+    }
+
+    /** \brief Inequality comparison operator. */
+    friend auto operator!=(pq_hydra_t3_event const &lhs,
+                           pq_hydra_t3_event const &rhs) noexcept -> bool {
+        return not(lhs == rhs);
+    }
+
+    /** \brief Stream insertion operator. */
+    friend auto operator<<(std::ostream &strm, pq_hydra_t3_event const &e)
+        -> std::ostream & {
+        auto version = IsHydraV1 ? 1 : 2;
+        return strm << "pq_hydra_v" << version
+                    << "_t3(special=" << e.is_special()
+                    << ", channel=" << e.channel() << ", dtime=" << e.dtime()
+                    << ", nsync=" << e.nsync() << ")";
     }
 };
 

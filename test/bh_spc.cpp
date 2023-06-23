@@ -28,6 +28,13 @@ inline auto bh_spc_event_from_u8(
 
 } // namespace
 
+TEST_CASE("bh_spc_event equality", "[bh_spc_event]") {
+    bh_spc_event a{};
+    bh_spc_event b{};
+    CHECK(a == b);
+    CHECK_FALSE(a != b);
+}
+
 TEST_CASE("adc_value", "[bh_spc_event]") {
     bh_spc_event event{};
 

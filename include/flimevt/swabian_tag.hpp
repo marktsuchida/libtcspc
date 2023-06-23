@@ -13,6 +13,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <exception>
+#include <ostream>
 
 namespace flimevt {
 
@@ -71,6 +72,27 @@ struct swabian_tag_event {
      */
     [[nodiscard]] auto time() const noexcept -> std::int64_t {
         return read_i64le(byte_subspan<8, 8>(bytes));
+    }
+
+    /** \brief Equality comparison operator. */
+    friend auto operator==(swabian_tag_event const &lhs,
+                           swabian_tag_event const &rhs) noexcept -> bool {
+        return lhs.bytes == rhs.bytes;
+    }
+
+    /** \brief Inequality comparison operator. */
+    friend auto operator!=(swabian_tag_event const &lhs,
+                           swabian_tag_event const &rhs) noexcept -> bool {
+        return not(lhs == rhs);
+    }
+
+    /** \brief Stream insertion operator. */
+    friend auto operator<<(std::ostream &strm, swabian_tag_event const &e)
+        -> std::ostream & {
+        return strm << "swabian_tag(type=" << static_cast<int>(e.type())
+                    << ", missed=" << e.missed_event_count()
+                    << ", channel=" << e.channel() << ", time=" << e.time()
+                    << ")";
     }
 };
 

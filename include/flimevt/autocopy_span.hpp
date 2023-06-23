@@ -126,14 +126,14 @@ template <typename T> class autocopy_span {
      */
     operator flimevt::span<T>() noexcept { return s; }
 
-    /** \brief Equiality operator. */
+    /** \brief Equiality comparison operator. */
     friend auto operator==(autocopy_span const &lhs,
                            autocopy_span const &rhs) noexcept -> bool {
         return lhs.s.size() == rhs.s.size() &&
                std::equal(lhs.s.begin(), lhs.s.end(), rhs.s.begin());
     }
 
-    /** \brief Inequality operator. */
+    /** \brief Inequality comparison operator. */
     friend auto operator!=(autocopy_span const &lhs,
                            autocopy_span const &rhs) noexcept -> bool {
         return not(lhs == rhs);

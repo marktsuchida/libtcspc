@@ -16,6 +16,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <exception>
+#include <ostream>
 #include <stdexcept>
 #include <utility>
 
@@ -121,7 +122,32 @@ struct bh_spc_event {
      */
     [[nodiscard]] auto multiple_macrotime_overflow_count() const noexcept
         -> std::uint32_t {
-        return read_u32le(byte_subspan<0, 4>(bytes)) & 0x0fffffffu;
+        return read_u32le(byte_subspan<0, 4>(bytes)) & 0x0fff'ffffu;
+    }
+
+    /** \brief Equality comparison operator. */
+    friend auto operator==(bh_spc_event const &lhs,
+                           bh_spc_event const &rhs) noexcept -> bool {
+        return lhs.bytes == rhs.bytes;
+    }
+
+    /** \brief Inequality comparison operator. */
+    friend auto operator!=(bh_spc_event const &lhs,
+                           bh_spc_event const &rhs) noexcept -> bool {
+        return not(lhs == rhs);
+    }
+
+    /** \brief Stream insertion operator. */
+    friend auto operator<<(std::ostream &strm, bh_spc_event const &e)
+        -> std::ostream & {
+        return strm << "bh_spc(MT=" << e.macrotime()
+                    << ", ROUT=" << e.routing_signals()
+                    << ", ADC=" << e.adc_value()
+                    << ", INVALID=" << e.invalid_flag()
+                    << ", MTOV=" << e.macrotime_overflow_flag()
+                    << ", GAP=" << e.gap_flag() << ", MARK=" << e.marker_flag()
+                    << ", CNT=" << e.multiple_macrotime_overflow_count()
+                    << ")";
     }
 };
 
@@ -215,6 +241,32 @@ struct bh_spc_600_event_48 {
         -> std::uint32_t {
         return 0;
     }
+
+    /** \brief Equality comparison operator. */
+    friend auto operator==(bh_spc_600_event_48 const &lhs,
+                           bh_spc_600_event_48 const &rhs) noexcept -> bool {
+        return lhs.bytes == rhs.bytes;
+    }
+
+    /** \brief Inequality comparison operator. */
+    friend auto operator!=(bh_spc_600_event_48 const &lhs,
+                           bh_spc_600_event_48 const &rhs) noexcept -> bool {
+        return not(lhs == rhs);
+    }
+
+    /** \brief Stream insertion operator. */
+    friend auto operator<<(std::ostream &strm, bh_spc_600_event_48 const &e)
+        -> std::ostream & {
+        bool const unused_bit =
+            (read_u8(byte_subspan<1, 1>(e.bytes)) & (1u << 7)) != 0;
+        return strm << "bh_spc(MT=" << e.macrotime()
+                    << ", R=" << e.routing_signals()
+                    << ", ADC=" << e.adc_value()
+                    << ", INVALID=" << e.invalid_flag()
+                    << ", MTOV=" << e.macrotime_overflow_flag()
+                    << ", GAP=" << e.gap_flag() << ", bit15=" << unused_bit
+                    << ")";
+    }
 };
 
 /**
@@ -294,18 +346,45 @@ struct bh_spc_600_event_32 {
     /**
      * \brief Determine if this event represents multiple macrotime overflows.
      */
-    [[nodiscard]] static auto is_multiple_macrotime_overflow() noexcept
+    [[nodiscard]] auto is_multiple_macrotime_overflow() const noexcept
         -> bool {
-        return false;
+        return macrotime_overflow_flag() && invalid_flag();
     }
 
     /**
      * \brief Read the macrotime overflow count if this event represents
      * multiple macrotime overflows.
      */
-    [[nodiscard]] static auto multiple_macrotime_overflow_count() noexcept
+    [[nodiscard]] auto multiple_macrotime_overflow_count() const noexcept
         -> std::uint32_t {
-        return 0;
+        return read_u32le(byte_subspan<0, 4>(bytes)) & 0x0fff'ffff;
+    }
+
+    /** \brief Equality comparison operator. */
+    friend auto operator==(bh_spc_600_event_32 const &lhs,
+                           bh_spc_600_event_32 const &rhs) noexcept -> bool {
+        return lhs.bytes == rhs.bytes;
+    }
+
+    /** \brief Inequality comparison operator. */
+    friend auto operator!=(bh_spc_600_event_32 const &lhs,
+                           bh_spc_600_event_32 const &rhs) noexcept -> bool {
+        return not(lhs == rhs);
+    }
+
+    /** \brief Stream insertion operator. */
+    friend auto operator<<(std::ostream &strm, bh_spc_600_event_32 const &e)
+        -> std::ostream & {
+        bool const unused_bit =
+            (read_u8(byte_subspan<3, 1>(e.bytes)) & (1u << 4)) != 0;
+        return strm << "bh_spc(MT=" << e.macrotime()
+                    << ", R=" << e.routing_signals()
+                    << ", ADC=" << e.adc_value()
+                    << ", INVALID=" << e.invalid_flag()
+                    << ", MTOV=" << e.macrotime_overflow_flag()
+                    << ", GAP=" << e.gap_flag() << ", bit28=" << unused_bit
+                    << ", CNT=" << e.multiple_macrotime_overflow_count()
+                    << ")";
     }
 };
 

@@ -282,29 +282,28 @@ template <typename Es, typename D> auto feed_input(D &&downstream) {
  *
  * \tparam N a number to distinguish event types
  */
-template <int N> struct empty_test_event {};
+template <int N> struct empty_test_event {
+    /** \brief Equality comparison operator. */
+    friend auto
+    operator==([[maybe_unused]] empty_test_event<N> const &lhs,
+               [[maybe_unused]] empty_test_event<N> const &rhs) noexcept
+        -> bool {
+        return true;
+    }
 
-/** \brief Equality operator for empty test event. */
-template <int N>
-auto operator==([[maybe_unused]] empty_test_event<N> const &lhs,
-                [[maybe_unused]] empty_test_event<N> const &rhs) -> bool {
-    return true;
-}
+    /** \brief Inequality comparison operator. */
+    friend auto operator!=(empty_test_event<N> const &lhs,
+                           empty_test_event<N> const &rhs) noexcept -> bool {
+        return not(lhs == rhs);
+    }
 
-/** \brief Inequality operator for empty test event. */
-template <int N>
-auto operator!=(empty_test_event<N> const &lhs, empty_test_event<N> const &rhs)
-    -> bool {
-    return !(lhs == rhs);
-}
-
-/** \brief Stream insertion operator for empty test event. */
-template <int N>
-auto operator<<(std::ostream &strm,
-                [[maybe_unused]] empty_test_event<N> const &e)
-    -> std::ostream & {
-    return strm << "empty_test_event<" << N << ">";
-}
+    /** \brief Stream insertion operator. */
+    friend auto operator<<(std::ostream &strm,
+                           [[maybe_unused]] empty_test_event<N> const &e)
+        -> std::ostream & {
+        return strm << "empty_test_event<" << N << ">";
+    }
+};
 
 /**
  * \brief Timestamped event for testing.
@@ -314,28 +313,28 @@ auto operator<<(std::ostream &strm,
 template <int N> struct timestamped_test_event {
     /** \brief Timestamp. */
     macrotime macrotime;
+
+    /** \brief Equality comparison operator. */
+    friend auto operator==(timestamped_test_event<N> const &lhs,
+                           timestamped_test_event<N> const &rhs) noexcept
+        -> bool {
+        return lhs.macrotime == rhs.macrotime;
+    }
+
+    /** \brief Inequality comparison operator. */
+    friend auto operator!=(timestamped_test_event<N> const &lhs,
+                           timestamped_test_event<N> const &rhs) noexcept
+        -> bool {
+        return not(lhs == rhs);
+    }
+
+    /** \brief Stream insertion operator. */
+    friend auto operator<<(std::ostream &strm,
+                           timestamped_test_event<N> const &e)
+        -> std::ostream & {
+        return strm << "timestamped_test_event<" << N << ">{" << e.macrotime
+                    << "}";
+    }
 };
-
-/** \brief Equality operator for timestamped test event. */
-template <int N>
-auto operator==(timestamped_test_event<N> const &lhs,
-                timestamped_test_event<N> const &rhs) -> bool {
-    return lhs.macrotime == rhs.macrotime;
-}
-
-/** \brief Inequality operator for timestamped test event. */
-template <int N>
-auto operator!=(timestamped_test_event<N> const &lhs,
-                timestamped_test_event<N> const &rhs) -> bool {
-    return !(lhs == rhs);
-}
-
-/** \brief Stream insertion operator for timestamped test event. */
-template <int N>
-auto operator<<(std::ostream &strm, timestamped_test_event<N> const &e)
-    -> std::ostream & {
-    return strm << "timestamped_test_event<" << N << ">{" << e.macrotime
-                << "}";
-}
 
 } // namespace flimevt
