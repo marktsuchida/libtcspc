@@ -32,11 +32,13 @@ TEST_CASE("Merge with error on one input", "[merge]") {
 
     auto rmin0 = ref_processor(min0);
     auto rmin1 = ref_processor(min1);
-    using vproc_type = virtual_processor<all_events>;
-    std::unique_ptr<vproc_type> v0 = std::make_unique<
-        virtual_wrapped_processor<decltype(rmin0), all_events>>(rmin0);
-    std::unique_ptr<vproc_type> v1 = std::make_unique<
-        virtual_wrapped_processor<decltype(rmin1), all_events>>(rmin1);
+    using vproc_type = abstract_processor<all_events>;
+    std::unique_ptr<vproc_type> v0 =
+        std::make_unique<virtual_processor<decltype(rmin0), all_events>>(
+            rmin0);
+    std::unique_ptr<vproc_type> v1 =
+        std::make_unique<virtual_processor<decltype(rmin1), all_events>>(
+            rmin1);
     int const x = GENERATE(0, 1);
     using dynproc_type = polymorphic_processor<all_events>;
     dynproc_type dyn_x(x != 0 ? std::move(v1) : std::move(v0));
@@ -210,13 +212,13 @@ TEST_CASE("Merge max time shift", "[merge]") {
     auto out = capture_output<all_events>();
     auto [min0, min1] = merge<all_events>(10, ref_processor(out));
 
-    using vproc_type = virtual_processor<all_events>;
-    std::unique_ptr<vproc_type> v0 = std::make_unique<
-        virtual_wrapped_processor<decltype(min0), all_events>>(
-        std::move(min0));
-    std::unique_ptr<vproc_type> v1 = std::make_unique<
-        virtual_wrapped_processor<decltype(min1), all_events>>(
-        std::move(min1));
+    using vproc_type = abstract_processor<all_events>;
+    std::unique_ptr<vproc_type> v0 =
+        std::make_unique<virtual_processor<decltype(min0), all_events>>(
+            std::move(min0));
+    std::unique_ptr<vproc_type> v1 =
+        std::make_unique<virtual_processor<decltype(min1), all_events>>(
+            std::move(min1));
     int const x = GENERATE(0, 1);
     using dynproc_type = polymorphic_processor<all_events>;
     dynproc_type dyn_x(x != 0 ? std::move(v1) : std::move(v0));
