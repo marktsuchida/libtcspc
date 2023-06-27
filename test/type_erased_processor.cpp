@@ -10,6 +10,8 @@
 #include "flimevt/event_set.hpp"
 #include "flimevt/test_utils.hpp"
 
+#include <catch2/catch_all.hpp>
+
 using namespace flimevt;
 
 using e0 = empty_test_event<0>;
@@ -47,3 +49,17 @@ static_assert(
     handles_event_set_v<
         internal::virtual_processor<discard_all<event_set<e0, e1>>, e0, e1>,
         event_set<e0, e1>>);
+
+TEST_CASE("type_erased_processor move assignment", "[type_erased_processor]") {
+    // Create with stub downstream.
+    type_erased_processor<event_set<e0>> tep;
+
+    struct myproc {
+        static void handle_event(e0 const &event) noexcept { (void)event; }
+        static void handle_end(std::exception_ptr const &error) noexcept {
+            (void)error;
+        }
+    };
+
+    tep = decltype(tep)(myproc());
+}

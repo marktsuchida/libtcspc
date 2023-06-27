@@ -7,6 +7,7 @@
 #pragma once
 
 #include "apply_class_template.hpp"
+#include "discard.hpp"
 #include "event_set.hpp"
 
 #include <exception>
@@ -113,6 +114,14 @@ template <typename Es> class type_erased_processor {
     std::unique_ptr<abstract_processor> proc;
 
   public:
+    /**
+     * \brief Construct with a stub downstream processor.
+     *
+     * The stub processor discards all events.
+     */
+    type_erased_processor()
+        : proc(std::make_unique<virtual_processor<discard_all<Es>>>()) {}
+
     /**
      * \brief Construct with the given downstream processor.
      *
