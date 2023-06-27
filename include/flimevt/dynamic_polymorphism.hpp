@@ -131,7 +131,7 @@ using virtual_wrapped_processor =
 /**
  * \brief Processor that invokes a dynamically polymorphic processor.
  *
- * This is a regular processor that contains a reference (\c shared_ptr) to a
+ * This is a regular processor that contains a reference (\c unique_ptr) to a
  * dynamically polymorphic processor whose type can be determined at run time.
  *
  * \see virtual_processor
@@ -139,7 +139,7 @@ using virtual_wrapped_processor =
  * \tparam Es the event set handled by the processor
  */
 template <typename Es> class polymorphic_processor {
-    std::shared_ptr<virtual_processor<Es>> proc;
+    std::unique_ptr<virtual_processor<Es>> proc;
 
   public:
     /**
@@ -148,8 +148,8 @@ template <typename Es> class polymorphic_processor {
      * \param proc the dynamically polymorphic processor that will handle
      * events and end-of-stream
      */
-    polymorphic_processor(std::shared_ptr<virtual_processor<Es>> proc)
-        : proc(proc) {}
+    polymorphic_processor(std::unique_ptr<virtual_processor<Es>> proc)
+        : proc(std::move(proc)) {}
 
     // Rule of zero
 

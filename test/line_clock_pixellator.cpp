@@ -7,8 +7,8 @@
 #include "flimevt/line_clock_pixellator.hpp"
 
 #include "flimevt/discard.hpp"
-#include "flimevt/dynamic_polymorphism.hpp"
 #include "flimevt/event_set.hpp"
+#include "flimevt/ref_processor.hpp"
 
 #include <catch2/catch_all.hpp>
 
@@ -67,18 +67,13 @@ TEST_CASE("Frames are produced according to line markers",
         }
     };
 
-    using virtual_mock_processor =
-        virtual_wrapped_processor<mock_processor, pixel_photon_events>;
-
-    auto shared_output = std::make_shared<virtual_mock_processor>();
-    auto &output = shared_output->wrapped();
+    mock_processor output;
+    auto ref_output = ref_processor(output);
     output.reset();
 
     SECTION("2x2 frames with no photons") {
-        polymorphic_processor<pixel_photon_events> polymorphic(shared_output);
-
-        line_clock_pixellator<decltype(polymorphic)> lcp(
-            2, 2, 10, 0, 20, 1, std::move(polymorphic));
+        line_clock_pixellator<decltype(ref_output)> lcp(2, 2, 10, 0, 20, 1,
+                                                        std::move(ref_output));
 
         marker_event line_marker;
         line_marker.channel = 1;
@@ -139,12 +134,10 @@ TEST_CASE("Frames are produced according to line markers",
     }
 
     SECTION("Photon placed correctly in 2x1 frame") {
-        polymorphic_processor<pixel_photon_events> polymorphic(shared_output);
-
         // Delay = 5, time = 25, so pixels range over times [5, 15) and [15,
         // 25) relative to the (single) line marker.
-        line_clock_pixellator<decltype(polymorphic)> lcp(
-            2, 1, 1, 5, 20, 1, std::move(polymorphic));
+        line_clock_pixellator<decltype(ref_output)> lcp(2, 1, 1, 5, 20, 1,
+                                                        std::move(ref_output));
 
         marker_event line_marker;
         line_marker.channel = 1;
