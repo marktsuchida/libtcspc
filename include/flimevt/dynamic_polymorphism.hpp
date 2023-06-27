@@ -96,57 +96,35 @@ using virtual_processor =
 } // namespace internal
 
 /**
- * \brief Abstract base class defining interface for dynamically polymorphic
- * processors.
- *
- * Dynamically polymorphic processors have virtual \c handle_event and \c
- * handle_end functions.
- *
- * \see polymorphic_processor
- * \see virtual_processor
- *
- * \tparam Es the event set handled by implementations of this interface
- */
-template <typename Es>
-using abstract_processor =
-    internal::apply_class_template_t<internal::abstract_processor_impl, Es>;
-
-/**
- * \brief A dynamically polymorphic wrapper for a given processor type.
- *
- * A \c virtual_processor with a given event set is derived from
- * \ref abstract_processor with the same event set, and has virtual \c
- * handle_event and \c handle_end functions.
- *
- * \tparam Proc the processor to wrap
- * \tparam Es the event set handled by the processor
- */
-template <typename Proc, typename Es>
-using virtual_processor =
-    internal::apply_class_template_t<internal::virtual_processor, Es, Proc>;
-
-/**
- * \brief Processor that invokes a dynamically polymorphic processor.
- *
- * This is a regular processor that contains a reference (\c unique_ptr) to a
- * dynamically polymorphic processor whose type can be determined at run time.
- *
- * \see abstract_processor
+ * \brief Processor that type-erases the downstream processor.
  *
  * \tparam Es the event set handled by the processor
  */
 template <typename Es> class polymorphic_processor {
-    std::unique_ptr<abstract_processor<Es>> proc;
+    using abstract_processor =
+        internal::apply_class_template_t<internal::abstract_processor_impl,
+                                         Es>;
+
+    template <typename Proc>
+    using virtual_processor =
+        internal::apply_class_template_t<internal::virtual_processor, Es,
+                                         Proc>;
+
+    std::unique_ptr<abstract_processor> proc;
 
   public:
     /**
-     * \brief Construct with the given dynamically polymorphic processor.
+     * \brief Construct with the given downstream processor.
      *
-     * \param proc the dynamically polymorphic processor that will handle
-     * events and end-of-stream
+     * The downstream processor must handle all of the events in \c Es.
+     *
+     * \param downstream downstream processor
      */
-    polymorphic_processor(std::unique_ptr<abstract_processor<Es>> proc)
-        : proc(std::move(proc)) {}
+    template <typename D,
+              typename = std::enable_if_t<handles_event_set_v<D, Es>>>
+    explicit polymorphic_processor(D &&downstream)
+        : proc(std::make_unique<virtual_processor<D>>(
+              std::forward<D>(downstream))) {}
 
     // Rule of zero
 

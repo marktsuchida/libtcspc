@@ -26,24 +26,24 @@ static_assert(handles_event_set_v<polymorphic_processor<event_set<e0, e1>>,
 
 // handles_event_set_v works even if the functions are virtual.
 static_assert(
-    handles_event_set_v<abstract_processor<event_set<>>, event_set<>>);
+    handles_event_set_v<internal::abstract_processor_impl<>, event_set<>>);
 static_assert(
-    !handles_event_set_v<abstract_processor<event_set<>>, event_set<e0>>);
+    !handles_event_set_v<internal::abstract_processor_impl<>, event_set<e0>>);
 static_assert(
-    handles_event_set_v<abstract_processor<event_set<e0>>, event_set<e0>>);
-static_assert(handles_event_set_v<abstract_processor<event_set<e0, e1>>,
+    handles_event_set_v<internal::abstract_processor_impl<e0>, event_set<e0>>);
+static_assert(handles_event_set_v<internal::abstract_processor_impl<e0, e1>,
                                   event_set<e0, e1>>);
 
+static_assert(
+    handles_event_set_v<internal::virtual_processor<discard_all<event_set<>>>,
+                        event_set<>>);
+static_assert(
+    !handles_event_set_v<internal::virtual_processor<discard_all<event_set<>>>,
+                         event_set<e0>>);
 static_assert(handles_event_set_v<
-              virtual_processor<discard_all<event_set<>>, event_set<>>,
-              event_set<>>);
-static_assert(!handles_event_set_v<
-              virtual_processor<discard_all<event_set<>>, event_set<>>,
-              event_set<e0>>);
-static_assert(handles_event_set_v<
-              virtual_processor<discard_all<event_set<e0>>, event_set<e0>>,
+              internal::virtual_processor<discard_all<event_set<e0>>, e0>,
               event_set<e0>>);
 static_assert(
     handles_event_set_v<
-        virtual_processor<discard_all<event_set<e0, e1>>, event_set<e0, e1>>,
+        internal::virtual_processor<discard_all<event_set<e0, e1>>, e0, e1>,
         event_set<e0, e1>>);
