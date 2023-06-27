@@ -10,6 +10,7 @@
 
 #include <algorithm>
 #include <condition_variable>
+#include <cstddef>
 #include <exception>
 #include <iterator>
 #include <memory>
@@ -18,6 +19,21 @@
 #include <vector>
 
 namespace flimevt {
+
+namespace internal {
+
+// Avoid std::hardware_destructive_interference_size, because it suffers from
+// ABI compatibility requirements and therefore may not have the best value
+// (for example, it seems to be 256 on Linux/aarch64). Instead, just default to
+// 64 (correct for most (all?) x86_64 and many ARM processors) except in known
+// cases where a larger value is appropriate.
+#if defined(__APPLE__) && defined(__arm64__)
+constexpr std::size_t destructive_interference_size = 128;
+#else
+constexpr std::size_t destructive_interference_size = 64;
+#endif
+
+} // namespace internal
 
 /**
  * \brief Memory pool holding objects for reuse.
@@ -170,9 +186,9 @@ template <typename E, typename D> class buffer_event {
     // event emitted, so the producer will be less likely to block when the
     // data rate is momentarily high, and the consumer will be less likely to
     // block while catching up on buffered events.
-    // The emit_queue is always empty at resting, but we keep it in a data
-    // member in order to reuse allocated memory.
-    queue_type emit_queue; // Invariant: always empty
+    // Furthermore, we ensure that the emit_queue and downstream do not share a
+    // CPU cache line with the shared_queue, to prevent false sharing.
+    alignas(destructive_interference_size) queue_type emit_queue;
 
     D downstream;
 
@@ -181,11 +197,13 @@ template <typename E, typename D> class buffer_event {
         : downstream(std::move(downstream)) {}
 
     void handle_event(E const &event) noexcept {
+        bool was_empty{};
         {
             std::scoped_lock lock(mutex);
             if (stream_ended)
                 return;
 
+            was_empty = shared_queue.empty();
             try {
                 shared_queue.push(event);
             } catch (std::exception const &) {
@@ -193,7 +211,8 @@ template <typename E, typename D> class buffer_event {
                 queued_error = std::current_exception();
             }
         }
-        has_item_condition.notify_one();
+        if (was_empty)
+            has_item_condition.notify_one();
     }
 
     void handle_end(std::exception_ptr const &error) noexcept {
