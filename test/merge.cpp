@@ -24,19 +24,19 @@ TEST_CASE("Merge with error on one input", "[merge]") {
     // The two merge inputs have different types. Wrap them so they can be
     // swapped for symmetric tests.
     // in_0 -> ref -> min0 -> merge_impl -> out
-    // in_x -> min_x -> rmin0/1 -> min0/1 -> merge_impl -> out
-    //         erased    ref
+    // in_x -> min_x -> ref -> min0/1 -> merge_impl -> out
+    //         erased
 
     auto out = capture_output<all_events>();
     auto [min0, min1] = merge<all_events>(1000, ref_processor(out));
 
-    auto rmin0 = ref_processor(min0);
-    auto rmin1 = ref_processor(min1);
+    auto min_x = type_erased_processor<all_events>(ref_processor(min0));
+    auto min_y = type_erased_processor<all_events>(ref_processor(min1));
     int const x = GENERATE(0, 1);
-    auto min_x = x != 0 ? type_erased_processor<all_events>(std::move(rmin1))
-                        : type_erased_processor<all_events>(std::move(rmin0));
-    auto min_y = x != 0 ? type_erased_processor<all_events>(std::move(rmin0))
-                        : type_erased_processor<all_events>(std::move(rmin1));
+    if (x != 0) {
+        using std::swap;
+        swap(min_x, min_y);
+    }
 
     auto in_0 = feed_input<all_events>(ref_processor(min0));
     in_0.require_output_checked(out);
@@ -207,10 +207,12 @@ TEST_CASE("Merge max time shift", "[merge]") {
     auto [min0, min1] = merge<all_events>(10, ref_processor(out));
 
     int const x = GENERATE(0, 1);
-    auto min_x = x != 0 ? type_erased_processor<all_events>(std::move(min1))
-                        : type_erased_processor<all_events>(std::move(min0));
-    auto min_y = x != 0 ? type_erased_processor<all_events>(std::move(min0))
-                        : type_erased_processor<all_events>(std::move(min1));
+    auto min_x = type_erased_processor<all_events>(std::move(min0));
+    auto min_y = type_erased_processor<all_events>(std::move(min1));
+    if (x != 0) {
+        using std::swap;
+        swap(min_x, min_y);
+    }
 
     auto in_x = feed_input<all_events>(std::move(min_x));
     in_x.require_output_checked(out);
