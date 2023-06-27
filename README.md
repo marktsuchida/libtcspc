@@ -72,7 +72,7 @@ Processors are just classes with the following member functions:
   value (default-constructed `exception_ptr`) when the event stream ends
   successfully
 
-The last argument to the constructor of a processor is usually `D&&
-downstream`, a reference to the downstream processor that will handle the
+The last argument to the constructor of a processor is usually
+`D&& downstream`, a reference to the downstream processor that will handle the
 events emitted by this processor. The downstream processor is moved into the
 processor.

@@ -8,15 +8,28 @@ repos:
     hooks:
       - id: check-yaml
         args: ["--allow-multiple-documents"]
+  - repo: https://github.com/pre-commit/mirrors-clang-format
+    rev: v14.0.6
+    hooks:
+      - id: clang-format
   - repo: https://github.com/editorconfig-checker/editorconfig-checker.python
     rev: 2.4.0
     hooks:
       - id: editorconfig-checker
         alias: ec
-  - repo: https://github.com/pre-commit/mirrors-clang-format
-    rev: v14.0.6
+  - repo: https://github.com/executablebooks/mdformat
+    rev: 0.7.16
     hooks:
-      - id: clang-format
+      - id: mdformat
+        additional_dependencies:
+          - mdformat-gfm
+        args: ["--wrap=79", "--end-of-line=keep"]
+        exclude: '^docs/.*$'
+      - id: mdformat
+        additional_dependencies:
+          - mdformat-myst
+        args: ["--wrap=79", "--end-of-line=keep"]
+        exclude: '^(?!docs/.*)$'
   - repo: https://github.com/fsfe/reuse-tool
     rev: v1.0.0
     hooks:

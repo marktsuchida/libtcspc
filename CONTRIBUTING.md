@@ -143,8 +143,8 @@ types should be documented with Doxygen comments (follow existing practice).
     stored (moved).
   - For specific events, use overloads; for generic events (e.g., for
     processors that pass through unrelated events), use a member function
-    template: `template <typename E> void handle_event(E const &event)
-    noexcept`.
+    template:
+    `template <typename E> void handle_event(E const &event) noexcept`.
   - Event handlers must not throw. If there is an error, they should call
     `handle_end()` on the downstream (and arange to ignore subsequent events).
 - Calling downstream event handlers
