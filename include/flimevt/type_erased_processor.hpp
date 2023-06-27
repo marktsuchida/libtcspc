@@ -100,7 +100,7 @@ using virtual_processor =
  *
  * \tparam Es the event set handled by the processor
  */
-template <typename Es> class polymorphic_processor {
+template <typename Es> class type_erased_processor {
     using abstract_processor =
         internal::apply_class_template_t<internal::abstract_processor_impl,
                                          Es>;
@@ -122,7 +122,7 @@ template <typename Es> class polymorphic_processor {
      */
     template <typename D,
               typename = std::enable_if_t<handles_event_set_v<D, Es>>>
-    explicit polymorphic_processor(D &&downstream)
+    explicit type_erased_processor(D &&downstream)
         : proc(std::make_unique<virtual_processor<D>>(
               std::forward<D>(downstream))) {}
 

@@ -69,7 +69,7 @@ types should be documented with Doxygen comments (follow existing practice).
   this) should be named after a verb describing what the processor does.
   - For example, `count_event`, not `event_counter`.
   - Exception: special wrapper processors such as `ref_processor`,
-    `polymorphic_processor`
+    `type_erased_processor`
 - Processors are class templates, whose last template parameter is the
   downstream processor type (`typename D` by convention).
   - Sinks, of course, will not have a downstream.
@@ -84,14 +84,14 @@ types should be documented with Doxygen comments (follow existing practice).
   - Note that the processor becomes move-only if any of its downstream
     processors are move-only.
   - Exception: processors with special semantics such as `ref_processor` and
-    `polymorphic_processor`.
+    `type_erased_processor`.
   - If the user wants to break the chain of containment for any reason, they
-    can use `ref_processor` or `polymorphic_processor`.
+    can use `ref_processor` or `type_erased_processor`.
     - This can be of advantage in a few cases:
       - To retain access to the downstream processor after construction of the
         upstream (with `ref_processor`).
       - To allow runtime selection of the processor type (with
-        `polymorphic_processor`).
+        `type_erased_processor`).
       - To reduce compile time.
       - Note: Currently even the use of these reference-semantic processors
         does not allow upstream processors to be created before their

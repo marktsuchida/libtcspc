@@ -13,7 +13,6 @@ public_cpp_headers = files(
     'count.hpp',
     'delay_hasten.hpp',
     'discard.hpp',
-    'dynamic_polymorphism.hpp',
     'event_set.hpp',
     'flimevt.hpp',
     'gate.hpp',
@@ -36,6 +35,7 @@ public_cpp_headers = files(
     'time_delay.hpp',
     'time_tagged_events.hpp',
     'translate_marker.hpp',
+    'type_erased_processor.hpp',
     'vector_queue.hpp',
 )
 

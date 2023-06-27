@@ -13,7 +13,6 @@ flimevents_tests_srcs = [
     'count.cpp',
     'delay_hasten.cpp',
     'discard.cpp',
-    'dynamic_polymorphism.cpp',
     'event_set.cpp',
     'gate.cpp',
     'generate_timings.cpp',
@@ -35,6 +34,7 @@ flimevents_tests_srcs = [
     'time_delay.cpp',
     'time_tagged_events.cpp',
     'translate_marker.cpp',
+    'type_erased_processor.cpp',
     'vector_queue.cpp',
 ]
 

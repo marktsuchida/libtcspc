@@ -6,9 +6,9 @@
 
 #include "flimevt/merge.hpp"
 
-#include "flimevt/dynamic_polymorphism.hpp"
 #include "flimevt/ref_processor.hpp"
 #include "flimevt/test_utils.hpp"
+#include "flimevt/type_erased_processor.hpp"
 
 #include <catch2/catch_all.hpp>
 
@@ -24,8 +24,8 @@ TEST_CASE("Merge with error on one input", "[merge]") {
     // The two merge inputs have different types. Wrap them so they can be
     // swapped for symmetric tests.
     // in_0 -> ref -> min0 -> merge_impl -> out
-    // in_x -> dyn_x -> v0/1 -> rmin0/1 -> min0/1 -> merge_impl -> out
-    //         poly     wrap     ref
+    // in_x -> min_x -> rmin0/1 -> min0/1 -> merge_impl -> out
+    //         erased    ref
 
     auto out = capture_output<all_events>();
     auto [min0, min1] = merge<all_events>(1000, ref_processor(out));
@@ -33,19 +33,18 @@ TEST_CASE("Merge with error on one input", "[merge]") {
     auto rmin0 = ref_processor(min0);
     auto rmin1 = ref_processor(min1);
     int const x = GENERATE(0, 1);
-    using dynproc_type = polymorphic_processor<all_events>;
-    auto dyn_x = x != 0 ? dynproc_type(std::move(rmin1))
-                        : dynproc_type(std::move(rmin0));
-    auto dyn_y = x != 0 ? dynproc_type(std::move(rmin0))
-                        : dynproc_type(std::move(rmin1));
+    auto min_x = x != 0 ? type_erased_processor<all_events>(std::move(rmin1))
+                        : type_erased_processor<all_events>(std::move(rmin0));
+    auto min_y = x != 0 ? type_erased_processor<all_events>(std::move(rmin0))
+                        : type_erased_processor<all_events>(std::move(rmin1));
 
     auto in_0 = feed_input<all_events>(ref_processor(min0));
     in_0.require_output_checked(out);
     auto in_1 = feed_input<all_events>(ref_processor(min1));
     in_1.require_output_checked(out);
-    auto in_x = feed_input<all_events>(std::move(dyn_x));
+    auto in_x = feed_input<all_events>(std::move(min_x));
     in_x.require_output_checked(out);
-    auto in_y = feed_input<all_events>(std::move(dyn_y));
+    auto in_y = feed_input<all_events>(std::move(min_y));
     in_y.require_output_checked(out);
 
     SECTION("Error on in_x with no pending events") {
@@ -201,22 +200,21 @@ TEST_CASE("Merge with error on one input", "[merge]") {
 }
 
 TEST_CASE("Merge max time shift", "[merge]") {
-    // in_x -> dyn_x -> v0/1 -> min0 -> merge_impl -> out
-    //         poly     wrap
+    // in_x -> min_x -> min0 -> merge_impl -> out
+    //         erased
 
     auto out = capture_output<all_events>();
     auto [min0, min1] = merge<all_events>(10, ref_processor(out));
 
     int const x = GENERATE(0, 1);
-    using dynproc_type = polymorphic_processor<all_events>;
-    auto dyn_x =
-        x != 0 ? dynproc_type(std::move(min1)) : dynproc_type(std::move(min0));
-    auto dyn_y =
-        x != 0 ? dynproc_type(std::move(min0)) : dynproc_type(std::move(min1));
+    auto min_x = x != 0 ? type_erased_processor<all_events>(std::move(min1))
+                        : type_erased_processor<all_events>(std::move(min0));
+    auto min_y = x != 0 ? type_erased_processor<all_events>(std::move(min0))
+                        : type_erased_processor<all_events>(std::move(min1));
 
-    auto in_x = feed_input<all_events>(std::move(dyn_x));
+    auto in_x = feed_input<all_events>(std::move(min_x));
     in_x.require_output_checked(out);
-    auto in_y = feed_input<all_events>(std::move(dyn_y));
+    auto in_y = feed_input<all_events>(std::move(min_y));
     in_y.require_output_checked(out);
 
     SECTION("in_x emitted after exceeding max time shift") {
