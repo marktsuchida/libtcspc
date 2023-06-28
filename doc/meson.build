@@ -1,4 +1,4 @@
-# This file is part of FLIMEvents
+# This file is part of libtcspc
 # Copyright 2019-2022 Board of Regents of the University of Wisconsin System
 # SPDX-License-Identifier: MIT
 
@@ -16,7 +16,7 @@ doxyfile = configure_file(
     output: 'Doxyfile',
 )
 
-doc_install_dir = get_option('datadir') / 'doc/FLIMEvents'
+doc_install_dir = get_option('datadir') / 'doc/libtcspc'
 
 if doxygen.found()
     custom_target(

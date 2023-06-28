@@ -1,8 +1,8 @@
-# This file is part of FLIMEvents
+# This file is part of libtcspc
 # Copyright 2019-2022 Board of Regents of the University of Wisconsin System
 # SPDX-License-Identifier: MIT
 
-flimevents_tests_srcs = [
+libtcspc_tests_srcs = [
     'apply_class_template.cpp',
     'autocopy_span.cpp',
     'bh_spc.cpp',
@@ -38,9 +38,9 @@ flimevents_tests_srcs = [
     'vector_queue.cpp',
 ]
 
-flimevents_tests_exe = executable(
-    'FLIMEventsTests',
-    flimevents_tests_srcs,
+libtcspc_tests_exe = executable(
+    'test_libtcspc',
+    libtcspc_tests_srcs,
     include_directories: [public_inc],
     dependencies: [
         tcb_span_dep,
@@ -48,4 +48,4 @@ flimevents_tests_exe = executable(
     ],
 )
 
-test('FLIMEvents Tests', flimevents_tests_exe)
+test('libtcspc tests', libtcspc_tests_exe)

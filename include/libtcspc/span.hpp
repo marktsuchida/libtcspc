@@ -1,5 +1,5 @@
 /*
- * This file is part of FLIMEvents
+ * This file is part of libtcspc
  * Copyright 2019-2022 Board of Regents of the University of Wisconsin System
  * SPDX-License-Identifier: MIT
  */
@@ -11,7 +11,7 @@
 #include <version>
 #if __cpp_lib_span >= 202002L
 #include <span>
-#define FLIMEVT_SPAN_USE_STD 1
+#define LIBTCSPC_SPAN_USE_STD 1
 
 namespace tcspc {
 
@@ -29,7 +29,7 @@ using span = std::span<T, Extent>;
 #endif // __cpp_lib_span
 #endif // <version>
 
-#if not FLIMEVT_SPAN_USE_STD
+#if not LIBTCSPC_SPAN_USE_STD
 
 #define TCB_SPAN_NAMESPACE_NAME tcspc
 

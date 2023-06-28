@@ -1,5 +1,5 @@
 /*
- * This file is part of FLIMEvents
+ * This file is part of libtcspc
  * Copyright 2019-2022 Board of Regents of the University of Wisconsin System
  * SPDX-License-Identifier: MIT
  */
@@ -10,12 +10,12 @@
 // For now, it only serves to document the namespace.
 
 /**
- * \mainpage FLIMEvents Documentation
+ * \mainpage libtcspc Documentation
  *
  * See namespace \ref tcspc for all public symbols.
  */
 
 /**
- * \brief FLIMEvents namespace.
+ * \brief libtcspc namespace.
  */
 namespace tcspc {}

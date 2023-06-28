@@ -1,5 +1,5 @@
 /*
- * This file is part of FLIMEvents
+ * This file is part of libtcspc
  * Copyright 2019-2022 Board of Regents of the University of Wisconsin System
  * SPDX-License-Identifier: MIT
  */
@@ -28,7 +28,7 @@ namespace tcspc {
  * if a negative delay is applied to events).
  *
  * The physical units of the macrotime is dependent on the input data and it is
- * the user's responsibility to interpret correctly. FLIMEvents is designed to
+ * the user's responsibility to interpret correctly. libtcspc is designed to
  * use integer values without scaling and does not handle physical units.
  *
  * It is assumed that macrotime values never overflow. The maximum

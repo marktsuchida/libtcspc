@@ -1,9 +1,9 @@
-# This file is part of FLIMEvents
+# This file is part of libtcspc
 # Copyright 2019-2022 Board of Regents of the University of Wisconsin System
 # SPDX-License-Identifier: MIT
 
-PROJECT_NAME           = FLIMEvents
-PROJECT_BRIEF          = "Streaming FLIM data processing in C++"
+PROJECT_NAME           = libtcspc
+PROJECT_BRIEF          = "Streaming TCSPC and time tag data processing in C++"
 INPUT                  = @DOXYGEN_INPUT@
 STRIP_FROM_PATH        = @DOXYGEN_INPUT@
 OUTPUT_DIRECTORY       = @DOXYGEN_OUTPUT@

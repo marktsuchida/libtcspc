@@ -1,9 +1,9 @@
-# This file is part of FLIMEvents
+# This file is part of libtcspc
 # Copyright 2019-2022 Board of Regents of the University of Wisconsin System
 # SPDX-License-Identifier: MIT
 
 project(
-    'FLIMEvents',
+    'libtcspc',
     'cpp',
     default_options: [
         'cpp_std=c++17',
@@ -29,10 +29,10 @@ subdir('doc')
 subdir('test')
 subdir('examples')
 
-flimevents_dep = declare_dependency(
+libtcspc_dep = declare_dependency(
     include_directories: public_inc,
     dependencies: [
         tcb_span_dep,
     ],
 )
-meson.override_dependency('FLIMEvents', flimevents_dep)
+meson.override_dependency('libtcspc', libtcspc_dep)
