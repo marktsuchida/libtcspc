@@ -12,7 +12,7 @@
 
 #include <catch2/catch_all.hpp>
 
-using namespace flimevt;
+using namespace tcspc;
 
 using tc_event = time_correlated_count_event;
 

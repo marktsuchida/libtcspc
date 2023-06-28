@@ -14,7 +14,7 @@
 #include <cstdint>
 #include <cstring>
 
-namespace flimevt {
+namespace tcspc {
 
 /**
  * \brief A span of \c std::byte.
@@ -184,4 +184,4 @@ inline auto read_i64le(byte_span<8> bytes) noexcept -> std::int64_t {
     return static_cast<std::int64_t>(read_u64le(bytes));
 }
 
-} // namespace flimevt
+} // namespace tcspc

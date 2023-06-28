@@ -8,7 +8,7 @@
 
 #include <catch2/catch_all.hpp>
 
-using namespace flimevt::internal;
+using namespace tcspc::internal;
 
 // Tests assume first allocation capacity is 3 elements.
 

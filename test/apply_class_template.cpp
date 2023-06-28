@@ -6,7 +6,7 @@
 
 #include "libtcspc/apply_class_template.hpp"
 
-using namespace flimevt::internal;
+using namespace tcspc::internal;
 
 template <typename... Ts> struct some_class_tmpl {};
 

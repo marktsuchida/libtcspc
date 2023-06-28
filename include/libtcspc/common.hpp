@@ -16,7 +16,7 @@
 #include <intrin.h>
 #endif
 
-namespace flimevt {
+namespace tcspc {
 
 /**
  * \brief Signed 64-bit integer type representing macrotime.
@@ -182,4 +182,4 @@ template <typename T, typename U> inline auto narrow(U i) -> T {
 
 } // namespace internal
 
-} // namespace flimevt
+} // namespace tcspc

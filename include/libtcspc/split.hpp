@@ -11,7 +11,7 @@
 #include <exception>
 #include <utility>
 
-namespace flimevt {
+namespace tcspc {
 
 namespace internal {
 
@@ -58,4 +58,4 @@ auto split_events(D0 &&downstream0, D1 &&downstream1) {
                                               std::forward<D1>(downstream1));
 }
 
-} // namespace flimevt
+} // namespace tcspc

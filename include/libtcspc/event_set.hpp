@@ -13,7 +13,7 @@
 #include <type_traits>
 #include <variant>
 
-namespace flimevt {
+namespace tcspc {
 
 /**
  * \brief Type representing a set of event types.
@@ -191,4 +191,4 @@ template <typename... ESets> struct concat_event_set {
 template <typename... ESets>
 using concat_event_set_t = typename concat_event_set<ESets...>::type;
 
-} // namespace flimevt
+} // namespace tcspc

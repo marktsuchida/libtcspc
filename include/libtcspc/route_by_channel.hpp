@@ -17,7 +17,7 @@
 #include <tuple>
 #include <utility>
 
-namespace flimevt {
+namespace tcspc {
 
 namespace internal {
 
@@ -97,4 +97,4 @@ auto route_by_channel(std::array<std::int16_t, sizeof...(Ds)> const &channels,
         channels, std::forward<Ds>(downstreams)...);
 }
 
-} // namespace flimevt
+} // namespace tcspc

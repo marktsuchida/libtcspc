@@ -18,7 +18,7 @@
 //! \cond TO_BE_REMOVED
 // NOLINTBEGIN
 
-namespace flimevt {
+namespace tcspc {
 
 // Assign pixels to photons using line clock only
 template <typename D> class line_clock_pixellator {
@@ -305,7 +305,7 @@ template <typename D> class line_clock_pixellator {
     void flush() { process_photons_and_lines(); }
 };
 
-} // namespace flimevt
+} // namespace tcspc
 
 // NOLINTEND
 //! \endcond

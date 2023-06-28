@@ -49,7 +49,7 @@ pipeline.
 
 ### Namespace
 
-Everything is in the `flimevents` namespace.
+Everything is in the `tcspc` namespace.
 
 ### Events
 

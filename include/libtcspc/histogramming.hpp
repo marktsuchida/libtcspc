@@ -15,7 +15,7 @@
 #include <iterator>
 #include <type_traits>
 
-namespace flimevt::internal {
+namespace tcspc::internal {
 
 struct saturate_on_internal_overflow {
     explicit saturate_on_internal_overflow() = default;
@@ -640,4 +640,4 @@ class multi_histogram_accumulation {
     }
 };
 
-} // namespace flimevt::internal
+} // namespace tcspc::internal

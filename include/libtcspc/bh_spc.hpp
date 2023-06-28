@@ -20,7 +20,7 @@
 #include <stdexcept>
 #include <utility>
 
-namespace flimevt {
+namespace tcspc {
 
 // Raw photon event data formats are documented in The bh TCSPC Handbook (see
 // section on FIFO Files in the chapter on Data file structure).
@@ -500,4 +500,4 @@ template <typename D> auto decode_bh_spc_600_32(D &&downstream) {
         std::forward<D>(downstream));
 }
 
-} // namespace flimevt
+} // namespace tcspc

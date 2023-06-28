@@ -12,7 +12,7 @@
 
 #include <catch2/catch_all.hpp>
 
-using namespace flimevt;
+using namespace tcspc;
 
 using output_event = timestamped_test_event<0>;
 using misc_event = timestamped_test_event<1>;

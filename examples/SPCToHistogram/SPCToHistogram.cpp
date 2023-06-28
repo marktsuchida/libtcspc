@@ -47,13 +47,13 @@ template <typename T> class histogram_saver {
         }
     }
 
-    void handle_event(flimevt::frame_histogram_event<T> const &event) {
+    void handle_event(tcspc::frame_histogram_event<T> const &event) {
         (void)event;
         std::cerr << "Frame " << (frame_count++) << '\n';
     }
 
     void
-    handle_event(flimevt::final_cumulative_histogram_event<T> const &event) {
+    handle_event(tcspc::final_cumulative_histogram_event<T> const &event) {
         if (frame_count == 0) { // No frames
             std::cerr << "No frames\n";
             return;
@@ -100,26 +100,26 @@ auto main(int argc, char *argv[]) -> int {
     using sample_type = std::uint16_t;
     std::uint32_t const input_bits = 12;
     std::uint32_t const histo_bits = 8;
-    flimevt::legacy_histogram<sample_type> frame_histo(histo_bits, input_bits,
-                                                       true, width, height);
-    flimevt::legacy_histogram<sample_type> cumul_histo(histo_bits, input_bits,
-                                                       true, width, height);
+    tcspc::legacy_histogram<sample_type> frame_histo(histo_bits, input_bits,
+                                                     true, width, height);
+    tcspc::legacy_histogram<sample_type> cumul_histo(histo_bits, input_bits,
+                                                     true, width, height);
     cumul_histo.clear();
 
     // Construct pipeline
     // clang-format off
     auto buffer =
-        flimevt::buffer_event<
-                std::shared_ptr<std::vector<flimevt::bh_spc_event>>>(
-        flimevt::dereference_pointer<
-                std::shared_ptr<std::vector<flimevt::bh_spc_event>>>(
-        flimevt::unbatch<
-                std::vector<flimevt::bh_spc_event>, flimevt::bh_spc_event>(
-        flimevt::decode_bh_spc(
-        flimevt::line_clock_pixellator(
+        tcspc::buffer_event<
+                std::shared_ptr<std::vector<tcspc::bh_spc_event>>>(
+        tcspc::dereference_pointer<
+                std::shared_ptr<std::vector<tcspc::bh_spc_event>>>(
+        tcspc::unbatch<
+                std::vector<tcspc::bh_spc_event>, tcspc::bh_spc_event>(
+        tcspc::decode_bh_spc(
+        tcspc::line_clock_pixellator(
                 width, height, max_frames, static_cast<std::int32_t>(line_delay), line_time, 1,
-        flimevt::sequential_histogrammer(std::move(frame_histo),
-        flimevt::histogram_accumulator(std::move(cumul_histo),
+        tcspc::sequential_histogrammer(std::move(frame_histo),
+        tcspc::histogram_accumulator(std::move(cumul_histo),
         histogram_saver<sample_type>(out_filename))))))));
     // clang-format on
 
@@ -131,10 +131,10 @@ auto main(int argc, char *argv[]) -> int {
         return 1;
     }
 
-    flimevt::object_pool<std::vector<flimevt::bh_spc_event>> pool(2);
+    tcspc::object_pool<std::vector<tcspc::bh_spc_event>> pool(2);
 
     constexpr std::size_t batch_capacity = std::size_t(48) * 1024;
-    constexpr auto max_size = batch_capacity * sizeof(flimevt::bh_spc_event);
+    constexpr auto max_size = batch_capacity * sizeof(tcspc::bh_spc_event);
 
     input.seekg(sizeof(bh_spc_file_header));
     while (input.good()) {
@@ -143,7 +143,7 @@ auto main(int argc, char *argv[]) -> int {
         // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
         input.read(reinterpret_cast<char *>(arr->data()), max_size);
         auto const readSize = static_cast<std::size_t>(input.gcount()) /
-                              sizeof(flimevt::bh_spc_event);
+                              sizeof(tcspc::bh_spc_event);
         arr->resize(static_cast<std::size_t>(readSize));
         buffer.handle_event(arr);
     }

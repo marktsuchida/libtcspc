@@ -13,7 +13,7 @@
 //! \cond TO_BE_REMOVED
 // NOLINTBEGIN
 
-namespace flimevt {
+namespace tcspc {
 
 struct pixel_photon_event {
     std::uint16_t difftime;
@@ -29,7 +29,7 @@ struct end_frame_event {};
 using pixel_photon_events =
     event_set<pixel_photon_event, begin_frame_event, end_frame_event>;
 
-} // namespace flimevt
+} // namespace tcspc
 
 // NOLINTEND
 //! \endcond

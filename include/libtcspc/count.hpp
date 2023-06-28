@@ -12,7 +12,7 @@
 #include <utility>
 #include <vector>
 
-namespace flimevt {
+namespace tcspc {
 
 namespace internal {
 
@@ -115,4 +115,4 @@ auto count_event(std::uint64_t threshold, std::uint64_t limit,
         threshold, limit, std::forward<D>(downstream));
 }
 
-} // namespace flimevt
+} // namespace tcspc

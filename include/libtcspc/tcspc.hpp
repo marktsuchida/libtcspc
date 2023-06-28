@@ -12,10 +12,10 @@
 /**
  * \mainpage FLIMEvents Documentation
  *
- * See namespace \ref flimevt for all public symbols.
+ * See namespace \ref tcspc for all public symbols.
  */
 
 /**
  * \brief FLIMEvents namespace.
  */
-namespace flimevt {}
+namespace tcspc {}

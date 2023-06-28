@@ -20,7 +20,7 @@
 
 // NOLINTBEGIN
 
-using namespace flimevt;
+using namespace tcspc;
 
 static_assert(handles_event_set_v<
               line_clock_pixellator<discard_all<pixel_photon_events>>,

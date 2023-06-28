@@ -12,7 +12,7 @@
 
 #include <catch2/catch_all.hpp>
 
-using namespace flimevt;
+using namespace tcspc;
 
 TEST_CASE("Autocopying span", "[autocopy_span]") {
     std::array a{1, 2, 3};

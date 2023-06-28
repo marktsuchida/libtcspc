@@ -22,7 +22,7 @@
 #include <utility>
 #include <vector>
 
-namespace flimevt {
+namespace tcspc {
 
 /** \brief Basic statistics for histograms and histogram arrays. */
 struct histogram_stats {
@@ -570,4 +570,4 @@ template <typename TBin> struct concluding_histogram_array_event {
     }
 };
 
-} // namespace flimevt
+} // namespace tcspc

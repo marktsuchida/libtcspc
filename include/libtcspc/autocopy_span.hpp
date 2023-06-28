@@ -14,7 +14,7 @@
 #include <type_traits>
 #include <vector>
 
-namespace flimevt {
+namespace tcspc {
 
 /**
  * \brief Like \c std::span, but allocates new memory when copied.
@@ -114,17 +114,17 @@ template <typename T> class autocopy_span {
      *
      * \return the span
      */
-    auto span() noexcept -> flimevt::span<T> { return s; }
+    auto span() noexcept -> tcspc::span<T> { return s; }
 
     /**
      * \brief Implicit conversion to span.
      */
-    operator flimevt::span<const T>() const noexcept { return s; }
+    operator tcspc::span<const T>() const noexcept { return s; }
 
     /**
      * \brief Implicit conversion to span.
      */
-    operator flimevt::span<T>() noexcept { return s; }
+    operator tcspc::span<T>() noexcept { return s; }
 
     /** \brief Equiality comparison operator. */
     friend auto operator==(autocopy_span const &lhs,
@@ -149,4 +149,4 @@ autocopy_span(std::array<T, N>) -> autocopy_span<T>;
 
 // C++20: static_assert(std::regular<autocopy_span<int>>);
 
-} // namespace flimevt
+} // namespace tcspc

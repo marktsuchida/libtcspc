@@ -17,7 +17,7 @@
 #include <type_traits>
 #include <utility>
 
-namespace flimevt {
+namespace tcspc {
 
 namespace internal {
 
@@ -347,4 +347,4 @@ auto histogram_elementwise_accumulate(std::size_t num_elements,
         num_elements, num_bins, max_per_bin, std::forward<D>(downstream));
 }
 
-} // namespace flimevt
+} // namespace tcspc

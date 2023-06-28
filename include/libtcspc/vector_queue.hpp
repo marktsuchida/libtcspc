@@ -16,7 +16,7 @@
 #include <new>
 #include <utility>
 
-namespace flimevt::internal {
+namespace tcspc::internal {
 
 // Equivalent of std::queue<T> (i.e., std::queue<T, std::deque<T>>) but backed
 // by a single array used as a ring buffer and enlarged as needed (which should
@@ -212,4 +212,4 @@ template <typename T> class vector_queue {
     }
 };
 
-} // namespace flimevt::internal
+} // namespace tcspc::internal

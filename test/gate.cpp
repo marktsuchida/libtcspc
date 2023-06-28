@@ -12,7 +12,7 @@
 
 #include <catch2/catch_all.hpp>
 
-using namespace flimevt;
+using namespace tcspc;
 
 using open_event = empty_test_event<0>;
 using close_event = empty_test_event<1>;

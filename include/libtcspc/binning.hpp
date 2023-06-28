@@ -18,7 +18,7 @@
 #include <type_traits>
 #include <utility>
 
-namespace flimevt {
+namespace tcspc {
 
 namespace internal {
 
@@ -369,4 +369,4 @@ auto batch_bin_increments(D &&downstream) {
         std::forward<D>(downstream));
 }
 
-} // namespace flimevt
+} // namespace tcspc

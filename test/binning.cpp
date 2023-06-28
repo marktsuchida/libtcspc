@@ -16,7 +16,7 @@
 #include <limits>
 #include <utility>
 
-using namespace flimevt;
+using namespace tcspc;
 
 using i32 = std::int32_t;
 using u32 = std::uint32_t;

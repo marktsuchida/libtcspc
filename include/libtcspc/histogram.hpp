@@ -19,7 +19,7 @@
 #include <type_traits>
 #include <utility>
 
-namespace flimevt {
+namespace tcspc {
 
 namespace internal {
 
@@ -163,4 +163,4 @@ auto histogram(std::size_t num_bins, TBin max_per_bin, D &&downstream) {
         num_bins, max_per_bin, std ::forward<D>(downstream));
 }
 
-} // namespace flimevt
+} // namespace tcspc

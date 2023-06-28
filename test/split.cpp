@@ -11,7 +11,7 @@
 
 #include <catch2/catch_all.hpp>
 
-using namespace flimevt;
+using namespace tcspc;
 
 using e0 = empty_test_event<0>;
 using e1 = empty_test_event<1>;

@@ -10,7 +10,7 @@
 
 #include <array>
 
-using namespace flimevt;
+using namespace tcspc;
 
 namespace {
 

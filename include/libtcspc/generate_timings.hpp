@@ -14,7 +14,7 @@
 #include <optional>
 #include <utility>
 
-namespace flimevt {
+namespace tcspc {
 
 namespace internal {
 
@@ -230,4 +230,4 @@ template <typename EOut> class linear_timing_generator {
     }
 };
 
-} // namespace flimevt
+} // namespace tcspc

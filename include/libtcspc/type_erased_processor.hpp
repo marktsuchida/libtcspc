@@ -15,7 +15,7 @@
 #include <type_traits>
 #include <utility>
 
-namespace flimevt {
+namespace tcspc {
 
 namespace internal {
 
@@ -152,4 +152,4 @@ template <typename Es> class type_erased_processor {
     }
 };
 
-} // namespace flimevt
+} // namespace tcspc

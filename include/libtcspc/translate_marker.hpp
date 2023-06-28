@@ -14,7 +14,7 @@
 #include <type_traits>
 #include <utility>
 
-namespace flimevt {
+namespace tcspc {
 
 namespace internal {
 
@@ -79,4 +79,4 @@ auto translate_marker(std::int32_t channel, D &&downstream) {
         channel, std::forward<D>(downstream));
 }
 
-} // namespace flimevt
+} // namespace tcspc

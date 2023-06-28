@@ -8,7 +8,7 @@
 
 #include <exception>
 
-namespace flimevt {
+namespace tcspc {
 
 /**
  * \brief Processor that forwards to a processor reference.
@@ -43,4 +43,4 @@ template <typename D> class ref_processor {
     }
 };
 
-} // namespace flimevt
+} // namespace tcspc

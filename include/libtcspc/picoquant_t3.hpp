@@ -18,7 +18,7 @@
 #include <stdexcept>
 #include <utility>
 
-namespace flimevt {
+namespace tcspc {
 
 // PicoQuant raw photon event ("TTTR") formats are documented in the html files
 // contained in this repository:
@@ -340,4 +340,4 @@ template <typename D> auto decode_pq_hydra_v2_t3(D &&downstream) {
         std::forward<D>(downstream));
 }
 
-} // namespace flimevt
+} // namespace tcspc

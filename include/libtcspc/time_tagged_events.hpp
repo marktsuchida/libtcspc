@@ -12,7 +12,7 @@
 #include <cstdint>
 #include <ostream>
 
-namespace flimevt {
+namespace tcspc {
 
 /**
  * \brief Base class for events with a hardware-assigned timestamp.
@@ -329,12 +329,11 @@ using tcspc_events = event_set<time_reached_event, data_lost_event,
                                time_correlated_count_event, marker_event>;
 
 /** \brief Stream insertion operator for TCSPC event variant. */
-inline auto
-operator<<(std::ostream &os,
-           flimevt::event_variant<flimevt::tcspc_events> const &event)
+inline auto operator<<(std::ostream &os,
+                       tcspc::event_variant<tcspc::tcspc_events> const &event)
     -> std::ostream & {
     return std::visit([&](auto const &e) -> std::ostream & { return os << e; },
                       event);
 }
 
-} // namespace flimevt
+} // namespace tcspc

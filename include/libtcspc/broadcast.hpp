@@ -10,7 +10,7 @@
 #include <tuple>
 #include <utility>
 
-namespace flimevt {
+namespace tcspc {
 
 namespace internal {
 
@@ -46,4 +46,4 @@ template <typename... Ds> auto broadcast(Ds &&...downstreams) {
     return internal::broadcast<Ds...>(std::forward<Ds>(downstreams)...);
 }
 
-} // namespace flimevt
+} // namespace tcspc

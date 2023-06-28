@@ -13,7 +13,7 @@
 
 // NOLINTBEGIN
 
-using namespace flimevt;
+using namespace tcspc;
 
 static_assert(
     handles_event_set_v<

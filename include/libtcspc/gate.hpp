@@ -12,7 +12,7 @@
 #include <type_traits>
 #include <utility>
 
-namespace flimevt {
+namespace tcspc {
 
 namespace internal {
 
@@ -73,4 +73,4 @@ auto gate_events(bool initially_open, D &&downstream) {
         initially_open, std::forward<D>(downstream));
 }
 
-} // namespace flimevt
+} // namespace tcspc

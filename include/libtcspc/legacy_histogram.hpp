@@ -23,7 +23,7 @@
 //! \cond TO_BE_REMOVED
 // NOLINTBEGIN
 
-namespace flimevt {
+namespace tcspc {
 
 namespace internal {
 
@@ -320,7 +320,7 @@ template <typename T, typename D> class histogram_accumulator {
     }
 };
 
-} // namespace flimevt
+} // namespace tcspc
 
 // NOLINTEND
 //! \endcond

@@ -13,7 +13,7 @@
 #include <span>
 #define FLIMEVT_SPAN_USE_STD 1
 
-namespace flimevt {
+namespace tcspc {
 
 /**
  * \brief Span, an alias or replacement for \c std::span.
@@ -24,14 +24,14 @@ namespace flimevt {
 template <class T, std::size_t Extent = std::dynamic_extent>
 using span = std::span<T, Extent>;
 
-} // namespace flimevt
+} // namespace tcspc
 
 #endif // __cpp_lib_span
 #endif // <version>
 
 #if not FLIMEVT_SPAN_USE_STD
 
-#define TCB_SPAN_NAMESPACE_NAME flimevt
+#define TCB_SPAN_NAMESPACE_NAME tcspc
 
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wsign-conversion"

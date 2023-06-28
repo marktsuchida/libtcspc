@@ -13,8 +13,8 @@
 
 #include <catch2/catch_all.hpp>
 
-using namespace flimevt;
-using namespace flimevt::internal;
+using namespace tcspc;
+using namespace tcspc::internal;
 
 using u8 = std::uint8_t;
 using u16 = std::uint16_t;

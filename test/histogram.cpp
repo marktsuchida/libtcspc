@@ -14,7 +14,7 @@
 
 #include <catch2/catch_all.hpp>
 
-using namespace flimevt;
+using namespace tcspc;
 
 using u16 = std::uint16_t;
 using u32 = std::uint32_t;

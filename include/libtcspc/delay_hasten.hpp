@@ -18,7 +18,7 @@
 
 //! \cond TO_BE_REMOVED
 
-namespace flimevt {
+namespace tcspc {
 
 namespace internal {
 
@@ -182,6 +182,6 @@ auto delay_hasten_processor(macrotime delta, D &&downstream) {
         delta, std::forward<D>(downstream));
 }
 
-} // namespace flimevt
+} // namespace tcspc
 
 //! \endcond

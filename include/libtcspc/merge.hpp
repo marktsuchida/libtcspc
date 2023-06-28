@@ -16,7 +16,7 @@
 #include <type_traits>
 #include <utility>
 
-namespace flimevt {
+namespace tcspc {
 
 namespace internal {
 
@@ -184,4 +184,4 @@ auto merge(macrotime max_time_shift, D &&downstream) {
                           internal::merge_input<1, Es, D>(p));
 }
 
-} // namespace flimevt
+} // namespace tcspc

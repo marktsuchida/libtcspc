@@ -15,7 +15,7 @@
 #include <exception>
 #include <ostream>
 
-namespace flimevt {
+namespace tcspc {
 
 // The raw tag stream format (struct Tag) is documented in Swabian's Time
 // Tagger C++ API Manual (part of their software download). See the 16-byte
@@ -167,4 +167,4 @@ template <typename D> auto decode_swabian_tags(D &&downstream) {
     return internal::decode_swabian_tags<D>(std::forward<D>(downstream));
 }
 
-} // namespace flimevt
+} // namespace tcspc

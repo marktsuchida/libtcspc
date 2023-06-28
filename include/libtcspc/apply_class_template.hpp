@@ -11,7 +11,7 @@
 #include <type_traits>
 #include <utility>
 
-namespace flimevt::internal {
+namespace tcspc::internal {
 
 namespace really_internal {
 
@@ -51,4 +51,4 @@ template <template <typename...> typename Tmpl, typename Tup, typename... Args>
 using apply_class_template_t =
     typename apply_class_template<Tmpl, Tup, Args...>::type;
 
-} // namespace flimevt::internal
+} // namespace tcspc::internal

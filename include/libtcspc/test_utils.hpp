@@ -19,7 +19,7 @@
 #include <utility>
 #include <vector>
 
-namespace flimevt {
+namespace tcspc {
 
 namespace internal {
 
@@ -337,4 +337,4 @@ template <int N> struct timestamped_test_event {
     }
 };
 
-} // namespace flimevt
+} // namespace tcspc

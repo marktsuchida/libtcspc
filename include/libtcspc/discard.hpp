@@ -11,7 +11,7 @@
 #include <exception>
 #include <type_traits>
 
-namespace flimevt {
+namespace tcspc {
 
 /**
  * \brief Processor that sinks any event and does nothing.
@@ -43,4 +43,4 @@ template <typename Es> class discard_all {
     handle_end([[maybe_unused]] std::exception_ptr const &error) noexcept {}
 };
 
-} // namespace flimevt
+} // namespace tcspc

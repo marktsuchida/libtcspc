@@ -18,7 +18,7 @@
 #include <utility>
 #include <vector>
 
-namespace flimevt {
+namespace tcspc {
 
 namespace internal {
 
@@ -278,4 +278,4 @@ template <typename E, typename D> auto buffer_event(D &&downstream) {
     return internal::buffer_event<E, D>(std::forward<D>(downstream));
 }
 
-} // namespace flimevt
+} // namespace tcspc

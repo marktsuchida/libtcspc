@@ -21,12 +21,12 @@
 
 class print_processor {
     std::uint32_t count = 0;
-    flimevt::macrotime last_macrotime = 0;
+    tcspc::macrotime last_macrotime = 0;
 
     // NOLINTNEXTLINE(cppcoreguidelines-avoid-const-or-ref-data-members)
     std::ostream &output;
 
-    void print_macrotime(std::ostream &output, flimevt::macrotime macrotime) {
+    void print_macrotime(std::ostream &output, tcspc::macrotime macrotime) {
         output << std::setw(6) << (count++) << ' ';
         output << std::setw(20) << macrotime;
         if (last_macrotime > 0) {
@@ -41,23 +41,23 @@ class print_processor {
   public:
     explicit print_processor(std::ostream &output) : output(output) {}
 
-    static void handle_event(flimevt::time_reached_event const &event) {
+    static void handle_event(tcspc::time_reached_event const &event) {
         // Do nothing
         (void)event;
     }
 
-    void handle_event(flimevt::data_lost_event const &event) {
+    void handle_event(tcspc::data_lost_event const &event) {
         print_macrotime(output, event.macrotime);
         output << " Data lost\n";
     }
 
-    void handle_event(flimevt::time_correlated_count_event const &event) {
+    void handle_event(tcspc::time_correlated_count_event const &event) {
         print_macrotime(output, event.macrotime);
         output << " Photon: " << std::setw(5) << event.difftime << "; "
                << int(event.channel) << '\n';
     }
 
-    void handle_event(flimevt::marker_event const &event) {
+    void handle_event(tcspc::marker_event const &event) {
         print_macrotime(output, event.macrotime);
         output << ' ' << "Marker: " << int(event.channel) << '\n';
     }
@@ -95,7 +95,7 @@ auto dump_header(std::istream &input, std::ostream &output) -> int {
 }
 
 void dump_raw_event(char const *raw_event, std::ostream &output) {
-    flimevt::bh_spc_event event{};
+    tcspc::bh_spc_event event{};
     std::memcpy(&event, raw_event, sizeof(event));
 
     std::uint8_t const route = event.routing_signals();
@@ -115,8 +115,8 @@ void dump_raw_event(char const *raw_event, std::ostream &output) {
 }
 
 auto dump_events(std::istream &input, std::ostream &output) -> int {
-    auto decoder = flimevt::decode_bh_spc(print_processor(output));
-    constexpr std::size_t const eventSize = sizeof(flimevt::bh_spc_event);
+    auto decoder = tcspc::decode_bh_spc(print_processor(output));
+    constexpr std::size_t const eventSize = sizeof(tcspc::bh_spc_event);
 
     while (input.good()) {
         std::vector<char> event(eventSize);
@@ -130,7 +130,7 @@ auto dump_events(std::istream &input, std::ostream &output) -> int {
         }
 
         dump_raw_event(event.data(), output);
-        flimevt::bh_spc_event e{};
+        tcspc::bh_spc_event e{};
         std::memcpy(&e, event.data(), sizeof(e));
         decoder.handle_event(e);
     }

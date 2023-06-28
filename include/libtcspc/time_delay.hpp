@@ -12,7 +12,7 @@
 #include <exception>
 #include <utility>
 
-namespace flimevt {
+namespace tcspc {
 
 namespace internal {
 
@@ -49,4 +49,4 @@ template <typename D> auto time_delay(macrotime delta, D &&downstream) {
     return internal::time_delay<D>(delta, std::forward<D>(downstream));
 }
 
-} // namespace flimevt
+} // namespace tcspc
