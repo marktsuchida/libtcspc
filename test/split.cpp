@@ -4,10 +4,10 @@
  * SPDX-License-Identifier: MIT
  */
 
-#include "flimevt/split.hpp"
+#include "libtcspc/split.hpp"
 
-#include "flimevt/ref_processor.hpp"
-#include "flimevt/test_utils.hpp"
+#include "libtcspc/ref_processor.hpp"
+#include "libtcspc/test_utils.hpp"
 
 #include <catch2/catch_all.hpp>
 

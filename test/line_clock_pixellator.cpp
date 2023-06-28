@@ -4,11 +4,11 @@
  * SPDX-License-Identifier: MIT
  */
 
-#include "flimevt/line_clock_pixellator.hpp"
+#include "libtcspc/line_clock_pixellator.hpp"
 
-#include "flimevt/discard.hpp"
-#include "flimevt/event_set.hpp"
-#include "flimevt/ref_processor.hpp"
+#include "libtcspc/discard.hpp"
+#include "libtcspc/event_set.hpp"
+#include "libtcspc/ref_processor.hpp"
 
 #include <catch2/catch_all.hpp>
 

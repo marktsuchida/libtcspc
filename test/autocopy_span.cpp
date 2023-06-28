@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: MIT
  */
 
-#include "flimevt/autocopy_span.hpp"
+#include "libtcspc/autocopy_span.hpp"
 
 #include <array>
 #include <utility>

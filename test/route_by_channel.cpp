@@ -4,11 +4,11 @@
  * SPDX-License-Identifier: MIT
  */
 
-#include "flimevt/route_by_channel.hpp"
+#include "libtcspc/route_by_channel.hpp"
 
-#include "flimevt/ref_processor.hpp"
-#include "flimevt/test_utils.hpp"
-#include "flimevt/time_tagged_events.hpp"
+#include "libtcspc/ref_processor.hpp"
+#include "libtcspc/test_utils.hpp"
+#include "libtcspc/time_tagged_events.hpp"
 
 #include <catch2/catch_all.hpp>
 

@@ -4,12 +4,12 @@
  * SPDX-License-Identifier: MIT
  */
 
-#include "flimevt/binning.hpp"
+#include "libtcspc/binning.hpp"
 
-#include "flimevt/event_set.hpp"
-#include "flimevt/ref_processor.hpp"
-#include "flimevt/test_utils.hpp"
-#include "flimevt/time_tagged_events.hpp"
+#include "libtcspc/event_set.hpp"
+#include "libtcspc/ref_processor.hpp"
+#include "libtcspc/test_utils.hpp"
+#include "libtcspc/time_tagged_events.hpp"
 
 #include <catch2/catch_all.hpp>
 

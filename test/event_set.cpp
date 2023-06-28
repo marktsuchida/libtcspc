@@ -4,9 +4,9 @@
  * SPDX-License-Identifier: MIT
  */
 
-#include "flimevt/event_set.hpp"
+#include "libtcspc/event_set.hpp"
 
-#include "flimevt/test_utils.hpp"
+#include "libtcspc/test_utils.hpp"
 
 using namespace flimevt;
 

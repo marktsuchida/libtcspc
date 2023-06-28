@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: MIT
  */
 
-#include "flimevt/histogramming.hpp"
+#include "libtcspc/histogramming.hpp"
 
 #include <algorithm>
 #include <array>

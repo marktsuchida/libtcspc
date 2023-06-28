@@ -4,11 +4,11 @@
  * SPDX-License-Identifier: MIT
  */
 
-#include "flimevt/type_erased_processor.hpp"
+#include "libtcspc/type_erased_processor.hpp"
 
-#include "flimevt/discard.hpp"
-#include "flimevt/event_set.hpp"
-#include "flimevt/test_utils.hpp"
+#include "libtcspc/discard.hpp"
+#include "libtcspc/event_set.hpp"
+#include "libtcspc/test_utils.hpp"
 
 #include <catch2/catch_all.hpp>
 

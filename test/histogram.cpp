@@ -4,11 +4,11 @@
  * SPDX-License-Identifier: MIT
  */
 
-#include "flimevt/histogram.hpp"
+#include "libtcspc/histogram.hpp"
 
-#include "flimevt/event_set.hpp"
-#include "flimevt/ref_processor.hpp"
-#include "flimevt/test_utils.hpp"
+#include "libtcspc/event_set.hpp"
+#include "libtcspc/ref_processor.hpp"
+#include "libtcspc/test_utils.hpp"
 
 #include <cstdint>
 

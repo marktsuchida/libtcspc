@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: MIT
  */
 
-#include "flimevt/vector_queue.hpp"
+#include "libtcspc/vector_queue.hpp"
 
 #include <catch2/catch_all.hpp>
 

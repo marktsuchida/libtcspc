@@ -4,10 +4,10 @@
  * SPDX-License-Identifier: MIT
  */
 
-#include "flimevt/legacy_histogram.hpp"
+#include "libtcspc/legacy_histogram.hpp"
 
-#include "flimevt/discard.hpp"
-#include "flimevt/event_set.hpp"
+#include "libtcspc/discard.hpp"
+#include "libtcspc/event_set.hpp"
 
 #include <catch2/catch_all.hpp>
 

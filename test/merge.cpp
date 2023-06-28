@@ -4,11 +4,11 @@
  * SPDX-License-Identifier: MIT
  */
 
-#include "flimevt/merge.hpp"
+#include "libtcspc/merge.hpp"
 
-#include "flimevt/ref_processor.hpp"
-#include "flimevt/test_utils.hpp"
-#include "flimevt/type_erased_processor.hpp"
+#include "libtcspc/ref_processor.hpp"
+#include "libtcspc/test_utils.hpp"
+#include "libtcspc/type_erased_processor.hpp"
 
 #include <catch2/catch_all.hpp>
 

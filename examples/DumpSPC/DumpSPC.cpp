@@ -6,9 +6,9 @@
 
 #include "../BHSPCFile.hpp"
 
-#include "flimevt/bh_spc.hpp"
-#include "flimevt/common.hpp"
-#include "flimevt/time_tagged_events.hpp"
+#include "libtcspc/bh_spc.hpp"
+#include "libtcspc/common.hpp"
+#include "libtcspc/time_tagged_events.hpp"
 
 #include <array>
 #include <cstring>

@@ -5,10 +5,10 @@
  */
 
 #include "../BHSPCFile.hpp"
-#include "flimevt/bh_spc.hpp"
-#include "flimevt/buffer.hpp"
-#include "flimevt/legacy_histogram.hpp"
-#include "flimevt/line_clock_pixellator.hpp"
+#include "libtcspc/bh_spc.hpp"
+#include "libtcspc/buffer.hpp"
+#include "libtcspc/legacy_histogram.hpp"
+#include "libtcspc/line_clock_pixellator.hpp"
 
 #include <ctime>
 #include <exception>

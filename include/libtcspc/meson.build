@@ -39,4 +39,4 @@ public_cpp_headers = files(
     'vector_queue.hpp',
 )
 
-install_headers(public_cpp_headers, subdir: 'flimevt')
+install_headers(public_cpp_headers, subdir: 'libtcspc')

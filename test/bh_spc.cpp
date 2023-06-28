@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: MIT
  */
 
-#include "flimevt/bh_spc.hpp"
+#include "libtcspc/bh_spc.hpp"
 
 #include <array>
 #include <cstdint>

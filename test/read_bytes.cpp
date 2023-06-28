@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: MIT
  */
 
-#include "flimevt/read_bytes.hpp"
+#include "libtcspc/read_bytes.hpp"
 
 #include <catch2/catch_all.hpp>
 

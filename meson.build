@@ -24,7 +24,7 @@ catch2_with_main_dep = dependency(
 
 public_inc = include_directories('include')
 
-subdir('include/flimevt')
+subdir('include/libtcspc')
 subdir('doc')
 subdir('test')
 subdir('examples')

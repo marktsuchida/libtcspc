@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: MIT
  */
 
-#include "flimevt/apply_class_template.hpp"
+#include "libtcspc/apply_class_template.hpp"
 
 using namespace flimevt::internal;
 

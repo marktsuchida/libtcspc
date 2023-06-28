@@ -4,11 +4,11 @@
  * SPDX-License-Identifier: MIT
  */
 
-#include "flimevt/time_delay.hpp"
+#include "libtcspc/time_delay.hpp"
 
-#include "flimevt/common.hpp"
-#include "flimevt/ref_processor.hpp"
-#include "flimevt/test_utils.hpp"
+#include "libtcspc/common.hpp"
+#include "libtcspc/ref_processor.hpp"
+#include "libtcspc/test_utils.hpp"
 
 #include <catch2/catch_all.hpp>
 
