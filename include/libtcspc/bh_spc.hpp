@@ -391,22 +391,22 @@ struct bh_spc_600_event_32 {
 namespace internal {
 
 // Common implementation for decode_bh_spc, decode_bh_spc_600_48,
-// decode_bh_spc_600_32. E is the binary record event class.
-template <typename E, typename D> class base_decode_bh_spc {
+// decode_bh_spc_600_32. BHEvent is the binary record event class.
+template <typename BHSPCEvent, typename Downstream> class base_decode_bh_spc {
     macrotime macrotime_base = 0; // Time of last overflow
     macrotime last_macrotime = 0;
 
-    D downstream;
+    Downstream downstream;
 
   public:
-    explicit base_decode_bh_spc(D &&downstream)
+    explicit base_decode_bh_spc(Downstream &&downstream)
         : downstream(std::move(downstream)) {}
 
     // Rule of zero
 
-    void handle_event(E const &event) noexcept {
+    void handle_event(BHSPCEvent const &event) noexcept {
         if (event.is_multiple_macrotime_overflow()) {
-            macrotime_base += E::macrotime_overflow_period *
+            macrotime_base += BHSPCEvent::macrotime_overflow_period *
                               event.multiple_macrotime_overflow_count();
 
             time_reached_event e{macrotime_base};
@@ -415,7 +415,7 @@ template <typename E, typename D> class base_decode_bh_spc {
         }
 
         if (event.macrotime_overflow_flag()) {
-            macrotime_base += E::macrotime_overflow_period;
+            macrotime_base += BHSPCEvent::macrotime_overflow_period;
         }
 
         macrotime macrotime = macrotime_base + event.macrotime();
@@ -465,39 +465,41 @@ template <typename E, typename D> class base_decode_bh_spc {
  * \brief Create a processor that decodes Becker & Hickl SPC (most models) FIFO
  * records.
  *
- * \tparam D downstream processor type
+ * \tparam Downstream downstream processor type
  * \param downstream downstream processor (moved out)
  * \return decode-bh-spc processor
  */
-template <typename D> auto decode_bh_spc(D &&downstream) {
-    return internal::base_decode_bh_spc<bh_spc_event, D>(
-        std::forward<D>(downstream));
+template <typename Downstream> auto decode_bh_spc(Downstream &&downstream) {
+    return internal::base_decode_bh_spc<bh_spc_event, Downstream>(
+        std::forward<Downstream>(downstream));
 }
 
 /**
  * \brief Create a processor that decodes Becker & Hickl SPC-600/630
  * 4096-channel mode FIFO records.
  *
- * \tparam D downstream processor type
+ * \tparam Downstream downstream processor type
  * \param downstream downstream processor (moved out)
  * \return decode-bh-spc-600-48 processor
  */
-template <typename D> auto decode_bh_spc_600_48(D &&downstream) {
-    return internal::base_decode_bh_spc<bh_spc_600_event_48, D>(
-        std::forward<D>(downstream));
+template <typename Downstream>
+auto decode_bh_spc_600_48(Downstream &&downstream) {
+    return internal::base_decode_bh_spc<bh_spc_600_event_48, Downstream>(
+        std::forward<Downstream>(downstream));
 }
 
 /**
  * \brief Create a processor that decodes Becker & Hickl SPC-600/630
  * 256-channel mode FIFO records.
  *
- * \tparam D downstream processor type
+ * \tparam Downstream downstream processor type
  * \param downstream downstream processor (moved out)
  * \return decode-bh-spc-600-32 processor
  */
-template <typename D> auto decode_bh_spc_600_32(D &&downstream) {
-    return internal::base_decode_bh_spc<bh_spc_600_event_32, D>(
-        std::forward<D>(downstream));
+template <typename Downstream>
+auto decode_bh_spc_600_32(Downstream &&downstream) {
+    return internal::base_decode_bh_spc<bh_spc_600_event_32, Downstream>(
+        std::forward<Downstream>(downstream));
 }
 
 } // namespace tcspc

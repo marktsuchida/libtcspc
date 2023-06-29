@@ -16,10 +16,10 @@ namespace tcspc {
  * This is an adapter to allow the use of non-movable processors, or when you
  * do not want to move a downstream processor into its upstream.
  *
- * \tparam D downstream processor type
+ * \tparam Downstream downstream processor type
  */
-template <typename D> class ref_processor {
-    D *downstream; // Not null.
+template <typename Downstream> class ref_processor {
+    Downstream *downstream; // Not null.
 
   public:
     /**
@@ -30,10 +30,11 @@ template <typename D> class ref_processor {
      *
      * \param downstream downstream processor
      */
-    explicit ref_processor(D &downstream) : downstream(&downstream) {}
+    explicit ref_processor(Downstream &downstream) : downstream(&downstream) {}
 
     /** \brief Processor interface */
-    template <typename E> void handle_event(E const &event) noexcept {
+    template <typename AnyEvent>
+    void handle_event(AnyEvent const &event) noexcept {
         downstream->handle_event(event);
     }
 

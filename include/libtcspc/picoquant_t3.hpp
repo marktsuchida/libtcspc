@@ -32,8 +32,9 @@ namespace tcspc {
 // https://commandcenter.blogspot.com/2012/04/byte-order-fallacy.html
 
 // The two T3 formats (pq_pico_t3_event and pq_hydra_t3_event) use matching
-// member names for static polymorphism. This allows base_decode_pq_t3<E> to
-// handle 3 different formats with the same code.
+// member names for static polymorphism. This allows
+// base_decode_pq_t3<PQT3Event> to handle 3 different formats with the same
+// code.
 
 /**
  * \brief Binary record interpretation for PicoHarp T3 Format.
@@ -249,21 +250,21 @@ namespace internal {
 
 // Common implementation for decode_pq_pico_t3, decode_pq_hydra_v1_t3,
 // decode_pq_hydra_v2_t3.
-// E is the binary record event class.
-template <typename E, typename D> class base_decode_pq_t3 {
+// PQT3Event is the binary record event class.
+template <typename PQT3Event, typename Downstream> class base_decode_pq_t3 {
     macrotime nsync_base = 0;
     macrotime last_nsync = 0;
 
-    D downstream;
+    Downstream downstream;
 
   public:
-    explicit base_decode_pq_t3(D &&downstream)
+    explicit base_decode_pq_t3(Downstream &&downstream)
         : downstream(std::move(downstream)) {}
 
-    void handle_event(E const &event) noexcept {
+    void handle_event(PQT3Event const &event) noexcept {
         if (event.is_nsync_overflow()) {
-            nsync_base +=
-                E::nsync_overflow_period * event.nsync_overflow_count();
+            nsync_base += PQT3Event::nsync_overflow_period *
+                          event.nsync_overflow_count();
 
             time_reached_event e;
             e.macrotime = nsync_base;
@@ -306,38 +307,41 @@ template <typename E, typename D> class base_decode_pq_t3 {
 /**
  * \brief Create a processor that decodes PicoQuant PicoHarp T3 events.
  *
- * \tparam D downstream processor type
+ * \tparam Downstream downstream processor type
  * \param downstream downstream processor (moved out)
  * \return decode-pq-pico-t3 processor
  */
-template <typename D> auto decode_pq_pico_t3(D &&downstream) {
-    return internal::base_decode_pq_t3<pq_pico_t3_event, D>(
-        std::forward<D>(downstream));
+template <typename Downstream>
+auto decode_pq_pico_t3(Downstream &&downstream) {
+    return internal::base_decode_pq_t3<pq_pico_t3_event, Downstream>(
+        std::forward<Downstream>(downstream));
 }
 
 /**
  * \brief Create a processor that decodes PicoQuant HydraHarp V1 T3 events.
  *
- * \tparam D downstream processor type
+ * \tparam Downstream downstream processor type
  * \param downstream downstream processor (moved out)
  * \return decode-pq-hydra-v1-t3 processor
  */
-template <typename D> auto decode_pq_hydra_v1_t3(D &&downstream) {
-    return internal::base_decode_pq_t3<pq_hydra_v1_t3_event, D>(
-        std::forward<D>(downstream));
+template <typename Downstream>
+auto decode_pq_hydra_v1_t3(Downstream &&downstream) {
+    return internal::base_decode_pq_t3<pq_hydra_v1_t3_event, Downstream>(
+        std::forward<Downstream>(downstream));
 }
 
 /**
  * \brief Create a processor that decodes PicoQuant HydraHarp V2, MultiHarp,
  * and TimeHarp260 T3 events.
  *
- * \tparam D downstream processor type
+ * \tparam Downstream downstream processor type
  * \param downstream downstream processor (moved out)
  * \return decode-pq-hydra-v2-t3 processor
  */
-template <typename D> auto decode_pq_hydra_v2_t3(D &&downstream) {
-    return internal::base_decode_pq_t3<pq_hydra_v2_t3_event, D>(
-        std::forward<D>(downstream));
+template <typename Downstream>
+auto decode_pq_hydra_v2_t3(Downstream &&downstream) {
+    return internal::base_decode_pq_t3<pq_hydra_v2_t3_event, Downstream>(
+        std::forward<Downstream>(downstream));
 }
 
 } // namespace tcspc

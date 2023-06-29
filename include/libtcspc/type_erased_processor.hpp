@@ -99,16 +99,16 @@ using virtual_processor =
 /**
  * \brief Processor that type-erases the downstream processor.
  *
- * \tparam Es the event set handled by the processor
+ * \tparam EventSet the event set handled by the processor
  */
-template <typename Es> class type_erased_processor {
+template <typename EventSet> class type_erased_processor {
     using abstract_processor =
         internal::apply_class_template_t<internal::abstract_processor_impl,
-                                         Es>;
+                                         EventSet>;
 
     template <typename Proc>
     using virtual_processor =
-        internal::apply_class_template_t<internal::virtual_processor, Es,
+        internal::apply_class_template_t<internal::virtual_processor, EventSet,
                                          Proc>;
 
     std::unique_ptr<abstract_processor> proc;
@@ -120,26 +120,28 @@ template <typename Es> class type_erased_processor {
      * The stub processor discards all events.
      */
     type_erased_processor()
-        : proc(std::make_unique<virtual_processor<discard_all<Es>>>()) {}
+        : proc(std::make_unique<virtual_processor<discard_all<EventSet>>>()) {}
 
     /**
      * \brief Construct with the given downstream processor.
      *
-     * The downstream processor must handle all of the events in \c Es.
+     * The downstream processor must handle all of the events in \c EventSet.
      *
      * \param downstream downstream processor
      */
-    template <typename D,
-              typename = std::enable_if_t<handles_event_set_v<D, Es>>>
-    explicit type_erased_processor(D &&downstream)
-        : proc(std::make_unique<virtual_processor<D>>(
-              std::forward<D>(downstream))) {}
+    template <
+        typename Downstream,
+        typename = std::enable_if_t<handles_event_set_v<Downstream, EventSet>>>
+    explicit type_erased_processor(Downstream &&downstream)
+        : proc(std::make_unique<virtual_processor<Downstream>>(
+              std::forward<Downstream>(downstream))) {}
 
     // Rule of zero
 
     /** \brief Processor interface */
-    template <typename E, typename = std::enable_if_t<contains_event_v<Es, E>>>
-    void handle_event(E const &event) noexcept {
+    template <typename Event,
+              typename = std::enable_if_t<contains_event_v<EventSet, Event>>>
+    void handle_event(Event const &event) noexcept {
         proc->handle_event(event);
     }
 

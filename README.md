@@ -63,7 +63,7 @@ Event classes are pure data and have public data members.
 
 Processors are just classes with the following member functions:
 
-- `void handle_event(E const& event) noexcept` -- a statically polymorphic
+- `void handle_event(Event const& event) noexcept` -- a statically polymorphic
   (i.e., overloaded for different event types) function, for each event in the
   event set that is processed by the processor
 - `void handle_end(std::exception_ptr const &error) noexcept` -- `error` is the
@@ -71,6 +71,6 @@ Processors are just classes with the following member functions:
   successfully
 
 The last argument to the constructor of a processor is usually
-`D&& downstream`, a reference to the downstream processor that will handle the
-events emitted by this processor. The downstream processor is moved into the
-processor.
+`Downstream &&downstream`, a reference to the downstream processor that will
+handle the events emitted by this processor. The downstream processor is moved
+into the processor.

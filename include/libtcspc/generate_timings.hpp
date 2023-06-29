@@ -18,30 +18,34 @@ namespace tcspc {
 
 namespace internal {
 
-template <typename ETrig, typename PGen, typename D> class generate_timings {
-    PGen generator;
-    D downstream;
+template <typename TriggerEvent, typename PatternGenerator,
+          typename Downstream>
+class generate_timings {
+    PatternGenerator generator;
+    Downstream downstream;
 
-    // P: bool(macrotime const &)
-    template <typename P> void emit(P predicate) noexcept {
+    // Pred: bool(macrotime const &)
+    template <typename Pred> void emit(Pred predicate) noexcept {
         for (std::optional<macrotime> t = generator.peek();
              t && predicate(t.value()); t = generator.peek()) {
-            typename PGen::output_event_type e = generator.pop();
+            typename PatternGenerator::output_event_type e = generator.pop();
             downstream.handle_event(e);
         }
     }
 
   public:
-    explicit generate_timings(PGen &&generator, D &&downstream)
+    explicit generate_timings(PatternGenerator &&generator,
+                              Downstream &&downstream)
         : generator(std::move(generator)), downstream(std::move(downstream)) {}
 
-    void handle_event(ETrig const &event) noexcept {
+    void handle_event(TriggerEvent const &event) noexcept {
         emit([now = event.macrotime](auto t) { return t < now; });
         generator.trigger(event.macrotime);
         downstream.handle_event(event);
     }
 
-    template <typename E> void handle_event(E const &event) noexcept {
+    template <typename OtherTimeTaggedEvent>
+    void handle_event(OtherTimeTaggedEvent const &event) noexcept {
         emit([now = event.macrotime](auto t) { return t <= now; });
         downstream.handle_event(event);
     }
@@ -62,17 +66,19 @@ template <typename ETrig, typename PGen, typename D> class generate_timings {
  *
  * All events are passed through.
  *
- * Every time an \c ETrig is received, generation of a pattern of timing events
- * is started according to the given pattern generator.
+ * Every time an \c TriggerEvent is received, generation of a pattern of timing
+ * events is started according to the given pattern generator.
  *
  * Timing events are only generated when an event with a greater macrotime is
  * passed through. In particular, timing events beyond the last passed through
  * event are not generated.
  *
- * If the next \c ETrig is received before pattern generation has finished, any
- * remaining timing events are not generated.
+ * If the next \c TriggerEvent is received before pattern generation has
+ * finished, any remaining timing events are not generated.
  *
- * The pattern generator type \c PGen must have the following members:
+ * The pattern generator type \c PatternGenerator must have the following
+ * members:
+ *
  * - <tt>output_event_type</tt>, the type of the generated event,
  * - <tt>void trigger(macrotime starttime) noexcept</tt>, which starts a new
  *   iteration of pattern generation,
@@ -85,18 +91,21 @@ template <typename ETrig, typename PGen, typename D> class generate_timings {
  * The generator must not produce any events before the first time it is
  * triggered.
  *
- * \tparam ETrig even type that triggers a new round of pattern generation by
- * resetting the pattern generator
- * \tparam PGen timing pattern generator type
- * \tparam D downstream processor type
+ * \tparam TriggerEvent even type that triggers a new round of pattern
+ * generation by resetting the pattern generator
+ * \tparam PatternGenerator timing pattern generator type
+ * \tparam Downstream downstream processor type
  * \param generator the timing pattern generator (moved out)
  * \param downstream downstream processor (moved out)
  * \return a new generate_timings processor
  */
-template <typename ETrig, typename PGen, typename D>
-auto generate_timings(PGen &&generator, D &&downstream) {
-    return internal::generate_timings<ETrig, PGen, D>(
-        std::forward<PGen>(generator), std::forward<D>(downstream));
+template <typename TriggerEvent, typename PatternGenerator,
+          typename Downstream>
+auto generate_timings(PatternGenerator &&generator, Downstream &&downstream) {
+    return internal::generate_timings<TriggerEvent, PatternGenerator,
+                                      Downstream>(
+        std::forward<PatternGenerator>(generator),
+        std::forward<Downstream>(downstream));
 }
 
 /**
@@ -104,12 +113,12 @@ auto generate_timings(PGen &&generator, D &&downstream) {
  *
  * Timing pattern generator for use with generate_timings.
  *
- * \tparam EOut output event type (never generated)
+ * \tparam Event output event type (never generated)
  */
-template <typename EOut> class null_timing_generator {
+template <typename Event> class null_timing_generator {
   public:
     /** \brief Timing generator interface */
-    using output_event_type = EOut;
+    using output_event_type = Event;
 
     /** \brief Timing generator interface */
     void trigger(macrotime starttime) noexcept { (void)starttime; }
@@ -120,7 +129,7 @@ template <typename EOut> class null_timing_generator {
     }
 
     /** \brief Timing generator interface */
-    auto pop() noexcept -> EOut { internal::unreachable(); }
+    auto pop() noexcept -> Event { internal::unreachable(); }
 };
 
 /**
@@ -128,16 +137,16 @@ template <typename EOut> class null_timing_generator {
  *
  * Timing pattern generator for use with generate_timings.
  *
- * \tparam EOut output event type
+ * \tparam Event output event type
  */
-template <typename EOut> class one_shot_timing_generator {
+template <typename Event> class one_shot_timing_generator {
     bool pending = false;
     macrotime next = 0;
     macrotime delay;
 
   public:
     /** \brief Timing generator interface */
-    using output_event_type = EOut;
+    using output_event_type = Event;
 
     /**
      * \brief Construct with delay.
@@ -162,8 +171,8 @@ template <typename EOut> class one_shot_timing_generator {
     }
 
     /** \brief Timing generator interface */
-    auto pop() noexcept -> EOut {
-        EOut event;
+    auto pop() noexcept -> Event {
+        Event event;
         event.macrotime = next;
         pending = false;
         return event;
@@ -176,9 +185,9 @@ template <typename EOut> class one_shot_timing_generator {
  *
  * Timing pattern generator for use with generate_timings.
  *
- * \tparam EOut output event type
+ * \tparam Event output event type
  */
-template <typename EOut> class linear_timing_generator {
+template <typename Event> class linear_timing_generator {
     macrotime next = 0;
     std::size_t remaining = 0;
 
@@ -188,7 +197,7 @@ template <typename EOut> class linear_timing_generator {
 
   public:
     /** \brief Timing generator interface */
-    using output_event_type = EOut;
+    using output_event_type = Event;
 
     /**
      * \brief Construct with delay, interval, and count.
@@ -221,8 +230,8 @@ template <typename EOut> class linear_timing_generator {
     }
 
     /** \brief Timing generator interface */
-    auto pop() noexcept -> EOut {
-        EOut event;
+    auto pop() noexcept -> Event {
+        Event event;
         event.macrotime = next;
         next += interval;
         --remaining;

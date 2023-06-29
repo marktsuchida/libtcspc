@@ -19,8 +19,8 @@ namespace tcspc {
 class discard_any {
   public:
     /** \brief Processor interface */
-    template <typename E>
-    void handle_event([[maybe_unused]] E const &event) noexcept {}
+    template <typename AnyEvent>
+    void handle_event([[maybe_unused]] AnyEvent const &event) noexcept {}
 
     /** \brief Processor interface */
     void
@@ -30,13 +30,14 @@ class discard_any {
 /**
  * \brief Processor that sinks a specified set of events and does nothing.
  *
- * \tparam Es the set of events to consume.
+ * \tparam EventSet the set of events to consume.
  */
-template <typename Es> class discard_all {
+template <typename EventSet> class discard_all {
   public:
     /** \brief Processor interface */
-    template <typename E, typename = std::enable_if_t<contains_event_v<Es, E>>>
-    void handle_event([[maybe_unused]] E const &event) noexcept {}
+    template <typename Event,
+              typename = std::enable_if_t<contains_event_v<EventSet, Event>>>
+    void handle_event([[maybe_unused]] Event const &event) noexcept {}
 
     /** \brief Processor interface */
     void

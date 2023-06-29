@@ -23,8 +23,8 @@ namespace tcspc {
 
 namespace internal {
 
-template <typename Es> class capture_output {
-    vector_queue<event_variant<Es>> output;
+template <typename EventSet> class capture_output {
+    vector_queue<event_variant<EventSet>> output;
     bool ended = false;
     std::exception_ptr error;
     bool end_of_life = false; // Reported error; cannot reuse
@@ -66,8 +66,9 @@ template <typename Es> class capture_output {
         };
     }
 
-    template <typename E, typename = std::enable_if_t<contains_event_v<Es, E>>>
-    void handle_event(E const &event) noexcept {
+    template <typename Event,
+              typename = std::enable_if_t<contains_event_v<EventSet, Event>>>
+    void handle_event(Event const &event) noexcept {
         assert(!end_of_life);
         assert(!ended);
         try {
@@ -86,10 +87,11 @@ template <typename Es> class capture_output {
         this->error = error;
     }
 
-    template <typename E, typename = std::enable_if_t<contains_event_v<Es, E>>>
-    auto check(E const &event) -> bool {
+    template <typename Event,
+              typename = std::enable_if_t<contains_event_v<EventSet, Event>>>
+    auto check(Event const &event) -> bool {
         assert(!end_of_life);
-        event_variant<Es> expected = event;
+        event_variant<EventSet> expected = event;
         if (!output.empty() && output.front() == expected) {
             output.pop();
             return true;
@@ -214,12 +216,12 @@ template <> class capture_output<event_set<>> {
     }
 };
 
-template <typename Es, typename D> class feed_input {
+template <typename EventSet, typename Downstream> class feed_input {
     std::vector<std::function<bool()>> output_checks;
-    D downstream;
+    Downstream downstream;
 
     static_assert(
-        handles_event_set_v<D, Es>,
+        handles_event_set_v<Downstream, EventSet>,
         "processor under test must handle the specified input events and end-of-stream");
 
     void require_outputs_checked() {
@@ -233,14 +235,17 @@ template <typename Es, typename D> class feed_input {
     }
 
   public:
-    explicit feed_input(D &&downstream) : downstream(std::move(downstream)) {}
+    explicit feed_input(Downstream &&downstream)
+        : downstream(std::move(downstream)) {}
 
-    template <typename P> void require_output_checked(P &output) {
+    template <typename CaptureOutputProc>
+    void require_output_checked(CaptureOutputProc &output) {
         output_checks.push_back(output.output_check_thunk());
     }
 
-    template <typename E, typename = std::enable_if_t<contains_event_v<Es, E>>>
-    void feed(E const &event) {
+    template <typename Event,
+              typename = std::enable_if_t<contains_event_v<EventSet, Event>>>
+    void feed(Event const &event) {
         require_outputs_checked();
         downstream.handle_event(event);
     }
@@ -258,23 +263,25 @@ template <typename Es, typename D> class feed_input {
 /**
  * \brief Create a sink that logs test output for checking.
  *
- * \tparam Es event set to accept
+ * \tparam EventSet event set to accept
  * \return capture-output sink
  */
-template <typename EsOutput> auto capture_output() {
-    return internal::capture_output<EsOutput>();
+template <typename EventSet> auto capture_output() {
+    return internal::capture_output<EventSet>();
 }
 
 /**
  * \brief Create a source for feeding test input to a processor.
  *
- * \tparam Es input event set
- * \tparam D downstream processor type
+ * \tparam EventSet input event set
+ * \tparam Downstream downstream processor type
  * \param downstream downstream processor (moved out)
  * \return feed-input source
  */
-template <typename Es, typename D> auto feed_input(D &&downstream) {
-    return internal::feed_input<Es, D>(std::forward<D>(downstream));
+template <typename EventSet, typename Downstream>
+auto feed_input(Downstream &&downstream) {
+    return internal::feed_input<EventSet, Downstream>(
+        std::forward<Downstream>(downstream));
 }
 
 /**

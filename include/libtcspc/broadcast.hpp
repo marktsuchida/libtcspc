@@ -14,14 +14,15 @@ namespace tcspc {
 
 namespace internal {
 
-template <typename... Ds> class broadcast {
-    std::tuple<Ds...> downstreams;
+template <typename... Downstreams> class broadcast {
+    std::tuple<Downstreams...> downstreams;
 
   public:
-    explicit broadcast(Ds &&...downstreams)
-        : downstreams{std::move<Ds>(downstreams)...} {}
+    explicit broadcast(Downstreams &&...downstreams)
+        : downstreams{std::move<Downstreams>(downstreams)...} {}
 
-    template <typename E> void handle_event(E const &event) noexcept {
+    template <typename AnyEvent>
+    void handle_event(AnyEvent const &event) noexcept {
         std::apply([&](auto &...s) { (..., s.handle_event(event)); },
                    downstreams);
     }
@@ -38,12 +39,14 @@ template <typename... Ds> class broadcast {
  * \brief Create a processor that broadcasts events to multiple downstream
  * processors.
  *
- * \tparam Ds downstream processor classes
+ * \tparam Downstreams downstream processor classes
  * \param downstreams downstream processors (moved out)
  * \return broadcast processor
  */
-template <typename... Ds> auto broadcast(Ds &&...downstreams) {
-    return internal::broadcast<Ds...>(std::forward<Ds>(downstreams)...);
+template <typename... Downstreams>
+auto broadcast(Downstreams &&...downstreams) {
+    return internal::broadcast<Downstreams...>(
+        std::forward<Downstreams>(downstreams)...);
 }
 
 } // namespace tcspc

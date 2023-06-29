@@ -21,12 +21,13 @@ namespace tcspc {
 
 namespace internal {
 
-template <typename ERouted, typename... Ds> class route_by_channel {
-    std::array<std::int16_t, sizeof...(Ds)> channels;
-    std::tuple<Ds...> downstreams;
+template <typename EventToRoute, typename... Downstreams>
+class route_by_channel {
+    std::array<std::int16_t, sizeof...(Downstreams)> channels;
+    std::tuple<Downstreams...> downstreams;
 
     template <std::size_t I = 0>
-    void handle_photon(std::size_t index, ERouted const &event) noexcept {
+    void handle_photon(std::size_t index, EventToRoute const &event) noexcept {
         if (index == I) {
             std::get<I>(downstreams).handle_event(event);
             return;
@@ -37,11 +38,11 @@ template <typename ERouted, typename... Ds> class route_by_channel {
 
   public:
     explicit route_by_channel(
-        std::array<std::int16_t, sizeof...(Ds)> const &channels,
-        Ds &&...downstreams)
+        std::array<std::int16_t, sizeof...(Downstreams)> const &channels,
+        Downstreams &&...downstreams)
         : channels(channels), downstreams{std::move(downstreams)...} {}
 
-    void handle_event(ERouted const &event) noexcept {
+    void handle_event(EventToRoute const &event) noexcept {
         auto chan = event.channel;
         auto it = std::find(channels.cbegin(), channels.cend(), chan);
         if (it != channels.cend())
@@ -49,7 +50,8 @@ template <typename ERouted, typename... Ds> class route_by_channel {
                           event);
     }
 
-    template <typename E> void handle_event(E const &event) noexcept {
+    template <typename OtherEvent>
+    void handle_event(OtherEvent const &event) noexcept {
         std::apply([&](auto &...s) { (..., s.handle_event(event)); },
                    downstreams);
     }
@@ -80,21 +82,22 @@ template <typename ERouted, typename... Ds> class route_by_channel {
  * (This has the limitation that only one channel can be mapped to each
  * downstream.)
  *
- * Thus, if channels contains <tt>{5, -3}</tt> and an \c ERouted event is
+ * Thus, if channels contains <tt>{5, -3}</tt> and an \c EventToRoute event is
  * received with channel equal to \c -3, then it is routed to downstream
  * processor 1 (counting from 0).
  *
- * \tparam ERouted event type to route by channel
- * \tparam Ds downstream processor types
+ * \tparam EventToRoute event type to route by channel
+ * \tparam Downstreams downstream processor types
  * \param channels channel mapping
  * \param downstreams downstream processors (moved out)
  * \return route-by-channel processor
  */
-template <typename ERouted, typename... Ds>
-auto route_by_channel(std::array<std::int16_t, sizeof...(Ds)> const &channels,
-                      Ds &&...downstreams) {
-    return internal::route_by_channel<ERouted, Ds...>(
-        channels, std::forward<Ds>(downstreams)...);
+template <typename EventToRoute, typename... Downstreams>
+auto route_by_channel(
+    std::array<std::int16_t, sizeof...(Downstreams)> const &channels,
+    Downstreams &&...downstreams) {
+    return internal::route_by_channel<EventToRoute, Downstreams...>(
+        channels, std::forward<Downstreams>(downstreams)...);
 }
 
 } // namespace tcspc

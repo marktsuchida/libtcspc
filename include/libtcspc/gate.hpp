@@ -16,29 +16,31 @@ namespace tcspc {
 
 namespace internal {
 
-template <typename Es, typename EOpen, typename EClose, typename D>
+template <typename EventSetToGate, typename OpenEvent, typename CloseEvent,
+          typename Downstream>
 class gate_events {
     bool open;
 
-    D downstream;
+    Downstream downstream;
 
   public:
-    explicit gate_events(bool initially_open, D &&downstream)
+    explicit gate_events(bool initially_open, Downstream &&downstream)
         : open(initially_open), downstream(std::move(downstream)) {}
 
-    template <typename E> void handle_event(E const &event) noexcept {
-        if (!contains_event_v<Es, E> || open)
-            downstream.handle_event(event);
-    }
-
-    void handle_event(EOpen const &event) noexcept {
+    void handle_event(OpenEvent const &event) noexcept {
         open = true;
         downstream.handle_event(event);
     }
 
-    void handle_event(EClose const &event) noexcept {
+    void handle_event(CloseEvent const &event) noexcept {
         open = false;
         downstream.handle_event(event);
+    }
+
+    template <typename OtherEvent>
+    void handle_event(OtherEvent const &event) noexcept {
+        if (!contains_event_v<EventSetToGate, OtherEvent> || open)
+            downstream.handle_event(event);
     }
 
     void handle_end(std::exception_ptr const &error) noexcept {
@@ -51,26 +53,28 @@ class gate_events {
 /**
  * \brief Create a processor that gates events depending on current state.
  *
- * Events belonging to \c Es are gated: if an \c EOpen was received more
- * recently than an \c EClose, they are passed through; otherwise they are
- * discarded.
+ * Events belonging to \c EventSetToGate are gated: if an \c OpenEvent was
+ * received more recently than an \c CloseEvent, they are passed through;
+ * otherwise they are discarded.
  *
- * All events not in \c Es are passed through (including \c EOpen and \c
- * EClose).
+ * All events not in \c EventSetToGate are passed through (including \c
+ * OpenEvent and \c CloseEvent).
  *
- * \tparam Es event types to gate
- * \tparam EOpen event type that opens the gate
- * \tparam EClose event type that closes the gate
- * \tparam D downstream processor type
- * \param initially_open whether the gate is open before the first \c EOpen
- * or \c EClose event is received
+ * \tparam EventSetToGate event types to gate
+ * \tparam OpenEvent event type that opens the gate
+ * \tparam CloseEvent event type that closes the gate
+ * \tparam Downstream downstream processor type
+ * \param initially_open whether the gate is open before the first \c OpenEvent
+ * or \c CloseEvent event is received
  * \param downstream downstream processor (moved out)
  * \return gate-events processor
  */
-template <typename Es, typename EOpen, typename EClose, typename D>
-auto gate_events(bool initially_open, D &&downstream) {
-    return internal::gate_events<Es, EOpen, EClose, D>(
-        initially_open, std::forward<D>(downstream));
+template <typename EventSetToGate, typename OpenEvent, typename CloseEvent,
+          typename Downstream>
+auto gate_events(bool initially_open, Downstream &&downstream) {
+    return internal::gate_events<EventSetToGate, OpenEvent, CloseEvent,
+                                 Downstream>(
+        initially_open, std::forward<Downstream>(downstream));
 }
 
 } // namespace tcspc

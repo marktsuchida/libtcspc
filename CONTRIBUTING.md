@@ -71,14 +71,14 @@ types should be documented with Doxygen comments (follow existing practice).
   - Exception: special wrapper processors such as `ref_processor`,
     `type_erased_processor`
 - Processors are class templates, whose last template parameter is the
-  downstream processor type (`typename D` by convention).
+  downstream processor type (`typename Downstream` by convention).
   - Sinks, of course, will not have a downstream.
 - Processors can by non-copyable and even non-movable, but only if necessary.
   - Non-movable processors are strongly discouraged ourside of special use
     cases (e.g., `capture_output`). They typically require `ref_processor` to
     use, unless they are the most upstream processor (i.e., data source).
 - Ordinary processors contain the (chain of) downstream processor(s) in a data
-  member (`D downstream`).
+  member (`Downstream downstream`).
   - This should usually be the last non-static data member, so that the data
     layout mirrors the order of processing.
   - Note that the processor becomes move-only if any of its downstream
@@ -106,9 +106,9 @@ types should be documented with Doxygen comments (follow existing practice).
       parameters.
   - Processors should have an `explicit` constructor (or a few) taking
     configuration parameters and, as the last parameter, the downstream
-    processor (as a forwarding reference: `D &&downstream`).
+    processor (as a forwarding reference: `Downstream &&downstream`).
     - The downstream processor should be assigned to the data member via
-      `std::forward<D>()`.
+      `std::forward<Downstream>()`.
 - Factory function
   - Processors in the library are defined as class templates in an internal
     namespace.
@@ -144,7 +144,7 @@ types should be documented with Doxygen comments (follow existing practice).
   - For specific events, use overloads; for generic events (e.g., for
     processors that pass through unrelated events), use a member function
     template:
-    `template <typename E> void handle_event(E const &event) noexcept`.
+    `template <typename AnyEvent> void handle_event(AnyEvent const &event) noexcept`.
   - Event handlers must not throw. If there is an error, they should call
     `handle_end()` on the downstream (and arange to ignore subsequent events).
 - Calling downstream event handlers

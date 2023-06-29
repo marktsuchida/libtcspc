@@ -21,18 +21,19 @@ namespace tcspc {
 
 namespace internal {
 
-template <typename TBinIndex, typename TBin, typename Ovfl, typename D>
+template <typename BinIndex, typename Bin, typename OverflowStrategy,
+          typename Downstream>
 class histogram_elementwise {
   public:
-    using bin_index_type = TBinIndex;
-    using bin_type = TBin;
-    static_assert(is_any_of_v<Ovfl, saturate_on_overflow, error_on_overflow>);
+    using bin_index_type = BinIndex;
+    using bin_type = Bin;
+    static_assert(is_any_of_v<OverflowStrategy, saturate_on_overflow,
+                              error_on_overflow>);
 
   private:
-    using internal_overflow_strategy =
-        std::conditional_t<std::is_same_v<Ovfl, saturate_on_overflow>,
-                           saturate_on_internal_overflow,
-                           stop_on_internal_overflow>;
+    using internal_overflow_strategy = std::conditional_t<
+        std::is_same_v<OverflowStrategy, saturate_on_overflow>,
+        saturate_on_internal_overflow, stop_on_internal_overflow>;
 
     bool finished = false;
     // We use unique_ptr<T[]> rather than vector<T> because, among other
@@ -45,7 +46,7 @@ class histogram_elementwise {
     histogram_stats stats;
     null_journal<bin_index_type> journal; // Journaling not required
     macrotime_range cycle_time_range;
-    D downstream;
+    Downstream downstream;
 
     void finish(std::exception_ptr const &error) noexcept {
         finished = true;
@@ -57,7 +58,7 @@ class histogram_elementwise {
   public:
     explicit histogram_elementwise(std::size_t num_elements,
                                    std::size_t num_bins, bin_type max_per_bin,
-                                   D &&downstream)
+                                   Downstream &&downstream)
         : hist_arr_mem(new bin_type[num_elements * num_bins]),
           hist_arr(hist_arr_mem.get(), num_elements * num_bins),
           mhist(hist_arr, max_per_bin, num_bins, num_elements, true),
@@ -72,13 +73,15 @@ class histogram_elementwise {
         auto element_index = mhist.next_element_index();
         if (not mhist.apply_increment_batch(event.bin_indices, stats,
                                             journal)) {
-            if constexpr (std::is_same_v<Ovfl, saturate_on_overflow>) {
+            if constexpr (std::is_same_v<OverflowStrategy,
+                                         saturate_on_overflow>) {
                 unreachable();
-            } else if constexpr (std::is_same_v<Ovfl, error_on_overflow>) {
+            } else if constexpr (std::is_same_v<OverflowStrategy,
+                                                error_on_overflow>) {
                 return finish(std::make_exception_ptr(histogram_overflow_error(
                     "elementwise histogram bin overflowed")));
             } else {
-                static_assert(false_for_type<Ovfl>::value);
+                static_assert(false_for_type<OverflowStrategy>::value);
             }
         }
         cycle_time_range.extend(event.time_range);
@@ -98,7 +101,7 @@ class histogram_elementwise {
         }
     }
 
-    template <typename E> void handle_event(E const &event) noexcept {
+    template <typename Event> void handle_event(Event const &event) noexcept {
         if (not finished)
             downstream.handle_event(event);
     }
@@ -134,10 +137,11 @@ class histogram_elementwise {
  * At the end of each cycle a histogram_array_event is emitted, referencing the
  * whole array of histograms from the cycle.
  *
- * \tparam TBinIndex the bin index type
- * \tparam TBin the data type of the histogram bins
- * \tparam Ovfl strategy tag type to select how to handle bin overflows
- * \tparam D downstream processor type
+ * \tparam BinIndex the bin index type
+ * \tparam Bin the data type of the histogram bins
+ * \tparam OverflowStrategy strategy tag type to select how to handle bin
+ * overflows
+ * \tparam Downstream downstream processor type
  * \param num_elements the number of elements (each a histogram) in the array
  * \param num_bins the number of bins in each histogram (must match the bin
  * mapper used upstream)
@@ -145,30 +149,34 @@ class histogram_elementwise {
  * \param downstream downstream processor (moved out)
  * \return histogram-array processor
  */
-template <typename TBinIndex, typename TBin, typename Ovfl, typename D>
+template <typename BinIndex, typename Bin, typename OverflowStrategy,
+          typename Downstream>
 auto histogram_elementwise(std::size_t num_elements, std::size_t num_bins,
-                           TBin max_per_bin, D &&downstream) {
-    return internal::histogram_elementwise<TBinIndex, TBin, Ovfl, D>(
-        num_elements, num_bins, max_per_bin, std::forward<D>(downstream));
+                           Bin max_per_bin, Downstream &&downstream) {
+    return internal::histogram_elementwise<BinIndex, Bin, OverflowStrategy,
+                                           Downstream>(
+        num_elements, num_bins, max_per_bin,
+        std::forward<Downstream>(downstream));
 }
 
 namespace internal {
 
-template <typename TBinIndex, typename TBin, typename EReset, typename Ovfl,
-          bool EmitConcluding, typename D>
+template <typename BinIndex, typename Bin, typename ResetEvent,
+          typename OverflowStrategy, bool EmitConcluding, typename Downstream>
 class histogram_elementwise_accumulate {
   public:
-    using bin_index_type = TBinIndex;
-    using bin_type = TBin;
+    using bin_index_type = BinIndex;
+    using bin_type = Bin;
 
-    static_assert(is_any_of_v<Ovfl, saturate_on_overflow, reset_on_overflow,
-                              stop_on_overflow, error_on_overflow>);
+    static_assert(
+        is_any_of_v<OverflowStrategy, saturate_on_overflow, reset_on_overflow,
+                    stop_on_overflow, error_on_overflow>);
 
     // EmitConcluding cannot be used with saturate-on-overflow because there is
     // no way to roll back the current cycle in the presense of lost counts due
     // to saturation.
     static_assert(not(EmitConcluding &&
-                      std::is_same_v<Ovfl, saturate_on_overflow>),
+                      std::is_same_v<OverflowStrategy, saturate_on_overflow>),
                   "EmitConcluding is incompatible with saturate_on_overflow");
 
     // We require EmitConcluding for reset/stop-on-overflow, because it doesn't
@@ -180,12 +188,11 @@ class histogram_elementwise_accumulate {
                   "EmitConcluding must be true for this overflow policy");
 
   private:
-    using internal_overflow_strategy =
-        std::conditional_t<std::is_same_v<Ovfl, saturate_on_overflow>,
-                           saturate_on_internal_overflow,
-                           stop_on_internal_overflow>;
+    using internal_overflow_strategy = std::conditional_t<
+        std::is_same_v<OverflowStrategy, saturate_on_overflow>,
+        saturate_on_internal_overflow, stop_on_internal_overflow>;
     static constexpr bool need_journal =
-        EmitConcluding || std::is_same_v<Ovfl, reset_on_overflow>;
+        EmitConcluding || std::is_same_v<OverflowStrategy, reset_on_overflow>;
     using journal_type =
         std::conditional_t<need_journal,
                            bin_increment_batch_journal<bin_index_type>,
@@ -202,7 +209,7 @@ class histogram_elementwise_accumulate {
     journal_type journal;
     macrotime_range cycle_time_range;
     macrotime_range total_time_range;
-    D downstream;
+    Downstream downstream;
 
     void emit_concluding(bool end_of_stream) noexcept {
         assert(mhista.is_consistent());
@@ -224,7 +231,7 @@ class histogram_elementwise_accumulate {
     explicit histogram_elementwise_accumulate(std::size_t num_elements,
                                               std::size_t num_bins,
                                               bin_type max_per_bin,
-                                              D &&downstream)
+                                              Downstream &&downstream)
         : hist_arr_mem(new bin_type[num_elements * num_bins]),
           hist_arr(hist_arr_mem.get(), num_elements * num_bins),
           mhista(hist_arr, max_per_bin, num_bins, num_elements, true),
@@ -239,9 +246,11 @@ class histogram_elementwise_accumulate {
         auto element_index = mhista.next_element_index();
         if (not mhista.apply_increment_batch(event.bin_indices, stats,
                                              journal)) {
-            if constexpr (std::is_same_v<Ovfl, saturate_on_overflow>) {
+            if constexpr (std::is_same_v<OverflowStrategy,
+                                         saturate_on_overflow>) {
                 unreachable();
-            } else if constexpr (std::is_same_v<Ovfl, reset_on_overflow>) {
+            } else if constexpr (std::is_same_v<OverflowStrategy,
+                                                reset_on_overflow>) {
                 if (mhista.cycle_index() == 0) {
                     return finish(std::make_exception_ptr(histogram_overflow_error(
                         "elementwise histogram bin overflowed on a single batch")));
@@ -254,17 +263,19 @@ class histogram_elementwise_accumulate {
                 // Keep journal and cycle time range!
                 mhista.reset_and_replay(journal, stats);
                 return handle_event(event); // Recurse max once
-            } else if constexpr (std::is_same_v<Ovfl, stop_on_overflow>) {
+            } else if constexpr (std::is_same_v<OverflowStrategy,
+                                                stop_on_overflow>) {
                 if constexpr (EmitConcluding) {
                     mhista.roll_back_current_cycle(journal, stats);
                     emit_concluding(true);
                 }
                 return finish({});
-            } else if constexpr (std::is_same_v<Ovfl, error_on_overflow>) {
+            } else if constexpr (std::is_same_v<OverflowStrategy,
+                                                error_on_overflow>) {
                 return finish(std::make_exception_ptr(histogram_overflow_error(
                     "elementwise histogram bin overflowed")));
             } else {
-                static_assert(false_for_type<Ovfl>::value);
+                static_assert(false_for_type<OverflowStrategy>::value);
             }
         }
         cycle_time_range.extend(event.time_range);
@@ -286,7 +297,7 @@ class histogram_elementwise_accumulate {
         }
     }
 
-    void handle_event([[maybe_unused]] EReset const &event) noexcept {
+    void handle_event([[maybe_unused]] ResetEvent const &event) noexcept {
         if (finished)
             return;
         if constexpr (EmitConcluding) {
@@ -300,7 +311,7 @@ class histogram_elementwise_accumulate {
         cycle_time_range.reset();
     }
 
-    template <typename E> void handle_event(E const &event) noexcept {
+    template <typename Event> void handle_event(Event const &event) noexcept {
         if (!finished)
             downstream.handle_event(event);
     }
@@ -322,14 +333,15 @@ class histogram_elementwise_accumulate {
  * \brief Create a processor that collects an array of histograms accumulated
  * over cycles of batches of datapoints.
  *
- * The reset event \c EReset causes the array of histograms to be cleared and a
- * new accumulation to be started.
+ * The reset event \c ResetEvent causes the array of histograms to be cleared
+ * and a new accumulation to be started.
  *
- * \tparam TBinIndex the bin index type
- * \tparam TBin the data type of the histogram bins
- * \tparam EReset type of event causing histograms to reset
- * \tparam Ovfl strategy tag type to select how to handle bin overflows
- * \tparam D downstream processor type
+ * \tparam BinIndex the bin index type
+ * \tparam Bin the data type of the histogram bins
+ * \tparam ResetEvent type of event causing histograms to reset
+ * \tparam OverflowStrategy strategy tag type to select how to handle bin
+ * overflows
+ * \tparam Downstream downstream processor type
  * \param num_elements the number of elements (each a histogram) in the array
  * \param num_bins the number of bins in each histogram (must match the bin
  * mapper used upstream)
@@ -337,14 +349,15 @@ class histogram_elementwise_accumulate {
  * \param downstream downstream processor (moved out)
  * \return accumulate-histogram-arrays processor
  */
-template <typename TBinIndex, typename TBin, typename EReset, typename Ovfl,
-          bool EmitConcluding, typename D>
+template <typename BinIndex, typename Bin, typename ResetEvent,
+          typename OverflowStrategy, bool EmitConcluding, typename Downstream>
 auto histogram_elementwise_accumulate(std::size_t num_elements,
-                                      std::size_t num_bins, TBin max_per_bin,
-                                      D &&downstream) {
-    return internal::histogram_elementwise_accumulate<TBinIndex, TBin, EReset,
-                                                      Ovfl, EmitConcluding, D>(
-        num_elements, num_bins, max_per_bin, std::forward<D>(downstream));
+                                      std::size_t num_bins, Bin max_per_bin,
+                                      Downstream &&downstream) {
+    return internal::histogram_elementwise_accumulate<
+        BinIndex, Bin, ResetEvent, OverflowStrategy, EmitConcluding,
+        Downstream>(num_elements, num_bins, max_per_bin,
+                    std::forward<Downstream>(downstream));
 }
 
 } // namespace tcspc

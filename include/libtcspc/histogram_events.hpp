@@ -138,13 +138,13 @@ inline void print_range(std::ostream &s, It first, It last) {
 /**
  * \brief Event representing a datapoint for histogramming.
  *
- * \tparam TData the integer data type of the datapoint
+ * \tparam DataPoint the integer data type of the datapoint
  */
-template <typename TData> struct datapoint_event {
+template <typename DataPoint> struct datapoint_event {
     /**
      * \brief The data type.
      */
-    using data_type = TData;
+    using data_type = DataPoint;
 
     /**
      * \brief The macrotime of the datapoint.
@@ -180,9 +180,9 @@ template <typename TData> struct datapoint_event {
 /**
  * \brief Event representing data binned for histogramming.
  *
- * \tparam TBinIndex the bin index type
+ * \tparam BinIndex the bin index type
  */
-template <typename TBinIndex> struct bin_increment_event {
+template <typename BinIndex> struct bin_increment_event {
     /**
      * \brief The macrotime of the binned datapoint.
      */
@@ -191,7 +191,7 @@ template <typename TBinIndex> struct bin_increment_event {
     /**
      * \brief The histogram bin index to which the data value was mapped.
      */
-    TBinIndex bin_index;
+    BinIndex bin_index;
 
     /** \brief Equality comparison operator. */
     friend constexpr auto operator==(bin_increment_event const &lhs,
@@ -222,9 +222,9 @@ template <typename TBinIndex> struct bin_increment_event {
  * Typically the batch represents some unit of data collection, such as a time
  * interval or pixel.
  *
- * \tparam TBinIndex the bin index type
+ * \tparam BinIndex the bin index type
  */
-template <typename TBinIndex> struct bin_increment_batch_event {
+template <typename BinIndex> struct bin_increment_batch_event {
     /**
      * \brief The macrotime range of the batch.
      */
@@ -233,7 +233,7 @@ template <typename TBinIndex> struct bin_increment_batch_event {
     /**
      * \brief The bin indices for the datapoints in the batch.
      */
-    std::vector<TBinIndex> bin_indices;
+    std::vector<BinIndex> bin_indices;
 
     /** \brief Equality comparison operator. */
     friend auto operator==(bin_increment_batch_event const &lhs,
@@ -266,9 +266,9 @@ template <typename TBinIndex> struct bin_increment_batch_event {
  * output of histogram_in_batches) and for a series of updates to the same
  * histogram (as with the output of histogram or accumulate_histograms).
  *
- * \tparam TBin the data type of the histogram bins
+ * \tparam Bin the data type of the histogram bins
  */
-template <typename TBin> struct histogram_event {
+template <typename Bin> struct histogram_event {
     /**
      * \brief The macrotime range of the histogrammed data.
      */
@@ -277,7 +277,7 @@ template <typename TBin> struct histogram_event {
     /**
      * \brief The histogram.
      */
-    autocopy_span<TBin> histogram;
+    autocopy_span<Bin> histogram;
 
     /** \brief Statistics. */
     histogram_stats stats;
@@ -315,9 +315,9 @@ template <typename TBin> struct histogram_event {
  * accumulated result. The contained histogram covers only whole batches;
  * counts from any partial batch are not included.
  *
- * \tparam TBin the data type of the histogram bins
+ * \tparam Bin the data type of the histogram bins
  */
-template <typename TBin> struct concluding_histogram_event {
+template <typename Bin> struct concluding_histogram_event {
     /**
      * \brief The macrotime range of the histogrammed data.
      */
@@ -326,7 +326,7 @@ template <typename TBin> struct concluding_histogram_event {
     /**
      * \brief The accumulated histogram.
      */
-    autocopy_span<TBin> histogram;
+    autocopy_span<Bin> histogram;
 
     /** \brief Statistics. */
     histogram_stats stats;
@@ -384,9 +384,9 @@ template <typename TBin> struct concluding_histogram_event {
  * histogram arrays. The data it references is not owned by the event, and must
  * be copied if needed after event handling returns.
  *
- * \tparam TBin the data type of the histogram bins
+ * \tparam Bin the data type of the histogram bins
  */
-template <typename TBin> struct element_histogram_event {
+template <typename Bin> struct element_histogram_event {
     /**
      * \brief The macrotime range of the histogrammed data.
      *
@@ -404,7 +404,7 @@ template <typename TBin> struct element_histogram_event {
     /**
      * \brief View of the histogram data.
      */
-    autocopy_span<TBin> histogram;
+    autocopy_span<Bin> histogram;
 
     /** \brief Statistics (for the histogram array). */
     histogram_stats stats;
@@ -449,9 +449,9 @@ template <typename TBin> struct element_histogram_event {
  * with the output of histogram_array) and for a series of updates to the same
  * histogram array (as with the output of accumulate_histogram_arrays).
  *
- * \tparam TBin the data type of the histogram bins
+ * \tparam Bin the data type of the histogram bins
  */
-template <typename TBin> struct histogram_array_event {
+template <typename Bin> struct histogram_array_event {
     /**
      * \brief The macrotime range of the histogrammed data.
      *
@@ -464,7 +464,7 @@ template <typename TBin> struct histogram_array_event {
     /**
      * \brief View of the histogram array.
      */
-    autocopy_span<TBin> histogram_array;
+    autocopy_span<Bin> histogram_array;
 
     /** \brief Statistics. */
     histogram_stats stats;
@@ -507,9 +507,9 @@ template <typename TBin> struct histogram_array_event {
  * result. The contained histogram array covers only whole cycles; counts from
  * any partial cycle are not included.
  *
- * \tparam TBin the data type of the histogram bins
+ * \tparam Bin the data type of the histogram bins
  */
-template <typename TBin> struct concluding_histogram_array_event {
+template <typename Bin> struct concluding_histogram_array_event {
     /**
      * \brief The macrotime range of the accumulation.
      *
@@ -522,7 +522,7 @@ template <typename TBin> struct concluding_histogram_array_event {
     /**
      * \brief View of the histogram array.
      */
-    autocopy_span<TBin> histogram_array;
+    autocopy_span<Bin> histogram_array;
 
     /** \brief Statistics. */
     histogram_stats stats;

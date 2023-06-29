@@ -15,17 +15,19 @@ namespace tcspc {
 
 namespace internal {
 
-template <typename Es, typename D0, typename D1> class split_events {
-    D0 downstream0;
-    D1 downstream1;
+template <typename EventSetToSplit, typename Downstream0, typename Downstream1>
+class split_events {
+    Downstream0 downstream0;
+    Downstream1 downstream1;
 
   public:
-    explicit split_events(D0 &&downstream0, D1 &&downstream1)
+    explicit split_events(Downstream0 &&downstream0, Downstream1 &&downstream1)
         : downstream0(std::move(downstream0)),
           downstream1(std::move(downstream1)) {}
 
-    template <typename E> void handle_event(E const &event) noexcept {
-        if constexpr (contains_event_v<Es, E>)
+    template <typename AnyEvent>
+    void handle_event(AnyEvent const &event) noexcept {
+        if constexpr (contains_event_v<EventSetToSplit, AnyEvent>)
             downstream1.handle_event(event);
         else
             downstream0.handle_event(event);
@@ -43,19 +45,21 @@ template <typename Es, typename D0, typename D1> class split_events {
  * \brief Create a processor that splits events into two streams according to
  * event type.
  *
- * \tparam Es event set specifying event types that should be routed to
- * downstream processor 1
- * \tparam D0 type of downstream processor 0
- * \tparam D1 type of downstream processor 1
- * \param downstream0 the downstream receiving events not in Es (moved
+ * \tparam EventSetToSplit event set specifying event types that should be
+ * routed to downstream processor 1
+ * \tparam Downstream0 type of downstream processor 0
+ * \tparam Downstream1 type of downstream processor 1
+ * \param downstream0 the downstream receiving events not in EventSetToSplit
+ * (moved out)
+ * \param downstream1 the downstream receiving events in EventSetToSplit (moved
  * out)
- * \param downstream1 the downstream receiving events in Es (moved out)
  * \return split-events processor
  */
-template <typename Es, typename D0, typename D1>
-auto split_events(D0 &&downstream0, D1 &&downstream1) {
-    return internal::split_events<Es, D0, D1>(std::forward<D0>(downstream0),
-                                              std::forward<D1>(downstream1));
+template <typename EventSetToSplit, typename Downstream0, typename Downstream1>
+auto split_events(Downstream0 &&downstream0, Downstream1 &&downstream1) {
+    return internal::split_events<EventSetToSplit, Downstream0, Downstream1>(
+        std::forward<Downstream0>(downstream0),
+        std::forward<Downstream1>(downstream1));
 }
 
 } // namespace tcspc

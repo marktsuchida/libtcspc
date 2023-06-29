@@ -18,29 +18,32 @@ namespace tcspc {
 
 namespace internal {
 
-template <typename EMarker, typename EOut, typename D> class translate_marker {
+template <typename MarkerEvent, typename OutputEvent, typename Downstream>
+class translate_marker {
     std::int32_t chan;
-    D downstream;
+    Downstream downstream;
 
-    static_assert(std::is_same_v<decltype(EOut{0}.macrotime), macrotime>,
-                  "EOut must have a macrotime field of type macrotime");
-    static_assert(EOut{42}.macrotime == 42,
-                  "EOut must be initializeable with macrotime");
+    static_assert(
+        std::is_same_v<decltype(OutputEvent{0}.macrotime), macrotime>,
+        "OutputEvent must have a macrotime field of type macrotime");
+    static_assert(OutputEvent{42}.macrotime == 42,
+                  "OutputEvent must be initializeable with macrotime");
 
   public:
-    explicit translate_marker(std::int32_t channel, D &&downstream)
+    explicit translate_marker(std::int32_t channel, Downstream &&downstream)
         : chan(channel), downstream(std::move(downstream)) {}
 
-    void handle_event(EMarker const &event) noexcept {
+    void handle_event(MarkerEvent const &event) noexcept {
         if (event.channel == chan) {
-            EOut e{event.macrotime};
+            OutputEvent e{event.macrotime};
             downstream.handle_event(e);
         } else {
             downstream.handle_event(event);
         }
     }
 
-    template <typename E> void handle_event(E const &event) noexcept {
+    template <typename OtherEvent>
+    void handle_event(OtherEvent const &event) noexcept {
         downstream.handle_event(event);
     }
 
@@ -59,24 +62,24 @@ template <typename EMarker, typename EOut, typename D> class translate_marker {
  * representing frame, line, or pixel markers for FLIM. Each instance converts
  * a single marker channel to a single event type.
  *
- * The marker event type \c EMarker must have fields \c macrotime and \c
+ * The marker event type \c MarkerEvent must have fields \c macrotime and \c
  * channel.
  *
- * The output event type \c EOut must have a \c macrotime field of type
+ * The output event type \c OutputEvent must have a \c macrotime field of type
  * \c macrotime, and must be brace-initializable with a macrotime value (as in
- * \c EOut{123} ).
+ * \c OutputEvent{123} ).
  *
- * \tparam EMarker marker event type
- * \tparam EOut output event type for matching marker events
- * \tparam D downstream processor type
- * \param channel channel of marker events to convert to EOut events
+ * \tparam MarkerEvent marker event type
+ * \tparam OutputEvent output event type for matching marker events
+ * \tparam Downstream downstream processor type
+ * \param channel channel of marker events to convert to OutputEvent events
  * \param downstream downstream processor (moved out)
  * \return translate-marker processor
  */
-template <typename EMarker, typename EOut, typename D>
-auto translate_marker(std::int32_t channel, D &&downstream) {
-    return internal::translate_marker<EMarker, EOut, D>(
-        channel, std::forward<D>(downstream));
+template <typename MarkerEvent, typename OutputEvent, typename Downstream>
+auto translate_marker(std::int32_t channel, Downstream &&downstream) {
+    return internal::translate_marker<MarkerEvent, OutputEvent, Downstream>(
+        channel, std::forward<Downstream>(downstream));
 }
 
 } // namespace tcspc

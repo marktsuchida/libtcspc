@@ -98,12 +98,12 @@ struct swabian_tag_event {
 
 namespace internal {
 
-template <typename D> class decode_swabian_tags {
+template <typename Downstream> class decode_swabian_tags {
     bool had_error = false;
-    D downstream;
+    Downstream downstream;
 
   public:
-    explicit decode_swabian_tags(D &&downstream)
+    explicit decode_swabian_tags(Downstream &&downstream)
         : downstream(std::move(downstream)) {}
 
     void handle_event(swabian_tag_event const &event) noexcept {
@@ -159,12 +159,14 @@ template <typename D> class decode_swabian_tags {
 /**
  * \brief Create a processor that decodes Swabian Tag events.
  *
- * \tparam D downstream processor type
+ * \tparam Downstream downstream processor type
  * \param downstream downstream processor (moved out)
  * \return decode-swabian-tags processor
  */
-template <typename D> auto decode_swabian_tags(D &&downstream) {
-    return internal::decode_swabian_tags<D>(std::forward<D>(downstream));
+template <typename Downstream>
+auto decode_swabian_tags(Downstream &&downstream) {
+    return internal::decode_swabian_tags<Downstream>(
+        std::forward<Downstream>(downstream));
 }
 
 } // namespace tcspc
