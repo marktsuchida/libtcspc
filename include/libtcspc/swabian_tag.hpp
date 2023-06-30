@@ -48,7 +48,7 @@ struct swabian_tag_event {
      * \brief Read the event type.
      */
     [[nodiscard]] auto type() const noexcept -> tag_type {
-        return tag_type(read_u8(byte_subspan<0, 1>(bytes)));
+        return tag_type(read_u8(byte_subspan<0, 1>(bytes)).value());
     }
 
     // bytes[1] is reserved and should be written zero.
@@ -56,21 +56,21 @@ struct swabian_tag_event {
     /**
      * \brief Read the missed event count if this is a missed events event.
      */
-    [[nodiscard]] auto missed_event_count() const noexcept -> std::uint16_t {
+    [[nodiscard]] auto missed_event_count() const noexcept -> u16np {
         return read_u16le(byte_subspan<2, 2>(bytes));
     }
 
     /**
      * \brief Read the channel if this is a time tag or missed events event.
      */
-    [[nodiscard]] auto channel() const noexcept -> std::int32_t {
+    [[nodiscard]] auto channel() const noexcept -> i32np {
         return read_i32le(byte_subspan<4, 4>(bytes));
     }
 
     /**
      * \brief Read the time (picoseconds).
      */
-    [[nodiscard]] auto time() const noexcept -> std::int64_t {
+    [[nodiscard]] auto time() const noexcept -> i64np {
         return read_i64le(byte_subspan<8, 8>(bytes));
     }
 
@@ -114,7 +114,8 @@ template <typename Downstream> class decode_swabian_tags {
         switch (event.type()) {
         case tag_type::time_tag: {
             time_tagged_count_event e{
-                {event.time()}, narrow<decltype(e.channel)>(event.channel())};
+                {event.time().value()},
+                narrow<decltype(e.channel)>(event.channel())};
             downstream.handle_event(e);
             break;
         }
@@ -125,19 +126,19 @@ template <typename Downstream> class decode_swabian_tags {
             break;
         case tag_type::overflow_begin: {
             begin_lost_interval_event e;
-            e.macrotime = event.time();
+            e.macrotime = event.time().value();
             downstream.handle_event(e);
             break;
         }
         case tag_type::overflow_end: {
             end_lost_interval_event e;
-            e.macrotime = event.time();
+            e.macrotime = event.time().value();
             downstream.handle_event(e);
             break;
         }
         case tag_type::missed_events: {
             untagged_counts_event e{
-                {event.time()}, event.missed_event_count(), 0};
+                {event.time().value()}, event.missed_event_count().value(), 0};
             downstream.handle_event(e);
             break;
         }

@@ -18,10 +18,6 @@
 
 using namespace tcspc;
 
-using i32 = std::int32_t;
-using u32 = std::uint32_t;
-using u16 = std::uint16_t;
-
 using start_event = timestamped_test_event<0>;
 using stop_event = timestamped_test_event<1>;
 using misc_event = timestamped_test_event<2>;

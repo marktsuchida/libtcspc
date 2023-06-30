@@ -22,6 +22,7 @@ public_cpp_headers = files(
     'legacy_histogram.hpp',
     'line_clock_pixellator.hpp',
     'merge.hpp',
+    'npint.hpp',
     'picoquant_t3.hpp',
     'pixel_photon_events.hpp',
     'read_bytes.hpp',

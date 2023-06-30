@@ -16,9 +16,6 @@
 using namespace tcspc;
 using namespace tcspc::internal;
 
-using u8 = std::uint8_t;
-using u16 = std::uint16_t;
-
 TEST_CASE("Journal basic operations", "[bin_increment_batch_journal]") {
     bin_increment_batch_journal<u16> j;
     REQUIRE(j.num_batches() == 0);

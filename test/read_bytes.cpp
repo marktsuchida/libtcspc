@@ -26,7 +26,7 @@ byte_span_of_uchars(std::array<unsigned char, N> const &arr) noexcept
 
 } // namespace
 
-TEST_CASE("Read u16", "[read_bytes]") {
+TEST_CASE("Read u16np", "[read_bytes]") {
     bool const use_memcpy = GENERATE(false, true);
     auto f = use_memcpy ? internal::read_u16le_memcpy
                         : internal::read_u16le_generic;
@@ -35,23 +35,23 @@ TEST_CASE("Read u16", "[read_bytes]") {
 
     SECTION("Zero") {
         data = {0, 0};
-        REQUIRE(f(byte_span_of_uchars(data)) == 0u);
+        REQUIRE(f(byte_span_of_uchars(data)) == u16np(0));
     }
 
     SECTION("Low byte") {
         auto x = GENERATE(std::uint8_t(0x01), 0x7f, 0x80, 0xff);
         data = {x, 0};
-        REQUIRE(f(byte_span_of_uchars(data)) == x);
+        REQUIRE(f(byte_span_of_uchars(data)) == u16np(x));
     }
 
     SECTION("High byte") {
         auto x = GENERATE(std::uint8_t(0x01), 0x7f, 0x80, 0xff);
         data = {0, x};
-        REQUIRE(f(byte_span_of_uchars(data)) == x * 0x100u);
+        REQUIRE(f(byte_span_of_uchars(data)) == u16np(x * 0x100u));
     }
 }
 
-TEST_CASE("Read u32", "[read_bytes]") {
+TEST_CASE("Read u32np", "[read_bytes]") {
     bool const use_memcpy = GENERATE(false, true);
     auto f = use_memcpy ? internal::read_u32le_memcpy
                         : internal::read_u32le_generic;
@@ -60,13 +60,13 @@ TEST_CASE("Read u32", "[read_bytes]") {
     memset(data.data(), 0, 4);
     std::size_t const byte = GENERATE(0u, 1u, 2u, 3u);
 
-    SECTION("Zero") { REQUIRE(f(byte_span_of_uchars(data)) == 0u); }
+    SECTION("Zero") { REQUIRE(f(byte_span_of_uchars(data)) == u32np(0)); }
 
     SECTION("Single byte") {
         auto x = GENERATE(std::uint8_t(0x01), 0x7f, 0x80, 0xff);
         // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-constant-array-index)
         data[byte] = x;
-        REQUIRE(f(byte_span_of_uchars(data)) == x * (1u << (8 * byte)));
+        REQUIRE(f(byte_span_of_uchars(data)) == u32np(x * (1u << (8 * byte))));
     }
 
     SECTION("Sanity") {
@@ -74,11 +74,11 @@ TEST_CASE("Read u32", "[read_bytes]") {
         data[1] = 2;
         data[2] = 3;
         data[3] = 4;
-        REQUIRE(f(byte_span_of_uchars(data)) == 0x04030201u);
+        REQUIRE(f(byte_span_of_uchars(data)) == u32np(0x04030201u));
     }
 }
 
-TEST_CASE("Read u64", "[read_bytes]") {
+TEST_CASE("Read u64np", "[read_bytes]") {
     bool const use_memcpy = GENERATE(false, true);
     auto f = use_memcpy ? internal::read_u64le_memcpy
                         : internal::read_u64le_generic;
@@ -87,13 +87,14 @@ TEST_CASE("Read u64", "[read_bytes]") {
     memset(data.data(), 0, 8);
     std::size_t const byte = GENERATE(0u, 1u, 2u, 3u, 4u, 5u, 6u, 7u);
 
-    SECTION("Zero") { REQUIRE(f(byte_span_of_uchars(data)) == 0u); }
+    SECTION("Zero") { REQUIRE(f(byte_span_of_uchars(data)) == u64np(0)); }
 
     SECTION("Single byte") {
         auto x = GENERATE(std::uint8_t(0x01), 0x7f, 0x80, 0xff);
         // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-constant-array-index)
         data[byte] = x;
-        REQUIRE(f(byte_span_of_uchars(data)) == x * (1uLL << (8 * byte)));
+        REQUIRE(f(byte_span_of_uchars(data)) ==
+                u64np(x * (1uLL << (8 * byte))));
     }
 
     SECTION("Sanity") {
@@ -105,6 +106,6 @@ TEST_CASE("Read u64", "[read_bytes]") {
         data[5] = 6;
         data[6] = 7;
         data[7] = 8;
-        REQUIRE(f(byte_span_of_uchars(data)) == 0x0807060504030201uLL);
+        REQUIRE(f(byte_span_of_uchars(data)) == u64np(0x0807060504030201uLL));
     }
 }

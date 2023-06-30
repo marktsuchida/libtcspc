@@ -23,6 +23,7 @@ libtcspc_tests_srcs = [
     'legacy_histogram.cpp',
     'line_clock_pixellator.cpp',
     'merge.cpp',
+    'npint.cpp',
     'picoquant_t3.cpp',
     'pixel_photon_events.cpp',
     'read_bytes.cpp',

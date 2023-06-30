@@ -6,6 +6,8 @@
 
 #pragma once
 
+#include "npint.hpp"
+
 #include <cassert>
 #include <cstdint>
 #include <limits>
@@ -126,10 +128,9 @@ namespace internal {
 // constexpr-if branches (by pretending that it may not always be false).
 template <typename T> struct false_for_type : std::false_type {};
 
-constexpr auto count_trailing_zeros_32_nonintrinsic(std::uint32_t x) noexcept
-    -> int {
+constexpr auto count_trailing_zeros_32_nonintrinsic(u32np x) noexcept -> int {
     int r = 0;
-    while ((x & 1) == 0) {
+    while ((x & u32np(1)) == u32np(0)) {
         x >>= 1;
         ++r;
     }
@@ -139,12 +140,12 @@ constexpr auto count_trailing_zeros_32_nonintrinsic(std::uint32_t x) noexcept
 // Return the number of trailing zero bits in x. Behavior is undefined if x is
 // zero.
 // TODO: In C++20, replace with std::countr_zero()
-inline auto count_trailing_zeros_32(std::uint32_t const x) noexcept -> int {
+inline auto count_trailing_zeros_32(u32np const x) noexcept -> int {
 #ifdef __GNUC__
-    return __builtin_ctz(x);
+    return __builtin_ctz(x.value());
 #elif defined(_MSC_VER)
     unsigned long r;
-    _BitScanForward(&r, x);
+    _BitScanForward(&r, x.value());
     return (int)r;
 #else
     return count_trailing_zeros_32_nonintrinsic(x);

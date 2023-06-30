@@ -16,9 +16,6 @@
 
 using namespace tcspc;
 
-using u16 = std::uint16_t;
-using u32 = std::uint32_t;
-
 using reset_event = timestamped_test_event<0>;
 using misc_event = timestamped_test_event<1>;
 

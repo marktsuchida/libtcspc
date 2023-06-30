@@ -55,21 +55,21 @@ struct pq_pico_t3_event {
     /**
      * \brief Read the channel if this event represents a photon.
      */
-    [[nodiscard]] auto channel() const noexcept -> std::uint8_t {
+    [[nodiscard]] auto channel() const noexcept -> u8np {
         return read_u8(byte_subspan<3, 1>(bytes)) >> 4;
     }
 
     /**
      * \brief Read the difference time if this event represents a photon.
      */
-    [[nodiscard]] auto dtime() const noexcept -> std::uint16_t {
-        return read_u16le(byte_subspan<2, 2>(bytes)) & 0x0fffu;
+    [[nodiscard]] auto dtime() const noexcept -> u16np {
+        return read_u16le(byte_subspan<2, 2>(bytes)) & u16np(0x0fff);
     }
 
     /**
      * \brief Read the nsync counter value (no rollover correction).
      */
-    [[nodiscard]] auto nsync() const noexcept -> std::uint16_t {
+    [[nodiscard]] auto nsync() const noexcept -> u16np {
         return read_u16le(byte_subspan<0, 2>(bytes));
     }
 
@@ -77,36 +77,35 @@ struct pq_pico_t3_event {
      * \brief Determine if this event is a non-photon event.
      */
     [[nodiscard]] auto is_special() const noexcept -> bool {
-        return channel() == 15;
+        return channel() == u8np(15);
     }
 
     /**
      * \brief Determine if this event represents an nsync overflow.
      */
     [[nodiscard]] auto is_nsync_overflow() const noexcept -> bool {
-        return is_special() && dtime() == 0;
+        return is_special() && dtime() == u16np(0);
     }
 
     /**
      * \brief Read the nsync overflow count if this event represents an nsync
      * overflow.
      */
-    [[nodiscard]] static auto nsync_overflow_count() noexcept
-        -> std::uint16_t {
-        return 1;
+    [[nodiscard]] static auto nsync_overflow_count() noexcept -> u16np {
+        return u16np(1);
     }
 
     /**
      * \brief Determine if this event represents markers.
      */
     [[nodiscard]] auto is_external_marker() const noexcept -> bool {
-        return is_special() && dtime() != 0;
+        return is_special() && dtime() != u16np(0);
     }
 
     /**
      * \brief Read the marker bits (mask) if this event represents markers.
      */
-    [[nodiscard]] auto external_marker_bits() const noexcept -> std::uint16_t {
+    [[nodiscard]] auto external_marker_bits() const noexcept -> u16np {
         return dtime();
     }
 
@@ -152,48 +151,48 @@ template <bool IsHydraV1> struct pq_hydra_t3_event {
     /**
      * \brief Read the channel if this event represents a photon.
      */
-    [[nodiscard]] auto channel() const noexcept -> std::uint8_t {
-        return (read_u8(byte_subspan<3, 1>(bytes)) & 0x7fu) >> 1;
+    [[nodiscard]] auto channel() const noexcept -> u8np {
+        return (read_u8(byte_subspan<3, 1>(bytes)) & u8np(0x7f)) >> 1;
     }
 
     /**
      * \brief Read the difference time if this event represents a photon.
      */
-    [[nodiscard]] auto dtime() const noexcept -> std::uint16_t {
-        unsigned const lo6 = read_u8(byte_subspan<1, 1>(bytes)) >> 2;
-        unsigned const mid8 = read_u8(byte_subspan<2, 1>(bytes));
-        unsigned const hi1 = read_u8(byte_subspan<3, 1>(bytes)) & 1u;
-        return static_cast<std::uint16_t>(lo6 | (mid8 << 6) | (hi1 << 14));
+    [[nodiscard]] auto dtime() const noexcept -> u16np {
+        auto const lo6 = u16np(read_u8(byte_subspan<1, 1>(bytes))) >> 2;
+        auto const mid8 = u16np(read_u8(byte_subspan<2, 1>(bytes)));
+        auto const hi1 = u16np(read_u8(byte_subspan<3, 1>(bytes))) & u16np(1);
+        return lo6 | (mid8 << 6) | (hi1 << 14);
     }
 
     /**
      * \brief Read the nsync counter value (no rollover correction).
      */
-    [[nodiscard]] auto nsync() const noexcept -> std::uint16_t {
-        return read_u16le(byte_subspan<0, 2>(bytes)) & 0x03ffu;
+    [[nodiscard]] auto nsync() const noexcept -> u16np {
+        return read_u16le(byte_subspan<0, 2>(bytes)) & u16np(0x03ff);
     }
 
     /**
      * \brief Determine if this event is a non-photon event.
      */
     [[nodiscard]] auto is_special() const noexcept -> bool {
-        return (read_u8(byte_subspan<3, 1>(bytes)) & (1u << 7)) != 0;
+        return (read_u8(byte_subspan<3, 1>(bytes)) & u8np(1 << 7)) != u8np(0);
     }
 
     /**
      * \brief Determine if this event represents an nsync overflow.
      */
     [[nodiscard]] auto is_nsync_overflow() const noexcept -> bool {
-        return is_special() && channel() == 63;
+        return is_special() && channel() == u8np(63);
     }
 
     /**
      * \brief Read the nsync overflow count if this event represents an nsync
      * overflow.
      */
-    [[nodiscard]] auto nsync_overflow_count() const noexcept -> std::uint16_t {
-        if (IsHydraV1 || nsync() == 0) {
-            return 1;
+    [[nodiscard]] auto nsync_overflow_count() const noexcept -> u16np {
+        if (IsHydraV1 || nsync() == u16np(0)) {
+            return u16np(1);
         }
         return nsync();
     }
@@ -202,13 +201,13 @@ template <bool IsHydraV1> struct pq_hydra_t3_event {
      * \brief Determine if this event represents markers.
      */
     [[nodiscard]] auto is_external_marker() const noexcept -> bool {
-        return is_special() && channel() != 63;
+        return is_special() && channel() != u8np(63);
     }
 
     /**
      * \brief Read the marker bits (mask) if this event represents markers.
      */
-    [[nodiscard]] auto external_marker_bits() const noexcept -> std::uint8_t {
+    [[nodiscard]] auto external_marker_bits() const noexcept -> u8np {
         return channel();
     }
 
@@ -285,11 +284,11 @@ template <typename PQT3Event, typename Downstream> class base_decode_pq_t3 {
 
         if (event.is_external_marker()) {
             marker_event e{{nsync}, 0};
-            std::uint32_t bits = event.external_marker_bits();
-            while (bits != 0) {
+            auto bits = u32np(event.external_marker_bits());
+            while (bits != u32np(0)) {
                 e.channel = count_trailing_zeros_32(bits);
                 downstream.handle_event(e);
-                bits = bits & (bits - 1); // Clear the handled bit
+                bits = bits & (bits - u32np(1)); // Clear the handled bit
             }
             return;
         }

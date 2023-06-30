@@ -98,11 +98,12 @@ void dump_raw_event(char const *raw_event, std::ostream &output) {
     tcspc::bh_spc_event event{};
     std::memcpy(&event, raw_event, sizeof(event));
 
-    std::uint8_t const route = event.routing_signals();
-    output << ((route & (1 << 3)) != 0 ? 'x' : '_')
-           << ((route & (1 << 2)) != 0 ? 'x' : '_')
-           << ((route & (1 << 1)) != 0 ? 'x' : '_')
-           << ((route & (1 << 0)) != 0 ? 'x' : '_') << ' '
+    using tcspc::u8np;
+    auto const route = event.routing_signals();
+    output << ((route & (u8np(1) << 3)) != u8np(0) ? 'x' : '_')
+           << ((route & (u8np(1) << 2)) != u8np(0) ? 'x' : '_')
+           << ((route & (u8np(1) << 1)) != u8np(0) ? 'x' : '_')
+           << ((route & (u8np(1) << 0)) != u8np(0) ? 'x' : '_') << ' '
            << (event.invalid_flag() ? 'I' : '_')
            << (event.macrotime_overflow_flag() ? 'O' : '_')
            << (event.gap_flag() ? 'G' : '_')
