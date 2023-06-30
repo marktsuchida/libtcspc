@@ -5,3 +5,11 @@
  */
 
 #include "libtcspc/swabian_tag.hpp"
+
+#include <type_traits>
+
+using namespace tcspc;
+
+static_assert(std::is_trivial_v<swabian_tag_event>);
+
+static_assert(sizeof(swabian_tag_event) == 16);

@@ -9,12 +9,19 @@
 #include <array>
 #include <cstdint>
 #include <cstring>
+#include <type_traits>
 
 #include <catch2/catch_all.hpp>
 
 using namespace tcspc;
 
+static_assert(std::is_trivial_v<bh_spc_event>);
+static_assert(std::is_trivial_v<bh_spc_600_event_32>);
+static_assert(std::is_trivial_v<bh_spc_600_event_48>);
+
 static_assert(sizeof(bh_spc_event) == 4);
+static_assert(sizeof(bh_spc_600_event_32) == 4);
+static_assert(sizeof(bh_spc_600_event_48) == 6);
 
 namespace {
 
