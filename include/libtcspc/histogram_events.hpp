@@ -278,9 +278,8 @@ template <typename BinIndex> struct bin_increment_batch_event {
  *
  * \ingroup events-histogram
  *
- * This event is used both for a series of independent histograms (as with the
- * output of histogram_in_batches) and for a series of updates to the same
- * histogram (as with the output of histogram or accumulate_histograms).
+ * This event may be used both for a series of independent histograms and for a
+ * series of updates to the same histogram.
  *
  * \tparam Bin the data type of the histogram bins
  */
@@ -468,8 +467,9 @@ template <typename Bin> struct element_histogram_event {
  * \ingroup events-histogram
  *
  * This even is used both for a series of independent arrays of histograms (as
- * with the output of histogram_array) and for a series of updates to the same
- * histogram array (as with the output of accumulate_histogram_arrays).
+ * with the output of \ref histogram_elementwise) and for a series of updates
+ * to the same histogram array (as with the output of \ref
+ * histogram_elementwise_accumulate).
  *
  * \tparam Bin the data type of the histogram bins
  */
@@ -522,14 +522,15 @@ template <typename Bin> struct histogram_array_event {
 };
 
 /**
- * \brief
+ * \brief Event representing the final result of accumulation of a histogram
+ * array.
  *
  * \ingroup events-histogram
  *
- * This event is emitted by accumulate_histogram_arrays once per accumulation
- * (that is, before each reset or end of stream) to provide the accumulated
- * result. The contained histogram array covers only whole cycles; counts from
- * any partial cycle are not included.
+ * This event is emitted by \ref histogram_elementwise_accumulate once per
+ * accumulation (that is, before each reset or end of stream) to provide the
+ * accumulated result. The contained histogram array covers only whole cycles;
+ * counts from any partial cycle are not included.
  *
  * \tparam Bin the data type of the histogram bins
  */
