@@ -32,9 +32,8 @@ namespace tcspc {
 // https://commandcenter.blogspot.com/2012/04/byte-order-fallacy.html
 
 // The two T3 formats (pq_pico_t3_event and pq_hydra_t3_event) use matching
-// member names for static polymorphism. This allows
-// base_decode_pq_t3<PQT3Event> to handle 3 different formats with the same
-// code.
+// member names for static polymorphism. This allows decode_pq_t3<PQT3Event> to
+// handle 3 different formats with the same code.
 
 /**
  * \brief Binary record interpretation for PicoHarp T3 Format.
@@ -133,10 +132,12 @@ struct pq_pico_t3_event {
 };
 
 /**
- * \brief Abstract base class for binary record interpretation for HydraHarp,
+ * \brief Implementation for binary record interpretation for HydraHarp,
  * MultiHarp, and TimeHarp260 T3 format.
  *
  * \ingroup events-device
+ *
+ * User code should use \ref pq_hydra_v1_t3_event or \ref pq_hydra_v2_t3_event.
  *
  * \tparam IsHydraV1 if true, interpret as HydraHarp V1 (RecType 0x00010304)
  * format, in which nsync overflow records always indicate a single overflow
@@ -258,14 +259,14 @@ namespace internal {
 // Common implementation for decode_pq_pico_t3, decode_pq_hydra_v1_t3,
 // decode_pq_hydra_v2_t3.
 // PQT3Event is the binary record event class.
-template <typename PQT3Event, typename Downstream> class base_decode_pq_t3 {
+template <typename PQT3Event, typename Downstream> class decode_pq_t3 {
     macrotime nsync_base = 0;
     macrotime last_nsync = 0;
 
     Downstream downstream;
 
   public:
-    explicit base_decode_pq_t3(Downstream &&downstream)
+    explicit decode_pq_t3(Downstream &&downstream)
         : downstream(std::move(downstream)) {}
 
     void handle_event(PQT3Event const &event) noexcept {
@@ -324,7 +325,7 @@ template <typename PQT3Event, typename Downstream> class base_decode_pq_t3 {
  */
 template <typename Downstream>
 auto decode_pq_pico_t3(Downstream &&downstream) {
-    return internal::base_decode_pq_t3<pq_pico_t3_event, Downstream>(
+    return internal::decode_pq_t3<pq_pico_t3_event, Downstream>(
         std::forward<Downstream>(downstream));
 }
 
@@ -341,7 +342,7 @@ auto decode_pq_pico_t3(Downstream &&downstream) {
  */
 template <typename Downstream>
 auto decode_pq_hydra_v1_t3(Downstream &&downstream) {
-    return internal::base_decode_pq_t3<pq_hydra_v1_t3_event, Downstream>(
+    return internal::decode_pq_t3<pq_hydra_v1_t3_event, Downstream>(
         std::forward<Downstream>(downstream));
 }
 
@@ -359,7 +360,7 @@ auto decode_pq_hydra_v1_t3(Downstream &&downstream) {
  */
 template <typename Downstream>
 auto decode_pq_hydra_v2_t3(Downstream &&downstream) {
-    return internal::base_decode_pq_t3<pq_hydra_v2_t3_event, Downstream>(
+    return internal::decode_pq_t3<pq_hydra_v2_t3_event, Downstream>(
         std::forward<Downstream>(downstream));
 }
 

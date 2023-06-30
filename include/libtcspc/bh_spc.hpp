@@ -398,14 +398,14 @@ namespace internal {
 
 // Common implementation for decode_bh_spc, decode_bh_spc_600_48,
 // decode_bh_spc_600_32. BHEvent is the binary record event class.
-template <typename BHSPCEvent, typename Downstream> class base_decode_bh_spc {
+template <typename BHSPCEvent, typename Downstream> class decode_bh_spc {
     macrotime macrotime_base = 0; // Time of last overflow
     macrotime last_macrotime = 0;
 
     Downstream downstream;
 
   public:
-    explicit base_decode_bh_spc(Downstream &&downstream)
+    explicit decode_bh_spc(Downstream &&downstream)
         : downstream(std::move(downstream)) {}
 
     // Rule of zero
@@ -482,7 +482,7 @@ template <typename BHSPCEvent, typename Downstream> class base_decode_bh_spc {
  * \return decode-bh-spc processor
  */
 template <typename Downstream> auto decode_bh_spc(Downstream &&downstream) {
-    return internal::base_decode_bh_spc<bh_spc_event, Downstream>(
+    return internal::decode_bh_spc<bh_spc_event, Downstream>(
         std::forward<Downstream>(downstream));
 }
 
@@ -500,7 +500,7 @@ template <typename Downstream> auto decode_bh_spc(Downstream &&downstream) {
  */
 template <typename Downstream>
 auto decode_bh_spc_600_48(Downstream &&downstream) {
-    return internal::base_decode_bh_spc<bh_spc_600_event_48, Downstream>(
+    return internal::decode_bh_spc<bh_spc_600_event_48, Downstream>(
         std::forward<Downstream>(downstream));
 }
 
@@ -518,7 +518,7 @@ auto decode_bh_spc_600_48(Downstream &&downstream) {
  */
 template <typename Downstream>
 auto decode_bh_spc_600_32(Downstream &&downstream) {
-    return internal::base_decode_bh_spc<bh_spc_600_event_32, Downstream>(
+    return internal::decode_bh_spc<bh_spc_600_event_32, Downstream>(
         std::forward<Downstream>(downstream));
 }
 
