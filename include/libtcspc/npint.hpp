@@ -18,8 +18,10 @@ namespace tcspc {
 /**
  * \brief Non-promoted integers.
  *
+ * \ingroup misc
+ *
  * Objects of this type behave similarly to the underlying integer type, except
- * that no integer promotion is applied automatically and now implicit
+ * that no integer promotion is applied automatically and no implicit
  * conversion is performed to or from any other type (including boolean).
  *
  * \tparam T underlying (scalar) integer type
@@ -308,22 +310,116 @@ class npint {
     }
 };
 
-using u8 = std::uint8_t;   ///< Short name for uint8_t.
-using u16 = std::uint16_t; ///< Short name for uint16_t.
-using u32 = std::uint32_t; ///< Short name for uint32_t.
-using u64 = std::uint64_t; ///< Short name for uint64_t.
-using i8 = std::int8_t;    ///< Short name for int8_t.
-using i16 = std::int16_t;  ///< Short name for int16_t.
-using i32 = std::int32_t;  ///< Short name for int32_t.
-using i64 = std::int64_t;  ///< Short name for int64_t.
+/**
+ * \brief Short name for uint8_t.
+ *
+ * \ingroup misc
+ */
+using u8 = std::uint8_t;
 
-using u8np = npint<u8>;   ///< Non-promoted unsigned 8-bit integer.
-using u16np = npint<u16>; ///< Non-promoted unsigned 16-bit integer.
-using u32np = npint<u32>; ///< Non-promoted unsigned 32-bit integer.
-using u64np = npint<u64>; ///< Non-promoted unsigned 64-bit integer.
-using i8np = npint<i8>;   ///< Non-promoted signed 8-bit integer.
-using i16np = npint<i16>; ///< Non-promoted signed 16-bit integer.
-using i32np = npint<i32>; ///< Non-promoted signed 32-bit integer.
-using i64np = npint<i64>; ///< Non-promoted signed 64-bit integer.
+/**
+ * \brief Short name for uint16_t.
+
+ * \ingroup misc
+ */
+using u16 = std::uint16_t;
+
+/**
+ * \brief Short name for uint32_t.
+ *
+ * \ingroup misc
+ */
+using u32 = std::uint32_t;
+
+/**
+ * \brief Short name for uint64_t.
+ *
+ * \ingroup misc
+ */
+using u64 = std::uint64_t;
+
+/**
+ * \brief Short name for int8_t.
+
+ * \ingroup misc
+ */
+using i8 = std::int8_t;
+
+/**
+ * \brief Short name for int16_t.
+
+ * \ingroup misc
+ */
+using i16 = std::int16_t;
+
+/**
+ * \brief Short name for int32_t.
+
+ * \ingroup misc
+ */
+using i32 = std::int32_t;
+
+/**
+ * \brief Short name for int64_t.
+ *
+ * \ingroup misc
+ */
+using i64 = std::int64_t;
+
+/**
+ * \brief Non-promoted unsigned 8-bit integer.
+ *
+ * \ingroup misc
+ */
+using u8np = npint<u8>;
+
+/**
+ * \brief Non-promoted unsigned 16-bit integer.
+ *
+ * \ingroup misc
+ */
+using u16np = npint<u16>;
+
+/**
+ * \brief Non-promoted unsigned 32-bit integer.
+
+ * \ingroup misc
+ */
+using u32np = npint<u32>;
+
+/**
+ * \brief Non-promoted unsigned 64-bit integer.
+
+ * \ingroup misc
+ */
+using u64np = npint<u64>;
+
+/**
+ * \brief Non-promoted signed 8-bit integer.
+
+ * \ingroup misc
+ */
+using i8np = npint<i8>;
+
+/**
+ * \brief Non-promoted signed 16-bit integer.
+
+ * \ingroup misc
+ */
+using i16np = npint<i16>;
+
+/**
+ * \brief Non-promoted signed 32-bit integer.
+
+ * \ingroup misc
+ */
+using i32np = npint<i32>;
+
+/**
+ * \brief Non-promoted signed 64-bit integer.
+
+ * \ingroup misc
+ */
+using i64np = npint<i64>;
 
 } // namespace tcspc

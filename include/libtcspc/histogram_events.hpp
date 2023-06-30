@@ -24,7 +24,11 @@
 
 namespace tcspc {
 
-/** \brief Basic statistics for histograms and histogram arrays. */
+/**
+ * \brief Basic statistics for histograms and histogram arrays.
+ *
+ * \ingroup misc
+ */
 struct histogram_stats {
     /**
      * \brief Total frequency count of the histogram or histogram array.
@@ -62,7 +66,11 @@ struct histogram_stats {
     }
 };
 
-/** \brief A range of macrotime. */
+/**
+ * \brief A range of macrotime.
+ *
+ * \ingroup misc
+ */
 struct macrotime_range {
     /** \brief Value indicating unset start time. */
     static constexpr auto unstarted = std::numeric_limits<macrotime>::max();

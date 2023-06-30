@@ -23,6 +23,8 @@ namespace tcspc {
 /**
  * \brief Signed 64-bit integer type representing macrotime.
  *
+ * \ingroup tbd
+ *
  * The macrotime is the monotonically increasing timestamp assigned to events
  * by time tagging hardware, after processing to eliminate wraparounds.
  *
@@ -59,6 +61,8 @@ class never_event {
 /**
  * \brief Histogram overflow strategy tag to request saturating addition on
  * overflowed bins.
+ *
+ * \ingroup overflow-strategies
  */
 struct saturate_on_overflow {
     explicit saturate_on_overflow() = default;
@@ -67,6 +71,8 @@ struct saturate_on_overflow {
 /**
  * \brief Histogram overflow strategy tag to request resetting the histogram
  * when a bin is about to overflow.
+ *
+ * \ingroup overflow-strategies
  */
 struct reset_on_overflow {
     explicit reset_on_overflow() = default;
@@ -75,6 +81,8 @@ struct reset_on_overflow {
 /**
  * \brief Histogram overflow strategy tag to request ending the processing when
  * a bin is about to overflow.
+ *
+ * \ingroup overflow-strategies
  */
 struct stop_on_overflow {
     explicit stop_on_overflow() = default;
@@ -83,6 +91,8 @@ struct stop_on_overflow {
 /**
  * \brief Histogram overflow strategy tag to request treating bin overflows as
  * errors.
+ *
+ * \ingroup overflow-strategies
  */
 struct error_on_overflow {
     explicit error_on_overflow() = default;
@@ -90,6 +100,8 @@ struct error_on_overflow {
 
 /**
  * \brief Error raised when a histogram bin overflows.
+ *
+ * \ingroup exceptions
  *
  * This error is raised when the error_on_overflow strategy is requested and
  * there was an overflow. It is also raised when reset_on_overflow is requested
@@ -104,6 +116,8 @@ class histogram_overflow_error : public std::runtime_error {
 
 /**
  * \brief Error raised when histogram array cycle is incomplete.
+ *
+ * \ingroup exceptions
  *
  * All but the last cycle before a reset or end-of-stream must be complete for
  * processors computing histogram arrays. This exception is thrown if a

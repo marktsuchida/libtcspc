@@ -25,11 +25,6 @@ struct stop_on_internal_overflow {
     explicit stop_on_internal_overflow() = default;
 };
 
-/**
- * \brief Data structure representing a log of bin increment batches.
- *
- * \tparam BinIndex bin index type
- */
 template <typename BinIndex> class bin_increment_batch_journal {
   public:
     using bin_index_type = BinIndex;

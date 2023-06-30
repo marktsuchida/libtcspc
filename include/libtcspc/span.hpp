@@ -18,6 +18,8 @@ namespace tcspc {
 /**
  * \brief Span, an alias or replacement for \c std::span.
  *
+ * \ingroup misc
+ *
  * For C++20 and later, this is an alias of \c std::span.
  * For C++17, this is replaced with a local implementation (tcbrindle/span).
  */

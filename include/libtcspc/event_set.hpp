@@ -18,6 +18,8 @@ namespace tcspc {
 /**
  * \brief Type representing a set of event types.
  *
+ * \ingroup misc
+ *
  * This is just an alias for std::tuple. It is used to describe sets of events
  * handled or emitted by processors.
  *
@@ -27,6 +29,8 @@ template <typename... Events> using event_set = std::tuple<Events...>;
 
 /**
  * \brief A variant type for events.
+ *
+ * \ingroup misc
  *
  * This is just an alias for a std::variant holding the events of the given
  * event set. It can be used to store more than one kind of event, for example
@@ -49,6 +53,8 @@ struct event_is_one_of : std::disjunction<std::is_same<Event, Events>...> {};
  * \brief Metafunction to check whether the given event set contains the given
  * event.
  *
+ * \ingroup metafunctions
+ *
  * The result is provided in the member constant \c value.
  *
  * \see contains_event_v
@@ -65,6 +71,8 @@ struct contains_event
 /**
  * \brief Helper variable to get the result of contains_event
  *
+ * \ingroup metafunctions
+ *
  * \tparam EventSet an event set type to check
  *
  * \tparam Event an event type to check
@@ -76,6 +84,8 @@ inline constexpr bool contains_event_v =
 /**
  * \brief Metafunction to check whether the given processor handles the given
  * event type.
+ *
+ * \ingroup metafunctions
  *
  * The result is provided in the member constant \c value.
  *
@@ -98,6 +108,8 @@ struct handles_event<Proc, Event,
 /**
  * \brief Helper variable to get the result of handles_event.
  *
+ * \ingroup metafunctions
+ *
  * \tparam Proc a processor type to check
  *
  * \tparam Event an event type to check
@@ -108,6 +120,8 @@ inline constexpr bool handles_event_v = handles_event<Proc, Event>::value;
 /**
  * \brief Metafunction to check whether the given processor handles end of
  * stream.
+ *
+ * \ingroup metafunctions
  *
  * All processors must handle end of stream. This metafunction is useful for
  * static checking.
@@ -130,6 +144,8 @@ struct handles_end<Proc, std::void_t<decltype(std::declval<Proc>().handle_end(
 /**
  * \brief Helper variable to get the result of handles_end.
  *
+ * \ingroup metafunctions
+ *
  * \tparam Proc a processor type to check
  */
 template <typename Proc>
@@ -150,6 +166,8 @@ struct handles_events_and_end
  * \brief Metafunction to check whether the given processor handles a set of
  * events.
  *
+ * \ingroup metafunctions
+ *
  * The result is true only if the processor handles all of the events in the
  * event set as well as end-of-stream.
  *
@@ -167,6 +185,8 @@ struct handles_event_set
 /**
  * \brief Helper variable to get the result of handles_event_set.
  *
+ * \ingroup metafunctions
+ *
  * \tparam Proc the processor type to check
  *
  * \tparam EventSet the event set to check
@@ -177,6 +197,8 @@ inline constexpr bool handles_event_set_v =
 
 /**
  * \brief Metafunction to concatenate event sets
+ *
+ * \ingroup metafunctions
  *
  * The result is a new event set type that contains all of the events of the
  * given event sets. No attempt is made to remove duplicate event types.
@@ -194,6 +216,8 @@ template <typename... EventSets> struct concat_event_set {
 
 /**
  * \brief Helper typedef to get the result of concat_event_set.
+ *
+ * \ingroup metafunctions
  *
  * \tparam EventSets the event set types to concatenate
  */

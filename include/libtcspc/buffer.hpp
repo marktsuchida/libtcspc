@@ -38,6 +38,8 @@ constexpr std::size_t destructive_interference_size = 64;
 /**
  * \brief Memory pool holding objects for reuse.
  *
+ * \ingroup misc
+ *
  * In other words, a free list of \c T instances that automatically allocates
  * additional instances on demand.
  *

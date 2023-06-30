@@ -19,6 +19,8 @@ namespace tcspc {
 /**
  * \brief Like \c std::span, but allocates new memory when copied.
  *
+ * \ingroup misc
+ *
  * Instances hold a span of \c T[] memory, which may or may not be owned by the
  * instance. Copying any instance copies the data, and the result is an
  * instance that owns the memory for its data.

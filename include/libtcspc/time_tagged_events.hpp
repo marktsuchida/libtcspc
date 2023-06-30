@@ -342,11 +342,17 @@ struct marker_event : public base_time_tagged_event {
 
 /**
  * \brief Event set containing all TCSPC events.
+ *
+ * \ingroup tbd
  */
 using tcspc_events = event_set<time_reached_event, data_lost_event,
                                time_correlated_count_event, marker_event>;
 
-/** \brief Stream insertion operator for TCSPC event variant. */
+/**
+ * \brief Stream insertion operator for TCSPC event variant.
+ *
+ * \ingroup tbd
+ */
 inline auto operator<<(std::ostream &os,
                        tcspc::event_variant<tcspc::tcspc_events> const &event)
     -> std::ostream & {
