@@ -58,7 +58,7 @@ class translate_marker {
  * \brief Create a processor that converts marker events with specific channel
  * to a specified event type.
  *
- * \ingroup processors
+ * \ingroup processors-timing
  *
  * This can be used, for example, to convert specific marker events into events
  * representing frame, line, or pixel markers for FLIM. Each instance converts

@@ -99,7 +99,7 @@ using virtual_processor =
 /**
  * \brief Processor that type-erases the downstream processor.
  *
- * \ingroup processors
+ * \ingroup processors-basic
  *
  * \tparam EventSet the event set handled by the processor
  */

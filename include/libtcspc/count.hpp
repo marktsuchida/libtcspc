@@ -71,7 +71,7 @@ class count_event {
  * \brief Create a processor that counts a specific event and emits an event
  * when the count reaches a threshold.
  *
- * \ingroup processors
+ * \ingroup processors-timing
  *
  * All events (including \c TickEvent and \c ResetEvent) are passed through.
  *

@@ -31,7 +31,7 @@ namespace tcspc {
 /**
  * \brief Binary record interpretation for raw BH SPC event.
  *
- * \ingroup events
+ * \ingroup events-device
  *
  * This interprets the FIFO format used by most BH SPC models, except for
  * SPC-600 and SPC-630.
@@ -157,7 +157,7 @@ struct bh_spc_event {
  * \brief Binary record interpretation for raw events from SPC-600/630 in
  * 4096-channel mode.
  *
- * \ingroup events
+ * \ingroup events-device
  */
 struct bh_spc_600_event_48 {
     /**
@@ -277,7 +277,7 @@ struct bh_spc_600_event_48 {
  * \brief Binary record interpretation for raw events from SPC-600/630 in
  * 256-channel mode.
  *
- * \ingroup events
+ * \ingroup events-device
  */
 struct bh_spc_600_event_32 {
     /**
@@ -473,7 +473,7 @@ template <typename BHSPCEvent, typename Downstream> class base_decode_bh_spc {
  * \brief Create a processor that decodes Becker & Hickl SPC (most models) FIFO
  * records.
  *
- * \ingroup processors
+ * \ingroup processors-decode
  *
  * \tparam Downstream downstream processor type
  *
@@ -490,7 +490,7 @@ template <typename Downstream> auto decode_bh_spc(Downstream &&downstream) {
  * \brief Create a processor that decodes Becker & Hickl SPC-600/630
  * 4096-channel mode FIFO records.
  *
- * \ingroup processors
+ * \ingroup processors-decode
  *
  * \tparam Downstream downstream processor type
  *
@@ -508,7 +508,7 @@ auto decode_bh_spc_600_48(Downstream &&downstream) {
  * \brief Create a processor that decodes Becker & Hickl SPC-600/630
  * 256-channel mode FIFO records.
  *
- * \ingroup processors
+ * \ingroup processors-decode
  *
  * \tparam Downstream downstream processor type
  *

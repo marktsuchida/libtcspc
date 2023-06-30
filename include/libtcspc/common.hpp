@@ -42,7 +42,7 @@ using macrotime = std::int64_t;
 /**
  * \brief An event type whose instances never occur.
  *
- * \ingroup events
+ * \ingroup events-basic
  *
  * This can be used to configure unused inputs to processors.
  */

@@ -24,7 +24,7 @@ namespace tcspc {
 /**
  * \brief Binary record interpretation for 16-byte Swabian 'Tag'.
  *
- * \ingroup events
+ * \ingroup events-device
  *
  * This has the same size and memory layout as the 'Tag' struct in the Swabian
  * Time Tagger C++ API.
@@ -162,7 +162,7 @@ template <typename Downstream> class decode_swabian_tags {
 /**
  * \brief Create a processor that decodes Swabian Tag events.
  *
- * \ingroup processors
+ * \ingroup processors-decode
  *
  * \tparam Downstream downstream processor type
  *

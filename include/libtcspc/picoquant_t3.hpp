@@ -39,7 +39,7 @@ namespace tcspc {
 /**
  * \brief Binary record interpretation for PicoHarp T3 Format.
  *
- * \ingroup events
+ * \ingroup events-device
  *
  * RecType 0x00010303.
  */
@@ -136,7 +136,7 @@ struct pq_pico_t3_event {
  * \brief Abstract base class for binary record interpretation for HydraHarp,
  * MultiHarp, and TimeHarp260 T3 format.
  *
- * \ingroup events
+ * \ingroup events-device
  *
  * \tparam IsHydraV1 if true, interpret as HydraHarp V1 (RecType 0x00010304)
  * format, in which nsync overflow records always indicate a single overflow
@@ -241,7 +241,7 @@ template <bool IsHydraV1> struct pq_hydra_t3_event {
 /**
  * \brief Binary record interpretation for HydraHarp V1 T3 format.
  *
- * \ingroup events
+ * \ingroup events-device
  */
 using pq_hydra_v1_t3_event = pq_hydra_t3_event<true>;
 
@@ -249,7 +249,7 @@ using pq_hydra_v1_t3_event = pq_hydra_t3_event<true>;
  * \brief Binary record interpretation for HydraHarp V2, MultiHarp, and
  * TimeHarp260 T3 format.
  *
- * \ingroup events
+ * \ingroup events-device
  */
 using pq_hydra_v2_t3_event = pq_hydra_t3_event<false>;
 
@@ -314,7 +314,7 @@ template <typename PQT3Event, typename Downstream> class base_decode_pq_t3 {
 /**
  * \brief Create a processor that decodes PicoQuant PicoHarp T3 events.
  *
- * \ingroup processors
+ * \ingroup processors-decode
  *
  * \tparam Downstream downstream processor type
  *
@@ -331,7 +331,7 @@ auto decode_pq_pico_t3(Downstream &&downstream) {
 /**
  * \brief Create a processor that decodes PicoQuant HydraHarp V1 T3 events.
  *
- * \ingroup processors
+ * \ingroup processors-decode
  *
  * \tparam Downstream downstream processor type
  *
@@ -349,7 +349,7 @@ auto decode_pq_hydra_v1_t3(Downstream &&downstream) {
  * \brief Create a processor that decodes PicoQuant HydraHarp V2, MultiHarp,
  * and TimeHarp260 T3 events.
  *
- * \ingroup processors
+ * \ingroup processors-decode
  *
  * \tparam Downstream downstream processor type
  *

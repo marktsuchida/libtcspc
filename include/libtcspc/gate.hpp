@@ -53,7 +53,7 @@ class gate_events {
 /**
  * \brief Create a processor that gates events depending on current state.
  *
- * \ingroup processors
+ * \ingroup processors-timing
  *
  * Events belonging to \c EventSetToGate are gated: if an \c OpenEvent was
  * received more recently than an \c CloseEvent, they are passed through;

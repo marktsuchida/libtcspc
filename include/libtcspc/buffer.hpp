@@ -121,7 +121,7 @@ template <typename Pointer, typename Downstream> class dereference_pointer {
 /**
  * \brief Create a processor dereferencing a pointers to events.
  *
- * \ingroup processors
+ * \ingroup processors-basic
  *
  * This can be used, for example, to convert \c shared_pointer<Event> to \c
  * Event for some event type \c Event.
@@ -166,7 +166,7 @@ class unbatch {
  * \brief Create a processor transforming batches of events to individual
  * events.
  *
- * \ingroup processors
+ * \ingroup processors-basic
  *
  * \tparam EventContainer event container type
  *
@@ -278,7 +278,7 @@ template <typename Event, typename Downstream> class buffer_event {
 /**
  * \brief Create a pseudo-processor that buffers events.
  *
- * \ingroup processors
+ * \ingroup processors-basic
  *
  * This receives events of type \c Event from upstream like a normal processor,
  * but stores them in a buffer. By calling <tt>void pump_downstream()

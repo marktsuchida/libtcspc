@@ -41,7 +41,7 @@ template <typename Downstream> class time_delay {
 /**
  * \brief Create a processor that applies a macrotime offset to all events.
  *
- * \ingroup processors
+ * \ingroup processors-timing
  *
  * \tparam Downstream downstream processor type
  *

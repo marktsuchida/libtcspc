@@ -64,7 +64,7 @@ class generate_timings {
  * \brief Create a processor that generates timing events in response to a
  * trigger.
  *
- * \ingroup processors
+ * \ingroup processors-timing
  *
  * All events are passed through.
  *

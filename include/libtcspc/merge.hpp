@@ -169,7 +169,7 @@ class merge_input {
 /**
  * \brief Create a processor that merges two event streams.
  *
- * \ingroup processors
+ * \ingroup processors-basic
  *
  * The merged stream will be produced in increasing macrotime order, provided
  * that the two input streams have events in increasing macrotime order and the

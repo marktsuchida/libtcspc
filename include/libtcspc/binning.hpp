@@ -55,7 +55,7 @@ template <typename DataMapper, typename Downstream> class map_to_datapoints {
  * \brief Create a processor that maps arbitrary timestamped events to
  * datapoint events.
  *
- * \ingroup processors
+ * \ingroup processors-histogram
  *
  * Incoming events of type \c event_type are mapped to \c
  * datapoint_event<data_type>. \c event_type and \c data_type are deduced from
@@ -149,7 +149,7 @@ template <typename BinMapper, typename Downstream> class map_to_bins {
 /**
  * \brief Create a processor that maps datapoints to histogram bin indices.
  *
- * \ingroup processors
+ * \ingroup processors-histogram
  *
  * Incoming events of type \c datapoint_event<data_type> are mapped to \c
  * bin_increment_event<bin_index_type>. \c data_type and \c bin_index_type are
@@ -342,28 +342,20 @@ class batch_bin_increments {
     Downstream downstream;
 
   public:
-    /**
-     * \brief Construct with downstream processor.
-     *
-     * \param downstream downstream processor (moved out)
-     */
     explicit batch_bin_increments(Downstream &&downstream)
         : downstream(downstream) {}
 
-    /** \brief Processor interface **/
     void handle_event(bin_increment_event<BinIndex> const &event) noexcept {
         if (in_batch)
             batch.bin_indices.push_back(event.bin_index);
     }
 
-    /** \brief Processor interface **/
     void handle_event(StartEvent const &event) noexcept {
         batch.bin_indices.clear();
         in_batch = true;
         batch.time_range.start = event.macrotime;
     }
 
-    /** \brief Processor interface **/
     void handle_event(StopEvent const &event) noexcept {
         if (in_batch) {
             batch.time_range.stop = event.macrotime;
@@ -372,13 +364,11 @@ class batch_bin_increments {
         }
     }
 
-    /** \brief Processor interface **/
     template <typename OtherEvent>
     void handle_event(OtherEvent const &event) noexcept {
         downstream.handle_event(event);
     }
 
-    /** \brief Processor interface **/
     void handle_end(std::exception_ptr const &error) noexcept {
         batch.bin_indices.clear();
         batch.bin_indices.shrink_to_fit();
@@ -391,7 +381,7 @@ class batch_bin_increments {
 /**
  * \brief Create a processor collecting binned data into batches.
  *
- * \ingroup processor
+ * \ingroup processors-histogram
  *
  * \tparam BinIndex the bin index type
  *

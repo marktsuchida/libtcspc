@@ -16,7 +16,7 @@ namespace tcspc {
 /**
  * \brief Processor that sinks any event and does nothing.
  *
- * \ingroup processors
+ * \ingroup processors-basic
  */
 class discard_any {
   public:
@@ -32,7 +32,7 @@ class discard_any {
 /**
  * \brief Processor that sinks a specified set of events and does nothing.
  *
- * \ingroup processors
+ * \ingroup processors-basic
  *
  * \tparam EventSet the set of events to consume.
  */

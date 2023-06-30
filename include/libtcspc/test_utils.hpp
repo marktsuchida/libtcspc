@@ -263,7 +263,7 @@ template <typename EventSet, typename Downstream> class feed_input {
 /**
  * \brief Create a sink that logs test output for checking.
  *
- * \ingroup processors
+ * \ingroup processors-testing
  *
  * \tparam EventSet event set to accept
  *
@@ -276,7 +276,7 @@ template <typename EventSet> auto capture_output() {
 /**
  * \brief Create a source for feeding test input to a processor.
  *
- * \ingroup processors
+ * \ingroup processors-testing
  *
  * \tparam EventSet input event set
  *
@@ -295,7 +295,7 @@ auto feed_input(Downstream &&downstream) {
 /**
  * \brief Empty event for testing.
  *
- * \ingroup events
+ * \ingroup events-testing
  *
  * \tparam N a number to distinguish event types
  */
@@ -325,7 +325,7 @@ template <int N> struct empty_test_event {
 /**
  * \brief Timestamped event for testing.
  *
- * \ingroup events
+ * \ingroup events-testing
  *
  * \tparam N a number to distinguish event types.
  */

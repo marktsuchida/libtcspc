@@ -39,7 +39,7 @@ template <typename... Downstreams> class broadcast {
  * \brief Create a processor that broadcasts events to multiple downstream
  * processors.
  *
- * \ingroup processors
+ * \ingroup processors-basic
  *
  * \tparam Downstreams downstream processor classes
  *

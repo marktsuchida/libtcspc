@@ -45,7 +45,7 @@ class split_events {
  * \brief Create a processor that splits events into two streams according to
  * event type.
  *
- * \ingroup processors
+ * \ingroup processors-basic
  *
  * \tparam EventSetToSplit event set specifying event types that should be
  * routed to downstream processor 1
