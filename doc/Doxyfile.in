@@ -13,5 +13,5 @@ CLASS_GRAPH            = NO
 COLLABORATION_GRAPH    = NO
 GROUP_GRAPHS           = NO
 RECURSIVE              = YES
-SORT_BRIEF_DOCS        = NO
+SORT_BRIEF_DOCS        = YES
 EXCLUDE_SYMBOLS        = internal

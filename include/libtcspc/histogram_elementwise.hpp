@@ -128,6 +128,8 @@ class histogram_elementwise {
  * \brief Create a processor that computes an array of histograms over cycles
  * of batches of datapoints.
  *
+ * \ingroup processors
+ *
  * This is the array version of histogram_in_batches (rather than histogram).
  *
  * Each incoming bin_increment_batch_event is stored as successive elements in
@@ -340,6 +342,8 @@ class histogram_elementwise_accumulate {
 /**
  * \brief Create a processor that collects an array of histograms accumulated
  * over cycles of batches of datapoints.
+ *
+ * \ingroup processors
  *
  * The reset event \c ResetEvent causes the array of histograms to be cleared
  * and a new accumulation to be started.

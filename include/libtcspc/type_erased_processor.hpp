@@ -99,6 +99,8 @@ using virtual_processor =
 /**
  * \brief Processor that type-erases the downstream processor.
  *
+ * \ingroup processors
+ *
  * \tparam EventSet the event set handled by the processor
  */
 template <typename EventSet> class type_erased_processor {

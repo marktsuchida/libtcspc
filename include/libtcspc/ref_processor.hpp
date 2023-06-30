@@ -13,6 +13,8 @@ namespace tcspc {
 /**
  * \brief Processor that forwards to a processor reference.
  *
+ * \ingroup processors
+ *
  * This is an adapter to allow the use of non-movable processors, or when you
  * do not want to move a downstream processor into its upstream.
  *

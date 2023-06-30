@@ -64,6 +64,8 @@ class generate_timings {
  * \brief Create a processor that generates timing events in response to a
  * trigger.
  *
+ * \ingroup processors
+ *
  * All events are passed through.
  *
  * Every time an \c TriggerEvent is received, generation of a pattern of timing
@@ -116,6 +118,8 @@ auto generate_timings(PatternGenerator &&generator, Downstream &&downstream) {
 /**
  * \brief Timing generator that generates no output events.
  *
+ * \ingroup timing-generators
+ *
  * Timing pattern generator for use with generate_timings.
  *
  * \tparam Event output event type (never generated)
@@ -139,6 +143,8 @@ template <typename Event> class null_timing_generator {
 
 /**
  * \brief Timing generator that generates a single, delayed output event.
+ *
+ * \ingroup timing-generators
  *
  * Timing pattern generator for use with generate_timings.
  *
@@ -187,6 +193,8 @@ template <typename Event> class one_shot_timing_generator {
 /**
  * \brief Timing generator that generates an equally spaced series of output
  * events.
+ *
+ * \ingroup timing-generators
  *
  * Timing pattern generator for use with generate_timings.
  *

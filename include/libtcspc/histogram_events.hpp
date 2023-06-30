@@ -138,6 +138,8 @@ inline void print_range(std::ostream &s, It first, It last) {
 /**
  * \brief Event representing a datapoint for histogramming.
  *
+ * \ingroup events
+ *
  * \tparam DataPoint the integer data type of the datapoint
  */
 template <typename DataPoint> struct datapoint_event {
@@ -180,6 +182,8 @@ template <typename DataPoint> struct datapoint_event {
 /**
  * \brief Event representing data binned for histogramming.
  *
+ * \ingroup events
+ *
  * \tparam BinIndex the bin index type
  */
 template <typename BinIndex> struct bin_increment_event {
@@ -218,6 +222,8 @@ template <typename BinIndex> struct bin_increment_event {
 
 /**
  * \brief Event representing a batch of data binned for histogramming.
+ *
+ * \ingroup events
  *
  * Typically the batch represents some unit of data collection, such as a time
  * interval or pixel.
@@ -261,6 +267,8 @@ template <typename BinIndex> struct bin_increment_batch_event {
 
 /**
  * \brief Event representing a single histogram.
+ *
+ * \ingroup events
  *
  * This event is used both for a series of independent histograms (as with the
  * output of histogram_in_batches) and for a series of updates to the same
@@ -309,6 +317,8 @@ template <typename Bin> struct histogram_event {
 
 /**
  * \brief Event representing the final result of histogramming.
+ *
+ * \ingroup events
  *
  * This event is emitted by histogram and accumulate_histograms once per
  * accumulation (that is, before each reset or end of stream) to provide the
@@ -380,6 +390,8 @@ template <typename Bin> struct concluding_histogram_event {
  * \brief Event representing an element histogram update in an array of
  * histograms.
  *
+ * \ingroup events
+ *
  * This event is used to provide progressive (elementwise) results for
  * histogram arrays. The data it references is not owned by the event, and must
  * be copied if needed after event handling returns.
@@ -445,6 +457,8 @@ template <typename Bin> struct element_histogram_event {
 /**
  * \brief Event representing an array of histograms.
  *
+ * \ingroup events
+ *
  * This even is used both for a series of independent arrays of histograms (as
  * with the output of histogram_array) and for a series of updates to the same
  * histogram array (as with the output of accumulate_histogram_arrays).
@@ -501,6 +515,8 @@ template <typename Bin> struct histogram_array_event {
 
 /**
  * \brief
+ *
+ * \ingroup events
  *
  * This event is emitted by accumulate_histogram_arrays once per accumulation
  * (that is, before each reset or end of stream) to provide the accumulated

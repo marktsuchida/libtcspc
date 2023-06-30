@@ -136,6 +136,8 @@ class histogram {
 /**
  * \brief Create a processor that collects a histogram of datapoints.
  *
+ * \ingroup processors
+ *
  * Every incoming \c bin_increment_event<BinIndex> causes the matching bin in
  * the histogram to be incremented. On every update, the current histogram is
  * emitted as a \c histogram_event<Bin> event.

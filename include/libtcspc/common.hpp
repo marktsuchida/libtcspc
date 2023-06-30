@@ -42,6 +42,8 @@ using macrotime = std::int64_t;
 /**
  * \brief An event type whose instances never occur.
  *
+ * \ingroup events
+ *
  * This can be used to configure unused inputs to processors.
  */
 class never_event {

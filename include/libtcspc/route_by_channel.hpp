@@ -68,6 +68,8 @@ class route_by_channel {
  * \brief Create a processor that routes events to downstream processors
  * according to channel.
  *
+ * \ingroup processors
+ *
  * This processor holds multiple downstream processors and a mapping from
  * channel numbers to downstream indices. Events of type \c ERoute are passed
  * only to the downstream indexed by the mapped channel number.

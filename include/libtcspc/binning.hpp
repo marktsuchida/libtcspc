@@ -55,6 +55,8 @@ template <typename DataMapper, typename Downstream> class map_to_datapoints {
  * \brief Create a processor that maps arbitrary timestamped events to
  * datapoint events.
  *
+ * \ingroup processors
+ *
  * Incoming events of type \c event_type are mapped to \c
  * datapoint_event<data_type>. \c event_type and \c data_type are deduced from
  * the type of \c DataMapper (the data mapper).
@@ -87,6 +89,8 @@ auto map_to_datapoints(DataMapper &&mapper, Downstream &&downstream) {
 
 /**
  * \brief Data mapper mapping difference time to the data value.
+ *
+ * \ingroup data-mappers
  *
  * \see map_to_datapoints
  */
@@ -145,6 +149,8 @@ template <typename BinMapper, typename Downstream> class map_to_bins {
 /**
  * \brief Create a processor that maps datapoints to histogram bin indices.
  *
+ * \ingroup processors
+ *
  * Incoming events of type \c datapoint_event<data_type> are mapped to \c
  * bin_increment_event<bin_index_type>. \c data_type and \c bin_index_type are
  * deduced from the type of \c BinMapper (the bin mapper).
@@ -183,6 +189,8 @@ auto map_to_bins(BinMapper &&bin_mapper, Downstream &&downstream) {
 
 /**
  * \brief Bin mapper that discards the least significant bits.
+ *
+ * \ingroup bin-mapper
  *
  * This bin mapper performs fast linear binning by taking the most significant
  * bits of the datapoint as the bin index.
@@ -251,6 +259,8 @@ class power_of_2_bin_mapper {
 
 /**
  * \brief Bin mapper for linear histograms of arbitrary size.
+ *
+ * \ingroup bin-mapper
  *
  * \see map_to_bins
  *
@@ -380,6 +390,8 @@ class batch_bin_increments {
 
 /**
  * \brief Create a processor collecting binned data into batches.
+ *
+ * \ingroup processor
  *
  * \tparam BinIndex the bin index type
  *
