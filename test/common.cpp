@@ -16,23 +16,23 @@ using namespace tcspc::internal;
 static_assert(!false_for_type<int>::value);
 
 TEST_CASE("count_trailing_zeros_32", "[common]") {
-    REQUIRE(count_trailing_zeros_32(u32np(1)) == 0);
-    REQUIRE(count_trailing_zeros_32_nonintrinsic(u32np(1)) == 0);
+    REQUIRE(count_trailing_zeros_32(1_u32np) == 0);
+    REQUIRE(count_trailing_zeros_32_nonintrinsic(1_u32np) == 0);
 
-    REQUIRE(count_trailing_zeros_32(u32np(2)) == 1);
-    REQUIRE(count_trailing_zeros_32_nonintrinsic(u32np(2)) == 1);
+    REQUIRE(count_trailing_zeros_32(2_u32np) == 1);
+    REQUIRE(count_trailing_zeros_32_nonintrinsic(2_u32np) == 1);
 
-    REQUIRE(count_trailing_zeros_32(u32np(3)) == 0);
-    REQUIRE(count_trailing_zeros_32_nonintrinsic(u32np(3)) == 0);
+    REQUIRE(count_trailing_zeros_32(3_u32np) == 0);
+    REQUIRE(count_trailing_zeros_32_nonintrinsic(3_u32np) == 0);
 
-    REQUIRE(count_trailing_zeros_32(u32np(4)) == 2);
-    REQUIRE(count_trailing_zeros_32_nonintrinsic(u32np(4)) == 2);
+    REQUIRE(count_trailing_zeros_32(4_u32np) == 2);
+    REQUIRE(count_trailing_zeros_32_nonintrinsic(4_u32np) == 2);
 
-    REQUIRE(count_trailing_zeros_32(u32np(6)) == 1);
-    REQUIRE(count_trailing_zeros_32_nonintrinsic(u32np(6)) == 1);
+    REQUIRE(count_trailing_zeros_32(6_u32np) == 1);
+    REQUIRE(count_trailing_zeros_32_nonintrinsic(6_u32np) == 1);
 
-    REQUIRE(count_trailing_zeros_32(u32np(1 << 31)) == 31);
-    REQUIRE(count_trailing_zeros_32_nonintrinsic(u32np(1 << 31)) == 31);
+    REQUIRE(count_trailing_zeros_32(1_u32np << 31) == 31);
+    REQUIRE(count_trailing_zeros_32_nonintrinsic(1_u32np << 31) == 31);
 }
 
 TEST_CASE("as signed or unsigned", "[common]") {

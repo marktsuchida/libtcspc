@@ -422,4 +422,85 @@ using i32np = npint<i32>;
  */
 using i64np = npint<i64>;
 
+/**
+ * \brief User-defined literals for \ref npint.
+ */
+namespace literals {
+
+/**
+ * \brief User defined literal for \ref u8np.
+ *
+ * \ingroup misc
+ */
+constexpr auto operator""_u8np(unsigned long long v) -> u8np {
+    return u8np(v);
+}
+
+/**
+ * \brief User defined literal for \ref u16np.
+ *
+ * \ingroup misc
+ */
+constexpr auto operator""_u16np(unsigned long long v) -> u16np {
+    return u16np(v);
+}
+
+/**
+ * \brief User defined literal for \ref u32np.
+ *
+ * \ingroup misc
+ */
+constexpr auto operator""_u32np(unsigned long long v) -> u32np {
+    return u32np(v);
+}
+
+/**
+ * \brief User defined literal for \ref u64np.
+ *
+ * \ingroup misc
+ */
+constexpr auto operator""_u64np(unsigned long long v) -> u64np {
+    return u64np(v);
+}
+
+/**
+ * \brief User defined literal for \ref i8np.
+ *
+ * \ingroup misc
+ */
+constexpr auto operator""_i8np(unsigned long long v) -> i8np {
+    return i8np(v);
+}
+
+/**
+ * \brief User defined literal for \ref i16np.
+ *
+ * \ingroup misc
+ */
+constexpr auto operator""_i16np(unsigned long long v) -> i16np {
+    return i16np(v);
+}
+
+/**
+ * \brief User defined literal for \ref i32np.
+ *
+ * \ingroup misc
+ */
+constexpr auto operator""_i32np(unsigned long long v) -> i32np {
+    return i32np(v);
+}
+
+/**
+ * \brief User defined literal for \ref i64np.
+ *
+ * \ingroup misc
+ */
+constexpr auto operator""_i64np(unsigned long long v) -> i64np {
+    return i64np(v);
+}
+
+} // namespace literals
+
+using namespace literals;
+
 } // namespace tcspc

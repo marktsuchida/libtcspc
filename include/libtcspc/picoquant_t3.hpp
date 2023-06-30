@@ -64,7 +64,7 @@ struct pq_pico_t3_event {
      * \brief Read the difference time if this event represents a photon.
      */
     [[nodiscard]] auto dtime() const noexcept -> u16np {
-        return read_u16le(byte_subspan<2, 2>(bytes)) & u16np(0x0fff);
+        return read_u16le(byte_subspan<2, 2>(bytes)) & 0x0fff_u16np;
     }
 
     /**
@@ -78,14 +78,14 @@ struct pq_pico_t3_event {
      * \brief Determine if this event is a non-photon event.
      */
     [[nodiscard]] auto is_special() const noexcept -> bool {
-        return channel() == u8np(15);
+        return channel() == 15_u8np;
     }
 
     /**
      * \brief Determine if this event represents an nsync overflow.
      */
     [[nodiscard]] auto is_nsync_overflow() const noexcept -> bool {
-        return is_special() && dtime() == u16np(0);
+        return is_special() && dtime() == 0_u16np;
     }
 
     /**
@@ -93,14 +93,14 @@ struct pq_pico_t3_event {
      * overflow.
      */
     [[nodiscard]] static auto nsync_overflow_count() noexcept -> u16np {
-        return u16np(1);
+        return 1_u16np;
     }
 
     /**
      * \brief Determine if this event represents markers.
      */
     [[nodiscard]] auto is_external_marker() const noexcept -> bool {
-        return is_special() && dtime() != u16np(0);
+        return is_special() && dtime() != 0_u16np;
     }
 
     /**
@@ -157,7 +157,7 @@ template <bool IsHydraV1> struct pq_hydra_t3_event {
      * \brief Read the channel if this event represents a photon.
      */
     [[nodiscard]] auto channel() const noexcept -> u8np {
-        return (read_u8(byte_subspan<3, 1>(bytes)) & u8np(0x7f)) >> 1;
+        return (read_u8(byte_subspan<3, 1>(bytes)) & 0x7f_u8np) >> 1;
     }
 
     /**
@@ -166,7 +166,7 @@ template <bool IsHydraV1> struct pq_hydra_t3_event {
     [[nodiscard]] auto dtime() const noexcept -> u16np {
         auto const lo6 = u16np(read_u8(byte_subspan<1, 1>(bytes))) >> 2;
         auto const mid8 = u16np(read_u8(byte_subspan<2, 1>(bytes)));
-        auto const hi1 = u16np(read_u8(byte_subspan<3, 1>(bytes))) & u16np(1);
+        auto const hi1 = u16np(read_u8(byte_subspan<3, 1>(bytes))) & 1_u16np;
         return lo6 | (mid8 << 6) | (hi1 << 14);
     }
 
@@ -174,21 +174,21 @@ template <bool IsHydraV1> struct pq_hydra_t3_event {
      * \brief Read the nsync counter value (no rollover correction).
      */
     [[nodiscard]] auto nsync() const noexcept -> u16np {
-        return read_u16le(byte_subspan<0, 2>(bytes)) & u16np(0x03ff);
+        return read_u16le(byte_subspan<0, 2>(bytes)) & 0x03ff_u16np;
     }
 
     /**
      * \brief Determine if this event is a non-photon event.
      */
     [[nodiscard]] auto is_special() const noexcept -> bool {
-        return (read_u8(byte_subspan<3, 1>(bytes)) & u8np(1 << 7)) != u8np(0);
+        return (read_u8(byte_subspan<3, 1>(bytes)) & (1_u8np << 7)) != 0_u8np;
     }
 
     /**
      * \brief Determine if this event represents an nsync overflow.
      */
     [[nodiscard]] auto is_nsync_overflow() const noexcept -> bool {
-        return is_special() && channel() == u8np(63);
+        return is_special() && channel() == 63_u8np;
     }
 
     /**
@@ -196,8 +196,8 @@ template <bool IsHydraV1> struct pq_hydra_t3_event {
      * overflow.
      */
     [[nodiscard]] auto nsync_overflow_count() const noexcept -> u16np {
-        if (IsHydraV1 || nsync() == u16np(0)) {
-            return u16np(1);
+        if (IsHydraV1 || nsync() == 0_u16np) {
+            return 1_u16np;
         }
         return nsync();
     }
@@ -206,7 +206,7 @@ template <bool IsHydraV1> struct pq_hydra_t3_event {
      * \brief Determine if this event represents markers.
      */
     [[nodiscard]] auto is_external_marker() const noexcept -> bool {
-        return is_special() && channel() != u8np(63);
+        return is_special() && channel() != 63_u8np;
     }
 
     /**
@@ -294,10 +294,10 @@ template <typename PQT3Event, typename Downstream> class decode_pq_t3 {
         if (event.is_external_marker()) {
             marker_event e{{nsync}, 0};
             auto bits = u32np(event.external_marker_bits());
-            while (bits != u32np(0)) {
+            while (bits != 0_u32np) {
                 e.channel = count_trailing_zeros_32(bits);
                 downstream.handle_event(e);
-                bits = bits & (bits - u32np(1)); // Clear the handled bit
+                bits = bits & (bits - 1_u32np); // Clear the handled bit
             }
             return;
         }

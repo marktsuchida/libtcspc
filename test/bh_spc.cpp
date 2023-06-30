@@ -46,47 +46,47 @@ TEST_CASE("adc_value", "[bh_spc_event]") {
     bh_spc_event event{};
 
     event = bh_spc_event_from_u8({0, 0, 0, 0});
-    CHECK(event.adc_value() == u16np(0));
+    CHECK(event.adc_value() == 0_u16np);
 
     event = bh_spc_event_from_u8({0, 0, 0xff, 0});
-    CHECK(event.adc_value() == u16np(0xff));
+    CHECK(event.adc_value() == 0xff_u16np);
 
     event = bh_spc_event_from_u8({0, 0, 0xff, 0x0f});
-    CHECK(event.adc_value() == u16np(4095));
+    CHECK(event.adc_value() == 4095_u16np);
 
     event = bh_spc_event_from_u8({0, 0, 0, 0x0f});
-    CHECK(event.adc_value() == u16np(0xf00));
+    CHECK(event.adc_value() == 0xf00_u16np);
 
     event = bh_spc_event_from_u8({0xff, 0xff, 0, 0xf0});
-    CHECK(event.adc_value() == u16np(0));
+    CHECK(event.adc_value() == 0_u16np);
 }
 
 TEST_CASE("routing_signals and marker_bits", "[bh_spc_event]") {
     bh_spc_event event{};
 
     event = bh_spc_event_from_u8({0, 0, 0, 0});
-    CHECK(event.routing_signals() == u8np(0));
-    CHECK(event.marker_bits() == u8np(0));
+    CHECK(event.routing_signals() == 0_u8np);
+    CHECK(event.marker_bits() == 0_u8np);
 
     event = bh_spc_event_from_u8({0, 0x10, 0, 0});
-    CHECK(event.routing_signals() == u8np(1));
-    CHECK(event.marker_bits() == u8np(1));
+    CHECK(event.routing_signals() == 1_u8np);
+    CHECK(event.marker_bits() == 1_u8np);
 
     event = bh_spc_event_from_u8({0, 0x20, 0, 0});
-    CHECK(event.routing_signals() == u8np(2));
-    CHECK(event.marker_bits() == u8np(2));
+    CHECK(event.routing_signals() == 2_u8np);
+    CHECK(event.marker_bits() == 2_u8np);
 
     event = bh_spc_event_from_u8({0, 0x40, 0, 0});
-    CHECK(event.routing_signals() == u8np(4));
-    CHECK(event.marker_bits() == u8np(4));
+    CHECK(event.routing_signals() == 4_u8np);
+    CHECK(event.marker_bits() == 4_u8np);
 
     event = bh_spc_event_from_u8({0, 0x80, 0, 0});
-    CHECK(event.routing_signals() == u8np(8));
-    CHECK(event.marker_bits() == u8np(8));
+    CHECK(event.routing_signals() == 8_u8np);
+    CHECK(event.marker_bits() == 8_u8np);
 
     event = bh_spc_event_from_u8({0xff, 0x0f, 0xff, 0xff});
-    CHECK(event.routing_signals() == u8np(0));
-    CHECK(event.marker_bits() == u8np(0));
+    CHECK(event.routing_signals() == 0_u8np);
+    CHECK(event.marker_bits() == 0_u8np);
 }
 
 TEST_CASE("macrotime", "[bh_spc_event]") {
@@ -95,19 +95,19 @@ TEST_CASE("macrotime", "[bh_spc_event]") {
     bh_spc_event event{};
 
     event = bh_spc_event_from_u8({0, 0, 0, 0});
-    CHECK(event.macrotime() == u16np(0));
+    CHECK(event.macrotime() == 0_u16np);
 
     event = bh_spc_event_from_u8({0xff, 0, 0, 0});
-    CHECK(event.macrotime() == u16np(0xff));
+    CHECK(event.macrotime() == 0xff_u16np);
 
     event = bh_spc_event_from_u8({0xff, 0x0f, 0, 0});
-    CHECK(event.macrotime() == u16np(4095));
+    CHECK(event.macrotime() == 4095_u16np);
 
     event = bh_spc_event_from_u8({0, 0x0f, 0, 0});
-    CHECK(event.macrotime() == u16np(0xf00));
+    CHECK(event.macrotime() == 0xf00_u16np);
 
     event = bh_spc_event_from_u8({0, 0xf0, 0xff, 0xff});
-    CHECK(event.macrotime() == u16np(0));
+    CHECK(event.macrotime() == 0_u16np);
 }
 
 TEST_CASE("flags", "[bh_spc_event]") {
@@ -179,29 +179,29 @@ TEST_CASE("multiple_macrotime_overflow_count", "[bh_spc_event]") {
     bh_spc_event event{};
 
     event = bh_spc_event_from_u8({0, 0, 0, 0});
-    CHECK(event.multiple_macrotime_overflow_count() == u32np(0));
+    CHECK(event.multiple_macrotime_overflow_count() == 0_u32np);
 
     event = bh_spc_event_from_u8({1, 0, 0, 0});
-    CHECK(event.multiple_macrotime_overflow_count() == u32np(1));
+    CHECK(event.multiple_macrotime_overflow_count() == 1_u32np);
 
     event = bh_spc_event_from_u8({0x80, 0, 0, 0});
-    CHECK(event.multiple_macrotime_overflow_count() == u32np(128));
+    CHECK(event.multiple_macrotime_overflow_count() == 128_u32np);
 
     event = bh_spc_event_from_u8({0, 1, 0, 0});
-    CHECK(event.multiple_macrotime_overflow_count() == u32np(256));
+    CHECK(event.multiple_macrotime_overflow_count() == 256_u32np);
 
     event = bh_spc_event_from_u8({0, 0x80, 0, 0});
-    CHECK(event.multiple_macrotime_overflow_count() == u32np(32768));
+    CHECK(event.multiple_macrotime_overflow_count() == 32768_u32np);
 
     event = bh_spc_event_from_u8({0, 0, 1, 0});
-    CHECK(event.multiple_macrotime_overflow_count() == u32np(65536));
+    CHECK(event.multiple_macrotime_overflow_count() == 65536_u32np);
 
     event = bh_spc_event_from_u8({0, 0, 0x80, 0});
-    CHECK(event.multiple_macrotime_overflow_count() == u32np(8388608));
+    CHECK(event.multiple_macrotime_overflow_count() == 8388608_u32np);
 
     event = bh_spc_event_from_u8({0, 0, 0, 1});
-    CHECK(event.multiple_macrotime_overflow_count() == u32np(16777216));
+    CHECK(event.multiple_macrotime_overflow_count() == 16777216_u32np);
 
     event = bh_spc_event_from_u8({0, 0, 0, 0x08});
-    CHECK(event.multiple_macrotime_overflow_count() == u32np(134217728));
+    CHECK(event.multiple_macrotime_overflow_count() == 134217728_u32np);
 }

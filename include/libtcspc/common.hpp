@@ -146,7 +146,7 @@ template <typename T> struct false_for_type : std::false_type {};
 
 constexpr auto count_trailing_zeros_32_nonintrinsic(u32np x) noexcept -> int {
     int r = 0;
-    while ((x & u32np(1)) == u32np(0)) {
+    while ((x & 1_u32np) == 0_u32np) {
         x >>= 1;
         ++r;
     }

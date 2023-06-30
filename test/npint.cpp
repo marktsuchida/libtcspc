@@ -19,18 +19,19 @@ TEST_CASE("integer construct and convert", "[integers]") {
     CHECK(std::uint8_t(ue) == 0);
     CHECK(ue.value() == 0);
     CHECK(u8np(3).value() == 3);
+    CHECK(3_u8np == u8np(3));
 }
 
 TEST_CASE("integer conversions", "[integers]") {
-    CHECK(u8np(i8np(3)) == u8np(3));
-    CHECK(i8np(u8np(3)) == i8np(3));
+    CHECK(u8np(3_i8np) == 3_u8np);
+    CHECK(i8np(3_u8np) == 3_i8np);
 
-    CHECK(u16np(u8np(3)) == u16np(3));
-    CHECK(u16np(u8np(i8np(3))) == u16np(3));
-    CHECK(u16np(i16np(i8np(3))) == u16np(3));
+    CHECK(u16np(3_u8np) == 3_u16np);
+    CHECK(u16np(u8np(3_i8np)) == 3_u16np);
+    CHECK(u16np(i16np(3_i8np)) == 3_u16np);
 
-    CHECK(u8np(u16np(3)) == u8np(3));
-    CHECK(i8np(u16np(3)) == i8np(3));
+    CHECK(u8np(3_u16np) == 3_u8np);
+    CHECK(i8np(3_u16np) == 3_i8np);
 }
 
 TEST_CASE("integer increment and decrement", "[integers]") {
@@ -46,37 +47,37 @@ TEST_CASE("integer increment and decrement", "[integers]") {
 TEST_CASE("integer compound assignment operators", "[integers]") {
     u8np ue{};
 
-    ue += u8np(3);
+    ue += 3_u8np;
     CHECK(ue.value() == 3);
-    ue *= u8np(6);
+    ue *= 6_u8np;
     CHECK(ue.value() == 18);
-    ue -= u8np(3);
+    ue -= 3_u8np;
     CHECK(ue.value() == 15);
-    ue /= u8np(6);
+    ue /= 6_u8np;
     CHECK(ue.value() == 2);
-    ue %= u8np(5);
+    ue %= 5_u8np;
     CHECK(ue.value() == 2);
 
-    ue &= u8np(2);
+    ue &= 2_u8np;
     CHECK(ue.value() == 2);
-    ue |= u8np(4);
+    ue |= 4_u8np;
     CHECK(ue.value() == 6);
-    ue ^= u8np(255);
+    ue ^= 255_u8np;
     CHECK(ue.value() == 255 - 6);
 
-    ue = u8np(8);
+    ue = 8_u8np;
 
     SECTION("shift with rhs of same type") {
-        ue >>= u8np(1);
+        ue >>= 1_u8np;
         CHECK(ue.value() == 4);
-        ue <<= u8np(2);
+        ue <<= 2_u8np;
         CHECK(ue.value() == 16);
     }
 
     SECTION("shift with rhs of other npint") {
-        ue >>= i16np(1);
+        ue >>= 1_i16np;
         CHECK(ue.value() == 4);
-        ue <<= i16np(2);
+        ue <<= 2_i16np;
         CHECK(ue.value() == 16);
     }
 
@@ -89,50 +90,50 @@ TEST_CASE("integer compound assignment operators", "[integers]") {
 }
 
 TEST_CASE("integer unary operators", "[integers]") {
-    CHECK(+u8np(3) == u8np(3));
-    CHECK(-u8np(3) == u8np(253));
-    CHECK(~u8np(1) == u8np(254));
+    CHECK(+3_u8np == 3_u8np);
+    CHECK(-3_u8np == 253_u8np);
+    CHECK(~1_u8np == 254_u8np);
 }
 
 TEST_CASE("integer binary operators", "[integers]") {
-    CHECK(u8np(3) + u8np(5) == u8np(8));
-    CHECK(u8np(5) - u8np(3) == u8np(2));
-    CHECK(u8np(3) * u8np(5) == u8np(15));
-    CHECK(u8np(5) / u8np(3) == u8np(1));
-    CHECK(u8np(5) % u8np(3) == u8np(2));
-    CHECK((u8np(3) & u8np(2)) == u8np(2));
-    CHECK((u8np(3) | u8np(4)) == u8np(7));
-    CHECK((u8np(1) ^ u8np(255)) == u8np(254));
+    CHECK(3_u8np + 5_u8np == 8_u8np);
+    CHECK(5_u8np - 3_u8np == 2_u8np);
+    CHECK(3_u8np * 5_u8np == 15_u8np);
+    CHECK(5_u8np / 3_u8np == 1_u8np);
+    CHECK(5_u8np % 3_u8np == 2_u8np);
+    CHECK((3_u8np & 2_u8np) == 2_u8np);
+    CHECK((3_u8np | 4_u8np) == 7_u8np);
+    CHECK((1_u8np ^ 255_u8np) == 254_u8np);
 
     SECTION("shift with rhs of same type") {
-        CHECK((u8np(8) >> u8np(1)) == u8np(4));
-        CHECK((u8np(4) << u8np(2)) == u8np(16));
+        CHECK((8_u8np >> 1_u8np) == 4_u8np);
+        CHECK((4_u8np << 2_u8np) == 16_u8np);
     }
 
     SECTION("shift with rhs of other npint") {
-        CHECK((u8np(8) >> u16np(1)) == u8np(4));
-        CHECK((u8np(4) << u16np(2)) == u8np(16));
+        CHECK((8_u8np >> 1_u16np) == 4_u8np);
+        CHECK((4_u8np << 2_u16np) == 16_u8np);
     }
 
     SECTION("shift with rhs of raw integer type") {
-        CHECK((u8np(8) >> 1) == u8np(4));
-        CHECK((u8np(4) << 2) == u8np(16));
+        CHECK((8_u8np >> 1) == 4_u8np);
+        CHECK((4_u8np << 2) == 16_u8np);
     }
 }
 
 TEST_CASE("integer comparison operators", "[integers]") {
-    CHECK(u8np(1) == u8np(1));
-    CHECK_FALSE(u8np(1) == u8np(0));
-    CHECK_FALSE(u8np(1) != u8np(1));
-    CHECK(u8np(1) != u8np(0));
-    CHECK_FALSE(u8np(1) > u8np(1));
-    CHECK(u8np(1) > u8np(0));
-    CHECK_FALSE(u8np(1) < u8np(1));
-    CHECK(u8np(0) < u8np(1));
-    CHECK(u8np(1) >= u8np(1));
-    CHECK_FALSE(u8np(0) >= u8np(1));
-    CHECK(u8np(1) <= u8np(1));
-    CHECK_FALSE(u8np(1) <= u8np(0));
+    CHECK(1_u8np == 1_u8np);
+    CHECK_FALSE(1_u8np == 0_u8np);
+    CHECK_FALSE(1_u8np != 1_u8np);
+    CHECK(1_u8np != 0_u8np);
+    CHECK_FALSE(1_u8np > 1_u8np);
+    CHECK(1_u8np > 0_u8np);
+    CHECK_FALSE(1_u8np < 1_u8np);
+    CHECK(0_u8np < 1_u8np);
+    CHECK(1_u8np >= 1_u8np);
+    CHECK_FALSE(0_u8np >= 1_u8np);
+    CHECK(1_u8np <= 1_u8np);
+    CHECK_FALSE(1_u8np <= 0_u8np);
 }
 
 TEST_CASE("integer subclasses", "[integers]") {
@@ -153,11 +154,11 @@ TEST_CASE("integer subclasses", "[integers]") {
     CHECK((ue + -ue2).value() == 256 - 3);
 
     // Convertible to plain type:
-    CHECK(u8np(myu8(4)) == u8np(4));
+    CHECK(u8np(myu8(4)) == 4_u8np);
 
     // Convertible from plain type:
-    myu8(u8np(0));
-    myu8(u16np(0));
+    myu8(0_u8np);
+    myu8(0_u16np);
 }
 
 } // namespace tcspc
