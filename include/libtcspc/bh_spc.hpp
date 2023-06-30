@@ -466,7 +466,9 @@ template <typename BHSPCEvent, typename Downstream> class base_decode_bh_spc {
  * records.
  *
  * \tparam Downstream downstream processor type
+ *
  * \param downstream downstream processor (moved out)
+ *
  * \return decode-bh-spc processor
  */
 template <typename Downstream> auto decode_bh_spc(Downstream &&downstream) {
@@ -479,7 +481,9 @@ template <typename Downstream> auto decode_bh_spc(Downstream &&downstream) {
  * 4096-channel mode FIFO records.
  *
  * \tparam Downstream downstream processor type
+ *
  * \param downstream downstream processor (moved out)
+ *
  * \return decode-bh-spc-600-48 processor
  */
 template <typename Downstream>
@@ -493,7 +497,9 @@ auto decode_bh_spc_600_48(Downstream &&downstream) {
  * 256-channel mode FIFO records.
  *
  * \tparam Downstream downstream processor type
+ *
  * \param downstream downstream processor (moved out)
+ *
  * \return decode-bh-spc-600-32 processor
  */
 template <typename Downstream>

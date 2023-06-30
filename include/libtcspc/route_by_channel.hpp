@@ -87,9 +87,13 @@ class route_by_channel {
  * processor 1 (counting from 0).
  *
  * \tparam EventToRoute event type to route by channel
+ *
  * \tparam Downstreams downstream processor types
+ *
  * \param channels channel mapping
+ *
  * \param downstreams downstream processors (moved out)
+ *
  * \return route-by-channel processor
  */
 template <typename EventToRoute, typename... Downstreams>

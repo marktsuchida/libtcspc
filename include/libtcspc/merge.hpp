@@ -174,9 +174,13 @@ class merge_input {
  * time shift between them does not exceed max_time_shift.
  *
  * \tparam EventSet the event set handled by the merge processor
+ *
  * \tparam Downstream downstream processor type
+ *
  * \param max_time_shift the maximum time shift between the two input streams
+ *
  * \param downstream downstream processor (will be moved out)
+ *
  * \return std::pair of the two processors serving as the input to merge
  */
 template <typename EventSet, typename Downstream>

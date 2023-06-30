@@ -98,16 +98,24 @@ class count_event {
  * the next \c TickEvent received.
  *
  * \tparam TickEvent the event type to count
+ *
  * \tparam FireEvent the event type to emit when the count reaches the
  * threshold
+ *
  * \tparam ResetEvent an event type that causes the count to be reset to zero
+ *
  * \tparam FireAfterTick whether to emit \c FireEvent after passing through \c
  * TickEvent
+ *
  * \tparam Downstream downstream processor type
+ *
  * \param threshold the count value at which to emit \c FireEvent
+ *
  * \param limit the count value at which to reset to zero (set to \c
  * std::uint64_t{-1} if automatic reset is not desired); must be positive
+ *
  * \param downstream downstream processor (moved out)
+ *
  * \return count-event processor
  */
 template <typename TickEvent, typename FireEvent, typename ResetEvent,

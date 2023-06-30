@@ -160,7 +160,9 @@ template <typename Downstream> class decode_swabian_tags {
  * \brief Create a processor that decodes Swabian Tag events.
  *
  * \tparam Downstream downstream processor type
+ *
  * \param downstream downstream processor (moved out)
+ *
  * \return decode-swabian-tags processor
  */
 template <typename Downstream>

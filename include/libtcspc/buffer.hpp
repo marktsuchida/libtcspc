@@ -125,8 +125,11 @@ template <typename Pointer, typename Downstream> class dereference_pointer {
  * Event for some even type \c Event.
  *
  * \tparam Pointer the event pointer type
+ *
  * \tparam Downstream downstream processor type
+ *
  * \param downstream downstream processor (moved out)
+ *
  * \return dereference-pointer processor
  */
 template <typename Pointer, typename Downstream>
@@ -162,9 +165,13 @@ class unbatch {
  * events.
  *
  * \tparam EventContainer event container type
+ *
  * \tparam Event the event type
+ *
  * \tparam Downstream downstream processor type
+ *
  * \param downstream downstream processor (moved out)
+ *
  * \return unbatch processor
  */
 template <typename EventContainer, typename Event, typename Downstream>
@@ -277,8 +284,11 @@ template <typename Event, typename Downstream> class buffer_event {
  * Usually \c Event should be EventArray in order to reduce overhead.
  *
  * \tparam Event the event type
+ *
  * \tparam Downstream downstream processor type
+ *
  * \param downstream downstream processor (moved out)
+ *
  * \return buffer-events pseudo-processor
  */
 template <typename Event, typename Downstream>

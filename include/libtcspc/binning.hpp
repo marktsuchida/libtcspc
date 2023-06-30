@@ -69,9 +69,13 @@ template <typename DataMapper, typename Downstream> class map_to_datapoints {
  * All other events are passed through.
  *
  * \tparam DataMapper type of data mapper
+ *
  * \tparam Downstream downstream processor type
+ *
  * \param mapper the data mapper (moved out)
+ *
  * \param downstream downstream processor (moved out)
+ *
  * \return map-to-datapoints processor
  */
 template <typename DataMapper, typename Downstream>
@@ -157,12 +161,17 @@ template <typename BinMapper, typename Downstream> class map_to_bins {
  * All other events are passed through.
  *
  * \see linear_bin_mapper
+ *
  * \see power_of_2_bin_mapper
  *
  * \tparam BinMapper type of bin mapper
+ *
  * \tparam Downstream downstream processor type
+ *
  * \param bin_mapper the bin mapper (moved out)
+ *
  * \param downstream downstream processor (moved out)
+ *
  * \return map-to-bin processor
  */
 template <typename BinMapper, typename Downstream>
@@ -189,9 +198,13 @@ auto map_to_bins(BinMapper &&bin_mapper, Downstream &&downstream) {
  * \see map_to_bins
  *
  * \tparam DataPoint the data type from which to map
+ *
  * \tparam BinIndex the type used for bin indices
+ *
  * \tparam NDataBits number of significant bits in the datapoints
+ *
  * \tparam NHistoBits number of bits used for bin indices
+ *
  * \tparam Flip whether to flip the bin indices
  */
 template <typename DataPoint, typename BinIndex, unsigned NDataBits,
@@ -242,6 +255,7 @@ class power_of_2_bin_mapper {
  * \see map_to_bins
  *
  * \tparam DataPoint the data type from which to map
+ *
  * \tparam BinIndex the type used for bin indices
  */
 template <typename DataPoint, typename BinIndex> class linear_bin_mapper {
@@ -271,8 +285,11 @@ template <typename DataPoint, typename BinIndex> class linear_bin_mapper {
      * signed type with sufficient range.
      *
      * \param offset minimum value mapped to the first bin
+     *
      * \param bin_width width of each bin (in datapoint units); must not be 0
+     *
      * \param max_bin_index number of bins minus one (must not be negative)
+     *
      * \param clamp if true, include datapoints outside of the mapped range in
      * the first and last bins
      */
@@ -365,10 +382,15 @@ class batch_bin_increments {
  * \brief Create a processor collecting binned data into batches.
  *
  * \tparam BinIndex the bin index type
+ *
  * \tparam StartEvent start-of-batch event type
+ *
  * \tparam StopEvent end-of-batch event type
+ *
  * \tparam Downstream downstream processor type
+ *
  * \param downstream downstream processor (moved out)
+ *
  * \return batch-bin-increments processor
  */
 template <typename BinIndex, typename StartEvent, typename StopEvent,

@@ -97,7 +97,9 @@ template <typename BinIndex> class bin_increment_batch_journal {
      * \brief Append a bin increment batch to this journal.
      *
      * \tparam It random access iterator type
+     *
      * \param first iterator pointing to begining of batch (bin indices)
+     *
      * \param last iterator pointing to past-end of batch
      */
     template <typename It> void append_batch(It first, It last) {

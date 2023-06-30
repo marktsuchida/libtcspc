@@ -308,7 +308,9 @@ template <typename PQT3Event, typename Downstream> class base_decode_pq_t3 {
  * \brief Create a processor that decodes PicoQuant PicoHarp T3 events.
  *
  * \tparam Downstream downstream processor type
+ *
  * \param downstream downstream processor (moved out)
+ *
  * \return decode-pq-pico-t3 processor
  */
 template <typename Downstream>
@@ -321,7 +323,9 @@ auto decode_pq_pico_t3(Downstream &&downstream) {
  * \brief Create a processor that decodes PicoQuant HydraHarp V1 T3 events.
  *
  * \tparam Downstream downstream processor type
+ *
  * \param downstream downstream processor (moved out)
+ *
  * \return decode-pq-hydra-v1-t3 processor
  */
 template <typename Downstream>
@@ -335,7 +339,9 @@ auto decode_pq_hydra_v1_t3(Downstream &&downstream) {
  * and TimeHarp260 T3 events.
  *
  * \tparam Downstream downstream processor type
+ *
  * \param downstream downstream processor (moved out)
+ *
  * \return decode-pq-hydra-v2-t3 processor
  */
 template <typename Downstream>

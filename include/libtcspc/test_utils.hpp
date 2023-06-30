@@ -264,6 +264,7 @@ template <typename EventSet, typename Downstream> class feed_input {
  * \brief Create a sink that logs test output for checking.
  *
  * \tparam EventSet event set to accept
+ *
  * \return capture-output sink
  */
 template <typename EventSet> auto capture_output() {
@@ -274,8 +275,11 @@ template <typename EventSet> auto capture_output() {
  * \brief Create a source for feeding test input to a processor.
  *
  * \tparam EventSet input event set
+ *
  * \tparam Downstream downstream processor type
+ *
  * \param downstream downstream processor (moved out)
+ *
  * \return feed-input source
  */
 template <typename EventSet, typename Downstream>

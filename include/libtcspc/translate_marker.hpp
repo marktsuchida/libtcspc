@@ -70,10 +70,15 @@ class translate_marker {
  * \c OutputEvent{123} ).
  *
  * \tparam MarkerEvent marker event type
+ *
  * \tparam OutputEvent output event type for matching marker events
+ *
  * \tparam Downstream downstream processor type
+ *
  * \param channel channel of marker events to convert to OutputEvent events
+ *
  * \param downstream downstream processor (moved out)
+ *
  * \return translate-marker processor
  */
 template <typename MarkerEvent, typename OutputEvent, typename Downstream>

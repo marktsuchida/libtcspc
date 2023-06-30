@@ -47,12 +47,17 @@ class split_events {
  *
  * \tparam EventSetToSplit event set specifying event types that should be
  * routed to downstream processor 1
+ *
  * \tparam Downstream0 type of downstream processor 0
+ *
  * \tparam Downstream1 type of downstream processor 1
+ *
  * \param downstream0 the downstream receiving events not in EventSetToSplit
  * (moved out)
+ *
  * \param downstream1 the downstream receiving events in EventSetToSplit (moved
  * out)
+ *
  * \return split-events processor
  */
 template <typename EventSetToSplit, typename Downstream0, typename Downstream1>

@@ -40,7 +40,9 @@ template <typename... Downstreams> class broadcast {
  * processors.
  *
  * \tparam Downstreams downstream processor classes
+ *
  * \param downstreams downstream processors (moved out)
+ *
  * \return broadcast processor
  */
 template <typename... Downstreams>

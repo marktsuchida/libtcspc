@@ -93,10 +93,15 @@ class generate_timings {
  *
  * \tparam TriggerEvent even type that triggers a new round of pattern
  * generation by resetting the pattern generator
+ *
  * \tparam PatternGenerator timing pattern generator type
+ *
  * \tparam Downstream downstream processor type
+ *
  * \param generator the timing pattern generator (moved out)
+ *
  * \param downstream downstream processor (moved out)
+ *
  * \return a new generate_timings processor
  */
 template <typename TriggerEvent, typename PatternGenerator,
@@ -204,8 +209,10 @@ template <typename Event> class linear_timing_generator {
      *
      * \param delay how much to delay the first output event relative to the
      * trigger (must be nonnegative)
+     *
      * \param interval time interval between subsequent output events (must be
      * positive)
+     *
      * \param count number of output events to generate for each trigger
      */
     // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)

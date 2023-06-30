@@ -61,12 +61,18 @@ class gate_events {
  * OpenEvent and \c CloseEvent).
  *
  * \tparam EventSetToGate event types to gate
+ *
  * \tparam OpenEvent event type that opens the gate
+ *
  * \tparam CloseEvent event type that closes the gate
+ *
  * \tparam Downstream downstream processor type
+ *
  * \param initially_open whether the gate is open before the first \c OpenEvent
  * or \c CloseEvent event is received
+ *
  * \param downstream downstream processor (moved out)
+ *
  * \return gate-events processor
  */
 template <typename EventSetToGate, typename OpenEvent, typename CloseEvent,

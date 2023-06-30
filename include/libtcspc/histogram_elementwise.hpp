@@ -138,15 +138,23 @@ class histogram_elementwise {
  * whole array of histograms from the cycle.
  *
  * \tparam BinIndex the bin index type
+ *
  * \tparam Bin the data type of the histogram bins
+ *
  * \tparam OverflowStrategy strategy tag type to select how to handle bin
  * overflows
+ *
  * \tparam Downstream downstream processor type
+ *
  * \param num_elements the number of elements (each a histogram) in the array
+ *
  * \param num_bins the number of bins in each histogram (must match the bin
  * mapper used upstream)
+ *
  * \param max_per_bin maximum value allowed in each bin
+ *
  * \param downstream downstream processor (moved out)
+ *
  * \return histogram-array processor
  */
 template <typename BinIndex, typename Bin, typename OverflowStrategy,
@@ -337,16 +345,25 @@ class histogram_elementwise_accumulate {
  * and a new accumulation to be started.
  *
  * \tparam BinIndex the bin index type
+ *
  * \tparam Bin the data type of the histogram bins
+ *
  * \tparam ResetEvent type of event causing histograms to reset
+ *
  * \tparam OverflowStrategy strategy tag type to select how to handle bin
  * overflows
+ *
  * \tparam Downstream downstream processor type
+ *
  * \param num_elements the number of elements (each a histogram) in the array
+ *
  * \param num_bins the number of bins in each histogram (must match the bin
  * mapper used upstream)
+ *
  * \param max_per_bin maximum value allowed in each bin
+ *
  * \param downstream downstream processor (moved out)
+ *
  * \return accumulate-histogram-arrays processor
  */
 template <typename BinIndex, typename Bin, typename ResetEvent,

@@ -153,15 +153,23 @@ class histogram {
  * index beyond the size of the histogram.
  *
  * \tparam BinIndex the bin index type
+ *
  * \tparam Bin the data type of the histogram bins
+ *
  * \tparam ResetEvent type of event causing histogram to reset
+ *
  * \tparam OverflowStrategy strategy tag type to select how to handle bin
  * overflows
+ *
  * \tparam Downstream downstream processor type
+ *
  * \param num_bins number of bins in the histogram (must match the bin mapper
  * used upstream)
+ *
  * \param max_per_bin maximum value allowed in each bin
+ *
  * \param downstream downstream processor (moved out)
+ *
  * \return histogram processor
  */
 template <typename BinIndex, typename Bin, typename ResetEvent,

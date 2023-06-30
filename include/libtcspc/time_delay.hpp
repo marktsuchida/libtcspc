@@ -42,8 +42,11 @@ template <typename Downstream> class time_delay {
  * \brief Create a processor that applies a macrotime offset to all events.
  *
  * \tparam Downstream downstream processor type
+ *
  * \param delta macrotime offset to apply (can be negative)
+ *
  * \param downstream downstream processor (moved out)
+ *
  * \return time-delay processor
  */
 template <typename Downstream>

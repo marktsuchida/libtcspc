@@ -54,6 +54,7 @@ struct event_is_one_of : std::disjunction<std::is_same<Event, Events>...> {};
  * \see contains_event_v
  *
  * \tparam EventSet an event set type to check
+ *
  * \tparam Event an event type to check
  */
 template <typename EventSet, typename Event>
@@ -65,6 +66,7 @@ struct contains_event
  * \brief Helper variable to get the result of contains_event
  *
  * \tparam EventSet an event set type to check
+ *
  * \tparam Event an event type to check
  */
 template <typename EventSet, typename Event>
@@ -80,6 +82,7 @@ inline constexpr bool contains_event_v =
  * \see handles_event_v
  *
  * \tparam Proc a processor type to check
+ *
  * \tparam Event an event type to check
  */
 template <typename Proc, typename Event, typename = void>
@@ -96,6 +99,7 @@ struct handles_event<Proc, Event,
  * \brief Helper variable to get the result of handles_event.
  *
  * \tparam Proc a processor type to check
+ *
  * \tparam Event an event type to check
  */
 template <typename Proc, typename Event>
@@ -152,6 +156,7 @@ struct handles_events_and_end
  * The result is provided in the member constant \c value.
  *
  * \tparam Proc the processor type to check
+ *
  * \tparam EventSet the event set to check
  */
 template <typename Proc, typename EventSet>
@@ -163,6 +168,7 @@ struct handles_event_set
  * \brief Helper variable to get the result of handles_event_set.
  *
  * \tparam Proc the processor type to check
+ *
  * \tparam EventSet the event set to check
  */
 template <typename Proc, typename EventSet>
