@@ -200,7 +200,7 @@ template <typename T> class vector_queue {
         if (is_full())
             expand_cap();
         auto alloc = std::allocator<T>();
-        alloctraits::construct(alloc, tail, std::forward<T>(value));
+        alloctraits::construct(alloc, tail, std::move(value));
         ++tail;
         if (tail == endptr)
             tail = ptr;

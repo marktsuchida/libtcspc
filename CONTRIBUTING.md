@@ -108,7 +108,7 @@ types should be documented with Doxygen comments (follow existing practice).
     configuration parameters and, as the last parameter, the downstream
     processor (as a forwarding reference: `Downstream &&downstream`).
     - The downstream processor should be assigned to the data member via
-      `std::forward<Downstream>()`.
+      `std::move()` (factory function may use `std::forward<Downstream>()`).
 - Factory function
   - Processors in the library are defined as class templates in an internal
     namespace.
