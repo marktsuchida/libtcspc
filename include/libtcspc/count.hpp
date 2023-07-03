@@ -75,50 +75,62 @@ class count_event {
  *
  * All events (including \c TickEvent and \c ResetEvent) are passed through.
  *
- * \c TickEvent and \c FireEvent must have a macrotime field and \c FireEvent
- * must be brace-initializable with macrotime (as in \c FireEvent{123} ).
+ * \c TickEvent and \c FireEvent must have a macrotime field. \c FireEvent must
+ * be brace-initializable with macrotime (as in \c FireEvent{123} ).
  *
- * The count is incremented as \c TickEvent is passed through. Just before or
- * after that (depending on whether \c FireAfterTick is false or true), the
- * count is compared to the \e threshold and if equal, \c FireEvent is emitted,
- * with its macrotime set equal to the \c TickEvent that triggered it.
+ * The count is incremented when a \c TickEvent is passed through. Just before
+ * or after the \c TickEvent is emitted (depending on whether \c FireAfterTick
+ * is false or true), the count is compared to the \e threshold and if equal,
+ * \c FireEvent is emitted. The macrotime of the \c FireEvent is set equal to
+ * the \c TickEvent that triggered it.
  *
  * After incrementing the count and processing the threshold, if the count
- * equals the \e limit, then the count is reset to zero. Automatic resetting
- * can be disabled by setting the limit to \c std::uint64_t{-1} .
+ * equals \e limit, then the count is reset to zero. Automatic resetting can be
+ * effectively disabled by setting \e limit to \c std::uint64_t{-1} .
  *
- * The \e limit must be positive (a zero limit would imply automatically
+ * The \e limit must be positive (a zero \e limit would imply automatically
  * resetting without any input, which doesn't make sense). When \c
- * FireAfterTick is false, \e threshold should be less than the limit;
- * otherwise \c FireEvent is never emitted. When \c FireAfterTick is true, \c
- * threshold should be greater than zero and less than or equal to the limit;
- * otherwise \c FireEvent is never emitted.
+ * FireAfterTick is false, \e threshold should be less than \e limit; otherwise
+ * \c FireEvent is never emitted. When \c FireAfterTick is true, \e threshold
+ * should be positive and less than or equal to the limit; otherwise \c
+ * FireEvent is never emitted.
  *
- * When an \c ResetEvent is received (and passed through), the count is reset
- * to zero. No \c FireEvent is emitted on reset, but if \c FireAfterTick is
- * false and the threshold is set to zero, then an \c FireEvent is emitted on
- * the next \c TickEvent received.
+ * When a \c ResetEvent is received (and passed through), the count is reset to
+ * zero. No \c FireEvent is emitted on reset, but if \c FireAfterTick is false
+ * and \e threshold is set to zero, then a \c FireEvent is emitted on the next
+ * \c TickEvent received.
  *
  * \tparam TickEvent the event type to count
  *
- * \tparam FireEvent the event type to emit when the count reaches the
- * threshold
+ * \tparam FireEvent the event type to emit when the count reaches \e threshold
  *
  * \tparam ResetEvent an event type that causes the count to be reset to zero
  *
  * \tparam FireAfterTick whether to emit \c FireEvent after passing through \c
- * TickEvent
+ * TickEvent, rather than before
  *
  * \tparam Downstream downstream processor type
  *
  * \param threshold the count value at which to emit \c FireEvent
  *
- * \param limit the count value at which to reset to zero (set to \c
- * std::uint64_t{-1} if automatic reset is not desired); must be positive
+ * \param limit the count value at which to reset to zero; must be positive
  *
- * \param downstream downstream processor (moved out)
+ * \param downstream downstream processor
  *
  * \return count-event processor
+ *
+ * \inevents
+ * \event{TickEvent, causes the count to be incremented; passed through}
+ * \event{ResetEvent, causes the count to be reset to zero; passed through}
+ * \event{All other events, passed through}
+ * \endevents
+ *
+ * \outevents
+ * \event{FireEvent, emitted when the count reaches \e threshold}
+ * \event{TickEvent, passed through}
+ * \event{ResetEvent, passed through}
+ * \event{Other events, passed through}
+ * \endevents
  */
 template <typename TickEvent, typename FireEvent, typename ResetEvent,
           bool FireAfterTick, typename Downstream>

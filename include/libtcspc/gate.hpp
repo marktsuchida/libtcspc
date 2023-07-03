@@ -55,9 +55,13 @@ class gate_events {
  *
  * \ingroup processors-timing
  *
- * Events belonging to \c EventSetToGate are gated: if an \c OpenEvent was
- * received more recently than an \c CloseEvent, they are passed through;
- * otherwise they are discarded.
+ * The processor keeps an internal boolean state: the "gate". The initial state
+ * of the gate is determined by \e initially_open. When an \c OpenEvent is
+ * received, the gate is opened. When a \c CloseEvent is received, the gate is
+ * closed.
+ *
+ * Events belonging to \c EventSetToGate are gated: they are passed through if
+ * and only if the gate is currently open.
  *
  * All events not in \c EventSetToGate are passed through (including \c
  * OpenEvent and \c CloseEvent).
@@ -73,9 +77,23 @@ class gate_events {
  * \param initially_open whether the gate is open before the first \c OpenEvent
  * or \c CloseEvent event is received
  *
- * \param downstream downstream processor (moved out)
+ * \param downstream downstream processor
  *
  * \return gate-events processor
+ *
+ * \inevents
+ * \event{Events in EventSetToGate, passed through if gate is open}
+ * \event{OpenEvent, causes gate to open; passed through}
+ * \event{CloseEvent, causes gate to close; passed through}
+ * \event{All other events, passed through}
+ * \endevents
+ *
+ * \outevents
+ * \event{Events in EventSetToGate, passed through if gate is open}
+ * \event{OpenEvent, passed through}
+ * \event{CloseEvent, passed through}
+ * \event{Other events, passed through}
+ * \endevents
  */
 template <typename EventSetToGate, typename OpenEvent, typename CloseEvent,
           typename Downstream>
