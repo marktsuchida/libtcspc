@@ -18,23 +18,22 @@ namespace tcspc {
 
 namespace internal {
 
-template <typename TriggerEvent, typename PatternGenerator,
-          typename Downstream>
+template <typename TriggerEvent, typename TimingGenerator, typename Downstream>
 class generate_timings {
-    PatternGenerator generator;
+    TimingGenerator generator;
     Downstream downstream;
 
     // Pred: bool(macrotime const &)
     template <typename Pred> void emit(Pred predicate) noexcept {
         for (std::optional<macrotime> t = std::as_const(generator).peek();
              t && predicate(*t); t = std::as_const(generator).peek()) {
-            typename PatternGenerator::output_event_type e = generator.pop();
+            typename TimingGenerator::output_event_type e = generator.pop();
             downstream.handle_event(e);
         }
     }
 
   public:
-    explicit generate_timings(PatternGenerator &&generator,
+    explicit generate_timings(TimingGenerator &&generator,
                               Downstream &&downstream)
         : generator(std::move(generator)), downstream(std::move(downstream)) {}
 
@@ -78,7 +77,7 @@ class generate_timings {
  * If the next \c TriggerEvent is received before pattern generation has
  * finished, any remaining timing events are not generated.
  *
- * The pattern generator type \c PatternGenerator must have the following
+ * The pattern generator type \c TimingGenerator must have the following
  * members:
  *
  * - <tt>output_event_type</tt>, the type of the generated event,
@@ -96,7 +95,7 @@ class generate_timings {
  * \tparam TriggerEvent even type that triggers a new round of pattern
  * generation by resetting the pattern generator
  *
- * \tparam PatternGenerator timing pattern generator type
+ * \tparam TimingGenerator timing pattern generator type
  *
  * \tparam Downstream downstream processor type
  *
@@ -106,12 +105,11 @@ class generate_timings {
  *
  * \return a new generate_timings processor
  */
-template <typename TriggerEvent, typename PatternGenerator,
-          typename Downstream>
-auto generate_timings(PatternGenerator &&generator, Downstream &&downstream) {
-    return internal::generate_timings<TriggerEvent, PatternGenerator,
+template <typename TriggerEvent, typename TimingGenerator, typename Downstream>
+auto generate_timings(TimingGenerator &&generator, Downstream &&downstream) {
+    return internal::generate_timings<TriggerEvent, TimingGenerator,
                                       Downstream>(
-        std::forward<PatternGenerator>(generator),
+        std::forward<TimingGenerator>(generator),
         std::forward<Downstream>(downstream));
 }
 
@@ -120,7 +118,7 @@ auto generate_timings(PatternGenerator &&generator, Downstream &&downstream) {
  *
  * \ingroup timing-generators
  *
- * Timing pattern generator for use with generate_timings.
+ * Timing generator for use with generate_timings.
  *
  * \tparam Event output event type (never generated)
  */
@@ -146,7 +144,7 @@ template <typename Event> class null_timing_generator {
  *
  * \ingroup timing-generators
  *
- * Timing pattern generator for use with generate_timings.
+ * Timing generator for use with generate_timings.
  *
  * \tparam Event output event type
  */
@@ -196,7 +194,7 @@ template <typename Event> class one_shot_timing_generator {
  *
  * \ingroup timing-generators
  *
- * Timing pattern generator for use with generate_timings.
+ * Timing generator for use with generate_timings.
  *
  * \tparam Event output event type
  */
