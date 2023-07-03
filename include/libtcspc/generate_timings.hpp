@@ -26,8 +26,8 @@ class generate_timings {
 
     // Pred: bool(macrotime const &)
     template <typename Pred> void emit(Pred predicate) noexcept {
-        for (std::optional<macrotime> t = generator.peek();
-             t && predicate(t.value()); t = generator.peek()) {
+        for (std::optional<macrotime> t = std::as_const(generator).peek();
+             t && predicate(*t); t = std::as_const(generator).peek()) {
             typename PatternGenerator::output_event_type e = generator.pop();
             downstream.handle_event(e);
         }
