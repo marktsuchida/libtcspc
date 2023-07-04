@@ -139,6 +139,8 @@ template <typename EventSet> class type_erased_processor {
               std::forward<Downstream>(downstream))) {}
 
     // Rule of zero
+    // Note that this allows move only. If we allowed copying, we would only
+    // work with copyable downstreams, which is not desirable.
 
     /** \brief Processor interface */
     template <typename Event,
