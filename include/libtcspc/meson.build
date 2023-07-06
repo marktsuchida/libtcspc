@@ -27,7 +27,7 @@ public_cpp_headers = files(
     'pixel_photon_events.hpp',
     'read_bytes.hpp',
     'ref_processor.hpp',
-    'route_by_channel.hpp',
+    'route.hpp',
     'shared_processor.hpp',
     'span.hpp',
     'split.hpp',

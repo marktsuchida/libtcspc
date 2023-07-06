@@ -108,6 +108,12 @@ namespace tcspc {
  */
 
 /**
+ * \defgroup routers Routers
+ *
+ * \brief Routers for use with \ref route.
+ */
+
+/**
  * \defgroup data-mappers Data mappers
  *
  * \brief Datapoint mappers for use with \ref map_to_datapoints.
