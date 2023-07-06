@@ -29,6 +29,7 @@ libtcspc_tests_srcs = [
     'read_bytes.cpp',
     'ref_processor.cpp',
     'route_by_channel.cpp',
+    'shared_processor.cpp',
     'split.cpp',
     'swabian_tag.cpp',
     'test_utils.cpp',

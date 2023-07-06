@@ -18,6 +18,8 @@ namespace tcspc {
  * This is an adapter to allow the use of non-movable processors, or when you
  * do not want to move a downstream processor into its upstream.
  *
+ * \see shared_processor
+ *
  * \tparam Downstream downstream processor type
  */
 template <typename Downstream> class ref_processor {

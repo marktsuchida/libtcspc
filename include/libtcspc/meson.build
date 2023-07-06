@@ -28,6 +28,7 @@ public_cpp_headers = files(
     'read_bytes.hpp',
     'ref_processor.hpp',
     'route_by_channel.hpp',
+    'shared_processor.hpp',
     'span.hpp',
     'split.hpp',
     'swabian_tag.hpp',
