@@ -19,7 +19,7 @@ using fire_event = timestamped_test_event<1>;
 using reset_event = timestamped_test_event<2>;
 using misc_event = timestamped_test_event<3>;
 
-TEST_CASE("Count event", "[count_event]") {
+TEST_CASE("Count up to", "[count_up_to]") {
     auto out = capture_output<
         event_set<tick_event, fire_event, reset_event, misc_event>>();
 
@@ -27,8 +27,8 @@ TEST_CASE("Count event", "[count_event]") {
         SECTION("Emit before") {
             auto in =
                 feed_input<event_set<tick_event, reset_event, misc_event>>(
-                    count_event<tick_event, fire_event, reset_event, false>(
-                        0, 1, ref_processor(out)));
+                    count_up_to<tick_event, fire_event, reset_event, false>(
+                        0, 1, 0, ref_processor(out)));
             in.require_output_checked(out);
 
             in.feed(tick_event{42});
@@ -50,8 +50,8 @@ TEST_CASE("Count event", "[count_event]") {
 
         SECTION("Emit after") {
             auto in = feed_input<event_set<tick_event>>(
-                count_event<tick_event, fire_event, reset_event, true>(
-                    0, 1, ref_processor(out)));
+                count_up_to<tick_event, fire_event, reset_event, true>(
+                    0, 1, 0, ref_processor(out)));
             in.require_output_checked(out);
 
             in.feed(tick_event{42});
@@ -66,8 +66,8 @@ TEST_CASE("Count event", "[count_event]") {
     SECTION("Threshold 1, limit 1") {
         SECTION("Emit before") {
             auto in = feed_input<event_set<tick_event>>(
-                count_event<tick_event, fire_event, reset_event, false>(
-                    1, 1, ref_processor(out)));
+                count_up_to<tick_event, fire_event, reset_event, false>(
+                    1, 1, 0, ref_processor(out)));
             in.require_output_checked(out);
 
             in.feed(tick_event{42});
@@ -80,8 +80,8 @@ TEST_CASE("Count event", "[count_event]") {
 
         SECTION("Emit after") {
             auto in = feed_input<event_set<tick_event>>(
-                count_event<tick_event, fire_event, reset_event, true>(
-                    1, 1, ref_processor(out)));
+                count_up_to<tick_event, fire_event, reset_event, true>(
+                    1, 1, 0, ref_processor(out)));
             in.require_output_checked(out);
 
             in.feed(tick_event{42});
@@ -98,8 +98,8 @@ TEST_CASE("Count event", "[count_event]") {
     SECTION("Threshold 1, limit 2") {
         SECTION("Emit before") {
             auto in = feed_input<event_set<tick_event, reset_event>>(
-                count_event<tick_event, fire_event, reset_event, false>(
-                    1, 2, ref_processor(out)));
+                count_up_to<tick_event, fire_event, reset_event, false>(
+                    1, 2, 0, ref_processor(out)));
             in.require_output_checked(out);
 
             in.feed(tick_event{42});
@@ -122,8 +122,8 @@ TEST_CASE("Count event", "[count_event]") {
 
         SECTION("Emit after") {
             auto in = feed_input<event_set<tick_event, reset_event>>(
-                count_event<tick_event, fire_event, reset_event, true>(
-                    1, 2, ref_processor(out)));
+                count_up_to<tick_event, fire_event, reset_event, true>(
+                    1, 2, 0, ref_processor(out)));
             in.require_output_checked(out);
 
             in.feed(tick_event{42});
@@ -145,4 +145,27 @@ TEST_CASE("Count event", "[count_event]") {
             REQUIRE(out.check_end());
         }
     }
+}
+
+TEST_CASE("Count down to", "[count_down_to]") {
+    auto out = capture_output<
+        event_set<tick_event, fire_event, reset_event, misc_event>>();
+
+    auto in = feed_input<event_set<tick_event, reset_event, misc_event>>(
+        count_down_to<tick_event, fire_event, reset_event, false>(
+            1, 0, 2, ref_processor(out)));
+    in.require_output_checked(out);
+
+    in.feed(tick_event{42});
+    REQUIRE(out.check(tick_event{42}));
+    in.feed(tick_event{43});
+    REQUIRE(out.check(fire_event{43}));
+    REQUIRE(out.check(tick_event{43}));
+    in.feed(tick_event{44});
+    REQUIRE(out.check(tick_event{44}));
+    in.feed(tick_event{45});
+    REQUIRE(out.check(fire_event{45}));
+    REQUIRE(out.check(tick_event{45}));
+    in.feed_end();
+    REQUIRE(out.check_end());
 }

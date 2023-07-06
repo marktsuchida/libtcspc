@@ -18,18 +18,20 @@ namespace internal {
 
 template <typename TickEvent, typename FireEvent, typename ResetEvent,
           bool FireAfterTick, typename Downstream>
-class count_event {
-    std::uint64_t count = 0;
+class count_up_to {
+    std::uint64_t count;
+    std::uint64_t init;
     std::uint64_t thresh;
     std::uint64_t limit;
 
     Downstream downstream;
 
   public:
-    explicit count_event(std::uint64_t threshold, std::uint64_t limit,
-                         Downstream &&downstream)
-        : thresh(threshold), limit(limit), downstream(std::move(downstream)) {
-        assert(limit > 0);
+    explicit count_up_to(std::uint64_t threshold, std::uint64_t limit,
+                         std::uint64_t initial_count, Downstream &&downstream)
+        : count(initial_count), init(initial_count), thresh(threshold),
+          limit(limit), downstream(std::move(downstream)) {
+        assert(limit > init);
     }
 
     void handle_event(TickEvent const &event) noexcept {
@@ -47,11 +49,11 @@ class count_event {
         }
 
         if (count == limit)
-            count = 0;
+            count = init;
     }
 
     void handle_event(ResetEvent const &event) noexcept {
-        count = 0;
+        count = init;
         downstream.handle_event(event);
     }
 
@@ -85,26 +87,29 @@ class count_event {
  * the \c TickEvent that triggered it.
  *
  * After incrementing the count and processing the threshold, if the count
- * equals \e limit, then the count is reset to zero. Automatic resetting can be
- * effectively disabled by setting \e limit to \c std::uint64_t{-1} .
+ * equals \e limit, then the count is reset to \e initial_count. Automatic
+ * resetting can be effectively disabled by setting \e limit to \c
+ * std::uint64_t{-1} .
  *
- * The \e limit must be positive (a zero \e limit would imply automatically
- * resetting without any input, which doesn't make sense). When \c
- * FireAfterTick is false, \e threshold should be less than \e limit; otherwise
- * \c FireEvent is never emitted. When \c FireAfterTick is true, \e threshold
- * should be positive and less than or equal to the limit; otherwise \c
- * FireEvent is never emitted.
+ * The \e limit must be greater than \e initial_count. When \c FireAfterTick is
+ * false, \e threshold should be greater than or equal to \e initial_count and
+ * less than \e limit; otherwise \c FireEvent is never emitted. When \c
+ * FireAfterTick is true, \e threshold should be greater than \e initial_count
+ * and less than or equal to \e limit; otherwise \c FireEvent is never emitted.
  *
  * When a \c ResetEvent is received (and passed through), the count is reset to
- * zero. No \c FireEvent is emitted on reset, but if \c FireAfterTick is false
- * and \e threshold is set to zero, then a \c FireEvent is emitted on the next
- * \c TickEvent received.
+ * \e initial_count. No \c FireEvent is emitted on reset, but if \c
+ * FireAfterTick is false and \e threshold is set equal to \e initial_count,
+ * then a \c FireEvent is emitted on the next \c TickEvent received.
+ *
+ * \see count_down_to
  *
  * \tparam TickEvent the event type to count
  *
  * \tparam FireEvent the event type to emit when the count reaches \e threshold
  *
- * \tparam ResetEvent an event type that causes the count to be reset to zero
+ * \tparam ResetEvent an event type that causes the count to be reset to \e
+ * initial_count
  *
  * \tparam FireAfterTick whether to emit \c FireEvent after passing through \c
  * TickEvent, rather than before
@@ -113,7 +118,11 @@ class count_event {
  *
  * \param threshold the count value at which to emit \c FireEvent
  *
- * \param limit the count value at which to reset to zero; must be positive
+ * \param limit the count value at which to reset to \e initial_count; must be
+ * greater than \e initial_count
+ *
+ * \param initial_count the value at which the count starts and to which it is
+ * reset
  *
  * \param downstream downstream processor
  *
@@ -121,7 +130,8 @@ class count_event {
  *
  * \inevents
  * \event{TickEvent, causes the count to be incremented; passed through}
- * \event{ResetEvent, causes the count to be reset to zero; passed through}
+ * \event{ResetEvent, causes the count to be reset to \e initial_count; passed
+ * through}
  * \event{All other events, passed through}
  * \endevents
  *
@@ -134,11 +144,41 @@ class count_event {
  */
 template <typename TickEvent, typename FireEvent, typename ResetEvent,
           bool FireAfterTick, typename Downstream>
-auto count_event(std::uint64_t threshold, std::uint64_t limit,
-                 Downstream &&downstream) {
-    return internal::count_event<TickEvent, FireEvent, ResetEvent,
+auto count_up_to(std::uint64_t threshold, std::uint64_t limit,
+                 std::uint64_t initial_count, Downstream &&downstream) {
+    return internal::count_up_to<TickEvent, FireEvent, ResetEvent,
                                  FireAfterTick, Downstream>(
-        threshold, limit, std::forward<Downstream>(downstream));
+        threshold, limit, initial_count, std::forward<Downstream>(downstream));
+}
+
+/**
+ * \brief Like \ref count_up_to, but decrement the count on each tick event.
+ *
+ * \ingroup processors-timing
+ *
+ * All behavior is symmetric to \c count_up_to. \e limit must be less than \e
+ * initial_count.
+ *
+ * \see count_up_to
+ */
+template <typename TickEvent, typename FireEvent, typename ResetEvent,
+          bool FireAfterTick, typename Downstream>
+auto count_down_to(std::uint64_t threshold, std::uint64_t limit,
+                   std::uint64_t initial_count, Downstream &&downstream) {
+    // Alter parameters to emulate count down using count up.
+    assert(initial_count > limit);
+    if (threshold > initial_count || threshold < limit) {
+        // Counter will never fire; no change to threshold needed.
+    } else {
+        // Mirror threshold around midpoint of initial_count and limit.
+        threshold = limit + (initial_count - threshold);
+    }
+    using std::swap;
+    swap(initial_count, limit);
+
+    return internal::count_up_to<TickEvent, FireEvent, ResetEvent,
+                                 FireAfterTick, Downstream>(
+        threshold, limit, initial_count, std::forward<Downstream>(downstream));
 }
 
 } // namespace tcspc
