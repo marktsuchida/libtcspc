@@ -9,6 +9,8 @@
 #include <algorithm>
 #include <array>
 #include <cstddef>
+#include <cstdint>
+#include <exception>
 #include <limits>
 #include <tuple>
 #include <utility>
@@ -17,17 +19,28 @@ namespace tcspc {
 
 namespace internal {
 
+// Design note: Currently the router produces a single downstream index per
+// event. We could generalize this so that the router produces a boolean mask
+// of the downstreams, such that a single event can be routed to multiple
+// downstreams. However, the exact same effect can also be achieved by adding
+// broadcast processors downstream, and it is not clear that there would be
+// much of a performance difference. So let's keep it simple.
+
 template <typename EventToRoute, typename Router, typename... Downstreams>
 class route {
     Router router;
     std::tuple<Downstreams...> downstreams;
 
-    template <std::size_t I = 0>
-    void route_event(std::size_t index, EventToRoute const &event) noexcept {
-        if (index == I)
-            return std::get<I>(downstreams).handle_event(event);
-        if constexpr (I + 1 < std::tuple_size_v<decltype(downstreams)>)
-            route_event<I + 1>(index, event);
+    template <std::size_t I>
+    void route_event_if(bool f, EventToRoute const &event) noexcept {
+        if (f)
+            std::get<I>(downstreams).handle_event(event);
+    }
+
+    template <std::size_t... I>
+    void route_event(std::size_t index, EventToRoute const &event,
+                     std::index_sequence<I...>) noexcept {
+        (void)std::array{(route_event_if<I>(I == index, event), 0)...};
     }
 
   public:
@@ -35,7 +48,8 @@ class route {
         : router(router), downstreams{std::move(downstreams)...} {}
 
     void handle_event(EventToRoute const &event) noexcept {
-        route_event(router(event), event);
+        route_event(router(event), event,
+                    std::make_index_sequence<sizeof...(Downstreams)>());
     }
 
     template <typename OtherEvent>
@@ -104,7 +118,7 @@ auto route(Router &&router, Downstreams &&...downstreams) {
  * \tparam N the number of downstreams to route to
  */
 template <std::size_t N> class channel_router {
-    std::array<int, N> channels;
+    std::array<std::int16_t, N> channels;
 
   public:
     /**
@@ -112,7 +126,7 @@ template <std::size_t N> class channel_router {
      *
      * \param channels channels in order of downstreams to which to route
      */
-    explicit channel_router(std::array<int, N> const &channels)
+    explicit channel_router(std::array<std::int16_t, N> const &channels)
         : channels(channels) {}
 
     /** \brief Router interface. */
@@ -129,6 +143,6 @@ template <std::size_t N> class channel_router {
  * \brief Deduction guide for array of channels.
  */
 template <std::size_t N>
-channel_router(std::array<int, N>) -> channel_router<N>;
+channel_router(std::array<std::int16_t, N>) -> channel_router<N>;
 
 } // namespace tcspc
