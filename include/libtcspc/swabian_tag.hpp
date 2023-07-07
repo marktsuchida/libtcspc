@@ -140,7 +140,9 @@ template <typename Downstream> class decode_swabian_tags {
         }
         case tag_type::missed_events: {
             untagged_counts_event e{
-                {event.time().value()}, event.missed_event_count().value(), 0};
+                {event.time().value()},
+                event.missed_event_count().value(),
+                narrow<decltype(e.channel)>(event.channel())};
             downstream.handle_event(e);
             break;
         }
