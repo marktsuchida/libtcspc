@@ -22,6 +22,7 @@ libtcspc_tests_srcs = [
     'histogramming.cpp',
     'legacy_histogram.cpp',
     'line_clock_pixellator.cpp',
+    'match.cpp',
     'merge.cpp',
     'npint.cpp',
     'picoquant_t3.cpp',
@@ -35,7 +36,6 @@ libtcspc_tests_srcs = [
     'test_utils.cpp',
     'time_delay.cpp',
     'time_tagged_events.cpp',
-    'translate_marker.cpp',
     'type_erased_processor.cpp',
     'vector_queue.cpp',
 ]

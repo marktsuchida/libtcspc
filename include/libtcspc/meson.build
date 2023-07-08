@@ -21,6 +21,7 @@ public_cpp_headers = files(
     'histogram_events.hpp',
     'legacy_histogram.hpp',
     'line_clock_pixellator.hpp',
+    'match.hpp',
     'merge.hpp',
     'npint.hpp',
     'picoquant_t3.hpp',
@@ -36,7 +37,6 @@ public_cpp_headers = files(
     'test_utils.hpp',
     'time_delay.hpp',
     'time_tagged_events.hpp',
-    'translate_marker.hpp',
     'type_erased_processor.hpp',
     'vector_queue.hpp',
 )

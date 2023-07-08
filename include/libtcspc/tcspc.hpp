@@ -108,6 +108,12 @@ namespace tcspc {
  */
 
 /**
+ * \defgroup matchers Matchers
+ *
+ * \brief Matchers for use with \ref match and \ref match_replace.
+ */
+
+/**
  * \defgroup routers Routers
  *
  * \brief Routers for use with \ref route.
