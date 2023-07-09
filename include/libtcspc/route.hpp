@@ -6,6 +6,8 @@
 
 #pragma once
 
+#include "event_set.hpp"
+
 #include <algorithm>
 #include <array>
 #include <cstddef>
@@ -13,6 +15,7 @@
 #include <exception>
 #include <limits>
 #include <tuple>
+#include <type_traits>
 #include <utility>
 
 namespace tcspc {
@@ -26,19 +29,19 @@ namespace internal {
 // broadcast processors downstream, and it is not clear that there would be
 // much of a performance difference. So let's keep it simple.
 
-template <typename EventToRoute, typename Router, typename... Downstreams>
+template <typename EventSetToRoute, typename Router, typename... Downstreams>
 class route {
     Router router;
     std::tuple<Downstreams...> downstreams;
 
-    template <std::size_t I>
-    void route_event_if(bool f, EventToRoute const &event) noexcept {
+    template <std::size_t I, typename Event>
+    void route_event_if(bool f, Event const &event) noexcept {
         if (f)
             std::get<I>(downstreams).handle_event(event);
     }
 
-    template <std::size_t... I>
-    void route_event(std::size_t index, EventToRoute const &event,
+    template <typename Event, std::size_t... I>
+    void route_event(std::size_t index, Event const &event,
                      std::index_sequence<I...>) noexcept {
         (void)std::array{(route_event_if<I>(I == index, event), 0)...};
     }
@@ -47,15 +50,15 @@ class route {
     explicit route(Router &&router, Downstreams &&...downstreams)
         : router(router), downstreams{std::move(downstreams)...} {}
 
-    void handle_event(EventToRoute const &event) noexcept {
-        route_event(router(event), event,
-                    std::make_index_sequence<sizeof...(Downstreams)>());
-    }
+    template <typename Event> void handle_event(Event const &event) noexcept {
+        if constexpr (contains_event_v<EventSetToRoute, Event>) {
+            route_event(router(event), event,
+                        std::make_index_sequence<sizeof...(Downstreams)>());
 
-    template <typename OtherEvent>
-    void handle_event(OtherEvent const &event) noexcept {
-        std::apply([&](auto &...s) { (..., s.handle_event(event)); },
-                   downstreams);
+        } else {
+            std::apply([&](auto &...s) { (..., s.handle_event(event)); },
+                       downstreams);
+        }
     }
 
     void handle_end(std::exception_ptr const &error) noexcept {
@@ -71,14 +74,14 @@ class route {
  *
  * \ingroup processors-timing
  *
- * This processor forwards each event of type \c EventToRoute to a different
+ * This processor forwards each event in \c EventSetToRoute to a different
  * downstream according to the provided router.
  *
  * All other events are broadcast to all downstreams.
  *
  * The router must implement the function call operator <tt>auto
- * operator()(EventToRoute const &) const noexcept -> std::size_t</tt>, mapping
- * events to downstream index.
+ * operator()(Event const &) const noexcept -> std::size_t</tt>, for every \c
+ * Event in \c EventSetToRoute, mapping events to downstream index.
  *
  * If the router maps an event to an index beyond the available downstreams,
  * that event is discarded. (Routers can return \c
@@ -86,7 +89,7 @@ class route {
  *
  * For routers provided by libtcspc, see \ref routers.
  *
- * \tparam EventToRoute event type to route
+ * \tparam EventSetToRoute event types to route
  *
  * \tparam Router type of router
  *
@@ -99,13 +102,13 @@ class route {
  * \return route processor
  *
  * \inevents
- * \event{EventToRoute, routed to at most one of the downstreams}
+ * \event{Events in EventSetToRoute, routed to at most one of the downstreams}
  * \event{All other events, broadcast to all downstreams}
  * \endevents
  */
-template <typename EventToRoute, typename Router, typename... Downstreams>
+template <typename EventSetToRoute, typename Router, typename... Downstreams>
 auto route(Router &&router, Downstreams &&...downstreams) {
-    return internal::route<EventToRoute, Router, Downstreams...>(
+    return internal::route<EventSetToRoute, Router, Downstreams...>(
         std::forward<Router>(router),
         std::forward<Downstreams>(downstreams)...);
 }
