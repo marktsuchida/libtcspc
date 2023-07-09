@@ -104,7 +104,7 @@ namespace tcspc {
 /**
  * \defgroup timing-generators Timing generators
  *
- * \brief Timing generators for use with \ref generate_timings.
+ * \brief Timing generators for use with \ref generate.
  */
 
 /**

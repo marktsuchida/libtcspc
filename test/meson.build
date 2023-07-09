@@ -16,7 +16,7 @@ libtcspc_tests_srcs = [
     'discard.cpp',
     'event_set.cpp',
     'gate.cpp',
-    'generate_timings.cpp',
+    'generate.cpp',
     'histogram.cpp',
     'histogram_elementwise.cpp',
     'histogram_events.cpp',

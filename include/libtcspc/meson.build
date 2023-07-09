@@ -16,7 +16,7 @@ public_cpp_headers = files(
     'discard.hpp',
     'event_set.hpp',
     'gate.hpp',
-    'generate_timings.hpp',
+    'generate.hpp',
     'histogram.hpp',
     'histogram_elementwise.hpp',
     'histogram_events.hpp',

@@ -19,7 +19,7 @@ namespace tcspc {
 namespace internal {
 
 template <typename TriggerEvent, typename TimingGenerator, typename Downstream>
-class generate_timings {
+class generate {
     TimingGenerator generator;
     Downstream downstream;
 
@@ -33,8 +33,7 @@ class generate_timings {
     }
 
   public:
-    explicit generate_timings(TimingGenerator &&generator,
-                              Downstream &&downstream)
+    explicit generate(TimingGenerator &&generator, Downstream &&downstream)
         : generator(std::move(generator)), downstream(std::move(downstream)) {}
 
     void handle_event(TriggerEvent const &event) noexcept {
@@ -134,9 +133,8 @@ class generate_timings {
  * \endevents
  */
 template <typename TriggerEvent, typename TimingGenerator, typename Downstream>
-auto generate_timings(TimingGenerator &&generator, Downstream &&downstream) {
-    return internal::generate_timings<TriggerEvent, TimingGenerator,
-                                      Downstream>(
+auto generate(TimingGenerator &&generator, Downstream &&downstream) {
+    return internal::generate<TriggerEvent, TimingGenerator, Downstream>(
         std::forward<TimingGenerator>(generator),
         std::forward<Downstream>(downstream));
 }
@@ -146,7 +144,7 @@ auto generate_timings(TimingGenerator &&generator, Downstream &&downstream) {
  *
  * \ingroup timing-generators
  *
- * Timing generator for use with generate_timings.
+ * Timing generator for use with \ref generate.
  *
  * \tparam Event output event type (never generated)
  */
@@ -172,7 +170,7 @@ template <typename Event> class null_timing_generator {
  *
  * \ingroup timing-generators
  *
- * Timing generator for use with generate_timings.
+ * Timing generator for use with \ref generate.
  *
  * \tparam Event output event type
  */
@@ -222,7 +220,7 @@ template <typename Event> class one_shot_timing_generator {
  *
  * \ingroup timing-generators
  *
- * Timing generator for use with generate_timings.
+ * Timing generator for use with \ref generate.
  *
  * \tparam Event output event type
  */

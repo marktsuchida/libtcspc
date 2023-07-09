@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: MIT
  */
 
-#include "libtcspc/generate_timings.hpp"
+#include "libtcspc/generate.hpp"
 
 #include "libtcspc/event_set.hpp"
 #include "libtcspc/ref_processor.hpp"
@@ -18,12 +18,10 @@ using trigger_event = timestamped_test_event<0>;
 using output_event = timestamped_test_event<1>;
 using misc_event = timestamped_test_event<2>;
 
-TEST_CASE("Generate null timing",
-          "[generate_timings][null_timing_generator]") {
+TEST_CASE("Generate null timing", "[generate][null_timing_generator]") {
     auto out = capture_output<event_set<trigger_event, output_event>>();
-    auto in =
-        feed_input<event_set<trigger_event>>(generate_timings<trigger_event>(
-            null_timing_generator<output_event>(), ref_processor(out)));
+    auto in = feed_input<event_set<trigger_event>>(generate<trigger_event>(
+        null_timing_generator<output_event>(), ref_processor(out)));
     in.require_output_checked(out);
 
     in.feed(trigger_event{42});
@@ -35,14 +33,13 @@ TEST_CASE("Generate null timing",
 }
 
 TEST_CASE("Generate one-shot timing",
-          "[generate_timings][one_shot_timing_generator]") {
+          "[generate][one_shot_timing_generator]") {
     macrotime const delay = GENERATE(0, 1, 2);
     auto out =
         capture_output<event_set<trigger_event, output_event, misc_event>>();
     auto in = feed_input<event_set<trigger_event, misc_event>>(
-        generate_timings<trigger_event>(
-            one_shot_timing_generator<output_event>(delay),
-            ref_processor(out)));
+        generate<trigger_event>(one_shot_timing_generator<output_event>(delay),
+                                ref_processor(out)));
     in.require_output_checked(out);
 
     SECTION("No trigger, no output") {
@@ -83,8 +80,7 @@ TEST_CASE("Generate one-shot timing",
     }
 }
 
-TEST_CASE("Generate linear timing",
-          "[generate_timings][linear_timing_generator]") {
+TEST_CASE("Generate linear timing", "[generate][linear_timing_generator]") {
     macrotime const delay = GENERATE(0, 1, 2);
     macrotime const interval = GENERATE(1, 2);
 
@@ -92,10 +88,9 @@ TEST_CASE("Generate linear timing",
         capture_output<event_set<trigger_event, output_event, misc_event>>();
 
     SECTION("Count of 0") {
-        auto in = feed_input<event_set<trigger_event>>(
-            generate_timings<trigger_event>(
-                linear_timing_generator<output_event>(delay, interval, 0),
-                ref_processor(out)));
+        auto in = feed_input<event_set<trigger_event>>(generate<trigger_event>(
+            linear_timing_generator<output_event>(delay, interval, 0),
+            ref_processor(out)));
         in.require_output_checked(out);
 
         in.feed(trigger_event{42});
@@ -108,7 +103,7 @@ TEST_CASE("Generate linear timing",
 
     SECTION("Count of 1") {
         auto in = feed_input<event_set<trigger_event, misc_event>>(
-            generate_timings<trigger_event>(
+            generate<trigger_event>(
                 linear_timing_generator<output_event>(delay, interval, 1),
                 ref_processor(out)));
         in.require_output_checked(out);
@@ -138,7 +133,7 @@ TEST_CASE("Generate linear timing",
 
     SECTION("Count of 2") {
         auto in = feed_input<event_set<trigger_event, misc_event>>(
-            generate_timings<trigger_event>(
+            generate<trigger_event>(
                 linear_timing_generator<output_event>(delay, interval, 2),
                 ref_processor(out)));
         in.require_output_checked(out);
