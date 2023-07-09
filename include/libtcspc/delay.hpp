@@ -43,13 +43,21 @@ template <typename Downstream> class delay {
  *
  * \ingroup processors-timing
  *
+ * All events processed must have a \c macrotime field, and no other fields
+ * derived from the macrotime (because only the \c macrotime field will be
+ * adjusted).
+ *
  * \tparam Downstream downstream processor type
  *
  * \param delta macrotime offset to apply (can be negative)
  *
- * \param downstream downstream processor (moved out)
+ * \param downstream downstream processor
  *
- * \return time-delay processor
+ * \return delay processor
+ *
+ * \inevents
+ * \event{All events, passed through with time delay applied}
+ * \endevents
  */
 template <typename Downstream>
 auto delay(macrotime delta, Downstream &&downstream) {
