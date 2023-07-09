@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: MIT
  */
 
-#include "libtcspc/time_delay.hpp"
+#include "libtcspc/delay.hpp"
 
 #include "libtcspc/common.hpp"
 #include "libtcspc/ref_processor.hpp"
@@ -17,11 +17,11 @@ using namespace tcspc;
 using e0 = timestamped_test_event<0>;
 using e1 = timestamped_test_event<1>;
 
-TEST_CASE("Time delay", "[time_delay]") {
+TEST_CASE("Delay", "[delay]") {
     auto out = capture_output<event_set<e0, e1>>();
 
     SECTION("Zero delay is noop") {
-        auto in = feed_input<event_set<e0>>(time_delay(0, ref_processor(out)));
+        auto in = feed_input<event_set<e0>>(delay(0, ref_processor(out)));
         in.require_output_checked(out);
 
         in.feed(e0{0});
@@ -31,8 +31,7 @@ TEST_CASE("Time delay", "[time_delay]") {
     }
 
     SECTION("Delay +1") {
-        auto in =
-            feed_input<event_set<e0, e1>>(time_delay(1, ref_processor(out)));
+        auto in = feed_input<event_set<e0, e1>>(delay(1, ref_processor(out)));
         in.require_output_checked(out);
 
         in.feed(e0{0});
@@ -44,8 +43,7 @@ TEST_CASE("Time delay", "[time_delay]") {
     }
 
     SECTION("Delay -1") {
-        auto in =
-            feed_input<event_set<e0, e1>>(time_delay(-1, ref_processor(out)));
+        auto in = feed_input<event_set<e0, e1>>(delay(-1, ref_processor(out)));
         in.require_output_checked(out);
 
         in.feed(e0{0});

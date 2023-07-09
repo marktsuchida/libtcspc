@@ -16,12 +16,12 @@ namespace tcspc {
 
 namespace internal {
 
-template <typename Downstream> class time_delay {
+template <typename Downstream> class delay {
     macrotime delta;
     Downstream downstream;
 
   public:
-    explicit time_delay(macrotime delta, Downstream &&downstream)
+    explicit delay(macrotime delta, Downstream &&downstream)
         : delta(delta), downstream(std::move(downstream)) {}
 
     template <typename TimeTaggedEvent>
@@ -52,9 +52,9 @@ template <typename Downstream> class time_delay {
  * \return time-delay processor
  */
 template <typename Downstream>
-auto time_delay(macrotime delta, Downstream &&downstream) {
-    return internal::time_delay<Downstream>(
-        delta, std::forward<Downstream>(downstream));
+auto delay(macrotime delta, Downstream &&downstream) {
+    return internal::delay<Downstream>(delta,
+                                       std::forward<Downstream>(downstream));
 }
 
 } // namespace tcspc
