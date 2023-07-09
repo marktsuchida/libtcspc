@@ -18,13 +18,13 @@ namespace internal {
 
 template <typename EventSetToGate, typename OpenEvent, typename CloseEvent,
           typename Downstream>
-class gate_events {
+class gate {
     bool open;
 
     Downstream downstream;
 
   public:
-    explicit gate_events(bool initially_open, Downstream &&downstream)
+    explicit gate(bool initially_open, Downstream &&downstream)
         : open(initially_open), downstream(std::move(downstream)) {}
 
     void handle_event(OpenEvent const &event) noexcept {
@@ -97,9 +97,8 @@ class gate_events {
  */
 template <typename EventSetToGate, typename OpenEvent, typename CloseEvent,
           typename Downstream>
-auto gate_events(bool initially_open, Downstream &&downstream) {
-    return internal::gate_events<EventSetToGate, OpenEvent, CloseEvent,
-                                 Downstream>(
+auto gate(bool initially_open, Downstream &&downstream) {
+    return internal::gate<EventSetToGate, OpenEvent, CloseEvent, Downstream>(
         initially_open, std::forward<Downstream>(downstream));
 }
 

@@ -19,13 +19,13 @@ using close_event = empty_test_event<1>;
 using gated_event = empty_test_event<2>;
 using misc_event = empty_test_event<3>;
 
-TEST_CASE("Gate events", "[gate_events]") {
+TEST_CASE("Gate events", "[gate]") {
     bool const initially_open = GENERATE(false, true);
     auto out = capture_output<
         event_set<open_event, close_event, gated_event, misc_event>>();
     auto in = feed_input<
         event_set<open_event, close_event, gated_event, misc_event>>(
-        gate_events<event_set<gated_event>, open_event, close_event>(
+        gate<event_set<gated_event>, open_event, close_event>(
             initially_open, ref_processor(out)));
     in.require_output_checked(out);
 
