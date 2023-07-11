@@ -57,7 +57,7 @@ class print_processor {
                << int(event.channel) << '\n';
     }
 
-    void handle_event(tcspc::marker_event const &event) {
+    void handle_event(tcspc::marker_event<> const &event) {
         print_macrotime(output, event.macrotime);
         output << ' ' << "Marker: " << int(event.channel) << '\n';
     }

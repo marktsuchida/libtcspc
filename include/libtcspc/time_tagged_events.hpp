@@ -53,12 +53,21 @@ struct base_time_tagged_event {
  * construction (which tends to be a list of numbers) very slightly more
  * readable: <tt>event{{{macrotime}, channel}, other fields}</tt> rather than
  * <tt>event{macrotime, channel, other fields}</tt>.
+ *
+ * Different devices have different ranges for the channel; some use negative
+ * numbers.
+ *
+ * \tparam Channel integer type to represent channel number
  */
+template <typename Channel = std::int16_t>
 struct base_channeled_time_tagged_event : base_time_tagged_event {
+    static_assert(std::is_integral_v<Channel>,
+                  "Channel must be an integer type");
+
     /**
      * \brief The channel on which this event occurred.
      */
-    std::int16_t channel;
+    Channel channel;
 };
 
 /**
@@ -212,8 +221,11 @@ struct end_lost_interval_event : base_time_tagged_event {
  *
  * This event should only occur between begin_lost_interval_event and
  * end_lost_interval_event.
+ *
+ * \tparam Channel integer type to represent channel number
  */
-struct untagged_counts_event : base_channeled_time_tagged_event {
+template <typename Channel = std::int16_t>
+struct untagged_counts_event : base_channeled_time_tagged_event<Channel> {
     /**
      * \brief Number of counts that were detected but could not be time-tagged.
      */
@@ -244,8 +256,11 @@ struct untagged_counts_event : base_channeled_time_tagged_event {
  * \brief Event indicating a detected count.
  *
  * \ingroup events-timing
+ *
+ * \tparam Channel integer type to represent channel number
  */
-struct detection_event : base_channeled_time_tagged_event {
+template <typename Channel = std::int16_t>
+struct detection_event : base_channeled_time_tagged_event<Channel> {
     /** \brief Equality comparison operator. */
     friend auto operator==(detection_event const &lhs,
                            detection_event const &rhs) noexcept -> bool {
@@ -271,10 +286,12 @@ struct detection_event : base_channeled_time_tagged_event {
  *
  * \ingroup events-timing
  *
+ * \tparam Channel integer type to represent channel number
  * \tparam Difftime integer type for difftime
  */
-template <typename Difftime = std::uint16_t>
-struct time_correlated_detection_event : base_channeled_time_tagged_event {
+template <typename Channel = std::int16_t, typename Difftime = std::uint16_t>
+struct time_correlated_detection_event
+    : base_channeled_time_tagged_event<Channel> {
     static_assert(std::is_integral_v<Difftime>,
                   "Difftime must be an integer type");
 
@@ -331,8 +348,11 @@ struct time_correlated_detection_event : base_channeled_time_tagged_event {
  *
  * The channel numbering of marker events may or may not be shared with
  * detection channels, depending on the hardware or data source.
+ *
+ * \tparam Channel integer type to represent channel number
  */
-struct marker_event : base_channeled_time_tagged_event {
+template <typename Channel = std::int16_t>
+struct marker_event : base_channeled_time_tagged_event<Channel> {
     /** \brief Equality comparison operator. */
     friend auto operator==(marker_event const &lhs,
                            marker_event const &rhs) noexcept -> bool {

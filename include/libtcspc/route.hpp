@@ -120,8 +120,9 @@ auto route(Router &&router, Downstreams &&...downstreams) {
  *
  * \tparam N the number of downstreams to route to
  */
-template <std::size_t N> class channel_router {
-    std::array<std::int16_t, N> channels;
+template <std::size_t N, typename Channel = std::int16_t>
+class channel_router {
+    std::array<Channel, N> channels;
 
   public:
     /**
@@ -129,12 +130,13 @@ template <std::size_t N> class channel_router {
      *
      * \param channels channels in order of downstreams to which to route
      */
-    explicit channel_router(std::array<std::int16_t, N> const &channels)
+    explicit channel_router(std::array<Channel, N> const &channels)
         : channels(channels) {}
 
     /** \brief Router interface. */
     template <typename Event>
     auto operator()(Event const &event) const noexcept -> std::size_t {
+        static_assert(std::is_same_v<decltype(event.channel), Channel>);
         auto it = std::find(channels.begin(), channels.end(), event.channel);
         if (it == channels.end())
             return std::numeric_limits<std::size_t>::max();
@@ -145,7 +147,7 @@ template <std::size_t N> class channel_router {
 /**
  * \brief Deduction guide for array of channels.
  */
-template <std::size_t N>
-channel_router(std::array<std::int16_t, N>) -> channel_router<N>;
+template <std::size_t N, typename Channel>
+channel_router(std::array<Channel, N>) -> channel_router<N, Channel>;
 
 } // namespace tcspc

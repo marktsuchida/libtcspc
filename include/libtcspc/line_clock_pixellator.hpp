@@ -278,7 +278,7 @@ template <typename D> class line_clock_pixellator {
         }
     }
 
-    void handle_event(marker_event const &event) noexcept {
+    void handle_event(marker_event<> const &event) noexcept {
         update_time_range(event.macrotime);
         if (event.channel == line_marker_channel) {
             try {

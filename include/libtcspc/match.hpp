@@ -8,6 +8,7 @@
 
 #include <cstdint>
 #include <exception>
+#include <type_traits>
 #include <utility>
 
 namespace tcspc {
@@ -114,8 +115,8 @@ auto match(Matcher &&matcher, Downstream &&downstream) {
  *
  * \ingroup matchers
  */
-class channel_matcher {
-    std::int16_t channel;
+template <typename Channel = std::int16_t> class channel_matcher {
+    Channel channel;
 
   public:
     /**
@@ -123,11 +124,12 @@ class channel_matcher {
      *
      * \param channel the channel number to match
      */
-    explicit channel_matcher(std::int16_t channel) : channel(channel) {}
+    explicit channel_matcher(Channel channel) : channel(channel) {}
 
     /** \brief Matcher interface. */
     template <typename Event>
     auto operator()(Event const &event) const noexcept -> bool {
+        static_assert(std::is_same_v<decltype(event.channel), Channel>);
         return event.channel == channel;
     }
 };
@@ -139,10 +141,12 @@ class channel_matcher {
  *
  * \tparam Channel the channel number to match
  */
-template <std::int16_t Channel> struct static_channel_matcher {
+template <typename ChannelType, ChannelType Channel>
+struct static_channel_matcher {
     /** \brief Matcher interface. */
     template <typename Event>
     auto operator()(Event const &event) const noexcept -> bool {
+        static_assert(std::is_same_v<decltype(event.channel), ChannelType>);
         return event.channel == Channel;
     }
 };
