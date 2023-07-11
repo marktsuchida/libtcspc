@@ -46,7 +46,7 @@ template <typename D> class line_clock_pixellator {
     macrotime line_start_time;
 
     // Buffer received photons until we can assign to pixel
-    std::deque<time_correlated_detection_event> pending_photons;
+    std::deque<time_correlated_detection_event<>> pending_photons;
 
     // Buffer line marks until we are ready to process
     std::deque<macrotime> pending_lines; // marker macrotimes
@@ -59,7 +59,7 @@ template <typename D> class line_clock_pixellator {
         latest_timestamp = macrotime;
     }
 
-    void enqueue_photon(time_correlated_detection_event const &event) {
+    void enqueue_photon(time_correlated_detection_event<> const &event) {
         if (stream_ended) {
             return; // Avoid buffering post-error
         }
@@ -132,7 +132,7 @@ template <typename D> class line_clock_pixellator {
         }
     }
 
-    void emit_photon(time_correlated_detection_event const &event) {
+    void emit_photon(time_correlated_detection_event<> const &event) {
         pixel_photon_event new_event;
         new_event.frame =
             static_cast<std::uint32_t>(current_line / lines_per_frame);
@@ -262,7 +262,8 @@ template <typename D> class line_clock_pixellator {
         }
     }
 
-    void handle_event(time_correlated_detection_event const &event) noexcept {
+    void
+    handle_event(time_correlated_detection_event<> const &event) noexcept {
         update_time_range(event.macrotime);
         try {
             enqueue_photon(event);

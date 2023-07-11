@@ -93,13 +93,17 @@ auto map_to_datapoints(DataMapper &&mapper, Downstream &&downstream) {
  * \ingroup data-mappers
  *
  * \see map_to_datapoints
+ *
+ * \tparam Event event type to map (must have difftime field)
  */
+template <typename Event = time_correlated_detection_event<>>
 class difftime_data_mapper {
   public:
     /** \brief Data mapper interface */
-    using event_type = time_correlated_detection_event;
+    using event_type = Event;
     /** \brief Data mapper interface */
     using data_type = decltype(std::declval<event_type>().difftime);
+    static_assert(std::is_integral_v<data_type>);
 
     /** \brief Data mapper interface */
     auto operator()(event_type const &event) const noexcept -> data_type {

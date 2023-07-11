@@ -452,7 +452,7 @@ template <typename BHSPCEvent, typename Downstream> class decode_bh_spc {
             time_reached_event e{macrotime};
             downstream.handle_event(e);
         } else {
-            time_correlated_detection_event e{
+            time_correlated_detection_event<std::uint16_t> e{
                 {{macrotime}, event.routing_signals().value()},
                 event.adc_value().value()};
             downstream.handle_event(e);

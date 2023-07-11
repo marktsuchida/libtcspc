@@ -23,8 +23,9 @@
 
 using namespace tcspc;
 
-using tcspc_events = event_set<time_reached_event, data_lost_event,
-                               time_correlated_detection_event, marker_event>;
+using tcspc_events =
+    event_set<time_reached_event, data_lost_event,
+              time_correlated_detection_event<>, marker_event>;
 
 inline auto operator<<(std::ostream &os,
                        tcspc::event_variant<tcspc_events> const &event)
