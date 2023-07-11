@@ -16,11 +16,22 @@
 #include <exception>
 #include <memory>
 #include <string>
+#include <variant>
 #include <vector>
 
 // NOLINTBEGIN
 
 using namespace tcspc;
+
+using tcspc_events = event_set<time_reached_event, data_lost_event,
+                               time_correlated_detection_event, marker_event>;
+
+inline auto operator<<(std::ostream &os,
+                       tcspc::event_variant<tcspc_events> const &event)
+    -> std::ostream & {
+    return std::visit([&](auto const &e) -> std::ostream & { return os << e; },
+                      event);
+}
 
 static_assert(handles_event_set_v<
               line_clock_pixellator<discard_all<pixel_photon_events>>,
