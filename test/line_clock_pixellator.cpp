@@ -145,7 +145,7 @@ TEST_CASE("Frames are produced according to line markers",
         lcp.handle_event(line_marker);
         lcp.flush();
 
-        time_correlated_count_event photon;
+        time_correlated_detection_event photon;
         memset(&photon, 0, sizeof(photon));
 
         for (auto mt : {104, 105, 114, 115, 124, 125}) {

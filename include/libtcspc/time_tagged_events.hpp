@@ -215,7 +215,7 @@ struct untagged_counts_event : public base_time_tagged_event {
  *
  * \ingroup events-timing
  */
-struct time_tagged_count_event : public base_time_tagged_event {
+struct detection_event : public base_time_tagged_event {
     /**
      * \brief The channel on which the count was detected.
      *
@@ -224,24 +224,21 @@ struct time_tagged_count_event : public base_time_tagged_event {
     std::int16_t channel;
 
     /** \brief Equality comparison operator. */
-    friend auto operator==(time_tagged_count_event const &lhs,
-                           time_tagged_count_event const &rhs) noexcept
-        -> bool {
+    friend auto operator==(detection_event const &lhs,
+                           detection_event const &rhs) noexcept -> bool {
         return lhs.macrotime == rhs.macrotime && lhs.channel == rhs.channel;
     }
 
     /** \brief Inequality comparison operator. */
-    friend auto operator!=(time_tagged_count_event const &lhs,
-                           time_tagged_count_event const &rhs) noexcept
-        -> bool {
+    friend auto operator!=(detection_event const &lhs,
+                           detection_event const &rhs) noexcept -> bool {
         return not(lhs == rhs);
     }
 
     /** \brief Stream insertion operator. */
-    friend auto operator<<(std::ostream &s, time_tagged_count_event const &e)
+    friend auto operator<<(std::ostream &s, detection_event const &e)
         -> std::ostream & {
-        return s << "time_tagged_count(" << e.macrotime << ", " << e.channel
-                 << ')';
+        return s << "detection(" << e.macrotime << ", " << e.channel << ')';
     }
 };
 
@@ -251,7 +248,7 @@ struct time_tagged_count_event : public base_time_tagged_event {
  *
  * \ingroup events-timing
  */
-struct time_correlated_count_event : public base_time_tagged_event {
+struct time_correlated_detection_event : public base_time_tagged_event {
     /**
      * \brief Difference time (a.k.a. microtime, nanotime) of the photon.
      *
@@ -269,25 +266,25 @@ struct time_correlated_count_event : public base_time_tagged_event {
     std::int16_t channel;
 
     /** \brief Equality comparison operator. */
-    friend auto operator==(time_correlated_count_event const &lhs,
-                           time_correlated_count_event const &rhs) noexcept
+    friend auto operator==(time_correlated_detection_event const &lhs,
+                           time_correlated_detection_event const &rhs) noexcept
         -> bool {
         return lhs.macrotime == rhs.macrotime &&
                lhs.difftime == rhs.difftime && lhs.channel == rhs.channel;
     }
 
     /** \brief Inequality comparison operator. */
-    friend auto operator!=(time_correlated_count_event const &lhs,
-                           time_correlated_count_event const &rhs) noexcept
+    friend auto operator!=(time_correlated_detection_event const &lhs,
+                           time_correlated_detection_event const &rhs) noexcept
         -> bool {
         return not(lhs == rhs);
     }
 
     /** \brief Stream insertion operator. */
     friend auto operator<<(std::ostream &s,
-                           time_correlated_count_event const &e)
+                           time_correlated_detection_event const &e)
         -> std::ostream & {
-        return s << "time_correlated_count(" << e.macrotime << ", "
+        return s << "time_correlated_detection(" << e.macrotime << ", "
                  << e.difftime << ", " << e.channel << ')';
     }
 };
@@ -346,7 +343,7 @@ struct marker_event : public base_time_tagged_event {
  * \ingroup tbd
  */
 using tcspc_events = event_set<time_reached_event, data_lost_event,
-                               time_correlated_count_event, marker_event>;
+                               time_correlated_detection_event, marker_event>;
 
 /**
  * \brief Stream insertion operator for TCSPC event variant.

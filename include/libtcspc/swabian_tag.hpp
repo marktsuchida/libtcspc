@@ -115,9 +115,8 @@ template <typename Downstream> class decode_swabian_tags {
         using tag_type = swabian_tag_event::tag_type;
         switch (event.type()) {
         case tag_type::time_tag: {
-            time_tagged_count_event e{
-                {event.time().value()},
-                narrow<decltype(e.channel)>(event.channel())};
+            detection_event e{{event.time().value()},
+                              narrow<decltype(e.channel)>(event.channel())};
             downstream.handle_event(e);
             break;
         }

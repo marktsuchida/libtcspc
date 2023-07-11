@@ -51,7 +51,7 @@ class print_processor {
         output << " Data lost\n";
     }
 
-    void handle_event(tcspc::time_correlated_count_event const &event) {
+    void handle_event(tcspc::time_correlated_detection_event const &event) {
         print_macrotime(output, event.macrotime);
         output << " Photon: " << std::setw(5) << event.difftime << "; "
                << int(event.channel) << '\n';

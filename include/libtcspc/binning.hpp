@@ -97,7 +97,7 @@ auto map_to_datapoints(DataMapper &&mapper, Downstream &&downstream) {
 class difftime_data_mapper {
   public:
     /** \brief Data mapper interface */
-    using event_type = time_correlated_count_event;
+    using event_type = time_correlated_detection_event;
     /** \brief Data mapper interface */
     using data_type = decltype(std::declval<event_type>().difftime);
 

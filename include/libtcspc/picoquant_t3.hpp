@@ -302,7 +302,8 @@ template <typename PQT3Event, typename Downstream> class decode_pq_t3 {
             return;
         }
 
-        time_correlated_count_event e{nsync, event.dtime(), event.channel()};
+        time_correlated_detection_event e{nsync, event.dtime(),
+                                          event.channel()};
         downstream.handle_event(e);
     }
 

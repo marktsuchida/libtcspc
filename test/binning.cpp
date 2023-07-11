@@ -24,13 +24,14 @@ using misc_event = timestamped_test_event<2>;
 
 TEST_CASE("Map to datapoints", "[map_to_datapoints][difftime_data_mapper]") {
     auto out = capture_output<event_set<datapoint_event<u16>, misc_event>>();
-    auto in = feed_input<event_set<time_correlated_count_event, misc_event>>(
-        map_to_datapoints(difftime_data_mapper(), ref_processor(out)));
+    auto in =
+        feed_input<event_set<time_correlated_detection_event, misc_event>>(
+            map_to_datapoints(difftime_data_mapper(), ref_processor(out)));
     in.require_output_checked(out);
 
     in.feed(misc_event{42});
     REQUIRE(out.check(misc_event{42}));
-    in.feed(time_correlated_count_event{{123}, 42, 0});
+    in.feed(time_correlated_detection_event{{123}, 42, 0});
     REQUIRE(out.check(datapoint_event<u16>{123, 42}));
     in.feed_end();
     REQUIRE(out.check_end());

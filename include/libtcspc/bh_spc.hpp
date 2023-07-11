@@ -452,9 +452,9 @@ template <typename BHSPCEvent, typename Downstream> class decode_bh_spc {
             time_reached_event e{macrotime};
             downstream.handle_event(e);
         } else {
-            time_correlated_count_event e{{macrotime},
-                                          event.adc_value().value(),
-                                          event.routing_signals().value()};
+            time_correlated_detection_event e{{macrotime},
+                                              event.adc_value().value(),
+                                              event.routing_signals().value()};
             downstream.handle_event(e);
         }
     }

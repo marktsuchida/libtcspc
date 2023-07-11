@@ -14,7 +14,7 @@
 
 using namespace tcspc;
 
-using tc_event = time_correlated_count_event;
+using tc_event = time_correlated_detection_event;
 
 TEST_CASE("Route", "[route]") {
     auto out0 = capture_output<event_set<tc_event, marker_event>>();
