@@ -25,10 +25,10 @@ TEST_CASE("Match and replace", "[match_replace]") {
                                                   ref_processor(out)));
     in.require_output_checked(out);
 
-    in.feed(marker_event{{100}, 0});
+    in.feed(marker_event{{{100}, 0}});
     REQUIRE(out.check(output_event{100}));
-    in.feed(marker_event{{200}, 1});
-    REQUIRE(out.check(marker_event{{200}, 1}));
+    in.feed(marker_event{{{200}, 1}});
+    REQUIRE(out.check(marker_event{{{200}, 1}}));
     in.feed(misc_event{300});
     REQUIRE(out.check(misc_event{300}));
     in.feed_end();
@@ -43,11 +43,11 @@ TEST_CASE("Match", "[match]") {
                                           ref_processor(out)));
     in.require_output_checked(out);
 
-    in.feed(marker_event{{100}, 0});
-    REQUIRE(out.check(marker_event{{100}, 0})); // Preserved
+    in.feed(marker_event{{{100}, 0}});
+    REQUIRE(out.check(marker_event{{{100}, 0}})); // Preserved
     REQUIRE(out.check(output_event{100}));
-    in.feed(marker_event{{200}, 1});
-    REQUIRE(out.check(marker_event{{200}, 1}));
+    in.feed(marker_event{{{200}, 1}});
+    REQUIRE(out.check(marker_event{{{200}, 1}}));
     in.feed(misc_event{300});
     REQUIRE(out.check(misc_event{300}));
     in.feed_end();

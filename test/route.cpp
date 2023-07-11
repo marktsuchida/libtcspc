@@ -28,15 +28,15 @@ TEST_CASE("Route", "[route]") {
     in.require_output_checked(out1);
     in.require_output_checked(out2);
 
-    in.feed(tc_event{{100}, 123, 5});
-    REQUIRE(out0.check(tc_event{{100}, 123, 5}));
-    in.feed(tc_event{{101}, 123, -3});
-    REQUIRE(out1.check(tc_event{{101}, 123, -3}));
-    in.feed(tc_event{{102}, 124, 0});
-    in.feed(marker_event{{103}, 0});
-    REQUIRE(out0.check(marker_event{{103}, 0}));
-    REQUIRE(out1.check(marker_event{{103}, 0}));
-    REQUIRE(out2.check(marker_event{{103}, 0}));
+    in.feed(tc_event{{{100}, 5}, 123});
+    REQUIRE(out0.check(tc_event{{{100}, 5}, 123}));
+    in.feed(tc_event{{{101}, -3}, 123});
+    REQUIRE(out1.check(tc_event{{{101}, -3}, 123}));
+    in.feed(tc_event{{{102}, 0}, 124});
+    in.feed(marker_event{{{103}, 0}});
+    REQUIRE(out0.check(marker_event{{{103}, 0}}));
+    REQUIRE(out1.check(marker_event{{{103}, 0}}));
+    REQUIRE(out2.check(marker_event{{{103}, 0}}));
     in.feed_end();
     REQUIRE(out0.check_end());
     REQUIRE(out1.check_end());

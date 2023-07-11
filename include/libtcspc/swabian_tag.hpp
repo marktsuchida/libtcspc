@@ -115,8 +115,8 @@ template <typename Downstream> class decode_swabian_tags {
         using tag_type = swabian_tag_event::tag_type;
         switch (event.type()) {
         case tag_type::time_tag: {
-            detection_event e{{event.time().value()},
-                              narrow<decltype(e.channel)>(event.channel())};
+            detection_event e{{{event.time().value()},
+                               narrow<decltype(e.channel)>(event.channel())}};
             downstream.handle_event(e);
             break;
         }
@@ -139,9 +139,9 @@ template <typename Downstream> class decode_swabian_tags {
         }
         case tag_type::missed_events: {
             untagged_counts_event e{
-                {event.time().value()},
-                event.missed_event_count().value(),
-                narrow<decltype(e.channel)>(event.channel())};
+                {{event.time().value()},
+                 narrow<decltype(e.channel)>(event.channel())},
+                event.missed_event_count().value()};
             downstream.handle_event(e);
             break;
         }

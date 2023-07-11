@@ -18,12 +18,37 @@ namespace tcspc {
  * \brief Base class for events with a hardware-assigned timestamp.
  *
  * \ingroup events-timing
+ *
+ * Event types that are associated with absolute time are derived from this
+ * type. However, this is not a requirement for polymorphism; it serves
+ * primarily to make aggregate construction (which tends to be a list of
+ * numbers) very slightly more readable: <tt>event{{macrotime}, other
+ * fields}</tt> rather than <tt>event{macrotime, other fields}</tt>.
  */
 struct base_time_tagged_event {
     /**
      * \brief The absolute macrotime of this event.
      */
     macrotime macrotime;
+};
+
+/**
+ * \brief Base class for time-tagged events that have a channel number.
+ *
+ * \ingroup events-timing
+ *
+ * Event types that are associated with absolute time and have a run-time
+ * channel number are derived from this type. However, this is not a
+ * requirement for polymorphism; it serves primarily to make aggregate
+ * construction (which tends to be a list of numbers) very slightly more
+ * readable: <tt>event{{{macrotime}, channel}, other fields}</tt> rather than
+ * <tt>event{macrotime, channel, other fields}</tt>.
+ */
+struct base_channeled_time_tagged_event : base_time_tagged_event {
+    /**
+     * \brief The channel on which this event occurred.
+     */
+    std::int16_t channel;
 };
 
 /**
@@ -46,7 +71,7 @@ struct base_time_tagged_event {
  * Note that this event is generally only emitted when the timestamp is not
  * associated with an actual event (photon, marker, etc.).
  */
-struct time_reached_event : public base_time_tagged_event {
+struct time_reached_event : base_time_tagged_event {
     /** \brief Equality comparison operator. */
     friend auto operator==(time_reached_event const &lhs,
                            time_reached_event const &rhs) noexcept -> bool {
@@ -82,7 +107,7 @@ struct time_reached_event : public base_time_tagged_event {
  * The macrotime may have skipped some elapsed time when this event occurs;
  * both counts and markers may have been lost.
  */
-struct data_lost_event : public base_time_tagged_event {
+struct data_lost_event : base_time_tagged_event {
     /** \brief Equality comparison operator. */
     friend auto operator==(data_lost_event const &lhs,
                            data_lost_event const &rhs) noexcept -> bool {
@@ -115,7 +140,7 @@ struct data_lost_event : public base_time_tagged_event {
  * If detected events during the interval could be counted (but not
  * time-tagged), they should be indicated by untagged_counts_event.
  */
-struct begin_lost_interval_event : public base_time_tagged_event {
+struct begin_lost_interval_event : base_time_tagged_event {
     /** \brief Equality comparison operator. */
     friend auto operator==(begin_lost_interval_event const &lhs,
                            begin_lost_interval_event const &rhs) noexcept
@@ -145,7 +170,7 @@ struct begin_lost_interval_event : public base_time_tagged_event {
  *
  * \ingroup events-timing
  */
-struct end_lost_interval_event : public base_time_tagged_event {
+struct end_lost_interval_event : base_time_tagged_event {
     /** \brief Equality comparison operator. */
     friend auto operator==(end_lost_interval_event const &lhs,
                            end_lost_interval_event const &rhs) noexcept
@@ -178,22 +203,17 @@ struct end_lost_interval_event : public base_time_tagged_event {
  * This event should only occur between begin_lost_interval_event and
  * end_lost_interval_event.
  */
-struct untagged_counts_event : public base_time_tagged_event {
+struct untagged_counts_event : base_channeled_time_tagged_event {
     /**
      * \brief Number of counts that were detected but could not be time-tagged.
      */
     std::uint32_t count;
 
-    /**
-     * \brief The channel on which the counts were detected.
-     */
-    std::int16_t channel;
-
     /** \brief Equality comparison operator. */
     friend auto operator==(untagged_counts_event const &lhs,
                            untagged_counts_event const &rhs) noexcept -> bool {
-        return lhs.macrotime == rhs.macrotime && lhs.count == rhs.count &&
-               lhs.channel == rhs.channel;
+        return lhs.macrotime == rhs.macrotime && lhs.channel == rhs.channel &&
+               lhs.count == rhs.count;
     }
 
     /** \brief Inequality comparison operator. */
@@ -205,8 +225,8 @@ struct untagged_counts_event : public base_time_tagged_event {
     /** \brief Stream insertion operator. */
     friend auto operator<<(std::ostream &s, untagged_counts_event const &e)
         -> std::ostream & {
-        return s << "untagged_counts(" << e.macrotime << ", " << e.count
-                 << ", " << e.channel << ')';
+        return s << "untagged_counts(" << e.macrotime << ", " << e.channel
+                 << ", " << e.count << ')';
     }
 };
 
@@ -215,14 +235,7 @@ struct untagged_counts_event : public base_time_tagged_event {
  *
  * \ingroup events-timing
  */
-struct detection_event : public base_time_tagged_event {
-    /**
-     * \brief The channel on which the count was detected.
-     *
-     * The channel number may be negative.
-     */
-    std::int16_t channel;
-
+struct detection_event : base_channeled_time_tagged_event {
     /** \brief Equality comparison operator. */
     friend auto operator==(detection_event const &lhs,
                            detection_event const &rhs) noexcept -> bool {
@@ -248,7 +261,7 @@ struct detection_event : public base_time_tagged_event {
  *
  * \ingroup events-timing
  */
-struct time_correlated_detection_event : public base_time_tagged_event {
+struct time_correlated_detection_event : base_channeled_time_tagged_event {
     /**
      * \brief Difference time (a.k.a. microtime, nanotime) of the photon.
      *
@@ -258,19 +271,12 @@ struct time_correlated_detection_event : public base_time_tagged_event {
      */
     std::uint16_t difftime;
 
-    /**
-     * \brief The channel, or routing signals, of the photon.
-     *
-     * The channel number may be negative.
-     */
-    std::int16_t channel;
-
     /** \brief Equality comparison operator. */
     friend auto operator==(time_correlated_detection_event const &lhs,
                            time_correlated_detection_event const &rhs) noexcept
         -> bool {
-        return lhs.macrotime == rhs.macrotime &&
-               lhs.difftime == rhs.difftime && lhs.channel == rhs.channel;
+        return lhs.macrotime == rhs.macrotime && lhs.channel == rhs.channel &&
+               lhs.difftime == rhs.difftime;
     }
 
     /** \brief Inequality comparison operator. */
@@ -285,7 +291,7 @@ struct time_correlated_detection_event : public base_time_tagged_event {
                            time_correlated_detection_event const &e)
         -> std::ostream & {
         return s << "time_correlated_detection(" << e.macrotime << ", "
-                 << e.difftime << ", " << e.channel << ')';
+                 << e.channel << ", " << e.difftime << ')';
     }
 };
 
@@ -306,18 +312,11 @@ struct time_correlated_detection_event : public base_time_tagged_event {
  * Ordering of simultaneous marker events within the stream is undefined (but
  * ordering should be made deterministic when arbitrarily determined by
  * software).
+ *
+ * The channel numbering of marker events may or may not be shared with
+ * detection channels, depending on the hardware or data source.
  */
-struct marker_event : public base_time_tagged_event {
-    /**
-     * \brief Input channel of the marker.
-     *
-     * Most hardware devices have numbers attched to the marker input channels;
-     * the channel number may be negative (e.g., Swabian). The channel
-     * numbering may or may not be shared with photon channels, depending on
-     * the hardware or data source.
-     */
-    std::int32_t channel;
-
+struct marker_event : base_channeled_time_tagged_event {
     /** \brief Equality comparison operator. */
     friend auto operator==(marker_event const &lhs,
                            marker_event const &rhs) noexcept -> bool {

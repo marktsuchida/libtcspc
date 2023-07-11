@@ -292,7 +292,7 @@ template <typename PQT3Event, typename Downstream> class decode_pq_t3 {
         last_nsync = nsync;
 
         if (event.is_external_marker()) {
-            marker_event e{{nsync}, 0};
+            marker_event e{{{nsync}, 0}};
             auto bits = u32np(event.external_marker_bits());
             while (bits != 0_u32np) {
                 e.channel = count_trailing_zeros_32(bits);

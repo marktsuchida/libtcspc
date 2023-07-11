@@ -438,7 +438,7 @@ template <typename BHSPCEvent, typename Downstream> class decode_bh_spc {
         }
 
         if (event.marker_flag()) {
-            marker_event e{{macrotime}, 0};
+            marker_event e{{{macrotime}, 0}};
             auto bits = u32np(event.marker_bits());
             while (bits != 0_u32np) {
                 e.channel = count_trailing_zeros_32(bits);
@@ -452,9 +452,9 @@ template <typename BHSPCEvent, typename Downstream> class decode_bh_spc {
             time_reached_event e{macrotime};
             downstream.handle_event(e);
         } else {
-            time_correlated_detection_event e{{macrotime},
-                                              event.adc_value().value(),
-                                              event.routing_signals().value()};
+            time_correlated_detection_event e{
+                {{macrotime}, event.routing_signals().value()},
+                event.adc_value().value()};
             downstream.handle_event(e);
         }
     }
