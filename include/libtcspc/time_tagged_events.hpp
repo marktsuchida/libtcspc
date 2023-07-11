@@ -28,6 +28,15 @@ namespace tcspc {
 struct base_time_tagged_event {
     /**
      * \brief The absolute macrotime of this event.
+     *
+     * The macrotime is the monotonically increasing (strictly speaking,
+     * non-decreasing) timestamp assigned to events by time tagging hardware,
+     * after processing to eliminate wraparounds.
+     *
+     * The physical units of the macrotime are dependent on the input data and
+     * it is the user's responsibility to interpret correctly. libtcspc is
+     * designed to use integer values to preserve exact discretized values and
+     * does not handle physical units.
      */
     macrotime macrotime;
 };
