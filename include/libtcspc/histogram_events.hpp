@@ -316,8 +316,8 @@ template <typename Bin> struct histogram_event {
     friend auto operator<<(std::ostream &s, histogram_event const &e)
         -> std::ostream & {
         s << "histogram(" << e.time_range << ", ";
-        internal::print_range(s, e.histogram.span().begin(),
-                              e.histogram.span().end());
+        internal::print_range(s, e.histogram.as_span().begin(),
+                              e.histogram.as_span().end());
         return s << ", " << e.stats << ')';
     }
 };
@@ -386,8 +386,8 @@ template <typename Bin> struct concluding_histogram_event {
                            concluding_histogram_event const &e)
         -> std::ostream & {
         s << "concluding_histogram(" << e.time_range << ", ";
-        internal::print_range(s, e.histogram.span().begin(),
-                              e.histogram.span().end());
+        internal::print_range(s, e.histogram.as_span().begin(),
+                              e.histogram.as_span().end());
         return s << ", " << e.stats << ", " << e.cycle_count << ", "
                  << e.is_end_of_stream << ')';
     }
@@ -455,8 +455,8 @@ template <typename Bin> struct element_histogram_event {
         -> std::ostream & {
         s << "element_histogram(" << e.time_range << ", " << e.element_index
           << ", ";
-        internal::print_range(s, e.histogram.span().begin(),
-                              e.histogram.span().end());
+        internal::print_range(s, e.histogram.as_span().begin(),
+                              e.histogram.as_span().end());
         return s << ", " << e.stats << ", " << e.cycle_index << ")";
     }
 };
@@ -515,8 +515,8 @@ template <typename Bin> struct histogram_array_event {
     friend auto operator<<(std::ostream &s, histogram_array_event e)
         -> std::ostream & {
         s << "histogram_array(" << e.time_range << ", ";
-        internal::print_range(s, e.histogram_array.span().begin(),
-                              e.histogram_array.span().end());
+        internal::print_range(s, e.histogram_array.as_span().begin(),
+                              e.histogram_array.as_span().end());
         return s << ", " << e.stats << ", " << e.cycles_accumulated << ")";
     }
 };
@@ -588,8 +588,8 @@ template <typename Bin> struct concluding_histogram_array_event {
     friend auto operator<<(std::ostream &s, concluding_histogram_array_event e)
         -> std::ostream & {
         s << "concluding_histogram_array(" << e.time_range << ", ";
-        internal::print_range(s, e.histogram_array.span().begin(),
-                              e.histogram_array.span().end());
+        internal::print_range(s, e.histogram_array.as_span().begin(),
+                              e.histogram_array.as_span().end());
         return s << ", " << e.stats << ", " << e.cycles_accumulated << ", "
                  << e.is_end_of_stream << ")";
     }

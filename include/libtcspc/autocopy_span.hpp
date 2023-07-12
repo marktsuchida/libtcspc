@@ -109,24 +109,24 @@ template <typename T> class autocopy_span {
      *
      * \return the span
      */
-    auto span() const noexcept -> span<const T> { return s; }
+    auto as_span() const noexcept -> span<const T> { return s; }
 
     /**
      * \brief Get the span represented.
      *
      * \return the span
      */
-    auto span() noexcept -> tcspc::span<T> { return s; }
+    auto as_span() noexcept -> span<T> { return s; }
 
     /**
      * \brief Implicit conversion to span.
      */
-    operator tcspc::span<const T>() const noexcept { return s; }
+    operator span<const T>() const noexcept { return s; }
 
     /**
      * \brief Implicit conversion to span.
      */
-    operator tcspc::span<T>() noexcept { return s; }
+    operator span<T>() noexcept { return s; }
 
     /** \brief Equiality comparison operator. */
     friend auto operator==(autocopy_span const &lhs,

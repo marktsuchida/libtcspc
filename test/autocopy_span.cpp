@@ -22,28 +22,28 @@ TEST_CASE("Autocopying span", "[autocopy_span]") {
 
     autocopy_span arr(v);
     // Can mutate if T is non-const
-    ++arr.span()[0];
+    ++arr.as_span()[0];
 
     autocopy_span<int const> carr(v);
     // Shares the underlying memory of v
-    REQUIRE(carr.span()[0] == 2);
+    REQUIRE(carr.as_span()[0] == 2);
 
     auto arr_copy = arr;
-    ++arr_copy.span()[0];
+    ++arr_copy.as_span()[0];
     // Copy does not share memory
-    REQUIRE(carr.span()[0] == 2);
+    REQUIRE(carr.as_span()[0] == 2);
 
     auto arr_moved = std::move(arr);
-    ++arr_moved.span()[0];
+    ++arr_moved.as_span()[0];
     // Moved view points to original memory
-    REQUIRE(carr.span()[0] == 3);
+    REQUIRE(carr.as_span()[0] == 3);
 
     autocopy_span<int> empty;
-    REQUIRE(empty.span().empty());
+    REQUIRE(empty.as_span().empty());
 
     // Copying an empty instance allocates T[0] but should just work
     autocopy_span empty_copy(empty);
-    REQUIRE(empty_copy.span().empty());
+    REQUIRE(empty_copy.as_span().empty());
 
     // Conversion to span
     span<int const> const s(carr);
@@ -59,7 +59,7 @@ TEST_CASE("Autocopying span", "[autocopy_span]") {
     // Make sure we're not getting lucky with small indices
     std::vector big(4096, 42);
     autocopy_span big_view(big);
-    REQUIRE(big_view.span()[4095] == 42);
+    REQUIRE(big_view.as_span()[4095] == 42);
     auto big_copy(big_view);
-    REQUIRE(big_copy.span()[4095] == 42);
+    REQUIRE(big_copy.as_span()[4095] == 42);
 }
