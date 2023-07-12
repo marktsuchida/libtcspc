@@ -115,7 +115,7 @@ auto main(int argc, char *argv[]) -> int {
                 std::shared_ptr<std::vector<tcspc::bh_spc_event>>>(
         tcspc::unbatch<
                 std::vector<tcspc::bh_spc_event>, tcspc::bh_spc_event>(
-        tcspc::decode_bh_spc(
+        tcspc::decode_bh_spc<tcspc::default_data_traits>(
         tcspc::line_clock_pixellator(
                 width, height, max_frames, static_cast<std::int32_t>(line_delay), line_time, 1,
         tcspc::sequential_histogrammer(std::move(frame_histo),

@@ -23,8 +23,8 @@ namespace tcspc {
 
 namespace internal {
 
-template <typename BinIndex, typename Bin, typename ResetEvent,
-          typename OverflowStrategy, typename Downstream>
+template <typename DataTraits, typename BinIndex, typename Bin,
+          typename ResetEvent, typename OverflowStrategy, typename Downstream>
 class histogram {
   public:
     using bin_index_type = BinIndex;
@@ -45,11 +45,11 @@ class histogram {
     single_histogram<bin_index_type, bin_type, internal_overflow_strategy>
         shist;
     histogram_stats stats;
-    macrotime_range time_range;
+    macrotime_range<typename DataTraits::abstime_type> time_range;
     Downstream downstream;
 
     void emit_concluding(bool end_of_stream) noexcept {
-        auto const che = concluding_histogram_event<Bin>{
+        auto const che = concluding_histogram_event<Bin, DataTraits>{
             time_range, autocopy_span<bin_type>(hist), stats, 0,
             end_of_stream};
         downstream.handle_event(che);
@@ -75,7 +75,8 @@ class histogram {
         shist.clear();
     }
 
-    void handle_event(bin_increment_event<BinIndex> const &event) noexcept {
+    void handle_event(
+        bin_increment_event<BinIndex, DataTraits> const &event) noexcept {
         if (finished)
             return;
 
@@ -105,7 +106,7 @@ class histogram {
             }
         }
         time_range.extend(event.macrotime);
-        auto const he = histogram_event<bin_type>{
+        auto const he = histogram_event<bin_type, DataTraits>{
             time_range, autocopy_span<Bin>(hist), stats};
         downstream.handle_event(he);
     }
@@ -154,6 +155,8 @@ class histogram {
  * Behavior is undefined if an incoming \c bin_increment_event contains a bin
  * index beyond the size of the histogram.
  *
+ * \tparam DataTraits traits type specifying \c abstime_type
+ *
  * \tparam BinIndex the bin index type
  *
  * \tparam Bin the data type of the histogram bins
@@ -174,12 +177,12 @@ class histogram {
  *
  * \return histogram processor
  */
-template <typename BinIndex, typename Bin, typename ResetEvent,
-          typename OverflowStrategy, typename Downstream>
+template <typename DataTraits, typename BinIndex, typename Bin,
+          typename ResetEvent, typename OverflowStrategy, typename Downstream>
 auto histogram(std::size_t num_bins, Bin max_per_bin,
                Downstream &&downstream) {
-    return internal::histogram<BinIndex, Bin, ResetEvent, OverflowStrategy,
-                               Downstream>(
+    return internal::histogram<DataTraits, BinIndex, Bin, ResetEvent,
+                               OverflowStrategy, Downstream>(
         num_bins, max_per_bin, std ::forward<Downstream>(downstream));
 }
 

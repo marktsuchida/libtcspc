@@ -22,7 +22,8 @@ namespace internal {
 
 // Internal implementation of merge processor. This processor is owned by the
 // two input processors via shared_ptr.
-template <typename EventSet, typename Downstream> class merge_impl {
+template <typename DataTraits, typename EventSet, typename Downstream>
+class merge_impl {
     // When events have equal macrotime, those originating from input 0 are
     // emitted before those originating from input1. Within the same input, the
     // order is preserved.
@@ -33,7 +34,7 @@ template <typename EventSet, typename Downstream> class merge_impl {
     std::array<bool, 2> input_ended{false, false};
     bool ended_with_error = false;
     vector_queue<event_variant<EventSet>> pending;
-    macrotime max_time_shift;
+    typename DataTraits::abstime_type max_time_shift;
 
     Downstream downstream;
 
@@ -47,7 +48,7 @@ template <typename EventSet, typename Downstream> class merge_impl {
     }
 
     // Emit pending while predicate is true.
-    // Pred: bool(macrotime const &)
+    // Pred: bool(abstime_type const &)
     template <typename Pred> void emit_pending(Pred predicate) noexcept {
         while (!pending.empty() && std::visit(
                                        [&](auto const &e) {
@@ -61,7 +62,8 @@ template <typename EventSet, typename Downstream> class merge_impl {
     }
 
   public:
-    explicit merge_impl(macrotime max_time_shift, Downstream &&downstream)
+    explicit merge_impl(typename DataTraits::abstime_type max_time_shift,
+                        Downstream &&downstream)
         : max_time_shift(max_time_shift), downstream(std::move(downstream)) {
         assert(max_time_shift >= 0);
     }
@@ -79,7 +81,7 @@ template <typename EventSet, typename Downstream> class merge_impl {
 
         if (is_pending_on_other<InputChannel>()) {
             // Emit any older events pending on the other input.
-            macrotime cutoff = event.macrotime;
+            typename DataTraits::abstime_type cutoff = event.macrotime;
             // Emit events from input 0 before events from input 1 when they
             // have equal macrotime.
             if constexpr (InputChannel == 0)
@@ -102,10 +104,12 @@ template <typename EventSet, typename Downstream> class merge_impl {
         // Emit any events on the same input if they are older than the maximum
         // allowed time shift between the inputs.
         // Guard against integer underflow.
-        constexpr auto macrotime_min = std::numeric_limits<macrotime>::min();
+        constexpr auto macrotime_min =
+            std::numeric_limits<typename DataTraits::abstime_type>::min();
         if (event.macrotime >= 0 ||
             max_time_shift > event.macrotime - macrotime_min) {
-            macrotime old_enough = event.macrotime - max_time_shift;
+            typename DataTraits::abstime_type old_enough =
+                event.macrotime - max_time_shift;
             emit_pending([=](auto t) { return t < old_enough; });
         }
 
@@ -136,13 +140,14 @@ template <typename EventSet, typename Downstream> class merge_impl {
     }
 };
 
-template <unsigned InputChannel, typename EventSet, typename Downstream>
+template <typename DataTraits, unsigned InputChannel, typename EventSet,
+          typename Downstream>
 class merge_input {
-    std::shared_ptr<merge_impl<EventSet, Downstream>> impl;
+    std::shared_ptr<merge_impl<DataTraits, EventSet, Downstream>> impl;
 
   public:
     explicit merge_input(
-        std::shared_ptr<merge_impl<EventSet, Downstream>> impl)
+        std::shared_ptr<merge_impl<DataTraits, EventSet, Downstream>> impl)
         : impl(impl) {}
 
     // Movable but not copyable
@@ -175,6 +180,8 @@ class merge_input {
  * that the two input streams have events in increasing macrotime order and the
  * time shift between them does not exceed max_time_shift.
  *
+ * \tparam DataTraits traits type specifying \c abstime_type
+ *
  * \tparam EventSet the event set handled by the merge processor
  *
  * \tparam Downstream downstream processor type
@@ -185,12 +192,15 @@ class merge_input {
  *
  * \return std::pair of the two processors serving as the input to merge
  */
-template <typename EventSet, typename Downstream>
-auto merge(macrotime max_time_shift, Downstream &&downstream) {
-    auto p = std::make_shared<internal::merge_impl<EventSet, Downstream>>(
+template <typename DataTraits, typename EventSet, typename Downstream>
+auto merge(typename DataTraits::abstime_type max_time_shift,
+           Downstream &&downstream) {
+    auto p = std::make_shared<
+        internal::merge_impl<DataTraits, EventSet, Downstream>>(
         max_time_shift, std::forward<Downstream>(downstream));
-    return std::make_pair(internal::merge_input<0, EventSet, Downstream>(p),
-                          internal::merge_input<1, EventSet, Downstream>(p));
+    return std::make_pair(
+        internal::merge_input<DataTraits, 0, EventSet, Downstream>(p),
+        internal::merge_input<DataTraits, 1, EventSet, Downstream>(p));
 }
 
 } // namespace tcspc

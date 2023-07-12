@@ -25,8 +25,13 @@ namespace tcspc {
  * primarily to make aggregate construction (which tends to be a list of
  * numbers) very slightly more readable: <tt>event{{macrotime}, other
  * fields}</tt> rather than <tt>event{macrotime, other fields}</tt>.
+ *
+ * \tparam DataTraits traits type specifying \c abstime_type
  */
+template <typename DataTraits = default_data_traits>
 struct base_time_tagged_event {
+    static_assert(std::is_integral_v<typename DataTraits::abstime_type>);
+
     /**
      * \brief The absolute macrotime of this event.
      *
@@ -39,7 +44,7 @@ struct base_time_tagged_event {
      * designed to use integer values to preserve exact discretized values and
      * does not handle physical units.
      */
-    macrotime macrotime;
+    typename DataTraits::abstime_type macrotime;
 };
 
 /**
@@ -57,17 +62,17 @@ struct base_time_tagged_event {
  * Different devices have different ranges for the channel; some use negative
  * numbers.
  *
- * \tparam Channel integer type to represent channel number
+ * \tparam DataTraits traits type specifying \c abstime_type and \c
+ * channel_type
  */
-template <typename Channel = std::int16_t>
-struct base_channeled_time_tagged_event : base_time_tagged_event {
-    static_assert(std::is_integral_v<Channel>,
-                  "Channel must be an integer type");
+template <typename DataTraits = default_data_traits>
+struct base_channeled_time_tagged_event : base_time_tagged_event<DataTraits> {
+    static_assert(std::is_integral_v<typename DataTraits::channel_type>);
 
     /**
      * \brief The channel on which this event occurred.
      */
-    Channel channel;
+    typename DataTraits::channel_type channel;
 };
 
 /**
@@ -89,8 +94,11 @@ struct base_channeled_time_tagged_event : base_time_tagged_event {
  *
  * Note that this event is generally only emitted when the timestamp is not
  * associated with an actual event (photon, marker, etc.).
+ *
+ * \tparam DataTraits traits type specifying \c abstime_type
  */
-struct time_reached_event : base_time_tagged_event {
+template <typename DataTraits = default_data_traits>
+struct time_reached_event : base_time_tagged_event<DataTraits> {
     /** \brief Equality comparison operator. */
     friend auto operator==(time_reached_event const &lhs,
                            time_reached_event const &rhs) noexcept -> bool {
@@ -125,8 +133,11 @@ struct time_reached_event : base_time_tagged_event {
  *
  * The macrotime may have skipped some elapsed time when this event occurs;
  * both counts and markers may have been lost.
+ *
+ * \tparam DataTraits traits type specifying \c abstime_type
  */
-struct data_lost_event : base_time_tagged_event {
+template <typename DataTraits = default_data_traits>
+struct data_lost_event : base_time_tagged_event<DataTraits> {
     /** \brief Equality comparison operator. */
     friend auto operator==(data_lost_event const &lhs,
                            data_lost_event const &rhs) noexcept -> bool {
@@ -158,8 +169,11 @@ struct data_lost_event : base_time_tagged_event {
  *
  * If detected events during the interval could be counted (but not
  * time-tagged), they should be indicated by untagged_counts_event.
+ *
+ * \tparam DataTraits traits type specifying \c abstime_type
  */
-struct begin_lost_interval_event : base_time_tagged_event {
+template <typename DataTraits = default_data_traits>
+struct begin_lost_interval_event : base_time_tagged_event<DataTraits> {
     /** \brief Equality comparison operator. */
     friend auto operator==(begin_lost_interval_event const &lhs,
                            begin_lost_interval_event const &rhs) noexcept
@@ -188,8 +202,11 @@ struct begin_lost_interval_event : base_time_tagged_event {
  * \brief Event indicating end of interval in which counts were lost.
  *
  * \ingroup events-timing
+ *
+ * \tparam DataTraits traits type specifying \c abstime_type
  */
-struct end_lost_interval_event : base_time_tagged_event {
+template <typename DataTraits = default_data_traits>
+struct end_lost_interval_event : base_time_tagged_event<DataTraits> {
     /** \brief Equality comparison operator. */
     friend auto operator==(end_lost_interval_event const &lhs,
                            end_lost_interval_event const &rhs) noexcept
@@ -222,10 +239,11 @@ struct end_lost_interval_event : base_time_tagged_event {
  * This event should only occur between begin_lost_interval_event and
  * end_lost_interval_event.
  *
- * \tparam Channel integer type to represent channel number
+ * \tparam DataTraits traits type specifying \c abstime_type and \c
+ * channel_type
  */
-template <typename Channel = std::int16_t>
-struct untagged_counts_event : base_channeled_time_tagged_event<Channel> {
+template <typename DataTraits = default_data_traits>
+struct untagged_counts_event : base_channeled_time_tagged_event<DataTraits> {
     /**
      * \brief Number of counts that were detected but could not be time-tagged.
      */
@@ -257,10 +275,11 @@ struct untagged_counts_event : base_channeled_time_tagged_event<Channel> {
  *
  * \ingroup events-timing
  *
- * \tparam Channel integer type to represent channel number
+ * \tparam DataTraits traits type specifying \c abstime_type and \c
+ * channel_type
  */
-template <typename Channel = std::int16_t>
-struct detection_event : base_channeled_time_tagged_event<Channel> {
+template <typename DataTraits = default_data_traits>
+struct detection_event : base_channeled_time_tagged_event<DataTraits> {
     /** \brief Equality comparison operator. */
     friend auto operator==(detection_event const &lhs,
                            detection_event const &rhs) noexcept -> bool {
@@ -286,14 +305,13 @@ struct detection_event : base_channeled_time_tagged_event<Channel> {
  *
  * \ingroup events-timing
  *
- * \tparam Channel integer type to represent channel number
- * \tparam Difftime integer type for difftime
+ * \tparam DataTraits traits type specifying \c abstime_type, \c channel_type,
+ * and \c difftime_type
  */
-template <typename Channel = std::int16_t, typename Difftime = std::uint16_t>
+template <typename DataTraits = default_data_traits>
 struct time_correlated_detection_event
-    : base_channeled_time_tagged_event<Channel> {
-    static_assert(std::is_integral_v<Difftime>,
-                  "Difftime must be an integer type");
+    : base_channeled_time_tagged_event<DataTraits> {
+    static_assert(std::is_integral_v<typename DataTraits::difftime_type>);
 
     /**
      * \brief Difference time (a.k.a. microtime, nanotime) of the photon.
@@ -302,7 +320,7 @@ struct time_correlated_detection_event
      * synchronization signal, generated by TCSPC electronics. It may or may
      * not be inverted.
      */
-    Difftime difftime;
+    typename DataTraits::difftime_type difftime;
 
     /** \brief Equality comparison operator. */
     friend auto operator==(time_correlated_detection_event const &lhs,
@@ -349,10 +367,11 @@ struct time_correlated_detection_event
  * The channel numbering of marker events may or may not be shared with
  * detection channels, depending on the hardware or data source.
  *
- * \tparam Channel integer type to represent channel number
+ * \tparam DataTraits traits type specifying \c abstime_type and \c
+ * channel_type
  */
-template <typename Channel = std::int16_t>
-struct marker_event : base_channeled_time_tagged_event<Channel> {
+template <typename DataTraits = default_data_traits>
+struct marker_event : base_channeled_time_tagged_event<DataTraits> {
     /** \brief Equality comparison operator. */
     friend auto operator==(marker_event const &lhs,
                            marker_event const &rhs) noexcept -> bool {

@@ -6,6 +6,8 @@
 
 #pragma once
 
+#include "common.hpp"
+
 #include <cstdint>
 #include <exception>
 #include <type_traits>
@@ -114,8 +116,11 @@ auto match(Matcher &&matcher, Downstream &&downstream) {
  * \brief Matcher that matches a single channel.
  *
  * \ingroup matchers
+ *
+ * \tparam Channel channel number type
  */
-template <typename Channel = std::int16_t> class channel_matcher {
+template <typename Channel = default_data_traits::channel_type>
+class channel_matcher {
     Channel channel;
 
   public:
@@ -131,23 +136,6 @@ template <typename Channel = std::int16_t> class channel_matcher {
     auto operator()(Event const &event) const noexcept -> bool {
         static_assert(std::is_same_v<decltype(event.channel), Channel>);
         return event.channel == channel;
-    }
-};
-
-/**
- * \brief Matcher that matches a single, compile-time-constant, channel.
- *
- * \ingroup matchers
- *
- * \tparam Channel the channel number to match
- */
-template <typename ChannelType, ChannelType Channel>
-struct static_channel_matcher {
-    /** \brief Matcher interface. */
-    template <typename Event>
-    auto operator()(Event const &event) const noexcept -> bool {
-        static_assert(std::is_same_v<decltype(event.channel), ChannelType>);
-        return event.channel == Channel;
     }
 };
 

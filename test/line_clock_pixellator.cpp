@@ -24,7 +24,7 @@
 using namespace tcspc;
 
 using tcspc_events =
-    event_set<time_reached_event, data_lost_event,
+    event_set<time_reached_event<>, data_lost_event<>,
               time_correlated_detection_event<>, marker_event<>>;
 
 inline auto operator<<(std::ostream &os,
@@ -87,7 +87,7 @@ TEST_CASE("Frames are produced according to line markers",
         line_clock_pixellator<decltype(ref_output)> lcp(2, 2, 10, 0, 20, 1,
                                                         std::move(ref_output));
 
-        marker_event line_marker;
+        marker_event<> line_marker;
         line_marker.channel = 1;
         line_marker.macrotime = 100;
         lcp.handle_event(line_marker);
@@ -111,7 +111,7 @@ TEST_CASE("Frames are produced according to line markers",
         output.reset();
 
         SECTION("Last frame is incomplete if last line not started") {
-            time_reached_event timestamp;
+            time_reached_event<> timestamp;
             timestamp.macrotime = 1000000;
             lcp.handle_event(timestamp);
             lcp.flush();
@@ -128,7 +128,7 @@ TEST_CASE("Frames are produced according to line markers",
             REQUIRE(output.end_frame_count == 0);
             output.reset();
 
-            time_reached_event timestamp;
+            time_reached_event<> timestamp;
             timestamp.macrotime = 419;
             lcp.handle_event(timestamp);
             lcp.flush();
@@ -151,13 +151,13 @@ TEST_CASE("Frames are produced according to line markers",
         line_clock_pixellator<decltype(ref_output)> lcp(2, 1, 1, 5, 20, 1,
                                                         std::move(ref_output));
 
-        marker_event line_marker;
+        marker_event<> line_marker;
         line_marker.channel = 1;
         line_marker.macrotime = 100;
         lcp.handle_event(line_marker);
         lcp.flush();
 
-        time_correlated_detection_event photon;
+        time_correlated_detection_event<> photon;
         memset(&photon, 0, sizeof(photon));
 
         for (auto mt : {104, 105, 114, 115, 124, 125}) {

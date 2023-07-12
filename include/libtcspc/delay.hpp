@@ -16,12 +16,13 @@ namespace tcspc {
 
 namespace internal {
 
-template <typename Downstream> class delay {
-    macrotime delta;
+template <typename DataTraits, typename Downstream> class delay {
+    typename DataTraits::abstime_type delta;
     Downstream downstream;
 
   public:
-    explicit delay(macrotime delta, Downstream &&downstream)
+    explicit delay(typename DataTraits::abstime_type delta,
+                   Downstream &&downstream)
         : delta(delta), downstream(std::move(downstream)) {}
 
     template <typename TimeTaggedEvent>
@@ -47,6 +48,8 @@ template <typename Downstream> class delay {
  * derived from the macrotime (because only the \c macrotime field will be
  * adjusted).
  *
+ * \tparam DataTraits traits type specifying \c abstime_type
+ *
  * \tparam Downstream downstream processor type
  *
  * \param delta macrotime offset to apply (can be negative)
@@ -59,10 +62,10 @@ template <typename Downstream> class delay {
  * \event{All events, passed through with time delay applied}
  * \endevents
  */
-template <typename Downstream>
-auto delay(macrotime delta, Downstream &&downstream) {
-    return internal::delay<Downstream>(delta,
-                                       std::forward<Downstream>(downstream));
+template <typename DataTraits, typename Downstream>
+auto delay(typename DataTraits::abstime_type delta, Downstream &&downstream) {
+    return internal::delay<DataTraits, Downstream>(
+        delta, std::forward<Downstream>(downstream));
 }
 
 } // namespace tcspc

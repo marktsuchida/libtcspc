@@ -21,18 +21,34 @@
 namespace tcspc {
 
 /**
- * \brief Signed 64-bit integer type representing macrotime.
+ * \brief Default traits for integer data types.
  *
- * \ingroup tbd
- *
- * We use a signed integer type because negative times can arise (for example
- * if a negative delay is applied to events).
- *
- * It is assumed that macrotime values never overflow. The maximum
- * representable value is over 9E18. If the macrotime units are picoseconds,
- * this corresponds to about 3 and a half months.
+ * \ingroup misc
  */
-using macrotime = std::int64_t;
+struct default_data_traits {
+    /**
+     * \brief Absolute time type.
+     *
+     * The default of \c int64_t is chosen because 64-bit precision is
+     * reasonable (32-bit would overflow; 128-bit would hurt performance and is
+     * not required for most applications) and because we want to allow
+     * negative time stamps.
+     */
+    using abstime_type = std::int64_t;
+
+    /**
+     * \brief Channel number type.
+     */
+    using channel_type = std::int16_t; // TODO int32_t
+
+    /**
+     * \brief Difference time type.
+     */
+    using difftime_type = std::uint16_t; // TODO int32_t
+
+    // TODO: We could use additional trait entries to specify how to handle
+    // integer overflow where it is relevant.
+};
 
 /**
  * \brief An event type whose instances never occur.

@@ -21,8 +21,8 @@ namespace tcspc {
 
 namespace internal {
 
-template <typename BinIndex, typename Bin, typename OverflowStrategy,
-          typename Downstream>
+template <typename DataTraits, typename BinIndex, typename Bin,
+          typename OverflowStrategy, typename Downstream>
 class histogram_elementwise {
   public:
     using bin_index_type = BinIndex;
@@ -45,7 +45,7 @@ class histogram_elementwise {
         mhist;
     histogram_stats stats;
     null_journal<bin_index_type> journal; // Journaling not required
-    macrotime_range cycle_time_range;
+    macrotime_range<typename DataTraits::abstime_type> cycle_time_range;
     Downstream downstream;
 
     void finish(std::exception_ptr const &error) noexcept {
@@ -64,8 +64,9 @@ class histogram_elementwise {
           mhist(hist_arr, max_per_bin, num_bins, num_elements, true),
           downstream(std::move(downstream)) {}
 
-    void handle_event(
-        bin_increment_batch_event<bin_index_type> const &event) noexcept {
+    void
+    handle_event(bin_increment_batch_event<bin_index_type, DataTraits> const
+                     &event) noexcept {
         if (finished)
             return;
         assert(not mhist.is_complete());
@@ -86,14 +87,14 @@ class histogram_elementwise {
         }
         cycle_time_range.extend(event.time_range);
 
-        auto const ehe = element_histogram_event<bin_type>{
+        auto const ehe = element_histogram_event<bin_type, DataTraits>{
             event.time_range, element_index,
             autocopy_span<bin_type>(mhist.element_span(element_index)), stats,
             0};
         downstream.handle_event(ehe);
 
         if (mhist.is_complete()) {
-            auto const hae = histogram_array_event<bin_type>{
+            auto const hae = histogram_array_event<bin_type, DataTraits>{
                 cycle_time_range, autocopy_span<bin_type>(hist_arr), stats, 1};
             downstream.handle_event(hae);
             mhist.reset(true);
@@ -139,6 +140,8 @@ class histogram_elementwise {
  * At the end of each cycle a histogram_array_event is emitted, referencing the
  * whole array of histograms from the cycle.
  *
+ * \tparam DataTraits traits type specifying \c abstime_type
+ *
  * \tparam BinIndex the bin index type
  *
  * \tparam Bin the data type of the histogram bins
@@ -159,20 +162,21 @@ class histogram_elementwise {
  *
  * \return histogram-array processor
  */
-template <typename BinIndex, typename Bin, typename OverflowStrategy,
-          typename Downstream>
+template <typename DataTraits, typename BinIndex, typename Bin,
+          typename OverflowStrategy, typename Downstream>
 auto histogram_elementwise(std::size_t num_elements, std::size_t num_bins,
                            Bin max_per_bin, Downstream &&downstream) {
-    return internal::histogram_elementwise<BinIndex, Bin, OverflowStrategy,
-                                           Downstream>(
+    return internal::histogram_elementwise<DataTraits, BinIndex, Bin,
+                                           OverflowStrategy, Downstream>(
         num_elements, num_bins, max_per_bin,
         std::forward<Downstream>(downstream));
 }
 
 namespace internal {
 
-template <typename BinIndex, typename Bin, typename ResetEvent,
-          typename OverflowStrategy, bool EmitConcluding, typename Downstream>
+template <typename DataTraits, typename BinIndex, typename Bin,
+          typename ResetEvent, typename OverflowStrategy, bool EmitConcluding,
+          typename Downstream>
 class histogram_elementwise_accumulate {
   public:
     using bin_index_type = BinIndex;
@@ -217,15 +221,16 @@ class histogram_elementwise_accumulate {
         mhista;
     histogram_stats stats;
     journal_type journal;
-    macrotime_range cycle_time_range;
-    macrotime_range total_time_range;
+    macrotime_range<typename DataTraits::abstime_type> cycle_time_range;
+    macrotime_range<typename DataTraits::abstime_type> total_time_range;
     Downstream downstream;
 
     void emit_concluding(bool end_of_stream) noexcept {
         assert(mhista.is_consistent());
-        auto const chae = concluding_histogram_array_event<bin_type>{
-            total_time_range, autocopy_span<bin_type>(hist_arr), stats,
-            mhista.cycle_index(), end_of_stream};
+        auto const chae =
+            concluding_histogram_array_event<bin_type, DataTraits>{
+                total_time_range, autocopy_span<bin_type>(hist_arr), stats,
+                mhista.cycle_index(), end_of_stream};
         downstream.handle_event(chae);
     }
 
@@ -247,8 +252,9 @@ class histogram_elementwise_accumulate {
           mhista(hist_arr, max_per_bin, num_bins, num_elements, true),
           downstream(std::move(downstream)) {}
 
-    void handle_event(
-        bin_increment_batch_event<bin_index_type> const &event) noexcept {
+    void
+    handle_event(bin_increment_batch_event<bin_index_type, DataTraits> const
+                     &event) noexcept {
         if (finished)
             return;
         assert(not mhista.is_cycle_complete());
@@ -290,7 +296,7 @@ class histogram_elementwise_accumulate {
         }
         cycle_time_range.extend(event.time_range);
 
-        auto const ehe = element_histogram_event<bin_type>{
+        auto const ehe = element_histogram_event<bin_type, DataTraits>{
             event.time_range, element_index,
             autocopy_span<bin_type>(mhista.element_span(element_index)), stats,
             mhista.cycle_index()};
@@ -299,7 +305,7 @@ class histogram_elementwise_accumulate {
         if (mhista.is_cycle_complete()) {
             total_time_range.extend(cycle_time_range);
             mhista.new_cycle(journal);
-            auto const hae = histogram_array_event<bin_type>{
+            auto const hae = histogram_array_event<bin_type, DataTraits>{
                 total_time_range, autocopy_span<bin_type>(hist_arr), stats,
                 mhista.cycle_index()};
             downstream.handle_event(hae);
@@ -348,6 +354,8 @@ class histogram_elementwise_accumulate {
  * The reset event \c ResetEvent causes the array of histograms to be cleared
  * and a new accumulation to be started.
  *
+ * \tparam DataTraits traits type specifying \c abstime_type
+ *
  * \tparam BinIndex the bin index type
  *
  * \tparam Bin the data type of the histogram bins
@@ -370,15 +378,16 @@ class histogram_elementwise_accumulate {
  *
  * \return accumulate-histogram-arrays processor
  */
-template <typename BinIndex, typename Bin, typename ResetEvent,
-          typename OverflowStrategy, bool EmitConcluding, typename Downstream>
+template <typename DataTraits, typename BinIndex, typename Bin,
+          typename ResetEvent, typename OverflowStrategy, bool EmitConcluding,
+          typename Downstream>
 auto histogram_elementwise_accumulate(std::size_t num_elements,
                                       std::size_t num_bins, Bin max_per_bin,
                                       Downstream &&downstream) {
     return internal::histogram_elementwise_accumulate<
-        BinIndex, Bin, ResetEvent, OverflowStrategy, EmitConcluding,
-        Downstream>(num_elements, num_bins, max_per_bin,
-                    std::forward<Downstream>(downstream));
+        DataTraits, BinIndex, Bin, ResetEvent, OverflowStrategy,
+        EmitConcluding, Downstream>(num_elements, num_bins, max_per_bin,
+                                    std::forward<Downstream>(downstream));
 }
 
 } // namespace tcspc

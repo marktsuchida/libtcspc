@@ -20,12 +20,17 @@ namespace internal {
 
 template <typename TriggerEvent, typename TimingGenerator, typename Downstream>
 class generate {
+    using abstime_type = typename TimingGenerator::abstime_type;
+    static_assert(
+        std::is_same_v<abstime_type,
+                       decltype(std::declval<TriggerEvent>().macrotime)>);
+
     TimingGenerator generator;
     Downstream downstream;
 
-    // Pred: bool(macrotime const &)
+    // Pred: bool(abstime_type const &)
     template <typename Pred> void emit(Pred predicate) noexcept {
-        for (std::optional<macrotime> t = std::as_const(generator).peek();
+        for (std::optional<abstime_type> t = std::as_const(generator).peek();
              t && predicate(*t); t = std::as_const(generator).peek()) {
             typename TimingGenerator::output_event_type e = generator.pop();
             downstream.handle_event(e);
@@ -88,13 +93,15 @@ class generate {
  *
  * The type \c TimingGenerator must have the following members:
  *
- * - <tt>output_event_type</tt>, the type of the generated event (which must
- * have a \c macrotime data member),
+ * - <tt>abstime_type</tt>, the integer type for absolute time,
  *
- * - <tt>void trigger(macrotime starttime) noexcept</tt>, which starts a new
+ * - <tt>output_event_type</tt>, the type of the generated event (which must
+ * have a \c macrotime data member of type \c abstime_type),
+ *
+ * - <tt>void trigger(abstime_type starttime) noexcept</tt>, which starts a new
  * iteration of timing generation,
  *
- * - <tt>auto peek() const noexcept -> std::optional<macrotime></tt>, which
+ * - <tt>auto peek() const noexcept -> std::optional<abstime_type></tt>, which
  * returns the macrotime of the next event to be generated, if any, and
  *
  * - <tt>auto pop() noexcept -> output_event_type</tt>, which generates the
@@ -151,13 +158,16 @@ auto generate(TimingGenerator &&generator, Downstream &&downstream) {
 template <typename Event> class null_timing_generator {
   public:
     /** \brief Timing generator interface */
+    using abstime_type = decltype(std::declval<Event>().macrotime);
+
+    /** \brief Timing generator interface */
     using output_event_type = Event;
 
     /** \brief Timing generator interface */
-    void trigger(macrotime starttime) noexcept { (void)starttime; }
+    void trigger(abstime_type starttime) noexcept { (void)starttime; }
 
     /** \brief Timing generator interface */
-    [[nodiscard]] auto peek() const noexcept -> std::optional<macrotime> {
+    [[nodiscard]] auto peek() const noexcept -> std::optional<abstime_type> {
         return std::nullopt;
     }
 
@@ -175,9 +185,14 @@ template <typename Event> class null_timing_generator {
  * \tparam Event output event type
  */
 template <typename Event> class one_shot_timing_generator {
+  public:
+    /** \brief Timing generator interface */
+    using abstime_type = decltype(std::declval<Event>().macrotime);
+
+  private:
     bool pending = false;
-    macrotime next = 0;
-    macrotime delay;
+    abstime_type next = 0;
+    abstime_type delay;
 
   public:
     /** \brief Timing generator interface */
@@ -188,18 +203,18 @@ template <typename Event> class one_shot_timing_generator {
      *
      * \param delay how much to delay the output event relative to the trigger
      */
-    explicit one_shot_timing_generator(macrotime delay) : delay(delay) {
+    explicit one_shot_timing_generator(abstime_type delay) : delay(delay) {
         assert(delay >= 0);
     }
 
     /** \brief Timing generator interface */
-    void trigger(macrotime starttime) noexcept {
+    void trigger(abstime_type starttime) noexcept {
         next = starttime + delay;
         pending = true;
     }
 
     /** \brief Timing generator interface */
-    [[nodiscard]] auto peek() const noexcept -> std::optional<macrotime> {
+    [[nodiscard]] auto peek() const noexcept -> std::optional<abstime_type> {
         if (pending)
             return next;
         return std::nullopt;
@@ -225,11 +240,16 @@ template <typename Event> class one_shot_timing_generator {
  * \tparam Event output event type
  */
 template <typename Event> class linear_timing_generator {
-    macrotime next = 0;
+  public:
+    /** \brief Timing generator interface */
+    using abstime_type = decltype(std::declval<Event>().macrotime);
+
+  private:
+    abstime_type next = 0;
     std::size_t remaining = 0;
 
-    macrotime delay;
-    macrotime interval;
+    abstime_type delay;
+    abstime_type interval;
     std::size_t count;
 
   public:
@@ -248,7 +268,7 @@ template <typename Event> class linear_timing_generator {
      * \param count number of output events to generate for each trigger
      */
     // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
-    explicit linear_timing_generator(macrotime delay, macrotime interval,
+    explicit linear_timing_generator(abstime_type delay, abstime_type interval,
                                      std::size_t count)
         : delay(delay), interval(interval), count(count) {
         assert(delay >= 0);
@@ -256,13 +276,13 @@ template <typename Event> class linear_timing_generator {
     }
 
     /** \brief Timing generator interface */
-    void trigger(macrotime starttime) noexcept {
+    void trigger(abstime_type starttime) noexcept {
         next = starttime + delay;
         remaining = count;
     }
 
     /** \brief Timing generator interface */
-    [[nodiscard]] auto peek() const noexcept -> std::optional<macrotime> {
+    [[nodiscard]] auto peek() const noexcept -> std::optional<abstime_type> {
         if (remaining > 0)
             return next;
         return std::nullopt;

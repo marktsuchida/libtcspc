@@ -34,7 +34,7 @@ TEST_CASE("Generate null timing", "[generate][null_timing_generator]") {
 
 TEST_CASE("Generate one-shot timing",
           "[generate][one_shot_timing_generator]") {
-    macrotime const delay = GENERATE(0, 1, 2);
+    default_data_traits::abstime_type const delay = GENERATE(0, 1, 2);
     auto out =
         capture_output<event_set<trigger_event, output_event, misc_event>>();
     auto in = feed_input<event_set<trigger_event, misc_event>>(
@@ -81,8 +81,8 @@ TEST_CASE("Generate one-shot timing",
 }
 
 TEST_CASE("Generate linear timing", "[generate][linear_timing_generator]") {
-    macrotime const delay = GENERATE(0, 1, 2);
-    macrotime const interval = GENERATE(1, 2);
+    default_data_traits::abstime_type const delay = GENERATE(0, 1, 2);
+    default_data_traits::abstime_type const interval = GENERATE(1, 2);
 
     auto out =
         capture_output<event_set<trigger_event, output_event, misc_event>>();

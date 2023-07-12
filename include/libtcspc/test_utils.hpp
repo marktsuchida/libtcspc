@@ -328,10 +328,13 @@ template <int N> struct empty_test_event {
  * \ingroup events-testing
  *
  * \tparam N a number to distinguish event types.
+ *
+ * \tparam DataTraits traits type specifying \c abstime_type
  */
-template <int N> struct timestamped_test_event {
+template <int N, typename DataTraits = default_data_traits>
+struct timestamped_test_event {
     /** \brief Timestamp. */
-    macrotime macrotime;
+    typename DataTraits::abstime_type macrotime;
 
     /** \brief Equality comparison operator. */
     friend auto operator==(timestamped_test_event<N> const &lhs,

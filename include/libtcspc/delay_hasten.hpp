@@ -23,13 +23,14 @@ namespace tcspc {
 namespace internal {
 
 template <typename EsDelayed, typename D> class delay_processor {
-    macrotime delta;
+    default_data_traits::abstime_type delta;
     vector_queue<event_variant<EsDelayed>> pending;
     D downstream;
     bool stream_ended = false;
 
   public:
-    explicit delay_processor(macrotime delta, D &&downstream)
+    explicit delay_processor(default_data_traits::abstime_type delta,
+                             D &&downstream)
         : delta(delta), downstream(std::move(downstream)) {
         assert(delta >= 0);
     }
@@ -80,7 +81,7 @@ template <typename EsDelayed, typename D> class delay_processor {
 } // namespace internal
 
 template <typename EsDelayed, typename D>
-auto delay_processor(macrotime delta, D &&downstream) {
+auto delay_processor(default_data_traits::abstime_type delta, D &&downstream) {
     return internal::delay_processor<EsDelayed, D>(
         delta, std::forward<D>(downstream));
 }
@@ -88,13 +89,14 @@ auto delay_processor(macrotime delta, D &&downstream) {
 namespace internal {
 
 template <typename EsUnchanged, typename D> class hasten_processor {
-    macrotime delta;
+    default_data_traits::abstime_type delta;
     vector_queue<event_variant<EsUnchanged>> pending;
     D downstream;
     bool stream_ended = false;
 
   public:
-    explicit hasten_processor(macrotime delta, D &&downstream)
+    explicit hasten_processor(default_data_traits::abstime_type delta,
+                              D &&downstream)
         : delta(delta), downstream(std::move(downstream)) {
         assert(delta >= 0);
     }
@@ -146,7 +148,8 @@ template <typename EsUnchanged, typename D> class hasten_processor {
 } // namespace internal
 
 template <typename EsUnchanged, typename D>
-auto hasten_processor(macrotime delta, D &&downstream) {
+auto hasten_processor(default_data_traits::abstime_type delta,
+                      D &&downstream) {
     return internal::hasten_processor<EsUnchanged, D>(
         delta, std::forward<D>(downstream));
 }
@@ -160,7 +163,8 @@ class delay_hasten_processor {
     delayer_type proc;
 
   public:
-    explicit delay_hasten_processor(macrotime delta, D &&downstream)
+    explicit delay_hasten_processor(default_data_traits::abstime_type delta,
+                                    D &&downstream)
         : proc(delayer_type(
               delta > 0 ? delta : 0,
               hastener_type(delta < 0 ? -delta : 0, std::move(downstream)))){};
@@ -177,7 +181,8 @@ class delay_hasten_processor {
 } // namespace internal
 
 template <typename EsRetimed, typename EsUnchanged, typename D>
-auto delay_hasten_processor(macrotime delta, D &&downstream) {
+auto delay_hasten_processor(default_data_traits::abstime_type delta,
+                            D &&downstream) {
     return internal::delay_hasten_processor<EsRetimed, EsUnchanged, D>(
         delta, std::forward<D>(downstream));
 }

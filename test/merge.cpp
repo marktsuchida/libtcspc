@@ -28,7 +28,8 @@ TEST_CASE("Merge with error on one input", "[merge]") {
     //         erased
 
     auto out = capture_output<all_events>();
-    auto [min0, min1] = merge<all_events>(1000, ref_processor(out));
+    auto [min0, min1] =
+        merge<default_data_traits, all_events>(1000, ref_processor(out));
 
     auto min_x = type_erased_processor<all_events>(ref_processor(min0));
     auto min_y = type_erased_processor<all_events>(ref_processor(min1));
@@ -204,7 +205,8 @@ TEST_CASE("Merge max time shift", "[merge]") {
     //         erased
 
     auto out = capture_output<all_events>();
-    auto [min0, min1] = merge<all_events>(10, ref_processor(out));
+    auto [min0, min1] =
+        merge<default_data_traits, all_events>(10, ref_processor(out));
 
     int const x = GENERATE(0, 1);
     auto min_x = type_erased_processor<all_events>(std::move(min0));

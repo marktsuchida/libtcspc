@@ -6,6 +6,7 @@
 
 #pragma once
 
+#include "common.hpp"
 #include "event_set.hpp"
 
 #include <algorithm>
@@ -119,8 +120,10 @@ auto route(Router &&router, Downstreams &&...downstreams) {
  * \ingroup routers
  *
  * \tparam N the number of downstreams to route to
+ *
+ * \tparam Channel channel number type
  */
-template <std::size_t N, typename Channel = std::int16_t>
+template <std::size_t N, typename Channel = default_data_traits::channel_type>
 class channel_router {
     std::array<Channel, N> channels;
 

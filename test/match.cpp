@@ -39,8 +39,8 @@ TEST_CASE("Match", "[match]") {
     auto out =
         capture_output<event_set<marker_event<>, output_event, misc_event>>();
     auto in = feed_input<event_set<marker_event<>, misc_event>>(
-        match<marker_event<>, output_event>(
-            static_channel_matcher<std::int16_t, 0>(), ref_processor(out)));
+        match<marker_event<>, output_event>(channel_matcher(std::int16_t(0)),
+                                            ref_processor(out)));
     in.require_output_checked(out);
 
     in.feed(marker_event<>{{{100}, 0}});

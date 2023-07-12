@@ -25,7 +25,8 @@ TEMPLATE_TEST_CASE("Histogram, zero bins", "[histogram]", saturate_on_overflow,
         histogram_event<u16>, concluding_histogram_event<u16>, misc_event>>();
     auto in = feed_input<
         event_set<bin_increment_event<u32>, reset_event, misc_event>>(
-        histogram<u32, u16, reset_event, TestType>(0, 0, ref_processor(out)));
+        histogram<default_data_traits, u32, u16, reset_event, TestType>(
+            0, 0, ref_processor(out)));
     in.require_output_checked(out);
 
     in.feed(misc_event{42});
@@ -45,8 +46,8 @@ TEMPLATE_TEST_CASE("Histogram, no overflow", "[histogram]",
     auto out = capture_output<
         event_set<histogram_event<u16>, concluding_histogram_event<u16>>>();
     auto in = feed_input<event_set<bin_increment_event<u32>, reset_event>>(
-        histogram<u32, u16, reset_event, TestType>(2, 100,
-                                                   ref_processor(out)));
+        histogram<default_data_traits, u32, u16, reset_event, TestType>(
+            2, 100, ref_processor(out)));
     in.require_output_checked(out);
 
     std::vector<u16> hist;
@@ -79,8 +80,8 @@ TEST_CASE("Histogram, saturate on overflow", "[histogram]") {
 
     SECTION("Max per bin = 0") {
         auto in = feed_input<event_set<bin_increment_event<u32>, reset_event>>(
-            histogram<u32, u16, reset_event, saturate_on_overflow>(
-                1, 0, ref_processor(out)));
+            histogram<default_data_traits, u32, u16, reset_event,
+                      saturate_on_overflow>(1, 0, ref_processor(out)));
         in.require_output_checked(out);
 
         std::vector<u16> hist;
@@ -97,8 +98,8 @@ TEST_CASE("Histogram, saturate on overflow", "[histogram]") {
 
     SECTION("Max per bin = 1") {
         auto in = feed_input<event_set<bin_increment_event<u32>, reset_event>>(
-            histogram<u32, u16, reset_event, saturate_on_overflow>(
-                1, 1, ref_processor(out)));
+            histogram<default_data_traits, u32, u16, reset_event,
+                      saturate_on_overflow>(1, 1, ref_processor(out)));
         in.require_output_checked(out);
 
         std::vector<u16> hist;
@@ -132,8 +133,8 @@ TEST_CASE("Histogram, reset on overflow", "[histogram]") {
 
     SECTION("Max per bin = 0") {
         auto in = feed_input<event_set<bin_increment_event<u32>, reset_event>>(
-            histogram<u32, u16, reset_event, reset_on_overflow>(
-                1, 0, ref_processor(out)));
+            histogram<default_data_traits, u32, u16, reset_event,
+                      reset_on_overflow>(1, 0, ref_processor(out)));
         in.require_output_checked(out);
 
         in.feed(bin_increment_event<u32>{42, 0}); // Overflow
@@ -142,8 +143,8 @@ TEST_CASE("Histogram, reset on overflow", "[histogram]") {
 
     SECTION("Max per bin = 1") {
         auto in = feed_input<event_set<bin_increment_event<u32>, reset_event>>(
-            histogram<u32, u16, reset_event, reset_on_overflow>(
-                1, 1, ref_processor(out)));
+            histogram<default_data_traits, u32, u16, reset_event,
+                      reset_on_overflow>(1, 1, ref_processor(out)));
         in.require_output_checked(out);
 
         std::vector<u16> hist;
@@ -173,8 +174,8 @@ TEST_CASE("Histogram, stop on overflow", "[histogram]") {
 
     SECTION("Max per bin = 0") {
         auto in = feed_input<event_set<bin_increment_event<u32>, reset_event>>(
-            histogram<u32, u16, reset_event, stop_on_overflow>(
-                1, 0, ref_processor(out)));
+            histogram<default_data_traits, u32, u16, reset_event,
+                      stop_on_overflow>(1, 0, ref_processor(out)));
         in.require_output_checked(out);
 
         in.feed(bin_increment_event<u32>{42, 0}); // Overflow
@@ -186,8 +187,8 @@ TEST_CASE("Histogram, stop on overflow", "[histogram]") {
 
     SECTION("Max per bin = 1") {
         auto in = feed_input<event_set<bin_increment_event<u32>, reset_event>>(
-            histogram<u32, u16, reset_event, stop_on_overflow>(
-                1, 1, ref_processor(out)));
+            histogram<default_data_traits, u32, u16, reset_event,
+                      stop_on_overflow>(1, 1, ref_processor(out)));
         in.require_output_checked(out);
 
         in.feed(bin_increment_event<u32>{42, 0});
@@ -208,8 +209,8 @@ TEST_CASE("Histogram, error on overflow", "[histogram]") {
 
     SECTION("Max per bin = 0") {
         auto in = feed_input<event_set<bin_increment_event<u32>, reset_event>>(
-            histogram<u32, u16, reset_event, error_on_overflow>(
-                1, 0, ref_processor(out)));
+            histogram<default_data_traits, u32, u16, reset_event,
+                      error_on_overflow>(1, 0, ref_processor(out)));
         in.require_output_checked(out);
 
         in.feed(bin_increment_event<u32>{42, 0}); // Overflow
@@ -218,8 +219,8 @@ TEST_CASE("Histogram, error on overflow", "[histogram]") {
 
     SECTION("Max per bin = 1") {
         auto in = feed_input<event_set<bin_increment_event<u32>, reset_event>>(
-            histogram<u32, u16, reset_event, error_on_overflow>(
-                1, 1, ref_processor(out)));
+            histogram<default_data_traits, u32, u16, reset_event,
+                      error_on_overflow>(1, 1, ref_processor(out)));
         in.require_output_checked(out);
 
         std::vector<u16> hist;

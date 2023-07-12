@@ -21,12 +21,13 @@
 
 class print_processor {
     std::uint32_t count = 0;
-    tcspc::macrotime last_macrotime = 0;
+    tcspc::default_data_traits::abstime_type last_macrotime = 0;
 
     // NOLINTNEXTLINE(cppcoreguidelines-avoid-const-or-ref-data-members)
     std::ostream &output;
 
-    void print_macrotime(std::ostream &output, tcspc::macrotime macrotime) {
+    void print_macrotime(std::ostream &output,
+                         tcspc::default_data_traits::abstime_type macrotime) {
         output << std::setw(6) << (count++) << ' ';
         output << std::setw(20) << macrotime;
         if (last_macrotime > 0) {
@@ -41,12 +42,12 @@ class print_processor {
   public:
     explicit print_processor(std::ostream &output) : output(output) {}
 
-    static void handle_event(tcspc::time_reached_event const &event) {
+    static void handle_event(tcspc::time_reached_event<> const &event) {
         // Do nothing
         (void)event;
     }
 
-    void handle_event(tcspc::data_lost_event const &event) {
+    void handle_event(tcspc::data_lost_event<> const &event) {
         print_macrotime(output, event.macrotime);
         output << " Data lost\n";
     }
@@ -116,7 +117,8 @@ void dump_raw_event(char const *raw_event, std::ostream &output) {
 }
 
 auto dump_events(std::istream &input, std::ostream &output) -> int {
-    auto decoder = tcspc::decode_bh_spc(print_processor(output));
+    auto decoder = tcspc::decode_bh_spc<tcspc::default_data_traits>(
+        print_processor(output));
     constexpr std::size_t const eventSize = sizeof(tcspc::bh_spc_event);
 
     while (input.good()) {

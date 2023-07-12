@@ -45,7 +45,7 @@ struct bh_spc_event {
     /**
      * \brief The macrotime overflow period of this event type.
      */
-    static constexpr macrotime macrotime_overflow_period = 1 << 12;
+    static constexpr std::uint32_t macrotime_overflow_period = 1 << 12;
 
     /**
      * \brief Read the ADC value (i.e., difference time) if this event
@@ -168,7 +168,7 @@ struct bh_spc_600_event_48 {
     /**
      * \brief The macrotime overflow period of this event type.
      */
-    static constexpr macrotime macrotime_overflow_period = 1 << 24;
+    static constexpr std::uint32_t macrotime_overflow_period = 1 << 24;
 
     /**
      * \brief Read the ADC value (i.e., difference time) if this event
@@ -286,7 +286,7 @@ struct bh_spc_600_event_32 {
     /**
      * \brief The macrotime overflow period of this event type.
      */
-    static constexpr macrotime macrotime_overflow_period = 1 << 17;
+    static constexpr std::uint32_t macrotime_overflow_period = 1 << 17;
 
     /**
      * \brief Read the ADC value (i.e., difference time) if this event
@@ -394,9 +394,12 @@ namespace internal {
 
 // Common implementation for decode_bh_spc, decode_bh_spc_600_48,
 // decode_bh_spc_600_32. BHEvent is the binary record event class.
-template <typename BHSPCEvent, typename Downstream> class decode_bh_spc {
-    macrotime macrotime_base = 0; // Time of last overflow
-    macrotime last_macrotime = 0;
+template <typename DataTraits, typename BHSPCEvent, typename Downstream>
+class decode_bh_spc {
+    using abstime_type = typename DataTraits::abstime_type;
+
+    abstime_type macrotime_base = 0; // Time of last overflow
+    abstime_type last_macrotime = 0;
 
     Downstream downstream;
 
@@ -409,10 +412,10 @@ template <typename BHSPCEvent, typename Downstream> class decode_bh_spc {
     void handle_event(BHSPCEvent const &event) noexcept {
         if (event.is_multiple_macrotime_overflow()) {
             macrotime_base +=
-                BHSPCEvent::macrotime_overflow_period *
+                abstime_type(BHSPCEvent::macrotime_overflow_period) *
                 event.multiple_macrotime_overflow_count().value();
 
-            time_reached_event e{macrotime_base};
+            time_reached_event<DataTraits> e{macrotime_base};
             downstream.handle_event(e);
             return;
         }
@@ -421,7 +424,7 @@ template <typename BHSPCEvent, typename Downstream> class decode_bh_spc {
             macrotime_base += BHSPCEvent::macrotime_overflow_period;
         }
 
-        macrotime macrotime = macrotime_base + event.macrotime().value();
+        abstime_type macrotime = macrotime_base + event.macrotime().value();
 
         // Validate input: ensure macrotime increases monotonically (a common
         // assumption made by downstream processors)
@@ -433,12 +436,12 @@ template <typename BHSPCEvent, typename Downstream> class decode_bh_spc {
         last_macrotime = macrotime;
 
         if (event.gap_flag()) {
-            data_lost_event e{macrotime};
+            data_lost_event<DataTraits> e{macrotime};
             downstream.handle_event(e);
         }
 
         if (event.marker_flag()) {
-            marker_event<> e{{{macrotime}, 0}};
+            marker_event<DataTraits> e{{{macrotime}, 0}};
             auto bits = u32np(event.marker_bits());
             while (bits != 0_u32np) {
                 e.channel = count_trailing_zeros_32(bits);
@@ -449,10 +452,10 @@ template <typename BHSPCEvent, typename Downstream> class decode_bh_spc {
         }
 
         if (event.invalid_flag()) {
-            time_reached_event e{macrotime};
+            time_reached_event<DataTraits> e{macrotime};
             downstream.handle_event(e);
         } else {
-            time_correlated_detection_event<> e{
+            time_correlated_detection_event<DataTraits> e{
                 {{macrotime}, event.routing_signals().value()},
                 event.adc_value().value()};
             downstream.handle_event(e);
@@ -471,14 +474,18 @@ template <typename BHSPCEvent, typename Downstream> class decode_bh_spc {
  *
  * \ingroup processors-decode
  *
+ * \tparam DataTraits traits type specifying \c abstime_type, \c channel_type,
+ * and \c difftime_type for the emitted events
+ *
  * \tparam Downstream downstream processor type
  *
  * \param downstream downstream processor (moved out)
  *
  * \return decode-bh-spc processor
  */
-template <typename Downstream> auto decode_bh_spc(Downstream &&downstream) {
-    return internal::decode_bh_spc<bh_spc_event, Downstream>(
+template <typename DataTraits, typename Downstream>
+auto decode_bh_spc(Downstream &&downstream) {
+    return internal::decode_bh_spc<DataTraits, bh_spc_event, Downstream>(
         std::forward<Downstream>(downstream));
 }
 
@@ -488,15 +495,19 @@ template <typename Downstream> auto decode_bh_spc(Downstream &&downstream) {
  *
  * \ingroup processors-decode
  *
+ * \tparam DataTraits traits type specifying \c abstime_type, \c channel_type,
+ * and \c difftime_type for the emitted events
+ *
  * \tparam Downstream downstream processor type
  *
  * \param downstream downstream processor (moved out)
  *
  * \return decode-bh-spc-600-48 processor
  */
-template <typename Downstream>
+template <typename DataTraits, typename Downstream>
 auto decode_bh_spc_600_48(Downstream &&downstream) {
-    return internal::decode_bh_spc<bh_spc_600_event_48, Downstream>(
+    return internal::decode_bh_spc<DataTraits, bh_spc_600_event_48,
+                                   Downstream>(
         std::forward<Downstream>(downstream));
 }
 
@@ -506,15 +517,19 @@ auto decode_bh_spc_600_48(Downstream &&downstream) {
  *
  * \ingroup processors-decode
  *
+ * \tparam DataTraits traits type specifying \c abstime_type, \c channel_type,
+ * and \c difftime_type for the emitted events
+ *
  * \tparam Downstream downstream processor type
  *
  * \param downstream downstream processor (moved out)
  *
  * \return decode-bh-spc-600-32 processor
  */
-template <typename Downstream>
+template <typename DataTraits, typename Downstream>
 auto decode_bh_spc_600_32(Downstream &&downstream) {
-    return internal::decode_bh_spc<bh_spc_600_event_32, Downstream>(
+    return internal::decode_bh_spc<DataTraits, bh_spc_600_event_32,
+                                   Downstream>(
         std::forward<Downstream>(downstream));
 }
 

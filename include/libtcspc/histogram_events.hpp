@@ -70,19 +70,21 @@ struct histogram_stats {
  * \brief A range of macrotime.
  *
  * \ingroup misc
+ *
+ * \tparam Abstime integer type for absolute time
  */
-struct macrotime_range {
+template <typename Abstime> struct macrotime_range {
     /** \brief Value indicating unset start time. */
-    static constexpr auto unstarted = std::numeric_limits<macrotime>::max();
+    static constexpr auto unstarted = std::numeric_limits<Abstime>::max();
 
     /** \brief Value indicating unset stop time. */
-    static constexpr auto unstopped = std::numeric_limits<macrotime>::min();
+    static constexpr auto unstopped = std::numeric_limits<Abstime>::min();
 
     /** \brief Start time of the range. */
-    macrotime start = unstarted;
+    Abstime start = unstarted;
 
     /** \brief Stop time of the range. */
-    macrotime stop = unstopped;
+    Abstime stop = unstopped;
 
     /** \brief Reset to empty time range. */
     constexpr void reset() noexcept {
@@ -91,14 +93,13 @@ struct macrotime_range {
     }
 
     /** \brief Extend the time range to include the given timestamp. */
-    constexpr void extend(macrotime timestamp) noexcept {
+    constexpr void extend(Abstime timestamp) noexcept {
         start = std::min(start, timestamp);
         stop = std::max(stop, timestamp);
     }
 
     /** \brief Extend the time range to include the given time range. */
-    constexpr void extend(macrotime other_start,
-                          macrotime other_stop) noexcept {
+    constexpr void extend(Abstime other_start, Abstime other_stop) noexcept {
         start = std::min(start, other_start);
         stop = std::max(stop, other_stop);
     }
@@ -149,8 +150,11 @@ inline void print_range(std::ostream &s, It first, It last) {
  * \ingroup events-histogram
  *
  * \tparam DataPoint the integer data type of the datapoint
+ *
+ * \tparam DataTraits traits type specifying \c abstime_type
  */
-template <typename DataPoint> struct datapoint_event {
+template <typename DataPoint, typename DataTraits = default_data_traits>
+struct datapoint_event {
     /**
      * \brief The data type.
      */
@@ -159,7 +163,7 @@ template <typename DataPoint> struct datapoint_event {
     /**
      * \brief The macrotime of the datapoint.
      */
-    macrotime macrotime;
+    typename DataTraits::abstime_type macrotime;
 
     /**
      * \brief The datapoint value.
@@ -193,12 +197,15 @@ template <typename DataPoint> struct datapoint_event {
  * \ingroup events-histogram
  *
  * \tparam BinIndex the bin index type
+ *
+ * \tparam DataTraits traits type specifying \c abstime_type
  */
-template <typename BinIndex> struct bin_increment_event {
+template <typename BinIndex, typename DataTraits = default_data_traits>
+struct bin_increment_event {
     /**
      * \brief The macrotime of the binned datapoint.
      */
-    macrotime macrotime;
+    typename DataTraits::abstime_type macrotime;
 
     /**
      * \brief The histogram bin index to which the data value was mapped.
@@ -237,12 +244,15 @@ template <typename BinIndex> struct bin_increment_event {
  * interval or pixel.
  *
  * \tparam BinIndex the bin index type
+ *
+ * \tparam DataTraits traits type specifying \c abstime_type
  */
-template <typename BinIndex> struct bin_increment_batch_event {
+template <typename BinIndex, typename DataTraits = default_data_traits>
+struct bin_increment_batch_event {
     /**
      * \brief The macrotime range of the batch.
      */
-    macrotime_range time_range;
+    macrotime_range<typename DataTraits::abstime_type> time_range;
 
     /**
      * \brief The bin indices for the datapoints in the batch.
@@ -282,12 +292,15 @@ template <typename BinIndex> struct bin_increment_batch_event {
  * series of updates to the same histogram.
  *
  * \tparam Bin the data type of the histogram bins
+ *
+ * \tparam DataTraits traits type specifying \c abstime_type
  */
-template <typename Bin> struct histogram_event {
+template <typename Bin, typename DataTraits = default_data_traits>
+struct histogram_event {
     /**
      * \brief The macrotime range of the histogrammed data.
      */
-    macrotime_range time_range;
+    macrotime_range<typename DataTraits::abstime_type> time_range;
 
     /**
      * \brief The histogram.
@@ -333,12 +346,15 @@ template <typename Bin> struct histogram_event {
  * counts from any partial batch are not included.
  *
  * \tparam Bin the data type of the histogram bins
+ *
+ * \tparam DataTraits traits type specifying \c abstime_type
  */
-template <typename Bin> struct concluding_histogram_event {
+template <typename Bin, typename DataTraits = default_data_traits>
+struct concluding_histogram_event {
     /**
      * \brief The macrotime range of the histogrammed data.
      */
-    macrotime_range time_range;
+    macrotime_range<typename DataTraits::abstime_type> time_range;
 
     /**
      * \brief The accumulated histogram.
@@ -404,8 +420,11 @@ template <typename Bin> struct concluding_histogram_event {
  * be copied if needed after event handling returns.
  *
  * \tparam Bin the data type of the histogram bins
+ *
+ * \tparam DataTraits traits type specifying \c abstime_type
  */
-template <typename Bin> struct element_histogram_event {
+template <typename Bin, typename DataTraits = default_data_traits>
+struct element_histogram_event {
     /**
      * \brief The macrotime range of the histogrammed data.
      *
@@ -413,7 +432,7 @@ template <typename Bin> struct element_histogram_event {
      * event. Note that it is the time range only of the latest batch even if
      * the histogram represents accumulated data.
      */
-    macrotime_range time_range;
+    macrotime_range<typename DataTraits::abstime_type> time_range;
 
     /**
      * \brief The index of the element (histogram) within the array.
@@ -472,8 +491,11 @@ template <typename Bin> struct element_histogram_event {
  * histogram_elementwise_accumulate).
  *
  * \tparam Bin the data type of the histogram bins
+ *
+ * \tparam DataTraits traits type specifying \c abstime_type
  */
-template <typename Bin> struct histogram_array_event {
+template <typename Bin, typename DataTraits = default_data_traits>
+struct histogram_array_event {
     /**
      * \brief The macrotime range of the histogrammed data.
      *
@@ -481,7 +503,7 @@ template <typename Bin> struct histogram_array_event {
      * first cycle to the stop time of the last batch of the last cycle of the
      * accumulation (or single cycle).
      */
-    macrotime_range time_range;
+    macrotime_range<typename DataTraits::abstime_type> time_range;
 
     /**
      * \brief View of the histogram array.
@@ -533,8 +555,11 @@ template <typename Bin> struct histogram_array_event {
  * counts from any partial cycle are not included.
  *
  * \tparam Bin the data type of the histogram bins
+ *
+ * \tparam DataTraits traits type specifying \c abstime_type
  */
-template <typename Bin> struct concluding_histogram_array_event {
+template <typename Bin, typename DataTraits = default_data_traits>
+struct concluding_histogram_array_event {
     /**
      * \brief The macrotime range of the accumulation.
      *
@@ -542,7 +567,7 @@ template <typename Bin> struct concluding_histogram_array_event {
      * first cycle to the stop time of the last batch of the last cycle of the
      * accumulation.
      */
-    macrotime_range time_range;
+    macrotime_range<typename DataTraits::abstime_type> time_range;
 
     /**
      * \brief View of the histogram array.

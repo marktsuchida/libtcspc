@@ -51,7 +51,7 @@ struct pq_pico_t3_event {
     /**
      * \brief The nsync overflow period of this event type.
      */
-    static constexpr macrotime nsync_overflow_period = 65536;
+    static constexpr std::int32_t nsync_overflow_period = 65536;
 
     /**
      * \brief Read the channel if this event represents a photon.
@@ -151,7 +151,7 @@ template <bool IsHydraV1> struct pq_hydra_t3_event {
     /**
      * \brief The nsync overflow period of this event type.
      */
-    static constexpr macrotime nsync_overflow_period = 1024;
+    static constexpr std::int32_t nsync_overflow_period = 1024;
 
     /**
      * \brief Read the channel if this event represents a photon.
@@ -259,9 +259,12 @@ namespace internal {
 // Common implementation for decode_pq_pico_t3, decode_pq_hydra_v1_t3,
 // decode_pq_hydra_v2_t3.
 // PQT3Event is the binary record event class.
-template <typename PQT3Event, typename Downstream> class decode_pq_t3 {
-    macrotime nsync_base = 0;
-    macrotime last_nsync = 0;
+template <typename DataTraits, typename PQT3Event, typename Downstream>
+class decode_pq_t3 {
+    using abstime_type = typename DataTraits::abstime_type;
+
+    abstime_type nsync_base = 0;
+    abstime_type last_nsync = 0;
 
     Downstream downstream;
 
@@ -271,16 +274,15 @@ template <typename PQT3Event, typename Downstream> class decode_pq_t3 {
 
     void handle_event(PQT3Event const &event) noexcept {
         if (event.is_nsync_overflow()) {
-            nsync_base += PQT3Event::nsync_overflow_period *
+            nsync_base += abstime_type(PQT3Event::nsync_overflow_period) *
                           event.nsync_overflow_count();
 
-            time_reached_event e;
-            e.macrotime = nsync_base;
+            time_reached_event<DataTraits> e{{nsync_base}};
             downstream.handle_event(e);
             return;
         }
 
-        macrotime nsync = nsync_base + event.nsync();
+        abstime_type nsync = nsync_base + event.nsync();
 
         // Validate input: ensure nsync increases monotonically (a common
         // assumption made by downstream processors)
@@ -292,7 +294,7 @@ template <typename PQT3Event, typename Downstream> class decode_pq_t3 {
         last_nsync = nsync;
 
         if (event.is_external_marker()) {
-            marker_event<> e{{{nsync}, 0}};
+            marker_event<DataTraits> e{{{nsync}, 0}};
             auto bits = u32np(event.external_marker_bits());
             while (bits != 0_u32np) {
                 e.channel = count_trailing_zeros_32(bits);
@@ -302,8 +304,8 @@ template <typename PQT3Event, typename Downstream> class decode_pq_t3 {
             return;
         }
 
-        time_correlated_detection_event e{nsync, event.dtime(),
-                                          event.channel()};
+        time_correlated_detection_event<DataTraits> e{
+            {{nsync}, event.channel()}, event.dtime()};
         downstream.handle_event(e);
     }
 
@@ -318,15 +320,18 @@ template <typename PQT3Event, typename Downstream> class decode_pq_t3 {
  *
  * \ingroup processors-decode
  *
+ * \tparam DataTraits traits type specifying \c abstime_type, \c channel_type,
+ * and \c difftime_type for the emitted events
+ *
  * \tparam Downstream downstream processor type
  *
  * \param downstream downstream processor (moved out)
  *
  * \return decode-pq-pico-t3 processor
  */
-template <typename Downstream>
+template <typename DataTraits, typename Downstream>
 auto decode_pq_pico_t3(Downstream &&downstream) {
-    return internal::decode_pq_t3<pq_pico_t3_event, Downstream>(
+    return internal::decode_pq_t3<DataTraits, pq_pico_t3_event, Downstream>(
         std::forward<Downstream>(downstream));
 }
 
@@ -335,15 +340,19 @@ auto decode_pq_pico_t3(Downstream &&downstream) {
  *
  * \ingroup processors-decode
  *
+ * \tparam DataTraits traits type specifying \c abstime_type, \c channel_type,
+ * and \c difftime_type for the emitted events
+ *
  * \tparam Downstream downstream processor type
  *
  * \param downstream downstream processor (moved out)
  *
  * \return decode-pq-hydra-v1-t3 processor
  */
-template <typename Downstream>
+template <typename DataTraits, typename Downstream>
 auto decode_pq_hydra_v1_t3(Downstream &&downstream) {
-    return internal::decode_pq_t3<pq_hydra_v1_t3_event, Downstream>(
+    return internal::decode_pq_t3<DataTraits, pq_hydra_v1_t3_event,
+                                  Downstream>(
         std::forward<Downstream>(downstream));
 }
 
@@ -353,15 +362,19 @@ auto decode_pq_hydra_v1_t3(Downstream &&downstream) {
  *
  * \ingroup processors-decode
  *
+ * \tparam DataTraits traits type specifying \c abstime_type, \c channel_type,
+ * and \c difftime_type for the emitted events
+ *
  * \tparam Downstream downstream processor type
  *
  * \param downstream downstream processor (moved out)
  *
  * \return decode-pq-hydra-v2-t3 processor
  */
-template <typename Downstream>
+template <typename DataTraits, typename Downstream>
 auto decode_pq_hydra_v2_t3(Downstream &&downstream) {
-    return internal::decode_pq_t3<pq_hydra_v2_t3_event, Downstream>(
+    return internal::decode_pq_t3<DataTraits, pq_hydra_v2_t3_event,
+                                  Downstream>(
         std::forward<Downstream>(downstream));
 }
 

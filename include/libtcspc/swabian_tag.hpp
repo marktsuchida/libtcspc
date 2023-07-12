@@ -100,7 +100,7 @@ struct swabian_tag_event {
 
 namespace internal {
 
-template <typename Downstream> class decode_swabian_tags {
+template <typename DataTraits, typename Downstream> class decode_swabian_tags {
     bool had_error = false;
     Downstream downstream;
 
@@ -115,7 +115,7 @@ template <typename Downstream> class decode_swabian_tags {
         using tag_type = swabian_tag_event::tag_type;
         switch (event.type()) {
         case tag_type::time_tag: {
-            detection_event<> e{
+            detection_event<DataTraits> e{
                 {{event.time().value()},
                  narrow<decltype(e.channel)>(event.channel())}};
             downstream.handle_event(e);
@@ -127,19 +127,17 @@ template <typename Downstream> class decode_swabian_tags {
             had_error = true;
             break;
         case tag_type::overflow_begin: {
-            begin_lost_interval_event e;
-            e.macrotime = event.time().value();
+            begin_lost_interval_event<DataTraits> e{{event.time().value()}};
             downstream.handle_event(e);
             break;
         }
         case tag_type::overflow_end: {
-            end_lost_interval_event e;
-            e.macrotime = event.time().value();
+            end_lost_interval_event<DataTraits> e{{event.time().value()}};
             downstream.handle_event(e);
             break;
         }
         case tag_type::missed_events: {
-            untagged_counts_event<> e{
+            untagged_counts_event<DataTraits> e{
                 {{event.time().value()},
                  narrow<decltype(e.channel)>(event.channel())},
                 event.missed_event_count().value()};
@@ -166,15 +164,18 @@ template <typename Downstream> class decode_swabian_tags {
  *
  * \ingroup processors-decode
  *
+ * \tparam DataTraits traits type specifying \c abstime_type and \c
+ * channel_type for the emitted events
+ *
  * \tparam Downstream downstream processor type
  *
  * \param downstream downstream processor (moved out)
  *
  * \return decode-swabian-tags processor
  */
-template <typename Downstream>
+template <typename DataTraits, typename Downstream>
 auto decode_swabian_tags(Downstream &&downstream) {
-    return internal::decode_swabian_tags<Downstream>(
+    return internal::decode_swabian_tags<DataTraits, Downstream>(
         std::forward<Downstream>(downstream));
 }
 

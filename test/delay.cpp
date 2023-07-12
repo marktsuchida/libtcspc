@@ -21,7 +21,8 @@ TEST_CASE("Delay", "[delay]") {
     auto out = capture_output<event_set<e0, e1>>();
 
     SECTION("Zero delay is noop") {
-        auto in = feed_input<event_set<e0>>(delay(0, ref_processor(out)));
+        auto in = feed_input<event_set<e0>>(
+            delay<default_data_traits>(0, ref_processor(out)));
         in.require_output_checked(out);
 
         in.feed(e0{0});
@@ -31,7 +32,8 @@ TEST_CASE("Delay", "[delay]") {
     }
 
     SECTION("Delay +1") {
-        auto in = feed_input<event_set<e0, e1>>(delay(1, ref_processor(out)));
+        auto in = feed_input<event_set<e0, e1>>(
+            delay<default_data_traits>(1, ref_processor(out)));
         in.require_output_checked(out);
 
         in.feed(e0{0});
@@ -43,7 +45,8 @@ TEST_CASE("Delay", "[delay]") {
     }
 
     SECTION("Delay -1") {
-        auto in = feed_input<event_set<e0, e1>>(delay(-1, ref_processor(out)));
+        auto in = feed_input<event_set<e0, e1>>(
+            delay<default_data_traits>(-1, ref_processor(out)));
         in.require_output_checked(out);
 
         in.feed(e0{0});
