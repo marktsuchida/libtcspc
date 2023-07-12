@@ -109,7 +109,7 @@ auto main(int argc, char *argv[]) -> int {
     // Construct pipeline
     // clang-format off
     auto buffer =
-        tcspc::buffer_event<
+        tcspc::buffer<
                 std::shared_ptr<std::vector<tcspc::bh_spc_event>>>(
         tcspc::dereference_pointer<
                 std::shared_ptr<std::vector<tcspc::bh_spc_event>>>(

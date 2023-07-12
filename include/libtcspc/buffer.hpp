@@ -188,7 +188,7 @@ auto unbatch(Downstream &&downstream) {
 
 namespace internal {
 
-template <typename Event, typename Downstream> class buffer_event {
+template <typename Event, typename Downstream> class buffer {
     std::mutex mutex;
     std::condition_variable has_item_condition; // item = event or end
 
@@ -212,7 +212,7 @@ template <typename Event, typename Downstream> class buffer_event {
     Downstream downstream;
 
   public:
-    explicit buffer_event(Downstream &&downstream)
+    explicit buffer(Downstream &&downstream)
         : downstream(std::move(downstream)) {}
 
     void handle_event(Event const &event) noexcept {
@@ -300,8 +300,8 @@ template <typename Event, typename Downstream> class buffer_event {
  * \return buffer-events pseudo-processor
  */
 template <typename Event, typename Downstream>
-auto buffer_event(Downstream &&downstream) {
-    return internal::buffer_event<Event, Downstream>(
+auto buffer(Downstream &&downstream) {
+    return internal::buffer<Event, Downstream>(
         std::forward<Downstream>(downstream));
 }
 
