@@ -9,12 +9,14 @@
 #include "vector_queue.hpp"
 
 #include <algorithm>
+#include <chrono>
 #include <condition_variable>
 #include <cstddef>
 #include <exception>
 #include <iterator>
 #include <memory>
 #include <mutex>
+#include <type_traits>
 #include <utility>
 #include <vector>
 
@@ -188,12 +190,18 @@ auto unbatch(Downstream &&downstream) {
 
 namespace internal {
 
-template <typename Event, typename Downstream> class buffer {
-    std::mutex mutex;
-    std::condition_variable has_item_condition; // item = event or end
-
+template <typename Event, bool LatencyLimited, typename Downstream>
+class buffer {
+    using clock_type = std::chrono::steady_clock;
     using queue_type = vector_queue<Event>;
+
+    std::size_t threshold;
+    std::chrono::time_point<clock_type>::duration max_latency;
+
+    std::mutex mutex;
+    std::condition_variable has_data_condition;
     queue_type shared_queue;
+    std::chrono::time_point<clock_type> oldest_enqueued_time;
     bool stream_ended = false;
     std::exception_ptr queued_error;
 
@@ -212,26 +220,43 @@ template <typename Event, typename Downstream> class buffer {
     Downstream downstream;
 
   public:
-    explicit buffer(Downstream &&downstream)
-        : downstream(std::move(downstream)) {}
+    template <typename Duration>
+    explicit buffer(std::size_t threshold, Duration latency_limit,
+                    Downstream &&downstream)
+        : threshold(threshold),
+          max_latency(std::chrono::duration_cast<decltype(max_latency)>(
+              latency_limit)),
+          downstream(std::move(downstream)) {}
+
+    explicit buffer(std::size_t threshold, Downstream &&downstream)
+        : buffer(threshold,
+                 std::chrono::time_point<clock_type>::duration::max(),
+                 std::move(downstream)) {}
 
     void handle_event(Event const &event) noexcept {
-        bool was_empty{};
+        bool should_notify{};
         {
             std::scoped_lock lock(mutex);
             if (stream_ended)
                 return;
 
-            was_empty = shared_queue.empty();
             try {
                 shared_queue.push(event);
+                should_notify = shared_queue.size() == threshold;
+                if constexpr (LatencyLimited) {
+                    if (shared_queue.size() == 1) {
+                        oldest_enqueued_time = clock_type::now();
+                        should_notify = true; // Wake up once to set deadline.
+                    }
+                }
             } catch (std::exception const &) {
                 stream_ended = true;
                 queued_error = std::current_exception();
+                should_notify = true;
             }
         }
-        if (was_empty)
-            has_item_condition.notify_one();
+        if (should_notify)
+            has_data_condition.notify_one();
     }
 
     void handle_end(std::exception_ptr const &error) noexcept {
@@ -243,17 +268,28 @@ template <typename Event, typename Downstream> class buffer {
             stream_ended = true;
             queued_error = error;
         }
-        has_item_condition.notify_one();
+        has_data_condition.notify_one();
     }
 
     void pump_downstream() noexcept {
         std::unique_lock lock(mutex);
 
         for (;;) {
-            has_item_condition.wait(
-                lock, [&] { return !shared_queue.empty() || stream_ended; });
+            if constexpr (LatencyLimited) {
+                has_data_condition.wait(lock, [&] {
+                    return not shared_queue.empty() || stream_ended;
+                });
+                auto const deadline = oldest_enqueued_time + max_latency;
+                has_data_condition.wait_until(lock, deadline, [&] {
+                    return shared_queue.size() >= threshold || stream_ended;
+                });
+            } else {
+                has_data_condition.wait(lock, [&] {
+                    return shared_queue.size() >= threshold || stream_ended;
+                });
+            }
 
-            if (shared_queue.empty()) { // Implying stream ended
+            if (stream_ended && shared_queue.empty()) {
                 std::exception_ptr error;
                 std::swap(error, queued_error);
                 lock.unlock();
@@ -295,14 +331,53 @@ template <typename Event, typename Downstream> class buffer {
  *
  * \tparam Downstream downstream processor type
  *
+ * \param threshold number of events to buffer before start sending to
+ * downstream
+ *
  * \param downstream downstream processor (moved out)
  *
  * \return buffer-events pseudo-processor
  */
 template <typename Event, typename Downstream>
-auto buffer(Downstream &&downstream) {
-    return internal::buffer<Event, Downstream>(
-        std::forward<Downstream>(downstream));
+auto buffer(std::size_t threshold, Downstream &&downstream) {
+    return internal::buffer<Event, false, Downstream>(
+        threshold, std::forward<Downstream>(downstream));
+}
+
+/**
+ * \brief Create a pseudo-processor that buffers events with limited latency.
+ *
+ * \ingroup processors-basic
+ *
+ * This receives events of type \c Event from upstream like a normal processor,
+ * but stores them in a buffer. By calling <tt>void pump_downstream()
+ * noexcept</tt> on a different thread, the buffered events can be sent
+ * downstream on that thread. The \c pump_downstream function blocks until the
+ * upstream has signaled the end of stream and all events have been emitted
+ * downstream.
+ *
+ * Usually \c Event should be EventArray in order to reduce overhead.
+ *
+ * \tparam Event the event type
+ *
+ * \tparam Downstream downstream processor type
+ *
+ * \param threshold number of events to buffer before start sending to
+ * downstream
+ *
+ * \param latency_limit a \c std::chrono::duration specifying the maximum time
+ * an event can remain in the buffer before sending to downstream is started
+ * even if there are fewer events than threshold
+ *
+ * \param downstream downstream processor (moved out)
+ *
+ * \return buffer-events pseudo-processor
+ */
+template <typename Event, typename Duration, typename Downstream>
+auto real_time_buffer(std::size_t threshold, Duration latency_limit,
+                      Downstream &&downstream) {
+    return internal::buffer<Event, true, Downstream>(
+        threshold, latency_limit, std::forward<Downstream>(downstream));
 }
 
 } // namespace tcspc

@@ -110,7 +110,7 @@ auto main(int argc, char *argv[]) -> int {
     // clang-format off
     auto buffer =
         tcspc::buffer<
-                std::shared_ptr<std::vector<tcspc::bh_spc_event>>>(
+                std::shared_ptr<std::vector<tcspc::bh_spc_event>>>(1,
         tcspc::dereference_pointer<
                 std::shared_ptr<std::vector<tcspc::bh_spc_event>>>(
         tcspc::unbatch<
