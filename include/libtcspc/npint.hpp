@@ -19,7 +19,7 @@ namespace tcspc {
 /**
  * \brief Non-promoted integers.
  *
- * \ingroup misc
+ * \ingroup integers
  *
  * Objects of this type behave similarly to the underlying integer type, except
  * that no integer promotion is applied automatically and no implicit
@@ -314,112 +314,112 @@ class npint {
 /**
  * \brief Short name for uint8_t.
  *
- * \ingroup misc
+ * \ingroup integers
  */
 using u8 = std::uint8_t;
 
 /**
  * \brief Short name for uint16_t.
 
- * \ingroup misc
+ * \ingroup integers
  */
 using u16 = std::uint16_t;
 
 /**
  * \brief Short name for uint32_t.
  *
- * \ingroup misc
+ * \ingroup integers
  */
 using u32 = std::uint32_t;
 
 /**
  * \brief Short name for uint64_t.
  *
- * \ingroup misc
+ * \ingroup integers
  */
 using u64 = std::uint64_t;
 
 /**
  * \brief Short name for int8_t.
 
- * \ingroup misc
+ * \ingroup integers
  */
 using i8 = std::int8_t;
 
 /**
  * \brief Short name for int16_t.
 
- * \ingroup misc
+ * \ingroup integers
  */
 using i16 = std::int16_t;
 
 /**
  * \brief Short name for int32_t.
 
- * \ingroup misc
+ * \ingroup integers
  */
 using i32 = std::int32_t;
 
 /**
  * \brief Short name for int64_t.
  *
- * \ingroup misc
+ * \ingroup integers
  */
 using i64 = std::int64_t;
 
 /**
  * \brief Non-promoted unsigned 8-bit integer.
  *
- * \ingroup misc
+ * \ingroup integers
  */
 using u8np = npint<u8>;
 
 /**
  * \brief Non-promoted unsigned 16-bit integer.
  *
- * \ingroup misc
+ * \ingroup integers
  */
 using u16np = npint<u16>;
 
 /**
  * \brief Non-promoted unsigned 32-bit integer.
 
- * \ingroup misc
+ * \ingroup integers
  */
 using u32np = npint<u32>;
 
 /**
  * \brief Non-promoted unsigned 64-bit integer.
 
- * \ingroup misc
+ * \ingroup integers
  */
 using u64np = npint<u64>;
 
 /**
  * \brief Non-promoted signed 8-bit integer.
 
- * \ingroup misc
+ * \ingroup integers
  */
 using i8np = npint<i8>;
 
 /**
  * \brief Non-promoted signed 16-bit integer.
 
- * \ingroup misc
+ * \ingroup integers
  */
 using i16np = npint<i16>;
 
 /**
  * \brief Non-promoted signed 32-bit integer.
 
- * \ingroup misc
+ * \ingroup integers
  */
 using i32np = npint<i32>;
 
 /**
  * \brief Non-promoted signed 64-bit integer.
 
- * \ingroup misc
+ * \ingroup integers
  */
 using i64np = npint<i64>;
 
@@ -431,7 +431,7 @@ namespace literals {
 /**
  * \brief User defined literal for \ref u8np.
  *
- * \ingroup misc
+ * \ingroup integers
  */
 constexpr auto operator""_u8np(unsigned long long v) -> u8np {
     return u8np(v);
@@ -440,7 +440,7 @@ constexpr auto operator""_u8np(unsigned long long v) -> u8np {
 /**
  * \brief User defined literal for \ref u16np.
  *
- * \ingroup misc
+ * \ingroup integers
  */
 constexpr auto operator""_u16np(unsigned long long v) -> u16np {
     return u16np(v);
@@ -449,7 +449,7 @@ constexpr auto operator""_u16np(unsigned long long v) -> u16np {
 /**
  * \brief User defined literal for \ref u32np.
  *
- * \ingroup misc
+ * \ingroup integers
  */
 constexpr auto operator""_u32np(unsigned long long v) -> u32np {
     return u32np(v);
@@ -458,7 +458,7 @@ constexpr auto operator""_u32np(unsigned long long v) -> u32np {
 /**
  * \brief User defined literal for \ref u64np.
  *
- * \ingroup misc
+ * \ingroup integers
  */
 constexpr auto operator""_u64np(unsigned long long v) -> u64np {
     return u64np(v);
@@ -467,7 +467,7 @@ constexpr auto operator""_u64np(unsigned long long v) -> u64np {
 /**
  * \brief User defined literal for \ref i8np.
  *
- * \ingroup misc
+ * \ingroup integers
  */
 constexpr auto operator""_i8np(unsigned long long v) -> i8np {
     return i8np(v);
@@ -476,7 +476,7 @@ constexpr auto operator""_i8np(unsigned long long v) -> i8np {
 /**
  * \brief User defined literal for \ref i16np.
  *
- * \ingroup misc
+ * \ingroup integers
  */
 constexpr auto operator""_i16np(unsigned long long v) -> i16np {
     return i16np(v);
@@ -485,7 +485,7 @@ constexpr auto operator""_i16np(unsigned long long v) -> i16np {
 /**
  * \brief User defined literal for \ref i32np.
  *
- * \ingroup misc
+ * \ingroup integers
  */
 constexpr auto operator""_i32np(unsigned long long v) -> i32np {
     return i32np(v);
@@ -494,7 +494,7 @@ constexpr auto operator""_i32np(unsigned long long v) -> i32np {
 /**
  * \brief User defined literal for \ref i64np.
  *
- * \ingroup misc
+ * \ingroup integers
  */
 constexpr auto operator""_i64np(unsigned long long v) -> i64np {
     return i64np(v);

@@ -110,7 +110,7 @@ constexpr auto read_u64le_generic(byte_span<8> bytes) noexcept -> u64np {
 /**
  * \brief Read an 8-bit unsigned integer from a byte.
  *
- * \ingroup misc
+ * \ingroup integers
  */
 constexpr auto read_u8(byte_span<1> byte) noexcept -> u8np {
     return u8np(u8(byte[0]));
@@ -119,7 +119,7 @@ constexpr auto read_u8(byte_span<1> byte) noexcept -> u8np {
 /**
  * \brief Read a little-endian 16-bit unsigned integer from bytes.
  *
- * \ingroup misc
+ * \ingroup integers
  */
 inline auto read_u16le(byte_span<2> bytes) noexcept -> u16np {
     if (internal::use_memcpy())
@@ -130,7 +130,7 @@ inline auto read_u16le(byte_span<2> bytes) noexcept -> u16np {
 /**
  * \brief Read a little-endian 32-bit unsigned integer from bytes.
  *
- * \ingroup misc
+ * \ingroup integers
  */
 inline auto read_u32le(byte_span<4> bytes) noexcept -> u32np {
     if (internal::use_memcpy())
@@ -141,7 +141,7 @@ inline auto read_u32le(byte_span<4> bytes) noexcept -> u32np {
 /**
  * \brief Read a little-endian 64-bit unsigned integer from bytes.
  *
- * \ingroup misc
+ * \ingroup integers
  */
 inline auto read_u64le(byte_span<8> bytes) noexcept -> u64np {
     if (internal::use_memcpy())
@@ -152,7 +152,7 @@ inline auto read_u64le(byte_span<8> bytes) noexcept -> u64np {
 /**
  * \brief Read an 8-bit signed integer from a byte.
  *
- * \ingroup misc
+ * \ingroup integers
  */
 inline auto read_i8(byte_span<1> byte) noexcept -> i8np {
     return i8np(read_u8(byte));
@@ -161,7 +161,7 @@ inline auto read_i8(byte_span<1> byte) noexcept -> i8np {
 /**
  * \brief Read a little-endian 16-bit signed integer from bytes.
  *
- * \ingroup misc
+ * \ingroup integers
  */
 inline auto read_i16le(byte_span<2> bytes) noexcept -> i16np {
     return i16np(read_u16le(bytes));
@@ -170,7 +170,7 @@ inline auto read_i16le(byte_span<2> bytes) noexcept -> i16np {
 /**
  * \brief Read a little-endian 32-bit signed integer from bytes.
  *
- * \ingroup misc
+ * \ingroup integers
  */
 inline auto read_i32le(byte_span<4> bytes) noexcept -> i32np {
     return i32np(read_u32le(bytes));
@@ -179,7 +179,7 @@ inline auto read_i32le(byte_span<4> bytes) noexcept -> i32np {
 /**
  * \brief Read a little-endian 64-bit signed integer from bytes.
  *
- * \ingroup misc
+ * \ingroup integers
  */
 inline auto read_i64le(byte_span<8> bytes) noexcept -> i64np {
     return i64np(read_u64le(bytes));
