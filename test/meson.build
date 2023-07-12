@@ -13,7 +13,6 @@ libtcspc_tests_srcs = [
     'count.cpp',
     'delay.cpp',
     'delay_hasten.cpp',
-    'discard.cpp',
     'event_set.cpp',
     'gate.cpp',
     'generate.cpp',

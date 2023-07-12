@@ -6,8 +6,9 @@
 
 #include "libtcspc/legacy_histogram.hpp"
 
-#include "libtcspc/discard.hpp"
+#include "libtcspc/common.hpp"
 #include "libtcspc/event_set.hpp"
+#include "libtcspc/test_utils.hpp"
 
 #include <catch2/catch_all.hpp>
 
@@ -15,20 +16,20 @@
 
 using namespace tcspc;
 
-static_assert(
-    handles_event_set_v<
-        histogrammer<unsigned, discard_all<frame_histogram_events<unsigned>>>,
-        pixel_photon_events>);
+static_assert(handles_event_set_v<
+              histogrammer<unsigned,
+                           event_set_sink<frame_histogram_events<unsigned>>>,
+              pixel_photon_events>);
 
 static_assert(handles_event_set_v<
               sequential_histogrammer<
-                  unsigned, discard_all<frame_histogram_events<unsigned>>>,
+                  unsigned, event_set_sink<frame_histogram_events<unsigned>>>,
               pixel_photon_events>);
 
 static_assert(
     handles_event_set_v<
         histogram_accumulator<
-            unsigned, discard_all<cumulative_histogram_events<unsigned>>>,
+            unsigned, event_set_sink<cumulative_histogram_events<unsigned>>>,
         frame_histogram_events<unsigned>>);
 
 TEST_CASE("TimeBins", "[legacy_histogram]") {

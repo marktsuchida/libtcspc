@@ -293,6 +293,73 @@ auto feed_input(Downstream &&downstream) {
 }
 
 /**
+ * \brief Processors that sinks only events in the given set, and
+ * end-of-stream.
+ *
+ * \ingroup processors-testing
+ *
+ * This can be used to check at compile time that output of the upstream
+ * processor does not contain unexpected events.
+ *
+ * \tparam EventSet event types to allow
+ */
+template <typename EventSet> class event_set_sink {
+  public:
+    /** \brief Processor interface */
+    template <typename Event,
+              typename = std::enable_if_t<contains_event_v<EventSet, Event>>>
+    void handle_event([[maybe_unused]] Event const &event) noexcept {}
+
+    /** \brief Processor interface */
+    void
+    handle_end([[maybe_unused]] std::exception_ptr const &error) noexcept {}
+};
+
+namespace internal {
+
+template <typename EventSet, typename Downstream> class check_event_set {
+    Downstream downstream;
+
+  public:
+    explicit check_event_set(Downstream &&downstream)
+        : downstream(std::move(downstream)) {}
+
+    template <typename Event,
+              typename = std::enable_if_t<contains_event_v<EventSet, Event>>>
+    void handle_event(Event const &event) noexcept {
+        downstream.handle_event(event);
+    }
+
+    void handle_end(std::exception_ptr const &error) noexcept {
+        downstream.handle_end(error);
+    }
+};
+
+} // namespace internal
+
+/**
+ * \brief Create a processor that forwards all events in a given set only.
+ *
+ * \ingroup processors-testing
+ *
+ * This processor simply forwards all events downstream, but it is a compile
+ * error if an input event is not in \c EventSet.
+ *
+ * \see require_event_set
+ *
+ * \tparam EventSet the set of events to forward
+ *
+ * \tparam Downstream downstream processor type
+ *
+ * \param downstream downstream processor
+ */
+template <typename EventSet, typename Downstream>
+auto check_event_set(Downstream &&downstream) {
+    return internal::check_event_set<EventSet, Downstream>(
+        std::forward<Downstream>(downstream));
+}
+
+/**
  * \brief Empty event for testing.
  *
  * \ingroup events-testing

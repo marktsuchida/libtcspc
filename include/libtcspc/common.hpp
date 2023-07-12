@@ -68,6 +68,23 @@ class never_event {
 };
 
 /**
+ * \brief Processor that sinks any event and the end-of-stream and does
+ * nothing.
+ *
+ * \ingroup processors-basic
+ */
+class null_sink {
+  public:
+    /** \brief Processor interface */
+    template <typename Event>
+    void handle_event([[maybe_unused]] Event const &event) noexcept {}
+
+    /** \brief Processor interface */
+    void
+    handle_end([[maybe_unused]] std::exception_ptr const &error) noexcept {}
+};
+
+/**
  * \brief Histogram overflow strategy tag to request saturating addition on
  * overflowed bins.
  *

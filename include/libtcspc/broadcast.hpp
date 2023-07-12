@@ -6,8 +6,11 @@
 
 #pragma once
 
+#include "event_set.hpp"
+
 #include <exception>
 #include <tuple>
+#include <type_traits>
 #include <utility>
 
 namespace tcspc {
@@ -21,8 +24,9 @@ template <typename... Downstreams> class broadcast {
     explicit broadcast(Downstreams &&...downstreams)
         : downstreams{std::move<Downstreams>(downstreams)...} {}
 
-    template <typename AnyEvent>
-    void handle_event(AnyEvent const &event) noexcept {
+    template <typename Event, typename = std::enable_if_t<std::conjunction_v<
+                                  handles_event<Downstreams, Event>...>>>
+    void handle_event(Event const &event) noexcept {
         std::apply([&](auto &...s) { (..., s.handle_event(event)); },
                    downstreams);
     }

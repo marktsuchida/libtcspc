@@ -6,9 +6,10 @@
 
 #include "libtcspc/line_clock_pixellator.hpp"
 
-#include "libtcspc/discard.hpp"
+#include "libtcspc/common.hpp"
 #include "libtcspc/event_set.hpp"
 #include "libtcspc/ref_processor.hpp"
+#include "libtcspc/test_utils.hpp"
 
 #include <catch2/catch_all.hpp>
 
@@ -35,7 +36,7 @@ inline auto operator<<(std::ostream &os,
 }
 
 static_assert(handles_event_set_v<
-              line_clock_pixellator<discard_all<pixel_photon_events>>,
+              line_clock_pixellator<event_set_sink<pixel_photon_events>>,
               tcspc_events>);
 
 TEST_CASE("Frames are produced according to line markers",
