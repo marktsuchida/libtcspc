@@ -48,18 +48,18 @@ class print_processor {
     }
 
     void handle_event(tcspc::data_lost_event<> const &event) {
-        print_macrotime(output, event.macrotime);
+        print_macrotime(output, event.abstime);
         output << " Data lost\n";
     }
 
     void handle_event(tcspc::time_correlated_detection_event<> const &event) {
-        print_macrotime(output, event.macrotime);
+        print_macrotime(output, event.abstime);
         output << " Photon: " << std::setw(5) << event.difftime << "; "
                << int(event.channel) << '\n';
     }
 
     void handle_event(tcspc::marker_event<> const &event) {
-        print_macrotime(output, event.macrotime);
+        print_macrotime(output, event.abstime);
         output << ' ' << "Marker: " << int(event.channel) << '\n';
     }
 

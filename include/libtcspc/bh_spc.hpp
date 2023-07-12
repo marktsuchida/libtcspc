@@ -398,8 +398,8 @@ template <typename DataTraits, typename BHSPCEvent, typename Downstream>
 class decode_bh_spc {
     using abstime_type = typename DataTraits::abstime_type;
 
-    abstime_type macrotime_base = 0; // Time of last overflow
-    abstime_type last_macrotime = 0;
+    abstime_type abstime_base = 0; // Time of last overflow
+    abstime_type last_abstime = 0;
 
     Downstream downstream;
 
@@ -411,37 +411,37 @@ class decode_bh_spc {
 
     void handle_event(BHSPCEvent const &event) noexcept {
         if (event.is_multiple_macrotime_overflow()) {
-            macrotime_base +=
+            abstime_base +=
                 abstime_type(BHSPCEvent::macrotime_overflow_period) *
                 event.multiple_macrotime_overflow_count().value();
 
-            time_reached_event<DataTraits> e{macrotime_base};
+            time_reached_event<DataTraits> e{abstime_base};
             downstream.handle_event(e);
             return;
         }
 
         if (event.macrotime_overflow_flag()) {
-            macrotime_base += BHSPCEvent::macrotime_overflow_period;
+            abstime_base += BHSPCEvent::macrotime_overflow_period;
         }
 
-        abstime_type macrotime = macrotime_base + event.macrotime().value();
+        abstime_type abstime = abstime_base + event.macrotime().value();
 
-        // Validate input: ensure macrotime increases monotonically (a common
+        // Validate input: ensure abstime increases monotonically (a common
         // assumption made by downstream processors)
-        if (macrotime <= last_macrotime) {
+        if (abstime <= last_abstime) {
             downstream.handle_end(std::make_exception_ptr(
-                std::runtime_error("Non-monotonic macrotime encountered")));
+                std::runtime_error("Non-monotonic abstime encountered")));
             return;
         }
-        last_macrotime = macrotime;
+        last_abstime = abstime;
 
         if (event.gap_flag()) {
-            data_lost_event<DataTraits> e{macrotime};
+            data_lost_event<DataTraits> e{abstime};
             downstream.handle_event(e);
         }
 
         if (event.marker_flag()) {
-            marker_event<DataTraits> e{{{macrotime}, 0}};
+            marker_event<DataTraits> e{{{abstime}, 0}};
             auto bits = u32np(event.marker_bits());
             while (bits != 0_u32np) {
                 e.channel = count_trailing_zeros_32(bits);
@@ -452,11 +452,11 @@ class decode_bh_spc {
         }
 
         if (event.invalid_flag()) {
-            time_reached_event<DataTraits> e{macrotime};
+            time_reached_event<DataTraits> e{abstime};
             downstream.handle_event(e);
         } else {
             time_correlated_detection_event<DataTraits> e{
-                {{macrotime}, event.routing_signals().value()},
+                {{abstime}, event.routing_signals().value()},
                 event.adc_value().value()};
             downstream.handle_event(e);
         }

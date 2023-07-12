@@ -32,7 +32,7 @@ class match {
         if (PassMatched || not matched)
             downstream.handle_event(event);
         if (matched)
-            downstream.handle_event(OutEvent{event.macrotime});
+            downstream.handle_event(OutEvent{event.abstime});
     }
 
     template <typename OtherEvent>
@@ -72,9 +72,9 @@ auto match_replace(Matcher &&matcher, Downstream &&downstream) {
  * All events are passed through.
  *
  * Any event of type \c Event is tested by the given \e matcher. If it is a
- * matched, an \c OutEvent is generated with the same macrotime.
+ * matched, an \c OutEvent is generated with the same abstime.
  *
- * Both \c Event and \c OutEvent must have a \c macrotime field.
+ * Both \c Event and \c OutEvent must have a \c abstime field.
  *
  * For matchers provided by libtcspc, see \ref matchers.
  *

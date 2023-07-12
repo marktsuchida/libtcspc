@@ -28,7 +28,7 @@ template <typename DataTraits, typename Downstream> class delay {
     template <typename TimeTaggedEvent>
     void handle_event(TimeTaggedEvent const &event) noexcept {
         TimeTaggedEvent copy(event);
-        copy.macrotime += delta;
+        copy.abstime += delta;
         downstream.handle_event(copy);
     }
 
@@ -40,19 +40,19 @@ template <typename DataTraits, typename Downstream> class delay {
 } // namespace internal
 
 /**
- * \brief Create a processor that applies a macrotime offset to all events.
+ * \brief Create a processor that applies a abstime offset to all events.
  *
  * \ingroup processors-timing
  *
- * All events processed must have a \c macrotime field, and no other fields
- * derived from the macrotime (because only the \c macrotime field will be
+ * All events processed must have a \c abstime field, and no other fields
+ * derived from the abstime (because only the \c abstime field will be
  * adjusted).
  *
  * \tparam DataTraits traits type specifying \c abstime_type
  *
  * \tparam Downstream downstream processor type
  *
- * \param delta macrotime offset to apply (can be negative)
+ * \param delta abstime offset to apply (can be negative)
  *
  * \param downstream downstream processor
  *

@@ -45,7 +45,7 @@ class histogram_elementwise {
         mhist;
     histogram_stats stats;
     null_journal<bin_index_type> journal; // Journaling not required
-    macrotime_range<typename DataTraits::abstime_type> cycle_time_range;
+    abstime_range<typename DataTraits::abstime_type> cycle_time_range;
     Downstream downstream;
 
     void finish(std::exception_ptr const &error) noexcept {
@@ -221,8 +221,8 @@ class histogram_elementwise_accumulate {
         mhista;
     histogram_stats stats;
     journal_type journal;
-    macrotime_range<typename DataTraits::abstime_type> cycle_time_range;
-    macrotime_range<typename DataTraits::abstime_type> total_time_range;
+    abstime_range<typename DataTraits::abstime_type> cycle_time_range;
+    abstime_range<typename DataTraits::abstime_type> total_time_range;
     Downstream downstream;
 
     void emit_concluding(bool end_of_stream) noexcept {

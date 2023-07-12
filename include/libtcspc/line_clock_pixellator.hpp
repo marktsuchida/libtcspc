@@ -22,43 +22,43 @@ namespace tcspc {
 
 // Assign pixels to photons using line clock only
 template <typename D> class line_clock_pixellator {
-    using macrotime_type = typename default_data_traits::abstime_type;
+    using abstime_type = typename default_data_traits::abstime_type;
 
     std::uint32_t const pixels_per_line;
     std::uint32_t const lines_per_frame;
     std::uint32_t const max_frames;
 
-    std::int32_t const line_delay; // in macrotime units
-    std::uint32_t const line_time; // in macrotime units
+    std::int32_t const line_delay; // in abstime units
+    std::uint32_t const line_time; // in abstime units
     std::int32_t const line_marker_channel;
 
-    macrotime_type latest_timestamp; // Latest observed macrotime
+    abstime_type latest_timestamp; // Latest observed abstime
 
     // Cumulative line numbers (no reset on new frame)
     std::uint64_t next_line;    // Incremented on line start_time
     std::uint64_t current_line; // Incremented on line finish
     // "Line start_time" is reception of line marker, at which point the line
-    // start_time and finish macrotimes are determined. "Line finish" is when
+    // start_time and finish abstimes are determined. "Line finish" is when
     // we determine that all photons for the line have been emitted downstream.
     // If next_line > current_line, we are in current_line.
     // If next_line == current_line, we are between (next_line - 1) and
     // next_line.
 
     // Start time of current line, or -1 if no line started.
-    macrotime_type line_start_time;
+    abstime_type line_start_time;
 
     // Buffer received photons until we can assign to pixel
     std::deque<time_correlated_detection_event<>> pending_photons;
 
     // Buffer line marks until we are ready to process
-    std::deque<macrotime_type> pending_lines; // marker macrotimes
+    std::deque<abstime_type> pending_lines; // marker abstimes
 
     D downstream;
     bool stream_ended = false;
 
   private:
-    void update_time_range(macrotime_type macrotime) noexcept {
-        latest_timestamp = macrotime;
+    void update_time_range(abstime_type abstime) noexcept {
+        latest_timestamp = abstime;
     }
 
     void enqueue_photon(time_correlated_detection_event<> const &event) {
@@ -68,19 +68,19 @@ template <typename D> class line_clock_pixellator {
         pending_photons.emplace_back(event);
     }
 
-    void enqueue_line_marker(macrotime_type macrotime) {
+    void enqueue_line_marker(abstime_type abstime) {
         if (stream_ended) {
             return; // Avoid buffering post-error
         }
-        pending_lines.emplace_back(macrotime);
+        pending_lines.emplace_back(abstime);
     }
 
-    macrotime_type check_line_start(macrotime_type line_marker_time) {
-        macrotime_type start_time;
+    abstime_type check_line_start(abstime_type line_marker_time) {
+        abstime_type start_time;
         if (line_delay >= 0) {
             start_time = line_marker_time + line_delay;
         } else {
-            macrotime_type minus_delay = -line_delay;
+            abstime_type minus_delay = -line_delay;
             if (line_marker_time < minus_delay) {
                 throw std::runtime_error("Pixel at negative time");
             }
@@ -94,7 +94,7 @@ template <typename D> class line_clock_pixellator {
         return start_time;
     }
 
-    void start_line(macrotime_type line_marker_time) {
+    void start_line(abstime_type line_marker_time) {
         line_start_time = check_line_start(line_marker_time);
         ++next_line;
 
@@ -140,7 +140,7 @@ template <typename D> class line_clock_pixellator {
             static_cast<std::uint32_t>(current_line / lines_per_frame);
         new_event.y =
             static_cast<std::uint32_t>(current_line % lines_per_frame);
-        auto time_in_line = event.macrotime - line_start_time;
+        auto time_in_line = event.abstime - line_start_time;
         new_event.x = static_cast<std::uint32_t>(pixels_per_line *
                                                  time_in_line / line_time);
         new_event.channel = event.channel;
@@ -160,7 +160,7 @@ template <typename D> class line_clock_pixellator {
                 // Nothing to do until a new line can be started
                 return false;
             }
-            macrotime_type line_marker_time = pending_lines.front();
+            abstime_type line_marker_time = pending_lines.front();
             pending_lines.pop_front();
 
             start_line(line_marker_time);
@@ -170,7 +170,7 @@ template <typename D> class line_clock_pixellator {
         // Discard all photons before current line
         while (!pending_photons.empty()) {
             auto const &photon = pending_photons.front();
-            if (photon.macrotime >= line_start_time) {
+            if (photon.abstime >= line_start_time) {
                 break;
             }
             pending_photons.pop_front();
@@ -180,7 +180,7 @@ template <typename D> class line_clock_pixellator {
         auto line_end_time = line_start_time + line_time;
         while (!pending_photons.empty()) {
             auto const &photon = pending_photons.front();
-            if (photon.macrotime >= line_end_time) {
+            if (photon.abstime >= line_end_time) {
                 break;
             }
             emit_photon(photon);
@@ -240,7 +240,7 @@ template <typename D> class line_clock_pixellator {
 
     void handle_event(time_reached_event<> const &event) noexcept {
         auto prev_timestamp = latest_timestamp;
-        update_time_range(event.macrotime);
+        update_time_range(event.abstime);
         // We could call process_photons_and_lines() to emit all lines that are
         // complete, but deferring can significantly improve performance when a
         // timestamp is sent for every macrotime overflow.
@@ -255,7 +255,7 @@ template <typename D> class line_clock_pixellator {
     }
 
     void handle_event(data_lost_event<> const &event) noexcept {
-        update_time_range(event.macrotime);
+        update_time_range(event.abstime);
         process_photons_and_lines();
         if (!stream_ended) {
             downstream.handle_end(std::make_exception_ptr(std::runtime_error(
@@ -266,7 +266,7 @@ template <typename D> class line_clock_pixellator {
 
     void
     handle_event(time_correlated_detection_event<> const &event) noexcept {
-        update_time_range(event.macrotime);
+        update_time_range(event.abstime);
         try {
             enqueue_photon(event);
         } catch (std::exception const &) {
@@ -281,10 +281,10 @@ template <typename D> class line_clock_pixellator {
     }
 
     void handle_event(marker_event<> const &event) noexcept {
-        update_time_range(event.macrotime);
+        update_time_range(event.abstime);
         if (event.channel == line_marker_channel) {
             try {
-                enqueue_line_marker(event.macrotime);
+                enqueue_line_marker(event.abstime);
             } catch (std::exception const &) {
                 downstream.handle_end(std::current_exception());
                 stream_ended = true;

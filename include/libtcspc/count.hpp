@@ -37,7 +37,7 @@ class count_up_to {
     void handle_event(TickEvent const &event) noexcept {
         if constexpr (!FireAfterTick) {
             if (count == thresh)
-                downstream.handle_event(FireEvent{event.macrotime});
+                downstream.handle_event(FireEvent{event.abstime});
         }
 
         downstream.handle_event(event);
@@ -45,7 +45,7 @@ class count_up_to {
 
         if constexpr (FireAfterTick) {
             if (count == thresh)
-                downstream.handle_event(FireEvent{event.macrotime});
+                downstream.handle_event(FireEvent{event.abstime});
         }
 
         if (count == limit)
@@ -77,13 +77,13 @@ class count_up_to {
  *
  * All events (including \c TickEvent and \c ResetEvent) are passed through.
  *
- * \c TickEvent and \c FireEvent must have a macrotime field. \c FireEvent must
- * be brace-initializable with macrotime (as in \c FireEvent{123} ).
+ * \c TickEvent and \c FireEvent must have a abstime field. \c FireEvent must
+ * be brace-initializable with abstime (as in \c FireEvent{123} ).
  *
  * The count is incremented when a \c TickEvent is passed through. Just before
  * or after the \c TickEvent is emitted (depending on whether \c FireAfterTick
  * is false or true), the count is compared to the \e threshold and if equal,
- * \c FireEvent is emitted. The macrotime of the \c FireEvent is set equal to
+ * \c FireEvent is emitted. The abstime of the \c FireEvent is set equal to
  * the \c TickEvent that triggered it.
  *
  * After incrementing the count and processing the threshold, if the count

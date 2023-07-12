@@ -67,13 +67,13 @@ struct histogram_stats {
 };
 
 /**
- * \brief A range of macrotime.
+ * \brief A range of abstime.
  *
  * \ingroup misc
  *
  * \tparam Abstime integer type for absolute time
  */
-template <typename Abstime> struct macrotime_range {
+template <typename Abstime> struct abstime_range {
     /** \brief Value indicating unset start time. */
     static constexpr auto unstarted = std::numeric_limits<Abstime>::max();
 
@@ -105,24 +105,24 @@ template <typename Abstime> struct macrotime_range {
     }
 
     /** \brief Extend the time range to include the given time range. */
-    constexpr void extend(macrotime_range const &other) noexcept {
+    constexpr void extend(abstime_range const &other) noexcept {
         extend(other.start, other.stop);
     }
 
     /** \brief Equality comparison operator. */
-    friend constexpr auto operator==(macrotime_range lhs,
-                                     macrotime_range rhs) noexcept -> bool {
+    friend constexpr auto operator==(abstime_range lhs,
+                                     abstime_range rhs) noexcept -> bool {
         return lhs.start == rhs.start && lhs.stop == rhs.stop;
     }
 
     /** \brief Inequality comparison operator. */
-    friend constexpr auto operator!=(macrotime_range lhs,
-                                     macrotime_range rhs) noexcept -> bool {
+    friend constexpr auto operator!=(abstime_range lhs,
+                                     abstime_range rhs) noexcept -> bool {
         return not(lhs == rhs);
     }
 
     /** \brief Stream insertion operator. */
-    friend auto operator<<(std::ostream &s, macrotime_range r)
+    friend auto operator<<(std::ostream &s, abstime_range r)
         -> std::ostream & {
         return s << '{' << r.start << ", " << r.stop << '}';
     }
@@ -161,9 +161,9 @@ struct datapoint_event {
     using data_type = DataPoint;
 
     /**
-     * \brief The macrotime of the datapoint.
+     * \brief The abstime of the datapoint.
      */
-    typename DataTraits::abstime_type macrotime;
+    typename DataTraits::abstime_type abstime;
 
     /**
      * \brief The datapoint value.
@@ -174,7 +174,7 @@ struct datapoint_event {
     friend constexpr auto operator==(datapoint_event const &lhs,
                                      datapoint_event const &rhs) noexcept
         -> bool {
-        return lhs.macrotime == rhs.macrotime && lhs.value == rhs.value;
+        return lhs.abstime == rhs.abstime && lhs.value == rhs.value;
     }
 
     /** \brief Inequality comparison operator. */
@@ -187,7 +187,7 @@ struct datapoint_event {
     /** \brief Stream insertion operator. */
     friend auto operator<<(std::ostream &s, datapoint_event const &e)
         -> std::ostream & {
-        return s << "datapoint(" << e.macrotime << ", " << e.value << ')';
+        return s << "datapoint(" << e.abstime << ", " << e.value << ')';
     }
 };
 
@@ -203,9 +203,9 @@ struct datapoint_event {
 template <typename BinIndex, typename DataTraits = default_data_traits>
 struct bin_increment_event {
     /**
-     * \brief The macrotime of the binned datapoint.
+     * \brief The abstime of the binned datapoint.
      */
-    typename DataTraits::abstime_type macrotime;
+    typename DataTraits::abstime_type abstime;
 
     /**
      * \brief The histogram bin index to which the data value was mapped.
@@ -216,8 +216,7 @@ struct bin_increment_event {
     friend constexpr auto operator==(bin_increment_event const &lhs,
                                      bin_increment_event const &rhs) noexcept
         -> bool {
-        return lhs.macrotime == rhs.macrotime &&
-               lhs.bin_index == rhs.bin_index;
+        return lhs.abstime == rhs.abstime && lhs.bin_index == rhs.bin_index;
     }
 
     /** \brief Inequality comparison operator. */
@@ -230,7 +229,7 @@ struct bin_increment_event {
     /** \brief Stream insertion operator. */
     friend auto operator<<(std::ostream &s, bin_increment_event const &e)
         -> std::ostream & {
-        return s << "bin_increment(" << e.macrotime << ", " << e.bin_index
+        return s << "bin_increment(" << e.abstime << ", " << e.bin_index
                  << ')';
     }
 };
@@ -250,9 +249,9 @@ struct bin_increment_event {
 template <typename BinIndex, typename DataTraits = default_data_traits>
 struct bin_increment_batch_event {
     /**
-     * \brief The macrotime range of the batch.
+     * \brief The abstime range of the batch.
      */
-    macrotime_range<typename DataTraits::abstime_type> time_range;
+    abstime_range<typename DataTraits::abstime_type> time_range;
 
     /**
      * \brief The bin indices for the datapoints in the batch.
@@ -298,9 +297,9 @@ struct bin_increment_batch_event {
 template <typename Bin, typename DataTraits = default_data_traits>
 struct histogram_event {
     /**
-     * \brief The macrotime range of the histogrammed data.
+     * \brief The abstime range of the histogrammed data.
      */
-    macrotime_range<typename DataTraits::abstime_type> time_range;
+    abstime_range<typename DataTraits::abstime_type> time_range;
 
     /**
      * \brief The histogram.
@@ -352,9 +351,9 @@ struct histogram_event {
 template <typename Bin, typename DataTraits = default_data_traits>
 struct concluding_histogram_event {
     /**
-     * \brief The macrotime range of the histogrammed data.
+     * \brief The abstime range of the histogrammed data.
      */
-    macrotime_range<typename DataTraits::abstime_type> time_range;
+    abstime_range<typename DataTraits::abstime_type> time_range;
 
     /**
      * \brief The accumulated histogram.
@@ -426,13 +425,13 @@ struct concluding_histogram_event {
 template <typename Bin, typename DataTraits = default_data_traits>
 struct element_histogram_event {
     /**
-     * \brief The macrotime range of the histogrammed data.
+     * \brief The abstime range of the histogrammed data.
      *
      * This is the time range of the bin increment batch that produced this
      * event. Note that it is the time range only of the latest batch even if
      * the histogram represents accumulated data.
      */
-    macrotime_range<typename DataTraits::abstime_type> time_range;
+    abstime_range<typename DataTraits::abstime_type> time_range;
 
     /**
      * \brief The index of the element (histogram) within the array.
@@ -497,13 +496,13 @@ struct element_histogram_event {
 template <typename Bin, typename DataTraits = default_data_traits>
 struct histogram_array_event {
     /**
-     * \brief The macrotime range of the histogrammed data.
+     * \brief The abstime range of the histogrammed data.
      *
      * This is the time range from the start time of the first batch of the
      * first cycle to the stop time of the last batch of the last cycle of the
      * accumulation (or single cycle).
      */
-    macrotime_range<typename DataTraits::abstime_type> time_range;
+    abstime_range<typename DataTraits::abstime_type> time_range;
 
     /**
      * \brief View of the histogram array.
@@ -561,13 +560,13 @@ struct histogram_array_event {
 template <typename Bin, typename DataTraits = default_data_traits>
 struct concluding_histogram_array_event {
     /**
-     * \brief The macrotime range of the accumulation.
+     * \brief The abstime range of the accumulation.
      *
      * This is the time range from the start time of the first batch of the
      * first cycle to the stop time of the last batch of the last cycle of the
      * accumulation.
      */
-    macrotime_range<typename DataTraits::abstime_type> time_range;
+    abstime_range<typename DataTraits::abstime_type> time_range;
 
     /**
      * \brief View of the histogram array.

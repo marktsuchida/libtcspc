@@ -34,7 +34,7 @@ template <typename DataMapper, typename Downstream> class map_to_datapoints {
         : mapper(std::move(mapper)), downstream(std::move(downstream)) {}
 
     void handle_event(event_type const &event) noexcept {
-        datapoint_event<data_type> e{event.macrotime,
+        datapoint_event<data_type> e{event.abstime,
                                      std::invoke(mapper, event)};
         downstream.handle_event(e);
     }
@@ -132,8 +132,7 @@ template <typename BinMapper, typename Downstream> class map_to_bins {
     void handle_event(datapoint_event<data_type> const &event) noexcept {
         auto bin = std::invoke(bin_mapper, event.value);
         if (bin) {
-            bin_increment_event<bin_index_type> e{event.macrotime,
-                                                  bin.value()};
+            bin_increment_event<bin_index_type> e{event.abstime, bin.value()};
             downstream.handle_event(e);
         }
     }
@@ -357,12 +356,12 @@ class batch_bin_increments {
     void handle_event(StartEvent const &event) noexcept {
         batch.bin_indices.clear();
         in_batch = true;
-        batch.time_range.start = event.macrotime;
+        batch.time_range.start = event.abstime;
     }
 
     void handle_event(StopEvent const &event) noexcept {
         if (in_batch) {
-            batch.time_range.stop = event.macrotime;
+            batch.time_range.stop = event.abstime;
             downstream.handle_event(std::as_const(batch));
             in_batch = false;
         }

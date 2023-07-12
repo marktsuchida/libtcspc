@@ -334,13 +334,13 @@ template <int N> struct empty_test_event {
 template <int N, typename DataTraits = default_data_traits>
 struct timestamped_test_event {
     /** \brief Timestamp. */
-    typename DataTraits::abstime_type macrotime;
+    typename DataTraits::abstime_type abstime;
 
     /** \brief Equality comparison operator. */
     friend auto operator==(timestamped_test_event<N> const &lhs,
                            timestamped_test_event<N> const &rhs) noexcept
         -> bool {
-        return lhs.macrotime == rhs.macrotime;
+        return lhs.abstime == rhs.abstime;
     }
 
     /** \brief Inequality comparison operator. */
@@ -354,7 +354,7 @@ struct timestamped_test_event {
     friend auto operator<<(std::ostream &strm,
                            timestamped_test_event<N> const &e)
         -> std::ostream & {
-        return strm << "timestamped_test_event<" << N << ">{" << e.macrotime
+        return strm << "timestamped_test_event<" << N << ">{" << e.abstime
                     << "}";
     }
 };

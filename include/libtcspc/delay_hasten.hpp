@@ -42,19 +42,18 @@ template <typename EsDelayed, typename D> class delay_processor {
         if constexpr (contains_event_v<EsDelayed, E>) {
             try {
                 E delayed(event);
-                delayed.macrotime += delta;
+                delayed.abstime += delta;
                 pending.push(delayed);
             } catch (std::exception const &) {
                 downstream.handle_end(std::current_exception());
                 stream_ended = true;
             }
         } else {
-            while (!pending.empty() && std::visit(
-                                           [&](auto const &e) {
-                                               return e.macrotime <=
-                                                      event.macrotime;
-                                           },
-                                           pending.front())) {
+            while (
+                !pending.empty() &&
+                std::visit(
+                    [&](auto const &e) { return e.abstime <= event.abstime; },
+                    pending.front())) {
                 std::visit([&](auto const &e) { downstream.handle_event(e); },
                            pending.front());
                 pending.pop();
@@ -114,12 +113,12 @@ template <typename EsUnchanged, typename D> class hasten_processor {
             }
         } else {
             E hastened(event);
-            hastened.macrotime -= delta;
+            hastened.abstime -= delta;
 
             while (!pending.empty() && std::visit(
                                            [&](auto const &e) {
-                                               return e.macrotime <
-                                                      hastened.macrotime;
+                                               return e.abstime <
+                                                      hastened.abstime;
                                            },
                                            pending.front())) {
                 std::visit([&](auto const &e) { downstream.handle_event(e); },

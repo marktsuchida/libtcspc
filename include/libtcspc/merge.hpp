@@ -24,7 +24,7 @@ namespace internal {
 // two input processors via shared_ptr.
 template <typename DataTraits, typename EventSet, typename Downstream>
 class merge_impl {
-    // When events have equal macrotime, those originating from input 0 are
+    // When events have equal abstime, those originating from input 0 are
     // emitted before those originating from input1. Within the same input, the
     // order is preserved.
     // As long as we follow that rule and also ensure never to buffer events
@@ -52,7 +52,7 @@ class merge_impl {
     template <typename Pred> void emit_pending(Pred predicate) noexcept {
         while (!pending.empty() && std::visit(
                                        [&](auto const &e) {
-                                           bool p = predicate(e.macrotime);
+                                           bool p = predicate(e.abstime);
                                            if (p)
                                                downstream.handle_event(e);
                                            return p;
@@ -81,9 +81,9 @@ class merge_impl {
 
         if (is_pending_on_other<InputChannel>()) {
             // Emit any older events pending on the other input.
-            typename DataTraits::abstime_type cutoff = event.macrotime;
+            typename DataTraits::abstime_type cutoff = event.abstime;
             // Emit events from input 0 before events from input 1 when they
-            // have equal macrotime.
+            // have equal abstime.
             if constexpr (InputChannel == 0)
                 --cutoff;
             emit_pending([=](auto t) { return t <= cutoff; });
@@ -104,12 +104,12 @@ class merge_impl {
         // Emit any events on the same input if they are older than the maximum
         // allowed time shift between the inputs.
         // Guard against integer underflow.
-        constexpr auto macrotime_min =
+        constexpr auto abstime_min =
             std::numeric_limits<typename DataTraits::abstime_type>::min();
-        if (event.macrotime >= 0 ||
-            max_time_shift > event.macrotime - macrotime_min) {
+        if (event.abstime >= 0 ||
+            max_time_shift > event.abstime - abstime_min) {
             typename DataTraits::abstime_type old_enough =
-                event.macrotime - max_time_shift;
+                event.abstime - max_time_shift;
             emit_pending([=](auto t) { return t < old_enough; });
         }
 
@@ -176,8 +176,8 @@ class merge_input {
  *
  * \ingroup processors-basic
  *
- * The merged stream will be produced in increasing macrotime order, provided
- * that the two input streams have events in increasing macrotime order and the
+ * The merged stream will be produced in increasing abstime order, provided
+ * that the two input streams have events in increasing abstime order and the
  * time shift between them does not exceed max_time_shift.
  *
  * \tparam DataTraits traits type specifying \c abstime_type

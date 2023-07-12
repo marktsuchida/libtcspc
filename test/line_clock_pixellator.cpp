@@ -89,21 +89,21 @@ TEST_CASE("Frames are produced according to line markers",
 
         marker_event<> line_marker;
         line_marker.channel = 1;
-        line_marker.macrotime = 100;
+        line_marker.abstime = 100;
         lcp.handle_event(line_marker);
         lcp.flush();
 
         REQUIRE(output.begin_frame_count == 1);
         output.reset();
 
-        line_marker.macrotime = 200;
+        line_marker.abstime = 200;
         lcp.handle_event(line_marker);
         lcp.flush();
         REQUIRE(output.begin_frame_count == 0);
         REQUIRE(output.end_frame_count == 0);
         output.reset();
 
-        line_marker.macrotime = 300;
+        line_marker.abstime = 300;
         lcp.handle_event(line_marker);
         lcp.flush();
         REQUIRE(output.begin_frame_count == 1);
@@ -112,7 +112,7 @@ TEST_CASE("Frames are produced according to line markers",
 
         SECTION("Last frame is incomplete if last line not started") {
             time_reached_event<> timestamp;
-            timestamp.macrotime = 1000000;
+            timestamp.abstime = 1000000;
             lcp.handle_event(timestamp);
             lcp.flush();
             REQUIRE(output.begin_frame_count == 0);
@@ -121,7 +121,7 @@ TEST_CASE("Frames are produced according to line markers",
         }
 
         SECTION("Last frame completion detected by last seen timestamp") {
-            line_marker.macrotime = 400;
+            line_marker.abstime = 400;
             lcp.handle_event(line_marker);
             lcp.flush();
             REQUIRE(output.begin_frame_count == 0);
@@ -129,14 +129,14 @@ TEST_CASE("Frames are produced according to line markers",
             output.reset();
 
             time_reached_event<> timestamp;
-            timestamp.macrotime = 419;
+            timestamp.abstime = 419;
             lcp.handle_event(timestamp);
             lcp.flush();
             REQUIRE(output.begin_frame_count == 0);
             REQUIRE(output.end_frame_count == 0);
             output.reset();
 
-            timestamp.macrotime = 420;
+            timestamp.abstime = 420;
             lcp.handle_event(timestamp);
             lcp.flush();
             REQUIRE(output.begin_frame_count == 0);
@@ -153,7 +153,7 @@ TEST_CASE("Frames are produced according to line markers",
 
         marker_event<> line_marker;
         line_marker.channel = 1;
-        line_marker.macrotime = 100;
+        line_marker.abstime = 100;
         lcp.handle_event(line_marker);
         lcp.flush();
 
@@ -161,7 +161,7 @@ TEST_CASE("Frames are produced according to line markers",
         memset(&photon, 0, sizeof(photon));
 
         for (auto mt : {104, 105, 114, 115, 124, 125}) {
-            photon.macrotime = mt;
+            photon.abstime = mt;
             lcp.handle_event(photon);
         }
 

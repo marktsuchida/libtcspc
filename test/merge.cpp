@@ -149,7 +149,7 @@ TEST_CASE("Merge with error on one input", "[merge]") {
         }
     }
 
-    SECTION("Events in macrotime order") {
+    SECTION("Events in abstime order") {
         in_x.feed(e0{1});
         in_y.feed(e1{2});
         REQUIRE(out.check(e0{1}));

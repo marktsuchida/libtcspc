@@ -23,8 +23,8 @@ namespace tcspc {
  * Event types that are associated with absolute time are derived from this
  * type. However, this is not a requirement for polymorphism; it serves
  * primarily to make aggregate construction (which tends to be a list of
- * numbers) very slightly more readable: <tt>event{{macrotime}, other
- * fields}</tt> rather than <tt>event{macrotime, other fields}</tt>.
+ * numbers) very slightly more readable: <tt>event{{abstime}, other
+ * fields}</tt> rather than <tt>event{abstime, other fields}</tt>.
  *
  * \tparam DataTraits traits type specifying \c abstime_type
  */
@@ -33,18 +33,18 @@ struct base_time_tagged_event {
     static_assert(std::is_integral_v<typename DataTraits::abstime_type>);
 
     /**
-     * \brief The absolute macrotime of this event.
+     * \brief The absolute time (a.k.a. macrotime) of this event.
      *
-     * The macrotime is the monotonically increasing (strictly speaking,
+     * The abstime is the monotonically increasing (strictly speaking,
      * non-decreasing) timestamp assigned to events by time tagging hardware,
-     * after processing to eliminate wraparounds.
+     * after processing to eliminate rollovers.
      *
-     * The physical units of the macrotime are dependent on the input data and
-     * it is the user's responsibility to interpret correctly. libtcspc is
-     * designed to use integer values to preserve exact discretized values and
-     * does not handle physical units.
+     * The physical units of the abstime are dependent on the input data and it
+     * is the user's responsibility to interpret the values correctly. libtcspc
+     * is designed to use integer values to preserve exact discretized values
+     * and does not handle physical units.
      */
-    typename DataTraits::abstime_type macrotime;
+    typename DataTraits::abstime_type abstime;
 };
 
 /**
@@ -56,8 +56,8 @@ struct base_time_tagged_event {
  * channel number are derived from this type. However, this is not a
  * requirement for polymorphism; it serves primarily to make aggregate
  * construction (which tends to be a list of numbers) very slightly more
- * readable: <tt>event{{{macrotime}, channel}, other fields}</tt> rather than
- * <tt>event{macrotime, channel, other fields}</tt>.
+ * readable: <tt>event{{{abstime}, channel}, other fields}</tt> rather than
+ * <tt>event{abstime, channel, other fields}</tt>.
  *
  * Different devices have different ranges for the channel; some use negative
  * numbers.
@@ -76,24 +76,22 @@ struct base_channeled_time_tagged_event : base_time_tagged_event<DataTraits> {
 };
 
 /**
- * \brief Event indicating latest macrotime reached.
+ * \brief Event indicating latest abstime reached.
  *
  * \ingroup events-timing
  *
- * Data sources emit this event to indicated that a macrotime stamp has been
+ * Data sources emit this event to indicated that a abstime stamp has been
  * seen, without any associated event.
  *
  * This conveys useful information because timestamps are monotonic: if a
- * timestamp is observed, it guarantees that all photons (and other events)
- * prior to that time have already been observed.
+ * timestamp is observed, it guarantees that all events prior to that time have
+ * already been observed. This may be important in determining that data
+ * acquisition or processing can be concluded.
  *
  * Data sources reading raw device event streams should typically emit this
- * event when a macrotime overflow occurs. Data sources that do not encode
- * such overflows should emit this event once before finishing the stream, if
- * the acquisition duration is known, to indicate the end time point.
- *
- * Note that this event is generally only emitted when the timestamp is not
- * associated with an actual event (photon, marker, etc.).
+ * event when a device event was received that would not result in any other
+ * event being emitted. They should also emit a single event of this type at
+ * the end of the stream if the ending abstime of the stream is known.
  *
  * \tparam DataTraits traits type specifying \c abstime_type
  */
@@ -102,7 +100,7 @@ struct time_reached_event : base_time_tagged_event<DataTraits> {
     /** \brief Equality comparison operator. */
     friend auto operator==(time_reached_event const &lhs,
                            time_reached_event const &rhs) noexcept -> bool {
-        return lhs.macrotime == rhs.macrotime;
+        return lhs.abstime == rhs.abstime;
     }
 
     /** \brief Inequality comparison operator. */
@@ -114,7 +112,7 @@ struct time_reached_event : base_time_tagged_event<DataTraits> {
     /** \brief Stream insertion operator. */
     friend auto operator<<(std::ostream &s, time_reached_event const &e)
         -> std::ostream & {
-        return s << "time_reached(" << e.macrotime << ')';
+        return s << "time_reached(" << e.abstime << ')';
     }
 };
 
@@ -123,16 +121,16 @@ struct time_reached_event : base_time_tagged_event<DataTraits> {
  *
  * \ingroup events-timing
  *
- * Event producers should continue to produce subsequent photon events, if any;
- * it is the event processor's responsibility to cancel processing, if that is
- * what is desired.
+ * Event producers should generally continue to produce subsequent detection
+ * events, if any; it is the event processor's responsibility to cancel
+ * processing, if that is what is desired.
  *
  * Different vendors use different terminology: the overflow may occur in the
  * device FIFO, DMA buffer, or any other stage involved in streaming data to
  * the computer.
  *
- * The macrotime may have skipped some elapsed time when this event occurs;
- * both counts and markers may have been lost.
+ * The abstime may have skipped some elapsed time when this event occurs; both
+ * counts and markers may have been lost.
  *
  * \tparam DataTraits traits type specifying \c abstime_type
  */
@@ -141,7 +139,7 @@ struct data_lost_event : base_time_tagged_event<DataTraits> {
     /** \brief Equality comparison operator. */
     friend auto operator==(data_lost_event const &lhs,
                            data_lost_event const &rhs) noexcept -> bool {
-        return lhs.macrotime == rhs.macrotime;
+        return lhs.abstime == rhs.abstime;
     }
 
     /** \brief Inequality comparison operator. */
@@ -153,7 +151,7 @@ struct data_lost_event : base_time_tagged_event<DataTraits> {
     /** \brief Stream insertion operator. */
     friend auto operator<<(std::ostream &s, data_lost_event const &e)
         -> std::ostream & {
-        return s << "data_lost(" << e.macrotime << ')';
+        return s << "data_lost(" << e.abstime << ')';
     }
 };
 
@@ -164,7 +162,7 @@ struct data_lost_event : base_time_tagged_event<DataTraits> {
  *
  * The interval must be ended with a subsequent end_lost_interval_event.
  *
- * Unlike with data_lost_event, the macrotime must remain consistent before,
+ * Unlike with data_lost_event, the abstime must remain consistent before,
  * during, and after the lost interval.
  *
  * If detected events during the interval could be counted (but not
@@ -252,7 +250,7 @@ struct untagged_counts_event : base_channeled_time_tagged_event<DataTraits> {
     /** \brief Equality comparison operator. */
     friend auto operator==(untagged_counts_event const &lhs,
                            untagged_counts_event const &rhs) noexcept -> bool {
-        return lhs.macrotime == rhs.macrotime && lhs.channel == rhs.channel &&
+        return lhs.abstime == rhs.abstime && lhs.channel == rhs.channel &&
                lhs.count == rhs.count;
     }
 
@@ -265,7 +263,7 @@ struct untagged_counts_event : base_channeled_time_tagged_event<DataTraits> {
     /** \brief Stream insertion operator. */
     friend auto operator<<(std::ostream &s, untagged_counts_event const &e)
         -> std::ostream & {
-        return s << "untagged_counts(" << e.macrotime << ", " << e.channel
+        return s << "untagged_counts(" << e.abstime << ", " << e.channel
                  << ", " << e.count << ')';
     }
 };
@@ -283,7 +281,7 @@ struct detection_event : base_channeled_time_tagged_event<DataTraits> {
     /** \brief Equality comparison operator. */
     friend auto operator==(detection_event const &lhs,
                            detection_event const &rhs) noexcept -> bool {
-        return lhs.macrotime == rhs.macrotime && lhs.channel == rhs.channel;
+        return lhs.abstime == rhs.abstime && lhs.channel == rhs.channel;
     }
 
     /** \brief Inequality comparison operator. */
@@ -295,7 +293,7 @@ struct detection_event : base_channeled_time_tagged_event<DataTraits> {
     /** \brief Stream insertion operator. */
     friend auto operator<<(std::ostream &s, detection_event const &e)
         -> std::ostream & {
-        return s << "detection(" << e.macrotime << ", " << e.channel << ')';
+        return s << "detection(" << e.abstime << ", " << e.channel << ')';
     }
 };
 
@@ -314,9 +312,10 @@ struct time_correlated_detection_event
     static_assert(std::is_integral_v<typename DataTraits::difftime_type>);
 
     /**
-     * \brief Difference time (a.k.a. microtime, nanotime) of the photon.
+     * \brief Difference time (a.k.a. microtime, nanotime) associated with the
+     * detected event.
      *
-     * This is usually the time difference between the photon and
+     * This is typically the time difference between the photon and
      * synchronization signal, generated by TCSPC electronics. It may or may
      * not be inverted.
      */
@@ -326,7 +325,7 @@ struct time_correlated_detection_event
     friend auto operator==(time_correlated_detection_event const &lhs,
                            time_correlated_detection_event const &rhs) noexcept
         -> bool {
-        return lhs.macrotime == rhs.macrotime && lhs.channel == rhs.channel &&
+        return lhs.abstime == rhs.abstime && lhs.channel == rhs.channel &&
                lhs.difftime == rhs.difftime;
     }
 
@@ -341,7 +340,7 @@ struct time_correlated_detection_event
     friend auto operator<<(std::ostream &s,
                            time_correlated_detection_event const &e)
         -> std::ostream & {
-        return s << "time_correlated_detection(" << e.macrotime << ", "
+        return s << "time_correlated_detection(" << e.abstime << ", "
                  << e.channel << ", " << e.difftime << ')';
     }
 };
@@ -359,7 +358,7 @@ struct time_correlated_detection_event
  *
  * Some devices produce single events with potentially multiple markers on
  * different channels, using, e.g., a bitmask. In such cases, a separate
- * marker_event must be generated for each channel, bearing the same macrotime.
+ * marker_event must be generated for each channel, bearing the same abstime.
  * Ordering of simultaneous marker events within the stream is undefined (but
  * ordering should be made deterministic when arbitrarily determined by
  * software).
@@ -375,7 +374,7 @@ struct marker_event : base_channeled_time_tagged_event<DataTraits> {
     /** \brief Equality comparison operator. */
     friend auto operator==(marker_event const &lhs,
                            marker_event const &rhs) noexcept -> bool {
-        return lhs.macrotime == rhs.macrotime && lhs.channel == rhs.channel;
+        return lhs.abstime == rhs.abstime && lhs.channel == rhs.channel;
     }
 
     /** \brief Inequality comparison operator. */
@@ -387,7 +386,7 @@ struct marker_event : base_channeled_time_tagged_event<DataTraits> {
     /** \brief Stream insertion operator. */
     friend auto operator<<(std::ostream &s, marker_event const &e)
         -> std::ostream & {
-        return s << "marker(" << e.macrotime << ", " << e.channel << ')';
+        return s << "marker(" << e.abstime << ", " << e.channel << ')';
     }
 };
 

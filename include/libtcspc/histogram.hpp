@@ -45,7 +45,7 @@ class histogram {
     single_histogram<bin_index_type, bin_type, internal_overflow_strategy>
         shist;
     histogram_stats stats;
-    macrotime_range<typename DataTraits::abstime_type> time_range;
+    abstime_range<typename DataTraits::abstime_type> time_range;
     Downstream downstream;
 
     void emit_concluding(bool end_of_stream) noexcept {
@@ -105,7 +105,7 @@ class histogram {
                 static_assert(false_for_type<OverflowStrategy>::value);
             }
         }
-        time_range.extend(event.macrotime);
+        time_range.extend(event.abstime);
         auto const he = histogram_event<bin_type, DataTraits>{
             time_range, autocopy_span<Bin>(hist), stats};
         downstream.handle_event(he);
