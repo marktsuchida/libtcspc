@@ -29,6 +29,7 @@ public_cpp_headers = files(
     'read_bytes.hpp',
     'ref_processor.hpp',
     'route.hpp',
+    'select.hpp',
     'shared_processor.hpp',
     'span.hpp',
     'split.hpp',
