@@ -14,6 +14,9 @@ static_assert(std::is_trivial_v<u8np>);
 
 static_assert(sizeof(u8np) == sizeof(std::uint8_t));
 
+static_assert(std::numeric_limits<i8np>::min() == -128_i8np);
+static_assert(std::numeric_limits<i8np>::digits == 7);
+
 TEST_CASE("integer construct and convert", "[integers]") {
     u8np ue{};
     CHECK(std::uint8_t(ue) == 0);

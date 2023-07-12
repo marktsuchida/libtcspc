@@ -10,6 +10,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <istream>
+#include <limits>
 #include <ostream>
 #include <type_traits>
 
@@ -504,3 +505,65 @@ constexpr auto operator""_i64np(unsigned long long v) -> i64np {
 using namespace literals;
 
 } // namespace tcspc
+
+namespace std {
+
+template <typename T> struct numeric_limits<tcspc::npint<T>> {
+    static constexpr bool is_specialized = true;
+
+    static constexpr bool has_denorm_loss = numeric_limits<T>::has_denorm_loss;
+    static constexpr bool has_infinity = numeric_limits<T>::has_infinity;
+    static constexpr bool has_quiet_NaN = numeric_limits<T>::has_quiet_NaN;
+    static constexpr bool has_signaling_NaN =
+        numeric_limits<T>::has_signaling_NaN;
+    static constexpr bool is_bounded = numeric_limits<T>::is_bounded;
+    static constexpr bool is_exact = numeric_limits<T>::is_exact;
+    static constexpr bool is_iec559 = numeric_limits<T>::is_iec559;
+    static constexpr bool is_integer = numeric_limits<T>::is_integer;
+    static constexpr bool is_modulo = numeric_limits<T>::is_modulo;
+    static constexpr bool is_signed = numeric_limits<T>::is_signed;
+    static constexpr bool tinyness_before = numeric_limits<T>::tinyness_before;
+    static constexpr bool traps = numeric_limits<T>::traps;
+    static constexpr float_denorm_style has_denorm =
+        numeric_limits<T>::has_denorm;
+    static constexpr float_round_style round_style =
+        numeric_limits<T>::round_style;
+    static constexpr int digits = numeric_limits<T>::digits;
+    static constexpr int digits10 = numeric_limits<T>::digits10;
+    static constexpr int max_digits10 = numeric_limits<T>::max_digits10;
+    static constexpr int max_exponent = numeric_limits<T>::max_exponent;
+    static constexpr int max_exponent10 = numeric_limits<T>::max_exponent10;
+    static constexpr int min_exponent = numeric_limits<T>::min_exponent;
+    static constexpr int min_exponent10 = numeric_limits<T>::min_exponent10;
+    static constexpr int radix = numeric_limits<T>::radix;
+
+    static constexpr tcspc::npint<T> denorm_min() {
+        return tcspc::npint<T>(numeric_limits<T>::denorm_min());
+    }
+    static constexpr tcspc::npint<T> epsilon() {
+        return tcspc::npint<T>(numeric_limits<T>::epsilon());
+    }
+    static constexpr tcspc::npint<T> infinity() {
+        return tcspc::npint<T>(numeric_limits<T>::infinity());
+    }
+    static constexpr tcspc::npint<T> lowest() {
+        return tcspc::npint<T>(numeric_limits<T>::lowest());
+    }
+    static constexpr tcspc::npint<T> max() {
+        return tcspc::npint<T>(numeric_limits<T>::max());
+    }
+    static constexpr tcspc::npint<T> min() {
+        return tcspc::npint<T>(numeric_limits<T>::min());
+    }
+    static constexpr tcspc::npint<T> quiet_NaN() {
+        return tcspc::npint<T>(numeric_limits<T>::quiet_NaN());
+    }
+    static constexpr tcspc::npint<T> round_error() {
+        return tcspc::npint<T>(numeric_limits<T>::round_error());
+    }
+    static constexpr tcspc::npint<T> signaling_NaN() {
+        return tcspc::npint<T>(numeric_limits<T>::signaling_NaN());
+    }
+};
+
+} // namespace std

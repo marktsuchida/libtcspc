@@ -14,7 +14,7 @@ COLLABORATION_GRAPH    = NO
 GROUP_GRAPHS           = NO
 RECURSIVE              = YES
 SORT_BRIEF_DOCS        = YES
-EXCLUDE_SYMBOLS        = internal
+EXCLUDE_SYMBOLS        = internal std
 
 # Custom commands for processor input/output events
 ALIASES += inevents="<dl class='params'><dt>Input Events</dt><dd><table class='params'>"
