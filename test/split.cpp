@@ -18,12 +18,11 @@ using e1 = empty_test_event<1>;
 using e2 = empty_test_event<2>;
 using e3 = empty_test_event<3>;
 
-TEST_CASE("Split events", "[split_events]") {
+TEST_CASE("Split events", "[split]") {
     auto out0 = capture_output<event_set<e0, e1>>();
     auto out1 = capture_output<event_set<e2, e3>>();
-    auto in =
-        feed_input<event_set<e0, e1, e2, e3>>(split_events<event_set<e2, e3>>(
-            ref_processor(out0), ref_processor(out1)));
+    auto in = feed_input<event_set<e0, e1, e2, e3>>(
+        split<event_set<e2, e3>>(ref_processor(out0), ref_processor(out1)));
     in.require_output_checked(out0);
     in.require_output_checked(out1);
 
@@ -50,11 +49,11 @@ TEST_CASE("Split events", "[split_events]") {
     }
 }
 
-TEST_CASE("Split events, empty on out0", "[split_events]") {
+TEST_CASE("Split events, empty on out0", "[split]") {
     auto out0 = capture_output<event_set<>>();
     auto out1 = capture_output<event_set<e0>>();
     auto in = feed_input<event_set<e0>>(
-        split_events<event_set<e0>>(ref_processor(out0), ref_processor(out1)));
+        split<event_set<e0>>(ref_processor(out0), ref_processor(out1)));
     in.require_output_checked(out0);
     in.require_output_checked(out1);
 
@@ -65,11 +64,11 @@ TEST_CASE("Split events, empty on out0", "[split_events]") {
     REQUIRE(out1.check_end());
 }
 
-TEST_CASE("Split events, empty on out1", "[split_events]") {
+TEST_CASE("Split events, empty on out1", "[split]") {
     auto out0 = capture_output<event_set<e0>>();
     auto out1 = capture_output<event_set<>>();
     auto in = feed_input<event_set<e0>>(
-        split_events<event_set<>>(ref_processor(out0), ref_processor(out1)));
+        split<event_set<>>(ref_processor(out0), ref_processor(out1)));
     in.require_output_checked(out0);
     in.require_output_checked(out1);
 

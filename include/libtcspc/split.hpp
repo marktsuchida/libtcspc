@@ -16,12 +16,12 @@ namespace tcspc {
 namespace internal {
 
 template <typename EventSetToSplit, typename Downstream0, typename Downstream1>
-class split_events {
+class split {
     Downstream0 downstream0;
     Downstream1 downstream1;
 
   public:
-    explicit split_events(Downstream0 &&downstream0, Downstream1 &&downstream1)
+    explicit split(Downstream0 &&downstream0, Downstream1 &&downstream1)
         : downstream0(std::move(downstream0)),
           downstream1(std::move(downstream1)) {}
 
@@ -63,8 +63,8 @@ class split_events {
  * \return split-events processor
  */
 template <typename EventSetToSplit, typename Downstream0, typename Downstream1>
-auto split_events(Downstream0 &&downstream0, Downstream1 &&downstream1) {
-    return internal::split_events<EventSetToSplit, Downstream0, Downstream1>(
+auto split(Downstream0 &&downstream0, Downstream1 &&downstream1) {
+    return internal::split<EventSetToSplit, Downstream0, Downstream1>(
         std::forward<Downstream0>(downstream0),
         std::forward<Downstream1>(downstream1));
 }
