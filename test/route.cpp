@@ -12,7 +12,7 @@
 
 #include <catch2/catch_all.hpp>
 
-using namespace tcspc;
+namespace tcspc {
 
 using tc_event = time_correlated_detection_event<>;
 
@@ -42,3 +42,5 @@ TEST_CASE("Route", "[route]") {
     REQUIRE(out1.check_end());
     REQUIRE(out2.check_end());
 }
+
+} // namespace tcspc

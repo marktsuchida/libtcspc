@@ -12,7 +12,7 @@
 
 #include <catch2/catch_all.hpp>
 
-using namespace tcspc;
+namespace tcspc {
 
 using e0 = timestamped_test_event<0>;
 using e1 = timestamped_test_event<1>;
@@ -246,3 +246,5 @@ TEST_CASE("Merge max time shift", "[merge]") {
         }
     }
 }
+
+} // namespace tcspc

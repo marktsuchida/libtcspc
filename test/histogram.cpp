@@ -14,7 +14,7 @@
 
 #include <catch2/catch_all.hpp>
 
-using namespace tcspc;
+namespace tcspc {
 
 using reset_event = timestamped_test_event<0>;
 using misc_event = timestamped_test_event<1>;
@@ -232,3 +232,5 @@ TEST_CASE("Histogram, error on overflow", "[histogram]") {
         REQUIRE_THROWS_AS(out.check_end(), histogram_overflow_error);
     }
 }
+
+} // namespace tcspc

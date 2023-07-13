@@ -15,7 +15,7 @@
 
 #include <catch2/catch_all.hpp>
 
-using namespace tcspc;
+namespace tcspc {
 
 using e0 = timestamped_test_event<0>;
 using e1 = timestamped_test_event<1>;
@@ -351,3 +351,5 @@ TEST_CASE("Delay-hasten basic test", "[delay_hasten_processor]") {
     REQUIRE(out.check(e0{6 + delta}));
     REQUIRE(out.check_end());
 }
+
+} // namespace tcspc

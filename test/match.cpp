@@ -12,7 +12,7 @@
 
 #include <catch2/catch_all.hpp>
 
-using namespace tcspc;
+namespace tcspc {
 
 using output_event = timestamped_test_event<0>;
 using misc_event = timestamped_test_event<1>;
@@ -53,3 +53,5 @@ TEST_CASE("Match", "[match]") {
     in.feed_end();
     REQUIRE(out.check_end());
 }
+
+} // namespace tcspc

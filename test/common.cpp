@@ -10,8 +10,7 @@
 
 #include <catch2/catch_all.hpp>
 
-using namespace tcspc;
-using namespace tcspc::internal;
+namespace tcspc::internal {
 
 static_assert(!false_for_type<int>::value);
 
@@ -43,3 +42,5 @@ TEST_CASE("as signed or unsigned", "[common]") {
 TEST_CASE("narrow integer", "[common]") {
     CHECK(narrow<std::uint8_t>(std::uint64_t(100)) == std::uint8_t(100));
 }
+
+} // namespace tcspc::internal

@@ -8,7 +8,7 @@
 
 #include <catch2/catch_all.hpp>
 
-using namespace tcspc::internal;
+namespace tcspc::internal {
 
 // Tests assume first allocation capacity is 3 elements.
 
@@ -137,3 +137,5 @@ TEST_CASE("Vector queue of shared_ptr", "[vector_queue]") {
     REQUIRE(*r.front() == 44);
     REQUIRE(*r.back() == 45);
 }
+
+} // namespace tcspc::internal

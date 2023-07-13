@@ -12,7 +12,7 @@
 
 #include <catch2/catch_all.hpp>
 
-using namespace tcspc;
+namespace tcspc {
 
 using open_event = empty_test_event<0>;
 using close_event = empty_test_event<1>;
@@ -70,3 +70,5 @@ TEST_CASE("Gate events", "[gate]") {
         REQUIRE(out.check_end());
     }
 }
+
+} // namespace tcspc

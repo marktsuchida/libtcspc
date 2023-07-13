@@ -12,7 +12,7 @@
 
 #include <catch2/catch_all.hpp>
 
-using namespace tcspc;
+namespace tcspc {
 
 TEST_CASE("Autocopying span", "[autocopy_span]") {
     std::array a{1, 2, 3};
@@ -63,3 +63,5 @@ TEST_CASE("Autocopying span", "[autocopy_span]") {
     auto big_copy(big_view);
     REQUIRE(big_copy.as_span()[4095] == 42);
 }
+
+} // namespace tcspc

@@ -14,7 +14,7 @@
 
 // NOLINTBEGIN
 
-using namespace tcspc;
+namespace tcspc {
 
 static_assert(handles_event_set_v<
               histogrammer<unsigned,
@@ -95,5 +95,7 @@ TEST_CASE("SingleTimeBin", "[legacy_histogram]") {
         REQUIRE(data[0] == 2);
     }
 }
+
+} // namespace tcspc
 
 // NOLINTEND

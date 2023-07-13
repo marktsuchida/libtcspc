@@ -16,7 +16,7 @@
 #include <limits>
 #include <utility>
 
-using namespace tcspc;
+namespace tcspc {
 
 using start_event = timestamped_test_event<0>;
 using stop_event = timestamped_test_event<1>;
@@ -382,3 +382,5 @@ TEST_CASE("Batch bin increments", "[batch_bin_increments]") {
         REQUIRE(out.check_end());
     }
 }
+
+} // namespace tcspc

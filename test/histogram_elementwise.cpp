@@ -15,7 +15,7 @@
 
 #include <catch2/catch_all.hpp>
 
-using namespace tcspc;
+namespace tcspc {
 
 using start_event = timestamped_test_event<0>;
 using reset_event = timestamped_test_event<2>;
@@ -752,3 +752,5 @@ TEST_CASE(
         }
     }
 }
+
+} // namespace tcspc

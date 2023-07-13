@@ -12,7 +12,7 @@
 
 #include <catch2/catch_all.hpp>
 
-using namespace tcspc;
+namespace tcspc {
 
 using trigger_event = timestamped_test_event<0>;
 using output_event = timestamped_test_event<1>;
@@ -156,3 +156,5 @@ TEST_CASE("Generate linear timing", "[generate][linear_timing_generator]") {
         REQUIRE(out.check_end());
     }
 }
+
+} // namespace tcspc

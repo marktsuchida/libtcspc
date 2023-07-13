@@ -12,7 +12,7 @@
 
 #include <catch2/catch_all.hpp>
 
-using namespace tcspc;
+namespace tcspc {
 
 using e0 = empty_test_event<0>;
 using e1 = empty_test_event<1>;
@@ -63,3 +63,5 @@ TEST_CASE("type_erased_processor move assignment", "[type_erased_processor]") {
 
     tep = decltype(tep)(myproc());
 }
+
+} // namespace tcspc

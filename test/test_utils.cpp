@@ -15,7 +15,7 @@
 
 #include <catch2/catch_all.hpp>
 
-using namespace tcspc;
+namespace tcspc {
 
 using e0 = empty_test_event<0>;
 using e1 = timestamped_test_event<1>;
@@ -79,3 +79,5 @@ TEST_CASE("Short-circuited with event set", "[test_utils]") {
         REQUIRE_FALSE(out.check(e1{0}));
     }
 }
+
+} // namespace tcspc

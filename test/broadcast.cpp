@@ -10,7 +10,7 @@
 #include "libtcspc/event_set.hpp"
 #include "libtcspc/test_utils.hpp"
 
-using namespace tcspc;
+namespace tcspc {
 
 using e0 = empty_test_event<0>;
 using e1 = empty_test_event<1>;
@@ -45,3 +45,5 @@ static_assert(
                             event_set_sink<event_set<e0>>>,
         event_set<e1>>,
     "Broadcast should not handle events not handled by all downstreams");
+
+} // namespace tcspc

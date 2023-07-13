@@ -13,7 +13,7 @@
 
 #include <catch2/catch_all.hpp>
 
-using namespace tcspc;
+namespace tcspc {
 
 static_assert(std::is_trivial_v<bh_spc_event>);
 static_assert(std::is_trivial_v<bh_spc_600_event_32>);
@@ -205,3 +205,5 @@ TEST_CASE("multiple_macrotime_overflow_count", "[bh_spc_event]") {
     event = bh_spc_event_from_u8({0, 0, 0, 0x08});
     CHECK(event.multiple_macrotime_overflow_count() == 134217728_u32np);
 }
+
+} // namespace tcspc

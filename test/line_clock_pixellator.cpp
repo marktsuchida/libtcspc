@@ -22,18 +22,15 @@
 
 // NOLINTBEGIN
 
-using namespace tcspc;
+namespace tcspc {
+
+namespace {
 
 using tcspc_events =
     event_set<time_reached_event<>, data_lost_event<>,
               time_correlated_detection_event<>, marker_event<>>;
 
-inline auto operator<<(std::ostream &os,
-                       tcspc::event_variant<tcspc_events> const &event)
-    -> std::ostream & {
-    return std::visit([&](auto const &e) -> std::ostream & { return os << e; },
-                      event);
-}
+} // namespace
 
 static_assert(handles_event_set_v<
               line_clock_pixellator<event_set_sink<pixel_photon_events>>,
@@ -184,5 +181,7 @@ TEST_CASE("Frames are produced according to line markers",
     // photons)
     //   - in particular, line spanning negative time
 }
+
+} // namespace tcspc
 
 // NOLINTEND

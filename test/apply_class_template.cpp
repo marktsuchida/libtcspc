@@ -6,9 +6,13 @@
 
 #include "libtcspc/apply_class_template.hpp"
 
-using namespace tcspc::internal;
+namespace tcspc::internal {
+
+namespace {
 
 template <typename... Ts> struct some_class_tmpl {};
+
+} // namespace
 
 static_assert(
     std::is_same_v<apply_class_template_t<some_class_tmpl, std::tuple<>,
@@ -23,3 +27,5 @@ static_assert(std::is_same_v<
               apply_class_template_t<some_class_tmpl, std::tuple<int, float>,
                                      unsigned, double>,
               some_class_tmpl<unsigned, double, int, float>>);
+
+} // namespace tcspc::internal

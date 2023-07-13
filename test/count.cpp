@@ -12,7 +12,7 @@
 
 #include <catch2/catch_all.hpp>
 
-using namespace tcspc;
+namespace tcspc {
 
 using tick_event = timestamped_test_event<0>;
 using fire_event = timestamped_test_event<1>;
@@ -169,3 +169,5 @@ TEST_CASE("Count down to", "[count_down_to]") {
     in.feed_end();
     REQUIRE(out.check_end());
 }
+
+} // namespace tcspc

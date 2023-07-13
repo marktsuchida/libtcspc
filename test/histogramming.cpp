@@ -13,8 +13,7 @@
 
 #include <catch2/catch_all.hpp>
 
-using namespace tcspc;
-using namespace tcspc::internal;
+namespace tcspc::internal {
 
 TEST_CASE("Journal basic operations", "[bin_increment_batch_journal]") {
     bin_increment_batch_journal<u16> j;
@@ -671,3 +670,5 @@ TEST_CASE("multi_histogram_accumulation: replay reproduces rolled-back delta",
     mhista.skip_remainder_of_current_cycle();
     CHECK(data == std::vector<u8>{0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0});
 }
+
+} // namespace tcspc::internal

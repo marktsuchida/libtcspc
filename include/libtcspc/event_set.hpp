@@ -9,6 +9,7 @@
 #include "apply_class_template.hpp"
 
 #include <exception>
+#include <ostream>
 #include <tuple>
 #include <type_traits>
 #include <variant>
@@ -40,7 +41,23 @@ template <typename... Events> using event_set = std::tuple<Events...>;
  * can hold
  */
 template <typename EventSet>
-using event_variant = internal::apply_class_template_t<std::variant, EventSet>;
+class event_variant
+    : public internal::apply_class_template_t<std::variant, EventSet> {
+    using base_type = internal::apply_class_template_t<std::variant, EventSet>;
+    using base_type::base_type;
+
+    // Note: event_variant needs to derive from std::variant, rather than be an
+    // alias template, because we need to befriend the stream insertion
+    // operator.
+
+    /** \brief Stream insertion operator */
+    friend auto operator<<(std::ostream &stream, event_variant const &event)
+        -> std::ostream & {
+        return std::visit(
+            [&](auto const &e) -> std::ostream & { return stream << e; },
+            event);
+    }
+};
 
 namespace internal {
 

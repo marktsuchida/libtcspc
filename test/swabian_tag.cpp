@@ -8,8 +8,10 @@
 
 #include <type_traits>
 
-using namespace tcspc;
+namespace tcspc {
 
 static_assert(std::is_trivial_v<swabian_tag_event>);
 
 static_assert(sizeof(swabian_tag_event) == 16);
+
+} // namespace tcspc

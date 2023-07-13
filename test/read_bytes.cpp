@@ -10,7 +10,7 @@
 
 #include <array>
 
-using namespace tcspc;
+namespace tcspc {
 
 namespace {
 
@@ -109,3 +109,5 @@ TEST_CASE("Read u64np", "[read_bytes]") {
         REQUIRE(f(byte_span_of_uchars(data)) == 0x0807'0605'0403'0201_u64np);
     }
 }
+
+} // namespace tcspc
