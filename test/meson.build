@@ -25,6 +25,7 @@ libtcspc_tests_srcs = [
     'match.cpp',
     'merge.cpp',
     'npint.cpp',
+    'pair.cpp',
     'picoquant_t3.cpp',
     'pixel_photon_events.cpp',
     'read_bytes.cpp',

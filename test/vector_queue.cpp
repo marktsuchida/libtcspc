@@ -19,6 +19,7 @@ TEST_CASE("Vector queue of int", "[vector_queue]") {
 
     REQUIRE(q.empty());
     REQUIRE(q.size() == 0);
+    q.for_each([](int) { REQUIRE(false); });
 
     auto p = q;
     REQUIRE(p.empty());
@@ -38,6 +39,7 @@ TEST_CASE("Vector queue of int", "[vector_queue]") {
     REQUIRE(q.size() == 1);
     REQUIRE(q.front() == 42);
     REQUIRE(q.back() == 42);
+    q.for_each([](int x) { REQUIRE(x == 42); });
     p = q;
     REQUIRE(p.size() == 1);
     r = std::move(p);
@@ -70,12 +72,30 @@ TEST_CASE("Vector queue of int", "[vector_queue]") {
     REQUIRE(q.size() == 2);
     REQUIRE(q.front() == 43);
     REQUIRE(q.back() == 44);
+    int i = 0;
+    q.for_each([&i](int x) mutable {
+        REQUIRE(i < 2);
+        if (i == 0)
+            REQUIRE(x == 43);
+        else
+            REQUIRE(x == 44);
+        ++i;
+    });
 
     q.pop();    // (-, -, 44)
     q.push(45); // (45, -, 44)
     REQUIRE(q.size() == 2);
     REQUIRE(q.front() == 44);
     REQUIRE(q.back() == 45);
+    i = 0;
+    q.for_each([&i](int x) mutable {
+        REQUIRE(i < 2);
+        if (i == 0)
+            REQUIRE(x == 44);
+        else
+            REQUIRE(x == 45);
+        ++i;
+    });
 
     // Copy & move discontiguous (45, -, 44)
     p = q;

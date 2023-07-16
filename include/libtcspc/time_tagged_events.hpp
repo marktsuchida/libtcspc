@@ -346,7 +346,7 @@ struct time_correlated_detection_event
 };
 
 /**
- * \brief TCSPC event indicating a marker.
+ * \brief Event indicating a timing marker.
  *
  * \ingroup events-timing
  *
@@ -387,6 +387,54 @@ struct marker_event : base_channeled_time_tagged_event<DataTraits> {
     friend auto operator<<(std::ostream &s, marker_event const &e)
         -> std::ostream & {
         return s << "marker(" << e.abstime << ", " << e.channel << ')';
+    }
+};
+
+/**
+ * \brief Event representing a pair of detection events.
+ *
+ * \ingroup events-timing
+ *
+ * This event contains a pair of \ref detection_event instances. Note that it
+ * does not contain an \c abstime field and therefore cannot be handled
+ * directly by processors that expect a time-stamped event stream.
+ *
+ * \tparam DataTraits traits type specifying \c abstime_type and \c
+ * channel_type
+ */
+template <typename DataTraits = default_data_traits>
+struct detection_pair_event {
+    /**
+     * \brief The first detection event of the pair.
+     *
+     * In general, \c first.abstime is out of order.
+     */
+    detection_event<DataTraits> first;
+
+    /**
+     * \brief The second detection event of the pair.
+     *
+     * Usually, \c second.abstime is in order in the stream (check the
+     * documentation for the pairing processor producing the pair stream.)
+     */
+    detection_event<DataTraits> second;
+
+    /** \brief Equality comparison operator. */
+    friend auto operator==(detection_pair_event const &lhs,
+                           detection_pair_event const &rhs) noexcept -> bool {
+        return lhs.first == rhs.first && lhs.second == rhs.second;
+    }
+
+    /** \brief Inequality comparison operator. */
+    friend auto operator!=(detection_pair_event const &lhs,
+                           detection_pair_event const &rhs) noexcept -> bool {
+        return not(lhs == rhs);
+    }
+
+    /** \brief Stream insertion operator. */
+    friend auto operator<<(std::ostream &s, detection_pair_event const &e)
+        -> std::ostream & {
+        return s << "detection_pair(" << e.first << ", " << e.second << ')';
     }
 };
 
