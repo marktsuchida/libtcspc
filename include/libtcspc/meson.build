@@ -28,6 +28,7 @@ public_cpp_headers = files(
     'picoquant_t3.hpp',
     'pixel_photon_events.hpp',
     'read_bytes.hpp',
+    'recover_order.hpp',
     'ref_processor.hpp',
     'route.hpp',
     'select.hpp',

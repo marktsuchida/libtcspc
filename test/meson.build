@@ -29,6 +29,7 @@ libtcspc_tests_srcs = [
     'picoquant_t3.cpp',
     'pixel_photon_events.cpp',
     'read_bytes.cpp',
+    'recover_order.cpp',
     'ref_processor.cpp',
     'route.cpp',
     'select.cpp',

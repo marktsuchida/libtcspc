@@ -6,6 +6,7 @@
 
 #pragma once
 
+#include "common.hpp"
 #include "time_tagged_events.hpp"
 #include "vector_queue.hpp"
 
@@ -24,14 +25,6 @@
 namespace tcspc {
 
 namespace internal {
-
-template <typename T>
-constexpr auto pairing_cutoff(T stop_time, T window_size) noexcept {
-    // Guard against underflow (window_size is non-negative).
-    if (stop_time < std::numeric_limits<T>::min() + window_size)
-        return std::numeric_limits<T>::min();
-    return stop_time - window_size;
-}
 
 template <typename DataTraits, std::size_t NStopChannels, typename Downstream>
 class pair_all {

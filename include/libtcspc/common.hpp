@@ -223,6 +223,15 @@ template <typename T, typename U> inline auto narrow(U i) -> T {
     return T(i);
 }
 
+// window_size must be non-negative
+template <typename T>
+constexpr auto pairing_cutoff(T stop_time, T window_size) noexcept {
+    // Guard against underflow (window_size is non-negative).
+    if (stop_time < std::numeric_limits<T>::min() + window_size)
+        return std::numeric_limits<T>::min();
+    return stop_time - window_size;
+}
+
 } // namespace internal
 
 } // namespace tcspc
