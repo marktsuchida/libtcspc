@@ -284,11 +284,11 @@ class decode_pq_t3 {
 
         abstime_type nsync = nsync_base + event.nsync();
 
-        // Validate input: ensure nsync increases monotonically (a common
-        // assumption made by downstream processors)
-        if (nsync <= last_nsync) {
+        // Validate input: ensure nsync is non-decreasing (a common assumption
+        // made by downstream processors)
+        if (nsync < last_nsync) {
             downstream.handle_end(std::make_exception_ptr(
-                std::runtime_error("Non-monotonic nsync encountered")));
+                std::runtime_error("Decreasing nsync encountered")));
             return;
         }
         last_nsync = nsync;

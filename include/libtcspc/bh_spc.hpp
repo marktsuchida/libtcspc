@@ -426,11 +426,11 @@ class decode_bh_spc {
 
         abstime_type abstime = abstime_base + event.macrotime().value();
 
-        // Validate input: ensure abstime increases monotonically (a common
+        // Validate input: ensure abstime is non-decreasing (a common
         // assumption made by downstream processors)
-        if (abstime <= last_abstime) {
+        if (abstime < last_abstime) {
             downstream.handle_end(std::make_exception_ptr(
-                std::runtime_error("Non-monotonic abstime encountered")));
+                std::runtime_error("Decreasing abstime encountered")));
             return;
         }
         last_abstime = abstime;
