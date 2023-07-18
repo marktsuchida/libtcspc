@@ -58,4 +58,39 @@ TEST_CASE("Delay", "[delay]") {
     }
 }
 
+TEST_CASE("zero-base abstime", "[zero_base_abstime]") {
+    auto out = capture_output<event_set<e0, e1>>();
+    auto in =
+        feed_input<event_set<e0, e1>>(zero_base_abstime(ref_processor(out)));
+    in.require_output_checked(out);
+
+    SECTION("Positive") {
+        in.feed(e0{123});
+        REQUIRE(out.check(e0{0}));
+        in.feed(e1{125});
+        REQUIRE(out.check(e1{2}));
+        in.feed(
+            e0{std::numeric_limits<default_data_traits::abstime_type>::min()});
+        REQUIRE(out.check(
+            e0{std::numeric_limits<default_data_traits::abstime_type>::max() -
+               122}));
+        in.feed_end();
+        REQUIRE(out.check_end());
+    }
+
+    SECTION("Negative") {
+        in.feed(e0{-123});
+        REQUIRE(out.check(e0{0}));
+        in.feed(e1{-121});
+        REQUIRE(out.check(e1{2}));
+        in.feed(
+            e0{std::numeric_limits<default_data_traits::abstime_type>::max()});
+        REQUIRE(out.check(
+            e0{std::numeric_limits<default_data_traits::abstime_type>::min() +
+               122}));
+        in.feed_end();
+        REQUIRE(out.check_end());
+    }
+}
+
 } // namespace tcspc

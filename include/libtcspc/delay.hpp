@@ -10,6 +10,8 @@
 #include "event_set.hpp"
 
 #include <exception>
+#include <limits>
+#include <type_traits>
 #include <utility>
 
 namespace tcspc {
@@ -27,8 +29,39 @@ template <typename DataTraits, typename Downstream> class delay {
 
     template <typename TimeTaggedEvent>
     void handle_event(TimeTaggedEvent const &event) noexcept {
+        static_assert(std::is_same_v<decltype(event.abstime),
+                                     typename DataTraits::abstime_type>);
         TimeTaggedEvent copy(event);
         copy.abstime += delta;
+        downstream.handle_event(copy);
+    }
+
+    void handle_end(std::exception_ptr const &error) noexcept {
+        downstream.handle_end(error);
+    }
+};
+
+template <typename DataTraits, typename Downstream> class zero_base_abstime {
+    bool initialized = false;
+    typename DataTraits::abstime_type minus_delta{};
+    Downstream downstream;
+
+  public:
+    explicit zero_base_abstime(Downstream &&downstream)
+        : downstream(std::move(downstream)) {}
+
+    template <typename TimeTaggedEvent>
+    void handle_event(TimeTaggedEvent const &event) noexcept {
+        static_assert(std::is_same_v<decltype(event.abstime),
+                                     typename DataTraits::abstime_type>);
+        if (not initialized) {
+            minus_delta = event.abstime;
+            initialized = true;
+        }
+        TimeTaggedEvent copy(event);
+        // Support integer wrap-around by using unsigned type for subtraction.
+        copy.abstime = static_cast<decltype(copy.abstime)>(
+            as_unsigned(event.abstime) - as_unsigned(minus_delta));
         downstream.handle_event(copy);
     }
 
@@ -40,11 +73,11 @@ template <typename DataTraits, typename Downstream> class delay {
 } // namespace internal
 
 /**
- * \brief Create a processor that applies a abstime offset to all events.
+ * \brief Create a processor that applies an abstime offset to all events.
  *
  * \ingroup processors-timing
  *
- * All events processed must have a \c abstime field, and no other fields
+ * All events processed must have an \c abstime field, and no other fields
  * derived from the abstime (because only the \c abstime field will be
  * adjusted).
  *
@@ -66,6 +99,32 @@ template <typename DataTraits, typename Downstream>
 auto delay(typename DataTraits::abstime_type delta, Downstream &&downstream) {
     return internal::delay<DataTraits, Downstream>(
         delta, std::forward<Downstream>(downstream));
+}
+
+/**
+ * \brief Create a processor that offsets abstime so that the first event is at
+ * time zero.
+ *
+ * \ingroup processors-timing
+ *
+ * This can be used to ensure that downstream processing will not encounter
+ * integer overflow within a moderate amount of time. Even if the \c
+ * abstime_type is a signed integer type, wrap-around is handled correctly.
+ *
+ * \see delay
+ *
+ * \tparam DataTraits traits type specifying \c abstime_type
+ *
+ * \tparam Downstream downstream processor type
+ *
+ * \param downstream downstream processor
+ *
+ * \return zero_base_abstime processor
+ */
+template <typename DataTraits = default_data_traits, typename Downstream>
+auto zero_base_abstime(Downstream &&downstream) {
+    return internal::zero_base_abstime<DataTraits, Downstream>(
+        std::forward<Downstream>(downstream));
 }
 
 } // namespace tcspc
