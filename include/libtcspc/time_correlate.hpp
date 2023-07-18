@@ -274,4 +274,56 @@ auto time_correlate_at_fraction(double fraction, Downstream &&downstream) {
         fraction, std::forward<Downstream>(downstream));
 }
 
+namespace internal {
+
+template <typename DataTraits, typename Downstream>
+class remove_time_correlation {
+    Downstream downstream;
+
+  public:
+    explicit remove_time_correlation(Downstream &&downstream)
+        : downstream(std::move(downstream)) {}
+
+    template <typename DT>
+    void
+    handle_event(time_correlated_detection_event<DT> const &event) noexcept {
+        static_assert(std::is_same_v<typename DT::abstime_type,
+                                     typename DataTraits::abstime_type>);
+        static_assert(std::is_same_v<typename DT::channel_type,
+                                     typename DataTraits::channel_type>);
+
+        downstream.handle_event(
+            detection_event<DataTraits>{{{event.abstime}, event.channel}});
+    }
+
+    template <typename OtherEvent>
+    void handle_event(OtherEvent const &event) noexcept {
+        downstream.handle_event(event);
+    }
+
+    void handle_end(std::exception_ptr const &error) noexcept {
+        downstream.handle_end(error);
+    }
+};
+
+} // namespace internal
+
+/**
+ * \brief Create a processor that removes the difftime from detection events.
+ *
+ * \ingroup processors-timing
+ *
+ * \tparam DataTraits traits type specifying \c abstime_type and \c
+ * channel_type.
+ *
+ * \tparam Downstream downstream processor type
+ *
+ * \param downstream downstream processor
+ */
+template <typename DataTraits = default_data_traits, typename Downstream>
+auto remove_time_correlation(Downstream &&downstream) {
+    return internal::remove_time_correlation<DataTraits, Downstream>(
+        std::forward<Downstream>(downstream));
+}
+
 } // namespace tcspc

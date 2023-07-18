@@ -93,4 +93,16 @@ TEST_CASE("time correlate at fraction", "[time_correlate_at_fraction]") {
     }
 }
 
+TEST_CASE("remove time correlation", "[remove_time_correlation]") {
+    auto out = capture_output<event_set<detection_event<>>>();
+    auto in = feed_input<event_set<time_correlated_detection_event<>>>(
+        remove_time_correlation<>(ref_processor(out)));
+    in.require_output_checked(out);
+
+    in.feed(time_correlated_detection_event<>{{{3}, 1}, 2});
+    REQUIRE(out.check(detection_event<>{{{3}, 1}}));
+    in.feed_end();
+    REQUIRE(out.check_end());
+}
+
 } // namespace tcspc
