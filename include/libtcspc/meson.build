@@ -38,6 +38,7 @@ public_cpp_headers = files(
     'swabian_tag.hpp',
     'tcspc.hpp',
     'test_utils.hpp',
+    'time_correlate.hpp',
     'time_tagged_events.hpp',
     'type_erased_processor.hpp',
     'vector_queue.hpp',
