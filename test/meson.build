@@ -35,6 +35,7 @@ libtcspc_tests_srcs = [
     'select.cpp',
     'shared_processor.cpp',
     'split.cpp',
+    'stop.cpp',
     'swabian_tag.cpp',
     'test_utils.cpp',
     'time_correlate.cpp',

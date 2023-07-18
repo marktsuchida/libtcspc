@@ -35,6 +35,7 @@ public_cpp_headers = files(
     'shared_processor.hpp',
     'span.hpp',
     'split.hpp',
+    'stop.hpp',
     'swabian_tag.hpp',
     'tcspc.hpp',
     'test_utils.hpp',
