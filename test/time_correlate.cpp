@@ -93,6 +93,24 @@ TEST_CASE("time correlate at fraction", "[time_correlate_at_fraction]") {
     }
 }
 
+TEST_CASE("negate difftime", "[negate_difftime]") {
+    struct traits : default_data_traits {
+        using difftime_type = std::int16_t;
+    };
+    auto out =
+        capture_output<event_set<time_correlated_detection_event<traits>>>();
+    auto in = feed_input<event_set<time_correlated_detection_event<traits>>>(
+        negate_difftime(ref_processor(out)));
+    in.require_output_checked(out);
+
+    in.feed(time_correlated_detection_event<traits>{{{3}, 1}, 2});
+    REQUIRE(out.check(time_correlated_detection_event<traits>{{{3}, 1}, -2}));
+    in.feed(time_correlated_detection_event<traits>{{{5}, 1}, -7});
+    REQUIRE(out.check(time_correlated_detection_event<traits>{{{5}, 1}, 7}));
+    in.feed_end();
+    REQUIRE(out.check_end());
+}
+
 TEST_CASE("remove time correlation", "[remove_time_correlation]") {
     auto out = capture_output<event_set<detection_event<>>>();
     auto in = feed_input<event_set<time_correlated_detection_event<>>>(

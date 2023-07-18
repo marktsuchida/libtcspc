@@ -276,6 +276,34 @@ auto time_correlate_at_fraction(double fraction, Downstream &&downstream) {
 
 namespace internal {
 
+template <typename Downstream> class negate_difftime {
+    Downstream downstream;
+
+  public:
+    explicit negate_difftime(Downstream &&downstream)
+        : downstream(std::move(downstream)) {}
+
+    template <typename DataTraits>
+    void handle_event(
+        time_correlated_detection_event<DataTraits> const &event) noexcept {
+        static_assert(
+            std::is_signed_v<typename DataTraits::difftime_type>,
+            "difftime_type of time_correlated_detection_event used with negate_difftime must be a signed integer type");
+        time_correlated_detection_event<DataTraits> copy(event);
+        copy.difftime = -event.difftime;
+        downstream.handle_event(copy);
+    }
+
+    template <typename OtherEvent>
+    void handle_event(OtherEvent const &event) noexcept {
+        downstream.handle_event(event);
+    }
+
+    void handle_end(std::exception_ptr const &error) noexcept {
+        downstream.handle_end(error);
+    }
+};
+
 template <typename DataTraits, typename Downstream>
 class remove_time_correlation {
     Downstream downstream;
@@ -307,6 +335,21 @@ class remove_time_correlation {
 };
 
 } // namespace internal
+
+/**
+ * \brief Create a processor that changes the sign of difftime in
+ * time-correlated detection events.
+ *
+ * \ingroup processors-timing
+ *
+ * \tparam Downstream downstream processor type
+ *
+ * \param downstream downstream processor
+ */
+template <typename Downstream> auto negate_difftime(Downstream &&downstream) {
+    return internal::negate_difftime<Downstream>(
+        std::forward<Downstream>(downstream));
+}
 
 /**
  * \brief Create a processor that removes the difftime from detection events.
