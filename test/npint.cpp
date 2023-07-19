@@ -14,11 +14,11 @@ static_assert(std::is_trivial_v<u8np>);
 
 static_assert(sizeof(u8np) == sizeof(std::uint8_t));
 
-static_assert(std::numeric_limits<i8np>::min() == -128_i8np);
+static_assert(std::numeric_limits<i8np>::min() == i8np(-128));
 static_assert(std::numeric_limits<i8np>::digits == 7);
 
 TEST_CASE("integer construct and convert", "[integers]") {
-    u8np ue{};
+    static constexpr u8np ue{};
     CHECK(std::uint8_t(ue) == 0);
     CHECK(ue.value() == 0);
     CHECK(u8np(3).value() == 3);
@@ -151,8 +151,8 @@ TEST_CASE("integer subclasses", "[integers]") {
         // Needed to allow conversion from plain u8np:
         explicit myu8(u8np v) noexcept : myu8(v.value()) {}
     };
-    myu8 ue{};
-    myu8 ue2(3);
+    static constexpr myu8 ue{};
+    static constexpr myu8 ue2(3);
     // Member and friend operators work:
     CHECK((ue + -ue2).value() == 256 - 3);
 

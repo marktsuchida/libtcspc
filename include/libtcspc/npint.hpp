@@ -468,36 +468,52 @@ constexpr auto operator""_u64np(unsigned long long v) -> u64np {
  * \brief User defined literal for \ref i8np.
  *
  * \ingroup integers
+ *
+ * The minimum value cannot be represented with this, because the positive
+ * value of equal magnitude is out of range.
  */
 constexpr auto operator""_i8np(unsigned long long v) -> i8np {
-    return i8np(v);
+    return v <= std::numeric_limits<i8>::max() ? i8np(static_cast<i8>(v))
+                                               : throw;
 }
 
 /**
  * \brief User defined literal for \ref i16np.
  *
  * \ingroup integers
+ *
+ * The minimum value cannot be represented with this, because the positive
+ * value of equal magnitude is out of range.
  */
 constexpr auto operator""_i16np(unsigned long long v) -> i16np {
-    return i16np(v);
+    return v <= std::numeric_limits<i16>::max() ? i16np(static_cast<i16>(v))
+                                                : throw;
 }
 
 /**
  * \brief User defined literal for \ref i32np.
  *
  * \ingroup integers
+ *
+ * The minimum value cannot be represented with this, because the positive
+ * value of equal magnitude is out of range.
  */
 constexpr auto operator""_i32np(unsigned long long v) -> i32np {
-    return i32np(v);
+    return v <= std::numeric_limits<i32>::max() ? i32np(static_cast<i32>(v))
+                                                : throw;
 }
 
 /**
  * \brief User defined literal for \ref i64np.
  *
  * \ingroup integers
+ *
+ * The minimum value cannot be represented with this, because the positive
+ * value of equal magnitude is out of range.
  */
 constexpr auto operator""_i64np(unsigned long long v) -> i64np {
-    return i64np(v);
+    return v <= std::numeric_limits<i64>::max() ? i64np(static_cast<i64>(v))
+                                                : throw;
 }
 
 } // namespace literals
@@ -537,31 +553,31 @@ template <typename T> struct numeric_limits<tcspc::npint<T>> {
     static constexpr int min_exponent10 = numeric_limits<T>::min_exponent10;
     static constexpr int radix = numeric_limits<T>::radix;
 
-    static constexpr tcspc::npint<T> denorm_min() {
+    static constexpr auto denorm_min() -> tcspc::npint<T> {
         return tcspc::npint<T>(numeric_limits<T>::denorm_min());
     }
-    static constexpr tcspc::npint<T> epsilon() {
+    static constexpr auto epsilon() -> tcspc::npint<T> {
         return tcspc::npint<T>(numeric_limits<T>::epsilon());
     }
-    static constexpr tcspc::npint<T> infinity() {
+    static constexpr auto infinity() -> tcspc::npint<T> {
         return tcspc::npint<T>(numeric_limits<T>::infinity());
     }
-    static constexpr tcspc::npint<T> lowest() {
+    static constexpr auto lowest() -> tcspc::npint<T> {
         return tcspc::npint<T>(numeric_limits<T>::lowest());
     }
-    static constexpr tcspc::npint<T> max() {
+    static constexpr auto max() -> tcspc::npint<T> {
         return tcspc::npint<T>(numeric_limits<T>::max());
     }
-    static constexpr tcspc::npint<T> min() {
+    static constexpr auto min() -> tcspc::npint<T> {
         return tcspc::npint<T>(numeric_limits<T>::min());
     }
-    static constexpr tcspc::npint<T> quiet_NaN() {
+    static constexpr auto quiet_NaN() -> tcspc::npint<T> {
         return tcspc::npint<T>(numeric_limits<T>::quiet_NaN());
     }
-    static constexpr tcspc::npint<T> round_error() {
+    static constexpr auto round_error() -> tcspc::npint<T> {
         return tcspc::npint<T>(numeric_limits<T>::round_error());
     }
-    static constexpr tcspc::npint<T> signaling_NaN() {
+    static constexpr auto signaling_NaN() -> tcspc::npint<T> {
         return tcspc::npint<T>(numeric_limits<T>::signaling_NaN());
     }
 };

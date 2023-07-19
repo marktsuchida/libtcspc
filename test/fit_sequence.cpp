@@ -96,7 +96,7 @@ TEST_CASE("fit arithmetic time sequence time bound, signed abstime",
         // unaffected.
         for (int i = 0; i < 998; ++i)
             in.feed(e0{i * abstime_type(100)});
-        abstime_type offset = 2000;
+        static constexpr abstime_type offset = 2000;
         in.feed(e0{99800 - offset});
         in.feed(e0{99900 + offset});
         REQUIRE_THROWS_WITH(out.check_end(),
@@ -143,7 +143,7 @@ TEST_CASE("fit arithmetic time sequence time bound, unsigned abstime",
         // Same as signed version
         for (int i = 0; i < 998; ++i)
             in.feed(e0{i * abstime_type(100)});
-        abstime_type offset = 2000;
+        static constexpr abstime_type offset = 2000;
         in.feed(e0{99800 - offset});
         in.feed(e0{99900 + offset});
         REQUIRE_THROWS_WITH(out.check_end(),

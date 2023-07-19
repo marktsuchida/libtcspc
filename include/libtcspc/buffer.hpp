@@ -196,7 +196,8 @@ class buffer {
     using queue_type = vector_queue<Event>;
 
     std::size_t threshold;
-    std::chrono::time_point<clock_type>::duration max_latency;
+    std::chrono::time_point<clock_type>::duration max_latency =
+        std::chrono::time_point<clock_type>::duration::max();
 
     std::mutex mutex;
     std::condition_variable has_data_condition;
@@ -229,9 +230,7 @@ class buffer {
           downstream(std::move(downstream)) {}
 
     explicit buffer(std::size_t threshold, Downstream &&downstream)
-        : buffer(threshold,
-                 std::chrono::time_point<clock_type>::duration::max(),
-                 std::move(downstream)) {}
+        : threshold(threshold), downstream(std::move(downstream)) {}
 
     void handle_event(Event const &event) noexcept {
         bool should_notify{};

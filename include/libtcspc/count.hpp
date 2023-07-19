@@ -27,6 +27,7 @@ class count_up_to {
     Downstream downstream;
 
   public:
+    // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
     explicit count_up_to(std::uint64_t threshold, std::uint64_t limit,
                          std::uint64_t initial_count, Downstream &&downstream)
         : count(initial_count), init(initial_count), thresh(threshold),

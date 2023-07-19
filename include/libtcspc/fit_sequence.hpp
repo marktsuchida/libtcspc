@@ -84,7 +84,7 @@ struct linear_fit_result {
 
 // y.size() must be at least 3. If it is 2, mse will be NaN. If it is 0 or 1,
 // all results will be NaN.
-inline auto linear_fit_sequence(std::vector<double> const &y) noexcept
+inline auto linear_fit_sequence(std::vector<double> const &y)
     -> linear_fit_result {
     // Linear fit: yfit = a + b * x; y from data sequence, x from fixed
     // indices:
@@ -104,11 +104,11 @@ inline auto linear_fit_sequence(std::vector<double> const &y) noexcept
 
     // Sum of 0, 1, ..., n - 1
     std::uint64_t const isigma_x = (n - 1) * n / 2;
-    double const sigma_x = static_cast<double>(isigma_x);
+    auto const sigma_x = static_cast<double>(isigma_x);
 
     // Sum of 0^2, 1^2, ..., (n - 1)^2
     std::uint64_t const isigma_xx = isigma_x * (2 * (n - 1) + 1) / 3;
-    double const sigma_xx = static_cast<double>(isigma_xx);
+    auto const sigma_xx = static_cast<double>(isigma_xx);
 
     // Sum of y_0, y_1, ..., y_n-1
     double const sigma_y = std::reduce(y.cbegin(), y.cend());
@@ -118,12 +118,14 @@ inline auto linear_fit_sequence(std::vector<double> const &y) noexcept
         std::transform_reduce(x.cbegin(), x.cend(), y.cbegin(), 0.0);
 
     // Determinant of Xt X
-    double const det_XtX = n * sigma_xx - sigma_x * sigma_x;
+    double const det_XtX =
+        static_cast<double>(n) * sigma_xx - sigma_x * sigma_x;
 
     // Solve ordinary linear least squares:
     // [a b]t = (Xt X)^-1 Xt y
     double const a = (sigma_xx * sigma_y - sigma_x * sigma_xy) / det_XtX;
-    double const b = (n * sigma_xy - sigma_x * sigma_y) / det_XtX;
+    double const b =
+        (static_cast<double>(n) * sigma_xy - sigma_x * sigma_y) / det_XtX;
 
     // Sum of squared residuals
     double const ssr =
@@ -133,7 +135,7 @@ inline auto linear_fit_sequence(std::vector<double> const &y) noexcept
                                   auto const r = y - yfit;
                                   return r * r;
                               });
-    double const mse = ssr / (n - 2);
+    double const mse = ssr / static_cast<double>(n - 2);
 
     return {a, b, mse};
 }
@@ -178,12 +180,26 @@ class fit_arithmetic_time_sequence {
         static_assert(std::is_same_v<decltype(event.abstime), abstime_type>);
         if (stopped)
             return;
+
         if (relative_ticks.empty())
             first_tick_time = event.abstime;
-        relative_ticks.push_back(
-            static_cast<double>(event.abstime - first_tick_time));
+
+        try {
+            relative_ticks.push_back(
+                static_cast<double>(event.abstime - first_tick_time));
+        } catch (std::exception const &e) {
+            stopped = true;
+            downstream.handle_end(std::make_exception_ptr(e));
+        }
+
         if (relative_ticks.size() == len) {
-            auto result = linear_fit_sequence(relative_ticks);
+            linear_fit_result result{};
+            try {
+                result = linear_fit_sequence(relative_ticks);
+            } catch (std::exception const &e) {
+                stopped = true;
+                downstream.handle_end(std::make_exception_ptr(e));
+            }
 
             if (result.mse > mse_cutoff)
                 return fail("mean squared error exceeded cutoff");

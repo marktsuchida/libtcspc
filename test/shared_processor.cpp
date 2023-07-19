@@ -16,7 +16,7 @@ namespace tcspc {
 TEST_CASE("shared_processor", "[shared_processor]") {
     auto out1 = capture_output<event_set<>>();
     auto ref1 = ref_processor(out1);
-    auto shptr = std::make_shared<decltype(ref1)>(std::move(ref1));
+    auto shptr = std::make_shared<decltype(ref1)>(ref1);
 
     auto in = feed_input<event_set<>>(shared_processor(shptr));
 

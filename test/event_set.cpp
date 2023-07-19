@@ -63,7 +63,8 @@ static_assert(
 namespace {
 
 struct my_event {
-    friend auto operator<<(std::ostream &stream, my_event const &)
+    friend auto operator<<(std::ostream &stream,
+                           [[maybe_unused]] my_event const &event)
         -> std::ostream & {
         return stream << "expected output";
     }

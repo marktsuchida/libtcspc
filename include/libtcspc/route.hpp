@@ -43,7 +43,7 @@ class route {
 
     template <typename Event, std::size_t... I>
     void route_event(std::size_t index, Event const &event,
-                     std::index_sequence<I...>) noexcept {
+                     [[maybe_unused]] std::index_sequence<I...> seq) noexcept {
         (void)std::array{(route_event_if<I>(I == index, event), 0)...};
     }
 
