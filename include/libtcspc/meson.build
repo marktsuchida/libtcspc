@@ -14,6 +14,7 @@ public_cpp_headers = files(
     'delay.hpp',
     'delay_hasten.hpp',
     'event_set.hpp',
+    'fit_sequence.hpp',
     'gate.hpp',
     'generate.hpp',
     'histogram.hpp',

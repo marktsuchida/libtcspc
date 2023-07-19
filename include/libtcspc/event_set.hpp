@@ -57,6 +57,17 @@ class event_variant
             [&](auto const &e) -> std::ostream & { return stream << e; },
             event);
     }
+
+    /** \brief Approximate equality for unit testing. */
+    friend auto approximately_equal(event_variant const &lhs,
+                                    event_variant const &rhs) noexcept
+        -> bool {
+        return std::visit(
+            [](auto const &l, auto const &r) -> bool {
+                return approximately_equal(l, r);
+            },
+            lhs, rhs);
+    }
 };
 
 namespace internal {

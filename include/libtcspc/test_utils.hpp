@@ -87,12 +87,12 @@ template <typename EventSet> class capture_output {
         this->error = error;
     }
 
-    template <typename Event,
+    template <typename Event, typename Equal,
               typename = std::enable_if_t<contains_event_v<EventSet, Event>>>
-    auto check(Event const &event) -> bool {
+    auto check_impl(Event const &event, Equal is_equal) -> bool {
         assert(!end_of_life);
         event_variant<EventSet> expected = event;
-        if (!output.empty() && output.front() == expected) {
+        if (!output.empty() && is_equal(output.front(), expected)) {
             output.pop();
             return true;
         }
@@ -105,6 +105,20 @@ template <typename EventSet> class capture_output {
             dump_output();
         }
         return false;
+    }
+
+    template <typename Event,
+              typename = std::enable_if_t<contains_event_v<EventSet, Event>>>
+    auto check(Event const &event) -> bool {
+        return check_impl(event, std::equal_to<>());
+    }
+
+    template <typename Event,
+              typename = std::enable_if_t<contains_event_v<EventSet, Event>>>
+    auto check_approx(Event const &event) -> bool {
+        return check_impl(event, [](auto const &lhs, auto const &rhs) {
+            return approximately_equal(lhs, rhs);
+        });
     }
 
     [[nodiscard]] auto check_not_end() -> bool {
@@ -404,22 +418,21 @@ struct timestamped_test_event {
     typename DataTraits::abstime_type abstime;
 
     /** \brief Equality comparison operator. */
-    friend auto operator==(timestamped_test_event<N> const &lhs,
-                           timestamped_test_event<N> const &rhs) noexcept
+    friend auto operator==(timestamped_test_event const &lhs,
+                           timestamped_test_event const &rhs) noexcept
         -> bool {
         return lhs.abstime == rhs.abstime;
     }
 
     /** \brief Inequality comparison operator. */
-    friend auto operator!=(timestamped_test_event<N> const &lhs,
-                           timestamped_test_event<N> const &rhs) noexcept
+    friend auto operator!=(timestamped_test_event const &lhs,
+                           timestamped_test_event const &rhs) noexcept
         -> bool {
         return not(lhs == rhs);
     }
 
     /** \brief Stream insertion operator. */
-    friend auto operator<<(std::ostream &strm,
-                           timestamped_test_event<N> const &e)
+    friend auto operator<<(std::ostream &strm, timestamped_test_event const &e)
         -> std::ostream & {
         return strm << "timestamped_test_event<" << N << ">{" << e.abstime
                     << "}";

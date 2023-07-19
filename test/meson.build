@@ -14,6 +14,7 @@ libtcspc_tests_srcs = [
     'delay.cpp',
     'delay_hasten.cpp',
     'event_set.cpp',
+    'fit_sequence.cpp',
     'gate.cpp',
     'generate.cpp',
     'histogram.cpp',
