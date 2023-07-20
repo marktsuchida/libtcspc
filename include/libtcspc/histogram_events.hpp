@@ -60,7 +60,7 @@ struct histogram_stats {
     }
 
     /** \brief Stream insertion operator. */
-    friend auto operator<<(std::ostream &s, histogram_stats stats)
+    friend auto operator<<(std::ostream &s, histogram_stats const &stats)
         -> std::ostream & {
         return s << '{' << stats.total << ", " << stats.saturated << '}';
     }
@@ -469,7 +469,7 @@ struct element_histogram_event {
     }
 
     /** \brief Stream insertion operator. */
-    friend auto operator<<(std::ostream &s, element_histogram_event e)
+    friend auto operator<<(std::ostream &s, element_histogram_event const &e)
         -> std::ostream & {
         s << "element_histogram(" << e.time_range << ", " << e.element_index
           << ", ";
@@ -533,7 +533,7 @@ struct histogram_array_event {
     }
 
     /** \brief Stream insertion operator. */
-    friend auto operator<<(std::ostream &s, histogram_array_event e)
+    friend auto operator<<(std::ostream &s, histogram_array_event const &e)
         -> std::ostream & {
         s << "histogram_array(" << e.time_range << ", ";
         internal::print_range(s, e.histogram_array.as_span().begin(),
@@ -609,7 +609,8 @@ struct concluding_histogram_array_event {
     }
 
     /** \brief Stream insertion operator. */
-    friend auto operator<<(std::ostream &s, concluding_histogram_array_event e)
+    friend auto operator<<(std::ostream &s,
+                           concluding_histogram_array_event const &e)
         -> std::ostream & {
         s << "concluding_histogram_array(" << e.time_range << ", ";
         internal::print_range(s, e.histogram_array.as_span().begin(),
