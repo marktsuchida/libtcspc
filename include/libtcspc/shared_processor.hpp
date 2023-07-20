@@ -49,6 +49,10 @@ template <typename Downstream> class shared_processor {
  * std::shared_ptr. It can be used to retain access to the downstream
  * processor after it is attached to the upstream.
  *
+ * Copying a shared processor preserves the reference to the same downstream
+ * processor, instead of copying the entire downstream as with regular
+ * processors. Only one copy should be used to actually receive input.
+ *
  * \see ref_processor
  *
  * \tparam Downstream downstream processor type

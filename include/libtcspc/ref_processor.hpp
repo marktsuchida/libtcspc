@@ -18,6 +18,11 @@ namespace tcspc {
  * This is an adapter to allow the use of non-movable processors, or when you
  * do not want to move a downstream processor into its upstream.
  *
+ * Copying a \c ref_processor produces another instance referencing the same
+ * downstream processor. It is up to the user to ensure that the downstream
+ * processor remains valid and in the same memory location for the lifetime of
+ * the \c ref_processor (and all its copies).
+ *
  * \see shared_processor
  *
  * \tparam Downstream downstream processor type
