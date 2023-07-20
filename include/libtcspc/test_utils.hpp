@@ -39,6 +39,26 @@ template <typename EventSet> class capture_output {
         }
     }
 
+    template <typename Event, typename Equal,
+              typename = std::enable_if_t<contains_event_v<EventSet, Event>>>
+    auto check_impl(Event const &event, Equal is_equal) -> bool {
+        assert(!end_of_life);
+        event_variant<EventSet> expected = event;
+        if (!output.empty() && is_equal(output.front(), expected)) {
+            output.pop();
+            return true;
+        }
+        end_of_life = true;
+        if (!suppress_output) {
+            std::cerr << "expected output: " << event << '\n';
+            if (output.empty()) {
+                std::cerr << "found no output\n";
+            }
+            dump_output();
+        }
+        return false;
+    }
+
   public:
     explicit capture_output(bool suppress_output = false)
         : suppress_output(suppress_output) {}
@@ -85,26 +105,6 @@ template <typename EventSet> class capture_output {
         assert(!ended);
         ended = true;
         this->error = error;
-    }
-
-    template <typename Event, typename Equal,
-              typename = std::enable_if_t<contains_event_v<EventSet, Event>>>
-    auto check_impl(Event const &event, Equal is_equal) -> bool {
-        assert(!end_of_life);
-        event_variant<EventSet> expected = event;
-        if (!output.empty() && is_equal(output.front(), expected)) {
-            output.pop();
-            return true;
-        }
-        end_of_life = true;
-        if (!suppress_output) {
-            std::cerr << "expected output: " << event << '\n';
-            if (output.empty()) {
-                std::cerr << "found no output\n";
-            }
-            dump_output();
-        }
-        return false;
     }
 
     template <typename Event,
