@@ -247,4 +247,37 @@ TEST_CASE("Merge max time shift", "[merge]") {
     }
 }
 
+TEST_CASE("merge N streams", "[merge_n]") {
+    auto out = capture_output<all_events>();
+
+    SECTION("Zero-stream merge_n returns empty tuple") {
+        auto tup = merge_n<0, default_data_traits, all_events>(
+            1000, ref_processor(out));
+        static_assert(std::tuple_size_v<decltype(tup)> == 0);
+    }
+
+    SECTION("Single-stream merge_n returns downstream in tuple") {
+        auto [m0] = merge_n<1, default_data_traits, all_events>(
+            1000, ref_processor(out));
+        auto in = feed_input<all_events>(std::move(m0));
+        in.require_output_checked(out);
+        in.feed(e0{0});
+        REQUIRE(out.check(e0{0}));
+        in.feed_end();
+        REQUIRE(out.check_end());
+    }
+
+    SECTION("Multi-stream merge_n can be instantiated") {
+        auto [m0, m1] = merge_n<2, default_data_traits, all_events>(
+            1000, ref_processor(out));
+        auto [n0, n1, n2] = merge_n<3, default_data_traits, all_events>(
+            1000, ref_processor(out));
+        auto [o0, o1, o2, o3] = merge_n<4, default_data_traits, all_events>(
+            1000, ref_processor(out));
+        auto [p0, p1, p2, p3, p4] =
+            merge_n<5, default_data_traits, all_events>(1000,
+                                                        ref_processor(out));
+    }
+}
+
 } // namespace tcspc

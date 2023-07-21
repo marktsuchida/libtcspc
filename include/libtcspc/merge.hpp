@@ -180,6 +180,8 @@ class merge_input {
  * that the two input streams have events in increasing abstime order and the
  * time shift between them does not exceed max_time_shift.
  *
+ * \see merge_n
+ *
  * \tparam DataTraits traits type specifying \c abstime_type
  *
  * \tparam EventSet the event set handled by the merge processor
@@ -190,7 +192,7 @@ class merge_input {
  *
  * \param downstream downstream processor (will be moved out)
  *
- * \return std::pair of the two processors serving as the input to merge
+ * \return tuple-like of two processors serving as the input to merge
  */
 template <typename DataTraits, typename EventSet, typename Downstream>
 auto merge(typename DataTraits::abstime_type max_time_shift,
@@ -201,6 +203,69 @@ auto merge(typename DataTraits::abstime_type max_time_shift,
     return std::make_pair(
         internal::merge_input<DataTraits, 0, EventSet, Downstream>(p),
         internal::merge_input<DataTraits, 1, EventSet, Downstream>(p));
+}
+
+/**
+ * \brief Create a processor that merges a given number of event streams.
+ *
+ * \ingroup processors-basic
+ *
+ * The merged stream will be produced in increasing abstime order, provided
+ * that all input streams have events in increasing abstime order and the time
+ * shift between them does not exceed max_time_shift.
+ *
+ * This is useful when merging a (compile-time) variable number of similar
+ * streams. If the streams to be merged are dissimilar (have different pairwise
+ * time shift and especially event frequency), it may be more efficient to
+ * manually build a tree using the 2-way \ref merge such that the streams with
+ * less frequent events are merged together first.
+ *
+ * \see merge
+ *
+ * \tparam N number of input streams
+ *
+ * \tparam DataTraits traits type specifying \c abstime_type
+ *
+ * \tparam EventSet the event set handled by the merge processor
+ *
+ * \tparam Downstream downstream processor type
+ *
+ * \param max_time_shift the maximum time shift between the two input streams
+ *
+ * \param downstream downstream processor
+ *
+ * \return tuple-like of N processors serving as the input to merge
+ */
+template <std::size_t N, typename DataTraits, typename EventSet,
+          typename Downstream>
+auto merge_n(typename DataTraits::abstime_type max_time_shift,
+             Downstream &&downstream) {
+    if constexpr (N == 0) {
+        return std::tuple{};
+    } else if constexpr (N == 1) {
+        return std::tuple{std::forward<Downstream>(downstream)};
+    } else {
+        auto [final_in0, final_in1] = merge<DataTraits, EventSet>(
+            max_time_shift, std::forward<Downstream>(downstream));
+
+        std::size_t const left = N / 2;
+        std::size_t const right = N - left;
+        if constexpr (left == 1) {
+            if constexpr (right == 1) {
+                return std::tuple{std::move(final_in0), std::move(final_in1)};
+            } else {
+                return std::tuple_cat(
+                    std::tuple{std::move(final_in0)},
+                    merge_n<right, DataTraits, EventSet>(
+                        max_time_shift, std::move(final_in1)));
+            }
+        } else {
+            return std::tuple_cat(merge_n<left, DataTraits, EventSet>(
+                                      max_time_shift, std::move(final_in0)),
+                                  merge_n<right, DataTraits, EventSet>(
+                                      max_time_shift, std::move(final_in1)));
+        }
+    }
 }
 
 } // namespace tcspc
