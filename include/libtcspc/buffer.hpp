@@ -9,11 +9,13 @@
 #include "vector_queue.hpp"
 
 #include <algorithm>
+#include <cassert>
 #include <chrono>
 #include <condition_variable>
 #include <cstddef>
 #include <exception>
 #include <iterator>
+#include <limits>
 #include <memory>
 #include <mutex>
 #include <type_traits>
@@ -43,31 +45,99 @@ constexpr std::size_t destructive_interference_size = 64;
  * \ingroup misc
  *
  * In other words, a free list of \c T instances that automatically allocates
- * additional instances on demand.
+ * additional instances on demand (up to a count limit, upon which the request
+ * blocks).
  *
  * Note that behavior is undefined unless all checked out objects are released
  * before the pool is destroyed.
  *
- * \tparam T the object type
+ * \tparam T the object type (must be default-constructible)
  */
 template <typename T> class object_pool {
     std::mutex mutex;
-    std::vector<std::unique_ptr<T>> buffers;
+    std::condition_variable not_empty_condition;
+    std::vector<std::unique_ptr<T>> objects;
+    std::size_t max_objects;
+    std::size_t object_count = 0;
+
+    auto make_checked_out_ptr(std::unique_ptr<T> uptr) -> std::shared_ptr<T> {
+        return {uptr.release(), [this](auto ptr) {
+                    if (ptr != nullptr) {
+                        {
+                            std::scoped_lock lock(mutex);
+                            objects.emplace_back(ptr);
+                        }
+                        not_empty_condition.notify_one();
+                    }
+                }};
+    }
 
   public:
     /**
      * \brief Construct with initial count.
      *
-     * \param initial_count number of \c T instances to pre-allocate
+     * \param initial_count number of \c T instances to pre-allocate (must not
+     * be greater than max_count)
+     *
+     * \param max_count maximum number of \c T instances to have in circulation
+     * at any time (must be positive)
      */
-    explicit object_pool(std::size_t initial_count = 0) {
-        buffers.reserve(initial_count);
-        std::generate_n(std::back_inserter(buffers), initial_count,
+    explicit object_pool(
+        std::size_t initial_count = 0,
+        std::size_t max_count = std::numeric_limits<std::size_t>::max())
+        : max_objects(max_count) {
+        assert(initial_count <= max_count);
+        assert(max_count > 0);
+        objects.reserve(initial_count);
+        std::generate_n(std::back_inserter(objects), initial_count,
                         [] { return std::make_unique<T>(); });
+        object_count = initial_count;
     }
 
     /**
-     * \brief Obtain an object for use.
+     * \brief Obtain an object for use, if available without blocking.
+     *
+     * If there are no available objects and the maximum allowed number are
+     * already in circulation, this function will return immediately an empty
+     * shared pointer.
+     *
+     * The returned shared pointer has a deleter that will automatically return
+     * (check in) the object back to this pool.
+     *
+     * Note that all checked out objects must be released (by allowing all
+     * shared pointers to be destroyed) before the pool is destroyed.
+     *
+     * \return shared pointer to the checked out object, or empty if none are
+     * available immediately
+     */
+    auto maybe_check_out() -> std::shared_ptr<T> {
+        std::unique_ptr<T> uptr;
+        bool should_allocate = false;
+
+        {
+            std::unique_lock lock(mutex);
+            if (objects.empty() && object_count < max_objects) {
+                should_allocate = true;
+                ++object_count;
+            } else if (objects.empty()) {
+                return {};
+            }
+            uptr = std::move(objects.back());
+            objects.pop_back();
+        }
+
+        if (should_allocate)
+            uptr = std::make_unique<T>();
+
+        return make_checked_out_ptr(std::move(uptr));
+    }
+
+    /**
+     * \brief Obtain an object for use, blocking if necessary.
+     *
+     * If there are no available objects and the maximum allowed number are
+     * already in circulation, this function will block until an object is
+     * available.
      *
      * The returned shared pointer has a deleter that will automatically return
      * (check in) the object back to this pool.
@@ -79,24 +149,25 @@ template <typename T> class object_pool {
      */
     auto check_out() -> std::shared_ptr<T> {
         std::unique_ptr<T> uptr;
+        bool should_allocate = false;
 
         {
-            std::scoped_lock hold(mutex);
-            if (!buffers.empty()) {
-                uptr = std::move(buffers.back());
-                buffers.pop_back();
+            std::unique_lock lock(mutex);
+            if (objects.empty() && object_count < max_objects) {
+                should_allocate = true;
+                ++object_count;
+            } else {
+                not_empty_condition.wait(lock,
+                                         [&] { return not objects.empty(); });
+                uptr = std::move(objects.back());
+                objects.pop_back();
             }
         }
 
-        if (!uptr)
+        if (should_allocate)
             uptr = std::make_unique<T>();
 
-        return {uptr.release(), [this](auto ptr) {
-                    if (ptr != nullptr) {
-                        std::scoped_lock hold(mutex);
-                        buffers.emplace_back(std::unique_ptr<T>(ptr));
-                    }
-                }};
+        return make_checked_out_ptr(std::move(uptr));
     }
 };
 
