@@ -48,12 +48,17 @@ constexpr std::size_t destructive_interference_size = 64;
  * additional instances on demand (up to a count limit, upon which the request
  * blocks).
  *
- * Note that behavior is undefined unless all checked out objects are released
- * before the pool is destroyed.
+ * Instances must be handled via \c std::shared_ptr and do not allow move or
+ * copy.
+ *
+ * Note that all objects created by the pool remain allocated until the pool is
+ * destroyed, which only happens once all shared pointers to pool objects have
+ * been destroyed or reset.
  *
  * \tparam T the object type (must be default-constructible)
  */
-template <typename T> class object_pool {
+template <typename T>
+class object_pool : public std::enable_shared_from_this<object_pool<T>> {
     std::mutex mutex;
     std::condition_variable not_empty_condition;
     std::vector<std::unique_ptr<T>> objects;
@@ -61,20 +66,22 @@ template <typename T> class object_pool {
     std::size_t object_count = 0;
 
     auto make_checked_out_ptr(std::unique_ptr<T> uptr) -> std::shared_ptr<T> {
-        return {uptr.release(), [this](auto ptr) {
+        return {uptr.release(), [self = this->shared_from_this()](auto ptr) {
                     if (ptr != nullptr) {
                         {
-                            std::scoped_lock lock(mutex);
-                            objects.emplace_back(ptr);
+                            std::scoped_lock lock(self->mutex);
+                            self->objects.emplace_back(ptr);
                         }
-                        not_empty_condition.notify_one();
+                        self->not_empty_condition.notify_one();
                     }
                 }};
     }
 
   public:
     /**
-     * \brief Construct with initial count.
+     * \brief Construct an object pool; to be used with \c std::make_shared.
+     *
+     * Make sure to manage the instance with \c std::shared_ptr.
      *
      * \param initial_count number of \c T instances to pre-allocate (must not
      * be greater than max_count)
@@ -109,6 +116,8 @@ template <typename T> class object_pool {
      *
      * \return shared pointer to the checked out object, or empty if none are
      * available immediately
+     *
+     * \throws std::bad_alloc if allocation failed
      */
     auto maybe_check_out() -> std::shared_ptr<T> {
         std::unique_ptr<T> uptr;
@@ -146,6 +155,8 @@ template <typename T> class object_pool {
      * shared pointers to be destroyed) before the pool is destroyed.
      *
      * \return shared pointer to the checked out object
+     *
+     * \throws std::bad_alloc if allocation failed
      */
     auto check_out() -> std::shared_ptr<T> {
         std::unique_ptr<T> uptr;
@@ -341,7 +352,7 @@ class buffer {
         has_data_condition.notify_one();
     }
 
-    void pump_downstream() noexcept {
+    void pump_events() noexcept {
         std::unique_lock lock(mutex);
 
         for (;;) {
@@ -389,11 +400,10 @@ class buffer {
  * \ingroup processors-basic
  *
  * This receives events of type \c Event from upstream like a normal processor,
- * but stores them in a buffer. By calling <tt>void pump_downstream()
- * noexcept</tt> on a different thread, the buffered events can be sent
- * downstream on that thread. The \c pump_downstream function blocks until the
- * upstream has signaled the end of stream and all events have been emitted
- * downstream.
+ * but stores them in a buffer. By calling <tt>void pump_events() noexcept</tt>
+ * on a different thread, the buffered events can be sent downstream on that
+ * thread. The \c pump_events function blocks until the upstream has signaled
+ * the end of stream and all events have been emitted downstream.
  *
  * Usually \c Event should be EventArray in order to reduce overhead.
  *
@@ -406,7 +416,7 @@ class buffer {
  *
  * \param downstream downstream processor (moved out)
  *
- * \return buffer-events pseudo-processor
+ * \return buffer pseudo-processor having \c pump_events member function
  */
 template <typename Event, typename Downstream>
 auto buffer(std::size_t threshold, Downstream &&downstream) {
@@ -420,11 +430,10 @@ auto buffer(std::size_t threshold, Downstream &&downstream) {
  * \ingroup processors-basic
  *
  * This receives events of type \c Event from upstream like a normal processor,
- * but stores them in a buffer. By calling <tt>void pump_downstream()
- * noexcept</tt> on a different thread, the buffered events can be sent
- * downstream on that thread. The \c pump_downstream function blocks until the
- * upstream has signaled the end of stream and all events have been emitted
- * downstream.
+ * but stores them in a buffer. By calling <tt>void pump_events() noexcept</tt>
+ * on a different thread, the buffered events can be sent downstream on that
+ * thread. The \c pump_events function blocks until the upstream has signaled
+ * the end of stream and all events have been emitted downstream.
  *
  * Usually \c Event should be EventArray in order to reduce overhead.
  *
@@ -441,7 +450,7 @@ auto buffer(std::size_t threshold, Downstream &&downstream) {
  *
  * \param downstream downstream processor (moved out)
  *
- * \return buffer-events pseudo-processor
+ * \return buffer pseudo-processor having \c pump_events member function
  */
 template <typename Event, typename Duration, typename Downstream>
 auto real_time_buffer(std::size_t threshold, Duration latency_limit,

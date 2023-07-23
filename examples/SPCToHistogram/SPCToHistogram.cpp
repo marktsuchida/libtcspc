@@ -123,7 +123,7 @@ auto main(int argc, char *argv[]) -> int {
         histogram_saver<sample_type>(out_filename))))))));
     // clang-format on
 
-    std::thread proc_thread([&] { buffer.pump_downstream(); });
+    std::thread proc_thread([&] { buffer.pump_events(); });
 
     std::fstream input(in_filename, std::fstream::binary | std::fstream::in);
     if (!input.is_open()) {
