@@ -6,11 +6,29 @@
 
 #include "libtcspc/common.hpp"
 
-#include <cstdint>
+#include "libtcspc/ref_processor.hpp"
+#include "libtcspc/test_utils.hpp"
 
 #include <catch2/catch_all.hpp>
 
-namespace tcspc::internal {
+#include <cstdint>
+
+namespace tcspc {
+
+TEST_CASE("null sink", "[null_sink]") {
+    auto sink = null_sink();
+    sink.handle_event(123);
+    sink.handle_event(std::string("hello"));
+}
+
+TEST_CASE("null source", "[null_source]") {
+    auto out = capture_output<event_set<>>();
+    auto src = null_source(ref_processor(out));
+    src.pump_events();
+    REQUIRE(out.check_end());
+}
+
+namespace internal {
 
 static_assert(!false_for_type<int>::value);
 
@@ -43,4 +61,6 @@ TEST_CASE("narrow integer", "[common]") {
     CHECK(narrow<std::uint8_t>(std::uint64_t(100)) == std::uint8_t(100));
 }
 
-} // namespace tcspc::internal
+} // namespace internal
+
+} // namespace tcspc

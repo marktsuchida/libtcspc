@@ -84,6 +84,36 @@ class null_sink {
     handle_end([[maybe_unused]] std::exception_ptr const &error) noexcept {}
 };
 
+namespace internal {
+
+template <typename Downstream> class null_source {
+    Downstream downstream;
+
+  public:
+    explicit null_source(Downstream &&downstream)
+        : downstream(std::move(downstream)) {}
+
+    void pump_events() noexcept { downstream.handle_end({}); }
+};
+
+} // namespace internal
+
+/**
+ * \brief Create a processor that sources an empty stream.
+ *
+ * \ingroup processors-basic
+ *
+ * \tparam Downstream downstream processor type
+ *
+ * \param downstream downstream processor
+ *
+ * \return null source having \c pump_events member function
+ */
+template <typename Downstream> auto null_source(Downstream &&downstream) {
+    return internal::null_source<Downstream>(
+        std::forward<Downstream>(downstream));
+}
+
 /**
  * \brief Histogram overflow strategy tag to request saturating addition on
  * overflowed bins.
