@@ -33,19 +33,6 @@ class autodelete {
     ~autodelete() { std::remove(path.string().c_str()); }
 };
 
-template <typename T> class pvector : public std::vector<T> {
-  public:
-    using std::vector<T>::vector;
-
-    friend auto operator<<(std::ostream &stream, pvector vec)
-        -> std::ostream & {
-        stream << "pvector{ ";
-        for (auto const &item : vec)
-            stream << item << ", ";
-        return stream << "}";
-    }
-};
-
 } // namespace
 
 TEST_CASE("read nonexistent file", "[read_file]") {

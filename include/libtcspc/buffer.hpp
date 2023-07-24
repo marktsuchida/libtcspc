@@ -228,6 +228,50 @@ auto dereference_pointer(Downstream &&downstream) {
 
 namespace internal {
 
+template <typename Event, typename EventVector, typename Downstream>
+class batch {
+    std::shared_ptr<object_pool<EventVector>> buffer_pool;
+    std::size_t batch_size;
+
+    std::shared_ptr<EventVector> cur_batch;
+
+    Downstream downstream;
+
+  public:
+    explicit batch(std::shared_ptr<object_pool<EventVector>> buffer_pool,
+                   std::size_t batch_size, Downstream &&downstream)
+        : buffer_pool(std::move(buffer_pool)), batch_size(batch_size),
+          downstream(std::move(downstream)) {
+        assert(batch_size > 0);
+    }
+
+    void handle_event(Event const &event) noexcept {
+        if (not cur_batch) {
+            try {
+                cur_batch = buffer_pool->check_out();
+                cur_batch->reserve(batch_size);
+                cur_batch->clear();
+            } catch (std::exception const &e) {
+                downstream.handle_end(std::make_exception_ptr(e));
+                return;
+            }
+        }
+
+        cur_batch->push_back(event);
+
+        if (cur_batch->size() == batch_size) {
+            downstream.handle_event(cur_batch);
+            cur_batch.reset();
+        }
+    }
+
+    void handle_end(std::exception_ptr const &error) noexcept {
+        if (cur_batch && not cur_batch->empty())
+            downstream.handle_event(std::move(cur_batch));
+        downstream.handle_end(error);
+    }
+};
+
 template <typename EventContainer, typename Event, typename Downstream>
 class unbatch {
     Downstream downstream;
@@ -249,10 +293,58 @@ class unbatch {
 } // namespace internal
 
 /**
+ * \brief Create a processor that batches events into vectors for buffering.
+ *
+ * \ingroup processors-basic
+ *
+ * Collects every \e batch_size events into vectors. The vectors are obtained
+ * from the given \e buffer_pool and are passed downstream via \c
+ * std::shared_ptr.
+ *
+ * This is not quite symmetric with \ref unbatch, which handles bare event
+ * vectors (or other containers).
+ *
+ * This processor does not perform time-based batching, so may introduce
+ * arbitrary delays to real-time event streams. Usually real-time streams
+ * originate from device APIs that read in batches.
+ *
+ * \see unbatch
+ *
+ * \tparam Event the event type
+ *
+ * \tparam EventVector vector-like container of events
+ *
+ * \tparam Downstream downstream processor type
+ *
+ * \param buffer_pool object pool providing event vectors
+ *
+ * \param batch_size number of events to collect in each batch
+ *
+ * \param downstream downstream processor
+ *
+ * \return batch processor
+ */
+template <typename Event, typename EventVector, typename Downstream>
+auto batch(std::shared_ptr<object_pool<EventVector>> buffer_pool,
+           std::size_t batch_size, Downstream &&downstream) {
+    return internal::batch<Event, EventVector, Downstream>(
+        buffer_pool, batch_size, std::forward<Downstream>(downstream));
+}
+
+/**
  * \brief Create a processor transforming batches of events to individual
  * events.
  *
  * \ingroup processors-basic
+ *
+ * Events in (ordered) containers are emitted one by one.
+ *
+ * This is not quite symmetric with \ref batch, which requires the container to
+ * be vector-like, and emits them via \c std::shared_ptr.
+ *
+ * \see batch
+ *
+ * \see dereference_pointer
  *
  * \tparam EventContainer event container type
  *
@@ -260,7 +352,7 @@ class unbatch {
  *
  * \tparam Downstream downstream processor type
  *
- * \param downstream downstream processor (moved out)
+ * \param downstream downstream processor
  *
  * \return unbatch processor
  */

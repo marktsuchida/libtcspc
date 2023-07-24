@@ -307,6 +307,30 @@ auto feed_input(Downstream &&downstream) {
 }
 
 /**
+ * \brief Like std::vector, but with a stream insertion operator.
+ *
+ * \ingroup misc
+ *
+ * This can be used in place of \c std::vector as test events for batching and
+ * buffering processors.
+ *
+ * \tparam T element type
+ */
+template <typename T> class pvector : public std::vector<T> {
+  public:
+    using std::vector<T>::vector;
+
+    /** \brief Stream insertion operator. */
+    friend auto operator<<(std::ostream &stream, pvector vec)
+        -> std::ostream & {
+        stream << "pvector{ ";
+        for (auto const &item : vec)
+            stream << item << ", ";
+        return stream << "}";
+    }
+};
+
+/**
  * \brief Processors that sinks only events in the given set, and
  * end-of-stream.
  *
