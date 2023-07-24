@@ -101,10 +101,21 @@ class read_istream {
     }
 
     void pump_events() noexcept {
+        auto this_read_size = read_size;
+        if (stream->good()) {
+            // Align second and subsequent reads to read_size if current offset
+            // is available. This may or may not improve read performance (when
+            // the read_size is a multiple of the page size or block size), but
+            // can't hurt.
+            std::streamoff const offset = stream->tellg();
+            if (offset >= 0)
+                this_read_size -= offset % read_size;
+        }
+
         while (total_bytes_read < length && stream->good()) {
-            auto const bufsize_bytes =
-                remainder_nbytes +
-                std::min<std::uint64_t>(read_size, length - total_bytes_read);
+            this_read_size = std::min<std::uint64_t>(
+                this_read_size, length - total_bytes_read); // > 0
+            auto const bufsize_bytes = remainder_nbytes + this_read_size;
             auto const bufsize_elements =
                 (bufsize_bytes - 1) / sizeof(Event) + 1;
             std::shared_ptr<EventVector> buf;
@@ -112,8 +123,7 @@ class read_istream {
                 buf = buffer_pool->check_out();
                 buf->resize(bufsize_elements);
             } catch (std::exception const &e) {
-                downstream.handle_end(std::make_exception_ptr(e));
-                return;
+                return downstream.handle_end(std::make_exception_ptr(e));
             }
             // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
             span<char> const buffer_span{reinterpret_cast<char *>(buf->data()),
@@ -123,6 +133,7 @@ class read_istream {
                       std::next(remainder.begin(), remainder_nbytes),
                       buffer_span.begin());
             auto const read_span = buffer_span.subspan(remainder_nbytes);
+            assert(read_span.size() == this_read_size);
 
             stream->read(read_span.data(),
                          static_cast<std::streamsize>(read_span.size()));
@@ -142,6 +153,8 @@ class read_istream {
                 buf->resize(this_batch_size);
                 downstream.handle_event(buf);
             }
+
+            this_read_size = read_size;
         }
 
         std::exception_ptr error;
