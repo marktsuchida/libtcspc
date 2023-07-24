@@ -102,6 +102,12 @@ namespace tcspc {
 /** @} */
 
 /**
+ * \defgroup input-streams Input streams
+ *
+ * \brief Input stream wrappers for use with \ref read_binary_stream.
+ */
+
+/**
  * \defgroup timing-generators Timing generators
  *
  * \brief Timing generators for use with \ref generate.

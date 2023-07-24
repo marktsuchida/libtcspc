@@ -10,13 +10,16 @@
 #include "span.hpp"
 
 #include <array>
+#include <cassert>
 #include <cstddef>
 #include <cstdint>
+#include <cstdio>
 #include <exception>
 #include <fstream>
 #include <istream>
 #include <limits>
 #include <memory>
+#include <optional>
 #include <stdexcept>
 #include <type_traits>
 #include <vector>
@@ -25,94 +28,320 @@ namespace tcspc {
 
 namespace internal {
 
-// Design note: read_istream holds a std::istream via std::unique_ptr to
-// allow polymorphism (the overhead of the indirection is likely negligible).
-// We could also imagine scenarios where user code wants to provide a reference
-// to a stream that is shared with other user tasks. This is not possible due
-// to the unique ownership. However, the intended use case for
-// read_istream is upstream of a buffer, pumping events on a dedicated
-// reading thread. Since streams are in general not thread safe, sharing the
-// istream with some other task almost never makes sense.
+template <typename IStream> class istream_input_stream {
+    static_assert(std::is_base_of_v<std::istream, IStream>);
+    IStream stream;
 
-inline auto unbuffered_binary_ifstream_at_offset(std::string const &filename,
-                                                 std::uint64_t start)
-    -> std::ifstream {
-    std::ifstream stream;
-    stream.rdbuf()->pubsetbuf(nullptr, 0); // Disable buffering.
-    stream.open(filename, std::ios::binary);
-    if (start > 0 && stream.good()) {
-        // Unlikely but guard against 32-bit std::streamoff.
-        if (start > std::numeric_limits<std::streamoff>::max())
-            stream.setstate(std::ios::failbit);
-        else
-            stream.seekg(static_cast<std::streamoff>(start), std::ios::beg);
-        if (stream.fail()) {
+  public:
+    explicit istream_input_stream(IStream &&stream)
+        : stream(std::move(stream)) {}
+
+    auto is_error() noexcept -> bool {
+        auto const flags = stream.rdstate();
+        return ((flags & std::ios::failbit) || (flags & std::ios::badbit)) &&
+               not(flags & std::ios::eofbit);
+    }
+
+    auto is_eof() noexcept -> bool { return stream.eof(); }
+
+    auto is_good() noexcept -> bool { return stream.good(); }
+
+    void clear() noexcept { stream.clear(); }
+
+    auto tell() noexcept -> std::optional<std::uint64_t> {
+        std::int64_t const pos = stream.tellg();
+        if (pos < 0)
+            return std::nullopt;
+        return std::uint64_t(pos);
+    }
+
+    auto skip(std::uint64_t bytes) noexcept -> bool {
+        if (stream.fail() ||
+            bytes > std::numeric_limits<std::streamoff>::max())
+            return false;
+        stream.seekg(std::streamoff(bytes), std::ios::beg);
+        return stream.good();
+    }
+
+    auto read(span<std::byte> buffer) noexcept -> std::uint64_t {
+        // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
+        stream.read(reinterpret_cast<char *>(buffer.data()),
+                    static_cast<std::streamsize>(buffer.size()));
+        return stream.gcount();
+    }
+};
+
+class cfile_input_stream {
+    std::FILE *fp;
+    bool should_close;
+
+  public:
+    explicit cfile_input_stream(std::FILE *stream, bool close_on_destruction)
+        : fp(stream), should_close(close_on_destruction && fp != nullptr) {}
+
+    cfile_input_stream(cfile_input_stream const &) = delete;
+    auto operator=(cfile_input_stream const &) = delete;
+
+    cfile_input_stream(cfile_input_stream &&other) noexcept
+        : fp(std::exchange(other.fp, nullptr)),
+          should_close(std::exchange(other.should_close, false)) {}
+
+    auto operator=(cfile_input_stream &&rhs) noexcept -> cfile_input_stream & {
+        if (should_close)
+            std::fclose(fp); // NOLINT(cppcoreguidelines-owning-memory)
+        fp = std::exchange(rhs.fp, nullptr);
+        should_close = std::exchange(rhs.should_close, false);
+        return *this;
+    }
+
+    ~cfile_input_stream() {
+        if (should_close)
+            std::fclose(fp); // NOLINT(cppcoreguidelines-owning-memory)
+    }
+
+    auto is_error() noexcept -> bool {
+        return fp == nullptr || std::ferror(fp) != 0;
+    }
+
+    auto is_eof() noexcept -> bool {
+        return fp != nullptr && std::feof(fp) != 0;
+    }
+
+    auto is_good() noexcept -> bool {
+        return fp != nullptr && std::ferror(fp) == 0 && std::feof(fp) == 0;
+    }
+
+    void clear() noexcept {
+        if (fp != nullptr)
+            std::clearerr(fp);
+    }
+
+    auto tell() noexcept -> std::optional<std::uint64_t> {
+        if (fp == nullptr)
+            return std::nullopt;
+        std::int64_t pos = std::ftell(fp);
+        if (pos >= 0)
+            return std::uint64_t(pos);
+#ifdef _WIN32
+        pos = ::_ftelli64(fp);
+        if (pos >= 0)
+            return std::uint64_t(pos);
+#endif
+        return std::nullopt;
+    }
+
+    auto skip(std::uint64_t bytes) noexcept -> bool {
+        if (fp == nullptr)
+            return false;
+        if (bytes > std::numeric_limits<long>::max()) {
+#ifdef _WIN32
+            if (bytes <= std::numeric_limits<__int64>::max())
+                return ::_fseeki64(fp, __int64(bytes), SEEK_CUR) == 0;
+#else
+            return false;
+#endif
+        }
+        return std::fseek(fp, long(bytes), SEEK_CUR) == 0;
+    }
+
+    auto read(span<std::byte> buffer) noexcept -> std::uint64_t {
+        if (fp == nullptr)
+            return 0;
+        return std::fread(buffer.data(), 1, buffer.size(), fp);
+    }
+};
+
+template <typename InputStream>
+inline void skip_stream_bytes(InputStream &stream,
+                              std::uint64_t bytes) noexcept {
+    if (stream.is_good()) {
+        if (not stream.skip(bytes)) {
             stream.clear();
-            // Try instead reading and discarding up to 'start', to
-            // support non-seekable files (e.g., pipes).
+            // Try instead reading and discarding up to 'start', to support
+            // non-seekable streams (e.g., pipes).
             std::uint64_t bytes_discarded = 0;
             static constexpr std::streamsize bufsize = 65536;
-            std::vector<char> buf(bufsize);
-            while (bytes_discarded < start) {
+            std::vector<std::byte> buf(bufsize);
+            span<std::byte> const bufspan(buf);
+            while (bytes_discarded < bytes) {
                 auto read_size =
-                    std::min<std::uint64_t>(bufsize, start - bytes_discarded);
-                stream.read(buf.data(),
-                            static_cast<std::streamsize>(read_size));
-                if (not stream.good()) {
-                    stream.close();
+                    std::min<std::uint64_t>(bufsize, bytes - bytes_discarded);
+                bytes_discarded += stream.read(bufspan.subspan(0, read_size));
+                if (not stream.is_good())
                     break;
-                }
-                bytes_discarded += stream.gcount();
             }
         }
     }
-    return stream;
 }
 
-template <typename Event, typename EventVector, typename Downstream>
-class read_istream {
-    static_assert(std::is_trivial_v<Event>,
-                  "Event type must be trivial to work with read_istream");
+// For files, we prefer cfile over ofstream (see
+// unbuffered_binary_file_input_stream), but here is an ifstream-based
+// implementation for benchmarking.
+inline auto
+unbuffered_binary_ifstream_input_stream(std::string const &filename,
+                                        std::uint64_t start = 0) {
+    std::ifstream stream;
+    stream.rdbuf()->pubsetbuf(nullptr, 0);
+    stream.open(filename, std::ios::binary);
+    auto ret = internal::istream_input_stream(std::move(stream));
+    skip_stream_bytes(ret, start);
+    return ret;
+}
 
-    std::unique_ptr<std::istream> stream;
+inline auto unbuffered_binary_cfile_input_stream(std::string const &filename,
+                                                 std::uint64_t start = 0) {
+    // NOLINTNEXTLINE(cppcoreguidelines-owning-memory)
+    std::FILE *fp = std::fopen(filename.c_str(), "rb");
+    if (fp != nullptr)
+        std::setbuf(fp, nullptr);
+    auto ret = internal::cfile_input_stream(fp, true);
+    skip_stream_bytes(ret, start);
+    return ret;
+}
+
+} // namespace internal
+
+/**
+ * \brief Create an unbuffered binary input stream for the given file.
+ *
+ * \ingroup input-streams
+ *
+ * \see read_binary_stream
+ *
+ * \param filename the filename
+ *
+ * \param start offset within the file to start reading from
+ *
+ * \return input stream
+ */
+inline auto unbuffered_binary_file_input_stream(std::string const &filename,
+                                                std::uint64_t start = 0) {
+    // Prefer cfile over ifstream since it _may_ be faster.
+    return internal::unbuffered_binary_cfile_input_stream(filename, start);
+}
+
+/**
+ * \brief Create an abstract input stream from an \c std::istream instance.
+ *
+ * \ingroup input-streams
+ *
+ * The istream is moved into the returned input stream and destroyed together,
+ * so you cannot use this with an istream that you do not own (such as \c
+ * std::cin). For that, see \ref borrowed_cfile_input_stream (which works with
+ * \c stdin).
+ *
+ * \see read_binary_stream
+ *
+ * \param stream an istream (derived from \c std::istream)
+ *
+ * \return input stream
+ */
+template <typename IStream>
+inline auto istream_input_stream(IStream &&stream) {
+    static_assert(std::is_base_of_v<std::istream, IStream>);
+    return internal::istream_input_stream(std::move(stream));
+}
+
+/**
+ * \brief Create an abstract input stream from a C file pointer, taking
+ * ownership.
+ *
+ * \ingroup input-streams
+ *
+ * The stream will use the C stdio functions, such as \c std::fread(). The file
+ * pointer is closed when the stream is destroyed.
+ *
+ * The file pointer \e fp should have been opened in binary mode.
+ *
+ * If \e fp is null, the stream will always be in an error state (even after
+ * clearing).
+ *
+ * \see borrowed_cfile_input_stream
+ * \see read_binary_stream
+ *
+ * \param fp a file pointer
+ *
+ * \return input stream
+ */
+inline auto owning_cfile_input_stream(std::FILE *fp) {
+    return internal::cfile_input_stream(fp, true);
+}
+
+/**
+ * \brief Create an abstract input stream from a non-owned C file pointer.
+ *
+ * \ingroup input-streams
+ *
+ * The stream will use the C stdio functions, such as \c std::fread(). The file
+ * pointer is not closed when the stream is destroyed. The caller is
+ * responsible for ensuring that the file pointer will remain valid throughout
+ * the lifetime of the returned input stream.
+ *
+ * The file pointer \e fp should have been opened in binary mode. (If using
+ * \c stdin, use \c std::freopen() with a null filename on POSIX or \c
+ * _setmode() with \c _O_BINARY on Windows.)
+ *
+ * If \e fp is null, the stream will always be in an error state (even after
+ * clearing).
+ *
+ * \see owning_cfile_input_stream
+ * \see read_binary_stream
+ *
+ * \param fp a file pointer
+ *
+ * \return input stream
+ */
+inline auto borrowed_cfile_input_stream(std::FILE *fp) {
+    return internal::cfile_input_stream(fp, false);
+}
+
+namespace internal {
+
+template <typename InputStream, typename Event, typename EventVector,
+          typename Downstream>
+class read_binary_stream {
+    static_assert(
+        std::is_trivial_v<Event>,
+        "Event type must be trivial to work with read_binary_stream");
+
+    InputStream stream;
     std::uint64_t length;
 
     std::uint64_t total_bytes_read = 0;
-    std::array<char, sizeof(Event)> remainder; // Store partially read Event.
+    std::array<std::byte, sizeof(Event)>
+        remainder; // Store partially read Event.
     std::size_t remainder_nbytes = 0;
 
-    std::shared_ptr<object_pool<EventVector>> buffer_pool;
+    std::shared_ptr<object_pool<EventVector>> bufpool;
     std::size_t read_size;
 
     Downstream downstream;
 
   public:
-    template <typename IStream, typename = std::enable_if_t<
-                                    std::is_base_of_v<std::istream, IStream>>>
-    explicit read_istream(
-        IStream &&stream, std::uint64_t max_length,
+    explicit read_binary_stream(
+        InputStream &&stream, std::uint64_t max_length,
         std::shared_ptr<object_pool<EventVector>> buffer_pool,
         std::size_t read_size_bytes, Downstream &&downstream)
-        : stream(std::make_unique<IStream>(std::forward<IStream>(stream))),
-          length(max_length), buffer_pool(std::move(buffer_pool)),
-          read_size(read_size_bytes), downstream(std::move(downstream)) {
+        : stream(std::move(stream)), length(max_length),
+          bufpool(std::move(buffer_pool)), read_size(read_size_bytes),
+          downstream(std::move(downstream)) {
+        assert(bufpool);
         assert(read_size > 0);
-        assert(read_size <= std::numeric_limits<std::streamsize>::max());
     }
 
     void pump_events() noexcept {
         auto this_read_size = read_size;
-        if (stream->good()) {
-            // Align second and subsequent reads to read_size if current offset
-            // is available. This may or may not improve read performance (when
-            // the read_size is a multiple of the page size or block size), but
-            // can't hurt.
-            std::streamoff const offset = stream->tellg();
-            if (offset >= 0)
-                this_read_size -= offset % read_size;
+        if (stream.is_good()) {
+            // Align second and subsequent reads to read_size if current
+            // offset is available. This may or may not improve read
+            // performance (when the read_size is a multiple of the page
+            // size or block size), but can't hurt.
+            std::optional<std::uint64_t> pos = stream.tell();
+            if (pos.has_value())
+                this_read_size -= *pos % read_size;
         }
 
-        while (total_bytes_read < length && stream->good()) {
+        while (total_bytes_read < length && stream.is_good()) {
             this_read_size = std::min<std::uint64_t>(
                 this_read_size, length - total_bytes_read); // > 0
             auto const bufsize_bytes = remainder_nbytes + this_read_size;
@@ -120,14 +349,15 @@ class read_istream {
                 (bufsize_bytes - 1) / sizeof(Event) + 1;
             std::shared_ptr<EventVector> buf;
             try {
-                buf = buffer_pool->check_out();
+                buf = bufpool->check_out();
                 buf->resize(bufsize_elements);
             } catch (std::exception const &e) {
                 return downstream.handle_end(std::make_exception_ptr(e));
             }
-            // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
-            span<char> const buffer_span{reinterpret_cast<char *>(buf->data()),
-                                         bufsize_bytes};
+            // NOLINTBEGIN(cppcoreguidelines-pro-type-reinterpret-cast)
+            span<std::byte> const buffer_span{
+                reinterpret_cast<std::byte *>(buf->data()), bufsize_bytes};
+            // NOLINTEND(cppcoreguidelines-pro-type-reinterpret-cast)
 
             std::copy(remainder.begin(),
                       std::next(remainder.begin(), remainder_nbytes),
@@ -135,9 +365,7 @@ class read_istream {
             auto const read_span = buffer_span.subspan(remainder_nbytes);
             assert(read_span.size() == this_read_size);
 
-            stream->read(read_span.data(),
-                         static_cast<std::streamsize>(read_span.size()));
-            auto const bytes_read = static_cast<std::size_t>(stream->gcount());
+            auto const bytes_read = stream.read(read_span);
             total_bytes_read += bytes_read;
             auto const data_span =
                 buffer_span.subspan(0, remainder_nbytes + bytes_read);
@@ -158,12 +386,13 @@ class read_istream {
         }
 
         std::exception_ptr error;
-        if (stream->fail() && not stream->eof())
+        if (stream.is_error()) {
             error = std::make_exception_ptr(
                 std::runtime_error("failed to read input"));
-        else if (remainder_nbytes > 0)
+        } else if (remainder_nbytes > 0) {
             error = std::make_exception_ptr(std::runtime_error(
                 "bytes fewer than event size remain at end of input"));
+        }
         downstream.handle_end(std::move(error));
     }
 };
@@ -171,27 +400,27 @@ class read_istream {
 } // namespace internal
 
 /**
- * \brief Create a source that reads batches of events from a binary \c
- * std::istream.
+ * \brief Create a source that reads batches of events from a binary stream,
+ * such as a file.
  *
  * \ingroup processors-basic
  *
+ * The stream is either libtcspc's stream abstraction (see \ref input-streams)
+ * or an iostreams stream. In the latter case, it is wrapped using \ref
+ * istream_input_stream.
+ *
  * The stream must contain a contiguous array of events (of type \c Event,
  * which must be a trivial type). Events are read from the stream in batches
- * and placed into buffers (of type \c EventContainer) provided by an \ref
- * object_pool. The events sent to the downstream processor are these buffers
- * (via \c std::shared_ptr).
- *
- * If the stream is a file stream, it should be opened in binary mode.
- *
- * \see read_file
+ * and placed into buffers (of type \c EventContainer) supplied by an \ref
+ * object_pool. The events sent to the downstream processor are of the type \c
+ * std::shared_ptr<EventVector>.
  *
  * \tparam Event the event type
  *
  * \tparam EventVector vector-like container of Event used for buffering (must
  * provide \c data() and \c resize())
  *
- * \tparam IStream input stream type (must be derived from \c std::istream)
+ * \tparam InputStream input stream type
  *
  * \tparam Downstream downstream processor type
  *
@@ -199,74 +428,38 @@ class read_istream {
  * mode)
  *
  * \param max_length maximum number of bytes to read from stream (should be a
- * multiple of \c sizeof(Event), or \c std::numeric_limit<std::size_t>::max())
+ * multiple of \c sizeof(Event), or \c std::numeric_limit<std::size_t>::max()
+ * to read to the end of the stream)
  *
  * \param buffer_pool object pool providing event buffers
  *
- * \param read_size_bytes size, in bytes, to read for each iteration; batches
+ * \param read_size_bytes size, in bytes, to read in each iteration; batches
  * will be approximately this size
  *
  * \param downstream downstream processor
  *
- * \return read-istream source having \c pump_events member function
+ * \return read-binary-stream source having \c pump_events member function
  */
-template <
-    typename Event, typename EventVector, typename IStream,
-    typename Downstream,
-    typename = std::enable_if_t<std::is_base_of_v<std::istream, IStream>>>
-auto read_istream(IStream &&stream, std::uint64_t max_length,
-                  std::shared_ptr<object_pool<EventVector>> buffer_pool,
-                  std::size_t read_size_bytes, Downstream &&downstream) {
-    return internal::read_istream<Event, EventVector, Downstream>(
-        std::forward<IStream>(stream), max_length, std::move(buffer_pool),
-        read_size_bytes, std::forward<Downstream>(downstream));
-}
-
-/**
- * \brief Create a source that reads batches of events from a binary file.
- *
- * \ingroup processors-basic
- *
- * This is a convenience wrapper around \ref read_istream. The \c std::istream
- * is constructed by opening the given file in binary mode and seeking to the
- * start offset.
- *
- * Otherwise, the behavior is the same as \ref read_istream.
- *
- * \see read_istream
- *
- * \tparam Event the event type
- *
- * \tparam EventVector vector-like container of Event used for buffering (must
- * provide \c data() and \c resize())
- *
- * \tparam Downstream downstream processor type
- *
- * \param filename name of file to read from
- *
- * \param start start offset, in bytes, from which to read
- *
- * \param max_length maximum number of bytes to read (should be a multiple of
- * \c sizeof(Event))
- *
- * \param buffer_pool object pool providing event buffers
- *
- * \param read_size_bytes size, in bytes, to read for each iteration; batches
- * will be approximately this size
- *
- * \param downstream downstream processor
- *
- * \return read-istream source having \c pump_events member function
- */
-template <typename Event, typename EventVector, typename Downstream>
-auto read_file(std::string const &filename, std::uint64_t start,
-               std::uint64_t max_length,
-               std::shared_ptr<object_pool<EventVector>> buffer_pool,
-               std::size_t read_size_bytes, Downstream &&downstream) {
-    return internal::read_istream<Event, EventVector, Downstream>(
-        internal::unbuffered_binary_ifstream_at_offset(filename, start),
-        max_length, std::move(buffer_pool), read_size_bytes,
-        std::forward<Downstream>(downstream));
+template <typename Event, typename EventVector, typename InputStream,
+          typename Downstream>
+auto read_binary_stream(InputStream &&stream, std::uint64_t max_length,
+                        std::shared_ptr<object_pool<EventVector>> buffer_pool,
+                        std::size_t read_size_bytes, Downstream &&downstream) {
+    // Support direct passing of C++ iostreams stream.
+    if constexpr (std::is_base_of_v<std::istream, InputStream>) {
+        auto wrapped =
+            internal::istream_input_stream<InputStream>(std::move(stream));
+        return internal::read_binary_stream<decltype(wrapped), Event,
+                                            EventVector, Downstream>(
+            std::move(wrapped), max_length, std::move(buffer_pool),
+            read_size_bytes, std::forward<Downstream>(downstream));
+    } else {
+        return internal::read_binary_stream<InputStream, Event, EventVector,
+                                            Downstream>(
+            std::forward<InputStream>(stream), max_length,
+            std::move(buffer_pool), read_size_bytes,
+            std::forward<Downstream>(downstream));
+    }
 }
 
 } // namespace tcspc
