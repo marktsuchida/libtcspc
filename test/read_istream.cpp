@@ -64,7 +64,7 @@ TEST_CASE("read ifstream", "[read_file]") {
         auto out = capture_output<event_set<pvector<std::uint64_t>>>();
         auto src = read_file<std::uint64_t, pvector<std::uint64_t>>(
             path.string(), 8, 48,
-            std::make_shared<object_pool<pvector<std::uint64_t>>>(), 2,
+            std::make_shared<object_pool<pvector<std::uint64_t>>>(), 16,
             dereference_pointer<std::shared_ptr<pvector<std::uint64_t>>>(
                 ref_processor(out)));
         src.pump_events();
@@ -78,7 +78,7 @@ TEST_CASE("read ifstream", "[read_file]") {
         auto out = capture_output<event_set<pvector<std::uint64_t>>>();
         auto src = read_file<std::uint64_t, pvector<std::uint64_t>>(
             path.string(), 8, 40,
-            std::make_shared<object_pool<pvector<std::uint64_t>>>(), 2,
+            std::make_shared<object_pool<pvector<std::uint64_t>>>(), 16,
             dereference_pointer<std::shared_ptr<pvector<std::uint64_t>>>(
                 ref_processor(out)));
         src.pump_events();
@@ -92,7 +92,7 @@ TEST_CASE("read ifstream", "[read_file]") {
         auto out = capture_output<event_set<pvector<std::uint64_t>>>();
         auto src = read_file<std::uint64_t, pvector<std::uint64_t>>(
             path.string(), 8, 44, // 4 remainder bytes
-            std::make_shared<object_pool<pvector<std::uint64_t>>>(), 2,
+            std::make_shared<object_pool<pvector<std::uint64_t>>>(), 16,
             dereference_pointer<std::shared_ptr<pvector<std::uint64_t>>>(
                 ref_processor(out)));
         src.pump_events();
@@ -101,6 +101,22 @@ TEST_CASE("read ifstream", "[read_file]") {
         REQUIRE(out.check(pvector<std::uint64_t>{47}));
         REQUIRE_THROWS_WITH(out.check_end(),
                             Catch::Matchers::ContainsSubstring("remain"));
+    }
+
+    SECTION("read size smaller than event size") {
+        auto out = capture_output<event_set<pvector<std::uint64_t>>>();
+        auto src = read_file<std::uint64_t, pvector<std::uint64_t>>(
+            path.string(), 8, 40,
+            std::make_shared<object_pool<pvector<std::uint64_t>>>(), 3,
+            dereference_pointer<std::shared_ptr<pvector<std::uint64_t>>>(
+                ref_processor(out)));
+        src.pump_events();
+        REQUIRE(out.check(pvector<std::uint64_t>{43}));
+        REQUIRE(out.check(pvector<std::uint64_t>{44}));
+        REQUIRE(out.check(pvector<std::uint64_t>{45}));
+        REQUIRE(out.check(pvector<std::uint64_t>{46}));
+        REQUIRE(out.check(pvector<std::uint64_t>{47}));
+        REQUIRE(out.check_end());
     }
 }
 
@@ -115,7 +131,7 @@ TEST_CASE("read existing istream, known length", "[read_istream]") {
     auto out = capture_output<event_set<pvector<std::uint64_t>>>();
     auto src = read_istream<std::uint64_t, pvector<std::uint64_t>>(
         std::move(stream), 40,
-        std::make_shared<object_pool<pvector<std::uint64_t>>>(), 2,
+        std::make_shared<object_pool<pvector<std::uint64_t>>>(), 16,
         dereference_pointer<std::shared_ptr<pvector<std::uint64_t>>>(
             ref_processor(out)));
     src.pump_events();
@@ -136,7 +152,7 @@ TEST_CASE("read existing istream, to end", "[read_istream]") {
     auto out = capture_output<event_set<pvector<std::uint64_t>>>();
     auto src = read_istream<std::uint64_t, pvector<std::uint64_t>>(
         std::move(stream), std::numeric_limits<std::uint64_t>::max(),
-        std::make_shared<object_pool<pvector<std::uint64_t>>>(), 2,
+        std::make_shared<object_pool<pvector<std::uint64_t>>>(), 16,
         dereference_pointer<std::shared_ptr<pvector<std::uint64_t>>>(
             ref_processor(out)));
     src.pump_events();

@@ -82,7 +82,7 @@ class read_istream {
     std::size_t remainder_nbytes = 0;
 
     std::shared_ptr<object_pool<EventVector>> buffer_pool;
-    std::size_t batch_size;
+    std::size_t read_size;
 
     Downstream downstream;
 
@@ -92,31 +92,19 @@ class read_istream {
     explicit read_istream(
         IStream &&stream, std::uint64_t max_length,
         std::shared_ptr<object_pool<EventVector>> buffer_pool,
-        std::size_t batch_size, Downstream &&downstream)
+        std::size_t read_size_bytes, Downstream &&downstream)
         : stream(std::make_unique<IStream>(std::forward<IStream>(stream))),
           length(max_length), buffer_pool(std::move(buffer_pool)),
-          batch_size(batch_size), downstream(std::move(downstream)) {
-        assert(batch_size > 0);
-        assert(batch_size * sizeof(Event) <
-               std::numeric_limits<std::streamsize>::max());
+          read_size(read_size_bytes), downstream(std::move(downstream)) {
+        assert(read_size > 0);
+        assert(read_size <= std::numeric_limits<std::streamsize>::max());
     }
 
     void pump_events() noexcept {
-        // TODO: Use reads that align with the OS disk (page) cache.
-        // 1. Use a read size (in bytes) rather than batch size (in elements)
-        //    so that the user can choose a multiple of the page size.
-        // 2. On first iteration, shrink the max read size according to tellg()
-        //    so that subsequent reads will be aligned to a multiple of read
-        //    size (give up and continue with full size if tellg() fails).
-        // 3. The remainder will be used potentially on all iterations.
-        // But there is the question of whether this makes much of a real
-        // difference in read performance (at large enough batch sizes), given
-        // that the same amount of data is copied anyway.
-
         while (total_bytes_read < length && stream->good()) {
-            auto const bufsize_bytes = std::min<std::uint64_t>(
-                batch_size * sizeof(Event),
-                length - total_bytes_read + remainder_nbytes); // > 0
+            auto const bufsize_bytes =
+                remainder_nbytes +
+                std::min<std::uint64_t>(read_size, length - total_bytes_read);
             auto const bufsize_elements =
                 (bufsize_bytes - 1) / sizeof(Event) + 1;
             std::shared_ptr<EventVector> buf;
@@ -202,7 +190,8 @@ class read_istream {
  *
  * \param buffer_pool object pool providing event buffers
  *
- * \param batch_size number of events to place in each buffer
+ * \param read_size_bytes size, in bytes, to read for each iteration; batches
+ * will be approximately this size
  *
  * \param downstream downstream processor
  *
@@ -214,10 +203,10 @@ template <
     typename = std::enable_if_t<std::is_base_of_v<std::istream, IStream>>>
 auto read_istream(IStream &&stream, std::uint64_t max_length,
                   std::shared_ptr<object_pool<EventVector>> buffer_pool,
-                  std::size_t batch_size, Downstream &&downstream) {
+                  std::size_t read_size_bytes, Downstream &&downstream) {
     return internal::read_istream<Event, EventVector, Downstream>(
         std::forward<IStream>(stream), max_length, std::move(buffer_pool),
-        batch_size, std::forward<Downstream>(downstream));
+        read_size_bytes, std::forward<Downstream>(downstream));
 }
 
 /**
@@ -249,7 +238,8 @@ auto read_istream(IStream &&stream, std::uint64_t max_length,
  *
  * \param buffer_pool object pool providing event buffers
  *
- * \param batch_size number of events to place in each buffer
+ * \param read_size_bytes size, in bytes, to read for each iteration; batches
+ * will be approximately this size
  *
  * \param downstream downstream processor
  *
@@ -259,10 +249,10 @@ template <typename Event, typename EventVector, typename Downstream>
 auto read_file(std::string const &filename, std::uint64_t start,
                std::uint64_t max_length,
                std::shared_ptr<object_pool<EventVector>> buffer_pool,
-               std::size_t batch_size, Downstream &&downstream) {
+               std::size_t read_size_bytes, Downstream &&downstream) {
     return internal::read_istream<Event, EventVector, Downstream>(
         internal::unbuffered_binary_ifstream_at_offset(filename, start),
-        max_length, std::move(buffer_pool), batch_size,
+        max_length, std::move(buffer_pool), read_size_bytes,
         std::forward<Downstream>(downstream));
 }
 
