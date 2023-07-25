@@ -152,8 +152,7 @@ class cfile_input_stream {
 };
 
 template <typename InputStream>
-inline void skip_stream_bytes(InputStream &stream,
-                              std::uint64_t bytes) noexcept {
+inline void skip_stream_bytes(InputStream &stream, std::uint64_t bytes) {
     if (stream.is_good()) {
         if (not stream.skip(bytes)) {
             stream.clear();
@@ -265,7 +264,7 @@ inline auto binary_file_input_stream(std::string const &filename,
 template <typename IStream>
 inline auto istream_input_stream(IStream &&stream) {
     static_assert(std::is_base_of_v<std::istream, IStream>);
-    return internal::istream_input_stream(std::move(stream));
+    return internal::istream_input_stream(std::forward<IStream>(stream));
 }
 
 /**
@@ -479,8 +478,7 @@ auto read_binary_stream(InputStream &&stream, std::uint64_t max_length,
                         std::size_t read_size_bytes, Downstream &&downstream) {
     // Support direct passing of C++ iostreams stream.
     if constexpr (std::is_base_of_v<std::istream, InputStream>) {
-        auto wrapped =
-            internal::istream_input_stream<InputStream>(std::move(stream));
+        auto wrapped = istream_input_stream(std::forward<InputStream>(stream));
         return internal::read_binary_stream<decltype(wrapped), Event,
                                             EventVector, Downstream>(
             std::move(wrapped), max_length, std::move(buffer_pool),

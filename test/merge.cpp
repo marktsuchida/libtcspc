@@ -251,14 +251,20 @@ TEST_CASE("merge N streams", "[merge_n]") {
     auto out = capture_output<all_events>();
 
     SECTION("Zero-stream merge_n returns empty tuple") {
+        // NOLINTBEGIN(clang-analyzer-deadcode.DeadStores)
         auto tup = merge_n<0, default_data_traits, all_events>(
             1000, ref_processor(out));
         static_assert(std::tuple_size_v<decltype(tup)> == 0);
+        // NOLINTEND(clang-analyzer-deadcode.DeadStores)
     }
 
     SECTION("Single-stream merge_n returns downstream in tuple") {
         auto [m0] = merge_n<1, default_data_traits, all_events>(
             1000, ref_processor(out));
+        static_assert(
+            std::is_same_v<decltype(m0), decltype(ref_processor(out))>);
+        // clang-tidy bug? std::move() is necessary here.
+        // NOLINTNEXTLINE(performance-move-const-arg)
         auto in = feed_input<all_events>(std::move(m0));
         in.require_output_checked(out);
         in.feed(e0{0});
