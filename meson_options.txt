@@ -8,3 +8,6 @@ option('docs', type: 'feature', value: 'auto',
 option('tests', type: 'feature', value: 'enabled',
     description: 'Build unit tests',
 )
+option('benchmarks', type: 'feature', value: 'enabled',
+    description: 'Build benchmarks',
+)

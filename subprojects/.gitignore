@@ -6,5 +6,7 @@
 !/.gitignore
 !/catch2.wrap
 !/catch2.wrap.license
+!/google-benchmark.wrap
+!/google-benchmark.wrap.license
 !/tcb-span.wrap
 !/tcb-span.wrap.license

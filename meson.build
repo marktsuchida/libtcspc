@@ -22,11 +22,18 @@ catch2_with_main_dep = dependency(
     disabler: true,
 )
 
+benchmark_dep = dependency(
+    'benchmark',
+    required: get_option('tests'),
+    disabler: true,
+)
+
 public_inc = include_directories('include')
 
 subdir('include/libtcspc')
 subdir('doc')
 subdir('test')
+subdir('benchmarks')
 subdir('examples')
 
 libtcspc_dep = declare_dependency(

@@ -174,14 +174,28 @@ inline void skip_stream_bytes(InputStream &stream,
     }
 }
 
-// For files, we prefer cfile over ofstream (see
-// unbuffered_binary_file_input_stream), but here is an ifstream-based
-// implementation for benchmarking.
+// For files, we prefer cfile over ofstream (see binary_file_input_stream), but
+// here are ifstream-based implementations for benchmarking.
+
 inline auto
 unbuffered_binary_ifstream_input_stream(std::string const &filename,
                                         std::uint64_t start = 0) {
     std::ifstream stream;
+
+    // The standard says that the following makes the stream "unbuffered", but
+    // its definition of unbuffered specifies nothing about input streams. At
+    // least with libc++, this is a huge pessimization:
     stream.rdbuf()->pubsetbuf(nullptr, 0);
+
+    stream.open(filename, std::ios::binary);
+    auto ret = internal::istream_input_stream(std::move(stream));
+    skip_stream_bytes(ret, start);
+    return ret;
+}
+
+inline auto binary_ifstream_input_stream(std::string const &filename,
+                                         std::uint64_t start = 0) {
+    std::ifstream stream;
     stream.open(filename, std::ios::binary);
     auto ret = internal::istream_input_stream(std::move(stream));
     skip_stream_bytes(ret, start);
@@ -192,8 +206,19 @@ inline auto unbuffered_binary_cfile_input_stream(std::string const &filename,
                                                  std::uint64_t start = 0) {
     // NOLINTNEXTLINE(cppcoreguidelines-owning-memory)
     std::FILE *fp = std::fopen(filename.c_str(), "rb");
-    if (fp != nullptr)
+    if (fp != nullptr) {
+        // Unlike with ifstream, setting to unbuffered does reduce overhead.
         std::setbuf(fp, nullptr);
+    }
+    auto ret = internal::cfile_input_stream(fp, true);
+    skip_stream_bytes(ret, start);
+    return ret;
+}
+
+inline auto binary_cfile_input_stream(std::string const &filename,
+                                      std::uint64_t start = 0) {
+    // NOLINTNEXTLINE(cppcoreguidelines-owning-memory)
+    std::FILE *fp = std::fopen(filename.c_str(), "rb");
     auto ret = internal::cfile_input_stream(fp, true);
     skip_stream_bytes(ret, start);
     return ret;
@@ -202,7 +227,7 @@ inline auto unbuffered_binary_cfile_input_stream(std::string const &filename,
 } // namespace internal
 
 /**
- * \brief Create an unbuffered binary input stream for the given file.
+ * \brief Create a binary input stream for the given file.
  *
  * \ingroup input-streams
  *
@@ -214,9 +239,10 @@ inline auto unbuffered_binary_cfile_input_stream(std::string const &filename,
  *
  * \return input stream
  */
-inline auto unbuffered_binary_file_input_stream(std::string const &filename,
-                                                std::uint64_t start = 0) {
-    // Prefer cfile over ifstream since it _may_ be faster.
+inline auto binary_file_input_stream(std::string const &filename,
+                                     std::uint64_t start = 0) {
+    // Prefer cfile over ifstream for performance; for cfile, unbuffered
+    // performs better (given our own buffering). See benchmark.
     return internal::unbuffered_binary_cfile_input_stream(filename, start);
 }
 
@@ -414,6 +440,12 @@ class read_binary_stream {
  * and placed into buffers (of type \c EventContainer) supplied by an \ref
  * object_pool. The events sent to the downstream processor are of the type \c
  * std::shared_ptr<EventVector>.
+ *
+ * The \e read_size can be tuned for best performance. If too small, reads will
+ * incur more overhead per bytes read; if too large, CPU caches may be
+ * polluted. Small batch sizes may also pessimize downstream processing. It is
+ * best to try different powers of 2 and measure, but 32768 bytes is likely a
+ * good starting point.
  *
  * \tparam Event the event type
  *

@@ -38,8 +38,7 @@ class autodelete {
 TEST_CASE("read nonexistent file", "[read_binary_stream]") {
     auto out = capture_output<event_set<pvector<std::uint64_t>>>();
     auto src = read_binary_stream<std::uint64_t>(
-        unbuffered_binary_file_input_stream(
-            "surely_a_file_with_this_name_doesn't_exist"),
+        binary_file_input_stream("surely_a_file_with_this_name_doesn't_exist"),
         0, std::make_shared<object_pool<pvector<std::uint64_t>>>(), 16384,
         dereference_pointer<std::shared_ptr<pvector<std::uint64_t>>>(
             ref_processor(out)));
@@ -64,7 +63,7 @@ TEST_CASE("read file", "[read_binary_stream]") {
     SECTION("whole events") {
         auto out = capture_output<event_set<pvector<std::uint64_t>>>();
         auto src = read_binary_stream<std::uint64_t>(
-            unbuffered_binary_file_input_stream(path.string(), 8), 40,
+            binary_file_input_stream(path.string(), 8), 40,
             std::make_shared<object_pool<pvector<std::uint64_t>>>(), 16,
             dereference_pointer<std::shared_ptr<pvector<std::uint64_t>>>(
                 ref_processor(out)));
@@ -79,7 +78,7 @@ TEST_CASE("read file", "[read_binary_stream]") {
     SECTION("whole events, partial batch at end") {
         auto out = capture_output<event_set<pvector<std::uint64_t>>>();
         auto src = read_binary_stream<std::uint64_t>(
-            unbuffered_binary_file_input_stream(path.string(), 8), 48,
+            binary_file_input_stream(path.string(), 8), 48,
             std::make_shared<object_pool<pvector<std::uint64_t>>>(), 16,
             dereference_pointer<std::shared_ptr<pvector<std::uint64_t>>>(
                 ref_processor(out)));
@@ -94,7 +93,7 @@ TEST_CASE("read file", "[read_binary_stream]") {
     SECTION("extra bytes at end") {
         auto out = capture_output<event_set<pvector<std::uint64_t>>>();
         auto src = read_binary_stream<std::uint64_t>(
-            unbuffered_binary_file_input_stream(path.string(), 8),
+            binary_file_input_stream(path.string(), 8),
             44, // 4 remainder bytes
             std::make_shared<object_pool<pvector<std::uint64_t>>>(), 16,
             dereference_pointer<std::shared_ptr<pvector<std::uint64_t>>>(
@@ -110,7 +109,7 @@ TEST_CASE("read file", "[read_binary_stream]") {
     SECTION("read size smaller than event size") {
         auto out = capture_output<event_set<pvector<std::uint64_t>>>();
         auto src = read_binary_stream<std::uint64_t>(
-            unbuffered_binary_file_input_stream(path.string(), 8), 40,
+            binary_file_input_stream(path.string(), 8), 40,
             std::make_shared<object_pool<pvector<std::uint64_t>>>(), 3,
             dereference_pointer<std::shared_ptr<pvector<std::uint64_t>>>(
                 ref_processor(out)));
