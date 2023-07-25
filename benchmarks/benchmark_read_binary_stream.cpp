@@ -4,7 +4,6 @@
  * SPDX-License-Identifier: MIT
  */
 
-#include "libtcspc/common.hpp"
 #include "libtcspc/read_binary_stream.hpp"
 
 #include <benchmark/benchmark.h>
@@ -21,6 +20,21 @@ namespace tcspc {
 // Also compare different read sizes. The optimum may also depend on downstream
 // processing, which is no-op here.
 
+namespace {
+
+class unoptimized_null_sink {
+  public:
+    template <typename Event> void handle_event(Event const &event) noexcept {
+        benchmark::DoNotOptimize(event);
+    }
+
+    void handle_end(std::exception_ptr const &error) noexcept {
+        benchmark::DoNotOptimize(error);
+    }
+};
+
+} // namespace
+
 void bm_read_devzero_ifstream_1M_unbuf(benchmark::State &state) {
     for (auto _ : state) {
         auto stream =
@@ -28,7 +42,7 @@ void bm_read_devzero_ifstream_1M_unbuf(benchmark::State &state) {
         auto src = read_binary_stream<int>(
             std::move(stream), 1024 * 1024,
             std::make_shared<object_pool<std::vector<int>>>(), state.range(0),
-            null_sink());
+            unoptimized_null_sink());
         src.pump_events();
     }
 }
@@ -39,7 +53,7 @@ void bm_read_devzero_ifstream_1M(benchmark::State &state) {
         auto src = read_binary_stream<int>(
             std::move(stream), 1024 * 1024,
             std::make_shared<object_pool<std::vector<int>>>(), state.range(0),
-            null_sink());
+            unoptimized_null_sink());
         src.pump_events();
     }
 }
@@ -51,7 +65,7 @@ void bm_read_devzero_cfile_1M_unbuf(benchmark::State &state) {
         auto src = read_binary_stream<int>(
             std::move(stream), 1024 * 1024,
             std::make_shared<object_pool<std::vector<int>>>(), state.range(0),
-            null_sink());
+            unoptimized_null_sink());
         src.pump_events();
     }
 }
@@ -62,7 +76,7 @@ void bm_read_devzero_cfile_1M(benchmark::State &state) {
         auto src = read_binary_stream<int>(
             std::move(stream), 1024 * 1024,
             std::make_shared<object_pool<std::vector<int>>>(), state.range(0),
-            null_sink());
+            unoptimized_null_sink());
         src.pump_events();
     }
 }
