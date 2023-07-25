@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: MIT
  */
 
-#include "libtcspc/read_istream.hpp"
+#include "libtcspc/read_binary_stream.hpp"
 
 #include "libtcspc/ref_processor.hpp"
 #include "libtcspc/span.hpp"
@@ -124,7 +124,7 @@ TEST_CASE("read file", "[read_binary_stream]") {
     }
 }
 
-TEST_CASE("read existing istream, known length", "[read_istream]") {
+TEST_CASE("read existing istream, known length", "[read_binary_stream]") {
     std::array<std::uint64_t, 7> data{42, 43, 44, 45, 46, 47, 48};
     std::stringstream stream;
     // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
@@ -145,7 +145,7 @@ TEST_CASE("read existing istream, known length", "[read_istream]") {
     REQUIRE(out.check_end());
 }
 
-TEST_CASE("read existing istream, to end", "[read_istream]") {
+TEST_CASE("read existing istream, to end", "[read_binary_stream]") {
     std::array<std::uint64_t, 7> data{42, 43, 44, 45, 46, 47, 48};
     std::stringstream stream;
     // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
@@ -167,7 +167,7 @@ TEST_CASE("read existing istream, to end", "[read_istream]") {
     REQUIRE(out.check_end());
 }
 
-TEST_CASE("read existing istream, empty", "[read_istream]") {
+TEST_CASE("read existing istream, empty", "[read_binary_stream]") {
     std::istringstream stream;
     REQUIRE(stream.good());
 
