@@ -302,11 +302,18 @@ class unbatch {
  * std::shared_ptr.
  *
  * This is not quite symmetric with \ref unbatch, which handles bare event
- * vectors (or other containers).
+ * containers.
  *
  * This processor does not perform time-based batching, so may introduce
- * arbitrary delays to real-time event streams. Usually real-time streams
- * originate from device APIs that read in batches.
+ * arbitrary delays to real-time event streams. For this reason, batching
+ * should not be performed (and is not necessary) for intermediate buffering of
+ * real-time streams in most cases. Batching is useful for writing to files
+ * efficiently.
+ *
+ * In contrast, streams originating from a stored source (e.g., a file) would
+ * cause buffers to grow unbounded if not regulated. In this case, buffers
+ * should use batching, with a size-limited \e buffer_pool so that buffer sizes
+ * are bounded.
  *
  * \see unbatch
  *
