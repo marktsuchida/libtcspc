@@ -305,7 +305,7 @@ inline auto owning_cfile_input_stream(std::FILE *fp) {
  *
  * The file pointer \e fp should have been opened in binary mode. (If using
  * \c stdin, use \c std::freopen() with a null filename on POSIX or \c
- * _setmode() with \c _O_BINARY on Windows.)
+ * _setmode() with \c _O_BINARY on Windows (via \c _fileno()).)
  *
  * If \e fp is null, the stream will always be in an error state (even after
  * clearing).
