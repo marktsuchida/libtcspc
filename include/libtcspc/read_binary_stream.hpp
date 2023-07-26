@@ -332,11 +332,6 @@ class read_binary_stream {
     InputStream stream;
     std::uint64_t length;
 
-    std::uint64_t total_bytes_read = 0;
-    std::array<std::byte, sizeof(Event)>
-        remainder; // Store partially read Event.
-    std::size_t remainder_nbytes = 0;
-
     std::shared_ptr<object_pool<EventVector>> bufpool;
     std::size_t read_size;
 
@@ -365,6 +360,11 @@ class read_binary_stream {
             if (pos.has_value())
                 this_read_size -= *pos % read_size;
         }
+
+        std::uint64_t total_bytes_read = 0;
+        std::array<std::byte, sizeof(Event)>
+            remainder; // Store partially read Event.
+        std::size_t remainder_nbytes = 0;
 
         while (total_bytes_read < length && stream.is_good()) {
             this_read_size = std::min<std::uint64_t>(
