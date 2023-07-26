@@ -352,18 +352,19 @@ class read_binary_stream {
     void pump_events() noexcept {
         auto this_read_size = read_size;
         if (stream.is_good()) {
-            // Align second and subsequent reads to read_size if current
-            // offset is available. This may or may not improve read
-            // performance (when the read_size is a multiple of the page
-            // size or block size), but can't hurt.
+            // Align second and subsequent reads to read_size if current offset
+            // is available. This may or may not improve read performance (when
+            // the read_size is a multiple of the page size or block size), but
+            // can't hurt.
             std::optional<std::uint64_t> pos = stream.tell();
             if (pos.has_value())
                 this_read_size -= *pos % read_size;
         }
 
         std::uint64_t total_bytes_read = 0;
-        std::array<std::byte, sizeof(Event)>
-            remainder; // Store partially read Event.
+        // If not null, buffer to use next containing a partial event:
+        std::shared_ptr<EventVector> buf;
+        // Bytes of new event contained in buf:
         std::size_t remainder_nbytes = 0;
 
         while (total_bytes_read < length && stream.is_good()) {
@@ -372,21 +373,15 @@ class read_binary_stream {
             auto const bufsize_bytes = remainder_nbytes + this_read_size;
             auto const bufsize_elements =
                 (bufsize_bytes - 1) / sizeof(Event) + 1;
-            std::shared_ptr<EventVector> buf;
             try {
-                buf = bufpool->check_out();
+                if (not buf)
+                    buf = bufpool->check_out();
                 buf->resize(bufsize_elements);
             } catch (std::exception const &e) {
                 return downstream.handle_end(std::make_exception_ptr(e));
             }
-            // NOLINTBEGIN(cppcoreguidelines-pro-type-reinterpret-cast)
-            span<std::byte> const buffer_span{
-                reinterpret_cast<std::byte *>(buf->data()), bufsize_bytes};
-            // NOLINTEND(cppcoreguidelines-pro-type-reinterpret-cast)
-
-            std::copy(remainder.begin(),
-                      std::next(remainder.begin(), remainder_nbytes),
-                      buffer_span.begin());
+            auto const buffer_span =
+                as_writable_bytes(span(*buf)).subspan(0, bufsize_bytes);
             auto const read_span = buffer_span.subspan(remainder_nbytes);
             assert(read_span.size() == this_read_size);
 
@@ -400,12 +395,27 @@ class read_binary_stream {
             auto const batch_span =
                 data_span.subspan(0, data_span.size() - remainder_nbytes);
             auto const remainder_span = data_span.subspan(batch_span.size());
-            std::copy(remainder_span.begin(), remainder_span.end(),
-                      remainder.begin());
+
+            std::shared_ptr<EventVector> next_buf;
+            if (remainder_nbytes > 0) {
+                try {
+                    next_buf = bufpool->check_out();
+                    next_buf->resize(1);
+                } catch (std::exception const &e) {
+                    return downstream.handle_end(std::make_exception_ptr(e));
+                }
+                auto const next_buffer_span =
+                    as_writable_bytes(span(*next_buf))
+                        .subspan(0, remainder_nbytes);
+                std::copy(remainder_span.begin(), remainder_span.end(),
+                          next_buffer_span.begin());
+            }
+
             if (this_batch_size > 0) {
                 buf->resize(this_batch_size);
                 downstream.handle_event(buf);
             }
+            buf = std::move(next_buf);
 
             this_read_size = read_size;
         }
