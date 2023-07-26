@@ -13,8 +13,6 @@
 
 namespace tcspc::internal {
 
-namespace really_internal {
-
 template <typename... Args> struct apply_class_template_curried {
     // Tmpl<T...> where T... is the first N element types of Tup, followed by
     // Ts.
@@ -38,14 +36,11 @@ template <typename... Args> struct apply_class_template_curried {
     };
 };
 
-} // namespace really_internal
-
 // Metafunction; given Tup = std::tuple<T, U>, return Tmpl<Args..., T, U>.
 template <template <typename...> typename Tmpl, typename Tup, typename... Args>
-using apply_class_template =
-    typename really_internal::apply_class_template_curried<Args...>::
-        template apply_class_template_to_tuple_n_elements<
-            Tmpl, Tup, std::tuple_size_v<Tup>>;
+using apply_class_template = typename apply_class_template_curried<Args...>::
+    template apply_class_template_to_tuple_n_elements<Tmpl, Tup,
+                                                      std::tuple_size_v<Tup>>;
 
 template <template <typename...> typename Tmpl, typename Tup, typename... Args>
 using apply_class_template_t =
