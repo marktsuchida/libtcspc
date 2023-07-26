@@ -159,7 +159,9 @@ inline void skip_stream_bytes(InputStream &stream, std::uint64_t bytes) {
             // Try instead reading and discarding up to 'start', to support
             // non-seekable streams (e.g., pipes).
             std::uint64_t bytes_discarded = 0;
-            static constexpr std::streamsize bufsize = 65536;
+            // For now, use the read size that was found fastest when reading
+            // /dev/zero on an Apple M1 Pro laptop. Could be tuned.
+            static constexpr std::streamsize bufsize = 32768;
             std::vector<std::byte> buf(bufsize);
             span<std::byte> const bufspan(buf);
             while (bytes_discarded < bytes) {
@@ -333,7 +335,7 @@ class read_binary_stream {
     std::uint64_t length;
 
     std::shared_ptr<object_pool<EventVector>> bufpool;
-    std::size_t read_size;
+    std::size_t read_granularity;
 
     Downstream downstream;
 
@@ -341,36 +343,51 @@ class read_binary_stream {
     explicit read_binary_stream(
         InputStream &&stream, std::uint64_t max_length,
         std::shared_ptr<object_pool<EventVector>> buffer_pool,
-        std::size_t read_size_bytes, Downstream &&downstream)
+        std::size_t read_granularity_bytes, Downstream &&downstream)
         : stream(std::move(stream)), length(max_length),
-          bufpool(std::move(buffer_pool)), read_size(read_size_bytes),
+          bufpool(std::move(buffer_pool)),
+          read_granularity(read_granularity_bytes),
           downstream(std::move(downstream)) {
         assert(bufpool);
-        assert(read_size > 0);
+        assert(read_granularity > 0);
     }
 
     void pump_events() noexcept {
-        auto this_read_size = read_size;
+        auto first_read_size = read_granularity;
         if (stream.is_good()) {
-            // Align second and subsequent reads to read_size if current offset
-            // is available. This may or may not improve read performance (when
-            // the read_size is a multiple of the page size or block size), but
-            // can't hurt.
+            // Align second and subsequent reads to read_granularity if current
+            // offset is available. This may or may not improve read
+            // performance (when the read_granularity is a multiple of the page
+            // size or block size), but can't hurt.
             std::optional<std::uint64_t> pos = stream.tell();
             if (pos.has_value())
-                this_read_size -= *pos % read_size;
+                first_read_size -= *pos % read_granularity;
         }
 
+        // State carried across iterations.
         std::uint64_t total_bytes_read = 0;
         // If not null, buffer to use next containing a partial event:
         std::shared_ptr<EventVector> buf;
         // Bytes of new event contained in buf:
-        std::size_t remainder_nbytes = 0;
+        std::size_t remainder_nbytes = 0; // Always < sizeof(Event)
+        bool const events_are_large = sizeof(Event) > read_granularity;
 
         while (total_bytes_read < length && stream.is_good()) {
-            this_read_size = std::min<std::uint64_t>(
-                this_read_size, length - total_bytes_read); // > 0
-            auto const bufsize_bytes = remainder_nbytes + this_read_size;
+            std::uint64_t read_size = read_granularity;
+            if (total_bytes_read == 0) {
+                read_size = first_read_size;
+            } else if (events_are_large) {
+                // Smallest multiple of read_granularity resulting in nonempty
+                // batch.
+                read_size = ((sizeof(Event) - remainder_nbytes - 1) /
+                                 read_granularity +
+                             1) *
+                            read_granularity;
+            }
+            read_size = std::min<std::uint64_t>(
+                read_size, length - total_bytes_read); // > 0
+
+            auto const bufsize_bytes = remainder_nbytes + read_size;
             auto const bufsize_elements =
                 (bufsize_bytes - 1) / sizeof(Event) + 1;
             try {
@@ -383,7 +400,7 @@ class read_binary_stream {
             auto const buffer_span =
                 as_writable_bytes(span(*buf)).subspan(0, bufsize_bytes);
             auto const read_span = buffer_span.subspan(remainder_nbytes);
-            assert(read_span.size() == this_read_size);
+            assert(read_span.size() == read_size);
 
             auto const bytes_read = stream.read(read_span);
             total_bytes_read += bytes_read;
@@ -416,8 +433,6 @@ class read_binary_stream {
                 downstream.handle_event(buf);
             }
             buf = std::move(next_buf);
-
-            this_read_size = read_size;
         }
 
         std::exception_ptr error;
@@ -450,11 +465,20 @@ class read_binary_stream {
  * object_pool. The events sent to the downstream processor are of the type \c
  * std::shared_ptr<EventVector>.
  *
- * The \e read_size can be tuned for best performance. If too small, reads will
- * incur more overhead per bytes read; if too large, CPU caches may be
- * polluted. Small batch sizes may also pessimize downstream processing. It is
- * best to try different powers of 2 and measure, but 32768 bytes is likely a
- * good starting point.
+ * Each time the stream is read, events that have been completely read are sent
+ * downstream as a batch. The size of each read is controlled by \e
+ * read_granularity and the size of \c Event. When the former is not smaller,
+ * it is used as the read size. When the size of \c Event is larger, the
+ * smallest multiple of \e read_granularity that would produce a non-empty
+ * (i.e., size 1) batch is used. The first read may be adjusted to a smaller
+ * size to align subsequent read offsets to the read granularity. The last read
+ * may be adjusted to a smaller size to avoid reading past \e max_length.
+ *
+ * The \e read_granularity can be tuned for best performance. If too small,
+ * reads may incur more overhead per byte read; if too large, CPU caches may
+ * be polluted. Small batch sizes may also pessimize downstream processing. It
+ * is best to try different powers of 2 and measure, but 32768 bytes is likely
+ * a good starting point.
  *
  * \tparam Event the event type
  *
@@ -472,10 +496,11 @@ class read_binary_stream {
  * multiple of \c sizeof(Event), or \c std::numeric_limit<std::size_t>::max()
  * to read to the end of the stream)
  *
- * \param buffer_pool object pool providing event buffers
+ * \param buffer_pool object pool providing event buffers; it must be able to
+ * circulate at least 2 buffers to avoid deadlock
  *
- * \param read_size_bytes size, in bytes, to read in each iteration; batches
- * will be approximately this size
+ * \param read_granularity_bytes minimum size, in bytes, to read in each
+ * iteration; a multiple of this value may be used if \c Event is larger
  *
  * \param downstream downstream processor
  *
@@ -485,19 +510,20 @@ template <typename Event, typename EventVector, typename InputStream,
           typename Downstream>
 auto read_binary_stream(InputStream &&stream, std::uint64_t max_length,
                         std::shared_ptr<object_pool<EventVector>> buffer_pool,
-                        std::size_t read_size_bytes, Downstream &&downstream) {
+                        std::size_t read_granularity_bytes,
+                        Downstream &&downstream) {
     // Support direct passing of C++ iostreams stream.
     if constexpr (std::is_base_of_v<std::istream, InputStream>) {
         auto wrapped = istream_input_stream(std::forward<InputStream>(stream));
         return internal::read_binary_stream<decltype(wrapped), Event,
                                             EventVector, Downstream>(
             std::move(wrapped), max_length, std::move(buffer_pool),
-            read_size_bytes, std::forward<Downstream>(downstream));
+            read_granularity_bytes, std::forward<Downstream>(downstream));
     } else {
         return internal::read_binary_stream<InputStream, Event, EventVector,
                                             Downstream>(
             std::forward<InputStream>(stream), max_length,
-            std::move(buffer_pool), read_size_bytes,
+            std::move(buffer_pool), read_granularity_bytes,
             std::forward<Downstream>(downstream));
     }
 }
