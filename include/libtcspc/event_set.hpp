@@ -129,9 +129,9 @@ struct handles_event : std::false_type {};
 template <typename Proc, typename Event>
 struct handles_event<Proc, Event,
                      std::void_t<decltype(std::declval<Proc>().handle_event(
-                         std::declval<Event>()))>>
+                         std::declval<Event const>()))>>
     : std::is_same<void, decltype(std::declval<Proc>().handle_event(
-                             std::declval<Event>()))> {};
+                             std::declval<Event const>()))> {};
 
 /**
  * \brief Helper variable to get the result of handles_event.
@@ -165,9 +165,9 @@ struct handles_end : std::false_type {};
 
 template <typename Proc>
 struct handles_end<Proc, std::void_t<decltype(std::declval<Proc>().handle_end(
-                             std::declval<std::exception_ptr>()))>>
+                             std::declval<std::exception_ptr const>()))>>
     : std::is_same<void, decltype(std::declval<Proc>().handle_end(
-                             std::declval<std::exception_ptr>()))> {};
+                             std::declval<std::exception_ptr const>()))> {};
 
 /**
  * \brief Helper variable to get the result of handles_end.
