@@ -35,7 +35,7 @@ class unoptimized_null_sink {
 
 } // namespace
 
-void bm_read_devzero_ifstream_1M_unbuf(benchmark::State &state) {
+void ifstream_1M_unbuf(benchmark::State &state) {
     for ([[maybe_unused]] auto _ : state) {
         auto stream =
             internal::unbuffered_binary_ifstream_input_stream("/dev/zero");
@@ -47,7 +47,7 @@ void bm_read_devzero_ifstream_1M_unbuf(benchmark::State &state) {
     }
 }
 
-void bm_read_devzero_ifstream_1M(benchmark::State &state) {
+void ifstream_1M(benchmark::State &state) {
     for ([[maybe_unused]] auto _ : state) {
         auto stream = internal::binary_ifstream_input_stream("/dev/zero");
         auto src = read_binary_stream<int>(
@@ -58,7 +58,7 @@ void bm_read_devzero_ifstream_1M(benchmark::State &state) {
     }
 }
 
-void bm_read_devzero_cfile_1M_unbuf(benchmark::State &state) {
+void cfile_1M_unbuf(benchmark::State &state) {
     for ([[maybe_unused]] auto _ : state) {
         auto stream =
             internal::unbuffered_binary_cfile_input_stream("/dev/zero");
@@ -70,7 +70,7 @@ void bm_read_devzero_cfile_1M_unbuf(benchmark::State &state) {
     }
 }
 
-void bm_read_devzero_cfile_1M(benchmark::State &state) {
+void cfile_1M(benchmark::State &state) {
     for ([[maybe_unused]] auto _ : state) {
         auto stream = internal::binary_cfile_input_stream("/dev/zero");
         auto src = read_binary_stream<int>(
@@ -83,21 +83,13 @@ void bm_read_devzero_cfile_1M(benchmark::State &state) {
 
 // NOLINTBEGIN
 
-BENCHMARK(bm_read_devzero_ifstream_1M_unbuf)
-    ->RangeMultiplier(2)
-    ->Range(4 << 10, 256 << 10);
+BENCHMARK(ifstream_1M_unbuf)->RangeMultiplier(2)->Range(4 << 10, 256 << 10);
 
-BENCHMARK(bm_read_devzero_ifstream_1M)
-    ->RangeMultiplier(2)
-    ->Range(4 << 10, 256 << 10);
+BENCHMARK(ifstream_1M)->RangeMultiplier(2)->Range(4 << 10, 256 << 10);
 
-BENCHMARK(bm_read_devzero_cfile_1M_unbuf)
-    ->RangeMultiplier(2)
-    ->Range(4 << 10, 256 << 10);
+BENCHMARK(cfile_1M_unbuf)->RangeMultiplier(2)->Range(4 << 10, 256 << 10);
 
-BENCHMARK(bm_read_devzero_cfile_1M)
-    ->RangeMultiplier(2)
-    ->Range(4 << 10, 256 << 10);
+BENCHMARK(cfile_1M)->RangeMultiplier(2)->Range(4 << 10, 256 << 10);
 
 // NOLINTEND
 

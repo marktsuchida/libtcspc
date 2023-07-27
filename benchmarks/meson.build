@@ -2,9 +2,9 @@
 # Copyright 2019-2023 Board of Regents of the University of Wisconsin System
 # SPDX-License-Identifier: MIT
 
-benchmark_read_binary_stream_exe = executable(
-    'benchmark_read_binary_stream',
-    'benchmark_read_binary_stream.cpp',
+benchmark_read_binary_stream_devzero_exe = executable(
+    'read_binary_stream_devzero',
+    'read_binary_stream_devzero.cpp',
     include_directories: [public_inc],
     dependencies: [
         benchmark_dep,
@@ -12,4 +12,7 @@ benchmark_read_binary_stream_exe = executable(
     ],
 )
 
-benchmark('read_binary_stream benchmark', benchmark_read_binary_stream_exe)
+benchmark(
+    'read_binary_stream_devzero',
+    benchmark_read_binary_stream_devzero_exe
+)
