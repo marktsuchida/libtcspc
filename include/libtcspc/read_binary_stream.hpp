@@ -504,8 +504,7 @@ class read_binary_stream {
  * The \e read_granularity_bytes can be tuned for best performance. If too
  * small, reads may incur more overhead per byte read; if too large, CPU caches
  * may be polluted. Small batch sizes may also pessimize downstream processing.
- * It is best to try different powers of 2 and measure, but 32768 bytes is
- * likely a good starting point.
+ * It is best to try different powers of 2 and measure.
  *
  * \see write_binary_stream
  *

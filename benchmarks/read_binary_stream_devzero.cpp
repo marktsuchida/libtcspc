@@ -14,11 +14,8 @@
 
 namespace tcspc {
 
-// Compare ifstream to C FILE *. For now this requires /dev/zero and won't
-// perform actual reads on Windows (need to create a temporary file).
-
-// Also compare different read sizes. The optimum may also depend on downstream
-// processing, which is no-op here.
+// Compare ifstream to C FILE *, buffering on or off, different read sizes.
+// The optimum may also depend on downstream processing, which is no-op here.
 
 namespace {
 
@@ -33,63 +30,65 @@ class unoptimized_null_sink {
     }
 };
 
+static constexpr std::size_t total_bytes = 1 << 20;
+
 } // namespace
 
-void ifstream_1M_unbuf(benchmark::State &state) {
+void ifstream_unbuf(benchmark::State &state) {
+    auto pool = std::make_shared<object_pool<std::vector<int>>>();
     for ([[maybe_unused]] auto _ : state) {
         auto stream =
             internal::unbuffered_binary_ifstream_input_stream("/dev/zero");
-        auto src = read_binary_stream<int>(
-            std::move(stream), 1 << 20,
-            std::make_shared<object_pool<std::vector<int>>>(), state.range(0),
-            unoptimized_null_sink());
+        auto src =
+            read_binary_stream<int>(std::move(stream), total_bytes, pool,
+                                    state.range(0), unoptimized_null_sink());
         src.pump_events();
     }
 }
 
-void ifstream_1M(benchmark::State &state) {
+void ifstream(benchmark::State &state) {
+    auto pool = std::make_shared<object_pool<std::vector<int>>>();
     for ([[maybe_unused]] auto _ : state) {
         auto stream = internal::binary_ifstream_input_stream("/dev/zero");
-        auto src = read_binary_stream<int>(
-            std::move(stream), 1 << 20,
-            std::make_shared<object_pool<std::vector<int>>>(), state.range(0),
-            unoptimized_null_sink());
+        auto src =
+            read_binary_stream<int>(std::move(stream), total_bytes, pool,
+                                    state.range(0), unoptimized_null_sink());
         src.pump_events();
     }
 }
 
-void cfile_1M_unbuf(benchmark::State &state) {
+void cfile_unbuf(benchmark::State &state) {
+    auto pool = std::make_shared<object_pool<std::vector<int>>>();
     for ([[maybe_unused]] auto _ : state) {
         auto stream =
             internal::unbuffered_binary_cfile_input_stream("/dev/zero");
-        auto src = read_binary_stream<int>(
-            std::move(stream), 1 << 20,
-            std::make_shared<object_pool<std::vector<int>>>(), state.range(0),
-            unoptimized_null_sink());
+        auto src =
+            read_binary_stream<int>(std::move(stream), total_bytes, pool,
+                                    state.range(0), unoptimized_null_sink());
         src.pump_events();
     }
 }
 
-void cfile_1M(benchmark::State &state) {
+void cfile(benchmark::State &state) {
+    auto pool = std::make_shared<object_pool<std::vector<int>>>();
     for ([[maybe_unused]] auto _ : state) {
         auto stream = internal::binary_cfile_input_stream("/dev/zero");
-        auto src = read_binary_stream<int>(
-            std::move(stream), 1 << 20,
-            std::make_shared<object_pool<std::vector<int>>>(), state.range(0),
-            unoptimized_null_sink());
+        auto src =
+            read_binary_stream<int>(std::move(stream), total_bytes, pool,
+                                    state.range(0), unoptimized_null_sink());
         src.pump_events();
     }
 }
 
 // NOLINTBEGIN
 
-BENCHMARK(ifstream_1M_unbuf)->RangeMultiplier(2)->Range(4 << 10, 256 << 10);
+BENCHMARK(ifstream_unbuf)->RangeMultiplier(2)->Range(4 << 10, 256 << 10);
 
-BENCHMARK(ifstream_1M)->RangeMultiplier(2)->Range(4 << 10, 256 << 10);
+BENCHMARK(ifstream)->RangeMultiplier(2)->Range(4 << 10, 256 << 10);
 
-BENCHMARK(cfile_1M_unbuf)->RangeMultiplier(2)->Range(4 << 10, 256 << 10);
+BENCHMARK(cfile_unbuf)->RangeMultiplier(2)->Range(4 << 10, 256 << 10);
 
-BENCHMARK(cfile_1M)->RangeMultiplier(2)->Range(4 << 10, 256 << 10);
+BENCHMARK(cfile)->RangeMultiplier(2)->Range(4 << 10, 256 << 10);
 
 // NOLINTEND
 
