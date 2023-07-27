@@ -18,6 +18,12 @@ namespace tcspc {
 // Compare ofstream to C FILE *, buffering on or off, different write sizes.
 // The optimum may also depend on upstream processing, which is no-op here.
 
+// These benchmarks are good enough to conclude that unbuffered C files perform
+// best. Finding the optimal write size requires testing a larger range (for
+// large amounts of data (1 GiB), the overhead seemed to keep decreasing,
+// although it starts to plateau at tens of megabytes, on an Apple M1 Pro
+// laptop). It may also be affected by what is done upstream.
+
 namespace {
 
 // Access output stream via reference, to ensure stream creation is not

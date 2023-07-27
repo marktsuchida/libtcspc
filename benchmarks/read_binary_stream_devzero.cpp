@@ -17,6 +17,12 @@ namespace tcspc {
 // Compare ifstream to C FILE *, buffering on or off, different read sizes.
 // The optimum may also depend on downstream processing, which is no-op here.
 
+// These benchmarks are good enough to conclude that unbuffered C files perform
+// best. Finding the optimal read size requires testing a larger range (for
+// large amounts of data (1 GiB), much larger read sizes (megabytes) were
+// faster on an Apple M1 Pro laptop). It is probably also affected by what is
+// done downstream.
+
 namespace {
 
 // Access input stream via reference, to ensure stream creation is not
