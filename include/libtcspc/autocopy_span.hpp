@@ -16,6 +16,19 @@
 
 namespace tcspc {
 
+// Design note (in addition to rationale in the doc comment below): We could
+// use std::shared_ptr<T const> to handle large buffers in events. However,
+// this is problematic due to the potentially high frequency of some of these
+// events (especially histogram_event and element_histogram_event) and the high
+// overhead (due to atomic operations) of creating and destroying shared_ptr
+// copies. The autocopy_span is designed for single-threaded (or externally
+// synchronized) use only, so generally does not have this issue.
+
+// Design note: For std::span, copies are shallow (do not copy the bytes), and
+// accordingly const is shallow (you can mutate the bytes referenced by a const
+// span); there is no comparison to prevent misuse. For autocopy_span, copies
+// are deep, and so is const and comparison. See https://wg21.link/P1085.
+
 /**
  * \brief Like \c std::span, but allocates new memory when copied.
  *
@@ -109,7 +122,7 @@ template <typename T> class autocopy_span {
      *
      * \return the span
      */
-    auto as_span() const noexcept -> span<const T> { return s; }
+    auto as_span() const noexcept -> span<T const> { return s; }
 
     /**
      * \brief Get the span represented.
@@ -121,7 +134,7 @@ template <typename T> class autocopy_span {
     /**
      * \brief Implicit conversion to span.
      */
-    operator span<const T>() const noexcept { return s; }
+    operator span<T const>() const noexcept { return s; }
 
     /**
      * \brief Implicit conversion to span.

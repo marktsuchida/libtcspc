@@ -44,6 +44,7 @@ libtcspc_tests_srcs = [
     'time_tagged_events.cpp',
     'type_erased_processor.cpp',
     'vector_queue.cpp',
+    'write_binary_stream.cpp',
 ]
 
 libtcspc_tests_exe = executable(
@@ -52,7 +53,8 @@ libtcspc_tests_exe = executable(
     include_directories: [public_inc],
     dependencies: [
         tcb_span_dep,
-        catch2_with_main_dep
+        catch2_with_main_dep,
+        trompeloeil_dep,
     ],
 )
 

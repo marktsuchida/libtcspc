@@ -102,9 +102,10 @@ namespace tcspc {
 /** @} */
 
 /**
- * \defgroup input-streams Input streams
+ * \defgroup streams Input and output streams
  *
- * \brief Input stream wrappers for use with \ref read_binary_stream.
+ * \brief Stream wrappers for use with \ref read_binary_stream and \ref
+ * write_binary_stream.
  */
 
 /**

@@ -45,6 +45,7 @@ public_cpp_headers = files(
     'time_tagged_events.hpp',
     'type_erased_processor.hpp',
     'vector_queue.hpp',
+    'write_binary_stream.hpp',
 )
 
 install_headers(public_cpp_headers, subdir: 'libtcspc')

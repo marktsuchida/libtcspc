@@ -22,6 +22,12 @@ catch2_with_main_dep = dependency(
     disabler: true,
 )
 
+trompeloeil_dep = dependency(
+    'trompeloeil',
+    fallback: ['trompeloeil', 'trompeloeil_dep'],
+    include_type: 'system',
+)
+
 benchmark_dep = dependency(
     'benchmark',
     required: get_option('tests'),

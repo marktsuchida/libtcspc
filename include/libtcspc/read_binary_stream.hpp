@@ -9,7 +9,6 @@
 #include "buffer.hpp"
 #include "span.hpp"
 
-#include <array>
 #include <cassert>
 #include <cstddef>
 #include <cstdint>
@@ -24,7 +23,38 @@
 #include <type_traits>
 #include <vector>
 
+// When editing this file, maintain partial symmetry with
+// write_binary_stream.hpp.
+
 namespace tcspc {
+
+/**
+ * \addtogroup streams
+ *
+ * \par Requirements for input streams
+ * An input stream must be a movable (usually noncopyable) object with the
+ * following member functions:
+ * - <tt>auto is_error() noexcept -> bool;</tt>\n
+ *   Return true if the stream is not available or the previous read operation
+ *   resulted in an error (\e not including reaching EOF). Not influenced by
+ *   failure of \c tell() or \c skip().
+ * - <tt>auto is_eof() noexcept -> bool;</tt>\n
+ *   Return true if the previous read operation tried to read beyond the end of
+ *   the stream (or if the stream is not available). Not influenced by failure
+ *   of \c tell() or \c skip().
+ * - <tt>auto is_good() noexcept -> bool;</tt>\n
+ *   Return true if neiter \c is_error() nor \c is_eof() is true.
+ * - <tt>auto tell() noexcept -> std::optional<std::uint64_t>;</tt>\n
+ *   Return the current stream position if supported by the stream, or \c
+ *   std::nullopt.
+ * - <tt>auto skip(std::uint64_t bytes) noexcept -> bool;</tt>\n
+ *   Seek, relative to the current offset, forward by \e bytes. Return true if
+ *   successful.
+ * - <tt>auto read(tcspc::span<std::byte> buffer) noexcept ->
+ *   std::uint64_t;</tt>\n
+ *   Read into the given buffer, up to the buffer size. Return the number of
+ *   bytes read.
+ */
 
 namespace internal {
 
@@ -46,21 +76,24 @@ template <typename IStream> class istream_input_stream {
 
     auto is_good() noexcept -> bool { return stream.good(); }
 
-    void clear() noexcept { stream.clear(); }
-
     auto tell() noexcept -> std::optional<std::uint64_t> {
+        if (stream.fail())
+            return std::nullopt; // Do not affect flags.
         std::int64_t const pos = stream.tellg();
-        if (pos < 0)
-            return std::nullopt;
-        return std::uint64_t(pos);
+        if (pos >= 0)
+            return std::uint64_t(pos);
+        stream.clear();
+        return std::nullopt;
     }
 
     auto skip(std::uint64_t bytes) noexcept -> bool {
         if (stream.fail() ||
             bytes > std::numeric_limits<std::streamoff>::max())
             return false;
-        stream.seekg(std::streamoff(bytes), std::ios::beg);
-        return stream.good();
+        stream.seekg(std::streamoff(bytes), std::ios::cur);
+        auto const ret = stream.good();
+        stream.clear();
+        return ret;
     }
 
     auto read(span<std::byte> buffer) noexcept -> std::uint64_t {
@@ -111,37 +144,31 @@ class cfile_input_stream {
         return fp != nullptr && std::ferror(fp) == 0 && std::feof(fp) == 0;
     }
 
-    void clear() noexcept {
-        if (fp != nullptr)
-            std::clearerr(fp);
-    }
-
     auto tell() noexcept -> std::optional<std::uint64_t> {
         if (fp == nullptr)
             return std::nullopt;
-        std::int64_t pos = std::ftell(fp);
-        if (pos >= 0)
-            return std::uint64_t(pos);
+        std::int64_t pos =
 #ifdef _WIN32
-        pos = ::_ftelli64(fp);
+            ::_ftelli64(fp);
+#else
+            std::ftell(fp);
+#endif
         if (pos >= 0)
             return std::uint64_t(pos);
-#endif
         return std::nullopt;
     }
 
     auto skip(std::uint64_t bytes) noexcept -> bool {
         if (fp == nullptr)
             return false;
-        if (bytes > std::numeric_limits<long>::max()) {
 #ifdef _WIN32
-            if (bytes <= std::numeric_limits<__int64>::max())
-                return ::_fseeki64(fp, __int64(bytes), SEEK_CUR) == 0;
+        if (bytes <= std::numeric_limits<__int64>::max())
+            return ::_fseeki64(fp, __int64(bytes), SEEK_CUR) == 0;
 #else
-            return false;
+        if (bytes <= std::numeric_limits<long>::max())
+            return std::fseek(fp, long(bytes), SEEK_CUR) == 0;
 #endif
-        }
-        return std::fseek(fp, long(bytes), SEEK_CUR) == 0;
+        return false;
     }
 
     auto read(span<std::byte> buffer) noexcept -> std::uint64_t {
@@ -153,31 +180,26 @@ class cfile_input_stream {
 
 template <typename InputStream>
 inline void skip_stream_bytes(InputStream &stream, std::uint64_t bytes) {
-    if (stream.is_good()) {
-        if (not stream.skip(bytes)) {
-            stream.clear();
-            // Try instead reading and discarding up to 'start', to support
-            // non-seekable streams (e.g., pipes).
-            std::uint64_t bytes_discarded = 0;
-            // For now, use the read size that was found fastest when reading
-            // /dev/zero on an Apple M1 Pro laptop. Could be tuned.
-            static constexpr std::streamsize bufsize = 32768;
-            std::vector<std::byte> buf(bufsize);
-            span<std::byte> const bufspan(buf);
-            while (bytes_discarded < bytes) {
-                auto read_size =
-                    std::min<std::uint64_t>(bufsize, bytes - bytes_discarded);
-                bytes_discarded += stream.read(bufspan.subspan(0, read_size));
-                if (not stream.is_good())
-                    break;
-            }
+    if (not stream.skip(bytes)) {
+        // Try instead reading and discarding up to 'start', to support
+        // non-seekable streams (e.g., pipes).
+        std::uint64_t bytes_discarded = 0;
+        // For now, use the read size that was found fastest when reading
+        // /dev/zero on an Apple M1 Pro laptop. Could be tuned.
+        static constexpr std::streamsize bufsize = 32768;
+        std::vector<std::byte> buf(bufsize);
+        span<std::byte> const bufspan(buf);
+        while (bytes_discarded < bytes) {
+            auto read_size =
+                std::min<std::uint64_t>(bufsize, bytes - bytes_discarded);
+            bytes_discarded += stream.read(bufspan.subspan(0, read_size));
+            if (not stream.is_good())
+                break;
         }
     }
 }
 
-// For files, we prefer cfile over ofstream (see binary_file_input_stream), but
-// here are ifstream-based implementations for benchmarking.
-
+// For benchmarking only
 inline auto
 unbuffered_binary_ifstream_input_stream(std::string const &filename,
                                         std::uint64_t start = 0) {
@@ -194,6 +216,7 @@ unbuffered_binary_ifstream_input_stream(std::string const &filename,
     return ret;
 }
 
+// For benchmarking only
 inline auto binary_ifstream_input_stream(std::string const &filename,
                                          std::uint64_t start = 0) {
     std::ifstream stream;
@@ -216,6 +239,7 @@ inline auto unbuffered_binary_cfile_input_stream(std::string const &filename,
     return ret;
 }
 
+// For benchmarking only
 inline auto binary_cfile_input_stream(std::string const &filename,
                                       std::uint64_t start = 0) {
     // NOLINTNEXTLINE(cppcoreguidelines-owning-memory)
@@ -230,7 +254,10 @@ inline auto binary_cfile_input_stream(std::string const &filename,
 /**
  * \brief Create a binary input stream for the given file.
  *
- * \ingroup input-streams
+ * \ingroup streams
+ *
+ * If the file cannot be opened, or is smaller than \e start bytes, the stream
+ * will be in an error state.
  *
  * \see read_binary_stream
  *
@@ -250,7 +277,7 @@ inline auto binary_file_input_stream(std::string const &filename,
 /**
  * \brief Create an abstract input stream from an \c std::istream instance.
  *
- * \ingroup input-streams
+ * \ingroup streams
  *
  * The istream is moved into the returned input stream and destroyed together,
  * so you cannot use this with an istream that you do not own (such as \c
@@ -273,15 +300,14 @@ inline auto istream_input_stream(IStream &&stream) {
  * \brief Create an abstract input stream from a C file pointer, taking
  * ownership.
  *
- * \ingroup input-streams
+ * \ingroup streams
  *
  * The stream will use the C stdio functions, such as \c std::fread(). The file
  * pointer is closed when the stream is destroyed.
  *
  * The file pointer \e fp should have been opened in binary mode.
  *
- * If \e fp is null, the stream will always be in an error state (even after
- * clearing).
+ * If \e fp is null, the stream will always be in an error state.
  *
  * \see borrowed_cfile_input_stream
  * \see read_binary_stream
@@ -297,7 +323,7 @@ inline auto owning_cfile_input_stream(std::FILE *fp) {
 /**
  * \brief Create an abstract input stream from a non-owned C file pointer.
  *
- * \ingroup input-streams
+ * \ingroup streams
  *
  * The stream will use the C stdio functions, such as \c std::fread(). The file
  * pointer is not closed when the stream is destroyed. The caller is
@@ -308,8 +334,7 @@ inline auto owning_cfile_input_stream(std::FILE *fp) {
  * \c stdin, use \c std::freopen() with a null filename on POSIX or \c
  * _setmode() with \c _O_BINARY on Windows (via \c _fileno()).)
  *
- * If \e fp is null, the stream will always be in an error state (even after
- * clearing).
+ * If \e fp is null, the stream will always be in an error state.
  *
  * \see owning_cfile_input_stream
  * \see read_binary_stream
@@ -358,7 +383,7 @@ class read_binary_stream {
             // Align second and subsequent reads to read_granularity if current
             // offset is available. This may or may not improve read
             // performance (when the read_granularity is a multiple of the page
-            // size or block size), but can't hurt.
+            // size or block size), but shouldn't hurt.
             std::optional<std::uint64_t> pos = stream.tell();
             if (pos.has_value())
                 first_read_size -= *pos % read_granularity;
@@ -366,7 +391,7 @@ class read_binary_stream {
 
         // State carried across iterations.
         std::uint64_t total_bytes_read = 0;
-        // If not null, buffer to use next containing a partial event:
+        // If not null, buffer to use next, containing a partial event:
         std::shared_ptr<EventVector> buf;
         // Bytes of new event contained in buf:
         std::size_t remainder_nbytes = 0; // Always < sizeof(Event)
@@ -455,9 +480,10 @@ class read_binary_stream {
  *
  * \ingroup processors-basic
  *
- * The stream is either libtcspc's stream abstraction (see \ref input-streams)
- * or an iostreams stream. In the latter case, it is wrapped using \ref
- * istream_input_stream.
+ * The stream is either libtcspc's input stream abstraction (see \ref streams)
+ * or an iostreams \c std::istream. In the latter case, it is wrapped using
+ * \ref istream_input_stream. (Use of iostreams is not recommended due to often
+ * poor performance.)
  *
  * The stream must contain a contiguous array of events (of type \c Event,
  * which must be a trivial type). Events are read from the stream in batches
@@ -467,18 +493,21 @@ class read_binary_stream {
  *
  * Each time the stream is read, events that have been completely read are sent
  * downstream as a batch. The size of each read is controlled by \e
- * read_granularity and the size of \c Event. When the former is not smaller,
- * it is used as the read size. When the size of \c Event is larger, the
- * smallest multiple of \e read_granularity that would produce a non-empty
- * (i.e., size 1) batch is used. The first read may be adjusted to a smaller
- * size to align subsequent read offsets to the read granularity. The last read
- * may be adjusted to a smaller size to avoid reading past \e max_length.
+ * read_granularity_bytes and the size of \c Event. When the former is not
+ * smaller, it is used as the read size. When the size of \c Event is larger,
+ * the smallest multiple of \e read_granularity_bytes that would produce a
+ * non-empty (i.e., size 1) batch is used. The first read may be adjusted to a
+ * smaller size to align subsequent read offsets to the read granularity. The
+ * last read may be adjusted to a smaller size to avoid reading past \e
+ * max_length.
  *
- * The \e read_granularity can be tuned for best performance. If too small,
- * reads may incur more overhead per byte read; if too large, CPU caches may
- * be polluted. Small batch sizes may also pessimize downstream processing. It
- * is best to try different powers of 2 and measure, but 32768 bytes is likely
- * a good starting point.
+ * The \e read_granularity_bytes can be tuned for best performance. If too
+ * small, reads may incur more overhead per byte read; if too large, CPU caches
+ * may be polluted. Small batch sizes may also pessimize downstream processing.
+ * It is best to try different powers of 2 and measure, but 32768 bytes is
+ * likely a good starting point.
+ *
+ * \see write_binary_stream
  *
  * \tparam Event the event type
  *
@@ -489,14 +518,13 @@ class read_binary_stream {
  *
  * \tparam Downstream downstream processor type
  *
- * \param stream the input stream (e.g., an \c std::ifstream opened in binary
- * mode)
+ * \param stream the input stream (see \ref streams)
  *
  * \param max_length maximum number of bytes to read from stream (should be a
  * multiple of \c sizeof(Event), or \c std::numeric_limit<std::size_t>::max()
  * to read to the end of the stream)
  *
- * \param buffer_pool object pool providing event buffers; it must be able to
+ * \param buffer_pool object pool providing event buffers; must be able to
  * circulate at least 2 buffers to avoid deadlock
  *
  * \param read_granularity_bytes minimum size, in bytes, to read in each

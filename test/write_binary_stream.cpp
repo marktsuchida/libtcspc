@@ -1,0 +1,327 @@
+/*
+ * This file is part of libtcspc
+ * Copyright 2019-2023 Board of Regents of the University of Wisconsin System
+ * SPDX-License-Identifier: MIT
+ */
+
+#include "libtcspc/write_binary_stream.hpp"
+
+#include "libtcspc/autocopy_span.hpp"
+#include "libtcspc/ref_processor.hpp"
+#include "libtcspc/test_utils.hpp"
+
+#include <catch2/catch_all.hpp>
+#include <catch2/trompeloeil.hpp>
+
+#include <algorithm>
+#include <numeric>
+
+namespace tcspc {
+
+namespace {
+
+template <typename T, std::size_t N, std::size_t M>
+auto equal_span(span<T const, N> lhs, span<T const, M> rhs) -> bool {
+    return lhs.size() == rhs.size() &&
+           std::equal(lhs.begin(), lhs.end(), rhs.begin());
+}
+
+struct mock_output_stream {
+    // NOLINTBEGIN(modernize-use-trailing-return-type)
+    MAKE_MOCK0(is_error, auto()->bool);
+    MAKE_MOCK0(tell, auto()->std::optional<std::uint64_t>);
+    MAKE_MOCK1(write, void(span<std::byte const>));
+    // NOLINTEND(modernize-use-trailing-return-type)
+};
+
+template <typename OutputStream> class ref_output_stream {
+    // NOLINTNEXTLINE(cppcoreguidelines-avoid-const-or-ref-data-members)
+    OutputStream &ref;
+
+  public:
+    explicit ref_output_stream(OutputStream &stream) : ref(stream) {}
+
+    auto is_error() -> bool { return ref.is_error(); }
+    auto tell() -> std::optional<std::uint64_t> { return ref.tell(); }
+    void write(span<std::byte const> buf) { ref.write(buf); }
+};
+
+}; // namespace
+
+TEST_CASE("write binary stream", "[write_binary_stream]") {
+    // We use a fixed writing granularity but vary event size and start offset
+    // to test different cases.
+    static constexpr auto granularity = 4;
+    auto stream = mock_output_stream();
+    auto out = capture_output<event_set<>>();
+    auto in = feed_input<
+        event_set<autocopy_span<std::byte>, autocopy_span<std::byte const>>>(
+        write_binary_stream<>(
+            ref_output_stream(stream),
+            std::make_shared<object_pool<std::vector<std::byte>>>(0, 1),
+            granularity, ref_processor(out)));
+    in.require_output_checked(out);
+
+    using trompeloeil::_;
+
+    SECTION("empty stream") {
+        // Never interacts with output stream.
+        in.feed_end();
+        REQUIRE(out.check_end());
+    }
+
+    SECTION("zero size event") {
+        ALLOW_CALL(stream, is_error()).RETURN(false);
+
+        auto const start = GENERATE(0, 1, 4);
+        ALLOW_CALL(stream, tell()).RETURN(start);
+        in.feed(autocopy_span<std::byte>());
+        in.feed(autocopy_span<std::byte>());
+        in.feed_end();
+        REQUIRE(out.check_end());
+    }
+
+    SECTION("initially bad stream") {
+        ALLOW_CALL(stream, is_error()).RETURN(true);
+        ALLOW_CALL(stream, tell()).RETURN(std::nullopt);
+        in.feed(autocopy_span<std::byte>()); // Empty spans are okay.
+        std::array data{std::byte(0)};
+        in.feed(autocopy_span(data));
+        in.feed(autocopy_span(data));
+        in.feed(autocopy_span(data));
+        REQUIRE_CALL(stream, write(_)).TIMES(1).WITH(_1.size() == granularity);
+        in.feed(autocopy_span(data));
+        REQUIRE_THROWS_WITH(out.check_end(),
+                            Catch::Matchers::ContainsSubstring("write"));
+    }
+
+    SECTION("tell() failure is ignored") {
+        ALLOW_CALL(stream, is_error()).RETURN(false);
+        REQUIRE_CALL(stream, tell()).TIMES(1, 4).RETURN(std::nullopt);
+        std::array data{std::byte(0)};
+        in.feed(autocopy_span(data));
+        in.feed(autocopy_span(data));
+        in.feed(autocopy_span(data));
+        REQUIRE_CALL(stream, write(_)).TIMES(1).WITH(_1.size() == granularity);
+        in.feed(autocopy_span(data));
+        in.feed_end();
+        REQUIRE(out.check_end());
+    }
+
+    SECTION("start offset 0") {
+        auto const start = GENERATE(0, 4);
+        ALLOW_CALL(stream, is_error()).RETURN(false);
+        ALLOW_CALL(stream, tell()).RETURN(start);
+
+        SECTION("event size 2") {
+            std::array<std::uint8_t, 8> data{};
+            std::iota(data.begin(), data.end(), 0);
+            auto const data_bytes = as_bytes(span(data));
+            in.feed(autocopy_span(data_bytes.subspan(0, 2)));
+            REQUIRE_CALL(stream, write(_))
+                .TIMES(1)
+                .WITH(equal_span(_1, data_bytes.subspan(0, 4)));
+            in.feed(autocopy_span(data_bytes.subspan(2, 2)));
+            in.feed(autocopy_span(data_bytes.subspan(4, 2)));
+            REQUIRE_CALL(stream, write(_))
+                .TIMES(1)
+                .WITH(equal_span(_1, data_bytes.subspan(4, 4)));
+
+            SECTION("write fails") {
+                ALLOW_CALL(stream, is_error()).RETURN(true);
+                in.feed(autocopy_span(data_bytes.subspan(6, 2)));
+                REQUIRE_THROWS(out.check_end());
+            }
+
+            SECTION("clean end") {
+                in.feed(autocopy_span(data_bytes.subspan(6, 2)));
+                in.feed_end();
+                REQUIRE(out.check_end());
+            }
+        }
+
+        SECTION("event size 3") {
+            std::array<std::uint8_t, 18> data{};
+            std::iota(data.begin(), data.end(), 0);
+            auto const data_bytes = as_bytes(span(data));
+            in.feed(autocopy_span(data_bytes.subspan(0, 3)));
+            REQUIRE_CALL(stream, write(_))
+                .TIMES(1)
+                .WITH(equal_span(_1, data_bytes.subspan(0, 4)));
+            in.feed(autocopy_span(data_bytes.subspan(3, 3)));
+            REQUIRE_CALL(stream, write(_))
+                .TIMES(1)
+                .WITH(equal_span(_1, data_bytes.subspan(4, 4)));
+            in.feed(autocopy_span(data_bytes.subspan(6, 3)));
+            REQUIRE_CALL(stream, write(_))
+                .TIMES(1)
+                .WITH(equal_span(_1, data_bytes.subspan(8, 4)));
+            in.feed(autocopy_span(data_bytes.subspan(9, 3)));
+            in.feed(autocopy_span(data_bytes.subspan(12, 3)));
+            REQUIRE_CALL(stream, write(_))
+                .TIMES(1)
+                .WITH(equal_span(_1, data_bytes.subspan(12, 4)));
+
+            SECTION("write fails") {
+                ALLOW_CALL(stream, is_error()).RETURN(true);
+                in.feed(autocopy_span(data_bytes.subspan(15, 3)));
+                REQUIRE_THROWS(out.check_end());
+            }
+
+            SECTION("clean end") {
+                in.feed(autocopy_span(data_bytes.subspan(15, 3)));
+                REQUIRE_CALL(stream, write(_))
+                    .TIMES(1)
+                    .WITH(equal_span(_1, data_bytes.subspan(16)));
+                in.feed_end();
+                REQUIRE(out.check_end());
+            }
+        }
+
+        SECTION("event size 4") {
+            std::array<std::uint8_t, 8> data{};
+            std::iota(data.begin(), data.end(), 0);
+            auto const data_bytes = as_bytes(span(data));
+            REQUIRE_CALL(stream, write(_))
+                .TIMES(1)
+                .WITH(equal_span(_1, data_bytes.subspan(0, 4)));
+            in.feed(autocopy_span(data_bytes.subspan(0, 4)));
+            REQUIRE_CALL(stream, write(_))
+                .TIMES(1)
+                .WITH(equal_span(_1, data_bytes.subspan(4, 4)));
+
+            SECTION("write fails") {
+                ALLOW_CALL(stream, is_error()).RETURN(true);
+                in.feed(autocopy_span(data_bytes.subspan(4, 4)));
+                REQUIRE_THROWS(out.check_end());
+            }
+        }
+
+        SECTION("event size 5") {
+            std::array<std::uint8_t, 15> data{};
+            std::iota(data.begin(), data.end(), 0);
+            auto const data_bytes = as_bytes(span(data));
+            REQUIRE_CALL(stream, write(_))
+                .TIMES(1)
+                .WITH(equal_span(_1, data_bytes.subspan(0, 4)));
+            in.feed(autocopy_span(data_bytes.subspan(0, 5)));
+            REQUIRE_CALL(stream, write(_))
+                .TIMES(1)
+                .WITH(equal_span(_1, data_bytes.subspan(4, 4)));
+            in.feed(autocopy_span(data_bytes.subspan(5, 5)));
+            REQUIRE_CALL(stream, write(_))
+                .TIMES(1)
+                .WITH(equal_span(_1, data_bytes.subspan(8, 4)));
+            ALLOW_CALL(stream, is_error()).RETURN(true);
+            in.feed(autocopy_span(data_bytes.subspan(10, 5)));
+            REQUIRE_THROWS(out.check_end());
+        }
+
+        SECTION("event size 9") {
+            std::array<std::uint8_t, 18> data{};
+            std::iota(data.begin(), data.end(), 0);
+            auto const data_bytes = as_bytes(span(data));
+            REQUIRE_CALL(stream, write(_))
+                .TIMES(1)
+                .WITH(equal_span(_1, data_bytes.subspan(0, 8)));
+            in.feed(autocopy_span(data_bytes.subspan(0, 9)));
+            REQUIRE_CALL(stream, write(_))
+                .TIMES(1)
+                .WITH(equal_span(_1, data_bytes.subspan(8, 4)));
+
+            SECTION("write fails") {
+                ALLOW_CALL(stream, is_error()).RETURN(true);
+                in.feed(autocopy_span(data_bytes.subspan(9, 9)));
+                REQUIRE_THROWS(out.check_end());
+            }
+
+            SECTION("clean end") {
+                REQUIRE_CALL(stream, write(_))
+                    .TIMES(1)
+                    .WITH(equal_span(_1, data_bytes.subspan(12, 4)));
+                in.feed(autocopy_span(data_bytes.subspan(9, 9)));
+                REQUIRE_CALL(stream, write(_))
+                    .TIMES(1)
+                    .WITH(equal_span(_1, data_bytes.subspan(16, 2)));
+                in.feed_end();
+                REQUIRE(out.check_end());
+            }
+        }
+    }
+
+    SECTION("start offset 1") {
+        auto const start = GENERATE(1, 5);
+        ALLOW_CALL(stream, is_error()).RETURN(false);
+        ALLOW_CALL(stream, tell()).RETURN(start);
+
+        SECTION("event size 3") {
+            std::array<std::uint8_t, 9> data{};
+            std::iota(data.begin(), data.end(), 0);
+            auto const data_bytes = as_bytes(span(data));
+            REQUIRE_CALL(stream, write(_))
+                .TIMES(1)
+                .WITH(equal_span(_1, data_bytes.subspan(0, 3)));
+
+            SECTION("write fails") {
+                ALLOW_CALL(stream, is_error()).RETURN(true);
+                in.feed(autocopy_span(data_bytes.subspan(0, 3)));
+                REQUIRE_THROWS(out.check_end());
+            }
+
+            SECTION("clean end") {
+                in.feed(autocopy_span(data_bytes.subspan(0, 3)));
+                in.feed_end();
+                REQUIRE(out.check_end());
+            }
+
+            SECTION("continue") {
+                in.feed(autocopy_span(data_bytes.subspan(0, 3)));
+                in.feed(autocopy_span(data_bytes.subspan(3, 3)));
+                REQUIRE_CALL(stream, write(_))
+                    .TIMES(1)
+                    .WITH(equal_span(_1, data_bytes.subspan(3, 4)));
+
+                SECTION("write fails") {
+                    ALLOW_CALL(stream, is_error()).RETURN(true);
+                    in.feed(autocopy_span(data_bytes.subspan(6, 3)));
+                    REQUIRE_THROWS(out.check_end());
+                }
+
+                SECTION("clean end") {
+                    in.feed(autocopy_span(data_bytes.subspan(6, 3)));
+                    REQUIRE_CALL(stream, write(_))
+                        .TIMES(1)
+                        .WITH(equal_span(_1, data_bytes.subspan(7, 2)));
+                    in.feed_end();
+                    REQUIRE(out.check_end());
+                }
+            }
+        }
+
+        SECTION("event size 4") {
+            std::array<std::uint8_t, 4> data{};
+            std::iota(data.begin(), data.end(), 0);
+            auto const data_bytes = as_bytes(span(data));
+            REQUIRE_CALL(stream, write(_))
+                .TIMES(1)
+                .WITH(equal_span(_1, data_bytes.subspan(0, 3)));
+
+            SECTION("write fails") {
+                ALLOW_CALL(stream, is_error()).RETURN(true);
+                in.feed(autocopy_span(data_bytes.subspan(0, 4)));
+                REQUIRE_THROWS(out.check_end());
+            }
+
+            SECTION("clean end") {
+                in.feed(autocopy_span(data_bytes.subspan(0, 4)));
+                REQUIRE_CALL(stream, write(_))
+                    .TIMES(1)
+                    .WITH(equal_span(_1, data_bytes.subspan(3, 1)));
+                in.feed_end();
+                REQUIRE(out.check_end());
+            }
+        }
+    }
+}
+
+} // namespace tcspc
