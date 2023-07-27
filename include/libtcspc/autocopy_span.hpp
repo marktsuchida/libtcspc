@@ -11,6 +11,7 @@
 #include <algorithm>
 #include <array>
 #include <memory>
+#include <ostream>
 #include <type_traits>
 #include <vector>
 
@@ -152,6 +153,30 @@ template <typename T> class autocopy_span {
     friend auto operator!=(autocopy_span const &lhs,
                            autocopy_span const &rhs) noexcept -> bool {
         return not(lhs == rhs);
+    }
+
+    /** \brief Stream insertion operator. */
+    friend auto operator<<(std::ostream &stream, autocopy_span const &acs)
+        -> std::ostream & {
+        static constexpr std::size_t num_to_print = 32;
+        auto const size = acs.s.size();
+        stream << "autocopy_span(size=" << size;
+        if constexpr (std::is_same_v<std::remove_cv_t<T>, std::byte>) {
+            for (std::size_t i = 0; i < std::min(size, num_to_print - 1); ++i)
+                stream << ", " << std::to_integer<int>(acs.s[i]);
+            if (size > num_to_print)
+                stream << ", ...";
+            if (size >= num_to_print)
+                stream << ", " << std::to_integer<int>(acs.s[size - 1]);
+        } else {
+            for (std::size_t i = 0; i < std::min(size, num_to_print - 1); ++i)
+                stream << ", " << acs.s[i];
+            if (size > num_to_print)
+                stream << ", ...";
+            if (size >= num_to_print)
+                stream << ", " << acs.s[size - 1];
+        }
+        return stream << ')';
     }
 };
 

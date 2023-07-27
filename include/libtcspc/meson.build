@@ -45,6 +45,7 @@ public_cpp_headers = files(
     'time_tagged_events.hpp',
     'type_erased_processor.hpp',
     'vector_queue.hpp',
+    'view_as_bytes.hpp',
     'write_binary_stream.hpp',
 )
 

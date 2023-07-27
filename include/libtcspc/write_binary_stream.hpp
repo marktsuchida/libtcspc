@@ -414,8 +414,8 @@ class write_binary_stream {
  * often poor performance.)
  *
  * The processor receives data in the form of <tt>autocopy_span<std::byte
- * const></tt>. The bytes are written sequentially and contiguously to the
- * stream.
+ * const></tt> (see \ref view_as_bytes). The bytes are written sequentially and
+ * contiguously to the stream.
  *
  * For efficiency, data is written in batches of at least \e
  * write_granularity_bytes (except possibly at the beginning and end of the

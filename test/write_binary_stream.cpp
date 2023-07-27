@@ -9,6 +9,7 @@
 #include "libtcspc/autocopy_span.hpp"
 #include "libtcspc/ref_processor.hpp"
 #include "libtcspc/test_utils.hpp"
+#include "libtcspc/view_as_bytes.hpp"
 
 #include <catch2/catch_all.hpp>
 #include <catch2/trompeloeil.hpp>
@@ -322,6 +323,29 @@ TEST_CASE("write binary stream", "[write_binary_stream]") {
             }
         }
     }
+}
+
+TEST_CASE("write binary file with view as bytes", "[write_binary_file]") {
+    auto stream = mock_output_stream();
+    auto out = capture_output<event_set<>>();
+    auto in =
+        feed_input<event_set<int>>(view_as_bytes<int>(write_binary_stream<>(
+            ref_output_stream(stream),
+            std::make_shared<object_pool<std::vector<std::byte>>>(0, 1),
+            2 * sizeof(int), ref_processor(out))));
+    in.require_output_checked(out);
+
+    ALLOW_CALL(stream, is_error()).RETURN(false);
+    ALLOW_CALL(stream, tell()).RETURN(0);
+    using trompeloeil::_;
+
+    std::vector const data{42, 43};
+    auto const data_bytes = as_bytes(span(data));
+    in.feed(42);
+    REQUIRE_CALL(stream, write(_)).TIMES(1).WITH(equal_span(_1, data_bytes));
+    in.feed(43);
+    in.feed_end();
+    REQUIRE(out.check_end());
 }
 
 } // namespace tcspc

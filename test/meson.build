@@ -44,6 +44,7 @@ libtcspc_tests_srcs = [
     'time_tagged_events.cpp',
     'type_erased_processor.cpp',
     'vector_queue.cpp',
+    'view_as_bytes.cpp',
     'write_binary_stream.cpp',
 ]
 
