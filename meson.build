@@ -20,11 +20,13 @@ catch2_with_main_dep = dependency(
     'catch2-with-main',
     required: get_option('tests'),
     disabler: true,
+    include_type: 'system',
 )
 
 trompeloeil_dep = dependency(
     'trompeloeil',
     fallback: ['trompeloeil', 'trompeloeil_dep'],
+    disabler: true,
     include_type: 'system',
 )
 
@@ -32,6 +34,7 @@ benchmark_dep = dependency(
     'benchmark',
     required: get_option('tests'),
     disabler: true,
+    include_type: 'system',
 )
 
 public_inc = include_directories('include')
