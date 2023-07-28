@@ -264,7 +264,6 @@ class decode_pq_t3 {
     using abstime_type = typename DataTraits::abstime_type;
 
     abstime_type nsync_base = 0;
-    abstime_type last_nsync = 0;
 
     Downstream downstream;
 
@@ -282,16 +281,7 @@ class decode_pq_t3 {
             return;
         }
 
-        abstime_type nsync = nsync_base + event.nsync();
-
-        // Validate input: ensure nsync is non-decreasing (a common assumption
-        // made by downstream processors)
-        if (nsync < last_nsync) {
-            downstream.handle_end(std::make_exception_ptr(
-                std::runtime_error("Decreasing nsync encountered")));
-            return;
-        }
-        last_nsync = nsync;
+        abstime_type const nsync = nsync_base + event.nsync();
 
         if (event.is_external_marker()) {
             marker_event<DataTraits> e{{{nsync}, 0}};

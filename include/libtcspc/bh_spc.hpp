@@ -399,7 +399,6 @@ class decode_bh_spc {
     using abstime_type = typename DataTraits::abstime_type;
 
     abstime_type abstime_base = 0; // Time of last overflow
-    abstime_type last_abstime = 0;
 
     Downstream downstream;
 
@@ -420,20 +419,10 @@ class decode_bh_spc {
             return;
         }
 
-        if (event.macrotime_overflow_flag()) {
+        if (event.macrotime_overflow_flag())
             abstime_base += BHSPCEvent::macrotime_overflow_period;
-        }
 
-        abstime_type abstime = abstime_base + event.macrotime().value();
-
-        // Validate input: ensure abstime is non-decreasing (a common
-        // assumption made by downstream processors)
-        if (abstime < last_abstime) {
-            downstream.handle_end(std::make_exception_ptr(
-                std::runtime_error("Decreasing abstime encountered")));
-            return;
-        }
-        last_abstime = abstime;
+        abstime_type const abstime = abstime_base + event.macrotime().value();
 
         if (event.gap_flag()) {
             data_lost_event<DataTraits> e{abstime};

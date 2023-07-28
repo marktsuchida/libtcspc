@@ -9,6 +9,7 @@ libtcspc_tests_srcs = [
     'binning.cpp',
     'broadcast.cpp',
     'buffer.cpp',
+    'check_monotonicity.cpp',
     'common.cpp',
     'count.cpp',
     'delay.cpp',

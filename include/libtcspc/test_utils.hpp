@@ -109,6 +109,29 @@ template <typename EventSet> class capture_output {
 
     template <typename Event,
               typename = std::enable_if_t<contains_event_v<EventSet, Event>>>
+    auto retrieve() -> std::optional<Event> {
+        assert(!end_of_life);
+        if (not output.empty()) {
+            auto const *event = std::get_if<Event>(&output.front());
+            if (event) {
+                auto const ret = Event(*event);
+                output.pop();
+                return ret;
+            }
+        }
+        end_of_life = true;
+        if (!suppress_output) {
+            std::cerr << "expected output of specific type\n";
+            if (output.empty()) {
+                std::cerr << "found no output\n";
+            }
+            dump_output();
+        }
+        return std::nullopt;
+    }
+
+    template <typename Event,
+              typename = std::enable_if_t<contains_event_v<EventSet, Event>>>
     auto check(Event const &event) -> bool {
         return check_impl(event, std::equal_to<>());
     }

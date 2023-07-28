@@ -51,14 +51,48 @@ struct default_data_traits {
 };
 
 /**
+ * \brief An event type indicating a warning.
+ *
+ * \ingroup events-basic
+ *
+ * Some processors that perform checks on data may emit this event. It can be
+ * used together with \ref stop_with_error to stop processing.
+ *
+ * Processors that generate this event should also pass through this event. In
+ * this way, multiple check processors can be chained before a single point
+ * where the warnings are handled.
+ */
+struct warning_event {
+    /** \brief A human-readable message describing the warning. */
+    std::string message;
+
+    /** \brief Equality comparison operator. */
+    friend auto operator==(warning_event const &lhs,
+                           warning_event const &rhs) noexcept -> bool {
+        return lhs.message == rhs.message;
+    }
+
+    /** \brief Inequality comparison operator. */
+    friend auto operator!=(warning_event const &lhs,
+                           warning_event const &rhs) noexcept -> bool {
+        return not(lhs == rhs);
+    }
+
+    /** \brief Stream insertion operator. */
+    friend auto operator<<(std::ostream &stream, warning_event const &event)
+        -> std::ostream & {
+        return stream << event.message;
+    }
+};
+
+/**
  * \brief An event type whose instances never occur.
  *
  * \ingroup events-basic
  *
  * This can be used to configure unused inputs to processors.
  */
-class never_event {
-  public:
+struct never_event {
     never_event() = delete;
 };
 
