@@ -116,8 +116,7 @@ template <typename DataTraits, typename Downstream> class decode_swabian_tags {
         switch (event.type()) {
         case tag_type::time_tag: {
             detection_event<DataTraits> e{
-                {{event.time().value()},
-                 narrow<decltype(e.channel)>(event.channel())}};
+                {{event.time().value()}, event.channel().value()}};
             downstream.handle_event(e);
             break;
         }
@@ -138,8 +137,7 @@ template <typename DataTraits, typename Downstream> class decode_swabian_tags {
         }
         case tag_type::missed_events: {
             untagged_counts_event<DataTraits> e{
-                {{event.time().value()},
-                 narrow<decltype(e.channel)>(event.channel())},
+                {{event.time().value()}, event.channel().value()},
                 event.missed_event_count().value()};
             downstream.handle_event(e);
             break;
@@ -173,7 +171,7 @@ template <typename DataTraits, typename Downstream> class decode_swabian_tags {
  *
  * \return decode-swabian-tags processor
  */
-template <typename DataTraits, typename Downstream>
+template <typename DataTraits = default_data_traits, typename Downstream>
 auto decode_swabian_tags(Downstream &&downstream) {
     return internal::decode_swabian_tags<DataTraits, Downstream>(
         std::forward<Downstream>(downstream));

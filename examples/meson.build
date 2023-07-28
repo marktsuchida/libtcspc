@@ -4,3 +4,13 @@
 
 subdir('DumpSPC')
 subdir('SPCToHistogram')
+
+summarize_swabian = executable(
+    'summarize_swabian',
+    'summarize_swabian.cpp',
+    include_directories: public_inc,
+    dependencies: [
+        tcb_span_dep,
+        thread_dep,
+    ],
+)
