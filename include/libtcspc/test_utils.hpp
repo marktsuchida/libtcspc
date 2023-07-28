@@ -11,12 +11,16 @@
 #include "vector_queue.hpp"
 
 #include <cassert>
+#include <cstdio>
 #include <exception>
 #include <functional>
-#include <iostream>
+#include <optional>
+#include <ostream>
+#include <sstream>
 #include <stdexcept>
 #include <type_traits>
 #include <utility>
+#include <variant>
 #include <vector>
 
 namespace tcspc {
@@ -30,11 +34,10 @@ template <typename EventSet> class capture_output {
     bool end_of_life = false; // Reported error; cannot reuse
     bool suppress_output;
 
-    void dump_output() {
+    void dump_output(std::ostream &stream) {
         while (!output.empty()) {
-            std::cerr << "found output: ";
-            std::visit([&](auto &&e) { std::cerr << e << '\n'; },
-                       output.front());
+            stream << "found output: ";
+            std::visit([&](auto &&e) { stream << e << '\n'; }, output.front());
             output.pop();
         }
     }
@@ -50,11 +53,13 @@ template <typename EventSet> class capture_output {
         }
         end_of_life = true;
         if (!suppress_output) {
-            std::cerr << "expected output: " << event << '\n';
+            std::ostringstream stream;
+            stream << "expected output: " << event << '\n';
             if (output.empty()) {
-                std::cerr << "found no output\n";
+                stream << "found no output\n";
             }
-            dump_output();
+            dump_output(stream);
+            std::fputs(stream.str().c_str(), stderr);
         }
         return false;
     }
@@ -76,8 +81,10 @@ template <typename EventSet> class capture_output {
             assert(!end_of_life);
             if (!output.empty()) {
                 if (!suppress_output) {
-                    std::cerr << "captured output not checked\n";
-                    dump_output();
+                    std::ostringstream stream;
+                    stream << "captured output not checked\n";
+                    dump_output(stream);
+                    std::fputs(stream.str().c_str(), stderr);
                 }
                 end_of_life = true;
                 return false;
@@ -94,8 +101,10 @@ template <typename EventSet> class capture_output {
         try {
             output.push(event);
         } catch (std::exception const &exc) {
-            std::cerr << "exception thrown while storing output: "
-                      << exc.what() << '\n';
+            std::ostringstream stream;
+            stream << "exception thrown while storing output: " << exc.what()
+                   << '\n';
+            std::fputs(stream.str().c_str(), stderr);
             std::terminate();
         }
     }
@@ -121,11 +130,13 @@ template <typename EventSet> class capture_output {
         }
         end_of_life = true;
         if (!suppress_output) {
-            std::cerr << "expected output of specific type\n";
+            std::ostringstream stream;
+            stream << "expected output of specific type\n";
             if (output.empty()) {
-                std::cerr << "found no output\n";
+                stream << "found no output\n";
             }
-            dump_output();
+            dump_output(stream);
+            std::fputs(stream.str().c_str(), stderr);
         }
         return std::nullopt;
     }
@@ -149,16 +160,18 @@ template <typename EventSet> class capture_output {
         if (!output.empty()) {
             end_of_life = true;
             if (!suppress_output) {
-                std::cerr << "expected no output\n";
-                dump_output();
+                std::ostringstream stream;
+                stream << "expected no output\n";
+                dump_output(stream);
+                std::fputs(stream.str().c_str(), stderr);
             }
             return false;
         }
         if (ended) {
             end_of_life = true;
             if (!suppress_output) {
-                std::cerr << "expected not end-of-stream\n";
-                std::cerr << "found end-of-stream\n";
+                std::fputs("expected not end-of-stream\n", stderr);
+                std::fputs("found end-of-stream\n", stderr);
             }
             return false;
         }
@@ -170,16 +183,18 @@ template <typename EventSet> class capture_output {
         if (!output.empty()) {
             end_of_life = true;
             if (!suppress_output) {
-                std::cerr << "expected end-of-stream\n";
-                dump_output();
+                std::ostringstream stream;
+                stream << "expected end-of-stream\n";
+                dump_output(stream);
+                std::fputs(stream.str().c_str(), stderr);
             }
             return false;
         }
         if (!ended) {
             end_of_life = true;
             if (!suppress_output) {
-                std::cerr << "expected end-of-stream\n";
-                std::cerr << "found no output\n";
+                std::fputs("expected end-of-stream\n", stderr);
+                std::fputs("found no output\n", stderr);
             }
             return false;
         }
@@ -228,8 +243,8 @@ template <> class capture_output<event_set<>> {
         if (!ended) {
             end_of_life = true;
             if (!suppress_output) {
-                std::cerr << "expected end-of-stream\n";
-                std::cerr << "found no output\n";
+                std::fputs("expected end-of-stream\n", stderr);
+                std::fputs("found no output\n", stderr);
             }
             return false;
         }
@@ -244,8 +259,8 @@ template <> class capture_output<event_set<>> {
         if (ended) {
             end_of_life = true;
             if (!suppress_output) {
-                std::cerr << "expected not end-of-stream\n";
-                std::cerr << "found end-of-stream\n";
+                std::fputs("expected not end-of-stream\n", stderr);
+                std::fputs("found end-of-stream\n", stderr);
             }
             return false;
         }
