@@ -2,13 +2,14 @@
 # Copyright 2019-2023 Board of Regents of the University of Wisconsin System
 # SPDX-License-Identifier: MIT
 
-*
-!/.gitignore
+/packagecache/
+
+# Subprojects installed by meson wrap
+/*-*/
+
+# Ignore *.wrap by default because they include transitive dependencies
+/*.wrap
 !/catch2.wrap
-!/catch2.wrap.license
 !/google-benchmark.wrap
-!/google-benchmark.wrap.license
 !/tcb-span.wrap
-!/tcb-span.wrap.license
 !/trompeloeil.wrap
-!/trompeloeil.wrap.license
