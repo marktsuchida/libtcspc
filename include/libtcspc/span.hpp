@@ -35,9 +35,15 @@ using span = std::span<T, Extent>;
 
 #define TCB_SPAN_NAMESPACE_NAME tcspc
 
+#ifdef __clang__
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wsign-conversion"
+#endif
+
 #include <tcb/span.hpp>
+
+#ifdef __clang__
 #pragma clang diagnostic pop
+#endif
 
 #endif
