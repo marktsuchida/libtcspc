@@ -129,7 +129,7 @@ TEST_CASE("fit arithmetic time sequence time bound, unsigned abstime",
     in.require_output_checked(out);
 
     SECTION("succeed despite time bound would be negative") {
-        for (int i = 0; i < 1000; ++i)
+        for (abstime_type i = 0; i < 1000; ++i)
             in.feed(e0{i * abstime_type(100)});
         // Time bound criterion would be that estimated start time is
         // 99900 - 1000 * 100 = -100, but we handle this despite using an
@@ -141,7 +141,7 @@ TEST_CASE("fit arithmetic time sequence time bound, unsigned abstime",
 
     SECTION("fail with time bound error") {
         // Same as signed version
-        for (int i = 0; i < 998; ++i)
+        for (abstime_type i = 0; i < 998; ++i)
             in.feed(e0{i * abstime_type(100)});
         static constexpr abstime_type offset = 2000;
         in.feed(e0{99800 - offset});
@@ -153,7 +153,7 @@ TEST_CASE("fit arithmetic time sequence time bound, unsigned abstime",
     SECTION("fail because of negative estimated start time") {
         in.feed(e0{0});
         in.feed(e0{0});
-        for (int i = 0; i < 998; ++i)
+        for (abstime_type i = 0; i < 998; ++i)
             in.feed(e0{i * abstime_type(100)});
         REQUIRE_THROWS_WITH(out.check_end(),
                             Catch::Matchers::ContainsSubstring("unsigned"));

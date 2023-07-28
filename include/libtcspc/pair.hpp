@@ -130,10 +130,10 @@ class pair_one {
                                      typename DataTraits::channel_type>);
 
         expel_old_starts(event.abstime);
-        auto chan_index = std::distance(
+        auto const chan_index = static_cast<std::size_t>(std::distance(
             stop_chans.cbegin(),
-            std::find(stop_chans.cbegin(), stop_chans.cend(), event.channel));
-        if (std::size_t(chan_index) < NStopChannels) {
+            std::find(stop_chans.cbegin(), stop_chans.cend(), event.channel)));
+        if (chan_index < NStopChannels) {
             starts.for_each([&](start_and_flags &sf) noexcept {
                 if (not sf.stopped[chan_index]) {
                     downstream.handle_event(detection_pair_event<DataTraits>{
@@ -263,12 +263,11 @@ class pair_one_between {
 
         expel_old_start(event.abstime);
         if (start.has_value()) {
-            auto chan_index =
+            auto const chan_index = static_cast<std::size_t>(
                 std::distance(stop_chans.cbegin(),
                               std::find(stop_chans.cbegin(), stop_chans.cend(),
-                                        event.channel));
-            if (std::size_t(chan_index) < NStopChannels &&
-                not start->stopped[chan_index]) {
+                                        event.channel)));
+            if (chan_index < NStopChannels && not start->stopped[chan_index]) {
                 downstream.handle_event(detection_pair_event<DataTraits>{
                     {{{start->time}, start_chan}}, event});
                 start->stopped[chan_index] = true;

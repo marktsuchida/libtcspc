@@ -80,7 +80,7 @@ class npint {
     template <typename U,
               typename = std::enable_if_t<std::negation_v<std::is_same<T, U>>>>
     explicit constexpr npint(npint<U> const &other) noexcept
-        : v(other.value()) {
+        : v(T(other.value())) {
         static_assert(
             sizeof(T) <= sizeof(U) ||
                 std::is_unsigned_v<T> == std::is_unsigned_v<U>,
@@ -434,7 +434,7 @@ namespace literals {
  * \ingroup integers
  */
 constexpr auto operator""_u8np(unsigned long long v) -> u8np {
-    return u8np(v);
+    return u8np(u8(v));
 }
 
 /**
@@ -443,7 +443,7 @@ constexpr auto operator""_u8np(unsigned long long v) -> u8np {
  * \ingroup integers
  */
 constexpr auto operator""_u16np(unsigned long long v) -> u16np {
-    return u16np(v);
+    return u16np(u16(v));
 }
 
 /**
@@ -452,7 +452,7 @@ constexpr auto operator""_u16np(unsigned long long v) -> u16np {
  * \ingroup integers
  */
 constexpr auto operator""_u32np(unsigned long long v) -> u32np {
-    return u32np(v);
+    return u32np(u32(v));
 }
 
 /**

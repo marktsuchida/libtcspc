@@ -51,7 +51,7 @@ constexpr std::size_t total_bytes = 1 << 20;
 void ofstream_unbuf(benchmark::State &state) {
     auto stream =
         internal::unbuffered_binary_ofstream_output_stream("/dev/null");
-    auto const write_size = state.range(0);
+    auto const write_size = static_cast<std::size_t>(state.range(0));
     auto const num_writes = total_bytes / write_size;
     std::vector<std::byte> data(write_size);
     auto pool = std::make_shared<object_pool<std::vector<std::byte>>>();
@@ -65,7 +65,7 @@ void ofstream_unbuf(benchmark::State &state) {
 
 void ofstream(benchmark::State &state) {
     auto stream = internal::binary_ofstream_output_stream("/dev/null");
-    auto const write_size = state.range(0);
+    auto const write_size = static_cast<std::size_t>(state.range(0));
     auto const num_writes = total_bytes / write_size;
     std::vector<std::byte> data(write_size);
     auto pool = std::make_shared<object_pool<std::vector<std::byte>>>();
@@ -79,7 +79,7 @@ void ofstream(benchmark::State &state) {
 
 void cfile_unbuf(benchmark::State &state) {
     auto stream = internal::unbuffered_binary_cfile_output_stream("/dev/null");
-    auto const write_size = state.range(0);
+    auto const write_size = static_cast<std::size_t>(state.range(0));
     auto const num_writes = total_bytes / write_size;
     std::vector<std::byte> data(write_size);
     auto pool = std::make_shared<object_pool<std::vector<std::byte>>>();
@@ -93,7 +93,7 @@ void cfile_unbuf(benchmark::State &state) {
 
 void cfile(benchmark::State &state) {
     auto stream = internal::binary_cfile_output_stream("/dev/null");
-    auto const write_size = state.range(0);
+    auto const write_size = static_cast<std::size_t>(state.range(0));
     auto const num_writes = total_bytes / write_size;
     std::vector<std::byte> data(write_size);
     auto pool = std::make_shared<object_pool<std::vector<std::byte>>>();

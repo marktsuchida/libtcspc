@@ -100,7 +100,7 @@ template <typename IStream> class istream_input_stream {
         // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
         stream.read(reinterpret_cast<char *>(buffer.data()),
                     static_cast<std::streamsize>(buffer.size()));
-        return stream.gcount();
+        return static_cast<std::uint64_t>(stream.gcount());
     }
 };
 

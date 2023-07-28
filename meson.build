@@ -8,9 +8,14 @@ project(
     default_options: [
         'cpp_std=c++17',
         'warning_level=3',
-        'cpp_arg=-Wconversion',
+        'werror=true',
     ],
 )
+
+cxx = meson.get_compiler('cpp')
+if cxx.get_id() in ['gcc', 'clang']
+    add_project_arguments('-Wconversion', language: 'cpp')
+endif
 
 thread_dep = dependency('threads')
 

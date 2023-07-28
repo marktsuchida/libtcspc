@@ -217,7 +217,11 @@ class fit_arithmetic_time_sequence {
                         "estimated start time is negative but abstime_type is unsigned");
             }
             auto const abstime =
-                static_cast<abstime_type>(first_tick_time + rounded_intercept);
+                rounded_intercept < 0
+                    ? first_tick_time -
+                          static_cast<abstime_type>(-rounded_intercept)
+                    : first_tick_time +
+                          static_cast<abstime_type>(rounded_intercept);
             auto max_time_shift =
                 max_interval_cutoff * static_cast<abstime_type>(len);
             if constexpr (std::is_unsigned_v<abstime_type>) {

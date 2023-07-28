@@ -143,7 +143,7 @@ class channel_router {
         auto it = std::find(channels.begin(), channels.end(), event.channel);
         if (it == channels.end())
             return std::numeric_limits<std::size_t>::max();
-        return std::distance(channels.begin(), it);
+        return static_cast<std::size_t>(std::distance(channels.begin(), it));
     }
 };
 

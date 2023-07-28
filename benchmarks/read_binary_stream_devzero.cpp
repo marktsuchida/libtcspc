@@ -69,44 +69,48 @@ constexpr std::size_t total_bytes = 1 << 20;
 void ifstream_unbuf(benchmark::State &state) {
     auto stream =
         internal::unbuffered_binary_ifstream_input_stream("/dev/zero");
+    auto const read_size = static_cast<std::size_t>(state.range(0));
     auto pool = std::make_shared<object_pool<std::vector<int>>>();
     for ([[maybe_unused]] auto _ : state) {
-        auto src = read_binary_stream<int>(ref_input_stream(stream),
-                                           total_bytes, pool, state.range(0),
-                                           unoptimized_null_sink());
+        auto src =
+            read_binary_stream<int>(ref_input_stream(stream), total_bytes,
+                                    pool, read_size, unoptimized_null_sink());
         src.pump_events();
     }
 }
 
 void ifstream(benchmark::State &state) {
     auto stream = internal::binary_ifstream_input_stream("/dev/zero");
+    auto const read_size = static_cast<std::size_t>(state.range(0));
     auto pool = std::make_shared<object_pool<std::vector<int>>>();
     for ([[maybe_unused]] auto _ : state) {
-        auto src = read_binary_stream<int>(ref_input_stream(stream),
-                                           total_bytes, pool, state.range(0),
-                                           unoptimized_null_sink());
+        auto src =
+            read_binary_stream<int>(ref_input_stream(stream), total_bytes,
+                                    pool, read_size, unoptimized_null_sink());
         src.pump_events();
     }
 }
 
 void cfile_unbuf(benchmark::State &state) {
     auto stream = internal::unbuffered_binary_cfile_input_stream("/dev/zero");
+    auto const read_size = static_cast<std::size_t>(state.range(0));
     auto pool = std::make_shared<object_pool<std::vector<int>>>();
     for ([[maybe_unused]] auto _ : state) {
-        auto src = read_binary_stream<int>(ref_input_stream(stream),
-                                           total_bytes, pool, state.range(0),
-                                           unoptimized_null_sink());
+        auto src =
+            read_binary_stream<int>(ref_input_stream(stream), total_bytes,
+                                    pool, read_size, unoptimized_null_sink());
         src.pump_events();
     }
 }
 
 void cfile(benchmark::State &state) {
     auto stream = internal::binary_cfile_input_stream("/dev/zero");
+    auto const read_size = static_cast<std::size_t>(state.range(0));
     auto pool = std::make_shared<object_pool<std::vector<int>>>();
     for ([[maybe_unused]] auto _ : state) {
-        auto src = read_binary_stream<int>(ref_input_stream(stream),
-                                           total_bytes, pool, state.range(0),
-                                           unoptimized_null_sink());
+        auto src =
+            read_binary_stream<int>(ref_input_stream(stream), total_bytes,
+                                    pool, read_size, unoptimized_null_sink());
         src.pump_events();
     }
 }

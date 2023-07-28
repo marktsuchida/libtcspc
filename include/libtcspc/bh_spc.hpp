@@ -433,7 +433,8 @@ class decode_bh_spc {
             marker_event<DataTraits> e{{{abstime}, 0}};
             auto bits = u32np(event.marker_bits());
             while (bits != 0_u32np) {
-                e.channel = count_trailing_zeros_32(bits);
+                e.channel =
+                    static_cast<std::uint8_t>(count_trailing_zeros_32(bits));
                 downstream.handle_event(e);
                 bits = bits & (bits - 1_u32np); // Clear the handled bit
             }
