@@ -21,6 +21,17 @@ namespace tcspc {
 // Tagger C++ API Manual (part of their software download). See the 16-byte
 // 'Tag' struct.
 
+// Design note: swabian_tag_event does not have an alignment requirement. This
+// means that tags can be read from, for example, a memory-mapped file that was
+// written without consideration of alignment. On platforms where unaligned
+// access requires extra instructions, this may add significant overhead.
+// However, on the platforms where this code is most likely to be commonly run
+// (x86-64 and aarch64), unaligned load/store usually does not require special
+// instructions; therefore there is little advantage to enforcing alignment at
+// this level, limiting usage scenarios. If the CPU can perform aligned loads
+// and stores faster, this will happen automatically when the buffer is aligned
+// at run time.
+
 /**
  * \brief Binary record interpretation for 16-byte Swabian 'Tag'.
  *
