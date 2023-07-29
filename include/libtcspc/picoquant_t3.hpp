@@ -275,28 +275,24 @@ class decode_pq_t3 {
         if (event.is_nsync_overflow()) {
             nsync_base += abstime_type(PQT3Event::nsync_overflow_period) *
                           event.nsync_overflow_count();
-
-            time_reached_event<DataTraits> e{{nsync_base}};
-            downstream.handle_event(e);
-            return;
+            return downstream.handle_event(
+                time_reached_event<DataTraits>{{nsync_base}});
         }
 
         abstime_type const nsync = nsync_base + event.nsync();
 
         if (event.is_external_marker()) {
-            marker_event<DataTraits> e{{{nsync}, 0}};
             auto bits = u32np(event.external_marker_bits());
             while (bits != 0_u32np) {
-                e.channel = count_trailing_zeros_32(bits);
-                downstream.handle_event(e);
+                downstream.handle_event(marker_event<DataTraits>{
+                    {{nsync}, count_trailing_zeros_32(bits)}});
                 bits = bits & (bits - 1_u32np); // Clear the handled bit
             }
             return;
         }
 
-        time_correlated_detection_event<DataTraits> e{
-            {{nsync}, event.channel()}, event.dtime()};
-        downstream.handle_event(e);
+        downstream.handle_event(time_correlated_detection_event<DataTraits>{
+            {{nsync}, event.channel()}, event.dtime()});
     }
 
     void handle_end(std::exception_ptr const &error) noexcept {

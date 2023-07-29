@@ -413,43 +413,36 @@ class decode_bh_spc {
             abstime_base +=
                 abstime_type(BHSPCEvent::macrotime_overflow_period) *
                 event.multiple_macrotime_overflow_count().value();
-
-            time_reached_event<DataTraits> e{abstime_base};
-            downstream.handle_event(e);
-            return;
+            return downstream.handle_event(
+                time_reached_event<DataTraits>{abstime_base});
         }
 
         if (event.macrotime_overflow_flag())
             abstime_base += BHSPCEvent::macrotime_overflow_period;
-
         abstime_type const abstime = abstime_base + event.macrotime().value();
 
-        if (event.gap_flag()) {
-            data_lost_event<DataTraits> e{abstime};
-            downstream.handle_event(e);
-        }
+        if (event.gap_flag())
+            downstream.handle_event(data_lost_event<DataTraits>{abstime});
 
         if (event.marker_flag()) {
-            marker_event<DataTraits> e{{{abstime}, 0}};
             auto bits = u32np(event.marker_bits());
             while (bits != 0_u32np) {
-                e.channel =
-                    static_cast<std::uint8_t>(count_trailing_zeros_32(bits));
-                downstream.handle_event(e);
+                downstream.handle_event(marker_event<DataTraits>{
+                    {{abstime},
+                     static_cast<typename DataTraits::channel_type>(
+                         count_trailing_zeros_32(bits))}});
                 bits = bits & (bits - 1_u32np); // Clear the handled bit
             }
             return;
         }
 
-        if (event.invalid_flag()) {
-            time_reached_event<DataTraits> e{abstime};
-            downstream.handle_event(e);
-        } else {
-            time_correlated_detection_event<DataTraits> e{
-                {{abstime}, event.routing_signals().value()},
-                event.adc_value().value()};
-            downstream.handle_event(e);
-        }
+        if (event.invalid_flag())
+            return downstream.handle_event(
+                time_reached_event<DataTraits>{abstime});
+
+        downstream.handle_event(time_correlated_detection_event<DataTraits>{
+            {{abstime}, event.routing_signals().value()},
+            event.adc_value().value()});
     }
 
     void handle_end(std::exception_ptr const &error) noexcept {
