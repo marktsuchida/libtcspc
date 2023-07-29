@@ -188,8 +188,6 @@ template <typename Pointer, typename Downstream> class dereference_pointer {
     Downstream downstream;
 
   public:
-    using event_type = decltype(*std::declval<Pointer>);
-
     explicit dereference_pointer(Downstream &&downstream)
         : downstream(std::move(downstream)) {}
 
