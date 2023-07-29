@@ -29,8 +29,8 @@ auto equal_span(span<T const, N> lhs, span<T const, M> rhs) -> bool {
 
 struct mock_output_stream {
     // NOLINTBEGIN(modernize-use-trailing-return-type)
-    MAKE_MOCK0(is_error, auto()->bool);
-    MAKE_MOCK0(tell, auto()->std::optional<std::uint64_t>);
+    MAKE_MOCK0(is_error, bool());
+    MAKE_MOCK0(tell, std::optional<std::uint64_t>());
     MAKE_MOCK1(write, void(span<std::byte const>));
     // NOLINTEND(modernize-use-trailing-return-type)
 };
