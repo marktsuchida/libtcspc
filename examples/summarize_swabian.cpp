@@ -62,32 +62,35 @@ class summarize_and_print {
     [[noreturn]] void handle_end(std::exception_ptr const &error) noexcept {
         int ret = EXIT_SUCCESS;
         std::ostringstream stream;
+
         if (error) {
             try {
                 std::rethrow_exception(error);
             } catch (std::exception const &e) {
                 stream << "Error: " << e.what() << '\n';
+                stream << "The following counts are up to the error.\n";
                 ret = EXIT_FAILURE;
             }
-        } else {
-            if (channel_numbers.empty()) {
-                stream << "No events" << '\n';
-            } else {
-                stream << "Time of first event: " << first_abstime << '\n';
-                stream << "Time of last event: " << last_abstime << '\n';
-                // Print channel counts in channel number order.
-                std::vector<
-                    std::tuple<data_traits::channel_type, std::uint64_t>>
-                    counts(channel_numbers.size());
-                std::transform(channel_numbers.cbegin(),
-                               channel_numbers.cend(), channel_counts.cbegin(),
-                               counts.begin(), [](auto chnum, auto chcnt) {
-                                   return std::make_tuple(chnum, chcnt);
-                               });
-                for (auto const &[chnum, chcnt] : counts)
-                    stream << chnum << ": " << chcnt << '\n';
-            }
         }
+
+        if (channel_numbers.empty()) {
+            stream << "No events" << '\n';
+        } else {
+            stream << "Time of first event: \t" << first_abstime << '\n';
+            stream << "Time of last event: \t" << last_abstime << '\n';
+            // Print channel counts in channel number order.
+            std::vector<std::tuple<data_traits::channel_type, std::uint64_t>>
+                counts(channel_numbers.size());
+            std::transform(channel_numbers.cbegin(), channel_numbers.cend(),
+                           channel_counts.cbegin(), counts.begin(),
+                           [](auto chnum, auto chcnt) {
+                               return std::make_tuple(chnum, chcnt);
+                           });
+            std::sort(counts.begin(), counts.end());
+            for (auto const &[chnum, chcnt] : counts)
+                stream << chnum << ": \t" << chcnt << '\n';
+        }
+
         std::fputs(stream.str().c_str(), stdout);
         std::exit(ret);
     }
