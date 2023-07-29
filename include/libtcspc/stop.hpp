@@ -6,6 +6,7 @@
 
 #pragma once
 
+#include "common.hpp"
 #include "event_set.hpp"
 
 #include <exception>
@@ -28,6 +29,19 @@ class stop_with_error {
     // Cold data after downstream.
     std::string message_prefix;
 
+    template <typename Event>
+    LIBTCSPC_NOINLINE void stop(Event const &event) noexcept {
+        stopped = true;
+        if (message_prefix.empty()) {
+            downstream.handle_end({});
+        } else {
+            std::ostringstream stream;
+            stream << message_prefix << ": " << event;
+            downstream.handle_end(
+                std::make_exception_ptr(Exception(stream.str())));
+        }
+    }
+
   public:
     explicit stop_with_error(std::string message, Downstream &&downstream)
         : downstream(std::move(downstream)),
@@ -36,19 +50,10 @@ class stop_with_error {
     template <typename Event> void handle_event(Event const &event) noexcept {
         if (stopped)
             return;
-        if constexpr (contains_event_v<EventSet, Event>) {
-            stopped = true;
-            if (message_prefix.empty()) {
-                downstream.handle_end({});
-            } else {
-                std::ostringstream stream;
-                stream << message_prefix << ": " << event;
-                downstream.handle_end(
-                    std::make_exception_ptr(Exception(stream.str())));
-            }
-        } else {
+        if constexpr (contains_event_v<EventSet, Event>)
+            stop(event);
+        else
             downstream.handle_event(event);
-        }
     }
 
     void handle_end(std::exception_ptr const &error) noexcept {

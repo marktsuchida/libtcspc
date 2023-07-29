@@ -278,6 +278,14 @@ class unbatch {
     explicit unbatch(Downstream &&downstream)
         : downstream(std::move(downstream)) {}
 
+    // Should we mark this LIBTCSPC_NOINLINE? It would be good to increase the
+    // chances that the downstream call will be inlined. But preliminary tests
+    // (Apple clang 14 arm64) suggest that when the downstream is simple enough
+    // to inline, it will be inlined, together with this loop, into upstream;
+    // conversely, if the downstream is too complex to inline, it won't be
+    // inlined even if this function is marked noinline. There may be
+    // borderline cases where this doesn't hold, but it is probably best to
+    // leave it to the compiler.
     void handle_event(EventContainer const &events) noexcept {
         for (auto const &event : events)
             downstream.handle_event(event);

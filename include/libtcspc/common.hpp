@@ -18,6 +18,15 @@
 #include <intrin.h>
 #endif
 
+#if defined(__GNUC__)
+#define LIBTCSPC_NOINLINE [[gnu::noinline]]
+#elif defined(_MSC_VER)
+// [[msvc::noinline]] requires /std:c++20
+#define LIBTCSPC_NOINLINE __declspec(noinline)
+#else
+#define LIBTCSPC_NOINLINE
+#endif
+
 namespace tcspc {
 
 /**

@@ -41,18 +41,21 @@ class summarize_and_print {
     data_traits::abstime_type last_abstime =
         std::numeric_limits<data_traits::abstime_type>::min();
 
+    void new_channel(data_traits::channel_type chan) noexcept {
+        channel_numbers.push_back(chan);
+        channel_counts.push_back(1);
+    }
+
   public:
     void
     handle_event(tcspc::detection_event<data_traits> const &event) noexcept {
         auto const p = std::find(channel_numbers.begin(),
                                  channel_numbers.end(), event.channel);
-        if (p == channel_numbers.end()) {
-            channel_numbers.push_back(event.channel);
-            channel_counts.push_back(1);
-        } else {
+        if (p == channel_numbers.end())
+            new_channel(event.channel);
+        else
             ++*std::next(channel_counts.begin(),
                          std::distance(channel_numbers.begin(), p));
-        }
         if (first_abstime ==
             std::numeric_limits<decltype(first_abstime)>::min())
             first_abstime = event.abstime;

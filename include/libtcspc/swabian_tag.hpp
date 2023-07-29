@@ -104,6 +104,36 @@ template <typename DataTraits, typename Downstream> class decode_swabian_tags {
     bool had_error = false;
     Downstream downstream;
 
+    LIBTCSPC_NOINLINE
+    void handle_coldpath_tag(swabian_tag_event const &event) noexcept {
+        using tag_type = swabian_tag_event::tag_type;
+        switch (event.type()) {
+        case tag_type::error:
+            downstream.handle_end(std::make_exception_ptr(
+                std::runtime_error("Error tag in input")));
+            had_error = true;
+            break;
+        case tag_type::overflow_begin:
+            downstream.handle_event(
+                begin_lost_interval_event<DataTraits>{{event.time().value()}});
+            break;
+        case tag_type::overflow_end:
+            downstream.handle_event(
+                end_lost_interval_event<DataTraits>{{event.time().value()}});
+            break;
+        case tag_type::missed_events:
+            downstream.handle_event(untagged_counts_event<DataTraits>{
+                {{event.time().value()}, event.channel().value()},
+                event.missed_event_count().value()});
+            break;
+        default:
+            downstream.handle_end(std::make_exception_ptr(
+                std::runtime_error("Unknown Swabian event type")));
+            had_error = true;
+            break;
+        }
+    }
+
   public:
     explicit decode_swabian_tags(Downstream &&downstream)
         : downstream(std::move(downstream)) {}
@@ -111,43 +141,11 @@ template <typename DataTraits, typename Downstream> class decode_swabian_tags {
     void handle_event(swabian_tag_event const &event) noexcept {
         if (had_error)
             return;
-
-        using tag_type = swabian_tag_event::tag_type;
-        switch (event.type()) {
-        case tag_type::time_tag: {
-            detection_event<DataTraits> e{
-                {{event.time().value()}, event.channel().value()}};
-            downstream.handle_event(e);
-            break;
-        }
-        case tag_type::error:
-            downstream.handle_end(std::make_exception_ptr(
-                std::runtime_error("Error tag in input")));
-            had_error = true;
-            break;
-        case tag_type::overflow_begin: {
-            begin_lost_interval_event<DataTraits> e{{event.time().value()}};
-            downstream.handle_event(e);
-            break;
-        }
-        case tag_type::overflow_end: {
-            end_lost_interval_event<DataTraits> e{{event.time().value()}};
-            downstream.handle_event(e);
-            break;
-        }
-        case tag_type::missed_events: {
-            untagged_counts_event<DataTraits> e{
-                {{event.time().value()}, event.channel().value()},
-                event.missed_event_count().value()};
-            downstream.handle_event(e);
-            break;
-        }
-        default:
-            downstream.handle_end(std::make_exception_ptr(
-                std::runtime_error("Unknown Swabian event type")));
-            had_error = true;
-            break;
-        }
+        if (event.type() == swabian_tag_event::tag_type::time_tag)
+            downstream.handle_event(detection_event<DataTraits>{
+                {{event.time().value()}, event.channel().value()}});
+        else
+            handle_coldpath_tag(event);
     }
 
     void handle_end(std::exception_ptr const &error) noexcept {
