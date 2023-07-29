@@ -159,7 +159,7 @@ struct bh_spc_event {
  *
  * \ingroup events-device
  */
-struct bh_spc_600_event_48 {
+struct bh_spc600_4096ch_event {
     /**
      * \brief Bytes of the 48-bit raw device event.
      */
@@ -245,23 +245,25 @@ struct bh_spc_600_event_48 {
     }
 
     /** \brief Equality comparison operator. */
-    friend auto operator==(bh_spc_600_event_48 const &lhs,
-                           bh_spc_600_event_48 const &rhs) noexcept -> bool {
+    friend auto operator==(bh_spc600_4096ch_event const &lhs,
+                           bh_spc600_4096ch_event const &rhs) noexcept
+        -> bool {
         return lhs.bytes == rhs.bytes;
     }
 
     /** \brief Inequality comparison operator. */
-    friend auto operator!=(bh_spc_600_event_48 const &lhs,
-                           bh_spc_600_event_48 const &rhs) noexcept -> bool {
+    friend auto operator!=(bh_spc600_4096ch_event const &lhs,
+                           bh_spc600_4096ch_event const &rhs) noexcept
+        -> bool {
         return not(lhs == rhs);
     }
 
     /** \brief Stream insertion operator. */
-    friend auto operator<<(std::ostream &strm, bh_spc_600_event_48 const &e)
+    friend auto operator<<(std::ostream &strm, bh_spc600_4096ch_event const &e)
         -> std::ostream & {
         bool const unused_bit =
             (read_u8(byte_subspan<1, 1>(e.bytes)) & (1_u8np << 7)) != 0_u8np;
-        return strm << "bh_spc(MT=" << e.macrotime()
+        return strm << "bh_spc600_4096ch(MT=" << e.macrotime()
                     << ", R=" << e.routing_signals()
                     << ", ADC=" << e.adc_value()
                     << ", INVALID=" << e.invalid_flag()
@@ -277,7 +279,7 @@ struct bh_spc_600_event_48 {
  *
  * \ingroup events-device
  */
-struct bh_spc_600_event_32 {
+struct bh_spc600_256ch_event {
     /**
      * \brief Bytes of the 32-bit raw device event.
      */
@@ -363,23 +365,23 @@ struct bh_spc_600_event_32 {
     }
 
     /** \brief Equality comparison operator. */
-    friend auto operator==(bh_spc_600_event_32 const &lhs,
-                           bh_spc_600_event_32 const &rhs) noexcept -> bool {
+    friend auto operator==(bh_spc600_256ch_event const &lhs,
+                           bh_spc600_256ch_event const &rhs) noexcept -> bool {
         return lhs.bytes == rhs.bytes;
     }
 
     /** \brief Inequality comparison operator. */
-    friend auto operator!=(bh_spc_600_event_32 const &lhs,
-                           bh_spc_600_event_32 const &rhs) noexcept -> bool {
+    friend auto operator!=(bh_spc600_256ch_event const &lhs,
+                           bh_spc600_256ch_event const &rhs) noexcept -> bool {
         return not(lhs == rhs);
     }
 
     /** \brief Stream insertion operator. */
-    friend auto operator<<(std::ostream &strm, bh_spc_600_event_32 const &e)
+    friend auto operator<<(std::ostream &strm, bh_spc600_256ch_event const &e)
         -> std::ostream & {
         bool const unused_bit =
             (read_u8(byte_subspan<3, 1>(e.bytes)) & (1_u8np << 4)) != 0_u8np;
-        return strm << "bh_spc(MT=" << e.macrotime()
+        return strm << "bh_spc600_256ch(MT=" << e.macrotime()
                     << ", R=" << e.routing_signals()
                     << ", ADC=" << e.adc_value()
                     << ", INVALID=" << e.invalid_flag()
@@ -392,8 +394,8 @@ struct bh_spc_600_event_32 {
 
 namespace internal {
 
-// Common implementation for decode_bh_spc, decode_bh_spc_600_48,
-// decode_bh_spc_600_32. BHEvent is the binary record event class.
+// Common implementation for decode_bh_spc*.
+// BHEvent is the binary record event class.
 template <typename DataTraits, typename BHSPCEvent, typename Downstream>
 class decode_bh_spc {
     using abstime_type = typename DataTraits::abstime_type;
@@ -485,11 +487,11 @@ auto decode_bh_spc(Downstream &&downstream) {
  *
  * \param downstream downstream processor (moved out)
  *
- * \return decode-bh-spc-600-48 processor
+ * \return decode-bh-spc-600-4096ch processor
  */
 template <typename DataTraits, typename Downstream>
-auto decode_bh_spc_600_48(Downstream &&downstream) {
-    return internal::decode_bh_spc<DataTraits, bh_spc_600_event_48,
+auto decode_bh_spc600_4096ch(Downstream &&downstream) {
+    return internal::decode_bh_spc<DataTraits, bh_spc600_4096ch_event,
                                    Downstream>(
         std::forward<Downstream>(downstream));
 }
@@ -507,11 +509,11 @@ auto decode_bh_spc_600_48(Downstream &&downstream) {
  *
  * \param downstream downstream processor (moved out)
  *
- * \return decode-bh-spc-600-32 processor
+ * \return decode-bh-spc-600-256ch processor
  */
 template <typename DataTraits, typename Downstream>
-auto decode_bh_spc_600_32(Downstream &&downstream) {
-    return internal::decode_bh_spc<DataTraits, bh_spc_600_event_32,
+auto decode_bh_spc600_256ch(Downstream &&downstream) {
+    return internal::decode_bh_spc<DataTraits, bh_spc600_256ch_event,
                                    Downstream>(
         std::forward<Downstream>(downstream));
 }

@@ -16,12 +16,12 @@
 namespace tcspc {
 
 static_assert(std::is_trivial_v<bh_spc_event>);
-static_assert(std::is_trivial_v<bh_spc_600_event_32>);
-static_assert(std::is_trivial_v<bh_spc_600_event_48>);
+static_assert(std::is_trivial_v<bh_spc600_256ch_event>);
+static_assert(std::is_trivial_v<bh_spc600_4096ch_event>);
 
 static_assert(sizeof(bh_spc_event) == 4);
-static_assert(sizeof(bh_spc_600_event_32) == 4);
-static_assert(sizeof(bh_spc_600_event_48) == 6);
+static_assert(sizeof(bh_spc600_256ch_event) == 4);
+static_assert(sizeof(bh_spc600_4096ch_event) == 6);
 
 namespace {
 
