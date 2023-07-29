@@ -31,9 +31,9 @@ namespace tcspc {
 // Note that code here is written to run on little- or big-endian machines; see
 // https://commandcenter.blogspot.com/2012/04/byte-order-fallacy.html
 
-// The two T3 formats (pq_pico_t3_event and pq_hydra_t3_event) use matching
-// member names for static polymorphism. This allows decode_pq_t3<PQT3Event> to
-// handle 3 different formats with the same code.
+// The two T3 formats (pqt3_picoharp_event and pqt3_hydraharp_event) use
+// matching member names for static polymorphism. This allows
+// decode_pqt3<PQT3Event> to handle 3 different formats with the same code.
 
 /**
  * \brief Binary record interpretation for PicoHarp T3 Format.
@@ -42,7 +42,7 @@ namespace tcspc {
  *
  * RecType 0x00010303.
  */
-struct pq_pico_t3_event {
+struct pqt3_picoharp_event {
     /**
      * \brief Bytes of the 32-bit raw device event.
      */
@@ -111,21 +111,21 @@ struct pq_pico_t3_event {
     }
 
     /** \brief Equality comparison operator. */
-    friend auto operator==(pq_pico_t3_event const &lhs,
-                           pq_pico_t3_event const &rhs) noexcept -> bool {
+    friend auto operator==(pqt3_picoharp_event const &lhs,
+                           pqt3_picoharp_event const &rhs) noexcept -> bool {
         return lhs.bytes == rhs.bytes;
     }
 
     /** \brief Inequality comparison operator. */
-    friend auto operator!=(pq_pico_t3_event const &lhs,
-                           pq_pico_t3_event const &rhs) noexcept -> bool {
+    friend auto operator!=(pqt3_picoharp_event const &lhs,
+                           pqt3_picoharp_event const &rhs) noexcept -> bool {
         return not(lhs == rhs);
     }
 
     /** \brief Stream insertion operator. */
-    friend auto operator<<(std::ostream &strm, pq_pico_t3_event const &e)
+    friend auto operator<<(std::ostream &strm, pqt3_picoharp_event const &e)
         -> std::ostream & {
-        return strm << "pq_pico_t3(channel=" << e.channel()
+        return strm << "pqt3_picoharp(channel=" << e.channel()
                     << ", dtime=" << e.dtime() << ", nsync=" << e.nsync()
                     << ")";
     }
@@ -137,12 +137,14 @@ struct pq_pico_t3_event {
  *
  * \ingroup events-device
  *
- * User code should use \ref pq_hydra_v1_t3_event or \ref pq_hydra_v2_t3_event.
+ * User code should use \ref pqt3_hydraharpv1_event or \ref
+ * pqt3_hydraharpv2_event.
  *
- * \tparam IsHydraV1 if true, interpret as HydraHarp V1 (RecType 0x00010304)
- * format, in which nsync overflow records always indicate a single overflow
+ * \tparam IsNSyncOverflowAlwaysSingle if true, interpret as HydraHarp V1
+ * (RecType 0x00010304) format, in which nsync overflow records always indicate
+ * a single overflow
  */
-template <bool IsHydraV1> struct pq_hydra_t3_event {
+template <bool IsNSyncOverflowAlwaysSingle> struct pqt3_hydraharp_event {
     /**
      * \brief Bytes of the 32-bit raw device event.
      */
@@ -196,9 +198,8 @@ template <bool IsHydraV1> struct pq_hydra_t3_event {
      * overflow.
      */
     [[nodiscard]] auto nsync_overflow_count() const noexcept -> u16np {
-        if (IsHydraV1 || nsync() == 0_u16np) {
+        if (IsNSyncOverflowAlwaysSingle || nsync() == 0_u16np)
             return 1_u16np;
-        }
         return nsync();
     }
 
@@ -217,23 +218,23 @@ template <bool IsHydraV1> struct pq_hydra_t3_event {
     }
 
     /** \brief Equality comparison operator. */
-    friend auto operator==(pq_hydra_t3_event const &lhs,
-                           pq_hydra_t3_event const &rhs) noexcept -> bool {
+    friend auto operator==(pqt3_hydraharp_event const &lhs,
+                           pqt3_hydraharp_event const &rhs) noexcept -> bool {
         return lhs.bytes == rhs.bytes;
     }
 
     /** \brief Inequality comparison operator. */
-    friend auto operator!=(pq_hydra_t3_event const &lhs,
-                           pq_hydra_t3_event const &rhs) noexcept -> bool {
+    friend auto operator!=(pqt3_hydraharp_event const &lhs,
+                           pqt3_hydraharp_event const &rhs) noexcept -> bool {
         return not(lhs == rhs);
     }
 
     /** \brief Stream insertion operator. */
-    friend auto operator<<(std::ostream &strm, pq_hydra_t3_event const &e)
+    friend auto operator<<(std::ostream &strm, pqt3_hydraharp_event const &e)
         -> std::ostream & {
-        auto version = IsHydraV1 ? 1 : 2;
-        return strm << "pq_hydra_v" << version
-                    << "_t3(special=" << e.is_special()
+        auto version = IsNSyncOverflowAlwaysSingle ? 1 : 2;
+        return strm << "pqt3_hydraharpv" << version
+                    << "(special=" << e.is_special()
                     << ", channel=" << e.channel() << ", dtime=" << e.dtime()
                     << ", nsync=" << e.nsync() << ")";
     }
@@ -244,7 +245,7 @@ template <bool IsHydraV1> struct pq_hydra_t3_event {
  *
  * \ingroup events-device
  */
-using pq_hydra_v1_t3_event = pq_hydra_t3_event<true>;
+using pqt3_hydraharpv1_event = pqt3_hydraharp_event<true>;
 
 /**
  * \brief Binary record interpretation for HydraHarp V2, MultiHarp, and
@@ -252,15 +253,14 @@ using pq_hydra_v1_t3_event = pq_hydra_t3_event<true>;
  *
  * \ingroup events-device
  */
-using pq_hydra_v2_t3_event = pq_hydra_t3_event<false>;
+using pqt3_hydraharpv2_event = pqt3_hydraharp_event<false>;
 
 namespace internal {
 
-// Common implementation for decode_pq_pico_t3, decode_pq_hydra_v1_t3,
-// decode_pq_hydra_v2_t3.
+// Common implementation for decode_pqt3_*.
 // PQT3Event is the binary record event class.
 template <typename DataTraits, typename PQT3Event, typename Downstream>
-class decode_pq_t3 {
+class decode_pqt3 {
     using abstime_type = typename DataTraits::abstime_type;
 
     abstime_type nsync_base = 0;
@@ -268,7 +268,7 @@ class decode_pq_t3 {
     Downstream downstream;
 
   public:
-    explicit decode_pq_t3(Downstream &&downstream)
+    explicit decode_pqt3(Downstream &&downstream)
         : downstream(std::move(downstream)) {}
 
     void handle_event(PQT3Event const &event) noexcept {
@@ -313,11 +313,11 @@ class decode_pq_t3 {
  *
  * \param downstream downstream processor (moved out)
  *
- * \return decode-pq-pico-t3 processor
+ * \return decode-pqt3-picoharp processor
  */
 template <typename DataTraits, typename Downstream>
-auto decode_pq_pico_t3(Downstream &&downstream) {
-    return internal::decode_pq_t3<DataTraits, pq_pico_t3_event, Downstream>(
+auto decode_pqt3_picoharp(Downstream &&downstream) {
+    return internal::decode_pqt3<DataTraits, pqt3_picoharp_event, Downstream>(
         std::forward<Downstream>(downstream));
 }
 
@@ -333,12 +333,12 @@ auto decode_pq_pico_t3(Downstream &&downstream) {
  *
  * \param downstream downstream processor (moved out)
  *
- * \return decode-pq-hydra-v1-t3 processor
+ * \return decode-pqt3-hydraharpv1 processor
  */
 template <typename DataTraits, typename Downstream>
-auto decode_pq_hydra_v1_t3(Downstream &&downstream) {
-    return internal::decode_pq_t3<DataTraits, pq_hydra_v1_t3_event,
-                                  Downstream>(
+auto decode_pqt3_hydraharpv1(Downstream &&downstream) {
+    return internal::decode_pqt3<DataTraits, pqt3_hydraharpv1_event,
+                                 Downstream>(
         std::forward<Downstream>(downstream));
 }
 
@@ -355,12 +355,12 @@ auto decode_pq_hydra_v1_t3(Downstream &&downstream) {
  *
  * \param downstream downstream processor (moved out)
  *
- * \return decode-pq-hydra-v2-t3 processor
+ * \return decode-pqt3-hydraharpv2 processor
  */
 template <typename DataTraits, typename Downstream>
-auto decode_pq_hydra_v2_t3(Downstream &&downstream) {
-    return internal::decode_pq_t3<DataTraits, pq_hydra_v2_t3_event,
-                                  Downstream>(
+auto decode_pqt3_hydraharpv2(Downstream &&downstream) {
+    return internal::decode_pqt3<DataTraits, pqt3_hydraharpv2_event,
+                                 Downstream>(
         std::forward<Downstream>(downstream));
 }
 
