@@ -2,9 +2,6 @@
 # Copyright 2019-2023 Board of Regents of the University of Wisconsin System
 # SPDX-License-Identifier: MIT
 
-subdir('DumpSPC')
-subdir('SPCToHistogram')
-
 summarize_swabian = executable(
     'summarize_swabian',
     'summarize_swabian.cpp',
