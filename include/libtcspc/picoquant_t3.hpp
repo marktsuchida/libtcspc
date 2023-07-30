@@ -198,7 +198,7 @@ template <bool IsNSyncOverflowAlwaysSingle> struct pqt3_hydraharp_event {
      * overflow.
      */
     [[nodiscard]] auto nsync_overflow_count() const noexcept -> u16np {
-        if (IsNSyncOverflowAlwaysSingle || nsync() == 0_u16np)
+        if (IsNSyncOverflowAlwaysSingle)
             return 1_u16np;
         return nsync();
     }
