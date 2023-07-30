@@ -415,6 +415,9 @@ class decode_bh_spc {
             abstime_base +=
                 abstime_type(BHSPCEvent::macrotime_overflow_period) *
                 event.multiple_macrotime_overflow_count().value();
+            if (event.gap_flag())
+                downstream.handle_event(
+                    data_lost_event<DataTraits>{abstime_base});
             return downstream.handle_event(
                 time_reached_event<DataTraits>{abstime_base});
         }
