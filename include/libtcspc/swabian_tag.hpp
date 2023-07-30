@@ -14,6 +14,8 @@
 #include <cstdint>
 #include <exception>
 #include <ostream>
+#include <sstream>
+#include <type_traits>
 
 namespace tcspc {
 
@@ -112,7 +114,6 @@ struct swabian_tag_event {
 namespace internal {
 
 template <typename DataTraits, typename Downstream> class decode_swabian_tags {
-    bool had_error = false;
     Downstream downstream;
 
     LIBTCSPC_NOINLINE
@@ -120,9 +121,7 @@ template <typename DataTraits, typename Downstream> class decode_swabian_tags {
         using tag_type = swabian_tag_event::tag_type;
         switch (event.type()) {
         case tag_type::error:
-            downstream.handle_end(std::make_exception_ptr(
-                std::runtime_error("Error tag in input")));
-            had_error = true;
+            downstream.handle_event(warning_event{"error tag encountered"});
             break;
         case tag_type::overflow_begin:
             downstream.handle_event(
@@ -137,11 +136,16 @@ template <typename DataTraits, typename Downstream> class decode_swabian_tags {
                 {{event.time().value()}, event.channel().value()},
                 event.missed_event_count().value()});
             break;
-        default:
-            downstream.handle_end(std::make_exception_ptr(
-                std::runtime_error("Unknown Swabian event type")));
-            had_error = true;
+        default: {
+            std::ostringstream stream;
+            stream << "unknown event type ("
+                   << static_cast<
+                          std::underlying_type_t<swabian_tag_event::tag_type>>(
+                          event.type())
+                   << ")";
+            downstream.handle_event(warning_event{stream.str()});
             break;
+        }
         }
     }
 
@@ -150,8 +154,6 @@ template <typename DataTraits, typename Downstream> class decode_swabian_tags {
         : downstream(std::move(downstream)) {}
 
     void handle_event(swabian_tag_event const &event) noexcept {
-        if (had_error)
-            return;
         if (event.type() == swabian_tag_event::tag_type::time_tag)
             downstream.handle_event(detection_event<DataTraits>{
                 {{event.time().value()}, event.channel().value()}});
