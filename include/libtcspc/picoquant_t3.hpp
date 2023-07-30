@@ -281,18 +281,18 @@ class decode_pqt3 {
 
         abstime_type const nsync = nsync_base + event.nsync();
 
-        if (event.is_external_marker()) {
+        if (not event.is_external_marker()) {
+            downstream.handle_event(
+                time_correlated_detection_event<DataTraits>{
+                    {{nsync}, event.channel()}, event.dtime()});
+        } else {
             auto bits = u32np(event.external_marker_bits());
             while (bits != 0_u32np) {
                 downstream.handle_event(marker_event<DataTraits>{
                     {{nsync}, count_trailing_zeros_32(bits)}});
                 bits = bits & (bits - 1_u32np); // Clear the handled bit
             }
-            return;
         }
-
-        downstream.handle_event(time_correlated_detection_event<DataTraits>{
-            {{nsync}, event.channel()}, event.dtime()});
     }
 
     void handle_end(std::exception_ptr const &error) noexcept {
