@@ -404,6 +404,10 @@ class decode_bh_spc {
 
     Downstream downstream;
 
+    LIBTCSPC_NOINLINE void issue_warning(char const *message) noexcept {
+        downstream.handle_event(warning_event{message});
+    }
+
   public:
     explicit decode_bh_spc(Downstream &&downstream)
         : downstream(std::move(downstream)) {}
@@ -429,25 +433,33 @@ class decode_bh_spc {
         if (event.gap_flag())
             downstream.handle_event(data_lost_event<DataTraits>{abstime});
 
-        if (event.marker_flag()) {
-            auto bits = u32np(event.marker_bits());
-            while (bits != 0_u32np) {
-                downstream.handle_event(marker_event<DataTraits>{
-                    {{abstime},
-                     static_cast<typename DataTraits::channel_type>(
-                         count_trailing_zeros_32(bits))}});
-                bits = bits & (bits - 1_u32np); // Clear the handled bit
+        if (not event.marker_flag()) {
+            if (not event.invalid_flag()) { // Valid photon
+                downstream.handle_event(
+                    time_correlated_detection_event<DataTraits>{
+                        {{abstime}, event.routing_signals().value()},
+                        event.adc_value().value()});
+            } else { // Invalid photon
+                downstream.handle_event(
+                    time_reached_event<DataTraits>{abstime});
             }
-            return;
+        } else {
+            if (event.invalid_flag()) { // Marker
+                auto bits = u32np(event.marker_bits());
+                while (bits != 0_u32np) {
+                    downstream.handle_event(marker_event<DataTraits>{
+                        {{abstime},
+                         static_cast<typename DataTraits::channel_type>(
+                             count_trailing_zeros_32(bits))}});
+                    bits = bits & (bits - 1_u32np); // Clear the handled bit
+                }
+            } else {
+                // Although not clearly documented, the combination of
+                // INV=0, MARK=1 is not currently used.
+                issue_warning(
+                    "unexpected BH SPC event flags: marker bit set but invalid bit cleared");
+            }
         }
-
-        if (event.invalid_flag())
-            return downstream.handle_event(
-                time_reached_event<DataTraits>{abstime});
-
-        downstream.handle_event(time_correlated_detection_event<DataTraits>{
-            {{abstime}, event.routing_signals().value()},
-            event.adc_value().value()});
     }
 
     void handle_end(std::exception_ptr const &error) noexcept {
