@@ -130,7 +130,8 @@ struct pqt3_picoharp_event {
     friend auto operator<<(std::ostream &stream,
                            pqt3_picoharp_event const &event)
         -> std::ostream & {
-        return stream << "pqt3_picoharp(channel=" << event.channel()
+        return stream << "pqt3_picoharp(channel="
+                      << unsigned(event.channel().value())
                       << ", dtime=" << event.dtime()
                       << ", nsync=" << event.nsync() << ")";
     }
@@ -243,7 +244,7 @@ template <bool IsNSyncOverflowAlwaysSingle> struct pqt3_hydraharp_event {
         static constexpr auto version = IsNSyncOverflowAlwaysSingle ? 1 : 2;
         return stream << "pqt3_hydraharpv" << version
                       << "(special=" << event.is_special()
-                      << ", channel=" << event.channel()
+                      << ", channel=" << unsigned(event.channel().value())
                       << ", dtime=" << event.dtime()
                       << ", nsync=" << event.nsync() << ")";
     }

@@ -142,7 +142,8 @@ struct pqt2_picoharp_event {
     friend auto operator<<(std::ostream &stream,
                            pqt2_picoharp_event const &event)
         -> std::ostream & {
-        return stream << "pqt2_picoharp(channel=" << event.channel()
+        return stream << "pqt2_picoharp(channel="
+                      << unsigned(event.channel().value())
                       << ", timetag=" << event.timetag() << ")";
     }
 };
@@ -262,7 +263,7 @@ struct pqt2_hydraharp_event {
         static constexpr auto version = IsOverflowAlwaysSingle ? 1 : 2;
         return stream << "pqt2_hydraharpv" << version
                       << "(special=" << event.is_special()
-                      << ", channel=" << event.channel()
+                      << ", channel=" << unsigned(event.channel().value())
                       << ", timetag=" << event.timetag() << ")";
     }
 };

@@ -140,7 +140,7 @@ struct bh_spc_event {
     friend auto operator<<(std::ostream &strm, bh_spc_event const &e)
         -> std::ostream & {
         return strm << "bh_spc(MT=" << e.macrotime()
-                    << ", ROUT=" << e.routing_signals()
+                    << ", ROUT=" << unsigned(e.routing_signals().value())
                     << ", ADC=" << e.adc_value()
                     << ", INVALID=" << e.invalid_flag()
                     << ", MTOV=" << e.macrotime_overflow_flag()
@@ -261,7 +261,7 @@ struct bh_spc600_4096ch_event {
         bool const unused_bit =
             (read_u8(byte_subspan<1, 1>(e.bytes)) & (1_u8np << 7)) != 0_u8np;
         return strm << "bh_spc600_4096ch(MT=" << e.macrotime()
-                    << ", R=" << e.routing_signals()
+                    << ", R=" << unsigned(e.routing_signals().value())
                     << ", ADC=" << e.adc_value()
                     << ", INVALID=" << e.invalid_flag()
                     << ", MTOV=" << e.macrotime_overflow_flag()
@@ -379,7 +379,7 @@ struct bh_spc600_256ch_event {
         bool const unused_bit =
             (read_u8(byte_subspan<3, 1>(e.bytes)) & (1_u8np << 4)) != 0_u8np;
         return strm << "bh_spc600_256ch(MT=" << e.macrotime()
-                    << ", R=" << e.routing_signals()
+                    << ", R=" << unsigned(e.routing_signals().value())
                     << ", ADC=" << e.adc_value()
                     << ", INVALID=" << e.invalid_flag()
                     << ", MTOV=" << e.macrotime_overflow_flag()
