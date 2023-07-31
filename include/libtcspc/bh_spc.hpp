@@ -124,6 +124,120 @@ struct bh_spc_event {
         return read_u32le(byte_subspan<0, 4>(bytes)) & 0x0fff'ffff_u32np;
     }
 
+    /**
+     * \brief Set this event to represent a valid photon event.
+     *
+     * The gap flag is cleared.
+     *
+     * \param macrotime the photon macrotime; 0 to 4095
+     *
+     * \param adc_value the photon ADC value (microtime); 0 to 4095
+     *
+     * \param route the routing signals (channel); 0 to 15
+     *
+     * \param macrotime_overflow whether to set the macrotime overflow flag
+     *
+     * \return \c *this
+     */
+    auto assign_photon(u16np macrotime, u16np adc_value, u8np route,
+                       bool macrotime_overflow = false) noexcept
+        -> bh_spc_event & {
+        auto const flags = (macrotime_overflow ? 0b0100_u8np : 0_u8np);
+        bytes[3] = std::byte(
+            ((flags << 4) | (u8np(adc_value >> 8) & 0x0f_u8np)).value());
+        bytes[2] = std::byte(u8np(adc_value).value());
+        bytes[1] = std::byte(
+            ((route << 4) | (u8np(macrotime >> 8) & 0x0f_u8np)).value());
+        bytes[0] = std::byte(u8np(macrotime).value());
+        return *this;
+    }
+
+    /**
+     * \brief Set this event to represent an invalid photon event.
+     *
+     * The gap flag is cleared. This event type does not allow invalid photons
+     * to carry a macrotime overflow.
+     *
+     * \param macrotime the photon macrotime; 0 to 4095
+     *
+     * \param adc_value the photon ADC value (microtime); 0 to 4095
+     *
+     * \return \c *this
+     */
+    auto assign_invalid_photon(u16np macrotime, u16np adc_value) noexcept
+        -> bh_spc_event & {
+        // N.B. No MTOV.
+        assign_photon(macrotime, adc_value, 0_u8np);
+        static constexpr auto inv_bit = std::byte(0b1000'0000);
+        bytes[3] = (bytes[3] & ~inv_bit) | inv_bit;
+        return *this;
+    }
+
+    /**
+     * \brief Set this event to represent a marker.
+     *
+     * The gap flag is cleared.
+     *
+     * \param macrotime the marker macrotime; 0 to 4095
+     *
+     * \param marker_bits the marker bitmask; 1 to 15 (0 is allowed but may not
+     * be handled correctly by other readers)
+     *
+     * \param macrotime_overflow whether to set the macrotime overflow flag
+     *
+     * \return \c *this
+     */
+    auto assign_marker(u16np macrotime, u8np marker_bits,
+                       bool macrotime_overflow = false) noexcept
+        -> bh_spc_event & {
+        auto const flags =
+            0b1001_u8np | (macrotime_overflow ? 0b0100_u8np : 0_u8np);
+        static constexpr auto adc_value = 0_u16np;
+        bytes[3] = std::byte(
+            ((flags << 4) | (u8np(adc_value >> 8) & 0x0f_u8np)).value());
+        bytes[2] = std::byte(u8np(adc_value).value());
+        bytes[1] = std::byte(
+            ((marker_bits << 4) | (u8np(macrotime >> 8) & 0x0f_u8np)).value());
+        bytes[0] = std::byte(u8np(macrotime).value());
+        return *this;
+    }
+
+    /**
+     * \brief Set this event to represent a multiple macrotime overflow.
+     *
+     * The gap flag is cleared.
+     *
+     * \param count the number of macrotime overflows; 1 to 268,435,455 (0 is
+     * allowed but may not be handled correctly by other readers)
+     *
+     * \return \c *this
+     */
+    auto assign_multiple_macrotime_overflow(u32np count) noexcept
+        -> bh_spc_event & {
+        static constexpr auto flags = 0b1100_u8np;
+        bytes[3] = std::byte(
+            ((flags << 4) | (u8np(count >> 24) & 0x0f_u8np)).value());
+        bytes[2] = std::byte(u8np(count >> 16).value());
+        bytes[1] = std::byte(u8np(count >> 8).value());
+        bytes[0] = std::byte(u8np(count >> 0).value());
+        return *this;
+    }
+
+    /**
+     * \brief Set or clear the gap flag of this event.
+     *
+     * All other bits are unaffected.
+     *
+     * \param gap if true, set the gap bit; otherwise clear
+     *
+     * \return \c *this
+     */
+    auto gap_flag(bool gap) noexcept -> bh_spc_event & {
+        static constexpr auto gap_bit = std::byte(0b0010'0000);
+        bytes[3] = (bytes[3] & ~gap_bit) | (gap ? gap_bit : std::byte(0));
+        return *this;
+    }
+
     /** \brief Equality comparison operator. */
     friend auto operator==(bh_spc_event const &lhs,
                            bh_spc_event const &rhs) noexcept -> bool {
@@ -239,6 +353,72 @@ struct bh_spc600_4096ch_event {
     [[nodiscard]] static auto multiple_macrotime_overflow_count() noexcept
         -> u32np {
         return 0_u32np;
+    }
+
+    /**
+     * \brief Set this event to represent a valid photon event.
+     *
+     * The gap flag is cleared.
+     *
+     * \param macrotime the photon macrotime; 0 to 16,777,215
+     *
+     * \param adc_value the photon ADC value (microtime); 0 to 4095
+     *
+     * \param route the routing signals (channel); 0 to 255
+     *
+     * \param macrotime_overflow whether to set the macrotime overflow flag
+     *
+     * \return \c *this
+     */
+    auto assign_photon(u32np macrotime, u16np adc_value, u8np route,
+                       bool macrotime_overflow = false) noexcept
+        -> bh_spc600_4096ch_event & {
+        auto const flags = (macrotime_overflow ? 0b0010_u8np : 0_u8np);
+        bytes[5] = std::byte(u8np(macrotime >> 8).value());
+        bytes[4] = std::byte(u8np(macrotime >> 0).value());
+        bytes[3] = std::byte(route.value());
+        bytes[2] = std::byte(u8np(macrotime >> 16).value());
+        bytes[1] = std::byte(
+            ((flags << 4) | (u8np(adc_value >> 8) & 0x0f_u8np)).value());
+        bytes[0] = std::byte(u8np(adc_value).value());
+        return *this;
+    }
+
+    /**
+     * \brief Set this event to represent an invalid photon event.
+     *
+     * The gap flag is cleared.
+     *
+     * \param macrotime the photon macrotime; 0 to 16,777,215
+     *
+     * \param adc_value the photon ADC value (microtime); 0 to 4095
+     *
+     * \param macrotime_overflow whether to set the macrotime overflow flag
+     *
+     * \return \c *this
+     */
+    auto assign_invalid_photon(u32np macrotime, u16np adc_value,
+                               bool macrotime_overflow = false) noexcept
+        -> bh_spc600_4096ch_event & {
+        assign_photon(macrotime, adc_value, 0_u8np, macrotime_overflow);
+        static constexpr auto inv_bit = std::byte(0b0001'0000);
+        bytes[1] = (bytes[1] & ~inv_bit) | inv_bit;
+        return *this;
+    }
+
+    /**
+     * \brief Set or clear the gap flag of this event.
+     *
+     * All other bits are unaffected.
+     *
+     * \param gap if true, set the gap bit; otherwise clear
+     *
+     * \return \c *this
+     */
+    auto gap_flag(bool gap) noexcept -> bh_spc600_4096ch_event & {
+        static constexpr auto gap_bit = std::byte(0b0100'0000);
+        bytes[1] = (bytes[1] & ~gap_bit) | (gap ? gap_bit : std::byte(0));
+        return *this;
     }
 
     /** \brief Equality comparison operator. */
@@ -359,6 +539,91 @@ struct bh_spc600_256ch_event {
     [[nodiscard]] auto multiple_macrotime_overflow_count() const noexcept
         -> u32np {
         return read_u32le(byte_subspan<0, 4>(bytes)) & 0x0fff'ffff_u32np;
+    }
+
+    /**
+     * \brief Set this event to represent a valid photon event.
+     *
+     * The gap flag is cleared.
+     *
+     * \param macrotime the photon macrotime; 0 to 131,071
+     *
+     * \param adc_value the photon ADC value (microtime); 0 to 255
+     *
+     * \param route the routing signals (channel); 0 to 7
+     *
+     * \param macrotime_overflow whether to set the macrotime overflow flag
+     *
+     * \return \c *this
+     */
+    auto assign_photon(u32np macrotime, u8np adc_value, u8np route,
+                       bool macrotime_overflow = false) noexcept
+        -> bh_spc600_256ch_event & {
+        auto const flags = (macrotime_overflow ? 0b0100_u8np : 0_u8np);
+        bytes[3] = std::byte(((flags << 4) | ((route << 1) & 0b1110_u8np) |
+                              (u8np(macrotime >> 16) & 0x01_u8np))
+                                 .value());
+        bytes[2] = std::byte(u8np(macrotime >> 8).value());
+        bytes[1] = std::byte(u8np(macrotime).value());
+        bytes[0] = std::byte(adc_value.value());
+        return *this;
+    }
+
+    /**
+     * \brief Set this event to represent an invalid photon event.
+     *
+     * The gap flag is cleared. This event type does not allow invalid photons
+     * to carry a macrotime overflow.
+     *
+     * \param macrotime the photon macrotime; 0 to 131,071
+     *
+     * \param adc_value the photon ADC value (microtime); 0 to 255
+     *
+     * \return \c *this
+     */
+    auto assign_invalid_photon(u32np macrotime, u8np adc_value) noexcept
+        -> bh_spc600_256ch_event & {
+        // N.B. No MTOV.
+        assign_photon(macrotime, adc_value, 0_u8np);
+        static constexpr auto inv_bit = std::byte(0b1000'0000);
+        bytes[3] = (bytes[3] & ~inv_bit) | inv_bit;
+        return *this;
+    }
+
+    /**
+     * \brief Set this event to represent a multiple macrotime overflow.
+     *
+     * The gap flag is cleared.
+     *
+     * \param count the number of macrotime overflows; 1 to 268,435,455 (0 is
+     * allowed but may not be handled correctly by other readers)
+     *
+     * \return \c *this
+     */
+    auto assign_multiple_macrotime_overflow(u32np count) noexcept
+        -> bh_spc600_256ch_event & {
+        static constexpr auto flags = 0b1100_u8np;
+        bytes[3] = std::byte(
+            ((flags << 4) | (u8np(count >> 24) & 0x0f_u8np)).value());
+        bytes[2] = std::byte(u8np(count >> 16).value());
+        bytes[1] = std::byte(u8np(count >> 8).value());
+        bytes[0] = std::byte(u8np(count >> 0).value());
+        return *this;
+    }
+
+    /**
+     * \brief Set or clear the gap flag of this event.
+     *
+     * All other bits are unaffected.
+     *
+     * \param gap if true, set the gap bit; otherwise clear
+     *
+     * \return \c *this
+     */
+    auto gap_flag(bool gap) noexcept -> bh_spc600_256ch_event & {
+        static constexpr auto gap_bit = std::byte(0b0010'0000);
+        bytes[3] = (bytes[3] & ~gap_bit) | (gap ? gap_bit : std::byte(0));
+        return *this;
     }
 
     /** \brief Equality comparison operator. */

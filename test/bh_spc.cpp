@@ -399,4 +399,234 @@ TEMPLATE_TEST_CASE("bh spc read multiple macrotime overflow count",
     CHECK(cnt_max.multiple_macrotime_overflow_count() == 268'435'455_u32np);
 }
 
+TEST_CASE("bh spc assign", "[bh_spc_event]") {
+    CHECK(bh_spc_event{}.assign_photon(0_u16np, 0_u16np, 0_u8np) ==
+          le_event<bh_spc_event>(
+              {0b0000'0000, 0b0000'0000, 0b0000'0000, 0b0000'0000}));
+    CHECK(bh_spc_event{}.assign_photon(1_u16np, 2_u16np, 3_u8np) ==
+          le_event<bh_spc_event>(
+              {0b0000'0000, 0b0000'0010, 0b0011'0000, 0b0000'0001}));
+    CHECK(bh_spc_event{}.assign_photon(1_u16np, 2_u16np, 3_u8np, true) ==
+          le_event<bh_spc_event>(
+              {0b0100'0000, 0b0000'0010, 0b0011'0000, 0b0000'0001}));
+    CHECK(bh_spc_event{}.assign_photon(4094_u16np, 4094_u16np, 14_u8np) ==
+          le_event<bh_spc_event>(
+              {0b0000'1111, 0b1111'1110, 0b1110'1111, 0b1111'1110}));
+    CHECK(bh_spc_event{}.assign_photon(4095_u16np, 4095_u16np, 15_u8np) ==
+          le_event<bh_spc_event>(
+              {0b0000'1111, 0b1111'1111, 0b1111'1111, 0b1111'1111}));
+
+    CHECK(bh_spc_event{}.assign_invalid_photon(0_u16np, 0_u16np) ==
+          le_event<bh_spc_event>(
+              {0b1000'0000, 0b0000'0000, 0b0000'0000, 0b0000'0000}));
+    CHECK(bh_spc_event{}.assign_invalid_photon(1_u16np, 2_u16np) ==
+          le_event<bh_spc_event>(
+              {0b1000'0000, 0b0000'0010, 0b0000'0000, 0b0000'0001}));
+    CHECK(bh_spc_event{}.assign_invalid_photon(4094_u16np, 4094_u16np) ==
+          le_event<bh_spc_event>(
+              {0b1000'1111, 0b1111'1110, 0b0000'1111, 0b1111'1110}));
+    CHECK(bh_spc_event{}.assign_invalid_photon(4095_u16np, 4095_u16np) ==
+          le_event<bh_spc_event>(
+              {0b1000'1111, 0b1111'1111, 0b0000'1111, 0b1111'1111}));
+
+    CHECK(bh_spc_event{}.assign_marker(0_u16np, 0_u8np) ==
+          le_event<bh_spc_event>(
+              {0b1001'0000, 0b0000'0000, 0b0000'0000, 0b0000'0000}));
+    CHECK(bh_spc_event{}.assign_marker(1_u16np, 2_u8np) ==
+          le_event<bh_spc_event>(
+              {0b1001'0000, 0b0000'0000, 0b0010'0000, 0b0000'0001}));
+    CHECK(bh_spc_event{}.assign_marker(1_u16np, 2_u8np, true) ==
+          le_event<bh_spc_event>(
+              {0b1101'0000, 0b0000'0000, 0b0010'0000, 0b0000'0001}));
+    CHECK(bh_spc_event{}.assign_marker(4094_u16np, 14_u8np) ==
+          le_event<bh_spc_event>(
+              {0b1001'0000, 0b0000'0000, 0b1110'1111, 0b1111'1110}));
+    CHECK(bh_spc_event{}.assign_marker(4095_u16np, 15_u8np) ==
+          le_event<bh_spc_event>(
+              {0b1001'0000, 0b0000'0000, 0b1111'1111, 0b1111'1111}));
+
+    CHECK(bh_spc_event{}.assign_multiple_macrotime_overflow(0_u32np) ==
+          le_event<bh_spc_event>(
+              {0b1100'0000, 0b0000'0000, 0b0000'0000, 0b0000'0000}));
+    CHECK(bh_spc_event{}.assign_multiple_macrotime_overflow(1_u32np) ==
+          le_event<bh_spc_event>(
+              {0b1100'0000, 0b0000'0000, 0b0000'0000, 0b0000'0001}));
+    CHECK(bh_spc_event{}.assign_multiple_macrotime_overflow(256_u32np) ==
+          le_event<bh_spc_event>(
+              {0b1100'0000, 0b0000'0000, 0b0000'0001, 0b0000'0000}));
+    CHECK(bh_spc_event{}.assign_multiple_macrotime_overflow(65536_u32np) ==
+          le_event<bh_spc_event>(
+              {0b1100'0000, 0b0000'0001, 0b0000'0000, 0b0000'0000}));
+    CHECK(
+        bh_spc_event{}.assign_multiple_macrotime_overflow(16'777'216_u32np) ==
+        le_event<bh_spc_event>(
+            {0b1100'0001, 0b0000'0000, 0b0000'0000, 0b0000'0000}));
+    CHECK(
+        bh_spc_event{}.assign_multiple_macrotime_overflow(268'435'455_u32np) ==
+        le_event<bh_spc_event>(
+            {0b1100'1111, 0b1111'1111, 0b1111'1111, 0b1111'1111}));
+
+    CHECK(bh_spc_event{}.gap_flag(true) ==
+          le_event<bh_spc_event>(
+              {0b0010'0000, 0b0000'0000, 0b0000'0000, 0b0000'0000}));
+
+    CHECK(le_event<bh_spc_event>(
+              {0b1111'1111, 0b1111'1111, 0b1111'1111, 0b1111'1111})
+              .gap_flag(false) ==
+          le_event<bh_spc_event>(
+              {0b1101'1111, 0b1111'1111, 0b1111'1111, 0b1111'1111}));
+}
+
+TEST_CASE("bh spc600 256ch assign", "[bh_spc_event]") {
+    CHECK(bh_spc600_256ch_event{}.assign_photon(0_u32np, 0_u8np, 0_u8np) ==
+          le_event<bh_spc600_256ch_event>(
+              {0b0000'0000, 0b0000'0000, 0b0000'0000, 0b0000'0000}));
+    CHECK(bh_spc600_256ch_event{}.assign_photon(1_u32np, 2_u8np, 3_u8np) ==
+          le_event<bh_spc600_256ch_event>(
+              {0b0000'0110, 0b0000'0000, 0b0000'0001, 0b0000'0010}));
+    CHECK(
+        bh_spc600_256ch_event{}.assign_photon(1_u32np, 2_u8np, 3_u8np, true) ==
+        le_event<bh_spc600_256ch_event>(
+            {0b0100'0110, 0b0000'0000, 0b0000'0001, 0b0000'0010}));
+    CHECK(bh_spc600_256ch_event{}.assign_photon(131'070_u32np, 254_u8np,
+                                                6_u8np) ==
+          le_event<bh_spc600_256ch_event>(
+              {0b0000'1101, 0b1111'1111, 0b1111'1110, 0b1111'1110}));
+    CHECK(bh_spc600_256ch_event{}.assign_photon(131'071_u32np, 255_u8np,
+                                                7_u8np) ==
+          le_event<bh_spc600_256ch_event>(
+              {0b0000'1111, 0b1111'1111, 0b1111'1111, 0b1111'1111}));
+
+    CHECK(bh_spc600_256ch_event{}.assign_invalid_photon(0_u32np, 0_u8np) ==
+          le_event<bh_spc600_256ch_event>(
+              {0b1000'0000, 0b0000'0000, 0b0000'0000, 0b0000'0000}));
+    CHECK(bh_spc600_256ch_event{}.assign_invalid_photon(1_u32np, 2_u8np) ==
+          le_event<bh_spc600_256ch_event>(
+              {0b1000'0000, 0b0000'0000, 0b0000'0001, 0b0000'0010}));
+    CHECK(bh_spc600_256ch_event{}.assign_invalid_photon(131'070_u32np,
+                                                        254_u8np) ==
+          le_event<bh_spc600_256ch_event>(
+              {0b1000'0001, 0b1111'1111, 0b1111'1110, 0b1111'1110}));
+    CHECK(bh_spc600_256ch_event{}.assign_invalid_photon(131'071_u32np,
+                                                        255_u8np) ==
+          le_event<bh_spc600_256ch_event>(
+              {0b1000'0001, 0b1111'1111, 0b1111'1111, 0b1111'1111}));
+
+    CHECK(
+        bh_spc600_256ch_event{}.assign_multiple_macrotime_overflow(0_u32np) ==
+        le_event<bh_spc600_256ch_event>(
+            {0b1100'0000, 0b0000'0000, 0b0000'0000, 0b0000'0000}));
+    CHECK(
+        bh_spc600_256ch_event{}.assign_multiple_macrotime_overflow(1_u32np) ==
+        le_event<bh_spc600_256ch_event>(
+            {0b1100'0000, 0b0000'0000, 0b0000'0000, 0b0000'0001}));
+    CHECK(bh_spc600_256ch_event{}.assign_multiple_macrotime_overflow(
+              256_u32np) ==
+          le_event<bh_spc600_256ch_event>(
+              {0b1100'0000, 0b0000'0000, 0b0000'0001, 0b0000'0000}));
+    CHECK(bh_spc600_256ch_event{}.assign_multiple_macrotime_overflow(
+              65536_u32np) ==
+          le_event<bh_spc600_256ch_event>(
+              {0b1100'0000, 0b0000'0001, 0b0000'0000, 0b0000'0000}));
+    CHECK(bh_spc600_256ch_event{}.assign_multiple_macrotime_overflow(
+              16'777'216_u32np) ==
+          le_event<bh_spc600_256ch_event>(
+              {0b1100'0001, 0b0000'0000, 0b0000'0000, 0b0000'0000}));
+    CHECK(bh_spc600_256ch_event{}.assign_multiple_macrotime_overflow(
+              268'435'455_u32np) ==
+          le_event<bh_spc600_256ch_event>(
+              {0b1100'1111, 0b1111'1111, 0b1111'1111, 0b1111'1111}));
+
+    CHECK(bh_spc600_256ch_event{}.gap_flag(true) ==
+          le_event<bh_spc600_256ch_event>(
+              {0b0010'0000, 0b0000'0000, 0b0000'0000, 0b0000'0000}));
+
+    CHECK(le_event<bh_spc600_256ch_event>(
+              {0b1111'1111, 0b1111'1111, 0b1111'1111, 0b1111'1111})
+              .gap_flag(false) ==
+          le_event<bh_spc600_256ch_event>(
+              {0b1101'1111, 0b1111'1111, 0b1111'1111, 0b1111'1111}));
+}
+
+TEST_CASE("bh spc600 4096ch assign", "[bh_spc_event]") {
+    CHECK(bh_spc600_4096ch_event{}.assign_photon(0_u32np, 0_u16np, 0_u8np) ==
+          le_event<bh_spc600_4096ch_event>({0b0000'0000, 0b0000'0000,
+                                            0b0000'0000, 0b0000'0000,
+                                            0b0000'0000, 0b0000'0000}));
+    CHECK(bh_spc600_4096ch_event{}.assign_photon(1_u32np, 2_u16np, 3_u8np) ==
+          le_event<bh_spc600_4096ch_event>({0b0000'0000, 0b0000'0001,
+                                            0b0000'0011, 0b0000'0000,
+                                            0b0000'0000, 0b0000'0010}));
+    CHECK(bh_spc600_4096ch_event{}.assign_photon(1_u32np, 2_u16np, 3_u8np,
+                                                 true) ==
+          le_event<bh_spc600_4096ch_event>({0b0000'0000, 0b0000'0001,
+                                            0b0000'0011, 0b0000'0000,
+                                            0b0010'0000, 0b0000'0010}));
+    CHECK(bh_spc600_4096ch_event{}.assign_photon(256_u32np, 2_u16np, 3_u8np) ==
+          le_event<bh_spc600_4096ch_event>({0b0000'0001, 0b0000'0000,
+                                            0b0000'0011, 0b0000'0000,
+                                            0b0000'0000, 0b0000'0010}));
+    CHECK(
+        bh_spc600_4096ch_event{}.assign_photon(65536_u32np, 2_u16np, 3_u8np) ==
+        le_event<bh_spc600_4096ch_event>({0b0000'0000, 0b0000'0000,
+                                          0b0000'0011, 0b0000'0001,
+                                          0b0000'0000, 0b0000'0010}));
+    CHECK(bh_spc600_4096ch_event{}.assign_photon(16'777'214_u32np, 4094_u16np,
+                                                 254_u8np) ==
+          le_event<bh_spc600_4096ch_event>({0b1111'1111, 0b1111'1110,
+                                            0b1111'1110, 0b1111'1111,
+                                            0b0000'1111, 0b1111'1110}));
+    CHECK(bh_spc600_4096ch_event{}.assign_photon(16'777'215_u32np, 4095_u16np,
+                                                 255_u8np) ==
+          le_event<bh_spc600_4096ch_event>({0b1111'1111, 0b1111'1111,
+                                            0b1111'1111, 0b1111'1111,
+                                            0b0000'1111, 0b1111'1111}));
+
+    CHECK(bh_spc600_4096ch_event{}.assign_invalid_photon(0_u32np, 0_u16np) ==
+          le_event<bh_spc600_4096ch_event>({0b0000'0000, 0b0000'0000,
+                                            0b0000'0000, 0b0000'0000,
+                                            0b0001'0000, 0b0000'0000}));
+    CHECK(bh_spc600_4096ch_event{}.assign_invalid_photon(1_u32np, 2_u16np) ==
+          le_event<bh_spc600_4096ch_event>({0b0000'0000, 0b0000'0001,
+                                            0b0000'0000, 0b0000'0000,
+                                            0b0001'0000, 0b0000'0010}));
+    CHECK(bh_spc600_4096ch_event{}.assign_invalid_photon(1_u32np, 2_u16np,
+                                                         true) ==
+          le_event<bh_spc600_4096ch_event>({0b0000'0000, 0b0000'0001,
+                                            0b0000'0000, 0b0000'0000,
+                                            0b0011'0000, 0b0000'0010}));
+    CHECK(bh_spc600_4096ch_event{}.assign_invalid_photon(256_u32np, 2_u16np) ==
+          le_event<bh_spc600_4096ch_event>({0b0000'0001, 0b0000'0000,
+                                            0b0000'0000, 0b0000'0000,
+                                            0b0001'0000, 0b0000'0010}));
+    CHECK(
+        bh_spc600_4096ch_event{}.assign_invalid_photon(65536_u32np, 2_u16np) ==
+        le_event<bh_spc600_4096ch_event>({0b0000'0000, 0b0000'0000,
+                                          0b0000'0000, 0b0000'0001,
+                                          0b0001'0000, 0b0000'0010}));
+    CHECK(bh_spc600_4096ch_event{}.assign_invalid_photon(16'777'214_u32np,
+                                                         4094_u16np) ==
+          le_event<bh_spc600_4096ch_event>({0b1111'1111, 0b1111'1110,
+                                            0b0000'0000, 0b1111'1111,
+                                            0b0001'1111, 0b1111'1110}));
+    CHECK(bh_spc600_4096ch_event{}.assign_invalid_photon(16'777'215_u32np,
+                                                         4095_u16np) ==
+          le_event<bh_spc600_4096ch_event>({0b1111'1111, 0b1111'1111,
+                                            0b0000'0000, 0b1111'1111,
+                                            0b0001'1111, 0b1111'1111}));
+
+    CHECK(bh_spc600_4096ch_event{}.gap_flag(true) ==
+          le_event<bh_spc600_4096ch_event>({0b0000'0000, 0b0000'0000,
+                                            0b0000'0000, 0b0000'0000,
+                                            0b0100'0000, 0b0000'0000}));
+
+    CHECK(le_event<bh_spc600_4096ch_event>({0b1111'1111, 0b1111'1111,
+                                            0b1111'1111, 0b1111'1111,
+                                            0b1111'1111, 0b1111'1111})
+              .gap_flag(false) ==
+          le_event<bh_spc600_4096ch_event>({0b1111'1111, 0b1111'1111,
+                                            0b1111'1111, 0b1111'1111,
+                                            0b1011'1111, 0b1111'1111}));
+}
+
 } // namespace tcspc
