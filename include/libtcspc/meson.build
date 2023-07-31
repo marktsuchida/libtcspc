@@ -24,6 +24,7 @@ public_cpp_headers = files(
     'merge.hpp',
     'npint.hpp',
     'pair.hpp',
+    'picoquant_t2.hpp',
     'picoquant_t3.hpp',
     'read_binary_stream.hpp',
     'read_bytes.hpp',

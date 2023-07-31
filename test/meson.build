@@ -25,6 +25,7 @@ libtcspc_tests_srcs = [
     'merge.cpp',
     'npint.cpp',
     'pair.cpp',
+    'picoquant_t2.cpp',
     'picoquant_t3.cpp',
     'read_binary_stream.cpp',
     'read_bytes.cpp',

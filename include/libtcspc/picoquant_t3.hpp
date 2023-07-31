@@ -6,7 +6,7 @@
 
 #pragma once
 
-#include "event_set.hpp"
+#include "common.hpp"
 #include "read_bytes.hpp"
 #include "time_tagged_events.hpp"
 
@@ -15,21 +15,19 @@
 #include <cstdint>
 #include <exception>
 #include <ostream>
-#include <stdexcept>
 #include <utility>
+
+// When editing this file, maintain the partial symmetry with picoquant_t2.hpp.
 
 namespace tcspc {
 
-// PicoQuant raw photon event ("TTTR") formats are documented in the html files
-// contained in this repository:
+// PicoQuant raw time tag event ("TTTR") formats are documented in the html
+// files contained in this repository:
 // https://github.com/PicoQuant/PicoQuant-Time-Tagged-File-Format-Demos
 
 // Vendor documentation does not specify, but the 32-bit records are to be
 // viewed as little-endian integers when interpreting the documented bit
 // locations.
-
-// Note that code here is written to run on little- or big-endian machines; see
-// https://commandcenter.blogspot.com/2012/04/byte-order-fallacy.html
 
 // The two T3 formats (pqt3_picoharp_event and pqt3_hydraharp_event) use
 // matching member names for static polymorphism. This allows
@@ -54,28 +52,29 @@ struct pqt3_picoharp_event {
     static constexpr std::int32_t nsync_overflow_period = 65536;
 
     /**
-     * \brief Read the channel if this event represents a photon.
+     * \brief Read the channel if this event is a non-special event.
      */
     [[nodiscard]] auto channel() const noexcept -> u8np {
         return read_u8(byte_subspan<3, 1>(bytes)) >> 4;
     }
 
     /**
-     * \brief Read the difference time if this event represents a photon.
+     * \brief Read the difference time if this event is a non-special event.
      */
     [[nodiscard]] auto dtime() const noexcept -> u16np {
         return read_u16le(byte_subspan<2, 2>(bytes)) & 0x0fff_u16np;
     }
 
     /**
-     * \brief Read the nsync counter value (no rollover correction).
+     * \brief Read the nsync counter value if this event is a non-special event
+     * or an external marker event.
      */
     [[nodiscard]] auto nsync() const noexcept -> u16np {
         return read_u16le(byte_subspan<0, 2>(bytes));
     }
 
     /**
-     * \brief Determine if this event is a non-photon event.
+     * \brief Determine if this event is a special event.
      */
     [[nodiscard]] auto is_special() const noexcept -> bool {
         return channel() == 15_u8np;
@@ -97,14 +96,19 @@ struct pqt3_picoharp_event {
     }
 
     /**
-     * \brief Determine if this event represents markers.
+     * \brief Determine if this event represents external markers.
      */
     [[nodiscard]] auto is_external_marker() const noexcept -> bool {
-        return is_special() && dtime() != 0_u16np;
+        // Vendor docs do not specifically say markers are 4 bits in PicoHarp
+        // T3, but they are in a 4-bit field in T2, and in HydraHarp T2/T3 the
+        // marker bits explicitly range 1-15. Let's just behave consistently
+        // here and check the upper limit.
+        return is_special() && dtime() > 0_u16np && dtime() <= 15_u16np;
     }
 
     /**
-     * \brief Read the marker bits (mask) if this event represents markers.
+     * \brief Read the marker bits (mask) if this event represents external
+     * markers.
      */
     [[nodiscard]] auto external_marker_bits() const noexcept -> u16np {
         return dtime();
@@ -123,11 +127,12 @@ struct pqt3_picoharp_event {
     }
 
     /** \brief Stream insertion operator. */
-    friend auto operator<<(std::ostream &strm, pqt3_picoharp_event const &e)
+    friend auto operator<<(std::ostream &stream,
+                           pqt3_picoharp_event const &event)
         -> std::ostream & {
-        return strm << "pqt3_picoharp(channel=" << e.channel()
-                    << ", dtime=" << e.dtime() << ", nsync=" << e.nsync()
-                    << ")";
+        return stream << "pqt3_picoharp(channel=" << event.channel()
+                      << ", dtime=" << event.dtime()
+                      << ", nsync=" << event.nsync() << ")";
     }
 };
 
@@ -137,8 +142,8 @@ struct pqt3_picoharp_event {
  *
  * \ingroup events-device
  *
- * User code should use \ref pqt3_hydraharpv1_event or \ref
- * pqt3_hydraharpv2_event.
+ * This class is documented to show the available member functions. User code
+ * should use \ref pqt3_hydraharpv1_event or \ref pqt3_hydraharpv2_event.
  *
  * \tparam IsNSyncOverflowAlwaysSingle if true, interpret as HydraHarp V1
  * (RecType 0x00010304) format, in which nsync overflow records always indicate
@@ -156,14 +161,14 @@ template <bool IsNSyncOverflowAlwaysSingle> struct pqt3_hydraharp_event {
     static constexpr std::int32_t nsync_overflow_period = 1024;
 
     /**
-     * \brief Read the channel if this event represents a photon.
+     * \brief Read the channel if this event is a non-special event.
      */
     [[nodiscard]] auto channel() const noexcept -> u8np {
         return (read_u8(byte_subspan<3, 1>(bytes)) & 0x7f_u8np) >> 1;
     }
 
     /**
-     * \brief Read the difference time if this event represents a photon.
+     * \brief Read the difference time if this event is a non-special event.
      */
     [[nodiscard]] auto dtime() const noexcept -> u16np {
         auto const lo6 = u16np(read_u8(byte_subspan<1, 1>(bytes))) >> 2;
@@ -173,14 +178,15 @@ template <bool IsNSyncOverflowAlwaysSingle> struct pqt3_hydraharp_event {
     }
 
     /**
-     * \brief Read the nsync counter value (no rollover correction).
+     * \brief Read the nsync counter value if this event is a non-special event
+     * or an external marker event.
      */
     [[nodiscard]] auto nsync() const noexcept -> u16np {
         return read_u16le(byte_subspan<0, 2>(bytes)) & 0x03ff_u16np;
     }
 
     /**
-     * \brief Determine if this event is a non-photon event.
+     * \brief Determine if this event is a special event.
      */
     [[nodiscard]] auto is_special() const noexcept -> bool {
         return (read_u8(byte_subspan<3, 1>(bytes)) & (1_u8np << 7)) != 0_u8np;
@@ -204,14 +210,15 @@ template <bool IsNSyncOverflowAlwaysSingle> struct pqt3_hydraharp_event {
     }
 
     /**
-     * \brief Determine if this event represents markers.
+     * \brief Determine if this event represents external markers.
      */
     [[nodiscard]] auto is_external_marker() const noexcept -> bool {
-        return is_special() && channel() != 63_u8np;
+        return is_special() && channel() > 0_u8np && channel() <= 15_u8np;
     }
 
     /**
-     * \brief Read the marker bits (mask) if this event represents markers.
+     * \brief Read the marker bits (mask) if this event represents external
+     * markers.
      */
     [[nodiscard]] auto external_marker_bits() const noexcept -> u8np {
         return channel();
@@ -230,13 +237,15 @@ template <bool IsNSyncOverflowAlwaysSingle> struct pqt3_hydraharp_event {
     }
 
     /** \brief Stream insertion operator. */
-    friend auto operator<<(std::ostream &strm, pqt3_hydraharp_event const &e)
+    friend auto operator<<(std::ostream &stream,
+                           pqt3_hydraharp_event const &event)
         -> std::ostream & {
-        auto version = IsNSyncOverflowAlwaysSingle ? 1 : 2;
-        return strm << "pqt3_hydraharpv" << version
-                    << "(special=" << e.is_special()
-                    << ", channel=" << e.channel() << ", dtime=" << e.dtime()
-                    << ", nsync=" << e.nsync() << ")";
+        static constexpr auto version = IsNSyncOverflowAlwaysSingle ? 1 : 2;
+        return stream << "pqt3_hydraharpv" << version
+                      << "(special=" << event.is_special()
+                      << ", channel=" << event.channel()
+                      << ", dtime=" << event.dtime()
+                      << ", nsync=" << event.nsync() << ")";
     }
 };
 
@@ -244,6 +253,8 @@ template <bool IsNSyncOverflowAlwaysSingle> struct pqt3_hydraharp_event {
  * \brief Binary record interpretation for HydraHarp V1 T3 format.
  *
  * \ingroup events-device
+ *
+ * RecType 0x00010304.
  */
 using pqt3_hydraharpv1_event = pqt3_hydraharp_event<true>;
 
@@ -252,6 +263,8 @@ using pqt3_hydraharpv1_event = pqt3_hydraharp_event<true>;
  * TimeHarp260 T3 format.
  *
  * \ingroup events-device
+ *
+ * RecType 01010304, 00010305, 00010306, 00010307.
  */
 using pqt3_hydraharpv2_event = pqt3_hydraharp_event<false>;
 
@@ -267,6 +280,10 @@ class decode_pqt3 {
 
     Downstream downstream;
 
+    LIBTCSPC_NOINLINE void issue_warning(char const *message) noexcept {
+        downstream.handle_event(warning_event{message});
+    }
+
   public:
     explicit decode_pqt3(Downstream &&downstream)
         : downstream(std::move(downstream)) {}
@@ -274,24 +291,27 @@ class decode_pqt3 {
     void handle_event(PQT3Event const &event) noexcept {
         if (event.is_nsync_overflow()) {
             nsync_base += abstime_type(PQT3Event::nsync_overflow_period) *
-                          event.nsync_overflow_count();
+                          event.nsync_overflow_count().value();
             return downstream.handle_event(
                 time_reached_event<DataTraits>{{nsync_base}});
         }
 
-        abstime_type const nsync = nsync_base + event.nsync();
+        abstime_type const nsync = nsync_base + event.nsync().value();
 
-        if (not event.is_external_marker()) {
+        if (not event.is_special()) {
             downstream.handle_event(
                 time_correlated_detection_event<DataTraits>{
-                    {{nsync}, event.channel()}, event.dtime()});
-        } else {
+                    {{nsync}, event.channel().value()},
+                    event.dtime().value()});
+        } else if (event.is_external_marker()) {
             auto bits = u32np(event.external_marker_bits());
             while (bits != 0_u32np) {
                 downstream.handle_event(marker_event<DataTraits>{
                     {{nsync}, count_trailing_zeros_32(bits)}});
                 bits = bits & (bits - 1_u32np); // Clear the handled bit
             }
+        } else {
+            issue_warning("invalid special event encountered");
         }
     }
 
@@ -311,7 +331,7 @@ class decode_pqt3 {
  *
  * \tparam Downstream downstream processor type
  *
- * \param downstream downstream processor (moved out)
+ * \param downstream downstream processor
  *
  * \return decode-pqt3-picoharp processor
  */
@@ -331,7 +351,7 @@ auto decode_pqt3_picoharp(Downstream &&downstream) {
  *
  * \tparam Downstream downstream processor type
  *
- * \param downstream downstream processor (moved out)
+ * \param downstream downstream processor
  *
  * \return decode-pqt3-hydraharpv1 processor
  */
@@ -353,7 +373,7 @@ auto decode_pqt3_hydraharpv1(Downstream &&downstream) {
  *
  * \tparam Downstream downstream processor type
  *
- * \param downstream downstream processor (moved out)
+ * \param downstream downstream processor
  *
  * \return decode-pqt3-hydraharpv2 processor
  */

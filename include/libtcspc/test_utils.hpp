@@ -8,9 +8,13 @@
 
 #include "common.hpp"
 #include "event_set.hpp"
+#include "span.hpp"
 #include "vector_queue.hpp"
 
+#include <algorithm>
+#include <array>
 #include <cassert>
+#include <cstdint>
 #include <cstdio>
 #include <exception>
 #include <functional>
@@ -500,5 +504,33 @@ struct timestamped_test_event {
                     << "}";
     }
 };
+
+/**
+ * \brief Bit-cast an array of bytes to an event in little-endian order.
+ *
+ * \ingroup misc
+ *
+ * This is a helper for writing readable unit tests for raw device events that
+ * are documented in little-endian byte order.
+ *
+ * The given array, which should be in big-endian order, is reversed and cast
+ * to the type \c Event (which must be trivial).
+ *
+ * (There is currently no analogous \c be_event because device events specified
+ * in big-endian order have not been encountered.)
+ *
+ * \tparam Event the returned event type
+ *
+ * \param bytes bytes constituting the event, in big-endian order
+ */
+template <typename Event>
+inline auto le_event(std::array<std::uint8_t, sizeof(Event)> bytes) noexcept {
+    static_assert(std::is_trivial_v<Event>);
+    auto const srcspan = as_bytes(span(&bytes, 1));
+    Event ret{};
+    auto const retspan = as_writable_bytes(span(&ret, 1));
+    std::reverse_copy(srcspan.begin(), srcspan.end(), retspan.begin());
+    return ret;
+}
 
 } // namespace tcspc

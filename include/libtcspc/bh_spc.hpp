@@ -25,9 +25,6 @@ namespace tcspc {
 // Raw photon event data formats are documented in The bh TCSPC Handbook (see
 // section on FIFO Files in the chapter on Data file structure).
 
-// Note that code here is written to run on little- or big-endian machines; see
-// https://commandcenter.blogspot.com/2012/04/byte-order-fallacy.html
-
 /**
  * \brief Binary record interpretation for raw BH SPC event.
  *
