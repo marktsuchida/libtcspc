@@ -126,6 +126,59 @@ struct pqt2_picoharp_event {
         return u8np(timetag()) & 0x0f_u8np;
     }
 
+    /**
+     * \brief Set this event to represent a non-special (photon) event.
+     *
+     * \param timetag the time tag; 0 to 268,435,455
+     *
+     * \param channel the channel; 0 to 14
+     *
+     * \return \c *this
+     */
+    auto assign_nonspecial(u32np timetag, u8np channel) noexcept
+        -> pqt2_picoharp_event & {
+        assert(channel <= 14_u8np);
+        bytes[3] = std::byte(
+            ((channel << 4) | (u8np(timetag >> 24) & 0x0f_u8np)).value());
+        bytes[2] = std::byte(u8np(timetag >> 16).value());
+        bytes[1] = std::byte(u8np(timetag >> 8).value());
+        bytes[0] = std::byte(u8np(timetag).value());
+        return *this;
+    }
+
+    /**
+     * \brief Set this event to represent an nsync overflow.
+     *
+     * \return \c *this
+     */
+    auto assign_nsync_overflow() noexcept -> pqt2_picoharp_event & {
+        bytes[3] = std::byte(0b1111'0000);
+        bytes[2] = bytes[1] = bytes[0] = std::byte(0);
+        return *this;
+    }
+
+    /**
+     * \brief Set this event to represent an external marker.
+     *
+     * \param timetag the time tag; 0 to 268'435'455; the lower 4 bits are
+     * discarded
+     *
+     * \param marker_bits the marker bitmask; 1 to 15 (0 is forbidden)
+     *
+     * \return \c *this
+     */
+    auto assign_external_marker(u32np timetag, u8np marker_bits) noexcept
+        -> pqt2_picoharp_event & {
+        assert(marker_bits != 0_u8np);
+        bytes[3] = std::byte(
+            (0b1111'0000_u8np | (u8np(timetag >> 24) & 0x0f_u8np)).value());
+        bytes[2] = std::byte(u8np(timetag >> 16).value());
+        bytes[1] = std::byte(u8np(timetag >> 8).value());
+        bytes[0] = std::byte(
+            ((u8np(timetag) & 0xf0_u8np) | (marker_bits & 0x0f_u8np)).value());
+        return *this;
+    }
+
     /** \brief Equality comparison operator. */
     friend auto operator==(pqt2_picoharp_event const &lhs,
                            pqt2_picoharp_event const &rhs) noexcept -> bool {
@@ -242,6 +295,88 @@ struct pqt2_hydraharp_event {
      */
     [[nodiscard]] auto external_marker_bits() const noexcept -> u8np {
         return channel();
+    }
+
+    /**
+     * \brief Set this event to represent a non-special (photon) event.
+     *
+     * \param timetag the time tag; 0 to 33,554,431
+     *
+     * \param channel the channel; 0 to 63
+     *
+     * \return \c *this
+     */
+    auto assign_nonspecial(u32np timetag, u8np channel) noexcept
+        -> pqt2_hydraharp_event & {
+        bytes[3] = std::byte(
+            (((channel & 0x3f_u8np) << 1) | (u8np(timetag >> 24) & 0x01_u8np))
+                .value());
+        bytes[2] = std::byte(u8np(timetag >> 16).value());
+        bytes[1] = std::byte(u8np(timetag >> 8).value());
+        bytes[0] = std::byte(u8np(timetag).value());
+        return *this;
+    }
+
+    /**
+     * \brief Set this event to represent an nsync overflow.
+     *
+     * \param count number of overflows; must be 1 for pqt2_hydraharpv1_event;
+     * 1 to 33,554,431 (0 is allowed but may not be handled correctly by other
+     * readers) for pqt2_hydraharpv2_event
+     *
+     * \return \c *this
+     */
+    auto assign_nsync_overflow(u32np count = 1_u32np) noexcept
+        -> pqt2_hydraharp_event & {
+        if constexpr (IsOverflowAlwaysSingle) {
+            assert(count == 1_u32np);
+            bytes[3] = std::byte(0b1111'1110);
+            bytes[2] = bytes[1] = bytes[0] = std::byte(0);
+        } else {
+            bytes[3] = std::byte(
+                (0b1111'1110_u8np | (u8np(count >> 24) & 0x01_u8np)).value());
+            bytes[2] = std::byte(u8np(count >> 16).value());
+            bytes[1] = std::byte(u8np(count >> 8).value());
+            bytes[0] = std::byte(u8np(count).value());
+        }
+        return *this;
+    }
+
+    /**
+     * \brief Set this event to represent a sync event.
+     *
+     * \param timetag the time tag; 0 to 33,554,431
+     *
+     * \return \c *this
+     */
+    auto assign_sync(u32np timetag) noexcept -> pqt2_hydraharp_event & {
+        bytes[3] = std::byte(
+            (0b1000'0000_u8np | (u8np(timetag >> 24) & 0x01_u8np)).value());
+        bytes[2] = std::byte(u8np(timetag >> 16).value());
+        bytes[1] = std::byte(u8np(timetag >> 8).value());
+        bytes[0] = std::byte(u8np(timetag).value());
+        return *this;
+    }
+
+    /**
+     * \brief Set this event to represent an external marker.
+     *
+     * \param timetag the time tag; 0 to 33,554,431
+     *
+     * \param marker_bits the marker bitmask; 1 to 15 (0 is forbidden)
+     *
+     * \return \c *this
+     */
+    auto assign_external_marker(u32np timetag, u8np marker_bits) noexcept
+        -> pqt2_hydraharp_event & {
+        bytes[3] =
+            std::byte((0b1000'0000_u8np | ((marker_bits & 0x3f_u8np) << 1) |
+                       (u8np(timetag >> 24) & 0x01_u8np))
+                          .value());
+        bytes[2] = std::byte(u8np(timetag >> 16).value());
+        bytes[1] = std::byte(u8np(timetag >> 8).value());
+        bytes[0] = std::byte(u8np(timetag).value());
+        return *this;
     }
 
     /** \brief Equality comparison operator. */
