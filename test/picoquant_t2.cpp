@@ -344,7 +344,7 @@ TEMPLATE_TEST_CASE("pqt2 hydraharp assign", "[pqt2_event]",
 
     CHECK(pqt2_hydraharpv1_event{}.assign_nsync_overflow() ==
           le_event<pqt2_hydraharpv1_event>(
-              {0b1111'1110, 0b0000'0000, 0b0000'0000, 0b0000'0000}));
+              {0b1111'1110, 0b0000'0000, 0b0000'0000, 0b0000'0001}));
 
     CHECK(pqt2_hydraharpv2_event{}.assign_nsync_overflow() ==
           pqt2_hydraharpv2_event{}.assign_nsync_overflow(1_u32np));

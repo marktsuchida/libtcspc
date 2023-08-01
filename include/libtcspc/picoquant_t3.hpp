@@ -315,7 +315,8 @@ template <bool IsNSyncOverflowAlwaysSingle> struct pqt3_hydraharp_event {
         bytes[2] = std::byte(0);
         if constexpr (IsNSyncOverflowAlwaysSingle) {
             assert(count == 1_u16np);
-            bytes[1] = bytes[0] = std::byte(0);
+            bytes[1] = std::byte(0);
+            bytes[0] = std::byte(1);
         } else {
             bytes[1] = std::byte((u8np(count >> 8) & 0x03_u8np).value());
             bytes[0] = std::byte(u8np(count).value());

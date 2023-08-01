@@ -331,7 +331,8 @@ struct pqt2_hydraharp_event {
         if constexpr (IsOverflowAlwaysSingle) {
             assert(count == 1_u32np);
             bytes[3] = std::byte(0b1111'1110);
-            bytes[2] = bytes[1] = bytes[0] = std::byte(0);
+            bytes[2] = bytes[1] = std::byte(0);
+            bytes[0] = std::byte(1);
         } else {
             bytes[3] = std::byte(
                 (0b1111'1110_u8np | (u8np(count >> 24) & 0x01_u8np)).value());
