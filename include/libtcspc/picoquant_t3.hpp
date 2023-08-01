@@ -114,6 +114,58 @@ struct pqt3_picoharp_event {
         return dtime();
     }
 
+    /**
+     * \brief Set this event to represent a non-special (photon) event.
+     *
+     * \param nsync the nsync count; 0 to 65535
+     *
+     * \param channel the channel; 0 to 14
+     *
+     * \param dtime the difference time; 0 to 4095
+     *
+     * \return \c *this
+     */
+    auto assign_nonspecial(u16np nsync, u8np channel, u16np dtime) noexcept
+        -> pqt3_picoharp_event & {
+        assert(channel <= 14_u8np);
+        bytes[3] = std::byte(
+            ((channel << 4) | (u8np(dtime >> 8) & 0x0f_u8np)).value());
+        bytes[2] = std::byte(u8np(dtime).value());
+        bytes[1] = std::byte(u8np(nsync >> 8).value());
+        bytes[0] = std::byte(u8np(nsync).value());
+        return *this;
+    }
+
+    /**
+     * \brief Set this event to represent an nsync overflow.
+     *
+     * \return \c *this
+     */
+    auto assign_nsync_overflow() noexcept -> pqt3_picoharp_event & {
+        bytes[3] = std::byte(0b1111'0000);
+        bytes[2] = bytes[1] = bytes[0] = std::byte(0);
+        return *this;
+    }
+
+    /**
+     * \brief Set this event to represent an external marker.
+     *
+     * \param nsync the nsync count; 0 to 65535
+     *
+     * \param marker_bits the marker bitmask; 1 to 15 (0 is forbidden)
+     *
+     * \return \c *this
+     */
+    auto assign_external_marker(u16np nsync, u8np marker_bits) noexcept
+        -> pqt3_picoharp_event & {
+        assert(marker_bits != 0_u8np);
+        bytes[3] = std::byte(0b1111'0000);
+        bytes[2] = std::byte((marker_bits & 0x0f_u8np).value());
+        bytes[1] = std::byte(u8np(nsync >> 8).value());
+        bytes[0] = std::byte(u8np(nsync).value());
+        return *this;
+    }
+
     /** \brief Equality comparison operator. */
     friend auto operator==(pqt3_picoharp_event const &lhs,
                            pqt3_picoharp_event const &rhs) noexcept -> bool {
@@ -223,6 +275,71 @@ template <bool IsNSyncOverflowAlwaysSingle> struct pqt3_hydraharp_event {
      */
     [[nodiscard]] auto external_marker_bits() const noexcept -> u8np {
         return channel();
+    }
+
+    /**
+     * \brief Set this event to represent a non-special (photon) event.
+     *
+     * \param nsync the nsync count; 0 to 1023
+     *
+     * \param channel the channel; 0 to 63
+     *
+     * \param dtime the difference time; 0 to 32767
+     *
+     * \return \c *this
+     */
+    auto assign_nonspecial(u16np nsync, u8np channel, u16np dtime) noexcept
+        -> pqt3_hydraharp_event & {
+        bytes[3] = std::byte(
+            (((channel & 0x3f_u8np) << 1) | (u8np(dtime >> 14) & 0x01_u8np))
+                .value());
+        bytes[2] = std::byte(u8np(dtime >> 6).value());
+        bytes[1] = std::byte(
+            (u8np(dtime << 2) | (u8np(nsync >> 8) & 0x03_u8np)).value());
+        bytes[0] = std::byte(u8np(nsync).value());
+        return *this;
+    }
+
+    /**
+     * \brief Set this event to represent an nsync overflow.
+     *
+     * \param count number of overflows; must be 1 for pqt3_hydraharpv1_event;
+     * 1 to 1023 (0 is allowed but may not be handled correctly by other
+     * readers) for pqt3_hydraharpv2_event
+     *
+     * \return \c *this
+     */
+    auto assign_nsync_overflow(u16np count = 1_u16np) noexcept
+        -> pqt3_hydraharp_event & {
+        bytes[3] = std::byte(0b1111'1110);
+        bytes[2] = std::byte(0);
+        if constexpr (IsNSyncOverflowAlwaysSingle) {
+            assert(count == 1_u16np);
+            bytes[1] = bytes[0] = std::byte(0);
+        } else {
+            bytes[1] = std::byte((u8np(count >> 8) & 0x03_u8np).value());
+            bytes[0] = std::byte(u8np(count).value());
+        }
+        return *this;
+    }
+
+    /**
+     * \brief Set this event to represent an external marker.
+     *
+     * \param nsync the nsync count; 0 to 1023
+     *
+     * \param marker_bits the marker bitmask; 1 to 15
+     *
+     * \return \c *this
+     */
+    auto assign_external_marker(u16np nsync, u8np marker_bits) noexcept
+        -> pqt3_hydraharp_event & {
+        bytes[3] = std::byte(
+            (0b1000'0000_u8np | ((marker_bits & 0x3f_u8np) << 1)).value());
+        bytes[2] = std::byte(0);
+        bytes[1] = std::byte((u8np(nsync >> 8) & 0x03_u8np).value());
+        bytes[0] = std::byte(u8np(nsync).value());
+        return *this;
     }
 
     /** \brief Equality comparison operator. */
