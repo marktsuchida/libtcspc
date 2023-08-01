@@ -147,11 +147,11 @@ struct pqt2_picoharp_event {
     }
 
     /**
-     * \brief Set this event to represent an nsync overflow.
+     * \brief Set this event to represent an time tag overflow.
      *
      * \return \c *this
      */
-    auto assign_nsync_overflow() noexcept -> pqt2_picoharp_event & {
+    auto assign_timetag_overflow() noexcept -> pqt2_picoharp_event & {
         bytes[3] = std::byte(0b1111'0000);
         bytes[2] = bytes[1] = bytes[0] = std::byte(0);
         return *this;
@@ -318,27 +318,40 @@ struct pqt2_hydraharp_event {
     }
 
     /**
-     * \brief Set this event to represent an nsync overflow.
+     * \brief Set this event to represent an time tag overflow.
      *
-     * \param count number of overflows; must be 1 for pqt2_hydraharpv1_event;
-     * 1 to 33,554,431 (0 is allowed but may not be handled correctly by other
-     * readers) for pqt2_hydraharpv2_event
+     * This overload is only available in \ref pqt2_hydraharpv2_event.
+     *
+     * \param count number of overflows; 1 to 33,554,431 (0 is allowed but may
+     * not be handled correctly by other readers)
      *
      * \return \c *this
      */
-    auto assign_nsync_overflow(u32np count = 1_u32np) noexcept
+    auto assign_timetag_overflow(u32np count) noexcept
         -> pqt2_hydraharp_event & {
+        static_assert(
+            not IsOverflowAlwaysSingle,
+            "multiple time tag overflow is not available in HydraHarp V1 format");
+        bytes[3] = std::byte(
+            (0b1111'1110_u8np | (u8np(count >> 24) & 0x01_u8np)).value());
+        bytes[2] = std::byte(u8np(count >> 16).value());
+        bytes[1] = std::byte(u8np(count >> 8).value());
+        bytes[0] = std::byte(u8np(count).value());
+        return *this;
+    }
+
+    /**
+     * \brief Set this event to represent a single time tag overflow.
+     *
+     * \return \c *this
+     */
+    auto assign_timetag_overflow() noexcept -> pqt2_hydraharp_event & {
         if constexpr (IsOverflowAlwaysSingle) {
-            assert(count == 1_u32np);
             bytes[3] = std::byte(0b1111'1110);
             bytes[2] = bytes[1] = std::byte(0);
             bytes[0] = std::byte(1);
         } else {
-            bytes[3] = std::byte(
-                (0b1111'1110_u8np | (u8np(count >> 24) & 0x01_u8np)).value());
-            bytes[2] = std::byte(u8np(count >> 16).value());
-            bytes[1] = std::byte(u8np(count >> 8).value());
-            bytes[0] = std::byte(u8np(count).value());
+            assign_timetag_overflow(1_u32np);
         }
         return *this;
     }

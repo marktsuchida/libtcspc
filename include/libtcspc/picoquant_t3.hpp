@@ -303,23 +303,37 @@ template <bool IsNSyncOverflowAlwaysSingle> struct pqt3_hydraharp_event {
     /**
      * \brief Set this event to represent an nsync overflow.
      *
-     * \param count number of overflows; must be 1 for pqt3_hydraharpv1_event;
-     * 1 to 1023 (0 is allowed but may not be handled correctly by other
-     * readers) for pqt3_hydraharpv2_event
+     * This overload is only available in \ref pqt3_hydraharpv2_event.
+     *
+     * \param count number of overflows; 1 to 1023 (0 is allowed but may not be
+     * handled correctly by other readers)
      *
      * \return \c *this
      */
-    auto assign_nsync_overflow(u16np count = 1_u16np) noexcept
+    auto assign_nsync_overflow(u16np count) noexcept
         -> pqt3_hydraharp_event & {
+        static_assert(
+            not IsNSyncOverflowAlwaysSingle,
+            "multiple nsync overflow is not available in HydraHarp V1 format");
         bytes[3] = std::byte(0b1111'1110);
         bytes[2] = std::byte(0);
+        bytes[1] = std::byte((u8np(count >> 8) & 0x03_u8np).value());
+        bytes[0] = std::byte(u8np(count).value());
+        return *this;
+    }
+
+    /**
+     * \brief Set this event to represent a single nsync overflow.
+     *
+     * \return \c *this;
+     */
+    auto assign_nsync_overflow() noexcept -> pqt3_hydraharp_event & {
         if constexpr (IsNSyncOverflowAlwaysSingle) {
-            assert(count == 1_u16np);
-            bytes[1] = std::byte(0);
+            bytes[3] = std::byte(0b1111'1110);
+            bytes[2] = bytes[1] = std::byte(0);
             bytes[0] = std::byte(1);
         } else {
-            bytes[1] = std::byte((u8np(count >> 8) & 0x03_u8np).value());
-            bytes[0] = std::byte(u8np(count).value());
+            assign_nsync_overflow(1_u16np);
         }
         return *this;
     }
