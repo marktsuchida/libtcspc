@@ -89,6 +89,68 @@ struct swabian_tag_event {
         return read_i64le(byte_subspan<8, 8>(bytes));
     }
 
+    /**
+     * \brief Set this event to represent a time tag.
+     *
+     * \param time the timestamp
+     *
+     * \param channel the channel
+     *
+     * \return \c *this
+     */
+    auto assign_time_tag(i64np time, i32np channel) noexcept
+        -> swabian_tag_event & {
+        return assign_fields(tag_type::time_tag, 0_u16np, channel, time);
+    }
+
+    /**
+     * \brief Set this event to represent an error.
+     *
+     * \param time the timestamp
+     *
+     * \return \c *this
+     */
+    auto assign_error(i64np time) noexcept -> swabian_tag_event & {
+        return assign_fields(tag_type::error, 0_u16np, 0_i32np, time);
+    }
+
+    /**
+     * \brief Set this event to represent the beginning of an overflow
+     * interval.
+     *
+     * \param time the timestamp
+     *
+     * \return \c *this
+     */
+    auto assign_overflow_begin(i64np time) noexcept -> swabian_tag_event & {
+        return assign_fields(tag_type::overflow_begin, 0_u16np, 0_i32np, time);
+    }
+
+    /**
+     * \brief Set this event to represent the end of an overflow interval.
+     *
+     * \param time the timestamp
+     *
+     * \return \c *this
+     */
+    auto assign_overflow_end(i64np time) noexcept -> swabian_tag_event & {
+        return assign_fields(tag_type::overflow_end, 0_u16np, 0_i32np, time);
+    }
+
+    /**
+     * \brief Set this event to represent a missed event count.
+     *
+     * \param time the timestamp
+     *
+     * \param count number of missed events
+     *
+     * \return \c *this
+     */
+    auto assign_missed_events(i64np time, u16np count) noexcept
+        -> swabian_tag_event & {
+        return assign_fields(tag_type::missed_events, count, 0_i32np, time);
+    }
+
     /** \brief Equality comparison operator. */
     friend auto operator==(swabian_tag_event const &lhs,
                            swabian_tag_event const &rhs) noexcept -> bool {
@@ -108,6 +170,28 @@ struct swabian_tag_event {
                     << ", missed=" << e.missed_event_count()
                     << ", channel=" << e.channel() << ", time=" << e.time()
                     << ")";
+    }
+
+  private:
+    auto assign_fields(tag_type type, u16np missed, i32np channel,
+                       i64np time) noexcept -> swabian_tag_event & {
+        bytes[0] = std::byte(type);
+        bytes[1] = std::byte(0); // Padding
+        bytes[2] = std::byte(u8np(missed).value());
+        bytes[3] = std::byte(u8np(missed >> 8).value());
+        bytes[4] = std::byte(u8np(channel).value());
+        bytes[5] = std::byte(u8np(channel >> 8).value());
+        bytes[6] = std::byte(u8np(channel >> 16).value());
+        bytes[7] = std::byte(u8np(channel >> 24).value());
+        bytes[8] = std::byte(u8np(time).value());
+        bytes[9] = std::byte(u8np(time >> 8).value());
+        bytes[10] = std::byte(u8np(time >> 16).value());
+        bytes[11] = std::byte(u8np(time >> 24).value());
+        bytes[12] = std::byte(u8np(time >> 32).value());
+        bytes[13] = std::byte(u8np(time >> 40).value());
+        bytes[14] = std::byte(u8np(time >> 48).value());
+        bytes[15] = std::byte(u8np(time >> 56).value());
+        return *this;
     }
 };
 

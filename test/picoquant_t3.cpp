@@ -6,7 +6,6 @@
 
 #include "libtcspc/picoquant_t3.hpp"
 
-#include "libtcspc/span.hpp"
 #include "libtcspc/test_utils.hpp"
 
 #include <catch2/catch_all.hpp>
