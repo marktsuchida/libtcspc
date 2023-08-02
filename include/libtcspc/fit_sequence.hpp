@@ -63,15 +63,6 @@ struct start_and_interval_event {
         return stream << "start_and_interval(" << event.abstime << ", "
                       << event.interval << ')';
     }
-
-    /** \brief Approximate equality for unit testing. */
-    friend auto
-    approximately_equal(start_and_interval_event const &lhs,
-                        start_and_interval_event const &rhs) noexcept -> bool {
-        double e_interval = 1e-6 * 0.5 * (lhs.interval + rhs.interval);
-        return lhs.abstime == rhs.abstime &&
-               std::abs(lhs.interval - rhs.interval) < e_interval;
-    }
 };
 
 namespace internal {

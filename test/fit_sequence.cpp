@@ -63,7 +63,11 @@ TEST_CASE("fit arithmetic time sequence", "[fit_arithmetic_time_sequence]") {
         in.feed(e0{5});
         in.feed(e0{7});
         in.feed(e0{10});
-        REQUIRE(out.check_approx(start_and_interval_event<>{5, 1.4}));
+        auto const out_event = out.retrieve<start_and_interval_event<>>();
+        REQUIRE(out_event.has_value());
+        REQUIRE(out_event->abstime == 5);
+        REQUIRE_THAT(out_event->interval,
+                     Catch::Matchers::WithinRel(1.4, 1e-6));
         in.feed_end();
         REQUIRE(out.check_end());
     }
@@ -108,7 +112,11 @@ TEST_CASE("fit arithmetic time sequence time bound, signed abstime",
         in.feed(e0{0});
         for (int i = 0; i < 998; ++i)
             in.feed(e0{i * abstime_type(100)});
-        REQUIRE(out.check_approx(start_and_interval_event<>{-199, 99.9982}));
+        auto const out_event = out.retrieve<start_and_interval_event<>>();
+        REQUIRE(out_event.has_value());
+        REQUIRE(out_event->abstime == -199);
+        REQUIRE_THAT(out_event->interval,
+                     Catch::Matchers::WithinRel(99.9982, 1e-6));
         in.feed_end();
         REQUIRE(out.check_end());
     }
@@ -134,7 +142,12 @@ TEST_CASE("fit arithmetic time sequence time bound, unsigned abstime",
         // Time bound criterion would be that estimated start time is
         // 99900 - 1000 * 100 = -100, but we handle this despite using an
         // unsigned abstime
-        REQUIRE(out.check_approx(start_and_interval_event<traits>{0, 100.0}));
+        auto const out_event =
+            out.retrieve<start_and_interval_event<traits>>();
+        REQUIRE(out_event.has_value());
+        REQUIRE(out_event->abstime == 0);
+        REQUIRE_THAT(out_event->interval,
+                     Catch::Matchers::WithinRel(100.0, 1e-6));
         in.feed_end();
         REQUIRE(out.check_end());
     }

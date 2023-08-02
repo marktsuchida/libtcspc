@@ -46,28 +46,6 @@ template <typename EventSet> class capture_output {
         }
     }
 
-    template <typename Event, typename Equal,
-              typename = std::enable_if_t<contains_event_v<EventSet, Event>>>
-    auto check_impl(Event const &event, Equal is_equal) -> bool {
-        assert(!end_of_life);
-        event_variant<EventSet> expected = event;
-        if (!output.empty() && is_equal(output.front(), expected)) {
-            output.pop();
-            return true;
-        }
-        end_of_life = true;
-        if (!suppress_output) {
-            std::ostringstream stream;
-            stream << "expected output: " << event << '\n';
-            if (output.empty()) {
-                stream << "found no output\n";
-            }
-            dump_output(stream);
-            std::fputs(stream.str().c_str(), stderr);
-        }
-        return false;
-    }
-
   public:
     explicit capture_output(bool suppress_output = false)
         : suppress_output(suppress_output) {}
@@ -148,15 +126,23 @@ template <typename EventSet> class capture_output {
     template <typename Event,
               typename = std::enable_if_t<contains_event_v<EventSet, Event>>>
     auto check(Event const &event) -> bool {
-        return check_impl(event, std::equal_to<>());
-    }
-
-    template <typename Event,
-              typename = std::enable_if_t<contains_event_v<EventSet, Event>>>
-    auto check_approx(Event const &event) -> bool {
-        return check_impl(event, [](auto const &lhs, auto const &rhs) {
-            return approximately_equal(lhs, rhs);
-        });
+        assert(!end_of_life);
+        event_variant<EventSet> expected = event;
+        if (!output.empty() && output.front() == expected) {
+            output.pop();
+            return true;
+        }
+        end_of_life = true;
+        if (!suppress_output) {
+            std::ostringstream stream;
+            stream << "expected output: " << event << '\n';
+            if (output.empty()) {
+                stream << "found no output\n";
+            }
+            dump_output(stream);
+            std::fputs(stream.str().c_str(), stderr);
+        }
+        return false;
     }
 
     [[nodiscard]] auto check_not_end() -> bool {
