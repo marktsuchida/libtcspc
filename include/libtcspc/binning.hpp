@@ -33,20 +33,17 @@ template <typename DataMapper, typename Downstream> class map_to_datapoints {
     explicit map_to_datapoints(DataMapper &&mapper, Downstream &&downstream)
         : mapper(std::move(mapper)), downstream(std::move(downstream)) {}
 
-    void handle_event(event_type const &event) noexcept {
+    void handle(event_type const &event) {
         datapoint_event<data_type> e{event.abstime,
                                      std::invoke(mapper, event)};
-        downstream.handle_event(e);
+        downstream.handle(e);
     }
 
-    template <typename OtherEvent>
-    void handle_event(OtherEvent const &event) noexcept {
-        downstream.handle_event(event);
+    template <typename OtherEvent> void handle(OtherEvent const &event) {
+        downstream.handle(event);
     }
 
-    void handle_end(std::exception_ptr const &error) noexcept {
-        downstream.handle_end(error);
-    }
+    void flush() { downstream.flush(); }
 };
 
 } // namespace internal
@@ -129,22 +126,19 @@ template <typename BinMapper, typename Downstream> class map_to_bins {
         : bin_mapper(std::move(bin_mapper)),
           downstream(std::move(downstream)) {}
 
-    void handle_event(datapoint_event<data_type> const &event) noexcept {
+    void handle(datapoint_event<data_type> const &event) {
         auto bin = std::invoke(bin_mapper, event.value);
         if (bin) {
             bin_increment_event<bin_index_type> e{event.abstime, bin.value()};
-            downstream.handle_event(e);
+            downstream.handle(e);
         }
     }
 
-    template <typename OtherEvent>
-    void handle_event(OtherEvent const &event) noexcept {
-        downstream.handle_event(event);
+    template <typename OtherEvent> void handle(OtherEvent const &event) {
+        downstream.handle(event);
     }
 
-    void handle_end(std::exception_ptr const &error) noexcept {
-        downstream.handle_end(error);
-    }
+    void flush() { downstream.flush(); }
 };
 
 } // namespace internal
@@ -348,35 +342,30 @@ class batch_bin_increments {
     explicit batch_bin_increments(Downstream &&downstream)
         : downstream(downstream) {}
 
-    void handle_event(bin_increment_event<BinIndex> const &event) noexcept {
+    void handle(bin_increment_event<BinIndex> const &event) {
         if (in_batch)
             batch.bin_indices.push_back(event.bin_index);
     }
 
-    void handle_event(StartEvent const &event) noexcept {
+    void handle(StartEvent const &event) {
         batch.bin_indices.clear();
         in_batch = true;
         batch.time_range.start = event.abstime;
     }
 
-    void handle_event(StopEvent const &event) noexcept {
+    void handle(StopEvent const &event) {
         if (in_batch) {
             batch.time_range.stop = event.abstime;
-            downstream.handle_event(std::as_const(batch));
+            downstream.handle(std::as_const(batch));
             in_batch = false;
         }
     }
 
-    template <typename OtherEvent>
-    void handle_event(OtherEvent const &event) noexcept {
-        downstream.handle_event(event);
+    template <typename OtherEvent> void handle(OtherEvent const &event) {
+        downstream.handle(event);
     }
 
-    void handle_end(std::exception_ptr const &error) noexcept {
-        batch.bin_indices.clear();
-        batch.bin_indices.shrink_to_fit();
-        downstream.handle_end(error);
-    }
+    void flush() { downstream.flush(); }
 };
 
 } // namespace internal

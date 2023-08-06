@@ -7,7 +7,6 @@ public_cpp_headers = files(
     'autocopy_span.hpp',
     'bh_spc.hpp',
     'binning.hpp',
-    'broadcast.hpp',
     'buffer.hpp',
     'check_monotonicity.hpp',
     'common.hpp',

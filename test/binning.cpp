@@ -33,8 +33,8 @@ TEST_CASE("Map to datapoints", "[map_to_datapoints][difftime_data_mapper]") {
     REQUIRE(out.check(misc_event{42}));
     in.feed(time_correlated_detection_event<>{{{123}, 0}, 42});
     REQUIRE(out.check(datapoint_event<u16>{123, 42}));
-    in.feed_end();
-    REQUIRE(out.check_end());
+    in.flush();
+    REQUIRE(out.check_flushed());
 }
 
 TEST_CASE("Map to bins", "[map_to_bin]") {
@@ -57,8 +57,8 @@ TEST_CASE("Map to bins", "[map_to_bin]") {
         in.feed(misc_event{42});
         REQUIRE(out.check(misc_event{42}));
         in.feed(datapoint_event<i32>{43, 123});
-        in.feed_end();
-        REQUIRE(out.check_end());
+        in.flush();
+        REQUIRE(out.check_flushed());
     }
 
     SECTION("Simple mapping") {
@@ -77,8 +77,8 @@ TEST_CASE("Map to bins", "[map_to_bin]") {
 
         in.feed(datapoint_event<i32>{0, 10});
         REQUIRE(out.check(bin_increment_event<u32>{0, 52}));
-        in.feed_end();
-        REQUIRE(out.check_end());
+        in.flush();
+        REQUIRE(out.check_flushed());
     }
 }
 
@@ -350,21 +350,21 @@ TEST_CASE("Batch bin increments", "[batch_bin_increments]") {
     SECTION("Pass through unrelated") {
         in.feed(misc_event{42});
         REQUIRE(out.check(misc_event{42}));
-        in.feed_end();
-        REQUIRE(out.check_end());
+        in.flush();
+        REQUIRE(out.check_flushed());
     }
 
     SECTION("Stop before first start ignored") {
         in.feed(stop_event{42});
-        in.feed_end();
-        REQUIRE(out.check_end());
+        in.flush();
+        REQUIRE(out.check_flushed());
     }
 
     SECTION("Start with no stop ignored") {
         in.feed(start_event{42});
         in.feed(bin_increment_event<u32>{43, 123});
-        in.feed_end();
-        REQUIRE(out.check_end());
+        in.flush();
+        REQUIRE(out.check_flushed());
     }
 
     SECTION("Events passed only between start and stop") {
@@ -378,8 +378,8 @@ TEST_CASE("Batch bin increments", "[batch_bin_increments]") {
         in.feed(stop_event{48});
         REQUIRE(
             out.check(bin_increment_batch_event<u32>{{45, 48}, {124, 125}}));
-        in.feed_end();
-        REQUIRE(out.check_end());
+        in.flush();
+        REQUIRE(out.check_flushed());
     }
 }
 

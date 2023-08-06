@@ -28,8 +28,8 @@ TEST_CASE("Generate null timing", "[generate][null_timing_generator]") {
     REQUIRE(out.check(trigger_event{42}));
     in.feed(trigger_event{43});
     REQUIRE(out.check(trigger_event{43}));
-    in.feed_end();
-    REQUIRE(out.check_end());
+    in.flush();
+    REQUIRE(out.check_flushed());
 }
 
 TEST_CASE("Generate one-shot timing",
@@ -48,8 +48,8 @@ TEST_CASE("Generate one-shot timing",
             in.feed(misc_event{42});
             REQUIRE(out.check(misc_event{42}));
         }
-        in.feed_end();
-        REQUIRE(out.check_end());
+        in.flush();
+        REQUIRE(out.check_flushed());
     }
 
     SECTION("Delayed output") {
@@ -75,8 +75,8 @@ TEST_CASE("Generate one-shot timing",
                 REQUIRE(out.check(misc_event{42 + delay + delay}));
             }
         }
-        in.feed_end();
-        REQUIRE(out.check_end());
+        in.flush();
+        REQUIRE(out.check_flushed());
     }
 }
 
@@ -97,8 +97,8 @@ TEST_CASE("Generate linear timing", "[generate][linear_timing_generator]") {
         REQUIRE(out.check(trigger_event{42}));
         in.feed(trigger_event{43 + delay});
         REQUIRE(out.check(trigger_event{43 + delay}));
-        in.feed_end();
-        REQUIRE(out.check_end());
+        in.flush();
+        REQUIRE(out.check_flushed());
     }
 
     SECTION("Count of 1") {
@@ -126,8 +126,8 @@ TEST_CASE("Generate linear timing", "[generate][linear_timing_generator]") {
                     REQUIRE(out.check(misc_event{42 + delay + interval + 1}));
                 }
             }
-            in.feed_end();
-            REQUIRE(out.check_end());
+            in.flush();
+            REQUIRE(out.check_flushed());
         }
     }
 
@@ -152,8 +152,8 @@ TEST_CASE("Generate linear timing", "[generate][linear_timing_generator]") {
         in.feed(misc_event{42 + delay + interval});
         REQUIRE(out.check(output_event{42 + delay + interval}));
         REQUIRE(out.check(misc_event{42 + delay + interval}));
-        in.feed_end();
-        REQUIRE(out.check_end());
+        in.flush();
+        REQUIRE(out.check_flushed());
     }
 }
 

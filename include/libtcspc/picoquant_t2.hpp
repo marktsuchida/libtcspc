@@ -448,19 +448,19 @@ class decode_pqt2 {
 
     Downstream downstream;
 
-    LIBTCSPC_NOINLINE void issue_warning(char const *message) noexcept {
-        downstream.handle_event(warning_event{message});
+    LIBTCSPC_NOINLINE void issue_warning(char const *message) {
+        downstream.handle(warning_event{message});
     }
 
   public:
     explicit decode_pqt2(Downstream &&downstream)
         : downstream(std::move(downstream)) {}
 
-    void handle_event(PQT2Event const &event) noexcept {
+    void handle(PQT2Event const &event) {
         if (event.is_timetag_overflow()) {
             timetag_base += abstime_type(PQT2Event::overflow_period) *
                             event.timetag_overflow_count().value();
-            return downstream.handle_event(
+            return downstream.handle(
                 time_reached_event<DataTraits>{{timetag_base}});
         }
 
@@ -472,7 +472,7 @@ class decode_pqt2 {
         if (not event.is_special() || event.is_sync_event()) {
             abstime_type const timetag =
                 timetag_base + event.timetag().value();
-            downstream.handle_event(detection_event<DataTraits>{
+            downstream.handle(detection_event<DataTraits>{
                 {{timetag},
                  event.is_special() ? -1 : event.channel().value()}});
         } else if (event.is_external_marker()) {
@@ -480,7 +480,7 @@ class decode_pqt2 {
                 timetag_base + event.external_marker_timetag().value();
             auto bits = u32np(event.external_marker_bits());
             while (bits != 0_u32np) {
-                downstream.handle_event(marker_event<DataTraits>{
+                downstream.handle(marker_event<DataTraits>{
                     {{timetag}, count_trailing_zeros_32(bits)}});
                 bits = bits & (bits - 1_u32np); // Clear the handled bit
             }
@@ -489,9 +489,7 @@ class decode_pqt2 {
         }
     }
 
-    void handle_end(std::exception_ptr const &error) noexcept {
-        downstream.handle_end(error);
-    }
+    void flush() { downstream.flush(); }
 };
 
 } // namespace internal

@@ -53,13 +53,11 @@ template <typename InputStream> class ref_input_stream {
 
 class unoptimized_null_sink {
   public:
-    template <typename Event> void handle_event(Event const &event) noexcept {
+    template <typename Event> void handle(Event const &event) {
         benchmark::DoNotOptimize(event);
     }
 
-    static void handle_end(std::exception_ptr const &error) noexcept {
-        benchmark::DoNotOptimize(error);
-    }
+    static void flush(int x = 0) { benchmark::DoNotOptimize(x); }
 };
 
 constexpr std::size_t total_bytes = 1 << 20;

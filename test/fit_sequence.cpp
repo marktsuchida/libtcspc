@@ -68,16 +68,16 @@ TEST_CASE("fit arithmetic time sequence", "[fit_arithmetic_time_sequence]") {
         REQUIRE(out_event->abstime == 5);
         REQUIRE_THAT(out_event->interval,
                      Catch::Matchers::WithinRel(1.4, 1e-6));
-        in.feed_end();
-        REQUIRE(out.check_end());
+        in.flush();
+        REQUIRE(out.check_flushed());
     }
 
     SECTION("fit fails") {
         in.feed(e0{100});
         in.feed(e0{5});
         in.feed(e0{7});
-        in.feed(e0{10});
-        REQUIRE_THROWS(out.check_end());
+        REQUIRE_THROWS(in.feed(e0{10}));
+        REQUIRE(out.check_not_flushed());
     }
 }
 
@@ -102,9 +102,9 @@ TEST_CASE("fit arithmetic time sequence time bound, signed abstime",
             in.feed(e0{i * abstime_type(100)});
         static constexpr abstime_type offset = 2000;
         in.feed(e0{99800 - offset});
-        in.feed(e0{99900 + offset});
-        REQUIRE_THROWS_WITH(out.check_end(),
+        REQUIRE_THROWS_WITH(in.feed(e0{99900 + offset}),
                             Catch::Matchers::ContainsSubstring("time bound"));
+        REQUIRE(out.check_not_flushed());
     }
 
     SECTION("correctly handle negative estimated start time") {
@@ -117,8 +117,8 @@ TEST_CASE("fit arithmetic time sequence time bound, signed abstime",
         REQUIRE(out_event->abstime == -199);
         REQUIRE_THAT(out_event->interval,
                      Catch::Matchers::WithinRel(99.9982, 1e-6));
-        in.feed_end();
-        REQUIRE(out.check_end());
+        in.flush();
+        REQUIRE(out.check_flushed());
     }
 }
 
@@ -148,8 +148,8 @@ TEST_CASE("fit arithmetic time sequence time bound, unsigned abstime",
         REQUIRE(out_event->abstime == 0);
         REQUIRE_THAT(out_event->interval,
                      Catch::Matchers::WithinRel(100.0, 1e-6));
-        in.feed_end();
-        REQUIRE(out.check_end());
+        in.flush();
+        REQUIRE(out.check_flushed());
     }
 
     SECTION("fail with time bound error") {
@@ -158,18 +158,19 @@ TEST_CASE("fit arithmetic time sequence time bound, unsigned abstime",
             in.feed(e0{i * abstime_type(100)});
         static constexpr abstime_type offset = 2000;
         in.feed(e0{99800 - offset});
-        in.feed(e0{99900 + offset});
-        REQUIRE_THROWS_WITH(out.check_end(),
+        REQUIRE_THROWS_WITH(in.feed(e0{99900 + offset}),
                             Catch::Matchers::ContainsSubstring("time bound"));
+        REQUIRE(out.check_not_flushed());
     }
 
     SECTION("fail because of negative estimated start time") {
         in.feed(e0{0});
         in.feed(e0{0});
-        for (abstime_type i = 0; i < 998; ++i)
+        for (abstime_type i = 0; i < 997; ++i)
             in.feed(e0{i * abstime_type(100)});
-        REQUIRE_THROWS_WITH(out.check_end(),
+        REQUIRE_THROWS_WITH(in.feed(e0{997 * abstime_type(100)}),
                             Catch::Matchers::ContainsSubstring("unsigned"));
+        REQUIRE(out.check_not_flushed());
     }
 }
 

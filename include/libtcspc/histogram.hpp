@@ -38,7 +38,6 @@ class histogram {
         std::is_same_v<OverflowStrategy, saturate_on_overflow>,
         saturate_on_internal_overflow, stop_on_internal_overflow>;
 
-    bool finished = false;
     // NOLINTNEXTLINE(cppcoreguidelines-avoid-c-arrays,modernize-avoid-c-arrays)
     std::unique_ptr<bin_type[]> hist_mem;
     span<bin_type> hist;
@@ -48,11 +47,10 @@ class histogram {
     abstime_range<typename DataTraits::abstime_type> time_range;
     Downstream downstream;
 
-    void emit_concluding(bool end_of_stream) noexcept {
-        auto const che = concluding_histogram_event<Bin, DataTraits>{
+    void emit_concluding(bool end_of_stream) {
+        downstream.handle(concluding_histogram_event<Bin, DataTraits>{
             time_range, autocopy_span<bin_type>(hist), stats, 0,
-            end_of_stream};
-        downstream.handle_event(che);
+            end_of_stream});
     }
 
     void reset() noexcept {
@@ -61,10 +59,36 @@ class histogram {
         time_range.reset();
     }
 
-    void finish(std::exception_ptr const &error) noexcept {
-        finished = true;
-        hist_mem.reset();
-        downstream.handle_end(error);
+    [[noreturn]] void stop() {
+        downstream.flush();
+        throw end_processing();
+    }
+
+    [[noreturn]] void overflow_error() {
+        throw histogram_overflow_error("histogram bin overflowed");
+    }
+
+    void
+    handle_overflow(bin_increment_event<BinIndex, DataTraits> const &event) {
+        if constexpr (std::is_same_v<OverflowStrategy, saturate_on_overflow>) {
+            unreachable();
+        } else if constexpr (std::is_same_v<OverflowStrategy,
+                                            reset_on_overflow>) {
+            if (shist.max_per_bin() == 0)
+                overflow_error();
+            emit_concluding(false);
+            reset();
+            return handle(event); // Recurse max once
+        } else if constexpr (std::is_same_v<OverflowStrategy,
+                                            stop_on_overflow>) {
+            emit_concluding(true);
+            stop();
+        } else if constexpr (std::is_same_v<OverflowStrategy,
+                                            error_on_overflow>) {
+            overflow_error();
+        } else {
+            static_assert(false_for_type<OverflowStrategy>::value);
+        }
     }
 
   public:
@@ -75,60 +99,26 @@ class histogram {
         shist.clear();
     }
 
-    void handle_event(
-        bin_increment_event<BinIndex, DataTraits> const &event) noexcept {
-        if (finished)
-            return;
-
-        if (not shist.apply_increments({&event.bin_index, 1}, stats)) {
-            if constexpr (std::is_same_v<OverflowStrategy,
-                                         saturate_on_overflow>) {
-                unreachable();
-            } else if constexpr (std::is_same_v<OverflowStrategy,
-                                                reset_on_overflow>) {
-                if (shist.max_per_bin() == 0) {
-                    return finish(std::make_exception_ptr(
-                        histogram_overflow_error("histogram bin overflowed")));
-                }
-                emit_concluding(false);
-                reset();
-                return handle_event(event); // Recurse max once
-            } else if constexpr (std::is_same_v<OverflowStrategy,
-                                                stop_on_overflow>) {
-                emit_concluding(true);
-                return finish({});
-            } else if constexpr (std::is_same_v<OverflowStrategy,
-                                                error_on_overflow>) {
-                return finish(std::make_exception_ptr(
-                    histogram_overflow_error("histogram bin overflowed")));
-            } else {
-                static_assert(false_for_type<OverflowStrategy>::value);
-            }
-        }
+    void handle(bin_increment_event<BinIndex, DataTraits> const &event) {
+        if (not shist.apply_increments({&event.bin_index, 1}, stats))
+            return handle_overflow(event);
         time_range.extend(event.abstime);
-        auto const he = histogram_event<bin_type, DataTraits>{
-            time_range, autocopy_span<Bin>(hist), stats};
-        downstream.handle_event(he);
+        downstream.handle(histogram_event<bin_type, DataTraits>{
+            time_range, autocopy_span<Bin>(hist), stats});
     }
 
-    void handle_event([[maybe_unused]] ResetEvent const &event) noexcept {
-        if (finished)
-            return;
+    void handle([[maybe_unused]] ResetEvent const &event) {
         emit_concluding(false);
         reset();
     }
 
-    template <typename OtherEvent>
-    void handle_event(OtherEvent const &event) noexcept {
-        if (!finished)
-            downstream.handle_event(event);
+    template <typename OtherEvent> void handle(OtherEvent const &event) {
+        downstream.handle(event);
     }
 
-    void handle_end(std::exception_ptr const &error) noexcept {
-        if (finished)
-            return;
+    void flush() {
         emit_concluding(true);
-        finish(error);
+        downstream.flush();
     }
 };
 

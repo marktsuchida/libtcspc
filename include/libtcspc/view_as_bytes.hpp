@@ -27,14 +27,12 @@ template <typename Event, typename Downstream> class view_as_bytes {
     explicit view_as_bytes(Downstream &&downstream)
         : downstream(std::move(downstream)) {}
 
-    void handle_event(Event const &event) noexcept {
-        downstream.handle_event(
+    void handle(Event const &event) {
+        downstream.handle(
             autocopy_span<std::byte const>(as_bytes(span(&event, 1))));
     }
 
-    void handle_end(std::exception_ptr const &error) noexcept {
-        downstream.handle_end(error);
-    }
+    void flush() { downstream.flush(); }
 };
 
 template <typename Event, typename Downstream>
@@ -46,14 +44,12 @@ class view_as_bytes<std::vector<Event>, Downstream> {
     explicit view_as_bytes(Downstream &&downstream)
         : downstream(std::move(downstream)) {}
 
-    void handle_event(std::vector<Event> const &event) noexcept {
-        downstream.handle_event(
+    void handle(std::vector<Event> const &event) {
+        downstream.handle(
             autocopy_span<std::byte const>(as_bytes(span(event))));
     }
 
-    void handle_end(std::exception_ptr const &error) noexcept {
-        downstream.handle_end(error);
-    }
+    void flush() { downstream.flush(); }
 };
 
 template <typename Event, typename Downstream> class view_histogram_as_bytes {
@@ -63,14 +59,11 @@ template <typename Event, typename Downstream> class view_histogram_as_bytes {
     explicit view_histogram_as_bytes(Downstream &&downstream)
         : downstream(std::move(downstream)) {}
 
-    void handle_event(Event const &event) noexcept {
-        downstream.handle_event(
-            autocopy_span(as_bytes(event.histogram.as_span())));
+    void handle(Event const &event) {
+        downstream.handle(autocopy_span(as_bytes(event.histogram.as_span())));
     }
 
-    void handle_end(std::exception_ptr const &error) noexcept {
-        downstream.handle_end(error);
-    }
+    void flush() { downstream.flush(); }
 };
 
 template <typename Event, typename Downstream>
@@ -81,14 +74,12 @@ class view_histogram_array_as_bytes {
     explicit view_histogram_array_as_bytes(Downstream &&downstream)
         : downstream(std::move(downstream)) {}
 
-    void handle_event(Event const &event) noexcept {
-        downstream.handle_event(
+    void handle(Event const &event) {
+        downstream.handle(
             autocopy_span(as_bytes(event.histogram_array.as_span())));
     }
 
-    void handle_end(std::exception_ptr const &error) noexcept {
-        downstream.handle_end(error);
-    }
+    void flush() { downstream.flush(); }
 };
 
 } // namespace internal

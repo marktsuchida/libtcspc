@@ -20,7 +20,7 @@ using e2 = timestamped_test_event<2>;
 using e3 = timestamped_test_event<3>;
 using all_events = event_set<e0, e1, e2, e3>;
 
-TEST_CASE("Merge with error on one input", "[merge]") {
+TEST_CASE("Merge", "[merge]") {
     // The two merge inputs have different types. Wrap them so they can be
     // swapped for symmetric tests.
     // in_0 -> ref -> min0 -> merge_impl -> out
@@ -48,78 +48,11 @@ TEST_CASE("Merge with error on one input", "[merge]") {
     auto in_y = feed_input<all_events>(std::move(min_y));
     in_y.require_output_checked(out);
 
-    SECTION("Error on in_x with no pending events") {
-        in_x.feed_end(std::make_exception_ptr(std::runtime_error("test")));
-        REQUIRE_THROWS_AS(out.check_end(), std::runtime_error);
-
-        // Other input must accept up to end of stream, but not emit anything
-
-        SECTION("No further input") {
-            in_y.feed_end();
-            REQUIRE_THROWS_AS(out.check_end(), std::runtime_error);
-        }
-
-        SECTION("Further input on in_y") {
-            in_y.feed(e2{});
-            in_y.feed_end();
-            REQUIRE_THROWS_AS(out.check_end(), std::runtime_error);
-        }
-    }
-
-    SECTION("Error on in_x with events pending on in_x") {
-        in_x.feed(e0{0});
-        REQUIRE(out.check_not_end());
-        in_x.feed_end(std::make_exception_ptr(std::runtime_error("test")));
-        // Pending events are discarded
-        REQUIRE_THROWS_AS(out.check_end(), std::runtime_error);
-
-        // Other input must accept up to end of stream, but not emit anything
-
-        SECTION("No further input") {
-            in_y.feed_end();
-            REQUIRE_THROWS_AS(out.check_end(), std::runtime_error);
-        }
-
-        SECTION("Further input on in_y") {
-            in_y.feed(e2{});
-            in_y.feed_end();
-            REQUIRE_THROWS_AS(out.check_end(), std::runtime_error);
-        }
-    }
-
-    SECTION("Error on in_x with events pending on in_y") {
-        in_y.feed(e0{0});
-        REQUIRE(out.check_not_end());
-        in_x.feed_end(std::make_exception_ptr(std::runtime_error("test")));
-        // Pending events are discarded
-        REQUIRE_THROWS_AS(out.check_end(), std::runtime_error);
-
-        // Other input must accept up to end of stream, but not emit anything
-
-        SECTION("No further input") {
-            in_y.feed_end();
-            REQUIRE_THROWS_AS(out.check_end(), std::runtime_error);
-        }
-
-        SECTION("Further input on in_y") {
-            in_y.feed(e2{});
-            in_y.feed_end();
-            REQUIRE_THROWS_AS(out.check_end(), std::runtime_error);
-        }
-    }
-
     SECTION("Empty yields empty") {
-        in_x.feed_end();
-        REQUIRE(out.check_not_end());
-        in_y.feed_end();
-        REQUIRE(out.check_end());
-    }
-
-    SECTION("Error on both inputs") {
-        in_x.feed_end(std::make_exception_ptr(std::runtime_error("test_x")));
-        REQUIRE_THROWS_AS(out.check_end(), std::runtime_error);
-        in_y.feed_end(std::make_exception_ptr(std::runtime_error("test_y")));
-        REQUIRE_THROWS_AS(out.check_end(), std::runtime_error);
+        in_x.flush();
+        REQUIRE(out.check_not_flushed());
+        in_y.flush();
+        REQUIRE(out.check_flushed());
     }
 
     SECTION("Events from in_0 emitted before those from in_1") {
@@ -131,21 +64,21 @@ TEST_CASE("Merge with error on one input", "[merge]") {
         REQUIRE(out.check(e2{42}));
 
         SECTION("End in_0 first") {
-            in_0.feed_end();
+            in_0.flush();
             REQUIRE(out.check(e1{42}));
             REQUIRE(out.check(e3{42}));
-            REQUIRE(out.check_not_end());
-            in_1.feed_end();
-            REQUIRE(out.check_end());
+            REQUIRE(out.check_not_flushed());
+            in_1.flush();
+            REQUIRE(out.check_flushed());
         }
 
         SECTION("End in_1 first") {
-            in_1.feed_end();
-            REQUIRE(out.check_not_end());
-            in_0.feed_end();
+            in_1.flush();
+            REQUIRE(out.check_not_flushed());
+            in_0.flush();
             REQUIRE(out.check(e1{42}));
             REQUIRE(out.check(e3{42}));
-            REQUIRE(out.check_end());
+            REQUIRE(out.check_flushed());
         }
     }
 
@@ -157,19 +90,37 @@ TEST_CASE("Merge with error on one input", "[merge]") {
         REQUIRE(out.check(e1{2}));
 
         SECTION("End in_x first") {
-            in_x.feed_end();
-            REQUIRE(out.check_not_end());
-            in_y.feed_end();
+            in_x.flush();
+            REQUIRE(out.check_not_flushed());
+            in_y.flush();
             REQUIRE(out.check(e0{3}));
-            REQUIRE(out.check_end());
+            REQUIRE(out.check_flushed());
+        }
+
+        SECTION("End in_x, additional y input") {
+            in_x.flush();
+            in_y.feed(e1{4});
+            REQUIRE(out.check(e0{3}));
+            REQUIRE(out.check(e1{4}));
+            in_y.flush();
+            REQUIRE(out.check_flushed());
         }
 
         SECTION("End in_y first") {
-            in_y.feed_end();
+            in_y.flush();
             REQUIRE(out.check(e0{3}));
-            REQUIRE(out.check_not_end());
-            in_x.feed_end();
-            REQUIRE(out.check_end());
+            REQUIRE(out.check_not_flushed());
+            in_x.flush();
+            REQUIRE(out.check_flushed());
+        }
+
+        SECTION("End in_y, additional x input") {
+            in_y.flush();
+            REQUIRE(out.check(e0{3}));
+            in_x.feed(e0{4});
+            REQUIRE(out.check(e0{4}));
+            in_x.flush();
+            REQUIRE(out.check_flushed());
         }
     }
 
@@ -183,19 +134,19 @@ TEST_CASE("Merge with error on one input", "[merge]") {
         REQUIRE(out.check(e1{3}));
 
         SECTION("End in_x first") {
-            in_x.feed_end();
-            REQUIRE(out.check_not_end());
-            in_y.feed_end();
+            in_x.flush();
+            REQUIRE(out.check_not_flushed());
+            in_y.flush();
             REQUIRE(out.check(e0{4}));
-            REQUIRE(out.check_end());
+            REQUIRE(out.check_flushed());
         }
 
         SECTION("End in_y first") {
-            in_y.feed_end();
+            in_y.flush();
             REQUIRE(out.check(e0{4}));
-            REQUIRE(out.check_not_end());
-            in_x.feed_end();
-            REQUIRE(out.check_end());
+            REQUIRE(out.check_not_flushed());
+            in_x.flush();
+            REQUIRE(out.check_flushed());
         }
     }
 }
@@ -228,21 +179,21 @@ TEST_CASE("Merge max time shift", "[merge]") {
         REQUIRE(out.check(e0{0}));
 
         SECTION("End in_x first") {
-            in_x.feed_end();
-            REQUIRE(out.check_not_end());
-            in_y.feed_end();
+            in_x.flush();
+            REQUIRE(out.check_not_flushed());
+            in_y.flush();
             REQUIRE(out.check(e0{10}));
             REQUIRE(out.check(e0{11}));
-            REQUIRE(out.check_end());
+            REQUIRE(out.check_flushed());
         }
 
         SECTION("End in_y first") {
-            in_y.feed_end();
+            in_y.flush();
             REQUIRE(out.check(e0{10}));
             REQUIRE(out.check(e0{11}));
-            REQUIRE(out.check_not_end());
-            in_x.feed_end();
-            REQUIRE(out.check_end());
+            REQUIRE(out.check_not_flushed());
+            in_x.flush();
+            REQUIRE(out.check_flushed());
         }
     }
 }
@@ -269,8 +220,8 @@ TEST_CASE("merge N streams", "[merge_n]") {
         in.require_output_checked(out);
         in.feed(e0{0});
         REQUIRE(out.check(e0{0}));
-        in.feed_end();
-        REQUIRE(out.check_end());
+        in.flush();
+        REQUIRE(out.check_flushed());
     }
 
     SECTION("Multi-stream merge_n can be instantiated") {

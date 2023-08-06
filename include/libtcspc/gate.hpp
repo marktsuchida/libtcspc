@@ -27,25 +27,22 @@ class gate {
     explicit gate(bool initially_open, Downstream &&downstream)
         : open(initially_open), downstream(std::move(downstream)) {}
 
-    void handle_event(OpenEvent const &event) noexcept {
+    void handle(OpenEvent const &event) {
         open = true;
-        downstream.handle_event(event);
+        downstream.handle(event);
     }
 
-    void handle_event(CloseEvent const &event) noexcept {
+    void handle(CloseEvent const &event) {
         open = false;
-        downstream.handle_event(event);
+        downstream.handle(event);
     }
 
-    template <typename OtherEvent>
-    void handle_event(OtherEvent const &event) noexcept {
+    template <typename OtherEvent> void handle(OtherEvent const &event) {
         if (!contains_event_v<EventSetToGate, OtherEvent> || open)
-            downstream.handle_event(event);
+            downstream.handle(event);
     }
 
-    void handle_end(std::exception_ptr const &error) noexcept {
-        downstream.handle_end(error);
-    }
+    void flush() { downstream.flush(); }
 };
 
 } // namespace internal

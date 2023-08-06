@@ -133,30 +133,33 @@ types should be documented with Doxygen comments (follow existing practice).
 - Avoid reference data members
   - These also prevent assignment. If you think a reference data member is
     necessary due to interfacing constraints, consider using a pointer instead.
-- The `handle_end()` function
-  - `void handle_end(std::exception_ptr const &error) noexcept`
-  - The parameter should almost always be passed by `const &` unless it will be
-    stored (moved) (copying and destroying `exception_ptr` may be expensive).
 - Event handlers
-  - `void handle_event(MyEvent const &event) noexcept`
+  - `void handle(MyEvent const &event)` (never `noexcept`)
   - The parameter should almost always be passed by `const &` unless it will be
     stored (moved).
   - For specific events, use overloads; for generic events (e.g., for
     processors that pass through unrelated events), use a member function
     template:
-    `template <typename AnyEvent> void handle_event(AnyEvent const &event) noexcept`.
-  - Event handlers must not throw. If there is an error, they should call
-    `handle_end()` on the downstream (and arange to ignore subsequent events).
+    `template <typename AnyEvent> void handle(AnyEvent const &event)`.
+  - Event handlers may throw (see below).
+- The `flush()` function
+  - `void flush()` (never `noexcept`)
+  - This function is called when the stream of events ends without an error.
+    Implementations should flush any beffered events and call the downstream's
+    `flush()`.
+  - `flush()` may throw (see below).
 - Calling downstream event handlers
   - Downstream event handlers may be called within event handlers and
-    `handle_end`. They may not be called during processor construction or
+    `flush()`. They may not be called during processor construction or
     destruction.
     - So if there is an event that must be sent at the beginning of the stream,
       it must be sent lazily upon receiving the first event (or the end of an
       empty stream). This seems to be rarely needed.
     - Exception: Buffering processors may emit events from an asynchronous
-      context (but still not in the constructor or destructor).
-  - When calling the downstream processor's event handler, and the event to be
+      context (but still not in the constructor or destructor). This can be
+      seen as the buffering processor acting as a sink to one stream and a
+      source to another, rather than a processor within a single stream.
+  - When calling the downstream processor's event handler, if the event to be
     passed will later be reused (and therefore should have its value
     preserved), always wrap in `std::as_const()`.
     - Usually this is simply a safety check in case the downstream processor
@@ -165,31 +168,30 @@ types should be documented with Doxygen comments (follow existing practice).
       `std::as_const()` should not be applied.
     - In theory, we could get better performance in a few cases by modifying
       events in place. This would require all processors to implement rvalue
-      ref versions of `handle_event` in addition to the const lvalue ref
-      version. We do not currently take advantage of this, as it is not clear
-      that it will make a significant difference.
+      ref versions of `handle()` in addition to the const lvalue ref version.
+      We do not currently take advantage of this, as it is not clear that it
+      will make a significant difference.
 - Ending the event stream
-  - The downstream processor's `handle_end` may be called within event handlers
-    and `handle_end`. It may not be called during processor construction or
-    destruction.
-    - Exception: Buffering processors may emit end-of-stream from an
-      asynchronous context (but still not in the constructor or destructor).
-  - Calls to the downstream processor's event handlers can be in any order.
-    However, a call to the downstream's `handle_end` must occur at most once,
-    after which no event handlers may be called.
-    - Note that this means processors need to discard received events from
-      upstream if it has stopped processing on its own accord because it had an
-      error or because it detected the end of data of interest.
-    - Processors need not check for unexpected events following the end of
-      stream.
-  - `handle_end` must call the downstream's `handle_end` if it has not yet been
-    called.
-    - The application usually relies on the end-of-stream being propagated in
-      this manner to know when processing has finished (or failed) and the
-      processor chain can be destroyed (and also the data source may be
-      stopped).
-  - Processors must be safe to destroy without having called `handle_end`.
-    - This applies whether or not any events were received.
+  - If the event stream ends because the source reached an end, the source
+    calls `flush()` on the first processor; this is propagated down the chain
+    to flush all processors in order.
+  - If a processor, while handling an event or a flush, determines that
+    processing should stop (because the end of the data of interest was
+    detected), it should call `flush()` on the downstream and throw
+    `end_processing`.
+  - If a processor, while handling an event or a flush, encounters an error, it
+    should (without flushing the downstream) throw an exception derived from
+    `std::exception`.
+  - `flush()` must not be called in processor constructors and destructors,
+    only event handlers and `flush()`.
+  - Each processor's `flush()` may be called at most once during its lifetime,
+    and never after one of its event handlers has thrown.
+  - Event handlers may not be called on a thrown or flushed processor.
+  - The `merge` processor provides special behavior, allowing both upstreams to
+    be flushed independently.
+  - Because `flush()` is only called and propagated on successful end of the
+    stream, user code must arrange to notify the ultimate sink(s) when the
+    stream is halted by an error, if necessary.
 - Equality comparison and stream insertion operators are unnecessary for
   processors.
 - An overload of the `swap` function is generally unnecessary for processors.

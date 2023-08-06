@@ -49,59 +49,62 @@ constexpr std::size_t total_bytes = 1 << 20;
 } // namespace
 
 void ofstream_unbuf(benchmark::State &state) {
-    auto stream =
-        internal::unbuffered_binary_ofstream_output_stream("/dev/null");
+    auto stream = internal::unbuffered_binary_ofstream_output_stream(
+        "/dev/null", false, true);
     auto const write_size = static_cast<std::size_t>(state.range(0));
     auto const num_writes = total_bytes / write_size;
     std::vector<std::byte> data(write_size);
     auto pool = std::make_shared<object_pool<std::vector<std::byte>>>();
     for ([[maybe_unused]] auto _ : state) {
-        auto proc = write_binary_stream(ref_output_stream(stream), pool,
-                                        write_size, null_sink());
+        auto proc =
+            write_binary_stream(ref_output_stream(stream), pool, write_size);
         for (auto n = num_writes; n > 0; --n)
-            proc.handle_event(autocopy_span(data));
+            proc.handle(autocopy_span(data));
     }
 }
 
 void ofstream(benchmark::State &state) {
-    auto stream = internal::binary_ofstream_output_stream("/dev/null");
+    auto stream =
+        internal::binary_ofstream_output_stream("/dev/null", false, true);
     auto const write_size = static_cast<std::size_t>(state.range(0));
     auto const num_writes = total_bytes / write_size;
     std::vector<std::byte> data(write_size);
     auto pool = std::make_shared<object_pool<std::vector<std::byte>>>();
     for ([[maybe_unused]] auto _ : state) {
-        auto proc = write_binary_stream(ref_output_stream(stream), pool,
-                                        write_size, null_sink());
+        auto proc =
+            write_binary_stream(ref_output_stream(stream), pool, write_size);
         for (auto n = num_writes; n > 0; --n)
-            proc.handle_event(autocopy_span(data));
+            proc.handle(autocopy_span(data));
     }
 }
 
 void cfile_unbuf(benchmark::State &state) {
-    auto stream = internal::unbuffered_binary_cfile_output_stream("/dev/null");
+    auto stream = internal::unbuffered_binary_cfile_output_stream("/dev/null",
+                                                                  false, true);
     auto const write_size = static_cast<std::size_t>(state.range(0));
     auto const num_writes = total_bytes / write_size;
     std::vector<std::byte> data(write_size);
     auto pool = std::make_shared<object_pool<std::vector<std::byte>>>();
     for ([[maybe_unused]] auto _ : state) {
-        auto proc = write_binary_stream(ref_output_stream(stream), pool,
-                                        write_size, null_sink());
+        auto proc =
+            write_binary_stream(ref_output_stream(stream), pool, write_size);
         for (auto n = num_writes; n > 0; --n)
-            proc.handle_event(autocopy_span(data));
+            proc.handle(autocopy_span(data));
     }
 }
 
 void cfile(benchmark::State &state) {
-    auto stream = internal::binary_cfile_output_stream("/dev/null");
+    auto stream =
+        internal::binary_cfile_output_stream("/dev/null", false, true);
     auto const write_size = static_cast<std::size_t>(state.range(0));
     auto const num_writes = total_bytes / write_size;
     std::vector<std::byte> data(write_size);
     auto pool = std::make_shared<object_pool<std::vector<std::byte>>>();
     for ([[maybe_unused]] auto _ : state) {
-        auto proc = write_binary_stream(ref_output_stream(stream), pool,
-                                        write_size, null_sink());
+        auto proc =
+            write_binary_stream(ref_output_stream(stream), pool, write_size);
         for (auto n = num_writes; n > 0; --n)
-            proc.handle_event(autocopy_span(data));
+            proc.handle(autocopy_span(data));
     }
 }
 

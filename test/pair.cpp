@@ -25,8 +25,8 @@ TEST_CASE("pair all", "[pair_all]") {
     in.require_output_checked(out);
 
     SECTION("empty stream") {
-        in.feed_end();
-        REQUIRE(out.check_end());
+        in.flush();
+        REQUIRE(out.check_flushed());
     }
 
     SECTION("stops following starts") {
@@ -55,8 +55,8 @@ TEST_CASE("pair all", "[pair_all]") {
         REQUIRE(out.check(detection_pair_event<>{{{{3}, 0}}, {{{3}, 1}}}));
         REQUIRE(out.check(detection_event<>{{{3}, 1}}));
 
-        in.feed_end();
-        REQUIRE(out.check_end());
+        in.flush();
+        REQUIRE(out.check_flushed());
     }
 
     SECTION("starts following stops") {
@@ -82,8 +82,8 @@ TEST_CASE("pair all", "[pair_all]") {
         in.feed(detection_event<>{{{3}, 0}});
         REQUIRE(out.check(detection_event<>{{{3}, 0}}));
 
-        in.feed_end();
-        REQUIRE(out.check_end());
+        in.flush();
+        REQUIRE(out.check_flushed());
     }
 }
 
@@ -113,8 +113,8 @@ TEST_CASE("pair all with self", "[pair_all]") {
     REQUIRE(out.check(detection_pair_event<>{{{{2}, 0}}, {{{3}, 0}}}));
     REQUIRE(out.check(detection_event<>{{{3}, 0}}));
 
-    in.feed_end();
-    REQUIRE(out.check_end());
+    in.flush();
+    REQUIRE(out.check_flushed());
 }
 
 TEST_CASE("pair one", "[pair_one]") {
@@ -127,8 +127,8 @@ TEST_CASE("pair one", "[pair_one]") {
     in.require_output_checked(out);
 
     SECTION("empty stream") {
-        in.feed_end();
-        REQUIRE(out.check_end());
+        in.flush();
+        REQUIRE(out.check_flushed());
     }
 
     SECTION("stops following starts") {
@@ -153,8 +153,8 @@ TEST_CASE("pair one", "[pair_one]") {
         REQUIRE(out.check(detection_pair_event<>{{{{3}, 0}}, {{{3}, 1}}}));
         REQUIRE(out.check(detection_event<>{{{3}, 1}}));
 
-        in.feed_end();
-        REQUIRE(out.check_end());
+        in.flush();
+        REQUIRE(out.check_flushed());
     }
 
     SECTION("starts following stops") {
@@ -178,8 +178,8 @@ TEST_CASE("pair one", "[pair_one]") {
         in.feed(detection_event<>{{{3}, 0}});
         REQUIRE(out.check(detection_event<>{{{3}, 0}}));
 
-        in.feed_end();
-        REQUIRE(out.check_end());
+        in.flush();
+        REQUIRE(out.check_flushed());
     }
 }
 
@@ -207,8 +207,8 @@ TEST_CASE("pair one with self", "[pair_one]") {
     REQUIRE(out.check(detection_pair_event<>{{{{2}, 0}}, {{{3}, 0}}}));
     REQUIRE(out.check(detection_event<>{{{3}, 0}}));
 
-    in.feed_end();
-    REQUIRE(out.check_end());
+    in.flush();
+    REQUIRE(out.check_flushed());
 }
 
 TEST_CASE("pair all between", "[pair_all_between]") {
@@ -221,8 +221,8 @@ TEST_CASE("pair all between", "[pair_all_between]") {
     in.require_output_checked(out);
 
     SECTION("empty stream") {
-        in.feed_end();
-        REQUIRE(out.check_end());
+        in.flush();
+        REQUIRE(out.check_flushed());
     }
 
     SECTION("stops following starts") {
@@ -248,8 +248,8 @@ TEST_CASE("pair all between", "[pair_all_between]") {
         REQUIRE(out.check(detection_pair_event<>{{{{3}, 0}}, {{{3}, 1}}}));
         REQUIRE(out.check(detection_event<>{{{3}, 1}}));
 
-        in.feed_end();
-        REQUIRE(out.check_end());
+        in.flush();
+        REQUIRE(out.check_flushed());
     }
 
     SECTION("starts following stops") {
@@ -274,8 +274,8 @@ TEST_CASE("pair all between", "[pair_all_between]") {
         in.feed(detection_event<>{{{3}, 0}});
         REQUIRE(out.check(detection_event<>{{{3}, 0}}));
 
-        in.feed_end();
-        REQUIRE(out.check_end());
+        in.flush();
+        REQUIRE(out.check_flushed());
     }
 }
 
@@ -303,8 +303,8 @@ TEST_CASE("pair all between with self", "[pair_all_between]") {
     REQUIRE(out.check(detection_pair_event<>{{{{2}, 0}}, {{{3}, 0}}}));
     REQUIRE(out.check(detection_event<>{{{3}, 0}}));
 
-    in.feed_end();
-    REQUIRE(out.check_end());
+    in.flush();
+    REQUIRE(out.check_flushed());
 }
 
 TEST_CASE("pair one between", "[pair_one_between]") {
@@ -317,8 +317,8 @@ TEST_CASE("pair one between", "[pair_one_between]") {
     in.require_output_checked(out);
 
     SECTION("empty stream") {
-        in.feed_end();
-        REQUIRE(out.check_end());
+        in.flush();
+        REQUIRE(out.check_flushed());
     }
 
     SECTION("stops following starts") {
@@ -343,8 +343,8 @@ TEST_CASE("pair one between", "[pair_one_between]") {
         REQUIRE(out.check(detection_pair_event<>{{{{3}, 0}}, {{{3}, 1}}}));
         REQUIRE(out.check(detection_event<>{{{3}, 1}}));
 
-        in.feed_end();
-        REQUIRE(out.check_end());
+        in.flush();
+        REQUIRE(out.check_flushed());
     }
 
     SECTION("starts following stops") {
@@ -368,8 +368,8 @@ TEST_CASE("pair one between", "[pair_one_between]") {
         in.feed(detection_event<>{{{3}, 0}});
         REQUIRE(out.check(detection_event<>{{{3}, 0}}));
 
-        in.feed_end();
-        REQUIRE(out.check_end());
+        in.flush();
+        REQUIRE(out.check_flushed());
     }
 }
 
@@ -397,8 +397,8 @@ TEST_CASE("pair one between with self", "[pair_one_between]") {
     REQUIRE(out.check(detection_pair_event<>{{{{2}, 0}}, {{{3}, 0}}}));
     REQUIRE(out.check(detection_event<>{{{3}, 0}}));
 
-    in.feed_end();
-    REQUIRE(out.check_end());
+    in.flush();
+    REQUIRE(out.check_flushed());
 }
 
 } // namespace tcspc

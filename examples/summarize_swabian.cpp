@@ -41,14 +41,13 @@ class summarize_and_print {
     data_traits::abstime_type last_abstime =
         std::numeric_limits<data_traits::abstime_type>::min();
 
-    void new_channel(data_traits::channel_type chan) noexcept {
+    void new_channel(data_traits::channel_type chan) {
         channel_numbers.push_back(chan);
         channel_counts.push_back(1);
     }
 
   public:
-    void
-    handle_event(tcspc::detection_event<data_traits> const &event) noexcept {
+    void handle(tcspc::detection_event<data_traits> const &event) {
         auto const p = std::find(channel_numbers.begin(),
                                  channel_numbers.end(), event.channel);
         if (p == channel_numbers.end())
@@ -62,19 +61,8 @@ class summarize_and_print {
         last_abstime = event.abstime;
     }
 
-    [[noreturn]] void handle_end(std::exception_ptr const &error) noexcept {
-        int ret = EXIT_SUCCESS;
+    void flush() {
         std::ostringstream stream;
-
-        if (error) {
-            try {
-                std::rethrow_exception(error);
-            } catch (std::exception const &e) {
-                stream << "Error: " << e.what() << '\n';
-                stream << "The following counts are up to the error.\n";
-                ret = EXIT_FAILURE;
-            }
-        }
 
         if (channel_numbers.empty()) {
             stream << "No events" << '\n';
@@ -95,7 +83,6 @@ class summarize_and_print {
         }
 
         std::fputs(stream.str().c_str(), stdout);
-        std::exit(ret);
     }
 };
 
@@ -108,29 +95,49 @@ auto summarize(std::string const &filename) {
         std::numeric_limits<std::uint64_t>::max(),
         std::make_shared<tcspc::object_pool<device_event_vector>>(3, 3),
         65536, // Reader produces shared_ptr of vectors of device events.
-        tcspc::dereference_pointer<
-            std::shared_ptr<device_event_vector>>( // Get the vectors
-                                                   // of device events.
-            tcspc::unbatch<device_event_vector,
-                           tcspc::swabian_tag_event>(    // Get individual
-                                                         // device events.
-                tcspc::decode_swabian_tags<data_traits>( // Decode device
-                                                         // events into generic
-                                                         // TCSPC events.
-                    tcspc::check_monotonicity<
-                        data_traits>( // Ensure the abstime is non-decreasing.
-                        tcspc::stop_with_error<
-                            tcspc::event_set<
+        tcspc::stop<tcspc::event_set<tcspc::warning_event>>( // End processing
+                                                             // on read error
+            tcspc::dereference_pointer<
+                std::shared_ptr<device_event_vector>>( // Get the
+                                                       // vectors of
+                                                       // device
+                                                       // events.
+                tcspc::unbatch<device_event_vector,
+                               tcspc::swabian_tag_event>(    // Get individual
+                                                             // device events.
+                    tcspc::decode_swabian_tags<data_traits>( // Decode device
+                                                             // events into
+                                                             // generic TCSPC
+                                                             // events.
+                        tcspc::check_monotonicity<
+                            data_traits>( // Ensure the abstime is
+                                          // non-decreasing.
+                            tcspc::stop<tcspc::event_set<
                                 tcspc::warning_event,
                                 tcspc::begin_lost_interval_event<data_traits>,
                                 tcspc::end_lost_interval_event<data_traits>,
-                                tcspc::untagged_counts_event<data_traits>>,
-                            std::runtime_error>(
-                            "error in input", // Quit if anything wrong; now we
-                                              // only have detection_event.
-                            summarize_and_print()))))));
+                                tcspc::untagged_counts_event<
+                                    data_traits>>>( // End processing if
+                                                    // anything wrong; now we
+                                                    // only have
+                                                    // detection_event.
+                                summarize_and_print())))))));
 
-    proc.pump_events(); // Run it all.
+    try {
+        proc.pump_events(); // Run it all.
+    } catch (tcspc::end_processing const &exc) {
+        // Explicit stop; counts were printed on flush.
+        // TODO Recover the error message (needs to be packaged in exc)
+        std::fputs("\n", stderr);
+        std::fputs("Error encountered in input\n", stderr);
+        std::fputs("The above results are only up to the error\n", stderr);
+        // TODO Determine byte position in input stream of error.
+    } catch (std::exception const &exc) {
+        // Other error; counts were not printed.
+        std::fputs("Error: ", stderr);
+        std::fputs(exc.what(), stderr);
+        std::fputs("\n", stderr);
+    }
 }
 
 auto main(int argc, char const *argv[]) -> int {

@@ -140,8 +140,6 @@ class fit_arithmetic_time_sequence {
     abstime_type max_interval_cutoff;
     double mse_cutoff;
 
-    bool stopped = false;
-
     // Record times relative to first event of the series, to prevent overflow
     // or loss of precision on large abstime values.
     abstime_type first_tick_time{};
@@ -149,10 +147,8 @@ class fit_arithmetic_time_sequence {
 
     Downstream downstream;
 
-    void fail(std::string const &message) noexcept {
-        stopped = true;
-        downstream.handle_end(std::make_exception_ptr(
-            std::runtime_error("fit arithmetic time sequence: " + message)));
+    void fail(std::string const &message) {
+        throw std::runtime_error("fit arithmetic time sequence: " + message);
     }
 
   public:
@@ -167,30 +163,18 @@ class fit_arithmetic_time_sequence {
         relative_ticks.reserve(length);
     }
 
-    void handle_event(Event const &event) noexcept {
+    void handle(Event const &event) {
         static_assert(std::is_same_v<decltype(event.abstime), abstime_type>);
-        if (stopped)
-            return;
 
         if (relative_ticks.empty())
             first_tick_time = event.abstime;
 
-        try {
-            relative_ticks.push_back(
-                static_cast<double>(event.abstime - first_tick_time));
-        } catch (std::exception const &e) {
-            stopped = true;
-            downstream.handle_end(std::make_exception_ptr(e));
-        }
+        relative_ticks.push_back(
+            static_cast<double>(event.abstime - first_tick_time));
 
         if (relative_ticks.size() == len) {
             linear_fit_result result{};
-            try {
-                result = linear_fit_sequence(relative_ticks);
-            } catch (std::exception const &e) {
-                stopped = true;
-                downstream.handle_end(std::make_exception_ptr(e));
-            }
+            result = linear_fit_sequence(relative_ticks);
 
             if (result.mse > mse_cutoff)
                 return fail("mean squared error exceeded cutoff");
@@ -226,16 +210,13 @@ class fit_arithmetic_time_sequence {
                 return fail(
                     "estimated start time was earlier than guaranteed time bound");
 
-            downstream.handle_event(
+            downstream.handle(
                 start_and_interval_event<DataTraits>{abstime, result.slope});
             relative_ticks.clear();
         }
     }
 
-    void handle_end(std::exception_ptr const &error) noexcept {
-        if (not stopped)
-            downstream.handle_end(error);
-    }
+    void flush() { downstream.flush(); }
 };
 
 } // namespace internal

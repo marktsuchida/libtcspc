@@ -21,8 +21,8 @@ TEST_CASE("time correlate at start", "[time_correlate_at_start]") {
 
     in.feed(detection_pair_event<>{{{{3}, 0}}, {{{5}, 1}}});
     REQUIRE(out.check(time_correlated_detection_event<>{{{3}, 0}, 2}));
-    in.feed_end();
-    REQUIRE(out.check_end());
+    in.flush();
+    REQUIRE(out.check_flushed());
 }
 
 TEST_CASE("time correlate at stop", "[time_correlate_at_stop]") {
@@ -33,8 +33,8 @@ TEST_CASE("time correlate at stop", "[time_correlate_at_stop]") {
 
     in.feed(detection_pair_event<>{{{{3}, 0}}, {{{5}, 1}}});
     REQUIRE(out.check(time_correlated_detection_event<>{{{5}, 1}, 2}));
-    in.feed_end();
-    REQUIRE(out.check_end());
+    in.flush();
+    REQUIRE(out.check_flushed());
 }
 
 TEST_CASE("time correlate at midpoint", "[time_correlate_at_midpoint]") {
@@ -47,8 +47,8 @@ TEST_CASE("time correlate at midpoint", "[time_correlate_at_midpoint]") {
 
         in.feed(detection_pair_event<>{{{{3}, 0}}, {{{5}, 1}}});
         REQUIRE(out.check(time_correlated_detection_event<>{{{4}, 1}, 2}));
-        in.feed_end();
-        REQUIRE(out.check_end());
+        in.flush();
+        REQUIRE(out.check_flushed());
     }
 
     SECTION("use start channel") {
@@ -59,8 +59,8 @@ TEST_CASE("time correlate at midpoint", "[time_correlate_at_midpoint]") {
 
         in.feed(detection_pair_event<>{{{{3}, 0}}, {{{5}, 1}}});
         REQUIRE(out.check(time_correlated_detection_event<>{{{4}, 0}, 2}));
-        in.feed_end();
-        REQUIRE(out.check_end());
+        in.flush();
+        REQUIRE(out.check_flushed());
     }
 }
 
@@ -75,8 +75,8 @@ TEST_CASE("time correlate at fraction", "[time_correlate_at_fraction]") {
         in.feed(detection_pair_event<>{{{{3000}, 0}}, {{{6000}, 1}}});
         REQUIRE(
             out.check(time_correlated_detection_event<>{{{4000}, 1}, 3000}));
-        in.feed_end();
-        REQUIRE(out.check_end());
+        in.flush();
+        REQUIRE(out.check_flushed());
     }
 
     SECTION("use start channel") {
@@ -88,8 +88,8 @@ TEST_CASE("time correlate at fraction", "[time_correlate_at_fraction]") {
         in.feed(detection_pair_event<>{{{{3000}, 0}}, {{{6000}, 1}}});
         REQUIRE(
             out.check(time_correlated_detection_event<>{{{4000}, 0}, 3000}));
-        in.feed_end();
-        REQUIRE(out.check_end());
+        in.flush();
+        REQUIRE(out.check_flushed());
     }
 }
 
@@ -107,8 +107,8 @@ TEST_CASE("negate difftime", "[negate_difftime]") {
     REQUIRE(out.check(time_correlated_detection_event<traits>{{{3}, 1}, -2}));
     in.feed(time_correlated_detection_event<traits>{{{5}, 1}, -7});
     REQUIRE(out.check(time_correlated_detection_event<traits>{{{5}, 1}, 7}));
-    in.feed_end();
-    REQUIRE(out.check_end());
+    in.flush();
+    REQUIRE(out.check_flushed());
 }
 
 TEST_CASE("remove time correlation", "[remove_time_correlation]") {
@@ -119,8 +119,8 @@ TEST_CASE("remove time correlation", "[remove_time_correlation]") {
 
     in.feed(time_correlated_detection_event<>{{{3}, 1}, 2});
     REQUIRE(out.check(detection_event<>{{{3}, 1}}));
-    in.feed_end();
-    REQUIRE(out.check_end());
+    in.flush();
+    REQUIRE(out.check_flushed());
 }
 
 } // namespace tcspc

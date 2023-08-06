@@ -377,7 +377,7 @@ class read_binary_stream {
         assert(read_granularity > 0);
     }
 
-    void pump_events() noexcept {
+    void pump_events() {
         auto first_read_size = read_granularity;
         if (stream.is_good()) {
             // Align second and subsequent reads to read_granularity if current
@@ -415,13 +415,9 @@ class read_binary_stream {
             auto const bufsize_bytes = remainder_nbytes + read_size;
             auto const bufsize_elements =
                 (bufsize_bytes - 1) / sizeof(Event) + 1;
-            try {
-                if (not buf)
-                    buf = bufpool->check_out();
-                buf->resize(bufsize_elements);
-            } catch (std::exception const &e) {
-                return downstream.handle_end(std::make_exception_ptr(e));
-            }
+            if (not buf)
+                buf = bufpool->check_out();
+            buf->resize(bufsize_elements);
             auto const buffer_span =
                 as_writable_bytes(span(*buf)).subspan(0, bufsize_bytes);
             auto const read_span = buffer_span.subspan(remainder_nbytes);
@@ -440,12 +436,8 @@ class read_binary_stream {
 
             std::shared_ptr<EventVector> next_buf;
             if (remainder_nbytes > 0) {
-                try {
-                    next_buf = bufpool->check_out();
-                    next_buf->resize(1);
-                } catch (std::exception const &e) {
-                    return downstream.handle_end(std::make_exception_ptr(e));
-                }
+                next_buf = bufpool->check_out();
+                next_buf->resize(1);
                 auto const next_buffer_span =
                     as_writable_bytes(span(*next_buf))
                         .subspan(0, remainder_nbytes);
@@ -455,20 +447,19 @@ class read_binary_stream {
 
             if (this_batch_size > 0) {
                 buf->resize(this_batch_size);
-                downstream.handle_event(buf);
+                downstream.handle(buf);
             }
             buf = std::move(next_buf);
         }
 
         std::exception_ptr error;
-        if (stream.is_error()) {
-            error = std::make_exception_ptr(
-                std::runtime_error("failed to read input"));
-        } else if (remainder_nbytes > 0) {
-            error = std::make_exception_ptr(std::runtime_error(
-                "bytes fewer than event size remain at end of input"));
+        if (stream.is_error())
+            throw std::runtime_error("failed to read input");
+        if (remainder_nbytes > 0) {
+            downstream.handle(warning_event{
+                "bytes fewer than record size remain at end of input"});
         }
-        downstream.handle_end(std::move(error));
+        downstream.flush();
     }
 };
 

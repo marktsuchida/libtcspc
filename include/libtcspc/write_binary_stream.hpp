@@ -276,8 +276,7 @@ inline auto borrowed_cfile_output_stream(std::FILE *fp) {
 
 namespace internal {
 
-template <typename OutputStream, typename Downstream>
-class write_binary_stream {
+template <typename OutputStream> class write_binary_stream {
     OutputStream strm;
     std::shared_ptr<object_pool<std::vector<std::byte>>> bufpool;
     std::size_t write_granularity;
@@ -285,50 +284,37 @@ class write_binary_stream {
     std::uint64_t total_bytes_written = 0;
     // If not null, buffer to use next, containing a partial event:
     std::shared_ptr<std::vector<std::byte>> buf;
-    bool stopped = false;
-
-    Downstream downstream;
 
   public:
     explicit write_binary_stream(
         OutputStream &&stream,
         std::shared_ptr<object_pool<std::vector<std::byte>>> buffer_pool,
-        std::size_t write_granularity_bytes, Downstream &&downstream)
+        std::size_t write_granularity_bytes)
         : strm(std::move(stream)), bufpool(std::move(buffer_pool)),
-          write_granularity(write_granularity_bytes),
-          downstream(std::move(downstream)) {
+          write_granularity(write_granularity_bytes) {
         assert(bufpool);
         assert(write_granularity > 0);
     }
 
-    void handle_event(autocopy_span<std::byte> const &event) noexcept {
+    void handle(autocopy_span<std::byte> const &event) {
         handle_span(event.as_span());
     }
 
-    void handle_event(autocopy_span<std::byte const> const &event) noexcept {
+    void handle(autocopy_span<std::byte const> const &event) {
         handle_span(event.as_span());
     }
 
-    void handle_end(std::exception_ptr const &error) noexcept {
-        if (stopped)
-            return;
-
+    void flush() {
         if (buf) {
             strm.write(span(*buf));
             buf.reset();
             if (strm.is_error())
-                return downstream.handle_end(std::make_exception_ptr(
-                    std::runtime_error("failed to write output")));
+                throw std::runtime_error("failed to write output");
         }
-
-        downstream.handle_end(error);
     }
 
   private:
-    void handle_span(span<std::byte const> event_span) noexcept {
-        if (stopped)
-            return;
-
+    void handle_span(span<std::byte const> event_span) {
         auto first_block_size = write_granularity;
         if (total_bytes_written == 0) {
             // Align second and subsequent writes to write_granularity if
@@ -347,15 +333,10 @@ class write_binary_stream {
             auto const leftover_bytes = buf ? buf->size() : 0;
             auto const buffer_size =
                 std::min(leftover_bytes + event_span.size(), first_block_size);
-            try {
-                if (not buf)
-                    buf = bufpool->check_out();
-                buf->reserve(write_granularity);
-                buf->resize(buffer_size);
-            } catch (std::exception const &e) {
-                stopped = true;
-                return downstream.handle_end(std::make_exception_ptr(e));
-            }
+            if (not buf)
+                buf = bufpool->check_out();
+            buf->reserve(write_granularity);
+            buf->resize(buffer_size);
             auto const dest_span = span(*buf).subspan(leftover_bytes);
             auto const src_span = event_span.subspan(
                 0, std::min(event_span.size(), dest_span.size()));
@@ -363,11 +344,8 @@ class write_binary_stream {
             if (buffer_size == first_block_size) {
                 strm.write(span(*buf));
                 buf.reset();
-                if (strm.is_error()) {
-                    stopped = true;
-                    return downstream.handle_end(std::make_exception_ptr(
-                        std::runtime_error("failed to write output")));
-                }
+                if (strm.is_error())
+                    throw std::runtime_error("failed to write output");
                 total_bytes_written += buffer_size;
             }
             event_span = event_span.subspan(src_span.size());
@@ -377,24 +355,16 @@ class write_binary_stream {
             event_span.size() / write_granularity * write_granularity;
         if (direct_write_size > 0) {
             strm.write(event_span.subspan(0, direct_write_size));
-            if (strm.is_error()) {
-                stopped = true;
-                return downstream.handle_end(std::make_exception_ptr(
-                    std::runtime_error("failed to write output")));
-            }
+            if (strm.is_error())
+                throw std::runtime_error("failed to write output");
             total_bytes_written += direct_write_size;
             event_span = event_span.subspan(direct_write_size);
         }
 
         if (not event_span.empty()) {
-            try {
-                buf = bufpool->check_out();
-                buf->reserve(write_granularity);
-                buf->resize(event_span.size());
-            } catch (std::exception const &e) {
-                stopped = true;
-                return downstream.handle_end(std::make_exception_ptr(e));
-            }
+            buf = bufpool->check_out();
+            buf->reserve(write_granularity);
+            buf->resize(event_span.size());
             std::copy(event_span.begin(), event_span.end(), buf->begin());
         }
     }
@@ -403,8 +373,7 @@ class write_binary_stream {
 } // namespace internal
 
 /**
- * \brief Create a processor that writes bytes to a binary stream, such as a
- * file.
+ * \brief Create a sink that writes bytes to a binary stream, such as a file.
  *
  * \ingroup processors-basic
  *
@@ -427,14 +396,9 @@ class write_binary_stream {
  * buffering is necessary). It is best to try different powers of 2 and
  * measure.
  *
- * This processor does not emit any events, but does emit an end-of-stream to
- * the downstream.
- *
  * \see read_binary_stream
  *
  * \tparam OutputStream output stream type
- *
- * \tparam Downstream downstream processor type
  *
  * \param stream the output stream (see \ref streams)
  *
@@ -445,26 +409,24 @@ class write_binary_stream {
  * \param write_granularity_bytes minimum size, in bytes, to write; all writes
  * (except possible the first and last ones) will be a multiple of this value
  *
- * \param downstream downstream processor
- *
  * \return write-binary-stream processor
  */
-template <typename OutputStream, typename Downstream>
+template <typename OutputStream>
 auto write_binary_stream(
     OutputStream &&stream,
     std::shared_ptr<object_pool<std::vector<std::byte>>> buffer_pool,
-    std::size_t write_granularity_bytes, Downstream &&downstream) {
+    std::size_t write_granularity_bytes) {
     // Support direct passing of C++ iostreams stream.
     if constexpr (std::is_base_of_v<std::ostream, OutputStream>) {
         auto wrapped =
             ostream_output_stream(std::forward<OutputStream>(stream));
-        return internal::write_binary_stream<decltype(wrapped), Downstream>(
+        return internal::write_binary_stream<decltype(wrapped)>(
             std::move(wrapped), std::move(buffer_pool),
-            write_granularity_bytes, std::forward<Downstream>(downstream));
+            write_granularity_bytes);
     } else {
-        return internal::write_binary_stream<OutputStream, Downstream>(
+        return internal::write_binary_stream<OutputStream>(
             std::forward<OutputStream>(stream), std::move(buffer_pool),
-            write_granularity_bytes, std::forward<Downstream>(downstream));
+            write_granularity_bytes);
     }
 }
 

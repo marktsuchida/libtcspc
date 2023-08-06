@@ -17,15 +17,15 @@ namespace tcspc {
 
 TEST_CASE("null sink", "[null_sink]") {
     auto sink = null_sink();
-    sink.handle_event(123);
-    sink.handle_event(std::string("hello"));
+    sink.handle(123);
+    sink.handle(std::string("hello"));
 }
 
 TEST_CASE("null source", "[null_source]") {
     auto out = capture_output<event_set<>>();
     auto src = null_source(ref_processor(out));
     src.pump_events();
-    REQUIRE(out.check_end());
+    REQUIRE(out.check_flushed());
 }
 
 namespace internal {

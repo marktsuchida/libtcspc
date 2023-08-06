@@ -29,8 +29,8 @@ TEST_CASE("select", "[select]") {
     in.feed(e0{});
     REQUIRE(out.check(e0{}));
     in.feed(e1{});
-    in.feed_end();
-    REQUIRE(out.check_end());
+    in.flush();
+    REQUIRE(out.check_flushed());
 }
 
 TEST_CASE("select_not", "[select]") {
@@ -42,8 +42,8 @@ TEST_CASE("select_not", "[select]") {
     in.feed(e0{});
     in.feed(e1{});
     REQUIRE(out.check(e1{}));
-    in.feed_end();
-    REQUIRE(out.check_end());
+    in.flush();
+    REQUIRE(out.check_flushed());
 }
 
 TEST_CASE("select_none", "[select]") {
@@ -53,8 +53,8 @@ TEST_CASE("select_none", "[select]") {
 
     in.feed(e0{});
     in.feed(e1{});
-    in.feed_end();
-    REQUIRE(out.check_end());
+    in.flush();
+    REQUIRE(out.check_flushed());
 }
 
 TEST_CASE("select_all", "[select]") {
@@ -66,8 +66,8 @@ TEST_CASE("select_all", "[select]") {
     REQUIRE(out.check(e0{}));
     in.feed(e1{});
     REQUIRE(out.check(e1{}));
-    in.feed_end();
-    REQUIRE(out.check_end());
+    in.flush();
+    REQUIRE(out.check_flushed());
 }
 
 } // namespace tcspc

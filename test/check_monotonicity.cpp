@@ -31,8 +31,8 @@ TEST_CASE("check monotonicity", "[check_monotonicity]") {
     REQUIRE(out_event.has_value());
     CHECK(out_event->message.find("monotonic") != std::string::npos);
     REQUIRE(out.check(e0{-11}));
-    in.feed_end();
-    REQUIRE(out.check_end());
+    in.flush();
+    REQUIRE(out.check_flushed());
 }
 
 } // namespace tcspc

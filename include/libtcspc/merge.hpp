@@ -31,12 +31,17 @@ class merge_impl {
     // that can be emitted, we only ever need to buffer events from one or the
     // other input at any given time.
     bool pending_on_1 = false; // Pending on input 0 if false
-    std::array<bool, 2> input_ended{false, false};
-    bool ended_with_error = false;
+    std::array<bool, 2> input_flushed{false, false};
+    bool ended_with_exception = false;
     vector_queue<event_variant<EventSet>> pending;
     typename DataTraits::abstime_type max_time_shift;
 
     Downstream downstream;
+
+    template <unsigned InputChannel>
+    [[nodiscard]] auto is_other_flushed() const noexcept -> bool {
+        return input_flushed[1 - InputChannel];
+    }
 
     template <unsigned InputChannel>
     [[nodiscard]] auto is_pending_on_other() const noexcept -> bool {
@@ -49,12 +54,12 @@ class merge_impl {
 
     // Emit pending while predicate is true.
     // Pred: bool(abstime_type const &)
-    template <typename Pred> void emit_pending(Pred predicate) noexcept {
+    template <typename Pred> void emit_pending(Pred predicate) {
         while (!pending.empty() && std::visit(
                                        [&](auto const &e) {
                                            bool p = predicate(e.abstime);
                                            if (p)
-                                               downstream.handle_event(e);
+                                               downstream.handle(e);
                                            return p;
                                        },
                                        pending.front()))
@@ -75,67 +80,69 @@ class merge_impl {
     ~merge_impl() = default;
 
     template <unsigned InputChannel, typename Event>
-    void handle_event(Event const &event) noexcept {
-        if (ended_with_error)
+    void handle(Event const &event) {
+        if (ended_with_exception)
             return;
+        try {
+            if (is_pending_on_other<InputChannel>()) {
+                // Emit any older events pending on the other input.
+                typename DataTraits::abstime_type cutoff = event.abstime;
+                // Emit events from input 0 before events from input 1 when
+                // they have equal abstime.
+                if constexpr (InputChannel == 0)
+                    --cutoff;
+                emit_pending([=](auto t) { return t <= cutoff; });
 
-        if (is_pending_on_other<InputChannel>()) {
-            // Emit any older events pending on the other input.
-            typename DataTraits::abstime_type cutoff = event.abstime;
-            // Emit events from input 0 before events from input 1 when they
-            // have equal abstime.
-            if constexpr (InputChannel == 0)
-                --cutoff;
-            emit_pending([=](auto t) { return t <= cutoff; });
+                // If events still pending on the other input, they are newer
+                // (or not older), so we can emit the current event first.
+                if (!pending.empty())
+                    return downstream.handle(event);
 
-            // If events still pending on the other input, they are newer (or
-            // not older), so we can emit the current event first.
-            if (!pending.empty()) {
-                downstream.handle_event(event);
-                return;
+                // If we are still here, we have no more events pending from
+                // the other input, but will now enqueue the current event on
+                // this input.
+                set_pending_on<InputChannel>();
+            }
+            // If we got here, no events from the other input are pending. If
+            // the other input is also flushed, we have no need to buffer.
+            if (is_other_flushed<InputChannel>()) {
+                assert(pending.empty());
+                return downstream.handle(event);
             }
 
-            // If we are still here, we have no more events pending from the
-            // other input, but will now enqueue the current event on this
-            // input.
-            set_pending_on<InputChannel>();
-        }
+            // Emit any events on the same input if they are older than the
+            // maximum allowed time shift between the inputs. Guard against
+            // integer underflow.
+            constexpr auto abstime_min =
+                std::numeric_limits<typename DataTraits::abstime_type>::min();
+            if (event.abstime >= 0 ||
+                max_time_shift > event.abstime - abstime_min) {
+                typename DataTraits::abstime_type old_enough =
+                    event.abstime - max_time_shift;
+                emit_pending([=](auto t) { return t < old_enough; });
+            }
 
-        // Emit any events on the same input if they are older than the maximum
-        // allowed time shift between the inputs.
-        // Guard against integer underflow.
-        constexpr auto abstime_min =
-            std::numeric_limits<typename DataTraits::abstime_type>::min();
-        if (event.abstime >= 0 ||
-            max_time_shift > event.abstime - abstime_min) {
-            typename DataTraits::abstime_type old_enough =
-                event.abstime - max_time_shift;
-            emit_pending([=](auto t) { return t < old_enough; });
+            pending.push(event);
+        } catch (std::exception const &) {
+            ended_with_exception = true;
+            throw;
         }
-
-        pending.push(event);
     }
 
-    template <unsigned InputChannel>
-    void handle_end(std::exception_ptr const &error) noexcept {
-        input_ended[InputChannel] = true;
-        if (ended_with_error)
+    template <unsigned InputChannel> void flush() {
+        input_flushed[InputChannel] = true;
+        if (ended_with_exception)
             return;
-
-        if (error)
-            ended_with_error = true;
-        else if (is_pending_on_other<InputChannel>())
+        if (is_other_flushed<InputChannel>()) {
+            // Since the other input was flushed, events on this input have not
+            // been buffered. But there may still be events pending on the
+            // other input.
             emit_pending([]([[maybe_unused]] auto t) { return true; });
-
-        bool other_input_ended = input_ended[1 - InputChannel];
-        if (other_input_ended || error) { // The output stream has ended now.
-            {
-                // Release queue memory.
-                decltype(pending) q;
-                pending.swap(q);
-            }
-
-            downstream.handle_end(error);
+            downstream.flush();
+        } else if (is_pending_on_other<InputChannel>()) {
+            // Since this input won't have any more events, no need to buffer
+            // the other any more.
+            emit_pending([]([[maybe_unused]] auto t) { return true; });
         }
     }
 };
@@ -159,14 +166,11 @@ class merge_input {
 
     template <typename Event,
               typename = std::enable_if_t<contains_event_v<EventSet, Event>>>
-    void handle_event(Event const &event) noexcept {
-        impl->template handle_event<InputChannel>(event);
+    void handle(Event const &event) {
+        impl->template handle<InputChannel>(event);
     }
 
-    void handle_end(std::exception_ptr const &error) noexcept {
-        impl->template handle_end<InputChannel>(error);
-        impl.reset();
-    }
+    void flush() { impl->template flush<InputChannel>(); }
 };
 
 } // namespace internal

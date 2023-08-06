@@ -44,8 +44,8 @@ TEST_CASE("Count up to", "[count_up_to]") {
             REQUIRE(out.check(tick_event{45}));
             in.feed(misc_event{46});
             REQUIRE(out.check(misc_event{46}));
-            in.feed_end();
-            REQUIRE(out.check_end());
+            in.flush();
+            REQUIRE(out.check_flushed());
         }
 
         SECTION("Emit after") {
@@ -58,8 +58,8 @@ TEST_CASE("Count up to", "[count_up_to]") {
             REQUIRE(out.check(tick_event{42}));
             in.feed(tick_event{42});
             REQUIRE(out.check(tick_event{42}));
-            in.feed_end();
-            REQUIRE(out.check_end());
+            in.flush();
+            REQUIRE(out.check_flushed());
         }
     }
 
@@ -74,8 +74,8 @@ TEST_CASE("Count up to", "[count_up_to]") {
             REQUIRE(out.check(tick_event{42}));
             in.feed(tick_event{42});
             REQUIRE(out.check(tick_event{42}));
-            in.feed_end();
-            REQUIRE(out.check_end());
+            in.flush();
+            REQUIRE(out.check_flushed());
         }
 
         SECTION("Emit after") {
@@ -90,8 +90,8 @@ TEST_CASE("Count up to", "[count_up_to]") {
             in.feed(tick_event{42});
             REQUIRE(out.check(tick_event{42}));
             REQUIRE(out.check(fire_event{42}));
-            in.feed_end();
-            REQUIRE(out.check_end());
+            in.flush();
+            REQUIRE(out.check_flushed());
         }
     }
 
@@ -116,8 +116,8 @@ TEST_CASE("Count up to", "[count_up_to]") {
             in.feed(tick_event{46});
             REQUIRE(out.check(fire_event{46}));
             REQUIRE(out.check(tick_event{46}));
-            in.feed_end();
-            REQUIRE(out.check_end());
+            in.flush();
+            REQUIRE(out.check_flushed());
         }
 
         SECTION("Emit after") {
@@ -141,8 +141,8 @@ TEST_CASE("Count up to", "[count_up_to]") {
             REQUIRE(out.check(fire_event{45}));
             in.feed(tick_event{46});
             REQUIRE(out.check(tick_event{46}));
-            in.feed_end();
-            REQUIRE(out.check_end());
+            in.flush();
+            REQUIRE(out.check_flushed());
         }
     }
 }
@@ -166,8 +166,8 @@ TEST_CASE("Count down to", "[count_down_to]") {
     in.feed(tick_event{45});
     REQUIRE(out.check(fire_event{45}));
     REQUIRE(out.check(tick_event{45}));
-    in.feed_end();
-    REQUIRE(out.check_end());
+    in.flush();
+    REQUIRE(out.check_flushed());
 }
 
 } // namespace tcspc

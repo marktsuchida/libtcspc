@@ -35,37 +35,34 @@ class count_up_to {
         assert(limit > init);
     }
 
-    void handle_event(TickEvent const &event) noexcept {
+    void handle(TickEvent const &event) {
         if constexpr (!FireAfterTick) {
             if (count == thresh)
-                downstream.handle_event(FireEvent{event.abstime});
+                downstream.handle(FireEvent{event.abstime});
         }
 
-        downstream.handle_event(event);
+        downstream.handle(event);
         ++count;
 
         if constexpr (FireAfterTick) {
             if (count == thresh)
-                downstream.handle_event(FireEvent{event.abstime});
+                downstream.handle(FireEvent{event.abstime});
         }
 
         if (count == limit)
             count = init;
     }
 
-    void handle_event(ResetEvent const &event) noexcept {
+    void handle(ResetEvent const &event) {
         count = init;
-        downstream.handle_event(event);
+        downstream.handle(event);
     }
 
-    template <typename OtherEvent>
-    void handle_event(OtherEvent const &event) noexcept {
-        downstream.handle_event(event);
+    template <typename OtherEvent> void handle(OtherEvent const &event) {
+        downstream.handle(event);
     }
 
-    void handle_end(std::exception_ptr const &error) noexcept {
-        downstream.handle_end(error);
-    }
+    void flush() { downstream.flush(); }
 };
 
 } // namespace internal

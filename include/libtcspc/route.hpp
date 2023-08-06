@@ -35,36 +35,82 @@ class route {
     Router router;
     std::tuple<Downstreams...> downstreams;
 
-    template <std::size_t I, typename Event>
-    void route_event_if(bool f, Event const &event) noexcept {
-        if (f)
-            std::get<I>(downstreams).handle_event(event);
-    }
-
     template <typename Event, std::size_t... I>
     void route_event(std::size_t index, Event const &event,
-                     [[maybe_unused]] std::index_sequence<I...> seq) noexcept {
+                     [[maybe_unused]] std::index_sequence<I...> seq) {
         (void)std::array{(route_event_if<I>(I == index, event), 0)...};
+    }
+
+    template <std::size_t I, typename Event>
+    void route_event_if(bool f, Event const &event) {
+        if (f) {
+            try {
+                std::get<I>(downstreams).handle(event);
+            } catch (end_processing const &) {
+                flush_all_but(std::get<I>(downstreams));
+                throw;
+            }
+        }
+    }
+
+    template <typename D> LIBTCSPC_NOINLINE void flush_all_but(D &d) {
+        std::apply(
+            [&d](auto &...dd) {
+                (..., [&](auto &dd) {
+                    if (&dd != &d) {
+                        try {
+                            dd.flush();
+                        } catch (end_processing const &) {
+                            ;
+                        }
+                    }
+                }(dd));
+            },
+            downstreams);
+    }
+
+    template <typename D> static void do_flush(D &d, std::exception_ptr &end) {
+        try {
+            d.flush();
+        } catch (end_processing const &) {
+            if (not end) // Keep only the first end_processing thrown.
+                end = std::current_exception();
+        }
     }
 
   public:
     explicit route(Router &&router, Downstreams &&...downstreams)
         : router(router), downstreams{std::move(downstreams)...} {}
 
-    template <typename Event> void handle_event(Event const &event) noexcept {
+    template <typename Event> void handle(Event const &event) {
         if constexpr (contains_event_v<EventSetToRoute, Event>) {
             route_event(router(event), event,
                         std::make_index_sequence<sizeof...(Downstreams)>());
-
-        } else {
-            std::apply([&](auto &...s) { (..., s.handle_event(event)); },
-                       downstreams);
+        } else { // Broadcast
+            std::apply(
+                [&](auto &...d) {
+                    (..., [&](auto &d) {
+                        try {
+                            d.handle(event);
+                        } catch (end_processing const &) {
+                            flush_all_but(d);
+                            throw;
+                        }
+                    }(d));
+                },
+                downstreams);
         }
     }
 
-    void handle_end(std::exception_ptr const &error) noexcept {
-        std::apply([&](auto &...s) { (..., s.handle_end(error)); },
-                   downstreams);
+    void flush() {
+        std::apply(
+            [&](auto &...d) {
+                std::exception_ptr end;
+                (..., do_flush(d, end));
+                if (end)
+                    std::rethrow_exception(end);
+            },
+            downstreams);
     }
 };
 
@@ -115,6 +161,23 @@ auto route(Router &&router, Downstreams &&...downstreams) {
 }
 
 /**
+ * \brief Router that does not route.
+ *
+ * \ingroup routers
+ *
+ * All routed events are discarded when this router is used.
+ */
+class null_router {
+  public:
+    /** \brief Router interface. */
+    template <typename Event>
+    auto operator()([[maybe_unused]] Event const &event) const noexcept
+        -> std::size_t {
+        return std::size_t(-1);
+    }
+};
+
+/**
  * \brief Router that routes by channel number.
  *
  * \ingroup routers
@@ -152,5 +215,23 @@ class channel_router {
  */
 template <std::size_t N, typename Channel>
 channel_router(std::array<Channel, N>) -> channel_router<N, Channel>;
+
+/**
+ * \brief Create a processor that broadcasts events to multiple downstream
+ * processors.
+ *
+ * \ingroup processors-basic
+ *
+ * \tparam Downstreams downstream processor classes
+ *
+ * \param downstreams downstream processors
+ *
+ * \return broadcast processor
+ */
+template <typename... Downstreams>
+auto broadcast(Downstreams &&...downstreams) {
+    return internal::route<event_set<>, null_router, Downstreams...>(
+        null_router(), std::forward<Downstreams>(downstreams)...);
+}
 
 } // namespace tcspc

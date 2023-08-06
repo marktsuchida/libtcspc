@@ -7,7 +7,6 @@ libtcspc_tests_srcs = [
     'autocopy_span.cpp',
     'bh_spc.cpp',
     'binning.cpp',
-    'broadcast.cpp',
     'buffer.cpp',
     'check_monotonicity.cpp',
     'common.cpp',

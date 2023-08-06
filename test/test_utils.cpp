@@ -26,14 +26,11 @@ TEST_CASE("Short-circuited with no events", "[test_utils]") {
     in.require_output_checked(out);
 
     SECTION("End successfully") {
-        in.feed_end();
-        REQUIRE(out.check_end());
+        in.flush();
+        CHECK(out.check_flushed());
     }
 
-    SECTION("End with error") {
-        in.feed_end(std::make_exception_ptr(std::runtime_error("test")));
-        REQUIRE_THROWS_AS(out.check_end(), std::runtime_error);
-    }
+    SECTION("Unflushed end") { CHECK(out.check_not_flushed()); }
 }
 
 TEST_CASE("Short-circuited with event set", "[test_utils]") {
@@ -42,41 +39,41 @@ TEST_CASE("Short-circuited with event set", "[test_utils]") {
     in.require_output_checked(out);
 
     in.feed(e0{});
-    REQUIRE(out.check(e0{}));
+    CHECK(out.check(e0{}));
 
     in.feed(e1{42});
-    REQUIRE(out.check(e1{42}));
+    CHECK(out.check(e1{42}));
 
     SECTION("End successfully") {
-        in.feed_end();
-        REQUIRE(out.check_end());
+        in.flush();
+        CHECK(out.check_flushed());
     }
 
-    SECTION("End with error") {
-        in.feed_end(std::make_exception_ptr(std::runtime_error("test")));
-        REQUIRE_THROWS_AS(out.check_end(), std::runtime_error);
-    }
+    SECTION("Unflushed end") { CHECK(out.check_not_flushed()); }
 
     SECTION("Forget to check output before feeding event") {
         in.feed(e0{});
-        REQUIRE_THROWS_AS(in.feed(e0{}), std::logic_error);
+        CHECK_THROWS_AS(in.feed(e0{}), std::logic_error);
     }
 
-    SECTION("Forget to check output before feeding end") {
+    SECTION("Forget to check output before flushing") {
         in.feed(e0{});
-        REQUIRE_THROWS_AS(in.feed_end(), std::logic_error);
+        CHECK_THROWS_AS(in.flush(), std::logic_error);
     }
 
-    SECTION("Forget to check output before feeding end with error") {
+    SECTION("Forget to check output before asserting successful end") {
         in.feed(e0{});
-        REQUIRE_THROWS_AS(
-            in.feed_end(std::make_exception_ptr(std::runtime_error("test"))),
-            std::logic_error);
+        CHECK_FALSE(out.check_flushed());
+    }
+
+    SECTION("Forget to check output before asserting unflushed end") {
+        in.feed(e0{});
+        CHECK_FALSE(out.check_not_flushed());
     }
 
     SECTION("Expect the wrong event") {
         in.feed(e1{42});
-        REQUIRE_FALSE(out.check(e1{0}));
+        CHECK_FALSE(out.check(e1{0}));
     }
 }
 

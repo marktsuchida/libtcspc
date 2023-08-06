@@ -537,7 +537,7 @@ class multi_histogram {
                             max_per_bin);
             if (need_to_clear)
                 single_hist.clear();
-            auto n_applied =
+            [[maybe_unused]] auto n_applied =
                 single_hist.apply_increments({&*begin, &*end}, stats);
             // Under correct usage, 'journal' only repeats previous success, so
             // cannot overflow.

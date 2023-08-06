@@ -42,9 +42,9 @@ TEST_CASE("batch", "[batch]") {
         in.feed(44);
         REQUIRE(out.check(pvector<int>{42, 43, 44}));
         in.feed(45);
-        in.feed_end();
+        in.flush();
         REQUIRE(out.check(pvector<int>{45}));
-        REQUIRE(out.check_end());
+        REQUIRE(out.check_flushed());
     }
 
     SECTION("ending in full batch") {
@@ -52,8 +52,8 @@ TEST_CASE("batch", "[batch]") {
         in.feed(43);
         in.feed(44);
         REQUIRE(out.check(pvector<int>{42, 43, 44}));
-        in.feed_end();
-        REQUIRE(out.check_end());
+        in.flush();
+        REQUIRE(out.check_flushed());
     }
 }
 
@@ -71,8 +71,8 @@ TEST_CASE("unbatch", "[unbatch]") {
     in.feed(pvector<int>{});
     in.feed(pvector<int>{45});
     REQUIRE(out.check(45));
-    in.feed_end();
-    REQUIRE(out.check_end());
+    in.flush();
+    REQUIRE(out.check_flushed());
 }
 
 } // namespace tcspc

@@ -413,33 +413,31 @@ class decode_pqt3 {
 
     Downstream downstream;
 
-    LIBTCSPC_NOINLINE void issue_warning(char const *message) noexcept {
-        downstream.handle_event(warning_event{message});
+    LIBTCSPC_NOINLINE void issue_warning(char const *message) {
+        downstream.handle(warning_event{message});
     }
 
   public:
     explicit decode_pqt3(Downstream &&downstream)
         : downstream(std::move(downstream)) {}
 
-    void handle_event(PQT3Event const &event) noexcept {
+    void handle(PQT3Event const &event) {
         if (event.is_nsync_overflow()) {
             nsync_base += abstime_type(PQT3Event::nsync_overflow_period) *
                           event.nsync_overflow_count().value();
-            return downstream.handle_event(
+            return downstream.handle(
                 time_reached_event<DataTraits>{{nsync_base}});
         }
 
         abstime_type const nsync = nsync_base + event.nsync().value();
 
         if (not event.is_special()) {
-            downstream.handle_event(
-                time_correlated_detection_event<DataTraits>{
-                    {{nsync}, event.channel().value()},
-                    event.dtime().value()});
+            downstream.handle(time_correlated_detection_event<DataTraits>{
+                {{nsync}, event.channel().value()}, event.dtime().value()});
         } else if (event.is_external_marker()) {
             auto bits = u32np(event.external_marker_bits());
             while (bits != 0_u32np) {
-                downstream.handle_event(marker_event<DataTraits>{
+                downstream.handle(marker_event<DataTraits>{
                     {{nsync}, count_trailing_zeros_32(bits)}});
                 bits = bits & (bits - 1_u32np); // Clear the handled bit
             }
@@ -448,9 +446,7 @@ class decode_pqt3 {
         }
     }
 
-    void handle_end(std::exception_ptr const &error) noexcept {
-        downstream.handle_end(error);
-    }
+    void flush() { downstream.flush(); }
 };
 } // namespace internal
 

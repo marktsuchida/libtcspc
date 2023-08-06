@@ -201,22 +201,22 @@ template <typename DataTraits, typename Downstream> class decode_swabian_tags {
     Downstream downstream;
 
     LIBTCSPC_NOINLINE
-    void handle_coldpath_tag(swabian_tag_event const &event) noexcept {
+    void handle_coldpath_tag(swabian_tag_event const &event) {
         using tag_type = swabian_tag_event::tag_type;
         switch (event.type()) {
         case tag_type::error:
-            downstream.handle_event(warning_event{"error tag encountered"});
+            downstream.handle(warning_event{"error tag encountered"});
             break;
         case tag_type::overflow_begin:
-            downstream.handle_event(
+            downstream.handle(
                 begin_lost_interval_event<DataTraits>{{event.time().value()}});
             break;
         case tag_type::overflow_end:
-            downstream.handle_event(
+            downstream.handle(
                 end_lost_interval_event<DataTraits>{{event.time().value()}});
             break;
         case tag_type::missed_events:
-            downstream.handle_event(untagged_counts_event<DataTraits>{
+            downstream.handle(untagged_counts_event<DataTraits>{
                 {{event.time().value()}, event.channel().value()},
                 event.missed_event_count().value()});
             break;
@@ -227,7 +227,7 @@ template <typename DataTraits, typename Downstream> class decode_swabian_tags {
                           std::underlying_type_t<swabian_tag_event::tag_type>>(
                           event.type())
                    << ")";
-            downstream.handle_event(warning_event{stream.str()});
+            downstream.handle(warning_event{stream.str()});
             break;
         }
         }
@@ -237,17 +237,15 @@ template <typename DataTraits, typename Downstream> class decode_swabian_tags {
     explicit decode_swabian_tags(Downstream &&downstream)
         : downstream(std::move(downstream)) {}
 
-    void handle_event(swabian_tag_event const &event) noexcept {
+    void handle(swabian_tag_event const &event) {
         if (event.type() == swabian_tag_event::tag_type::time_tag)
-            downstream.handle_event(detection_event<DataTraits>{
+            downstream.handle(detection_event<DataTraits>{
                 {{event.time().value()}, event.channel().value()}});
         else
             handle_coldpath_tag(event);
     }
 
-    void handle_end(std::exception_ptr const &error) noexcept {
-        downstream.handle_end(error);
-    }
+    void flush() { downstream.flush(); }
 };
 
 } // namespace internal

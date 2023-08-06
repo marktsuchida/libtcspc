@@ -39,8 +39,8 @@ TEMPLATE_TEST_CASE("Histogram elementwise, zero elements",
 
     in.feed(misc_event{42});
     REQUIRE(out.check(misc_event{42}));
-    in.feed_end();
-    REQUIRE(out.check_end());
+    in.flush();
+    REQUIRE(out.check_flushed());
 }
 
 TEMPLATE_TEST_CASE("Histogram elementwise, zero bins",
@@ -57,8 +57,8 @@ TEMPLATE_TEST_CASE("Histogram elementwise, zero bins",
     REQUIRE(
         out.check(element_histogram_event<u16>{{42, 43}, 0, {}, {0, 0}, 0}));
     REQUIRE(out.check(histogram_array_event<u16>{{42, 43}, {}, {0, 0}, 1}));
-    in.feed_end();
-    REQUIRE(out.check_end());
+    in.flush();
+    REQUIRE(out.check_flushed());
 }
 
 TEMPLATE_TEST_CASE("Histogram elementwise, no overflow",
@@ -84,8 +84,8 @@ TEMPLATE_TEST_CASE("Histogram elementwise, no overflow",
     REQUIRE(out.check(histogram_array_event<u16>{
         {42, 45}, autocopy_span(hist_arr), {3, 0}, 1}));
 
-    in.feed_end();
-    REQUIRE(out.check_end());
+    in.flush();
+    REQUIRE(out.check_flushed());
 }
 
 TEST_CASE("Histogram elementwise, saturate on overflow",
@@ -107,8 +107,8 @@ TEST_CASE("Histogram elementwise, saturate on overflow",
         std::vector<u16> hist_arr{0};
         REQUIRE(out.check(histogram_array_event<u16>{
             {42, 43}, autocopy_span(hist_arr), {1, 1}, 1}));
-        in.feed_end();
-        REQUIRE(out.check_end());
+        in.flush();
+        REQUIRE(out.check_flushed());
     }
 
     SECTION("Max per bin = 1") {
@@ -125,8 +125,8 @@ TEST_CASE("Histogram elementwise, saturate on overflow",
         std::vector<u16> hist_arr{1};
         REQUIRE(out.check(histogram_array_event<u16>{
             {42, 43}, autocopy_span(hist_arr), {2, 1}, 1}));
-        in.feed_end();
-        REQUIRE(out.check_end());
+        in.flush();
+        REQUIRE(out.check_flushed());
     }
 }
 
@@ -142,8 +142,10 @@ TEST_CASE("Histogram elementwise, error on overflow",
                                                      ref_processor(out)));
         in.require_output_checked(out);
 
-        in.feed(bin_increment_batch_event<u32>{{42, 43}, {0}}); // Overflow
-        REQUIRE_THROWS_AS(out.check_end(), histogram_overflow_error);
+        REQUIRE_THROWS_AS(
+            in.feed(bin_increment_batch_event<u32>{{42, 43}, {0}}),
+            histogram_overflow_error);
+        REQUIRE(out.check_not_flushed());
     }
 
     SECTION("Max per bin = 1") {
@@ -153,8 +155,10 @@ TEST_CASE("Histogram elementwise, error on overflow",
                                                      ref_processor(out)));
         in.require_output_checked(out);
 
-        in.feed(bin_increment_batch_event<u32>{{42, 43}, {0, 0}}); // Overflow
-        REQUIRE_THROWS_AS(out.check_end(), histogram_overflow_error);
+        REQUIRE_THROWS_AS(
+            in.feed(bin_increment_batch_event<u32>{{42, 43}, {0, 0}}),
+            histogram_overflow_error);
+        REQUIRE(out.check_not_flushed());
     }
 }
 
@@ -193,15 +197,15 @@ TEMPLATE_TEST_CASE(
     in.require_output_checked(out);
 
     SECTION("empty stream") {
-        in.feed_end();
-        REQUIRE(out.check_end());
+        in.flush();
+        REQUIRE(out.check_flushed());
     }
 
     SECTION("unrelated event only") {
         in.feed(misc_event{});
         REQUIRE(out.check(misc_event{}));
-        in.feed_end();
-        REQUIRE(out.check_end());
+        in.flush();
+        REQUIRE(out.check_flushed());
     }
 }
 
@@ -220,8 +224,8 @@ TEMPLATE_TEST_CASE(
     std::vector<u8> hist_arr;
 
     SECTION("end before cycle 0") {
-        in.feed_end();
-        REQUIRE(out.check_end());
+        in.flush();
+        REQUIRE(out.check_flushed());
     }
 
     SECTION("feed cycle 0, element 0") {
@@ -231,8 +235,8 @@ TEMPLATE_TEST_CASE(
             {42, 43}, 0, autocopy_span(elem_hist), {1, 0}, 0}));
 
         SECTION("end mid cycle 0") {
-            in.feed_end();
-            REQUIRE(out.check_end());
+            in.flush();
+            REQUIRE(out.check_flushed());
         }
 
         SECTION("feed cycle 0, element 1") {
@@ -245,8 +249,8 @@ TEMPLATE_TEST_CASE(
                 {42, 45}, autocopy_span(hist_arr), {2, 0}, 1}));
 
             SECTION("end after cycle 0") {
-                in.feed_end();
-                REQUIRE(out.check_end());
+                in.flush();
+                REQUIRE(out.check_flushed());
             }
 
             SECTION("feed cycle 1, element 0") {
@@ -256,8 +260,8 @@ TEMPLATE_TEST_CASE(
                     {46, 47}, 0, autocopy_span(elem_hist), {3, 0}, 1}));
 
                 SECTION("end mid cycle 1") {
-                    in.feed_end();
-                    REQUIRE(out.check_end());
+                    in.flush();
+                    REQUIRE(out.check_flushed());
                 }
             }
         }
@@ -279,11 +283,11 @@ TEMPLATE_TEST_CASE(
     std::vector<u8> hist_arr;
 
     SECTION("end before cycle 0") {
-        in.feed_end();
+        in.flush();
         hist_arr = {0, 0, 0, 0, 0, 0};
         REQUIRE(out.check(concluding_histogram_array_event<u8>{
             {}, autocopy_span(hist_arr), {0, 0}, 0, true}));
-        REQUIRE(out.check_end());
+        REQUIRE(out.check_flushed());
     }
 
     SECTION("feed cycle 0, element 0") {
@@ -293,11 +297,11 @@ TEMPLATE_TEST_CASE(
             {42, 43}, 0, autocopy_span(elem_hist), {1, 0}, 0}));
 
         SECTION("end mid cycle 0") {
-            in.feed_end();
+            in.flush();
             hist_arr = {0, 0, 0, 0, 0, 0};
             REQUIRE(out.check(concluding_histogram_array_event<u8>{
                 {}, autocopy_span(hist_arr), {0, 0}, 0, true}));
-            REQUIRE(out.check_end());
+            REQUIRE(out.check_flushed());
         }
 
         SECTION("feed cycle 0, element 1") {
@@ -310,11 +314,11 @@ TEMPLATE_TEST_CASE(
                 {42, 45}, autocopy_span(hist_arr), {2, 0}, 1}));
 
             SECTION("end after cycle 0") {
-                in.feed_end();
+                in.flush();
                 hist_arr = {1, 0, 0, 0, 1, 0};
                 REQUIRE(out.check(concluding_histogram_array_event<u8>{
                     {42, 45}, autocopy_span(hist_arr), {2, 0}, 1, true}));
-                REQUIRE(out.check_end());
+                REQUIRE(out.check_flushed());
             }
 
             SECTION("feed cycle 1, element 0") {
@@ -324,11 +328,11 @@ TEMPLATE_TEST_CASE(
                     {46, 47}, 0, autocopy_span(elem_hist), {3, 0}, 1}));
 
                 SECTION("end mid cycle 1") {
-                    in.feed_end();
+                    in.flush();
                     hist_arr = {1, 0, 0, 0, 1, 0}; // Rolled back
                     REQUIRE(out.check(concluding_histogram_array_event<u8>{
                         {42, 45}, autocopy_span(hist_arr), {2, 0}, 1, true}));
-                    REQUIRE(out.check_end());
+                    REQUIRE(out.check_flushed());
                 }
             }
         }
@@ -354,11 +358,11 @@ TEMPLATE_TEST_CASE(
         hist_arr = {0, 0, 0, 0, 0, 0};
         REQUIRE(out.check(concluding_histogram_array_event<u8>{
             {}, autocopy_span(hist_arr), {0, 0}, 0, false}));
-        in.feed_end();
+        in.flush();
         hist_arr = {0, 0, 0, 0, 0, 0};
         REQUIRE(out.check(concluding_histogram_array_event<u8>{
             {}, autocopy_span(hist_arr), {0, 0}, 0, true}));
-        REQUIRE(out.check_end());
+        REQUIRE(out.check_flushed());
     }
 
     SECTION("feed cycle 0, element 0") {
@@ -372,11 +376,11 @@ TEMPLATE_TEST_CASE(
             hist_arr = {0, 0, 0, 0, 0, 0};
             REQUIRE(out.check(concluding_histogram_array_event<u8>{
                 {}, autocopy_span(hist_arr), {0, 0}, 0, false}));
-            in.feed_end();
+            in.flush();
             hist_arr = {0, 0, 0, 0, 0, 0};
             REQUIRE(out.check(concluding_histogram_array_event<u8>{
                 {}, autocopy_span(hist_arr), {0, 0}, 0, true}));
-            REQUIRE(out.check_end());
+            REQUIRE(out.check_flushed());
         }
 
         SECTION("feed cycle 0, element 1") {
@@ -393,11 +397,11 @@ TEMPLATE_TEST_CASE(
                 hist_arr = {1, 0, 0, 0, 1, 0};
                 REQUIRE(out.check(concluding_histogram_array_event<u8>{
                     {42, 45}, autocopy_span(hist_arr), {2, 0}, 1, false}));
-                in.feed_end();
+                in.flush();
                 hist_arr = {0, 0, 0, 0, 0, 0};
                 REQUIRE(out.check(concluding_histogram_array_event<u8>{
                     {}, autocopy_span(hist_arr), {0, 0}, 0, true}));
-                REQUIRE(out.check_end());
+                REQUIRE(out.check_flushed());
             }
 
             SECTION("feed cycle 1, element 0") {
@@ -411,11 +415,11 @@ TEMPLATE_TEST_CASE(
                     hist_arr = {1, 0, 0, 0, 1, 0}; // Rolled back
                     REQUIRE(out.check(concluding_histogram_array_event<u8>{
                         {42, 45}, autocopy_span(hist_arr), {2, 0}, 1, false}));
-                    in.feed_end();
+                    in.flush();
                     hist_arr = {0, 0, 0, 0, 0, 0};
                     REQUIRE(out.check(concluding_histogram_array_event<u8>{
                         {}, autocopy_span(hist_arr), {0, 0}, 0, true}));
-                    REQUIRE(out.check_end());
+                    REQUIRE(out.check_flushed());
                 }
             }
         }
@@ -440,8 +444,8 @@ TEST_CASE("histogram_elementwise_accumulate with saturate-on-overflow",
             {42, 43}, 0, autocopy_span(elem_hist), {6, 2}, 0}));
 
         SECTION("end") {
-            in.feed_end();
-            REQUIRE(out.check_end());
+            in.flush();
+            REQUIRE(out.check_flushed());
         }
 
         SECTION("reset") {
@@ -452,8 +456,8 @@ TEST_CASE("histogram_elementwise_accumulate with saturate-on-overflow",
                 elem_hist = {0, 0, 0};
                 REQUIRE(out.check(element_histogram_event<u8>{
                     {44, 45}, 0, autocopy_span(elem_hist), {0, 0}, 0}));
-                in.feed_end();
-                REQUIRE(out.check_end());
+                in.flush();
+                REQUIRE(out.check_flushed());
             }
         }
     }
@@ -472,8 +476,10 @@ TEST_CASE("histogram_elementwise_accumulate with reset-on-overflow",
     std::vector<u8> hist_arr;
 
     SECTION("single-batch overflow during cycle 0, element 0") {
-        in.feed(bin_increment_batch_event<u8>{{42, 43}, {0, 0, 0, 0, 0, 0}});
-        REQUIRE_THROWS_AS(out.check_end(), histogram_overflow_error);
+        REQUIRE_THROWS_AS(in.feed(bin_increment_batch_event<u8>{
+                              {42, 43}, {0, 0, 0, 0, 0, 0}}),
+                          histogram_overflow_error);
+        REQUIRE(out.check_not_flushed());
     }
 
     SECTION("no overflow during cycle 0, element 0") {
@@ -483,9 +489,10 @@ TEST_CASE("histogram_elementwise_accumulate with reset-on-overflow",
             {42, 43}, 0, autocopy_span(elem_hist), {2, 0}, 0}));
 
         SECTION("single-batch overflow during cycle 0, element 1") {
-            in.feed(
-                bin_increment_batch_event<u8>{{44, 45}, {1, 1, 1, 1, 1, 1}});
-            REQUIRE_THROWS_AS(out.check_end(), histogram_overflow_error);
+            REQUIRE_THROWS_AS(in.feed(bin_increment_batch_event<u8>{
+                                  {44, 45}, {1, 1, 1, 1, 1, 1}}),
+                              histogram_overflow_error);
+            REQUIRE(out.check_not_flushed());
         }
 
         SECTION("no overflow during cycle 0, element 1") {
@@ -506,19 +513,20 @@ TEST_CASE("histogram_elementwise_accumulate with reset-on-overflow",
                 REQUIRE(out.check(element_histogram_event<u8>{
                     {46, 47}, 0, autocopy_span(elem_hist), {3, 0}, 0}));
 
-                in.feed_end();
+                in.flush();
                 hist_arr = {0, 0, 0, 0, 0, 0};
                 REQUIRE(out.check(concluding_histogram_array_event<u8>{
                     {}, autocopy_span(hist_arr), {0, 0}, 0, true}));
             }
 
             SECTION("single-batch overflow during cycle 1, element 0") {
-                in.feed(bin_increment_batch_event<u8>{{46, 47},
-                                                      {0, 0, 0, 0, 0, 0}});
+                REQUIRE_THROWS_AS(in.feed(bin_increment_batch_event<u8>{
+                                      {46, 47}, {0, 0, 0, 0, 0, 0}}),
+                                  histogram_overflow_error);
                 hist_arr = {2, 0, 0, 0, 2, 0};
                 REQUIRE(out.check(concluding_histogram_array_event<u8>{
                     {42, 45}, autocopy_span(hist_arr), {4, 0}, 1, false}));
-                REQUIRE_THROWS_AS(out.check_end(), histogram_overflow_error);
+                REQUIRE(out.check_not_flushed());
             }
 
             SECTION("no overflow during cycle 1, element 0") {
@@ -540,20 +548,20 @@ TEST_CASE("histogram_elementwise_accumulate with reset-on-overflow",
                     REQUIRE(out.check(histogram_array_event<u8>{
                         {46, 49}, autocopy_span(hist_arr), {4, 0}, 1}));
 
-                    in.feed_end();
+                    in.flush();
                     hist_arr = {1, 0, 0, 0, 3, 0};
                     REQUIRE(out.check(concluding_histogram_array_event<u8>{
                         {46, 49}, autocopy_span(hist_arr), {4, 0}, 1, true}));
                 }
 
                 SECTION("single-batch overflow during cycle 1, element 1") {
-                    in.feed(bin_increment_batch_event<u8>{{48, 49},
-                                                          {1, 1, 1, 1, 1, 1}});
+                    REQUIRE_THROWS_AS(in.feed(bin_increment_batch_event<u8>{
+                                          {48, 49}, {1, 1, 1, 1, 1, 1}}),
+                                      histogram_overflow_error);
                     hist_arr = {2, 0, 0, 0, 2, 0}; // Rolled back
                     REQUIRE(out.check(concluding_histogram_array_event<u8>{
                         {42, 45}, autocopy_span(hist_arr), {4, 0}, 1, false}));
-                    REQUIRE_THROWS_AS(out.check_end(),
-                                      histogram_overflow_error);
+                    REQUIRE(out.check_not_flushed());
                 }
             }
         }
@@ -573,11 +581,13 @@ TEST_CASE("histogram_elementwise_accumulate with stop-on-overflow",
     std::vector<u8> hist_arr;
 
     SECTION("overflow during cycle 0, element 0") {
-        in.feed(bin_increment_batch_event<u8>{{42, 43}, {0, 0, 0, 0, 0}});
+        REQUIRE_THROWS_AS(
+            in.feed(bin_increment_batch_event<u8>{{42, 43}, {0, 0, 0, 0, 0}}),
+            end_processing);
         hist_arr = {0, 0, 0, 0, 0, 0};
         REQUIRE(out.check(concluding_histogram_array_event<u8>{
             {}, autocopy_span(hist_arr), {0, 0}, 0, true}));
-        REQUIRE(out.check_end());
+        REQUIRE(out.check_flushed());
     }
 
     SECTION("no overflow during cycle 0, element 0") {
@@ -587,12 +597,13 @@ TEST_CASE("histogram_elementwise_accumulate with stop-on-overflow",
             {42, 43}, 0, autocopy_span(elem_hist), {2, 0}, 0}));
 
         SECTION("overflow during cycle 0, element 1") {
-            in.feed(
-                bin_increment_batch_event<u8>{{44, 45}, {1, 1, 1, 1, 1, 1}});
+            REQUIRE_THROWS_AS(in.feed(bin_increment_batch_event<u8>{
+                                  {44, 45}, {1, 1, 1, 1, 1, 1}}),
+                              end_processing);
             hist_arr = {0, 0, 0, 0, 0, 0};
             REQUIRE(out.check(concluding_histogram_array_event<u8>{
                 {}, autocopy_span(hist_arr), {0, 0}, 0, true}));
-            REQUIRE(out.check_end());
+            REQUIRE(out.check_flushed());
         }
 
         SECTION("no overflow during cycle 0, element 1") {
@@ -605,11 +616,13 @@ TEST_CASE("histogram_elementwise_accumulate with stop-on-overflow",
                 {42, 45}, autocopy_span(hist_arr), {4, 0}, 1}));
 
             SECTION("overflow during cycle 1, element 0") {
-                in.feed(bin_increment_batch_event<u8>{{46, 47}, {0, 0, 0}});
+                REQUIRE_THROWS_AS(in.feed(bin_increment_batch_event<u8>{
+                                      {46, 47}, {0, 0, 0}}),
+                                  end_processing);
                 hist_arr = {2, 0, 0, 0, 2, 0};
                 REQUIRE(out.check(concluding_histogram_array_event<u8>{
                     {42, 45}, autocopy_span(hist_arr), {4, 0}, 1, true}));
-                REQUIRE(out.check_end());
+                REQUIRE(out.check_flushed());
             }
 
             SECTION("no overflow during cycle 1, element 0") {
@@ -619,12 +632,13 @@ TEST_CASE("histogram_elementwise_accumulate with stop-on-overflow",
                     {46, 47}, 0, autocopy_span(elem_hist), {5, 0}, 1}));
 
                 SECTION("overflow during cycle 1, element 1") {
-                    in.feed(
-                        bin_increment_batch_event<u8>{{48, 49}, {1, 1, 1}});
+                    REQUIRE_THROWS_AS(in.feed(bin_increment_batch_event<u8>{
+                                          {48, 49}, {1, 1, 1}}),
+                                      end_processing);
                     hist_arr = {2, 0, 0, 0, 2, 0}; // Rolled back
                     REQUIRE(out.check(concluding_histogram_array_event<u8>{
                         {42, 45}, autocopy_span(hist_arr), {4, 0}, 1, true}));
-                    REQUIRE(out.check_end());
+                    REQUIRE(out.check_flushed());
                 }
             }
         }
@@ -645,8 +659,10 @@ TEST_CASE(
     std::vector<u8> hist_arr;
 
     SECTION("overflow during cycle 0, element 0") {
-        in.feed(bin_increment_batch_event<u8>{{42, 43}, {0, 0, 0, 0, 0}});
-        REQUIRE_THROWS_AS(out.check_end(), histogram_overflow_error);
+        REQUIRE_THROWS_AS(
+            in.feed(bin_increment_batch_event<u8>{{42, 43}, {0, 0, 0, 0, 0}}),
+            histogram_overflow_error);
+        REQUIRE(out.check_not_flushed());
     }
 
     SECTION("no overflow during cycle 0, element 0") {
@@ -656,9 +672,10 @@ TEST_CASE(
             {42, 43}, 0, autocopy_span(elem_hist), {2, 0}, 0}));
 
         SECTION("overflow during cycle 0, element 1") {
-            in.feed(
-                bin_increment_batch_event<u8>{{44, 45}, {1, 1, 1, 1, 1, 1}});
-            REQUIRE_THROWS_AS(out.check_end(), histogram_overflow_error);
+            REQUIRE_THROWS_AS(in.feed(bin_increment_batch_event<u8>{
+                                  {44, 45}, {1, 1, 1, 1, 1, 1}}),
+                              histogram_overflow_error);
+            REQUIRE(out.check_not_flushed());
         }
 
         SECTION("no overflow during cycle 0, element 1") {
@@ -671,8 +688,10 @@ TEST_CASE(
                 {42, 45}, autocopy_span(hist_arr), {4, 0}, 1}));
 
             SECTION("overflow during cycle 1, element 0") {
-                in.feed(bin_increment_batch_event<u8>{{46, 47}, {0, 0, 0}});
-                REQUIRE_THROWS_AS(out.check_end(), histogram_overflow_error);
+                REQUIRE_THROWS_AS(in.feed(bin_increment_batch_event<u8>{
+                                      {46, 47}, {0, 0, 0}}),
+                                  histogram_overflow_error);
+                REQUIRE(out.check_not_flushed());
             }
 
             SECTION("no overflow during cycle 1, element 0") {
@@ -682,10 +701,10 @@ TEST_CASE(
                     {46, 47}, 0, autocopy_span(elem_hist), {5, 0}, 1}));
 
                 SECTION("overflow during cycle 1, element 1") {
-                    in.feed(
-                        bin_increment_batch_event<u8>{{48, 49}, {1, 1, 1}});
-                    REQUIRE_THROWS_AS(out.check_end(),
+                    REQUIRE_THROWS_AS(in.feed(bin_increment_batch_event<u8>{
+                                          {48, 49}, {1, 1, 1}}),
                                       histogram_overflow_error);
+                    REQUIRE(out.check_not_flushed());
                 }
             }
         }
@@ -706,8 +725,10 @@ TEST_CASE(
     std::vector<u8> hist_arr;
 
     SECTION("overflow during cycle 0, element 0") {
-        in.feed(bin_increment_batch_event<u8>{{42, 43}, {0, 0, 0, 0, 0}});
-        REQUIRE_THROWS_AS(out.check_end(), histogram_overflow_error);
+        REQUIRE_THROWS_AS(
+            in.feed(bin_increment_batch_event<u8>{{42, 43}, {0, 0, 0, 0, 0}}),
+            histogram_overflow_error);
+        REQUIRE(out.check_not_flushed());
     }
 
     SECTION("no overflow during cycle 0, element 0") {
@@ -717,9 +738,10 @@ TEST_CASE(
             {42, 43}, 0, autocopy_span(elem_hist), {2, 0}, 0}));
 
         SECTION("overflow during cycle 0, element 1") {
-            in.feed(
-                bin_increment_batch_event<u8>{{44, 45}, {1, 1, 1, 1, 1, 1}});
-            REQUIRE_THROWS_AS(out.check_end(), histogram_overflow_error);
+            REQUIRE_THROWS_AS(in.feed(bin_increment_batch_event<u8>{
+                                  {44, 45}, {1, 1, 1, 1, 1, 1}}),
+                              histogram_overflow_error);
+            REQUIRE(out.check_not_flushed());
         }
 
         SECTION("no overflow during cycle 0, element 1") {
@@ -732,8 +754,10 @@ TEST_CASE(
                 {42, 45}, autocopy_span(hist_arr), {4, 0}, 1}));
 
             SECTION("overflow during cycle 1, element 0") {
-                in.feed(bin_increment_batch_event<u8>{{46, 47}, {0, 0, 0}});
-                REQUIRE_THROWS_AS(out.check_end(), histogram_overflow_error);
+                REQUIRE_THROWS_AS(in.feed(bin_increment_batch_event<u8>{
+                                      {46, 47}, {0, 0, 0}}),
+                                  histogram_overflow_error);
+                REQUIRE(out.check_not_flushed());
             }
 
             SECTION("no overflow during cycle 1, element 0") {
@@ -743,10 +767,10 @@ TEST_CASE(
                     {46, 47}, 0, autocopy_span(elem_hist), {5, 0}, 1}));
 
                 SECTION("overflow during cycle 1, element 1") {
-                    in.feed(
-                        bin_increment_batch_event<u8>{{48, 49}, {1, 1, 1}});
-                    REQUIRE_THROWS_AS(out.check_end(),
+                    REQUIRE_THROWS_AS(in.feed(bin_increment_batch_event<u8>{
+                                          {48, 49}, {1, 1, 1}}),
                                       histogram_overflow_error);
+                    REQUIRE(out.check_not_flushed());
                 }
             }
         }

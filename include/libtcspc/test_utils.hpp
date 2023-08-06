@@ -33,13 +33,16 @@ namespace internal {
 
 template <typename EventSet> class capture_output {
     vector_queue<event_variant<EventSet>> output;
-    bool ended = false;
-    std::exception_ptr error;
+    bool flushed = false;
+    std::size_t error_in = std::numeric_limits<std::size_t>::max();
+    std::size_t end_in = std::numeric_limits<std::size_t>::max();
+    bool error_on_flush = false;
+    bool end_on_flush = false;
     bool end_of_life = false; // Reported error; cannot reuse
     bool suppress_output;
 
     void dump_output(std::ostream &stream) {
-        while (!output.empty()) {
+        while (not output.empty()) {
             stream << "found output: ";
             std::visit([&](auto &&e) { stream << e << '\n'; }, output.front());
             output.pop();
@@ -60,9 +63,9 @@ template <typename EventSet> class capture_output {
 
     auto output_check_thunk() -> std::function<bool()> {
         return [this] {
-            assert(!end_of_life);
-            if (!output.empty()) {
-                if (!suppress_output) {
+            assert(not end_of_life);
+            if (not output.empty()) {
+                if (not suppress_output) {
                     std::ostringstream stream;
                     stream << "captured output not checked\n";
                     dump_output(stream);
@@ -77,9 +80,11 @@ template <typename EventSet> class capture_output {
 
     template <typename Event,
               typename = std::enable_if_t<contains_event_v<EventSet, Event>>>
-    void handle_event(Event const &event) noexcept {
-        assert(!end_of_life);
-        assert(!ended);
+    void handle(Event const &event) {
+        assert(not end_of_life);
+        assert(not flushed);
+        if (error_in == 0)
+            throw std::runtime_error("test error on event");
         try {
             output.push(event);
         } catch (std::exception const &exc) {
@@ -89,19 +94,40 @@ template <typename EventSet> class capture_output {
             std::fputs(stream.str().c_str(), stderr);
             std::terminate();
         }
+        if (end_in == 0)
+            throw end_processing();
+        --error_in;
+        --end_in;
     }
 
-    void handle_end(std::exception_ptr const &error) noexcept {
-        assert(!end_of_life);
-        assert(!ended);
-        ended = true;
-        this->error = error;
+    void flush() {
+        assert(not end_of_life);
+        assert(not flushed);
+        if (error_on_flush) {
+            end_of_life = true;
+            throw std::runtime_error("test error on flush");
+        }
+        flushed = true;
+        if (end_on_flush)
+            throw end_processing();
     }
+
+    void throw_error_on_next(std::size_t count = 0) noexcept {
+        error_in = count;
+    }
+
+    void throw_end_processing_on_next(std::size_t count = 0) noexcept {
+        end_in = count;
+    }
+
+    void throw_error_on_flush() noexcept { error_on_flush = true; }
+
+    void throw_end_processing_on_flush() noexcept { end_on_flush = true; }
 
     template <typename Event,
               typename = std::enable_if_t<contains_event_v<EventSet, Event>>>
     auto retrieve() -> std::optional<Event> {
-        assert(!end_of_life);
+        assert(not end_of_life);
         if (not output.empty()) {
             auto const *event = std::get_if<Event>(&output.front());
             if (event) {
@@ -111,7 +137,7 @@ template <typename EventSet> class capture_output {
             }
         }
         end_of_life = true;
-        if (!suppress_output) {
+        if (not suppress_output) {
             std::ostringstream stream;
             stream << "expected output of specific type\n";
             if (output.empty()) {
@@ -126,14 +152,14 @@ template <typename EventSet> class capture_output {
     template <typename Event,
               typename = std::enable_if_t<contains_event_v<EventSet, Event>>>
     auto check(Event const &event) -> bool {
-        assert(!end_of_life);
+        assert(not end_of_life);
         event_variant<EventSet> expected = event;
-        if (!output.empty() && output.front() == expected) {
+        if (not output.empty() && output.front() == expected) {
             output.pop();
             return true;
         }
         end_of_life = true;
-        if (!suppress_output) {
+        if (not suppress_output) {
             std::ostringstream stream;
             stream << "expected output: " << event << '\n';
             if (output.empty()) {
@@ -145,11 +171,11 @@ template <typename EventSet> class capture_output {
         return false;
     }
 
-    [[nodiscard]] auto check_not_end() -> bool {
-        assert(!end_of_life);
-        if (!output.empty()) {
+    [[nodiscard]] auto check_not_flushed() -> bool {
+        assert(not end_of_life);
+        if (not output.empty()) {
             end_of_life = true;
-            if (!suppress_output) {
+            if (not suppress_output) {
                 std::ostringstream stream;
                 stream << "expected no output\n";
                 dump_output(stream);
@@ -157,48 +183,46 @@ template <typename EventSet> class capture_output {
             }
             return false;
         }
-        if (ended) {
+        if (flushed) {
             end_of_life = true;
-            if (!suppress_output) {
-                std::fputs("expected not end-of-stream\n", stderr);
-                std::fputs("found end-of-stream\n", stderr);
+            if (not suppress_output) {
+                std::fputs("expected not flushed\n", stderr);
+                std::fputs("found flushed\n", stderr);
             }
             return false;
         }
         return true;
     }
 
-    [[nodiscard]] auto check_end() -> bool {
-        assert(!end_of_life);
-        if (!output.empty()) {
+    [[nodiscard]] auto check_flushed() -> bool {
+        assert(not end_of_life);
+        if (not output.empty()) {
             end_of_life = true;
-            if (!suppress_output) {
+            if (not suppress_output) {
                 std::ostringstream stream;
-                stream << "expected end-of-stream\n";
+                stream << "expected flushed\n";
                 dump_output(stream);
                 std::fputs(stream.str().c_str(), stderr);
             }
             return false;
         }
-        if (!ended) {
+        if (not flushed) {
             end_of_life = true;
-            if (!suppress_output) {
-                std::fputs("expected end-of-stream\n", stderr);
-                std::fputs("found no output\n", stderr);
+            if (not suppress_output) {
+                std::fputs("expected flushed\n", stderr);
+                std::fputs("found not flushed\n", stderr);
             }
             return false;
         }
-
-        if (error)
-            std::rethrow_exception(error);
         return true;
     }
 };
 
 // Specialization required for empty event set
 template <> class capture_output<event_set<>> {
-    bool ended = false;
-    std::exception_ptr error;
+    bool flushed = false;
+    bool error_on_flush = false;
+    bool end_on_flush = false;
     bool end_of_life = false; // Reported error; cannot reuse
     bool suppress_output;
 
@@ -216,41 +240,48 @@ template <> class capture_output<event_set<>> {
 
     auto output_check_thunk() -> std::function<bool()> {
         return [this] {
-            assert(!end_of_life);
+            assert(not end_of_life);
+            (void)this;
             return true;
         };
     }
 
-    void handle_end(std::exception_ptr const &error) noexcept {
-        assert(!end_of_life);
-        assert(!ended);
-        ended = true;
-        this->error = error;
+    void flush() {
+        assert(not end_of_life);
+        assert(not flushed);
+        if (error_on_flush) {
+            end_of_life = true;
+            throw std::runtime_error("test error on flush");
+        }
+        flushed = true;
+        if (end_on_flush)
+            throw end_processing();
     }
 
-    [[nodiscard]] auto check_end() -> bool {
-        assert(!end_of_life);
-        if (!ended) {
+    void throw_error_on_flush() noexcept { error_on_flush = true; }
+
+    void throw_end_processing_on_flush() noexcept { end_on_flush = true; }
+
+    [[nodiscard]] auto check_flushed() -> bool {
+        assert(not end_of_life);
+        if (not flushed) {
             end_of_life = true;
-            if (!suppress_output) {
-                std::fputs("expected end-of-stream\n", stderr);
-                std::fputs("found no output\n", stderr);
+            if (not suppress_output) {
+                std::fputs("expected flushed\n", stderr);
+                std::fputs("found not flushed\n", stderr);
             }
             return false;
         }
-
-        if (error)
-            std::rethrow_exception(error);
         return true;
     }
 
-    [[nodiscard]] auto check_not_end() -> bool {
-        assert(!end_of_life);
-        if (ended) {
+    [[nodiscard]] auto check_not_flushed() -> bool {
+        assert(not end_of_life);
+        if (flushed) {
             end_of_life = true;
-            if (!suppress_output) {
-                std::fputs("expected not end-of-stream\n", stderr);
-                std::fputs("found end-of-stream\n", stderr);
+            if (not suppress_output) {
+                std::fputs("expected not flushed\n", stderr);
+                std::fputs("found flushed\n", stderr);
             }
             return false;
         }
@@ -264,14 +295,14 @@ template <typename EventSet, typename Downstream> class feed_input {
 
     static_assert(
         handles_event_set_v<Downstream, EventSet>,
-        "processor under test must handle the specified input events and end-of-stream");
+        "processor under test must handle the specified input events and flush");
 
     void require_outputs_checked() {
         if (output_checks.empty())
             throw std::logic_error(
                 "feed_input has no registered capture_output to check");
         for (auto &check : output_checks) {
-            if (!check())
+            if (not check())
                 throw std::logic_error("unchecked output remains");
         }
     }
@@ -289,15 +320,13 @@ template <typename EventSet, typename Downstream> class feed_input {
               typename = std::enable_if_t<contains_event_v<EventSet, Event>>>
     void feed(Event const &event) {
         require_outputs_checked();
-        downstream.handle_event(event);
+        downstream.handle(event);
     }
 
-    void feed_end(std::exception_ptr const &error) {
+    void flush() {
         require_outputs_checked();
-        downstream.handle_end(error);
+        downstream.flush();
     }
-
-    void feed_end() { feed_end({}); }
 };
 
 } // namespace internal
@@ -374,11 +403,10 @@ template <typename EventSet> class event_set_sink {
     /** \brief Processor interface */
     template <typename Event,
               typename = std::enable_if_t<contains_event_v<EventSet, Event>>>
-    void handle_event([[maybe_unused]] Event const &event) noexcept {}
+    void handle([[maybe_unused]] Event const &event) {}
 
     /** \brief Processor interface */
-    void
-    handle_end([[maybe_unused]] std::exception_ptr const &error) noexcept {}
+    void flush() {}
 };
 
 namespace internal {
@@ -392,13 +420,11 @@ template <typename EventSet, typename Downstream> class check_event_set {
 
     template <typename Event,
               typename = std::enable_if_t<contains_event_v<EventSet, Event>>>
-    void handle_event(Event const &event) noexcept {
-        downstream.handle_event(event);
+    void handle(Event const &event) {
+        downstream.handle(event);
     }
 
-    void handle_end(std::exception_ptr const &error) noexcept {
-        downstream.handle_end(error);
-    }
+    void flush() { downstream.flush(); }
 };
 
 } // namespace internal

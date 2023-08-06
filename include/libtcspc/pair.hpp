@@ -55,8 +55,7 @@ class pair_all {
         assert(window_size >= 0);
     }
 
-    template <typename DT>
-    void handle_event(detection_event<DT> const &event) noexcept {
+    template <typename DT> void handle(detection_event<DT> const &event) {
         static_assert(std::is_same_v<typename DT::abstime_type,
                                      typename DataTraits::abstime_type>);
         static_assert(std::is_same_v<typename DT::channel_type,
@@ -67,24 +66,21 @@ class pair_all {
             stop_chans.cbegin(),
             std::find(stop_chans.cbegin(), stop_chans.cend(), event.channel));
         if (std::size_t(chan_index) < NStopChannels) {
-            starts.for_each([&](auto start_time) noexcept {
-                downstream.handle_event(detection_pair_event<DataTraits>{
+            starts.for_each([&](auto start_time) {
+                downstream.handle(detection_pair_event<DataTraits>{
                     {{{start_time}, start_chan}}, event});
             });
         }
         if (event.channel == start_chan)
             starts.push(event.abstime);
-        downstream.handle_event(event);
+        downstream.handle(event);
     }
 
-    template <typename OtherEvent>
-    void handle_event(OtherEvent const &event) noexcept {
-        downstream.handle_event(event);
+    template <typename OtherEvent> void handle(OtherEvent const &event) {
+        downstream.handle(event);
     }
 
-    void handle_end(std::exception_ptr const &error) noexcept {
-        downstream.handle_end(error);
-    }
+    void flush() { downstream.flush(); }
 };
 
 template <typename DataTraits, std::size_t NStopChannels, typename Downstream>
@@ -122,8 +118,7 @@ class pair_one {
         assert(window_size >= 0);
     }
 
-    template <typename DT>
-    void handle_event(detection_event<DT> const &event) noexcept {
+    template <typename DT> void handle(detection_event<DT> const &event) {
         static_assert(std::is_same_v<typename DT::abstime_type,
                                      typename DataTraits::abstime_type>);
         static_assert(std::is_same_v<typename DT::channel_type,
@@ -134,9 +129,9 @@ class pair_one {
             stop_chans.cbegin(),
             std::find(stop_chans.cbegin(), stop_chans.cend(), event.channel)));
         if (chan_index < NStopChannels) {
-            starts.for_each([&](start_and_flags &sf) noexcept {
+            starts.for_each([&](start_and_flags &sf) {
                 if (not sf.stopped[chan_index]) {
-                    downstream.handle_event(detection_pair_event<DataTraits>{
+                    downstream.handle(detection_pair_event<DataTraits>{
                         {{{sf.time}, start_chan}}, event});
                     sf.stopped[chan_index] = true;
                 }
@@ -144,17 +139,14 @@ class pair_one {
         }
         if (event.channel == start_chan)
             starts.push(start_and_flags{event.abstime, {}});
-        downstream.handle_event(event);
+        downstream.handle(event);
     }
 
-    template <typename OtherEvent>
-    void handle_event(OtherEvent const &event) noexcept {
-        downstream.handle_event(event);
+    template <typename OtherEvent> void handle(OtherEvent const &event) {
+        downstream.handle(event);
     }
 
-    void handle_end(std::exception_ptr const &error) noexcept {
-        downstream.handle_end(error);
-    }
+    void flush() { downstream.flush(); }
 };
 
 template <typename DataTraits, std::size_t NStopChannels, typename Downstream>
@@ -186,8 +178,7 @@ class pair_all_between {
         assert(window_size >= 0);
     }
 
-    template <typename DT>
-    void handle_event(detection_event<DT> const &event) noexcept {
+    template <typename DT> void handle(detection_event<DT> const &event) {
         static_assert(std::is_same_v<typename DT::abstime_type,
                                      typename DataTraits::abstime_type>);
         static_assert(std::is_same_v<typename DT::channel_type,
@@ -200,23 +191,20 @@ class pair_all_between {
                               std::find(stop_chans.cbegin(), stop_chans.cend(),
                                         event.channel));
             if (std::size_t(chan_index) < NStopChannels) {
-                downstream.handle_event(detection_pair_event<DataTraits>{
+                downstream.handle(detection_pair_event<DataTraits>{
                     {{{*start}, start_chan}}, event});
             }
         }
         if (event.channel == start_chan)
             start = event.abstime;
-        downstream.handle_event(event);
+        downstream.handle(event);
     }
 
-    template <typename OtherEvent>
-    void handle_event(OtherEvent const &event) noexcept {
-        downstream.handle_event(event);
+    template <typename OtherEvent> void handle(OtherEvent const &event) {
+        downstream.handle(event);
     }
 
-    void handle_end(std::exception_ptr const &error) noexcept {
-        downstream.handle_end(error);
-    }
+    void flush() { downstream.flush(); }
 };
 
 template <typename DataTraits, std::size_t NStopChannels, typename Downstream>
@@ -254,8 +242,7 @@ class pair_one_between {
         assert(window_size >= 0);
     }
 
-    template <typename DT>
-    void handle_event(detection_event<DT> const &event) noexcept {
+    template <typename DT> void handle(detection_event<DT> const &event) {
         static_assert(std::is_same_v<typename DT::abstime_type,
                                      typename DataTraits::abstime_type>);
         static_assert(std::is_same_v<typename DT::channel_type,
@@ -268,24 +255,21 @@ class pair_one_between {
                               std::find(stop_chans.cbegin(), stop_chans.cend(),
                                         event.channel)));
             if (chan_index < NStopChannels && not start->stopped[chan_index]) {
-                downstream.handle_event(detection_pair_event<DataTraits>{
+                downstream.handle(detection_pair_event<DataTraits>{
                     {{{start->time}, start_chan}}, event});
                 start->stopped[chan_index] = true;
             }
         }
         if (event.channel == start_chan)
             start = start_and_flags{event.abstime, {}};
-        downstream.handle_event(event);
+        downstream.handle(event);
     }
 
-    template <typename OtherEvent>
-    void handle_event(OtherEvent const &event) noexcept {
-        downstream.handle_event(event);
+    template <typename OtherEvent> void handle(OtherEvent const &event) {
+        downstream.handle(event);
     }
 
-    void handle_end(std::exception_ptr const &error) noexcept {
-        downstream.handle_end(error);
-    }
+    void flush() { downstream.flush(); }
 };
 
 } // namespace internal

@@ -36,7 +36,7 @@ class recover_order {
         assert(window_size >= 0);
     }
 
-    void handle_event(Event const &event) noexcept {
+    void handle(Event const &event) {
         static_assert(std::is_same_v<decltype(event.abstime),
                                      typename DataTraits::abstime_type>);
 
@@ -54,8 +54,8 @@ class recover_order {
         auto keep_it = std::find_if_not(
             buf.begin(), buf.end(),
             [&](Event const &e) noexcept { return e.abstime < cutoff; });
-        std::for_each(buf.begin(), keep_it, [&](Event const &e) noexcept {
-            downstream.handle_event(std::as_const(e));
+        std::for_each(buf.begin(), keep_it, [&](Event const &e) {
+            downstream.handle(std::as_const(e));
         });
         buf.erase(buf.begin(), keep_it);
 
@@ -71,12 +71,12 @@ class recover_order {
 
     // Do not allow other events.
 
-    void handle_end(std::exception_ptr const &error) noexcept {
-        std::for_each(buf.begin(), buf.end(), [&](Event const &e) noexcept {
-            downstream.handle_event(std::as_const(e));
+    void flush() {
+        std::for_each(buf.begin(), buf.end(), [&](Event const &e) {
+            downstream.handle(std::as_const(e));
         });
         buf.clear();
-        downstream.handle_end(error);
+        downstream.flush();
     }
 };
 

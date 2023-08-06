@@ -23,8 +23,8 @@ TEST_CASE("view as bytes", "[view_as_bytes]") {
     int i = 42;
     in.feed(i);
     REQUIRE(out.check(autocopy_span(as_bytes(span(&i, 1)))));
-    in.feed_end();
-    REQUIRE(out.check_end());
+    in.flush();
+    REQUIRE(out.check_flushed());
 }
 
 TEST_CASE("view as bytes, vector specialization", "[view_as_bytes]") {
@@ -36,8 +36,8 @@ TEST_CASE("view as bytes, vector specialization", "[view_as_bytes]") {
     std::vector data{42, 43};
     in.feed(data);
     REQUIRE(out.check(autocopy_span(as_bytes(span(data)))));
-    in.feed_end();
-    REQUIRE(out.check_end());
+    in.flush();
+    REQUIRE(out.check_flushed());
 }
 
 TEST_CASE("view histogram as bytes", "[view_histogram_as_bytes]") {
@@ -52,8 +52,8 @@ TEST_CASE("view histogram as bytes", "[view_histogram_as_bytes]") {
                                      histogram_stats{}};
     in.feed(event);
     REQUIRE(out.check(autocopy_span(as_bytes(span(hist)))));
-    in.feed_end();
-    REQUIRE(out.check_end());
+    in.flush();
+    REQUIRE(out.check_flushed());
 }
 
 TEST_CASE("view histogram array as bytes", "[view_histogram_array_as_bytes]") {
@@ -69,8 +69,8 @@ TEST_CASE("view histogram array as bytes", "[view_histogram_array_as_bytes]") {
                                            histogram_stats{}};
     in.feed(event);
     REQUIRE(out.check(autocopy_span(as_bytes(span(histarr)))));
-    in.feed_end();
-    REQUIRE(out.check_end());
+    in.flush();
+    REQUIRE(out.check_flushed());
 }
 
 } // namespace tcspc

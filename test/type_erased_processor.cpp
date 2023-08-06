@@ -55,10 +55,8 @@ TEST_CASE("type_erased_processor move assignment", "[type_erased_processor]") {
     type_erased_processor<event_set<e0>> tep;
 
     struct myproc {
-        static void handle_event(e0 const &event) noexcept { (void)event; }
-        static void handle_end(std::exception_ptr const &error) noexcept {
-            (void)error;
-        }
+        static void handle(e0 const &event) { (void)event; }
+        static void flush() {}
     };
 
     tep = decltype(tep)(myproc());

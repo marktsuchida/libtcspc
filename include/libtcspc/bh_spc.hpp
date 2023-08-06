@@ -666,8 +666,8 @@ class decode_bh_spc {
 
     Downstream downstream;
 
-    LIBTCSPC_NOINLINE void issue_warning(char const *message) noexcept {
-        downstream.handle_event(warning_event{message});
+    LIBTCSPC_NOINLINE void issue_warning(char const *message) {
+        downstream.handle(warning_event{message});
     }
 
   public:
@@ -676,15 +676,14 @@ class decode_bh_spc {
 
     // Rule of zero
 
-    void handle_event(BHSPCEvent const &event) noexcept {
+    void handle(BHSPCEvent const &event) {
         if (event.is_multiple_macrotime_overflow()) {
             abstime_base +=
                 abstime_type(BHSPCEvent::macrotime_overflow_period) *
                 event.multiple_macrotime_overflow_count().value();
             if (event.gap_flag())
-                downstream.handle_event(
-                    data_lost_event<DataTraits>{abstime_base});
-            return downstream.handle_event(
+                downstream.handle(data_lost_event<DataTraits>{abstime_base});
+            return downstream.handle(
                 time_reached_event<DataTraits>{abstime_base});
         }
 
@@ -693,23 +692,21 @@ class decode_bh_spc {
         abstime_type const abstime = abstime_base + event.macrotime().value();
 
         if (event.gap_flag())
-            downstream.handle_event(data_lost_event<DataTraits>{abstime});
+            downstream.handle(data_lost_event<DataTraits>{abstime});
 
         if (not event.marker_flag()) {
             if (not event.invalid_flag()) { // Valid photon
-                downstream.handle_event(
-                    time_correlated_detection_event<DataTraits>{
-                        {{abstime}, event.routing_signals().value()},
-                        event.adc_value().value()});
+                downstream.handle(time_correlated_detection_event<DataTraits>{
+                    {{abstime}, event.routing_signals().value()},
+                    event.adc_value().value()});
             } else { // Invalid photon
-                downstream.handle_event(
-                    time_reached_event<DataTraits>{abstime});
+                downstream.handle(time_reached_event<DataTraits>{abstime});
             }
         } else {
             if (event.invalid_flag()) { // Marker
                 auto bits = u32np(event.marker_bits());
                 while (bits != 0_u32np) {
-                    downstream.handle_event(marker_event<DataTraits>{
+                    downstream.handle(marker_event<DataTraits>{
                         {{abstime},
                          static_cast<typename DataTraits::channel_type>(
                              count_trailing_zeros_32(bits))}});
@@ -724,9 +721,7 @@ class decode_bh_spc {
         }
     }
 
-    void handle_end(std::exception_ptr const &error) noexcept {
-        downstream.handle_end(error);
-    }
+    void flush() { downstream.flush(); }
 };
 } // namespace internal
 

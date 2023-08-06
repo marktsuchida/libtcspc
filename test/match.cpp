@@ -31,8 +31,8 @@ TEST_CASE("Match and replace", "[match_replace]") {
     REQUIRE(out.check(marker_event<>{{{200}, 1}}));
     in.feed(misc_event{300});
     REQUIRE(out.check(misc_event{300}));
-    in.feed_end();
-    REQUIRE(out.check_end());
+    in.flush();
+    REQUIRE(out.check_flushed());
 }
 
 TEST_CASE("Match", "[match]") {
@@ -50,8 +50,8 @@ TEST_CASE("Match", "[match]") {
     REQUIRE(out.check(marker_event<>{{{200}, 1}}));
     in.feed(misc_event{300});
     REQUIRE(out.check(misc_event{300}));
-    in.feed_end();
-    REQUIRE(out.check_end());
+    in.flush();
+    REQUIRE(out.check_flushed());
 }
 
 } // namespace tcspc

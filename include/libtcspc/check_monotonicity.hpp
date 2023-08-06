@@ -27,34 +27,30 @@ class check_monotonicity {
     Downstream downstream;
 
     LIBTCSPC_NOINLINE
-    void issue_warning(typename DataTraits::abstime_type abstime) noexcept {
+    void issue_warning(typename DataTraits::abstime_type abstime) {
         std::ostringstream stream;
         stream << "non-monotonic abstime: " << last_seen << " followed by "
                << abstime;
-        downstream.handle_event(warning_event{stream.str()});
+        downstream.handle(warning_event{stream.str()});
     }
 
   public:
     explicit check_monotonicity(Downstream &&downstream)
         : downstream(std::move(downstream)) {}
 
-    template <typename Event> void handle_event(Event const &event) noexcept {
+    template <typename Event> void handle(Event const &event) {
         bool const monotonic = RequireStrictlyIncreasing
                                    ? event.abstime > last_seen
                                    : event.abstime >= last_seen;
         if (not monotonic)
             issue_warning(event.abstime);
         last_seen = event.abstime;
-        downstream.handle_event(event);
+        downstream.handle(event);
     }
 
-    void handle_event(warning_event const &event) noexcept {
-        downstream.handle_event(event);
-    }
+    void handle(warning_event const &event) { downstream.handle(event); }
 
-    void handle_end(std::exception_ptr const &error) noexcept {
-        downstream.handle_end(error);
-    }
+    void flush() { downstream.flush(); }
 };
 
 } // namespace internal

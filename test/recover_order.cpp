@@ -22,8 +22,8 @@ TEST_CASE("recover order", "[recover_order]") {
     in.require_output_checked(out);
 
     SECTION("empty stream") {
-        in.feed_end();
-        REQUIRE(out.check_end());
+        in.flush();
+        REQUIRE(out.check_flushed());
     }
 
     SECTION("in-order events are delayed") {
@@ -35,12 +35,12 @@ TEST_CASE("recover order", "[recover_order]") {
         in.feed(event{5});
         in.feed(event{6});
         REQUIRE(out.check(event{2}));
-        in.feed_end();
+        in.flush();
         REQUIRE(out.check(event{3}));
         REQUIRE(out.check(event{4}));
         REQUIRE(out.check(event{5}));
         REQUIRE(out.check(event{6}));
-        REQUIRE(out.check_end());
+        REQUIRE(out.check_flushed());
     }
 
     SECTION("out-of-order events are sorted") {
@@ -52,10 +52,10 @@ TEST_CASE("recover order", "[recover_order]") {
         in.feed(event{7});
         REQUIRE(out.check(event{2}));
         REQUIRE(out.check(event{3}));
-        in.feed_end();
+        in.flush();
         REQUIRE(out.check(event{5}));
         REQUIRE(out.check(event{7}));
-        REQUIRE(out.check_end());
+        REQUIRE(out.check_flushed());
     }
 }
 
@@ -79,9 +79,9 @@ TEST_CASE("recover order, empty time window", "[recover_order]") {
         REQUIRE(out.check(event{4}));
         in.feed(event{6});
         REQUIRE(out.check(event{5}));
-        in.feed_end();
+        in.flush();
         REQUIRE(out.check(event{6}));
-        REQUIRE(out.check_end());
+        REQUIRE(out.check_flushed());
     }
 }
 

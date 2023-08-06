@@ -35,7 +35,6 @@ class histogram_elementwise {
         std::is_same_v<OverflowStrategy, saturate_on_overflow>,
         saturate_on_internal_overflow, stop_on_internal_overflow>;
 
-    bool finished = false;
     // We use unique_ptr<T[]> rather than vector<T> because, among other
     // things, the latter cannot be allocated without zeroing.
     // NOLINTNEXTLINE(cppcoreguidelines-avoid-c-arrays,modernize-avoid-c-arrays)
@@ -48,11 +47,19 @@ class histogram_elementwise {
     abstime_range<typename DataTraits::abstime_type> cycle_time_range;
     Downstream downstream;
 
-    void finish(std::exception_ptr const &error) noexcept {
-        finished = true;
-        hist_arr_mem.reset();
-        hist_arr = {};
-        downstream.handle_end(error);
+    [[noreturn]] void overflow_error() {
+        throw histogram_overflow_error("elementwise histogram bin overflowed");
+    }
+
+    [[noreturn]] void handle_overflow() {
+        if constexpr (std::is_same_v<OverflowStrategy, saturate_on_overflow>) {
+            unreachable();
+        } else if constexpr (std::is_same_v<OverflowStrategy,
+                                            error_on_overflow>) {
+            overflow_error();
+        } else {
+            static_assert(false_for_type<OverflowStrategy>::value);
+        }
     }
 
   public:
@@ -64,53 +71,33 @@ class histogram_elementwise {
           mhist(hist_arr, max_per_bin, num_bins, num_elements, true),
           downstream(std::move(downstream)) {}
 
-    void
-    handle_event(bin_increment_batch_event<bin_index_type, DataTraits> const
-                     &event) noexcept {
-        if (finished)
-            return;
+    void handle(
+        bin_increment_batch_event<bin_index_type, DataTraits> const &event) {
         assert(not mhist.is_complete());
-
         auto element_index = mhist.next_element_index();
-        if (not mhist.apply_increment_batch(event.bin_indices, stats,
-                                            journal)) {
-            if constexpr (std::is_same_v<OverflowStrategy,
-                                         saturate_on_overflow>) {
-                unreachable();
-            } else if constexpr (std::is_same_v<OverflowStrategy,
-                                                error_on_overflow>) {
-                return finish(std::make_exception_ptr(histogram_overflow_error(
-                    "elementwise histogram bin overflowed")));
-            } else {
-                static_assert(false_for_type<OverflowStrategy>::value);
-            }
-        }
+        if (not mhist.apply_increment_batch(event.bin_indices, stats, journal))
+            handle_overflow();
         cycle_time_range.extend(event.time_range);
 
-        auto const ehe = element_histogram_event<bin_type, DataTraits>{
+        downstream.handle(element_histogram_event<bin_type, DataTraits>{
             event.time_range, element_index,
             autocopy_span<bin_type>(mhist.element_span(element_index)), stats,
-            0};
-        downstream.handle_event(ehe);
+            0});
 
         if (mhist.is_complete()) {
-            auto const hae = histogram_array_event<bin_type, DataTraits>{
-                cycle_time_range, autocopy_span<bin_type>(hist_arr), stats, 1};
-            downstream.handle_event(hae);
+            downstream.handle(histogram_array_event<bin_type, DataTraits>{
+                cycle_time_range, autocopy_span<bin_type>(hist_arr), stats,
+                1});
             mhist.reset(true);
             cycle_time_range.reset();
         }
     }
 
-    template <typename Event> void handle_event(Event const &event) noexcept {
-        if (not finished)
-            downstream.handle_event(event);
+    template <typename Event> void handle(Event const &event) {
+        downstream.handle(event);
     }
 
-    void handle_end(std::exception_ptr const &error) noexcept {
-        if (not finished)
-            finish(error);
-    }
+    void flush() { downstream.flush(); }
 };
 
 } // namespace internal
@@ -212,7 +199,6 @@ class histogram_elementwise_accumulate {
                            bin_increment_batch_journal<bin_index_type>,
                            null_journal<bin_index_type>>;
 
-    bool finished = false;
     // NOLINTNEXTLINE(cppcoreguidelines-avoid-c-arrays,modernize-avoid-c-arrays)
     std::unique_ptr<bin_type[]> hist_arr_mem;
     span<bin_type> hist_arr;
@@ -225,21 +211,54 @@ class histogram_elementwise_accumulate {
     abstime_range<typename DataTraits::abstime_type> total_time_range;
     Downstream downstream;
 
-    void emit_concluding(bool end_of_stream) noexcept {
+    void emit_concluding(bool end_of_stream) {
         assert(mhista.is_consistent());
-        auto const chae =
+        downstream.handle(
             concluding_histogram_array_event<bin_type, DataTraits>{
                 total_time_range, autocopy_span<bin_type>(hist_arr), stats,
-                mhista.cycle_index(), end_of_stream};
-        downstream.handle_event(chae);
+                mhista.cycle_index(), end_of_stream});
     }
 
-    void finish(std::exception_ptr const &error) noexcept {
-        finished = true;
-        hist_arr_mem.reset();
-        hist_arr = {};
-        journal.clear_and_shrink_to_fit();
-        downstream.handle_end(error);
+    [[noreturn]] void stop() {
+        downstream.flush();
+        throw end_processing();
+    }
+
+    [[noreturn]] void overflow_error(char const *msg) {
+        throw histogram_overflow_error(msg);
+    }
+
+    void handle_overflow(
+        bin_increment_batch_event<bin_index_type, DataTraits> const &event) {
+        if constexpr (std::is_same_v<OverflowStrategy, saturate_on_overflow>) {
+            unreachable();
+        } else if constexpr (std::is_same_v<OverflowStrategy,
+                                            reset_on_overflow>) {
+            if (mhista.cycle_index() == 0) {
+                overflow_error(
+                    "elementwise histogram bin overflowed on a single batch");
+            }
+            mhista.roll_back_current_cycle(journal, stats);
+            if constexpr (EmitConcluding)
+                emit_concluding(false);
+            stats = decltype(stats){};
+            total_time_range.reset();
+            // Keep journal and cycle time range!
+            mhista.reset_and_replay(journal, stats);
+            return handle(event); // Recurse max once
+        } else if constexpr (std::is_same_v<OverflowStrategy,
+                                            stop_on_overflow>) {
+            if constexpr (EmitConcluding) {
+                mhista.roll_back_current_cycle(journal, stats);
+                emit_concluding(true);
+            }
+            stop();
+        } else if constexpr (std::is_same_v<OverflowStrategy,
+                                            error_on_overflow>) {
+            overflow_error("elementwise histogram bin overflowed");
+        } else {
+            static_assert(false_for_type<OverflowStrategy>::value);
+        }
     }
 
   public:
@@ -252,70 +271,31 @@ class histogram_elementwise_accumulate {
           mhista(hist_arr, max_per_bin, num_bins, num_elements, true),
           downstream(std::move(downstream)) {}
 
-    void
-    handle_event(bin_increment_batch_event<bin_index_type, DataTraits> const
-                     &event) noexcept {
-        if (finished)
-            return;
+    void handle(
+        bin_increment_batch_event<bin_index_type, DataTraits> const &event) {
         assert(not mhista.is_cycle_complete());
-
         auto element_index = mhista.next_element_index();
         if (not mhista.apply_increment_batch(event.bin_indices, stats,
-                                             journal)) {
-            if constexpr (std::is_same_v<OverflowStrategy,
-                                         saturate_on_overflow>) {
-                unreachable();
-            } else if constexpr (std::is_same_v<OverflowStrategy,
-                                                reset_on_overflow>) {
-                if (mhista.cycle_index() == 0) {
-                    return finish(std::make_exception_ptr(histogram_overflow_error(
-                        "elementwise histogram bin overflowed on a single batch")));
-                }
-                mhista.roll_back_current_cycle(journal, stats);
-                if constexpr (EmitConcluding)
-                    emit_concluding(false);
-                stats = decltype(stats){};
-                total_time_range.reset();
-                // Keep journal and cycle time range!
-                mhista.reset_and_replay(journal, stats);
-                return handle_event(event); // Recurse max once
-            } else if constexpr (std::is_same_v<OverflowStrategy,
-                                                stop_on_overflow>) {
-                if constexpr (EmitConcluding) {
-                    mhista.roll_back_current_cycle(journal, stats);
-                    emit_concluding(true);
-                }
-                return finish({});
-            } else if constexpr (std::is_same_v<OverflowStrategy,
-                                                error_on_overflow>) {
-                return finish(std::make_exception_ptr(histogram_overflow_error(
-                    "elementwise histogram bin overflowed")));
-            } else {
-                static_assert(false_for_type<OverflowStrategy>::value);
-            }
-        }
+                                             journal))
+            return handle_overflow(event);
         cycle_time_range.extend(event.time_range);
 
-        auto const ehe = element_histogram_event<bin_type, DataTraits>{
+        downstream.handle(element_histogram_event<bin_type, DataTraits>{
             event.time_range, element_index,
             autocopy_span<bin_type>(mhista.element_span(element_index)), stats,
-            mhista.cycle_index()};
-        downstream.handle_event(ehe);
+            mhista.cycle_index()});
 
         if (mhista.is_cycle_complete()) {
             total_time_range.extend(cycle_time_range);
             mhista.new_cycle(journal);
-            auto const hae = histogram_array_event<bin_type, DataTraits>{
+            downstream.handle(histogram_array_event<bin_type, DataTraits>{
                 total_time_range, autocopy_span<bin_type>(hist_arr), stats,
-                mhista.cycle_index()};
-            downstream.handle_event(hae);
+                mhista.cycle_index()});
             cycle_time_range.reset();
         }
     }
 
-    void handle_event([[maybe_unused]] ResetEvent const &event) noexcept {
-        if (finished)
-            return;
+    void handle([[maybe_unused]] ResetEvent const &event) {
         if constexpr (EmitConcluding) {
             mhista.roll_back_current_cycle(journal, stats);
             emit_concluding(false);
@@ -327,19 +307,16 @@ class histogram_elementwise_accumulate {
         cycle_time_range.reset();
     }
 
-    template <typename Event> void handle_event(Event const &event) noexcept {
-        if (!finished)
-            downstream.handle_event(event);
+    template <typename Event> void handle(Event const &event) {
+        downstream.handle(event);
     }
 
-    void handle_end(std::exception_ptr const &error) noexcept {
-        if (finished)
-            return;
+    void flush() {
         if constexpr (EmitConcluding) {
             mhista.roll_back_current_cycle(journal, stats);
             emit_concluding(true);
         }
-        finish(error);
+        downstream.flush();
     }
 };
 

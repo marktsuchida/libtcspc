@@ -8,7 +8,6 @@
 
 #include "apply_class_template.hpp"
 
-#include <exception>
 #include <ostream>
 #include <tuple>
 #include <type_traits>
@@ -117,9 +116,9 @@ struct handles_event : std::false_type {};
 
 template <typename Proc, typename Event>
 struct handles_event<Proc, Event,
-                     std::void_t<decltype(std::declval<Proc>().handle_event(
+                     std::void_t<decltype(std::declval<Proc>().handle(
                          std::declval<Event const>()))>>
-    : std::is_same<void, decltype(std::declval<Proc>().handle_event(
+    : std::is_same<void, decltype(std::declval<Proc>().handle(
                              std::declval<Event const>()))> {};
 
 /**
@@ -135,38 +134,35 @@ template <typename Proc, typename Event>
 inline constexpr bool handles_event_v = handles_event<Proc, Event>::value;
 
 /**
- * \brief Metafunction to check whether the given processor handles end of
- * stream.
+ * \brief Metafunction to check whether the given processor handles flushing.
  *
  * \ingroup metafunctions
  *
- * All processors must handle end of stream. This metafunction is useful for
- * static checking.
+ * All processors must handle flushing. This metafunction is useful for static
+ * checking.
  *
  * The result is provided in the member constant \c value.
  *
- * \see handles_end_v
+ * \see handles_flush_v
  *
  * \tparam Proc a processor type to check
  */
 template <typename Proc, typename = void>
-struct handles_end : std::false_type {};
+struct handles_flush : std::false_type {};
 
 template <typename Proc>
-struct handles_end<Proc, std::void_t<decltype(std::declval<Proc>().handle_end(
-                             std::declval<std::exception_ptr const>()))>>
-    : std::is_same<void, decltype(std::declval<Proc>().handle_end(
-                             std::declval<std::exception_ptr const>()))> {};
+struct handles_flush<Proc, std::void_t<decltype(std::declval<Proc>().flush())>>
+    : std::is_same<void, decltype(std::declval<Proc>().flush())> {};
 
 /**
- * \brief Helper variable to get the result of handles_end.
+ * \brief Helper variable to get the result of handles_flush.
  *
  * \ingroup metafunctions
  *
  * \tparam Proc a processor type to check
  */
 template <typename Proc>
-inline constexpr bool handles_end_v = handles_end<Proc>::value;
+inline constexpr bool handles_flush_v = handles_flush<Proc>::value;
 
 namespace internal {
 
@@ -174,8 +170,9 @@ template <typename Proc, typename... Events>
 struct handles_events : std::conjunction<handles_event<Proc, Events>...> {};
 
 template <typename Proc, typename... Events>
-struct handles_events_and_end
-    : std::conjunction<handles_events<Proc, Events...>, handles_end<Proc>> {};
+struct handles_events_and_flush
+    : std::conjunction<handles_events<Proc, Events...>, handles_flush<Proc>> {
+};
 
 } // namespace internal
 
@@ -186,7 +183,7 @@ struct handles_events_and_end
  * \ingroup metafunctions
  *
  * The result is true only if the processor handles all of the events in the
- * event set as well as end-of-stream.
+ * event set as well as flush.
  *
  * The result is provided in the member constant \c value.
  *
@@ -196,7 +193,7 @@ struct handles_events_and_end
  */
 template <typename Proc, typename EventSet>
 struct handles_event_set
-    : internal::apply_class_template_t<internal::handles_events_and_end,
+    : internal::apply_class_template_t<internal::handles_events_and_flush,
                                        EventSet, Proc> {};
 
 /**

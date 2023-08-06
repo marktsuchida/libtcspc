@@ -22,15 +22,12 @@ template <typename EventSet, bool Inverted, typename Downstream> class select {
     explicit select(Downstream &&downstream)
         : downstream(std::move(downstream)) {}
 
-    template <typename AnyEvent>
-    void handle_event(AnyEvent const &event) noexcept {
+    template <typename AnyEvent> void handle(AnyEvent const &event) {
         if constexpr (contains_event_v<EventSet, AnyEvent> != Inverted)
-            downstream.handle_event(event);
+            downstream.handle(event);
     }
 
-    void handle_end(std::exception_ptr const &error) noexcept {
-        downstream.handle_end(error);
-    }
+    void flush() { downstream.flush(); }
 };
 
 } // namespace internal

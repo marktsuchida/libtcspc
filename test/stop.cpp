@@ -24,14 +24,11 @@ TEST_CASE("stop with error", "[stop_with_error]") {
 
     in.feed(e1{});
     REQUIRE(out.check(e1{}));
-    in.feed(e0{});
     REQUIRE_THROWS_WITH(
-        out.check_end(),
+        in.feed(e0{}),
         Catch::Matchers::ContainsSubstring("myerror") &&
             Catch::Matchers::ContainsSubstring("empty_test_event<0>"));
-    in.feed(e1{});
-    in.feed(e0{});
-    in.feed_end();
+    REQUIRE(out.check_not_flushed());
 }
 
 TEST_CASE("stop with no error", "[stop]") {
@@ -42,11 +39,8 @@ TEST_CASE("stop with no error", "[stop]") {
 
     in.feed(e1{});
     REQUIRE(out.check(e1{}));
-    in.feed(e0{});
-    REQUIRE(out.check_end());
-    in.feed(e1{});
-    in.feed(e0{});
-    in.feed_end();
+    REQUIRE_THROWS_AS(in.feed(e0{}), end_processing);
+    REQUIRE(out.check_flushed());
 }
 
 } // namespace tcspc

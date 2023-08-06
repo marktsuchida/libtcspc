@@ -191,13 +191,9 @@ template <typename Pointer, typename Downstream> class dereference_pointer {
     explicit dereference_pointer(Downstream &&downstream)
         : downstream(std::move(downstream)) {}
 
-    void handle_event(Pointer const &event_ptr) noexcept {
-        downstream.handle_event(*event_ptr);
-    }
+    void handle(Pointer const &event_ptr) { downstream.handle(*event_ptr); }
 
-    void handle_end(std::exception_ptr const &error) noexcept {
-        downstream.handle_end(error);
-    }
+    void flush() { downstream.flush(); }
 };
 
 } // namespace internal
@@ -243,30 +239,25 @@ class batch {
         assert(batch_size > 0);
     }
 
-    void handle_event(Event const &event) noexcept {
+    void handle(Event const &event) {
         if (not cur_batch) {
-            try {
-                cur_batch = buffer_pool->check_out();
-                cur_batch->reserve(batch_size);
-                cur_batch->clear();
-            } catch (std::exception const &e) {
-                downstream.handle_end(std::make_exception_ptr(e));
-                return;
-            }
+            cur_batch = buffer_pool->check_out();
+            cur_batch->reserve(batch_size);
+            cur_batch->clear();
         }
 
         cur_batch->push_back(event);
 
         if (cur_batch->size() == batch_size) {
-            downstream.handle_event(cur_batch);
+            downstream.handle(cur_batch);
             cur_batch.reset();
         }
     }
 
-    void handle_end(std::exception_ptr const &error) noexcept {
+    void flush() {
         if (cur_batch && not cur_batch->empty())
-            downstream.handle_event(std::move(cur_batch));
-        downstream.handle_end(error);
+            downstream.handle(std::move(cur_batch));
+        downstream.flush();
     }
 };
 
@@ -286,14 +277,12 @@ class unbatch {
     // inlined even if this function is marked noinline. There may be
     // borderline cases where this doesn't hold, but it is probably best to
     // leave it to the compiler.
-    void handle_event(EventContainer const &events) noexcept {
+    void handle(EventContainer const &events) {
         for (auto const &event : events)
-            downstream.handle_event(event);
+            downstream.handle(event);
     }
 
-    void handle_end(std::exception_ptr const &error) noexcept {
-        downstream.handle_end(error);
-    }
+    void flush() { downstream.flush(); }
 };
 
 } // namespace internal
@@ -375,6 +364,18 @@ auto unbatch(Downstream &&downstream) {
         std::forward<Downstream>(downstream));
 }
 
+/**
+ * \brief Exception type thrown when buffer source was discontinued without
+ * reaching the point of flushing.
+ */
+class source_halted final : std::exception {
+  public:
+    /** \brief std::exception interface. */
+    auto what() const noexcept -> char const * override {
+        return "source halted without flushing";
+    }
+};
+
 namespace internal {
 
 template <typename Event, bool LatencyLimited, typename Downstream>
@@ -390,8 +391,9 @@ class buffer {
     std::condition_variable has_data_condition;
     queue_type shared_queue;
     std::chrono::time_point<clock_type> oldest_enqueued_time;
-    bool stream_ended = false;
-    std::exception_ptr queued_error;
+    bool upstream_flushed = false;
+    bool upstream_halted = false;
+    bool downstream_threw = false;
 
     // To reduce lock contention on the shared_queue, we use a second queue
     // that is accessed only by the emitting thread and is not protected by the
@@ -419,80 +421,92 @@ class buffer {
     explicit buffer(std::size_t threshold, Downstream &&downstream)
         : threshold(threshold), downstream(std::move(downstream)) {}
 
-    void handle_event(Event const &event) noexcept {
+    void handle(Event const &event) {
         bool should_notify{};
         {
             std::scoped_lock lock(mutex);
-            if (stream_ended)
-                return;
+            if (downstream_threw)
+                throw end_processing();
 
-            try {
-                shared_queue.push(event);
-                should_notify = shared_queue.size() == threshold;
-                if constexpr (LatencyLimited) {
-                    if (shared_queue.size() == 1) {
-                        oldest_enqueued_time = clock_type::now();
-                        should_notify = true; // Wake up once to set deadline.
-                    }
+            shared_queue.push(event);
+            should_notify = shared_queue.size() == threshold;
+            if constexpr (LatencyLimited) {
+                if (shared_queue.size() == 1) {
+                    oldest_enqueued_time = clock_type::now();
+                    should_notify = true; // Wake up once to set deadline.
                 }
-            } catch (std::exception const &) {
-                stream_ended = true;
-                queued_error = std::current_exception();
-                should_notify = true;
             }
         }
         if (should_notify)
             has_data_condition.notify_one();
     }
 
-    void handle_end(std::exception_ptr const &error) noexcept {
+    void flush() {
         {
             std::scoped_lock lock(mutex);
-            if (stream_ended)
-                return;
-
-            stream_ended = true;
-            queued_error = error;
+            if (downstream_threw)
+                throw end_processing();
+            upstream_flushed = true;
         }
         has_data_condition.notify_one();
     }
 
-    void pump_events() noexcept {
-        std::unique_lock lock(mutex);
+    void notify_halt() noexcept {
+        {
+            std::scoped_lock lock(mutex);
+            upstream_halted = true;
+        }
+        has_data_condition.notify_one();
+    }
 
-        for (;;) {
-            if constexpr (LatencyLimited) {
-                has_data_condition.wait(lock, [&] {
-                    return not shared_queue.empty() || stream_ended;
-                });
-                auto const deadline = oldest_enqueued_time + max_latency;
-                has_data_condition.wait_until(lock, deadline, [&] {
-                    return shared_queue.size() >= threshold || stream_ended;
-                });
-            } else {
-                has_data_condition.wait(lock, [&] {
-                    return shared_queue.size() >= threshold || stream_ended;
-                });
-            }
+    void pump_events() {
+        try {
+            std::unique_lock lock(mutex);
+            for (;;) {
+                if constexpr (LatencyLimited) {
+                    has_data_condition.wait(lock, [&] {
+                        return not shared_queue.empty() || upstream_flushed ||
+                               upstream_halted;
+                    });
+                    auto const deadline = oldest_enqueued_time + max_latency;
+                    has_data_condition.wait_until(lock, deadline, [&] {
+                        return shared_queue.size() >= threshold ||
+                               upstream_flushed || upstream_halted;
+                    });
+                } else {
+                    has_data_condition.wait(lock, [&] {
+                        return shared_queue.size() >= threshold ||
+                               upstream_flushed || upstream_halted;
+                    });
+                }
 
-            if (stream_ended && shared_queue.empty()) {
-                std::exception_ptr error;
-                std::swap(error, queued_error);
+                if (shared_queue.empty()) {
+                    if (upstream_flushed) {
+                        lock.unlock();
+                        downstream.flush();
+                        return;
+                    }
+                    if (upstream_halted) // Ended without flushing.
+                        throw source_halted();
+                }
+
+                emit_queue.swap(shared_queue);
+
                 lock.unlock();
-                downstream.handle_end(error);
-                return;
+
+                while (!emit_queue.empty()) {
+                    downstream.handle(emit_queue.front());
+                    emit_queue.pop();
+                }
+
+                lock.lock();
             }
-
-            emit_queue.swap(shared_queue);
-
-            lock.unlock();
-
-            while (!emit_queue.empty()) {
-                downstream.handle_event(emit_queue.front());
-                emit_queue.pop();
-            }
-
-            lock.lock();
+        } catch (source_halted const &) {
+            throw;
+        } catch (...) {
+            std::scoped_lock lock(mutex);
+            downstream_threw = true;
+            throw;
         }
     }
 };
@@ -505,10 +519,10 @@ class buffer {
  * \ingroup processors-basic
  *
  * This receives events of type \c Event from upstream like a normal processor,
- * but stores them in a buffer. By calling <tt>void pump_events() noexcept</tt>
- * on a different thread, the buffered events can be sent downstream on that
- * thread. The \c pump_events function blocks until the upstream has signaled
- * the end of stream and all events have been emitted downstream.
+ * but stores them in a buffer. By calling <tt>void pump_events()</tt> on a
+ * different thread, the buffered events can be sent downstream on that thread.
+ * The \c pump_events function blocks until the upstream has signaled the end
+ * of stream and all events have been emitted downstream.
  *
  * Usually \c Event should be EventArray in order to reduce overhead.
  *
@@ -535,10 +549,14 @@ auto buffer(std::size_t threshold, Downstream &&downstream) {
  * \ingroup processors-basic
  *
  * This receives events of type \c Event from upstream like a normal processor,
- * but stores them in a buffer. By calling <tt>void pump_events() noexcept</tt>
- * on a different thread, the buffered events can be sent downstream on that
- * thread. The \c pump_events function blocks until the upstream has signaled
- * the end of stream and all events have been emitted downstream.
+ * but stores them in a buffer. By calling <tt>void pump_events()</tt> on a
+ * different thread, the buffered events can be sent downstream on that thread.
+ * The \c pump_events function blocks until the upstream has signaled the end
+ * of stream and all events have been emitted downstream.
+ *
+ * The thread sending events to the buffer must call <tt>void notify_halt()
+ * noexcept</tt> when it will not send anything more, whether or not it flushed
+ * the stream.
  *
  * Usually \c Event should be EventArray in order to reduce overhead.
  *

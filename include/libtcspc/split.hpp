@@ -6,6 +6,7 @@
 
 #pragma once
 
+#include "common.hpp"
 #include "event_set.hpp"
 
 #include <exception>
@@ -25,17 +26,41 @@ class split {
         : downstream0(std::move(downstream0)),
           downstream1(std::move(downstream1)) {}
 
-    template <typename AnyEvent>
-    void handle_event(AnyEvent const &event) noexcept {
-        if constexpr (contains_event_v<EventSetToSplit, AnyEvent>)
-            downstream1.handle_event(event);
-        else
-            downstream0.handle_event(event);
+    template <typename AnyEvent> void handle(AnyEvent const &event) {
+        if constexpr (contains_event_v<EventSetToSplit, AnyEvent>) {
+            try {
+                downstream1.handle(event);
+            } catch (end_processing const &) {
+                downstream0.flush();
+                throw;
+            }
+
+        } else {
+            try {
+                downstream0.handle(event);
+            } catch (end_processing const &) {
+                downstream1.flush();
+                throw;
+            }
+        }
     }
 
-    void handle_end(std::exception_ptr const &error) noexcept {
-        downstream0.handle_end(error);
-        downstream1.handle_end(error);
+    void flush() {
+        std::exception_ptr end;
+        try {
+            downstream0.flush();
+        } catch (end_processing const &) {
+            end = std::current_exception();
+        }
+        try {
+            downstream1.flush();
+        } catch (end_processing const &) {
+            if (end) // Both threw; keep first.
+                std::rethrow_exception(end);
+            throw;
+        }
+        if (end)
+            std::rethrow_exception(end);
     }
 };
 

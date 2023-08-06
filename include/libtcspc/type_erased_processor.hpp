@@ -29,13 +29,13 @@ template <> class abstract_processor_impl<> {
     abstract_processor_impl(abstract_processor_impl &&) = delete;
     auto operator=(abstract_processor_impl &&) = delete;
     virtual ~abstract_processor_impl() = default;
-    virtual void handle_end(std::exception_ptr const &) noexcept = 0;
+    virtual void flush() = 0;
 };
 
 template <typename Event0>
 class abstract_processor_impl<Event0> : public abstract_processor_impl<> {
   public:
-    virtual void handle_event(Event0 const &) noexcept = 0;
+    virtual void handle(Event0 const &) = 0;
 };
 
 template <typename Event0, typename Event1, typename... Events>
@@ -44,8 +44,8 @@ class abstract_processor_impl<Event0, Event1, Events...>
     using base_type = abstract_processor_impl<Event1, Events...>;
 
   public:
-    using base_type::handle_event; // Import overload set
-    virtual void handle_event(Event0 const &) noexcept = 0;
+    using base_type::handle; // Import overload set
+    virtual void handle(Event0 const &) = 0;
 };
 
 template <typename Interface, typename Proc, typename... Events>
@@ -64,9 +64,7 @@ class virtual_processor_impl<Interface, Proc> : public Interface {
     explicit virtual_processor_impl(Args &&...args)
         : proc(std::forward<Args>(args)...) {}
 
-    void handle_end(std::exception_ptr const &error) noexcept final {
-        proc.handle_end(error);
-    }
+    void flush() final { proc.flush(); }
 
     auto wrapped() -> Proc & { return proc; }
 };
@@ -83,10 +81,8 @@ class virtual_processor_impl<Interface, Proc, Event0, Events...>
   public:
     using base_type::base_type;
 
-    using base_type::handle_event; // Import overload set
-    void handle_event(Event0 const &event) noexcept final {
-        proc.handle_event(event);
-    }
+    using base_type::handle; // Import overload set
+    void handle(Event0 const &event) final { proc.handle(event); }
 };
 
 template <typename Proc, typename... Events>
@@ -145,17 +141,12 @@ template <typename EventSet> class type_erased_processor {
     /** \brief Processor interface */
     template <typename Event,
               typename = std::enable_if_t<contains_event_v<EventSet, Event>>>
-    void handle_event(Event const &event) noexcept {
-        proc->handle_event(event);
+    void handle(Event const &event) {
+        proc->handle(event);
     }
 
     /** \brief Processor interface */
-    void handle_end(std::exception_ptr const &error) noexcept {
-        proc->handle_end(error);
-
-        // No more calls will be made to proc, so avoid holding onto it
-        proc.reset();
-    }
+    void flush() { proc->flush(); }
 };
 
 } // namespace tcspc

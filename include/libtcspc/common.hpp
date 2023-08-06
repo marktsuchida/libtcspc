@@ -60,6 +60,18 @@ struct default_data_traits {
 };
 
 /**
+ * \brief Exception type used to indicate processor-initiated non-error end of
+ * processing.
+ */
+class end_processing final : public std::exception {
+  public:
+    /** \brief std::exception interface. */
+    auto what() const noexcept -> char const * override {
+        return "reached end of processing without error";
+    }
+};
+
+/**
  * \brief An event type indicating a warning.
  *
  * \ingroup events-basic
@@ -115,11 +127,10 @@ class null_sink {
   public:
     /** \brief Processor interface */
     template <typename Event>
-    void handle_event([[maybe_unused]] Event const &event) noexcept {}
+    void handle([[maybe_unused]] Event const &event) {}
 
     /** \brief Processor interface */
-    void
-    handle_end([[maybe_unused]] std::exception_ptr const &error) noexcept {}
+    void flush() {}
 };
 
 namespace internal {
@@ -131,7 +142,7 @@ template <typename Downstream> class null_source {
     explicit null_source(Downstream &&downstream)
         : downstream(std::move(downstream)) {}
 
-    void pump_events() noexcept { downstream.handle_end({}); }
+    void pump_events() { downstream.flush(); }
 };
 
 } // namespace internal

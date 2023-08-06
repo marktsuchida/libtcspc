@@ -27,22 +27,19 @@ class match {
     explicit match(Matcher &&matcher, Downstream &&downstream)
         : matcher(std::move(matcher)), downstream(std::move(downstream)) {}
 
-    void handle_event(Event const &event) noexcept {
+    void handle(Event const &event) {
         bool matched = matcher(event);
         if (PassMatched || not matched)
-            downstream.handle_event(event);
+            downstream.handle(event);
         if (matched)
-            downstream.handle_event(OutEvent{event.abstime});
+            downstream.handle(OutEvent{event.abstime});
     }
 
-    template <typename OtherEvent>
-    void handle_event(OtherEvent const &event) noexcept {
-        downstream.handle_event(event);
+    template <typename OtherEvent> void handle(OtherEvent const &event) {
+        downstream.handle(event);
     }
 
-    void handle_end(std::exception_ptr const &error) noexcept {
-        downstream.handle_end(error);
-    }
+    void flush() { downstream.flush(); }
 };
 
 } // namespace internal

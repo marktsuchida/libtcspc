@@ -33,15 +33,15 @@ TEST_CASE("Gate events", "[gate]") {
         in.feed(gated_event{});
         if (initially_open)
             REQUIRE(out.check(gated_event{}));
-        in.feed_end();
-        REQUIRE(out.check_end());
+        in.flush();
+        REQUIRE(out.check_flushed());
     }
 
     SECTION("Pass through unrelated events") {
         in.feed(misc_event{});
         REQUIRE(out.check(misc_event{}));
-        in.feed_end();
-        REQUIRE(out.check_end());
+        in.flush();
+        REQUIRE(out.check_flushed());
     }
 
     SECTION("Pass through open/close") {
@@ -49,16 +49,16 @@ TEST_CASE("Gate events", "[gate]") {
         REQUIRE(out.check(open_event{}));
         in.feed(close_event{});
         REQUIRE(out.check(close_event{}));
-        in.feed_end();
-        REQUIRE(out.check_end());
+        in.flush();
+        REQUIRE(out.check_flushed());
     }
 
     SECTION("Gate closed") {
         in.feed(close_event{});
         REQUIRE(out.check(close_event{}));
         in.feed(gated_event{});
-        in.feed_end();
-        REQUIRE(out.check_end());
+        in.flush();
+        REQUIRE(out.check_flushed());
     }
 
     SECTION("Gate open") {
@@ -66,8 +66,8 @@ TEST_CASE("Gate events", "[gate]") {
         REQUIRE(out.check(open_event{}));
         in.feed(gated_event{});
         REQUIRE(out.check(gated_event{}));
-        in.feed_end();
-        REQUIRE(out.check_end());
+        in.flush();
+        REQUIRE(out.check_flushed());
     }
 }
 

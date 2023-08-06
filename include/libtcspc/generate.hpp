@@ -29,11 +29,11 @@ class generate {
     Downstream downstream;
 
     // Pred: bool(abstime_type const &)
-    template <typename Pred> void emit(Pred predicate) noexcept {
+    template <typename Pred> void emit(Pred predicate) {
         for (std::optional<abstime_type> t = std::as_const(generator).peek();
              t && predicate(*t); t = std::as_const(generator).peek()) {
             typename TimingGenerator::output_event_type e = generator.pop();
-            downstream.handle_event(e);
+            downstream.handle(e);
         }
     }
 
@@ -41,23 +41,23 @@ class generate {
     explicit generate(TimingGenerator &&generator, Downstream &&downstream)
         : generator(std::move(generator)), downstream(std::move(downstream)) {}
 
-    void handle_event(TriggerEvent const &event) noexcept {
+    void handle(TriggerEvent const &event) {
         emit([now = event.abstime](auto t) { return t < now; });
         generator.trigger(event.abstime);
-        downstream.handle_event(event);
+        downstream.handle(event);
     }
 
     template <typename OtherTimeTaggedEvent>
-    void handle_event(OtherTimeTaggedEvent const &event) noexcept {
+    void handle(OtherTimeTaggedEvent const &event) {
         emit([now = event.abstime](auto t) { return t <= now; });
-        downstream.handle_event(event);
+        downstream.handle(event);
     }
 
-    void handle_end(std::exception_ptr const &error) noexcept {
+    void flush() {
         // Note that we do _not_ generate the remaining timings. Usually timing
         // events beyond the end of the event stream are not useful, and not
         // generating them means that infinite generators can be used.
-        downstream.handle_end(error);
+        downstream.flush();
     }
 };
 

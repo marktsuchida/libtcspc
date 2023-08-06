@@ -20,12 +20,11 @@ using e0 = empty_test_event<0>;
 using e1 = empty_test_event<1>;
 
 struct my_event1_processor {
-    void handle_event([[maybe_unused]] e0 const &event) noexcept {}
+    void handle([[maybe_unused]] e0 const &event) {}
 };
 
-struct my_end_processor {
-    void
-    handle_end([[maybe_unused]] std::exception_ptr const &error) noexcept {}
+struct my_flush_processor {
+    void flush() {}
 };
 
 } // namespace
@@ -38,17 +37,17 @@ static_assert(contains_event_v<event_set<e0, e1>, e1>);
 
 static_assert(handles_event_v<my_event1_processor, e0>);
 static_assert(!handles_event_v<my_event1_processor, e1>);
-static_assert(!handles_end_v<my_event1_processor>);
+static_assert(!handles_flush_v<my_event1_processor>);
 static_assert(!handles_event_set_v<my_event1_processor, event_set<e0>>);
 
-static_assert(!handles_event_v<my_end_processor, e0>);
-static_assert(handles_end_v<my_end_processor>);
-static_assert(handles_event_set_v<my_end_processor, event_set<>>);
+static_assert(!handles_event_v<my_flush_processor, e0>);
+static_assert(handles_flush_v<my_flush_processor>);
+static_assert(handles_event_set_v<my_flush_processor, event_set<>>);
 
-struct my_event1_set_processor : my_event1_processor, my_end_processor {};
+struct my_event1_set_processor : my_event1_processor, my_flush_processor {};
 
 static_assert(handles_event_v<my_event1_set_processor, e0>);
-static_assert(handles_end_v<my_event1_set_processor>);
+static_assert(handles_flush_v<my_event1_set_processor>);
 static_assert(handles_event_set_v<my_event1_set_processor, event_set<e0>>);
 static_assert(!handles_event_set_v<my_event1_set_processor, event_set<e1>>);
 static_assert(

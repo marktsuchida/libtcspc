@@ -22,16 +22,16 @@ TEST_CASE("shared_processor", "[shared_processor]") {
 
     SECTION("Events are forwarded") {
         in.require_output_checked(out1);
-        in.feed_end();
-        REQUIRE(out1.check_end());
+        in.flush();
+        REQUIRE(out1.check_flushed());
     }
 
     SECTION("Downstream can be replaced via the shared_ptr") {
         auto out2 = capture_output<event_set<>>();
         *shptr = ref_processor(out2);
         in.require_output_checked(out2);
-        in.feed_end();
-        REQUIRE(out2.check_end());
+        in.flush();
+        REQUIRE(out2.check_flushed());
     }
 }
 

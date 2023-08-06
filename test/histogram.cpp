@@ -34,10 +34,10 @@ TEMPLATE_TEST_CASE("Histogram, zero bins", "[histogram]", saturate_on_overflow,
     in.feed(reset_event{});
     REQUIRE(
         out.check(concluding_histogram_event<u16>{{}, {}, {0, 0}, 0, false}));
-    in.feed_end();
+    in.flush();
     REQUIRE(
         out.check(concluding_histogram_event<u16>{{}, {}, {0, 0}, 0, true}));
-    REQUIRE(out.check_end());
+    REQUIRE(out.check_flushed());
 }
 
 TEMPLATE_TEST_CASE("Histogram, no overflow", "[histogram]",
@@ -67,11 +67,11 @@ TEMPLATE_TEST_CASE("Histogram, no overflow", "[histogram]",
     hist = {1, 0};
     REQUIRE(out.check(
         histogram_event<u16>{{45, 45}, autocopy_span(hist), {1, 0}}));
-    in.feed_end();
+    in.flush();
     hist = {1, 0};
     REQUIRE(out.check(concluding_histogram_event<u16>{
         {45, 45}, autocopy_span(hist), {1, 0}, 0, true}));
-    REQUIRE(out.check_end());
+    REQUIRE(out.check_flushed());
 }
 
 TEST_CASE("Histogram, saturate on overflow", "[histogram]") {
@@ -89,11 +89,11 @@ TEST_CASE("Histogram, saturate on overflow", "[histogram]") {
         hist = {0};
         REQUIRE(out.check(
             histogram_event<u16>{{42, 42}, autocopy_span(hist), {1, 1}}));
-        in.feed_end();
+        in.flush();
         hist = {0};
         REQUIRE(out.check(concluding_histogram_event<u16>{
             {42, 42}, autocopy_span(hist), {1, 1}, 0, true}));
-        REQUIRE(out.check_end());
+        REQUIRE(out.check_flushed());
     }
 
     SECTION("Max per bin = 1") {
@@ -119,11 +119,11 @@ TEST_CASE("Histogram, saturate on overflow", "[histogram]") {
         hist = {1};
         REQUIRE(out.check(
             histogram_event<u16>{{45, 45}, autocopy_span(hist), {1, 0}}));
-        in.feed_end();
+        in.flush();
         hist = {1};
         REQUIRE(out.check(concluding_histogram_event<u16>{
             {45, 45}, autocopy_span(hist), {1, 0}, 0, true}));
-        REQUIRE(out.check_end());
+        REQUIRE(out.check_flushed());
     }
 }
 
@@ -137,8 +137,9 @@ TEST_CASE("Histogram, reset on overflow", "[histogram]") {
                       reset_on_overflow>(1, 0, ref_processor(out)));
         in.require_output_checked(out);
 
-        in.feed(bin_increment_event<u32>{42, 0}); // Overflow
-        REQUIRE_THROWS_AS(out.check_end(), histogram_overflow_error);
+        REQUIRE_THROWS_AS(in.feed(bin_increment_event<u32>{42, 0}),
+                          histogram_overflow_error);
+        REQUIRE(out.check_not_flushed());
     }
 
     SECTION("Max per bin = 1") {
@@ -159,11 +160,11 @@ TEST_CASE("Histogram, reset on overflow", "[histogram]") {
         hist = {1};
         REQUIRE(out.check(
             histogram_event<u16>{{43, 43}, autocopy_span(hist), {1, 0}}));
-        in.feed_end();
+        in.flush();
         hist = {1};
         REQUIRE(out.check(concluding_histogram_event<u16>{
             {43, 43}, autocopy_span(hist), {1, 0}, 0, true}));
-        REQUIRE(out.check_end());
+        REQUIRE(out.check_flushed());
     }
 }
 
@@ -178,11 +179,12 @@ TEST_CASE("Histogram, stop on overflow", "[histogram]") {
                       stop_on_overflow>(1, 0, ref_processor(out)));
         in.require_output_checked(out);
 
-        in.feed(bin_increment_event<u32>{42, 0}); // Overflow
+        REQUIRE_THROWS_AS(in.feed(bin_increment_event<u32>{42, 0}),
+                          end_processing); // Overflow
         hist = {0};
         REQUIRE(out.check(concluding_histogram_event<u16>{
             {}, autocopy_span(hist), {0, 0}, 0, true}));
-        REQUIRE(out.check_end());
+        REQUIRE(out.check_flushed());
     }
 
     SECTION("Max per bin = 1") {
@@ -195,11 +197,12 @@ TEST_CASE("Histogram, stop on overflow", "[histogram]") {
         hist = {1};
         REQUIRE(out.check(
             histogram_event<u16>{{42, 42}, autocopy_span(hist), {1, 0}}));
-        in.feed(bin_increment_event<u32>{43, 0}); // Overflow
+        REQUIRE_THROWS_AS(in.feed(bin_increment_event<u32>{43, 0}),
+                          end_processing); // Overflow
         hist = {1};
         REQUIRE(out.check(concluding_histogram_event<u16>{
             {42, 42}, autocopy_span(hist), {1, 0}, 0, true}));
-        REQUIRE(out.check_end());
+        REQUIRE(out.check_flushed());
     }
 }
 
@@ -213,8 +216,9 @@ TEST_CASE("Histogram, error on overflow", "[histogram]") {
                       error_on_overflow>(1, 0, ref_processor(out)));
         in.require_output_checked(out);
 
-        in.feed(bin_increment_event<u32>{42, 0}); // Overflow
-        REQUIRE_THROWS_AS(out.check_end(), histogram_overflow_error);
+        REQUIRE_THROWS_AS(in.feed(bin_increment_event<u32>{42, 0}),
+                          histogram_overflow_error);
+        REQUIRE(out.check_not_flushed());
     }
 
     SECTION("Max per bin = 1") {
@@ -228,8 +232,9 @@ TEST_CASE("Histogram, error on overflow", "[histogram]") {
         hist = {1};
         REQUIRE(out.check(
             histogram_event<u16>{{42, 42}, autocopy_span(hist), {1, 0}}));
-        in.feed(bin_increment_event<u32>{43, 0}); // Overflow
-        REQUIRE_THROWS_AS(out.check_end(), histogram_overflow_error);
+        REQUIRE_THROWS_AS(in.feed(bin_increment_event<u32>{43, 0}),
+                          histogram_overflow_error);
+        REQUIRE(out.check_not_flushed());
     }
 }
 

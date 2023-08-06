@@ -28,17 +28,15 @@ template <typename DataTraits, typename Downstream> class delay {
         : delta(delta), downstream(std::move(downstream)) {}
 
     template <typename TimeTaggedEvent>
-    void handle_event(TimeTaggedEvent const &event) noexcept {
+    void handle(TimeTaggedEvent const &event) {
         static_assert(std::is_same_v<decltype(event.abstime),
                                      typename DataTraits::abstime_type>);
         TimeTaggedEvent copy(event);
         copy.abstime += delta;
-        downstream.handle_event(copy);
+        downstream.handle(copy);
     }
 
-    void handle_end(std::exception_ptr const &error) noexcept {
-        downstream.handle_end(error);
-    }
+    void flush() { downstream.flush(); }
 };
 
 template <typename DataTraits, typename Downstream> class zero_base_abstime {
@@ -51,7 +49,7 @@ template <typename DataTraits, typename Downstream> class zero_base_abstime {
         : downstream(std::move(downstream)) {}
 
     template <typename TimeTaggedEvent>
-    void handle_event(TimeTaggedEvent const &event) noexcept {
+    void handle(TimeTaggedEvent const &event) {
         static_assert(std::is_same_v<decltype(event.abstime),
                                      typename DataTraits::abstime_type>);
         if (not initialized) {
@@ -62,12 +60,10 @@ template <typename DataTraits, typename Downstream> class zero_base_abstime {
         // Support integer wrap-around by using unsigned type for subtraction.
         copy.abstime = static_cast<decltype(copy.abstime)>(
             as_unsigned(event.abstime) - as_unsigned(minus_delta));
-        downstream.handle_event(copy);
+        downstream.handle(copy);
     }
 
-    void handle_end(std::exception_ptr const &error) noexcept {
-        downstream.handle_end(error);
-    }
+    void flush() { downstream.flush(); }
 };
 
 } // namespace internal

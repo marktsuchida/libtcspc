@@ -42,15 +42,12 @@ template <typename Downstream> class ref_processor {
     explicit ref_processor(Downstream &downstream) : downstream(&downstream) {}
 
     /** \brief Processor interface */
-    template <typename AnyEvent>
-    void handle_event(AnyEvent const &event) noexcept {
-        downstream->handle_event(event);
+    template <typename AnyEvent> void handle(AnyEvent const &event) {
+        downstream->handle(event);
     }
 
     /** \brief Processor interface */
-    void handle_end(std::exception_ptr const &error) noexcept {
-        downstream->handle_end(error);
-    }
+    void flush() { downstream->flush(); }
 };
 
 } // namespace tcspc

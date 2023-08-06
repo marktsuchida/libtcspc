@@ -35,8 +35,7 @@ class time_correlate_at_start_or_stop {
     explicit time_correlate_at_start_or_stop(Downstream &&downstream)
         : downstream(std::move(downstream)) {}
 
-    template <typename DT>
-    void handle_event(detection_pair_event<DT> const &event) noexcept {
+    template <typename DT> void handle(detection_pair_event<DT> const &event) {
         static_assert(std::is_same_v<typename DT::abstime_type,
                                      typename DataTraits::abstime_type>);
         static_assert(std::is_same_v<typename DT::channel_type,
@@ -44,19 +43,16 @@ class time_correlate_at_start_or_stop {
         auto const difftime = event.second.abstime - event.first.abstime;
         auto const &anchor =
             UseStartTimeAndChannel ? event.first : event.second;
-        downstream.handle_event(time_correlated_detection_event<DataTraits>{
+        downstream.handle(time_correlated_detection_event<DataTraits>{
             {{anchor.abstime}, anchor.channel},
             static_cast<typename DataTraits::difftime_type>(difftime)});
     }
 
-    template <typename OtherEvent>
-    void handle_event(OtherEvent const &event) noexcept {
-        downstream.handle_event(event);
+    template <typename OtherEvent> void handle(OtherEvent const &event) {
+        downstream.handle(event);
     }
 
-    void handle_end(std::exception_ptr const &error) noexcept {
-        downstream.handle_end(error);
-    }
+    void flush() { downstream.flush(); }
 };
 
 template <typename DataTraits, bool UseStartChannel, typename Downstream>
@@ -67,8 +63,7 @@ class time_correlate_at_midpoint {
     explicit time_correlate_at_midpoint(Downstream &&downstream)
         : downstream(std::move(downstream)) {}
 
-    template <typename DT>
-    void handle_event(detection_pair_event<DT> const &event) noexcept {
+    template <typename DT> void handle(detection_pair_event<DT> const &event) {
         static_assert(std::is_same_v<typename DT::abstime_type,
                                      typename DataTraits::abstime_type>);
         static_assert(std::is_same_v<typename DT::channel_type,
@@ -77,19 +72,16 @@ class time_correlate_at_midpoint {
         auto const abstime = event.first.abstime + difftime / 2;
         auto const channel =
             UseStartChannel ? event.first.channel : event.second.channel;
-        downstream.handle_event(time_correlated_detection_event<DataTraits>{
+        downstream.handle(time_correlated_detection_event<DataTraits>{
             {{abstime}, channel},
             static_cast<typename DataTraits::difftime_type>(difftime)});
     }
 
-    template <typename OtherEvent>
-    void handle_event(OtherEvent const &event) noexcept {
-        downstream.handle_event(event);
+    template <typename OtherEvent> void handle(OtherEvent const &event) {
+        downstream.handle(event);
     }
 
-    void handle_end(std::exception_ptr const &error) noexcept {
-        downstream.handle_end(error);
-    }
+    void flush() { downstream.flush(); }
 };
 
 template <typename DataTraits, bool UseStartChannel, typename Downstream>
@@ -102,8 +94,7 @@ class time_correlate_at_fraction {
                                         Downstream &&downstream)
         : fraction(fraction), downstream(std::move(downstream)) {}
 
-    template <typename DT>
-    void handle_event(detection_pair_event<DT> const &event) noexcept {
+    template <typename DT> void handle(detection_pair_event<DT> const &event) {
         static_assert(std::is_same_v<typename DT::abstime_type,
                                      typename DataTraits::abstime_type>);
         static_assert(std::is_same_v<typename DT::channel_type,
@@ -115,19 +106,16 @@ class time_correlate_at_fraction {
                 std::llround(static_cast<double>(difftime) * fraction));
         auto const channel =
             UseStartChannel ? event.first.channel : event.second.channel;
-        downstream.handle_event(time_correlated_detection_event<DataTraits>{
+        downstream.handle(time_correlated_detection_event<DataTraits>{
             {{abstime}, channel},
             static_cast<typename DataTraits::difftime_type>(difftime)});
     }
 
-    template <typename OtherEvent>
-    void handle_event(OtherEvent const &event) noexcept {
-        downstream.handle_event(event);
+    template <typename OtherEvent> void handle(OtherEvent const &event) {
+        downstream.handle(event);
     }
 
-    void handle_end(std::exception_ptr const &error) noexcept {
-        downstream.handle_end(error);
-    }
+    void flush() { downstream.flush(); }
 };
 
 } // namespace internal
@@ -284,24 +272,20 @@ template <typename Downstream> class negate_difftime {
         : downstream(std::move(downstream)) {}
 
     template <typename DataTraits>
-    void handle_event(
-        time_correlated_detection_event<DataTraits> const &event) noexcept {
+    void handle(time_correlated_detection_event<DataTraits> const &event) {
         static_assert(
             std::is_signed_v<typename DataTraits::difftime_type>,
             "difftime_type of time_correlated_detection_event used with negate_difftime must be a signed integer type");
         time_correlated_detection_event<DataTraits> copy(event);
         copy.difftime = -event.difftime;
-        downstream.handle_event(copy);
+        downstream.handle(copy);
     }
 
-    template <typename OtherEvent>
-    void handle_event(OtherEvent const &event) noexcept {
-        downstream.handle_event(event);
+    template <typename OtherEvent> void handle(OtherEvent const &event) {
+        downstream.handle(event);
     }
 
-    void handle_end(std::exception_ptr const &error) noexcept {
-        downstream.handle_end(error);
-    }
+    void flush() { downstream.flush(); }
 };
 
 template <typename DataTraits, typename Downstream>
@@ -313,25 +297,21 @@ class remove_time_correlation {
         : downstream(std::move(downstream)) {}
 
     template <typename DT>
-    void
-    handle_event(time_correlated_detection_event<DT> const &event) noexcept {
+    void handle(time_correlated_detection_event<DT> const &event) {
         static_assert(std::is_same_v<typename DT::abstime_type,
                                      typename DataTraits::abstime_type>);
         static_assert(std::is_same_v<typename DT::channel_type,
                                      typename DataTraits::channel_type>);
 
-        downstream.handle_event(
+        downstream.handle(
             detection_event<DataTraits>{{{event.abstime}, event.channel}});
     }
 
-    template <typename OtherEvent>
-    void handle_event(OtherEvent const &event) noexcept {
-        downstream.handle_event(event);
+    template <typename OtherEvent> void handle(OtherEvent const &event) {
+        downstream.handle(event);
     }
 
-    void handle_end(std::exception_ptr const &error) noexcept {
-        downstream.handle_end(error);
-    }
+    void flush() { downstream.flush(); }
 };
 
 } // namespace internal

@@ -27,8 +27,8 @@ TEST_CASE("Delay", "[delay]") {
 
         in.feed(e0{0});
         REQUIRE(out.check(e0{0}));
-        in.feed_end();
-        REQUIRE(out.check_end());
+        in.flush();
+        REQUIRE(out.check_flushed());
     }
 
     SECTION("Delay +1") {
@@ -40,8 +40,8 @@ TEST_CASE("Delay", "[delay]") {
         REQUIRE(out.check(e0{1}));
         in.feed(e1{1});
         REQUIRE(out.check(e1{2}));
-        in.feed_end();
-        REQUIRE(out.check_end());
+        in.flush();
+        REQUIRE(out.check_flushed());
     }
 
     SECTION("Delay -1") {
@@ -53,8 +53,8 @@ TEST_CASE("Delay", "[delay]") {
         REQUIRE(out.check(e0{-1}));
         in.feed(e1{1});
         REQUIRE(out.check(e1{0}));
-        in.feed_end();
-        REQUIRE(out.check_end());
+        in.flush();
+        REQUIRE(out.check_flushed());
     }
 }
 
@@ -74,8 +74,8 @@ TEST_CASE("zero-base abstime", "[zero_base_abstime]") {
         REQUIRE(out.check(
             e0{std::numeric_limits<default_data_traits::abstime_type>::max() -
                122}));
-        in.feed_end();
-        REQUIRE(out.check_end());
+        in.flush();
+        REQUIRE(out.check_flushed());
     }
 
     SECTION("Negative") {
@@ -88,8 +88,8 @@ TEST_CASE("zero-base abstime", "[zero_base_abstime]") {
         REQUIRE(out.check(
             e0{std::numeric_limits<default_data_traits::abstime_type>::min() +
                122}));
-        in.feed_end();
-        REQUIRE(out.check_end());
+        in.flush();
+        REQUIRE(out.check_flushed());
     }
 }
 
