@@ -32,11 +32,10 @@ class stop_with_error {
         if (message_prefix.empty()) {
             downstream.flush();
             throw end_processing();
-        } else {
-            std::ostringstream stream;
-            stream << message_prefix << ": " << event;
-            throw Exception(stream.str());
         }
+        std::ostringstream stream;
+        stream << message_prefix << ": " << event;
+        throw Exception(stream.str());
     }
 
   public:

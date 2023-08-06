@@ -86,7 +86,7 @@ class summarize_and_print {
     }
 };
 
-auto summarize(std::string const &filename) {
+auto summarize(std::string const &filename) -> bool {
     using device_event_vector = std::vector<tcspc::swabian_tag_event>;
 
     // Create the processing graph (actually just a linear chain).
@@ -132,21 +132,32 @@ auto summarize(std::string const &filename) {
         std::fputs("Error encountered in input\n", stderr);
         std::fputs("The above results are only up to the error\n", stderr);
         // TODO Determine byte position in input stream of error.
+        return false;
     } catch (std::exception const &exc) {
         // Other error; counts were not printed.
         std::fputs("Error: ", stderr);
         std::fputs(exc.what(), stderr);
         std::fputs("\n", stderr);
+        return false;
     }
+    return true;
 }
 
 auto main(int argc, char const *argv[]) -> int {
-    std::vector<std::string> const args(std::next(argv),
-                                        std::next(argv, argc));
-    if (args.size() != 1) {
-        std::fputs("A single argument (the filename) is required\n", stderr);
+    try {
+        std::vector<std::string> const args(std::next(argv),
+                                            std::next(argv, argc));
+        if (args.size() != 1) {
+            std::fputs("A single argument (the filename) is required\n",
+                       stderr);
+            return EXIT_FAILURE;
+        }
+        auto const &filename = args.front();
+        return summarize(filename) ? EXIT_SUCCESS : EXIT_FAILURE;
+    } catch (std::exception const &exc) {
+        std::fputs("Error: ", stderr);
+        std::fputs(exc.what(), stderr);
+        std::fputs("\n", stderr);
         return EXIT_FAILURE;
     }
-    auto const filename = args.front();
-    summarize(filename);
 }

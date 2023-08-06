@@ -371,7 +371,7 @@ auto unbatch(Downstream &&downstream) {
 class source_halted final : std::exception {
   public:
     /** \brief std::exception interface. */
-    auto what() const noexcept -> char const * override {
+    [[nodiscard]] auto what() const noexcept -> char const * override {
         return "source halted without flushing";
     }
 };

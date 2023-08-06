@@ -65,7 +65,9 @@ TEST_CASE("fit arithmetic time sequence", "[fit_arithmetic_time_sequence]") {
         in.feed(e0{10});
         auto const out_event = out.retrieve<start_and_interval_event<>>();
         REQUIRE(out_event.has_value());
+        // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
         REQUIRE(out_event->abstime == 5);
+        // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
         REQUIRE_THAT(out_event->interval,
                      Catch::Matchers::WithinRel(1.4, 1e-6));
         in.flush();
@@ -114,7 +116,9 @@ TEST_CASE("fit arithmetic time sequence time bound, signed abstime",
             in.feed(e0{i * abstime_type(100)});
         auto const out_event = out.retrieve<start_and_interval_event<>>();
         REQUIRE(out_event.has_value());
+        // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
         REQUIRE(out_event->abstime == -199);
+        // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
         REQUIRE_THAT(out_event->interval,
                      Catch::Matchers::WithinRel(99.9982, 1e-6));
         in.flush();

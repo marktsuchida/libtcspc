@@ -66,7 +66,7 @@ struct default_data_traits {
 class end_processing final : public std::exception {
   public:
     /** \brief std::exception interface. */
-    auto what() const noexcept -> char const * override {
+    [[nodiscard]] auto what() const noexcept -> char const * override {
         return "reached end of processing without error";
     }
 };

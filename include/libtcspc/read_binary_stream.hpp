@@ -452,7 +452,6 @@ class read_binary_stream {
             buf = std::move(next_buf);
         }
 
-        std::exception_ptr error;
         if (stream.is_error())
             throw std::runtime_error("failed to read input");
         if (remainder_nbytes > 0) {

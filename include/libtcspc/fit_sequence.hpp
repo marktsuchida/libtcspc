@@ -178,8 +178,8 @@ class fit_arithmetic_time_sequence {
 
             if (result.mse > mse_cutoff)
                 return fail("mean squared error exceeded cutoff");
-            if (result.slope < min_interval_cutoff ||
-                result.slope > max_interval_cutoff)
+            if (result.slope < double(min_interval_cutoff) ||
+                result.slope > double(max_interval_cutoff))
                 return fail(
                     "estimated time interval was not in expected range");
 

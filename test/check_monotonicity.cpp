@@ -29,6 +29,7 @@ TEST_CASE("check monotonicity", "[check_monotonicity]") {
     in.feed(e0{-11});
     auto const out_event = out.retrieve<warning_event>();
     REQUIRE(out_event.has_value());
+    // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
     CHECK(out_event->message.find("monotonic") != std::string::npos);
     REQUIRE(out.check(e0{-11}));
     in.flush();

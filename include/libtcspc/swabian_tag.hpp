@@ -238,11 +238,12 @@ template <typename DataTraits, typename Downstream> class decode_swabian_tags {
         : downstream(std::move(downstream)) {}
 
     void handle(swabian_tag_event const &event) {
-        if (event.type() == swabian_tag_event::tag_type::time_tag)
+        if (event.type() == swabian_tag_event::tag_type::time_tag) {
             downstream.handle(detection_event<DataTraits>{
                 {{event.time().value()}, event.channel().value()}});
-        else
+        } else {
             handle_coldpath_tag(event);
+        }
     }
 
     void flush() { downstream.flush(); }
