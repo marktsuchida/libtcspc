@@ -10,13 +10,13 @@
 
 #include <algorithm>
 #include <array>
-#include <cassert>
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
 #include <exception>
 #include <numeric>
 #include <ostream>
+#include <stdexcept>
 #include <string>
 #include <type_traits>
 #include <utility>
@@ -159,7 +159,9 @@ class fit_arithmetic_time_sequence {
         : len(length), min_interval_cutoff(min_max_interval[0]),
           max_interval_cutoff(min_max_interval[1]), mse_cutoff(max_mse),
           downstream(std::move(downstream)) {
-        assert(length >= 3);
+        if (length < 3)
+            throw std::invalid_argument(
+                "fit_arithmetic_time_sequence length must be at least 3");
         relative_ticks.reserve(length);
     }
 

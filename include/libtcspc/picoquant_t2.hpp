@@ -15,6 +15,7 @@
 #include <cstdint>
 #include <exception>
 #include <ostream>
+#include <stdexcept>
 #include <utility>
 
 // When editing this file, maintain the partial symmetry with picoquant_t3.hpp.
@@ -135,9 +136,11 @@ struct pqt2_picoharp_event {
      *
      * \return \c *this
      */
-    auto assign_nonspecial(u32np timetag, u8np channel) noexcept
+    auto assign_nonspecial(u32np timetag, u8np channel)
         -> pqt2_picoharp_event & {
-        assert(channel <= 14_u8np);
+        if (channel > 14_u8np)
+            throw std::invalid_argument(
+                "pqt2_picoharp_event channel must be in the range 0-14");
         bytes[3] = std::byte(
             ((channel << 4) | (u8np(timetag >> 24) & 0x0f_u8np)).value());
         bytes[2] = std::byte(u8np(timetag >> 16).value());
@@ -167,9 +170,11 @@ struct pqt2_picoharp_event {
      *
      * \return \c *this
      */
-    auto assign_external_marker(u32np timetag, u8np marker_bits) noexcept
+    auto assign_external_marker(u32np timetag, u8np marker_bits)
         -> pqt2_picoharp_event & {
-        assert(marker_bits != 0_u8np);
+        if (marker_bits == 0_u8np)
+            throw std::invalid_argument(
+                "pqt2_picoharp_event marker_bits must not be zero");
         bytes[3] = std::byte(
             (0b1111'0000_u8np | (u8np(timetag >> 24) & 0x0f_u8np)).value());
         bytes[2] = std::byte(u8np(timetag >> 16).value());
@@ -306,7 +311,7 @@ struct pqt2_hydraharp_event {
      *
      * \return \c *this
      */
-    auto assign_nonspecial(u32np timetag, u8np channel) noexcept
+    auto assign_nonspecial(u32np timetag, u8np channel)
         -> pqt2_hydraharp_event & {
         bytes[3] = std::byte(
             (((channel & 0x3f_u8np) << 1) | (u8np(timetag >> 24) & 0x01_u8np))
@@ -327,8 +332,7 @@ struct pqt2_hydraharp_event {
      *
      * \return \c *this
      */
-    auto assign_timetag_overflow(u32np count) noexcept
-        -> pqt2_hydraharp_event & {
+    auto assign_timetag_overflow(u32np count) -> pqt2_hydraharp_event & {
         static_assert(
             not IsOverflowAlwaysSingle,
             "multiple time tag overflow is not available in HydraHarp V1 format");
@@ -381,7 +385,7 @@ struct pqt2_hydraharp_event {
      *
      * \return \c *this
      */
-    auto assign_external_marker(u32np timetag, u8np marker_bits) noexcept
+    auto assign_external_marker(u32np timetag, u8np marker_bits)
         -> pqt2_hydraharp_event & {
         bytes[3] =
             std::byte((0b1000'0000_u8np | ((marker_bits & 0x3f_u8np) << 1) |

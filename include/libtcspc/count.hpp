@@ -6,9 +6,9 @@
 
 #pragma once
 
-#include <cassert>
 #include <cstdint>
 #include <exception>
+#include <stdexcept>
 #include <utility>
 #include <vector>
 
@@ -32,7 +32,9 @@ class count_up_to {
                          std::uint64_t initial_count, Downstream &&downstream)
         : count(initial_count), init(initial_count), thresh(threshold),
           limit(limit), downstream(std::move(downstream)) {
-        assert(limit > init);
+        if (init >= limit)
+            throw std::invalid_argument(
+                "count_up_to limit must be greater than initial_count");
     }
 
     void handle(TickEvent const &event) {
@@ -164,7 +166,9 @@ template <typename TickEvent, typename FireEvent, typename ResetEvent,
 auto count_down_to(std::uint64_t threshold, std::uint64_t limit,
                    std::uint64_t initial_count, Downstream &&downstream) {
     // Alter parameters to emulate count down using count up.
-    assert(initial_count > limit);
+    if (limit >= initial_count)
+        throw std::invalid_argument(
+            "count_down_to limit must be less than initial_count");
     if (threshold > initial_count || threshold < limit) {
         // Counter will never fire; no change to threshold needed.
     } else {

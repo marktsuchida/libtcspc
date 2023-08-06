@@ -8,10 +8,10 @@
 
 #include "common.hpp"
 
-#include <cassert>
 #include <cstddef>
 #include <exception>
 #include <optional>
+#include <stdexcept>
 #include <utility>
 
 namespace tcspc {
@@ -204,7 +204,9 @@ template <typename Event> class one_shot_timing_generator {
      * \param delay how much to delay the output event relative to the trigger
      */
     explicit one_shot_timing_generator(abstime_type delay) : delay(delay) {
-        assert(delay >= 0);
+        if (delay < 0)
+            throw std::invalid_argument(
+                "one_shot_timing_generator delay must not be negative");
     }
 
     /** \brief Timing generator interface */
@@ -271,8 +273,12 @@ template <typename Event> class linear_timing_generator {
     explicit linear_timing_generator(abstime_type delay, abstime_type interval,
                                      std::size_t count)
         : delay(delay), interval(interval), count(count) {
-        assert(delay >= 0);
-        assert(interval > 0);
+        if (delay < 0)
+            throw std::invalid_argument(
+                "linear_timing_generator delay must not be negative");
+        if (interval <= 0)
+            throw std::invalid_argument(
+                "linear_timing_generator interval must be positive");
     }
 
     /** \brief Timing generator interface */

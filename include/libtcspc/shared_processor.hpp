@@ -6,9 +6,9 @@
 
 #pragma once
 
-#include <cassert>
 #include <exception>
 #include <memory>
+#include <stdexcept>
 #include <utility>
 
 namespace tcspc {
@@ -25,7 +25,9 @@ template <typename Downstream> class shared_processor {
         // (unnecessary overhead) or substitute with a null sink (not possible
         // without type erasure, which is out of scope here). So use a narrow
         // contract (behavior is undefined for null downstream).
-        assert(this->downstream);
+        if (not this->downstream)
+            throw std::invalid_argument(
+                "shared_processor downstream must not be null");
     }
 
     template <typename AnyEvent> void handle(AnyEvent const &event) {

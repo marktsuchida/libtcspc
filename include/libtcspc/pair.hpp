@@ -13,11 +13,11 @@
 #include <algorithm>
 #include <array>
 #include <bitset>
-#include <cassert>
 #include <exception>
 #include <iterator>
 #include <limits>
 #include <optional>
+#include <stdexcept>
 #include <type_traits>
 #include <utility>
 #include <vector>
@@ -52,7 +52,9 @@ class pair_all {
         typename DataTraits::abstime_type time_window, Downstream &&downstream)
         : start_chan(start_channel), stop_chans(stop_channels),
           window_size(time_window), downstream(std::move(downstream)) {
-        assert(window_size >= 0);
+        if (window_size < 0)
+            throw std::invalid_argument(
+                "pair_all time_window must not be negative");
     }
 
     template <typename DT> void handle(detection_event<DT> const &event) {
@@ -115,7 +117,9 @@ class pair_one {
         typename DataTraits::abstime_type time_window, Downstream &&downstream)
         : start_chan(start_channel), stop_chans(stop_channels),
           window_size(time_window), downstream(std::move(downstream)) {
-        assert(window_size >= 0);
+        if (window_size < 0)
+            throw std::invalid_argument(
+                "pair_one time_window must not be negative");
     }
 
     template <typename DT> void handle(detection_event<DT> const &event) {
@@ -175,7 +179,9 @@ class pair_all_between {
         typename DataTraits::abstime_type time_window, Downstream &&downstream)
         : start_chan(start_channel), stop_chans(stop_channels),
           window_size(time_window), downstream(std::move(downstream)) {
-        assert(window_size >= 0);
+        if (window_size < 0)
+            throw std::invalid_argument(
+                "pair_all_between time_window must not be negative");
     }
 
     template <typename DT> void handle(detection_event<DT> const &event) {
@@ -239,7 +245,9 @@ class pair_one_between {
         typename DataTraits::abstime_type time_window, Downstream &&downstream)
         : start_chan(start_channel), stop_chans(stop_channels),
           window_size(time_window), downstream(std::move(downstream)) {
-        assert(window_size >= 0);
+        if (window_size < 0)
+            throw std::invalid_argument(
+                "pair_one_between time_window must not be negative");
     }
 
     template <typename DT> void handle(detection_event<DT> const &event) {

@@ -9,8 +9,8 @@
 #include "common.hpp"
 
 #include <algorithm>
-#include <cassert>
 #include <iterator>
+#include <stdexcept>
 #include <type_traits>
 #include <utility>
 #include <vector>
@@ -33,7 +33,9 @@ class recover_order {
     explicit recover_order(typename DataTraits::abstime_type time_window,
                            Downstream &&downstream)
         : window_size(time_window), downstream(std::move(downstream)) {
-        assert(window_size >= 0);
+        if (window_size < 0)
+            throw std::invalid_argument(
+                "recover_order time_window must not be negative");
     }
 
     void handle(Event const &event) {

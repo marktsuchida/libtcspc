@@ -11,8 +11,10 @@
 #include "vector_queue.hpp"
 
 #include <array>
+#include <cassert>
 #include <exception>
 #include <limits>
+#include <stdexcept>
 #include <type_traits>
 #include <utility>
 
@@ -70,7 +72,9 @@ class merge_impl {
     explicit merge_impl(typename DataTraits::abstime_type max_time_shift,
                         Downstream &&downstream)
         : max_time_shift(max_time_shift), downstream(std::move(downstream)) {
-        assert(max_time_shift >= 0);
+        if (max_time_shift < 0)
+            throw std::invalid_argument(
+                "merge max_time_shift must not be negative");
     }
 
     merge_impl(merge_impl const &) = delete;

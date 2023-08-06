@@ -9,7 +9,6 @@
 #include "vector_queue.hpp"
 
 #include <algorithm>
-#include <cassert>
 #include <chrono>
 #include <condition_variable>
 #include <cstddef>
@@ -18,6 +17,7 @@
 #include <limits>
 #include <memory>
 #include <mutex>
+#include <stdexcept>
 #include <type_traits>
 #include <utility>
 #include <vector>
@@ -93,8 +93,12 @@ class object_pool : public std::enable_shared_from_this<object_pool<T>> {
         std::size_t initial_count = 0,
         std::size_t max_count = std::numeric_limits<std::size_t>::max())
         : max_objects(max_count) {
-        assert(initial_count <= max_count);
-        assert(max_count > 0);
+        if (max_count == 0)
+            throw std::invalid_argument(
+                "object_pool max_count must not be zero");
+        if (initial_count > max_count)
+            throw std::invalid_argument(
+                "object_pool initial_count must not be greater than max_count");
         objects.reserve(initial_count);
         std::generate_n(std::back_inserter(objects), initial_count,
                         [] { return std::make_unique<T>(); });
@@ -236,7 +240,9 @@ class batch {
                    std::size_t batch_size, Downstream &&downstream)
         : buffer_pool(std::move(buffer_pool)), batch_size(batch_size),
           downstream(std::move(downstream)) {
-        assert(batch_size > 0);
+        if (batch_size == 0)
+            throw std::invalid_argument(
+                "batch processor batch_size must not be zero");
     }
 
     void handle(Event const &event) {

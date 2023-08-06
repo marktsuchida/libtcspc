@@ -10,7 +10,6 @@
 #include "buffer.hpp"
 #include "span.hpp"
 
-#include <cassert>
 #include <cstddef>
 #include <cstdint>
 #include <cstdio>
@@ -308,8 +307,12 @@ template <typename OutputStream> class write_binary_stream {
         std::size_t write_granularity_bytes)
         : strm(std::move(stream)), bufpool(std::move(buffer_pool)),
           write_granularity(write_granularity_bytes) {
-        assert(bufpool);
-        assert(write_granularity > 0);
+        if (not bufpool)
+            throw std::invalid_argument(
+                "write_binary_stream buffer_pool must not be null");
+        if (write_granularity <= 0)
+            throw std::invalid_argument(
+                "write_binary_stream write_granularity_bytes must be positive");
     }
 
     void handle(autocopy_span<std::byte> const &event) {

@@ -15,6 +15,7 @@
 #include <functional>
 #include <limits>
 #include <optional>
+#include <stdexcept>
 #include <type_traits>
 #include <utility>
 
@@ -305,7 +306,12 @@ template <typename DataPoint, typename BinIndex> class linear_bin_mapper {
                                bool clamp = false)
         : offset(offset), bin_width(bin_width), max_bin_index(max_bin_index),
           clamp(clamp) {
-        assert(bin_width != 0);
+        if (bin_width == 0)
+            throw std::invalid_argument(
+                "linear_bin_mapper bin_width must not be zero");
+        if (max_bin_index < 0)
+            throw std::invalid_argument(
+                "linear_bin_mapper max_bin_index must not be negative");
     }
 
     /** \brief Bin mapper interface */

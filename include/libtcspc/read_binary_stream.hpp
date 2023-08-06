@@ -387,8 +387,12 @@ class read_binary_stream {
           bufpool(std::move(buffer_pool)),
           read_granularity(read_granularity_bytes),
           downstream(std::move(downstream)) {
-        assert(bufpool);
-        assert(read_granularity > 0);
+        if (not bufpool)
+            throw std::invalid_argument(
+                "read_binary_stream buffer_pool must not be null");
+        if (read_granularity <= 0)
+            throw std::invalid_argument(
+                "read_binary_stream read_granularity_bytes must be positive");
     }
 
     void pump_events() {
