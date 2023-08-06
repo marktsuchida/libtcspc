@@ -478,12 +478,9 @@ class decode_pqt2 {
         } else if (event.is_external_marker()) {
             abstime_type const timetag =
                 timetag_base + event.external_marker_timetag().value();
-            auto bits = u32np(event.external_marker_bits());
-            while (bits != 0_u32np) {
-                downstream.handle(marker_event<DataTraits>{
-                    {{timetag}, count_trailing_zeros_32(bits)}});
-                bits = bits & (bits - 1_u32np); // Clear the handled bit
-            }
+            for_each_set_bit(u32np(event.external_marker_bits()), [&](int b) {
+                downstream.handle(marker_event<DataTraits>{{{timetag}, b}});
+            });
         } else {
             issue_warning("invalid special event encountered");
         }

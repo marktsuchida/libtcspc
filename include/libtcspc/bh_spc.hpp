@@ -704,14 +704,11 @@ class decode_bh_spc {
             }
         } else {
             if (event.invalid_flag()) { // Marker
-                auto bits = u32np(event.marker_bits());
-                while (bits != 0_u32np) {
+                for_each_set_bit(u32np(event.marker_bits()), [&](int b) {
                     downstream.handle(marker_event<DataTraits>{
                         {{abstime},
-                         static_cast<typename DataTraits::channel_type>(
-                             count_trailing_zeros_32(bits))}});
-                    bits = bits & (bits - 1_u32np); // Clear the handled bit
-                }
+                         static_cast<typename DataTraits::channel_type>(b)}});
+                });
             } else {
                 // Although not clearly documented, the combination of
                 // INV=0, MARK=1 is not currently used.
