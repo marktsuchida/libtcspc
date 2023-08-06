@@ -412,6 +412,12 @@ template <typename OutputStream> class write_binary_stream {
  * buffering is necessary). It is best to try different powers of 2 and
  * measure.
  *
+ * If there is an error (either in this processor or upstream), an incomplete
+ * file may be left (if the output stream was a regular file). Application
+ * code, if it so desires, should delete this file after closing the file (by
+ * destroying the processor, if the file lifetime is tied to the output
+ * stream).
+ *
  * \see read_binary_stream
  *
  * \tparam OutputStream output stream type
