@@ -20,6 +20,7 @@
 #include <memory>
 #include <optional>
 #include <stdexcept>
+#include <system_error>
 #include <type_traits>
 #include <vector>
 
@@ -211,6 +212,8 @@ unbuffered_binary_ifstream_input_stream(std::string const &filename,
     stream.rdbuf()->pubsetbuf(nullptr, 0);
 
     stream.open(filename, std::ios::binary);
+    if (stream.fail())
+        throw std::runtime_error("failed to open input file: " + filename);
     auto ret = internal::istream_input_stream(std::move(stream));
     skip_stream_bytes(ret, start);
     return ret;
@@ -221,6 +224,8 @@ inline auto binary_ifstream_input_stream(std::string const &filename,
                                          std::uint64_t start = 0) {
     std::ifstream stream;
     stream.open(filename, std::ios::binary);
+    if (stream.fail())
+        throw std::runtime_error("failed to open input file: " + filename);
     auto ret = internal::istream_input_stream(std::move(stream));
     skip_stream_bytes(ret, start);
     return ret;
@@ -228,12 +233,15 @@ inline auto binary_ifstream_input_stream(std::string const &filename,
 
 inline auto unbuffered_binary_cfile_input_stream(std::string const &filename,
                                                  std::uint64_t start = 0) {
+    errno = 0; // ISO C does not require fopen to set errno on error.
     // NOLINTNEXTLINE(cppcoreguidelines-owning-memory)
     std::FILE *fp = std::fopen(filename.c_str(), "rb");
-    if (fp != nullptr) {
-        // Unlike with ifstream, setting to unbuffered does reduce overhead.
-        std::setbuf(fp, nullptr);
+    if (fp == nullptr) {
+        if (errno != 0)
+            throw std::system_error(errno, std::generic_category());
+        throw std::runtime_error("failed to open input file: " + filename);
     }
+    std::setbuf(fp, nullptr);
     auto ret = internal::cfile_input_stream(fp, true);
     skip_stream_bytes(ret, start);
     return ret;
@@ -242,8 +250,14 @@ inline auto unbuffered_binary_cfile_input_stream(std::string const &filename,
 // For benchmarking only
 inline auto binary_cfile_input_stream(std::string const &filename,
                                       std::uint64_t start = 0) {
+    errno = 0; // ISO C does not require fopen to set errno on error.
     // NOLINTNEXTLINE(cppcoreguidelines-owning-memory)
     std::FILE *fp = std::fopen(filename.c_str(), "rb");
+    if (fp == nullptr) {
+        if (errno != 0)
+            throw std::system_error(errno, std::generic_category());
+        throw std::runtime_error("failed to open input file: " + filename);
+    }
     auto ret = internal::cfile_input_stream(fp, true);
     skip_stream_bytes(ret, start);
     return ret;

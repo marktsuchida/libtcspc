@@ -36,17 +36,6 @@ class autodelete {
 
 } // namespace
 
-TEST_CASE("read nonexistent file", "[read_binary_stream]") {
-    auto out = capture_output<
-        event_set<std::shared_ptr<pvector<std::uint64_t>>, warning_event>>();
-    auto src = read_binary_stream<std::uint64_t>(
-        binary_file_input_stream("surely_a_file_with_this_name_doesn't_exist"),
-        0, std::make_shared<object_pool<pvector<std::uint64_t>>>(), 16384,
-        ref_processor(out));
-    REQUIRE_THROWS(src.pump_events());
-    REQUIRE(out.check_not_flushed());
-}
-
 TEST_CASE("read file", "[read_binary_stream]") {
     auto path = std::filesystem::temp_directory_path() /
                 "libtcspc_test_read_binary_stream";

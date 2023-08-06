@@ -21,6 +21,7 @@
 #include <optional>
 #include <ostream>
 #include <stdexcept>
+#include <system_error>
 #include <type_traits>
 #include <vector>
 
@@ -138,6 +139,8 @@ inline auto unbuffered_binary_ofstream_output_stream(
 
     stream.open(filename, std::ios::binary | (truncate ? std::ios::trunc : 0) |
                               (append ? std::ios::ate : 0));
+    if (stream.fail())
+        throw std::runtime_error("failed to open output file: " + filename);
     return internal::ostream_output_stream(std::move(stream));
 }
 
@@ -148,6 +151,8 @@ inline auto binary_ofstream_output_stream(std::string const &filename,
     std::ofstream stream;
     stream.open(filename, std::ios::binary | (truncate ? std::ios::trunc : 0) |
                               (append ? std::ios::ate : 0));
+    if (stream.fail())
+        throw std::runtime_error("failed to open output file: " + filename);
     return internal::ostream_output_stream(std::move(stream));
 }
 
@@ -155,10 +160,15 @@ inline auto unbuffered_binary_cfile_output_stream(std::string const &filename,
                                                   bool truncate = false,
                                                   bool append = false) {
     char const *mode = truncate ? "wb" : (append ? "ab" : "wbx");
+    errno = 0; // ISO C does not require fopen to set errno on error.
     // NOLINTNEXTLINE(cppcoreguidelines-owning-memory)
     std::FILE *fp = std::fopen(filename.c_str(), mode);
-    if (fp != nullptr)
-        std::setbuf(fp, nullptr);
+    if (fp == nullptr) {
+        if (errno != 0)
+            throw std::system_error(errno, std::generic_category());
+        throw std::runtime_error("failed to open output file: " + filename);
+    }
+    std::setbuf(fp, nullptr);
     return internal::cfile_output_stream(fp, true);
 }
 
@@ -167,8 +177,14 @@ inline auto binary_cfile_output_stream(std::string const &filename,
                                        bool truncate = false,
                                        bool append = false) {
     char const *mode = truncate ? "wb" : (append ? "ab" : "wbx");
+    errno = 0; // ISO C does not require fopen to set errno on error.
     // NOLINTNEXTLINE(cppcoreguidelines-owning-memory)
     std::FILE *fp = std::fopen(filename.c_str(), mode);
+    if (fp == nullptr) {
+        if (errno != 0)
+            throw std::system_error(errno, std::generic_category());
+        throw std::runtime_error("failed to open output file: " + filename);
+    }
     return internal::cfile_output_stream(fp, true);
 }
 
