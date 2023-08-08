@@ -124,10 +124,10 @@ template <typename T> class vector_queue {
     }
 
     vector_queue(vector_queue &&other) noexcept
-        : ptr(other.ptr), endptr(other.endptr), head(other.head),
-          tail(other.tail) {
-        other.ptr = other.endptr = other.head = other.tail = nullptr;
-    }
+        : ptr(std::exchange(other.ptr, nullptr)),
+          endptr(std::exchange(other.endptr, nullptr)),
+          head(std::exchange(other.head, nullptr)),
+          tail(std::exchange(other.tail, nullptr)) {}
 
     auto operator=(vector_queue const &rhs) -> vector_queue & {
         vector_queue t(rhs);
@@ -136,11 +136,8 @@ template <typename T> class vector_queue {
     }
 
     auto operator=(vector_queue &&rhs) noexcept -> vector_queue & {
-        ptr = rhs.ptr;
-        endptr = rhs.endptr;
-        head = rhs.head;
-        tail = rhs.tail;
-        rhs.ptr = rhs.endptr = rhs.head = rhs.tail = nullptr;
+        vector_queue t(std::move(rhs));
+        swap(t);
         return *this;
     }
 
@@ -208,7 +205,10 @@ template <typename T> class vector_queue {
 
     void swap(vector_queue &other) noexcept {
         using std::swap;
-        swap(*this, other);
+        swap(ptr, other.ptr);
+        swap(endptr, other.endptr);
+        swap(head, other.head);
+        swap(tail, other.tail);
     }
 
     // Not in std::queue interface
