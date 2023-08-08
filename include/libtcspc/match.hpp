@@ -29,10 +29,12 @@ class match {
 
     void handle(Event const &event) {
         bool matched = matcher(event);
-        if constexpr (PassMatched)
+        if constexpr (PassMatched) {
             downstream.handle(event);
-        else if (not matched)
-            downstream.handle(event);
+        } else {
+            if (not matched)
+                downstream.handle(event);
+        }
         if (matched)
             downstream.handle(OutEvent{event.abstime});
     }

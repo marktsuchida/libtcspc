@@ -27,6 +27,9 @@ namespace {
 
 // Access input stream via reference, to ensure stream creation is not
 // dominant. (Effect was moderate for 1 MiB reads.)
+
+// Exception escape likely a false positive here.
+// NOLINTBEGIN(bugprone-exception-escape)
 template <typename InputStream> class ref_input_stream {
     // NOLINTNEXTLINE(cppcoreguidelines-avoid-const-or-ref-data-members)
     InputStream &stream;
@@ -50,6 +53,7 @@ template <typename InputStream> class ref_input_stream {
         return stream.read(buffer);
     }
 };
+// NOLINTEND(bugprone-exception-escape)
 
 class unoptimized_null_sink {
   public:

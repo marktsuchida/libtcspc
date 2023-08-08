@@ -149,7 +149,9 @@ TEST_CASE("fit arithmetic time sequence time bound, unsigned abstime",
         auto const out_event =
             out.retrieve<start_and_interval_event<traits>>();
         REQUIRE(out_event.has_value());
+        // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
         REQUIRE(out_event->abstime == 0);
+        // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
         REQUIRE_THAT(out_event->interval,
                      Catch::Matchers::WithinRel(100.0, 1e-6));
         in.flush();

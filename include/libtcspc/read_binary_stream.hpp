@@ -59,13 +59,17 @@ namespace tcspc {
 
 namespace internal {
 
+// We turn off istream exceptions in the constructor.
+// NOLINTBEGIN(bugprone-exception-escape)
 template <typename IStream> class istream_input_stream {
     static_assert(std::is_base_of_v<std::istream, IStream>);
     IStream stream;
 
   public:
     explicit istream_input_stream(IStream &&stream)
-        : stream(std::move(stream)) {}
+        : stream(std::move(stream)) {
+        this->stream.exceptions(std::ios::goodbit);
+    }
 
     auto is_error() noexcept -> bool {
         auto const flags = stream.rdstate();
@@ -104,6 +108,7 @@ template <typename IStream> class istream_input_stream {
         return static_cast<std::uint64_t>(stream.gcount());
     }
 };
+// NOLINTEND(bugprone-exception-escape)
 
 class cfile_input_stream {
     std::FILE *fp;

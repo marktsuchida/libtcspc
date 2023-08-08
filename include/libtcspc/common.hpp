@@ -265,7 +265,7 @@ inline auto count_trailing_zeros_32(u32np x) noexcept -> int {
 #ifdef __GNUC__
     return __builtin_ctz(x.value());
 #elif defined(_MSC_VER)
-    unsigned long r;
+    unsigned long r{};
     _BitScanForward(&r, x.value());
     return (int)r;
 #else

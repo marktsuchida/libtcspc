@@ -47,13 +47,17 @@ namespace tcspc {
 
 namespace internal {
 
+// We turn off ostream exceptions in the constructor.
+// NOLINTBEGIN(bugprone-exception-escape)
 template <typename OStream> class ostream_output_stream {
     static_assert(std::is_base_of_v<std::ostream, OStream>);
     OStream stream;
 
   public:
     explicit ostream_output_stream(OStream &&stream)
-        : stream(std::move(stream)) {}
+        : stream(std::move(stream)) {
+        this->stream.exceptions(std::ios::goodbit);
+    }
 
     auto is_error() noexcept -> bool { return stream.fail(); }
 
@@ -73,6 +77,7 @@ template <typename OStream> class ostream_output_stream {
                      static_cast<std::streamsize>(buffer.size()));
     }
 };
+// NOLINTEND(bugprone-exception-escape)
 
 class cfile_output_stream {
     std::FILE *fp;

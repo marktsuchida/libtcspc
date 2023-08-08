@@ -28,6 +28,9 @@ namespace {
 
 // Access output stream via reference, to ensure stream creation is not
 // dominant. (Effect was moderate for 1 MiB writes.)
+
+// Exception escape likely a false positive here.
+// NOLINTBEGIN(bugprone-exception-escape)
 template <typename OutputStream> class ref_output_stream {
     // NOLINTNEXTLINE(cppcoreguidelines-avoid-const-or-ref-data-members)
     OutputStream &stream;
@@ -43,6 +46,7 @@ template <typename OutputStream> class ref_output_stream {
 
     void write(span<std::byte const> buffer) noexcept { stream.write(buffer); }
 };
+// NOLINTEND(bugprone-exception-escape)
 
 constexpr std::size_t total_bytes = 1 << 20;
 
