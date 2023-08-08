@@ -28,7 +28,7 @@ class stop_with_error {
     std::string message_prefix;
 
     template <typename Event>
-    LIBTCSPC_NOINLINE [[noreturn]] void stop(Event const &event) {
+    [[noreturn]] LIBTCSPC_NOINLINE void stop(Event const &event) {
         if (message_prefix.empty()) {
             downstream.flush();
             throw end_processing();
