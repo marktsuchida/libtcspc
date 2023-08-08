@@ -38,8 +38,12 @@ class gate {
     }
 
     template <typename OtherEvent> void handle(OtherEvent const &event) {
-        if (!contains_event_v<EventSetToGate, OtherEvent> || open)
+        if constexpr (contains_event_v<EventSetToGate, OtherEvent>) {
+            if (open)
+                downstream.handle(event);
+        } else {
             downstream.handle(event);
+        }
     }
 
     void flush() { downstream.flush(); }

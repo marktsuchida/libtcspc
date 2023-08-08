@@ -330,7 +330,7 @@ template <typename DataPoint, typename BinIndex> class linear_bin_mapper {
         d /= bin_width;
         if (std::uint64_t(d) > max_bin_index)
             return clamp ? std::make_optional(max_bin_index) : std::nullopt;
-        return d;
+        return bin_index_type(d);
     }
 };
 

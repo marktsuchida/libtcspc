@@ -159,15 +159,20 @@ inline auto unbuffered_binary_cfile_output_stream(std::string const &filename,
                                                   bool truncate = false,
                                                   bool append = false) {
     char const *mode = truncate ? "wb" : (append ? "ab" : "wbx");
+#ifdef _WIN32 // Avoid requiring _CRT_SECURE_NO_WARNINGS.
+    std::FILE *fp{};
+    (void)fopen_s(&fp, filename.c_str(), mode);
+#else
     errno = 0; // ISO C does not require fopen to set errno on error.
     // NOLINTNEXTLINE(cppcoreguidelines-owning-memory)
     std::FILE *fp = std::fopen(filename.c_str(), mode);
+#endif
     if (fp == nullptr) {
         if (errno != 0)
             throw std::system_error(errno, std::generic_category());
         throw std::runtime_error("failed to open output file: " + filename);
     }
-    std::setbuf(fp, nullptr);
+    std::setvbuf(fp, nullptr, _IONBF, 0);
     return internal::cfile_output_stream(fp, true);
 }
 
@@ -176,9 +181,14 @@ inline auto binary_cfile_output_stream(std::string const &filename,
                                        bool truncate = false,
                                        bool append = false) {
     char const *mode = truncate ? "wb" : (append ? "ab" : "wbx");
+#ifdef _WIN32 // Avoid requiring _CRT_SECURE_NO_WARNINGS.
+    std::FILE *fp{};
+    (void)fopen_s(&fp, filename.c_str(), mode);
+#else
     errno = 0; // ISO C does not require fopen to set errno on error.
     // NOLINTNEXTLINE(cppcoreguidelines-owning-memory)
     std::FILE *fp = std::fopen(filename.c_str(), mode);
+#endif
     if (fp == nullptr) {
         if (errno != 0)
             throw std::system_error(errno, std::generic_category());

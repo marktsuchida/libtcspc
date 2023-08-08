@@ -89,7 +89,7 @@ template <typename IStream> class istream_input_stream {
 
     auto skip(std::uint64_t bytes) noexcept -> bool {
         if (stream.fail() ||
-            bytes > std::numeric_limits<std::streamoff>::max())
+            bytes > std::uint64_t(std::numeric_limits<std::streamoff>::max()))
             return false;
         stream.seekg(std::streamoff(bytes), std::ios::cur);
         auto const ret = stream.good();
@@ -163,7 +163,7 @@ class cfile_input_stream {
         if (fp == nullptr)
             return false;
 #ifdef _WIN32
-        if (bytes <= std::numeric_limits<__int64>::max())
+        if (bytes <= std::uint64_t(std::numeric_limits<__int64>::max()))
             return ::_fseeki64(fp, __int64(bytes), SEEK_CUR) == 0;
 #else
         if (bytes <= std::numeric_limits<long>::max())
@@ -233,15 +233,20 @@ inline auto binary_ifstream_input_stream(std::string const &filename,
 
 inline auto unbuffered_binary_cfile_input_stream(std::string const &filename,
                                                  std::uint64_t start = 0) {
+#ifdef _WIN32 // Avoid requiring _CRT_SECURE_NO_WARNINGS.
+    std::FILE *fp{};
+    (void)fopen_s(&fp, filename.c_str(), "rb");
+#else
     errno = 0; // ISO C does not require fopen to set errno on error.
     // NOLINTNEXTLINE(cppcoreguidelines-owning-memory)
     std::FILE *fp = std::fopen(filename.c_str(), "rb");
+#endif
     if (fp == nullptr) {
         if (errno != 0)
             throw std::system_error(errno, std::generic_category());
         throw std::runtime_error("failed to open input file: " + filename);
     }
-    std::setbuf(fp, nullptr);
+    std::setvbuf(fp, nullptr, _IONBF, 0);
     auto ret = internal::cfile_input_stream(fp, true);
     skip_stream_bytes(ret, start);
     return ret;
@@ -250,9 +255,14 @@ inline auto unbuffered_binary_cfile_input_stream(std::string const &filename,
 // For benchmarking only
 inline auto binary_cfile_input_stream(std::string const &filename,
                                       std::uint64_t start = 0) {
+#ifdef _WIN32 // Avoid requiring _CRT_SECURE_NO_WARNINGS.
+    std::FILE *fp{};
+    (void)fopen_s(&fp, filename.c_str(), "rb");
+#else
     errno = 0; // ISO C does not require fopen to set errno on error.
     // NOLINTNEXTLINE(cppcoreguidelines-owning-memory)
     std::FILE *fp = std::fopen(filename.c_str(), "rb");
+#endif
     if (fp == nullptr) {
         if (errno != 0)
             throw std::system_error(errno, std::generic_category());

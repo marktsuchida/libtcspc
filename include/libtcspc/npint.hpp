@@ -473,8 +473,8 @@ constexpr auto operator""_u64np(unsigned long long v) -> u64np {
  * value of equal magnitude is out of range.
  */
 constexpr auto operator""_i8np(unsigned long long v) -> i8np {
-    return v <= std::numeric_limits<i8>::max() ? i8np(static_cast<i8>(v))
-                                               : throw;
+    return v <= u8(std::numeric_limits<i8>::max()) ? i8np(static_cast<i8>(v))
+                                                   : throw;
 }
 
 /**
@@ -486,8 +486,9 @@ constexpr auto operator""_i8np(unsigned long long v) -> i8np {
  * value of equal magnitude is out of range.
  */
 constexpr auto operator""_i16np(unsigned long long v) -> i16np {
-    return v <= std::numeric_limits<i16>::max() ? i16np(static_cast<i16>(v))
-                                                : throw;
+    return v <= u16(std::numeric_limits<i16>::max())
+               ? i16np(static_cast<i16>(v))
+               : throw;
 }
 
 /**
@@ -499,8 +500,9 @@ constexpr auto operator""_i16np(unsigned long long v) -> i16np {
  * value of equal magnitude is out of range.
  */
 constexpr auto operator""_i32np(unsigned long long v) -> i32np {
-    return v <= std::numeric_limits<i32>::max() ? i32np(static_cast<i32>(v))
-                                                : throw;
+    return v <= u32(std::numeric_limits<i32>::max())
+               ? i32np(static_cast<i32>(v))
+               : throw;
 }
 
 /**
@@ -512,8 +514,9 @@ constexpr auto operator""_i32np(unsigned long long v) -> i32np {
  * value of equal magnitude is out of range.
  */
 constexpr auto operator""_i64np(unsigned long long v) -> i64np {
-    return v <= std::numeric_limits<i64>::max() ? i64np(static_cast<i64>(v))
-                                                : throw;
+    return v <= u64(std::numeric_limits<i64>::max())
+               ? i64np(static_cast<i64>(v))
+               : throw;
 }
 
 } // namespace literals

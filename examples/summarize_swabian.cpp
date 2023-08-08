@@ -125,7 +125,7 @@ auto summarize(std::string const &filename) -> bool {
 
     try {
         proc.pump_events(); // Run it all.
-    } catch (tcspc::end_processing const &exc) {
+    } catch (tcspc::end_processing const &) {
         // Explicit stop; counts were printed on flush.
         // TODO Recover the error message (needs to be packaged in exc)
         std::fputs("\n", stderr);

@@ -104,15 +104,18 @@ template <typename BinIndex> class bin_increment_batch_journal {
             batch_size > 0) {
             std::size_t delta = elem_index - last_stored_index;
             while (delta > 255) {
-                encoded_indices.emplace_back(255, 0);
+                encoded_indices.emplace_back(std::uint8_t(255),
+                                             std::uint8_t(0));
                 delta -= 255;
             }
             while (batch_size > 255) {
-                encoded_indices.emplace_back(delta, 255);
+                encoded_indices.emplace_back(std::uint8_t(delta),
+                                             std::uint8_t(255));
                 batch_size -= 255;
                 delta = 0;
             }
-            encoded_indices.emplace_back(delta, batch_size);
+            encoded_indices.emplace_back(std::uint8_t(delta),
+                                         std::uint8_t(batch_size));
             last_stored_index = elem_index;
 
             all_bin_indices.insert(all_bin_indices.end(), first, last);

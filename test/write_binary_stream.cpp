@@ -108,7 +108,7 @@ TEST_CASE("write binary stream", "[write_binary_stream]") {
 
         SECTION("event size 2") {
             std::array<std::uint8_t, 8> data{};
-            std::iota(data.begin(), data.end(), 0);
+            std::iota(data.begin(), data.end(), std::uint8_t(0));
             auto const data_bytes = as_bytes(span(data));
             proc.handle(autocopy_span(data_bytes.subspan(0, 2)));
             REQUIRE_CALL(stream, write(_))
@@ -134,7 +134,7 @@ TEST_CASE("write binary stream", "[write_binary_stream]") {
 
         SECTION("event size 3") {
             std::array<std::uint8_t, 18> data{};
-            std::iota(data.begin(), data.end(), 0);
+            std::iota(data.begin(), data.end(), std::uint8_t(0));
             auto const data_bytes = as_bytes(span(data));
             proc.handle(autocopy_span(data_bytes.subspan(0, 3)));
             REQUIRE_CALL(stream, write(_))
@@ -171,7 +171,7 @@ TEST_CASE("write binary stream", "[write_binary_stream]") {
 
         SECTION("event size 4") {
             std::array<std::uint8_t, 8> data{};
-            std::iota(data.begin(), data.end(), 0);
+            std::iota(data.begin(), data.end(), std::uint8_t(0));
             auto const data_bytes = as_bytes(span(data));
             REQUIRE_CALL(stream, write(_))
                 .TIMES(1)
@@ -190,7 +190,7 @@ TEST_CASE("write binary stream", "[write_binary_stream]") {
 
         SECTION("event size 5") {
             std::array<std::uint8_t, 15> data{};
-            std::iota(data.begin(), data.end(), 0);
+            std::iota(data.begin(), data.end(), std::uint8_t(0));
             auto const data_bytes = as_bytes(span(data));
             REQUIRE_CALL(stream, write(_))
                 .TIMES(1)
@@ -210,7 +210,7 @@ TEST_CASE("write binary stream", "[write_binary_stream]") {
 
         SECTION("event size 9") {
             std::array<std::uint8_t, 18> data{};
-            std::iota(data.begin(), data.end(), 0);
+            std::iota(data.begin(), data.end(), std::uint8_t(0));
             auto const data_bytes = as_bytes(span(data));
             REQUIRE_CALL(stream, write(_))
                 .TIMES(1)
@@ -246,7 +246,7 @@ TEST_CASE("write binary stream", "[write_binary_stream]") {
 
         SECTION("event size 3") {
             std::array<std::uint8_t, 9> data{};
-            std::iota(data.begin(), data.end(), 0);
+            std::iota(data.begin(), data.end(), std::uint8_t(0));
             auto const data_bytes = as_bytes(span(data));
             REQUIRE_CALL(stream, write(_))
                 .TIMES(1)
@@ -288,7 +288,7 @@ TEST_CASE("write binary stream", "[write_binary_stream]") {
 
         SECTION("event size 4") {
             std::array<std::uint8_t, 4> data{};
-            std::iota(data.begin(), data.end(), 0);
+            std::iota(data.begin(), data.end(), std::uint8_t(0));
             auto const data_bytes = as_bytes(span(data));
             REQUIRE_CALL(stream, write(_))
                 .TIMES(1)
