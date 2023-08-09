@@ -85,12 +85,14 @@ class merge_impl {
 
     template <unsigned InputChannel, typename Event>
     void handle(Event const &event) {
+        static_assert(std::is_same_v<decltype(event.abstime),
+                                     typename DataTraits::abstime_type>);
         if (ended_with_exception)
             return;
         try {
             if (is_pending_on_other<InputChannel>()) {
                 // Emit any older events pending on the other input.
-                typename DataTraits::abstime_type cutoff = event.abstime;
+                auto cutoff = event.abstime;
                 // Emit events from input 0 before events from input 1 when
                 // they have equal abstime.
                 if constexpr (InputChannel == 0)
@@ -171,6 +173,8 @@ class merge_input {
     template <typename Event,
               typename = std::enable_if_t<contains_event_v<EventSet, Event>>>
     void handle(Event const &event) {
+        static_assert(std::is_same_v<decltype(event.abstime),
+                                     typename DataTraits::abstime_type>);
         impl->template handle<InputChannel>(event);
     }
 

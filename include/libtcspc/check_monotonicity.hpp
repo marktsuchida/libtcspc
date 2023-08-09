@@ -12,6 +12,7 @@
 #include <limits>
 #include <ostream>
 #include <sstream>
+#include <type_traits>
 #include <utility>
 
 namespace tcspc {
@@ -39,6 +40,8 @@ class check_monotonicity {
         : downstream(std::move(downstream)) {}
 
     template <typename Event> void handle(Event const &event) {
+        static_assert(std::is_same_v<decltype(event.abstime),
+                                     typename DataTraits::abstime_type>);
         bool const monotonic = RequireStrictlyIncreasing
                                    ? event.abstime > last_seen
                                    : event.abstime >= last_seen;

@@ -255,7 +255,7 @@ class fit_arithmetic_time_sequence {
  * event (because such events would be out of order with the \c
  * start_and_interval_event events).
  *
- * \tparam DataTraits traits type specifying \c abstime_type
+ * \tparam DataTraits traits type specifying data types for emitted event
  *
  * \tparam Event event whose timing is to be fit
  *
