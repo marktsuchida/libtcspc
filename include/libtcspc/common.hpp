@@ -48,12 +48,12 @@ struct default_data_traits {
     /**
      * \brief Channel number type.
      */
-    using channel_type = std::int16_t; // TODO int32_t
+    using channel_type = std::int32_t;
 
     /**
      * \brief Difference time type.
      */
-    using difftime_type = std::uint16_t; // TODO int32_t
+    using difftime_type = std::int32_t;
 
     /**
      * \brief Type of datapoint for histogramming.
