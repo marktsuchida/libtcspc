@@ -44,7 +44,7 @@ TEST_CASE("Journal iterator", "[bin_increment_batch_journal]") {
     bin_increment_batch_journal<u16> j;
 
     SECTION("Empty") {
-        for ([[maybe_unused]] auto [index, begin, end] : j) {
+        for ([[maybe_unused]] auto [index, bis] : j) {
             REQUIRE(false);
         }
 
@@ -59,30 +59,29 @@ TEST_CASE("Journal iterator", "[bin_increment_batch_journal]") {
         {
             auto it = j.begin();
             REQUIRE(it != j.end());
-            auto [index, begin, end] = *it;
+            auto [index, bis] = *it;
             REQUIRE(index == 0);
-            REQUIRE(std::distance(begin, end) == 1);
-            REQUIRE(*begin == 42);
+            REQUIRE(bis.size() == 1);
+            REQUIRE(bis[0] == 42);
         }
 
         j.append_batch(std::array<u16, 2>{43, 44});
         {
             auto it = j.begin();
             {
-                auto [index, begin, end] = *it;
+                auto [index, bis] = *it;
                 REQUIRE(index == 0);
-                REQUIRE(std::distance(begin, end) == 1);
-                REQUIRE(*begin == 42);
+                REQUIRE(bis.size() == 1);
+                REQUIRE(bis[0] == 42);
             }
             ++it;
             REQUIRE(it != j.end());
             {
-                auto [index, begin, end] = *it;
+                auto [index, bis] = *it;
                 REQUIRE(index == 1);
-                REQUIRE(std::distance(begin, end) == 2);
-                REQUIRE(*begin == 43);
-                ++begin;
-                REQUIRE(*begin == 44);
+                REQUIRE(bis.size() == 2);
+                REQUIRE(bis[0] == 43);
+                REQUIRE(bis[1] == 44);
             }
         }
     }
@@ -94,10 +93,10 @@ TEST_CASE("Journal iterator", "[bin_increment_batch_journal]") {
         j.append_batch(std::array<u16, 1>{42});
         auto it = j.begin();
         REQUIRE(it != j.end());
-        auto [index, begin, end] = *it;
+        auto [index, bis] = *it;
         REQUIRE(index == 1);
-        REQUIRE(std::distance(begin, end) == 1);
-        REQUIRE(*begin == 42);
+        REQUIRE(bis.size() == 1);
+        REQUIRE(bis[0] == 42);
     }
 
     SECTION("Start with 2 empty batches") {
@@ -110,10 +109,10 @@ TEST_CASE("Journal iterator", "[bin_increment_batch_journal]") {
         j.append_batch(std::array<u16, 1>{42});
         auto it = j.begin();
         REQUIRE(it != j.end());
-        auto [index, begin, end] = *it;
+        auto [index, bis] = *it;
         REQUIRE(index == 2);
-        REQUIRE(std::distance(begin, end) == 1);
-        REQUIRE(*begin == 42);
+        REQUIRE(bis.size() == 1);
+        REQUIRE(bis[0] == 42);
     }
 
     SECTION("Start with 255 empty batches") {
@@ -123,10 +122,10 @@ TEST_CASE("Journal iterator", "[bin_increment_batch_journal]") {
         REQUIRE(j.num_batches() == 256);
         auto it = j.begin();
         REQUIRE(it != j.end());
-        auto [index, begin, end] = *it;
+        auto [index, bis] = *it;
         REQUIRE(index == 255);
-        REQUIRE(std::distance(begin, end) == 1);
-        REQUIRE(*begin == 42);
+        REQUIRE(bis.size() == 1);
+        REQUIRE(bis[0] == 42);
     }
 
     SECTION("Start with 256 empty batches") {
@@ -136,10 +135,10 @@ TEST_CASE("Journal iterator", "[bin_increment_batch_journal]") {
         REQUIRE(j.num_batches() == 257);
         auto it = j.begin();
         REQUIRE(it != j.end());
-        auto [index, begin, end] = *it;
+        auto [index, bis] = *it;
         REQUIRE(index == 256);
-        REQUIRE(std::distance(begin, end) == 1);
-        REQUIRE(*begin == 42);
+        REQUIRE(bis.size() == 1);
+        REQUIRE(bis[0] == 42);
     }
 
     SECTION("Start with batch of size 255") {
@@ -148,10 +147,10 @@ TEST_CASE("Journal iterator", "[bin_increment_batch_journal]") {
         REQUIRE(j.num_batches() == 1);
         auto it = j.begin();
         REQUIRE(it != j.end());
-        auto [index, begin, end] = *it;
+        auto [index, bis] = *it;
         REQUIRE(index == 0);
-        REQUIRE(std::distance(begin, end) == 255);
-        REQUIRE(*begin == 42);
+        REQUIRE(bis.size() == 255);
+        REQUIRE(bis[0] == 42);
     }
 
     SECTION("Start with batch of size 256") {
@@ -160,10 +159,10 @@ TEST_CASE("Journal iterator", "[bin_increment_batch_journal]") {
         REQUIRE(j.num_batches() == 1);
         auto it = j.begin();
         REQUIRE(it != j.end());
-        auto [index, begin, end] = *it;
+        auto [index, bis] = *it;
         REQUIRE(index == 0);
-        REQUIRE(std::distance(begin, end) == 256);
-        REQUIRE(*begin == 42);
+        REQUIRE(bis.size() == 256);
+        REQUIRE(bis[0] == 42);
     }
 
     SECTION("Batch of size 256 following 255 empty batches") {
@@ -176,18 +175,18 @@ TEST_CASE("Journal iterator", "[bin_increment_batch_journal]") {
         auto it = j.begin();
         REQUIRE(it != j.end());
         {
-            auto [index, begin, end] = *it;
+            auto [index, bis] = *it;
             REQUIRE(index == 0);
-            REQUIRE(std::distance(begin, end) == 1);
-            REQUIRE(*begin == 42);
+            REQUIRE(bis.size() == 1);
+            REQUIRE(bis[0] == 42);
         }
         ++it;
         REQUIRE(it != j.end());
         {
-            auto [index, begin, end] = *it;
+            auto [index, bis] = *it;
             REQUIRE(index == 256);
-            REQUIRE(std::distance(begin, end) == 256);
-            REQUIRE(*begin == 123);
+            REQUIRE(bis.size() == 256);
+            REQUIRE(bis[0] == 123);
         }
     }
 }

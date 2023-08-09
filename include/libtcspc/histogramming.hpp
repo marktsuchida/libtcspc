@@ -139,11 +139,11 @@ template <typename BinIndex> class bin_increment_batch_journal {
      *
      * Satisfies the requirements for input iterator.
      *
-     * The iterator, when dereferenced, yields the triple (std::tuple)
-     * (batch_index, batch_begin, batch_end), where batch_index is the index
+     * The iterator, when dereferenced, yields the size-2 std::tuple
+     * (batch_index, bin_index_span), where batch_index is the index
      * (std::size_t) of the batch (order appended to the journal), and
-     * batch_begin and batch_end are an iterator pair pointing to the range of
-     * bin indices (BinIndex) belonging to the batch.
+     * bin_index_span is the span of bin indices (BinIndex) belonging to the
+     * batch.
      *
      * For efficiency reasons, empty batches are skipped over. If you need to
      * take action for empty batches, you need to store the batch_index as you
@@ -187,10 +187,7 @@ template <typename BinIndex> class bin_increment_batch_journal {
 
       public:
         /** \brief Iterator value type. */
-        using value_type =
-            std::tuple<std::size_t,
-                       typename bin_index_vector_type::const_iterator,
-                       typename bin_index_vector_type::const_iterator>;
+        using value_type = std::tuple<std::size_t, span<bin_index_type const>>;
 
         /** \brief Iterator difference type. */
         using difference_type = std::ptrdiff_t;
@@ -250,8 +247,7 @@ template <typename BinIndex> class bin_increment_batch_journal {
             while (++tmp_iter != encoded_indices_end && tmp_iter->first == 0)
                 batch_size += tmp_iter->second;
 
-            return {batch_index, bin_indices_iter,
-                    std::next(bin_indices_iter, as_signed(batch_size))};
+            return {batch_index, span(&*bin_indices_iter, batch_size)};
         }
 
         /** \brief Equality operator. */
@@ -514,11 +510,11 @@ class multi_histogram {
         static_assert(
             std::is_same_v<typename Journal::bin_index_type, bin_index_type>);
         assert((std::is_same_v<OverflowStrategy, stop_on_internal_overflow>));
-        for (auto [index, begin, end] : journal) {
+        for (auto [index, bin_index_span] : journal) {
             single_histogram<bin_index_type, bin_type, OverflowStrategy>
                 single_hist(hist_arr.subspan(num_bins * index, num_bins),
                             max_per_bin);
-            single_hist.undo_increments({&*begin, &*end}, stats);
+            single_hist.undo_increments(bin_index_span, stats);
         }
         // Ensure the previously untouched tail of the span gets cleared, if
         // clearing was requested and has not happened yet.
@@ -535,18 +531,18 @@ class multi_histogram {
             std::is_same_v<typename Journal::bin_index_type, bin_index_type>);
         assert((std::is_same_v<OverflowStrategy, stop_on_internal_overflow>));
         assert(not is_started());
-        for (auto [index, begin, end] : journal) {
+        for (auto [index, bin_index_span] : journal) {
             single_histogram<bin_index_type, bin_type, OverflowStrategy>
                 single_hist(hist_arr.subspan(num_bins * index, num_bins),
                             max_per_bin);
             if (need_to_clear)
                 single_hist.clear();
             [[maybe_unused]] auto n_applied =
-                single_hist.apply_increments({&*begin, &*end}, stats);
+                single_hist.apply_increments(bin_index_span, stats);
             // Under correct usage, 'journal' only repeats previous success, so
             // cannot overflow.
             assert(n_applied ==
-                   static_cast<std::size_t>(std::distance(begin, end)));
+                   static_cast<std::size_t>(bin_index_span.size()));
         }
         element_index = journal.num_batches();
     }
