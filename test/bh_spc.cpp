@@ -445,6 +445,27 @@ TEST_CASE("bh spc assign", "[bh_spc_event]") {
           le_event<bh_spc_event>(
               {0b1001'0000, 0b0000'0000, 0b1111'1111, 0b1111'1111}));
 
+    CHECK(bh_spc_event{}.assign_spc180_marker0_with_intensity_count(
+              0_u16np, 1_u8np, 0_u16np) ==
+          le_event<bh_spc_event>(
+              {0b1001'0000, 0b0000'0000, 0b0001'0000, 0b0000'0000}));
+    CHECK(bh_spc_event{}.assign_spc180_marker0_with_intensity_count(
+              1_u16np, 3_u8np, 2_u16np) ==
+          le_event<bh_spc_event>(
+              {0b1001'0000, 0b0000'0010, 0b0011'0000, 0b0000'0001}));
+    CHECK(bh_spc_event{}.assign_spc180_marker0_with_intensity_count(
+              1_u16np, 3_u8np, 2_u16np, true) ==
+          le_event<bh_spc_event>(
+              {0b1101'0000, 0b0000'0010, 0b0011'0000, 0b0000'0001}));
+    CHECK(bh_spc_event{}.assign_spc180_marker0_with_intensity_count(
+              4094_u16np, 13_u8np, 4093_u16np) ==
+          le_event<bh_spc_event>(
+              {0b1001'1111, 0b1111'1101, 0b1101'1111, 0b1111'1110}));
+    CHECK(bh_spc_event{}.assign_spc180_marker0_with_intensity_count(
+              4095_u16np, 15_u8np, 4095_u16np) ==
+          le_event<bh_spc_event>(
+              {0b1001'1111, 0b1111'1111, 0b1111'1111, 0b1111'1111}));
+
     CHECK(bh_spc_event{}.assign_multiple_macrotime_overflow(0_u32np) ==
           le_event<bh_spc_event>(
               {0b1100'0000, 0b0000'0000, 0b0000'0000, 0b0000'0000}));

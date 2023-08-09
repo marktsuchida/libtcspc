@@ -109,6 +109,29 @@ class difftime_data_mapper {
     }
 };
 
+/**
+ * \brief Data mapper mapping count to the data value.
+ *
+ * \ingroup data-mappers
+ *
+ * \see map_to_datapoints
+ *
+ * \tparam Event event type to map (must have count field)
+ */
+template <typename Event = nontagged_counts_event<>> class count_data_mapper {
+  public:
+    /** \brief Data mapper interface */
+    using event_type = Event;
+    /** \brief Data mapper interface */
+    using data_type = decltype(std::declval<event_type>().count);
+    static_assert(std::is_integral_v<data_type>);
+
+    /** \brief Data mapper interface */
+    auto operator()(event_type const &event) const noexcept -> data_type {
+        return event.count;
+    }
+};
+
 namespace internal {
 
 template <typename BinMapper, typename Downstream> class map_to_bins {

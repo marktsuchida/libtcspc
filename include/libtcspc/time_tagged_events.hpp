@@ -237,6 +237,8 @@ struct end_lost_interval_event : base_time_tagged_event<DataTraits> {
  * This event should only occur between begin_lost_interval_event and
  * end_lost_interval_event.
  *
+ * Not to be confused with \ref nontagged_counts_event.
+ *
  * \tparam DataTraits traits type specifying \c abstime_type and \c
  * channel_type
  */
@@ -264,6 +266,46 @@ struct untagged_counts_event : base_channeled_time_tagged_event<DataTraits> {
     friend auto operator<<(std::ostream &s, untagged_counts_event const &e)
         -> std::ostream & {
         return s << "untagged_counts(" << e.abstime << ", " << e.channel
+                 << ", " << e.count << ')';
+    }
+};
+
+/**
+ * \brief Event indicating number of detections from a non-time-tagging device.
+ *
+ * \ingroup events-timing
+ *
+ * Not to be confused with \ref untagged_counts_event.
+ *
+ * \tparam DataTraits traits type specifying \c abstime_type and \c
+ * channel_type
+ */
+template <typename DataTraits = default_data_traits>
+struct nontagged_counts_event : base_channeled_time_tagged_event<DataTraits> {
+    /**
+     * \brief Number of non-time-tagged counts detected.
+     */
+    std::uint32_t count;
+
+    /** \brief Equality comparison operator. */
+    friend auto operator==(nontagged_counts_event const &lhs,
+                           nontagged_counts_event const &rhs) noexcept
+        -> bool {
+        return lhs.abstime == rhs.abstime && lhs.channel == rhs.channel &&
+               lhs.count == rhs.count;
+    }
+
+    /** \brief Inequality comparison operator. */
+    friend auto operator!=(nontagged_counts_event const &lhs,
+                           nontagged_counts_event const &rhs) noexcept
+        -> bool {
+        return not(lhs == rhs);
+    }
+
+    /** \brief Stream insertion operator. */
+    friend auto operator<<(std::ostream &s, nontagged_counts_event const &e)
+        -> std::ostream & {
+        return s << "nontagged_counts(" << e.abstime << ", " << e.channel
                  << ", " << e.count << ')';
     }
 };
