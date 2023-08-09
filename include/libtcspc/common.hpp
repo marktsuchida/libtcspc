@@ -55,8 +55,20 @@ struct default_data_traits {
      */
     using difftime_type = std::uint16_t; // TODO int32_t
 
-    // TODO: We could use additional trait entries to specify how to handle
-    // integer overflow where it is relevant.
+    /**
+     * \brief Type of datapoint for histogramming.
+     */
+    using datapoint_type = std::int32_t;
+
+    /**
+     * \brief Type of histogram bin index.
+     */
+    using bin_index_type = std::uint16_t;
+
+    /**
+     * \brief Type of histogram bin value (count).
+     */
+    using bin_type = std::uint16_t;
 };
 
 /**

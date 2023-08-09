@@ -149,16 +149,14 @@ inline void print_range(std::ostream &s, It first, It last) {
  *
  * \ingroup events-histogram
  *
- * \tparam DataPoint the integer data type of the datapoint
- *
- * \tparam DataTraits traits type specifying \c abstime_type
+ * \tparam DataTraits traits type specifying \c abstime_type and \c
+ * datapoint_type
  */
-template <typename DataPoint, typename DataTraits = default_data_traits>
-struct datapoint_event {
+template <typename DataTraits = default_data_traits> struct datapoint_event {
     /**
      * \brief The data type.
      */
-    using data_type = DataPoint;
+    using datapoint_type = typename DataTraits::datapoint_type;
 
     /**
      * \brief The abstime of the datapoint.
@@ -168,7 +166,7 @@ struct datapoint_event {
     /**
      * \brief The datapoint value.
      */
-    data_type value;
+    datapoint_type value;
 
     /** \brief Equality comparison operator. */
     friend constexpr auto operator==(datapoint_event const &lhs,
@@ -196,11 +194,10 @@ struct datapoint_event {
  *
  * \ingroup events-histogram
  *
- * \tparam BinIndex the bin index type
- *
- * \tparam DataTraits traits type specifying \c abstime_type
+ * \tparam DataTraits traits type specifying \c abstime_type and \c
+ * bin_index_type
  */
-template <typename BinIndex, typename DataTraits = default_data_traits>
+template <typename DataTraits = default_data_traits>
 struct bin_increment_event {
     /**
      * \brief The abstime of the binned datapoint.
@@ -210,7 +207,7 @@ struct bin_increment_event {
     /**
      * \brief The histogram bin index to which the data value was mapped.
      */
-    BinIndex bin_index;
+    typename DataTraits::bin_index_type bin_index;
 
     /** \brief Equality comparison operator. */
     friend constexpr auto operator==(bin_increment_event const &lhs,
@@ -242,11 +239,10 @@ struct bin_increment_event {
  * Typically the batch represents some unit of data collection, such as a time
  * interval or pixel.
  *
- * \tparam BinIndex the bin index type
- *
- * \tparam DataTraits traits type specifying \c abstime_type
+ * \tparam DataTraits traits type specifying \c abstime_type and \c
+ * bin_index_type
  */
-template <typename BinIndex, typename DataTraits = default_data_traits>
+template <typename DataTraits = default_data_traits>
 struct bin_increment_batch_event {
     /**
      * \brief The abstime range of the batch.
@@ -256,7 +252,7 @@ struct bin_increment_batch_event {
     /**
      * \brief The bin indices for the datapoints in the batch.
      */
-    std::vector<BinIndex> bin_indices;
+    std::vector<typename DataTraits::bin_index_type> bin_indices;
 
     /** \brief Equality comparison operator. */
     friend auto operator==(bin_increment_batch_event const &lhs,
@@ -290,12 +286,9 @@ struct bin_increment_batch_event {
  * This event may be used both for a series of independent histograms and for a
  * series of updates to the same histogram.
  *
- * \tparam Bin the data type of the histogram bins
- *
- * \tparam DataTraits traits type specifying \c abstime_type
+ * \tparam DataTraits traits type specifying \c abstime_type and \c bin_type
  */
-template <typename Bin, typename DataTraits = default_data_traits>
-struct histogram_event {
+template <typename DataTraits = default_data_traits> struct histogram_event {
     /**
      * \brief The abstime range of the histogrammed data.
      */
@@ -304,7 +297,7 @@ struct histogram_event {
     /**
      * \brief The histogram.
      */
-    autocopy_span<Bin> histogram;
+    autocopy_span<typename DataTraits::bin_type> histogram;
 
     /** \brief Statistics. */
     histogram_stats stats;
@@ -344,11 +337,9 @@ struct histogram_event {
  * accumulated result. The contained histogram covers only whole batches;
  * counts from any partial batch are not included.
  *
- * \tparam Bin the data type of the histogram bins
- *
- * \tparam DataTraits traits type specifying \c abstime_type
+ * \tparam DataTraits traits type specifying \c abstime_type and \c bin_type
  */
-template <typename Bin, typename DataTraits = default_data_traits>
+template <typename DataTraits = default_data_traits>
 struct concluding_histogram_event {
     /**
      * \brief The abstime range of the histogrammed data.
@@ -358,7 +349,7 @@ struct concluding_histogram_event {
     /**
      * \brief The accumulated histogram.
      */
-    autocopy_span<Bin> histogram;
+    autocopy_span<typename DataTraits::bin_type> histogram;
 
     /** \brief Statistics. */
     histogram_stats stats;
@@ -418,11 +409,9 @@ struct concluding_histogram_event {
  * histogram arrays. The data it references is not owned by the event, and must
  * be copied if needed after event handling returns.
  *
- * \tparam Bin the data type of the histogram bins
- *
- * \tparam DataTraits traits type specifying \c abstime_type
+ * \tparam DataTraits traits type specifying \c abstime_type and \c bin_type
  */
-template <typename Bin, typename DataTraits = default_data_traits>
+template <typename DataTraits = default_data_traits>
 struct element_histogram_event {
     /**
      * \brief The abstime range of the histogrammed data.
@@ -441,7 +430,7 @@ struct element_histogram_event {
     /**
      * \brief View of the histogram data.
      */
-    autocopy_span<Bin> histogram;
+    autocopy_span<typename DataTraits::bin_type> histogram;
 
     /** \brief Statistics (for the histogram array). */
     histogram_stats stats;
@@ -489,11 +478,9 @@ struct element_histogram_event {
  * to the same histogram array (as with the output of \ref
  * histogram_elementwise_accumulate).
  *
- * \tparam Bin the data type of the histogram bins
- *
- * \tparam DataTraits traits type specifying \c abstime_type
+ * \tparam DataTraits traits type specifying \c abstime_type and \c bin_type
  */
-template <typename Bin, typename DataTraits = default_data_traits>
+template <typename DataTraits = default_data_traits>
 struct histogram_array_event {
     /**
      * \brief The abstime range of the histogrammed data.
@@ -507,7 +494,7 @@ struct histogram_array_event {
     /**
      * \brief View of the histogram array.
      */
-    autocopy_span<Bin> histogram_array;
+    autocopy_span<typename DataTraits::bin_type> histogram_array;
 
     /** \brief Statistics. */
     histogram_stats stats;
@@ -553,11 +540,9 @@ struct histogram_array_event {
  * accumulated result. The contained histogram array covers only whole cycles;
  * counts from any partial cycle are not included.
  *
- * \tparam Bin the data type of the histogram bins
- *
- * \tparam DataTraits traits type specifying \c abstime_type
+ * \tparam DataTraits traits type specifying \c abstime_type and \c bin_type
  */
-template <typename Bin, typename DataTraits = default_data_traits>
+template <typename DataTraits = default_data_traits>
 struct concluding_histogram_array_event {
     /**
      * \brief The abstime range of the accumulation.
@@ -571,7 +556,7 @@ struct concluding_histogram_array_event {
     /**
      * \brief View of the histogram array.
      */
-    autocopy_span<Bin> histogram_array;
+    autocopy_span<typename DataTraits::bin_type> histogram_array;
 
     /** \brief Statistics. */
     histogram_stats stats;

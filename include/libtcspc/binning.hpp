@@ -23,21 +23,23 @@ namespace tcspc {
 
 namespace internal {
 
-template <typename DataMapper, typename Downstream> class map_to_datapoints {
+template <typename DataTraits, typename DataMapper, typename Downstream>
+class map_to_datapoints {
     DataMapper mapper;
     Downstream downstream;
 
   public:
     using event_type = typename DataMapper::event_type;
-    using data_type = typename DataMapper::data_type;
+    using datapoint_type = typename DataMapper::datapoint_type;
+    static_assert(
+        std::is_same_v<datapoint_type, typename DataTraits::datapoint_type>);
 
     explicit map_to_datapoints(DataMapper &&mapper, Downstream &&downstream)
         : mapper(std::move(mapper)), downstream(std::move(downstream)) {}
 
     void handle(event_type const &event) {
-        datapoint_event<data_type> e{event.abstime,
-                                     std::invoke(mapper, event)};
-        downstream.handle(e);
+        downstream.handle(datapoint_event<DataTraits>{
+            event.abstime, std::invoke(mapper, event)});
     }
 
     template <typename OtherEvent> void handle(OtherEvent const &event) {
@@ -56,17 +58,20 @@ template <typename DataMapper, typename Downstream> class map_to_datapoints {
  * \ingroup processors-histogram
  *
  * Incoming events of type \c event_type are mapped to \c
- * datapoint_event<data_type>. \c event_type and \c data_type are deduced from
- * the type of \c DataMapper (the data mapper).
+ * datapoint_event<DataTraits>. \c event_type and \c datapoint_type are deduced
+ * from the type of \c DataMapper (the data mapper).
  *
- * The data mapper must define member types \c event_type and \c data_type,
- * plus the function call operator <tt>data_type operator()(event_type const &)
- * const noexcept</tt>.
+ * The data mapper must define member types \c event_type and \c
+ * datapoint_type, plus the function call operator <tt>datapoint_type
+ * operator()(event_type const &) const noexcept</tt>.
  *
- * \c data_type can be any copyable type accepted by the bin mapper used
- * downstream. Typically it is a numeric type.
+ * \c datapoint_type can be any copyable type accepted by the bin mapper used
+ * downstream. Typically it is a numeric type. It must match \c
+ * DataTraits::datapoint_type.
  *
  * All other events are passed through.
+ *
+ * \tparam DataTraits traits type for emitted events
  *
  * \tparam DataMapper type of data mapper
  *
@@ -78,9 +83,10 @@ template <typename DataMapper, typename Downstream> class map_to_datapoints {
  *
  * \return map-to-datapoints processor
  */
-template <typename DataMapper, typename Downstream>
+template <typename DataTraits = default_data_traits, typename DataMapper,
+          typename Downstream>
 auto map_to_datapoints(DataMapper &&mapper, Downstream &&downstream) {
-    return internal::map_to_datapoints<DataMapper, Downstream>(
+    return internal::map_to_datapoints<DataTraits, DataMapper, Downstream>(
         std::forward<DataMapper>(mapper),
         std::forward<Downstream>(downstream));
 }
@@ -100,11 +106,11 @@ class difftime_data_mapper {
     /** \brief Data mapper interface */
     using event_type = Event;
     /** \brief Data mapper interface */
-    using data_type = decltype(std::declval<event_type>().difftime);
-    static_assert(std::is_integral_v<data_type>);
+    using datapoint_type = decltype(std::declval<event_type>().difftime);
+    static_assert(std::is_integral_v<datapoint_type>);
 
     /** \brief Data mapper interface */
-    auto operator()(event_type const &event) const noexcept -> data_type {
+    auto operator()(event_type const &event) const noexcept -> datapoint_type {
         return event.difftime;
     }
 };
@@ -123,18 +129,19 @@ template <typename Event = nontagged_counts_event<>> class count_data_mapper {
     /** \brief Data mapper interface */
     using event_type = Event;
     /** \brief Data mapper interface */
-    using data_type = decltype(std::declval<event_type>().count);
-    static_assert(std::is_integral_v<data_type>);
+    using datapoint_type = decltype(std::declval<event_type>().count);
+    static_assert(std::is_integral_v<datapoint_type>);
 
     /** \brief Data mapper interface */
-    auto operator()(event_type const &event) const noexcept -> data_type {
+    auto operator()(event_type const &event) const noexcept -> datapoint_type {
         return event.count;
     }
 };
 
 namespace internal {
 
-template <typename BinMapper, typename Downstream> class map_to_bins {
+template <typename DataTraits, typename BinMapper, typename Downstream>
+class map_to_bins {
     BinMapper bin_mapper;
     Downstream downstream;
 
@@ -143,19 +150,22 @@ template <typename BinMapper, typename Downstream> class map_to_bins {
         "The bin mapper's bin_index_type must be an unsigned integer type");
 
   public:
-    using data_type = typename BinMapper::data_type;
+    using datapoint_type = typename BinMapper::datapoint_type;
     using bin_index_type = typename BinMapper::bin_index_type;
+    static_assert(
+        std::is_same_v<bin_index_type, typename DataTraits::bin_index_type>);
 
     explicit map_to_bins(BinMapper &&bin_mapper, Downstream &&downstream)
         : bin_mapper(std::move(bin_mapper)),
           downstream(std::move(downstream)) {}
 
-    void handle(datapoint_event<data_type> const &event) {
+    template <typename DT> void handle(datapoint_event<DT> const &event) {
+        static_assert(
+            std::is_same_v<typename DT::datapoint_type, datapoint_type>);
         auto bin = std::invoke(bin_mapper, event.value);
-        if (bin) {
-            bin_increment_event<bin_index_type> e{event.abstime, bin.value()};
-            downstream.handle(e);
-        }
+        if (bin)
+            downstream.handle(
+                bin_increment_event<DataTraits>{event.abstime, bin.value()});
     }
 
     template <typename OtherEvent> void handle(OtherEvent const &event) {
@@ -172,13 +182,14 @@ template <typename BinMapper, typename Downstream> class map_to_bins {
  *
  * \ingroup processors-histogram
  *
- * Incoming events of type \c datapoint_event<data_type> are mapped to \c
- * bin_increment_event<bin_index_type>. \c data_type and \c bin_index_type are
- * deduced from the type of \c BinMapper (the bin mapper).
+ * Incoming events of type \c datapoint_event<datapoint_type> are mapped to \c
+ * bin_increment_event<bin_index_type>. \c datapoint_type and \c bin_index_type
+ * are deduced from the type of \c BinMapper (the bin mapper).
  *
- * The bin mapper must define member types \c data_type and \c bin_index_type,
- * plus the function call operator <tt>std::optional<bin_index_type>
- * operator()(data_type) const noexcept</tt>.
+ * The bin mapper must define member types \c datapoint_type and \c
+ * bin_index_type, plus the function call operator
+ * <tt>std::optional<bin_index_type> operator()(datapoint_type) const
+ * noexcept</tt>.
  *
  * Bin mappers should also implement <tt>std::size_t n_bins() const
  * noexcept</tt>.
@@ -191,6 +202,8 @@ template <typename BinMapper, typename Downstream> class map_to_bins {
  *
  * \see power_of_2_bin_mapper
  *
+ * \tparam DataTraits traits type for emitted events
+ *
  * \tparam BinMapper type of bin mapper
  *
  * \tparam Downstream downstream processor type
@@ -201,9 +214,10 @@ template <typename BinMapper, typename Downstream> class map_to_bins {
  *
  * \return map-to-bin processor
  */
-template <typename BinMapper, typename Downstream>
+template <typename DataTraits = default_data_traits, typename BinMapper,
+          typename Downstream>
 auto map_to_bins(BinMapper &&bin_mapper, Downstream &&downstream) {
-    return internal::map_to_bins<BinMapper, Downstream>(
+    return internal::map_to_bins<DataTraits, BinMapper, Downstream>(
         std::forward<BinMapper>(bin_mapper),
         std::forward<Downstream>(downstream));
 }
@@ -226,29 +240,28 @@ auto map_to_bins(BinMapper &&bin_mapper, Downstream &&downstream) {
  *
  * \see map_to_bins
  *
- * \tparam DataPoint the data type from which to map
- *
- * \tparam BinIndex the type used for bin indices
- *
  * \tparam NDataBits number of significant bits in the datapoints
  *
  * \tparam NHistoBits number of bits used for bin indices
  *
+ * \tparam DataTraits traits type specifying \c datapoint_type and \c
+ * bin_index_type
+ *
  * \tparam Flip whether to flip the bin indices
  */
-template <typename DataPoint, typename BinIndex, unsigned NDataBits,
-          unsigned NHistoBits, bool Flip = false>
+template <unsigned NDataBits, unsigned NHistoBits,
+          typename DataTraits = default_data_traits, bool Flip = false>
 class power_of_2_bin_mapper {
-    static_assert(std::is_unsigned_v<DataPoint>,
-                  "DataPoint must be an unsigned integer type");
-    static_assert(std::is_unsigned_v<BinIndex>,
-                  "BinIndex must be an unsigned integer type");
+    static_assert(std::is_unsigned_v<typename DataTraits::datapoint_type>,
+                  "datapoint_type must be an unsigned integer type");
+    static_assert(std::is_unsigned_v<typename DataTraits::bin_index_type>,
+                  "bin_index_type must be an unsigned integer type");
 
   public:
     /** \brief Bin mapper interface */
-    using data_type = DataPoint;
+    using datapoint_type = typename DataTraits::datapoint_type;
     /** \brief Bin mapper interface */
-    using bin_index_type = BinIndex;
+    using bin_index_type = typename DataTraits::bin_index_type;
 
     /** \brief Bin mapper interface */
     [[nodiscard]] auto n_bins() const noexcept -> std::size_t {
@@ -256,20 +269,20 @@ class power_of_2_bin_mapper {
     }
 
     /** \brief Bin mapper interface */
-    auto operator()(data_type d) const noexcept
+    auto operator()(datapoint_type d) const noexcept
         -> std::optional<bin_index_type> {
-        static_assert(sizeof(data_type) >= sizeof(bin_index_type));
-        static_assert(NDataBits <= 8 * sizeof(data_type));
+        static_assert(sizeof(datapoint_type) >= sizeof(bin_index_type));
+        static_assert(NDataBits <= 8 * sizeof(datapoint_type));
         static_assert(NHistoBits <= 8 * sizeof(bin_index_type));
         static_assert(NDataBits >= NHistoBits);
         constexpr int shift = NDataBits - NHistoBits;
         auto bin = [&] {
-            if constexpr (shift >= 8 * sizeof(data_type))
+            if constexpr (shift >= 8 * sizeof(datapoint_type))
                 return 0;
             else
                 return d >> shift;
         }();
-        constexpr data_type max_bin_index = (1 << NHistoBits) - 1;
+        constexpr datapoint_type max_bin_index = (1 << NHistoBits) - 1;
         if (bin > max_bin_index)
             return std::nullopt;
         if constexpr (Flip)
@@ -285,26 +298,25 @@ class power_of_2_bin_mapper {
  *
  * \see map_to_bins
  *
- * \tparam DataPoint the data type from which to map
- *
- * \tparam BinIndex the type used for bin indices
+ * \tparam DataTraits traits type specifying \c datapoint_type and \c
+ * bin_index_type
  */
-template <typename DataPoint, typename BinIndex> class linear_bin_mapper {
-    DataPoint offset;
-    DataPoint bin_width;
-    BinIndex max_bin_index;
+template <typename DataTraits = default_data_traits> class linear_bin_mapper {
+    typename DataTraits::datapoint_type offset;
+    typename DataTraits::datapoint_type bin_width;
+    typename DataTraits::bin_index_type max_bin_index;
     bool clamp;
 
-    static_assert(std::is_integral_v<DataPoint>,
-                  "DataPoint must be an integer type");
-    static_assert(std::is_unsigned_v<BinIndex>,
-                  "BinIndex must be an unsigned integer type");
+    static_assert(std::is_integral_v<typename DataTraits::datapoint_type>,
+                  "datapoint_type must be an integer type");
+    static_assert(std::is_unsigned_v<typename DataTraits::bin_index_type>,
+                  "bin_index_type must be an unsigned integer type");
 
   public:
     /** \brief Bin mapper interface */
-    using data_type = DataPoint;
+    using datapoint_type = typename DataTraits::datapoint_type;
     /** \brief Bin mapper interface */
-    using bin_index_type = BinIndex;
+    using bin_index_type = typename DataTraits::bin_index_type;
 
     /**
      * \brief Construct with parameters.
@@ -312,7 +324,7 @@ template <typename DataPoint, typename BinIndex> class linear_bin_mapper {
      * \c max_bin_index must be in the range of \c bin_index_type.
      *
      * A negative \c bin_width value (together with a positive \c offset value)
-     * can be used to flip the histogram, provided that \c data_type is a
+     * can be used to flip the histogram, provided that \c datapoint_type is a
      * signed type with sufficient range.
      *
      * \param offset minimum value mapped to the first bin
@@ -324,7 +336,7 @@ template <typename DataPoint, typename BinIndex> class linear_bin_mapper {
      * \param clamp if true, include datapoints outside of the mapped range in
      * the first and last bins
      */
-    explicit linear_bin_mapper(data_type offset, data_type bin_width,
+    explicit linear_bin_mapper(datapoint_type offset, datapoint_type bin_width,
                                bin_index_type max_bin_index,
                                bool clamp = false)
         : offset(offset), bin_width(bin_width), max_bin_index(max_bin_index),
@@ -343,7 +355,7 @@ template <typename DataPoint, typename BinIndex> class linear_bin_mapper {
     }
 
     /** \brief Bin mapper interface */
-    auto operator()(data_type d) const noexcept
+    auto operator()(datapoint_type d) const noexcept
         -> std::optional<bin_index_type> {
         d -= offset;
         // Check sign before dividing to avoid rounding to zero in division.
@@ -359,11 +371,11 @@ template <typename DataPoint, typename BinIndex> class linear_bin_mapper {
 
 namespace internal {
 
-template <typename BinIndex, typename StartEvent, typename StopEvent,
+template <typename DataTraits, typename StartEvent, typename StopEvent,
           typename Downstream>
 class batch_bin_increments {
     bool in_batch = false;
-    bin_increment_batch_event<BinIndex> batch;
+    bin_increment_batch_event<DataTraits> batch;
 
     Downstream downstream;
 
@@ -371,7 +383,9 @@ class batch_bin_increments {
     explicit batch_bin_increments(Downstream &&downstream)
         : downstream(downstream) {}
 
-    void handle(bin_increment_event<BinIndex> const &event) {
+    template <typename DT> void handle(bin_increment_event<DT> const &event) {
+        static_assert(std::is_same_v<typename DT::bin_index_type,
+                                     typename DataTraits::bin_index_type>);
         if (in_batch)
             batch.bin_indices.push_back(event.bin_index);
     }
@@ -404,7 +418,8 @@ class batch_bin_increments {
  *
  * \ingroup processors-histogram
  *
- * \tparam BinIndex the bin index type
+ * \tparam DataTraits traits type specifying \c bin_index_type and used for
+ * emitted events
  *
  * \tparam StartEvent start-of-batch event type
  *
@@ -416,10 +431,10 @@ class batch_bin_increments {
  *
  * \return batch-bin-increments processor
  */
-template <typename BinIndex, typename StartEvent, typename StopEvent,
+template <typename DataTraits, typename StartEvent, typename StopEvent,
           typename Downstream>
 auto batch_bin_increments(Downstream &&downstream) {
-    return internal::batch_bin_increments<BinIndex, StartEvent, StopEvent,
+    return internal::batch_bin_increments<DataTraits, StartEvent, StopEvent,
                                           Downstream>(
         std::forward<Downstream>(downstream));
 }

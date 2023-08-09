@@ -23,12 +23,12 @@ namespace tcspc {
 
 namespace internal {
 
-template <typename DataTraits, typename BinIndex, typename Bin,
-          typename ResetEvent, typename OverflowStrategy, typename Downstream>
+template <typename DataTraits, typename ResetEvent, typename OverflowStrategy,
+          typename Downstream>
 class histogram {
   public:
-    using bin_index_type = BinIndex;
-    using bin_type = Bin;
+    using bin_index_type = typename DataTraits::bin_index_type;
+    using bin_type = typename DataTraits::bin_type;
     static_assert(
         is_any_of_v<OverflowStrategy, saturate_on_overflow, reset_on_overflow,
                     stop_on_overflow, error_on_overflow>);
@@ -48,7 +48,7 @@ class histogram {
     Downstream downstream;
 
     void emit_concluding(bool end_of_stream) {
-        downstream.handle(concluding_histogram_event<Bin, DataTraits>{
+        downstream.handle(concluding_histogram_event<DataTraits>{
             time_range, autocopy_span<bin_type>(hist), stats, 0,
             end_of_stream});
     }
@@ -68,8 +68,7 @@ class histogram {
         throw histogram_overflow_error("histogram bin overflowed");
     }
 
-    void
-    handle_overflow(bin_increment_event<BinIndex, DataTraits> const &event) {
+    void handle_overflow(bin_increment_event<DataTraits> const &event) {
         if constexpr (std::is_same_v<OverflowStrategy, saturate_on_overflow>) {
             unreachable();
         } else if constexpr (std::is_same_v<OverflowStrategy,
@@ -92,19 +91,21 @@ class histogram {
     }
 
   public:
-    explicit histogram(std::size_t num_bins, Bin max_per_bin,
+    explicit histogram(std::size_t num_bins, bin_type max_per_bin,
                        Downstream &&downstream)
         : hist_mem(new bin_type[num_bins]), hist(hist_mem.get(), num_bins),
           shist(hist, max_per_bin), downstream(std::move(downstream)) {
         shist.clear();
     }
 
-    void handle(bin_increment_event<BinIndex, DataTraits> const &event) {
+    template <typename DT> void handle(bin_increment_event<DT> const &event) {
+        static_assert(std::is_same_v<typename DT::bin_index_type,
+                                     typename DataTraits::bin_index_type>);
         if (not shist.apply_increments({&event.bin_index, 1}, stats))
             return handle_overflow(event);
         time_range.extend(event.abstime);
-        downstream.handle(histogram_event<bin_type, DataTraits>{
-            time_range, autocopy_span<Bin>(hist), stats});
+        downstream.handle(histogram_event<DataTraits>{
+            time_range, autocopy_span<bin_type>(hist), stats});
     }
 
     void handle([[maybe_unused]] ResetEvent const &event) {
@@ -145,7 +146,8 @@ class histogram {
  * Behavior is undefined if an incoming \c bin_increment_event contains a bin
  * index beyond the size of the histogram.
  *
- * \tparam DataTraits traits type specifying \c abstime_type
+ * \tparam DataTraits traits type specifying \c abstime_type, \c
+ * bin_index_type, and \c bin_type
  *
  * \tparam BinIndex the bin index type
  *
@@ -167,12 +169,12 @@ class histogram {
  *
  * \return histogram processor
  */
-template <typename DataTraits, typename BinIndex, typename Bin,
-          typename ResetEvent, typename OverflowStrategy, typename Downstream>
-auto histogram(std::size_t num_bins, Bin max_per_bin,
+template <typename DataTraits, typename ResetEvent, typename OverflowStrategy,
+          typename Downstream>
+auto histogram(std::size_t num_bins, typename DataTraits::bin_type max_per_bin,
                Downstream &&downstream) {
-    return internal::histogram<DataTraits, BinIndex, Bin, ResetEvent,
-                               OverflowStrategy, Downstream>(
+    return internal::histogram<DataTraits, ResetEvent, OverflowStrategy,
+                               Downstream>(
         num_bins, max_per_bin, std ::forward<Downstream>(downstream));
 }
 
