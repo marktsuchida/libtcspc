@@ -184,11 +184,11 @@ class null_router {
  *
  * \tparam N the number of downstreams to route to
  *
- * \tparam Channel channel number type
+ * \tparam DataTraits traits type specifying \c channel_type
  */
-template <std::size_t N, typename Channel = default_data_traits::channel_type>
+template <std::size_t N, typename DataTraits = default_data_traits>
 class channel_router {
-    std::array<Channel, N> channels;
+    std::array<typename DataTraits::channel_type, N> channels;
 
   public:
     /**
@@ -196,13 +196,15 @@ class channel_router {
      *
      * \param channels channels in order of downstreams to which to route
      */
-    explicit channel_router(std::array<Channel, N> const &channels)
+    explicit channel_router(
+        std::array<typename DataTraits::channel_type, N> const &channels)
         : channels(channels) {}
 
     /** \brief Router interface. */
     template <typename Event>
     auto operator()(Event const &event) const noexcept -> std::size_t {
-        static_assert(std::is_same_v<decltype(event.channel), Channel>);
+        static_assert(std::is_same_v<decltype(event.channel),
+                                     typename DataTraits::channel_type>);
         auto it = std::find(channels.begin(), channels.end(), event.channel);
         if (it == channels.end())
             return std::numeric_limits<std::size_t>::max();
@@ -210,11 +212,20 @@ class channel_router {
     }
 };
 
+namespace internal {
+
+template <typename Channel> struct channel_router_data_traits {
+    using channel_type = Channel;
+};
+
+} // namespace internal
+
 /**
  * \brief Deduction guide for array of channels.
  */
 template <std::size_t N, typename Channel>
-channel_router(std::array<Channel, N>) -> channel_router<N, Channel>;
+channel_router(std::array<Channel, N>)
+    -> channel_router<N, internal::channel_router_data_traits<Channel>>;
 
 /**
  * \brief Create a processor that broadcasts events to multiple downstream
