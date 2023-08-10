@@ -141,8 +141,10 @@ inline auto unbuffered_binary_ofstream_output_stream(
     // Set to unbuffered.
     stream.rdbuf()->pubsetbuf(nullptr, 0);
 
-    stream.open(filename, std::ios::binary | (truncate ? std::ios::trunc : 0) |
-                              (append ? std::ios::ate : 0));
+    stream.open(filename,
+                std::ios::binary |
+                    (truncate ? std::ios::trunc : std::ios::openmode{}) |
+                    (append ? std::ios::ate : std::ios::openmode{}));
     if (stream.fail())
         throw std::runtime_error("failed to open output file: " + filename);
     return internal::ostream_output_stream(std::move(stream));
@@ -153,8 +155,10 @@ inline auto binary_ofstream_output_stream(std::string const &filename,
                                           bool truncate = false,
                                           bool append = false) {
     std::ofstream stream;
-    stream.open(filename, std::ios::binary | (truncate ? std::ios::trunc : 0) |
-                              (append ? std::ios::ate : 0));
+    stream.open(filename,
+                std::ios::binary |
+                    (truncate ? std::ios::trunc : std::ios::openmode{}) |
+                    (append ? std::ios::ate : std::ios::openmode{}));
     if (stream.fail())
         throw std::runtime_error("failed to open output file: " + filename);
     return internal::ostream_output_stream(std::move(stream));

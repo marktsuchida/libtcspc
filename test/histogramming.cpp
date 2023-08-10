@@ -261,7 +261,7 @@ TEST_CASE("single_histogram: undoing correctly decrements bins and stats",
           "[single_histogram]") {
     SECTION("0 bins") {
         single_histogram<u8, u8, stop_on_internal_overflow> shist({}, 255);
-        histogram_stats(stats);
+        histogram_stats stats{};
         shist.undo_increments({}, stats);
         CHECK(stats.total == 0);
         CHECK(stats.saturated == 0);
