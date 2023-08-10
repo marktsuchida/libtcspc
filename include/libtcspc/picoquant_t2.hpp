@@ -141,12 +141,7 @@ struct pqt2_picoharp_event {
         if (channel > 14_u8np)
             throw std::invalid_argument(
                 "pqt2_picoharp_event channel must be in the range 0-14");
-        bytes[3] = std::byte(
-            ((channel << 4) | (u8np(timetag >> 24) & 0x0f_u8np)).value());
-        bytes[2] = std::byte(u8np(timetag >> 16).value());
-        bytes[1] = std::byte(u8np(timetag >> 8).value());
-        bytes[0] = std::byte(u8np(timetag).value());
-        return *this;
+        return assign_fields(channel, timetag);
     }
 
     /**
@@ -155,9 +150,7 @@ struct pqt2_picoharp_event {
      * \return \c *this
      */
     auto assign_timetag_overflow() noexcept -> pqt2_picoharp_event & {
-        bytes[3] = std::byte(0b1111'0000);
-        bytes[2] = bytes[1] = bytes[0] = std::byte(0);
-        return *this;
+        return assign_fields(15_u8np, 0_u32np);
     }
 
     /**
@@ -175,13 +168,8 @@ struct pqt2_picoharp_event {
         if (marker_bits == 0_u8np)
             throw std::invalid_argument(
                 "pqt2_picoharp_event marker_bits must not be zero");
-        bytes[3] = std::byte(
-            (0b1111'0000_u8np | (u8np(timetag >> 24) & 0x0f_u8np)).value());
-        bytes[2] = std::byte(u8np(timetag >> 16).value());
-        bytes[1] = std::byte(u8np(timetag >> 8).value());
-        bytes[0] = std::byte(
-            ((u8np(timetag) & 0xf0_u8np) | (marker_bits & 0x0f_u8np)).value());
-        return *this;
+        return assign_fields(15_u8np, (timetag & ~0x0f_u32np) |
+                                          (u32np(marker_bits) & 0x0f_u32np));
     }
 
     /** \brief Equality comparison operator. */
@@ -203,6 +191,16 @@ struct pqt2_picoharp_event {
         return stream << "pqt2_picoharp(channel="
                       << unsigned(event.channel().value())
                       << ", timetag=" << event.timetag() << ")";
+    }
+
+  private:
+    auto assign_fields(u8np channel, u32np timetag) -> pqt2_picoharp_event & {
+        bytes[3] = std::byte(
+            ((channel << 4) | (u8np(timetag >> 24) & 0x0f_u8np)).value());
+        bytes[2] = std::byte(u8np(timetag >> 16).value());
+        bytes[1] = std::byte(u8np(timetag >> 8).value());
+        bytes[0] = std::byte(u8np(timetag).value());
+        return *this;
     }
 };
 
@@ -313,13 +311,7 @@ struct pqt2_hydraharp_event {
      */
     auto assign_nonspecial(u32np timetag, u8np channel)
         -> pqt2_hydraharp_event & {
-        bytes[3] = std::byte(
-            (((channel & 0x3f_u8np) << 1) | (u8np(timetag >> 24) & 0x01_u8np))
-                .value());
-        bytes[2] = std::byte(u8np(timetag >> 16).value());
-        bytes[1] = std::byte(u8np(timetag >> 8).value());
-        bytes[0] = std::byte(u8np(timetag).value());
-        return *this;
+        return assign_fields(false, channel, timetag);
     }
 
     /**
@@ -336,12 +328,7 @@ struct pqt2_hydraharp_event {
         static_assert(
             not IsOverflowAlwaysSingle,
             "multiple time tag overflow is not available in HydraHarp V1 format");
-        bytes[3] = std::byte(
-            (0b1111'1110_u8np | (u8np(count >> 24) & 0x01_u8np)).value());
-        bytes[2] = std::byte(u8np(count >> 16).value());
-        bytes[1] = std::byte(u8np(count >> 8).value());
-        bytes[0] = std::byte(u8np(count).value());
-        return *this;
+        return assign_fields(true, 63_u8np, count);
     }
 
     /**
@@ -350,14 +337,7 @@ struct pqt2_hydraharp_event {
      * \return \c *this
      */
     auto assign_timetag_overflow() noexcept -> pqt2_hydraharp_event & {
-        if constexpr (IsOverflowAlwaysSingle) {
-            bytes[3] = std::byte(0b1111'1110);
-            bytes[2] = bytes[1] = std::byte(0);
-            bytes[0] = std::byte(1);
-        } else {
-            assign_timetag_overflow(1_u32np);
-        }
-        return *this;
+        return assign_fields(true, 63_u8np, 1_u32np);
     }
 
     /**
@@ -368,12 +348,7 @@ struct pqt2_hydraharp_event {
      * \return \c *this
      */
     auto assign_sync(u32np timetag) noexcept -> pqt2_hydraharp_event & {
-        bytes[3] = std::byte(
-            (0b1000'0000_u8np | (u8np(timetag >> 24) & 0x01_u8np)).value());
-        bytes[2] = std::byte(u8np(timetag >> 16).value());
-        bytes[1] = std::byte(u8np(timetag >> 8).value());
-        bytes[0] = std::byte(u8np(timetag).value());
-        return *this;
+        return assign_fields(true, 0_u8np, timetag);
     }
 
     /**
@@ -387,14 +362,10 @@ struct pqt2_hydraharp_event {
      */
     auto assign_external_marker(u32np timetag, u8np marker_bits)
         -> pqt2_hydraharp_event & {
-        bytes[3] =
-            std::byte((0b1000'0000_u8np | ((marker_bits & 0x3f_u8np) << 1) |
-                       (u8np(timetag >> 24) & 0x01_u8np))
-                          .value());
-        bytes[2] = std::byte(u8np(timetag >> 16).value());
-        bytes[1] = std::byte(u8np(timetag >> 8).value());
-        bytes[0] = std::byte(u8np(timetag).value());
-        return *this;
+        if (marker_bits == 0_u8np || (marker_bits & ~0x0f_u8np) != 0_u8np)
+            throw std::invalid_argument(
+                "pqt2_hydraharp_event marker_bits must be in range 1-15");
+        return assign_fields(true, marker_bits & 0x3f_u8np, timetag);
     }
 
     /** \brief Equality comparison operator. */
@@ -418,6 +389,19 @@ struct pqt2_hydraharp_event {
                       << "(special=" << event.is_special()
                       << ", channel=" << unsigned(event.channel().value())
                       << ", timetag=" << event.timetag() << ")";
+    }
+
+  private:
+    auto assign_fields(bool special, u8np channel, u32np timetag)
+        -> pqt2_hydraharp_event & {
+        bytes[3] =
+            std::byte(((u8np(special) << 7) | ((channel & 0x3f_u8np) << 1) |
+                       (u8np(timetag >> 24) & 0x01_u8np))
+                          .value());
+        bytes[2] = std::byte(u8np(timetag >> 16).value());
+        bytes[1] = std::byte(u8np(timetag >> 8).value());
+        bytes[0] = std::byte(u8np(timetag).value());
+        return *this;
     }
 };
 

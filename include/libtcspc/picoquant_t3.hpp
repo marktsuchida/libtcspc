@@ -131,12 +131,7 @@ struct pqt3_picoharp_event {
         if (channel > 14_u8np)
             throw std::invalid_argument(
                 "pqt3_picoharp_event channel must be in the range 0-14");
-        bytes[3] = std::byte(
-            ((channel << 4) | (u8np(dtime >> 8) & 0x0f_u8np)).value());
-        bytes[2] = std::byte(u8np(dtime).value());
-        bytes[1] = std::byte(u8np(nsync >> 8).value());
-        bytes[0] = std::byte(u8np(nsync).value());
-        return *this;
+        return assign_fields(channel, dtime, nsync);
     }
 
     /**
@@ -145,9 +140,7 @@ struct pqt3_picoharp_event {
      * \return \c *this
      */
     auto assign_nsync_overflow() noexcept -> pqt3_picoharp_event & {
-        bytes[3] = std::byte(0b1111'0000);
-        bytes[2] = bytes[1] = bytes[0] = std::byte(0);
-        return *this;
+        return assign_fields(15_u8np, 0_u16np, 0_u16np);
     }
 
     /**
@@ -164,11 +157,7 @@ struct pqt3_picoharp_event {
         if (marker_bits == 0_u8np)
             throw std::invalid_argument(
                 "pqt3_picoharp_event marker_bits must not be zero");
-        bytes[3] = std::byte(0b1111'0000);
-        bytes[2] = std::byte((marker_bits & 0x0f_u8np).value());
-        bytes[1] = std::byte(u8np(nsync >> 8).value());
-        bytes[0] = std::byte(u8np(nsync).value());
-        return *this;
+        return assign_fields(15_u8np, u16np(marker_bits & 0x0f_u8np), nsync);
     }
 
     /** \brief Equality comparison operator. */
@@ -191,6 +180,17 @@ struct pqt3_picoharp_event {
                       << unsigned(event.channel().value())
                       << ", dtime=" << event.dtime()
                       << ", nsync=" << event.nsync() << ")";
+    }
+
+  private:
+    auto assign_fields(u8np channel, u16np dtime, u16np nsync)
+        -> pqt3_picoharp_event & {
+        bytes[3] = std::byte(
+            ((channel << 4) | (u8np(dtime >> 8) & 0x0f_u8np)).value());
+        bytes[2] = std::byte(u8np(dtime).value());
+        bytes[1] = std::byte(u8np(nsync >> 8).value());
+        bytes[0] = std::byte(u8np(nsync).value());
+        return *this;
     }
 };
 
@@ -295,14 +295,7 @@ template <bool IsNSyncOverflowAlwaysSingle> struct pqt3_hydraharp_event {
      */
     auto assign_nonspecial(u16np nsync, u8np channel, u16np dtime)
         -> pqt3_hydraharp_event & {
-        bytes[3] = std::byte(
-            (((channel & 0x3f_u8np) << 1) | (u8np(dtime >> 14) & 0x01_u8np))
-                .value());
-        bytes[2] = std::byte(u8np(dtime >> 6).value());
-        bytes[1] = std::byte(
-            (u8np(dtime << 2) | (u8np(nsync >> 8) & 0x03_u8np)).value());
-        bytes[0] = std::byte(u8np(nsync).value());
-        return *this;
+        return assign_fields(false, channel, dtime, nsync);
     }
 
     /**
@@ -319,11 +312,7 @@ template <bool IsNSyncOverflowAlwaysSingle> struct pqt3_hydraharp_event {
         static_assert(
             not IsNSyncOverflowAlwaysSingle,
             "multiple nsync overflow is not available in HydraHarp V1 format");
-        bytes[3] = std::byte(0b1111'1110);
-        bytes[2] = std::byte(0);
-        bytes[1] = std::byte((u8np(count >> 8) & 0x03_u8np).value());
-        bytes[0] = std::byte(u8np(count).value());
-        return *this;
+        return assign_fields(true, 63_u8np, 0_u16np, count);
     }
 
     /**
@@ -332,14 +321,7 @@ template <bool IsNSyncOverflowAlwaysSingle> struct pqt3_hydraharp_event {
      * \return \c *this;
      */
     auto assign_nsync_overflow() noexcept -> pqt3_hydraharp_event & {
-        if constexpr (IsNSyncOverflowAlwaysSingle) {
-            bytes[3] = std::byte(0b1111'1110);
-            bytes[2] = bytes[1] = std::byte(0);
-            bytes[0] = std::byte(1);
-        } else {
-            assign_nsync_overflow(1_u16np);
-        }
-        return *this;
+        return assign_fields(true, 63_u8np, 0_u16np, 1_u16np);
     }
 
     /**
@@ -353,12 +335,7 @@ template <bool IsNSyncOverflowAlwaysSingle> struct pqt3_hydraharp_event {
      */
     auto assign_external_marker(u16np nsync, u8np marker_bits)
         -> pqt3_hydraharp_event & {
-        bytes[3] = std::byte(
-            (0b1000'0000_u8np | ((marker_bits & 0x3f_u8np) << 1)).value());
-        bytes[2] = std::byte(0);
-        bytes[1] = std::byte((u8np(nsync >> 8) & 0x03_u8np).value());
-        bytes[0] = std::byte(u8np(nsync).value());
-        return *this;
+        return assign_fields(true, marker_bits, 0_u16np, nsync);
     }
 
     /** \brief Equality comparison operator. */
@@ -383,6 +360,20 @@ template <bool IsNSyncOverflowAlwaysSingle> struct pqt3_hydraharp_event {
                       << ", channel=" << unsigned(event.channel().value())
                       << ", dtime=" << event.dtime()
                       << ", nsync=" << event.nsync() << ")";
+    }
+
+  private:
+    auto assign_fields(bool special, u8np channel, u16np dtime, u16np nsync)
+        -> pqt3_hydraharp_event & {
+        bytes[3] =
+            std::byte(((u8np(special) << 7) | ((channel & 0x3f_u8np) << 1) |
+                       (u8np(dtime >> 14) & 0x01_u8np))
+                          .value());
+        bytes[2] = std::byte(u8np(dtime >> 6).value());
+        bytes[1] = std::byte(
+            (u8np(dtime << 2) | (u8np(nsync >> 8) & 0x03_u8np)).value());
+        bytes[0] = std::byte(u8np(nsync).value());
+        return *this;
     }
 };
 

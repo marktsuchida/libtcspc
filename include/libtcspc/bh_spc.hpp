@@ -141,14 +141,8 @@ struct bh_spc_event {
      */
     auto assign_photon(u16np macrotime, u16np adc_value, u8np route,
                        bool macrotime_overflow = false) -> bh_spc_event & {
-        auto const flags = (macrotime_overflow ? 0b0100_u8np : 0_u8np);
-        bytes[3] = std::byte(
-            ((flags << 4) | (u8np(adc_value >> 8) & 0x0f_u8np)).value());
-        bytes[2] = std::byte(u8np(adc_value).value());
-        bytes[1] = std::byte(
-            ((route << 4) | (u8np(macrotime >> 8) & 0x0f_u8np)).value());
-        bytes[0] = std::byte(u8np(macrotime).value());
-        return *this;
+        return assign_fields(false, macrotime_overflow, false, false,
+                             adc_value, route, macrotime);
     }
 
     /**
@@ -166,10 +160,8 @@ struct bh_spc_event {
     auto assign_invalid_photon(u16np macrotime, u16np adc_value)
         -> bh_spc_event & {
         // N.B. No MTOV.
-        assign_photon(macrotime, adc_value, 0_u8np);
-        static constexpr auto inv_bit = std::byte(0b1000'0000);
-        bytes[3] = (bytes[3] & ~inv_bit) | inv_bit;
-        return *this;
+        return assign_fields(true, false, false, false, adc_value, 0_u8np,
+                             macrotime);
     }
 
     /**
@@ -188,16 +180,8 @@ struct bh_spc_event {
      */
     auto assign_marker(u16np macrotime, u8np marker_bits,
                        bool macrotime_overflow = false) -> bh_spc_event & {
-        auto const flags =
-            0b1001_u8np | (macrotime_overflow ? 0b0100_u8np : 0_u8np);
-        static constexpr auto adc_value = 0_u16np;
-        bytes[3] = std::byte(
-            ((flags << 4) | (u8np(adc_value >> 8) & 0x0f_u8np)).value());
-        bytes[2] = std::byte(u8np(adc_value).value());
-        bytes[1] = std::byte(
-            ((marker_bits << 4) | (u8np(macrotime >> 8) & 0x0f_u8np)).value());
-        bytes[0] = std::byte(u8np(macrotime).value());
-        return *this;
+        return assign_fields(true, macrotime_overflow, false, true, 0_u16np,
+                             marker_bits, macrotime);
     }
 
     /**
@@ -223,15 +207,8 @@ struct bh_spc_event {
         if ((marker_bits & 0x01_u8np) == 0_u8np)
             throw std::invalid_argument(
                 "bit for marker 0 must be set in intensity counter event");
-        auto const flags =
-            0b1001_u8np | (macrotime_overflow ? 0b0100_u8np : 0_u8np);
-        bytes[3] =
-            std::byte(((flags << 4) | (u8np(count >> 8) & 0x0f_u8np)).value());
-        bytes[2] = std::byte(u8np(count).value());
-        bytes[1] = std::byte(
-            ((marker_bits << 4) | (u8np(macrotime >> 8) & 0x0f_u8np)).value());
-        bytes[0] = std::byte(u8np(macrotime).value());
-        return *this;
+        return assign_fields(true, macrotime_overflow, false, true, count,
+                             marker_bits, macrotime);
     }
 
     /**
@@ -245,9 +222,9 @@ struct bh_spc_event {
      * \return \c *this
      */
     auto assign_multiple_macrotime_overflow(u32np count) -> bh_spc_event & {
-        static constexpr auto flags = 0b1100_u8np;
-        bytes[3] = std::byte(
-            ((flags << 4) | (u8np(count >> 24) & 0x0f_u8np)).value());
+        static constexpr auto flags = 0b1100'0000_u8np;
+        bytes[3] =
+            std::byte((flags | (u8np(count >> 24) & 0x0f_u8np)).value());
         bytes[2] = std::byte(u8np(count >> 16).value());
         bytes[1] = std::byte(u8np(count >> 8).value());
         bytes[0] = std::byte(u8np(count >> 0).value());
@@ -292,6 +269,20 @@ struct bh_spc_event {
                     << ", GAP=" << e.gap_flag() << ", MARK=" << e.marker_flag()
                     << ", CNT=" << e.multiple_macrotime_overflow_count()
                     << ")";
+    }
+
+  private:
+    auto assign_fields(bool invalid, bool mtov, bool gap, bool mark, u16np adc,
+                       u8np rout, u16np mt) -> bh_spc_event & {
+
+        auto const flags = (u8np(invalid) << 7) | (u8np(mtov) << 6) |
+                           (u8np(gap) << 5) | (u8np(mark) << 4);
+        bytes[3] = std::byte((flags | (u8np(adc >> 8) & 0x0f_u8np)).value());
+        bytes[2] = std::byte(u8np(adc).value());
+        bytes[1] =
+            std::byte(((rout << 4) | (u8np(mt >> 8) & 0x0f_u8np)).value());
+        bytes[0] = std::byte(u8np(mt).value());
+        return *this;
     }
 };
 
@@ -404,15 +395,8 @@ struct bh_spc600_4096ch_event {
     auto assign_photon(u32np macrotime, u16np adc_value, u8np route,
                        bool macrotime_overflow = false)
         -> bh_spc600_4096ch_event & {
-        auto const flags = (macrotime_overflow ? 0b0010_u8np : 0_u8np);
-        bytes[5] = std::byte(u8np(macrotime >> 8).value());
-        bytes[4] = std::byte(u8np(macrotime >> 0).value());
-        bytes[3] = std::byte(route.value());
-        bytes[2] = std::byte(u8np(macrotime >> 16).value());
-        bytes[1] = std::byte(
-            ((flags << 4) | (u8np(adc_value >> 8) & 0x0f_u8np)).value());
-        bytes[0] = std::byte(u8np(adc_value).value());
-        return *this;
+        return assign_fields(macrotime, route, false, macrotime_overflow,
+                             false, adc_value);
     }
 
     /**
@@ -431,10 +415,8 @@ struct bh_spc600_4096ch_event {
     auto assign_invalid_photon(u32np macrotime, u16np adc_value,
                                bool macrotime_overflow = false)
         -> bh_spc600_4096ch_event & {
-        assign_photon(macrotime, adc_value, 0_u8np, macrotime_overflow);
-        static constexpr auto inv_bit = std::byte(0b0001'0000);
-        bytes[1] = (bytes[1] & ~inv_bit) | inv_bit;
-        return *this;
+        return assign_fields(macrotime, 0_u8np, false, macrotime_overflow,
+                             true, adc_value);
     }
 
     /**
@@ -478,6 +460,20 @@ struct bh_spc600_4096ch_event {
                     << ", MTOV=" << e.macrotime_overflow_flag()
                     << ", GAP=" << e.gap_flag() << ", bit15=" << unused_bit
                     << ")";
+    }
+
+  private:
+    auto assign_fields(u32np mt, u8np r, bool gap, bool mtov, bool invalid,
+                       u16np adc) -> bh_spc600_4096ch_event & {
+        auto const flags =
+            (u8np(gap) << 6) | (u8np(mtov) << 5) | (u8np(invalid) << 4);
+        bytes[5] = std::byte(u8np(mt >> 8).value());
+        bytes[4] = std::byte(u8np(mt >> 0).value());
+        bytes[3] = std::byte(r.value());
+        bytes[2] = std::byte(u8np(mt >> 16).value());
+        bytes[1] = std::byte((flags | (u8np(adc >> 8) & 0x0f_u8np)).value());
+        bytes[0] = std::byte(u8np(adc).value());
+        return *this;
     }
 };
 
@@ -590,14 +586,8 @@ struct bh_spc600_256ch_event {
     auto assign_photon(u32np macrotime, u8np adc_value, u8np route,
                        bool macrotime_overflow = false)
         -> bh_spc600_256ch_event & {
-        auto const flags = (macrotime_overflow ? 0b0100_u8np : 0_u8np);
-        bytes[3] = std::byte(((flags << 4) | ((route << 1) & 0b1110_u8np) |
-                              (u8np(macrotime >> 16) & 0x01_u8np))
-                                 .value());
-        bytes[2] = std::byte(u8np(macrotime >> 8).value());
-        bytes[1] = std::byte(u8np(macrotime).value());
-        bytes[0] = std::byte(adc_value.value());
-        return *this;
+        return assign_fields(false, macrotime_overflow, false, route,
+                             macrotime, adc_value);
     }
 
     /**
@@ -615,10 +605,7 @@ struct bh_spc600_256ch_event {
     auto assign_invalid_photon(u32np macrotime, u8np adc_value)
         -> bh_spc600_256ch_event & {
         // N.B. No MTOV.
-        assign_photon(macrotime, adc_value, 0_u8np);
-        static constexpr auto inv_bit = std::byte(0b1000'0000);
-        bytes[3] = (bytes[3] & ~inv_bit) | inv_bit;
-        return *this;
+        return assign_fields(true, false, false, 0_u8np, macrotime, adc_value);
     }
 
     /**
@@ -633,9 +620,9 @@ struct bh_spc600_256ch_event {
      */
     auto assign_multiple_macrotime_overflow(u32np count)
         -> bh_spc600_256ch_event & {
-        static constexpr auto flags = 0b1100_u8np;
-        bytes[3] = std::byte(
-            ((flags << 4) | (u8np(count >> 24) & 0x0f_u8np)).value());
+        static constexpr auto flags = 0b1100'0000_u8np;
+        bytes[3] =
+            std::byte((flags | (u8np(count >> 24) & 0x0f_u8np)).value());
         bytes[2] = std::byte(u8np(count >> 16).value());
         bytes[1] = std::byte(u8np(count >> 8).value());
         bytes[0] = std::byte(u8np(count >> 0).value());
@@ -682,6 +669,20 @@ struct bh_spc600_256ch_event {
                     << ", GAP=" << e.gap_flag() << ", bit28=" << unused_bit
                     << ", CNT=" << e.multiple_macrotime_overflow_count()
                     << ")";
+    }
+
+  private:
+    auto assign_fields(bool invalid, bool mtov, bool gap, u8np r, u32np mt,
+                       u8np adc) -> bh_spc600_256ch_event & {
+        auto const flags =
+            (u8np(invalid) << 7) | (u8np(mtov) << 6) | (u8np(gap) << 5);
+        bytes[3] = std::byte(
+            (flags | ((r << 1) & 0b1110_u8np) | (u8np(mt >> 16) & 0x01_u8np))
+                .value());
+        bytes[2] = std::byte(u8np(mt >> 8).value());
+        bytes[1] = std::byte(u8np(mt).value());
+        bytes[0] = std::byte(adc.value());
+        return *this;
     }
 };
 
