@@ -5,6 +5,7 @@
 doxygen = find_program(
     'doxygen',
     required: get_option('docs'),
+    disabler: true,
 )
 
 doxyfile = configure_file(
@@ -18,13 +19,11 @@ doxyfile = configure_file(
 
 doc_install_dir = get_option('datadir') / 'doc/libtcspc'
 
-if doxygen.found()
-    custom_target(
-        'docs',
-        command: [doxygen, '-q', doxyfile],
-        depend_files: [public_cpp_headers],
-        output: ['apidoc'],
-        install: true,
-        install_dir: doc_install_dir,
-    )
-endif
+custom_target(
+    'docs',
+    command: [doxygen, '-q', doxyfile],
+    depend_files: [public_cpp_headers],
+    output: ['apidoc'],
+    install: true,
+    install_dir: doc_install_dir,
+)

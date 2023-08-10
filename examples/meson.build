@@ -2,6 +2,8 @@
 # Copyright 2019-2023 Board of Regents of the University of Wisconsin System
 # SPDX-License-Identifier: MIT
 
+if not get_option('examples').disabled()
+
 summarize_swabian = executable(
     'summarize_swabian',
     'summarize_swabian.cpp',
@@ -10,3 +12,5 @@ summarize_swabian = executable(
         thread_dep,
     ],
 )
+
+endif

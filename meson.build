@@ -23,6 +23,7 @@ tcb_span_dep = dependency('tcb_span')
 
 catch2_with_main_dep = dependency(
     'catch2-with-main',
+    allow_fallback: true,
     required: get_option('tests'),
     disabler: true,
     include_type: 'system',
@@ -38,7 +39,8 @@ trompeloeil_dep = dependency(
 
 benchmark_dep = dependency(
     'benchmark',
-    required: get_option('tests'),
+    allow_fallback: true,
+    required: get_option('benchmarks'),
     disabler: true,
     include_type: 'system',
 )
