@@ -42,7 +42,7 @@ template <typename BinIndex> class bin_increment_batch_journal {
     // delta or count exceeds 255, use extra entries:
     // E.g., delta = 300: (255, 0), (45, count)
     // E.g., count = 300: (delta, 255), (0, 45)
-    // E.g., delta = 270, value = 500: (255, 0), (15, 255), (0, 245)
+    // E.g., delta = 270, count = 500: (255, 0), (15, 255), (0, 245)
     std::vector<std::pair<std::uint8_t, std::uint8_t>> encoded_indices;
 
     // The bin indices from all batches, concatenated.
