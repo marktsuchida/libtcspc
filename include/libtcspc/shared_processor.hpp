@@ -9,6 +9,7 @@
 #include <exception>
 #include <memory>
 #include <stdexcept>
+#include <type_traits>
 #include <utility>
 
 namespace tcspc {
@@ -69,6 +70,26 @@ template <typename Downstream> class shared_processor {
 template <typename Downstream>
 auto shared_processor(std::shared_ptr<Downstream> downstream) {
     return internal::shared_processor<Downstream>(std::move(downstream));
+}
+
+/**
+ * \brief Move-construct an instance managed by \c std::shared_ptr.
+ *
+ * \ingroup misc
+ *
+ * This is a helper to make it easier to prepare a processor for use with \ref
+ * shared_processor.
+ *
+ * \tparam T the object type
+ *
+ * \param t the object
+ *
+ * \return shared pointer to an instance of \c T move-constructed from \c t.
+ */
+template <typename T,
+          typename = std::enable_if_t<std::is_rvalue_reference_v<T &&>>>
+auto move_to_shared(T &&t) -> std::shared_ptr<T> {
+    return std::make_shared<T>(std::forward<T>(t));
 }
 
 } // namespace tcspc

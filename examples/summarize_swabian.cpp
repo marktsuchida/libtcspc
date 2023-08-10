@@ -10,7 +10,6 @@
 #include "libtcspc/delay.hpp"
 #include "libtcspc/event_set.hpp"
 #include "libtcspc/read_binary_stream.hpp"
-#include "libtcspc/shared_processor.hpp"
 #include "libtcspc/stop.hpp"
 #include "libtcspc/swabian_tag.hpp"
 
