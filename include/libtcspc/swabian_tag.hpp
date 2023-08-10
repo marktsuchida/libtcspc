@@ -90,65 +90,67 @@ struct swabian_tag_event {
     }
 
     /**
-     * \brief Set this event to represent a time tag.
+     * \brief Make an event representing a time tag.
      *
      * \param time the timestamp
      *
      * \param channel the channel
      *
-     * \return \c *this
+     * \return event
      */
-    auto assign_time_tag(i64np time, i32np channel) noexcept
-        -> swabian_tag_event & {
-        return assign_fields(tag_type::time_tag, 0_u16np, channel, time);
+    static auto make_time_tag(i64np time, i32np channel) noexcept
+        -> swabian_tag_event {
+        return make_from_fields(tag_type::time_tag, 0_u16np, channel, time);
     }
 
     /**
-     * \brief Set this event to represent an error.
+     * \brief Make an event representing an error.
      *
      * \param time the timestamp
      *
-     * \return \c *this
+     * \return event
      */
-    auto assign_error(i64np time) noexcept -> swabian_tag_event & {
-        return assign_fields(tag_type::error, 0_u16np, 0_i32np, time);
+    static auto make_error(i64np time) noexcept -> swabian_tag_event {
+        return make_from_fields(tag_type::error, 0_u16np, 0_i32np, time);
     }
 
     /**
-     * \brief Set this event to represent the beginning of an overflow
+     * \brief Make an event representing the beginning of an overflow
      * interval.
      *
      * \param time the timestamp
      *
-     * \return \c *this
+     * \return event
      */
-    auto assign_overflow_begin(i64np time) noexcept -> swabian_tag_event & {
-        return assign_fields(tag_type::overflow_begin, 0_u16np, 0_i32np, time);
+    static auto make_overflow_begin(i64np time) noexcept -> swabian_tag_event {
+        return make_from_fields(tag_type::overflow_begin, 0_u16np, 0_i32np,
+                                time);
     }
 
     /**
-     * \brief Set this event to represent the end of an overflow interval.
+     * \brief Make an event representing the end of an overflow interval.
      *
      * \param time the timestamp
      *
-     * \return \c *this
+     * \return event
      */
-    auto assign_overflow_end(i64np time) noexcept -> swabian_tag_event & {
-        return assign_fields(tag_type::overflow_end, 0_u16np, 0_i32np, time);
+    static auto make_overflow_end(i64np time) noexcept -> swabian_tag_event {
+        return make_from_fields(tag_type::overflow_end, 0_u16np, 0_i32np,
+                                time);
     }
 
     /**
-     * \brief Set this event to represent a missed event count.
+     * \brief Make an event representing a missed event count.
      *
      * \param time the timestamp
      *
      * \param count number of missed events
      *
-     * \return \c *this
+     * \return event
      */
-    auto assign_missed_events(i64np time, u16np count) noexcept
-        -> swabian_tag_event & {
-        return assign_fields(tag_type::missed_events, count, 0_i32np, time);
+    static auto make_missed_events(i64np time, u16np count) noexcept
+        -> swabian_tag_event {
+        return make_from_fields(tag_type::missed_events, count, 0_i32np, time);
     }
 
     /** \brief Equality comparison operator. */
@@ -173,25 +175,26 @@ struct swabian_tag_event {
     }
 
   private:
-    auto assign_fields(tag_type type, u16np missed, i32np channel,
-                       i64np time) noexcept -> swabian_tag_event & {
-        bytes[0] = std::byte(type);
-        bytes[1] = std::byte(0); // Padding
-        bytes[2] = std::byte(u8np(missed).value());
-        bytes[3] = std::byte(u8np(missed >> 8).value());
-        bytes[4] = std::byte(u8np(channel).value());
-        bytes[5] = std::byte(u8np(channel >> 8).value());
-        bytes[6] = std::byte(u8np(channel >> 16).value());
-        bytes[7] = std::byte(u8np(channel >> 24).value());
-        bytes[8] = std::byte(u8np(time).value());
-        bytes[9] = std::byte(u8np(time >> 8).value());
-        bytes[10] = std::byte(u8np(time >> 16).value());
-        bytes[11] = std::byte(u8np(time >> 24).value());
-        bytes[12] = std::byte(u8np(time >> 32).value());
-        bytes[13] = std::byte(u8np(time >> 40).value());
-        bytes[14] = std::byte(u8np(time >> 48).value());
-        bytes[15] = std::byte(u8np(time >> 56).value());
-        return *this;
+    static auto make_from_fields(tag_type type, u16np missed, i32np channel,
+                                 i64np time) noexcept -> swabian_tag_event {
+        return swabian_tag_event{{
+            std::byte(type),
+            std::byte(0), // Padding
+            std::byte(u8np(missed).value()),
+            std::byte(u8np(missed >> 8).value()),
+            std::byte(u8np(channel).value()),
+            std::byte(u8np(channel >> 8).value()),
+            std::byte(u8np(channel >> 16).value()),
+            std::byte(u8np(channel >> 24).value()),
+            std::byte(u8np(time).value()),
+            std::byte(u8np(time >> 8).value()),
+            std::byte(u8np(time >> 16).value()),
+            std::byte(u8np(time >> 24).value()),
+            std::byte(u8np(time >> 32).value()),
+            std::byte(u8np(time >> 40).value()),
+            std::byte(u8np(time >> 48).value()),
+            std::byte(u8np(time >> 56).value()),
+        }};
     }
 };
 

@@ -110,35 +110,35 @@ TEST_CASE("swabian tag read", "[swabian_tag_event]") {
 }
 
 TEST_CASE("swabian tag assign", "[swabian_tag_event]") {
-    auto event = swabian_tag_event{}.assign_time_tag(100_i64np, 3_i32np);
+    auto event = swabian_tag_event::make_time_tag(100_i64np, 3_i32np);
     CHECK(
         std::equal(event.bytes.begin(), event.bytes.end(),
                    as_bytes(span(std::array<u8, 16>{0, 0, 0, 0, 3, 0, 0, 0,
                                                     100, 0, 0, 0, 0, 0, 0, 0}))
                        .begin()));
 
-    event = swabian_tag_event{}.assign_error(100_i64np);
+    event = swabian_tag_event::make_error(100_i64np);
     CHECK(
         std::equal(event.bytes.begin(), event.bytes.end(),
                    as_bytes(span(std::array<u8, 16>{1, 0, 0, 0, 0, 0, 0, 0,
                                                     100, 0, 0, 0, 0, 0, 0, 0}))
                        .begin()));
 
-    event = swabian_tag_event{}.assign_overflow_begin(100_i64np);
+    event = swabian_tag_event::make_overflow_begin(100_i64np);
     CHECK(
         std::equal(event.bytes.begin(), event.bytes.end(),
                    as_bytes(span(std::array<u8, 16>{2, 0, 0, 0, 0, 0, 0, 0,
                                                     100, 0, 0, 0, 0, 0, 0, 0}))
                        .begin()));
 
-    event = swabian_tag_event{}.assign_overflow_end(100_i64np);
+    event = swabian_tag_event::make_overflow_end(100_i64np);
     CHECK(
         std::equal(event.bytes.begin(), event.bytes.end(),
                    as_bytes(span(std::array<u8, 16>{3, 0, 0, 0, 0, 0, 0, 0,
                                                     100, 0, 0, 0, 0, 0, 0, 0}))
                        .begin()));
 
-    event = swabian_tag_event{}.assign_missed_events(100_i64np, 7_u16np);
+    event = swabian_tag_event::make_missed_events(100_i64np, 7_u16np);
     CHECK(
         std::equal(event.bytes.begin(), event.bytes.end(),
                    as_bytes(span(std::array<u8, 16>{4, 0, 7, 0, 0, 0, 0, 0,

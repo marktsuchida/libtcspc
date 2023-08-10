@@ -294,92 +294,90 @@ TEMPLATE_TEST_CASE("pqt2 hydraharp read external marker bits", "[pqt2_event]",
 }
 
 TEST_CASE("pqt2 picoharp assign", "[pqt2_event]") {
-    CHECK(pqt2_picoharp_event{}.assign_nonspecial(0_u32np, 0_u8np) ==
+    CHECK(pqt2_picoharp_event::make_nonspecial(0_u32np, 0_u8np) ==
           le_event<pqt2_picoharp_event>(
               {0b0000'0000, 0b0000'0000, 0b0000'0000, 0b0000'0000}));
-    CHECK(pqt2_picoharp_event{}.assign_nonspecial(1_u32np, 2_u8np) ==
+    CHECK(pqt2_picoharp_event::make_nonspecial(1_u32np, 2_u8np) ==
           le_event<pqt2_picoharp_event>(
               {0b0010'0000, 0b0000'0000, 0b0000'0000, 0b0000'0001}));
-    CHECK(
-        pqt2_picoharp_event{}.assign_nonspecial(268'435'454_u32np, 14_u8np) ==
-        le_event<pqt2_picoharp_event>(
-            {0b1110'1111, 0b1111'1111, 0b1111'1111, 0b1111'1110}));
-    CHECK(
-        pqt2_picoharp_event{}.assign_nonspecial(268'435'455_u32np, 14_u8np) ==
-        le_event<pqt2_picoharp_event>(
-            {0b1110'1111, 0b1111'1111, 0b1111'1111, 0b1111'1111}));
+    CHECK(pqt2_picoharp_event::make_nonspecial(268'435'454_u32np, 14_u8np) ==
+          le_event<pqt2_picoharp_event>(
+              {0b1110'1111, 0b1111'1111, 0b1111'1111, 0b1111'1110}));
+    CHECK(pqt2_picoharp_event::make_nonspecial(268'435'455_u32np, 14_u8np) ==
+          le_event<pqt2_picoharp_event>(
+              {0b1110'1111, 0b1111'1111, 0b1111'1111, 0b1111'1111}));
 
-    CHECK(pqt2_picoharp_event{}.assign_timetag_overflow() ==
+    CHECK(pqt2_picoharp_event::make_timetag_overflow() ==
           le_event<pqt2_picoharp_event>(
               {0b1111'0000, 0b0000'0000, 0b0000'0000, 0b0000'0000}));
 
-    CHECK(pqt2_picoharp_event{}.assign_external_marker(0_u32np, 1_u8np) ==
+    CHECK(pqt2_picoharp_event::make_external_marker(0_u32np, 1_u8np) ==
           le_event<pqt2_picoharp_event>(
               {0b1111'0000, 0b0000'0000, 0b0000'0000, 0b0000'0001}));
-    CHECK(pqt2_picoharp_event{}.assign_external_marker(268'435'455_u32np,
-                                                       3_u8np) ==
-          le_event<pqt2_picoharp_event>(
-              {0b1111'1111, 0b1111'1111, 0b1111'1111, 0b1111'0011}));
-    CHECK(pqt2_picoharp_event{}.assign_external_marker(268'435'455_u32np,
-                                                       15_u8np) ==
+    CHECK(
+        pqt2_picoharp_event::make_external_marker(268'435'455_u32np, 3_u8np) ==
+        le_event<pqt2_picoharp_event>(
+            {0b1111'1111, 0b1111'1111, 0b1111'1111, 0b1111'0011}));
+    CHECK(pqt2_picoharp_event::make_external_marker(268'435'455_u32np,
+                                                    15_u8np) ==
           le_event<pqt2_picoharp_event>(
               {0b1111'1111, 0b1111'1111, 0b1111'1111, 0b1111'1111}));
 }
 
 TEMPLATE_TEST_CASE("pqt2 hydraharp assign", "[pqt2_event]",
                    pqt2_hydraharpv1_event, pqt2_hydraharpv2_event) {
-    CHECK(TestType{}.assign_nonspecial(0_u32np, 0_u8np) ==
+    CHECK(TestType::make_nonspecial(0_u32np, 0_u8np) ==
           le_event<TestType>(
               {0b0000'0000, 0b0000'0000, 0b0000'0000, 0b0000'0000}));
-    CHECK(TestType{}.assign_nonspecial(1_u32np, 2_u8np) ==
+    CHECK(TestType::make_nonspecial(1_u32np, 2_u8np) ==
           le_event<TestType>(
               {0b0000'0100, 0b0000'0000, 0b0000'0000, 0b0000'0001}));
-    CHECK(TestType{}.assign_nonspecial(33'554'430_u32np, 62_u8np) ==
+    CHECK(TestType::make_nonspecial(33'554'430_u32np, 62_u8np) ==
           le_event<TestType>(
               {0b0111'1101, 0b1111'1111, 0b1111'1111, 0b1111'1110}));
-    CHECK(TestType{}.assign_nonspecial(33'554'431_u32np, 63_u8np) ==
+    CHECK(TestType::make_nonspecial(33'554'431_u32np, 63_u8np) ==
           le_event<TestType>(
               {0b0111'1111, 0b1111'1111, 0b1111'1111, 0b1111'1111}));
 
-    CHECK(pqt2_hydraharpv1_event{}.assign_timetag_overflow() ==
+    CHECK(pqt2_hydraharpv1_event::make_timetag_overflow() ==
           le_event<pqt2_hydraharpv1_event>(
               {0b1111'1110, 0b0000'0000, 0b0000'0000, 0b0000'0001}));
 
-    CHECK(pqt2_hydraharpv2_event{}.assign_timetag_overflow() ==
-          pqt2_hydraharpv2_event{}.assign_timetag_overflow(1_u32np));
-    CHECK(pqt2_hydraharpv2_event{}.assign_timetag_overflow(0_u32np) ==
+    CHECK(pqt2_hydraharpv2_event::make_timetag_overflow() ==
+          pqt2_hydraharpv2_event::make_timetag_overflow(1_u32np));
+    CHECK(pqt2_hydraharpv2_event::make_timetag_overflow(0_u32np) ==
           le_event<pqt2_hydraharpv2_event>(
               {0b1111'1110, 0b0000'0000, 0b0000'0000, 0b0000'0000}));
-    CHECK(pqt2_hydraharpv2_event{}.assign_timetag_overflow(1_u32np) ==
+    CHECK(pqt2_hydraharpv2_event::make_timetag_overflow(1_u32np) ==
           le_event<pqt2_hydraharpv2_event>(
               {0b1111'1110, 0b0000'0000, 0b0000'0000, 0b0000'0001}));
-    CHECK(pqt2_hydraharpv2_event{}.assign_timetag_overflow(33'554'430_u32np) ==
+    CHECK(pqt2_hydraharpv2_event::make_timetag_overflow(33'554'430_u32np) ==
           le_event<pqt2_hydraharpv2_event>(
               {0b1111'1111, 0b1111'1111, 0b1111'1111, 0b1111'1110}));
-    CHECK(pqt2_hydraharpv2_event{}.assign_timetag_overflow(33'554'431_u32np) ==
+    CHECK(pqt2_hydraharpv2_event::make_timetag_overflow(33'554'431_u32np) ==
           le_event<pqt2_hydraharpv2_event>(
               {0b1111'1111, 0b1111'1111, 0b1111'1111, 0b1111'1111}));
 
-    CHECK(pqt2_hydraharpv2_event{}.assign_sync(0_u32np) ==
+    CHECK(pqt2_hydraharpv2_event::make_sync(0_u32np) ==
           le_event<pqt2_hydraharpv2_event>(
               {0b1000'0000, 0b0000'0000, 0b0000'0000, 0b0000'0000}));
-    CHECK(pqt2_hydraharpv2_event{}.assign_sync(1_u32np) ==
+    CHECK(pqt2_hydraharpv2_event::make_sync(1_u32np) ==
           le_event<pqt2_hydraharpv2_event>(
               {0b1000'0000, 0b0000'0000, 0b0000'0000, 0b0000'0001}));
-    CHECK(pqt2_hydraharpv2_event{}.assign_sync(33'554'430_u32np) ==
+    CHECK(pqt2_hydraharpv2_event::make_sync(33'554'430_u32np) ==
           le_event<pqt2_hydraharpv2_event>(
               {0b1000'0001, 0b1111'1111, 0b1111'1111, 0b1111'1110}));
-    CHECK(pqt2_hydraharpv2_event{}.assign_sync(33'554'431_u32np) ==
+    CHECK(pqt2_hydraharpv2_event::make_sync(33'554'431_u32np) ==
           le_event<pqt2_hydraharpv2_event>(
               {0b1000'0001, 0b1111'1111, 0b1111'1111, 0b1111'1111}));
 
-    CHECK(TestType{}.assign_external_marker(0_u32np, 1_u8np) ==
+    CHECK(TestType::make_external_marker(0_u32np, 1_u8np) ==
           le_event<TestType>(
               {0b1000'0010, 0b0000'0000, 0b0000'0000, 0b0000'0000}));
-    CHECK(TestType{}.assign_external_marker(33'554'430_u32np, 14_u8np) ==
+    CHECK(TestType::make_external_marker(33'554'430_u32np, 14_u8np) ==
           le_event<TestType>(
               {0b1001'1101, 0b1111'1111, 0b1111'1111, 0b1111'1110}));
-    CHECK(TestType{}.assign_external_marker(33'554'431_u32np, 15_u8np) ==
+    CHECK(TestType::make_external_marker(33'554'431_u32np, 15_u8np) ==
           le_event<TestType>(
               {0b1001'1111, 0b1111'1111, 0b1111'1111, 0b1111'1111}));
 }

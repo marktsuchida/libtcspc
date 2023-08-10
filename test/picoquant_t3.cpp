@@ -286,77 +286,77 @@ TEMPLATE_TEST_CASE("pqt3 hydraharp read external marker bits", "[pqt3_event]",
 }
 
 TEST_CASE("pqt3 picoharp assign", "[pqt3_event]") {
-    CHECK(pqt3_picoharp_event{}.assign_nonspecial(0_u16np, 0_u8np, 0_u16np) ==
+    CHECK(pqt3_picoharp_event::make_nonspecial(0_u16np, 0_u8np, 0_u16np) ==
           le_event<pqt3_picoharp_event>(
               {0b0000'0000, 0b0000'0000, 0b0000'0000, 0b0000'0000}));
-    CHECK(pqt3_picoharp_event{}.assign_nonspecial(1_u16np, 2_u8np, 3_u16np) ==
+    CHECK(pqt3_picoharp_event::make_nonspecial(1_u16np, 2_u8np, 3_u16np) ==
           le_event<pqt3_picoharp_event>(
               {0b0010'0000, 0b0000'0011, 0b0000'0000, 0b0000'0001}));
-    CHECK(pqt3_picoharp_event{}.assign_nonspecial(65534_u16np, 14_u8np,
-                                                  4094_u16np) ==
+    CHECK(pqt3_picoharp_event::make_nonspecial(65534_u16np, 14_u8np,
+                                               4094_u16np) ==
           le_event<pqt3_picoharp_event>(
               {0b1110'1111, 0b1111'1110, 0b1111'1111, 0b1111'1110}));
-    CHECK(pqt3_picoharp_event{}.assign_nonspecial(65535_u16np, 14_u8np,
-                                                  4095_u16np) ==
+    CHECK(pqt3_picoharp_event::make_nonspecial(65535_u16np, 14_u8np,
+                                               4095_u16np) ==
           le_event<pqt3_picoharp_event>(
               {0b1110'1111, 0b1111'1111, 0b1111'1111, 0b1111'1111}));
 
-    CHECK(pqt3_picoharp_event{}.assign_nsync_overflow() ==
+    CHECK(pqt3_picoharp_event::make_nsync_overflow() ==
           le_event<pqt3_picoharp_event>(
               {0b1111'0000, 0b0000'0000, 0b0000'0000, 0b0000'0000}));
 
-    CHECK(pqt3_picoharp_event{}.assign_external_marker(0_u16np, 1_u8np) ==
+    CHECK(pqt3_picoharp_event::make_external_marker(0_u16np, 1_u8np) ==
           le_event<pqt3_picoharp_event>(
               {0b1111'0000, 0b0000'0001, 0b0000'0000, 0b0000'0000}));
-    CHECK(pqt3_picoharp_event{}.assign_external_marker(65534_u16np, 14_u8np) ==
+    CHECK(pqt3_picoharp_event::make_external_marker(65534_u16np, 14_u8np) ==
           le_event<pqt3_picoharp_event>(
               {0b1111'0000, 0b0000'1110, 0b1111'1111, 0b1111'1110}));
-    CHECK(pqt3_picoharp_event{}.assign_external_marker(65535_u16np, 15_u8np) ==
+    CHECK(pqt3_picoharp_event::make_external_marker(65535_u16np, 15_u8np) ==
           le_event<pqt3_picoharp_event>(
               {0b1111'0000, 0b0000'1111, 0b1111'1111, 0b1111'1111}));
 }
 
 TEMPLATE_TEST_CASE("pqt3 hydraharp assign", "[pqt3_event]",
                    pqt3_hydraharpv1_event, pqt3_hydraharpv2_event) {
-    CHECK(TestType{}.assign_nonspecial(0_u16np, 0_u8np, 0_u16np) ==
+    CHECK(TestType::make_nonspecial(0_u16np, 0_u8np, 0_u16np) ==
           le_event<TestType>(
               {0b0000'0000, 0b0000'0000, 0b0000'0000, 0b0000'0000}));
-    CHECK(TestType{}.assign_nonspecial(1_u16np, 2_u8np, 3_u16np) ==
+    CHECK(TestType::make_nonspecial(1_u16np, 2_u8np, 3_u16np) ==
           le_event<TestType>(
               {0b0000'0100, 0b0000'0000, 0b0000'1100, 0b0000'0001}));
-    CHECK(TestType{}.assign_nonspecial(1022_u16np, 62_u8np, 32766_u16np) ==
+    CHECK(TestType::make_nonspecial(1022_u16np, 62_u8np, 32766_u16np) ==
           le_event<TestType>(
               {0b0111'1101, 0b1111'1111, 0b1111'1011, 0b1111'1110}));
-    CHECK(TestType{}.assign_nonspecial(1023_u16np, 63_u8np, 32767_u16np) ==
+    CHECK(TestType::make_nonspecial(1023_u16np, 63_u8np, 32767_u16np) ==
           le_event<TestType>(
               {0b0111'1111, 0b1111'1111, 0b1111'1111, 0b1111'1111}));
 
-    CHECK(pqt3_hydraharpv1_event{}.assign_nsync_overflow() ==
+    CHECK(pqt3_hydraharpv1_event::make_nsync_overflow() ==
           le_event<pqt3_hydraharpv1_event>(
               {0b1111'1110, 0b0000'0000, 0b0000'0000, 0b0000'0001}));
 
-    CHECK(pqt3_hydraharpv2_event{}.assign_nsync_overflow() ==
-          pqt3_hydraharpv2_event{}.assign_nsync_overflow(1_u16np));
-    CHECK(pqt3_hydraharpv2_event{}.assign_nsync_overflow(0_u16np) ==
+    CHECK(pqt3_hydraharpv2_event::make_nsync_overflow() ==
+          pqt3_hydraharpv2_event::make_nsync_overflow(1_u16np));
+    CHECK(pqt3_hydraharpv2_event::make_nsync_overflow(0_u16np) ==
           le_event<pqt3_hydraharpv2_event>(
               {0b1111'1110, 0b0000'0000, 0b0000'0000, 0b0000'0000}));
-    CHECK(pqt3_hydraharpv2_event{}.assign_nsync_overflow(1_u16np) ==
+    CHECK(pqt3_hydraharpv2_event::make_nsync_overflow(1_u16np) ==
           le_event<pqt3_hydraharpv2_event>(
               {0b1111'1110, 0b0000'0000, 0b0000'0000, 0b0000'0001}));
-    CHECK(pqt3_hydraharpv2_event{}.assign_nsync_overflow(1022_u16np) ==
+    CHECK(pqt3_hydraharpv2_event::make_nsync_overflow(1022_u16np) ==
           le_event<pqt3_hydraharpv2_event>(
               {0b1111'1110, 0b0000'0000, 0b0000'0011, 0b1111'1110}));
-    CHECK(pqt3_hydraharpv2_event{}.assign_nsync_overflow(1023_u16np) ==
+    CHECK(pqt3_hydraharpv2_event::make_nsync_overflow(1023_u16np) ==
           le_event<pqt3_hydraharpv2_event>(
               {0b1111'1110, 0b0000'0000, 0b0000'0011, 0b1111'1111}));
 
-    CHECK(TestType{}.assign_external_marker(0_u16np, 1_u8np) ==
+    CHECK(TestType::make_external_marker(0_u16np, 1_u8np) ==
           le_event<TestType>(
               {0b1000'0010, 0b0000'0000, 0b0000'0000, 0b0000'0000}));
-    CHECK(TestType{}.assign_external_marker(1022_u16np, 14_u8np) ==
+    CHECK(TestType::make_external_marker(1022_u16np, 14_u8np) ==
           le_event<TestType>(
               {0b1001'1100, 0b0000'0000, 0b0000'0011, 0b1111'1110}));
-    CHECK(TestType{}.assign_external_marker(1023_u16np, 15_u8np) ==
+    CHECK(TestType::make_external_marker(1023_u16np, 15_u8np) ==
           le_event<TestType>(
               {0b1001'1110, 0b0000'0000, 0b0000'0011, 0b1111'1111}));
 }

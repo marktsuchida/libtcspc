@@ -128,48 +128,49 @@ struct pqt2_picoharp_event {
     }
 
     /**
-     * \brief Set this event to represent a non-special (photon) event.
+     * \brief Make an event representing a non-special (photon) event.
      *
      * \param timetag the time tag; 0 to 268,435,455
      *
      * \param channel the channel; 0 to 14
      *
-     * \return \c *this
+     * \return event
      */
-    auto assign_nonspecial(u32np timetag, u8np channel)
-        -> pqt2_picoharp_event & {
+    static auto make_nonspecial(u32np timetag, u8np channel)
+        -> pqt2_picoharp_event {
         if (channel > 14_u8np)
             throw std::invalid_argument(
                 "pqt2_picoharp_event channel must be in the range 0-14");
-        return assign_fields(channel, timetag);
+        return make_from_fields(channel, timetag);
     }
 
     /**
-     * \brief Set this event to represent an time tag overflow.
+     * \brief Make an event representing an time tag overflow.
      *
-     * \return \c *this
+     * \return event
      */
-    auto assign_timetag_overflow() noexcept -> pqt2_picoharp_event & {
-        return assign_fields(15_u8np, 0_u32np);
+    static auto make_timetag_overflow() noexcept -> pqt2_picoharp_event {
+        return make_from_fields(15_u8np, 0_u32np);
     }
 
     /**
-     * \brief Set this event to represent an external marker.
+     * \brief Make an event representing an external marker.
      *
      * \param timetag the time tag; 0 to 268'435'455; the lower 4 bits are
      * discarded
      *
      * \param marker_bits the marker bitmask; 1 to 15 (0 is forbidden)
      *
-     * \return \c *this
+     * \return event
      */
-    auto assign_external_marker(u32np timetag, u8np marker_bits)
-        -> pqt2_picoharp_event & {
+    static auto make_external_marker(u32np timetag, u8np marker_bits)
+        -> pqt2_picoharp_event {
         if (marker_bits == 0_u8np)
             throw std::invalid_argument(
                 "pqt2_picoharp_event marker_bits must not be zero");
-        return assign_fields(15_u8np, (timetag & ~0x0f_u32np) |
-                                          (u32np(marker_bits) & 0x0f_u32np));
+        return make_from_fields(15_u8np,
+                                (timetag & ~0x0f_u32np) |
+                                    (u32np(marker_bits) & 0x0f_u32np));
     }
 
     /** \brief Equality comparison operator. */
@@ -194,13 +195,15 @@ struct pqt2_picoharp_event {
     }
 
   private:
-    auto assign_fields(u8np channel, u32np timetag) -> pqt2_picoharp_event & {
-        bytes[3] = std::byte(
-            ((channel << 4) | (u8np(timetag >> 24) & 0x0f_u8np)).value());
-        bytes[2] = std::byte(u8np(timetag >> 16).value());
-        bytes[1] = std::byte(u8np(timetag >> 8).value());
-        bytes[0] = std::byte(u8np(timetag).value());
-        return *this;
+    static auto make_from_fields(u8np channel, u32np timetag)
+        -> pqt2_picoharp_event {
+        return pqt2_picoharp_event{{
+            std::byte(u8np(timetag).value()),
+            std::byte(u8np(timetag >> 8).value()),
+            std::byte(u8np(timetag >> 16).value()),
+            std::byte(
+                ((channel << 4) | (u8np(timetag >> 24) & 0x0f_u8np)).value()),
+        }};
     }
 };
 
@@ -301,71 +304,71 @@ struct pqt2_hydraharp_event {
     }
 
     /**
-     * \brief Set this event to represent a non-special (photon) event.
+     * \brief Make an event representing a non-special (photon) event.
      *
      * \param timetag the time tag; 0 to 33,554,431
      *
      * \param channel the channel; 0 to 63
      *
-     * \return \c *this
+     * \return event
      */
-    auto assign_nonspecial(u32np timetag, u8np channel)
-        -> pqt2_hydraharp_event & {
-        return assign_fields(false, channel, timetag);
+    static auto make_nonspecial(u32np timetag, u8np channel)
+        -> pqt2_hydraharp_event {
+        return make_from_fields(false, channel, timetag);
     }
 
     /**
-     * \brief Set this event to represent an time tag overflow.
+     * \brief Make an event representing an time tag overflow.
      *
      * This overload is only available in \ref pqt2_hydraharpv2_event.
      *
      * \param count number of overflows; 1 to 33,554,431 (0 is allowed but may
      * not be handled correctly by other readers)
      *
-     * \return \c *this
+     * \return event
      */
-    auto assign_timetag_overflow(u32np count) -> pqt2_hydraharp_event & {
+    static auto make_timetag_overflow(u32np count) -> pqt2_hydraharp_event {
         static_assert(
             not IsOverflowAlwaysSingle,
             "multiple time tag overflow is not available in HydraHarp V1 format");
-        return assign_fields(true, 63_u8np, count);
+        return make_from_fields(true, 63_u8np, count);
     }
 
     /**
-     * \brief Set this event to represent a single time tag overflow.
+     * \brief Make an event representing a single time tag overflow.
      *
-     * \return \c *this
+     * \return event
      */
-    auto assign_timetag_overflow() noexcept -> pqt2_hydraharp_event & {
-        return assign_fields(true, 63_u8np, 1_u32np);
+    static auto make_timetag_overflow() noexcept -> pqt2_hydraharp_event {
+        return make_from_fields(true, 63_u8np, 1_u32np);
     }
 
     /**
-     * \brief Set this event to represent a sync event.
+     * \brief Make an event representing a sync event.
      *
      * \param timetag the time tag; 0 to 33,554,431
      *
-     * \return \c *this
+     * \return event
      */
-    auto assign_sync(u32np timetag) noexcept -> pqt2_hydraharp_event & {
-        return assign_fields(true, 0_u8np, timetag);
+    static auto make_sync(u32np timetag) noexcept -> pqt2_hydraharp_event {
+        return make_from_fields(true, 0_u8np, timetag);
     }
 
     /**
-     * \brief Set this event to represent an external marker.
+     * \brief Make an event representing an external marker.
      *
      * \param timetag the time tag; 0 to 33,554,431
      *
      * \param marker_bits the marker bitmask; 1 to 15 (0 is forbidden)
      *
-     * \return \c *this
+     * \return event
      */
-    auto assign_external_marker(u32np timetag, u8np marker_bits)
-        -> pqt2_hydraharp_event & {
+    static auto make_external_marker(u32np timetag, u8np marker_bits)
+        -> pqt2_hydraharp_event {
         if (marker_bits == 0_u8np || (marker_bits & ~0x0f_u8np) != 0_u8np)
             throw std::invalid_argument(
                 "pqt2_hydraharp_event marker_bits must be in range 1-15");
-        return assign_fields(true, marker_bits & 0x3f_u8np, timetag);
+        return make_from_fields(true, marker_bits & 0x3f_u8np, timetag);
     }
 
     /** \brief Equality comparison operator. */
@@ -392,16 +395,17 @@ struct pqt2_hydraharp_event {
     }
 
   private:
-    auto assign_fields(bool special, u8np channel, u32np timetag)
-        -> pqt2_hydraharp_event & {
-        bytes[3] =
-            std::byte(((u8np(special) << 7) | ((channel & 0x3f_u8np) << 1) |
+    static auto make_from_fields(bool special, u8np channel, u32np timetag)
+        -> pqt2_hydraharp_event {
+        return pqt2_hydraharp_event{{
+            std::byte(u8np(timetag).value()),
+            std::byte(u8np(timetag >> 8).value()),
+            std::byte(u8np(timetag >> 16).value()),
+            std::byte(((u8np(u8(special)) << 7) |
+                       ((channel & 0x3f_u8np) << 1) |
                        (u8np(timetag >> 24) & 0x01_u8np))
-                          .value());
-        bytes[2] = std::byte(u8np(timetag >> 16).value());
-        bytes[1] = std::byte(u8np(timetag >> 8).value());
-        bytes[0] = std::byte(u8np(timetag).value());
-        return *this;
+                          .value()),
+        }};
     }
 };
 

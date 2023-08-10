@@ -116,7 +116,7 @@ struct pqt3_picoharp_event {
     }
 
     /**
-     * \brief Set this event to represent a non-special (photon) event.
+     * \brief Make an event representing a non-special (photon) event.
      *
      * \param nsync the nsync count; 0 to 65535
      *
@@ -124,40 +124,41 @@ struct pqt3_picoharp_event {
      *
      * \param dtime the difference time; 0 to 4095
      *
-     * \return \c *this
+     * \return event
      */
-    auto assign_nonspecial(u16np nsync, u8np channel, u16np dtime)
-        -> pqt3_picoharp_event & {
+    static auto make_nonspecial(u16np nsync, u8np channel, u16np dtime)
+        -> pqt3_picoharp_event {
         if (channel > 14_u8np)
             throw std::invalid_argument(
                 "pqt3_picoharp_event channel must be in the range 0-14");
-        return assign_fields(channel, dtime, nsync);
+        return make_from_fields(channel, dtime, nsync);
     }
 
     /**
-     * \brief Set this event to represent an nsync overflow.
+     * \brief Make an event representing an nsync overflow.
      *
-     * \return \c *this
+     * \return event
      */
-    auto assign_nsync_overflow() noexcept -> pqt3_picoharp_event & {
-        return assign_fields(15_u8np, 0_u16np, 0_u16np);
+    static auto make_nsync_overflow() noexcept -> pqt3_picoharp_event {
+        return make_from_fields(15_u8np, 0_u16np, 0_u16np);
     }
 
     /**
-     * \brief Set this event to represent an external marker.
+     * \brief Make an event representing an external marker.
      *
      * \param nsync the nsync count; 0 to 65535
      *
      * \param marker_bits the marker bitmask; 1 to 15 (0 is forbidden)
      *
-     * \return \c *this
+     * \return event
      */
-    auto assign_external_marker(u16np nsync, u8np marker_bits)
-        -> pqt3_picoharp_event & {
+    static auto make_external_marker(u16np nsync, u8np marker_bits)
+        -> pqt3_picoharp_event {
         if (marker_bits == 0_u8np)
             throw std::invalid_argument(
                 "pqt3_picoharp_event marker_bits must not be zero");
-        return assign_fields(15_u8np, u16np(marker_bits & 0x0f_u8np), nsync);
+        return make_from_fields(15_u8np, u16np(marker_bits & 0x0f_u8np),
+                                nsync);
     }
 
     /** \brief Equality comparison operator. */
@@ -183,14 +184,15 @@ struct pqt3_picoharp_event {
     }
 
   private:
-    auto assign_fields(u8np channel, u16np dtime, u16np nsync)
-        -> pqt3_picoharp_event & {
-        bytes[3] = std::byte(
-            ((channel << 4) | (u8np(dtime >> 8) & 0x0f_u8np)).value());
-        bytes[2] = std::byte(u8np(dtime).value());
-        bytes[1] = std::byte(u8np(nsync >> 8).value());
-        bytes[0] = std::byte(u8np(nsync).value());
-        return *this;
+    static auto make_from_fields(u8np channel, u16np dtime, u16np nsync)
+        -> pqt3_picoharp_event {
+        return pqt3_picoharp_event{{
+            std::byte(u8np(nsync).value()),
+            std::byte(u8np(nsync >> 8).value()),
+            std::byte(u8np(dtime).value()),
+            std::byte(
+                ((channel << 4) | (u8np(dtime >> 8) & 0x0f_u8np)).value()),
+        }};
     }
 };
 
@@ -283,7 +285,7 @@ template <bool IsNSyncOverflowAlwaysSingle> struct pqt3_hydraharp_event {
     }
 
     /**
-     * \brief Set this event to represent a non-special (photon) event.
+     * \brief Make an event representing a non-special (photon) event.
      *
      * \param nsync the nsync count; 0 to 1023
      *
@@ -291,51 +293,51 @@ template <bool IsNSyncOverflowAlwaysSingle> struct pqt3_hydraharp_event {
      *
      * \param dtime the difference time; 0 to 32767
      *
-     * \return \c *this
+     * \return event
      */
-    auto assign_nonspecial(u16np nsync, u8np channel, u16np dtime)
-        -> pqt3_hydraharp_event & {
-        return assign_fields(false, channel, dtime, nsync);
+    static auto make_nonspecial(u16np nsync, u8np channel, u16np dtime)
+        -> pqt3_hydraharp_event {
+        return make_from_fields(false, channel, dtime, nsync);
     }
 
     /**
-     * \brief Set this event to represent an nsync overflow.
+     * \brief Make an event representing an nsync overflow.
      *
      * This overload is only available in \ref pqt3_hydraharpv2_event.
      *
      * \param count number of overflows; 1 to 1023 (0 is allowed but may not be
      * handled correctly by other readers)
      *
-     * \return \c *this
+     * \return event
      */
-    auto assign_nsync_overflow(u16np count) -> pqt3_hydraharp_event & {
+    static auto make_nsync_overflow(u16np count) -> pqt3_hydraharp_event {
         static_assert(
             not IsNSyncOverflowAlwaysSingle,
             "multiple nsync overflow is not available in HydraHarp V1 format");
-        return assign_fields(true, 63_u8np, 0_u16np, count);
+        return make_from_fields(true, 63_u8np, 0_u16np, count);
     }
 
     /**
-     * \brief Set this event to represent a single nsync overflow.
+     * \brief Make an event representing a single nsync overflow.
      *
-     * \return \c *this;
+     * \return event;
      */
-    auto assign_nsync_overflow() noexcept -> pqt3_hydraharp_event & {
-        return assign_fields(true, 63_u8np, 0_u16np, 1_u16np);
+    static auto make_nsync_overflow() noexcept -> pqt3_hydraharp_event {
+        return make_from_fields(true, 63_u8np, 0_u16np, 1_u16np);
     }
 
     /**
-     * \brief Set this event to represent an external marker.
+     * \brief Make an event representing an external marker.
      *
      * \param nsync the nsync count; 0 to 1023
      *
      * \param marker_bits the marker bitmask; 1 to 15
      *
-     * \return \c *this
+     * \return event
      */
-    auto assign_external_marker(u16np nsync, u8np marker_bits)
-        -> pqt3_hydraharp_event & {
-        return assign_fields(true, marker_bits, 0_u16np, nsync);
+    static auto make_external_marker(u16np nsync, u8np marker_bits)
+        -> pqt3_hydraharp_event {
+        return make_from_fields(true, marker_bits, 0_u16np, nsync);
     }
 
     /** \brief Equality comparison operator. */
@@ -363,17 +365,18 @@ template <bool IsNSyncOverflowAlwaysSingle> struct pqt3_hydraharp_event {
     }
 
   private:
-    auto assign_fields(bool special, u8np channel, u16np dtime, u16np nsync)
-        -> pqt3_hydraharp_event & {
-        bytes[3] =
-            std::byte(((u8np(special) << 7) | ((channel & 0x3f_u8np) << 1) |
+    static auto make_from_fields(bool special, u8np channel, u16np dtime,
+                                 u16np nsync) -> pqt3_hydraharp_event {
+        return pqt3_hydraharp_event{{
+            std::byte(u8np(nsync).value()),
+            std::byte(
+                (u8np(dtime << 2) | (u8np(nsync >> 8) & 0x03_u8np)).value()),
+            std::byte(u8np(dtime >> 6).value()),
+            std::byte(((u8np(u8(special)) << 7) |
+                       ((channel & 0x3f_u8np) << 1) |
                        (u8np(dtime >> 14) & 0x01_u8np))
-                          .value());
-        bytes[2] = std::byte(u8np(dtime >> 6).value());
-        bytes[1] = std::byte(
-            (u8np(dtime << 2) | (u8np(nsync >> 8) & 0x03_u8np)).value());
-        bytes[0] = std::byte(u8np(nsync).value());
-        return *this;
+                          .value()),
+        }};
     }
 };
 
