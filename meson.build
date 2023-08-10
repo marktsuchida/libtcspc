@@ -31,6 +31,7 @@ catch2_with_main_dep = dependency(
 trompeloeil_dep = dependency(
     'trompeloeil',
     fallback: ['trompeloeil', 'trompeloeil_dep'],
+    required: get_option('tests'),
     disabler: true,
     include_type: 'system',
 )
@@ -42,18 +43,15 @@ benchmark_dep = dependency(
     include_type: 'system',
 )
 
-public_inc = include_directories('include')
+libtcspc_dep = declare_dependency(
+    include_directories: include_directories('include'),
+    dependencies: [
+        tcb_span_dep,
+    ],
+)
 
 subdir('include/libtcspc')
 subdir('doc')
 subdir('test')
 subdir('benchmarks')
 subdir('examples')
-
-libtcspc_dep = declare_dependency(
-    include_directories: public_inc,
-    dependencies: [
-        tcb_span_dep,
-    ],
-)
-meson.override_dependency('libtcspc', libtcspc_dep)

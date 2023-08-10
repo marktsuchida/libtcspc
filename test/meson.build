@@ -2,7 +2,7 @@
 # Copyright 2019-2023 Board of Regents of the University of Wisconsin System
 # SPDX-License-Identifier: MIT
 
-libtcspc_tests_srcs = [
+test_libtcspc_srcs = [
     'apply_class_template.cpp',
     'autocopy_span.cpp',
     'bh_spc.cpp',
@@ -45,15 +45,14 @@ libtcspc_tests_srcs = [
     'write_binary_stream.cpp',
 ]
 
-libtcspc_tests_exe = executable(
+test_libtcspc_exe = executable(
     'test_libtcspc',
-    libtcspc_tests_srcs,
-    include_directories: [public_inc],
+    test_libtcspc_srcs,
     dependencies: [
-        tcb_span_dep,
         catch2_with_main_dep,
+        libtcspc_dep,
         trompeloeil_dep,
     ],
 )
 
-test('libtcspc tests', libtcspc_tests_exe)
+test('libtcspc tests', test_libtcspc_exe)

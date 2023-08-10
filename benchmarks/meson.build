@@ -5,10 +5,9 @@
 benchmark_read_binary_stream_devzero_exe = executable(
     'read_binary_stream_devzero',
     'read_binary_stream_devzero.cpp',
-    include_directories: [public_inc],
     dependencies: [
         benchmark_dep,
-        tcb_span_dep,
+        libtcspc_dep,
     ],
 )
 
@@ -20,10 +19,9 @@ benchmark(
 benchmark_write_binary_stream_devnull_exe = executable(
     'write_binary_stream_devnull',
     'write_binary_stream_devnull.cpp',
-    include_directories: [public_inc],
     dependencies: [
         benchmark_dep,
-        tcb_span_dep,
+        libtcspc_dep,
     ],
 )
 
