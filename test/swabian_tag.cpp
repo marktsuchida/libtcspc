@@ -7,7 +7,9 @@
 #include "libtcspc/swabian_tag.hpp"
 
 #include "libtcspc/npint.hpp"
+#include "libtcspc/ref_processor.hpp"
 #include "libtcspc/span.hpp"
+#include "libtcspc/test_utils.hpp"
 
 #include <catch2/catch_all.hpp>
 
@@ -138,12 +140,53 @@ TEST_CASE("swabian tag assign", "[swabian_tag_event]") {
                                                     100, 0, 0, 0, 0, 0, 0, 0}))
                        .begin()));
 
-    event = swabian_tag_event::make_missed_events(100_i64np, 7_u16np);
+    event = swabian_tag_event::make_missed_events(100_i64np, 3_i32np, 7_u16np);
     CHECK(
         std::equal(event.bytes.begin(), event.bytes.end(),
-                   as_bytes(span(std::array<u8, 16>{4, 0, 7, 0, 0, 0, 0, 0,
+                   as_bytes(span(std::array<u8, 16>{4, 0, 7, 0, 3, 0, 0, 0,
                                                     100, 0, 0, 0, 0, 0, 0, 0}))
                        .begin()));
+}
+
+TEST_CASE("decode swabian tags", "[decode_swabian_tags]") {
+    auto out = capture_output<event_set<
+        detection_event<>, begin_lost_interval_event<>,
+        end_lost_interval_event<>, untagged_counts_event<>, warning_event>>();
+    auto in = feed_input<event_set<swabian_tag_event>>(
+        decode_swabian_tags(ref_processor(out)));
+    in.require_output_checked(out);
+
+    SECTION("time tag") {
+        in.feed(swabian_tag_event::make_time_tag(42_i64np, 5_i32np));
+        REQUIRE(out.check(detection_event<>{{{42}, 5}}));
+    }
+
+    SECTION("error") {
+        in.feed(swabian_tag_event::make_error(42_i64np));
+        auto const e = out.retrieve<warning_event>();
+        REQUIRE(e.has_value());
+        // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
+        REQUIRE_THAT(e->message, Catch::Matchers::ContainsSubstring("error"));
+    }
+
+    SECTION("overflow begin") {
+        in.feed(swabian_tag_event::make_overflow_begin(42_i64np));
+        REQUIRE(out.check(begin_lost_interval_event<>{{42}}));
+    }
+
+    SECTION("overflow end") {
+        in.feed(swabian_tag_event::make_overflow_end(42_i64np));
+        REQUIRE(out.check(end_lost_interval_event<>{{42}}));
+    }
+
+    SECTION("missed events") {
+        in.feed(swabian_tag_event::make_missed_events(42_i64np, 5_i32np,
+                                                      123_u16np));
+        REQUIRE(out.check(untagged_counts_event<>{{{42}, 5}, 123}));
+    }
+
+    in.flush();
+    REQUIRE(out.check_flushed());
 }
 
 } // namespace tcspc

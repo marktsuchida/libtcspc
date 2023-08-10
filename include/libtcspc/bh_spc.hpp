@@ -788,7 +788,7 @@ class decode_bh_spc {
  *
  * \return decode-bh-spc processor
  */
-template <typename DataTraits, typename Downstream>
+template <typename DataTraits = default_data_traits, typename Downstream>
 auto decode_bh_spc(Downstream &&downstream) {
     return internal::decode_bh_spc<DataTraits, bh_spc_event, false,
                                    Downstream>(
@@ -815,7 +815,7 @@ auto decode_bh_spc(Downstream &&downstream) {
  *
  * \return decode-bh-spc processor
  */
-template <typename DataTraits, typename Downstream>
+template <typename DataTraits = default_data_traits, typename Downstream>
 auto decode_bh_spc_with_fast_intensity_counter(Downstream &&downstream) {
     return internal::decode_bh_spc<DataTraits, bh_spc_event, true, Downstream>(
         std::forward<Downstream>(downstream));
@@ -836,7 +836,7 @@ auto decode_bh_spc_with_fast_intensity_counter(Downstream &&downstream) {
  *
  * \return decode-bh-spc-600-4096ch processor
  */
-template <typename DataTraits, typename Downstream>
+template <typename DataTraits = default_data_traits, typename Downstream>
 auto decode_bh_spc600_4096ch(Downstream &&downstream) {
     return internal::decode_bh_spc<DataTraits, bh_spc600_4096ch_event, false,
                                    Downstream>(
@@ -858,7 +858,7 @@ auto decode_bh_spc600_4096ch(Downstream &&downstream) {
  *
  * \return decode-bh-spc-600-256ch processor
  */
-template <typename DataTraits, typename Downstream>
+template <typename DataTraits = default_data_traits, typename Downstream>
 auto decode_bh_spc600_256ch(Downstream &&downstream) {
     return internal::decode_bh_spc<DataTraits, bh_spc600_256ch_event, false,
                                    Downstream>(

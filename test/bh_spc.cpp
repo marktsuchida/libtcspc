@@ -6,6 +6,7 @@
 
 #include "libtcspc/bh_spc.hpp"
 
+#include "libtcspc/ref_processor.hpp"
 #include "libtcspc/test_utils.hpp"
 
 #include <catch2/catch_all.hpp>
@@ -640,6 +641,302 @@ TEST_CASE("bh spc600 4096ch assign", "[bh_spc_event]") {
           le_event<bh_spc600_4096ch_event>({0b1111'1111, 0b1111'1111,
                                             0b1111'1111, 0b1111'1111,
                                             0b1011'1111, 0b1111'1111}));
+}
+
+TEST_CASE("decode bh spc", "[decode_bh_spc]") {
+    auto out = capture_output<
+        event_set<time_correlated_detection_event<>, marker_event<>,
+                  time_reached_event<>, data_lost_event<>, warning_event>>();
+    auto in =
+        feed_input<event_set<bh_spc_event>>(decode_bh_spc(ref_processor(out)));
+    in.require_output_checked(out);
+
+    bool const gap = GENERATE(false, true);
+
+    SECTION("photon, no mtov") {
+        in.feed(bh_spc_event::make_photon(42_u16np, 123_u16np, 5_u8np, false)
+                    .gap_flag(gap));
+        if (gap)
+            REQUIRE(out.check(data_lost_event<>{{42}}));
+        REQUIRE(out.check(time_correlated_detection_event<>{{{42}, 5}, 123}));
+    }
+
+    SECTION("photon, mtov") {
+        in.feed(bh_spc_event::make_photon(42_u16np, 123_u16np, 5_u8np, true)
+                    .gap_flag(gap));
+        if (gap)
+            REQUIRE(out.check(data_lost_event<>{{4096 + 42}}));
+        REQUIRE(out.check(
+            time_correlated_detection_event<>{{{4096 + 42}, 5}, 123}));
+    }
+
+    SECTION("invalid photon") {
+        in.feed(bh_spc_event::make_invalid_photon(42_u16np, 123_u16np)
+                    .gap_flag(gap));
+        if (gap)
+            REQUIRE(out.check(data_lost_event<>{{42}}));
+        REQUIRE(out.check(time_reached_event<>{{42}}));
+    }
+
+    SECTION("marker, no mtov") {
+        in.feed(
+            bh_spc_event::make_marker(42_u16np, 5_u8np, false).gap_flag(gap));
+        if (gap)
+            REQUIRE(out.check(data_lost_event<>{{42}}));
+        REQUIRE(out.check(marker_event<>{{{42}, 0}}));
+        REQUIRE(out.check(marker_event<>{{{42}, 2}}));
+    }
+
+    SECTION("marker, mtov") {
+        in.feed(
+            bh_spc_event::make_marker(42_u16np, 5_u8np, true).gap_flag(gap));
+        if (gap)
+            REQUIRE(out.check(data_lost_event<>{{4096 + 42}}));
+        REQUIRE(out.check(marker_event<>{{{4096 + 42}, 0}}));
+        REQUIRE(out.check(marker_event<>{{{4096 + 42}, 2}}));
+    }
+
+    SECTION("multi-mtov") {
+        in.feed(
+            bh_spc_event::make_multiple_macrotime_overflow(3_u32np).gap_flag(
+                gap));
+        if (gap)
+            REQUIRE(out.check(data_lost_event<>{{i64(4096) * 3}}));
+        REQUIRE(out.check(time_reached_event<>{{i64(4096) * 3}}));
+
+        SECTION("photon, no mtov") {
+            in.feed(
+                bh_spc_event::make_photon(42_u16np, 123_u16np, 5_u8np, false)
+                    .gap_flag(gap));
+            if (gap)
+                REQUIRE(out.check(data_lost_event<>{{i64(4096) * 3 + 42}}));
+            REQUIRE(out.check(time_correlated_detection_event<>{
+                {{i64(4096) * 3 + 42}, 5}, 123}));
+        }
+
+        SECTION("photon, mtov") {
+            in.feed(
+                bh_spc_event::make_photon(42_u16np, 123_u16np, 5_u8np, true)
+                    .gap_flag(gap));
+            if (gap)
+                REQUIRE(out.check(data_lost_event<>{{i64(4096) * 4 + 42}}));
+            REQUIRE(out.check(time_correlated_detection_event<>{
+                {{i64(4096) * 4 + 42}, 5}, 123}));
+        }
+
+        SECTION("invalid photon") {
+            in.feed(bh_spc_event::make_invalid_photon(42_u16np, 123_u16np)
+                        .gap_flag(gap));
+            if (gap)
+                REQUIRE(out.check(data_lost_event<>{{i64(4096) * 3 + 42}}));
+            REQUIRE(out.check(time_reached_event<>{{i64(4096) * 3 + 42}}));
+        }
+
+        SECTION("marker, no mtov") {
+            in.feed(bh_spc_event::make_marker(42_u16np, 5_u8np, false)
+                        .gap_flag(gap));
+            if (gap)
+                REQUIRE(out.check(data_lost_event<>{{i64(4096) * 3 + 42}}));
+            REQUIRE(out.check(marker_event<>{{{i64(4096) * 3 + 42}, 0}}));
+            REQUIRE(out.check(marker_event<>{{{i64(4096) * 3 + 42}, 2}}));
+        }
+
+        SECTION("marker, mtov") {
+            in.feed(bh_spc_event::make_marker(42_u16np, 5_u8np, true)
+                        .gap_flag(gap));
+            if (gap)
+                REQUIRE(out.check(data_lost_event<>{{i64(4096) * 4 + 42}}));
+            REQUIRE(out.check(marker_event<>{{{i64(4096) * 4 + 42}, 0}}));
+            REQUIRE(out.check(marker_event<>{{{i64(4096) * 4 + 42}, 2}}));
+        }
+    }
+
+    in.flush();
+    REQUIRE(out.check_flushed());
+}
+
+TEST_CASE("decode bh spc with fast intensity counter",
+          "[decode_bh_spc_with_fast_intensity_counter]") {
+    auto out = capture_output<
+        event_set<time_correlated_detection_event<>, marker_event<>,
+                  time_reached_event<>, data_lost_event<>,
+                  nontagged_counts_event<>, warning_event>>();
+    auto in = feed_input<event_set<bh_spc_event>>(
+        decode_bh_spc_with_fast_intensity_counter(ref_processor(out)));
+    in.require_output_checked(out);
+
+    bool const gap = GENERATE(false, true);
+
+    SECTION("no marker 0, no mtov") {
+        in.feed(
+            bh_spc_event::make_marker(42_u16np, 4_u8np, false).gap_flag(gap));
+        if (gap)
+            REQUIRE(out.check(data_lost_event<>{{42}}));
+        REQUIRE(out.check(marker_event<>{{{42}, 2}}));
+    }
+
+    SECTION("no marker 0, mtov") {
+        in.feed(
+            bh_spc_event::make_marker(42_u16np, 4_u8np, true).gap_flag(gap));
+        if (gap)
+            REQUIRE(out.check(data_lost_event<>{{4096 + 42}}));
+        REQUIRE(out.check(marker_event<>{{{4096 + 42}, 2}}));
+    }
+
+    SECTION("with marker 0, no mtov") {
+        in.feed(bh_spc_event::make_spc180_marker0_with_intensity_count(
+                    42_u16np, 5_u8np, 123_u16np, false)
+                    .gap_flag(gap));
+        if (gap)
+            REQUIRE(out.check(data_lost_event<>{{42}}));
+        REQUIRE(out.check(nontagged_counts_event<>{{{42}, -1}, 123}));
+        REQUIRE(out.check(marker_event<>{{{42}, 0}}));
+        REQUIRE(out.check(marker_event<>{{{42}, 2}}));
+    }
+
+    SECTION("with marker 0, mtov") {
+        in.feed(bh_spc_event::make_spc180_marker0_with_intensity_count(
+                    42_u16np, 5_u8np, 123_u16np, true)
+                    .gap_flag(gap));
+        if (gap)
+            REQUIRE(out.check(data_lost_event<>{{4096 + 42}}));
+        REQUIRE(out.check(nontagged_counts_event<>{{{4096 + 42}, -1}, 123}));
+        REQUIRE(out.check(marker_event<>{{{4096 + 42}, 0}}));
+        REQUIRE(out.check(marker_event<>{{{4096 + 42}, 2}}));
+    }
+
+    in.flush();
+    REQUIRE(out.check_flushed());
+}
+
+TEST_CASE("decode bh spc600 256ch", "[decode_bh_spc600_256ch]") {
+    auto out = capture_output<
+        event_set<time_correlated_detection_event<>, marker_event<>,
+                  time_reached_event<>, data_lost_event<>, warning_event>>();
+    auto in = feed_input<event_set<bh_spc600_256ch_event>>(
+        decode_bh_spc600_256ch(ref_processor(out)));
+    in.require_output_checked(out);
+
+    bool const gap = GENERATE(false, true);
+
+    SECTION("photon, no mtov") {
+        in.feed(bh_spc600_256ch_event::make_photon(42_u32np, 123_u8np, 5_u8np,
+                                                   false)
+                    .gap_flag(gap));
+        if (gap)
+            REQUIRE(out.check(data_lost_event<>{{42}}));
+        REQUIRE(out.check(time_correlated_detection_event<>{{{42}, 5}, 123}));
+    }
+
+    SECTION("photon, mtov") {
+        in.feed(bh_spc600_256ch_event::make_photon(42_u32np, 123_u8np, 5_u8np,
+                                                   true)
+                    .gap_flag(gap));
+        if (gap)
+            REQUIRE(out.check(data_lost_event<>{{131'072 + 42}}));
+        REQUIRE(out.check(
+            time_correlated_detection_event<>{{{131'072 + 42}, 5}, 123}));
+    }
+
+    SECTION("invalid photon") {
+        in.feed(bh_spc600_256ch_event::make_invalid_photon(42_u32np, 123_u8np)
+                    .gap_flag(gap));
+        if (gap)
+            REQUIRE(out.check(data_lost_event<>{{42}}));
+        REQUIRE(out.check(time_reached_event<>{{42}}));
+    }
+
+    SECTION("multi-mtov") {
+        in.feed(
+            bh_spc600_256ch_event::make_multiple_macrotime_overflow(3_u32np)
+                .gap_flag(gap));
+        if (gap)
+            REQUIRE(out.check(data_lost_event<>{{i64(131'072) * 3}}));
+        REQUIRE(out.check(time_reached_event<>{{i64(131'072) * 3}}));
+
+        SECTION("photon, no mtov") {
+            in.feed(bh_spc600_256ch_event::make_photon(42_u32np, 123_u8np,
+                                                       5_u8np, false)
+                        .gap_flag(gap));
+            if (gap)
+                REQUIRE(out.check(data_lost_event<>{{i64(131'072) * 3 + 42}}));
+            REQUIRE(out.check(time_correlated_detection_event<>{
+                {{i64(131'072) * 3 + 42}, 5}, 123}));
+        }
+
+        SECTION("photon, mtov") {
+            in.feed(bh_spc600_256ch_event::make_photon(42_u32np, 123_u8np,
+                                                       5_u8np, true)
+                        .gap_flag(gap));
+            if (gap)
+                REQUIRE(out.check(data_lost_event<>{{i64(131'072) * 4 + 42}}));
+            REQUIRE(out.check(time_correlated_detection_event<>{
+                {{i64(131'072) * 4 + 42}, 5}, 123}));
+        }
+
+        SECTION("invalid photon") {
+            in.feed(
+                bh_spc600_256ch_event::make_invalid_photon(42_u32np, 123_u8np)
+                    .gap_flag(gap));
+            if (gap)
+                REQUIRE(out.check(data_lost_event<>{{i64(131'072) * 3 + 42}}));
+            REQUIRE(out.check(time_reached_event<>{{i64(131'072) * 3 + 42}}));
+        }
+    }
+
+    in.flush();
+    REQUIRE(out.check_flushed());
+}
+
+TEST_CASE("decode bh spc600 4096ch", "[decode_bh_spc600_4096ch]") {
+    auto out = capture_output<
+        event_set<time_correlated_detection_event<>, marker_event<>,
+                  time_reached_event<>, data_lost_event<>, warning_event>>();
+    auto in = feed_input<event_set<bh_spc600_4096ch_event>>(
+        decode_bh_spc600_4096ch(ref_processor(out)));
+    in.require_output_checked(out);
+
+    bool const gap = GENERATE(false, true);
+
+    SECTION("photon, no mtov") {
+        in.feed(bh_spc600_4096ch_event::make_photon(42_u32np, 123_u16np,
+                                                    5_u8np, false)
+                    .gap_flag(gap));
+        if (gap)
+            REQUIRE(out.check(data_lost_event<>{{42}}));
+        REQUIRE(out.check(time_correlated_detection_event<>{{{42}, 5}, 123}));
+    }
+
+    SECTION("photon, mtov") {
+        in.feed(bh_spc600_4096ch_event::make_photon(42_u32np, 123_u16np,
+                                                    5_u8np, true)
+                    .gap_flag(gap));
+        if (gap)
+            REQUIRE(out.check(data_lost_event<>{{16'777'216 + 42}}));
+        REQUIRE(out.check(
+            time_correlated_detection_event<>{{{16'777'216 + 42}, 5}, 123}));
+    }
+
+    SECTION("invalid photon, no mtov") {
+        in.feed(bh_spc600_4096ch_event::make_invalid_photon(42_u32np,
+                                                            123_u16np, false)
+                    .gap_flag(gap));
+        if (gap)
+            REQUIRE(out.check(data_lost_event<>{{42}}));
+        REQUIRE(out.check(time_reached_event<>{{42}}));
+    }
+
+    SECTION("invalid photon, mtov") {
+        in.feed(bh_spc600_4096ch_event::make_invalid_photon(42_u32np,
+                                                            123_u16np, true)
+                    .gap_flag(gap));
+        if (gap)
+            REQUIRE(out.check(data_lost_event<>{{16'777'216 + 42}}));
+        REQUIRE(out.check(time_reached_event<>{{16'777'216 + 42}}));
+    }
+
+    in.flush();
+    REQUIRE(out.check_flushed());
 }
 
 } // namespace tcspc

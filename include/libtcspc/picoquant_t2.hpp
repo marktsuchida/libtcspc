@@ -497,7 +497,7 @@ class decode_pqt2 {
  *
  * \return decode-pqt2-picoharp processor
  */
-template <typename DataTraits, typename Downstream>
+template <typename DataTraits = default_data_traits, typename Downstream>
 auto decode_pqt2_picoharp(Downstream &&downstream) {
     return internal::decode_pqt2<DataTraits, pqt2_picoharp_event, Downstream>(
         std::forward<Downstream>(downstream));
@@ -520,7 +520,7 @@ auto decode_pqt2_picoharp(Downstream &&downstream) {
  *
  * \return decode-pqt2-hydraharpv1 processor
  */
-template <typename DataTraits, typename Downstream>
+template <typename DataTraits = default_data_traits, typename Downstream>
 auto decode_pqt2_hydraharpv1(Downstream &&downstream) {
     return internal::decode_pqt2<DataTraits, pqt2_hydraharpv1_event,
                                  Downstream>(
@@ -545,7 +545,7 @@ auto decode_pqt2_hydraharpv1(Downstream &&downstream) {
  *
  * \return decode-pqt2-hydraharpv2 processor
  */
-template <typename DataTraits, typename Downstream>
+template <typename DataTraits = default_data_traits, typename Downstream>
 auto decode_pqt2_hydraharpv2(Downstream &&downstream) {
     return internal::decode_pqt2<DataTraits, pqt2_hydraharpv2_event,
                                  Downstream>(

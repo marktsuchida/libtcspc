@@ -144,13 +144,15 @@ struct swabian_tag_event {
      *
      * \param time the timestamp
      *
+     * \param channel the channel
+     *
      * \param count number of missed events
      *
      * \return event
      */
-    static auto make_missed_events(i64np time, u16np count) noexcept
-        -> swabian_tag_event {
-        return make_from_fields(tag_type::missed_events, count, 0_i32np, time);
+    static auto make_missed_events(i64np time, i32np channel,
+                                   u16np count) noexcept -> swabian_tag_event {
+        return make_from_fields(tag_type::missed_events, count, channel, time);
     }
 
     /** \brief Equality comparison operator. */
