@@ -40,12 +40,20 @@ namespace tcspc {
  * \tparam DataTraits traits type specifying \c abstime_type
  */
 template <typename DataTraits = default_data_traits>
-struct start_and_interval_event {
+struct offset_and_interval_event {
     /**
-     * \brief Absolute time of the fitted intercept (time of first event of the
-     * sequence), rounede to integer.
+     * \brief Absolute time of this event, used as a reference point.
+     *
+     * The value is chosen such than \c offset falls between 1.0 and 2.0.
      */
     typename DataTraits::abstime_type abstime;
+
+    /**
+     * \brief The estimated time of the first event, relative to \c abstime.
+     *
+     * This is in abstime units and is at least 1.0 and no more than 2.0.
+     */
+    double offset;
 
     /**
      * \brief Interval, in abstime units per index, of the fit sequence.
@@ -53,23 +61,24 @@ struct start_and_interval_event {
     double interval;
 
     /** \brief Equality comparison operator. */
-    friend auto operator==(start_and_interval_event const &lhs,
-                           start_and_interval_event const &rhs) noexcept {
-        return lhs.abstime == rhs.abstime && lhs.interval == rhs.interval;
+    friend auto operator==(offset_and_interval_event const &lhs,
+                           offset_and_interval_event const &rhs) noexcept {
+        return lhs.abstime == rhs.abstime && lhs.offset == rhs.offset &&
+               lhs.interval == rhs.interval;
     }
 
     /** \brief Inequality comparison operator. */
-    friend auto operator!=(start_and_interval_event const &lhs,
-                           start_and_interval_event const &rhs) noexcept {
+    friend auto operator!=(offset_and_interval_event const &lhs,
+                           offset_and_interval_event const &rhs) noexcept {
         return not(lhs == rhs);
     }
 
     /** \brief Stream insertion operator. */
     friend auto operator<<(std::ostream &stream,
-                           start_and_interval_event const &event)
+                           offset_and_interval_event const &event)
         -> std::ostream & {
-        return stream << "start_and_interval(" << event.abstime << ", "
-                      << event.interval << ')';
+        return stream << "offset_and_interval(" << event.abstime << " + "
+                      << event.offset << ", " << event.interval << ')';
     }
 };
 
@@ -160,39 +169,45 @@ class fit_periodic_sequences {
 
     Downstream downstream;
 
-    void fail(std::string const &message) {
-        throw std::runtime_error("fit periodic sequences: " + message);
-    }
-
     LIBTCSPC_NOINLINE void fit_and_emit(abstime_type last_event_time) {
         auto const result = fitter.fit(relative_ticks);
         if (result.mse > mse_cutoff)
-            return fail("mean squared error exceeded cutoff");
+            throw std::runtime_error(
+                "fit periodic sequences: mean squared error exceeded cutoff");
         if (result.slope < min_interval_cutoff ||
             result.slope > max_interval_cutoff)
-            return fail("estimated time interval was not in expected range");
+            throw std::runtime_error(
+                "fit periodic sequences: stimated time interval was not in expected range");
 
-        auto const rounded_intercept = std::llround(result.intercept);
+        // Split intercept to i0 + i1, where 1.0 <= i1 < 2.0.
+        auto const offset_int = std::floor(result.intercept) - 1.0;
+        auto const offset_frac = result.intercept - offset_int; // [1.0, 2.0)
 
-        if constexpr (std::is_unsigned_v<abstime_type>) {
-            if ((rounded_intercept < 0 &&
-                 static_cast<abstime_type>(-rounded_intercept) + tick_offset >
-                     first_tick_time) ||
-                (rounded_intercept >= 0 &&
-                 static_cast<abstime_type>(rounded_intercept) +
-                         first_tick_time <
-                     tick_offset))
-                return fail(
-                    "estimated start time is negative but abstime_type is unsigned");
-        }
-        auto const abstime =
-            rounded_intercept < 0
-                ? first_tick_time -
-                      static_cast<abstime_type>(-rounded_intercept) -
-                      tick_offset
-                : first_tick_time +
-                      static_cast<abstime_type>(rounded_intercept) -
-                      tick_offset;
+        // Compute abstime in abstime_type to prevent loss of precision at
+        // large abstime values.
+        auto const abstime = [&] {
+            if constexpr (std::is_unsigned_v<abstime_type>) {
+                if (offset_int >= 0) {
+                    if (first_tick_time +
+                            static_cast<abstime_type>(offset_int) >=
+                        tick_offset)
+                        return first_tick_time +
+                               static_cast<abstime_type>(offset_int) -
+                               tick_offset;
+                } else {
+                    if (first_tick_time >=
+                        tick_offset - static_cast<abstime_type>(-offset_int))
+                        return first_tick_time -
+                               static_cast<abstime_type>(-offset_int) -
+                               tick_offset;
+                }
+                throw std::runtime_error(
+                    "fit periodic sequences: abstime would be negative but abstime_type is unsigned");
+            } else {
+                return first_tick_time +
+                       static_cast<abstime_type>(offset_int) - tick_offset;
+            }
+        }();
 
         auto max_time_shift =
             static_cast<abstime_type>(std::ceil(max_interval_cutoff)) *
@@ -200,16 +215,16 @@ class fit_periodic_sequences {
         if constexpr (std::is_unsigned_v<abstime_type>) {
             if (max_time_shift > last_event_time) {
                 // The case of negative abstime is already checked above, so
-                // effectively disable the max-time-shift check.
+                // disable the max-time-shift check.
                 max_time_shift = last_event_time;
             }
         }
         if (abstime < last_event_time - max_time_shift)
-            return fail(
-                "estimated start time was earlier than guaranteed time bound");
+            throw std::runtime_error(
+                "fit periodic sequences: estimated start time was earlier than guaranteed time bound");
 
-        downstream.handle(
-            start_and_interval_event<DataTraits>{abstime, result.slope});
+        downstream.handle(offset_and_interval_event<DataTraits>{
+            abstime, offset_frac, result.slope});
     }
 
   public:
@@ -261,28 +276,34 @@ class fit_periodic_sequences {
  *
  * The processor accepts a single event type, \c Event. Every \e length events
  * are grouped together and a model of regularly spaced events is fit to their
- * abstimes. If the fit is successful (see below for criteria), then a \c
- * start_and_interval_event is emitted, whose abstime is the estimated time of
- * the first event (rounded to integer) and which contains the estimated event
- * interval. If the fit is not successful, an error is generated.
+ * abstimes. If the fit is successful (see below for criteria), then an \c
+ * offset_and_interval_event is emitted, containing the fit results, upon
+ * receiving the last \c Event of the series. If the fit is not successful,
+ * processing is halted with an error.
  *
- * The fit is considered successful if all of the following conditions are
+ * The emitted fit parameters consist of an offset and interval. The offset is
+ * chosen to be between 1.0 and 2.0 (this avoids working with subnormal
+ * floating point values). The abstime of the emitted event is chosen such that
+ * <tt>abstime + offset</tt> is the estimated time of the first event in the
+ * fit sequence. If this abstime is not representable (due to the abstime type
+ * being unsigned), processing is halted with an error.
+ *
+ * The fit is considered successful if all of the following criteria are
  * satisfied:
  *
  * -# the mean squared error is no more than \e max_mse
  * -# the estimated event interval is within \e min_max_interval
- * -# the estimated time of the first event (rounded to integer) is not less
- *    than the observed time of the last event minus <tt>length *
- *    ceil(min_max_interval[1])</tt>
+ * -# the abstime of the emitted event is not less than the observed time of
+ *    the last event minus <tt>length * ceil(min_max_interval[1])</tt>
  *
- * (The last criterion provides a bound for the time shift if the emitted
- * events are merged back to the origianl event stream from which the input
- * events were derived, because the \c start_and_interval_event is emitted when
- * handling the last event.)
+ * (The last criterion provides a bound on the time shift between the emitted
+ * events and the original events. This can be used when merging (with \ref
+ * merge) the emitted events with another stream derived from the original
+ * events.)
  *
  * This processor does not pass through \c Event, and does not handle any other
- * event (because such events would be out of order with the \c
- * start_and_interval_event events).
+ * event (because such events would be out of order with the emitted \c
+ * offset_and_interval_event events).
  *
  * \tparam DataTraits traits type specifying data types for emitted event
  *
@@ -290,7 +311,7 @@ class fit_periodic_sequences {
  *
  * \tparam Downstream downstream processor type
  *
- * \param length number of Event events to fit
+ * \param length number of \c Event events to fit
  *
  * \param min_max_interval allowed range of estimated event interval for the
  * fit to be considered successful
