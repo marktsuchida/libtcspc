@@ -169,7 +169,18 @@ TEST_CASE("fit equally spaced sequence time bound, unsigned abstime",
         REQUIRE(out.check_not_flushed());
     }
 
-    SECTION("fail because of negative estimated start time") {
+    SECTION(
+        "fail because of negative estimated start time (positive intercept less than tick offset)") {
+        in.feed(e0{50});
+        for (abstime_type i = 0; i < 998; ++i)
+            in.feed(e0{90 + i * abstime_type(100)});
+        REQUIRE_THROWS_WITH(in.feed(e0{90 + 998 * abstime_type(100)}),
+                            Catch::Matchers::ContainsSubstring("unsigned"));
+        REQUIRE(out.check_not_flushed());
+    }
+
+    SECTION(
+        "fail because of negative estimated start time (negative intercept)") {
         in.feed(e0{0});
         in.feed(e0{0});
         for (abstime_type i = 0; i < 997; ++i)

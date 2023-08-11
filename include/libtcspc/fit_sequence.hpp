@@ -24,6 +24,14 @@
 
 namespace tcspc {
 
+// Design note: It is important that we use double, not float, for these
+// computations. The abstime units might be picoseconds, and the event interval
+// being fit might be several microseconds (typical pixel clock) with a
+// sequence length of up to ~1000. Under these conditions (9-10 orders of
+// magnitude between unit and total), even with the use of relative time values
+// (as we do), float may lose precision before the end of a single sequence is
+// reached.
+
 /**
  * \brief Event representing result of fitting an equally spaced sequence.
  *
@@ -90,6 +98,9 @@ inline auto linear_fit_sequence(std::vector<double> const &y)
 
     std::uint64_t const n = y.size();
 
+    // TODO The values that only depend on X and x could be stored for reuse
+    // (avoiding allocation of x, among other things) by making this a class.
+
     std::vector<double> x(n);
     std::iota(x.begin(), x.end(), 0.0);
 
@@ -136,14 +147,18 @@ class fit_equally_spaced_sequence {
     using abstime_type = typename DataTraits::abstime_type;
 
     std::size_t len; // At least 3
-    abstime_type min_interval_cutoff;
-    abstime_type max_interval_cutoff;
-    double mse_cutoff;
 
     // Record times relative to first event of the series, to prevent overflow
     // or loss of precision on large abstime values.
     abstime_type first_tick_time{};
-    std::vector<double> relative_ticks; // First element will be 0.0.
+    abstime_type tick_offset; // Offset relative tick times so as not to be
+                              // near zero (avoid subnormal intercept)
+    std::vector<double> relative_ticks; // First element will be tick_offset.
+
+    // Colder data (only used when fitting).
+    abstime_type min_interval_cutoff;
+    abstime_type max_interval_cutoff;
+    double mse_cutoff;
 
     Downstream downstream;
 
@@ -162,26 +177,33 @@ class fit_equally_spaced_sequence {
             return fail("estimated time interval was not in expected range");
 
         auto const rounded_intercept = std::llround(result.intercept);
+
         if constexpr (std::is_unsigned_v<abstime_type>) {
-            if (rounded_intercept < 0 &&
-                static_cast<abstime_type>(-rounded_intercept) >
-                    first_tick_time)
+            if ((rounded_intercept < 0 &&
+                 static_cast<abstime_type>(-rounded_intercept) + tick_offset >
+                     first_tick_time) ||
+                (rounded_intercept >= 0 &&
+                 static_cast<abstime_type>(rounded_intercept) +
+                         first_tick_time <
+                     tick_offset))
                 return fail(
                     "estimated start time is negative but abstime_type is unsigned");
         }
-
         auto const abstime =
             rounded_intercept < 0
                 ? first_tick_time -
-                      static_cast<abstime_type>(-rounded_intercept)
+                      static_cast<abstime_type>(-rounded_intercept) -
+                      tick_offset
                 : first_tick_time +
-                      static_cast<abstime_type>(rounded_intercept);
+                      static_cast<abstime_type>(rounded_intercept) -
+                      tick_offset;
+
         auto max_time_shift =
             max_interval_cutoff * static_cast<abstime_type>(len);
         if constexpr (std::is_unsigned_v<abstime_type>) {
             if (max_time_shift > last_event_time) {
-                // The case of negative abstime is already checked above,
-                // so effectively disable the max-time-shift check.
+                // The case of negative abstime is already checked above, so
+                // effectively disable the max-time-shift check.
                 max_time_shift = last_event_time;
             }
         }
@@ -198,12 +220,19 @@ class fit_equally_spaced_sequence {
         std::size_t length,
         std::array<typename DataTraits::abstime_type, 2> min_max_interval,
         double max_mse, Downstream &&downstream)
-        : len(length), min_interval_cutoff(min_max_interval[0]),
+        : len(length), tick_offset(min_max_interval[1] + 10),
+          min_interval_cutoff(min_max_interval[0]),
           max_interval_cutoff(min_max_interval[1]), mse_cutoff(max_mse),
           downstream(std::move(downstream)) {
         if (length < 3)
             throw std::invalid_argument(
                 "fit_equally_spaced_sequence length must be at least 3");
+        if (min_interval_cutoff > max_interval_cutoff)
+            throw std::invalid_argument(
+                "fit_equally_spaced_sequence min interval cutoff must be less than or equal to max interval cutoff");
+        if (max_interval_cutoff <= 0)
+            throw std::invalid_argument(
+                "fit_equally_spaced_sequence max interval cutoff must be positive");
         relative_ticks.reserve(length);
     }
 
@@ -213,8 +242,8 @@ class fit_equally_spaced_sequence {
         if (relative_ticks.empty())
             first_tick_time = event.abstime;
 
-        relative_ticks.push_back(
-            static_cast<double>(event.abstime - first_tick_time));
+        relative_ticks.push_back(static_cast<double>(
+            event.abstime - first_tick_time + tick_offset));
 
         if (relative_ticks.size() == len) {
             fit_and_emit(event.abstime);
