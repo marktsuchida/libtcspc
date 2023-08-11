@@ -75,16 +75,13 @@ struct start_and_interval_event {
 
 namespace internal {
 
-struct linear_fit_result {
+struct periodic_fit_result {
     double intercept;
     double slope;
     double mse; // mean squared error
 };
 
-// y.size() must be at least 3. If it is 2, mse will be NaN. If it is 0 or 1,
-// all results will be NaN.
-inline auto linear_fit_sequence(std::vector<double> const &y)
-    -> linear_fit_result {
+class periodic_fitter {
     // Linear fit: yfit = a + b * x; y from data sequence, x from fixed
     // indices:
     //
@@ -96,51 +93,51 @@ inline auto linear_fit_sequence(std::vector<double> const &y)
     //     [    .]        [.    .]        [  .]
     //     [y_n-1]        [1  n-1]        [n-1]
 
-    std::uint64_t const n = y.size();
+    double n;
+    double sigma_x;        // Sum of 0, 1, ..., n - 1
+    double sigma_xx;       // Sum of 0^2, 1^2, ..., (n - 1)^2
+    double det_XtX;        // Determinant of Xt X
+    std::vector<double> x; // 0, ..., n - 1
 
-    // TODO The values that only depend on X and x could be stored for reuse
-    // (avoiding allocation of x, among other things) by making this a class.
+  public:
+    // n should be at least 3. If it is 2, mse will be NaN. If it is 0 or 1,
+    // intercept and slope will be NaN.
+    explicit periodic_fitter(std::uint64_t length)
+        : n(static_cast<double>(length)), sigma_x((n - 1.0) * n * 0.5),
+          sigma_xx((n - 1.0) * n * (2.0 * n - 1.0) / 6.0),
+          det_XtX(n * sigma_xx - sigma_x * sigma_x), x(length) {
+        std::iota(x.begin(), x.end(), 0.0);
+    }
 
-    std::vector<double> x(n);
-    std::iota(x.begin(), x.end(), 0.0);
+    auto fit(std::vector<double> const &y) const noexcept
+        -> periodic_fit_result {
+        assert(static_cast<double>(y.size()) == n);
 
-    // Sum of 0, 1, ..., n - 1
-    std::uint64_t const isigma_x = (n - 1) * n / 2;
-    auto const sigma_x = static_cast<double>(isigma_x);
+        // Sum of y_0, y_1, ..., y_n-1
+        double const sigma_y = std::reduce(y.cbegin(), y.cend());
 
-    // Sum of 0^2, 1^2, ..., (n - 1)^2
-    std::uint64_t const isigma_xx = isigma_x * (2 * (n - 1) + 1) / 3;
-    auto const sigma_xx = static_cast<double>(isigma_xx);
+        // Sum of x_0 * y_0, x_1 * y_1, ..., x_n-1 * y_n-1
+        double const sigma_xy =
+            std::transform_reduce(x.cbegin(), x.cend(), y.cbegin(), 0.0);
 
-    // Sum of y_0, y_1, ..., y_n-1
-    double const sigma_y = std::reduce(y.cbegin(), y.cend());
+        // Solve ordinary linear least squares:
+        // [a b]t = (Xt X)^-1 Xt y
+        double const a = (sigma_xx * sigma_y - sigma_x * sigma_xy) / det_XtX;
+        double const b = (n * sigma_xy - sigma_x * sigma_y) / det_XtX;
 
-    // Sum of x_0 * y_0, x_1 * y_1, ..., x_n-1 * y_n-1
-    double const sigma_xy =
-        std::transform_reduce(x.cbegin(), x.cend(), y.cbegin(), 0.0);
+        // Sum of squared residuals
+        double const ssr = std::transform_reduce(
+            x.cbegin(), x.cend(), y.cbegin(), 0.0, std::plus<>(),
+            [&](double x, double y) noexcept {
+                auto const yfit = a + b * x;
+                auto const r = y - yfit;
+                return r * r;
+            });
+        double const mse = ssr / (n - 2.0);
 
-    // Determinant of Xt X
-    double const det_XtX =
-        static_cast<double>(n) * sigma_xx - sigma_x * sigma_x;
-
-    // Solve ordinary linear least squares:
-    // [a b]t = (Xt X)^-1 Xt y
-    double const a = (sigma_xx * sigma_y - sigma_x * sigma_xy) / det_XtX;
-    double const b =
-        (static_cast<double>(n) * sigma_xy - sigma_x * sigma_y) / det_XtX;
-
-    // Sum of squared residuals
-    double const ssr =
-        std::transform_reduce(x.cbegin(), x.cend(), y.cbegin(), 0.0,
-                              std::plus<>(), [&](double x, double y) noexcept {
-                                  auto const yfit = a + b * x;
-                                  auto const r = y - yfit;
-                                  return r * r;
-                              });
-    double const mse = ssr / static_cast<double>(n - 2);
-
-    return {a, b, mse};
-}
+        return {a, b, mse};
+    }
+};
 
 template <typename DataTraits, typename Event, typename Downstream>
 class fit_periodic_sequences {
@@ -156,6 +153,7 @@ class fit_periodic_sequences {
     std::vector<double> relative_ticks; // First element will be tick_offset.
 
     // Colder data (only used when fitting).
+    periodic_fitter fitter;
     abstime_type min_interval_cutoff;
     abstime_type max_interval_cutoff;
     double mse_cutoff;
@@ -167,9 +165,7 @@ class fit_periodic_sequences {
     }
 
     LIBTCSPC_NOINLINE void fit_and_emit(abstime_type last_event_time) {
-        linear_fit_result result{};
-        result = linear_fit_sequence(relative_ticks);
-
+        auto const result = fitter.fit(relative_ticks);
         if (result.mse > mse_cutoff)
             return fail("mean squared error exceeded cutoff");
         if (result.slope < double(min_interval_cutoff) ||
@@ -220,7 +216,7 @@ class fit_periodic_sequences {
         std::size_t length,
         std::array<typename DataTraits::abstime_type, 2> min_max_interval,
         double max_mse, Downstream &&downstream)
-        : len(length), tick_offset(min_max_interval[1] + 10),
+        : len(length), tick_offset(min_max_interval[1] + 10), fitter(length),
           min_interval_cutoff(min_max_interval[0]),
           max_interval_cutoff(min_max_interval[1]), mse_cutoff(max_mse),
           downstream(std::move(downstream)) {

@@ -19,33 +19,31 @@ namespace tcspc {
 
 namespace internal {
 
-TEST_CASE("linear fit sequence", "[fit_periodic_sequences]") {
+TEST_CASE("periodic fitter", "[fit_periodic_sequences]") {
     using Catch::Matchers::WithinAbs;
 
     // Numbers derived from Wikipedia linear least squares example.
     std::vector const y{6.0, 5.0, 7.0, 10.0};
-    auto const result = linear_fit_sequence(y);
+    auto const result = periodic_fitter(y.size()).fit(y);
     CHECK_THAT(result.intercept, WithinAbs(4.9, 1e-100));
     CHECK_THAT(result.slope, WithinAbs(1.4, 1e-100));
     CHECK_THAT(result.mse, WithinAbs(2.1, 1e-12));
 
     std::vector const yminlen{3.0, 4.0};
-    auto const resultminlen = linear_fit_sequence(yminlen);
+    auto const resultminlen = periodic_fitter(2).fit(yminlen);
     CHECK_THAT(resultminlen.intercept, WithinAbs(3.0, 1e-100));
     CHECK_THAT(resultminlen.slope, WithinAbs(1.0, 1e-100));
     CHECK(std::isnan(resultminlen.mse));
 
     std::vector const ybad{3.0};
-    auto const resultbad = linear_fit_sequence(ybad);
+    auto const resultbad = periodic_fitter(1).fit(ybad);
     CHECK(std::isnan(resultbad.intercept));
     CHECK(std::isnan(resultbad.slope));
-    CHECK(std::isnan(resultbad.mse));
 
     std::vector<double> const yempty{};
-    auto const resultempty = linear_fit_sequence(ybad);
+    auto const resultempty = periodic_fitter(0).fit(yempty);
     CHECK(std::isnan(resultempty.intercept));
     CHECK(std::isnan(resultempty.slope));
-    CHECK(std::isnan(resultempty.mse));
 }
 
 } // namespace internal
