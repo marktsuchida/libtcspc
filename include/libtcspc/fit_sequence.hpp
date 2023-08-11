@@ -154,8 +154,8 @@ class fit_periodic_sequences {
 
     // Colder data (only used when fitting).
     periodic_fitter fitter;
-    abstime_type min_interval_cutoff;
-    abstime_type max_interval_cutoff;
+    double min_interval_cutoff;
+    double max_interval_cutoff;
     double mse_cutoff;
 
     Downstream downstream;
@@ -168,8 +168,8 @@ class fit_periodic_sequences {
         auto const result = fitter.fit(relative_ticks);
         if (result.mse > mse_cutoff)
             return fail("mean squared error exceeded cutoff");
-        if (result.slope < double(min_interval_cutoff) ||
-            result.slope > double(max_interval_cutoff))
+        if (result.slope < min_interval_cutoff ||
+            result.slope > max_interval_cutoff)
             return fail("estimated time interval was not in expected range");
 
         auto const rounded_intercept = std::llround(result.intercept);
@@ -195,7 +195,8 @@ class fit_periodic_sequences {
                       tick_offset;
 
         auto max_time_shift =
-            max_interval_cutoff * static_cast<abstime_type>(len);
+            static_cast<abstime_type>(std::ceil(max_interval_cutoff)) *
+            static_cast<abstime_type>(len);
         if constexpr (std::is_unsigned_v<abstime_type>) {
             if (max_time_shift > last_event_time) {
                 // The case of negative abstime is already checked above, so
@@ -212,12 +213,12 @@ class fit_periodic_sequences {
     }
 
   public:
-    explicit fit_periodic_sequences(
-        std::size_t length,
-        std::array<typename DataTraits::abstime_type, 2> min_max_interval,
-        double max_mse, Downstream &&downstream)
-        : len(length), tick_offset(min_max_interval[1] + 10), fitter(length),
-          min_interval_cutoff(min_max_interval[0]),
+    explicit fit_periodic_sequences(std::size_t length,
+                                    std::array<double, 2> min_max_interval,
+                                    double max_mse, Downstream &&downstream)
+        : len(length),
+          tick_offset(static_cast<abstime_type>(min_max_interval[1]) + 10),
+          fitter(length), min_interval_cutoff(min_max_interval[0]),
           max_interval_cutoff(min_max_interval[1]), mse_cutoff(max_mse),
           downstream(std::move(downstream)) {
         if (length < 3)
@@ -272,7 +273,7 @@ class fit_periodic_sequences {
  * -# the estimated event interval is within \e min_max_interval
  * -# the estimated time of the first event (rounded to integer) is not less
  *    than the observed time of the last event minus <tt>length *
- *    min_max_interval[1]</tt>
+ *    ceil(min_max_interval[1])</tt>
  *
  * (The last criterion provides a bound for the time shift if the emitted
  * events are merged back to the origianl event stream from which the input
@@ -300,10 +301,9 @@ class fit_periodic_sequences {
  * \param downstream downstream processor
  */
 template <typename DataTraits, typename Event, typename Downstream>
-auto fit_periodic_sequences(
-    std::size_t length,
-    std::array<typename DataTraits::abstime_type, 2> min_max_interval,
-    double max_mse, Downstream &&downstream) {
+auto fit_periodic_sequences(std::size_t length,
+                            std::array<double, 2> min_max_interval,
+                            double max_mse, Downstream &&downstream) {
     return internal::fit_periodic_sequences<DataTraits, Event, Downstream>(
         length, min_max_interval, max_mse,
         std::forward<Downstream>(downstream));
