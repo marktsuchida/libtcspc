@@ -25,7 +25,7 @@
 namespace tcspc {
 
 /**
- * \brief Event representing result of fitting an arithmetic time sequence.
+ * \brief Event representing result of fitting an equally spaced sequence.
  *
  * \ingroup events-timing
  *
@@ -34,13 +34,13 @@ namespace tcspc {
 template <typename DataTraits = default_data_traits>
 struct start_and_interval_event {
     /**
-     * \brief Absolute time of the fitted intercept, rounede to integer.
+     * \brief Absolute time of the fitted intercept (time of first event of the
+     * sequence), rounede to integer.
      */
     typename DataTraits::abstime_type abstime;
 
     /**
-     * \brief Intercept (interval in abstime units per index) of the
-     * arithmetic sequence.
+     * \brief Interval, in abstime units per index, of the fit sequence.
      */
     double interval;
 
@@ -132,7 +132,7 @@ inline auto linear_fit_sequence(std::vector<double> const &y)
 }
 
 template <typename DataTraits, typename Event, typename Downstream>
-class fit_arithmetic_time_sequence {
+class fit_equally_spaced_sequence {
     using abstime_type = typename DataTraits::abstime_type;
 
     std::size_t len; // At least 3
@@ -148,11 +148,11 @@ class fit_arithmetic_time_sequence {
     Downstream downstream;
 
     void fail(std::string const &message) {
-        throw std::runtime_error("fit arithmetic time sequence: " + message);
+        throw std::runtime_error("fit equally spaced sequence: " + message);
     }
 
   public:
-    explicit fit_arithmetic_time_sequence(
+    explicit fit_equally_spaced_sequence(
         std::size_t length,
         std::array<typename DataTraits::abstime_type, 2> min_max_interval,
         double max_mse, Downstream &&downstream)
@@ -161,7 +161,7 @@ class fit_arithmetic_time_sequence {
           downstream(std::move(downstream)) {
         if (length < 3)
             throw std::invalid_argument(
-                "fit_arithmetic_time_sequence length must be at least 3");
+                "fit_equally_spaced_sequence length must be at least 3");
         relative_ticks.reserve(length);
     }
 
@@ -224,18 +224,17 @@ class fit_arithmetic_time_sequence {
 } // namespace internal
 
 /**
- * \brief Create a processor that fits an arithmetic sequence to the abstimes
- * of an event.
+ * \brief Create a processor that fits an equally spaced sequence to the
+ * abstimes of an event.
  *
  * \ingroup processors-timing
  *
  * The processor accepts a single event type, \c Event. Every \e length events
- * are grouped together and their abstime is fit to an arithmetic sequence
- * (that is, a sequence of equally spaced values). If the fit is successful
- * (see below), then a \c start_and_interval_event is emitted, whose abstime is
- * the estimated time of the first event (rounded to integer) and which
- * contains the estimated event interval. If the fit is not successful, an
- * error is generated.
+ * are grouped together and their abstimes are fit to an equally spaced
+ * sequence. If the fit is successful (see below), then a \c
+ * start_and_interval_event is emitted, whose abstime is the estimated time of
+ * the first event (rounded to integer) and which contains the estimated event
+ * interval. If the fit is not successful, an error is generated.
  *
  * The fit is considered successful if all of the following conditions are
  * satisfied:
@@ -272,12 +271,12 @@ class fit_arithmetic_time_sequence {
  * \param downstream downstream processor
  */
 template <typename DataTraits, typename Event, typename Downstream>
-auto fit_arithmetic_time_sequence(
+auto fit_equally_spaced_sequence(
     std::size_t length,
     std::array<typename DataTraits::abstime_type, 2> min_max_interval,
     double max_mse, Downstream &&downstream) {
-    return internal::fit_arithmetic_time_sequence<DataTraits, Event,
-                                                  Downstream>(
+    return internal::fit_equally_spaced_sequence<DataTraits, Event,
+                                                 Downstream>(
         length, min_max_interval, max_mse,
         std::forward<Downstream>(downstream));
 }
