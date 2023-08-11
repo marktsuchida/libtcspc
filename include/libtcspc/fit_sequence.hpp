@@ -33,7 +33,7 @@ namespace tcspc {
 // reached.
 
 /**
- * \brief Event representing result of fitting an equally spaced sequence.
+ * \brief Event representing result of fitting a periodic sequence.
  *
  * \ingroup events-timing
  *
@@ -143,7 +143,7 @@ inline auto linear_fit_sequence(std::vector<double> const &y)
 }
 
 template <typename DataTraits, typename Event, typename Downstream>
-class fit_equally_spaced_sequence {
+class fit_periodic_sequences {
     using abstime_type = typename DataTraits::abstime_type;
 
     std::size_t len; // At least 3
@@ -163,7 +163,7 @@ class fit_equally_spaced_sequence {
     Downstream downstream;
 
     void fail(std::string const &message) {
-        throw std::runtime_error("fit equally spaced sequence: " + message);
+        throw std::runtime_error("fit periodic sequences: " + message);
     }
 
     LIBTCSPC_NOINLINE void fit_and_emit(abstime_type last_event_time) {
@@ -216,7 +216,7 @@ class fit_equally_spaced_sequence {
     }
 
   public:
-    explicit fit_equally_spaced_sequence(
+    explicit fit_periodic_sequences(
         std::size_t length,
         std::array<typename DataTraits::abstime_type, 2> min_max_interval,
         double max_mse, Downstream &&downstream)
@@ -226,13 +226,13 @@ class fit_equally_spaced_sequence {
           downstream(std::move(downstream)) {
         if (length < 3)
             throw std::invalid_argument(
-                "fit_equally_spaced_sequence length must be at least 3");
+                "fit_periodic_sequences length must be at least 3");
         if (min_interval_cutoff > max_interval_cutoff)
             throw std::invalid_argument(
-                "fit_equally_spaced_sequence min interval cutoff must be less than or equal to max interval cutoff");
+                "fit_periodic_sequences min interval cutoff must be less than or equal to max interval cutoff");
         if (max_interval_cutoff <= 0)
             throw std::invalid_argument(
-                "fit_equally_spaced_sequence max interval cutoff must be positive");
+                "fit_periodic_sequences max interval cutoff must be positive");
         relative_ticks.reserve(length);
     }
 
@@ -257,14 +257,14 @@ class fit_equally_spaced_sequence {
 } // namespace internal
 
 /**
- * \brief Create a processor that fits an equally spaced sequence to the
- * abstimes of an event.
+ * \brief Create a processor that fits fixed-length periodic sequences of
+ * events and estimates the start time and interval.
  *
  * \ingroup processors-timing
  *
  * The processor accepts a single event type, \c Event. Every \e length events
- * are grouped together and their abstimes are fit to an equally spaced
- * sequence. If the fit is successful (see below), then a \c
+ * are grouped together and a model of regularly spaced events is fit to their
+ * abstimes. If the fit is successful (see below for criteria), then a \c
  * start_and_interval_event is emitted, whose abstime is the estimated time of
  * the first event (rounded to integer) and which contains the estimated event
  * interval. If the fit is not successful, an error is generated.
@@ -304,12 +304,11 @@ class fit_equally_spaced_sequence {
  * \param downstream downstream processor
  */
 template <typename DataTraits, typename Event, typename Downstream>
-auto fit_equally_spaced_sequence(
+auto fit_periodic_sequences(
     std::size_t length,
     std::array<typename DataTraits::abstime_type, 2> min_max_interval,
     double max_mse, Downstream &&downstream) {
-    return internal::fit_equally_spaced_sequence<DataTraits, Event,
-                                                 Downstream>(
+    return internal::fit_periodic_sequences<DataTraits, Event, Downstream>(
         length, min_max_interval, max_mse,
         std::forward<Downstream>(downstream));
 }

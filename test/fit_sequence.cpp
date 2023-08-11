@@ -19,7 +19,7 @@ namespace tcspc {
 
 namespace internal {
 
-TEST_CASE("linear fit sequence", "[fit_equally_spaced_sequence]") {
+TEST_CASE("linear fit sequence", "[fit_periodic_sequences]") {
     using Catch::Matchers::WithinAbs;
 
     // Numbers derived from Wikipedia linear least squares example.
@@ -50,12 +50,12 @@ TEST_CASE("linear fit sequence", "[fit_equally_spaced_sequence]") {
 
 } // namespace internal
 
-TEST_CASE("fit equally spaced sequence", "[fit_equally_spaced_sequence]") {
+TEST_CASE("fit periodic sequences", "[fit_periodic_sequences]") {
     using e0 = timestamped_test_event<0>;
     auto out = capture_output<event_set<start_and_interval_event<>>>();
     auto in = feed_input<event_set<e0>>(
-        fit_equally_spaced_sequence<default_data_traits, e0>(
-            4, {1, 2}, 2.5, ref_processor(out)));
+        fit_periodic_sequences<default_data_traits, e0>(4, {1, 2}, 2.5,
+                                                        ref_processor(out)));
     in.require_output_checked(out);
 
     SECTION("fit succeeds") {
@@ -83,14 +83,14 @@ TEST_CASE("fit equally spaced sequence", "[fit_equally_spaced_sequence]") {
     }
 }
 
-TEST_CASE("fit equally spaced sequence time bound, signed abstime",
-          "[fit_equally_spaced_sequence]") {
+TEST_CASE("fit periodic sequences time bound, signed abstime",
+          "[fit_periodic_sequences]") {
     using abstime_type = default_data_traits::abstime_type;
     using e0 = timestamped_test_event<0>;
     static_assert(std::is_signed_v<abstime_type>);
     auto out = capture_output<event_set<start_and_interval_event<>>>();
     auto in = feed_input<event_set<e0>>(
-        fit_equally_spaced_sequence<default_data_traits, e0>(
+        fit_periodic_sequences<default_data_traits, e0>(
             1000, {99, 101}, std::numeric_limits<double>::infinity(),
             ref_processor(out)));
     in.require_output_checked(out);
@@ -126,18 +126,17 @@ TEST_CASE("fit equally spaced sequence time bound, signed abstime",
     }
 }
 
-TEST_CASE("fit equally spaced sequence time bound, unsigned abstime",
-          "[fit_equally_spaced_sequence]") {
+TEST_CASE("fit periodic sequences time bound, unsigned abstime",
+          "[fit_periodic_sequences]") {
     struct traits {
         using abstime_type = std::uint64_t;
     };
     using abstime_type = traits::abstime_type;
     using e0 = timestamped_test_event<0, traits>;
     auto out = capture_output<event_set<start_and_interval_event<traits>>>();
-    auto in =
-        feed_input<event_set<e0>>(fit_equally_spaced_sequence<traits, e0>(
-            1000, {99, 101}, std::numeric_limits<double>::infinity(),
-            ref_processor(out)));
+    auto in = feed_input<event_set<e0>>(fit_periodic_sequences<traits, e0>(
+        1000, {99, 101}, std::numeric_limits<double>::infinity(),
+        ref_processor(out)));
     in.require_output_checked(out);
 
     SECTION("succeed despite time bound would be negative") {
