@@ -151,6 +151,48 @@ class fit_equally_spaced_sequence {
         throw std::runtime_error("fit equally spaced sequence: " + message);
     }
 
+    LIBTCSPC_NOINLINE void fit_and_emit(abstime_type last_event_time) {
+        linear_fit_result result{};
+        result = linear_fit_sequence(relative_ticks);
+
+        if (result.mse > mse_cutoff)
+            return fail("mean squared error exceeded cutoff");
+        if (result.slope < double(min_interval_cutoff) ||
+            result.slope > double(max_interval_cutoff))
+            return fail("estimated time interval was not in expected range");
+
+        auto const rounded_intercept = std::llround(result.intercept);
+        if constexpr (std::is_unsigned_v<abstime_type>) {
+            if (rounded_intercept < 0 &&
+                static_cast<abstime_type>(-rounded_intercept) >
+                    first_tick_time)
+                return fail(
+                    "estimated start time is negative but abstime_type is unsigned");
+        }
+
+        auto const abstime =
+            rounded_intercept < 0
+                ? first_tick_time -
+                      static_cast<abstime_type>(-rounded_intercept)
+                : first_tick_time +
+                      static_cast<abstime_type>(rounded_intercept);
+        auto max_time_shift =
+            max_interval_cutoff * static_cast<abstime_type>(len);
+        if constexpr (std::is_unsigned_v<abstime_type>) {
+            if (max_time_shift > last_event_time) {
+                // The case of negative abstime is already checked above,
+                // so effectively disable the max-time-shift check.
+                max_time_shift = last_event_time;
+            }
+        }
+        if (abstime < last_event_time - max_time_shift)
+            return fail(
+                "estimated start time was earlier than guaranteed time bound");
+
+        downstream.handle(
+            start_and_interval_event<DataTraits>{abstime, result.slope});
+    }
+
   public:
     explicit fit_equally_spaced_sequence(
         std::size_t length,
@@ -175,45 +217,7 @@ class fit_equally_spaced_sequence {
             static_cast<double>(event.abstime - first_tick_time));
 
         if (relative_ticks.size() == len) {
-            linear_fit_result result{};
-            result = linear_fit_sequence(relative_ticks);
-
-            if (result.mse > mse_cutoff)
-                return fail("mean squared error exceeded cutoff");
-            if (result.slope < double(min_interval_cutoff) ||
-                result.slope > double(max_interval_cutoff))
-                return fail(
-                    "estimated time interval was not in expected range");
-
-            auto const rounded_intercept = std::llround(result.intercept);
-            if constexpr (std::is_unsigned_v<abstime_type>) {
-                if (rounded_intercept < 0 &&
-                    static_cast<abstime_type>(-rounded_intercept) >
-                        first_tick_time)
-                    return fail(
-                        "estimated start time is negative but abstime_type is unsigned");
-            }
-            auto const abstime =
-                rounded_intercept < 0
-                    ? first_tick_time -
-                          static_cast<abstime_type>(-rounded_intercept)
-                    : first_tick_time +
-                          static_cast<abstime_type>(rounded_intercept);
-            auto max_time_shift =
-                max_interval_cutoff * static_cast<abstime_type>(len);
-            if constexpr (std::is_unsigned_v<abstime_type>) {
-                if (max_time_shift > event.abstime) {
-                    // The case of negative abstime is already checked above,
-                    // so effectively disable the max-time-shift check.
-                    max_time_shift = event.abstime;
-                }
-            }
-            if (abstime < event.abstime - max_time_shift)
-                return fail(
-                    "estimated start time was earlier than guaranteed time bound");
-
-            downstream.handle(
-                start_and_interval_event<DataTraits>{abstime, result.slope});
+            fit_and_emit(event.abstime);
             relative_ticks.clear();
         }
     }
