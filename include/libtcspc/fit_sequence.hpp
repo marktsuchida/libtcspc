@@ -33,52 +33,53 @@ namespace tcspc {
 // reached.
 
 /**
- * \brief Event representing result of fitting a periodic sequence.
+ * \brief Event representing a summarized model of a periodic sequence of
+ * events.
  *
  * \ingroup events-timing
  *
  * \tparam DataTraits traits type specifying \c abstime_type
  */
 template <typename DataTraits = default_data_traits>
-struct offset_and_interval_event {
+struct periodic_sequence_event {
     /**
      * \brief Absolute time of this event, used as a reference point.
-     *
-     * The value is chosen such than \c offset falls between 1.0 and 2.0.
      */
     typename DataTraits::abstime_type abstime;
 
     /**
      * \brief The estimated time of the first event, relative to \c abstime.
      *
-     * This is in abstime units and is at least 1.0 and no more than 2.0.
+     * The modeled time of the first tick of the sequence is at <tt>abstime +
+     * start_offset</tt>.
      */
-    double offset;
+    double start_offset;
 
     /**
-     * \brief Interval, in abstime units per index, of the fit sequence.
+     * \brief Interval, in abstime units per index, of the modeled sequence.
      */
     double interval;
 
     /** \brief Equality comparison operator. */
-    friend auto operator==(offset_and_interval_event const &lhs,
-                           offset_and_interval_event const &rhs) noexcept {
-        return lhs.abstime == rhs.abstime && lhs.offset == rhs.offset &&
+    friend auto operator==(periodic_sequence_event const &lhs,
+                           periodic_sequence_event const &rhs) noexcept {
+        return lhs.abstime == rhs.abstime &&
+               lhs.start_offset == rhs.start_offset &&
                lhs.interval == rhs.interval;
     }
 
     /** \brief Inequality comparison operator. */
-    friend auto operator!=(offset_and_interval_event const &lhs,
-                           offset_and_interval_event const &rhs) noexcept {
+    friend auto operator!=(periodic_sequence_event const &lhs,
+                           periodic_sequence_event const &rhs) noexcept {
         return not(lhs == rhs);
     }
 
     /** \brief Stream insertion operator. */
     friend auto operator<<(std::ostream &stream,
-                           offset_and_interval_event const &event)
+                           periodic_sequence_event const &event)
         -> std::ostream & {
         return stream << "offset_and_interval(" << event.abstime << " + "
-                      << event.offset << ", " << event.interval << ')';
+                      << event.start_offset << ", " << event.interval << ')';
     }
 };
 
@@ -169,7 +170,7 @@ class fit_periodic_sequences {
 
     Downstream downstream;
 
-    LIBTCSPC_NOINLINE void fit_and_emit(abstime_type last_event_time) {
+    LIBTCSPC_NOINLINE void fit_and_emit(abstime_type last_tick_time) {
         auto const result = fitter.fit(relative_ticks);
         if (result.mse > mse_cutoff)
             throw std::runtime_error(
@@ -213,17 +214,17 @@ class fit_periodic_sequences {
             static_cast<abstime_type>(std::ceil(max_interval_cutoff)) *
             static_cast<abstime_type>(len);
         if constexpr (std::is_unsigned_v<abstime_type>) {
-            if (max_time_shift > last_event_time) {
+            if (max_time_shift > last_tick_time) {
                 // The case of negative abstime is already checked above, so
                 // disable the max-time-shift check.
-                max_time_shift = last_event_time;
+                max_time_shift = last_tick_time;
             }
         }
-        if (abstime < last_event_time - max_time_shift)
+        if (abstime < last_tick_time - max_time_shift)
             throw std::runtime_error(
                 "fit periodic sequences: estimated start time was earlier than guaranteed time bound");
 
-        downstream.handle(offset_and_interval_event<DataTraits>{
+        downstream.handle(periodic_sequence_event<DataTraits>{
             abstime, offset_frac, result.slope});
     }
 
@@ -277,16 +278,16 @@ class fit_periodic_sequences {
  * The processor accepts a single event type, \c Event. Every \e length events
  * are grouped together and a model of regularly spaced events is fit to their
  * abstimes. If the fit is successful (see below for criteria), then an \c
- * offset_and_interval_event is emitted, containing the fit results, upon
+ * periodic_sequence_event is emitted, containing the fit results, upon
  * receiving the last \c Event of the series. If the fit is not successful,
  * processing is halted with an error.
  *
- * The emitted fit parameters consist of an offset and interval. The offset is
- * chosen to be between 1.0 and 2.0 (this avoids working with subnormal
- * floating point values). The abstime of the emitted event is chosen such that
- * <tt>abstime + offset</tt> is the estimated time of the first event in the
- * fit sequence. If this abstime is not representable (due to the abstime type
- * being unsigned), processing is halted with an error.
+ * The emitted fit parameters consist of a start offset and interval. The
+ * offset is chosen to be between 1.0 and 2.0 (this avoids working with
+ * subnormal floating point values). The abstime of the emitted event is chosen
+ * such that <tt>abstime + start_offset</tt> is the estimated time of the first
+ * event in the fit sequence. If this abstime is not representable (due to the
+ * abstime type being unsigned), processing is halted with an error.
  *
  * The fit is considered successful if all of the following criteria are
  * satisfied:
@@ -303,7 +304,7 @@ class fit_periodic_sequences {
  *
  * This processor does not pass through \c Event, and does not handle any other
  * event (because such events would be out of order with the emitted \c
- * offset_and_interval_event events).
+ * periodic_sequence_event events).
  *
  * \tparam DataTraits traits type specifying data types for emitted event
  *
