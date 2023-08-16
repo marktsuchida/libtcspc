@@ -64,8 +64,7 @@ TEST_CASE("fit periodic sequences", "[fit_periodic_sequences]") {
         auto const out_event = out.retrieve<periodic_sequence_event<>>();
         REQUIRE(out_event.has_value());
         // NOLINTBEGIN(bugprone-unchecked-optional-access)
-        CHECK(out_event->start_offset >= 1.0);
-        CHECK(out_event->start_offset < 2.0);
+        CHECK(out_event->abstime == 10);
         CHECK_THAT(static_cast<double>(out_event->abstime) +
                        out_event->start_offset,
                    Catch::Matchers::WithinRel(4.9, 1e-12));
@@ -85,106 +84,58 @@ TEST_CASE("fit periodic sequences", "[fit_periodic_sequences]") {
     }
 }
 
-TEST_CASE("fit periodic sequences time bound, signed abstime",
-          "[fit_periodic_sequences]") {
-    using abstime_type = default_data_traits::abstime_type;
-    using e0 = timestamped_test_event<0>;
-    static_assert(std::is_signed_v<abstime_type>);
+TEST_CASE("retime periodic sequence events",
+          "[retime_periodic_sequence_events]") {
     auto out = capture_output<event_set<periodic_sequence_event<>>>();
-    auto in = feed_input<event_set<e0>>(
-        fit_periodic_sequences<default_data_traits, e0>(
-            1000, {99.0, 101.0}, std::numeric_limits<double>::infinity(),
-            ref_processor(out)));
+    auto in = feed_input<event_set<periodic_sequence_event<>>>(
+        retime_periodic_sequence_events<>(10, ref_processor(out)));
     in.require_output_checked(out);
 
-    SECTION("fail with time bound error") {
-        // Constrain the fit well with lots of points, but have the last point
-        // have a large positive error; counteract that by a negative error on
-        // the penultimate point to keep the estimated interval relatively
-        // unaffected.
-        for (int i = 0; i < 998; ++i)
-            in.feed(e0{i * abstime_type(100)});
-        static constexpr abstime_type offset = 2000;
-        in.feed(e0{99800 - offset});
-        REQUIRE_THROWS_WITH(in.feed(e0{99900 + offset}),
-                            Catch::Matchers::ContainsSubstring("time bound"));
-        REQUIRE(out.check_not_flushed());
+    SECTION("normal operation") {
+        in.feed(periodic_sequence_event<>{4, -8.0, 1.5});
+        REQUIRE(out.check(periodic_sequence_event<>{-5, 1.0, 1.5}));
+        in.feed(periodic_sequence_event<>{4, -8.5, 1.5});
+        REQUIRE(out.check(periodic_sequence_event<>{-6, 1.5, 1.5}));
+        in.feed(periodic_sequence_event<>{4, 10.0, 1.5});
+        REQUIRE(out.check(periodic_sequence_event<>{13, 1.0, 1.5}));
     }
 
-    SECTION("correctly handle negative estimated start time") {
-        in.feed(e0{0});
-        in.feed(e0{0});
-        for (int i = 0; i < 998; ++i)
-            in.feed(e0{i * abstime_type(100)});
-        auto const out_event = out.retrieve<periodic_sequence_event<>>();
-        REQUIRE(out_event.has_value());
-        // NOLINTBEGIN(bugprone-unchecked-optional-access)
-        CHECK(out_event->start_offset >= 1.0);
-        CHECK(out_event->start_offset < 2.0);
-        CHECK_THAT(static_cast<double>(out_event->abstime) +
-                       out_event->start_offset,
-                   Catch::Matchers::WithinAbs(-198.8, 0.1));
-        CHECK_THAT(out_event->interval,
-                   Catch::Matchers::WithinRel(99.9982, 1e-6));
-        // NOLINTEND(bugprone-unchecked-optional-access)
-        in.flush();
-        REQUIRE(out.check_flushed());
+    SECTION("max time shift") {
+        in.feed(periodic_sequence_event<>{4, -9.0, 1.5});
+        REQUIRE(out.check(periodic_sequence_event<>{-6, 1.0, 1.5}));
+        in.feed(periodic_sequence_event<>{4, 11.75, 1.5});
+        REQUIRE(out.check(periodic_sequence_event<>{14, 1.75, 1.5}));
+    }
+
+    SECTION("fail above max time shift") {
+        REQUIRE_THROWS_WITH(in.feed(periodic_sequence_event<>{4, -9.01, 1.5}),
+                            Catch::Matchers::ContainsSubstring("shift"));
+        REQUIRE_THROWS_WITH(in.feed(periodic_sequence_event<>{4, 12.0, 1.5}),
+                            Catch::Matchers::ContainsSubstring("shift"));
     }
 }
 
-TEST_CASE("fit periodic sequences time bound, unsigned abstime",
-          "[fit_periodic_sequences]") {
+TEST_CASE("retime periodic sequence events unsigned",
+          "[retime_periodic_sequence_events]") {
     struct traits {
         using abstime_type = std::uint64_t;
     };
-    using abstime_type = traits::abstime_type;
-    using e0 = timestamped_test_event<0, traits>;
     auto out = capture_output<event_set<periodic_sequence_event<traits>>>();
-    auto in = feed_input<event_set<e0>>(fit_periodic_sequences<traits, e0>(
-        1000, {99.0, 101.0}, std::numeric_limits<double>::infinity(),
-        ref_processor(out)));
+    auto in = feed_input<event_set<periodic_sequence_event<traits>>>(
+        retime_periodic_sequence_events<traits>(10, ref_processor(out)));
     in.require_output_checked(out);
 
-    SECTION("succeed despite time bound would be negative") {
-        for (abstime_type i = 0; i < 1000; ++i)
-            in.feed(e0{1 + i * abstime_type(100)});
-        // Time bound criterion would be that estimated start time is
-        // 99900 - 1000 * 100 = -100, but we handle this despite using an
-        // unsigned abstime
-        auto const out_event = out.retrieve<periodic_sequence_event<traits>>();
-        REQUIRE(out_event.has_value());
-        // NOLINTBEGIN(bugprone-unchecked-optional-access)
-        CHECK(out_event->start_offset >= 1.0);
-        CHECK(out_event->start_offset < 2.0);
-        CHECK_THAT(static_cast<double>(out_event->abstime) +
-                       out_event->start_offset,
-                   Catch::Matchers::WithinRel(1.0, 1e-12));
-        CHECK_THAT(out_event->interval,
-                   Catch::Matchers::WithinRel(100.0, 1e-6));
-        // NOLINTEND(bugprone-unchecked-optional-access)
-        in.flush();
-        REQUIRE(out.check_flushed());
+    SECTION("normal operation") {
+        in.feed(periodic_sequence_event<traits>{4, -1.5, 1.5});
+        REQUIRE(out.check(periodic_sequence_event<traits>{1, 1.5, 1.5}));
+        in.feed(periodic_sequence_event<traits>{4, -3.0, 1.5});
+        REQUIRE(out.check(periodic_sequence_event<traits>{0, 1.0, 1.5}));
     }
 
-    SECTION(
-        "fail because of negative estimated start time (positive intercept less than tick offset)") {
-        in.feed(e0{50});
-        for (abstime_type i = 0; i < 998; ++i)
-            in.feed(e0{90 + i * abstime_type(100)});
-        REQUIRE_THROWS_WITH(in.feed(e0{90 + 998 * abstime_type(100)}),
-                            Catch::Matchers::ContainsSubstring("unsigned"));
-        REQUIRE(out.check_not_flushed());
-    }
-
-    SECTION(
-        "fail because of negative estimated start time (negative intercept)") {
-        in.feed(e0{0});
-        in.feed(e0{0});
-        for (abstime_type i = 0; i < 997; ++i)
-            in.feed(e0{i * abstime_type(100)});
-        REQUIRE_THROWS_WITH(in.feed(e0{997 * abstime_type(100)}),
-                            Catch::Matchers::ContainsSubstring("unsigned"));
-        REQUIRE(out.check_not_flushed());
+    SECTION("unsigned underflow") {
+        REQUIRE_THROWS_WITH(
+            in.feed(periodic_sequence_event<traits>{4, -3.01, 1.5}),
+            Catch::Matchers::ContainsSubstring("unsigned"));
     }
 }
 

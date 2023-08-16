@@ -119,7 +119,7 @@ class periodic_fitter {
         std::iota(x.begin(), x.end(), 0.0);
     }
 
-    auto fit(std::vector<double> const &y) const noexcept
+    [[nodiscard]] auto fit(std::vector<double> const &y) const noexcept
         -> periodic_fit_result {
         assert(static_cast<double>(y.size()) == n);
 
@@ -180,52 +180,15 @@ class fit_periodic_sequences {
             throw std::runtime_error(
                 "fit periodic sequences: stimated time interval was not in expected range");
 
-        // Split intercept to i0 + i1, where 1.0 <= i1 < 2.0.
-        auto const offset_int = std::floor(result.intercept) - 1.0;
-        auto const offset_frac = result.intercept - offset_int; // [1.0, 2.0)
-
-        // Compute abstime in abstime_type to prevent loss of precision at
-        // large abstime values.
-        auto const abstime = [&] {
-            if constexpr (std::is_unsigned_v<abstime_type>) {
-                if (offset_int >= 0) {
-                    if (first_tick_time +
-                            static_cast<abstime_type>(offset_int) >=
-                        tick_offset)
-                        return first_tick_time +
-                               static_cast<abstime_type>(offset_int) -
-                               tick_offset;
-                } else {
-                    if (first_tick_time >=
-                        tick_offset - static_cast<abstime_type>(-offset_int))
-                        return first_tick_time -
-                               static_cast<abstime_type>(-offset_int) -
-                               tick_offset;
-                }
-                throw std::runtime_error(
-                    "fit periodic sequences: abstime would be negative but abstime_type is unsigned");
-            } else {
-                return first_tick_time +
-                       static_cast<abstime_type>(offset_int) - tick_offset;
-            }
-        }();
-
-        auto max_time_shift =
-            static_cast<abstime_type>(std::ceil(max_interval_cutoff)) *
-            static_cast<abstime_type>(len);
-        if constexpr (std::is_unsigned_v<abstime_type>) {
-            if (max_time_shift > last_tick_time) {
-                // The case of negative abstime is already checked above, so
-                // disable the max-time-shift check.
-                max_time_shift = last_tick_time;
-            }
-        }
-        if (abstime < last_tick_time - max_time_shift)
-            throw std::runtime_error(
-                "fit periodic sequences: estimated start time was earlier than guaranteed time bound");
+        // Convert intercept (relative to first_tick_time + tick_offset) to
+        // start offset (relative to last_tick_time).
+        auto const start_offset =
+            result.intercept -
+            static_cast<double>(last_tick_time - first_tick_time) -
+            static_cast<double>(tick_offset);
 
         downstream.handle(periodic_sequence_event<DataTraits>{
-            abstime, offset_frac, result.slope});
+            last_tick_time, start_offset, result.slope});
     }
 
   public:
@@ -264,6 +227,59 @@ class fit_periodic_sequences {
         }
     }
 
+    template <typename OtherEvent> void handle(OtherEvent const &event) {
+        downstream.handle(event);
+    }
+
+    void flush() { downstream.flush(); }
+};
+
+template <typename DataTraits, typename Downstream>
+class retime_periodic_sequence_events {
+    using abstime_type = typename DataTraits::abstime_type;
+
+    abstime_type max_shift;
+
+    Downstream downstream;
+
+  public:
+    explicit retime_periodic_sequence_events(
+        typename DataTraits::abstime_type max_time_shift,
+        Downstream &&downstream)
+        : max_shift(max_time_shift), downstream(std::move(downstream)) {
+        if (max_shift < 0)
+            throw std::invalid_argument(
+                "retime_periodic_sequence_events max_time_shift must not be negative");
+    }
+
+    template <typename DT>
+    void handle(periodic_sequence_event<DT> const &event) {
+        static_assert(std::is_same_v<typename DT::abstime_type, abstime_type>);
+
+        auto delta = std::floor(event.start_offset) - 1.0;
+        if (std::abs(delta) > static_cast<double>(max_shift))
+            throw std::runtime_error(
+                "retime periodic sequence: abstime would shift more than max time shift");
+
+        abstime_type abstime{};
+        if constexpr (std::is_unsigned_v<abstime_type>) {
+            if (delta < 0.0) {
+                auto ndelta = static_cast<abstime_type>(-delta);
+                if (ndelta > event.abstime)
+                    throw std::runtime_error(
+                        "retime periodic sequence: abstime would be negative but abstime_type is unsigned");
+                abstime = event.abstime - ndelta;
+            } else {
+                abstime = event.abstime + static_cast<abstime_type>(delta);
+            }
+        } else {
+            abstime = event.abstime + static_cast<abstime_type>(delta);
+        }
+
+        downstream.handle(periodic_sequence_event<DataTraits>{
+            abstime, event.start_offset - delta, event.interval});
+    }
+
     void flush() { downstream.flush(); }
 };
 
@@ -282,29 +298,19 @@ class fit_periodic_sequences {
  * receiving the last \c Event of the series. If the fit is not successful,
  * processing is halted with an error.
  *
- * The emitted fit parameters consist of a start offset and interval. The
- * offset is chosen to be between 1.0 and 2.0 (this avoids working with
- * subnormal floating point values). The abstime of the emitted event is chosen
- * such that <tt>abstime + start_offset</tt> is the estimated time of the first
- * event in the fit sequence. If this abstime is not representable (due to the
- * abstime type being unsigned), processing is halted with an error.
+ * The emitted event's abstime is set to the abstime of the last observed \c
+ * Event (during which handling the event is emitted). The emitted fit
+ * parameters consist of a start offset and interval. The start offset is
+ * relative to the emitted event's abstime.
  *
  * The fit is considered successful if all of the following criteria are
  * satisfied:
  *
  * -# the mean squared error is no more than \e max_mse
  * -# the estimated event interval is within \e min_max_interval
- * -# the abstime of the emitted event is not less than the observed time of
- *    the last event minus <tt>length * ceil(min_max_interval[1])</tt>
  *
- * (The last criterion provides a bound on the time shift between the emitted
- * events and the original events. This can be used when merging (with \ref
- * merge) the emitted events with another stream derived from the original
- * events.)
- *
- * This processor does not pass through \c Event, and does not handle any other
- * event (because such events would be out of order with the emitted \c
- * periodic_sequence_event events).
+ * This processor does not pass through \c Event, but passes through any other
+ * event.
  *
  * \tparam DataTraits traits type specifying data types for emitted event
  *
@@ -329,6 +335,54 @@ auto fit_periodic_sequences(std::size_t length,
     return internal::fit_periodic_sequences<DataTraits, Event, Downstream>(
         length, min_max_interval, max_mse,
         std::forward<Downstream>(downstream));
+}
+
+/**
+ * Create a processor that adjusts the abstime of \c periodic_sequence_event to
+ * be earlier than the modeled sequence.
+ *
+ * \ingroup processors-timing
+ *
+ * Events of type \c periodic_sequence_event (with matching \c abstime_type)
+ * have their \c abstime and \c start_offset modified, such that \c
+ * start_offset is at least 1.0 and no more than 2.0.
+ *
+ * This means that the events are timed before any of the modeled tick times of
+ * the sequences they represent, so that they can be used for event generation
+ * downstream.
+ *
+ * The choice of the \c start_time range of <tt>[1.0, 2.0)</tt> (rather than
+ * <tt>[0.0, 1.0)</tt>) is to avoid subnormal floating point values.
+ *
+ * If the adjustment would result in altering the abstime by more than \e
+ * max_time_shift (in either direction), processing is halted with an error.
+ * This can be used to guarantee that any downstream (\ref merge) works
+ * correctly (provided that the resulting abstimes are in order, which needs to
+ * be guaranteed by the manner in which the original events were generated).
+ *
+ * If the adjustment would result in a negative abstime, but the abstime type
+ * is an unsigned integer type, processing is halted with an error.
+ *
+ * No other events are handled (because this processor would cause their
+ * abstimes to be out of order).
+ *
+ * \see fit_periodic_sequences
+ *
+ * \tparam DataTraits traits type specifying \c abstime_type and traits for
+ * emitted events
+ *
+ * \tparam Downstream downstream processor type
+ *
+ * \param max_time_shift maximum allowed (absolute value of) timeshift
+ *
+ * \param downstream downstream processor
+ */
+template <typename DataTraits = default_data_traits, typename Downstream>
+auto retime_periodic_sequence_events(
+    typename DataTraits::abstime_type max_time_shift,
+    Downstream &&downstream) {
+    return internal::retime_periodic_sequence_events<DataTraits, Downstream>(
+        max_time_shift, std::forward<Downstream>(downstream));
 }
 
 } // namespace tcspc
