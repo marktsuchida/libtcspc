@@ -8,10 +8,15 @@
 
 #include "common.hpp"
 
+#include <cmath>
 #include <cstddef>
+#include <cstring>
 #include <exception>
+#include <limits>
 #include <optional>
+#include <random>
 #include <stdexcept>
+#include <type_traits>
 #include <utility>
 
 namespace tcspc {
@@ -215,7 +220,7 @@ template <typename Event> class one_shot_timing_generator {
 
     /** \brief Timing generator interface */
     auto pop() noexcept -> Event {
-        Event event;
+        Event event{};
         event.abstime = next;
         pending = false;
         return event;
@@ -288,10 +293,179 @@ template <typename Event> class linear_timing_generator {
 
     /** \brief Timing generator interface */
     auto pop() noexcept -> Event {
-        Event event;
+        Event event{};
         event.abstime = next;
         next += interval;
         --remaining;
+        return event;
+    }
+};
+
+namespace internal {
+
+// Design note: We do not use std::uniform_real_distribution or
+// std::generate_canonical, because they may have issues (may return the upper
+// bound, depending on implementation). (Also, they do not produce the same
+// sequence across library implementations.) Instead, we use our own method to
+// produce random doubles in [0.0, 1.0).
+
+// Formality: Check our assumption that 'double' is IEEE 754 double precision.
+static_assert(std::numeric_limits<double>::is_iec559);
+static_assert(std::numeric_limits<double>::radix == 2);
+static_assert(std::numeric_limits<double>::digits == 53);
+
+// Make a uniformly-distributed random double value in [0.0, 1.0), given a
+// uniformly-distributed 64-bit random integer r (e.g. from std::mt19937_64).
+[[nodiscard]] inline auto uniform_double_0_1(std::uint64_t r) noexcept
+    -> double {
+    // Keep the random bits in the 52-bit fraction field, but set the sign to
+    // positive and exponent to 0 (giving a value in [1.0, 2.0)).
+    r &= (1uLL << 52) - 1; // Keep only fraction
+    r |= 1023uLL << 52;    // Exponent = 0
+    double d{};
+    std::memcpy(&d, &r, sizeof(d));
+    return d - 1.0; // Will not produce subnormal values.
+}
+
+// Make a uniformly-distributed random double value in [0.0, 1.0), given a
+// uniformly-distributed 32-bit random integer r from std::minstd_rand.
+[[nodiscard]] inline auto uniform_double_0_1_minstd(std::uint32_t r) noexcept
+    -> double {
+    // Since r comes from std::minstd_rand, it is in [1, 2147483646].
+    using minstd_type = decltype(std::minstd_rand0());
+    static_assert(minstd_type::min() == 1);
+    static_assert(minstd_type::max() == 2'147'483'646);
+    // Do we care that 0 and 2^31-1 are not included in the range? Probably not
+    // for dithering.
+    assert(r < 2'147'483'648); // Do allow 0 and 2147483647 in tests.
+
+    // 31 random bits should be plenty for our 1-dimensional dithering
+    // purposes. Put the 31 random bits in the most significant part of the
+    // 52-bit fraction field; leave the sign positive and exponent to 0 (giving
+    // a value in [1.0, 2.0)).
+    auto bits = std::uint64_t(r) << (52 - 31);
+    bits |= 1023uLL << 52; // Exponent = 0
+    double d{};
+    std::memcpy(&d, &bits, sizeof(d));
+    return d - 1.0; // Will not produce subnormal values.
+}
+
+template <typename T>
+[[nodiscard]] inline auto dither(double value, double dither_noise) noexcept
+    -> T {
+    assert(dither_noise >= 0.0);
+    assert(dither_noise < 1.0);
+    return static_cast<T>(std::floor(value + dither_noise));
+}
+
+template <typename T> class dithering_quantizer {
+    // Prefer std::minstd_rand() over std::mt19937[_64] because of its compact
+    // state (the two have similar performance in a tight loop, but mt19937 has
+    // > 2 KiB of state, which can become a nontrivial fraction of the L1D if
+    // multiple instances are in use). The "poor" quality of the MINSTD PRNG is
+    // likely not a significant issue for dithering purposes.
+    // TODO Check if it actually makes any difference.
+    std::minstd_rand prng;
+
+  public:
+    [[nodiscard]] auto operator()(double value) noexcept -> T {
+        return dither<T>(value, uniform_double_0_1_minstd(prng()));
+    }
+};
+
+} // namespace internal
+
+/**
+ * \brief Timing generator that generates an equally spaced series of output
+ * events, with temporal dithering.
+ *
+ * \ingroup timing-generators
+ *
+ * Timing generator for use with \ref generate.
+ *
+ * \tparam Event output event type
+ */
+template <typename Event> class dithered_linear_timing_generator {
+  public:
+    /** \brief Timing generator interface */
+    using abstime_type = decltype(std::declval<Event>().abstime);
+
+  private:
+    abstime_type trigger_time{};
+    std::size_t remaining = 0;
+    abstime_type next{};
+
+    double offset;
+    double interval;
+    abstime_type interval_floor =
+        static_cast<abstime_type>(std::floor(interval));
+    std::size_t count;
+
+    internal::dithering_quantizer<abstime_type> dithq;
+
+    void compute_next() noexcept {
+        if (remaining == 0)
+            return;
+        auto relnext =
+            dithq(offset + interval * static_cast<double>(count - remaining));
+        if (remaining < count) { // Clamp to interval floor-ceil.
+            auto const relmin = next - trigger_time + interval_floor;
+            auto const relmax = relmin + 1;
+            relnext = relnext < relmin   ? relmin
+                      : relnext > relmax ? relmax
+                                         : relnext;
+        }
+        next = trigger_time + relnext;
+    }
+
+  public:
+    /** \brief Timing generator interface */
+    using output_event_type = Event;
+
+    /**
+     * \brief Construct with offset, interval, and count.
+     *
+     * \param offset how much to delay the first output event relative to the
+     * trigger (must be nonnegative)
+     *
+     * \param interval time interval between subsequent output events (must be
+     * positive)
+     *
+     * \param count number of output events to generate for each trigger
+     */
+    // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
+    explicit dithered_linear_timing_generator(double offset, double interval,
+                                              std::size_t count)
+        : offset(offset), interval(interval), count(count) {
+        if (offset < 0.0)
+            throw std::invalid_argument(
+                "dithered_linear_timing_generator offset must be non-negative");
+        if (interval <= 0.0)
+            throw std::invalid_argument(
+                "dithered_linear_timing_generator interval must be positive");
+    }
+
+    /** \brief Timing generator interface */
+    template <typename TriggerEvent> void trigger(TriggerEvent const &event) {
+        static_assert(std::is_same_v<decltype(event.abstime), abstime_type>);
+        trigger_time = event.abstime;
+        remaining = count;
+        compute_next();
+    }
+
+    /** \brief Timing generator interface */
+    [[nodiscard]] auto peek() const noexcept -> std::optional<abstime_type> {
+        if (remaining > 0)
+            return next;
+        return std::nullopt;
+    }
+
+    /** \brief Timing generator interface */
+    auto pop() noexcept -> Event {
+        Event event{};
+        event.abstime = next;
+        --remaining;
+        compute_next();
         return event;
     }
 };
