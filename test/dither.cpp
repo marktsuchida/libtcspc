@@ -61,6 +61,40 @@ TEST_CASE("dithering quantizer", "[dither]") {
 
 } // namespace internal
 
+TEST_CASE("dithered one-shot timing generator",
+          "[dithered_one_shot_timing_generator]") {
+    auto tg = dithered_one_shot_timing_generator<output_event>(0.5);
+    CHECK_FALSE(tg.peek().has_value());
+    tg.trigger(trigger_event{42});
+    CHECK(tg.peek().has_value());
+    auto const t0 =
+        tg.peek().value(); // NOLINT(bugprone-unchecked-optional-access)
+    auto const e0 = tg.pop();
+    CHECK(t0 == e0.abstime);
+    CHECK(t0 >= 42);
+    CHECK(t0 <= 43);
+    CHECK_FALSE(tg.peek().has_value());
+}
+
+TEST_CASE("dynamic dithered one-shot timing generator",
+          "[dynamic_dithered_one_shot_timing_generator]") {
+    auto tg = dynamic_dithered_one_shot_timing_generator<output_event>();
+    CHECK_FALSE(tg.peek().has_value());
+    struct trig_evt {
+        std::int64_t abstime;
+        double delay;
+    };
+    tg.trigger(trig_evt{42, 0.5});
+    CHECK(tg.peek().has_value());
+    auto const t0 =
+        tg.peek().value(); // NOLINT(bugprone-unchecked-optional-access)
+    auto const e0 = tg.pop();
+    CHECK(t0 == e0.abstime);
+    CHECK(t0 >= 42);
+    CHECK(t0 <= 43);
+    CHECK_FALSE(tg.peek().has_value());
+}
+
 TEST_CASE("dithered linear timing generator",
           "[dithered_linear_timing_generator]") {
     // Test that generated timings always fulfill criteria, but also that all
