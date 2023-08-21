@@ -470,4 +470,32 @@ template <typename Event> class dithered_linear_timing_generator {
     }
 };
 
+/**
+ * \brief Timing generator that generates a single, delayed output event whose
+ * abstime is dithered.
+ *
+ * \ingroup timing-generators
+ *
+ * Timing generator for use with \ref generate.
+ *
+ * Note that the fact that this type is derived from \c
+ * dithered_linear_timing_generator<Event> is an implementation detail and
+ * should not be relied upon.
+ *
+ * \tparam Event output event type
+ */
+template <typename Event>
+class dithered_one_shot_timing_generator
+    : public dithered_linear_timing_generator<Event> {
+  public:
+    /**
+     * \brief Construct with delay.
+     *
+     * \param delay how much to delay the output event relative to the trigger
+     * (must not be negative)
+     */
+    explicit dithered_one_shot_timing_generator(double delay)
+        : dithered_linear_timing_generator<Event>(delay, 1.0, 1) {}
+};
+
 } // namespace tcspc
