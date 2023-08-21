@@ -547,6 +547,103 @@ template <typename Abstime> class dithered_timing_generator_impl {
 } // namespace internal
 
 /**
+ * \brief Timing generator that generates a single, delayed output event whose
+ * abstime is dithered.
+ *
+ * \ingroup timing-generators
+ *
+ * Timing generator for use with \ref generate.
+ *
+ * \tparam Event output event type
+ */
+template <typename Event> class dithered_one_shot_timing_generator {
+  public:
+    /** \brief Timing generator interface */
+    using abstime_type = decltype(std::declval<Event>().abstime);
+
+    /** \brief Timing generator interface */
+    using output_event_type = Event;
+
+  private:
+    internal::dithered_timing_generator_impl<abstime_type> impl;
+
+  public:
+    /**
+     * \brief Construct with delay.
+     *
+     * \param delay how much to delay the output event relative to the
+     * trigger (must not be negative)
+     */
+    explicit dithered_one_shot_timing_generator(double delay)
+        : impl(delay, 1.0, 1) {}
+
+    /** \brief Timing generator interface */
+    template <typename TriggerEvent> void trigger(TriggerEvent const &event) {
+        static_assert(std::is_same_v<decltype(event.abstime), abstime_type>);
+        impl.trigger(event.abstime);
+    }
+
+    /** \brief Timing generator interface */
+    [[nodiscard]] auto peek() const noexcept -> std::optional<abstime_type> {
+        return impl.peek();
+    }
+
+    /** \brief Timing generator interface */
+    auto pop() noexcept -> Event {
+        Event event{};
+        event.abstime = impl.pop();
+        return event;
+    }
+};
+
+/**
+ * \brief Timing generator that generates a single, delayed output event whose
+ * abstime is dithered, configured by the trigger event.
+ *
+ * \ingroup timing-generators
+ *
+ * Timing generator for use with \ref generate.
+ *
+ * \tparam Event output event type
+ */
+template <typename Event> class dynamic_dithered_one_shot_timing_generator {
+  public:
+    /** \brief Timing generator interface */
+    using abstime_type = decltype(std::declval<Event>().abstime);
+
+    /** \brief Timing generator interface */
+    using output_event_type = Event;
+
+  private:
+    internal::dithered_timing_generator_impl<abstime_type> impl;
+
+  public:
+    /**
+     * \brief Construct.
+     */
+    explicit dynamic_dithered_one_shot_timing_generator()
+        : impl(0.0, 1.0, 1) {}
+
+    /** \brief Timing generator interface */
+    template <typename TriggerEvent> void trigger(TriggerEvent const &event) {
+        static_assert(std::is_same_v<decltype(event.abstime), abstime_type>);
+        impl.trigger_and_configure(event.abstime, event.delay, 1.0, 1);
+    }
+
+    /** \brief Timing generator interface */
+    [[nodiscard]] auto peek() const noexcept -> std::optional<abstime_type> {
+        return impl.peek();
+    }
+
+    /** \brief Timing generator interface */
+    auto pop() noexcept -> Event {
+        Event event{};
+        event.abstime = impl.pop();
+        return event;
+    }
+};
+
+/**
  * \brief Timing generator that generates an equally spaced series of output
  * events, with temporal dithering.
  *
@@ -635,103 +732,6 @@ template <typename Event> class dynamic_dithered_linear_timing_generator {
         static_assert(std::is_same_v<decltype(event.abstime), abstime_type>);
         impl.trigger_and_configure(event.abstime, event.delay, event.interval,
                                    event.count);
-    }
-
-    /** \brief Timing generator interface */
-    [[nodiscard]] auto peek() const noexcept -> std::optional<abstime_type> {
-        return impl.peek();
-    }
-
-    /** \brief Timing generator interface */
-    auto pop() noexcept -> Event {
-        Event event{};
-        event.abstime = impl.pop();
-        return event;
-    }
-};
-
-/**
- * \brief Timing generator that generates a single, delayed output event whose
- * abstime is dithered.
- *
- * \ingroup timing-generators
- *
- * Timing generator for use with \ref generate.
- *
- * \tparam Event output event type
- */
-template <typename Event> class dithered_one_shot_timing_generator {
-  public:
-    /** \brief Timing generator interface */
-    using abstime_type = decltype(std::declval<Event>().abstime);
-
-    /** \brief Timing generator interface */
-    using output_event_type = Event;
-
-  private:
-    internal::dithered_timing_generator_impl<abstime_type> impl;
-
-  public:
-    /**
-     * \brief Construct with delay.
-     *
-     * \param delay how much to delay the output event relative to the
-     * trigger (must not be negative)
-     */
-    explicit dithered_one_shot_timing_generator(double delay)
-        : impl(delay, 1.0, 1) {}
-
-    /** \brief Timing generator interface */
-    template <typename TriggerEvent> void trigger(TriggerEvent const &event) {
-        static_assert(std::is_same_v<decltype(event.abstime), abstime_type>);
-        impl.trigger(event.abstime);
-    }
-
-    /** \brief Timing generator interface */
-    [[nodiscard]] auto peek() const noexcept -> std::optional<abstime_type> {
-        return impl.peek();
-    }
-
-    /** \brief Timing generator interface */
-    auto pop() noexcept -> Event {
-        Event event{};
-        event.abstime = impl.pop();
-        return event;
-    }
-};
-
-/**
- * \brief Timing generator that generates a single, delayed output event whose
- * abstime is dithered, configured by the trigger event.
- *
- * \ingroup timing-generators
- *
- * Timing generator for use with \ref generate.
- *
- * \tparam Event output event type
- */
-template <typename Event> class dynamic_dithered_one_shot_timing_generator {
-  public:
-    /** \brief Timing generator interface */
-    using abstime_type = decltype(std::declval<Event>().abstime);
-
-    /** \brief Timing generator interface */
-    using output_event_type = Event;
-
-  private:
-    internal::dithered_timing_generator_impl<abstime_type> impl;
-
-  public:
-    /**
-     * \brief Construct.
-     */
-    explicit dynamic_dithered_one_shot_timing_generator()
-        : impl(0.0, 1.0, 1) {}
-
-    /** \brief Timing generator interface */
-    template <typename TriggerEvent> void trigger(TriggerEvent const &event) {
-        static_assert(std::is_same_v<decltype(event.abstime), abstime_type>);
-        impl.trigger_and_configure(event.abstime, event.delay, 1.0, 1);
     }
 
     /** \brief Timing generator interface */
