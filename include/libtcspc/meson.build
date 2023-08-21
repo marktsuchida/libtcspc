@@ -12,6 +12,7 @@ public_cpp_headers = files(
     'common.hpp',
     'count.hpp',
     'delay.hpp',
+    'dither.hpp',
     'event_set.hpp',
     'fit_sequence.hpp',
     'gate.hpp',

@@ -12,6 +12,7 @@ test_libtcspc_srcs = [
     'common.cpp',
     'count.cpp',
     'delay.cpp',
+    'dither.cpp',
     'event_set.cpp',
     'fit_sequence.cpp',
     'gate.cpp',
