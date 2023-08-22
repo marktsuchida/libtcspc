@@ -62,14 +62,16 @@ struct periodic_sequence_event {
 
     /** \brief Equality comparison operator. */
     friend auto operator==(periodic_sequence_event const &lhs,
-                           periodic_sequence_event const &rhs) noexcept {
+                           periodic_sequence_event const &rhs) noexcept
+        -> bool {
         return lhs.abstime == rhs.abstime && lhs.delay == rhs.delay &&
                lhs.interval == rhs.interval;
     }
 
     /** \brief Inequality comparison operator. */
     friend auto operator!=(periodic_sequence_event const &lhs,
-                           periodic_sequence_event const &rhs) noexcept {
+                           periodic_sequence_event const &rhs) noexcept
+        -> bool {
         return not(lhs == rhs);
     }
 
