@@ -65,8 +65,7 @@ TEST_CASE("fit periodic sequences", "[fit_periodic_sequences]") {
         REQUIRE(out_event.has_value());
         // NOLINTBEGIN(bugprone-unchecked-optional-access)
         CHECK(out_event->abstime == 10);
-        CHECK_THAT(static_cast<double>(out_event->abstime) +
-                       out_event->start_offset,
+        CHECK_THAT(static_cast<double>(out_event->abstime) + out_event->delay,
                    Catch::Matchers::WithinRel(4.9, 1e-12));
         CHECK_THAT(out_event->interval,
                    Catch::Matchers::WithinRel(1.4, 1e-12));

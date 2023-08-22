@@ -51,9 +51,9 @@ struct periodic_sequence_event {
      * \brief The estimated time of the first event, relative to \c abstime.
      *
      * The modeled time of the first tick of the sequence is at <tt>abstime +
-     * start_offset</tt>.
+     * delay</tt>.
      */
-    double start_offset;
+    double delay;
 
     /**
      * \brief Interval, in abstime units per index, of the modeled sequence.
@@ -63,8 +63,7 @@ struct periodic_sequence_event {
     /** \brief Equality comparison operator. */
     friend auto operator==(periodic_sequence_event const &lhs,
                            periodic_sequence_event const &rhs) noexcept {
-        return lhs.abstime == rhs.abstime &&
-               lhs.start_offset == rhs.start_offset &&
+        return lhs.abstime == rhs.abstime && lhs.delay == rhs.delay &&
                lhs.interval == rhs.interval;
     }
 
@@ -79,7 +78,7 @@ struct periodic_sequence_event {
                            periodic_sequence_event const &event)
         -> std::ostream & {
         return stream << "offset_and_interval(" << event.abstime << " + "
-                      << event.start_offset << ", " << event.interval << ')';
+                      << event.delay << ", " << event.interval << ')';
     }
 };
 
@@ -181,14 +180,14 @@ class fit_periodic_sequences {
                 "fit periodic sequences: stimated time interval was not in expected range");
 
         // Convert intercept (relative to first_tick_time + tick_offset) to
-        // start offset (relative to last_tick_time).
-        auto const start_offset =
+        // delay (relative to last_tick_time).
+        auto const delay =
             result.intercept -
             static_cast<double>(last_tick_time - first_tick_time) -
             static_cast<double>(tick_offset);
 
         downstream.handle(periodic_sequence_event<DataTraits>{
-            last_tick_time, start_offset, result.slope});
+            last_tick_time, delay, result.slope});
     }
 
   public:
@@ -256,7 +255,7 @@ class retime_periodic_sequence_events {
     void handle(periodic_sequence_event<DT> const &event) {
         static_assert(std::is_same_v<typename DT::abstime_type, abstime_type>);
 
-        auto delta = std::floor(event.start_offset) - 1.0;
+        auto delta = std::floor(event.delay) - 1.0;
         if (std::abs(delta) > static_cast<double>(max_shift))
             throw std::runtime_error(
                 "retime periodic sequence: abstime would shift more than max time shift");
@@ -277,7 +276,7 @@ class retime_periodic_sequence_events {
         }
 
         downstream.handle(periodic_sequence_event<DataTraits>{
-            abstime, event.start_offset - delta, event.interval});
+            abstime, event.delay - delta, event.interval});
     }
 
     void flush() { downstream.flush(); }
@@ -344,8 +343,8 @@ auto fit_periodic_sequences(std::size_t length,
  * \ingroup processors-timing
  *
  * Events of type \c periodic_sequence_event (with matching \c abstime_type)
- * have their \c abstime and \c start_offset modified, such that \c
- * start_offset is at least 1.0 and no more than 2.0.
+ * have their \c abstime and \c delay modified, such that \c delay is at least
+ * 1.0 and no more than 2.0.
  *
  * This means that the events are timed before any of the modeled tick times of
  * the sequences they represent, so that they can be used for event generation
