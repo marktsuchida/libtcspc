@@ -13,11 +13,10 @@
 
 namespace tcspc {
 
-TEST_CASE("retime periodic sequence events",
-          "[retime_periodic_sequence_events]") {
+TEST_CASE("retime periodic sequence events", "[retime_periodic_sequences]") {
     auto out = capture_output<event_set<periodic_sequence_event<>>>();
     auto in = feed_input<event_set<periodic_sequence_event<>>>(
-        retime_periodic_sequence_events<>(10, ref_processor(out)));
+        retime_periodic_sequences<>(10, ref_processor(out)));
     in.require_output_checked(out);
 
     SECTION("normal operation") {
@@ -45,13 +44,13 @@ TEST_CASE("retime periodic sequence events",
 }
 
 TEST_CASE("retime periodic sequence events unsigned",
-          "[retime_periodic_sequence_events]") {
+          "[retime_periodic_sequences]") {
     struct traits {
         using abstime_type = std::uint64_t;
     };
     auto out = capture_output<event_set<periodic_sequence_event<traits>>>();
     auto in = feed_input<event_set<periodic_sequence_event<traits>>>(
-        retime_periodic_sequence_events<traits>(10, ref_processor(out)));
+        retime_periodic_sequences<traits>(10, ref_processor(out)));
     in.require_output_checked(out);
 
     SECTION("normal operation") {

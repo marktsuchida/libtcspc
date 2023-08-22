@@ -71,7 +71,7 @@ struct periodic_sequence_event {
 namespace internal {
 
 template <typename DataTraits, typename Downstream>
-class retime_periodic_sequence_events {
+class retime_periodic_sequences {
     using abstime_type = typename DataTraits::abstime_type;
 
     abstime_type max_shift;
@@ -79,13 +79,13 @@ class retime_periodic_sequence_events {
     Downstream downstream;
 
   public:
-    explicit retime_periodic_sequence_events(
+    explicit retime_periodic_sequences(
         typename DataTraits::abstime_type max_time_shift,
         Downstream &&downstream)
         : max_shift(max_time_shift), downstream(std::move(downstream)) {
         if (max_shift < 0)
             throw std::invalid_argument(
-                "retime_periodic_sequence_events max_time_shift must not be negative");
+                "retime_periodic_sequences max_time_shift must not be negative");
     }
 
     template <typename DT>
@@ -162,10 +162,10 @@ class retime_periodic_sequence_events {
  * \param downstream downstream processor
  */
 template <typename DataTraits = default_data_traits, typename Downstream>
-auto retime_periodic_sequence_events(
+auto retime_periodic_sequences(
     typename DataTraits::abstime_type max_time_shift,
     Downstream &&downstream) {
-    return internal::retime_periodic_sequence_events<DataTraits, Downstream>(
+    return internal::retime_periodic_sequences<DataTraits, Downstream>(
         max_time_shift, std::forward<Downstream>(downstream));
 }
 
