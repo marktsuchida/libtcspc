@@ -41,6 +41,7 @@ public_cpp_headers = files(
     'test_utils.hpp',
     'time_correlate.hpp',
     'time_tagged_events.hpp',
+    'timing_misc.hpp',
     'type_erased_processor.hpp',
     'vector_queue.hpp',
     'view_as_bytes.hpp',

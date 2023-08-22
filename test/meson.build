@@ -40,6 +40,7 @@ test_libtcspc_srcs = [
     'test_utils.cpp',
     'time_correlate.cpp',
     'time_tagged_events.cpp',
+    'timing_misc.cpp',
     'type_erased_processor.cpp',
     'vector_queue.cpp',
     'view_as_bytes.cpp',
