@@ -161,4 +161,48 @@ TEST_CASE("Generate linear timing", "[generate][linear_timing_generator]") {
     }
 }
 
+TEST_CASE("dynamic one-shot timing generator",
+          "[dynamic_one_shot_timing_generator]") {
+    auto tg = dynamic_one_shot_timing_generator<output_event>();
+    CHECK_FALSE(tg.peek().has_value());
+    struct trig_evt {
+        std::int64_t abstime;
+        std::int64_t delay;
+    };
+    tg.trigger(trig_evt{42, 3});
+    CHECK(tg.peek().has_value());
+    auto const t0 =
+        tg.peek().value(); // NOLINT(bugprone-unchecked-optional-access)
+    auto const e0 = tg.pop();
+    CHECK(t0 == e0.abstime);
+    CHECK(t0 == 45);
+    CHECK_FALSE(tg.peek().has_value());
+}
+
+TEST_CASE("dynamic linear timing generator",
+          "[dynamic_linear_timing_generator]") {
+    auto tg = dynamic_linear_timing_generator<output_event>();
+    CHECK_FALSE(tg.peek().has_value());
+    struct trig_evt {
+        std::int64_t abstime;
+        std::int64_t delay;
+        std::int64_t interval;
+        std::size_t count;
+    };
+    tg.trigger(trig_evt{42, 3, 5, 2});
+    CHECK(tg.peek().has_value());
+    auto const t0 =
+        tg.peek().value(); // NOLINT(bugprone-unchecked-optional-access)
+    auto const e0 = tg.pop();
+    CHECK(t0 == e0.abstime);
+    CHECK(t0 == 45);
+    CHECK(tg.peek().has_value());
+    auto const t1 =
+        tg.peek().value(); // NOLINT(bugprone-unchecked-optional-access)
+    auto const e1 = tg.pop();
+    CHECK(t1 == e1.abstime);
+    CHECK(t1 == 50);
+    CHECK_FALSE(tg.peek().has_value());
+}
+
 } // namespace tcspc

@@ -142,4 +142,33 @@ TEST_CASE("dithered linear timing generator",
     CHECK(seen_t01_11);
 }
 
+TEST_CASE("dynamic dithered linear timeing generator",
+          "[dynamic_dithered_linear_timing_generator]") {
+    auto tg = dynamic_dithered_linear_timing_generator<output_event>();
+    CHECK_FALSE(tg.peek().has_value());
+    struct trig_evt {
+        std::int64_t abstime;
+        double delay;
+        double interval;
+        std::size_t count;
+    };
+    tg.trigger(trig_evt{42, 0.5, 10.25, 2});
+    CHECK(tg.peek().has_value());
+    auto const t0 =
+        tg.peek().value(); // NOLINT(bugprone-unchecked-optional-access)
+    auto const e0 = tg.pop();
+    CHECK(t0 == e0.abstime);
+    CHECK(t0 >= 42);
+    CHECK(t0 <= 43);
+    CHECK(tg.peek().has_value());
+    auto const t1 =
+        tg.peek().value(); // NOLINT(bugprone-unchecked-optional-access)
+    auto const e1 = tg.pop();
+    CHECK(t1 == e1.abstime);
+    CHECK(t1 >= 52);
+    CHECK(t1 <= 53);
+    CHECK(t1 - t0 >= 10);
+    CHECK(t1 - t0 <= 11);
+}
+
 } // namespace tcspc

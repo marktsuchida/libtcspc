@@ -163,6 +163,9 @@ template <typename Event> class dithered_one_shot_timing_generator {
  *
  * Timing generator for use with \ref generate.
  *
+ * The delay of the output event (relative to the trigger event) is obtained
+ * from the \c delay data member (type \c double) of each trigger event.
+ *
  * \tparam Event output event type
  */
 template <typename Event> class dynamic_dithered_one_shot_timing_generator {
@@ -281,8 +284,8 @@ template <typename Abstime> class dithered_linear_timing_generator_impl {
 } // namespace internal
 
 /**
- * \brief Timing generator that generates an equally spaced series of output
- * events, with temporal dithering.
+ * \brief Timing generator that generates a periodic series of output events,
+ * with temporal dithering.
  *
  * \ingroup timing-generators
  *
@@ -338,12 +341,18 @@ template <typename Event> class dithered_linear_timing_generator {
 };
 
 /**
- * \brief Timing generator that generates an equally spaced series of output
- * events, with temporal dithering, configured by the trigger event.
+ * \brief Timing generator that generates a periodic series of output events,
+ * with temporal dithering, configured by the trigger event.
  *
  * \ingroup timing-generators
  *
  * Timing generator for use with \ref generate.
+ *
+ * The delay, interval, and count of the output events are obtained from the
+ * data members of each trigger event:
+ * - \c double \c delay
+ * - \c double \c interval
+ * - \c std::size_t \c count
  *
  * \tparam Event output event type
  */

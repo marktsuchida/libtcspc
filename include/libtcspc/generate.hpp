@@ -230,6 +230,9 @@ template <typename Event> class one_shot_timing_generator {
  *
  * Timing generator for use with \ref generate.
  *
+ * The delay of the output event (relative to the trigger event) is obtained
+ * from the \c delay data member (type \c abstime_type) of each trigger event.
+ *
  * \tparam Event output event type
  */
 template <typename Event> class dynamic_one_shot_timing_generator {
@@ -355,6 +358,12 @@ template <typename Event> class linear_timing_generator {
  *
  * Timing generator for use with \ref generate.
  *
+ * The delay, interval, and count of the output events are obtained from the
+ * data members of each trigger event:
+ * - \c abstime_type \c delay
+ * - \c abstime_type \c interval
+ * - \c std::size_t \c count
+ *
  * \tparam Event output event type
  */
 template <typename Event> class dynamic_linear_timing_generator {
@@ -381,6 +390,7 @@ template <typename Event> class dynamic_linear_timing_generator {
         static_assert(std::is_same_v<decltype(event.abstime), abstime_type>);
         next = event.abstime + event.delay;
         remaining = event.count;
+        interval = event.interval;
     }
 
     /** \brief Timing generator interface */
