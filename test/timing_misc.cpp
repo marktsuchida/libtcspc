@@ -67,4 +67,98 @@ TEST_CASE("retime periodic sequence events unsigned",
     }
 }
 
+TEST_CASE("extrapolate periodic sequences",
+          "[extrapolate_periodic_sequences]") {
+    auto out = capture_output<event_set<real_one_shot_timing_event<>>>();
+    auto in = feed_input<event_set<periodic_sequence_event<>>>(
+        extrapolate_periodic_sequences(2, ref_processor(out)));
+    in.require_output_checked(out);
+
+    in.feed(periodic_sequence_event<>{42, 0.5, 1.75});
+    REQUIRE(out.check(real_one_shot_timing_event<>{42, 4.0}));
+    in.flush();
+    REQUIRE(out.check_flushed());
+}
+
+TEST_CASE("add count to periodic sequences",
+          "[add_count_to_periodic_sequences]") {
+    auto out = capture_output<event_set<real_linear_timing_event<>>>();
+    auto in = feed_input<event_set<periodic_sequence_event<>>>(
+        add_count_to_periodic_sequences(3, ref_processor(out)));
+    in.require_output_checked(out);
+
+    in.feed(periodic_sequence_event<>{42, 0.5, 1.75});
+    REQUIRE(out.check(real_linear_timing_event<>{42, 0.5, 1.75, 3}));
+    in.flush();
+    REQUIRE(out.check_flushed());
+}
+
+TEST_CASE("convert sequences to start-stop",
+          "[convert_sequences_to_start_stop]") {
+    using inevt = timestamped_test_event<0>;
+    using startevt = timestamped_test_event<1>;
+    using stopevt = timestamped_test_event<2>;
+    using otherevt = timestamped_test_event<3>;
+    auto out = capture_output<event_set<startevt, stopevt, otherevt>>();
+
+    SECTION("zero length") {
+        auto in = feed_input<event_set<inevt, otherevt>>(
+            convert_sequences_to_start_stop<inevt, startevt, stopevt>(
+                0, ref_processor(out)));
+        in.require_output_checked(out);
+
+        in.feed(inevt{42}); // No output.
+        in.feed(inevt{42}); // No output.
+        in.feed(otherevt{43});
+        REQUIRE(out.check(otherevt{43}));
+        in.feed(inevt{42}); // No output.
+        in.flush();
+        REQUIRE(out.check_flushed());
+    }
+
+    SECTION("length 1") {
+        auto in = feed_input<event_set<inevt, otherevt>>(
+            convert_sequences_to_start_stop<inevt, startevt, stopevt>(
+                1, ref_processor(out)));
+        in.require_output_checked(out);
+
+        in.feed(inevt{42});
+        REQUIRE(out.check(startevt{42}));
+        in.feed(inevt{43});
+        REQUIRE(out.check(stopevt{43}));
+        in.feed(inevt{44});
+        REQUIRE(out.check(startevt{44}));
+        in.feed(inevt{45});
+        REQUIRE(out.check(stopevt{45}));
+        in.flush();
+        REQUIRE(out.check_flushed());
+    }
+
+    SECTION("length 2") {
+        auto in = feed_input<event_set<inevt, otherevt>>(
+            convert_sequences_to_start_stop<inevt, startevt, stopevt>(
+                2, ref_processor(out)));
+        in.require_output_checked(out);
+
+        in.feed(inevt{42});
+        REQUIRE(out.check(startevt{42}));
+        in.feed(inevt{43});
+        REQUIRE(out.check(stopevt{43}));
+        REQUIRE(out.check(startevt{43}));
+        in.feed(inevt{44});
+        REQUIRE(out.check(stopevt{44}));
+
+        in.feed(inevt{46});
+        REQUIRE(out.check(startevt{46}));
+        in.feed(inevt{47});
+        REQUIRE(out.check(stopevt{47}));
+        REQUIRE(out.check(startevt{47}));
+        in.feed(inevt{48});
+        REQUIRE(out.check(stopevt{48}));
+
+        in.flush();
+        REQUIRE(out.check_flushed());
+    }
+}
+
 } // namespace tcspc
