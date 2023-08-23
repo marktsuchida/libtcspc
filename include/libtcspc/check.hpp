@@ -94,4 +94,69 @@ auto check_monotonic(Downstream &&downstream) {
         std::forward<Downstream>(downstream));
 }
 
+namespace internal {
+
+template <typename Event0, typename Event1, typename Downstream>
+class check_alternating {
+    bool last_saw_0 = false;
+    Downstream downstream;
+
+    LIBTCSPC_NOINLINE void issue_warning() {
+        downstream.handle(warning_event{"non-alternating events"});
+    }
+
+  public:
+    explicit check_alternating(Downstream &&downstream)
+        : downstream(std::move(downstream)) {}
+
+    void handle(Event0 const &event) {
+        if (last_saw_0)
+            issue_warning();
+        last_saw_0 = true;
+        downstream.handle(event);
+    }
+
+    void handle(Event1 const &event) {
+        if (not last_saw_0)
+            issue_warning();
+        last_saw_0 = false;
+        downstream.handle(event);
+    }
+
+    template <typename OtherEvent> void handle(OtherEvent const &event) {
+        downstream.handle(event);
+    }
+
+    void flush() { downstream.flush(); }
+};
+
+} // namespace internal
+
+/**
+ * \brief Create a processor that checks that events of two types appear in
+ * alternation.
+ *
+ * The processor passes through all events. It examines events of types \c
+ * Event0 and \c Event1, and checks that they alternate, starting with \c
+ * Event0. If a violation is detected, a \c warning_event is emitted just
+ * before the offending event.
+ *
+ * \ingroup processors-timing
+ *
+ * \tparam Event0 event type expected first
+ *
+ * \tparam Event1 event type expected second
+ *
+ * \tparam Downstream downstream processor type
+ *
+ * \param downstream downstream processor
+ *
+ * \return check-alternating processor
+ */
+template <typename Event0, typename Event1, typename Downstream>
+auto check_alternating(Downstream &&downstream) {
+    return internal::check_alternating<Event0, Event1, Downstream>(
+        std::forward<Downstream>(downstream));
+}
+
 } // namespace tcspc
