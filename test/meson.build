@@ -8,7 +8,7 @@ test_libtcspc_srcs = [
     'bh_spc.cpp',
     'binning.cpp',
     'buffer.cpp',
-    'check_monotonicity.cpp',
+    'check.cpp',
     'common.cpp',
     'count.cpp',
     'delay.cpp',

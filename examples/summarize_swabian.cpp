@@ -5,7 +5,7 @@
  */
 
 #include "libtcspc/buffer.hpp"
-#include "libtcspc/check_monotonicity.hpp"
+#include "libtcspc/check.hpp"
 #include "libtcspc/common.hpp"
 #include "libtcspc/delay.hpp"
 #include "libtcspc/event_set.hpp"

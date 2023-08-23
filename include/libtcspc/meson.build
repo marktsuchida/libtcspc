@@ -8,7 +8,7 @@ public_cpp_headers = files(
     'bh_spc.hpp',
     'binning.hpp',
     'buffer.hpp',
-    'check_monotonicity.hpp',
+    'check.hpp',
     'common.hpp',
     'count.hpp',
     'delay.hpp',

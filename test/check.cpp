@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: MIT
  */
 
-#include "libtcspc/check_monotonicity.hpp"
+#include "libtcspc/check.hpp"
 
 #include "libtcspc/ref_processor.hpp"
 #include "libtcspc/test_utils.hpp"
