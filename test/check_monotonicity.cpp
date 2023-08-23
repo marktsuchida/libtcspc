@@ -13,11 +13,11 @@
 
 namespace tcspc {
 
-TEST_CASE("check monotonicity", "[check_monotonicity]") {
+TEST_CASE("check monotonic", "[check_monotonic]") {
     using e0 = timestamped_test_event<0>;
     auto out = capture_output<event_set<e0, warning_event>>();
     auto in = feed_input<event_set<e0, warning_event>>(
-        check_monotonicity(ref_processor(out)));
+        check_monotonic(ref_processor(out)));
     in.require_output_checked(out);
 
     in.feed(e0{-10});

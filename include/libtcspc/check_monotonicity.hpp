@@ -21,14 +21,14 @@ namespace internal {
 
 template <typename DataTraits, bool RequireStrictlyIncreasing,
           typename Downstream>
-class check_monotonicity {
+class check_monotonic {
     typename DataTraits::abstime_type last_seen =
         std::numeric_limits<typename DataTraits::abstime_type>::min();
 
     Downstream downstream;
 
-    LIBTCSPC_NOINLINE
-    void issue_warning(typename DataTraits::abstime_type abstime) {
+    LIBTCSPC_NOINLINE void
+    issue_warning(typename DataTraits::abstime_type abstime) {
         std::ostringstream stream;
         stream << "non-monotonic abstime: " << last_seen << " followed by "
                << abstime;
@@ -36,7 +36,7 @@ class check_monotonicity {
     }
 
   public:
-    explicit check_monotonicity(Downstream &&downstream)
+    explicit check_monotonic(Downstream &&downstream)
         : downstream(std::move(downstream)) {}
 
     template <typename Event> void handle(Event const &event) {
@@ -84,13 +84,13 @@ class check_monotonicity {
  *
  * \param downstream downstream processor
  *
- * \return check-monotonicity processor
+ * \return check-monotonic processor
  */
 template <typename DataTraits = default_data_traits,
           bool RequireStrictlyIncreasing = false, typename Downstream>
-auto check_monotonicity(Downstream &&downstream) {
-    return internal::check_monotonicity<DataTraits, RequireStrictlyIncreasing,
-                                        Downstream>(
+auto check_monotonic(Downstream &&downstream) {
+    return internal::check_monotonic<DataTraits, RequireStrictlyIncreasing,
+                                     Downstream>(
         std::forward<Downstream>(downstream));
 }
 

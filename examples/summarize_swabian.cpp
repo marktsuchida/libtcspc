@@ -108,9 +108,9 @@ auto summarize(std::string const &filename) -> bool {
                                                              // events into
                                                              // generic TCSPC
                                                              // events.
-                        tcspc::check_monotonicity<
-                            data_traits>( // Ensure the abstime is
-                                          // non-decreasing.
+                        tcspc::check_monotonic<data_traits>( // Ensure the
+                                                             // abstime is
+                                                             // non-decreasing.
                             tcspc::stop<tcspc::event_set<
                                 tcspc::warning_event,
                                 tcspc::begin_lost_interval_event<data_traits>,
