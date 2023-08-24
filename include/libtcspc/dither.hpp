@@ -186,7 +186,7 @@ template <typename Event> class dynamic_dithered_one_shot_timing_generator {
     /**
      * \brief Construct.
      */
-    explicit dynamic_dithered_one_shot_timing_generator() {}
+    explicit dynamic_dithered_one_shot_timing_generator() = default;
 
     /** \brief Timing generator interface */
     template <typename TriggerEvent> void trigger(TriggerEvent const &event) {
@@ -259,6 +259,7 @@ template <typename Abstime> class dithered_linear_timing_generator_impl {
         compute_next();
     }
 
+    // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
     void trigger_and_configure(Abstime abstime, double delay, double interval,
                                std::size_t count) noexcept {
         dly = delay;

@@ -251,7 +251,7 @@ template <typename Event> class dynamic_one_shot_timing_generator {
     /**
      * \brief Construct.
      */
-    explicit dynamic_one_shot_timing_generator() {}
+    explicit dynamic_one_shot_timing_generator() = default;
 
     /** \brief Timing generator interface */
     template <typename TriggerEvent> void trigger(TriggerEvent const &event) {
@@ -383,7 +383,7 @@ template <typename Event> class dynamic_linear_timing_generator {
     /**
      * \brief Construct.
      */
-    explicit dynamic_linear_timing_generator() {}
+    explicit dynamic_linear_timing_generator() = default;
 
     /** \brief Timing generator interface */
     template <typename TriggerEvent> void trigger(TriggerEvent const &event) {

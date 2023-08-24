@@ -64,6 +64,9 @@ excluded from the output.
 using abstime_type = tcspc::default_data_traits::abstime_type;
 using channel_type = tcspc::default_data_traits::channel_type;
 
+// Workaround for https://github.com/llvm/llvm-project/issues/54668 (probably
+// fixed in LLVM 18):
+// NOLINTNEXTLINE(bugprone-exception-escape)
 struct settings {
     std::string input_filename;
     std::string output_filename;
@@ -144,11 +147,11 @@ auto parse_args(std::vector<std::string> args) -> settings {
     auto pop_arg = [&] {
         if (args.empty())
             throw std::invalid_argument("option value expected");
-        auto const ret = args.front();
+        auto ret = args.front();
         args.erase(args.begin());
         return ret;
     };
-    while (args.size() > 0) {
+    while (not args.empty()) {
         auto const arg = pop_arg();
         if (arg.substr(0, 2) == "--") {
             auto const equals = arg.find('=', 2);
