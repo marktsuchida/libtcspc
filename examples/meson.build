@@ -13,4 +13,13 @@ summarize_swabian = executable(
     ],
 )
 
+flim_bruker_bh_spc = executable(
+    'flim_bruker_bh_spc',
+    'flim_bruker_bh_spc.cpp',
+    dependencies: [
+        libtcspc_dep,
+        thread_dep,
+    ],
+)
+
 endif

@@ -251,17 +251,18 @@ auto map_to_bins(BinMapper &&bin_mapper, Downstream &&downstream) {
  */
 template <unsigned NDataBits, unsigned NHistoBits,
           typename DataTraits = default_data_traits, bool Flip = false>
-class power_of_2_bin_mapper {
-    static_assert(std::is_unsigned_v<typename DataTraits::datapoint_type>,
-                  "datapoint_type must be an unsigned integer type");
-    static_assert(std::is_unsigned_v<typename DataTraits::bin_index_type>,
-                  "bin_index_type must be an unsigned integer type");
-
-  public:
+struct power_of_2_bin_mapper {
     /** \brief Bin mapper interface */
     using datapoint_type = typename DataTraits::datapoint_type;
+    static_assert((std::is_unsigned_v<datapoint_type> &&
+                   NDataBits <= 8 * sizeof(datapoint_type)) ||
+                  NDataBits <= 8 * sizeof(datapoint_type) - 1);
+
     /** \brief Bin mapper interface */
     using bin_index_type = typename DataTraits::bin_index_type;
+    static_assert((std::is_unsigned_v<bin_index_type> &&
+                   NHistoBits <= 8 * sizeof(bin_index_type)) ||
+                  NHistoBits <= 8 * sizeof(bin_index_type) - 1);
 
     /** \brief Bin mapper interface */
     [[nodiscard]] auto n_bins() const noexcept -> std::size_t {
@@ -381,7 +382,7 @@ class batch_bin_increments {
 
   public:
     explicit batch_bin_increments(Downstream &&downstream)
-        : downstream(downstream) {}
+        : downstream(std::move(downstream)) {}
 
     template <typename DT> void handle(bin_increment_event<DT> const &event) {
         static_assert(std::is_same_v<typename DT::bin_index_type,

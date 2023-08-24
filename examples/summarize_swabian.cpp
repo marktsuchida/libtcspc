@@ -90,12 +90,12 @@ auto summarize(std::string const &filename) -> bool {
 
     // Create the processing graph (actually just a linear chain).
     auto proc = tcspc::read_binary_stream<tcspc::swabian_tag_event>(
-        tcspc::binary_file_input_stream(std::string(filename)),
+        tcspc::binary_file_input_stream(filename),
         std::numeric_limits<std::uint64_t>::max(),
         std::make_shared<tcspc::object_pool<device_event_vector>>(3, 3),
         65536, // Reader produces shared_ptr of vectors of device events.
         tcspc::stop<tcspc::event_set<tcspc::warning_event>>( // End processing
-                                                             // on read error
+                                                             // on read error.
             tcspc::dereference_pointer<
                 std::shared_ptr<device_event_vector>>( // Get the
                                                        // vectors of

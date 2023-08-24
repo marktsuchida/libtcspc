@@ -1,0 +1,215 @@
+/*
+ * This file is part of libtcspc
+ * Copyright 2019-2023 Board of Regents of the University of Wisconsin System
+ * SPDX-License-Identifier: MIT
+ */
+
+#include "libtcspc/bh_spc.hpp"
+#include "libtcspc/binning.hpp"
+#include "libtcspc/buffer.hpp"
+#include "libtcspc/check.hpp"
+#include "libtcspc/common.hpp"
+#include "libtcspc/generate.hpp"
+#include "libtcspc/histogram_elementwise.hpp"
+#include "libtcspc/match.hpp"
+#include "libtcspc/read_binary_stream.hpp"
+#include "libtcspc/route.hpp"
+#include "libtcspc/select.hpp"
+#include "libtcspc/stop.hpp"
+#include "libtcspc/view_as_bytes.hpp"
+#include "libtcspc/write_binary_stream.hpp"
+
+#include <array>
+#include <cstddef>
+#include <cstdint>
+#include <cstdio>
+#include <exception>
+#include <iterator>
+#include <limits>
+#include <memory>
+#include <stdexcept>
+#include <string>
+#include <vector>
+
+void usage() {
+    std::fputs(R"(
+Usage: flim_bruker_bh_spc [options] input_file output_file
+
+Options:
+    --channel=CHANNEL  Select channel (default: 0)
+    --pixel-time=TIME  Set pixel time in macrotime units (required)
+    --width=PIXELS     Set pixels per line (required)
+    --height=PIXELS    Set lines per frame (required)
+    --sum              If given, output only the total of all frames
+
+This program computes FLIM histograms from raw Becker-Hickl SPC files in which
+marker 0 is a valid pixel clock (start of each pixel). There must not be any
+marker 0 events that are not pixel starts.
+
+The output is a raw binary array file of 16-bit unsigned integers. It can be
+read, for example, with numpy.fromfile(output_file, dtype=numpy.uint16).
+
+When --sum is not given, the array has the shape (in NumPy axis order)
+    (frame_count, height, width, 256),
+where the last axis is the time difference histogram (reduced to 8 bits).
+
+When --sum is given, the array has the shape (height, width, 256).
+
+In all cases, if there is an incomplete frame at the end of the input, it is
+excluded from the output.
+)",
+               stderr);
+}
+
+using abstime_type = tcspc::default_data_traits::abstime_type;
+using channel_type = tcspc::default_data_traits::channel_type;
+
+struct settings {
+    std::string input_filename;
+    std::string output_filename;
+    channel_type channel;
+    abstime_type pixel_time;
+    std::size_t pixels_per_line;
+    std::size_t lines_per_frame;
+    bool cumulative;
+};
+
+template <bool Cumulative> auto make_histo_proc(settings const &settings) {
+    using namespace tcspc;
+    auto writer = write_binary_stream(
+        binary_file_output_stream(settings.output_filename),
+        std::make_shared<object_pool<std::vector<std::byte>>>(), 65536);
+    if constexpr (Cumulative) {
+        return histogram_elementwise_accumulate<
+            default_data_traits, never_event, error_on_overflow, true>(
+            settings.pixels_per_line * settings.lines_per_frame, 256, 65535,
+            select<event_set<concluding_histogram_array_event<>>>(
+                view_histogram_array_as_bytes<
+                    concluding_histogram_array_event<>>(std::move(writer))));
+    } else {
+        return histogram_elementwise<default_data_traits, error_on_overflow>(
+            settings.pixels_per_line * settings.lines_per_frame, 256, 65535,
+            select<event_set<histogram_array_event<>>>(
+                view_histogram_array_as_bytes<histogram_array_event<>>(
+                    std::move(writer))));
+    }
+}
+
+template <bool Cumulative> auto make_processor(settings const &settings) {
+    using namespace tcspc;
+    using device_event_vector = std::vector<bh_spc_event>;
+    struct pixel_start_event : base_time_tagged_event<> {};
+    struct pixel_stop_event : base_time_tagged_event<> {};
+
+    // clang-format off
+    return
+    read_binary_stream<bh_spc_event>(
+        binary_file_input_stream(settings.input_filename,
+                                 4), // Skip 4-byte header.
+        std::numeric_limits<std::uint64_t>::max(),
+        std::make_shared<object_pool<device_event_vector>>(2, 2),
+        65536, // Reader produces shared_ptr of vectors of device events.
+    stop_with_error<event_set<warning_event>>(
+        "error reading input",
+    dereference_pointer<std::shared_ptr<device_event_vector>>(
+    unbatch<device_event_vector, bh_spc_event>(
+    decode_bh_spc(
+    check_monotonic(
+    stop_with_error<event_set<warning_event, data_lost_event<>>>(
+        "error in input data",
+    match<marker_event<>, pixel_start_event>(
+        channel_matcher(0), // Extract pixel clock.
+    select_not<event_set<marker_event<>>>(
+    generate<pixel_start_event>(
+        one_shot_timing_generator<pixel_stop_event>(
+            settings.pixel_time), // Generate pixel stop events.
+    select_not<event_set<time_reached_event<>>>(
+    check_alternating<pixel_start_event, pixel_stop_event>(
+    stop_with_error<event_set<warning_event, data_lost_event<>>>(
+        "pixel time is such that pixel stop occurs after next pixel start",
+    route<event_set<time_correlated_detection_event<>>>(
+        channel_router(std::array<channel_type, 1>{settings.channel}),
+    map_to_datapoints(difftime_data_mapper(),
+    map_to_bins(
+        power_of_2_bin_mapper<12, 8, default_data_traits, true>(),
+    batch_bin_increments<
+        default_data_traits, pixel_start_event, pixel_stop_event>(
+    make_histo_proc<Cumulative>(settings))))))))))))))))));
+    // clang-format on
+}
+
+auto parse_args(std::vector<std::string> args) -> settings {
+    std::vector<std::string> positional;
+    settings ret{};
+    auto pop_arg = [&] {
+        if (args.empty())
+            throw std::invalid_argument("option value expected");
+        auto const ret = args.front();
+        args.erase(args.begin());
+        return ret;
+    };
+    while (args.size() > 0) {
+        auto const arg = pop_arg();
+        if (arg.substr(0, 2) == "--") {
+            auto const equals = arg.find('=', 2);
+            auto const key = equals == std::string::npos
+                                 ? arg.substr(2)
+                                 : arg.substr(2, equals - 2);
+            auto get_value = [&] {
+                return equals == std::string::npos ? pop_arg()
+                                                   : arg.substr(equals + 1);
+            };
+            if (key == "channel")
+                ret.channel = std::stoi(get_value());
+            else if (key == "pixel-time")
+                ret.pixel_time = std::stoi(get_value());
+            else if (key == "width")
+                ret.pixels_per_line = std::stoul(get_value());
+            else if (key == "height")
+                ret.lines_per_frame = std::stoul(get_value());
+            else if (key == "sum")
+                ret.cumulative = true;
+            else
+                throw std::invalid_argument("unrecognized option: " + arg);
+        } else {
+            positional.push_back(arg);
+        }
+    }
+    if (ret.pixel_time <= 0) {
+        throw std::invalid_argument(
+            "--pixel-time must be given and be positive");
+    }
+    if (ret.pixels_per_line == 0 || ret.lines_per_frame == 0) {
+        throw std::invalid_argument(
+            "--width and --height must both be given and be positive");
+    }
+    if (positional.size() != 2) {
+        throw std::invalid_argument(
+            "two positional arguments required (input file and output file)");
+    }
+    ret.input_filename = positional[0];
+    ret.output_filename = positional[1];
+    return ret;
+}
+
+auto main(int argc, char *argv[]) -> int {
+    try {
+        std::vector<std::string> const args(std::next(argv),
+                                            std::next(argv, argc));
+        auto const settings = parse_args(args);
+        if (settings.cumulative)
+            make_processor<true>(settings).pump_events();
+        else
+            make_processor<false>(settings).pump_events();
+    } catch (tcspc::end_processing const &) {
+        // Ok.
+    } catch (std::exception const &exc) {
+        std::fputs("Error: ", stderr);
+        std::fputs(exc.what(), stderr);
+        std::fputs("\n", stderr);
+        if (dynamic_cast<std::invalid_argument const *>(&exc) != nullptr)
+            usage();
+        return EXIT_FAILURE;
+    }
+    return EXIT_SUCCESS;
+}
