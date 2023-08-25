@@ -4,15 +4,16 @@
  * SPDX-License-Identifier: MIT
  */
 
+#include "libtcspc/bh_spc.hpp"
 #include "libtcspc/buffer.hpp"
 #include "libtcspc/check.hpp"
 #include "libtcspc/common.hpp"
 #include "libtcspc/event_set.hpp"
 #include "libtcspc/read_binary_stream.hpp"
 #include "libtcspc/stop.hpp"
-#include "libtcspc/swabian_tag.hpp"
 
 #include <algorithm>
+#include <array>
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
@@ -24,85 +25,72 @@
 #include <string>
 #include <vector>
 
-using channel_type = tcspc::default_data_traits::channel_type;
-using abstime_type = tcspc::default_data_traits::abstime_type;
+struct dtraits : tcspc::default_data_traits {
+    // BH channels are never negative; use of unsigned type simplifies checks
+    // in summarize_and_print().
+    using channel_type = std::uint32_t;
+};
 
-// Custom sink that counts detection events in all channels encountered, and
-// prints the results at the end of the stream.
+using channel_type = dtraits::channel_type;
+using abstime_type = dtraits::abstime_type;
+
+// Custom sink that counts events in all channels, and prints the results at
+// the end of the stream.
 class summarize_and_print {
-    std::vector<channel_type> channel_numbers;
-    std::vector<std::uint64_t> channel_counts;
-    abstime_type first_abstime = std::numeric_limits<abstime_type>::min();
+    std::array<std::uint64_t, 16> photon_counts;
+    std::array<std::uint64_t, 4> marker_counts;
     abstime_type last_abstime = std::numeric_limits<abstime_type>::min();
 
-    void new_channel(channel_type chan) {
-        channel_numbers.push_back(chan);
-        channel_counts.push_back(1);
+  public:
+    void handle(tcspc::time_correlated_detection_event<dtraits> const &event) {
+        if (event.channel < 0 || event.channel >= photon_counts.size())
+            throw std::runtime_error("unexpected channel in photon event");
+        ++photon_counts[event.channel];
+        last_abstime = event.abstime;
     }
 
-  public:
-    void handle(tcspc::detection_event<> const &event) {
-        auto const p = std::find(channel_numbers.begin(),
-                                 channel_numbers.end(), event.channel);
-        if (p == channel_numbers.end())
-            new_channel(event.channel);
-        else
-            ++*std::next(channel_counts.begin(),
-                         std::distance(channel_numbers.begin(), p));
-        if (first_abstime == std::numeric_limits<abstime_type>::min())
-            first_abstime = event.abstime;
+    void handle(tcspc::marker_event<dtraits> const &event) {
+        if (event.channel < 0 || event.channel >= marker_counts.size())
+            throw std::runtime_error("unexpected channel in marker event");
+        ++marker_counts[event.channel];
+        last_abstime = event.abstime;
+    }
+
+    void handle(tcspc::time_reached_event<dtraits> const &event) {
         last_abstime = event.abstime;
     }
 
     void flush() {
         std::ostringstream stream;
-
-        if (channel_numbers.empty()) {
-            stream << "No events" << '\n';
-        } else {
-            stream << "Time of first event: \t" << first_abstime << '\n';
-            stream << "Time of last event: \t" << last_abstime << '\n';
-            // Print channel counts in channel number order.
-            std::vector<std::tuple<channel_type, std::uint64_t>> counts(
-                channel_numbers.size());
-            std::transform(channel_numbers.cbegin(), channel_numbers.cend(),
-                           channel_counts.cbegin(), counts.begin(),
-                           [](auto chnum, auto chcnt) {
-                               return std::make_tuple(chnum, chcnt);
-                           });
-            std::sort(counts.begin(), counts.end());
-            for (auto const &[chnum, chcnt] : counts)
-                stream << chnum << ": \t" << chcnt << '\n';
-        }
-
+        stream << "Relative time of last event: \t" << last_abstime << '\n';
+        for (std::size_t i = 0; i < photon_counts.size(); ++i)
+            stream << "rout " << i << ": \t" << photon_counts[i] << '\n';
+        for (std::size_t i = 0; i < marker_counts.size(); ++i)
+            stream << "mark " << i << ": \t" << marker_counts[i] << '\n';
         std::fputs(stream.str().c_str(), stdout);
     }
 };
 
 auto summarize(std::string const &filename) -> bool {
     using namespace tcspc;
-    using device_event_vector = std::vector<swabian_tag_event>;
+    using device_event_vector = std::vector<bh_spc_event>;
 
     // clang-format off
     auto proc =
-    read_binary_stream<swabian_tag_event>(
-        binary_file_input_stream(filename),
+    read_binary_stream<bh_spc_event>(
+        binary_file_input_stream(filename, 4), // Assume 4-byte .spc header.
         std::numeric_limits<std::uint64_t>::max(),
         std::make_shared<object_pool<device_event_vector>>(3, 3),
         65536, // Reader produces shared_ptr of vectors of device events.
     stop<event_set<warning_event>>( // End processing on read error.
     dereference_pointer<std::shared_ptr<device_event_vector>>(
         // Get the vectors of device events.
-    unbatch<device_event_vector, swabian_tag_event>(
+    unbatch<device_event_vector, bh_spc_event>(
         // Get individual device events.
-    decode_swabian_tags(
-        // Decode device events into generic TCSPC events.
-    check_monotonic( // Ensure the abstime is non-decreasing.
-    stop<event_set<warning_event,
-                   begin_lost_interval_event<>,
-                   end_lost_interval_event<>,
-                   untagged_counts_event<>>>(
-        // End processing if anything wrong; now we only have detection_event.
+    decode_bh_spc<dtraits>( // Decode device events into generic TCSPC events.
+    check_monotonic<dtraits>( // Ensure the abstime is non-decreasing.
+    stop<event_set<warning_event, data_lost_event<dtraits>>>(
+        // End processing if anything wrong.
     summarize_and_print())))))));
     // clang-format on
 

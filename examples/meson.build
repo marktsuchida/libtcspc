@@ -4,6 +4,15 @@
 
 if not get_option('examples').disabled()
 
+summarize_bh_spc = executable(
+    'summarize_bh_spc',
+    'summarize_bh_spc.cpp',
+    dependencies: [
+        libtcspc_dep,
+        thread_dep,
+    ],
+)
+
 summarize_swabian = executable(
     'summarize_swabian',
     'summarize_swabian.cpp',
