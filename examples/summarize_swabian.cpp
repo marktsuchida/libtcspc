@@ -86,45 +86,35 @@ class summarize_and_print {
 };
 
 auto summarize(std::string const &filename) -> bool {
-    using device_event_vector = std::vector<tcspc::swabian_tag_event>;
+    using namespace tcspc;
+    using device_event_vector = std::vector<swabian_tag_event>;
 
-    // Create the processing graph (actually just a linear chain).
-    auto proc = tcspc::read_binary_stream<tcspc::swabian_tag_event>(
-        tcspc::binary_file_input_stream(filename),
+    // clang-format off
+    auto proc =
+    read_binary_stream<swabian_tag_event>(
+        binary_file_input_stream(filename),
         std::numeric_limits<std::uint64_t>::max(),
-        std::make_shared<tcspc::object_pool<device_event_vector>>(3, 3),
+        std::make_shared<object_pool<device_event_vector>>(3, 3),
         65536, // Reader produces shared_ptr of vectors of device events.
-        tcspc::stop<tcspc::event_set<tcspc::warning_event>>( // End processing
-                                                             // on read error.
-            tcspc::dereference_pointer<
-                std::shared_ptr<device_event_vector>>( // Get the
-                                                       // vectors of
-                                                       // device
-                                                       // events.
-                tcspc::unbatch<device_event_vector,
-                               tcspc::swabian_tag_event>(    // Get individual
-                                                             // device events.
-                    tcspc::decode_swabian_tags<data_traits>( // Decode device
-                                                             // events into
-                                                             // generic TCSPC
-                                                             // events.
-                        tcspc::check_monotonic<data_traits>( // Ensure the
-                                                             // abstime is
-                                                             // non-decreasing.
-                            tcspc::stop<tcspc::event_set<
-                                tcspc::warning_event,
-                                tcspc::begin_lost_interval_event<data_traits>,
-                                tcspc::end_lost_interval_event<data_traits>,
-                                tcspc::untagged_counts_event<
-                                    data_traits>>>( // End processing if
-                                                    // anything wrong; now we
-                                                    // only have
-                                                    // detection_event.
-                                summarize_and_print())))))));
+    stop<event_set<warning_event>>( // End processing on read error.
+    dereference_pointer<std::shared_ptr<device_event_vector>>(
+        // Get the vectors of device events.
+    unbatch<device_event_vector, swabian_tag_event>(
+        // Get individual device events.
+    decode_swabian_tags<data_traits>(
+        // Decode device events into generic TCSPC events.
+    check_monotonic<data_traits>( // Ensure the abstime is non-decreasing.
+    stop<event_set<warning_event,
+                   begin_lost_interval_event<data_traits>,
+                   end_lost_interval_event<data_traits>,
+                   untagged_counts_event<data_traits>>>(
+        // End processing if anything wrong; now we only have detection_event.
+    summarize_and_print())))))));
+    // clang-format on
 
     try {
         proc.pump_events(); // Run it all.
-    } catch (tcspc::end_processing const &) {
+    } catch (end_processing const &) {
         // Explicit stop; counts were printed on flush.
         // TODO Recover the error message (needs to be packaged in exc)
         std::fputs("\n", stderr);
