@@ -25,28 +25,24 @@
 #include <string>
 #include <vector>
 
-struct data_traits : tcspc::default_data_traits {
-    using channel_type = std::int32_t;
-};
+using channel_type = tcspc::default_data_traits::channel_type;
+using abstime_type = tcspc::default_data_traits::abstime_type;
 
 // Custom sink that counts detection events in all channels encountered, and
-// prints the results at the end of the stream. For simplicity, it exits the
-// program when finished.
+// prints the results at the end of the stream.
 class summarize_and_print {
-    std::vector<data_traits::channel_type> channel_numbers;
+    std::vector<channel_type> channel_numbers;
     std::vector<std::uint64_t> channel_counts;
-    data_traits::abstime_type first_abstime =
-        std::numeric_limits<data_traits::abstime_type>::min();
-    data_traits::abstime_type last_abstime =
-        std::numeric_limits<data_traits::abstime_type>::min();
+    abstime_type first_abstime = std::numeric_limits<abstime_type>::min();
+    abstime_type last_abstime = std::numeric_limits<abstime_type>::min();
 
-    void new_channel(data_traits::channel_type chan) {
+    void new_channel(channel_type chan) {
         channel_numbers.push_back(chan);
         channel_counts.push_back(1);
     }
 
   public:
-    void handle(tcspc::detection_event<data_traits> const &event) {
+    void handle(tcspc::detection_event<> const &event) {
         auto const p = std::find(channel_numbers.begin(),
                                  channel_numbers.end(), event.channel);
         if (p == channel_numbers.end())
@@ -54,8 +50,7 @@ class summarize_and_print {
         else
             ++*std::next(channel_counts.begin(),
                          std::distance(channel_numbers.begin(), p));
-        if (first_abstime ==
-            std::numeric_limits<decltype(first_abstime)>::min())
+        if (first_abstime == std::numeric_limits<abstime_type>::min())
             first_abstime = event.abstime;
         last_abstime = event.abstime;
     }
@@ -69,8 +64,8 @@ class summarize_and_print {
             stream << "Time of first event: \t" << first_abstime << '\n';
             stream << "Time of last event: \t" << last_abstime << '\n';
             // Print channel counts in channel number order.
-            std::vector<std::tuple<data_traits::channel_type, std::uint64_t>>
-                counts(channel_numbers.size());
+            std::vector<std::tuple<channel_type, std::uint64_t>> counts(
+                channel_numbers.size());
             std::transform(channel_numbers.cbegin(), channel_numbers.cend(),
                            channel_counts.cbegin(), counts.begin(),
                            [](auto chnum, auto chcnt) {
@@ -101,13 +96,13 @@ auto summarize(std::string const &filename) -> bool {
         // Get the vectors of device events.
     unbatch<device_event_vector, swabian_tag_event>(
         // Get individual device events.
-    decode_swabian_tags<data_traits>(
+    decode_swabian_tags(
         // Decode device events into generic TCSPC events.
-    check_monotonic<data_traits>( // Ensure the abstime is non-decreasing.
+    check_monotonic( // Ensure the abstime is non-decreasing.
     stop<event_set<warning_event,
-                   begin_lost_interval_event<data_traits>,
-                   end_lost_interval_event<data_traits>,
-                   untagged_counts_event<data_traits>>>(
+                   begin_lost_interval_event<>,
+                   end_lost_interval_event<>,
+                   untagged_counts_event<>>>(
         // End processing if anything wrong; now we only have detection_event.
     summarize_and_print())))))));
     // clang-format on
