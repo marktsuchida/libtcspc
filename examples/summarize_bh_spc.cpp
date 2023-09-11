@@ -37,22 +37,18 @@ using abstime_type = dtraits::abstime_type;
 // Custom sink that counts events in all channels, and prints the results at
 // the end of the stream.
 class summarize_and_print {
-    std::array<std::uint64_t, 16> photon_counts;
-    std::array<std::uint64_t, 4> marker_counts;
+    std::array<std::uint64_t, 16> photon_counts{};
+    std::array<std::uint64_t, 4> marker_counts{};
     abstime_type last_abstime = std::numeric_limits<abstime_type>::min();
 
   public:
     void handle(tcspc::time_correlated_detection_event<dtraits> const &event) {
-        if (event.channel < 0 || event.channel >= photon_counts.size())
-            throw std::runtime_error("unexpected channel in photon event");
-        ++photon_counts[event.channel];
+        ++photon_counts.at(event.channel);
         last_abstime = event.abstime;
     }
 
     void handle(tcspc::marker_event<dtraits> const &event) {
-        if (event.channel < 0 || event.channel >= marker_counts.size())
-            throw std::runtime_error("unexpected channel in marker event");
-        ++marker_counts[event.channel];
+        ++marker_counts.at(event.channel);
         last_abstime = event.abstime;
     }
 
@@ -64,9 +60,9 @@ class summarize_and_print {
         std::ostringstream stream;
         stream << "Relative time of last event: \t" << last_abstime << '\n';
         for (std::size_t i = 0; i < photon_counts.size(); ++i)
-            stream << "rout " << i << ": \t" << photon_counts[i] << '\n';
+            stream << "rout " << i << ": \t" << photon_counts.at(i) << '\n';
         for (std::size_t i = 0; i < marker_counts.size(); ++i)
-            stream << "mark " << i << ": \t" << marker_counts[i] << '\n';
+            stream << "mark " << i << ": \t" << marker_counts.at(i) << '\n';
         std::fputs(stream.str().c_str(), stdout);
     }
 };
