@@ -82,6 +82,19 @@ TEST_CASE("Route", "[route]") {
     }
 }
 
+TEST_CASE("Route with heterogeneous downstreams", "[route]") {
+    auto out0 = capture_output<event_set<e0>>();
+    auto out1 = null_sink();
+    auto in = feed_input<event_set<e0>>(route<event_set<e0>>(
+        []([[maybe_unused]] e0 const &event) { return std::size_t(0); },
+        ref_processor(out0), ref_processor(out1)));
+    in.require_output_checked(out0);
+    in.feed(e0{});
+    REQUIRE(out0.check(e0{}));
+    in.flush();
+    REQUIRE(out0.check_flushed());
+}
+
 TEST_CASE("Broadcast", "[broadcast]") {
     auto out0 = capture_output<event_set<e0>>();
     auto out1 = capture_output<event_set<e0>>();

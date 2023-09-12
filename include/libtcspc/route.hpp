@@ -57,7 +57,7 @@ class route {
         std::apply(
             [&d](auto &...dd) {
                 (..., [&](auto &dd) {
-                    if (&dd != &d) {
+                    if (static_cast<void *>(&dd) != static_cast<void *>(&d)) {
                         try {
                             dd.flush();
                         } catch (end_processing const &) {
