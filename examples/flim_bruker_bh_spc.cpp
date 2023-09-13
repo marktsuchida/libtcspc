@@ -33,7 +33,7 @@
 
 void usage() {
     std::fputs(R"(
-Usage: flim_bruker_bh_spc [options] input_file output_file
+Usage: flim_bruker_bh_spc options input_file output_file
 
 Options:
     --channel=CHANNEL  Select channel (default: 0)
@@ -70,11 +70,11 @@ using channel_type = tcspc::default_data_traits::channel_type;
 struct settings {
     std::string input_filename;
     std::string output_filename;
-    channel_type channel;
-    abstime_type pixel_time;
-    std::size_t pixels_per_line;
-    std::size_t lines_per_frame;
-    bool cumulative;
+    channel_type channel = 0;
+    abstime_type pixel_time = -1;
+    std::size_t pixels_per_line = 0;
+    std::size_t lines_per_frame = 0;
+    bool cumulative = false;
 };
 
 template <bool Cumulative> auto make_histo_proc(settings const &settings) {
