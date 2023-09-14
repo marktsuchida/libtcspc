@@ -36,7 +36,7 @@ TEST_CASE("Journal basic operations", "[bin_increment_batch_journal]") {
 
     j.clear();
     REQUIRE(j.num_batches() == 0);
-    j3.clear_and_shrink_to_fit();
+    j3.clear();
     REQUIRE(j3.num_batches() == 0);
 }
 

@@ -70,21 +70,6 @@ template <typename BinIndex> class bin_increment_batch_journal {
         all_bin_indices.clear();
     }
 
-    /**
-     * \brief Clear this journal and release memory.
-     */
-    void clear_and_shrink_to_fit() {
-        n_batches = 0;
-        last_stored_index = std::size_t(-1);
-
-        // Optimizers work better when the clear() and shrink_to_fit() are
-        // juxtaposed.
-        encoded_indices.clear();
-        encoded_indices.shrink_to_fit();
-        all_bin_indices.clear();
-        all_bin_indices.shrink_to_fit();
-    }
-
     [[nodiscard]] auto empty() const noexcept -> bool {
         return n_batches == 0;
     }
@@ -92,16 +77,11 @@ template <typename BinIndex> class bin_increment_batch_journal {
     /**
      * \brief Append a bin increment batch to this journal.
      *
-     * \tparam It random access iterator type
-     *
-     * \param first iterator pointing to begining of batch (bin indices)
-     *
-     * \param last iterator pointing to past-end of batch
+     * \param batch the bin increment batch to append (bin indices)
      */
-    template <typename It> void append_batch(It first, It last) {
+    void append_batch(span<BinIndex const> batch) {
         std::size_t const elem_index = n_batches;
-        if (std::size_t batch_size = as_unsigned(std::distance(first, last));
-            batch_size > 0) {
+        if (std::size_t batch_size = batch.size(); batch_size > 0) {
             std::size_t delta = elem_index - last_stored_index;
             while (delta > 255) {
                 encoded_indices.emplace_back(std::uint8_t(255),
@@ -118,20 +98,10 @@ template <typename BinIndex> class bin_increment_batch_journal {
                                          std::uint8_t(batch_size));
             last_stored_index = elem_index;
 
-            all_bin_indices.insert(all_bin_indices.end(), first, last);
+            all_bin_indices.insert(all_bin_indices.end(), batch.begin(),
+                                   batch.end());
         }
         n_batches = elem_index + 1;
-    }
-
-    /**
-     * \brief Append a bin increment batch to this journal.
-     *
-     * This is a convenience function taking a vector instead of iterator pair.
-     *
-     * \param batch the bin increment batch to append (bin indices)
-     */
-    void append_batch(span<BinIndex const> batch) {
-        append_batch(batch.begin(), batch.end());
     }
 
     /**
