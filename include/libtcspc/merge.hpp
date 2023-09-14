@@ -10,8 +10,10 @@
 #include "event_set.hpp"
 #include "vector_queue.hpp"
 
+#include <algorithm>
 #include <array>
 #include <cassert>
+#include <cstddef>
 #include <exception>
 #include <limits>
 #include <stdexcept>
@@ -161,7 +163,7 @@ class merge_input {
   public:
     explicit merge_input(
         std::shared_ptr<merge_impl<DataTraits, EventSet, Downstream>> impl)
-        : impl(impl) {}
+        : impl(std::move(impl)) {}
 
     // Movable but not copyable
     merge_input(merge_input const &) = delete;
@@ -278,6 +280,116 @@ auto merge_n(typename DataTraits::abstime_type max_time_shift,
                                       max_time_shift, std::move(final_in1)));
         }
     }
+}
+
+namespace internal {
+
+// Internal implementation of N-way unsorted merge processor. This processor is
+// owned by the N input processors via shared_ptr.
+template <std::size_t N, typename Downstream> class merge_unsorted_impl {
+    Downstream downstream;
+
+    // Cold data.
+    bool ended_with_exception = false;
+    std::array<bool, N> input_flushed{};
+
+  public:
+    explicit merge_unsorted_impl(Downstream &&downstream)
+        : downstream(std::move(downstream)) {}
+
+    merge_unsorted_impl(merge_unsorted_impl const &) = delete;
+    auto operator=(merge_unsorted_impl const &) = delete;
+    merge_unsorted_impl(merge_unsorted_impl &&) = delete;
+    auto operator=(merge_unsorted_impl &&) = delete;
+    ~merge_unsorted_impl() = default;
+
+    template <typename Event> void handle(Event const &event) {
+        if (ended_with_exception)
+            return;
+        try {
+            downstream.handle(event);
+        } catch (std::exception const &) {
+            ended_with_exception = true;
+            throw;
+        }
+    }
+
+    void flush(std::size_t input_channel) {
+        input_flushed[input_channel] = true;
+        if (ended_with_exception)
+            return;
+        if (std::all_of(input_flushed.begin(), input_flushed.end(),
+                        [](auto f) { return f; }))
+            downstream.flush();
+    }
+};
+
+template <std::size_t N, typename Downstream> class merge_unsorted_input {
+    std::shared_ptr<merge_unsorted_impl<N, Downstream>> impl;
+
+    // Cold data.
+    std::size_t chan;
+
+  public:
+    explicit merge_unsorted_input(
+        std::shared_ptr<merge_unsorted_impl<N, Downstream>> impl,
+        std::size_t channel)
+        : impl(std::move(impl)), chan(channel) {}
+
+    // Movable but not copyable
+    merge_unsorted_input(merge_unsorted_input const &) = delete;
+    auto operator=(merge_unsorted_input const &) = delete;
+    merge_unsorted_input(merge_unsorted_input &&) = default;
+    auto operator=(merge_unsorted_input &&) noexcept
+        -> merge_unsorted_input & = default;
+    ~merge_unsorted_input() = default;
+
+    template <typename Event> void handle(Event const &event) {
+        impl->handle(event);
+    }
+
+    void flush() { impl->flush(chan); }
+};
+
+template <std::size_t N, typename Downstream, std::size_t... Indices>
+auto make_merge_unsorted_inputs(
+    std::shared_ptr<merge_unsorted_impl<N, Downstream>> impl,
+    std::index_sequence<Indices...>) {
+    using input_type = merge_unsorted_input<N, Downstream>;
+    return std::array<input_type, N>{(input_type(impl, Indices))...};
+}
+
+} // namespace internal
+
+/**
+ * \brief Create a processor that merges a given number of event streams
+ * without sorting by abstime.
+ *
+ * \ingroup processors-basic
+ *
+ * The merged stream will handle events in the temporal order they are passed
+ * from the upstreams.
+ *
+ * This is useful when the events on the input streams are known to arrive in
+ * the correct order.
+ *
+ * \see merge
+ * \see merge_n
+ *
+ * \tparam N number of input streams
+ *
+ * \tparam Downstream downstream processor type
+ *
+ * \param downstream downstream processor
+ *
+ * \return std::array of N processors serving as the input to merge
+ */
+template <std::size_t N = 2, typename Downstream>
+auto merge_n_unsorted(Downstream &&downstream) {
+    auto impl = std::make_shared<internal::merge_unsorted_impl<N, Downstream>>(
+        std::forward<Downstream>(downstream));
+    return internal::make_merge_unsorted_inputs(impl,
+                                                std::make_index_sequence<N>());
 }
 
 } // namespace tcspc

@@ -237,4 +237,32 @@ TEST_CASE("merge N streams", "[merge_n]") {
     }
 }
 
+TEST_CASE("merge unsorted", "[merge_n_unsorted]") {
+    auto out = capture_output<all_events>();
+    auto [min0, min1] = merge_n_unsorted(ref_processor(out));
+    auto in0 = feed_input<all_events>(std::move(min0));
+    auto in1 = feed_input<all_events>(std::move(min1));
+    in0.require_output_checked(out);
+    in1.require_output_checked(out);
+
+    SECTION("empty yields empty") {
+        in0.flush();
+        REQUIRE(out.check_not_flushed());
+        in1.flush();
+        REQUIRE(out.check_flushed());
+    }
+
+    SECTION("no buffering, independent flushing") {
+        in0.feed(e0{});
+        REQUIRE(out.check(e0{}));
+        in1.feed(e1{});
+        REQUIRE(out.check(e1{}));
+        in1.flush();
+        in0.feed(e2{});
+        REQUIRE(out.check(e2{}));
+        in0.flush();
+        REQUIRE(out.check_flushed());
+    }
+}
+
 } // namespace tcspc

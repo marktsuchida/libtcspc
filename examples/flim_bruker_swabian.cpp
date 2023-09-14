@@ -192,8 +192,7 @@ template <bool Cumulative> auto make_processor(settings const &settings) {
     std::move(sync_merge));
 
     auto [photon_leading_processor, photon_trailing_processor] =
-    merge<default_data_traits, event_set<detection_event<>>>(
-        0, // TODO merge_unsorted
+    merge_n_unsorted(
     pair_one_between<default_data_traits>(
         settings.photon_leading_channel,
         std::array<channel_type, 1>{settings.photon_trailing_channel},
