@@ -274,7 +274,7 @@ auto parse_integer(std::string const &arg,
 }
 
 template <typename T>
-auto parse_integer_pair(std::string const &arg) -> std::array<T, 2> {
+auto parse_integer_pair(std::string const &arg) -> std::pair<T, T> {
     auto const comma_index = arg.find(',');
     if (comma_index == std::string::npos)
         throw std::invalid_argument(
