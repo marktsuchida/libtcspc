@@ -41,6 +41,7 @@ Options:
     --width=PIXELS     Set pixels per line (required)
     --height=PIXELS    Set lines per frame (required)
     --sum              If given, output only the total of all frames
+    --overwrite        If given, overwrite output file if it exists
 
 This program computes FLIM histograms from raw Becker-Hickl SPC files in which
 marker 0 is a valid pixel clock (start of each pixel). There must not be any
@@ -75,12 +76,13 @@ struct settings {
     std::size_t pixels_per_line = 0;
     std::size_t lines_per_frame = 0;
     bool cumulative = false;
+    bool truncate = false;
 };
 
 template <bool Cumulative> auto make_histo_proc(settings const &settings) {
     using namespace tcspc;
     auto writer = write_binary_stream(
-        binary_file_output_stream(settings.output_filename),
+        binary_file_output_stream(settings.output_filename, settings.truncate),
         std::make_shared<object_pool<std::vector<std::byte>>>(), 65536);
     if constexpr (Cumulative) {
         return histogram_elementwise_accumulate<
@@ -172,6 +174,8 @@ auto parse_args(std::vector<std::string> args) -> settings {
                 ret.lines_per_frame = std::stoul(get_value());
             else if (key == "sum")
                 ret.cumulative = true;
+            else if (key == "overwrite")
+                ret.truncate = true;
             else
                 throw std::invalid_argument("unrecognized option: " + arg);
         } else {

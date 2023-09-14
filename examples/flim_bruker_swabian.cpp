@@ -69,6 +69,8 @@ Options:
         Set number of difference time histogram bins (default: 256)
     --sum
         If given, output only the total of all frames
+    --overwrite
+        If given, overwrite output file if it exists
     --help
         Show this usage and exit
 
@@ -128,12 +130,13 @@ struct settings {
     difftime_type bin_width = 50;
     bin_index_type max_bin_index = 255;
     bool cumulative = false;
+    bool truncate = false;
 };
 
 template <bool Cumulative> auto make_histo_proc(settings const &settings) {
     using namespace tcspc;
     auto writer = write_binary_stream(
-        binary_file_output_stream(settings.output_filename),
+        binary_file_output_stream(settings.output_filename, settings.truncate),
         std::make_shared<object_pool<std::vector<std::byte>>>(), 65536);
     if constexpr (Cumulative) {
         return histogram_elementwise_accumulate<
@@ -316,6 +319,8 @@ void parse_option(settings &dest, std::string const &key, GetValue get_value) {
                 1);
         } else if (key == "sum") {
             dest.cumulative = true;
+        } else if (key == "overwrite") {
+            dest.truncate = true;
         } else if (key == "help") {
             usage();
             std::exit(EXIT_SUCCESS);
