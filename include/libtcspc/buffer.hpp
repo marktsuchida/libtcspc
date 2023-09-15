@@ -539,7 +539,7 @@ class buffer {
  * \param threshold number of events to buffer before start sending to
  * downstream
  *
- * \param downstream downstream processor (moved out)
+ * \param downstream downstream processor
  *
  * \return buffer pseudo-processor having \c pump_events member function
  */
@@ -577,7 +577,7 @@ auto buffer(std::size_t threshold, Downstream &&downstream) {
  * an event can remain in the buffer before sending to downstream is started
  * even if there are fewer events than threshold
  *
- * \param downstream downstream processor (moved out)
+ * \param downstream downstream processor
  *
  * \return buffer pseudo-processor having \c pump_events member function
  */
@@ -586,6 +586,74 @@ auto real_time_buffer(std::size_t threshold, Duration latency_limit,
                       Downstream &&downstream) {
     return internal::buffer<Event, true, Downstream>(
         threshold, latency_limit, std::forward<Downstream>(downstream));
+}
+
+namespace internal {
+
+template <typename Event, typename Downstream> class single_threaded_buffer {
+    std::size_t threshold;
+    std::vector<Event> buf;
+
+    Downstream downstream;
+
+    LIBTCSPC_NOINLINE void drain() {
+        for (auto &event : buf)
+            downstream.handle(event);
+        buf.clear();
+    }
+
+  public:
+    explicit single_threaded_buffer(std::size_t threshold,
+                                    Downstream &&downstream)
+        : threshold(threshold), downstream(std::move(downstream)) {}
+
+    void handle(Event const &event) {
+        buf.push_back(event);
+        if (buf.size() >= threshold)
+            drain();
+    }
+
+    void flush() {
+        drain();
+        downstream.flush();
+    }
+};
+
+} // namespace internal
+
+/**
+ * \brief Create a processor that buffers events and passes them downstream
+ * when a threshold capacity is reached.
+ *
+ * \ingroup processors-basic
+ *
+ * This is intended for use in cases where separating the processing loop is
+ * beneficial, for example to limit the (code or data) working set size.
+ * Usually the regular \c buffer (requiring two separate threads) is more
+ * beneficial because it can exploit parallellism, but a single-threaded buffer
+ * is easier to introduce (it can simply be inserted in a processor chain) so
+ * may be convenient for experimentation.
+ *
+ * Events are buffered until the threshold is reached, without regard to
+ * timing, so this type of buffer is usually not appropriate for live
+ * processing.
+ *
+ * \see buffer
+ *
+ * \tparam Event the event type
+ *
+ * \tparam Downstream downstream processor type
+ *
+ * \param threshold number of events to buffer before passing them downstream
+ *
+ * \param downstream downstream processor
+ *
+ * \return single-threaded-buffer processor
+ */
+template <typename Event, typename Downstream>
+auto single_threaded_buffer(std::size_t threshold, Downstream &&downstream) {
+    return internal::single_threaded_buffer<Event, Downstream>(
+        threshold, std::forward<Downstream>(downstream));
 }
 
 } // namespace tcspc
