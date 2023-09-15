@@ -235,7 +235,7 @@ template <bool Cumulative> auto make_processor(settings const &settings) {
     check_monotonic(
     stop<event_set<warning_event>>( // Stop quietly on non-monotonic time.
     route<event_set<detection_event<>>>(
-        channel_router(std::array<channel_type, 4>{
+        channel_router(std::array{
             settings.sync_channel,
             settings.photon_leading_channel,
             settings.photon_trailing_channel,

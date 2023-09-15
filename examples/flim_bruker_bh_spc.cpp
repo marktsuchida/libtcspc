@@ -132,14 +132,15 @@ template <bool Cumulative> auto make_processor(settings const &settings) {
     check_alternating<pixel_start_event, pixel_stop_event>(
     stop_with_error<event_set<warning_event, data_lost_event<>>>(
         "pixel time is such that pixel stop occurs after next pixel start",
-    route<event_set<time_correlated_detection_event<>>>(
+    route_homogeneous<event_set<time_correlated_detection_event<>>>(
         channel_router(std::array<channel_type, 1>{settings.channel}),
+        std::array{
     map_to_datapoints(difftime_data_mapper(),
     map_to_bins(
         power_of_2_bin_mapper<12, 8, default_data_traits, true>(),
     batch_bin_increments<
         default_data_traits, pixel_start_event, pixel_stop_event>(
-    make_histo_proc<Cumulative>(settings))))))))))))))))));
+    make_histo_proc<Cumulative>(settings))))}))))))))))))));
     // clang-format on
 }
 
