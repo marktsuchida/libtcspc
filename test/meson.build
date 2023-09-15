@@ -23,6 +23,7 @@ test_libtcspc_srcs = [
     'histogramming.cpp',
     'match.cpp',
     'merge.cpp',
+    'multiplex.cpp',
     'npint.cpp',
     'pair.cpp',
     'picoquant_t2.cpp',

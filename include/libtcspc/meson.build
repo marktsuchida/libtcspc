@@ -22,6 +22,7 @@ public_cpp_headers = files(
     'histogram_events.hpp',
     'match.hpp',
     'merge.hpp',
+    'multiplex.hpp',
     'npint.hpp',
     'pair.hpp',
     'picoquant_t2.hpp',
