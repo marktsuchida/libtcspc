@@ -64,6 +64,8 @@ excluded from the output.
 
 using abstime_type = tcspc::default_data_traits::abstime_type;
 using channel_type = tcspc::default_data_traits::channel_type;
+struct pixel_start_event : tcspc::base_time_tagged_event<> {};
+struct pixel_stop_event : tcspc::base_time_tagged_event<> {};
 
 // Workaround for https://github.com/llvm/llvm-project/issues/54668 (probably
 // fixed in LLVM 18):
@@ -103,8 +105,6 @@ template <bool Cumulative> auto make_histo_proc(settings const &settings) {
 template <bool Cumulative> auto make_processor(settings const &settings) {
     using namespace tcspc;
     using device_event_vector = std::vector<bh_spc_event>;
-    struct pixel_start_event : base_time_tagged_event<> {};
-    struct pixel_stop_event : base_time_tagged_event<> {};
 
     // clang-format off
     return
