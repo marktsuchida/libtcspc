@@ -133,7 +133,8 @@ template <bool Cumulative> auto make_processor(settings const &settings) {
     stop_with_error<event_set<warning_event, data_lost_event<>>>(
         "pixel time is such that pixel stop occurs after next pixel start",
     route_homogeneous<event_set<time_correlated_detection_event<>>>(
-        channel_router(std::array<channel_type, 1>{settings.channel}),
+        channel_router(
+            std::array{std::make_pair(settings.channel, std::size_t(0))}),
         std::array{
     map_to_datapoints(difftime_data_mapper(),
     map_to_bins(

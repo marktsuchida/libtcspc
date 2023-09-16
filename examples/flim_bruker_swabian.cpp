@@ -191,8 +191,7 @@ template <bool Cumulative> auto make_processor(settings const &settings) {
     delay<default_data_traits>(settings.sync_delay,
     std::move(sync_merge));
 
-    auto [photon_leading_processor, photon_trailing_processor] =
-    merge_n_unsorted(
+    auto photon_processor =
     pair_one_between<default_data_traits>(
         settings.photon_leading_channel,
         std::array<channel_type, 1>{settings.photon_trailing_channel},
@@ -202,7 +201,7 @@ template <bool Cumulative> auto make_processor(settings const &settings) {
     remove_time_correlation(
     recover_order<default_data_traits, detection_event<>>(
         std::abs(settings.max_photon_pulse_width),
-    std::move(cfd_merge)))))));
+    std::move(cfd_merge))))));
 
     auto pixel_marker_processor =
     match<detection_event<>, pixel_start_event>(
@@ -236,14 +235,13 @@ template <bool Cumulative> auto make_processor(settings const &settings) {
     stop<event_set<warning_event>>( // Stop quietly on non-monotonic time.
     route<event_set<detection_event<>>>(
         channel_router(std::array{
-            settings.sync_channel,
-            settings.photon_leading_channel,
-            settings.photon_trailing_channel,
-            settings.pixel_marker_channel,
+            std::pair{settings.sync_channel, 0},
+            std::pair{settings.photon_leading_channel, 1},
+            std::pair{settings.photon_trailing_channel, 1},
+            std::pair{settings.pixel_marker_channel, 2},
         }),
         std::move(sync_processor),
-        std::move(photon_leading_processor),
-        std::move(photon_trailing_processor),
+        std::move(photon_processor),
         std::move(pixel_marker_processor))))))))));
     // clang-format on
 }

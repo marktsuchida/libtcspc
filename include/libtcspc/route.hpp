@@ -212,23 +212,41 @@ class null_router {
  *
  * \ingroup routers
  *
- * \tparam N the number of downstreams to route to
+ * \tparam N the number of channels to route
  *
  * \tparam DataTraits traits type specifying \c channel_type
  */
 template <std::size_t N, typename DataTraits = default_data_traits>
 class channel_router {
     std::array<typename DataTraits::channel_type, N> channels;
+    std::array<std::size_t, N> indices;
 
   public:
     /**
-     * \brief Construct with channels to map to downstream indices.
+     * \brief Construct with channels and corresponding downstream indices.
      *
-     * \param channels channels in order of downstreams to which to route
+     * \param channel_indices pairs of channels with downstream indices to
+     * route to
      */
+    template <
+        typename Ch, typename I,
+        typename = std::enable_if_t<
+            std::is_convertible_v<Ch, typename DataTraits::channel_type> &&
+            std::is_convertible_v<I, std::size_t>>>
     explicit channel_router(
-        std::array<typename DataTraits::channel_type, N> const &channels)
-        : channels(channels) {}
+        std::array<std::pair<Ch, I>, N> const &channel_indices)
+        : channels([&] {
+              std::array<typename DataTraits::channel_type, N> ret{};
+              std::transform(channel_indices.begin(), channel_indices.end(),
+                             ret.begin(), [](auto p) { return p.first; });
+              return ret;
+          }()),
+          indices([&] {
+              std::array<std::size_t, N> ret{};
+              std::transform(channel_indices.begin(), channel_indices.end(),
+                             ret.begin(), [](auto p) { return p.second; });
+              return ret;
+          }()) {}
 
     /** \brief Router interface. */
     template <typename Event>
@@ -238,24 +256,10 @@ class channel_router {
         auto it = std::find(channels.begin(), channels.end(), event.channel);
         if (it == channels.end())
             return std::numeric_limits<std::size_t>::max();
-        return static_cast<std::size_t>(std::distance(channels.begin(), it));
+        return indices[internal::as_unsigned(
+            std::distance(channels.begin(), it))];
     }
 };
-
-namespace internal {
-
-template <typename Channel> struct channel_router_data_traits {
-    using channel_type = Channel;
-};
-
-} // namespace internal
-
-/**
- * \brief Deduction guide for array of channels.
- */
-template <std::size_t N, typename Channel>
-channel_router(std::array<Channel, N>)
-    -> channel_router<N, internal::channel_router_data_traits<Channel>>;
 
 /**
  * \brief Create a processor that broadcasts events to multiple downstream
