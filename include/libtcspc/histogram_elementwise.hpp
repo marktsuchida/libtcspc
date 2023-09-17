@@ -218,7 +218,7 @@ class histogram_elementwise_accumulate {
 
     [[noreturn]] void stop() {
         downstream.flush();
-        throw end_processing();
+        throw end_processing("elementwise histogram bin overflowed");
     }
 
     [[noreturn]] void overflow_error(char const *msg) {

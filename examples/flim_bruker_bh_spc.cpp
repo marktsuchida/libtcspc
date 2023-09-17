@@ -114,8 +114,7 @@ template <bool Cumulative> auto make_processor(settings const &settings) {
         std::numeric_limits<std::uint64_t>::max(),
         std::make_shared<object_pool<device_event_vector>>(2, 2),
         65536, // Reader produces shared_ptr of vectors of device events.
-    stop_with_error<event_set<warning_event>>(
-        "error reading input",
+    stop_with_error<event_set<warning_event>>("error reading input",
     dereference_pointer<std::shared_ptr<device_event_vector>>(
     unbatch<device_event_vector, bh_spc_event>(
     decode_bh_spc(
@@ -208,10 +207,10 @@ auto main(int argc, char *argv[]) -> int {
             make_processor<true>(settings).pump_events();
         else
             make_processor<false>(settings).pump_events();
-    } catch (tcspc::end_processing const &) {
-        // Ok.
+    } catch (tcspc::end_processing const &exc) {
+        std::fputs(exc.what(), stderr);
+        std::fputs("\n", stderr);
     } catch (std::exception const &exc) {
-        std::fputs("Error: ", stderr);
         std::fputs(exc.what(), stderr);
         std::fputs("\n", stderr);
         if (dynamic_cast<std::invalid_argument const *>(&exc) != nullptr)

@@ -76,10 +76,20 @@ struct default_data_traits {
  * processing.
  */
 class end_processing final : public std::exception {
+    std::string msg;
+
   public:
+    /**
+     * \brief Construct with status message.
+     *
+     * \param message the message, which should describe the reason for the end
+     * of processing
+     */
+    explicit end_processing(std::string message) : msg(std::move(message)) {}
+
     /** \brief std::exception interface. */
     [[nodiscard]] auto what() const noexcept -> char const * override {
-        return "reached end of processing without error";
+        return msg.c_str();
     }
 };
 

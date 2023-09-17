@@ -61,7 +61,7 @@ class histogram {
 
     [[noreturn]] void stop() {
         downstream.flush();
-        throw end_processing();
+        throw end_processing("histogram bin overflowed");
     }
 
     [[noreturn]] void overflow_error() {

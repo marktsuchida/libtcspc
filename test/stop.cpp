@@ -33,8 +33,8 @@ TEST_CASE("stop with error", "[stop_with_error]") {
 
 TEST_CASE("stop with no error", "[stop]") {
     auto out = capture_output<event_set<e1>>();
-    auto in =
-        feed_input<event_set<e0, e1>>(stop<event_set<e0>>(ref_processor(out)));
+    auto in = feed_input<event_set<e0, e1>>(
+        stop<event_set<e0>>("end of stream", ref_processor(out)));
     in.require_output_checked(out);
 
     in.feed(e1{});

@@ -432,7 +432,8 @@ class buffer {
         {
             std::scoped_lock lock(mutex);
             if (downstream_threw)
-                throw end_processing();
+                throw end_processing(
+                    "ending upstream of buffer upon end of downstream processing");
 
             shared_queue.push(event);
             should_notify = shared_queue.size() == threshold;
@@ -451,7 +452,8 @@ class buffer {
         {
             std::scoped_lock lock(mutex);
             if (downstream_threw)
-                throw end_processing();
+                throw end_processing(
+                    "ending upstream of buffer upon end of downstream processing");
             upstream_flushed = true;
         }
         has_data_condition.notify_one();

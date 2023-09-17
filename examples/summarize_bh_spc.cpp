@@ -78,31 +78,28 @@ auto summarize(std::string const &filename) -> bool {
         std::numeric_limits<std::uint64_t>::max(),
         std::make_shared<object_pool<device_event_vector>>(3, 3),
         65536, // Reader produces shared_ptr of vectors of device events.
-    stop<event_set<warning_event>>( // End processing on read error.
+    stop<event_set<warning_event>>("error reading input",
     dereference_pointer<std::shared_ptr<device_event_vector>>(
         // Get the vectors of device events.
     unbatch<device_event_vector, bh_spc_event>(
         // Get individual device events.
     decode_bh_spc<dtraits>( // Decode device events into generic TCSPC events.
     check_monotonic<dtraits>( // Ensure the abstime is non-decreasing.
-    stop<event_set<warning_event, data_lost_event<dtraits>>>(
-        // End processing if anything wrong.
+    stop<event_set<warning_event, data_lost_event<dtraits>>>("error in data",
     summarize_and_print())))))));
     // clang-format on
 
     try {
         proc.pump_events(); // Run it all.
-    } catch (end_processing const &) {
+    } catch (end_processing const &exc) {
         // Explicit stop; counts were printed on flush.
-        // TODO Recover the error message (needs to be packaged in exc)
+        std::fputs(exc.what(), stderr);
         std::fputs("\n", stderr);
-        std::fputs("Error encountered in input\n", stderr);
-        std::fputs("The above results are only up to the error\n", stderr);
+        std::fputs("The above results are up to the error\n", stderr);
         // TODO Determine byte position in input stream of error.
         return false;
     } catch (std::exception const &exc) {
         // Other error; counts were not printed.
-        std::fputs("Error: ", stderr);
         std::fputs(exc.what(), stderr);
         std::fputs("\n", stderr);
         return false;
@@ -122,7 +119,7 @@ auto main(int argc, char const *argv[]) -> int {
         auto const &filename = args.front();
         return summarize(filename) ? EXIT_SUCCESS : EXIT_FAILURE;
     } catch (std::exception const &exc) {
-        std::fputs("Error: ", stderr);
+        std::fputs("error: ", stderr);
         std::fputs(exc.what(), stderr);
         std::fputs("\n", stderr);
         return EXIT_FAILURE;

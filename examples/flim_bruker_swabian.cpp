@@ -216,8 +216,7 @@ template <bool Cumulative> auto make_processor(settings const &settings) {
         std::numeric_limits<std::uint64_t>::max(),
         std::make_shared<object_pool<device_event_vector>>(2, 2),
         65536,
-    stop_with_error<event_set<warning_event>>(
-        "error reading input",
+    stop_with_error<event_set<warning_event>>("error reading input",
     dereference_pointer<std::shared_ptr<device_event_vector>>(
     unbatch<device_event_vector, swabian_tag_event>(
     decode_swabian_tags(
@@ -225,10 +224,9 @@ template <bool Cumulative> auto make_processor(settings const &settings) {
         warning_event,
         begin_lost_interval_event<>,
         end_lost_interval_event<>,
-        untagged_counts_event<>>>(
-            "error in input data",
+        untagged_counts_event<>>>("error in input data",
     check_monotonic(
-    stop<event_set<warning_event>>( // Stop quietly on non-monotonic time.
+    stop<event_set<warning_event>>("processing stopped",
     route<event_set<detection_event<>>>(
         channel_router(std::array{
             std::pair{settings.sync_channel, 0},
@@ -389,14 +387,14 @@ auto main(int argc, char *argv[]) -> int {
             make_processor<true>(settings).pump_events();
         else
             make_processor<false>(settings).pump_events();
-    } catch (tcspc::end_processing const &) {
-        // Ok.
+    } catch (tcspc::end_processing const &exc) {
+        std::fputs(exc.what(), stderr);
+        std::fputs("\n", stderr);
     } catch (std::exception const &exc) {
-        std::fputs("Error: ", stderr);
         std::fputs(exc.what(), stderr);
         std::fputs("\n", stderr);
         if (dynamic_cast<std::invalid_argument const *>(&exc) != nullptr)
-            std::fputs("Use --help for usage\n", stderr);
+            std::fputs("use --help for usage\n", stderr);
         return EXIT_FAILURE;
     }
     return EXIT_SUCCESS;

@@ -84,7 +84,7 @@ template <typename EventSet> class capture_output {
         assert(not end_of_life);
         assert(not flushed);
         if (error_in == 0)
-            throw std::runtime_error("test error on event");
+            throw std::runtime_error("test error upon event");
         try {
             output.push(event);
         } catch (std::exception const &exc) {
@@ -95,7 +95,7 @@ template <typename EventSet> class capture_output {
             std::terminate();
         }
         if (end_in == 0)
-            throw end_processing();
+            throw end_processing("test end-of-stream upon event");
         --error_in;
         --end_in;
     }
@@ -105,11 +105,11 @@ template <typename EventSet> class capture_output {
         assert(not flushed);
         if (error_on_flush) {
             end_of_life = true;
-            throw std::runtime_error("test error on flush");
+            throw std::runtime_error("test error upon flush");
         }
         flushed = true;
         if (end_on_flush)
-            throw end_processing();
+            throw end_processing("test end-of-stream upon flush");
     }
 
     void throw_error_on_next(std::size_t count = 0) noexcept {
@@ -251,11 +251,11 @@ template <> class capture_output<event_set<>> {
         assert(not flushed);
         if (error_on_flush) {
             end_of_life = true;
-            throw std::runtime_error("test error on flush");
+            throw std::runtime_error("test error upon flush");
         }
         flushed = true;
         if (end_on_flush)
-            throw end_processing();
+            throw end_processing("test end-of-stream upon flush");
     }
 
     void throw_error_on_flush() noexcept { error_on_flush = true; }

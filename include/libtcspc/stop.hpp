@@ -21,7 +21,7 @@ namespace tcspc {
 namespace internal {
 
 template <typename EventSet, typename Exception, typename Downstream>
-class stop_with_error {
+class stop_impl {
     Downstream downstream;
 
     // Cold data after downstream.
@@ -29,19 +29,19 @@ class stop_with_error {
 
     template <typename Event>
     [[noreturn]] LIBTCSPC_NOINLINE void stop(Event const &event) {
-        if (message_prefix.empty()) {
+        if constexpr (std::is_same_v<Exception, end_processing>)
             downstream.flush();
-            throw end_processing();
-        }
         std::ostringstream stream;
-        stream << message_prefix << ": " << event;
+        if (not message_prefix.empty())
+            stream << message_prefix << ": ";
+        stream << event;
         throw Exception(stream.str());
     }
 
   public:
-    explicit stop_with_error(std::string message, Downstream &&downstream)
+    explicit stop_impl(std::string prefix, Downstream &&downstream)
         : downstream(std::move(downstream)),
-          message_prefix(std::move(message)) {}
+          message_prefix(std::move(prefix)) {}
 
     template <typename Event> void handle(Event const &event) {
         if constexpr (contains_event_v<EventSet, Event>)
@@ -70,16 +70,16 @@ class stop_with_error {
  *
  * \tparam Downstream downstream processor type
  *
- * \param message error message ("error" is used if empty)
+ * \param message_prefix error message prefix
  *
  * \param downstream downstream processor
  */
 template <typename EventSet, typename Exception = std::runtime_error,
           typename Downstream>
-auto stop_with_error(std::string message, Downstream &&downstream) {
-    return internal::stop_with_error<EventSet, Exception, Downstream>(
-        message.empty() ? "error" : std::move(message),
-        std::forward<Downstream>(downstream));
+auto stop_with_error(std::string message_prefix, Downstream &&downstream) {
+    static_assert(not std::is_same_v<Exception, end_processing>);
+    return internal::stop_impl<EventSet, Exception, Downstream>(
+        std::move(message_prefix), std::forward<Downstream>(downstream));
 }
 
 /**
@@ -94,12 +94,14 @@ auto stop_with_error(std::string message, Downstream &&downstream) {
  *
  * \tparam Downstream downstream processor type
  *
+ * \param message_prefix error message prefix
+ *
  * \param downstream downstream processor
  */
 template <typename EventSet, typename Downstream>
-auto stop(Downstream &&downstream) {
-    return internal::stop_with_error<EventSet, std::runtime_error, Downstream>(
-        {}, std::forward<Downstream>(downstream));
+auto stop(std::string message_prefix, Downstream &&downstream) {
+    return internal::stop_impl<EventSet, end_processing, Downstream>(
+        std::move(message_prefix), std::forward<Downstream>(downstream));
 }
 
 } // namespace tcspc
