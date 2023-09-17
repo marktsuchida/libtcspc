@@ -35,7 +35,7 @@ TEMPLATE_TEST_CASE("Histogram, zero bins", "[histogram]", saturate_on_overflow,
                   concluding_histogram_event<data_traits>, misc_event>>();
     auto in = feed_input<
         event_set<bin_increment_event<data_traits>, reset_event, misc_event>>(
-        histogram<data_traits, reset_event, TestType>(0, 0,
+        histogram<reset_event, TestType, data_traits>(0, 0,
                                                       ref_processor(out)));
     in.require_output_checked(out);
 
@@ -58,7 +58,7 @@ TEMPLATE_TEST_CASE("Histogram, no overflow", "[histogram]",
                                  concluding_histogram_event<data_traits>>>();
     auto in =
         feed_input<event_set<bin_increment_event<data_traits>, reset_event>>(
-            histogram<data_traits, reset_event, TestType>(2, 100,
+            histogram<reset_event, TestType, data_traits>(2, 100,
                                                           ref_processor(out)));
     in.require_output_checked(out);
 
@@ -94,7 +94,7 @@ TEST_CASE("Histogram, saturate on overflow", "[histogram]") {
     SECTION("Max per bin = 0") {
         auto in = feed_input<
             event_set<bin_increment_event<data_traits>, reset_event>>(
-            histogram<data_traits, reset_event, saturate_on_overflow>(
+            histogram<reset_event, saturate_on_overflow, data_traits>(
                 1, 0, ref_processor(out)));
         in.require_output_checked(out);
 
@@ -113,7 +113,7 @@ TEST_CASE("Histogram, saturate on overflow", "[histogram]") {
     SECTION("Max per bin = 1") {
         auto in = feed_input<
             event_set<bin_increment_event<data_traits>, reset_event>>(
-            histogram<data_traits, reset_event, saturate_on_overflow>(
+            histogram<reset_event, saturate_on_overflow, data_traits>(
                 1, 1, ref_processor(out)));
         in.require_output_checked(out);
 
@@ -150,7 +150,7 @@ TEST_CASE("Histogram, reset on overflow", "[histogram]") {
     SECTION("Max per bin = 0") {
         auto in = feed_input<
             event_set<bin_increment_event<data_traits>, reset_event>>(
-            histogram<data_traits, reset_event, reset_on_overflow>(
+            histogram<reset_event, reset_on_overflow, data_traits>(
                 1, 0, ref_processor(out)));
         in.require_output_checked(out);
 
@@ -162,7 +162,7 @@ TEST_CASE("Histogram, reset on overflow", "[histogram]") {
     SECTION("Max per bin = 1") {
         auto in = feed_input<
             event_set<bin_increment_event<data_traits>, reset_event>>(
-            histogram<data_traits, reset_event, reset_on_overflow>(
+            histogram<reset_event, reset_on_overflow, data_traits>(
                 1, 1, ref_processor(out)));
         in.require_output_checked(out);
 
@@ -195,7 +195,7 @@ TEST_CASE("Histogram, stop on overflow", "[histogram]") {
     SECTION("Max per bin = 0") {
         auto in = feed_input<
             event_set<bin_increment_event<data_traits>, reset_event>>(
-            histogram<data_traits, reset_event, stop_on_overflow>(
+            histogram<reset_event, stop_on_overflow, data_traits>(
                 1, 0, ref_processor(out)));
         in.require_output_checked(out);
 
@@ -210,7 +210,7 @@ TEST_CASE("Histogram, stop on overflow", "[histogram]") {
     SECTION("Max per bin = 1") {
         auto in = feed_input<
             event_set<bin_increment_event<data_traits>, reset_event>>(
-            histogram<data_traits, reset_event, stop_on_overflow>(
+            histogram<reset_event, stop_on_overflow, data_traits>(
                 1, 1, ref_processor(out)));
         in.require_output_checked(out);
 
@@ -235,7 +235,7 @@ TEST_CASE("Histogram, error on overflow", "[histogram]") {
     SECTION("Max per bin = 0") {
         auto in = feed_input<
             event_set<bin_increment_event<data_traits>, reset_event>>(
-            histogram<data_traits, reset_event, error_on_overflow>(
+            histogram<reset_event, error_on_overflow, data_traits>(
                 1, 0, ref_processor(out)));
         in.require_output_checked(out);
 
@@ -247,7 +247,7 @@ TEST_CASE("Histogram, error on overflow", "[histogram]") {
     SECTION("Max per bin = 1") {
         auto in = feed_input<
             event_set<bin_increment_event<data_traits>, reset_event>>(
-            histogram<data_traits, reset_event, error_on_overflow>(
+            histogram<reset_event, error_on_overflow, data_traits>(
                 1, 1, ref_processor(out)));
         in.require_output_checked(out);
 

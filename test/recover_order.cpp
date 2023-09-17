@@ -18,7 +18,7 @@ using event = timestamped_test_event<0>;
 TEST_CASE("recover order", "[recover_order]") {
     auto out = capture_output<event_set<event>>();
     auto in = feed_input<event_set<event>>(
-        recover_order<default_data_traits, event>(3, ref_processor(out)));
+        recover_order<event>(3, ref_processor(out)));
     in.require_output_checked(out);
 
     SECTION("empty stream") {
@@ -62,7 +62,7 @@ TEST_CASE("recover order", "[recover_order]") {
 TEST_CASE("recover order, empty time window", "[recover_order]") {
     auto out = capture_output<event_set<event>>();
     auto in = feed_input<event_set<event>>(
-        recover_order<default_data_traits, event>(0, ref_processor(out)));
+        recover_order<event>(0, ref_processor(out)));
     in.require_output_checked(out);
 
     SECTION("in-order events are delayed") {

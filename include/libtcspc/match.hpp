@@ -118,11 +118,10 @@ auto match(Matcher &&matcher, Downstream &&downstream) {
  *
  * \ingroup matchers
  *
- * \tparam Channel channel number type
+ * \tparam DataTraits traits type specifying \c channel_type
  */
-template <typename Channel = default_data_traits::channel_type>
-class channel_matcher {
-    Channel channel;
+template <typename DataTraits = default_data_traits> class channel_matcher {
+    typename DataTraits::channel_type channel;
 
   public:
     /**
@@ -130,12 +129,14 @@ class channel_matcher {
      *
      * \param channel the channel number to match
      */
-    explicit channel_matcher(Channel channel) : channel(channel) {}
+    explicit channel_matcher(typename DataTraits::channel_type channel)
+        : channel(channel) {}
 
     /** \brief Matcher interface. */
     template <typename Event>
     auto operator()(Event const &event) const noexcept -> bool {
-        static_assert(std::is_same_v<decltype(event.channel), Channel>);
+        static_assert(std::is_same_v<decltype(event.channel),
+                                     typename DataTraits::channel_type>);
         return event.channel == channel;
     }
 };

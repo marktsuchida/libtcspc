@@ -18,10 +18,9 @@ namespace tcspc {
 TEST_CASE("pair all", "[pair_all]") {
     auto out =
         capture_output<event_set<detection_event<>, detection_pair_event<>>>();
-    auto in =
-        feed_input<event_set<detection_event<>>>(pair_all<default_data_traits>(
-            0, std::array<default_data_traits::channel_type, 1>{1}, 2,
-            ref_processor(out)));
+    auto in = feed_input<event_set<detection_event<>>>(
+        pair_all(0, std::array<default_data_traits::channel_type, 1>{1}, 2,
+                 ref_processor(out)));
     in.require_output_checked(out);
 
     SECTION("empty stream") {
@@ -90,10 +89,9 @@ TEST_CASE("pair all", "[pair_all]") {
 TEST_CASE("pair all with self", "[pair_all]") {
     auto out =
         capture_output<event_set<detection_event<>, detection_pair_event<>>>();
-    auto in =
-        feed_input<event_set<detection_event<>>>(pair_all<default_data_traits>(
-            0, std::array<default_data_traits::channel_type, 1>{0}, 2,
-            ref_processor(out)));
+    auto in = feed_input<event_set<detection_event<>>>(
+        pair_all(0, std::array<default_data_traits::channel_type, 1>{0}, 2,
+                 ref_processor(out)));
     in.require_output_checked(out);
 
     in.feed(detection_event<>{{{0}, 0}});
@@ -120,10 +118,9 @@ TEST_CASE("pair all with self", "[pair_all]") {
 TEST_CASE("pair one", "[pair_one]") {
     auto out =
         capture_output<event_set<detection_event<>, detection_pair_event<>>>();
-    auto in =
-        feed_input<event_set<detection_event<>>>(pair_one<default_data_traits>(
-            0, std::array<default_data_traits::channel_type, 1>{1}, 2,
-            ref_processor(out)));
+    auto in = feed_input<event_set<detection_event<>>>(
+        pair_one(0, std::array<default_data_traits::channel_type, 1>{1}, 2,
+                 ref_processor(out)));
     in.require_output_checked(out);
 
     SECTION("empty stream") {
@@ -186,10 +183,9 @@ TEST_CASE("pair one", "[pair_one]") {
 TEST_CASE("pair one with self", "[pair_one]") {
     auto out =
         capture_output<event_set<detection_event<>, detection_pair_event<>>>();
-    auto in =
-        feed_input<event_set<detection_event<>>>(pair_one<default_data_traits>(
-            0, std::array<default_data_traits::channel_type, 1>{0}, 2,
-            ref_processor(out)));
+    auto in = feed_input<event_set<detection_event<>>>(
+        pair_one(0, std::array<default_data_traits::channel_type, 1>{0}, 2,
+                 ref_processor(out)));
     in.require_output_checked(out);
 
     in.feed(detection_event<>{{{0}, 0}});
@@ -214,10 +210,9 @@ TEST_CASE("pair one with self", "[pair_one]") {
 TEST_CASE("pair all between", "[pair_all_between]") {
     auto out =
         capture_output<event_set<detection_event<>, detection_pair_event<>>>();
-    auto in = feed_input<event_set<detection_event<>>>(
-        pair_all_between<default_data_traits>(
-            0, std::array<default_data_traits::channel_type, 1>{1}, 2,
-            ref_processor(out)));
+    auto in = feed_input<event_set<detection_event<>>>(pair_all_between(
+        0, std::array<default_data_traits::channel_type, 1>{1}, 2,
+        ref_processor(out)));
     in.require_output_checked(out);
 
     SECTION("empty stream") {
@@ -282,10 +277,9 @@ TEST_CASE("pair all between", "[pair_all_between]") {
 TEST_CASE("pair all between with self", "[pair_all_between]") {
     auto out =
         capture_output<event_set<detection_event<>, detection_pair_event<>>>();
-    auto in = feed_input<event_set<detection_event<>>>(
-        pair_all_between<default_data_traits>(
-            0, std::array<default_data_traits::channel_type, 1>{0}, 2,
-            ref_processor(out)));
+    auto in = feed_input<event_set<detection_event<>>>(pair_all_between(
+        0, std::array<default_data_traits::channel_type, 1>{0}, 2,
+        ref_processor(out)));
     in.require_output_checked(out);
 
     in.feed(detection_event<>{{{0}, 0}});
@@ -310,10 +304,9 @@ TEST_CASE("pair all between with self", "[pair_all_between]") {
 TEST_CASE("pair one between", "[pair_one_between]") {
     auto out =
         capture_output<event_set<detection_event<>, detection_pair_event<>>>();
-    auto in = feed_input<event_set<detection_event<>>>(
-        pair_one_between<default_data_traits>(
-            0, std::array<default_data_traits::channel_type, 1>{1}, 2,
-            ref_processor(out)));
+    auto in = feed_input<event_set<detection_event<>>>(pair_one_between(
+        0, std::array<default_data_traits::channel_type, 1>{1}, 2,
+        ref_processor(out)));
     in.require_output_checked(out);
 
     SECTION("empty stream") {
@@ -376,10 +369,9 @@ TEST_CASE("pair one between", "[pair_one_between]") {
 TEST_CASE("pair one between with self", "[pair_one_between]") {
     auto out =
         capture_output<event_set<detection_event<>, detection_pair_event<>>>();
-    auto in = feed_input<event_set<detection_event<>>>(
-        pair_one_between<default_data_traits>(
-            0, std::array<default_data_traits::channel_type, 1>{0}, 2,
-            ref_processor(out)));
+    auto in = feed_input<event_set<detection_event<>>>(pair_one_between(
+        0, std::array<default_data_traits::channel_type, 1>{0}, 2,
+        ref_processor(out)));
     in.require_output_checked(out);
 
     in.feed(detection_event<>{{{0}, 0}});

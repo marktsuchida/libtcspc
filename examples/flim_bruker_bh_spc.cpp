@@ -87,14 +87,14 @@ template <bool Cumulative> auto make_histo_proc(settings const &settings) {
         binary_file_output_stream(settings.output_filename, settings.truncate),
         std::make_shared<object_pool<std::vector<std::byte>>>(), 65536);
     if constexpr (Cumulative) {
-        return histogram_elementwise_accumulate<
-            default_data_traits, never_event, error_on_overflow, true>(
+        return histogram_elementwise_accumulate<never_event, error_on_overflow,
+                                                true>(
             settings.pixels_per_line * settings.lines_per_frame, 256, 65535,
             select<event_set<concluding_histogram_array_event<>>>(
                 view_histogram_array_as_bytes<
                     concluding_histogram_array_event<>>(std::move(writer))));
     } else {
-        return histogram_elementwise<default_data_traits, error_on_overflow>(
+        return histogram_elementwise<error_on_overflow>(
             settings.pixels_per_line * settings.lines_per_frame, 256, 65535,
             select<event_set<histogram_array_event<>>>(
                 view_histogram_array_as_bytes<histogram_array_event<>>(
@@ -137,10 +137,8 @@ template <bool Cumulative> auto make_processor(settings const &settings) {
             std::array{std::make_pair(settings.channel, std::size_t(0))}),
         std::array{
     map_to_datapoints(difftime_data_mapper(),
-    map_to_bins(
-        power_of_2_bin_mapper<12, 8, default_data_traits, true>(),
-    batch_bin_increments<
-        default_data_traits, pixel_start_event, pixel_stop_event>(
+    map_to_bins(power_of_2_bin_mapper<12, 8, true>(),
+    batch_bin_increments<pixel_start_event, pixel_stop_event>(
     make_histo_proc<Cumulative>(settings))))}))))))))))))));
     // clang-format on
 }

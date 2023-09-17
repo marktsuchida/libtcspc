@@ -23,7 +23,7 @@ namespace tcspc {
 
 namespace internal {
 
-template <typename DataTraits, typename ResetEvent, typename OverflowStrategy,
+template <typename ResetEvent, typename OverflowStrategy, typename DataTraits,
           typename Downstream>
 class histogram {
   public:
@@ -146,17 +146,13 @@ class histogram {
  * Behavior is undefined if an incoming \c bin_increment_event contains a bin
  * index beyond the size of the histogram.
  *
- * \tparam DataTraits traits type specifying \c abstime_type, \c
- * bin_index_type, and \c bin_type
- *
- * \tparam BinIndex the bin index type
- *
- * \tparam Bin the data type of the histogram bins
- *
  * \tparam ResetEvent type of event causing histogram to reset
  *
  * \tparam OverflowStrategy strategy tag type to select how to handle bin
  * overflows
+ *
+ * \tparam DataTraits traits type specifying \c abstime_type, \c
+ * bin_index_type, and \c bin_type
  *
  * \tparam Downstream downstream processor type
  *
@@ -169,11 +165,11 @@ class histogram {
  *
  * \return histogram processor
  */
-template <typename DataTraits, typename ResetEvent, typename OverflowStrategy,
-          typename Downstream>
+template <typename ResetEvent, typename OverflowStrategy,
+          typename DataTraits = default_data_traits, typename Downstream>
 auto histogram(std::size_t num_bins, typename DataTraits::bin_type max_per_bin,
                Downstream &&downstream) {
-    return internal::histogram<DataTraits, ResetEvent, OverflowStrategy,
+    return internal::histogram<ResetEvent, OverflowStrategy, DataTraits,
                                Downstream>(
         num_bins, max_per_bin, std ::forward<Downstream>(downstream));
 }

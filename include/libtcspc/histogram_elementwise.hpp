@@ -21,7 +21,7 @@ namespace tcspc {
 
 namespace internal {
 
-template <typename DataTraits, typename OverflowStrategy, typename Downstream>
+template <typename OverflowStrategy, typename DataTraits, typename Downstream>
 class histogram_elementwise {
   public:
     using bin_index_type = typename DataTraits::bin_index_type;
@@ -128,11 +128,11 @@ class histogram_elementwise {
  * At the end of each cycle a histogram_array_event is emitted, referencing the
  * whole array of histograms from the cycle.
  *
- * \tparam DataTraits traits type specifying \c abstime_type, \c
- * bin_index_type, and \c bin_type
- *
  * \tparam OverflowStrategy strategy tag type to select how to handle bin
  * overflows
+ *
+ * \tparam DataTraits traits type specifying \c abstime_type, \c
+ * bin_index_type, and \c bin_type
  *
  * \tparam Downstream downstream processor type
  *
@@ -147,11 +147,12 @@ class histogram_elementwise {
  *
  * \return histogram-array processor
  */
-template <typename DataTraits, typename OverflowStrategy, typename Downstream>
+template <typename OverflowStrategy, typename DataTraits = default_data_traits,
+          typename Downstream>
 auto histogram_elementwise(std::size_t num_elements, std::size_t num_bins,
                            typename DataTraits::bin_type max_per_bin,
                            Downstream &&downstream) {
-    return internal::histogram_elementwise<DataTraits, OverflowStrategy,
+    return internal::histogram_elementwise<OverflowStrategy, DataTraits,
                                            Downstream>(
         num_elements, num_bins, max_per_bin,
         std::forward<Downstream>(downstream));
@@ -159,8 +160,8 @@ auto histogram_elementwise(std::size_t num_elements, std::size_t num_bins,
 
 namespace internal {
 
-template <typename DataTraits, typename ResetEvent, typename OverflowStrategy,
-          bool EmitConcluding, typename Downstream>
+template <typename ResetEvent, typename OverflowStrategy, bool EmitConcluding,
+          typename DataTraits, typename Downstream>
 class histogram_elementwise_accumulate {
   public:
     using bin_index_type = typename DataTraits::bin_index_type;
@@ -328,13 +329,16 @@ class histogram_elementwise_accumulate {
  * The reset event \c ResetEvent causes the array of histograms to be cleared
  * and a new accumulation to be started.
  *
- * \tparam DataTraits traits type specifying \c abstime_type, \c
- * bin_index_type, and \c bin_type
- *
  * \tparam ResetEvent type of event causing histograms to reset
  *
  * \tparam OverflowStrategy strategy tag type to select how to handle bin
  * overflows
+ *
+ * \tparam EmitConcluding if true, emit a \c concluding_histogram_array_event
+ * each time a cycle completes
+ *
+ * \tparam DataTraits traits type specifying \c abstime_type, \c
+ * bin_index_type, and \c bin_type
  *
  * \tparam Downstream downstream processor type
  *
@@ -349,13 +353,14 @@ class histogram_elementwise_accumulate {
  *
  * \return accumulate-histogram-arrays processor
  */
-template <typename DataTraits, typename ResetEvent, typename OverflowStrategy,
-          bool EmitConcluding, typename Downstream>
+template <typename ResetEvent, typename OverflowStrategy,
+          bool EmitConcluding = false,
+          typename DataTraits = default_data_traits, typename Downstream>
 auto histogram_elementwise_accumulate(
     std::size_t num_elements, std::size_t num_bins,
     typename DataTraits::bin_type max_per_bin, Downstream &&downstream) {
     return internal::histogram_elementwise_accumulate<
-        DataTraits, ResetEvent, OverflowStrategy, EmitConcluding, Downstream>(
+        ResetEvent, OverflowStrategy, EmitConcluding, DataTraits, Downstream>(
         num_elements, num_bins, max_per_bin,
         std::forward<Downstream>(downstream));
 }

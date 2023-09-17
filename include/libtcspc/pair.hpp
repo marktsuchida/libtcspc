@@ -26,7 +26,7 @@ namespace tcspc {
 
 namespace internal {
 
-template <typename DataTraits, std::size_t NStopChannels, typename Downstream>
+template <std::size_t NStopChannels, typename DataTraits, typename Downstream>
 class pair_all {
     typename DataTraits::channel_type start_chan;
     std::array<typename DataTraits::channel_type, NStopChannels> stop_chans;
@@ -85,7 +85,7 @@ class pair_all {
     void flush() { downstream.flush(); }
 };
 
-template <typename DataTraits, std::size_t NStopChannels, typename Downstream>
+template <std::size_t NStopChannels, typename DataTraits, typename Downstream>
 class pair_one {
     typename DataTraits::channel_type start_chan;
     std::array<typename DataTraits::channel_type, NStopChannels> stop_chans;
@@ -153,7 +153,7 @@ class pair_one {
     void flush() { downstream.flush(); }
 };
 
-template <typename DataTraits, std::size_t NStopChannels, typename Downstream>
+template <std::size_t NStopChannels, typename DataTraits, typename Downstream>
 class pair_all_between {
     typename DataTraits::channel_type start_chan;
     std::array<typename DataTraits::channel_type, NStopChannels> stop_chans;
@@ -213,7 +213,7 @@ class pair_all_between {
     void flush() { downstream.flush(); }
 };
 
-template <typename DataTraits, std::size_t NStopChannels, typename Downstream>
+template <std::size_t NStopChannels, typename DataTraits, typename Downstream>
 class pair_one_between {
     typename DataTraits::channel_type start_chan;
     std::array<typename DataTraits::channel_type, NStopChannels> stop_chans;
@@ -299,10 +299,10 @@ class pair_one_between {
  * \see pair_all_between
  * \see pair_one_between
  *
+ * \tparam NStopChannels number of stop channels
+ *
  * \tparam DataTraits traits type specifying \c abstime_type and \c
  * channel_type
- *
- * \tparam NStopChannels number of stop channels
  *
  * \tparam Downstream downstream processor type
  *
@@ -315,12 +315,13 @@ class pair_one_between {
  *
  * \param downstream downstream processor
  */
-template <typename DataTraits, std::size_t NStopChannels, typename Downstream>
+template <std::size_t NStopChannels, typename DataTraits = default_data_traits,
+          typename Downstream>
 auto pair_all(
     typename DataTraits::channel_type start_channel,
     std::array<typename DataTraits::channel_type, NStopChannels> stop_channels,
     typename DataTraits::abstime_type time_window, Downstream &&downstream) {
-    return internal::pair_all<DataTraits, NStopChannels, Downstream>(
+    return internal::pair_all<NStopChannels, DataTraits, Downstream>(
         start_channel, stop_channels, time_window,
         std::forward<Downstream>(downstream));
 }
@@ -344,10 +345,10 @@ auto pair_all(
  * \see pair_all_between
  * \see pair_one_between
  *
+ * \tparam NStopChannels number of stop channels
+ *
  * \tparam DataTraits traits type specifying \c abstime_type and \c
  * channel_type
- *
- * \tparam NStopChannels number of stop channels
  *
  * \tparam Downstream downstream processor type
  *
@@ -360,12 +361,13 @@ auto pair_all(
  *
  * \param downstream downstream processor
  */
-template <typename DataTraits, std::size_t NStopChannels, typename Downstream>
+template <std::size_t NStopChannels, typename DataTraits = default_data_traits,
+          typename Downstream>
 auto pair_one(
     typename DataTraits::channel_type start_channel,
     std::array<typename DataTraits::channel_type, NStopChannels> stop_channels,
     typename DataTraits::abstime_type time_window, Downstream &&downstream) {
-    return internal::pair_one<DataTraits, NStopChannels, Downstream>(
+    return internal::pair_one<NStopChannels, DataTraits, Downstream>(
         start_channel, stop_channels, time_window,
         std::forward<Downstream>(downstream));
 }
@@ -388,10 +390,10 @@ auto pair_one(
  * \see pair_one
  * \see pair_one_between
  *
+ * \tparam NStopChannels number of stop channels
+ *
  * \tparam DataTraits traits type specifying \c abstime_type and \c
  * channel_type
- *
- * \tparam NStopChannels number of stop channels
  *
  * \tparam Downstream downstream processor type
  *
@@ -404,12 +406,13 @@ auto pair_one(
  *
  * \param downstream downstream processor
  */
-template <typename DataTraits, std::size_t NStopChannels, typename Downstream>
+template <std::size_t NStopChannels, typename DataTraits = default_data_traits,
+          typename Downstream>
 auto pair_all_between(
     typename DataTraits::channel_type start_channel,
     std::array<typename DataTraits::channel_type, NStopChannels> stop_channels,
     typename DataTraits::abstime_type time_window, Downstream &&downstream) {
-    return internal::pair_all_between<DataTraits, NStopChannels, Downstream>(
+    return internal::pair_all_between<NStopChannels, DataTraits, Downstream>(
         start_channel, stop_channels, time_window,
         std::forward<Downstream>(downstream));
 }
@@ -433,10 +436,10 @@ auto pair_all_between(
  * \see pair_one
  * \see pair_all_between
  *
+ * \tparam NStopChannels number of stop channels
+ *
  * \tparam DataTraits traits type specifying \c abstime_type and \c
  * channel_type
- *
- * \tparam NStopChannels number of stop channels
  *
  * \tparam Downstream downstream processor type
  *
@@ -449,12 +452,13 @@ auto pair_all_between(
  *
  * \param downstream downstream processor
  */
-template <typename DataTraits, std::size_t NStopChannels, typename Downstream>
+template <std::size_t NStopChannels, typename DataTraits = default_data_traits,
+          typename Downstream>
 auto pair_one_between(
     typename DataTraits::channel_type start_channel,
     std::array<typename DataTraits::channel_type, NStopChannels> stop_channels,
     typename DataTraits::abstime_type time_window, Downstream &&downstream) {
-    return internal::pair_one_between<DataTraits, NStopChannels, Downstream>(
+    return internal::pair_one_between<NStopChannels, DataTraits, Downstream>(
         start_channel, stop_channels, time_window,
         std::forward<Downstream>(downstream));
 }

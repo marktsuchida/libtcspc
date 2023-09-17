@@ -99,7 +99,7 @@ class periodic_fitter {
     }
 };
 
-template <typename DataTraits, typename Event, typename Downstream>
+template <typename Event, typename DataTraits, typename Downstream>
 class fit_periodic_sequences {
     using abstime_type = typename DataTraits::abstime_type;
 
@@ -213,9 +213,9 @@ class fit_periodic_sequences {
  * This processor does not pass through \c Event, but passes through any other
  * event.
  *
- * \tparam DataTraits traits type specifying data types for emitted event
- *
  * \tparam Event event whose timing is to be fit
+ *
+ * \tparam DataTraits traits type specifying data types for emitted event
  *
  * \tparam Downstream downstream processor type
  *
@@ -229,11 +229,12 @@ class fit_periodic_sequences {
  *
  * \param downstream downstream processor
  */
-template <typename DataTraits, typename Event, typename Downstream>
+template <typename Event, typename DataTraits = default_data_traits,
+          typename Downstream>
 auto fit_periodic_sequences(std::size_t length,
                             std::array<double, 2> min_max_interval,
                             double max_mse, Downstream &&downstream) {
-    return internal::fit_periodic_sequences<DataTraits, Event, Downstream>(
+    return internal::fit_periodic_sequences<Event, DataTraits, Downstream>(
         length, min_max_interval, max_mse,
         std::forward<Downstream>(downstream));
 }

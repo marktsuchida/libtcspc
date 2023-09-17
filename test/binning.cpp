@@ -104,41 +104,41 @@ TEST_CASE("Power-of-2 bin mapping", "[power_of_2_bin_mapper]") {
         using datapoint_type = u32;
         using bin_index_type = u16;
     };
-    power_of_2_bin_mapper<0, 0, data_traits, false> const m00;
+    power_of_2_bin_mapper<0, 0, false, data_traits> const m00;
     REQUIRE(m00.n_bins() == 1);
     REQUIRE(m00(0).value() == 0);
     REQUIRE_FALSE(m00(1));
 
-    power_of_2_bin_mapper<0, 0, data_traits, true> const m00f;
+    power_of_2_bin_mapper<0, 0, true, data_traits> const m00f;
     REQUIRE(m00f.n_bins() == 1);
     REQUIRE(m00f(0).value() == 0);
     REQUIRE_FALSE(m00f(1));
 
-    power_of_2_bin_mapper<1, 0, data_traits, false> const m10;
+    power_of_2_bin_mapper<1, 0, false, data_traits> const m10;
     REQUIRE(m10.n_bins() == 1);
     REQUIRE(m10(0).value() == 0);
     REQUIRE(m10(1).value() == 0);
     REQUIRE_FALSE(m10(2));
 
-    power_of_2_bin_mapper<1, 0, data_traits, true> const m10f;
+    power_of_2_bin_mapper<1, 0, true, data_traits> const m10f;
     REQUIRE(m10f.n_bins() == 1);
     REQUIRE(m10f(0).value() == 0);
     REQUIRE(m10f(1).value() == 0);
     REQUIRE_FALSE(m10f(2));
 
-    power_of_2_bin_mapper<1, 1, data_traits, false> const m11;
+    power_of_2_bin_mapper<1, 1, false, data_traits> const m11;
     REQUIRE(m11.n_bins() == 2);
     REQUIRE(m11(0).value() == 0);
     REQUIRE(m11(1).value() == 1);
     REQUIRE_FALSE(m11(2));
 
-    power_of_2_bin_mapper<1, 1, data_traits, true> const m11f;
+    power_of_2_bin_mapper<1, 1, true, data_traits> const m11f;
     REQUIRE(m11f.n_bins() == 2);
     REQUIRE(m11f(0).value() == 1);
     REQUIRE(m11f(1).value() == 0);
     REQUIRE_FALSE(m11f(2));
 
-    power_of_2_bin_mapper<2, 0, data_traits, false> const m20;
+    power_of_2_bin_mapper<2, 0, false, data_traits> const m20;
     REQUIRE(m20.n_bins() == 1);
     REQUIRE(m20(0).value() == 0);
     REQUIRE(m20(1).value() == 0);
@@ -146,7 +146,7 @@ TEST_CASE("Power-of-2 bin mapping", "[power_of_2_bin_mapper]") {
     REQUIRE(m20(3).value() == 0);
     REQUIRE_FALSE(m20(4));
 
-    power_of_2_bin_mapper<2, 0, data_traits, true> const m20f;
+    power_of_2_bin_mapper<2, 0, true, data_traits> const m20f;
     REQUIRE(m20f.n_bins() == 1);
     REQUIRE(m20f(0).value() == 0);
     REQUIRE(m20f(1).value() == 0);
@@ -154,7 +154,7 @@ TEST_CASE("Power-of-2 bin mapping", "[power_of_2_bin_mapper]") {
     REQUIRE(m20f(3).value() == 0);
     REQUIRE_FALSE(m20f(4));
 
-    power_of_2_bin_mapper<2, 1, data_traits, false> const m21;
+    power_of_2_bin_mapper<2, 1, false, data_traits> const m21;
     REQUIRE(m21.n_bins() == 2);
     REQUIRE(m21(0).value() == 0);
     REQUIRE(m21(1).value() == 0);
@@ -162,7 +162,7 @@ TEST_CASE("Power-of-2 bin mapping", "[power_of_2_bin_mapper]") {
     REQUIRE(m21(3).value() == 1);
     REQUIRE_FALSE(m21(4));
 
-    power_of_2_bin_mapper<2, 1, data_traits, true> const m21f;
+    power_of_2_bin_mapper<2, 1, true, data_traits> const m21f;
     REQUIRE(m21f.n_bins() == 2);
     REQUIRE(m21f(0).value() == 1);
     REQUIRE(m21f(1).value() == 1);
@@ -170,7 +170,7 @@ TEST_CASE("Power-of-2 bin mapping", "[power_of_2_bin_mapper]") {
     REQUIRE(m21f(3).value() == 0);
     REQUIRE_FALSE(m21f(4));
 
-    power_of_2_bin_mapper<2, 2, data_traits, false> const m22;
+    power_of_2_bin_mapper<2, 2, false, data_traits> const m22;
     REQUIRE(m22.n_bins() == 4);
     REQUIRE(m22(0).value() == 0);
     REQUIRE(m22(1).value() == 1);
@@ -178,7 +178,7 @@ TEST_CASE("Power-of-2 bin mapping", "[power_of_2_bin_mapper]") {
     REQUIRE(m22(3).value() == 3);
     REQUIRE_FALSE(m22(4));
 
-    power_of_2_bin_mapper<2, 2, data_traits, true> const m22f;
+    power_of_2_bin_mapper<2, 2, true, data_traits> const m22f;
     REQUIRE(m22f.n_bins() == 4);
     REQUIRE(m22f(0).value() == 3);
     REQUIRE(m22f(1).value() == 2);
@@ -186,7 +186,7 @@ TEST_CASE("Power-of-2 bin mapping", "[power_of_2_bin_mapper]") {
     REQUIRE(m22f(3).value() == 0);
     REQUIRE_FALSE(m22f(4));
 
-    power_of_2_bin_mapper<12, 8, data_traits, false> const m12_8;
+    power_of_2_bin_mapper<12, 8, false, data_traits> const m12_8;
     REQUIRE(m12_8.n_bins() == 256);
     REQUIRE(m12_8(0).value() == 0);
     REQUIRE(m12_8(15).value() == 0);
@@ -194,7 +194,7 @@ TEST_CASE("Power-of-2 bin mapping", "[power_of_2_bin_mapper]") {
     REQUIRE(m12_8(4095).value() == 255);
     REQUIRE_FALSE(m12_8(4096));
 
-    power_of_2_bin_mapper<12, 8, data_traits, true> const m12_8f;
+    power_of_2_bin_mapper<12, 8, true, data_traits> const m12_8f;
     REQUIRE(m12_8f.n_bins() == 256);
     REQUIRE(m12_8f(0).value() == 255);
     REQUIRE(m12_8f(15).value() == 255);
@@ -202,7 +202,7 @@ TEST_CASE("Power-of-2 bin mapping", "[power_of_2_bin_mapper]") {
     REQUIRE(m12_8f(4095).value() == 0);
     REQUIRE_FALSE(m12_8f(4096));
 
-    power_of_2_bin_mapper<16, 16, data_traits, false> const m16_16;
+    power_of_2_bin_mapper<16, 16, false, data_traits> const m16_16;
     REQUIRE(m16_16.n_bins() == 65536);
     REQUIRE(m16_16(0).value() == 0);
     REQUIRE(m16_16(1).value() == 1);
@@ -211,13 +211,13 @@ TEST_CASE("Power-of-2 bin mapping", "[power_of_2_bin_mapper]") {
     struct data_traits_16_16 : data_traits {
         using datapoint_type = u16;
     };
-    power_of_2_bin_mapper<16, 16, data_traits_16_16, false> const m16_16_16;
+    power_of_2_bin_mapper<16, 16, false, data_traits_16_16> const m16_16_16;
     REQUIRE(m16_16_16.n_bins() == 65536);
     REQUIRE(m16_16_16(0).value() == 0);
     REQUIRE(m16_16_16(1).value() == 1);
     REQUIRE(m16_16_16(65535).value() == 65535);
 
-    power_of_2_bin_mapper<32, 16, data_traits, false> const m32_16;
+    power_of_2_bin_mapper<32, 16, false, data_traits> const m32_16;
     REQUIRE(m32_16.n_bins() == 65536);
     REQUIRE(m32_16(0).value() == 0);
     REQUIRE(m32_16(65535).value() == 0);
@@ -378,7 +378,7 @@ TEST_CASE("Batch bin increments", "[batch_bin_increments]") {
         event_set<bin_increment_batch_event<data_traits>, misc_event>>();
     auto in = feed_input<event_set<bin_increment_event<data_traits>,
                                    start_event, stop_event, misc_event>>(
-        batch_bin_increments<data_traits, start_event, stop_event>(
+        batch_bin_increments<start_event, stop_event, data_traits>(
             ref_processor(out)));
     in.require_output_checked(out);
 

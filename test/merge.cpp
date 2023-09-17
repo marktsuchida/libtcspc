@@ -28,8 +28,7 @@ TEST_CASE("Merge", "[merge]") {
     //         erased
 
     auto out = capture_output<all_events>();
-    auto [min0, min1] =
-        merge<default_data_traits, all_events>(1000, ref_processor(out));
+    auto [min0, min1] = merge<all_events>(1000, ref_processor(out));
 
     auto min_x = type_erased_processor<all_events>(ref_processor(min0));
     auto min_y = type_erased_processor<all_events>(ref_processor(min1));
@@ -156,8 +155,7 @@ TEST_CASE("Merge max time shift", "[merge]") {
     //         erased
 
     auto out = capture_output<all_events>();
-    auto [min0, min1] =
-        merge<default_data_traits, all_events>(10, ref_processor(out));
+    auto [min0, min1] = merge<all_events>(10, ref_processor(out));
 
     int const x = GENERATE(0, 1);
     auto min_x = type_erased_processor<all_events>(std::move(min0));
@@ -203,15 +201,13 @@ TEST_CASE("merge N streams", "[merge_n]") {
 
     SECTION("Zero-stream merge_n returns empty tuple") {
         // NOLINTBEGIN(clang-analyzer-deadcode.DeadStores)
-        auto tup = merge_n<0, default_data_traits, all_events>(
-            1000, ref_processor(out));
+        auto tup = merge_n<0, all_events>(1000, ref_processor(out));
         static_assert(std::tuple_size_v<decltype(tup)> == 0);
         // NOLINTEND(clang-analyzer-deadcode.DeadStores)
     }
 
     SECTION("Single-stream merge_n returns downstream in tuple") {
-        auto [m0] = merge_n<1, default_data_traits, all_events>(
-            1000, ref_processor(out));
+        auto [m0] = merge_n<1, all_events>(1000, ref_processor(out));
         static_assert(
             std::is_same_v<decltype(m0), decltype(ref_processor(out))>);
         // clang-tidy bug? std::move() is necessary here.
@@ -225,15 +221,12 @@ TEST_CASE("merge N streams", "[merge_n]") {
     }
 
     SECTION("Multi-stream merge_n can be instantiated") {
-        auto [m0, m1] = merge_n<2, default_data_traits, all_events>(
-            1000, ref_processor(out));
-        auto [n0, n1, n2] = merge_n<3, default_data_traits, all_events>(
-            1000, ref_processor(out));
-        auto [o0, o1, o2, o3] = merge_n<4, default_data_traits, all_events>(
-            1000, ref_processor(out));
+        auto [m0, m1] = merge_n<2, all_events>(1000, ref_processor(out));
+        auto [n0, n1, n2] = merge_n<3, all_events>(1000, ref_processor(out));
+        auto [o0, o1, o2, o3] =
+            merge_n<4, all_events>(1000, ref_processor(out));
         auto [p0, p1, p2, p3, p4] =
-            merge_n<5, default_data_traits, all_events>(1000,
-                                                        ref_processor(out));
+            merge_n<5, all_events>(1000, ref_processor(out));
     }
 }
 

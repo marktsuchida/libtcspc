@@ -52,8 +52,7 @@ TEST_CASE("fit periodic sequences", "[fit_periodic_sequences]") {
     using e0 = timestamped_test_event<0>;
     auto out = capture_output<event_set<periodic_sequence_event<>>>();
     auto in = feed_input<event_set<e0>>(
-        fit_periodic_sequences<default_data_traits, e0>(4, {1.0, 2.0}, 2.5,
-                                                        ref_processor(out)));
+        fit_periodic_sequences<e0>(4, {1.0, 2.0}, 2.5, ref_processor(out)));
     in.require_output_checked(out);
 
     SECTION("fit succeeds") {

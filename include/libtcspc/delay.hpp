@@ -91,7 +91,7 @@ template <typename DataTraits, typename Downstream> class zero_base_abstime {
  * \event{All events, passed through with time delay applied}
  * \endevents
  */
-template <typename DataTraits, typename Downstream>
+template <typename DataTraits = default_data_traits, typename Downstream>
 auto delay(typename DataTraits::abstime_type delta, Downstream &&downstream) {
     return internal::delay<DataTraits, Downstream>(
         delta, std::forward<Downstream>(downstream));

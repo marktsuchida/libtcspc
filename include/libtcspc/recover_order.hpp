@@ -19,7 +19,7 @@ namespace tcspc {
 
 namespace internal {
 
-template <typename DataTraits, typename Event, typename Downstream>
+template <typename Event, typename DataTraits, typename Downstream>
 class recover_order {
     typename DataTraits::abstime_type window_size;
 
@@ -90,9 +90,9 @@ class recover_order {
  *
  * \ingroup processors-timing
  *
- * \tparam DataTraits traits type specifying \c abstime_type
- *
  * \tparam Event type of event to sort
+ *
+ * \tparam DataTraits traits type specifying \c abstime_type
  *
  * \tparam Downstream downstream processor type
  *
@@ -101,10 +101,11 @@ class recover_order {
  *
  * \param downstream downstream processor
  */
-template <typename DataTraits, typename Event, typename Downstream>
+template <typename Event, typename DataTraits = default_data_traits,
+          typename Downstream>
 auto recover_order(typename DataTraits::abstime_type time_window,
                    Downstream &&downstream) {
-    return internal::recover_order<DataTraits, Event, Downstream>(
+    return internal::recover_order<Event, DataTraits, Downstream>(
         time_window, std::forward<Downstream>(downstream));
 }
 

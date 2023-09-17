@@ -141,15 +141,15 @@ template <bool Cumulative> auto make_histo_proc(settings const &settings) {
         binary_file_output_stream(settings.output_filename, settings.truncate),
         std::make_shared<object_pool<std::vector<std::byte>>>(), 65536);
     if constexpr (Cumulative) {
-        return histogram_elementwise_accumulate<
-            default_data_traits, never_event, error_on_overflow, true>(
+        return histogram_elementwise_accumulate<never_event, error_on_overflow,
+                                                true>(
             settings.pixels_per_line * settings.lines_per_frame,
             std::size_t(settings.max_bin_index) + 1, 65535,
             select<event_set<concluding_histogram_array_event<>>>(
                 view_histogram_array_as_bytes<
                     concluding_histogram_array_event<>>(std::move(writer))));
     } else {
-        return histogram_elementwise<default_data_traits, error_on_overflow>(
+        return histogram_elementwise<error_on_overflow>(
             settings.pixels_per_line * settings.lines_per_frame,
             std::size_t(settings.max_bin_index) + 1, 65535,
             select<event_set<histogram_array_event<>>>(
@@ -165,42 +165,39 @@ template <bool Cumulative> auto make_processor(settings const &settings) {
     // clang-format off
 
     auto [bin_increment_merge, start_stop_merge] =
-    merge<default_data_traits, event_set<
+    merge<event_set<
         bin_increment_event<>, pixel_start_event, pixel_stop_event>>(
             settings.max_photon_pulse_width,
-    batch_bin_increments<
-        default_data_traits, pixel_start_event, pixel_stop_event>(
+    batch_bin_increments<pixel_start_event, pixel_stop_event>(
     make_histo_proc<Cumulative>(settings)));
 
     auto [sync_merge, cfd_merge] =
-    merge<default_data_traits, event_set<detection_event<>>>(
+    merge<event_set<detection_event<>>>(
         std::abs(settings.sync_delay),
-    pair_all_between<default_data_traits>(
+    pair_all_between(
         settings.sync_channel,
-        std::array<channel_type, 1>{settings.photon_trailing_channel},
+        std::array{settings.photon_trailing_channel},
         settings.max_diff_time,
     select<event_set<detection_pair_event<>>>(
     time_correlate_at_stop(
-    map_to_datapoints(
-        difftime_data_mapper(),
+    map_to_datapoints(difftime_data_mapper(),
     map_to_bins(
         linear_bin_mapper(0, settings.bin_width, settings.max_bin_index),
     std::move(bin_increment_merge)))))));
 
     auto sync_processor =
-    delay<default_data_traits>(settings.sync_delay,
+    delay(settings.sync_delay,
     std::move(sync_merge));
 
     auto photon_processor =
-    pair_one_between<default_data_traits>(
+    pair_one_between(
         settings.photon_leading_channel,
-        std::array<channel_type, 1>{settings.photon_trailing_channel},
+        std::array{settings.photon_trailing_channel},
         settings.max_photon_pulse_width,
     select<event_set<detection_pair_event<>>>(
     time_correlate_at_midpoint(
     remove_time_correlation(
-    recover_order<default_data_traits, detection_event<>>(
-        std::abs(settings.max_photon_pulse_width),
+    recover_order<detection_event<>>(std::abs(settings.max_photon_pulse_width),
     std::move(cfd_merge))))));
 
     auto pixel_marker_processor =
@@ -243,6 +240,7 @@ template <bool Cumulative> auto make_processor(settings const &settings) {
         std::move(sync_processor),
         std::move(photon_processor),
         std::move(pixel_marker_processor))))))))));
+
     // clang-format on
 }
 

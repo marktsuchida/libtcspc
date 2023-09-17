@@ -244,13 +244,13 @@ auto map_to_bins(BinMapper &&bin_mapper, Downstream &&downstream) {
  *
  * \tparam NHistoBits number of bits used for bin indices
  *
+ * \tparam Flip whether to flip the bin indices
+ *
  * \tparam DataTraits traits type specifying \c datapoint_type and \c
  * bin_index_type
- *
- * \tparam Flip whether to flip the bin indices
  */
-template <unsigned NDataBits, unsigned NHistoBits,
-          typename DataTraits = default_data_traits, bool Flip = false>
+template <unsigned NDataBits, unsigned NHistoBits, bool Flip = false,
+          typename DataTraits = default_data_traits>
 struct power_of_2_bin_mapper {
     /** \brief Bin mapper interface */
     using datapoint_type = typename DataTraits::datapoint_type;
@@ -372,7 +372,7 @@ template <typename DataTraits = default_data_traits> class linear_bin_mapper {
 
 namespace internal {
 
-template <typename DataTraits, typename StartEvent, typename StopEvent,
+template <typename StartEvent, typename StopEvent, typename DataTraits,
           typename Downstream>
 class batch_bin_increments {
     bool in_batch = false;
@@ -419,12 +419,12 @@ class batch_bin_increments {
  *
  * \ingroup processors-histogram
  *
- * \tparam DataTraits traits type specifying \c bin_index_type and used for
- * emitted events
- *
  * \tparam StartEvent start-of-batch event type
  *
  * \tparam StopEvent end-of-batch event type
+ *
+ * \tparam DataTraits traits type specifying \c bin_index_type and used for
+ * emitted events
  *
  * \tparam Downstream downstream processor type
  *
@@ -432,10 +432,10 @@ class batch_bin_increments {
  *
  * \return batch-bin-increments processor
  */
-template <typename DataTraits, typename StartEvent, typename StopEvent,
-          typename Downstream>
+template <typename StartEvent, typename StopEvent,
+          typename DataTraits = default_data_traits, typename Downstream>
 auto batch_bin_increments(Downstream &&downstream) {
-    return internal::batch_bin_increments<DataTraits, StartEvent, StopEvent,
+    return internal::batch_bin_increments<StartEvent, StopEvent, DataTraits,
                                           Downstream>(
         std::forward<Downstream>(downstream));
 }

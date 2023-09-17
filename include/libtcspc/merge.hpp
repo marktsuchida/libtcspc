@@ -26,7 +26,7 @@ namespace internal {
 
 // Internal implementation of merge processor. This processor is owned by the
 // two input processors via shared_ptr.
-template <typename DataTraits, typename EventSet, typename Downstream>
+template <typename EventSet, typename DataTraits, typename Downstream>
 class merge_impl {
     // When events have equal abstime, those originating from input 0 are
     // emitted before those originating from input1. Within the same input, the
@@ -155,14 +155,14 @@ class merge_impl {
     }
 };
 
-template <typename DataTraits, unsigned InputChannel, typename EventSet,
+template <unsigned InputChannel, typename EventSet, typename DataTraits,
           typename Downstream>
 class merge_input {
-    std::shared_ptr<merge_impl<DataTraits, EventSet, Downstream>> impl;
+    std::shared_ptr<merge_impl<EventSet, DataTraits, Downstream>> impl;
 
   public:
     explicit merge_input(
-        std::shared_ptr<merge_impl<DataTraits, EventSet, Downstream>> impl)
+        std::shared_ptr<merge_impl<EventSet, DataTraits, Downstream>> impl)
         : impl(std::move(impl)) {}
 
     // Movable but not copyable
@@ -196,9 +196,9 @@ class merge_input {
  *
  * \see merge_n
  *
- * \tparam DataTraits traits type specifying \c abstime_type
- *
  * \tparam EventSet the event set handled by the merge processor
+ *
+ * \tparam DataTraits traits type specifying \c abstime_type
  *
  * \tparam Downstream downstream processor type
  *
@@ -208,15 +208,16 @@ class merge_input {
  *
  * \return tuple-like of two processors serving as the input to merge
  */
-template <typename DataTraits, typename EventSet, typename Downstream>
+template <typename EventSet, typename DataTraits = default_data_traits,
+          typename Downstream>
 auto merge(typename DataTraits::abstime_type max_time_shift,
            Downstream &&downstream) {
     auto p = std::make_shared<
-        internal::merge_impl<DataTraits, EventSet, Downstream>>(
+        internal::merge_impl<EventSet, DataTraits, Downstream>>(
         max_time_shift, std::forward<Downstream>(downstream));
     return std::make_pair(
-        internal::merge_input<DataTraits, 0, EventSet, Downstream>(p),
-        internal::merge_input<DataTraits, 1, EventSet, Downstream>(p));
+        internal::merge_input<0, EventSet, DataTraits, Downstream>(p),
+        internal::merge_input<1, EventSet, DataTraits, Downstream>(p));
 }
 
 /**
@@ -238,9 +239,9 @@ auto merge(typename DataTraits::abstime_type max_time_shift,
  *
  * \tparam N number of input streams
  *
- * \tparam DataTraits traits type specifying \c abstime_type
- *
  * \tparam EventSet the event set handled by the merge processor
+ *
+ * \tparam DataTraits traits type specifying \c abstime_type
  *
  * \tparam Downstream downstream processor type
  *
@@ -250,8 +251,8 @@ auto merge(typename DataTraits::abstime_type max_time_shift,
  *
  * \return tuple-like of N processors serving as the input to merge
  */
-template <std::size_t N, typename DataTraits, typename EventSet,
-          typename Downstream>
+template <std::size_t N, typename EventSet,
+          typename DataTraits = default_data_traits, typename Downstream>
 auto merge_n(typename DataTraits::abstime_type max_time_shift,
              Downstream &&downstream) {
     if constexpr (N == 0) {
@@ -259,7 +260,7 @@ auto merge_n(typename DataTraits::abstime_type max_time_shift,
     } else if constexpr (N == 1) {
         return std::tuple{std::forward<Downstream>(downstream)};
     } else {
-        auto [final_in0, final_in1] = merge<DataTraits, EventSet>(
+        auto [final_in0, final_in1] = merge<EventSet, DataTraits>(
             max_time_shift, std::forward<Downstream>(downstream));
 
         std::size_t const left = N / 2;
@@ -270,13 +271,13 @@ auto merge_n(typename DataTraits::abstime_type max_time_shift,
             } else {
                 return std::tuple_cat(
                     std::tuple{std::move(final_in0)},
-                    merge_n<right, DataTraits, EventSet>(
+                    merge_n<right, EventSet, DataTraits>(
                         max_time_shift, std::move(final_in1)));
             }
         } else {
-            return std::tuple_cat(merge_n<left, DataTraits, EventSet>(
+            return std::tuple_cat(merge_n<left, EventSet, DataTraits>(
                                       max_time_shift, std::move(final_in0)),
-                                  merge_n<right, DataTraits, EventSet>(
+                                  merge_n<right, EventSet, DataTraits>(
                                       max_time_shift, std::move(final_in1)));
         }
     }

@@ -47,7 +47,7 @@ TEMPLATE_TEST_CASE("Histogram elementwise, zero elements",
                                  histogram_array_event<dt3216>, misc_event>>();
     auto in =
         feed_input<event_set<bin_increment_batch_event<dt3216>, misc_event>>(
-            histogram_elementwise<dt3216, TestType>(0, 1, 1,
+            histogram_elementwise<TestType, dt3216>(0, 1, 1,
                                                     ref_processor(out)));
     in.require_output_checked(out);
 
@@ -63,7 +63,7 @@ TEMPLATE_TEST_CASE("Histogram elementwise, zero bins",
     auto out = capture_output<event_set<element_histogram_event<dt3216>,
                                         histogram_array_event<dt3216>>>();
     auto in = feed_input<event_set<bin_increment_batch_event<dt3216>>>(
-        histogram_elementwise<dt3216, TestType>(1, 0, 1, ref_processor(out)));
+        histogram_elementwise<TestType, dt3216>(1, 0, 1, ref_processor(out)));
     in.require_output_checked(out);
 
     in.feed(bin_increment_batch_event<dt3216>{{42, 43}, {}});
@@ -80,7 +80,7 @@ TEMPLATE_TEST_CASE("Histogram elementwise, no overflow",
     auto out = capture_output<event_set<element_histogram_event<dt3216>,
                                         histogram_array_event<dt3216>>>();
     auto in = feed_input<event_set<bin_increment_batch_event<dt3216>>>(
-        histogram_elementwise<dt3216, TestType>(2, 2, 100,
+        histogram_elementwise<TestType, dt3216>(2, 2, 100,
                                                 ref_processor(out)));
     in.require_output_checked(out);
 
@@ -108,7 +108,7 @@ TEST_CASE("Histogram elementwise, saturate on overflow",
 
     SECTION("Max per bin = 0") {
         auto in = feed_input<event_set<bin_increment_batch_event<dt3216>>>(
-            histogram_elementwise<dt3216, saturate_on_overflow>(
+            histogram_elementwise<saturate_on_overflow, dt3216>(
                 1, 1, 0, ref_processor(out)));
         in.require_output_checked(out);
 
@@ -125,7 +125,7 @@ TEST_CASE("Histogram elementwise, saturate on overflow",
 
     SECTION("Max per bin = 1") {
         auto in = feed_input<event_set<bin_increment_batch_event<dt3216>>>(
-            histogram_elementwise<dt3216, saturate_on_overflow>(
+            histogram_elementwise<saturate_on_overflow, dt3216>(
                 1, 1, 1, ref_processor(out)));
         in.require_output_checked(out);
 
@@ -149,7 +149,7 @@ TEST_CASE("Histogram elementwise, error on overflow",
 
     SECTION("Max per bin = 0") {
         auto in = feed_input<event_set<bin_increment_batch_event<dt3216>>>(
-            histogram_elementwise<dt3216, error_on_overflow>(
+            histogram_elementwise<error_on_overflow, dt3216>(
                 1, 1, 0, ref_processor(out)));
         in.require_output_checked(out);
 
@@ -161,7 +161,7 @@ TEST_CASE("Histogram elementwise, error on overflow",
 
     SECTION("Max per bin = 1") {
         auto in = feed_input<event_set<bin_increment_batch_event<dt3216>>>(
-            histogram_elementwise<dt3216, error_on_overflow>(
+            histogram_elementwise<error_on_overflow, dt3216>(
                 1, 1, 1, ref_processor(out)));
         in.require_output_checked(out);
 
@@ -201,7 +201,7 @@ TEMPLATE_TEST_CASE(
     auto num_bins = GENERATE(std::size_t{0}, 1, 4);
     auto out = capture_output<hea_output_events_no_concluding>();
     auto in = feed_input<hea_input_events>(
-        histogram_elementwise_accumulate<dt88, reset_event, TestType, false>(
+        histogram_elementwise_accumulate<reset_event, TestType, false, dt88>(
             num_elements, num_bins, 10, ref_processor(out)));
     in.require_output_checked(out);
 
@@ -224,7 +224,7 @@ TEMPLATE_TEST_CASE(
     reset_on_overflow, stop_on_overflow, error_on_overflow) {
     auto out = capture_output<hea_output_events_no_concluding>();
     auto in = feed_input<hea_input_events>(
-        histogram_elementwise_accumulate<dt88, reset_event, TestType, false>(
+        histogram_elementwise_accumulate<reset_event, TestType, false, dt88>(
             2, 3, 255, ref_processor(out)));
     in.require_output_checked(out);
 
@@ -282,7 +282,7 @@ TEMPLATE_TEST_CASE(
     error_on_overflow) {
     auto out = capture_output<hea_output_events>();
     auto in = feed_input<hea_input_events>(
-        histogram_elementwise_accumulate<dt88, reset_event, TestType, true>(
+        histogram_elementwise_accumulate<reset_event, TestType, true, dt88>(
             2, 3, 255, ref_processor(out)));
     in.require_output_checked(out);
 
@@ -352,7 +352,7 @@ TEMPLATE_TEST_CASE(
     error_on_overflow) {
     auto out = capture_output<hea_output_events>();
     auto in = feed_input<hea_input_events>(
-        histogram_elementwise_accumulate<dt88, reset_event, TestType, true>(
+        histogram_elementwise_accumulate<reset_event, TestType, true, dt88>(
             2, 3, 255, ref_processor(out)));
     in.require_output_checked(out);
 
@@ -436,9 +436,9 @@ TEST_CASE("histogram_elementwise_accumulate with saturate-on-overflow",
           "[histogram_elementwise_accumulate]") {
     auto out = capture_output<hea_output_events_no_concluding>();
     auto in = feed_input<hea_input_events>(
-        histogram_elementwise_accumulate<dt88, reset_event,
-                                         saturate_on_overflow, false>(
-            2, 3, 4, ref_processor(out)));
+        histogram_elementwise_accumulate<reset_event, saturate_on_overflow,
+                                         false, dt88>(2, 3, 4,
+                                                      ref_processor(out)));
     in.require_output_checked(out);
 
     std::vector<u8> elem_hist;
@@ -473,8 +473,8 @@ TEST_CASE("histogram_elementwise_accumulate with reset-on-overflow",
           "[histogram_elementwise_accumulate]") {
     auto out = capture_output<hea_output_events>();
     auto in = feed_input<hea_input_events>(
-        histogram_elementwise_accumulate<dt88, reset_event, reset_on_overflow,
-                                         true>(2, 3, 4, ref_processor(out)));
+        histogram_elementwise_accumulate<reset_event, reset_on_overflow, true,
+                                         dt88>(2, 3, 4, ref_processor(out)));
     in.require_output_checked(out);
 
     std::vector<u8> elem_hist;
@@ -577,8 +577,8 @@ TEST_CASE("histogram_elementwise_accumulate with stop-on-overflow",
           "[histogram_elementwise_accumulate]") {
     auto out = capture_output<hea_output_events>();
     auto in = feed_input<hea_input_events>(
-        histogram_elementwise_accumulate<dt88, reset_event, stop_on_overflow,
-                                         true>(2, 3, 4, ref_processor(out)));
+        histogram_elementwise_accumulate<reset_event, stop_on_overflow, true,
+                                         dt88>(2, 3, 4, ref_processor(out)));
     in.require_output_checked(out);
 
     std::vector<u8> elem_hist;
@@ -654,8 +654,8 @@ TEST_CASE(
     "[histogram_elementwise_accumulate]") {
     auto out = capture_output<hea_output_events>();
     auto in = feed_input<hea_input_events>(
-        histogram_elementwise_accumulate<dt88, reset_event, error_on_overflow,
-                                         true>(2, 3, 4, ref_processor(out)));
+        histogram_elementwise_accumulate<reset_event, error_on_overflow, true,
+                                         dt88>(2, 3, 4, ref_processor(out)));
     in.require_output_checked(out);
 
     std::vector<u8> elem_hist;
@@ -719,8 +719,8 @@ TEST_CASE(
     "[histogram_elementwise_accumulate]") {
     auto out = capture_output<hea_output_events_no_concluding>();
     auto in = feed_input<hea_input_events>(
-        histogram_elementwise_accumulate<dt88, reset_event, error_on_overflow,
-                                         false>(2, 3, 4, ref_processor(out)));
+        histogram_elementwise_accumulate<reset_event, error_on_overflow, false,
+                                         dt88>(2, 3, 4, ref_processor(out)));
     in.require_output_checked(out);
 
     std::vector<u8> elem_hist;
