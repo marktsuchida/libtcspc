@@ -114,6 +114,45 @@ auto match(Matcher &&matcher, Downstream &&downstream) {
 }
 
 /**
+ * \brief Matcher that always matches.
+ *
+ * \ingroup matchers
+ *
+ * This allows \c match to be used used to unconditionally convert events of a
+ * certain type.
+ *
+ * \see never_matcher
+ */
+class always_matcher {
+  public:
+    /** \brief Matcher interface. */
+    template <typename Event>
+    auto operator()([[maybe_unused]] Event const &event) const noexcept
+        -> bool {
+        return true;
+    }
+};
+
+/**
+ * \brief Matcher that never matches.
+ *
+ * \ingroup matchers
+ *
+ * Provided for symmetry with \c always_matcher.
+ *
+ * \see always_matcher
+ */
+class never_matcher {
+  public:
+    /** \brief Matcher interface. */
+    template <typename Event>
+    auto operator()([[maybe_unused]] Event const &event) const noexcept
+        -> bool {
+        return false;
+    }
+};
+
+/**
  * \brief Matcher that matches a single channel.
  *
  * \ingroup matchers

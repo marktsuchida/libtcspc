@@ -201,8 +201,7 @@ template <bool Cumulative> auto make_processor(settings const &settings) {
     std::move(cfd_merge))))));
 
     auto pixel_marker_processor =
-    match<detection_event<>, pixel_start_event>(
-        []([[maybe_unused]] detection_event<> const &event) { return true; },
+    match<detection_event<>, pixel_start_event>(always_matcher(),
     select<event_set<pixel_start_event>>(
     generate<pixel_start_event>(
         one_shot_timing_generator<pixel_stop_event>(settings.pixel_time),
