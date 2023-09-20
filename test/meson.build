@@ -28,6 +28,7 @@ test_libtcspc_srcs = [
     'pair.cpp',
     'picoquant_t2.cpp',
     'picoquant_t3.cpp',
+    'processor_context.cpp',
     'read_binary_stream.cpp',
     'read_bytes.cpp',
     'recover_order.cpp',

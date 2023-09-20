@@ -27,6 +27,7 @@ public_cpp_headers = files(
     'pair.hpp',
     'picoquant_t2.hpp',
     'picoquant_t3.hpp',
+    'processor_context.hpp',
     'read_binary_stream.hpp',
     'read_bytes.hpp',
     'recover_order.hpp',
