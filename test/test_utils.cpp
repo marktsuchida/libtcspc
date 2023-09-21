@@ -7,7 +7,7 @@
 #include "libtcspc/test_utils.hpp"
 
 #include "libtcspc/event_set.hpp"
-#include "libtcspc/ref_processor.hpp"
+#include "libtcspc/processor_context.hpp"
 
 #include <exception>
 #include <ostream>
@@ -21,9 +21,12 @@ using e0 = empty_test_event<0>;
 using e1 = timestamped_test_event<1>;
 
 TEST_CASE("Short-circuited with no events", "[test_utils]") {
-    auto out = capture_output<event_set<>>();
-    auto in = feed_input<event_set<>>(ref_processor(out));
-    in.require_output_checked(out);
+    auto ctx = std::make_shared<processor_context>();
+    auto in = feed_input<event_set<>>(capture_output<event_set<>>(
+        ctx->tracker<capture_output_access>("out")));
+    in.require_output_checked(ctx, "out");
+    auto out = capture_output_checker<event_set<>>(
+        ctx->accessor<capture_output_access>("out"));
 
     SECTION("End successfully") {
         in.flush();
@@ -34,9 +37,12 @@ TEST_CASE("Short-circuited with no events", "[test_utils]") {
 }
 
 TEST_CASE("Short-circuited with event set", "[test_utils]") {
-    auto out = internal::capture_output<event_set<e0, e1>>(true);
-    auto in = feed_input<event_set<e0, e1>>(ref_processor(out));
-    in.require_output_checked(out);
+    auto ctx = std::make_shared<processor_context>();
+    auto in = feed_input<event_set<e0, e1>>(capture_output<event_set<e0, e1>>(
+        ctx->tracker<capture_output_access>("out")));
+    in.require_output_checked(ctx, "out");
+    auto out = capture_output_checker<event_set<e0, e1>>(
+        ctx->accessor<capture_output_access>("out"));
 
     in.feed(e0{});
     CHECK(out.check(e0{}));
@@ -63,17 +69,17 @@ TEST_CASE("Short-circuited with event set", "[test_utils]") {
 
     SECTION("Forget to check output before asserting successful end") {
         in.feed(e0{});
-        CHECK_FALSE(out.check_flushed());
+        CHECK_THROWS_AS(out.check_flushed(), std::logic_error);
     }
 
     SECTION("Forget to check output before asserting unflushed end") {
         in.feed(e0{});
-        CHECK_FALSE(out.check_not_flushed());
+        CHECK_THROWS_AS(out.check_not_flushed(), std::logic_error);
     }
 
     SECTION("Expect the wrong event") {
         in.feed(e1{42});
-        CHECK_FALSE(out.check(e1{0}));
+        CHECK_THROWS_AS(out.check(e1{0}), std::logic_error);
     }
 }
 

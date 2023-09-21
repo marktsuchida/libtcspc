@@ -27,8 +27,10 @@ TEST_CASE("Merge", "[merge]") {
     // in_x -> min_x -> ref -> min0/1 -> merge_impl -> out
     //         erased
 
-    auto out = capture_output<all_events>();
-    auto [min0, min1] = merge<all_events>(1000, ref_processor(out));
+    auto ctx = std::make_shared<processor_context>();
+    auto [min0, min1] = merge<all_events>(
+        1000, capture_output<all_events>(
+                  ctx->tracker<capture_output_access>("out")));
 
     auto min_x = type_erased_processor<all_events>(ref_processor(min0));
     auto min_y = type_erased_processor<all_events>(ref_processor(min1));
@@ -39,13 +41,16 @@ TEST_CASE("Merge", "[merge]") {
     }
 
     auto in_0 = feed_input<all_events>(ref_processor(min0));
-    in_0.require_output_checked(out);
+    in_0.require_output_checked(ctx, "out");
     auto in_1 = feed_input<all_events>(ref_processor(min1));
-    in_1.require_output_checked(out);
+    in_1.require_output_checked(ctx, "out");
     auto in_x = feed_input<all_events>(std::move(min_x));
-    in_x.require_output_checked(out);
+    in_x.require_output_checked(ctx, "out");
     auto in_y = feed_input<all_events>(std::move(min_y));
-    in_y.require_output_checked(out);
+    in_y.require_output_checked(ctx, "out");
+
+    auto out = capture_output_checker<all_events>(
+        ctx->accessor<capture_output_access>("out"));
 
     SECTION("Empty yields empty") {
         in_x.flush();
@@ -154,8 +159,10 @@ TEST_CASE("Merge max time shift", "[merge]") {
     // in_x -> min_x -> min0 -> merge_impl -> out
     //         erased
 
-    auto out = capture_output<all_events>();
-    auto [min0, min1] = merge<all_events>(10, ref_processor(out));
+    auto ctx = std::make_shared<processor_context>();
+    auto [min0, min1] =
+        merge<all_events>(10, capture_output<all_events>(
+                                  ctx->tracker<capture_output_access>("out")));
 
     int const x = GENERATE(0, 1);
     auto min_x = type_erased_processor<all_events>(std::move(min0));
@@ -166,9 +173,12 @@ TEST_CASE("Merge max time shift", "[merge]") {
     }
 
     auto in_x = feed_input<all_events>(std::move(min_x));
-    in_x.require_output_checked(out);
+    in_x.require_output_checked(ctx, "out");
     auto in_y = feed_input<all_events>(std::move(min_y));
-    in_y.require_output_checked(out);
+    in_y.require_output_checked(ctx, "out");
+
+    auto out = capture_output_checker<all_events>(
+        ctx->accessor<capture_output_access>("out"));
 
     SECTION("in_x emitted after exceeding max time shift") {
         in_x.feed(e0{0});
@@ -197,23 +207,30 @@ TEST_CASE("Merge max time shift", "[merge]") {
 }
 
 TEST_CASE("merge N streams", "[merge_n]") {
-    auto out = capture_output<all_events>();
+    auto ctx = std::make_shared<processor_context>();
 
     SECTION("Zero-stream merge_n returns empty tuple") {
         // NOLINTBEGIN(clang-analyzer-deadcode.DeadStores)
-        auto tup = merge_n<0, all_events>(1000, ref_processor(out));
+        auto tup = merge_n<0, all_events>(
+            1000, capture_output<all_events>(
+                      ctx->tracker<capture_output_access>("out")));
         static_assert(std::tuple_size_v<decltype(tup)> == 0);
         // NOLINTEND(clang-analyzer-deadcode.DeadStores)
     }
 
     SECTION("Single-stream merge_n returns downstream in tuple") {
-        auto [m0] = merge_n<1, all_events>(1000, ref_processor(out));
+        auto [m0] = merge_n<1, all_events>(
+            1000, capture_output<all_events>(
+                      ctx->tracker<capture_output_access>("out")));
         static_assert(
-            std::is_same_v<decltype(m0), decltype(ref_processor(out))>);
-        // clang-tidy bug? std::move() is necessary here.
-        // NOLINTNEXTLINE(performance-move-const-arg)
+            std::is_same_v<decltype(m0),
+                           decltype(capture_output<all_events>(
+                               ctx->tracker<capture_output_access>("out")))>);
         auto in = feed_input<all_events>(std::move(m0));
-        in.require_output_checked(out);
+        in.require_output_checked(ctx, "out");
+        auto out = capture_output_checker<all_events>(
+            ctx->accessor<capture_output_access>("out"));
+
         in.feed(e0{0});
         REQUIRE(out.check(e0{0}));
         in.flush();
@@ -221,22 +238,31 @@ TEST_CASE("merge N streams", "[merge_n]") {
     }
 
     SECTION("Multi-stream merge_n can be instantiated") {
-        auto [m0, m1] = merge_n<2, all_events>(1000, ref_processor(out));
-        auto [n0, n1, n2] = merge_n<3, all_events>(1000, ref_processor(out));
-        auto [o0, o1, o2, o3] =
-            merge_n<4, all_events>(1000, ref_processor(out));
-        auto [p0, p1, p2, p3, p4] =
-            merge_n<5, all_events>(1000, ref_processor(out));
+        auto [m0, m1] = merge_n<2, all_events>(
+            1000, capture_output<all_events>(
+                      ctx->tracker<capture_output_access>("out2")));
+        auto [n0, n1, n2] = merge_n<3, all_events>(
+            1000, capture_output<all_events>(
+                      ctx->tracker<capture_output_access>("out3")));
+        auto [o0, o1, o2, o3] = merge_n<4, all_events>(
+            1000, capture_output<all_events>(
+                      ctx->tracker<capture_output_access>("out4")));
+        auto [p0, p1, p2, p3, p4] = merge_n<5, all_events>(
+            1000, capture_output<all_events>(
+                      ctx->tracker<capture_output_access>("out5")));
     }
 }
 
 TEST_CASE("merge unsorted", "[merge_n_unsorted]") {
-    auto out = capture_output<all_events>();
-    auto [min0, min1] = merge_n_unsorted(ref_processor(out));
+    auto ctx = std::make_shared<processor_context>();
+    auto [min0, min1] = merge_n_unsorted(capture_output<all_events>(
+        ctx->tracker<capture_output_access>("out")));
     auto in0 = feed_input<all_events>(std::move(min0));
     auto in1 = feed_input<all_events>(std::move(min1));
-    in0.require_output_checked(out);
-    in1.require_output_checked(out);
+    in0.require_output_checked(ctx, "out");
+    in1.require_output_checked(ctx, "out");
+    auto out = capture_output_checker<all_events>(
+        ctx->accessor<capture_output_access>("out"));
 
     SECTION("empty yields empty") {
         in0.flush();

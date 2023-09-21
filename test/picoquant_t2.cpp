@@ -6,7 +6,6 @@
 
 #include "libtcspc/picoquant_t2.hpp"
 
-#include "libtcspc/ref_processor.hpp"
 #include "libtcspc/test_utils.hpp"
 
 #include <catch2/catch_all.hpp>
@@ -383,13 +382,21 @@ TEMPLATE_TEST_CASE("pqt2 hydraharp assign", "[pqt2_event]",
               {0b1001'1111, 0b1111'1111, 0b1111'1111, 0b1111'1111}));
 }
 
+namespace {
+
+using out_events = event_set<detection_event<>, marker_event<>,
+                             time_reached_event<>, warning_event>;
+
+}
+
 TEST_CASE("decode pqt2 picoharp", "[decode_pqt2_picoharp]") {
-    auto out =
-        capture_output<event_set<detection_event<>, marker_event<>,
-                                 time_reached_event<>, warning_event>>();
+    auto ctx = std::make_shared<processor_context>();
     auto in = feed_input<event_set<pqt2_picoharp_event>>(
-        decode_pqt2_picoharp(ref_processor(out)));
-    in.require_output_checked(out);
+        decode_pqt2_picoharp(capture_output<out_events>(
+            ctx->tracker<capture_output_access>("out"))));
+    in.require_output_checked(ctx, "out");
+    auto out = capture_output_checker<out_events>(
+        ctx->accessor<capture_output_access>("out"));
 
     SECTION("non-special") {
         in.feed(pqt2_picoharp_event::make_nonspecial(42_u32np, 5_u8np));
@@ -416,12 +423,13 @@ TEST_CASE("decode pqt2 picoharp", "[decode_pqt2_picoharp]") {
 }
 
 TEST_CASE("decode pqt2 hydraharpv1", "[decode_pqt2_hydraharpv1]") {
-    auto out =
-        capture_output<event_set<detection_event<>, marker_event<>,
-                                 time_reached_event<>, warning_event>>();
+    auto ctx = std::make_shared<processor_context>();
     auto in = feed_input<event_set<pqt2_hydraharpv1_event>>(
-        decode_pqt2_hydraharpv1(ref_processor(out)));
-    in.require_output_checked(out);
+        decode_pqt2_hydraharpv1(capture_output<out_events>(
+            ctx->tracker<capture_output_access>("out"))));
+    in.require_output_checked(ctx, "out");
+    auto out = capture_output_checker<out_events>(
+        ctx->accessor<capture_output_access>("out"));
 
     SECTION("non-special") {
         in.feed(pqt2_hydraharpv1_event::make_nonspecial(42_u32np, 5_u8np));
@@ -453,12 +461,13 @@ TEST_CASE("decode pqt2 hydraharpv1", "[decode_pqt2_hydraharpv1]") {
 }
 
 TEST_CASE("decode pqt2 hydraharpv2", "[decode_pqt2_hydraharpv2]") {
-    auto out =
-        capture_output<event_set<detection_event<>, marker_event<>,
-                                 time_reached_event<>, warning_event>>();
+    auto ctx = std::make_shared<processor_context>();
     auto in = feed_input<event_set<pqt2_hydraharpv2_event>>(
-        decode_pqt2_hydraharpv2(ref_processor(out)));
-    in.require_output_checked(out);
+        decode_pqt2_hydraharpv2(capture_output<out_events>(
+            ctx->tracker<capture_output_access>("out"))));
+    in.require_output_checked(ctx, "out");
+    auto out = capture_output_checker<out_events>(
+        ctx->accessor<capture_output_access>("out"));
 
     SECTION("non-special") {
         in.feed(pqt2_hydraharpv2_event::make_nonspecial(42_u32np, 5_u8np));

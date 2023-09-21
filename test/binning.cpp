@@ -7,7 +7,6 @@
 #include "libtcspc/binning.hpp"
 
 #include "libtcspc/event_set.hpp"
-#include "libtcspc/ref_processor.hpp"
 #include "libtcspc/test_utils.hpp"
 #include "libtcspc/time_tagged_events.hpp"
 
@@ -30,13 +29,17 @@ TEST_CASE("Map to datapoints", "[map_to_datapoints][difftime_data_mapper]") {
     struct data_traits : default_data_traits {
         using datapoint_type = difftime_type;
     };
-    auto out =
-        capture_output<event_set<datapoint_event<data_traits>, misc_event>>();
+    using out_events = event_set<datapoint_event<data_traits>, misc_event>;
+    auto ctx = std::make_shared<processor_context>();
     auto in =
         feed_input<event_set<time_correlated_detection_event<>, misc_event>>(
-            map_to_datapoints<data_traits>(difftime_data_mapper<>(),
-                                           ref_processor(out)));
-    in.require_output_checked(out);
+            map_to_datapoints<data_traits>(
+                difftime_data_mapper<>(),
+                capture_output<out_events>(
+                    ctx->tracker<capture_output_access>("out"))));
+    in.require_output_checked(ctx, "out");
+    auto out = capture_output_checker<out_events>(
+        ctx->accessor<capture_output_access>("out"));
 
     in.feed(misc_event{42});
     REQUIRE(out.check(misc_event{42}));
@@ -52,6 +55,8 @@ TEST_CASE("Map to bins", "[map_to_bin]") {
         using bin_index_type = u32;
     };
 
+    auto ctx = std::make_shared<processor_context>();
+
     SECTION("Out of range") {
         struct null_bin_mapper {
             using datapoint_type = i32;
@@ -61,14 +66,17 @@ TEST_CASE("Map to bins", "[map_to_bin]") {
                 return std::nullopt;
             }
         };
-
-        auto out = capture_output<
-            event_set<bin_increment_event<data_traits>, misc_event>>();
+        using out_events =
+            event_set<bin_increment_event<data_traits>, misc_event>;
         auto in =
             feed_input<event_set<datapoint_event<data_traits>, misc_event>>(
-                map_to_bins<data_traits>(null_bin_mapper(),
-                                         ref_processor(out)));
-        in.require_output_checked(out);
+                map_to_bins<data_traits>(
+                    null_bin_mapper(),
+                    capture_output<out_events>(
+                        ctx->tracker<capture_output_access>("out"))));
+        in.require_output_checked(ctx, "out");
+        auto out = capture_output_checker<out_events>(
+            ctx->accessor<capture_output_access>("out"));
 
         in.feed(misc_event{42});
         REQUIRE(out.check(misc_event{42}));
@@ -85,12 +93,15 @@ TEST_CASE("Map to bins", "[map_to_bin]") {
                 return unsigned(d) + 42u;
             }
         };
-
-        auto out =
-            capture_output<event_set<bin_increment_event<data_traits>>>();
+        using out_events = event_set<bin_increment_event<data_traits>>;
         auto in = feed_input<event_set<datapoint_event<data_traits>>>(
-            map_to_bins<data_traits>(add_42_bin_mapper(), ref_processor(out)));
-        in.require_output_checked(out);
+            map_to_bins<data_traits>(
+                add_42_bin_mapper(),
+                capture_output<out_events>(
+                    ctx->tracker<capture_output_access>("out"))));
+        in.require_output_checked(ctx, "out");
+        auto out = capture_output_checker<out_events>(
+            ctx->accessor<capture_output_access>("out"));
 
         in.feed(datapoint_event<data_traits>{0, 10});
         REQUIRE(out.check(bin_increment_event<data_traits>{0, 52}));
@@ -374,13 +385,17 @@ TEST_CASE("Batch bin increments", "[batch_bin_increments]") {
     struct data_traits : default_data_traits {
         using bin_index_type = u32;
     };
-    auto out = capture_output<
-        event_set<bin_increment_batch_event<data_traits>, misc_event>>();
+    using out_events =
+        event_set<bin_increment_batch_event<data_traits>, misc_event>;
+    auto ctx = std::make_shared<processor_context>();
     auto in = feed_input<event_set<bin_increment_event<data_traits>,
                                    start_event, stop_event, misc_event>>(
         batch_bin_increments<start_event, stop_event, data_traits>(
-            ref_processor(out)));
-    in.require_output_checked(out);
+            capture_output<out_events>(
+                ctx->tracker<capture_output_access>("out"))));
+    in.require_output_checked(ctx, "out");
+    auto out = capture_output_checker<out_events>(
+        ctx->accessor<capture_output_access>("out"));
 
     SECTION("Pass through unrelated") {
         in.feed(misc_event{42});

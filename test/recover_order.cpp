@@ -6,7 +6,6 @@
 
 #include "libtcspc/recover_order.hpp"
 
-#include "libtcspc/ref_processor.hpp"
 #include "libtcspc/test_utils.hpp"
 
 #include <catch2/catch_all.hpp>
@@ -16,10 +15,13 @@ namespace tcspc {
 using event = timestamped_test_event<0>;
 
 TEST_CASE("recover order", "[recover_order]") {
-    auto out = capture_output<event_set<event>>();
-    auto in = feed_input<event_set<event>>(
-        recover_order<event>(3, ref_processor(out)));
-    in.require_output_checked(out);
+    auto ctx = std::make_shared<processor_context>();
+    auto in = feed_input<event_set<event>>(recover_order<event>(
+        3, capture_output<event_set<event>>(
+               ctx->tracker<capture_output_access>("out"))));
+    in.require_output_checked(ctx, "out");
+    auto out = capture_output_checker<event_set<event>>(
+        ctx->accessor<capture_output_access>("out"));
 
     SECTION("empty stream") {
         in.flush();
@@ -60,10 +62,13 @@ TEST_CASE("recover order", "[recover_order]") {
 }
 
 TEST_CASE("recover order, empty time window", "[recover_order]") {
-    auto out = capture_output<event_set<event>>();
-    auto in = feed_input<event_set<event>>(
-        recover_order<event>(0, ref_processor(out)));
-    in.require_output_checked(out);
+    auto ctx = std::make_shared<processor_context>();
+    auto in = feed_input<event_set<event>>(recover_order<event>(
+        0, capture_output<event_set<event>>(
+               ctx->tracker<capture_output_access>("out"))));
+    in.require_output_checked(ctx, "out");
+    auto out = capture_output_checker<event_set<event>>(
+        ctx->accessor<capture_output_access>("out"));
 
     SECTION("in-order events are delayed") {
         in.feed(event{0});

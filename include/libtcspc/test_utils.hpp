@@ -8,6 +8,7 @@
 
 #include "common.hpp"
 #include "event_set.hpp"
+#include "processor_context.hpp"
 #include "span.hpp"
 #include "vector_queue.hpp"
 
@@ -23,11 +24,373 @@
 #include <sstream>
 #include <stdexcept>
 #include <type_traits>
+#include <typeinfo>
 #include <utility>
 #include <variant>
 #include <vector>
 
 namespace tcspc {
+
+/**
+ * \brief Accessor for \c capture_output processors.
+ *
+ * \ingroup processors-testing
+ *
+ * \see capture_output_accessor
+ */
+class capture_output_access {
+    std::any peek_events_func; // () -> std::vector<event_variant<EventSet>>
+    std::function<void()> pop_event_func;
+    std::function<bool()> is_empty_func;
+    std::function<bool()> is_flushed_func;
+    std::function<void(std::size_t, bool)> set_up_to_throw_func;
+    std::function<std::string()> events_as_string_func;
+
+    template <typename EventSet>
+    auto peek_events() const -> std::vector<event_variant<EventSet>> {
+        return std::any_cast<
+            std::function<std::vector<event_variant<EventSet>>()>>(
+            peek_events_func)();
+    }
+
+  public:
+    /**
+     * \brief Tag struct used internally for construction.
+     */
+    struct empty_event_set_tag {};
+
+    /**
+     * \brief Constructor used internally by \c capture_output.
+     */
+    template <typename EventSet>
+    explicit capture_output_access(
+        std::function<std::vector<event_variant<EventSet>>()> peek_events,
+        std::function<void()> pop_event, std::function<bool()> is_empty,
+        std::function<bool()> is_flushed,
+        std::function<void(std::size_t, bool)> set_up_to_throw,
+        std::function<std::string()> events_as_string)
+        : peek_events_func(std::move(peek_events)),
+          pop_event_func(std::move(pop_event)),
+          is_empty_func(std::move(is_empty)),
+          is_flushed_func(std::move(is_flushed)),
+          set_up_to_throw_func(std::move(set_up_to_throw)),
+          events_as_string_func(std::move(events_as_string)) {}
+
+    /**
+     * \brief Constructor used internally by \c capture_output.
+     */
+    explicit capture_output_access(
+        [[maybe_unused]] empty_event_set_tag tag,
+        std::function<bool()> is_flushed,
+        std::function<void(std::size_t, bool)> set_up_to_throw)
+        : is_empty_func([] { return true; }),
+          is_flushed_func(std::move(is_flushed)),
+          set_up_to_throw_func(std::move(set_up_to_throw)) {}
+
+    /**
+     * \brief Ensure that this access works with the given event set.
+     *
+     * \tparam EventSet event set to check
+     */
+    template <typename EventSet> void check_event_set() const {
+        if constexpr (std::tuple_size_v<EventSet> > 0)
+            std::any_cast<
+                std::function<std::vector<event_variant<EventSet>>()>>(
+                peek_events_func);
+    }
+
+    /**
+     * \brief Check if ready for input; used internally by \c feed_input.
+     */
+    void check_ready_for_input() const {
+        if (not is_empty_func()) {
+            throw std::logic_error(
+                "cannot accept input: recorded output events remain unchecked:" +
+                events_as_string_func());
+        }
+        if (is_flushed_func()) {
+            throw std::logic_error(
+                "cannot accept input: output has been flushed");
+        }
+    }
+
+    /**
+     * \brief Retrieve the next recorded output event.
+     *
+     * This can be used when \c check() is not convenient (for example, because
+     * the exactly matching event is not known).
+     *
+     * \tparam Event the expected event type
+     *
+     * \tparam EventSet the event set accepted by the \c capture_output
+     * processor
+     *
+     * \return the event
+     */
+    template <typename Event, typename EventSet,
+              typename = std::enable_if_t<contains_event_v<EventSet, Event>>>
+    auto pop() -> Event {
+        auto events = peek_events<EventSet>();
+        if (events.empty()) {
+            throw std::logic_error(
+                "tried to retrieve recorded output event of type " +
+                std::string(typeid(Event).name()) + " but found no events");
+        }
+        auto const *event = std::get_if<Event>(&events.front());
+        if (event == nullptr) {
+            std::ostringstream stream;
+            stream << "tried to retrieve recorded output event of type "
+                   << std::string(typeid(Event).name()) << " but found:";
+            for (auto const &event : events)
+                stream << '\n' << event;
+            throw std::logic_error(stream.str());
+        }
+        pop_event_func();
+        return *event;
+    }
+
+    /**
+     * \brief Check that the next recorded output event matches with the given
+     * one.
+     *
+     * This function never returns false; a \c std::logic_error is thrown if
+     * the check is unsuccessful. It returns true for convenient use with
+     * testing framework macros such as \c CHECK() or \c REQUIRE() (which
+     * typically help locate where an exception was thrown).
+     *
+     * \tparam Event the expected event type
+     *
+     * \tparam EventSet the event set accepted by the \c capture_output
+     * processor
+     *
+     * \param expected_event the expected event
+     *
+     * \return true if the check was successful
+     */
+    template <typename Event, typename EventSet,
+              typename = std::enable_if_t<contains_event_v<EventSet, Event>>>
+    auto check(Event const &expected_event) -> bool {
+        auto events = peek_events<EventSet>();
+        if (events.empty()) {
+            std::ostringstream stream;
+            stream << "expected recorded output event " << expected_event
+                   << " but found no events";
+            throw std::logic_error(stream.str());
+        }
+        auto const *event = std::get_if<Event>(&events.front());
+        if (event == nullptr || *event != expected_event) {
+            std::ostringstream stream;
+            stream << "expected recorded output event " << expected_event
+                   << " but found:";
+            for (auto const &event : events)
+                stream << '\n' << event;
+            throw std::logic_error(stream.str());
+        }
+        pop_event_func();
+        return true;
+    }
+
+    /**
+     * \brief Check that no recorded output events remain but the output has
+     * not been flushed.
+     *
+     * This function never returns false; a \c std::logic_error is thrown if
+     * the check is unsuccessful. It returns true for convenient use with
+     * testing framework macros such as \c CHECK() or \c REQUIRE() (which
+     * typically help locate where an exception was thrown).
+     *
+     * \return true if the check was successful.
+     */
+    auto check_not_flushed() -> bool {
+        if (not is_empty_func()) {
+            throw std::logic_error(
+                "expected no recorded output events but found:" +
+                events_as_string_func());
+        }
+        if (is_flushed_func()) {
+            throw std::logic_error(
+                "expected output unflushed but found flushed");
+        }
+        return true;
+    }
+
+    /**
+     * \brief Check that no recorded output events remain and the output has
+     * been flushed.
+     *
+     * This function never returns false; a \c std::logic_error is thrown if
+     * the check is unsuccessful. It returns true for convenient use with
+     * testing framework macros such as \c CHECK() or \c REQUIRE() (which
+     * typically help locate where an exception was thrown).
+     *
+     * \return true if the check was successful.
+     */
+    auto check_flushed() -> bool {
+        if (not is_empty_func()) {
+            throw std::logic_error(
+                "expected no recorded output events but found:" +
+                events_as_string_func());
+        }
+        if (not is_flushed_func()) {
+            throw std::logic_error(
+                "expected output flushed but found unflushed");
+        }
+        return true;
+    }
+
+    /**
+     * \brief Arrange to throw an error on receiving the given number of
+     * events.
+     *
+     * \param count number of events to handle normally before throwing
+     */
+    void throw_error_on_next(std::size_t count = 0) {
+        set_up_to_throw_func(count, true);
+    }
+
+    /**
+     * \brief Arrange to throw an \c end_processing on receiving the given
+     * number of events.
+     *
+     * \param count number of events to handle normally before throwing
+     */
+    void throw_end_processing_on_next(std::size_t count = 0) {
+        set_up_to_throw_func(count, false);
+    }
+
+    /**
+     * \brief Arrange to throw an error on receiving a flush.
+     */
+    void throw_error_on_flush() {
+        set_up_to_throw_func(std::numeric_limits<std::size_t>::max(), true);
+    }
+
+    /**
+     * \brief Arrange to throw an \c end_processing on receiving a flush.
+     */
+    void throw_end_processing_on_flush() {
+        set_up_to_throw_func(std::numeric_limits<std::size_t>::max(), false);
+    }
+};
+
+/**
+ * \brief Event-set-specific wrapper for \c capture_output_access.
+ *
+ * \ingroup processors-testing
+ *
+ * This class has almost the same interface as \c capture_output_access but is
+ * parameterized on \c EventSet so does not require specifying the event set
+ * when calling \c check() or \c pop().
+ *
+ * \see capture_output_access
+ */
+template <typename EventSet> class capture_output_checker {
+    capture_output_access acc;
+
+  public:
+    /**
+     * \brief Construct from a \c capture_output_access.
+     */
+    explicit capture_output_checker(capture_output_access access)
+        : acc(std::move(access)) {
+        acc.check_event_set<EventSet>(); // Fail early.
+    }
+
+    /**
+     * \brief Retrieve the next recorded output event.
+     *
+     * This can be used when \c check() is not convenient (for example, because
+     * the exactly matching event is not known).
+     *
+     * \tparam Event the expected event type
+     *
+     * \return the event
+     */
+    template <typename Event,
+              typename = std::enable_if_t<contains_event_v<EventSet, Event>>>
+    auto pop() -> Event {
+        return acc.pop<Event, EventSet>();
+    }
+
+    /**
+     * \brief Check that the next recorded output event matches with the given
+     * one.
+     *
+     * This function never returns false; a \c std::logic_error is thrown if
+     * the check is unsuccessful. It returns true for convenient use with
+     * testing framework macros such as \c CHECK() or \c REQUIRE() (which
+     * typically help locate where an exception was thrown).
+     *
+     * \tparam Event the expected event type
+     *
+     * \param expected_event the expected event
+     *
+     * \return true if the check was successful
+     */
+    template <typename Event,
+              typename = std::enable_if_t<contains_event_v<EventSet, Event>>>
+    auto check(Event const &expected_event) -> bool {
+        return acc.check<Event, EventSet>(expected_event);
+    }
+
+    /**
+     * \brief Check that no recorded output events remain but the output has
+     * not been flushed.
+     *
+     * This function never returns false; a \c std::logic_error is thrown if
+     * the check is unsuccessful. It returns true for convenient use with
+     * testing framework macros such as \c CHECK() or \c REQUIRE() (which
+     * typically help locate where an exception was thrown).
+     *
+     * \return true if the check was successful.
+     */
+    auto check_not_flushed() -> bool { return acc.check_not_flushed(); }
+
+    /**
+     * \brief Check that no recorded output events remain and the output has
+     * been flushed.
+     *
+     * This function never returns false; a \c std::logic_error is thrown if
+     * the check is unsuccessful. It returns true for convenient use with
+     * testing framework macros such as \c CHECK() or \c REQUIRE() (which
+     * typically help locate where an exception was thrown).
+     *
+     * \return true if the check was successful.
+     */
+    auto check_flushed() -> bool { return acc.check_flushed(); }
+
+    /**
+     * \brief Arrange to throw an error on receiving the given number of
+     * events.
+     *
+     * \param count number of events to handle normally before throwing
+     */
+    void throw_error_on_next(std::size_t count = 0) {
+        acc.throw_error_on_next(count);
+    }
+
+    /**
+     * \brief Arrange to throw an \c end_processing on receiving the given
+     * number of events.
+     *
+     * \param count number of events to handle normally before throwing
+     */
+    void throw_end_processing_on_next(std::size_t count = 0) {
+        acc.throw_end_processing_on_next(count);
+    }
+
+    /**
+     * \brief Arrange to throw an error on receiving a flush.
+     */
+    void throw_error_on_flush() { acc.throw_error_on_flush(); }
+
+    /**
+     * \brief Arrange to throw an \c end_processing on receiving a flush.
+     */
+    void throw_end_processing_on_flush() {
+        acc.throw_end_processing_on_flush();
+    }
+};
 
 namespace internal {
 
@@ -38,62 +401,36 @@ template <typename EventSet> class capture_output {
     std::size_t end_in = std::numeric_limits<std::size_t>::max();
     bool error_on_flush = false;
     bool end_on_flush = false;
-    bool end_of_life = false; // Reported error; cannot reuse
-    bool suppress_output;
 
-    void dump_output(std::ostream &stream) {
-        while (not output.empty()) {
-            stream << "found output: ";
-            std::visit([&](auto &&e) { stream << e << '\n'; }, output.front());
-            output.pop();
-        }
-    }
+    processor_tracker<capture_output_access> trk;
 
   public:
-    explicit capture_output(bool suppress_output = false)
-        : suppress_output(suppress_output) {}
-
-    // Disallow move and copy because output check thunks will keep reference
-    // to this.
-    capture_output(capture_output const &) = delete;
-    auto operator=(capture_output const &) = delete;
-    capture_output(capture_output &&) = delete;
-    auto operator=(capture_output &&) = delete;
-    ~capture_output() = default;
-
-    auto output_check_thunk() -> std::function<bool()> {
-        return [this] {
-            assert(not end_of_life);
-            if (not output.empty()) {
-                if (not suppress_output) {
-                    std::ostringstream stream;
-                    stream << "captured output not checked\n";
-                    dump_output(stream);
-                    std::fputs(stream.str().c_str(), stderr);
-                }
-                end_of_life = true;
-                return false;
-            }
-            return true;
-        };
+    explicit capture_output(processor_tracker<capture_output_access> &&tracker)
+        : trk(std::move(tracker)) {
+        trk.register_accessor_factory([](auto &tracker) {
+            using self_type = capture_output;
+            auto *self = reinterpret_cast<self_type *>(
+                reinterpret_cast<std::byte *>(&tracker) -
+                offsetof(self_type, trk));
+            return capture_output_access(
+                std::function([self] { return self->peek(); }),
+                [self] { self->output.pop(); },
+                [self] { return self->output.empty(); },
+                [self] { return self->flushed; },
+                [self](std::size_t count, bool use_error) {
+                    self->set_up_to_throw(count, use_error);
+                },
+                [self] { return self->events_as_string(); });
+        });
     }
 
     template <typename Event,
               typename = std::enable_if_t<contains_event_v<EventSet, Event>>>
     void handle(Event const &event) {
-        assert(not end_of_life);
         assert(not flushed);
         if (error_in == 0)
             throw std::runtime_error("test error upon event");
-        try {
-            output.push(event);
-        } catch (std::exception const &exc) {
-            std::ostringstream stream;
-            stream << "exception thrown while storing output: " << exc.what()
-                   << '\n';
-            std::fputs(stream.str().c_str(), stderr);
-            std::terminate();
-        }
+        output.push(event);
         if (end_in == 0)
             throw end_processing("test end-of-stream upon event");
         --error_in;
@@ -101,10 +438,8 @@ template <typename EventSet> class capture_output {
     }
 
     void flush() {
-        assert(not end_of_life);
         assert(not flushed);
         if (error_on_flush) {
-            end_of_life = true;
             throw std::runtime_error("test error upon flush");
         }
         flushed = true;
@@ -112,145 +447,61 @@ template <typename EventSet> class capture_output {
             throw end_processing("test end-of-stream upon flush");
     }
 
-    void throw_error_on_next(std::size_t count = 0) noexcept {
-        error_in = count;
+  private:
+    auto peek() const -> std::vector<event_variant<EventSet>> {
+        std::vector<event_variant<EventSet>> ret;
+        output.for_each([&ret](auto const &event) { ret.push_back(event); });
+        return ret;
     }
 
-    void throw_end_processing_on_next(std::size_t count = 0) noexcept {
-        end_in = count;
+    auto events_as_string() const -> std::string {
+        std::ostringstream stream;
+        output.for_each([&](auto const &event) { stream << '\n' << event; });
+        return stream.str();
     }
 
-    void throw_error_on_flush() noexcept { error_on_flush = true; }
-
-    void throw_end_processing_on_flush() noexcept { end_on_flush = true; }
-
-    template <typename Event,
-              typename = std::enable_if_t<contains_event_v<EventSet, Event>>>
-    auto retrieve() -> std::optional<Event> {
-        assert(not end_of_life);
-        if (not output.empty()) {
-            auto const *event = std::get_if<Event>(&output.front());
-            if (event) {
-                auto const ret = Event(*event);
-                output.pop();
-                return ret;
-            }
+    void set_up_to_throw(std::size_t count, bool use_error) {
+        if (count == std::numeric_limits<std::size_t>::max()) {
+            if (use_error)
+                error_on_flush = true;
+            else
+                end_on_flush = true;
+        } else {
+            if (use_error)
+                error_in = count;
+            else
+                end_in = count;
         }
-        end_of_life = true;
-        if (not suppress_output) {
-            std::ostringstream stream;
-            stream << "expected output of specific type\n";
-            if (output.empty()) {
-                stream << "found no output\n";
-            }
-            dump_output(stream);
-            std::fputs(stream.str().c_str(), stderr);
-        }
-        return std::nullopt;
-    }
-
-    template <typename Event,
-              typename = std::enable_if_t<contains_event_v<EventSet, Event>>>
-    auto check(Event const &event) -> bool {
-        assert(not end_of_life);
-        event_variant<EventSet> expected = event;
-        if (not output.empty() && output.front() == expected) {
-            output.pop();
-            return true;
-        }
-        end_of_life = true;
-        if (not suppress_output) {
-            std::ostringstream stream;
-            stream << "expected output: " << event << '\n';
-            if (output.empty()) {
-                stream << "found no output\n";
-            }
-            dump_output(stream);
-            std::fputs(stream.str().c_str(), stderr);
-        }
-        return false;
-    }
-
-    [[nodiscard]] auto check_not_flushed() -> bool {
-        assert(not end_of_life);
-        if (not output.empty()) {
-            end_of_life = true;
-            if (not suppress_output) {
-                std::ostringstream stream;
-                stream << "expected no output\n";
-                dump_output(stream);
-                std::fputs(stream.str().c_str(), stderr);
-            }
-            return false;
-        }
-        if (flushed) {
-            end_of_life = true;
-            if (not suppress_output) {
-                std::fputs("expected not flushed\n", stderr);
-                std::fputs("found flushed\n", stderr);
-            }
-            return false;
-        }
-        return true;
-    }
-
-    [[nodiscard]] auto check_flushed() -> bool {
-        assert(not end_of_life);
-        if (not output.empty()) {
-            end_of_life = true;
-            if (not suppress_output) {
-                std::ostringstream stream;
-                stream << "expected flushed\n";
-                dump_output(stream);
-                std::fputs(stream.str().c_str(), stderr);
-            }
-            return false;
-        }
-        if (not flushed) {
-            end_of_life = true;
-            if (not suppress_output) {
-                std::fputs("expected flushed\n", stderr);
-                std::fputs("found not flushed\n", stderr);
-            }
-            return false;
-        }
-        return true;
     }
 };
 
-// Specialization required for empty event set
+// Specialization for empty event set.
 template <> class capture_output<event_set<>> {
     bool flushed = false;
     bool error_on_flush = false;
     bool end_on_flush = false;
-    bool end_of_life = false; // Reported error; cannot reuse
-    bool suppress_output;
+    processor_tracker<capture_output_access> trk;
 
   public:
-    explicit capture_output(bool suppress_output = false)
-        : suppress_output(suppress_output) {}
-
-    // Disallow move and copy because output check thunks will keep reference
-    // to this.
-    capture_output(capture_output const &src) = delete;
-    capture_output(capture_output &&src) = delete;
-    auto operator=(capture_output const &rhs) -> capture_output & = delete;
-    auto operator=(capture_output &&rhs) -> capture_output & = delete;
-    ~capture_output() = default;
-
-    auto output_check_thunk() -> std::function<bool()> {
-        return [this] {
-            assert(not end_of_life);
-            (void)this;
-            return true;
-        };
+    explicit capture_output(processor_tracker<capture_output_access> &&tracker)
+        : trk(std::move(tracker)) {
+        trk.register_accessor_factory([](auto &tracker) {
+            using self_type = capture_output;
+            auto *self = reinterpret_cast<self_type *>(
+                reinterpret_cast<std::byte *>(&tracker) -
+                offsetof(self_type, trk));
+            return capture_output_access(
+                capture_output_access::empty_event_set_tag{},
+                [self] { return self->flushed; },
+                [self](std::size_t count, bool use_error) {
+                    self->set_up_to_throw(count, use_error);
+                });
+        });
     }
 
     void flush() {
-        assert(not end_of_life);
         assert(not flushed);
         if (error_on_flush) {
-            end_of_life = true;
             throw std::runtime_error("test error upon flush");
         }
         flushed = true;
@@ -258,73 +509,54 @@ template <> class capture_output<event_set<>> {
             throw end_processing("test end-of-stream upon flush");
     }
 
-    void throw_error_on_flush() noexcept { error_on_flush = true; }
-
-    void throw_end_processing_on_flush() noexcept { end_on_flush = true; }
-
-    [[nodiscard]] auto check_flushed() -> bool {
-        assert(not end_of_life);
-        if (not flushed) {
-            end_of_life = true;
-            if (not suppress_output) {
-                std::fputs("expected flushed\n", stderr);
-                std::fputs("found not flushed\n", stderr);
-            }
-            return false;
+  private:
+    void set_up_to_throw(std::size_t count, bool use_error) {
+        if (count == std::numeric_limits<std::size_t>::max()) {
+            if (use_error)
+                error_on_flush = true;
+            else
+                end_on_flush = true;
         }
-        return true;
-    }
-
-    [[nodiscard]] auto check_not_flushed() -> bool {
-        assert(not end_of_life);
-        if (flushed) {
-            end_of_life = true;
-            if (not suppress_output) {
-                std::fputs("expected not flushed\n", stderr);
-                std::fputs("found flushed\n", stderr);
-            }
-            return false;
-        }
-        return true;
     }
 };
 
 template <typename EventSet, typename Downstream> class feed_input {
-    std::vector<std::function<bool()>> output_checks;
+    std::vector<std::pair<std::shared_ptr<processor_context>, std::string>>
+        outputs_to_check; // (context, name)
     Downstream downstream;
 
     static_assert(
         handles_event_set_v<Downstream, EventSet>,
         "processor under test must handle the specified input events and flush");
 
-    void require_outputs_checked() {
-        if (output_checks.empty())
+    void check_outputs_ready() {
+        if (outputs_to_check.empty())
             throw std::logic_error(
                 "feed_input has no registered capture_output to check");
-        for (auto &check : output_checks) {
-            if (not check())
-                throw std::logic_error("unchecked output remains");
-        }
+        for (auto &[context, name] : outputs_to_check)
+            context->template accessor<capture_output_access>(name)
+                .check_ready_for_input();
     }
 
   public:
     explicit feed_input(Downstream &&downstream)
         : downstream(std::move(downstream)) {}
 
-    template <typename CaptureOutputProc>
-    void require_output_checked(CaptureOutputProc &output) {
-        output_checks.push_back(output.output_check_thunk());
+    void require_output_checked(std::shared_ptr<processor_context> context,
+                                std::string name) {
+        context->accessor<capture_output_access>(name); // Fail early.
+        outputs_to_check.emplace_back(context, std::move(name));
     }
 
     template <typename Event,
               typename = std::enable_if_t<contains_event_v<EventSet, Event>>>
     void feed(Event const &event) {
-        require_outputs_checked();
+        check_outputs_ready();
         downstream.handle(event);
     }
 
     void flush() {
-        require_outputs_checked();
+        check_outputs_ready();
         downstream.flush();
     }
 };
@@ -338,10 +570,13 @@ template <typename EventSet, typename Downstream> class feed_input {
  *
  * \tparam EventSet event set to accept
  *
+ * \param tracker processor tracker for later access to state
+ *
  * \return capture-output sink
  */
-template <typename EventSet> auto capture_output() {
-    return internal::capture_output<EventSet>();
+template <typename EventSet>
+auto capture_output(processor_tracker<capture_output_access> &&tracker) {
+    return internal::capture_output<EventSet>(std::move(tracker));
 }
 
 /**

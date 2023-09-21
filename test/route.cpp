@@ -8,7 +8,6 @@
 
 #include "libtcspc/common.hpp"
 #include "libtcspc/event_set.hpp"
-#include "libtcspc/ref_processor.hpp"
 #include "libtcspc/test_utils.hpp"
 #include "libtcspc/time_tagged_events.hpp"
 
@@ -16,14 +15,17 @@
 
 namespace tcspc {
 
+namespace {
+
 using tc_event = time_correlated_detection_event<>;
 using e0 = empty_test_event<0>;
 using e1 = empty_test_event<1>;
 
+} // namespace
+
 TEST_CASE("Route", "[route]") {
-    auto out0 = capture_output<event_set<tc_event, marker_event<>>>();
-    auto out1 = capture_output<event_set<tc_event, marker_event<>>>();
-    auto out2 = capture_output<event_set<tc_event, marker_event<>>>();
+    using out_events = event_set<tc_event, marker_event<>>;
+    auto ctx = std::make_shared<processor_context>();
     auto in = feed_input<event_set<tc_event, marker_event<>>>(
         route<event_set<tc_event>, event_set<marker_event<>>>(
             channel_router(std::array{
@@ -31,10 +33,21 @@ TEST_CASE("Route", "[route]") {
                 std::pair{-3, 1},
                 std::pair{-32768, 2},
             }),
-            ref_processor(out0), ref_processor(out1), ref_processor(out2)));
-    in.require_output_checked(out0);
-    in.require_output_checked(out1);
-    in.require_output_checked(out2);
+            capture_output<out_events>(
+                ctx->tracker<capture_output_access>("out0")),
+            capture_output<out_events>(
+                ctx->tracker<capture_output_access>("out1")),
+            capture_output<out_events>(
+                ctx->tracker<capture_output_access>("out2"))));
+    in.require_output_checked(ctx, "out0");
+    in.require_output_checked(ctx, "out1");
+    in.require_output_checked(ctx, "out2");
+    auto out0 = capture_output_checker<out_events>(
+        ctx->accessor<capture_output_access>("out0"));
+    auto out1 = capture_output_checker<out_events>(
+        ctx->accessor<capture_output_access>("out1"));
+    auto out2 = capture_output_checker<out_events>(
+        ctx->accessor<capture_output_access>("out2"));
 
     SECTION("Route and broadcast by event type") {
         in.feed(tc_event{{{100}, 5}, 123});
@@ -87,12 +100,16 @@ TEST_CASE("Route", "[route]") {
 }
 
 TEST_CASE("Route with heterogeneous downstreams", "[route]") {
-    auto out0 = capture_output<event_set<e0>>();
-    auto out1 = null_sink();
+    auto ctx = std::make_shared<processor_context>();
     auto in = feed_input<event_set<e0>>(route<event_set<e0>, event_set<>>(
         []([[maybe_unused]] e0 const &event) { return std::size_t(0); },
-        ref_processor(out0), ref_processor(out1)));
-    in.require_output_checked(out0);
+        capture_output<event_set<e0>>(
+            ctx->tracker<capture_output_access>("out0")),
+        null_sink()));
+    in.require_output_checked(ctx, "out0");
+    auto out0 = capture_output_checker<event_set<e0>>(
+        ctx->accessor<capture_output_access>("out0"));
+
     in.feed(e0{});
     REQUIRE(out0.check(e0{}));
     in.flush();
@@ -100,14 +117,23 @@ TEST_CASE("Route with heterogeneous downstreams", "[route]") {
 }
 
 TEST_CASE("Broadcast", "[broadcast]") {
-    auto out0 = capture_output<event_set<e0>>();
-    auto out1 = capture_output<event_set<e0>>();
-    auto out2 = capture_output<event_set<e0>>();
+    auto ctx = std::make_shared<processor_context>();
     auto in = feed_input<event_set<e0>>(broadcast<event_set<e0>>(
-        ref_processor(out0), ref_processor(out1), ref_processor(out2)));
-    in.require_output_checked(out0);
-    in.require_output_checked(out1);
-    in.require_output_checked(out2);
+        capture_output<event_set<e0>>(
+            ctx->tracker<capture_output_access>("out0")),
+        capture_output<event_set<e0>>(
+            ctx->tracker<capture_output_access>("out1")),
+        capture_output<event_set<e0>>(
+            ctx->tracker<capture_output_access>("out2"))));
+    in.require_output_checked(ctx, "out0");
+    in.require_output_checked(ctx, "out1");
+    in.require_output_checked(ctx, "out2");
+    auto out0 = capture_output_checker<event_set<e0>>(
+        ctx->accessor<capture_output_access>("out0"));
+    auto out1 = capture_output_checker<event_set<e0>>(
+        ctx->accessor<capture_output_access>("out1"));
+    auto out2 = capture_output_checker<event_set<e0>>(
+        ctx->accessor<capture_output_access>("out2"));
 
     SECTION("Empty stream") {
         in.flush();

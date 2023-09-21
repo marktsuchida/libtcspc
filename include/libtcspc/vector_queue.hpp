@@ -221,6 +221,16 @@ template <typename T> class vector_queue {
             std::for_each(ptr, tail, func);
         }
     }
+
+    template <typename F>
+    void for_each(F func) const noexcept(noexcept(func(std::declval<T &>()))) {
+        if (head <= tail) {
+            std::for_each(head, tail, func);
+        } else {
+            std::for_each(head, endptr, func);
+            std::for_each(ptr, tail, func);
+        }
+    }
 };
 
 } // namespace tcspc::internal

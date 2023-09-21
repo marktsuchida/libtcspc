@@ -73,10 +73,8 @@ types should be documented with Doxygen comments (follow existing practice).
 - Processors are class templates, whose last template parameter is the
   downstream processor type (`typename Downstream` by convention).
   - Sinks, of course, will not have a downstream.
-- Processors can by non-copyable and even non-movable, but only if necessary.
-  - Non-movable processors are strongly discouraged ourside of special use
-    cases (e.g., `capture_output`). They typically require `ref_processor` to
-    use, unless they are the most upstream processor (i.e., data source).
+- Processors can be non-copyable if necessary. Non-movable processors are
+  strongly discouraged.
 - Ordinary processors contain the (chain of) downstream processor(s) in a data
   member (`Downstream downstream`).
   - This should usually be the last non-static data member, so that the data
@@ -86,10 +84,8 @@ types should be documented with Doxygen comments (follow existing practice).
   - Exception: processors with special semantics such as `ref_processor` and
     `type_erased_processor`.
   - If the user wants to break the chain of containment for any reason, they
-    can use `ref_processor` or `type_erased_processor`.
+    can use `type_erased_processor`.
     - This can be of advantage in a few cases:
-      - To retain access to the downstream processor after construction of the
-        upstream (with `ref_processor`).
       - To allow runtime selection of the processor type (with
         `type_erased_processor`).
       - To reduce compile time.

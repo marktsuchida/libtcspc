@@ -7,7 +7,6 @@
 #include "libtcspc/histogram.hpp"
 
 #include "libtcspc/event_set.hpp"
-#include "libtcspc/ref_processor.hpp"
 #include "libtcspc/test_utils.hpp"
 
 #include <cstdint>
@@ -30,14 +29,19 @@ struct data_traits : default_data_traits {
 
 TEMPLATE_TEST_CASE("Histogram, zero bins", "[histogram]", saturate_on_overflow,
                    reset_on_overflow, stop_on_overflow, error_on_overflow) {
-    auto out = capture_output<
+    using out_events =
         event_set<histogram_event<data_traits>,
-                  concluding_histogram_event<data_traits>, misc_event>>();
+                  concluding_histogram_event<data_traits>, misc_event>;
+    auto ctx = std::make_shared<processor_context>();
     auto in = feed_input<
         event_set<bin_increment_event<data_traits>, reset_event, misc_event>>(
-        histogram<reset_event, TestType, data_traits>(0, 0,
-                                                      ref_processor(out)));
-    in.require_output_checked(out);
+        histogram<reset_event, TestType, data_traits>(
+            0, 0,
+            capture_output<out_events>(
+                ctx->tracker<capture_output_access>("out"))));
+    in.require_output_checked(ctx, "out");
+    auto out = capture_output_checker<out_events>(
+        ctx->accessor<capture_output_access>("out"));
 
     in.feed(misc_event{42});
     REQUIRE(out.check(misc_event{42}));
@@ -53,14 +57,18 @@ TEMPLATE_TEST_CASE("Histogram, zero bins", "[histogram]", saturate_on_overflow,
 TEMPLATE_TEST_CASE("Histogram, no overflow", "[histogram]",
                    saturate_on_overflow, reset_on_overflow, stop_on_overflow,
                    error_on_overflow) {
-    auto out =
-        capture_output<event_set<histogram_event<data_traits>,
-                                 concluding_histogram_event<data_traits>>>();
+    using out_events = event_set<histogram_event<data_traits>,
+                                 concluding_histogram_event<data_traits>>;
+    auto ctx = std::make_shared<processor_context>();
     auto in =
         feed_input<event_set<bin_increment_event<data_traits>, reset_event>>(
-            histogram<reset_event, TestType, data_traits>(2, 100,
-                                                          ref_processor(out)));
-    in.require_output_checked(out);
+            histogram<reset_event, TestType, data_traits>(
+                2, 100,
+                capture_output<out_events>(
+                    ctx->tracker<capture_output_access>("out"))));
+    in.require_output_checked(ctx, "out");
+    auto out = capture_output_checker<out_events>(
+        ctx->accessor<capture_output_access>("out"));
 
     std::vector<u16> hist;
     in.feed(bin_increment_event<data_traits>{42, 0});
@@ -87,16 +95,20 @@ TEMPLATE_TEST_CASE("Histogram, no overflow", "[histogram]",
 }
 
 TEST_CASE("Histogram, saturate on overflow", "[histogram]") {
-    auto out =
-        capture_output<event_set<histogram_event<data_traits>,
-                                 concluding_histogram_event<data_traits>>>();
+    using out_events = event_set<histogram_event<data_traits>,
+                                 concluding_histogram_event<data_traits>>;
+    auto ctx = std::make_shared<processor_context>();
 
     SECTION("Max per bin = 0") {
         auto in = feed_input<
             event_set<bin_increment_event<data_traits>, reset_event>>(
             histogram<reset_event, saturate_on_overflow, data_traits>(
-                1, 0, ref_processor(out)));
-        in.require_output_checked(out);
+                1, 0,
+                capture_output<out_events>(
+                    ctx->tracker<capture_output_access>("out"))));
+        in.require_output_checked(ctx, "out");
+        auto out = capture_output_checker<out_events>(
+            ctx->accessor<capture_output_access>("out"));
 
         std::vector<u16> hist;
         in.feed(bin_increment_event<data_traits>{42, 0}); // Overflow
@@ -114,8 +126,12 @@ TEST_CASE("Histogram, saturate on overflow", "[histogram]") {
         auto in = feed_input<
             event_set<bin_increment_event<data_traits>, reset_event>>(
             histogram<reset_event, saturate_on_overflow, data_traits>(
-                1, 1, ref_processor(out)));
-        in.require_output_checked(out);
+                1, 1,
+                capture_output<out_events>(
+                    ctx->tracker<capture_output_access>("out"))));
+        in.require_output_checked(ctx, "out");
+        auto out = capture_output_checker<out_events>(
+            ctx->accessor<capture_output_access>("out"));
 
         std::vector<u16> hist;
         in.feed(bin_increment_event<data_traits>{42, 0});
@@ -143,16 +159,20 @@ TEST_CASE("Histogram, saturate on overflow", "[histogram]") {
 }
 
 TEST_CASE("Histogram, reset on overflow", "[histogram]") {
-    auto out =
-        capture_output<event_set<histogram_event<data_traits>,
-                                 concluding_histogram_event<data_traits>>>();
+    using out_events = event_set<histogram_event<data_traits>,
+                                 concluding_histogram_event<data_traits>>;
+    auto ctx = std::make_shared<processor_context>();
 
     SECTION("Max per bin = 0") {
         auto in = feed_input<
             event_set<bin_increment_event<data_traits>, reset_event>>(
             histogram<reset_event, reset_on_overflow, data_traits>(
-                1, 0, ref_processor(out)));
-        in.require_output_checked(out);
+                1, 0,
+                capture_output<out_events>(
+                    ctx->tracker<capture_output_access>("out"))));
+        in.require_output_checked(ctx, "out");
+        auto out = capture_output_checker<out_events>(
+            ctx->accessor<capture_output_access>("out"));
 
         REQUIRE_THROWS_AS(in.feed(bin_increment_event<data_traits>{42, 0}),
                           histogram_overflow_error);
@@ -163,8 +183,12 @@ TEST_CASE("Histogram, reset on overflow", "[histogram]") {
         auto in = feed_input<
             event_set<bin_increment_event<data_traits>, reset_event>>(
             histogram<reset_event, reset_on_overflow, data_traits>(
-                1, 1, ref_processor(out)));
-        in.require_output_checked(out);
+                1, 1,
+                capture_output<out_events>(
+                    ctx->tracker<capture_output_access>("out"))));
+        in.require_output_checked(ctx, "out");
+        auto out = capture_output_checker<out_events>(
+            ctx->accessor<capture_output_access>("out"));
 
         std::vector<u16> hist;
         in.feed(bin_increment_event<data_traits>{42, 0});
@@ -187,17 +211,21 @@ TEST_CASE("Histogram, reset on overflow", "[histogram]") {
 }
 
 TEST_CASE("Histogram, stop on overflow", "[histogram]") {
-    auto out =
-        capture_output<event_set<histogram_event<data_traits>,
-                                 concluding_histogram_event<data_traits>>>();
+    using out_events = event_set<histogram_event<data_traits>,
+                                 concluding_histogram_event<data_traits>>;
+    auto ctx = std::make_shared<processor_context>();
     std::vector<u16> hist;
 
     SECTION("Max per bin = 0") {
         auto in = feed_input<
             event_set<bin_increment_event<data_traits>, reset_event>>(
             histogram<reset_event, stop_on_overflow, data_traits>(
-                1, 0, ref_processor(out)));
-        in.require_output_checked(out);
+                1, 0,
+                capture_output<out_events>(
+                    ctx->tracker<capture_output_access>("out"))));
+        in.require_output_checked(ctx, "out");
+        auto out = capture_output_checker<out_events>(
+            ctx->accessor<capture_output_access>("out"));
 
         REQUIRE_THROWS_AS(in.feed(bin_increment_event<data_traits>{42, 0}),
                           end_processing); // Overflow
@@ -211,8 +239,12 @@ TEST_CASE("Histogram, stop on overflow", "[histogram]") {
         auto in = feed_input<
             event_set<bin_increment_event<data_traits>, reset_event>>(
             histogram<reset_event, stop_on_overflow, data_traits>(
-                1, 1, ref_processor(out)));
-        in.require_output_checked(out);
+                1, 1,
+                capture_output<out_events>(
+                    ctx->tracker<capture_output_access>("out"))));
+        in.require_output_checked(ctx, "out");
+        auto out = capture_output_checker<out_events>(
+            ctx->accessor<capture_output_access>("out"));
 
         in.feed(bin_increment_event<data_traits>{42, 0});
         hist = {1};
@@ -228,16 +260,20 @@ TEST_CASE("Histogram, stop on overflow", "[histogram]") {
 }
 
 TEST_CASE("Histogram, error on overflow", "[histogram]") {
-    auto out =
-        capture_output<event_set<histogram_event<data_traits>,
-                                 concluding_histogram_event<data_traits>>>();
+    using out_events = event_set<histogram_event<data_traits>,
+                                 concluding_histogram_event<data_traits>>;
+    auto ctx = std::make_shared<processor_context>();
 
     SECTION("Max per bin = 0") {
         auto in = feed_input<
             event_set<bin_increment_event<data_traits>, reset_event>>(
             histogram<reset_event, error_on_overflow, data_traits>(
-                1, 0, ref_processor(out)));
-        in.require_output_checked(out);
+                1, 0,
+                capture_output<out_events>(
+                    ctx->tracker<capture_output_access>("out"))));
+        in.require_output_checked(ctx, "out");
+        auto out = capture_output_checker<out_events>(
+            ctx->accessor<capture_output_access>("out"));
 
         REQUIRE_THROWS_AS(in.feed(bin_increment_event<data_traits>{42, 0}),
                           histogram_overflow_error);
@@ -248,8 +284,12 @@ TEST_CASE("Histogram, error on overflow", "[histogram]") {
         auto in = feed_input<
             event_set<bin_increment_event<data_traits>, reset_event>>(
             histogram<reset_event, error_on_overflow, data_traits>(
-                1, 1, ref_processor(out)));
-        in.require_output_checked(out);
+                1, 1,
+                capture_output<out_events>(
+                    ctx->tracker<capture_output_access>("out"))));
+        in.require_output_checked(ctx, "out");
+        auto out = capture_output_checker<out_events>(
+            ctx->accessor<capture_output_access>("out"));
 
         std::vector<u16> hist;
         in.feed(bin_increment_event<data_traits>{42, 0});

@@ -7,7 +7,6 @@
 #include "libtcspc/write_binary_stream.hpp"
 
 #include "libtcspc/autocopy_span.hpp"
-#include "libtcspc/ref_processor.hpp"
 #include "libtcspc/test_utils.hpp"
 #include "libtcspc/view_as_bytes.hpp"
 

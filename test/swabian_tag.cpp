@@ -7,7 +7,6 @@
 #include "libtcspc/swabian_tag.hpp"
 
 #include "libtcspc/npint.hpp"
-#include "libtcspc/ref_processor.hpp"
 #include "libtcspc/span.hpp"
 #include "libtcspc/test_utils.hpp"
 
@@ -149,12 +148,17 @@ TEST_CASE("swabian tag assign", "[swabian_tag_event]") {
 }
 
 TEST_CASE("decode swabian tags", "[decode_swabian_tags]") {
-    auto out = capture_output<event_set<
-        detection_event<>, begin_lost_interval_event<>,
-        end_lost_interval_event<>, untagged_counts_event<>, warning_event>>();
+    using out_events =
+        event_set<detection_event<>, begin_lost_interval_event<>,
+                  end_lost_interval_event<>, untagged_counts_event<>,
+                  warning_event>;
+    auto ctx = std::make_shared<processor_context>();
     auto in = feed_input<event_set<swabian_tag_event>>(
-        decode_swabian_tags(ref_processor(out)));
-    in.require_output_checked(out);
+        decode_swabian_tags(capture_output<out_events>(
+            ctx->tracker<capture_output_access>("out"))));
+    in.require_output_checked(ctx, "out");
+    auto out = capture_output_checker<out_events>(
+        ctx->accessor<capture_output_access>("out"));
 
     SECTION("time tag") {
         in.feed(swabian_tag_event::make_time_tag(42_i64np, 5_i32np));
@@ -163,10 +167,8 @@ TEST_CASE("decode swabian tags", "[decode_swabian_tags]") {
 
     SECTION("error") {
         in.feed(swabian_tag_event::make_error(42_i64np));
-        auto const e = out.retrieve<warning_event>();
-        REQUIRE(e.has_value());
-        // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
-        REQUIRE_THAT(e->message, Catch::Matchers::ContainsSubstring("error"));
+        auto const e = out.pop<warning_event>();
+        REQUIRE_THAT(e.message, Catch::Matchers::ContainsSubstring("error"));
     }
 
     SECTION("overflow begin") {

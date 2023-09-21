@@ -6,7 +6,6 @@
 
 #include "libtcspc/common.hpp"
 
-#include "libtcspc/ref_processor.hpp"
 #include "libtcspc/test_utils.hpp"
 
 #include <catch2/catch_all.hpp>
@@ -22,8 +21,10 @@ TEST_CASE("null sink", "[null_sink]") {
 }
 
 TEST_CASE("null source", "[null_source]") {
-    auto out = capture_output<event_set<>>();
-    auto src = null_source(ref_processor(out));
+    auto ctx = std::make_shared<processor_context>();
+    auto src = null_source(capture_output<event_set<>>(
+        ctx->tracker<capture_output_access>("out")));
+    auto out = ctx->accessor<capture_output_access>("out");
     src.pump_events();
     REQUIRE(out.check_flushed());
 }

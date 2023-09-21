@@ -8,25 +8,34 @@
 
 #include "libtcspc/common.hpp"
 #include "libtcspc/event_set.hpp"
-#include "libtcspc/ref_processor.hpp"
 #include "libtcspc/test_utils.hpp"
 
 #include <catch2/catch_all.hpp>
 
 namespace tcspc {
 
+namespace {
+
 using e0 = empty_test_event<0>;
 using e1 = empty_test_event<1>;
 using e2 = empty_test_event<2>;
 using e3 = empty_test_event<3>;
 
+} // namespace
+
 TEST_CASE("Split events", "[split]") {
-    auto out0 = capture_output<event_set<e0, e1>>();
-    auto out1 = capture_output<event_set<e2, e3>>();
-    auto in = feed_input<event_set<e0, e1, e2, e3>>(
-        split<event_set<e2, e3>>(ref_processor(out0), ref_processor(out1)));
-    in.require_output_checked(out0);
-    in.require_output_checked(out1);
+    auto ctx = std::make_shared<processor_context>();
+    auto in = feed_input<event_set<e0, e1, e2, e3>>(split<event_set<e2, e3>>(
+        capture_output<event_set<e0, e1>>(
+            ctx->tracker<capture_output_access>("out0")),
+        capture_output<event_set<e2, e3>>(
+            ctx->tracker<capture_output_access>("out1"))));
+    in.require_output_checked(ctx, "out0");
+    in.require_output_checked(ctx, "out1");
+    auto out0 = capture_output_checker<event_set<e0, e1>>(
+        ctx->accessor<capture_output_access>("out0"));
+    auto out1 = capture_output_checker<event_set<e2, e3>>(
+        ctx->accessor<capture_output_access>("out1"));
 
     SECTION("Empty stream yields empty streams") {
         in.flush();
@@ -156,12 +165,18 @@ TEST_CASE("Split events", "[split]") {
 }
 
 TEST_CASE("Split events, empty on out0", "[split]") {
-    auto out0 = capture_output<event_set<>>();
-    auto out1 = capture_output<event_set<e0>>();
-    auto in = feed_input<event_set<e0>>(
-        split<event_set<e0>>(ref_processor(out0), ref_processor(out1)));
-    in.require_output_checked(out0);
-    in.require_output_checked(out1);
+    auto ctx = std::make_shared<processor_context>();
+    auto in = feed_input<event_set<e0>>(split<event_set<e0>>(
+        capture_output<event_set<>>(
+            ctx->tracker<capture_output_access>("out0")),
+        capture_output<event_set<e0>>(
+            ctx->tracker<capture_output_access>("out1"))));
+    in.require_output_checked(ctx, "out0");
+    in.require_output_checked(ctx, "out1");
+    auto out0 = capture_output_checker<event_set<>>(
+        ctx->accessor<capture_output_access>("out0"));
+    auto out1 = capture_output_checker<event_set<e0>>(
+        ctx->accessor<capture_output_access>("out1"));
 
     in.feed(e0{});
     REQUIRE(out1.check(e0{}));
@@ -171,12 +186,18 @@ TEST_CASE("Split events, empty on out0", "[split]") {
 }
 
 TEST_CASE("Split events, empty on out1", "[split]") {
-    auto out0 = capture_output<event_set<e0>>();
-    auto out1 = capture_output<event_set<>>();
+    auto ctx = std::make_shared<processor_context>();
     auto in = feed_input<event_set<e0>>(
-        split<event_set<>>(ref_processor(out0), ref_processor(out1)));
-    in.require_output_checked(out0);
-    in.require_output_checked(out1);
+        split<event_set<>>(capture_output<event_set<e0>>(
+                               ctx->tracker<capture_output_access>("out0")),
+                           capture_output<event_set<>>(
+                               ctx->tracker<capture_output_access>("out1"))));
+    in.require_output_checked(ctx, "out0");
+    in.require_output_checked(ctx, "out1");
+    auto out0 = capture_output_checker<event_set<e0>>(
+        ctx->accessor<capture_output_access>("out0"));
+    auto out1 = capture_output_checker<event_set<>>(
+        ctx->accessor<capture_output_access>("out1"));
 
     in.feed(e0{});
     REQUIRE(out0.check(e0{}));

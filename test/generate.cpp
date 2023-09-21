@@ -7,7 +7,6 @@
 #include "libtcspc/generate.hpp"
 
 #include "libtcspc/event_set.hpp"
-#include "libtcspc/ref_processor.hpp"
 #include "libtcspc/test_utils.hpp"
 
 #include <catch2/catch_all.hpp>
@@ -19,14 +18,19 @@ namespace {
 using trigger_event = timestamped_test_event<0>;
 using output_event = timestamped_test_event<1>;
 using misc_event = timestamped_test_event<2>;
+using out_events = event_set<trigger_event, output_event, misc_event>;
 
 } // namespace
 
 TEST_CASE("Generate null timing", "[generate][null_timing_generator]") {
-    auto out = capture_output<event_set<trigger_event, output_event>>();
+    auto ctx = std::make_shared<processor_context>();
     auto in = feed_input<event_set<trigger_event>>(generate<trigger_event>(
-        null_timing_generator<output_event>(), ref_processor(out)));
-    in.require_output_checked(out);
+        null_timing_generator<output_event>(),
+        capture_output<out_events>(
+            ctx->tracker<capture_output_access>("out"))));
+    in.require_output_checked(ctx, "out");
+    auto out = capture_output_checker<out_events>(
+        ctx->accessor<capture_output_access>("out"));
 
     in.feed(trigger_event{42});
     REQUIRE(out.check(trigger_event{42}));
@@ -39,12 +43,15 @@ TEST_CASE("Generate null timing", "[generate][null_timing_generator]") {
 TEST_CASE("Generate one-shot timing",
           "[generate][one_shot_timing_generator]") {
     default_data_traits::abstime_type const delay = GENERATE(0, 1, 2);
-    auto out =
-        capture_output<event_set<trigger_event, output_event, misc_event>>();
+    auto ctx = std::make_shared<processor_context>();
     auto in = feed_input<event_set<trigger_event, misc_event>>(
-        generate<trigger_event>(one_shot_timing_generator<output_event>(delay),
-                                ref_processor(out)));
-    in.require_output_checked(out);
+        generate<trigger_event>(
+            one_shot_timing_generator<output_event>(delay),
+            capture_output<out_events>(
+                ctx->tracker<capture_output_access>("out"))));
+    in.require_output_checked(ctx, "out");
+    auto out = capture_output_checker<out_events>(
+        ctx->accessor<capture_output_access>("out"));
 
     SECTION("No trigger, no output") {
         SECTION("No events") {}
@@ -88,14 +95,16 @@ TEST_CASE("Generate linear timing", "[generate][linear_timing_generator]") {
     default_data_traits::abstime_type const delay = GENERATE(0, 1, 2);
     default_data_traits::abstime_type const interval = GENERATE(1, 2);
 
-    auto out =
-        capture_output<event_set<trigger_event, output_event, misc_event>>();
+    auto ctx = std::make_shared<processor_context>();
 
     SECTION("Count of 0") {
         auto in = feed_input<event_set<trigger_event>>(generate<trigger_event>(
             linear_timing_generator<output_event>(delay, interval, 0),
-            ref_processor(out)));
-        in.require_output_checked(out);
+            capture_output<out_events>(
+                ctx->tracker<capture_output_access>("out"))));
+        in.require_output_checked(ctx, "out");
+        auto out = capture_output_checker<out_events>(
+            ctx->accessor<capture_output_access>("out"));
 
         in.feed(trigger_event{42});
         REQUIRE(out.check(trigger_event{42}));
@@ -109,8 +118,11 @@ TEST_CASE("Generate linear timing", "[generate][linear_timing_generator]") {
         auto in = feed_input<event_set<trigger_event, misc_event>>(
             generate<trigger_event>(
                 linear_timing_generator<output_event>(delay, interval, 1),
-                ref_processor(out)));
-        in.require_output_checked(out);
+                capture_output<out_events>(
+                    ctx->tracker<capture_output_access>("out"))));
+        in.require_output_checked(ctx, "out");
+        auto out = capture_output_checker<out_events>(
+            ctx->accessor<capture_output_access>("out"));
 
         SECTION("Delayed output") {
             in.feed(trigger_event{42});
@@ -139,8 +151,11 @@ TEST_CASE("Generate linear timing", "[generate][linear_timing_generator]") {
         auto in = feed_input<event_set<trigger_event, misc_event>>(
             generate<trigger_event>(
                 linear_timing_generator<output_event>(delay, interval, 2),
-                ref_processor(out)));
-        in.require_output_checked(out);
+                capture_output<out_events>(
+                    ctx->tracker<capture_output_access>("out"))));
+        in.require_output_checked(ctx, "out");
+        auto out = capture_output_checker<out_events>(
+            ctx->accessor<capture_output_access>("out"));
 
         in.feed(trigger_event{42});
         REQUIRE(out.check(trigger_event{42}));

@@ -7,7 +7,6 @@
 #include "libtcspc/histogram_elementwise.hpp"
 
 #include "libtcspc/event_set.hpp"
-#include "libtcspc/ref_processor.hpp"
 #include "libtcspc/test_utils.hpp"
 
 #include <array>
@@ -42,14 +41,18 @@ struct dt88 : default_data_traits {
 TEMPLATE_TEST_CASE("Histogram elementwise, zero elements",
                    "[histogram_elementwise]", saturate_on_overflow,
                    error_on_overflow) {
-    auto out =
-        capture_output<event_set<element_histogram_event<dt3216>,
-                                 histogram_array_event<dt3216>, misc_event>>();
+    using out_events = event_set<element_histogram_event<dt3216>,
+                                 histogram_array_event<dt3216>, misc_event>;
+    auto ctx = std::make_shared<processor_context>();
     auto in =
         feed_input<event_set<bin_increment_batch_event<dt3216>, misc_event>>(
-            histogram_elementwise<TestType, dt3216>(0, 1, 1,
-                                                    ref_processor(out)));
-    in.require_output_checked(out);
+            histogram_elementwise<TestType, dt3216>(
+                0, 1, 1,
+                capture_output<out_events>(
+                    ctx->tracker<capture_output_access>("out"))));
+    in.require_output_checked(ctx, "out");
+    auto out = capture_output_checker<out_events>(
+        ctx->accessor<capture_output_access>("out"));
 
     in.feed(misc_event{42});
     REQUIRE(out.check(misc_event{42}));
@@ -60,11 +63,17 @@ TEMPLATE_TEST_CASE("Histogram elementwise, zero elements",
 TEMPLATE_TEST_CASE("Histogram elementwise, zero bins",
                    "[histogram_elementwise]", saturate_on_overflow,
                    error_on_overflow) {
-    auto out = capture_output<event_set<element_histogram_event<dt3216>,
-                                        histogram_array_event<dt3216>>>();
+    using out_events = event_set<element_histogram_event<dt3216>,
+                                 histogram_array_event<dt3216>>;
+    auto ctx = std::make_shared<processor_context>();
     auto in = feed_input<event_set<bin_increment_batch_event<dt3216>>>(
-        histogram_elementwise<TestType, dt3216>(1, 0, 1, ref_processor(out)));
-    in.require_output_checked(out);
+        histogram_elementwise<TestType, dt3216>(
+            1, 0, 1,
+            capture_output<out_events>(
+                ctx->tracker<capture_output_access>("out"))));
+    in.require_output_checked(ctx, "out");
+    auto out = capture_output_checker<out_events>(
+        ctx->accessor<capture_output_access>("out"));
 
     in.feed(bin_increment_batch_event<dt3216>{{42, 43}, {}});
     REQUIRE(out.check(
@@ -77,12 +86,17 @@ TEMPLATE_TEST_CASE("Histogram elementwise, zero bins",
 TEMPLATE_TEST_CASE("Histogram elementwise, no overflow",
                    "[histogram_elementwise]", saturate_on_overflow,
                    error_on_overflow) {
-    auto out = capture_output<event_set<element_histogram_event<dt3216>,
-                                        histogram_array_event<dt3216>>>();
+    using out_events = event_set<element_histogram_event<dt3216>,
+                                 histogram_array_event<dt3216>>;
+    auto ctx = std::make_shared<processor_context>();
     auto in = feed_input<event_set<bin_increment_batch_event<dt3216>>>(
-        histogram_elementwise<TestType, dt3216>(2, 2, 100,
-                                                ref_processor(out)));
-    in.require_output_checked(out);
+        histogram_elementwise<TestType, dt3216>(
+            2, 2, 100,
+            capture_output<out_events>(
+                ctx->tracker<capture_output_access>("out"))));
+    in.require_output_checked(ctx, "out");
+    auto out = capture_output_checker<out_events>(
+        ctx->accessor<capture_output_access>("out"));
 
     in.feed(bin_increment_batch_event<dt3216>{{42, 43}, {0}});
     std::vector<u16> elem_hist{1, 0};
@@ -103,14 +117,19 @@ TEMPLATE_TEST_CASE("Histogram elementwise, no overflow",
 
 TEST_CASE("Histogram elementwise, saturate on overflow",
           "[histogram_elementwise]") {
-    auto out = capture_output<event_set<element_histogram_event<dt3216>,
-                                        histogram_array_event<dt3216>>>();
+    using out_events = event_set<element_histogram_event<dt3216>,
+                                 histogram_array_event<dt3216>>;
+    auto ctx = std::make_shared<processor_context>();
 
     SECTION("Max per bin = 0") {
         auto in = feed_input<event_set<bin_increment_batch_event<dt3216>>>(
             histogram_elementwise<saturate_on_overflow, dt3216>(
-                1, 1, 0, ref_processor(out)));
-        in.require_output_checked(out);
+                1, 1, 0,
+                capture_output<out_events>(
+                    ctx->tracker<capture_output_access>("out"))));
+        in.require_output_checked(ctx, "out");
+        auto out = capture_output_checker<out_events>(
+            ctx->accessor<capture_output_access>("out"));
 
         in.feed(bin_increment_batch_event<dt3216>{{42, 43}, {0}}); // Overflow
         std::vector<u16> elem_hist{0};
@@ -126,8 +145,12 @@ TEST_CASE("Histogram elementwise, saturate on overflow",
     SECTION("Max per bin = 1") {
         auto in = feed_input<event_set<bin_increment_batch_event<dt3216>>>(
             histogram_elementwise<saturate_on_overflow, dt3216>(
-                1, 1, 1, ref_processor(out)));
-        in.require_output_checked(out);
+                1, 1, 1,
+                capture_output<out_events>(
+                    ctx->tracker<capture_output_access>("out"))));
+        in.require_output_checked(ctx, "out");
+        auto out = capture_output_checker<out_events>(
+            ctx->accessor<capture_output_access>("out"));
 
         in.feed(
             bin_increment_batch_event<dt3216>{{42, 43}, {0, 0}}); // Overflow
@@ -144,14 +167,19 @@ TEST_CASE("Histogram elementwise, saturate on overflow",
 
 TEST_CASE("Histogram elementwise, error on overflow",
           "[histogram_elementwise]") {
-    auto out = capture_output<event_set<element_histogram_event<dt3216>,
-                                        histogram_array_event<dt3216>>>();
+    using out_events = event_set<element_histogram_event<dt3216>,
+                                 histogram_array_event<dt3216>>;
+    auto ctx = std::make_shared<processor_context>();
 
     SECTION("Max per bin = 0") {
         auto in = feed_input<event_set<bin_increment_batch_event<dt3216>>>(
             histogram_elementwise<error_on_overflow, dt3216>(
-                1, 1, 0, ref_processor(out)));
-        in.require_output_checked(out);
+                1, 1, 0,
+                capture_output<out_events>(
+                    ctx->tracker<capture_output_access>("out"))));
+        in.require_output_checked(ctx, "out");
+        auto out = capture_output_checker<out_events>(
+            ctx->accessor<capture_output_access>("out"));
 
         REQUIRE_THROWS_AS(
             in.feed(bin_increment_batch_event<dt3216>{{42, 43}, {0}}),
@@ -162,8 +190,12 @@ TEST_CASE("Histogram elementwise, error on overflow",
     SECTION("Max per bin = 1") {
         auto in = feed_input<event_set<bin_increment_batch_event<dt3216>>>(
             histogram_elementwise<error_on_overflow, dt3216>(
-                1, 1, 1, ref_processor(out)));
-        in.require_output_checked(out);
+                1, 1, 1,
+                capture_output<out_events>(
+                    ctx->tracker<capture_output_access>("out"))));
+        in.require_output_checked(ctx, "out");
+        auto out = capture_output_checker<out_events>(
+            ctx->accessor<capture_output_access>("out"));
 
         REQUIRE_THROWS_AS(
             in.feed(bin_increment_batch_event<dt3216>{{42, 43}, {0, 0}}),
@@ -199,11 +231,15 @@ TEMPLATE_TEST_CASE(
     reset_on_overflow, stop_on_overflow, error_on_overflow) {
     auto num_elements = GENERATE(std::size_t{0}, 1, 3);
     auto num_bins = GENERATE(std::size_t{0}, 1, 4);
-    auto out = capture_output<hea_output_events_no_concluding>();
+    auto ctx = std::make_shared<processor_context>();
     auto in = feed_input<hea_input_events>(
         histogram_elementwise_accumulate<reset_event, TestType, false, dt88>(
-            num_elements, num_bins, 10, ref_processor(out)));
-    in.require_output_checked(out);
+            num_elements, num_bins, 10,
+            capture_output<hea_output_events_no_concluding>(
+                ctx->tracker<capture_output_access>("out"))));
+    in.require_output_checked(ctx, "out");
+    auto out = capture_output_checker<hea_output_events_no_concluding>(
+        ctx->accessor<capture_output_access>("out"));
 
     SECTION("empty stream") {
         in.flush();
@@ -222,11 +258,15 @@ TEMPLATE_TEST_CASE(
     "histogram_elementwise_accumulate without emit-concluding finishes correctly",
     "[histogram_elementwise_accumulate]", saturate_on_overflow,
     reset_on_overflow, stop_on_overflow, error_on_overflow) {
-    auto out = capture_output<hea_output_events_no_concluding>();
+    auto ctx = std::make_shared<processor_context>();
     auto in = feed_input<hea_input_events>(
         histogram_elementwise_accumulate<reset_event, TestType, false, dt88>(
-            2, 3, 255, ref_processor(out)));
-    in.require_output_checked(out);
+            2, 3, 255,
+            capture_output<hea_output_events_no_concluding>(
+                ctx->tracker<capture_output_access>("out"))));
+    in.require_output_checked(ctx, "out");
+    auto out = capture_output_checker<hea_output_events_no_concluding>(
+        ctx->accessor<capture_output_access>("out"));
 
     std::vector<u8> elem_hist;
     std::vector<u8> hist_arr;
@@ -280,11 +320,15 @@ TEMPLATE_TEST_CASE(
     "histogram_elementwise_accumulate with emit-concluding emits concluding event when ended",
     "[histogram_elementwise_accumulate]", reset_on_overflow, stop_on_overflow,
     error_on_overflow) {
-    auto out = capture_output<hea_output_events>();
+    auto ctx = std::make_shared<processor_context>();
     auto in = feed_input<hea_input_events>(
         histogram_elementwise_accumulate<reset_event, TestType, true, dt88>(
-            2, 3, 255, ref_processor(out)));
-    in.require_output_checked(out);
+            2, 3, 255,
+            capture_output<hea_output_events>(
+                ctx->tracker<capture_output_access>("out"))));
+    in.require_output_checked(ctx, "out");
+    auto out = capture_output_checker<hea_output_events>(
+        ctx->accessor<capture_output_access>("out"));
 
     std::vector<u8> elem_hist;
     std::vector<u8> hist_arr;
@@ -350,11 +394,15 @@ TEMPLATE_TEST_CASE(
     "histogram_elementwise_accumulate with emit-concluding emits concluding event when reset",
     "[histogram_elementwise_accumulate]", reset_on_overflow, stop_on_overflow,
     error_on_overflow) {
-    auto out = capture_output<hea_output_events>();
+    auto ctx = std::make_shared<processor_context>();
     auto in = feed_input<hea_input_events>(
         histogram_elementwise_accumulate<reset_event, TestType, true, dt88>(
-            2, 3, 255, ref_processor(out)));
-    in.require_output_checked(out);
+            2, 3, 255,
+            capture_output<hea_output_events>(
+                ctx->tracker<capture_output_access>("out"))));
+    in.require_output_checked(ctx, "out");
+    auto out = capture_output_checker<hea_output_events>(
+        ctx->accessor<capture_output_access>("out"));
 
     std::vector<u8> elem_hist;
     std::vector<u8> hist_arr;
@@ -434,12 +482,16 @@ TEMPLATE_TEST_CASE(
 
 TEST_CASE("histogram_elementwise_accumulate with saturate-on-overflow",
           "[histogram_elementwise_accumulate]") {
-    auto out = capture_output<hea_output_events_no_concluding>();
+    auto ctx = std::make_shared<processor_context>();
     auto in = feed_input<hea_input_events>(
         histogram_elementwise_accumulate<reset_event, saturate_on_overflow,
-                                         false, dt88>(2, 3, 4,
-                                                      ref_processor(out)));
-    in.require_output_checked(out);
+                                         false, dt88>(
+            2, 3, 4,
+            capture_output<hea_output_events_no_concluding>(
+                ctx->tracker<capture_output_access>("out"))));
+    in.require_output_checked(ctx, "out");
+    auto out = capture_output_checker<hea_output_events_no_concluding>(
+        ctx->accessor<capture_output_access>("out"));
 
     std::vector<u8> elem_hist;
 
@@ -471,11 +523,16 @@ TEST_CASE("histogram_elementwise_accumulate with saturate-on-overflow",
 
 TEST_CASE("histogram_elementwise_accumulate with reset-on-overflow",
           "[histogram_elementwise_accumulate]") {
-    auto out = capture_output<hea_output_events>();
+    auto ctx = std::make_shared<processor_context>();
     auto in = feed_input<hea_input_events>(
         histogram_elementwise_accumulate<reset_event, reset_on_overflow, true,
-                                         dt88>(2, 3, 4, ref_processor(out)));
-    in.require_output_checked(out);
+                                         dt88>(
+            2, 3, 4,
+            capture_output<hea_output_events>(
+                ctx->tracker<capture_output_access>("out"))));
+    in.require_output_checked(ctx, "out");
+    auto out = capture_output_checker<hea_output_events>(
+        ctx->accessor<capture_output_access>("out"));
 
     std::vector<u8> elem_hist;
     std::vector<u8> hist_arr;
@@ -575,11 +632,16 @@ TEST_CASE("histogram_elementwise_accumulate with reset-on-overflow",
 
 TEST_CASE("histogram_elementwise_accumulate with stop-on-overflow",
           "[histogram_elementwise_accumulate]") {
-    auto out = capture_output<hea_output_events>();
+    auto ctx = std::make_shared<processor_context>();
     auto in = feed_input<hea_input_events>(
         histogram_elementwise_accumulate<reset_event, stop_on_overflow, true,
-                                         dt88>(2, 3, 4, ref_processor(out)));
-    in.require_output_checked(out);
+                                         dt88>(
+            2, 3, 4,
+            capture_output<hea_output_events>(
+                ctx->tracker<capture_output_access>("out"))));
+    in.require_output_checked(ctx, "out");
+    auto out = capture_output_checker<hea_output_events>(
+        ctx->accessor<capture_output_access>("out"));
 
     std::vector<u8> elem_hist;
     std::vector<u8> hist_arr;
@@ -652,11 +714,16 @@ TEST_CASE("histogram_elementwise_accumulate with stop-on-overflow",
 TEST_CASE(
     "histogram_elementwise_accumulate with error-on-overflow, emit-concluding",
     "[histogram_elementwise_accumulate]") {
-    auto out = capture_output<hea_output_events>();
+    auto ctx = std::make_shared<processor_context>();
     auto in = feed_input<hea_input_events>(
         histogram_elementwise_accumulate<reset_event, error_on_overflow, true,
-                                         dt88>(2, 3, 4, ref_processor(out)));
-    in.require_output_checked(out);
+                                         dt88>(
+            2, 3, 4,
+            capture_output<hea_output_events>(
+                ctx->tracker<capture_output_access>("out"))));
+    in.require_output_checked(ctx, "out");
+    auto out = capture_output_checker<hea_output_events>(
+        ctx->accessor<capture_output_access>("out"));
 
     std::vector<u8> elem_hist;
     std::vector<u8> hist_arr;
@@ -717,11 +784,16 @@ TEST_CASE(
 TEST_CASE(
     "histogram_elementwise_accumulate with error-on-overflow, no emit-concluding",
     "[histogram_elementwise_accumulate]") {
-    auto out = capture_output<hea_output_events_no_concluding>();
+    auto ctx = std::make_shared<processor_context>();
     auto in = feed_input<hea_input_events>(
         histogram_elementwise_accumulate<reset_event, error_on_overflow, false,
-                                         dt88>(2, 3, 4, ref_processor(out)));
-    in.require_output_checked(out);
+                                         dt88>(
+            2, 3, 4,
+            capture_output<hea_output_events_no_concluding>(
+                ctx->tracker<capture_output_access>("out"))));
+    in.require_output_checked(ctx, "out");
+    auto out = capture_output_checker<hea_output_events_no_concluding>(
+        ctx->accessor<capture_output_access>("out"));
 
     std::vector<u8> elem_hist;
     std::vector<u8> hist_arr;

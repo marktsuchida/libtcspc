@@ -7,7 +7,6 @@
 #include "libtcspc/pair.hpp"
 
 #include "libtcspc/common.hpp"
-#include "libtcspc/ref_processor.hpp"
 #include "libtcspc/test_utils.hpp"
 #include "libtcspc/time_tagged_events.hpp"
 
@@ -15,13 +14,21 @@
 
 namespace tcspc {
 
+namespace {
+
+using out_events = event_set<detection_event<>, detection_pair_event<>>;
+
+}
+
 TEST_CASE("pair all", "[pair_all]") {
-    auto out =
-        capture_output<event_set<detection_event<>, detection_pair_event<>>>();
+    auto ctx = std::make_shared<processor_context>();
     auto in = feed_input<event_set<detection_event<>>>(
         pair_all(0, std::array<default_data_traits::channel_type, 1>{1}, 2,
-                 ref_processor(out)));
-    in.require_output_checked(out);
+                 capture_output<out_events>(
+                     ctx->tracker<capture_output_access>("out"))));
+    in.require_output_checked(ctx, "out");
+    auto out = capture_output_checker<out_events>(
+        ctx->accessor<capture_output_access>("out"));
 
     SECTION("empty stream") {
         in.flush();
@@ -87,12 +94,14 @@ TEST_CASE("pair all", "[pair_all]") {
 }
 
 TEST_CASE("pair all with self", "[pair_all]") {
-    auto out =
-        capture_output<event_set<detection_event<>, detection_pair_event<>>>();
+    auto ctx = std::make_shared<processor_context>();
     auto in = feed_input<event_set<detection_event<>>>(
         pair_all(0, std::array<default_data_traits::channel_type, 1>{0}, 2,
-                 ref_processor(out)));
-    in.require_output_checked(out);
+                 capture_output<out_events>(
+                     ctx->tracker<capture_output_access>("out"))));
+    in.require_output_checked(ctx, "out");
+    auto out = capture_output_checker<out_events>(
+        ctx->accessor<capture_output_access>("out"));
 
     in.feed(detection_event<>{{{0}, 0}});
     REQUIRE(out.check(detection_event<>{{{0}, 0}}));
@@ -116,12 +125,14 @@ TEST_CASE("pair all with self", "[pair_all]") {
 }
 
 TEST_CASE("pair one", "[pair_one]") {
-    auto out =
-        capture_output<event_set<detection_event<>, detection_pair_event<>>>();
+    auto ctx = std::make_shared<processor_context>();
     auto in = feed_input<event_set<detection_event<>>>(
         pair_one(0, std::array<default_data_traits::channel_type, 1>{1}, 2,
-                 ref_processor(out)));
-    in.require_output_checked(out);
+                 capture_output<out_events>(
+                     ctx->tracker<capture_output_access>("out"))));
+    in.require_output_checked(ctx, "out");
+    auto out = capture_output_checker<out_events>(
+        ctx->accessor<capture_output_access>("out"));
 
     SECTION("empty stream") {
         in.flush();
@@ -181,12 +192,14 @@ TEST_CASE("pair one", "[pair_one]") {
 }
 
 TEST_CASE("pair one with self", "[pair_one]") {
-    auto out =
-        capture_output<event_set<detection_event<>, detection_pair_event<>>>();
+    auto ctx = std::make_shared<processor_context>();
     auto in = feed_input<event_set<detection_event<>>>(
         pair_one(0, std::array<default_data_traits::channel_type, 1>{0}, 2,
-                 ref_processor(out)));
-    in.require_output_checked(out);
+                 capture_output<out_events>(
+                     ctx->tracker<capture_output_access>("out"))));
+    in.require_output_checked(ctx, "out");
+    auto out = capture_output_checker<out_events>(
+        ctx->accessor<capture_output_access>("out"));
 
     in.feed(detection_event<>{{{0}, 0}});
     REQUIRE(out.check(detection_event<>{{{0}, 0}}));
@@ -208,12 +221,14 @@ TEST_CASE("pair one with self", "[pair_one]") {
 }
 
 TEST_CASE("pair all between", "[pair_all_between]") {
-    auto out =
-        capture_output<event_set<detection_event<>, detection_pair_event<>>>();
+    auto ctx = std::make_shared<processor_context>();
     auto in = feed_input<event_set<detection_event<>>>(pair_all_between(
         0, std::array<default_data_traits::channel_type, 1>{1}, 2,
-        ref_processor(out)));
-    in.require_output_checked(out);
+        capture_output<out_events>(
+            ctx->tracker<capture_output_access>("out"))));
+    in.require_output_checked(ctx, "out");
+    auto out = capture_output_checker<out_events>(
+        ctx->accessor<capture_output_access>("out"));
 
     SECTION("empty stream") {
         in.flush();
@@ -275,12 +290,14 @@ TEST_CASE("pair all between", "[pair_all_between]") {
 }
 
 TEST_CASE("pair all between with self", "[pair_all_between]") {
-    auto out =
-        capture_output<event_set<detection_event<>, detection_pair_event<>>>();
+    auto ctx = std::make_shared<processor_context>();
     auto in = feed_input<event_set<detection_event<>>>(pair_all_between(
         0, std::array<default_data_traits::channel_type, 1>{0}, 2,
-        ref_processor(out)));
-    in.require_output_checked(out);
+        capture_output<out_events>(
+            ctx->tracker<capture_output_access>("out"))));
+    in.require_output_checked(ctx, "out");
+    auto out = capture_output_checker<out_events>(
+        ctx->accessor<capture_output_access>("out"));
 
     in.feed(detection_event<>{{{0}, 0}});
     REQUIRE(out.check(detection_event<>{{{0}, 0}}));
@@ -302,12 +319,14 @@ TEST_CASE("pair all between with self", "[pair_all_between]") {
 }
 
 TEST_CASE("pair one between", "[pair_one_between]") {
-    auto out =
-        capture_output<event_set<detection_event<>, detection_pair_event<>>>();
+    auto ctx = std::make_shared<processor_context>();
     auto in = feed_input<event_set<detection_event<>>>(pair_one_between(
         0, std::array<default_data_traits::channel_type, 1>{1}, 2,
-        ref_processor(out)));
-    in.require_output_checked(out);
+        capture_output<out_events>(
+            ctx->tracker<capture_output_access>("out"))));
+    in.require_output_checked(ctx, "out");
+    auto out = capture_output_checker<out_events>(
+        ctx->accessor<capture_output_access>("out"));
 
     SECTION("empty stream") {
         in.flush();
@@ -367,12 +386,14 @@ TEST_CASE("pair one between", "[pair_one_between]") {
 }
 
 TEST_CASE("pair one between with self", "[pair_one_between]") {
-    auto out =
-        capture_output<event_set<detection_event<>, detection_pair_event<>>>();
+    auto ctx = std::make_shared<processor_context>();
     auto in = feed_input<event_set<detection_event<>>>(pair_one_between(
         0, std::array<default_data_traits::channel_type, 1>{0}, 2,
-        ref_processor(out)));
-    in.require_output_checked(out);
+        capture_output<out_events>(
+            ctx->tracker<capture_output_access>("out"))));
+    in.require_output_checked(ctx, "out");
+    auto out = capture_output_checker<out_events>(
+        ctx->accessor<capture_output_access>("out"));
 
     in.feed(detection_event<>{{{0}, 0}});
     REQUIRE(out.check(detection_event<>{{{0}, 0}}));
