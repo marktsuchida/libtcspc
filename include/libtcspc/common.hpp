@@ -161,7 +161,7 @@ template <typename Downstream> class null_source {
     Downstream downstream;
 
   public:
-    explicit null_source(Downstream &&downstream)
+    explicit null_source(Downstream downstream)
         : downstream(std::move(downstream)) {}
 
     void pump_events() { downstream.flush(); }

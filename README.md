@@ -63,13 +63,13 @@ Event classes are pure data and have public data members.
 
 Processors are just classes with the following member functions:
 
-- `void handle(Event const& event)` -- a statically polymorphic (i.e.,
+- `void handle(Event const &event)` -- a statically polymorphic (i.e.,
   overloaded for different event types) function, for each event in the event
   set that is processed by the processor
 - `void flush()` -- called when the event stream ends successfully, to flush
   out any events buffered in processors
 
-The last argument to the constructor of a processor is usually
-`Downstream &&downstream`, a reference to the downstream processor that will
-handle the events emitted by this processor. The downstream processor is moved
-into the processor.
+When creating a processor, the downstream processor is passed in as an argument
+and moved in. This results in a single object for a chain of processors, tying
+frequently accessed state data in a compact layout and enabling heavy compiler
+optimizations on the event processing.

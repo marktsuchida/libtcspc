@@ -36,7 +36,7 @@ class check_monotonic {
     }
 
   public:
-    explicit check_monotonic(Downstream &&downstream)
+    explicit check_monotonic(Downstream downstream)
         : downstream(std::move(downstream)) {}
 
     template <typename Event> void handle(Event const &event) {
@@ -106,7 +106,7 @@ class check_alternating {
     }
 
   public:
-    explicit check_alternating(Downstream &&downstream)
+    explicit check_alternating(Downstream downstream)
         : downstream(std::move(downstream)) {}
 
     void handle(Event0 const &event) {

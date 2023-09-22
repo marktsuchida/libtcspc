@@ -34,7 +34,7 @@ class map_to_datapoints {
     static_assert(
         std::is_same_v<datapoint_type, typename DataTraits::datapoint_type>);
 
-    explicit map_to_datapoints(DataMapper &&mapper, Downstream &&downstream)
+    explicit map_to_datapoints(DataMapper &&mapper, Downstream downstream)
         : mapper(std::move(mapper)), downstream(std::move(downstream)) {}
 
     void handle(event_type const &event) {
@@ -155,7 +155,7 @@ class map_to_bins {
     static_assert(
         std::is_same_v<bin_index_type, typename DataTraits::bin_index_type>);
 
-    explicit map_to_bins(BinMapper &&bin_mapper, Downstream &&downstream)
+    explicit map_to_bins(BinMapper &&bin_mapper, Downstream downstream)
         : bin_mapper(std::move(bin_mapper)),
           downstream(std::move(downstream)) {}
 
@@ -381,7 +381,7 @@ class batch_bin_increments {
     Downstream downstream;
 
   public:
-    explicit batch_bin_increments(Downstream &&downstream)
+    explicit batch_bin_increments(Downstream downstream)
         : downstream(std::move(downstream)) {}
 
     template <typename DT> void handle(bin_increment_event<DT> const &event) {

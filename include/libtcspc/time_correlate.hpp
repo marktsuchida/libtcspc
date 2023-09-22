@@ -32,7 +32,7 @@ class time_correlate_at_start_or_stop {
     Downstream downstream;
 
   public:
-    explicit time_correlate_at_start_or_stop(Downstream &&downstream)
+    explicit time_correlate_at_start_or_stop(Downstream downstream)
         : downstream(std::move(downstream)) {}
 
     template <typename DT> void handle(detection_pair_event<DT> const &event) {
@@ -60,7 +60,7 @@ class time_correlate_at_midpoint {
     Downstream downstream;
 
   public:
-    explicit time_correlate_at_midpoint(Downstream &&downstream)
+    explicit time_correlate_at_midpoint(Downstream downstream)
         : downstream(std::move(downstream)) {}
 
     template <typename DT> void handle(detection_pair_event<DT> const &event) {
@@ -90,8 +90,7 @@ class time_correlate_at_fraction {
     Downstream downstream;
 
   public:
-    explicit time_correlate_at_fraction(double fraction,
-                                        Downstream &&downstream)
+    explicit time_correlate_at_fraction(double fraction, Downstream downstream)
         : fraction(fraction), downstream(std::move(downstream)) {}
 
     template <typename DT> void handle(detection_pair_event<DT> const &event) {
@@ -268,7 +267,7 @@ template <typename Downstream> class negate_difftime {
     Downstream downstream;
 
   public:
-    explicit negate_difftime(Downstream &&downstream)
+    explicit negate_difftime(Downstream downstream)
         : downstream(std::move(downstream)) {}
 
     template <typename DataTraits>
@@ -293,7 +292,7 @@ class remove_time_correlation {
     Downstream downstream;
 
   public:
-    explicit remove_time_correlation(Downstream &&downstream)
+    explicit remove_time_correlation(Downstream downstream)
         : downstream(std::move(downstream)) {}
 
     template <typename DT>

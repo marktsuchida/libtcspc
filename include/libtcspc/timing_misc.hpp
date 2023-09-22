@@ -179,7 +179,7 @@ class retime_periodic_sequences {
   public:
     explicit retime_periodic_sequences(
         typename DataTraits::abstime_type max_time_shift,
-        Downstream &&downstream)
+        Downstream downstream)
         : max_shift(max_time_shift), downstream(std::move(downstream)) {
         if (max_shift < 0)
             throw std::invalid_argument(
@@ -276,7 +276,7 @@ class extrapolate_periodic_sequences {
 
   public:
     explicit extrapolate_periodic_sequences(std::size_t tick_index,
-                                            Downstream &&downstream)
+                                            Downstream downstream)
         : m(static_cast<double>(tick_index)),
           downstream(std::move(downstream)) {}
 
@@ -335,7 +335,7 @@ class add_count_to_periodic_sequences {
 
   public:
     explicit add_count_to_periodic_sequences(std::size_t count,
-                                             Downstream &&downstream)
+                                             Downstream downstream)
         : ct(count), downstream(std::move(downstream)) {}
 
     template <typename DT>
@@ -403,7 +403,7 @@ class convert_sequences_to_start_stop {
 
   public:
     explicit convert_sequences_to_start_stop(std::size_t count,
-                                             Downstream &&downstream)
+                                             Downstream downstream)
         : input_len(count + 1), downstream(std::move(downstream)) {}
 
     void handle(TickEvent const &event) {

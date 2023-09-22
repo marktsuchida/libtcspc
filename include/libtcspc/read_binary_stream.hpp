@@ -397,7 +397,7 @@ class read_binary_stream {
     explicit read_binary_stream(
         InputStream &&stream, std::uint64_t max_length,
         std::shared_ptr<object_pool<EventVector>> buffer_pool,
-        std::size_t read_granularity_bytes, Downstream &&downstream)
+        std::size_t read_granularity_bytes, Downstream downstream)
         : stream(std::move(stream)), length(max_length),
           bufpool(std::move(buffer_pool)),
           read_granularity(read_granularity_bytes),

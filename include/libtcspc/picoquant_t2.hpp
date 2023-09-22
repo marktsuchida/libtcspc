@@ -445,7 +445,7 @@ class decode_pqt2 {
     }
 
   public:
-    explicit decode_pqt2(Downstream &&downstream)
+    explicit decode_pqt2(Downstream downstream)
         : downstream(std::move(downstream)) {}
 
     void handle(PQT2Event const &event) {

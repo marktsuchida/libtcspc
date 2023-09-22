@@ -39,7 +39,7 @@ class stop_impl {
     }
 
   public:
-    explicit stop_impl(std::string prefix, Downstream &&downstream)
+    explicit stop_impl(std::string prefix, Downstream downstream)
         : downstream(std::move(downstream)),
           message_prefix(std::move(prefix)) {}
 

@@ -92,7 +92,7 @@ class histogram {
 
   public:
     explicit histogram(std::size_t num_bins, bin_type max_per_bin,
-                       Downstream &&downstream)
+                       Downstream downstream)
         : hist_mem(new bin_type[num_bins]), hist(hist_mem.get(), num_bins),
           shist(hist, max_per_bin), downstream(std::move(downstream)) {
         shist.clear();

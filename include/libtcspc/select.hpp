@@ -19,7 +19,7 @@ template <typename EventSet, bool Inverted, typename Downstream> class select {
     Downstream downstream;
 
   public:
-    explicit select(Downstream &&downstream)
+    explicit select(Downstream downstream)
         : downstream(std::move(downstream)) {}
 
     template <typename AnyEvent> void handle(AnyEvent const &event) {

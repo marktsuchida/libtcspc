@@ -22,7 +22,7 @@ class split {
     Downstream1 downstream1;
 
   public:
-    explicit split(Downstream0 &&downstream0, Downstream1 &&downstream1)
+    explicit split(Downstream0 downstream0, Downstream1 downstream1)
         : downstream0(std::move(downstream0)),
           downstream1(std::move(downstream1)) {}
 

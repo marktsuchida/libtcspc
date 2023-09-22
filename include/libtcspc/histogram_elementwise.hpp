@@ -64,7 +64,7 @@ class histogram_elementwise {
   public:
     explicit histogram_elementwise(std::size_t num_elements,
                                    std::size_t num_bins, bin_type max_per_bin,
-                                   Downstream &&downstream)
+                                   Downstream downstream)
         : hist_arr_mem(new bin_type[num_elements * num_bins]),
           hist_arr(hist_arr_mem.get(), num_elements * num_bins),
           mhist(hist_arr, max_per_bin, num_bins, num_elements, true),
@@ -261,7 +261,7 @@ class histogram_elementwise_accumulate {
     explicit histogram_elementwise_accumulate(std::size_t num_elements,
                                               std::size_t num_bins,
                                               bin_type max_per_bin,
-                                              Downstream &&downstream)
+                                              Downstream downstream)
         : hist_arr_mem(new bin_type[num_elements * num_bins]),
           hist_arr(hist_arr_mem.get(), num_elements * num_bins),
           mhista(hist_arr, max_per_bin, num_bins, num_elements, true),

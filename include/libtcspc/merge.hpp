@@ -72,7 +72,7 @@ class merge_impl {
 
   public:
     explicit merge_impl(typename DataTraits::abstime_type max_time_shift,
-                        Downstream &&downstream)
+                        Downstream downstream)
         : max_time_shift(max_time_shift), downstream(std::move(downstream)) {
         if (max_time_shift < 0)
             throw std::invalid_argument(
@@ -295,7 +295,7 @@ template <std::size_t N, typename Downstream> class merge_unsorted_impl {
     std::array<bool, N> input_flushed{};
 
   public:
-    explicit merge_unsorted_impl(Downstream &&downstream)
+    explicit merge_unsorted_impl(Downstream downstream)
         : downstream(std::move(downstream)) {}
 
     merge_unsorted_impl(merge_unsorted_impl const &) = delete;

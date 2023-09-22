@@ -102,9 +102,9 @@ types should be documented with Doxygen comments (follow existing practice).
       parameters.
   - Processors should have an `explicit` constructor (or a few) taking
     configuration parameters and, as the last parameter, the downstream
-    processor (as a forwarding reference: `Downstream &&downstream`).
-    - The downstream processor should be assigned to the data member via
-      `std::move()` (factory function may use `std::forward<Downstream>()`).
+    processor (`Downstream downstream`).
+    - The downstream processor should usually be assigned to the data member
+      via `std::move()`.
 - Factory function
   - Processors in the library are defined as class templates in an internal
     namespace.
@@ -115,12 +115,15 @@ types should be documented with Doxygen comments (follow existing practice).
     guides. (CTAD only works if all template parameters can be deduced; we
     often want to deduce just the downstream type and possibly _some_ of the
     compile-time configuration parameters.)
+  - The downstream processor should be the last parameter
+    (`Downstream &&downstream` and passed to the constructor via
+    `std::forward`)
 - Copy and move constructors, assignment operators, and destructor
   - For regular (data-processing) processors, follow the Rule of Zero.
     - This should usually result in a copyable processor, unless the downstream
       is move-only.
   - For processors with special semantics, follow the Rule of Five to make the
-    processor move-only (or, rarely, non-movable).
+    processor move-only (or, very rarely, non-movable).
     - Even then, it should be extremely rare that a non-defaulted destructor is
       needed.
 - Avoid const data members

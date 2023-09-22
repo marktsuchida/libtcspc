@@ -51,7 +51,7 @@ class route_homogeneous {
 
   public:
     explicit route_homogeneous(Router router,
-                               std::array<Downstream, N> &&downstreams)
+                               std::array<Downstream, N> downstreams)
         : router(std::move(router)), downstreams(std::move(downstreams)) {}
 
     template <typename Event> void handle(Event const &event) {

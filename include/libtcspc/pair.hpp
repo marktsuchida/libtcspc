@@ -49,7 +49,7 @@ class pair_all {
         typename DataTraits::channel_type start_channel,
         std::array<typename DataTraits::channel_type, NStopChannels>
             stop_channels,
-        typename DataTraits::abstime_type time_window, Downstream &&downstream)
+        typename DataTraits::abstime_type time_window, Downstream downstream)
         : start_chan(start_channel), stop_chans(stop_channels),
           window_size(time_window), downstream(std::move(downstream)) {
         if (window_size < 0)
@@ -114,7 +114,7 @@ class pair_one {
         typename DataTraits::channel_type start_channel,
         std::array<typename DataTraits::channel_type, NStopChannels>
             stop_channels,
-        typename DataTraits::abstime_type time_window, Downstream &&downstream)
+        typename DataTraits::abstime_type time_window, Downstream downstream)
         : start_chan(start_channel), stop_chans(stop_channels),
           window_size(time_window), downstream(std::move(downstream)) {
         if (window_size < 0)
@@ -176,7 +176,7 @@ class pair_all_between {
         typename DataTraits::channel_type start_channel,
         std::array<typename DataTraits::channel_type, NStopChannels>
             stop_channels,
-        typename DataTraits::abstime_type time_window, Downstream &&downstream)
+        typename DataTraits::abstime_type time_window, Downstream downstream)
         : start_chan(start_channel), stop_chans(stop_channels),
           window_size(time_window), downstream(std::move(downstream)) {
         if (window_size < 0)
@@ -242,7 +242,7 @@ class pair_one_between {
         typename DataTraits::channel_type start_channel,
         std::array<typename DataTraits::channel_type, NStopChannels>
             stop_channels,
-        typename DataTraits::abstime_type time_window, Downstream &&downstream)
+        typename DataTraits::abstime_type time_window, Downstream downstream)
         : start_chan(start_channel), stop_chans(stop_channels),
           window_size(time_window), downstream(std::move(downstream)) {
         if (window_size < 0)

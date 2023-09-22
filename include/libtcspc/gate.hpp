@@ -24,7 +24,7 @@ class gate {
     Downstream downstream;
 
   public:
-    explicit gate(bool initially_open, Downstream &&downstream)
+    explicit gate(bool initially_open, Downstream downstream)
         : open(initially_open), downstream(std::move(downstream)) {}
 
     void handle(OpenEvent const &event) {

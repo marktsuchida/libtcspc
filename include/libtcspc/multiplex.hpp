@@ -22,7 +22,7 @@ template <typename EventSet, typename Downstream> class multiplex {
     Downstream downstream;
 
   public:
-    explicit multiplex(Downstream &&downstream)
+    explicit multiplex(Downstream downstream)
         : downstream(std::move(downstream)) {}
 
     template <typename Event,
@@ -40,7 +40,7 @@ template <typename EventSet, typename Downstream> class demultiplex {
     Downstream downstream;
 
   public:
-    explicit demultiplex(Downstream &&downstream)
+    explicit demultiplex(Downstream downstream)
         : downstream(std::move(downstream)) {}
 
     void handle(event_variant<EventSet> const &event) {

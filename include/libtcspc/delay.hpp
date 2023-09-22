@@ -24,7 +24,7 @@ template <typename DataTraits, typename Downstream> class delay {
 
   public:
     explicit delay(typename DataTraits::abstime_type delta,
-                   Downstream &&downstream)
+                   Downstream downstream)
         : delta(delta), downstream(std::move(downstream)) {}
 
     template <typename TimeTaggedEvent>
@@ -45,7 +45,7 @@ template <typename DataTraits, typename Downstream> class zero_base_abstime {
     Downstream downstream;
 
   public:
-    explicit zero_base_abstime(Downstream &&downstream)
+    explicit zero_base_abstime(Downstream downstream)
         : downstream(std::move(downstream)) {}
 
     template <typename TimeTaggedEvent>

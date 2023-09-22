@@ -416,7 +416,7 @@ class decode_pqt3 {
     }
 
   public:
-    explicit decode_pqt3(Downstream &&downstream)
+    explicit decode_pqt3(Downstream downstream)
         : downstream(std::move(downstream)) {}
 
     void handle(PQT3Event const &event) {

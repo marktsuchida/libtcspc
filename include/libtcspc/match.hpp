@@ -24,7 +24,7 @@ class match {
     Downstream downstream;
 
   public:
-    explicit match(Matcher &&matcher, Downstream &&downstream)
+    explicit match(Matcher &&matcher, Downstream downstream)
         : matcher(std::move(matcher)), downstream(std::move(downstream)) {}
 
     void handle(Event const &event) {

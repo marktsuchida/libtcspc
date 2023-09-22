@@ -144,7 +144,7 @@ class fit_periodic_sequences {
   public:
     explicit fit_periodic_sequences(std::size_t length,
                                     std::array<double, 2> min_max_interval,
-                                    double max_mse, Downstream &&downstream)
+                                    double max_mse, Downstream downstream)
         : len(length),
           tick_offset(static_cast<abstime_type>(min_max_interval[1]) + 10),
           fitter(length), min_interval_cutoff(min_max_interval[0]),

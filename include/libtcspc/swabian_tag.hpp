@@ -239,7 +239,7 @@ template <typename DataTraits, typename Downstream> class decode_swabian_tags {
     }
 
   public:
-    explicit decode_swabian_tags(Downstream &&downstream)
+    explicit decode_swabian_tags(Downstream downstream)
         : downstream(std::move(downstream)) {}
 
     void handle(swabian_tag_event const &event) {

@@ -544,7 +544,7 @@ template <typename EventSet, typename Downstream> class feed_input {
     }
 
   public:
-    explicit feed_input(Downstream &&downstream)
+    explicit feed_input(Downstream downstream)
         : downstream(std::move(downstream)) {}
 
     void require_output_checked(std::shared_ptr<processor_context> context,
@@ -655,7 +655,7 @@ template <typename EventSet, typename Downstream> class check_event_set {
     Downstream downstream;
 
   public:
-    explicit check_event_set(Downstream &&downstream)
+    explicit check_event_set(Downstream downstream)
         : downstream(std::move(downstream)) {}
 
     template <typename Event,

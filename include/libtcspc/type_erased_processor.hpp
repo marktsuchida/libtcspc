@@ -58,7 +58,7 @@ class virtual_processor_impl<Interface, Proc> : public Interface {
     Proc proc;
 
   public:
-    explicit virtual_processor_impl(Proc &&proc) : proc(std::move(proc)) {}
+    explicit virtual_processor_impl(Proc proc) : proc(std::move(proc)) {}
 
     template <typename... Args>
     explicit virtual_processor_impl(Args &&...args)

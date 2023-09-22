@@ -24,7 +24,7 @@ template <typename Event, typename Downstream> class view_as_bytes {
     Downstream downstream;
 
   public:
-    explicit view_as_bytes(Downstream &&downstream)
+    explicit view_as_bytes(Downstream downstream)
         : downstream(std::move(downstream)) {}
 
     void handle(Event const &event) {
@@ -41,7 +41,7 @@ class view_as_bytes<std::vector<Event>, Downstream> {
     Downstream downstream;
 
   public:
-    explicit view_as_bytes(Downstream &&downstream)
+    explicit view_as_bytes(Downstream downstream)
         : downstream(std::move(downstream)) {}
 
     void handle(std::vector<Event> const &event) {
@@ -56,7 +56,7 @@ template <typename Event, typename Downstream> class view_histogram_as_bytes {
     Downstream downstream;
 
   public:
-    explicit view_histogram_as_bytes(Downstream &&downstream)
+    explicit view_histogram_as_bytes(Downstream downstream)
         : downstream(std::move(downstream)) {}
 
     void handle(Event const &event) {
@@ -71,7 +71,7 @@ class view_histogram_array_as_bytes {
     Downstream downstream;
 
   public:
-    explicit view_histogram_array_as_bytes(Downstream &&downstream)
+    explicit view_histogram_array_as_bytes(Downstream downstream)
         : downstream(std::move(downstream)) {}
 
     void handle(Event const &event) {

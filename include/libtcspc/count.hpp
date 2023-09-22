@@ -33,7 +33,7 @@ class count_up_to {
   public:
     // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
     explicit count_up_to(std::uint64_t threshold, std::uint64_t limit,
-                         std::uint64_t initial_count, Downstream &&downstream)
+                         std::uint64_t initial_count, Downstream downstream)
         : count(initial_count), init(initial_count), thresh(threshold),
           limit(limit), downstream(std::move(downstream)) {
         if (init >= limit)
@@ -213,7 +213,7 @@ template <typename Event, typename Downstream> class count {
 
   public:
     explicit count(processor_tracker<count_access> &&tracker,
-                   Downstream &&downstream)
+                   Downstream downstream)
         : downstream(std::move(downstream)), trk(std::move(tracker)) {
         trk.register_accessor_factory([](auto &tracker) {
             using self_type = count;

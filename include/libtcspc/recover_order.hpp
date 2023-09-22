@@ -31,7 +31,7 @@ class recover_order {
 
   public:
     explicit recover_order(typename DataTraits::abstime_type time_window,
-                           Downstream &&downstream)
+                           Downstream downstream)
         : window_size(time_window), downstream(std::move(downstream)) {
         if (window_size < 0)
             throw std::invalid_argument(

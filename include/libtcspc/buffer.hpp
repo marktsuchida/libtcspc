@@ -192,7 +192,7 @@ template <typename Pointer, typename Downstream> class dereference_pointer {
     Downstream downstream;
 
   public:
-    explicit dereference_pointer(Downstream &&downstream)
+    explicit dereference_pointer(Downstream downstream)
         : downstream(std::move(downstream)) {}
 
     void handle(Pointer const &event_ptr) { downstream.handle(*event_ptr); }
@@ -237,7 +237,7 @@ class batch {
 
   public:
     explicit batch(std::shared_ptr<object_pool<EventVector>> buffer_pool,
-                   std::size_t batch_size, Downstream &&downstream)
+                   std::size_t batch_size, Downstream downstream)
         : buffer_pool(std::move(buffer_pool)), batch_size(batch_size),
           downstream(std::move(downstream)) {
         if (batch_size == 0)
@@ -272,7 +272,7 @@ class unbatch {
     Downstream downstream;
 
   public:
-    explicit unbatch(Downstream &&downstream)
+    explicit unbatch(Downstream downstream)
         : downstream(std::move(downstream)) {}
 
     // Should we mark this LIBTCSPC_NOINLINE? It would be good to increase the
@@ -418,13 +418,13 @@ class buffer {
   public:
     template <typename Duration>
     explicit buffer(std::size_t threshold, Duration latency_limit,
-                    Downstream &&downstream)
+                    Downstream downstream)
         : threshold(threshold),
           max_latency(std::chrono::duration_cast<decltype(max_latency)>(
               latency_limit)),
           downstream(std::move(downstream)) {}
 
-    explicit buffer(std::size_t threshold, Downstream &&downstream)
+    explicit buffer(std::size_t threshold, Downstream downstream)
         : threshold(threshold), downstream(std::move(downstream)) {}
 
     void handle(Event const &event) {
@@ -606,7 +606,7 @@ template <typename Event, typename Downstream> class single_threaded_buffer {
 
   public:
     explicit single_threaded_buffer(std::size_t threshold,
-                                    Downstream &&downstream)
+                                    Downstream downstream)
         : threshold(threshold), downstream(std::move(downstream)) {}
 
     void handle(Event const &event) {

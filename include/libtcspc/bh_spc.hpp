@@ -708,7 +708,7 @@ class decode_bh_spc {
     }
 
   public:
-    explicit decode_bh_spc(Downstream &&downstream)
+    explicit decode_bh_spc(Downstream downstream)
         : downstream(std::move(downstream)) {}
 
     // Rule of zero
