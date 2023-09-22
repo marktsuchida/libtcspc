@@ -149,9 +149,10 @@ class processor_context
      */
     template <typename Accessor>
     auto tracker(std::string processor_name) -> processor_tracker<Accessor> {
-        if (trackers.count(processor_name) > 0)
+        if (trackers.count(processor_name) != 0)
             throw std::logic_error(
-                "cannot create tracker for existing processor name in context");
+                "cannot create tracker for existing processor name: " +
+                processor_name);
         auto ret = processor_tracker<Accessor>(shared_from_this(),
                                                std::move(processor_name));
         trackers.insert({ret.name, std::any(&ret)});
@@ -173,8 +174,8 @@ class processor_context
         auto tracker_ptr = std::any_cast<processor_tracker<Accessor> *>(
             trackers.at(processor_name));
         if (tracker_ptr == nullptr)
-            throw std::logic_error(
-                "cannot access destroyed processor through context");
+            throw std::logic_error("cannot access destroyed processor: " +
+                                   processor_name);
         return tracker_ptr->accessor_factory(*tracker_ptr);
     }
 };

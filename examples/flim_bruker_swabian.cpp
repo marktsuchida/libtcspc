@@ -8,12 +8,14 @@
 #include "libtcspc/buffer.hpp"
 #include "libtcspc/check.hpp"
 #include "libtcspc/common.hpp"
+#include "libtcspc/count.hpp"
 #include "libtcspc/delay.hpp"
 #include "libtcspc/generate.hpp"
 #include "libtcspc/histogram_elementwise.hpp"
 #include "libtcspc/match.hpp"
 #include "libtcspc/merge.hpp"
 #include "libtcspc/pair.hpp"
+#include "libtcspc/processor_context.hpp"
 #include "libtcspc/read_binary_stream.hpp"
 #include "libtcspc/recover_order.hpp"
 #include "libtcspc/route.hpp"
@@ -135,7 +137,9 @@ struct settings {
     bool truncate = false;
 };
 
-template <bool Cumulative> auto make_histo_proc(settings const &settings) {
+template <bool Cumulative>
+auto make_histo_proc(settings const &settings,
+                     std::shared_ptr<tcspc::processor_context> ctx) {
     using namespace tcspc;
     auto writer = write_binary_stream(
         binary_file_output_stream(settings.output_filename, settings.truncate),
@@ -145,20 +149,27 @@ template <bool Cumulative> auto make_histo_proc(settings const &settings) {
                                                 true>(
             settings.pixels_per_line * settings.lines_per_frame,
             std::size_t(settings.max_bin_index) + 1, 65535,
-            select<event_set<concluding_histogram_array_event<>>>(
-                view_histogram_array_as_bytes<
-                    concluding_histogram_array_event<>>(std::move(writer))));
+            count<histogram_array_event<>>(
+                ctx->tracker<count_access>("frame_counter"),
+                select<event_set<concluding_histogram_array_event<>>>(
+                    view_histogram_array_as_bytes<
+                        concluding_histogram_array_event<>>(
+                        std::move(writer)))));
     } else {
         return histogram_elementwise<error_on_overflow>(
             settings.pixels_per_line * settings.lines_per_frame,
             std::size_t(settings.max_bin_index) + 1, 65535,
-            select<event_set<histogram_array_event<>>>(
-                view_histogram_array_as_bytes<histogram_array_event<>>(
-                    std::move(writer))));
+            count<histogram_array_event<>>(
+                ctx->tracker<count_access>("frame_counter"),
+                select<event_set<histogram_array_event<>>>(
+                    view_histogram_array_as_bytes<histogram_array_event<>>(
+                        std::move(writer)))));
     }
 }
 
-template <bool Cumulative> auto make_processor(settings const &settings) {
+template <bool Cumulative>
+auto make_processor(settings const &settings,
+                    std::shared_ptr<tcspc::processor_context> ctx) {
     using namespace tcspc;
     using device_event_vector = std::vector<swabian_tag_event>;
 
@@ -169,7 +180,9 @@ template <bool Cumulative> auto make_processor(settings const &settings) {
         bin_increment_event<>, pixel_start_event, pixel_stop_event>>(
             settings.max_photon_pulse_width,
     batch_bin_increments<pixel_start_event, pixel_stop_event>(
-    make_histo_proc<Cumulative>(settings)));
+    count<bin_increment_batch_event<>>(
+        ctx->tracker<count_access>("pixel_counter"),
+    make_histo_proc<Cumulative>(settings, ctx))));
 
     auto [sync_merge, cfd_merge] =
     merge<event_set<detection_event<>>>(
@@ -219,6 +232,7 @@ template <bool Cumulative> auto make_processor(settings const &settings) {
     stop_with_error<event_set<warning_event>>("error reading input",
     dereference_pointer<std::shared_ptr<device_event_vector>>(
     unbatch<device_event_vector, swabian_tag_event>(
+    count<swabian_tag_event>(ctx->tracker<count_access>("record_counter"),
     decode_swabian_tags(
     stop_with_error<event_set<
         warning_event,
@@ -236,9 +250,41 @@ template <bool Cumulative> auto make_processor(settings const &settings) {
         }),
         std::move(sync_processor),
         std::move(photon_processor),
-        std::move(pixel_marker_processor))))))))));
+        std::move(pixel_marker_processor)))))))))));
 
     // clang-format on
+}
+
+void print_stats(settings const &settings,
+                 std::shared_ptr<tcspc::processor_context> ctx) {
+    auto const pixels_per_frame =
+        settings.pixels_per_line * settings.lines_per_frame;
+    auto const records =
+        ctx->accessor<tcspc::count_access>("record_counter").count();
+    auto const pixels =
+        ctx->accessor<tcspc::count_access>("pixel_counter").count();
+    auto const frames =
+        ctx->accessor<tcspc::count_access>("frame_counter").count();
+    std::ostringstream stream;
+    stream << "records decoded: " << records << '\n';
+    stream << "pixels finished: " << pixels << '\n';
+    stream << "pixels per frame: " << pixels_per_frame << '\n';
+    stream << "frames finished: " << frames << '\n';
+    stream << "discarded pixels in incomplete frame: "
+           << (pixels - frames * pixels_per_frame) << '\n';
+    std::fputs(stream.str().c_str(), stdout);
+}
+
+template <bool Cumulative> auto run_and_print(settings const &settings) {
+    auto ctx = std::make_shared<tcspc::processor_context>();
+    auto proc = make_processor<Cumulative>(settings, ctx);
+    try {
+        proc.pump_events();
+    } catch (tcspc::end_processing const &exc) {
+        std::fputs(exc.what(), stderr);
+        std::fputs("\n", stderr);
+    }
+    print_stats(settings, ctx);
 }
 
 template <typename T>
@@ -384,9 +430,9 @@ auto main(int argc, char *argv[]) -> int {
                                             std::next(argv, argc));
         auto const settings = parse_args(args);
         if (settings.cumulative)
-            make_processor<true>(settings).pump_events();
+            run_and_print<true>(settings);
         else
-            make_processor<false>(settings).pump_events();
+            run_and_print<false>(settings);
     } catch (tcspc::end_processing const &exc) {
         std::fputs(exc.what(), stderr);
         std::fputs("\n", stderr);
