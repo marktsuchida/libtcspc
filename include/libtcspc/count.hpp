@@ -245,6 +245,14 @@ template <typename Event, typename Downstream> class count {
  *
  * \ingroup processors-basic
  *
+ * The count can be retrieved using a \c processor_context.
+ *
+ * Note that the count is incremented \e before the events of type \c Event are
+ * sent to the downstream processor. This means that the event will be counted
+ * even if it results in an error or end-of-stream in a downstream processor.
+ *
+ * All other events are passed through without counting.
+ *
  * \see count_access
  *
  * \tparam Event type of event to count
