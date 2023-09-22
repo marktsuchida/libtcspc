@@ -61,7 +61,7 @@ class summarize_and_print {
         std::ostringstream stream;
         stream << "Relative time of last event: \t" << last_abstime << '\n';
         for (std::size_t i = 0; i < photon_counts.size(); ++i)
-            stream << "rout " << i << ": \t" << photon_counts.at(i) << '\n';
+            stream << "route " << i << ": \t" << photon_counts.at(i) << '\n';
         for (std::size_t i = 0; i < marker_counts.size(); ++i)
             stream << "mark " << i << ": \t" << marker_counts.at(i) << '\n';
         std::fputs(stream.str().c_str(), stdout);
