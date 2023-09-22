@@ -8,6 +8,7 @@
 #include "libtcspc/buffer.hpp"
 #include "libtcspc/check.hpp"
 #include "libtcspc/common.hpp"
+#include "libtcspc/count.hpp"
 #include "libtcspc/event_set.hpp"
 #include "libtcspc/read_binary_stream.hpp"
 #include "libtcspc/stop.hpp"
@@ -71,6 +72,8 @@ auto summarize(std::string const &filename) -> bool {
     using namespace tcspc;
     using device_event_vector = std::vector<bh_spc_event>;
 
+    auto ctx = std::make_shared<processor_context>();
+
     // clang-format off
     auto proc =
     read_binary_stream<bh_spc_event>(
@@ -83,10 +86,11 @@ auto summarize(std::string const &filename) -> bool {
         // Get the vectors of device events.
     unbatch<device_event_vector, bh_spc_event>(
         // Get individual device events.
+    count<bh_spc_event>(ctx->tracker<count_access>("event_counter"), // Count.
     decode_bh_spc<dtraits>( // Decode device events into generic TCSPC events.
     check_monotonic<dtraits>( // Ensure the abstime is non-decreasing.
     stop<event_set<warning_event, data_lost_event<dtraits>>>("error in data",
-    summarize_and_print())))))));
+    summarize_and_print()))))))));
     // clang-format on
 
     try {
@@ -96,14 +100,17 @@ auto summarize(std::string const &filename) -> bool {
         std::fputs(exc.what(), stderr);
         std::fputs("\n", stderr);
         std::fputs("The above results are up to the error\n", stderr);
-        // TODO Determine byte position in input stream of error.
-        return false;
     } catch (std::exception const &exc) {
         // Other error; counts were not printed.
         std::fputs(exc.what(), stderr);
         std::fputs("\n", stderr);
         return false;
     }
+    std::fputs(
+        (std::to_string(ctx->accessor<count_access>("event_counter").count()) +
+         " events processed\n")
+            .c_str(),
+        stderr);
     return true;
 }
 

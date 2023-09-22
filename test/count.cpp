@@ -199,4 +199,26 @@ TEST_CASE("Count down to", "[count_down_to]") {
     REQUIRE(out.check_flushed());
 }
 
+TEST_CASE("event counter", "[count]") {
+    auto ctx = std::make_shared<processor_context>();
+    auto in = feed_input<event_set<tick_event, misc_event>>(
+        count<tick_event>(ctx->tracker<count_access>("counter"),
+                          capture_output<out_events>(
+                              ctx->tracker<capture_output_access>("out"))));
+    in.require_output_checked(ctx, "out");
+    auto out = capture_output_checker<out_events>(
+        ctx->accessor<capture_output_access>("out"));
+    auto counter = ctx->accessor<count_access>("counter");
+
+    CHECK(counter.count() == 0);
+    in.feed(tick_event{});
+    REQUIRE(out.check(tick_event{}));
+    CHECK(counter.count() == 1);
+    in.feed(misc_event{});
+    REQUIRE(out.check(misc_event{}));
+    CHECK(counter.count() == 1);
+    in.flush();
+    REQUIRE(out.check_flushed());
+}
+
 } // namespace tcspc

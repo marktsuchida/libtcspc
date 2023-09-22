@@ -6,8 +6,12 @@
 
 #pragma once
 
+#include "processor_context.hpp"
+
+#include <cstddef>
 #include <cstdint>
 #include <exception>
+#include <functional>
 #include <stdexcept>
 #include <utility>
 #include <vector>
@@ -181,6 +185,79 @@ auto count_down_to(std::uint64_t threshold, std::uint64_t limit,
     return internal::count_up_to<TickEvent, FireEvent, ResetEvent,
                                  FireAfterTick, Downstream>(
         threshold, limit, initial_count, std::forward<Downstream>(downstream));
+}
+
+/**
+ * \brief Accessor for count processor data.
+ *
+ * \ingroup processors-basic
+ *
+ * \see count
+ */
+struct count_access {
+    /**
+     * \brief Get the count.
+     */
+    std::function<std::uint64_t()> count;
+};
+
+namespace internal {
+
+template <typename Event, typename Downstream> class count {
+    std::uint64_t ct = 0;
+
+    Downstream downstream;
+
+    // Cold data after downstream.
+    processor_tracker<count_access> trk;
+
+  public:
+    explicit count(processor_tracker<count_access> &&tracker,
+                   Downstream &&downstream)
+        : downstream(std::move(downstream)), trk(std::move(tracker)) {
+        trk.register_accessor_factory([](auto &tracker) {
+            using self_type = count;
+            auto *self = reinterpret_cast<self_type *>(
+                reinterpret_cast<std::byte *>(&tracker) -
+                offsetof(self_type, trk));
+            return count_access{[self] { return self->ct; }};
+        });
+    }
+
+    void handle(Event const &event) {
+        ++ct;
+        downstream.handle(event);
+    }
+
+    template <typename OtherEvent> void handle(OtherEvent const &event) {
+        downstream.handle(event);
+    }
+
+    void flush() { downstream.flush(); }
+};
+
+} // namespace internal
+
+/**
+ * \brief Create a processor that counts events.
+ *
+ * \ingroup processors-basic
+ *
+ * \see count_access
+ *
+ * \tparam Event type of event to count
+ *
+ * \tparam Downstream downstream processor type
+ *
+ * \param tracker processor tracker for later access to state
+ *
+ * \param downstream downstream processor
+ */
+template <typename Event, typename Downstream>
+auto count(processor_tracker<count_access> &&tracker,
+           Downstream &&downstream) {
+    return internal::count<Event, Downstream>(
+        std::move(tracker), std::forward<Downstream>(downstream));
 }
 
 } // namespace tcspc
