@@ -86,7 +86,7 @@ auto summarize(std::string const &filename) -> bool {
         // Get the vectors of device events.
     unbatch<device_event_vector, bh_spc_event>(
         // Get individual device events.
-    count<bh_spc_event>(ctx->tracker<count_access>("event_counter"), // Count.
+    count<bh_spc_event>(ctx->tracker<count_access>("counter"), // Count.
     decode_bh_spc<dtraits>( // Decode device events into generic TCSPC events.
     check_monotonic<dtraits>( // Ensure the abstime is non-decreasing.
     stop<event_set<warning_event, data_lost_event<dtraits>>>("error in data",
@@ -107,8 +107,8 @@ auto summarize(std::string const &filename) -> bool {
         return false;
     }
     std::fputs(
-        (std::to_string(ctx->accessor<count_access>("event_counter").count()) +
-         " events processed\n")
+        (std::to_string(ctx->accessor<count_access>("counter").count()) +
+         " records decoded\n")
             .c_str(),
         stderr);
     return true;
