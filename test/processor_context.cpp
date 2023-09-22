@@ -56,6 +56,8 @@ struct example_access {
     std::function<int()> value;
 };
 
+// Workaround for spurious clang-tidy warning:
+// NOLINTNEXTLINE(bugprone-exception-escape)
 class example_processor {
     // In this example the processor is not a template, but most real
     // processors have very long type names due to the downstream being
@@ -88,8 +90,10 @@ class example_processor {
                 // be a problem in practice, but it should be noted.
                 static constexpr std::size_t tracker_offset =
                     offsetof(self_type, trk);
+                // NOLINTBEGIN(cppcoreguidelines-pro-type-reinterpret-cast,cppcoreguidelines-pro-bounds-pointer-arithmetic)
                 auto *self = reinterpret_cast<self_type *>(
                     reinterpret_cast<std::byte *>(&t) - tracker_offset);
+                // NOLINTEND(cppcoreguidelines-pro-type-reinterpret-cast,cppcoreguidelines-pro-bounds-pointer-arithmetic)
                 // Finally, we use lambda(s) to supply the type-erased
                 // function(s) by which the accessor interacts with the
                 // processor. As stated above, we assume 'self' remains valid

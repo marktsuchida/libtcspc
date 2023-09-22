@@ -93,10 +93,11 @@ class capture_output_access {
      * \tparam EventSet event set to check
      */
     template <typename EventSet> void check_event_set() const {
-        if constexpr (std::tuple_size_v<EventSet> > 0)
+        if constexpr (std::tuple_size_v<EventSet> > 0) {
             std::any_cast<
                 std::function<std::vector<event_variant<EventSet>>()>>(
                 peek_events_func);
+        }
     }
 
     /**
@@ -409,9 +410,11 @@ template <typename EventSet> class capture_output {
         : trk(std::move(tracker)) {
         trk.register_accessor_factory([](auto &tracker) {
             using self_type = capture_output;
+            // NOLINTBEGIN(cppcoreguidelines-pro-type-reinterpret-cast,cppcoreguidelines-pro-bounds-pointer-arithmetic)
             auto *self = reinterpret_cast<self_type *>(
                 reinterpret_cast<std::byte *>(&tracker) -
                 offsetof(self_type, trk));
+            // NOLINTEND(cppcoreguidelines-pro-type-reinterpret-cast,cppcoreguidelines-pro-bounds-pointer-arithmetic)
             return capture_output_access(
                 std::function([self] { return self->peek(); }),
                 [self] { self->output.pop(); },
@@ -454,7 +457,7 @@ template <typename EventSet> class capture_output {
         return ret;
     }
 
-    auto events_as_string() const -> std::string {
+    [[nodiscard]] auto events_as_string() const -> std::string {
         std::ostringstream stream;
         output.for_each([&](auto const &event) { stream << '\n' << event; });
         return stream.str();
@@ -487,9 +490,11 @@ template <> class capture_output<event_set<>> {
         : trk(std::move(tracker)) {
         trk.register_accessor_factory([](auto &tracker) {
             using self_type = capture_output;
+            // NOLINTBEGIN(cppcoreguidelines-pro-type-reinterpret-cast,cppcoreguidelines-pro-bounds-pointer-arithmetic)
             auto *self = reinterpret_cast<self_type *>(
                 reinterpret_cast<std::byte *>(&tracker) -
                 offsetof(self_type, trk));
+            // NOLINTEND(cppcoreguidelines-pro-type-reinterpret-cast,cppcoreguidelines-pro-bounds-pointer-arithmetic)
             return capture_output_access(
                 capture_output_access::empty_event_set_tag{},
                 [self] { return self->flushed; },

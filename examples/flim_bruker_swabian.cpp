@@ -139,7 +139,7 @@ struct settings {
 
 template <bool Cumulative>
 auto make_histo_proc(settings const &settings,
-                     std::shared_ptr<tcspc::processor_context> ctx) {
+                     std::shared_ptr<tcspc::processor_context> const &ctx) {
     using namespace tcspc;
     auto writer = write_binary_stream(
         binary_file_output_stream(settings.output_filename, settings.truncate),
@@ -256,7 +256,7 @@ auto make_processor(settings const &settings,
 }
 
 void print_stats(settings const &settings,
-                 std::shared_ptr<tcspc::processor_context> ctx) {
+                 std::shared_ptr<tcspc::processor_context> const &ctx) {
     auto const pixels_per_frame =
         settings.pixels_per_line * settings.lines_per_frame;
     auto const records =

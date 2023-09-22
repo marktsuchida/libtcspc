@@ -217,9 +217,11 @@ template <typename Event, typename Downstream> class count {
         : downstream(std::move(downstream)), trk(std::move(tracker)) {
         trk.register_accessor_factory([](auto &tracker) {
             using self_type = count;
+            // NOLINTBEGIN(cppcoreguidelines-pro-type-reinterpret-cast,cppcoreguidelines-pro-bounds-pointer-arithmetic)
             auto *self = reinterpret_cast<self_type *>(
                 reinterpret_cast<std::byte *>(&tracker) -
                 offsetof(self_type, trk));
+            // NOLINTEND(cppcoreguidelines-pro-type-reinterpret-cast,cppcoreguidelines-pro-bounds-pointer-arithmetic)
             return count_access{[self] { return self->ct; }};
         });
     }

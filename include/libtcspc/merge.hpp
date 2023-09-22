@@ -340,7 +340,7 @@ template <std::size_t N, typename Downstream> class merge_unsorted_input {
     // Movable but not copyable
     merge_unsorted_input(merge_unsorted_input const &) = delete;
     auto operator=(merge_unsorted_input const &) = delete;
-    merge_unsorted_input(merge_unsorted_input &&) = default;
+    merge_unsorted_input(merge_unsorted_input &&) noexcept = default;
     auto operator=(merge_unsorted_input &&) noexcept
         -> merge_unsorted_input & = default;
     ~merge_unsorted_input() = default;
@@ -355,7 +355,7 @@ template <std::size_t N, typename Downstream> class merge_unsorted_input {
 template <std::size_t N, typename Downstream, std::size_t... Indices>
 auto make_merge_unsorted_inputs(
     std::shared_ptr<merge_unsorted_impl<N, Downstream>> impl,
-    std::index_sequence<Indices...>) {
+    [[maybe_unused]] std::index_sequence<Indices...> indices) {
     using input_type = merge_unsorted_input<N, Downstream>;
     return std::array<input_type, N>{(input_type(impl, Indices))...};
 }

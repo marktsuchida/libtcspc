@@ -85,7 +85,7 @@ struct settings {
 
 template <bool Cumulative>
 auto make_histo_proc(settings const &settings,
-                     std::shared_ptr<tcspc::processor_context> ctx) {
+                     std::shared_ptr<tcspc::processor_context> const &ctx) {
     using namespace tcspc;
     auto writer = write_binary_stream(
         binary_file_output_stream(settings.output_filename, settings.truncate),
@@ -156,7 +156,7 @@ auto make_processor(settings const &settings,
 }
 
 void print_stats(settings const &settings,
-                 std::shared_ptr<tcspc::processor_context> ctx) {
+                 std::shared_ptr<tcspc::processor_context> const &ctx) {
     auto const pixels_per_frame =
         settings.pixels_per_line * settings.lines_per_frame;
     auto const records =
@@ -187,6 +187,28 @@ template <bool Cumulative> auto run_and_print(settings const &settings) {
     print_stats(settings, ctx);
 }
 
+template <typename GetValue>
+void parse_option(settings &dest, std::string const &key, GetValue get_value) {
+    try {
+        if (key == "channel")
+            dest.channel = std::stoi(get_value());
+        else if (key == "pixel-time")
+            dest.pixel_time = std::stoi(get_value());
+        else if (key == "width")
+            dest.pixels_per_line = std::stoul(get_value());
+        else if (key == "height")
+            dest.lines_per_frame = std::stoul(get_value());
+        else if (key == "sum")
+            dest.cumulative = true;
+        else if (key == "overwrite")
+            dest.truncate = true;
+        else
+            throw std::invalid_argument("unrecognized option");
+    } catch (std::exception const &exc) {
+        throw std::invalid_argument("--" + key + ": " + exc.what());
+    }
+}
+
 auto parse_args(std::vector<std::string> args) -> settings {
     std::vector<std::string> positional;
     settings ret{};
@@ -204,24 +226,10 @@ auto parse_args(std::vector<std::string> args) -> settings {
             auto const key = equals == std::string::npos
                                  ? arg.substr(2)
                                  : arg.substr(2, equals - 2);
-            auto get_value = [&] {
+            parse_option(ret, key, [&] {
                 return equals == std::string::npos ? pop_arg()
                                                    : arg.substr(equals + 1);
-            };
-            if (key == "channel")
-                ret.channel = std::stoi(get_value());
-            else if (key == "pixel-time")
-                ret.pixel_time = std::stoi(get_value());
-            else if (key == "width")
-                ret.pixels_per_line = std::stoul(get_value());
-            else if (key == "height")
-                ret.lines_per_frame = std::stoul(get_value());
-            else if (key == "sum")
-                ret.cumulative = true;
-            else if (key == "overwrite")
-                ret.truncate = true;
-            else
-                throw std::invalid_argument("unrecognized option: " + arg);
+            });
         } else {
             positional.push_back(arg);
         }
