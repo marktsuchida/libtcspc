@@ -59,11 +59,6 @@ struct example_access {
 // Workaround for spurious clang-tidy warning:
 // NOLINTNEXTLINE(bugprone-exception-escape)
 class example_processor {
-    // In this example the processor is not a template, but most real
-    // processors have very long type names due to the downstream being
-    // included. To implement an accessor, it is best to use an alias type.
-    using self_type = example_processor;
-
     // Processor data.
     int value = 42;
 
@@ -85,15 +80,8 @@ class example_processor {
             // therefore its tracker) stay alive in its current location, so
             // within the callable we can make these assumptions.
             [](processor_tracker<example_access> &t) {
-                // Note: offsetof() on non-standard-layout types is only
-                // "conditionally-supported" as of C++17. I expect this not to
-                // be a problem in practice, but it should be noted.
-                static constexpr std::size_t tracker_offset =
-                    offsetof(self_type, trk);
-                // NOLINTBEGIN(cppcoreguidelines-pro-type-reinterpret-cast,cppcoreguidelines-pro-bounds-pointer-arithmetic)
-                auto *self = reinterpret_cast<self_type *>(
-                    reinterpret_cast<std::byte *>(&t) - tracker_offset);
-                // NOLINTEND(cppcoreguidelines-pro-type-reinterpret-cast,cppcoreguidelines-pro-bounds-pointer-arithmetic)
+                auto *self =
+                    LIBTCSPC_PROCESSOR_FROM_TRACKER(example_processor, trk, t);
                 // Finally, we use lambda(s) to supply the type-erased
                 // function(s) by which the accessor interacts with the
                 // processor. As stated above, we assume 'self' remains valid

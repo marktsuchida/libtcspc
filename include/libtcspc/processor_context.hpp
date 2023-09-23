@@ -8,6 +8,7 @@
 
 #include <any>
 #include <cassert>
+#include <cstddef>
 #include <functional>
 #include <memory>
 #include <stdexcept>
@@ -206,5 +207,33 @@ processor_tracker<Accessor>::~processor_tracker() {
     if (ctx)
         ctx->update_tracker_address<Accessor>(name, nullptr);
 }
+
+// NOLINTBEGIN
+
+/**
+ * \brief Recover the processor address from an embedded processor tracker.
+ *
+ * This can be used in the implementation of a processor accessor factory (see
+ * \c processor_tracker::register_accessor_factory).
+ *
+ * \param proc_type processor type (no commas or angle brackets)
+ *
+ * \param tracker_field_name name of data member of proc_type holding the
+ * tracker
+ *
+ * \param tracker the tracker
+ *
+ * \return pointer to the processor
+ */
+#define LIBTCSPC_PROCESSOR_FROM_TRACKER(proc_type, tracker_field_name,        \
+                                        tracker)                              \
+    reinterpret_cast<proc_type *>(reinterpret_cast<std::byte *>(&(tracker)) - \
+                                  offsetof(proc_type, tracker_field_name))
+
+// Note: offsetof() on non-standard-layout types is only
+// "conditionally-supported" as of C++17. I expect this not to be a problem in
+// practice, but it should be noted.
+
+// NOLINTEND
 
 } // namespace tcspc

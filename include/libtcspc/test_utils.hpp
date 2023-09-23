@@ -409,12 +409,8 @@ template <typename EventSet> class capture_output {
     explicit capture_output(processor_tracker<capture_output_access> &&tracker)
         : trk(std::move(tracker)) {
         trk.register_accessor_factory([](auto &tracker) {
-            using self_type = capture_output;
-            // NOLINTBEGIN(cppcoreguidelines-pro-type-reinterpret-cast,cppcoreguidelines-pro-bounds-pointer-arithmetic)
-            auto *self = reinterpret_cast<self_type *>(
-                reinterpret_cast<std::byte *>(&tracker) -
-                offsetof(self_type, trk));
-            // NOLINTEND(cppcoreguidelines-pro-type-reinterpret-cast,cppcoreguidelines-pro-bounds-pointer-arithmetic)
+            auto *self =
+                LIBTCSPC_PROCESSOR_FROM_TRACKER(capture_output, trk, tracker);
             return capture_output_access(
                 std::function([self] { return self->peek(); }),
                 [self] { self->output.pop(); },
@@ -489,12 +485,8 @@ template <> class capture_output<event_set<>> {
     explicit capture_output(processor_tracker<capture_output_access> &&tracker)
         : trk(std::move(tracker)) {
         trk.register_accessor_factory([](auto &tracker) {
-            using self_type = capture_output;
-            // NOLINTBEGIN(cppcoreguidelines-pro-type-reinterpret-cast,cppcoreguidelines-pro-bounds-pointer-arithmetic)
-            auto *self = reinterpret_cast<self_type *>(
-                reinterpret_cast<std::byte *>(&tracker) -
-                offsetof(self_type, trk));
-            // NOLINTEND(cppcoreguidelines-pro-type-reinterpret-cast,cppcoreguidelines-pro-bounds-pointer-arithmetic)
+            auto *self =
+                LIBTCSPC_PROCESSOR_FROM_TRACKER(capture_output, trk, tracker);
             return capture_output_access(
                 capture_output_access::empty_event_set_tag{},
                 [self] { return self->flushed; },
