@@ -94,7 +94,7 @@ class capture_output_access {
      */
     template <typename EventSet> void check_event_set() const {
         if constexpr (std::tuple_size_v<EventSet> > 0) {
-            std::any_cast<
+            (void)std::any_cast<
                 std::function<std::vector<event_variant<EventSet>>()>>(
                 peek_events_func);
         }
