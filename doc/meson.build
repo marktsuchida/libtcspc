@@ -11,6 +11,7 @@ doxygen = find_program(
 doxyfile = configure_file(
     configuration: {
         'DOXYGEN_INPUT': meson.current_source_dir() / '../include',
+        'DOXYGEN_EXCLUDE': meson.current_source_dir() / '../include/tcb',
         'DOXYGEN_OUTPUT': meson.current_build_dir() / 'apidoc',
     },
     input: 'Doxyfile.in',

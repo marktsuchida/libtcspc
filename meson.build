@@ -19,8 +19,6 @@ endif
 
 thread_dep = dependency('threads')
 
-tcb_span_dep = dependency('tcb_span')
-
 catch2_with_main_dep = dependency(
     'catch2-with-main',
     allow_fallback: true,
@@ -47,9 +45,6 @@ benchmark_dep = dependency(
 
 libtcspc_dep = declare_dependency(
     include_directories: include_directories('include'),
-    dependencies: [
-        tcb_span_dep,
-    ],
 )
 
 subdir('include')

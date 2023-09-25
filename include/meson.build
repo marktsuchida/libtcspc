@@ -48,6 +48,7 @@ public_cpp_headers = files(
     'libtcspc/vector_queue.hpp',
     'libtcspc/view_as_bytes.hpp',
     'libtcspc/write_binary_stream.hpp',
+    'tcb/span.hpp',
 )
 
 install_headers(public_cpp_headers, preserve_path: true)

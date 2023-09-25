@@ -40,7 +40,7 @@ using span = std::span<T, Extent>;
 #pragma clang diagnostic ignored "-Wsign-conversion"
 #endif
 
-#include <tcb/span.hpp>
+#include "tcb/span.hpp"
 
 #ifdef __clang__
 #pragma clang diagnostic pop

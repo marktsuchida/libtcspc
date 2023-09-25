@@ -11,5 +11,4 @@
 /*.wrap
 !/catch2.wrap
 !/google-benchmark.wrap
-!/tcb-span.wrap
 !/trompeloeil.wrap
