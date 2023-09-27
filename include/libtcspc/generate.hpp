@@ -38,7 +38,7 @@ class generate {
     }
 
   public:
-    explicit generate(TimingGenerator &&generator, Downstream downstream)
+    explicit generate(TimingGenerator generator, Downstream downstream)
         : generator(std::move(generator)), downstream(std::move(downstream)) {}
 
     void handle(TriggerEvent const &event) {

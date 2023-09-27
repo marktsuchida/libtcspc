@@ -54,7 +54,7 @@ template <typename OStream> class ostream_output_stream {
     OStream stream;
 
   public:
-    explicit ostream_output_stream(OStream &&stream)
+    explicit ostream_output_stream(OStream stream)
         : stream(std::move(stream)) {
         this->stream.exceptions(std::ios::goodbit);
     }
@@ -321,7 +321,7 @@ template <typename OutputStream> class write_binary_stream {
 
   public:
     explicit write_binary_stream(
-        OutputStream &&stream,
+        OutputStream stream,
         std::shared_ptr<object_pool<std::vector<std::byte>>> buffer_pool,
         std::size_t write_granularity_bytes)
         : strm(std::move(stream)), bufpool(std::move(buffer_pool)),

@@ -66,8 +66,7 @@ template <typename IStream> class istream_input_stream {
     IStream stream;
 
   public:
-    explicit istream_input_stream(IStream &&stream)
-        : stream(std::move(stream)) {
+    explicit istream_input_stream(IStream stream) : stream(std::move(stream)) {
         this->stream.exceptions(std::ios::goodbit);
     }
 
@@ -395,7 +394,7 @@ class read_binary_stream {
 
   public:
     explicit read_binary_stream(
-        InputStream &&stream, std::uint64_t max_length,
+        InputStream stream, std::uint64_t max_length,
         std::shared_ptr<object_pool<EventVector>> buffer_pool,
         std::size_t read_granularity_bytes, Downstream downstream)
         : stream(std::move(stream)), length(max_length),
