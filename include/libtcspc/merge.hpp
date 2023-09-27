@@ -38,6 +38,7 @@ class merge_impl {
     std::array<bool, 2> input_flushed{false, false};
     bool ended_with_exception = false;
     vector_queue<event_variant<EventSet>> pending;
+    std::size_t max_buffered;
 
     Downstream downstream;
 
@@ -70,8 +71,8 @@ class merge_impl {
     }
 
   public:
-    explicit merge_impl(Downstream downstream)
-        : downstream(std::move(downstream)) {}
+    explicit merge_impl(std::size_t max_buffered, Downstream downstream)
+        : max_buffered(max_buffered), downstream(std::move(downstream)) {}
 
     merge_impl(merge_impl const &) = delete;
     auto operator=(merge_impl const &) = delete;
@@ -111,6 +112,8 @@ class merge_impl {
                 assert(pending.empty());
                 return downstream.handle(event);
             }
+            if (pending.size() == max_buffered)
+                throw std::runtime_error("merge buffer capacity exceeded");
             pending.push(event);
         } catch (std::exception const &) {
             ended_with_exception = true;
@@ -192,16 +195,19 @@ class merge_input {
  *
  * \tparam Downstream downstream processor type
  *
- * \param downstream downstream processor (will be moved out)
+ * \param max_buffered maximum capacity for buffered events (beyond which an
+ * error is thrown)
+ *
+ * \param downstream downstream processor
  *
  * \return tuple-like of two processors serving as the input to merge
  */
 template <typename EventSet, typename DataTraits = default_data_traits,
           typename Downstream>
-auto merge(Downstream &&downstream) {
+auto merge(std::size_t max_buffered, Downstream &&downstream) {
     auto p = std::make_shared<
         internal::merge_impl<EventSet, DataTraits, Downstream>>(
-        std::forward<Downstream>(downstream));
+        max_buffered, std::forward<Downstream>(downstream));
     return std::make_pair(
         internal::merge_input<0, EventSet, DataTraits, Downstream>(p),
         internal::merge_input<1, EventSet, DataTraits, Downstream>(p));
@@ -241,20 +247,23 @@ auto merge(Downstream &&downstream) {
  *
  * \tparam Downstream downstream processor type
  *
+ * \param max_buffered maximum capacity for buffered events in each pairwise
+ * merge (beyond which an error is thrown)
+ *
  * \param downstream downstream processor
  *
  * \return tuple-like of N processors serving as the input to merge
  */
 template <std::size_t N, typename EventSet,
           typename DataTraits = default_data_traits, typename Downstream>
-auto merge_n(Downstream &&downstream) {
+auto merge_n(std::size_t max_buffered, Downstream &&downstream) {
     if constexpr (N == 0) {
         return std::tuple{};
     } else if constexpr (N == 1) {
         return std::tuple{std::forward<Downstream>(downstream)};
     } else {
-        auto [final_in0, final_in1] =
-            merge<EventSet, DataTraits>(std::forward<Downstream>(downstream));
+        auto [final_in0, final_in1] = merge<EventSet, DataTraits>(
+            max_buffered, std::forward<Downstream>(downstream));
 
         std::size_t const left = N / 2;
         std::size_t const right = N - left;
@@ -264,12 +273,13 @@ auto merge_n(Downstream &&downstream) {
             } else {
                 return std::tuple_cat(std::tuple{std::move(final_in0)},
                                       merge_n<right, EventSet, DataTraits>(
-                                          std::move(final_in1)));
+                                          max_buffered, std::move(final_in1)));
             }
         } else {
-            return std::tuple_cat(
-                merge_n<left, EventSet, DataTraits>(std::move(final_in0)),
-                merge_n<right, EventSet, DataTraits>(std::move(final_in1)));
+            return std::tuple_cat(merge_n<left, EventSet, DataTraits>(
+                                      max_buffered, std::move(final_in0)),
+                                  merge_n<right, EventSet, DataTraits>(
+                                      max_buffered, std::move(final_in1)));
         }
     }
 }

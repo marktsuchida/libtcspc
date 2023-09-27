@@ -28,8 +28,9 @@ TEST_CASE("Merge", "[merge]") {
     //         erased
 
     auto ctx = std::make_shared<processor_context>();
-    auto [min0, min1] = merge<all_events>(capture_output<all_events>(
-        ctx->tracker<capture_output_access>("out")));
+    auto [min0, min1] = merge<all_events>(
+        1024, capture_output<all_events>(
+                  ctx->tracker<capture_output_access>("out")));
 
     auto min_x = type_erased_processor<all_events>(ref_processor(min0));
     auto min_y = type_erased_processor<all_events>(ref_processor(min1));
@@ -159,15 +160,17 @@ TEST_CASE("merge N streams", "[merge_n]") {
 
     SECTION("Zero-stream merge_n returns empty tuple") {
         // NOLINTBEGIN(clang-analyzer-deadcode.DeadStores)
-        auto tup = merge_n<0, all_events>(capture_output<all_events>(
-            ctx->tracker<capture_output_access>("out")));
+        auto tup = merge_n<0, all_events>(
+            1024, capture_output<all_events>(
+                      ctx->tracker<capture_output_access>("out")));
         static_assert(std::tuple_size_v<decltype(tup)> == 0);
         // NOLINTEND(clang-analyzer-deadcode.DeadStores)
     }
 
     SECTION("Single-stream merge_n returns downstream in tuple") {
-        auto [m0] = merge_n<1, all_events>(capture_output<all_events>(
-            ctx->tracker<capture_output_access>("out")));
+        auto [m0] = merge_n<1, all_events>(
+            1024, capture_output<all_events>(
+                      ctx->tracker<capture_output_access>("out")));
         static_assert(
             std::is_same_v<decltype(m0),
                            decltype(capture_output<all_events>(
@@ -184,16 +187,18 @@ TEST_CASE("merge N streams", "[merge_n]") {
     }
 
     SECTION("Multi-stream merge_n can be instantiated") {
-        auto [m0, m1] = merge_n<2, all_events>(capture_output<all_events>(
-            ctx->tracker<capture_output_access>("out2")));
-        auto [n0, n1, n2] = merge_n<3, all_events>(capture_output<all_events>(
-            ctx->tracker<capture_output_access>("out3")));
-        auto [o0, o1, o2, o3] =
-            merge_n<4, all_events>(capture_output<all_events>(
-                ctx->tracker<capture_output_access>("out4")));
-        auto [p0, p1, p2, p3, p4] =
-            merge_n<5, all_events>(capture_output<all_events>(
-                ctx->tracker<capture_output_access>("out5")));
+        auto [m0, m1] = merge_n<2, all_events>(
+            1024, capture_output<all_events>(
+                      ctx->tracker<capture_output_access>("out2")));
+        auto [n0, n1, n2] = merge_n<3, all_events>(
+            1024, capture_output<all_events>(
+                      ctx->tracker<capture_output_access>("out3")));
+        auto [o0, o1, o2, o3] = merge_n<4, all_events>(
+            1024, capture_output<all_events>(
+                      ctx->tracker<capture_output_access>("out4")));
+        auto [p0, p1, p2, p3, p4] = merge_n<5, all_events>(
+            1024, capture_output<all_events>(
+                      ctx->tracker<capture_output_access>("out5")));
     }
 }
 
