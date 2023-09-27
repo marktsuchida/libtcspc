@@ -178,7 +178,6 @@ auto make_processor(settings const &settings,
     auto [bin_increment_merge, start_stop_merge] =
     merge<event_set<
         bin_increment_event<>, pixel_start_event, pixel_stop_event>>(
-            settings.max_photon_pulse_width,
     batch_bin_increments<pixel_start_event, pixel_stop_event>(
     count<bin_increment_batch_event<>>(
         ctx->tracker<count_access>("pixel_counter"),
@@ -186,7 +185,6 @@ auto make_processor(settings const &settings,
 
     auto [sync_merge, cfd_merge] =
     merge<event_set<detection_event<>>>(
-        std::abs(settings.sync_delay),
     pair_all_between(
         settings.sync_channel,
         std::array{settings.photon_trailing_channel},

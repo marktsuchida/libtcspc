@@ -38,7 +38,6 @@ class merge_impl {
     std::array<bool, 2> input_flushed{false, false};
     bool ended_with_exception = false;
     vector_queue<event_variant<EventSet>> pending;
-    typename DataTraits::abstime_type max_time_shift;
 
     Downstream downstream;
 
@@ -71,13 +70,8 @@ class merge_impl {
     }
 
   public:
-    explicit merge_impl(typename DataTraits::abstime_type max_time_shift,
-                        Downstream downstream)
-        : max_time_shift(max_time_shift), downstream(std::move(downstream)) {
-        if (max_time_shift < 0)
-            throw std::invalid_argument(
-                "merge max_time_shift must not be negative");
-    }
+    explicit merge_impl(Downstream downstream)
+        : downstream(std::move(downstream)) {}
 
     merge_impl(merge_impl const &) = delete;
     auto operator=(merge_impl const &) = delete;
@@ -103,7 +97,7 @@ class merge_impl {
 
                 // If events still pending on the other input, they are newer
                 // (or not older), so we can emit the current event first.
-                if (!pending.empty())
+                if (not pending.empty())
                     return downstream.handle(event);
 
                 // If we are still here, we have no more events pending from
@@ -117,19 +111,6 @@ class merge_impl {
                 assert(pending.empty());
                 return downstream.handle(event);
             }
-
-            // Emit any events on the same input if they are older than the
-            // maximum allowed time shift between the inputs. Guard against
-            // integer underflow.
-            constexpr auto abstime_min =
-                std::numeric_limits<typename DataTraits::abstime_type>::min();
-            if (event.abstime >= 0 ||
-                max_time_shift > event.abstime - abstime_min) {
-                typename DataTraits::abstime_type old_enough =
-                    event.abstime - max_time_shift;
-                emit_pending([=](auto t) { return t < old_enough; });
-            }
-
             pending.push(event);
         } catch (std::exception const &) {
             ended_with_exception = true;
@@ -190,9 +171,18 @@ class merge_input {
  *
  * \ingroup processors-basic
  *
- * The merged stream will be produced in increasing abstime order, provided
- * that the two input streams have events in increasing abstime order and the
- * time shift between them does not exceed max_time_shift.
+ * The merged stream will be produced in non-decreasing abstime order, provided
+ * that the two input streams have events in non-decreasing abstime order.
+ *
+ * If events with the same abstime are received on both inputs, those received
+ * on input 0 are emitted before those received on input 1.
+ *
+ * If one input falls far behind the other input (in terms of abstime), an
+ * unidesirably large number of events may be buffered (undesirable either in
+ * terms of timely update of downstream or in terms of excessive memory use).
+ * The only way to prevent such a situation is to ensure that both inputs carry
+ * events at some minimal frequency, for example by injecting \c
+ * time_reached_event.
  *
  * \see merge_n
  *
@@ -202,19 +192,16 @@ class merge_input {
  *
  * \tparam Downstream downstream processor type
  *
- * \param max_time_shift the maximum time shift between the two input streams
- *
  * \param downstream downstream processor (will be moved out)
  *
  * \return tuple-like of two processors serving as the input to merge
  */
 template <typename EventSet, typename DataTraits = default_data_traits,
           typename Downstream>
-auto merge(typename DataTraits::abstime_type max_time_shift,
-           Downstream &&downstream) {
+auto merge(Downstream &&downstream) {
     auto p = std::make_shared<
         internal::merge_impl<EventSet, DataTraits, Downstream>>(
-        max_time_shift, std::forward<Downstream>(downstream));
+        std::forward<Downstream>(downstream));
     return std::make_pair(
         internal::merge_input<0, EventSet, DataTraits, Downstream>(p),
         internal::merge_input<1, EventSet, DataTraits, Downstream>(p));
@@ -225,15 +212,24 @@ auto merge(typename DataTraits::abstime_type max_time_shift,
  *
  * \ingroup processors-basic
  *
- * The merged stream will be produced in increasing abstime order, provided
- * that all input streams have events in increasing abstime order and the time
- * shift between them does not exceed max_time_shift.
+ * The merged stream will be produced in non-decreasing abstime order, provided
+ * that all input streams have events in non-decreasing abstime order.
  *
  * This is useful when merging a (compile-time) variable number of similar
  * streams. If the streams to be merged are dissimilar (have different pairwise
  * time shift and especially event frequency), it may be more efficient to
  * manually build a tree using the 2-way \ref merge such that the streams with
  * less frequent events are merged together first.
+ *
+ * This processor does not guarantee any particular ordering for events of
+ * equal abstime.
+ *
+ * If any input falls far behind the the others (in terms of abstime), an
+ * unidesirably large number of events may be buffered (undesirable either in
+ * terms of timely update of downstream or in terms of excessive memory use).
+ * The only way to prevent such a situation is to ensure that all inputs carry
+ * events at some minimal frequency, for example by injecting \c
+ * time_reached_event.
  *
  * \see merge
  *
@@ -245,23 +241,20 @@ auto merge(typename DataTraits::abstime_type max_time_shift,
  *
  * \tparam Downstream downstream processor type
  *
- * \param max_time_shift the maximum time shift between the two input streams
- *
  * \param downstream downstream processor
  *
  * \return tuple-like of N processors serving as the input to merge
  */
 template <std::size_t N, typename EventSet,
           typename DataTraits = default_data_traits, typename Downstream>
-auto merge_n(typename DataTraits::abstime_type max_time_shift,
-             Downstream &&downstream) {
+auto merge_n(Downstream &&downstream) {
     if constexpr (N == 0) {
         return std::tuple{};
     } else if constexpr (N == 1) {
         return std::tuple{std::forward<Downstream>(downstream)};
     } else {
-        auto [final_in0, final_in1] = merge<EventSet, DataTraits>(
-            max_time_shift, std::forward<Downstream>(downstream));
+        auto [final_in0, final_in1] =
+            merge<EventSet, DataTraits>(std::forward<Downstream>(downstream));
 
         std::size_t const left = N / 2;
         std::size_t const right = N - left;
@@ -269,16 +262,14 @@ auto merge_n(typename DataTraits::abstime_type max_time_shift,
             if constexpr (right == 1) {
                 return std::tuple{std::move(final_in0), std::move(final_in1)};
             } else {
-                return std::tuple_cat(
-                    std::tuple{std::move(final_in0)},
-                    merge_n<right, EventSet, DataTraits>(
-                        max_time_shift, std::move(final_in1)));
+                return std::tuple_cat(std::tuple{std::move(final_in0)},
+                                      merge_n<right, EventSet, DataTraits>(
+                                          std::move(final_in1)));
             }
         } else {
-            return std::tuple_cat(merge_n<left, EventSet, DataTraits>(
-                                      max_time_shift, std::move(final_in0)),
-                                  merge_n<right, EventSet, DataTraits>(
-                                      max_time_shift, std::move(final_in1)));
+            return std::tuple_cat(
+                merge_n<left, EventSet, DataTraits>(std::move(final_in0)),
+                merge_n<right, EventSet, DataTraits>(std::move(final_in1)));
         }
     }
 }
