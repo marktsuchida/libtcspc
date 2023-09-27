@@ -83,6 +83,7 @@ template <typename Accessor> class processor_tracker {
      */
     template <typename F> void register_accessor_factory(F factory) {
         assert(ctx);
+        assert(not accessor_factory);
         accessor_factory = std::move(factory);
     }
 };
