@@ -1,0 +1,12 @@
+# This file is part of libtcspc
+# Copyright 2019-2023 Board of Regents of the University of Wisconsin System
+# SPDX-License-Identifier: MIT
+
+---
+# We just want to disable all checks for this directory, but that fails when
+# clang-tidy is run via meson (because meson runs clang-tidy on each file, and
+# clang-tidy complains that no checks are enabled (for any files)).
+# So use 'modernize-avoid-bind' (which is unlikely to be triggered in span.hpp)
+# as a fill-in.
+Checks: -*,modernize-avoid-bind
+...
