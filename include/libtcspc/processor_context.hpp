@@ -13,6 +13,7 @@
 #include <memory>
 #include <stdexcept>
 #include <string>
+#include <type_traits>
 #include <unordered_map>
 #include <utility>
 
@@ -222,18 +223,23 @@ processor_tracker<Accessor>::~processor_tracker() {
  * \param tracker_field_name name of data member of proc_type holding the
  * tracker
  *
- * \param tracker the tracker
+ * \param tracker the tracker (must be lvalue)
  *
  * \return pointer to the processor
  */
 #define LIBTCSPC_PROCESSOR_FROM_TRACKER(proc_type, tracker_field_name,        \
                                         tracker)                              \
-    reinterpret_cast<proc_type *>(reinterpret_cast<std::byte *>(&(tracker)) - \
-                                  offsetof(proc_type, tracker_field_name))
+    reinterpret_cast<std::add_pointer_t<proc_type>>(                          \
+        reinterpret_cast<std::byte *>(&(tracker)) -                           \
+        offsetof(proc_type, tracker_field_name))
 
-// Note: offsetof() on non-standard-layout types is only
-// "conditionally-supported" as of C++17. I expect this not to be a problem in
-// practice, but it should be noted.
+// Note: offsetof() on non-standard-layout types is "conditionally-supported"
+// as of C++17 for non-standard-layout types. I expect this not to be a problem
+// in practice, as long as virtual inheritance is not involved.
+
+// Pointer arithmetic on the underlying bytes of an object is technically
+// undefined behavior in C++ (but not C), because no array of bytes was created
+// there. But compilers treat this as valid (see https://wg21.link/p1839r5).
 
 // NOLINTEND
 
