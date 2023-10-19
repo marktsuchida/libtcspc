@@ -59,6 +59,7 @@ namespace tcspc {
  * \tparam T the array element type (typically numeric)
  */
 template <typename T> class autocopy_span {
+    // We cannot use std::vector for m, because `T` may be const.
     // NOLINTNEXTLINE(cppcoreguidelines-avoid-c-arrays,modernize-avoid-c-arrays)
     std::unique_ptr<T[]> m;
     span<T> s;
@@ -131,16 +132,6 @@ template <typename T> class autocopy_span {
      * \return the span
      */
     auto as_span() noexcept -> span<T> { return s; }
-
-    /**
-     * \brief Implicit conversion to span.
-     */
-    operator span<T const>() const noexcept { return s; }
-
-    /**
-     * \brief Implicit conversion to span.
-     */
-    operator span<T>() noexcept { return s; }
 
     /** \brief Equiality comparison operator. */
     friend auto operator==(autocopy_span const &lhs,

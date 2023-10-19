@@ -45,14 +45,6 @@ TEST_CASE("Autocopying span", "[autocopy_span]") {
     autocopy_span empty_copy(empty);
     REQUIRE(empty_copy.as_span().empty());
 
-    // Conversion to span
-    span<int const> const s(carr);
-    REQUIRE(s[0] == 3);
-
-    // Implicit conversion to span
-    auto lamb = [](span<int const> s) { return s[0]; };
-    REQUIRE(lamb(carr) == 3);
-
     // Copying const to const
     auto carr_copy = carr;
 
