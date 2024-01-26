@@ -15,17 +15,17 @@
 
 namespace tcspc {
 
-static_assert(std::is_pod_v<pqt2_picoharp_event>);
+static_assert(std::is_pod_v<pqt2_picoharp300_event>);
 static_assert(std::is_pod_v<pqt2_hydraharpv1_event>);
-static_assert(std::is_pod_v<pqt2_hydraharpv2_event>);
+static_assert(std::is_pod_v<pqt2_generic_event>);
 
-static_assert(sizeof(pqt2_picoharp_event) == 4);
+static_assert(sizeof(pqt2_picoharp300_event) == 4);
 static_assert(sizeof(pqt2_hydraharpv1_event) == 4);
-static_assert(sizeof(pqt2_hydraharpv2_event) == 4);
+static_assert(sizeof(pqt2_generic_event) == 4);
 
 TEMPLATE_TEST_CASE("pqt2 equality and inequality", "[pqt2_event]",
-                   pqt2_picoharp_event, pqt2_hydraharpv1_event,
-                   pqt2_hydraharpv2_event) {
+                   pqt2_picoharp300_event, pqt2_hydraharpv1_event,
+                   pqt2_generic_event) {
     auto const ptrn = std::array<u8, 4>{1, 2, 3, 4};
     CHECK(le_event<TestType>(ptrn) == le_event<TestType>(ptrn));
 
@@ -36,57 +36,57 @@ TEMPLATE_TEST_CASE("pqt2 equality and inequality", "[pqt2_event]",
     CHECK(le_event<TestType>(nonzero2) != le_event<TestType>(zero));
 }
 
-TEST_CASE("pqt2 picoharp event type", "[pqt2_event]") {
-    auto const zero = le_event<pqt2_picoharp_event>(
+TEST_CASE("pqt2 picoharp300 event type", "[pqt2_event]") {
+    auto const zero = le_event<pqt2_picoharp300_event>(
         {0b0000'0000, 0b0000'0000, 0b0000'0000, 0b0000'0000});
     CHECK_FALSE(zero.is_special());
     CHECK_FALSE(zero.is_timetag_overflow());
     CHECK_FALSE(zero.is_sync_event());
     CHECK_FALSE(zero.is_external_marker());
 
-    auto const everything_else = le_event<pqt2_picoharp_event>(
+    auto const everything_else = le_event<pqt2_picoharp300_event>(
         {0b0000'1111, 0b1111'1111, 0b1111'1111, 0b1111'1111});
     CHECK_FALSE(everything_else.is_special());
     CHECK_FALSE(everything_else.is_timetag_overflow());
     CHECK_FALSE(everything_else.is_sync_event());
     CHECK_FALSE(everything_else.is_external_marker());
 
-    auto const chan1 = le_event<pqt2_picoharp_event>(
+    auto const chan1 = le_event<pqt2_picoharp300_event>(
         {0b0001'0000, 0b0000'0000, 0b0000'0000, 0b0000'0000});
     CHECK_FALSE(chan1.is_special());
     CHECK_FALSE(chan1.is_timetag_overflow());
     CHECK_FALSE(chan1.is_sync_event());
     CHECK_FALSE(chan1.is_external_marker());
 
-    auto const chan14 = le_event<pqt2_picoharp_event>(
+    auto const chan14 = le_event<pqt2_picoharp300_event>(
         {0b1110'0000, 0b0000'0000, 0b0000'0000, 0b0000'0000});
     CHECK_FALSE(chan14.is_special());
     CHECK_FALSE(chan14.is_timetag_overflow());
     CHECK_FALSE(chan14.is_sync_event());
     CHECK_FALSE(chan14.is_external_marker());
 
-    auto const overflow = le_event<pqt2_picoharp_event>(
+    auto const overflow = le_event<pqt2_picoharp300_event>(
         {0b1111'0000, 0b0000'0000, 0b0000'0000, 0b0000'0000});
     CHECK(overflow.is_special());
     CHECK(overflow.is_timetag_overflow());
     CHECK_FALSE(overflow.is_sync_event());
     CHECK_FALSE(overflow.is_external_marker());
 
-    auto const overflow_everything_else = le_event<pqt2_picoharp_event>(
+    auto const overflow_everything_else = le_event<pqt2_picoharp300_event>(
         {0b1111'1111, 0b1111'1111, 0b1111'1111, 0b1111'0000});
     CHECK(overflow_everything_else.is_special());
     CHECK(overflow_everything_else.is_timetag_overflow());
     CHECK_FALSE(overflow_everything_else.is_sync_event());
     CHECK_FALSE(overflow_everything_else.is_external_marker());
 
-    auto const marker0 = le_event<pqt2_picoharp_event>(
+    auto const marker0 = le_event<pqt2_picoharp300_event>(
         {0b1111'0000, 0b0000'0000, 0b0000'0000, 0b0000'0001});
     CHECK(marker0.is_special());
     CHECK_FALSE(marker0.is_timetag_overflow());
     CHECK_FALSE(marker0.is_sync_event());
     CHECK(marker0.is_external_marker());
 
-    auto const all_markers = le_event<pqt2_picoharp_event>(
+    auto const all_markers = le_event<pqt2_picoharp300_event>(
         {0b1111'0000, 0b0000'0000, 0b0000'0000, 0b0000'1111});
     CHECK(all_markers.is_special());
     CHECK_FALSE(all_markers.is_timetag_overflow());
@@ -94,8 +94,8 @@ TEST_CASE("pqt2 picoharp event type", "[pqt2_event]") {
     CHECK(all_markers.is_external_marker());
 }
 
-TEMPLATE_TEST_CASE("pqt2 hydraharp event type", "[pqt2_event]",
-                   pqt2_hydraharpv1_event, pqt2_hydraharpv2_event) {
+TEMPLATE_TEST_CASE("pqt2 event type", "[pqt2_event]", pqt2_hydraharpv1_event,
+                   pqt2_generic_event) {
     auto const zero = le_event<TestType>(
         {0b0000'0000, 0b0000'0000, 0b0000'0000, 0b0000'0000});
     CHECK_FALSE(zero.is_special());
@@ -160,20 +160,20 @@ TEMPLATE_TEST_CASE("pqt2 hydraharp event type", "[pqt2_event]",
     CHECK_FALSE(out_of_range_markers.is_external_marker());
 }
 
-TEST_CASE("pqt2 picoharp read channel", "[pqt2_event]") {
-    auto const chan0 = le_event<pqt2_picoharp_event>(
+TEST_CASE("pqt2 picoharp300 read channel", "[pqt2_event]") {
+    auto const chan0 = le_event<pqt2_picoharp300_event>(
         {0b0000'1111, 0b1111'1111, 0b1111'1111, 0b1111'1111});
     REQUIRE_FALSE(chan0.is_special());
     CHECK(chan0.channel() == 0_u8np);
 
-    auto const chan14 = le_event<pqt2_picoharp_event>(
+    auto const chan14 = le_event<pqt2_picoharp300_event>(
         {0b1110'0000, 0b0000'0000, 0b0000'0000, 0b0000'0000});
     REQUIRE_FALSE(chan14.is_special());
     CHECK(chan14.channel() == 14_u8np);
 }
 
-TEMPLATE_TEST_CASE("pqt2 hydraharp read channel", "[pqt2_event]",
-                   pqt2_hydraharpv1_event, pqt2_hydraharpv2_event) {
+TEMPLATE_TEST_CASE("pqt2 read channel", "[pqt2_event]", pqt2_hydraharpv1_event,
+                   pqt2_generic_event) {
     auto const chan0 = le_event<TestType>(
         {0b0000'0001, 0b1111'1111, 0b1111'1111, 0b1111'1111});
     REQUIRE_FALSE(chan0.is_special());
@@ -185,20 +185,20 @@ TEMPLATE_TEST_CASE("pqt2 hydraharp read channel", "[pqt2_event]",
     CHECK(chan63.channel() == 63_u8np);
 }
 
-TEST_CASE("pqt2 picoharp read time tag", "[pqt2_event]") {
-    auto const timetag0 = le_event<pqt2_picoharp_event>(
+TEST_CASE("pqt2 picoharp300 read time tag", "[pqt2_event]") {
+    auto const timetag0 = le_event<pqt2_picoharp300_event>(
         {0b0001'0000, 0b0000'0000, 0b0000'0000, 0b0000'0000});
     REQUIRE_FALSE(timetag0.is_special());
     CHECK(timetag0.timetag() == 0_u32np);
 
-    auto const timetag_max = le_event<pqt2_picoharp_event>(
+    auto const timetag_max = le_event<pqt2_picoharp300_event>(
         {0b0000'1111, 0b1111'1111, 0b1111'1111, 0b1111'1111});
     REQUIRE_FALSE(timetag_max.is_special());
     CHECK(timetag_max.timetag() == 268'435'455_u32np);
 }
 
-TEMPLATE_TEST_CASE("pqt2 hydraharp read time tag", "[pqt2_event]",
-                   pqt2_hydraharpv1_event, pqt2_hydraharpv2_event) {
+TEMPLATE_TEST_CASE("pqt2 read time tag", "[pqt2_event]",
+                   pqt2_hydraharpv1_event, pqt2_generic_event) {
     auto const timetag0 = le_event<TestType>(
         {0b0111'1110, 0b0000'0000, 0b0000'0000, 0b0000'0000});
     REQUIRE_FALSE(timetag0.is_special());
@@ -210,17 +210,17 @@ TEMPLATE_TEST_CASE("pqt2 hydraharp read time tag", "[pqt2_event]",
     CHECK(timetag_max.timetag() == 33'554'431_u32np);
 }
 
-TEST_CASE("pqt2 picoharp read marker time tag", "[pqt2_event]") {
+TEST_CASE("pqt2 picoharp300 read marker time tag", "[pqt2_event]") {
     // Marker time tag should have low 4 bits zeroed.
-    auto const marker_timetag = le_event<pqt2_picoharp_event>(
+    auto const marker_timetag = le_event<pqt2_picoharp300_event>(
         {0b1111'0011, 0b1100'0011, 0b0011'1100, 0b1111'1010});
     REQUIRE(marker_timetag.is_external_marker());
     CHECK(marker_timetag.external_marker_timetag() ==
           0b0011'1100'0011'0011'1100'1111'0000_u32np);
 }
 
-TEMPLATE_TEST_CASE("pqt2 hydraharp read marker time tag", "[pqt2_event]",
-                   pqt2_hydraharpv1_event, pqt2_hydraharpv2_event) {
+TEMPLATE_TEST_CASE("pqt2 read marker time tag", "[pqt2_event]",
+                   pqt2_hydraharpv1_event, pqt2_generic_event) {
     auto const timetag0 = le_event<TestType>(
         {0b1001'1110, 0b0000'0000, 0b0000'0000, 0b0000'0000});
     REQUIRE(timetag0.is_external_marker());
@@ -232,13 +232,13 @@ TEMPLATE_TEST_CASE("pqt2 hydraharp read marker time tag", "[pqt2_event]",
     CHECK(timetag_max.timetag() == 33'554'431_u32np);
 }
 
-TEST_CASE("pqt2 picoharp read timetag overflow count", "[pqt2_event]") {
-    auto const zeros = le_event<pqt2_picoharp_event>(
+TEST_CASE("pqt2 picoharp300 read timetag overflow count", "[pqt2_event]") {
+    auto const zeros = le_event<pqt2_picoharp300_event>(
         {0b1111'0000, 0b0000'0000, 0b0000'0000, 0b0000'0000});
     REQUIRE(zeros.is_timetag_overflow());
     CHECK(zeros.timetag_overflow_count() == 1_u32np);
 
-    auto const ones = le_event<pqt2_picoharp_event>(
+    auto const ones = le_event<pqt2_picoharp300_event>(
         {0b1111'1111, 0b1111'1111, 0b1111'1111, 0b1111'0000});
     REQUIRE(ones.is_timetag_overflow());
     CHECK(ones.timetag_overflow_count() == 1_u32np);
@@ -256,32 +256,32 @@ TEST_CASE("pqt2 hydraharpv1 read time tag overflow count", "[pqt2_event]") {
     CHECK(ones.timetag_overflow_count() == 1_u32np);
 }
 
-TEST_CASE("pqt2 hydraharpv2 read time tag overflow count", "[pqt2_event]") {
-    auto const zeros = le_event<pqt2_hydraharpv2_event>(
+TEST_CASE("pqt2 generic read time tag overflow count", "[pqt2_event]") {
+    auto const zeros = le_event<pqt2_generic_event>(
         {0b1111'1110, 0b0000'0000, 0b0000'0000, 0b0000'0000});
     REQUIRE(zeros.is_timetag_overflow());
     CHECK(zeros.timetag_overflow_count() == 0_u32np);
 
-    auto const ones = le_event<pqt2_hydraharpv2_event>(
+    auto const ones = le_event<pqt2_generic_event>(
         {0b1111'1111, 0b1111'1111, 0b1111'1111, 0b1111'1111});
     REQUIRE(ones.is_timetag_overflow());
     CHECK(ones.timetag_overflow_count() == 33'554'431_u32np);
 }
 
-TEST_CASE("pqt2 picoharp read external marker bits", "[pqt2_event]") {
-    auto const marker1 = le_event<pqt2_picoharp_event>(
+TEST_CASE("pqt2 picoharp300 read external marker bits", "[pqt2_event]") {
+    auto const marker1 = le_event<pqt2_picoharp300_event>(
         {0b1111'0000, 0b0000'0000, 0b0000'0000, 0b0000'0001});
     REQUIRE(marker1.is_external_marker());
     CHECK(marker1.external_marker_bits() == 1_u8np);
 
-    auto const marker_all = le_event<pqt2_picoharp_event>(
+    auto const marker_all = le_event<pqt2_picoharp300_event>(
         {0b1111'0000, 0b0000'0000, 0b0000'0000, 0b0000'1111});
     REQUIRE(marker_all.is_external_marker());
     CHECK(marker_all.external_marker_bits() == 15_u8np);
 }
 
-TEMPLATE_TEST_CASE("pqt2 hydraharp read external marker bits", "[pqt2_event]",
-                   pqt2_hydraharpv1_event, pqt2_hydraharpv2_event) {
+TEMPLATE_TEST_CASE("pqt2 read external marker bits", "[pqt2_event]",
+                   pqt2_hydraharpv1_event, pqt2_generic_event) {
     auto const marker1 = le_event<TestType>(
         {0b1000'0010, 0b0000'0000, 0b0000'0000, 0b0000'0000});
     REQUIRE(marker1.is_external_marker());
@@ -293,39 +293,41 @@ TEMPLATE_TEST_CASE("pqt2 hydraharp read external marker bits", "[pqt2_event]",
     CHECK(marker_all.external_marker_bits() == 15_u8np);
 }
 
-TEST_CASE("pqt2 picoharp assign", "[pqt2_event]") {
-    CHECK(pqt2_picoharp_event::make_nonspecial(0_u32np, 0_u8np) ==
-          le_event<pqt2_picoharp_event>(
+TEST_CASE("pqt2 picoharp300 assign", "[pqt2_event]") {
+    CHECK(pqt2_picoharp300_event::make_nonspecial(0_u32np, 0_u8np) ==
+          le_event<pqt2_picoharp300_event>(
               {0b0000'0000, 0b0000'0000, 0b0000'0000, 0b0000'0000}));
-    CHECK(pqt2_picoharp_event::make_nonspecial(1_u32np, 2_u8np) ==
-          le_event<pqt2_picoharp_event>(
+    CHECK(pqt2_picoharp300_event::make_nonspecial(1_u32np, 2_u8np) ==
+          le_event<pqt2_picoharp300_event>(
               {0b0010'0000, 0b0000'0000, 0b0000'0000, 0b0000'0001}));
-    CHECK(pqt2_picoharp_event::make_nonspecial(268'435'454_u32np, 14_u8np) ==
-          le_event<pqt2_picoharp_event>(
-              {0b1110'1111, 0b1111'1111, 0b1111'1111, 0b1111'1110}));
-    CHECK(pqt2_picoharp_event::make_nonspecial(268'435'455_u32np, 14_u8np) ==
-          le_event<pqt2_picoharp_event>(
-              {0b1110'1111, 0b1111'1111, 0b1111'1111, 0b1111'1111}));
+    CHECK(
+        pqt2_picoharp300_event::make_nonspecial(268'435'454_u32np, 14_u8np) ==
+        le_event<pqt2_picoharp300_event>(
+            {0b1110'1111, 0b1111'1111, 0b1111'1111, 0b1111'1110}));
+    CHECK(
+        pqt2_picoharp300_event::make_nonspecial(268'435'455_u32np, 14_u8np) ==
+        le_event<pqt2_picoharp300_event>(
+            {0b1110'1111, 0b1111'1111, 0b1111'1111, 0b1111'1111}));
 
-    CHECK(pqt2_picoharp_event::make_timetag_overflow() ==
-          le_event<pqt2_picoharp_event>(
+    CHECK(pqt2_picoharp300_event::make_timetag_overflow() ==
+          le_event<pqt2_picoharp300_event>(
               {0b1111'0000, 0b0000'0000, 0b0000'0000, 0b0000'0000}));
 
-    CHECK(pqt2_picoharp_event::make_external_marker(0_u32np, 1_u8np) ==
-          le_event<pqt2_picoharp_event>(
+    CHECK(pqt2_picoharp300_event::make_external_marker(0_u32np, 1_u8np) ==
+          le_event<pqt2_picoharp300_event>(
               {0b1111'0000, 0b0000'0000, 0b0000'0000, 0b0000'0001}));
-    CHECK(
-        pqt2_picoharp_event::make_external_marker(268'435'455_u32np, 3_u8np) ==
-        le_event<pqt2_picoharp_event>(
-            {0b1111'1111, 0b1111'1111, 0b1111'1111, 0b1111'0011}));
-    CHECK(pqt2_picoharp_event::make_external_marker(268'435'455_u32np,
-                                                    15_u8np) ==
-          le_event<pqt2_picoharp_event>(
+    CHECK(pqt2_picoharp300_event::make_external_marker(268'435'455_u32np,
+                                                       3_u8np) ==
+          le_event<pqt2_picoharp300_event>(
+              {0b1111'1111, 0b1111'1111, 0b1111'1111, 0b1111'0011}));
+    CHECK(pqt2_picoharp300_event::make_external_marker(268'435'455_u32np,
+                                                       15_u8np) ==
+          le_event<pqt2_picoharp300_event>(
               {0b1111'1111, 0b1111'1111, 0b1111'1111, 0b1111'1111}));
 }
 
-TEMPLATE_TEST_CASE("pqt2 hydraharp assign", "[pqt2_event]",
-                   pqt2_hydraharpv1_event, pqt2_hydraharpv2_event) {
+TEMPLATE_TEST_CASE("pqt2 assign", "[pqt2_event]", pqt2_hydraharpv1_event,
+                   pqt2_generic_event) {
     CHECK(TestType::make_nonspecial(0_u32np, 0_u8np) ==
           le_event<TestType>(
               {0b0000'0000, 0b0000'0000, 0b0000'0000, 0b0000'0000}));
@@ -343,32 +345,32 @@ TEMPLATE_TEST_CASE("pqt2 hydraharp assign", "[pqt2_event]",
           le_event<pqt2_hydraharpv1_event>(
               {0b1111'1110, 0b0000'0000, 0b0000'0000, 0b0000'0001}));
 
-    CHECK(pqt2_hydraharpv2_event::make_timetag_overflow() ==
-          pqt2_hydraharpv2_event::make_timetag_overflow(1_u32np));
-    CHECK(pqt2_hydraharpv2_event::make_timetag_overflow(0_u32np) ==
-          le_event<pqt2_hydraharpv2_event>(
+    CHECK(pqt2_generic_event::make_timetag_overflow() ==
+          pqt2_generic_event::make_timetag_overflow(1_u32np));
+    CHECK(pqt2_generic_event::make_timetag_overflow(0_u32np) ==
+          le_event<pqt2_generic_event>(
               {0b1111'1110, 0b0000'0000, 0b0000'0000, 0b0000'0000}));
-    CHECK(pqt2_hydraharpv2_event::make_timetag_overflow(1_u32np) ==
-          le_event<pqt2_hydraharpv2_event>(
+    CHECK(pqt2_generic_event::make_timetag_overflow(1_u32np) ==
+          le_event<pqt2_generic_event>(
               {0b1111'1110, 0b0000'0000, 0b0000'0000, 0b0000'0001}));
-    CHECK(pqt2_hydraharpv2_event::make_timetag_overflow(33'554'430_u32np) ==
-          le_event<pqt2_hydraharpv2_event>(
+    CHECK(pqt2_generic_event::make_timetag_overflow(33'554'430_u32np) ==
+          le_event<pqt2_generic_event>(
               {0b1111'1111, 0b1111'1111, 0b1111'1111, 0b1111'1110}));
-    CHECK(pqt2_hydraharpv2_event::make_timetag_overflow(33'554'431_u32np) ==
-          le_event<pqt2_hydraharpv2_event>(
+    CHECK(pqt2_generic_event::make_timetag_overflow(33'554'431_u32np) ==
+          le_event<pqt2_generic_event>(
               {0b1111'1111, 0b1111'1111, 0b1111'1111, 0b1111'1111}));
 
-    CHECK(pqt2_hydraharpv2_event::make_sync(0_u32np) ==
-          le_event<pqt2_hydraharpv2_event>(
+    CHECK(pqt2_generic_event::make_sync(0_u32np) ==
+          le_event<pqt2_generic_event>(
               {0b1000'0000, 0b0000'0000, 0b0000'0000, 0b0000'0000}));
-    CHECK(pqt2_hydraharpv2_event::make_sync(1_u32np) ==
-          le_event<pqt2_hydraharpv2_event>(
+    CHECK(pqt2_generic_event::make_sync(1_u32np) ==
+          le_event<pqt2_generic_event>(
               {0b1000'0000, 0b0000'0000, 0b0000'0000, 0b0000'0001}));
-    CHECK(pqt2_hydraharpv2_event::make_sync(33'554'430_u32np) ==
-          le_event<pqt2_hydraharpv2_event>(
+    CHECK(pqt2_generic_event::make_sync(33'554'430_u32np) ==
+          le_event<pqt2_generic_event>(
               {0b1000'0001, 0b1111'1111, 0b1111'1111, 0b1111'1110}));
-    CHECK(pqt2_hydraharpv2_event::make_sync(33'554'431_u32np) ==
-          le_event<pqt2_hydraharpv2_event>(
+    CHECK(pqt2_generic_event::make_sync(33'554'431_u32np) ==
+          le_event<pqt2_generic_event>(
               {0b1000'0001, 0b1111'1111, 0b1111'1111, 0b1111'1111}));
 
     CHECK(TestType::make_external_marker(0_u32np, 1_u8np) ==
@@ -389,32 +391,33 @@ using out_events = event_set<detection_event<>, marker_event<>,
 
 }
 
-TEST_CASE("decode pqt2 picoharp", "[decode_pqt2_picoharp]") {
+TEST_CASE("decode pqt2 picoharp300", "[decode_pqt2_picoharp300]") {
     auto ctx = std::make_shared<processor_context>();
-    auto in = feed_input<event_set<pqt2_picoharp_event>>(
-        decode_pqt2_picoharp(capture_output<out_events>(
+    auto in = feed_input<event_set<pqt2_picoharp300_event>>(
+        decode_pqt2_picoharp300(capture_output<out_events>(
             ctx->tracker<capture_output_access>("out"))));
     in.require_output_checked(ctx, "out");
     auto out = capture_output_checker<out_events>(
         ctx->accessor<capture_output_access>("out"));
 
     SECTION("non-special") {
-        in.feed(pqt2_picoharp_event::make_nonspecial(42_u32np, 5_u8np));
+        in.feed(pqt2_picoharp300_event::make_nonspecial(42_u32np, 5_u8np));
         REQUIRE(out.check(detection_event<>{{{42}, 5}}));
     }
 
     SECTION("external marker") {
         // Low 4 bits of timetag are erased: 42 = 32 + 10 -> 32.
-        in.feed(pqt2_picoharp_event::make_external_marker(42_u32np, 5_u8np));
+        in.feed(
+            pqt2_picoharp300_event::make_external_marker(42_u32np, 5_u8np));
         REQUIRE(out.check(marker_event<>{{{32}, 0}}));
         REQUIRE(out.check(marker_event<>{{{32}, 2}}));
     }
 
     SECTION("timetag overflow") {
-        in.feed(pqt2_picoharp_event::make_timetag_overflow());
+        in.feed(pqt2_picoharp300_event::make_timetag_overflow());
         REQUIRE(out.check(time_reached_event<>{210'698'240}));
 
-        in.feed(pqt2_picoharp_event::make_nonspecial(42_u32np, 5_u8np));
+        in.feed(pqt2_picoharp300_event::make_nonspecial(42_u32np, 5_u8np));
         REQUIRE(out.check(detection_event<>{{{210'698'240 + 42}, 5}}));
     }
 
@@ -460,37 +463,36 @@ TEST_CASE("decode pqt2 hydraharpv1", "[decode_pqt2_hydraharpv1]") {
     REQUIRE(out.check_flushed());
 }
 
-TEST_CASE("decode pqt2 hydraharpv2", "[decode_pqt2_hydraharpv2]") {
+TEST_CASE("decode pqt2 generic", "[decode_pqt2_generic]") {
     auto ctx = std::make_shared<processor_context>();
-    auto in = feed_input<event_set<pqt2_hydraharpv2_event>>(
-        decode_pqt2_hydraharpv2(capture_output<out_events>(
+    auto in = feed_input<event_set<pqt2_generic_event>>(
+        decode_pqt2_generic(capture_output<out_events>(
             ctx->tracker<capture_output_access>("out"))));
     in.require_output_checked(ctx, "out");
     auto out = capture_output_checker<out_events>(
         ctx->accessor<capture_output_access>("out"));
 
     SECTION("non-special") {
-        in.feed(pqt2_hydraharpv2_event::make_nonspecial(42_u32np, 5_u8np));
+        in.feed(pqt2_generic_event::make_nonspecial(42_u32np, 5_u8np));
         REQUIRE(out.check(detection_event<>{{{42}, 5}}));
     }
 
     SECTION("external marker") {
-        in.feed(
-            pqt2_hydraharpv2_event::make_external_marker(42_u32np, 5_u8np));
+        in.feed(pqt2_generic_event::make_external_marker(42_u32np, 5_u8np));
         REQUIRE(out.check(marker_event<>{{{42}, 0}}));
         REQUIRE(out.check(marker_event<>{{{42}, 2}}));
     }
 
     SECTION("sync") {
-        in.feed(pqt2_hydraharpv2_event::make_sync(42_u32np));
+        in.feed(pqt2_generic_event::make_sync(42_u32np));
         REQUIRE(out.check(detection_event<>{{{42}, -1}}));
     }
 
     SECTION("timetag overflow") {
-        in.feed(pqt2_hydraharpv2_event::make_timetag_overflow(3_u32np));
+        in.feed(pqt2_generic_event::make_timetag_overflow(3_u32np));
         REQUIRE(out.check(time_reached_event<>{i64(33'554'432) * 3}));
 
-        in.feed(pqt2_hydraharpv2_event::make_nonspecial(42_u32np, 5_u8np));
+        in.feed(pqt2_generic_event::make_nonspecial(42_u32np, 5_u8np));
         REQUIRE(out.check(detection_event<>{{{i64(33'554'432) * 3 + 42}, 5}}));
     }
 

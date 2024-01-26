@@ -30,18 +30,18 @@ namespace tcspc {
 // viewed as little-endian integers when interpreting the documented bit
 // locations.
 
-// The two T2 formats (pqt2_picoharp_event and pqt2_hydraharp_event) use
+// The two T2 formats (pqt2_picoharp300_event and basic_pqt2_event) use
 // matching member names for static polymorphism. This allows
 // decode_pqt2<PQT2Event> to handle 3 different formats with the same code.
 
 /**
- * \brief Binary record interpretation for PicoHarp T2 Format.
+ * \brief Binary record interpretation for PicoHarp 300 T2 Format.
  *
  * \ingroup events-device
  *
  * RecType 0x00010203.
  */
-struct pqt2_picoharp_event {
+struct pqt2_picoharp300_event {
     /**
      * \brief Bytes of the 32-bit raw device event.
      */
@@ -137,10 +137,10 @@ struct pqt2_picoharp_event {
      * \return event
      */
     static auto make_nonspecial(u32np timetag, u8np channel)
-        -> pqt2_picoharp_event {
+        -> pqt2_picoharp300_event {
         if (channel > 14_u8np)
             throw std::invalid_argument(
-                "pqt2_picoharp_event channel must be in the range 0-14");
+                "pqt2_picoharp300_event channel must be in the range 0-14");
         return make_from_fields(channel, timetag);
     }
 
@@ -149,7 +149,7 @@ struct pqt2_picoharp_event {
      *
      * \return event
      */
-    static auto make_timetag_overflow() noexcept -> pqt2_picoharp_event {
+    static auto make_timetag_overflow() noexcept -> pqt2_picoharp300_event {
         return make_from_fields(15_u8np, 0_u32np);
     }
 
@@ -164,30 +164,32 @@ struct pqt2_picoharp_event {
      * \return event
      */
     static auto make_external_marker(u32np timetag, u8np marker_bits)
-        -> pqt2_picoharp_event {
+        -> pqt2_picoharp300_event {
         if (marker_bits == 0_u8np)
             throw std::invalid_argument(
-                "pqt2_picoharp_event marker_bits must not be zero");
+                "pqt2_picoharp300_event marker_bits must not be zero");
         return make_from_fields(15_u8np,
                                 (timetag & ~0x0f_u32np) |
                                     (u32np(marker_bits) & 0x0f_u32np));
     }
 
     /** \brief Equality comparison operator. */
-    friend auto operator==(pqt2_picoharp_event const &lhs,
-                           pqt2_picoharp_event const &rhs) noexcept -> bool {
+    friend auto operator==(pqt2_picoharp300_event const &lhs,
+                           pqt2_picoharp300_event const &rhs) noexcept
+        -> bool {
         return lhs.bytes == rhs.bytes;
     }
 
     /** \brief Inequality comparison operator. */
-    friend auto operator!=(pqt2_picoharp_event const &lhs,
-                           pqt2_picoharp_event const &rhs) noexcept -> bool {
+    friend auto operator!=(pqt2_picoharp300_event const &lhs,
+                           pqt2_picoharp300_event const &rhs) noexcept
+        -> bool {
         return not(lhs == rhs);
     }
 
     /** \brief Stream insertion operator. */
     friend auto operator<<(std::ostream &stream,
-                           pqt2_picoharp_event const &event)
+                           pqt2_picoharp300_event const &event)
         -> std::ostream & {
         return stream << "pqt2_picoharp(channel="
                       << unsigned(event.channel().value())
@@ -196,8 +198,8 @@ struct pqt2_picoharp_event {
 
   private:
     static auto make_from_fields(u8np channel, u32np timetag)
-        -> pqt2_picoharp_event {
-        return pqt2_picoharp_event{{
+        -> pqt2_picoharp300_event {
+        return pqt2_picoharp300_event{{
             std::byte(u8np(timetag).value()),
             std::byte(u8np(timetag >> 8).value()),
             std::byte(u8np(timetag >> 16).value()),
@@ -209,12 +211,12 @@ struct pqt2_picoharp_event {
 
 /**
  * \brief Implementation for binary record interpretation for HydraHarp,
- * MultiHarp, and TimeHarp260 T2 format.
+ * MultiHarp, TimeHarp 260, and PicoHarp 330 T2 format.
  *
  * \ingroup events-device
  *
  * This class is documented to show the available member functions. User code
- * should use \ref pqt2_hydraharpv1_event or \ref pqt2_hydraharpv2_event.
+ * should use \ref pqt2_hydraharpv1_event or \ref pqt2_generic_event.
  *
  * \tparam OverflowPeriod the time tag overflow period
  *
@@ -222,7 +224,7 @@ struct pqt2_picoharp_event {
  * indicate a single overflow
  */
 template <std::int32_t OverflowPeriod, bool IsOverflowAlwaysSingle>
-struct pqt2_hydraharp_event {
+struct basic_pqt2_event {
     /**
      * \brief Bytes of the 32-bit raw device event.
      */
@@ -313,21 +315,21 @@ struct pqt2_hydraharp_event {
      * \return event
      */
     static auto make_nonspecial(u32np timetag, u8np channel)
-        -> pqt2_hydraharp_event {
+        -> basic_pqt2_event {
         return make_from_fields(false, channel, timetag);
     }
 
     /**
      * \brief Make an event representing an time tag overflow.
      *
-     * This overload is only available in \ref pqt2_hydraharpv2_event.
+     * This overload is only available in \ref pqt2_generic_event.
      *
      * \param count number of overflows; 1 to 33,554,431 (0 is allowed but may
      * not be handled correctly by other readers)
      *
      * \return event
      */
-    static auto make_timetag_overflow(u32np count) -> pqt2_hydraharp_event {
+    static auto make_timetag_overflow(u32np count) -> basic_pqt2_event {
         static_assert(
             not IsOverflowAlwaysSingle,
             "multiple time tag overflow is not available in HydraHarp V1 format");
@@ -339,7 +341,7 @@ struct pqt2_hydraharp_event {
      *
      * \return event
      */
-    static auto make_timetag_overflow() noexcept -> pqt2_hydraharp_event {
+    static auto make_timetag_overflow() noexcept -> basic_pqt2_event {
         return make_from_fields(true, 63_u8np, 1_u32np);
     }
 
@@ -350,7 +352,7 @@ struct pqt2_hydraharp_event {
      *
      * \return event
      */
-    static auto make_sync(u32np timetag) noexcept -> pqt2_hydraharp_event {
+    static auto make_sync(u32np timetag) noexcept -> basic_pqt2_event {
         return make_from_fields(true, 0_u8np, timetag);
     }
 
@@ -364,28 +366,27 @@ struct pqt2_hydraharp_event {
      * \return event
      */
     static auto make_external_marker(u32np timetag, u8np marker_bits)
-        -> pqt2_hydraharp_event {
+        -> basic_pqt2_event {
         if (marker_bits == 0_u8np || (marker_bits & ~0x0f_u8np) != 0_u8np)
             throw std::invalid_argument(
-                "pqt2_hydraharp_event marker_bits must be in range 1-15");
+                "basic_pqt2_event marker_bits must be in range 1-15");
         return make_from_fields(true, marker_bits & 0x3f_u8np, timetag);
     }
 
     /** \brief Equality comparison operator. */
-    friend auto operator==(pqt2_hydraharp_event const &lhs,
-                           pqt2_hydraharp_event const &rhs) noexcept -> bool {
+    friend auto operator==(basic_pqt2_event const &lhs,
+                           basic_pqt2_event const &rhs) noexcept -> bool {
         return lhs.bytes == rhs.bytes;
     }
 
     /** \brief Inequality comparison operator. */
-    friend auto operator!=(pqt2_hydraharp_event const &lhs,
-                           pqt2_hydraharp_event const &rhs) noexcept -> bool {
+    friend auto operator!=(basic_pqt2_event const &lhs,
+                           basic_pqt2_event const &rhs) noexcept -> bool {
         return not(lhs == rhs);
     }
 
     /** \brief Stream insertion operator. */
-    friend auto operator<<(std::ostream &stream,
-                           pqt2_hydraharp_event const &event)
+    friend auto operator<<(std::ostream &stream, basic_pqt2_event const &event)
         -> std::ostream & {
         static constexpr auto version = IsOverflowAlwaysSingle ? 1 : 2;
         return stream << "pqt2_hydraharpv" << version
@@ -396,8 +397,8 @@ struct pqt2_hydraharp_event {
 
   private:
     static auto make_from_fields(bool special, u8np channel, u32np timetag)
-        -> pqt2_hydraharp_event {
-        return pqt2_hydraharp_event{{
+        -> basic_pqt2_event {
+        return basic_pqt2_event{{
             std::byte(u8np(timetag).value()),
             std::byte(u8np(timetag >> 8).value()),
             std::byte(u8np(timetag >> 16).value()),
@@ -416,17 +417,17 @@ struct pqt2_hydraharp_event {
  *
  * RecType 0x00010204.
  */
-using pqt2_hydraharpv1_event = pqt2_hydraharp_event<33552000, true>;
+using pqt2_hydraharpv1_event = basic_pqt2_event<33552000, true>;
 
 /**
- * \brief Binary record interpretation for HydraHarp V2, MultiHarp, and
- * TimeHarp260 T2 format.
+ * \brief Binary record interpretation for HydraHarp V2, MultiHarp,
+ * TimeHarp 260, and PicoHarp 330 "Generic" T2 format.
  *
  * \ingroup events-device
  *
- * RecType 01010204, 01010205, 01010206, 01010207.
+ * RecType 0x01010204, 0x00010205, 0x00010206, 0x00010207.
  */
-using pqt2_hydraharpv2_event = pqt2_hydraharp_event<33554432, false>;
+using pqt2_generic_event = basic_pqt2_event<33554432, false>;
 
 namespace internal {
 
@@ -457,7 +458,7 @@ class decode_pqt2 {
         }
 
         // In the case where the overflow period is smaller than one plus the
-        // maximum representable time tag (PicoHarp, and HydraHarp V1), any
+        // maximum representable time tag (PicoHarp 300 and HydraHarp V1), any
         // invalid time tags will be caught when (externally) checking for
         // monotonicity. So we do not check here.
 
@@ -484,7 +485,7 @@ class decode_pqt2 {
 } // namespace internal
 
 /**
- * \brief Create a processor that decodes PicoQuant PicoHarp T2 events.
+ * \brief Create a processor that decodes PicoQuant PicoHarp 300 T2 events.
  *
  * \ingroup processors-decode
  *
@@ -495,11 +496,12 @@ class decode_pqt2 {
  *
  * \param downstream downstream processor
  *
- * \return decode-pqt2-picoharp processor
+ * \return decode-pqt2-picoharp300 processor
  */
 template <typename DataTraits = default_data_traits, typename Downstream>
-auto decode_pqt2_picoharp(Downstream &&downstream) {
-    return internal::decode_pqt2<DataTraits, pqt2_picoharp_event, Downstream>(
+auto decode_pqt2_picoharp300(Downstream &&downstream) {
+    return internal::decode_pqt2<DataTraits, pqt2_picoharp300_event,
+                                 Downstream>(
         std::forward<Downstream>(downstream));
 }
 
@@ -529,7 +531,7 @@ auto decode_pqt2_hydraharpv1(Downstream &&downstream) {
 
 /**
  * \brief Create a processor that decodes PicoQuant HydraHarp V2, MultiHarp,
- * and TimeHarp260 T2 events.
+ * TimeHarp 260, and PicoHarp 330 "Generic" T2 events.
  *
  * \ingroup processors-decode
  *
@@ -543,12 +545,11 @@ auto decode_pqt2_hydraharpv1(Downstream &&downstream) {
  *
  * \param downstream downstream processor
  *
- * \return decode-pqt2-hydraharpv2 processor
+ * \return decode-pqt2-generic processor
  */
 template <typename DataTraits = default_data_traits, typename Downstream>
-auto decode_pqt2_hydraharpv2(Downstream &&downstream) {
-    return internal::decode_pqt2<DataTraits, pqt2_hydraharpv2_event,
-                                 Downstream>(
+auto decode_pqt2_generic(Downstream &&downstream) {
+    return internal::decode_pqt2<DataTraits, pqt2_generic_event, Downstream>(
         std::forward<Downstream>(downstream));
 }
 

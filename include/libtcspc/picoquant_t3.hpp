@@ -30,18 +30,18 @@ namespace tcspc {
 // viewed as little-endian integers when interpreting the documented bit
 // locations.
 
-// The two T3 formats (pqt3_picoharp_event and pqt3_hydraharp_event) use
+// The two T3 formats (pqt3_picoharp300_event and basic_pqt3_event) use
 // matching member names for static polymorphism. This allows
 // decode_pqt3<PQT3Event> to handle 3 different formats with the same code.
 
 /**
- * \brief Binary record interpretation for PicoHarp T3 Format.
+ * \brief Binary record interpretation for PicoHarp 300 T3 Format.
  *
  * \ingroup events-device
  *
  * RecType 0x00010303.
  */
-struct pqt3_picoharp_event {
+struct pqt3_picoharp300_event {
     /**
      * \brief Bytes of the 32-bit raw device event.
      */
@@ -101,9 +101,9 @@ struct pqt3_picoharp_event {
      */
     [[nodiscard]] auto is_external_marker() const noexcept -> bool {
         // Vendor docs do not specifically say markers are 4 bits in PicoHarp
-        // T3, but they are in a 4-bit field in T2, and in HydraHarp T2/T3 the
-        // marker bits explicitly range 1-15. Let's just behave consistently
-        // here and check the upper limit.
+        // 300 T3, but they are in a 4-bit field in T2, and in
+        // HydraHarp/Generic T2/T3 the marker bits explicitly range 1-15. Let's
+        // just behave consistently here and check the upper limit.
         return is_special() && dtime() > 0_u16np && dtime() <= 15_u16np;
     }
 
@@ -127,10 +127,10 @@ struct pqt3_picoharp_event {
      * \return event
      */
     static auto make_nonspecial(u16np nsync, u8np channel, u16np dtime)
-        -> pqt3_picoharp_event {
+        -> pqt3_picoharp300_event {
         if (channel > 14_u8np)
             throw std::invalid_argument(
-                "pqt3_picoharp_event channel must be in the range 0-14");
+                "pqt3_picoharp300_event channel must be in the range 0-14");
         return make_from_fields(channel, dtime, nsync);
     }
 
@@ -139,7 +139,7 @@ struct pqt3_picoharp_event {
      *
      * \return event
      */
-    static auto make_nsync_overflow() noexcept -> pqt3_picoharp_event {
+    static auto make_nsync_overflow() noexcept -> pqt3_picoharp300_event {
         return make_from_fields(15_u8np, 0_u16np, 0_u16np);
     }
 
@@ -153,29 +153,31 @@ struct pqt3_picoharp_event {
      * \return event
      */
     static auto make_external_marker(u16np nsync, u8np marker_bits)
-        -> pqt3_picoharp_event {
+        -> pqt3_picoharp300_event {
         if (marker_bits == 0_u8np)
             throw std::invalid_argument(
-                "pqt3_picoharp_event marker_bits must not be zero");
+                "pqt3_picoharp300_event marker_bits must not be zero");
         return make_from_fields(15_u8np, u16np(marker_bits & 0x0f_u8np),
                                 nsync);
     }
 
     /** \brief Equality comparison operator. */
-    friend auto operator==(pqt3_picoharp_event const &lhs,
-                           pqt3_picoharp_event const &rhs) noexcept -> bool {
+    friend auto operator==(pqt3_picoharp300_event const &lhs,
+                           pqt3_picoharp300_event const &rhs) noexcept
+        -> bool {
         return lhs.bytes == rhs.bytes;
     }
 
     /** \brief Inequality comparison operator. */
-    friend auto operator!=(pqt3_picoharp_event const &lhs,
-                           pqt3_picoharp_event const &rhs) noexcept -> bool {
+    friend auto operator!=(pqt3_picoharp300_event const &lhs,
+                           pqt3_picoharp300_event const &rhs) noexcept
+        -> bool {
         return not(lhs == rhs);
     }
 
     /** \brief Stream insertion operator. */
     friend auto operator<<(std::ostream &stream,
-                           pqt3_picoharp_event const &event)
+                           pqt3_picoharp300_event const &event)
         -> std::ostream & {
         return stream << "pqt3_picoharp(channel="
                       << unsigned(event.channel().value())
@@ -185,8 +187,8 @@ struct pqt3_picoharp_event {
 
   private:
     static auto make_from_fields(u8np channel, u16np dtime, u16np nsync)
-        -> pqt3_picoharp_event {
-        return pqt3_picoharp_event{{
+        -> pqt3_picoharp300_event {
+        return pqt3_picoharp300_event{{
             std::byte(u8np(nsync).value()),
             std::byte(u8np(nsync >> 8).value()),
             std::byte(u8np(dtime).value()),
@@ -198,18 +200,18 @@ struct pqt3_picoharp_event {
 
 /**
  * \brief Implementation for binary record interpretation for HydraHarp,
- * MultiHarp, and TimeHarp260 T3 format.
+ * MultiHarp, TimeHarp 260, and PicoHarp 330 T3 format.
  *
  * \ingroup events-device
  *
  * This class is documented to show the available member functions. User code
- * should use \ref pqt3_hydraharpv1_event or \ref pqt3_hydraharpv2_event.
+ * should use \ref pqt3_hydraharpv1_event or \ref pqt3_generic_event.
  *
  * \tparam IsNSyncOverflowAlwaysSingle if true, interpret as HydraHarp V1
  * (RecType 0x00010304) format, in which nsync overflow records always indicate
  * a single overflow
  */
-template <bool IsNSyncOverflowAlwaysSingle> struct pqt3_hydraharp_event {
+template <bool IsNSyncOverflowAlwaysSingle> struct basic_pqt3_event {
     /**
      * \brief Bytes of the 32-bit raw device event.
      */
@@ -296,21 +298,21 @@ template <bool IsNSyncOverflowAlwaysSingle> struct pqt3_hydraharp_event {
      * \return event
      */
     static auto make_nonspecial(u16np nsync, u8np channel, u16np dtime)
-        -> pqt3_hydraharp_event {
+        -> basic_pqt3_event {
         return make_from_fields(false, channel, dtime, nsync);
     }
 
     /**
      * \brief Make an event representing an nsync overflow.
      *
-     * This overload is only available in \ref pqt3_hydraharpv2_event.
+     * This overload is only available in \ref pqt3_generic_event.
      *
      * \param count number of overflows; 1 to 1023 (0 is allowed but may not be
      * handled correctly by other readers)
      *
      * \return event
      */
-    static auto make_nsync_overflow(u16np count) -> pqt3_hydraharp_event {
+    static auto make_nsync_overflow(u16np count) -> basic_pqt3_event {
         static_assert(
             not IsNSyncOverflowAlwaysSingle,
             "multiple nsync overflow is not available in HydraHarp V1 format");
@@ -322,7 +324,7 @@ template <bool IsNSyncOverflowAlwaysSingle> struct pqt3_hydraharp_event {
      *
      * \return event;
      */
-    static auto make_nsync_overflow() noexcept -> pqt3_hydraharp_event {
+    static auto make_nsync_overflow() noexcept -> basic_pqt3_event {
         return make_from_fields(true, 63_u8np, 0_u16np, 1_u16np);
     }
 
@@ -336,25 +338,24 @@ template <bool IsNSyncOverflowAlwaysSingle> struct pqt3_hydraharp_event {
      * \return event
      */
     static auto make_external_marker(u16np nsync, u8np marker_bits)
-        -> pqt3_hydraharp_event {
+        -> basic_pqt3_event {
         return make_from_fields(true, marker_bits, 0_u16np, nsync);
     }
 
     /** \brief Equality comparison operator. */
-    friend auto operator==(pqt3_hydraharp_event const &lhs,
-                           pqt3_hydraharp_event const &rhs) noexcept -> bool {
+    friend auto operator==(basic_pqt3_event const &lhs,
+                           basic_pqt3_event const &rhs) noexcept -> bool {
         return lhs.bytes == rhs.bytes;
     }
 
     /** \brief Inequality comparison operator. */
-    friend auto operator!=(pqt3_hydraharp_event const &lhs,
-                           pqt3_hydraharp_event const &rhs) noexcept -> bool {
+    friend auto operator!=(basic_pqt3_event const &lhs,
+                           basic_pqt3_event const &rhs) noexcept -> bool {
         return not(lhs == rhs);
     }
 
     /** \brief Stream insertion operator. */
-    friend auto operator<<(std::ostream &stream,
-                           pqt3_hydraharp_event const &event)
+    friend auto operator<<(std::ostream &stream, basic_pqt3_event const &event)
         -> std::ostream & {
         static constexpr auto version = IsNSyncOverflowAlwaysSingle ? 1 : 2;
         return stream << "pqt3_hydraharpv" << version
@@ -366,8 +367,8 @@ template <bool IsNSyncOverflowAlwaysSingle> struct pqt3_hydraharp_event {
 
   private:
     static auto make_from_fields(bool special, u8np channel, u16np dtime,
-                                 u16np nsync) -> pqt3_hydraharp_event {
-        return pqt3_hydraharp_event{{
+                                 u16np nsync) -> basic_pqt3_event {
+        return basic_pqt3_event{{
             std::byte(u8np(nsync).value()),
             std::byte(
                 (u8np(dtime << 2) | (u8np(nsync >> 8) & 0x03_u8np)).value()),
@@ -387,17 +388,17 @@ template <bool IsNSyncOverflowAlwaysSingle> struct pqt3_hydraharp_event {
  *
  * RecType 0x00010304.
  */
-using pqt3_hydraharpv1_event = pqt3_hydraharp_event<true>;
+using pqt3_hydraharpv1_event = basic_pqt3_event<true>;
 
 /**
- * \brief Binary record interpretation for HydraHarp V2, MultiHarp, and
- * TimeHarp260 T3 format.
+ * \brief Binary record interpretation for HydraHarp V2, MultiHarp,
+ * TimeHarp 260, and PicoHarp 330 "Generic" T3 format.
  *
  * \ingroup events-device
  *
- * RecType 01010304, 00010305, 00010306, 00010307.
+ * RecType 0x01010304, 0x00010305, 0x00010306, 0x00010307.
  */
-using pqt3_hydraharpv2_event = pqt3_hydraharp_event<false>;
+using pqt3_generic_event = basic_pqt3_event<false>;
 
 namespace internal {
 
@@ -446,7 +447,7 @@ class decode_pqt3 {
 } // namespace internal
 
 /**
- * \brief Create a processor that decodes PicoQuant PicoHarp T3 events.
+ * \brief Create a processor that decodes PicoQuant PicoHarp 300 T3 events.
  *
  * \ingroup processors-decode
  *
@@ -457,11 +458,12 @@ class decode_pqt3 {
  *
  * \param downstream downstream processor
  *
- * \return decode-pqt3-picoharp processor
+ * \return decode-pqt3-picoharp300 processor
  */
 template <typename DataTraits = default_data_traits, typename Downstream>
-auto decode_pqt3_picoharp(Downstream &&downstream) {
-    return internal::decode_pqt3<DataTraits, pqt3_picoharp_event, Downstream>(
+auto decode_pqt3_picoharp300(Downstream &&downstream) {
+    return internal::decode_pqt3<DataTraits, pqt3_picoharp300_event,
+                                 Downstream>(
         std::forward<Downstream>(downstream));
 }
 
@@ -488,7 +490,7 @@ auto decode_pqt3_hydraharpv1(Downstream &&downstream) {
 
 /**
  * \brief Create a processor that decodes PicoQuant HydraHarp V2, MultiHarp,
- * and TimeHarp260 T3 events.
+ * TimeHarp 260, and PicoHarp 330 "Generic" T3 events.
  *
  * \ingroup processors-decode
  *
@@ -499,12 +501,11 @@ auto decode_pqt3_hydraharpv1(Downstream &&downstream) {
  *
  * \param downstream downstream processor
  *
- * \return decode-pqt3-hydraharpv2 processor
+ * \return decode-pqt3-generic processor
  */
 template <typename DataTraits = default_data_traits, typename Downstream>
-auto decode_pqt3_hydraharpv2(Downstream &&downstream) {
-    return internal::decode_pqt3<DataTraits, pqt3_hydraharpv2_event,
-                                 Downstream>(
+auto decode_pqt3_generic(Downstream &&downstream) {
+    return internal::decode_pqt3<DataTraits, pqt3_generic_event, Downstream>(
         std::forward<Downstream>(downstream));
 }
 
