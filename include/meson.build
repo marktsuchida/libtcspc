@@ -37,7 +37,6 @@ public_cpp_headers = files(
     'libtcspc/select.hpp',
     'libtcspc/shared_processor.hpp',
     'libtcspc/span.hpp',
-    'libtcspc/split.hpp',
     'libtcspc/stop.hpp',
     'libtcspc/swabian_tag.hpp',
     'libtcspc/tcspc.hpp',

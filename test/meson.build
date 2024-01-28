@@ -37,7 +37,6 @@ test_libtcspc_srcs = [
     'route.cpp',
     'select.cpp',
     'shared_processor.cpp',
-    'split.cpp',
     'stop.cpp',
     'swabian_tag.cpp',
     'test_utils.cpp',
