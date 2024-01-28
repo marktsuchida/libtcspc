@@ -33,6 +33,18 @@ namespace internal {
 
 static_assert(!false_for_type<int>::value);
 
+TEST_CASE("add_sat", "[common]") {
+    REQUIRE(add_sat(0, 0) == 0);
+    REQUIRE(add_sat(1, 2) == 3);
+    REQUIRE(add_sat(1, -2) == -1);
+    REQUIRE(add_sat(i8(100), i8(27)) == i8(127));
+    REQUIRE(add_sat(i8(100), i8(28)) == i8(127));
+    REQUIRE(add_sat(i8(-100), i8(-28)) == i8(-128));
+    REQUIRE(add_sat(i8(-100), i8(-29)) == i8(-128));
+    REQUIRE(add_sat(u8(100), u8(155)) == u8(255));
+    REQUIRE(add_sat(u8(100), u8(156)) == u8(255));
+}
+
 TEST_CASE("count_trailing_zeros_32", "[common]") {
     REQUIRE(count_trailing_zeros_32(1_u32np) == 0);
     REQUIRE(count_trailing_zeros_32_nonintrinsic(1_u32np) == 0);

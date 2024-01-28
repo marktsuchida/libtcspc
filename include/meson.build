@@ -32,6 +32,7 @@ public_cpp_headers = files(
     'libtcspc/read_bytes.hpp',
     'libtcspc/recover_order.hpp',
     'libtcspc/ref_processor.hpp',
+    'libtcspc/regulate_time_reached.hpp',
     'libtcspc/route.hpp',
     'libtcspc/select.hpp',
     'libtcspc/shared_processor.hpp',

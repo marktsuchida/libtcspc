@@ -33,6 +33,7 @@ test_libtcspc_srcs = [
     'read_bytes.cpp',
     'recover_order.cpp',
     'ref_processor.cpp',
+    'regulate_time_reached.cpp',
     'route.cpp',
     'select.cpp',
     'shared_processor.cpp',
