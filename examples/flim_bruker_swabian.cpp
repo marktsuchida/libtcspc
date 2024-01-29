@@ -209,7 +209,8 @@ auto make_processor(settings const &settings,
     select<event_set<detection_pair_event<>>>(
     time_correlate_at_midpoint(
     remove_time_correlation(
-    recover_order<detection_event<>>(std::abs(settings.max_photon_pulse_width),
+    recover_order<event_set<detection_event<>>>(
+        std::abs(settings.max_photon_pulse_width),
     std::move(cfd_merge))))));
 
     auto pixel_marker_processor =

@@ -7,6 +7,7 @@
 #pragma once
 
 #include "common.hpp"
+#include "event_set.hpp"
 
 #include <algorithm>
 #include <iterator>
@@ -19,14 +20,17 @@ namespace tcspc {
 
 namespace internal {
 
-template <typename Event, typename DataTraits, typename Downstream>
+template <typename EventSet, typename DataTraits, typename Downstream>
 class recover_order {
     using abstime_type = typename DataTraits::abstime_type;
     abstime_type window_size;
 
     // We just use a sorted vector, because the intended use cases do not
     // require buffering large numbers of events.
-    std::vector<Event> buf; // Always in ascending abstime order
+    using element_type = std::conditional_t<event_set_size_v<EventSet> == 1,
+                                            event_set_element_t<0, EventSet>,
+                                            event_variant<EventSet>>;
+    std::vector<element_type> buf; // Always in ascending abstime order
     // For error checking
     abstime_type last_emitted_time = std::numeric_limits<abstime_type>::min();
 
@@ -40,9 +44,9 @@ class recover_order {
                 "recover_order time_window must not be negative");
     }
 
-    void handle(Event const &event) {
+    template <typename Event> void handle(Event const &event) {
+        static_assert(contains_event_v<EventSet, Event>);
         static_assert(std::is_same_v<decltype(event.abstime), abstime_type>);
-
         if (event.abstime < last_emitted_time) {
             throw std::runtime_error(
                 "recover_order encountered event outside of time window");
@@ -59,19 +63,35 @@ class recover_order {
         // selectable.)
 
         auto const cutoff = pairing_cutoff(event.abstime, window_size);
-        auto keep_it = std::find_if_not(
-            buf.begin(), buf.end(),
-            [&](Event const &e) noexcept { return e.abstime < cutoff; });
-        std::for_each(buf.begin(), keep_it, [&](Event const &e) {
-            downstream.handle(std::as_const(e));
+        auto before_cutoff = [&](auto const &e) { return e.abstime < cutoff; };
+        auto keep_it =
+            std::find_if_not(buf.begin(), buf.end(), [&](auto const &e) {
+                if constexpr (event_set_size_v<EventSet> == 1)
+                    return before_cutoff(e);
+                else
+                    return std::visit(before_cutoff, e);
+            });
+
+        auto emit = [&](auto const &e) {
+            downstream.handle(e);
             last_emitted_time = e.abstime;
+        };
+        std::for_each(buf.begin(), keep_it, [&](auto const &e) {
+            if constexpr (event_set_size_v<EventSet> == 1)
+                emit(e);
+            else
+                std::visit(emit, e);
         });
         buf.erase(buf.begin(), keep_it);
 
-        auto ins_it = std::find_if(buf.rbegin(), buf.rend(),
-                                   [&](Event const &e) noexcept {
-                                       return e.abstime < event.abstime;
-                                   });
+        auto older = [&](auto const &e) { return e.abstime < event.abstime; };
+        auto ins_it =
+            std::find_if(buf.rbegin(), buf.rend(), [&](auto const &e) {
+                if constexpr (event_set_size_v<EventSet> == 1)
+                    return older(e);
+                else
+                    return std::visit(older, e);
+            });
         if (ins_it == buf.rend())
             buf.insert(buf.begin(), event);
         else
@@ -81,8 +101,12 @@ class recover_order {
     // Do not allow other events.
 
     void flush() {
-        std::for_each(buf.begin(), buf.end(), [&](Event const &e) {
-            downstream.handle(std::as_const(e));
+        auto emit = [&](auto const &e) { downstream.handle(e); };
+        std::for_each(buf.begin(), buf.end(), [&](auto const &e) {
+            if constexpr (event_set_size_v<EventSet> == 1)
+                emit(e);
+            else
+                std::visit(emit, e);
         });
         buf.clear();
         downstream.flush();
@@ -97,7 +121,7 @@ class recover_order {
  *
  * \ingroup processors-timing
  *
- * \tparam Event type of event to sort
+ * \tparam EventSet events to sort
  *
  * \tparam DataTraits traits type specifying \c abstime_type
  *
@@ -108,11 +132,11 @@ class recover_order {
  *
  * \param downstream downstream processor
  */
-template <typename Event, typename DataTraits = default_data_traits,
+template <typename EventSet, typename DataTraits = default_data_traits,
           typename Downstream>
 auto recover_order(typename DataTraits::abstime_type time_window,
                    Downstream &&downstream) {
-    return internal::recover_order<Event, DataTraits, Downstream>(
+    return internal::recover_order<EventSet, DataTraits, Downstream>(
         time_window, std::forward<Downstream>(downstream));
 }
 
