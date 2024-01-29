@@ -99,7 +99,7 @@ template <typename T> class vector_queue {
                                 as_unsigned(std::distance(ptr, endptr)));
     }
 
-    vector_queue()
+    vector_queue() noexcept
         : ptr(nullptr), endptr(nullptr), head(nullptr), tail(nullptr) {}
 
     vector_queue(vector_queue const &other) {
@@ -150,31 +150,31 @@ template <typename T> class vector_queue {
         return as_unsigned(std::distance(head, tail));
     }
 
-    auto front() noexcept -> T & {
+    auto front() -> T & {
         assert(head != tail);
         return *head;
     }
 
-    auto front() const noexcept -> T const & {
+    auto front() const -> T const & {
         assert(head != tail);
         return *head;
     }
 
-    auto back() noexcept -> T & {
+    auto back() -> T & {
         assert(head != tail);
         if (tail == ptr)
             return *(endptr - 1);
         return *(tail - 1);
     }
 
-    auto back() const noexcept -> T const & {
+    auto back() const -> T const & {
         assert(head != tail);
         if (tail == ptr)
             return *(endptr - 1);
         return *(tail - 1);
     }
 
-    void pop() noexcept {
+    void pop() {
         assert(head != tail);
         auto alloc = std::allocator<T>();
         alloctraits::destroy(alloc, head);
