@@ -155,6 +155,39 @@ TEST_CASE("Merge", "[merge]") {
     }
 }
 
+TEST_CASE("merge single event type", "[merge]") {
+    using one_event = event_set<e0>;
+    auto ctx = std::make_shared<processor_context>();
+    auto [min0, min1] = merge<one_event>(
+        1024,
+        capture_output<one_event>(ctx->tracker<capture_output_access>("out")));
+    auto in0 = feed_input<one_event>(std::move(min0));
+    in0.require_output_checked(ctx, "out");
+    auto in1 = feed_input<one_event>(std::move(min1));
+    in1.require_output_checked(ctx, "out");
+    auto out = capture_output_checker<one_event>(
+        ctx->accessor<capture_output_access>("out"));
+
+    // The only non-common code for the single-event-type case is in
+    // emit_pending, so lightly test that.
+
+    in0.feed(e0{42});
+    in1.feed(e0{41});
+    REQUIRE(out.check(e0{41}));
+    in1.feed(e0{43});
+    REQUIRE(out.check(e0{42}));
+    in1.feed(e0{44});
+    in1.feed(e0{45});
+    in0.feed(e0{46});
+    REQUIRE(out.check(e0{43}));
+    REQUIRE(out.check(e0{44}));
+    REQUIRE(out.check(e0{45}));
+    in0.flush();
+    in1.flush();
+    REQUIRE(out.check(e0{46}));
+    REQUIRE(out.check_flushed());
+}
+
 TEST_CASE("merge N streams", "[merge_n]") {
     auto ctx = std::make_shared<processor_context>();
 

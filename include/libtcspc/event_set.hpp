@@ -58,6 +58,59 @@ class event_variant
     }
 };
 
+/**
+ * \brief Metafunction to get the number of events in an event set.
+ *
+ * \ingroup metafunctions
+ *
+ * Duplicate events are counted twice.
+ *
+ * \see event_set_size_v
+ *
+ * \tparam EventSet an event set
+ */
+template <typename EventSet> using event_set_size = std::tuple_size<EventSet>;
+
+/**
+ * \brief Helper variable to get the result of event_set_size
+ *
+ * \ingroup metafunctions
+ *
+ * \tparam EventSet an event set
+ */
+template <typename EventSet>
+inline constexpr std::size_t event_set_size_v =
+    event_set_size<EventSet>::value;
+
+/**
+ * \brief Metafunction to get the type of element of an event set.
+ *
+ * \ingroup metafunctions
+ *
+ * Because order is (semantically) not significant in \c event_set, this
+ * metafunction is mostly useful for obtaining element 0 of a size-1 event set.
+ *
+ * \see event_set_element_t
+ *
+ * \tparam I the index of the element
+ *
+ * \tparam EventSet an event set
+ */
+template <std::size_t I, typename EventSet>
+using event_set_element = std::tuple_element<I, EventSet>;
+
+/**
+ * \brief Helper typedef to get the result of event_set_element.
+ *
+ * \ingroup metafunctions
+ *
+ * \tparam I the index of the element
+ *
+ * \tparam EventSet an event set
+ */
+template <std::size_t I, typename EventSet>
+using event_set_element_t = typename event_set_element<I, EventSet>::type;
+
 namespace internal {
 
 template <typename Event, typename... Events>

@@ -37,7 +37,11 @@ class merge_impl {
     bool pending_on_1 = false; // Pending on input 0 if false
     std::array<bool, 2> input_flushed{false, false};
     bool ended_with_exception = false;
-    vector_queue<event_variant<EventSet>> pending;
+    using queue_element_type =
+        std::conditional_t<event_set_size_v<EventSet> == 1,
+                           event_set_element_t<0, EventSet>,
+                           event_variant<EventSet>>;
+    vector_queue<queue_element_type> pending;
     std::size_t max_buffered;
 
     Downstream downstream;
@@ -59,15 +63,19 @@ class merge_impl {
     // Emit pending while predicate is true.
     // Pred: bool(abstime_type const &)
     template <typename Pred> void emit_pending(Pred &&predicate) {
-        while (!pending.empty() && std::visit(
-                                       [&](auto const &e) {
-                                           bool p = predicate(e.abstime);
-                                           if (p)
-                                               downstream.handle(e);
-                                           return p;
-                                       },
-                                       pending.front()))
-            pending.pop();
+        auto emit = [&](auto const &e) {
+            bool p = predicate(e.abstime);
+            if (p)
+                downstream.handle(e);
+            return p;
+        };
+        if constexpr (event_set_size_v<EventSet> == 1) {
+            while (!pending.empty() && emit(pending.front()))
+                pending.pop();
+        } else {
+            while (!pending.empty() && std::visit(emit, pending.front()))
+                pending.pop();
+        }
     }
 
   public:
@@ -82,6 +90,7 @@ class merge_impl {
 
     template <unsigned InputChannel, typename Event>
     void handle(Event const &event) {
+        static_assert(contains_event_v<EventSet, Event>);
         static_assert(std::is_same_v<decltype(event.abstime),
                                      typename DataTraits::abstime_type>);
         if (ended_with_exception)
