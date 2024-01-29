@@ -312,6 +312,9 @@ inline auto binary_file_input_stream(std::string const &filename,
  * std::cin). For that, see \ref borrowed_cfile_input_stream (which works with
  * \c stdin).
  *
+ * Due to poor performance, use of \c istream_input_stream is not recommended
+ * unless you must interface with an existing \c std::istream.
+ *
  * \see read_binary_stream
  *
  * \param stream an istream (derived from \c std::istream)
