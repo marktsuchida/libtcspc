@@ -114,13 +114,16 @@ void cfile(benchmark::State &state) {
 
 // NOLINTBEGIN
 
-BENCHMARK(ofstream_unbuf)->RangeMultiplier(2)->Range(4 << 10, 256 << 10);
+constexpr auto start = 4 << 10;
+constexpr auto stop = 256 << 10;
 
-BENCHMARK(ofstream)->RangeMultiplier(2)->Range(4 << 10, 256 << 10);
+BENCHMARK(ofstream_unbuf)->RangeMultiplier(2)->Range(start, stop);
 
-BENCHMARK(cfile_unbuf)->RangeMultiplier(2)->Range(4 << 10, 256 << 10);
+BENCHMARK(ofstream)->RangeMultiplier(2)->Range(start, stop);
 
-BENCHMARK(cfile)->RangeMultiplier(2)->Range(4 << 10, 256 << 10);
+BENCHMARK(cfile_unbuf)->RangeMultiplier(2)->Range(start, stop);
+
+BENCHMARK(cfile)->RangeMultiplier(2)->Range(start, stop);
 
 // NOLINTEND
 
