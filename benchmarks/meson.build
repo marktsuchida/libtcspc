@@ -29,3 +29,17 @@ benchmark(
     'write_binary_stream_devnull',
     benchmark_write_binary_stream_devnull_exe,
 )
+
+benchmark_vector_queue_exe = executable(
+    'vector_queue',
+    'vector_queue.cpp',
+    dependencies: [
+        benchmark_dep,
+        libtcspc_dep,
+    ],
+)
+
+benchmark(
+    'vector_queue',
+    benchmark_vector_queue_exe,
+)
