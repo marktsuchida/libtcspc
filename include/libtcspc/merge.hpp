@@ -46,6 +46,14 @@ class merge_impl {
 
     Downstream downstream;
 
+    // Abstract away single event vs variant queue_element_type.
+    template <typename F> static auto call_or_visit(F func) {
+        if constexpr (event_set_size_v<EventSet> == 1)
+            return [func](auto const &e) { return func(e); };
+        else
+            return [func](auto const &e) { return std::visit(func, e); };
+    }
+
     template <unsigned InputChannel>
     [[nodiscard]] auto is_other_flushed() const noexcept -> bool {
         return input_flushed[1 - InputChannel];
@@ -63,19 +71,15 @@ class merge_impl {
     // Emit pending while predicate is true.
     // Pred: bool(abstime_type const &)
     template <typename Pred> void emit_pending(Pred &&predicate) {
-        auto emit = [&](auto const &e) {
+        auto emit_of_true = [&](auto const &e) {
             bool p = predicate(e.abstime);
             if (p)
                 downstream.handle(e);
             return p;
         };
-        if constexpr (event_set_size_v<EventSet> == 1) {
-            while (!pending.empty() && emit(pending.front()))
-                pending.pop();
-        } else {
-            while (!pending.empty() && std::visit(emit, pending.front()))
-                pending.pop();
-        }
+        while (!pending.empty() &&
+               call_or_visit(emit_of_true)(pending.front()))
+            pending.pop();
     }
 
   public:

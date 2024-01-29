@@ -36,6 +36,14 @@ class recover_order {
 
     Downstream downstream;
 
+    // Abstract away single event vs variant element_type.
+    template <typename F> static auto call_or_visit(F func) {
+        if constexpr (event_set_size_v<EventSet> == 1)
+            return [func](auto const &e) { return func(e); };
+        else
+            return [func](auto const &e) { return std::visit(func, e); };
+    }
+
   public:
     explicit recover_order(abstime_type time_window, Downstream downstream)
         : window_size(time_window), downstream(std::move(downstream)) {
@@ -63,35 +71,20 @@ class recover_order {
         // selectable.)
 
         auto const cutoff = pairing_cutoff(event.abstime, window_size);
-        auto before_cutoff = [&](auto const &e) { return e.abstime < cutoff; };
-        auto keep_it =
-            std::find_if_not(buf.begin(), buf.end(), [&](auto const &e) {
-                if constexpr (event_set_size_v<EventSet> == 1)
-                    return before_cutoff(e);
-                else
-                    return std::visit(before_cutoff, e);
-            });
+        auto keep_it = std::find_if_not(
+            buf.begin(), buf.end(),
+            call_or_visit([&](auto const &e) { return e.abstime < cutoff; }));
 
-        auto emit = [&](auto const &e) {
-            downstream.handle(e);
-            last_emitted_time = e.abstime;
-        };
-        std::for_each(buf.begin(), keep_it, [&](auto const &e) {
-            if constexpr (event_set_size_v<EventSet> == 1)
-                emit(e);
-            else
-                std::visit(emit, e);
-        });
+        std::for_each(buf.begin(), keep_it, call_or_visit([&](auto const &e) {
+                          downstream.handle(e);
+                          last_emitted_time = e.abstime;
+                      }));
         buf.erase(buf.begin(), keep_it);
 
-        auto older = [&](auto const &e) { return e.abstime < event.abstime; };
-        auto ins_it =
-            std::find_if(buf.rbegin(), buf.rend(), [&](auto const &e) {
-                if constexpr (event_set_size_v<EventSet> == 1)
-                    return older(e);
-                else
-                    return std::visit(older, e);
-            });
+        auto ins_it = std::find_if(buf.rbegin(), buf.rend(),
+                                   call_or_visit([&](auto const &e) {
+                                       return e.abstime < event.abstime;
+                                   }));
         if (ins_it == buf.rend())
             buf.insert(buf.begin(), event);
         else
@@ -101,13 +94,9 @@ class recover_order {
     // Do not allow other events.
 
     void flush() {
-        auto emit = [&](auto const &e) { downstream.handle(e); };
-        std::for_each(buf.begin(), buf.end(), [&](auto const &e) {
-            if constexpr (event_set_size_v<EventSet> == 1)
-                emit(e);
-            else
-                std::visit(emit, e);
-        });
+        std::for_each(
+            buf.begin(), buf.end(),
+            call_or_visit([&](auto const &e) { downstream.handle(e); }));
         buf.clear();
         downstream.flush();
     }
