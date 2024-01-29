@@ -21,17 +21,19 @@ namespace internal {
 
 template <typename Event, typename DataTraits, typename Downstream>
 class recover_order {
-    typename DataTraits::abstime_type window_size;
+    using abstime_type = typename DataTraits::abstime_type;
+    abstime_type window_size;
 
     // We just use a sorted vector, because the intended use cases do not
     // require buffering large numbers of events.
     std::vector<Event> buf; // Always in ascending abstime order
+    // For error checking
+    abstime_type last_emitted_time = std::numeric_limits<abstime_type>::min();
 
     Downstream downstream;
 
   public:
-    explicit recover_order(typename DataTraits::abstime_type time_window,
-                           Downstream downstream)
+    explicit recover_order(abstime_type time_window, Downstream downstream)
         : window_size(time_window), downstream(std::move(downstream)) {
         if (window_size < 0)
             throw std::invalid_argument(
@@ -39,8 +41,12 @@ class recover_order {
     }
 
     void handle(Event const &event) {
-        static_assert(std::is_same_v<decltype(event.abstime),
-                                     typename DataTraits::abstime_type>);
+        static_assert(std::is_same_v<decltype(event.abstime), abstime_type>);
+
+        if (event.abstime < last_emitted_time) {
+            throw std::runtime_error(
+                "recover_order encountered event outside of time window");
+        }
 
         // We perform a sliding-window version of insertion sort, enabled by
         // the known time bound of out-of-order events.
@@ -58,6 +64,7 @@ class recover_order {
             [&](Event const &e) noexcept { return e.abstime < cutoff; });
         std::for_each(buf.begin(), keep_it, [&](Event const &e) {
             downstream.handle(std::as_const(e));
+            last_emitted_time = e.abstime;
         });
         buf.erase(buf.begin(), keep_it);
 

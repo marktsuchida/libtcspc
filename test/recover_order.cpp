@@ -88,6 +88,30 @@ TEST_CASE("recover order, empty time window", "[recover_order]") {
         REQUIRE(out.check(event{6}));
         REQUIRE(out.check_flushed());
     }
+
+    SECTION("out-of-order event does not throw if recoverable") {
+        in.feed(event{42});
+        in.feed(event{41});
+        in.feed(event{42});
+        REQUIRE(out.check(event{41}));
+        in.feed(event{43});
+        REQUIRE(out.check(event{42}));
+        REQUIRE(out.check(event{42}));
+        in.feed(event{42});
+        in.feed(event{43});
+        REQUIRE(out.check(event{42}));
+        in.flush();
+        REQUIRE(out.check(event{43}));
+        REQUIRE(out.check(event{43}));
+        REQUIRE(out.check_flushed());
+    }
+
+    SECTION("out-of-order event throws if too late") {
+        in.feed(event{42});
+        in.feed(event{43});
+        REQUIRE(out.check(event{42}));
+        REQUIRE_THROWS_AS(in.feed(event{41}), std::runtime_error);
+    }
 }
 
 } // namespace tcspc
