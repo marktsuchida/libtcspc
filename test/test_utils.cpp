@@ -8,6 +8,7 @@
 
 #include "libtcspc/event_set.hpp"
 #include "libtcspc/processor_context.hpp"
+#include "test_checkers.hpp"
 
 #include <exception>
 #include <ostream>
@@ -16,6 +17,18 @@
 #include <catch2/catch_all.hpp>
 
 namespace tcspc {
+
+TEST_CASE("introspect test_utils", "[introspect]") {
+    auto ctx = std::make_shared<processor_context>();
+    check_introspect_simple_sink(capture_output<event_set<>>(
+        ctx->tracker<capture_output_access>("out0")));
+    check_introspect_simple_sink(capture_output<event_set<int>>(
+        ctx->tracker<capture_output_access>("out1")));
+    check_introspect_simple_source(feed_input<event_set<>>(null_sink()));
+    check_introspect_simple_sink(event_set_sink<event_set<>>());
+    check_introspect_simple_processor(
+        check_event_set<event_set<>>(null_sink()));
+}
 
 using e0 = empty_test_event<0>;
 using e1 = timestamped_test_event<1>;

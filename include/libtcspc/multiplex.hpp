@@ -7,6 +7,7 @@
 #pragma once
 
 #include "event_set.hpp"
+#include "introspect.hpp"
 
 #include <type_traits>
 #include <utility>
@@ -25,6 +26,17 @@ template <typename EventSet, typename Downstream> class multiplex {
     explicit multiplex(Downstream downstream)
         : downstream(std::move(downstream)) {}
 
+    [[nodiscard]] auto introspect_node() const -> processor_info {
+        processor_info info(this, "multiplex");
+        return info;
+    }
+
+    [[nodiscard]] auto introspect_graph() const -> processor_graph {
+        auto g = downstream.introspect_graph();
+        g.push_entry_point(this);
+        return g;
+    }
+
     template <typename Event,
               typename = std::enable_if_t<contains_event_v<EventSet, Event>>>
     void handle(Event const &event) {
@@ -42,6 +54,17 @@ template <typename EventSet, typename Downstream> class demultiplex {
   public:
     explicit demultiplex(Downstream downstream)
         : downstream(std::move(downstream)) {}
+
+    [[nodiscard]] auto introspect_node() const -> processor_info {
+        processor_info info(this, "demultiplex");
+        return info;
+    }
+
+    [[nodiscard]] auto introspect_graph() const -> processor_graph {
+        auto g = downstream.introspect_graph();
+        g.push_entry_point(this);
+        return g;
+    }
 
     void handle(event_variant<EventSet> const &event) {
         std::visit([&](auto const &e) { downstream.handle(e); }, event);
@@ -73,6 +96,8 @@ template <typename EventSet, typename Downstream> class demultiplex {
  */
 template <typename EventSet, typename Downstream>
 auto multiplex(Downstream &&downstream) {
+    static_assert(event_set_size_v<EventSet> > 0,
+                  "multiplex requires non-empty event set");
     return internal::multiplex<EventSet, Downstream>(
         std::forward<Downstream>(downstream));
 }

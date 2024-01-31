@@ -8,6 +8,7 @@
 
 #include "libtcspc/histogram_events.hpp"
 #include "libtcspc/test_utils.hpp"
+#include "test_checkers.hpp"
 
 #include <catch2/catch_all.hpp>
 
@@ -17,6 +18,14 @@ namespace {
 
 using out_events = event_set<autocopy_span<std::byte const>>;
 
+}
+
+TEST_CASE("introspect view_as_bytes", "[introspect]") {
+    check_introspect_simple_processor(view_as_bytes<int>(null_sink()));
+    check_introspect_simple_processor(
+        view_histogram_as_bytes<histogram_event<>>(null_sink()));
+    check_introspect_simple_processor(
+        view_histogram_array_as_bytes<histogram_array_event<>>(null_sink()));
 }
 
 TEST_CASE("view as bytes") {

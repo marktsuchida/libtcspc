@@ -8,6 +8,7 @@
 
 #include "autocopy_span.hpp"
 #include "buffer.hpp"
+#include "introspect.hpp"
 #include "span.hpp"
 
 #include <cstddef>
@@ -46,6 +47,19 @@ namespace tcspc {
  */
 
 namespace internal {
+
+class null_output_stream {
+    std::uint64_t bytes_written = 0;
+
+  public:
+    static auto is_error() noexcept -> bool { return false; }
+    auto tell() const noexcept -> std::optional<std::uint64_t> {
+        return bytes_written;
+    }
+    void write(span<std::byte const> buffer) noexcept {
+        bytes_written += buffer.size();
+    }
+};
 
 // We turn off ostream exceptions in the constructor.
 // NOLINTBEGIN(bugprone-exception-escape)
@@ -209,6 +223,17 @@ inline auto binary_cfile_output_stream(std::string const &filename,
 } // namespace internal
 
 /**
+ * \brief Create an output stream that discards all written bytes.
+ *
+ * \ingroup streams
+ *
+ * \see write_binary_stream
+ *
+ * \return output stream
+ */
+inline auto null_output_stream() { return internal::null_output_stream(); }
+
+/**
  * \brief Create a binary output stream for the given file.
  *
  * \ingroup streams
@@ -332,6 +357,17 @@ template <typename OutputStream> class write_binary_stream {
         if (write_granularity <= 0)
             throw std::invalid_argument(
                 "write_binary_stream write_granularity_bytes must be positive");
+    }
+
+    [[nodiscard]] auto introspect_node() const -> processor_info {
+        processor_info info(this, "write_binary_stream");
+        return info;
+    }
+
+    [[nodiscard]] auto introspect_graph() const -> processor_graph {
+        auto g = processor_graph();
+        g.push_entry_point(this);
+        return g;
     }
 
     void handle(autocopy_span<std::byte> const &event) {

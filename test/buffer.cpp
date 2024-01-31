@@ -7,12 +7,27 @@
 #include "libtcspc/buffer.hpp"
 
 #include "libtcspc/test_utils.hpp"
+#include "test_checkers.hpp"
 
 #include <catch2/catch_all.hpp>
 
 #include <memory>
 
 namespace tcspc {
+
+TEST_CASE("introspect buffer", "[introspect]") {
+    check_introspect_simple_processor(
+        dereference_pointer<void *>(null_sink()));
+    check_introspect_simple_processor(batch<int, std::vector<int>>(
+        std::shared_ptr<object_pool<std::vector<int>>>{}, 1, null_sink()));
+    check_introspect_simple_processor(
+        unbatch<std::vector<int>, int>(null_sink()));
+    check_introspect_simple_processor(buffer<int>(1, null_sink()));
+    check_introspect_simple_processor(
+        real_time_buffer<int>(1, std::chrono::seconds(1), null_sink()));
+    check_introspect_simple_processor(
+        single_threaded_buffer<int>(1, null_sink()));
+}
 
 TEST_CASE("object pool") {
     auto pool = std::make_shared<object_pool<int>>(1, 3);

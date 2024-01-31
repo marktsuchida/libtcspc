@@ -7,10 +7,17 @@
 #include "libtcspc/check.hpp"
 
 #include "libtcspc/test_utils.hpp"
+#include "test_checkers.hpp"
 
 #include <catch2/catch_all.hpp>
 
 namespace tcspc {
+
+TEST_CASE("introspect check", "[introspect]") {
+    check_introspect_simple_processor(check_monotonic(null_sink()));
+    check_introspect_simple_processor(
+        check_alternating<int, long>(null_sink()));
+}
 
 TEST_CASE("check monotonic") {
     using e0 = timestamped_test_event<0>;

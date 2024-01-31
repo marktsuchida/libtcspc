@@ -7,6 +7,7 @@
 #pragma once
 
 #include "event_set.hpp"
+#include "introspect.hpp"
 
 #include <exception>
 #include <utility>
@@ -21,6 +22,17 @@ template <typename EventSet, bool Inverted, typename Downstream> class select {
   public:
     explicit select(Downstream downstream)
         : downstream(std::move(downstream)) {}
+
+    [[nodiscard]] auto introspect_node() const -> processor_info {
+        processor_info info(this, "select");
+        return info;
+    }
+
+    [[nodiscard]] auto introspect_graph() const -> processor_graph {
+        auto g = downstream.introspect_graph();
+        g.push_entry_point(this);
+        return g;
+    }
 
     template <typename AnyEvent> void handle(AnyEvent const &event) {
         if constexpr (contains_event_v<EventSet, AnyEvent> != Inverted)

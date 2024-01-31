@@ -9,6 +9,7 @@
 #include "libtcspc/npint.hpp"
 #include "libtcspc/span.hpp"
 #include "libtcspc/test_utils.hpp"
+#include "test_checkers.hpp"
 
 #include <catch2/catch_all.hpp>
 
@@ -145,6 +146,10 @@ TEST_CASE("swabian tag assign") {
                    as_bytes(span(std::array<u8, 16>{4, 0, 7, 0, 3, 0, 0, 0,
                                                     100, 0, 0, 0, 0, 0, 0, 0}))
                        .begin()));
+}
+
+TEST_CASE("introspect swabian_tag", "[introspect]") {
+    check_introspect_simple_processor(decode_swabian_tags(null_sink()));
 }
 
 TEST_CASE("decode swabian tags") {

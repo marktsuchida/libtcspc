@@ -8,10 +8,12 @@
 
 #include "common.hpp"
 #include "event_set.hpp"
+#include "introspect.hpp"
 
 #include <algorithm>
 #include <iterator>
 #include <stdexcept>
+#include <string>
 #include <type_traits>
 #include <utility>
 #include <vector>
@@ -50,6 +52,17 @@ class recover_order {
         if (window_size < 0)
             throw std::invalid_argument(
                 "recover_order time_window must not be negative");
+    }
+
+    [[nodiscard]] auto introspect_node() const -> processor_info {
+        processor_info info(this, "recover_order");
+        return info;
+    }
+
+    [[nodiscard]] auto introspect_graph() const -> processor_graph {
+        auto g = downstream.introspect_graph();
+        g.push_entry_point(this);
+        return g;
     }
 
     template <typename Event> void handle(Event const &event) {
@@ -125,6 +138,8 @@ template <typename EventSet, typename DataTraits = default_data_traits,
           typename Downstream>
 auto recover_order(typename DataTraits::abstime_type time_window,
                    Downstream &&downstream) {
+    static_assert(event_set_size_v<EventSet> > 0,
+                  "recover_order requires non-empty event set");
     return internal::recover_order<EventSet, DataTraits, Downstream>(
         time_window, std::forward<Downstream>(downstream));
 }

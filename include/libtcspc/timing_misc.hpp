@@ -7,6 +7,7 @@
 #pragma once
 
 #include "common.hpp"
+#include "introspect.hpp"
 
 #include <cmath>
 #include <ostream>
@@ -186,6 +187,17 @@ class retime_periodic_sequences {
                 "retime_periodic_sequences max_time_shift must not be negative");
     }
 
+    [[nodiscard]] auto introspect_node() const -> processor_info {
+        processor_info info(this, "retime_periodic_sequences");
+        return info;
+    }
+
+    [[nodiscard]] auto introspect_graph() const -> processor_graph {
+        auto g = downstream.introspect_graph();
+        g.push_entry_point(this);
+        return g;
+    }
+
     template <typename DT>
     void handle(periodic_sequence_event<DT> const &event) {
         static_assert(std::is_same_v<typename DT::abstime_type, abstime_type>);
@@ -280,6 +292,17 @@ class extrapolate_periodic_sequences {
         : m(static_cast<double>(tick_index)),
           downstream(std::move(downstream)) {}
 
+    [[nodiscard]] auto introspect_node() const -> processor_info {
+        processor_info info(this, "extrapolate_periodic_sequences");
+        return info;
+    }
+
+    [[nodiscard]] auto introspect_graph() const -> processor_graph {
+        auto g = downstream.introspect_graph();
+        g.push_entry_point(this);
+        return g;
+    }
+
     template <typename DT>
     void handle(periodic_sequence_event<DT> const &event) {
         static_assert(std::is_same_v<typename DT::abstime_type,
@@ -337,6 +360,17 @@ class add_count_to_periodic_sequences {
     explicit add_count_to_periodic_sequences(std::size_t count,
                                              Downstream downstream)
         : ct(count), downstream(std::move(downstream)) {}
+
+    [[nodiscard]] auto introspect_node() const -> processor_info {
+        processor_info info(this, "add_count_to_periodic_sequences");
+        return info;
+    }
+
+    [[nodiscard]] auto introspect_graph() const -> processor_graph {
+        auto g = downstream.introspect_graph();
+        g.push_entry_point(this);
+        return g;
+    }
 
     template <typename DT>
     void handle(periodic_sequence_event<DT> const &event) {
@@ -405,6 +439,17 @@ class convert_sequences_to_start_stop {
     explicit convert_sequences_to_start_stop(std::size_t count,
                                              Downstream downstream)
         : input_len(count + 1), downstream(std::move(downstream)) {}
+
+    [[nodiscard]] auto introspect_node() const -> processor_info {
+        processor_info info(this, "convert_sequences_to_start_stop");
+        return info;
+    }
+
+    [[nodiscard]] auto introspect_graph() const -> processor_graph {
+        auto g = downstream.introspect_graph();
+        g.push_entry_point(this);
+        return g;
+    }
 
     void handle(TickEvent const &event) {
         if (seen > 0) {

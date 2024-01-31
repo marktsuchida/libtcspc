@@ -8,6 +8,7 @@
 
 #include "common.hpp"
 #include "event_set.hpp"
+#include "introspect.hpp"
 #include "type_erased_processor.hpp"
 
 #include <algorithm>
@@ -16,6 +17,8 @@
 #include <cstdint>
 #include <exception>
 #include <limits>
+#include <numeric>
+#include <string>
 #include <tuple>
 #include <type_traits>
 #include <utility>
@@ -53,6 +56,21 @@ class route_homogeneous {
     explicit route_homogeneous(Router router,
                                std::array<Downstream, N> downstreams)
         : router(std::move(router)), downstreams(std::move(downstreams)) {}
+
+    [[nodiscard]] auto introspect_node() const -> processor_info {
+        processor_info info(this, "route_homogeneous");
+        return info;
+    }
+
+    [[nodiscard]] auto introspect_graph() const -> processor_graph {
+        return std::transform_reduce(downstreams.begin(), downstreams.end(),
+                                     processor_graph(), merge_processor_graphs,
+                                     [this](auto const &d) {
+                                         auto g = d.introspect_graph();
+                                         g.push_entry_point(this);
+                                         return g;
+                                     });
+    }
 
     template <typename Event> void handle(Event const &event) {
         if constexpr (contains_event_v<EventSetToRoute, Event>) {

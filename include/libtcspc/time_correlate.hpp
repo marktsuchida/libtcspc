@@ -7,6 +7,7 @@
 #pragma once
 
 #include "common.hpp"
+#include "introspect.hpp"
 #include "time_tagged_events.hpp"
 
 #include <cassert>
@@ -35,6 +36,17 @@ class time_correlate_at_start_or_stop {
     explicit time_correlate_at_start_or_stop(Downstream downstream)
         : downstream(std::move(downstream)) {}
 
+    [[nodiscard]] auto introspect_node() const -> processor_info {
+        processor_info info(this, "time_correlate_at_start_or_stop");
+        return info;
+    }
+
+    [[nodiscard]] auto introspect_graph() const -> processor_graph {
+        auto g = downstream.introspect_graph();
+        g.push_entry_point(this);
+        return g;
+    }
+
     template <typename DT> void handle(detection_pair_event<DT> const &event) {
         static_assert(std::is_same_v<typename DT::abstime_type,
                                      typename DataTraits::abstime_type>);
@@ -62,6 +74,17 @@ class time_correlate_at_midpoint {
   public:
     explicit time_correlate_at_midpoint(Downstream downstream)
         : downstream(std::move(downstream)) {}
+
+    [[nodiscard]] auto introspect_node() const -> processor_info {
+        processor_info info(this, "time_correlate_at_midpoint");
+        return info;
+    }
+
+    [[nodiscard]] auto introspect_graph() const -> processor_graph {
+        auto g = downstream.introspect_graph();
+        g.push_entry_point(this);
+        return g;
+    }
 
     template <typename DT> void handle(detection_pair_event<DT> const &event) {
         static_assert(std::is_same_v<typename DT::abstime_type,
@@ -92,6 +115,17 @@ class time_correlate_at_fraction {
   public:
     explicit time_correlate_at_fraction(double fraction, Downstream downstream)
         : fraction(fraction), downstream(std::move(downstream)) {}
+
+    [[nodiscard]] auto introspect_node() const -> processor_info {
+        processor_info info(this, "time_correlate_at_fraction");
+        return info;
+    }
+
+    [[nodiscard]] auto introspect_graph() const -> processor_graph {
+        auto g = downstream.introspect_graph();
+        g.push_entry_point(this);
+        return g;
+    }
 
     template <typename DT> void handle(detection_pair_event<DT> const &event) {
         static_assert(std::is_same_v<typename DT::abstime_type,
@@ -270,6 +304,17 @@ template <typename Downstream> class negate_difftime {
     explicit negate_difftime(Downstream downstream)
         : downstream(std::move(downstream)) {}
 
+    [[nodiscard]] auto introspect_node() const -> processor_info {
+        processor_info info(this, "negate_difftime");
+        return info;
+    }
+
+    [[nodiscard]] auto introspect_graph() const -> processor_graph {
+        auto g = downstream.introspect_graph();
+        g.push_entry_point(this);
+        return g;
+    }
+
     template <typename DataTraits>
     void handle(time_correlated_detection_event<DataTraits> const &event) {
         static_assert(
@@ -294,6 +339,17 @@ class remove_time_correlation {
   public:
     explicit remove_time_correlation(Downstream downstream)
         : downstream(std::move(downstream)) {}
+
+    [[nodiscard]] auto introspect_node() const -> processor_info {
+        processor_info info(this, "remove_time_correlation");
+        return info;
+    }
+
+    [[nodiscard]] auto introspect_graph() const -> processor_graph {
+        auto g = downstream.introspect_graph();
+        g.push_entry_point(this);
+        return g;
+    }
 
     template <typename DT>
     void handle(time_correlated_detection_event<DT> const &event) {

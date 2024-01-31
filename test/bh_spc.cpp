@@ -7,6 +7,7 @@
 #include "libtcspc/bh_spc.hpp"
 
 #include "libtcspc/test_utils.hpp"
+#include "test_checkers.hpp"
 
 #include <catch2/catch_all.hpp>
 
@@ -649,6 +650,14 @@ using out_events_with_counter =
     event_set<time_correlated_detection_event<>, marker_event<>,
               time_reached_event<>, data_lost_event<>,
               nontagged_counts_event<>, warning_event>;
+
+TEST_CASE("introspect bh_spc", "[introspect]") {
+    check_introspect_simple_processor(decode_bh_spc(null_sink()));
+    check_introspect_simple_processor(
+        decode_bh_spc_with_fast_intensity_counter(null_sink()));
+    check_introspect_simple_processor(decode_bh_spc600_4096ch(null_sink()));
+    check_introspect_simple_processor(decode_bh_spc600_256ch(null_sink()));
+}
 
 TEST_CASE("decode bh spc") {
     auto ctx = std::make_shared<processor_context>();

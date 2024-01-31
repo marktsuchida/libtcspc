@@ -6,6 +6,8 @@
 
 #pragma once
 
+#include "introspect.hpp"
+
 #include <exception>
 #include <memory>
 #include <stdexcept>
@@ -29,6 +31,17 @@ template <typename Downstream> class shared_processor {
         if (not this->downstream)
             throw std::invalid_argument(
                 "shared_processor downstream must not be null");
+    }
+
+    [[nodiscard]] auto introspect_node() const -> processor_info {
+        processor_info info(this, "shared_processor");
+        return info;
+    }
+
+    [[nodiscard]] auto introspect_graph() const -> processor_graph {
+        auto g = downstream->introspect_graph();
+        g.push_entry_point(this);
+        return g;
     }
 
     template <typename AnyEvent> void handle(AnyEvent const &event) {

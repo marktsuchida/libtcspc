@@ -8,6 +8,7 @@
 
 #include "common.hpp"
 #include "histogram_events.hpp"
+#include "introspect.hpp"
 #include "time_tagged_events.hpp"
 
 #include <cstddef>
@@ -36,6 +37,17 @@ class map_to_datapoints {
 
     explicit map_to_datapoints(DataMapper mapper, Downstream downstream)
         : mapper(std::move(mapper)), downstream(std::move(downstream)) {}
+
+    [[nodiscard]] auto introspect_node() const -> processor_info {
+        processor_info info(this, "map_to_datapoints");
+        return info;
+    }
+
+    [[nodiscard]] auto introspect_graph() const -> processor_graph {
+        auto g = downstream.introspect_graph();
+        g.push_entry_point(this);
+        return g;
+    }
 
     void handle(event_type const &event) {
         downstream.handle(datapoint_event<DataTraits>{
@@ -158,6 +170,17 @@ class map_to_bins {
     explicit map_to_bins(BinMapper bin_mapper, Downstream downstream)
         : bin_mapper(std::move(bin_mapper)),
           downstream(std::move(downstream)) {}
+
+    [[nodiscard]] auto introspect_node() const -> processor_info {
+        processor_info info(this, "map_to_bins");
+        return info;
+    }
+
+    [[nodiscard]] auto introspect_graph() const -> processor_graph {
+        auto g = downstream.introspect_graph();
+        g.push_entry_point(this);
+        return g;
+    }
 
     template <typename DT> void handle(datapoint_event<DT> const &event) {
         static_assert(
@@ -383,6 +406,17 @@ class batch_bin_increments {
   public:
     explicit batch_bin_increments(Downstream downstream)
         : downstream(std::move(downstream)) {}
+
+    [[nodiscard]] auto introspect_node() const -> processor_info {
+        processor_info info(this, "batch_bin_increments");
+        return info;
+    }
+
+    [[nodiscard]] auto introspect_graph() const -> processor_graph {
+        auto g = downstream.introspect_graph();
+        g.push_entry_point(this);
+        return g;
+    }
 
     template <typename DT> void handle(bin_increment_event<DT> const &event) {
         static_assert(std::is_same_v<typename DT::bin_index_type,

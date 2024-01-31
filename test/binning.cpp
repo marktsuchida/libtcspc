@@ -9,6 +9,7 @@
 #include "libtcspc/event_set.hpp"
 #include "libtcspc/test_utils.hpp"
 #include "libtcspc/time_tagged_events.hpp"
+#include "test_checkers.hpp"
 
 #include <catch2/catch_all.hpp>
 
@@ -24,6 +25,18 @@ using stop_event = timestamped_test_event<1>;
 using misc_event = timestamped_test_event<2>;
 
 } // namespace
+
+TEST_CASE("introspect binning", "[introspect]") {
+    struct count_traits : default_data_traits {
+        using datapoint_type = std::uint32_t;
+    };
+    check_introspect_simple_processor(
+        map_to_datapoints<count_traits>(count_data_mapper(), null_sink()));
+    check_introspect_simple_processor(
+        map_to_bins(linear_bin_mapper(0, 1, 10), null_sink()));
+    check_introspect_simple_processor(
+        batch_bin_increments<start_event, stop_event>(null_sink()));
+}
 
 TEST_CASE("Map to datapoints") {
     struct data_traits : default_data_traits {

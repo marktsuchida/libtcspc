@@ -7,6 +7,7 @@
 #pragma once
 
 #include "common.hpp"
+#include "introspect.hpp"
 #include "time_tagged_events.hpp"
 
 #include <cstddef>
@@ -50,6 +51,17 @@ class regulate_time_reached {
                                    Downstream downstream)
         : interval_thresh(interval_threshold), count_thresh(count_threshold),
           downstream(std::move(downstream)) {}
+
+    [[nodiscard]] auto introspect_node() const -> processor_info {
+        processor_info info(this, "regulate_time_reached");
+        return info;
+    }
+
+    [[nodiscard]] auto introspect_graph() const -> processor_graph {
+        auto g = downstream.introspect_graph();
+        g.push_entry_point(this);
+        return g;
+    }
 
     template <typename DT> void handle(time_reached_event<DT> const &event) {
         static_assert(std::is_same_v<typename DT::abstime_type, abstime_type>);

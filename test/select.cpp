@@ -7,6 +7,7 @@
 #include "libtcspc/select.hpp"
 
 #include "libtcspc/test_utils.hpp"
+#include "test_checkers.hpp"
 
 #include <catch2/catch_all.hpp>
 
@@ -19,6 +20,13 @@ using e1 = empty_test_event<1>;
 using out_events = event_set<e0, e1>;
 
 } // namespace
+
+TEST_CASE("introspect select", "[introspect]") {
+    check_introspect_simple_processor(select<event_set<>>(null_sink()));
+    check_introspect_simple_processor(select_none(null_sink()));
+    check_introspect_simple_processor(select_not<event_set<>>(null_sink()));
+    check_introspect_simple_processor(select_all(null_sink()));
+}
 
 TEST_CASE("select") {
     auto ctx = std::make_shared<processor_context>();

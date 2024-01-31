@@ -7,6 +7,7 @@
 #pragma once
 
 #include "common.hpp"
+#include "introspect.hpp"
 
 #include <cstdint>
 #include <exception>
@@ -26,6 +27,17 @@ class match {
   public:
     explicit match(Matcher matcher, Downstream downstream)
         : matcher(std::move(matcher)), downstream(std::move(downstream)) {}
+
+    [[nodiscard]] auto introspect_node() const -> processor_info {
+        processor_info info(this, "match");
+        return info;
+    }
+
+    [[nodiscard]] auto introspect_graph() const -> processor_graph {
+        auto g = downstream.introspect_graph();
+        g.push_entry_point(this);
+        return g;
+    }
 
     void handle(Event const &event) {
         bool matched = matcher(event);

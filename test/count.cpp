@@ -8,6 +8,7 @@
 
 #include "libtcspc/event_set.hpp"
 #include "libtcspc/test_utils.hpp"
+#include "test_checkers.hpp"
 
 #include <catch2/catch_all.hpp>
 
@@ -22,6 +23,18 @@ using misc_event = timestamped_test_event<3>;
 using out_events = event_set<tick_event, fire_event, reset_event, misc_event>;
 
 } // namespace
+
+TEST_CASE("introspect count", "[introspect]") {
+    check_introspect_simple_processor(
+        count_up_to<tick_event, fire_event, reset_event, false>(1, 2, 0,
+                                                                null_sink()));
+    check_introspect_simple_processor(
+        count_down_to<tick_event, fire_event, reset_event, false>(
+            1, 0, 2, null_sink()));
+    auto ctx = std::make_shared<processor_context>();
+    check_introspect_simple_processor(
+        count<tick_event>(ctx->tracker<count_access>("t"), null_sink()));
+}
 
 TEST_CASE("Count up to") {
     auto ctx = std::make_shared<processor_context>();

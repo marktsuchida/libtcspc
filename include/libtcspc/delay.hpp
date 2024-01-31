@@ -8,6 +8,7 @@
 
 #include "common.hpp"
 #include "event_set.hpp"
+#include "introspect.hpp"
 
 #include <exception>
 #include <limits>
@@ -26,6 +27,17 @@ template <typename DataTraits, typename Downstream> class delay {
     explicit delay(typename DataTraits::abstime_type delta,
                    Downstream downstream)
         : delta(delta), downstream(std::move(downstream)) {}
+
+    [[nodiscard]] auto introspect_node() const -> processor_info {
+        processor_info info(this, "delay");
+        return info;
+    }
+
+    [[nodiscard]] auto introspect_graph() const -> processor_graph {
+        auto g = downstream.introspect_graph();
+        g.push_entry_point(this);
+        return g;
+    }
 
     template <typename TimeTaggedEvent>
     void handle(TimeTaggedEvent const &event) {
@@ -47,6 +59,17 @@ template <typename DataTraits, typename Downstream> class zero_base_abstime {
   public:
     explicit zero_base_abstime(Downstream downstream)
         : downstream(std::move(downstream)) {}
+
+    [[nodiscard]] auto introspect_node() const -> processor_info {
+        processor_info info(this, "zero_base_abstime");
+        return info;
+    }
+
+    [[nodiscard]] auto introspect_graph() const -> processor_graph {
+        auto g = downstream.introspect_graph();
+        g.push_entry_point(this);
+        return g;
+    }
 
     template <typename TimeTaggedEvent>
     void handle(TimeTaggedEvent const &event) {

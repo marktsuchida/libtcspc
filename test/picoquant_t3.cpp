@@ -7,6 +7,7 @@
 #include "libtcspc/picoquant_t3.hpp"
 
 #include "libtcspc/test_utils.hpp"
+#include "test_checkers.hpp"
 
 #include <catch2/catch_all.hpp>
 
@@ -365,6 +366,12 @@ namespace {
 using out_events = event_set<time_correlated_detection_event<>, marker_event<>,
                              time_reached_event<>, warning_event>;
 
+}
+
+TEST_CASE("introspect picoquant_t3", "[introspect]") {
+    check_introspect_simple_processor(decode_pqt3_picoharp300(null_sink()));
+    check_introspect_simple_processor(decode_pqt3_hydraharpv1(null_sink()));
+    check_introspect_simple_processor(decode_pqt3_generic(null_sink()));
 }
 
 TEST_CASE("decode pqt3 picoharp300") {

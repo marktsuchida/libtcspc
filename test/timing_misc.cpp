@@ -7,10 +7,25 @@
 #include "libtcspc/timing_misc.hpp"
 
 #include "libtcspc/test_utils.hpp"
+#include "test_checkers.hpp"
 
 #include <catch2/catch_all.hpp>
 
 namespace tcspc {
+
+TEST_CASE("introspect timing_misc", "[introspect]") {
+    check_introspect_simple_processor(
+        retime_periodic_sequences(1, null_sink()));
+    check_introspect_simple_processor(
+        extrapolate_periodic_sequences(1, null_sink()));
+    check_introspect_simple_processor(
+        add_count_to_periodic_sequences(1, null_sink()));
+    using etick = timestamped_test_event<0>;
+    using estart = timestamped_test_event<1>;
+    using estop = timestamped_test_event<2>;
+    check_introspect_simple_processor(
+        convert_sequences_to_start_stop<etick, estart, estop>(1, null_sink()));
+}
 
 TEST_CASE("retime periodic sequence events") {
     using out_events = event_set<periodic_sequence_event<>>;

@@ -7,6 +7,7 @@
 #pragma once
 
 #include "autocopy_span.hpp"
+#include "introspect.hpp"
 #include "span.hpp"
 
 #include <cstddef>
@@ -27,6 +28,17 @@ template <typename Event, typename Downstream> class view_as_bytes {
     explicit view_as_bytes(Downstream downstream)
         : downstream(std::move(downstream)) {}
 
+    [[nodiscard]] auto introspect_node() const -> processor_info {
+        processor_info info(this, "view_as_bytes");
+        return info;
+    }
+
+    [[nodiscard]] auto introspect_graph() const -> processor_graph {
+        auto g = downstream.introspect_graph();
+        g.push_entry_point(this);
+        return g;
+    }
+
     void handle(Event const &event) {
         downstream.handle(
             autocopy_span<std::byte const>(as_bytes(span(&event, 1))));
@@ -44,6 +56,17 @@ class view_as_bytes<std::vector<Event>, Downstream> {
     explicit view_as_bytes(Downstream downstream)
         : downstream(std::move(downstream)) {}
 
+    [[nodiscard]] auto introspect_node() const -> processor_info {
+        processor_info info(this, "view_as_bytes");
+        return info;
+    }
+
+    [[nodiscard]] auto introspect_graph() const -> processor_graph {
+        auto g = downstream.introspect_graph();
+        g.push_entry_point(this);
+        return g;
+    }
+
     void handle(std::vector<Event> const &event) {
         downstream.handle(
             autocopy_span<std::byte const>(as_bytes(span(event))));
@@ -59,6 +82,17 @@ template <typename Event, typename Downstream> class view_histogram_as_bytes {
     explicit view_histogram_as_bytes(Downstream downstream)
         : downstream(std::move(downstream)) {}
 
+    [[nodiscard]] auto introspect_node() const -> processor_info {
+        processor_info info(this, "view_histogram_as_bytes");
+        return info;
+    }
+
+    [[nodiscard]] auto introspect_graph() const -> processor_graph {
+        auto g = downstream.introspect_graph();
+        g.push_entry_point(this);
+        return g;
+    }
+
     void handle(Event const &event) {
         downstream.handle(autocopy_span(as_bytes(event.histogram.as_span())));
     }
@@ -73,6 +107,17 @@ class view_histogram_array_as_bytes {
   public:
     explicit view_histogram_array_as_bytes(Downstream downstream)
         : downstream(std::move(downstream)) {}
+
+    [[nodiscard]] auto introspect_node() const -> processor_info {
+        processor_info info(this, "view_histogram_array_as_bytes");
+        return info;
+    }
+
+    [[nodiscard]] auto introspect_graph() const -> processor_graph {
+        auto g = downstream.introspect_graph();
+        g.push_entry_point(this);
+        return g;
+    }
 
     void handle(Event const &event) {
         downstream.handle(

@@ -10,6 +10,7 @@
 #include "common.hpp"
 #include "histogram_events.hpp"
 #include "histogramming.hpp"
+#include "introspect.hpp"
 #include "span.hpp"
 
 #include <algorithm>
@@ -96,6 +97,17 @@ class histogram {
         : hist_mem(new bin_type[num_bins]), hist(hist_mem.get(), num_bins),
           shist(hist, max_per_bin), downstream(std::move(downstream)) {
         shist.clear();
+    }
+
+    [[nodiscard]] auto introspect_node() const -> processor_info {
+        processor_info info(this, "histogram");
+        return info;
+    }
+
+    [[nodiscard]] auto introspect_graph() const -> processor_graph {
+        auto g = downstream.introspect_graph();
+        g.push_entry_point(this);
+        return g;
     }
 
     template <typename DT> void handle(bin_increment_event<DT> const &event) {

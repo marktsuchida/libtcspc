@@ -7,6 +7,7 @@
 #include "libtcspc/fit_sequence.hpp"
 
 #include "libtcspc/test_utils.hpp"
+#include "test_checkers.hpp"
 
 #include <catch2/catch_all.hpp>
 
@@ -15,6 +16,11 @@
 #include <vector>
 
 namespace tcspc {
+
+TEST_CASE("introspect fit_sequence") {
+    check_introspect_simple_processor(
+        fit_periodic_sequences<int>(3, {0.0, 1.0}, 0.5, null_sink()));
+}
 
 namespace internal {
 

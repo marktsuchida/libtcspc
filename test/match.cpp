@@ -8,6 +8,7 @@
 
 #include "libtcspc/test_utils.hpp"
 #include "libtcspc/time_tagged_events.hpp"
+#include "test_checkers.hpp"
 
 #include <catch2/catch_all.hpp>
 
@@ -20,6 +21,13 @@ using misc_event = timestamped_test_event<1>;
 using out_events = event_set<marker_event<>, output_event, misc_event>;
 
 } // namespace
+
+TEST_CASE("introspect match", "[introspect]") {
+    check_introspect_simple_processor(
+        match_replace<int, long>(never_matcher(), null_sink()));
+    check_introspect_simple_processor(
+        match<int, long>(never_matcher(), null_sink()));
+}
 
 TEST_CASE("Match and replace") {
     auto ctx = std::make_shared<processor_context>();

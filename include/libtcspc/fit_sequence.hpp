@@ -7,6 +7,7 @@
 #pragma once
 
 #include "common.hpp"
+#include "introspect.hpp"
 #include "timing_misc.hpp"
 
 #include <algorithm>
@@ -160,6 +161,17 @@ class fit_periodic_sequences {
             throw std::invalid_argument(
                 "fit_periodic_sequences max interval cutoff must be positive");
         relative_ticks.reserve(length);
+    }
+
+    [[nodiscard]] auto introspect_node() const -> processor_info {
+        processor_info info(this, "fit_periodic_sequences");
+        return info;
+    }
+
+    [[nodiscard]] auto introspect_graph() const -> processor_graph {
+        auto g = downstream.introspect_graph();
+        g.push_entry_point(this);
+        return g;
     }
 
     void handle(Event const &event) {

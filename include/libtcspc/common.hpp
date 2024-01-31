@@ -6,6 +6,7 @@
 
 #pragma once
 
+#include "introspect.hpp"
 #include "npint.hpp"
 
 #include <cassert>
@@ -152,6 +153,18 @@ class null_sink {
     void handle([[maybe_unused]] Event const &event) {}
 
     /** \brief Processor interface */
+    [[nodiscard]] auto introspect_node() const -> processor_info {
+        return processor_info(this, "null_sink");
+    }
+
+    /** \brief Processor interface */
+    [[nodiscard]] auto introspect_graph() const -> processor_graph {
+        auto g = processor_graph();
+        g.push_entry_point(this);
+        return g;
+    }
+
+    /** \brief Processor interface */
     void flush() {}
 };
 
@@ -163,6 +176,16 @@ template <typename Downstream> class null_source {
   public:
     explicit null_source(Downstream downstream)
         : downstream(std::move(downstream)) {}
+
+    [[nodiscard]] auto introspect_node() const -> processor_info {
+        return processor_info(this, "null_source");
+    }
+
+    [[nodiscard]] auto introspect_graph() const -> processor_graph {
+        auto g = downstream.introspect_graph();
+        g.push_source(this);
+        return g;
+    }
 
     void pump_events() { downstream.flush(); }
 };

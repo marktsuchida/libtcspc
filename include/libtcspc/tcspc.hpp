@@ -157,6 +157,12 @@ namespace tcspc {
  */
 
 /**
+ * \defgroup introspect Introspection
+ *
+ * \brief Facilities for introspecting a processor graph.
+ */
+
+/**
  * \defgroup metafunctions Metafunctions
  *
  * \brief Template metafunctions

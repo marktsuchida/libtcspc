@@ -7,6 +7,7 @@
 #include "libtcspc/recover_order.hpp"
 
 #include "libtcspc/test_utils.hpp"
+#include "test_checkers.hpp"
 
 #include <catch2/catch_all.hpp>
 
@@ -18,6 +19,11 @@ using e0 = timestamped_test_event<0>;
 using e1 = timestamped_test_event<1>;
 
 } // namespace
+
+TEST_CASE("introspect recover_order", "[introspect]") {
+    check_introspect_simple_processor(
+        recover_order<event_set<e0>>(1, null_sink()));
+}
 
 TEST_CASE("recover order") {
     auto ctx = std::make_shared<processor_context>();

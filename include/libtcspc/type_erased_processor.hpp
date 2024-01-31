@@ -9,6 +9,7 @@
 #include "apply_class_template.hpp"
 #include "common.hpp"
 #include "event_set.hpp"
+#include "introspect.hpp"
 
 #include <exception>
 #include <memory>
@@ -29,6 +30,8 @@ template <> class abstract_processor_impl<> {
     abstract_processor_impl(abstract_processor_impl &&) = delete;
     auto operator=(abstract_processor_impl &&) = delete;
     virtual ~abstract_processor_impl() = default;
+    [[nodiscard]] virtual auto introspect_node() const -> processor_info = 0;
+    [[nodiscard]] virtual auto introspect_graph() const -> processor_graph = 0;
     virtual void flush() = 0;
 };
 
@@ -63,6 +66,17 @@ class virtual_processor_impl<Interface, Proc> : public Interface {
     template <typename... Args>
     explicit virtual_processor_impl(Args &&...args)
         : proc(std::forward<Args>(args)...) {}
+
+    [[nodiscard]] auto introspect_node() const -> processor_info final {
+        processor_info info(this, "virtual_processor_impl");
+        return info;
+    }
+
+    [[nodiscard]] auto introspect_graph() const -> processor_graph final {
+        auto g = proc.introspect_graph();
+        g.push_entry_point(this);
+        return g;
+    }
 
     void flush() final { proc.flush(); }
 
@@ -134,9 +148,18 @@ template <typename EventSet> class type_erased_processor {
         : proc(std::make_unique<virtual_processor<Downstream>>(
               std::forward<Downstream>(downstream))) {}
 
-    // Rule of zero
-    // Note that this allows move only. If we allowed copying, we would only
-    // work with copyable downstreams, which is not desirable.
+    /** \brief Processor interface */
+    [[nodiscard]] auto introspect_node() const -> processor_info {
+        processor_info info(this, "type_erased_processor");
+        return info;
+    }
+
+    /** \brief Processor interface */
+    [[nodiscard]] auto introspect_graph() const -> processor_graph {
+        auto g = proc->introspect_graph();
+        g.push_entry_point(this);
+        return g;
+    }
 
     /** \brief Processor interface */
     template <typename Event,

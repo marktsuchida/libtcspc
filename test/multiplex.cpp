@@ -7,6 +7,7 @@
 #include "libtcspc/multiplex.hpp"
 
 #include "libtcspc/test_utils.hpp"
+#include "test_checkers.hpp"
 
 #include <catch2/catch_all.hpp>
 
@@ -18,6 +19,11 @@ using e0 = empty_test_event<0>;
 using e1 = empty_test_event<1>;
 
 } // namespace
+
+TEST_CASE("introspect multiplex", "[introspect]") {
+    check_introspect_simple_processor(multiplex<event_set<e0>>(null_sink()));
+    check_introspect_simple_processor(demultiplex<event_set<>>(null_sink()));
+}
 
 TEST_CASE("multiplex") {
     using out_events = event_set<event_variant<event_set<e0, e1>>>;

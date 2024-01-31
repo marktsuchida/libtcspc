@@ -7,6 +7,7 @@
 #include "libtcspc/time_correlate.hpp"
 
 #include "libtcspc/test_utils.hpp"
+#include "test_checkers.hpp"
 
 #include <catch2/catch_all.hpp>
 
@@ -16,6 +17,16 @@ namespace {
 
 using tc_out_events = event_set<time_correlated_detection_event<>>;
 
+}
+
+TEST_CASE("introspect time_correlate", "[introspect]") {
+    check_introspect_simple_processor(time_correlate_at_start(null_sink()));
+    check_introspect_simple_processor(time_correlate_at_stop(null_sink()));
+    check_introspect_simple_processor(time_correlate_at_midpoint(null_sink()));
+    check_introspect_simple_processor(
+        time_correlate_at_fraction(0.3, null_sink()));
+    check_introspect_simple_processor(negate_difftime(null_sink()));
+    check_introspect_simple_processor(remove_time_correlation(null_sink()));
 }
 
 TEST_CASE("time correlate at start") {

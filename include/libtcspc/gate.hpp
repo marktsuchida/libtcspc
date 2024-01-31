@@ -7,6 +7,7 @@
 #pragma once
 
 #include "event_set.hpp"
+#include "introspect.hpp"
 
 #include <exception>
 #include <type_traits>
@@ -26,6 +27,17 @@ class gate {
   public:
     explicit gate(bool initially_open, Downstream downstream)
         : open(initially_open), downstream(std::move(downstream)) {}
+
+    [[nodiscard]] auto introspect_node() const -> processor_info {
+        processor_info info(this, "gate");
+        return info;
+    }
+
+    [[nodiscard]] auto introspect_graph() const -> processor_graph {
+        auto g = downstream.introspect_graph();
+        g.push_entry_point(this);
+        return g;
+    }
 
     void handle(OpenEvent const &event) {
         open = true;

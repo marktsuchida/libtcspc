@@ -9,6 +9,7 @@
 #include "libtcspc/autocopy_span.hpp"
 #include "libtcspc/test_utils.hpp"
 #include "libtcspc/view_as_bytes.hpp"
+#include "test_checkers.hpp"
 
 #include <catch2/catch_all.hpp>
 #include <catch2/trompeloeil.hpp>
@@ -17,6 +18,12 @@
 #include <numeric>
 
 namespace tcspc {
+
+TEST_CASE("introspect write_binary_stream", "[introspect]") {
+    check_introspect_simple_sink(write_binary_stream(
+        null_output_stream(),
+        std::make_shared<object_pool<std::vector<std::byte>>>(), 1));
+}
 
 namespace {
 

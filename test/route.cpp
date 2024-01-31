@@ -10,6 +10,7 @@
 #include "libtcspc/event_set.hpp"
 #include "libtcspc/test_utils.hpp"
 #include "libtcspc/time_tagged_events.hpp"
+#include "test_checkers.hpp"
 
 #include <catch2/catch_all.hpp>
 
@@ -22,6 +23,27 @@ using e0 = empty_test_event<0>;
 using e1 = empty_test_event<1>;
 
 } // namespace
+
+TEST_CASE("introspect route", "[introspect]") {
+    auto const rh2 = route_homogeneous<event_set<>>(
+        null_router(), std::array{null_sink(), null_sink()});
+    auto const info = check_introspect_node_info(rh2);
+    auto const g = rh2.introspect_graph();
+    CHECK(g.nodes().size() == 3);
+    CHECK(g.entry_points().size() == 1);
+    auto const node = g.entry_points()[0];
+    CHECK(g.node_info(node) == info);
+    auto const edges = g.edges();
+    CHECK(edges.size() == 2);
+    CHECK(edges[0].first == node);
+    CHECK(edges[1].first == node);
+    CHECK(g.node_info(edges[0].second).name() == "null_sink");
+    CHECK(g.node_info(edges[1].second).name() == "null_sink");
+
+    // route() is just route_homogeneous + type_erased_processor; no separate
+    // test needed. broadcast_homogeneous() and broadcast() are also thin
+    // wrappers.
+}
 
 TEST_CASE("Route") {
     using out_events = event_set<tc_event, marker_event<>>;

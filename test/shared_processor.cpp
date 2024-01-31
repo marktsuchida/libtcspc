@@ -7,10 +7,16 @@
 #include "libtcspc/shared_processor.hpp"
 
 #include "libtcspc/test_utils.hpp"
+#include "test_checkers.hpp"
 
 #include <catch2/catch_all.hpp>
 
 namespace tcspc {
+
+TEST_CASE("introspect shared_processor", "[introspect]") {
+    check_introspect_simple_processor(
+        shared_processor(move_to_shared(null_sink())));
+}
 
 TEST_CASE("move to shared") {
     std::shared_ptr<int> const spi = move_to_shared(123);

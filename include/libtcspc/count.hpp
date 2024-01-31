@@ -6,6 +6,7 @@
 
 #pragma once
 
+#include "introspect.hpp"
 #include "processor_context.hpp"
 
 #include <cstddef>
@@ -39,6 +40,17 @@ class count_up_to {
         if (init >= limit)
             throw std::invalid_argument(
                 "count_up_to limit must be greater than initial_count");
+    }
+
+    [[nodiscard]] auto introspect_node() const -> processor_info {
+        processor_info info(this, "count_up_to");
+        return info;
+    }
+
+    [[nodiscard]] auto introspect_graph() const -> processor_graph {
+        auto g = downstream.introspect_graph();
+        g.push_entry_point(this);
+        return g;
     }
 
     void handle(TickEvent const &event) {
@@ -219,6 +231,17 @@ template <typename Event, typename Downstream> class count {
             auto *self = LIBTCSPC_PROCESSOR_FROM_TRACKER(count, trk, tracker);
             return count_access{[self] { return self->ct; }};
         });
+    }
+
+    [[nodiscard]] auto introspect_node() const -> processor_info {
+        processor_info info(this, "count");
+        return info;
+    }
+
+    [[nodiscard]] auto introspect_graph() const -> processor_graph {
+        auto g = downstream.introspect_graph();
+        g.push_entry_point(this);
+        return g;
     }
 
     void handle(Event const &event) {

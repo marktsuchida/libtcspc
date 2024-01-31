@@ -8,6 +8,7 @@
 
 #include "libtcspc/event_set.hpp"
 #include "libtcspc/test_utils.hpp"
+#include "test_checkers.hpp"
 
 #include <cstdint>
 
@@ -26,6 +27,11 @@ struct data_traits : default_data_traits {
 };
 
 } // namespace
+
+TEST_CASE("introspect histogram", "[introspect]") {
+    check_introspect_simple_processor(
+        histogram<reset_event, saturate_on_overflow>(1, 255, null_sink()));
+}
 
 TEMPLATE_TEST_CASE("Histogram, zero bins", "", saturate_on_overflow,
                    reset_on_overflow, stop_on_overflow, error_on_overflow) {

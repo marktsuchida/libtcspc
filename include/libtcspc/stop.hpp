@@ -8,6 +8,7 @@
 
 #include "common.hpp"
 #include "event_set.hpp"
+#include "introspect.hpp"
 
 #include <exception>
 #include <sstream>
@@ -21,14 +22,14 @@ namespace tcspc {
 namespace internal {
 
 template <typename EventSet, typename Exception, typename Downstream>
-class stop_impl {
+class stop {
     Downstream downstream;
 
     // Cold data after downstream.
     std::string message_prefix;
 
     template <typename Event>
-    [[noreturn]] LIBTCSPC_NOINLINE void stop(Event const &event) {
+    [[noreturn]] LIBTCSPC_NOINLINE void handle_stop(Event const &event) {
         if constexpr (std::is_same_v<Exception, end_processing>)
             downstream.flush();
         std::ostringstream stream;
@@ -39,13 +40,24 @@ class stop_impl {
     }
 
   public:
-    explicit stop_impl(std::string prefix, Downstream downstream)
+    explicit stop(std::string prefix, Downstream downstream)
         : downstream(std::move(downstream)),
           message_prefix(std::move(prefix)) {}
 
+    [[nodiscard]] auto introspect_node() const -> processor_info {
+        processor_info info(this, "stop");
+        return info;
+    }
+
+    [[nodiscard]] auto introspect_graph() const -> processor_graph {
+        auto g = downstream.introspect_graph();
+        g.push_entry_point(this);
+        return g;
+    }
+
     template <typename Event> void handle(Event const &event) {
         if constexpr (contains_event_v<EventSet, Event>)
-            stop(event);
+            handle_stop(event);
         else
             downstream.handle(event);
     }
@@ -78,7 +90,7 @@ template <typename EventSet, typename Exception = std::runtime_error,
           typename Downstream>
 auto stop_with_error(std::string message_prefix, Downstream &&downstream) {
     static_assert(not std::is_same_v<Exception, end_processing>);
-    return internal::stop_impl<EventSet, Exception, Downstream>(
+    return internal::stop<EventSet, Exception, Downstream>(
         std::move(message_prefix), std::forward<Downstream>(downstream));
 }
 
@@ -100,7 +112,7 @@ auto stop_with_error(std::string message_prefix, Downstream &&downstream) {
  */
 template <typename EventSet, typename Downstream>
 auto stop(std::string message_prefix, Downstream &&downstream) {
-    return internal::stop_impl<EventSet, end_processing, Downstream>(
+    return internal::stop<EventSet, end_processing, Downstream>(
         std::move(message_prefix), std::forward<Downstream>(downstream));
 }
 

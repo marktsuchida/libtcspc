@@ -6,6 +6,7 @@
 
 #pragma once
 
+#include "introspect.hpp"
 #include "vector_queue.hpp"
 
 #include <algorithm>
@@ -195,6 +196,17 @@ template <typename Pointer, typename Downstream> class dereference_pointer {
     explicit dereference_pointer(Downstream downstream)
         : downstream(std::move(downstream)) {}
 
+    [[nodiscard]] auto introspect_node() const -> processor_info {
+        processor_info info(this, "dereference_pointer");
+        return info;
+    }
+
+    [[nodiscard]] auto introspect_graph() const -> processor_graph {
+        auto g = downstream.introspect_graph();
+        g.push_entry_point(this);
+        return g;
+    }
+
     void handle(Pointer const &event_ptr) { downstream.handle(*event_ptr); }
 
     void flush() { downstream.flush(); }
@@ -245,6 +257,17 @@ class batch {
                 "batch processor batch_size must not be zero");
     }
 
+    [[nodiscard]] auto introspect_node() const -> processor_info {
+        processor_info info(this, "batch");
+        return info;
+    }
+
+    [[nodiscard]] auto introspect_graph() const -> processor_graph {
+        auto g = downstream.introspect_graph();
+        g.push_entry_point(this);
+        return g;
+    }
+
     void handle(Event const &event) {
         if (not cur_batch) {
             cur_batch = buffer_pool->check_out();
@@ -274,6 +297,17 @@ class unbatch {
   public:
     explicit unbatch(Downstream downstream)
         : downstream(std::move(downstream)) {}
+
+    [[nodiscard]] auto introspect_node() const -> processor_info {
+        processor_info info(this, "unbatch");
+        return info;
+    }
+
+    [[nodiscard]] auto introspect_graph() const -> processor_graph {
+        auto g = downstream.introspect_graph();
+        g.push_entry_point(this);
+        return g;
+    }
 
     // Should we mark this LIBTCSPC_NOINLINE? It would be good to increase the
     // chances that the downstream call will be inlined. But preliminary tests
@@ -426,6 +460,17 @@ class buffer {
 
     explicit buffer(std::size_t threshold, Downstream downstream)
         : threshold(threshold), downstream(std::move(downstream)) {}
+
+    [[nodiscard]] auto introspect_node() const -> processor_info {
+        processor_info info(this, "buffer");
+        return info;
+    }
+
+    [[nodiscard]] auto introspect_graph() const -> processor_graph {
+        auto g = downstream.introspect_graph();
+        g.push_entry_point(this);
+        return g;
+    }
 
     void handle(Event const &event) {
         bool should_notify{};
@@ -608,6 +653,17 @@ template <typename Event, typename Downstream> class single_threaded_buffer {
     explicit single_threaded_buffer(std::size_t threshold,
                                     Downstream downstream)
         : threshold(threshold), downstream(std::move(downstream)) {}
+
+    [[nodiscard]] auto introspect_node() const -> processor_info {
+        processor_info info(this, "single_threaded_buffer");
+        return info;
+    }
+
+    [[nodiscard]] auto introspect_graph() const -> processor_graph {
+        auto g = downstream.introspect_graph();
+        g.push_entry_point(this);
+        return g;
+    }
 
     void handle(Event const &event) {
         buf.push_back(event);

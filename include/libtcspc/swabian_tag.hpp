@@ -7,6 +7,7 @@
 #pragma once
 
 #include "common.hpp"
+#include "introspect.hpp"
 #include "read_bytes.hpp"
 #include "time_tagged_events.hpp"
 
@@ -241,6 +242,17 @@ template <typename DataTraits, typename Downstream> class decode_swabian_tags {
   public:
     explicit decode_swabian_tags(Downstream downstream)
         : downstream(std::move(downstream)) {}
+
+    [[nodiscard]] auto introspect_node() const -> processor_info {
+        processor_info info(this, "decode_swabian_tags");
+        return info;
+    }
+
+    [[nodiscard]] auto introspect_graph() const -> processor_graph {
+        auto g = downstream.introspect_graph();
+        g.push_entry_point(this);
+        return g;
+    }
 
     void handle(swabian_tag_event const &event) {
         if (event.type() == swabian_tag_event::tag_type::time_tag) {

@@ -8,6 +8,7 @@
 
 #include "common.hpp"
 #include "event_set.hpp"
+#include "introspect.hpp"
 #include "read_bytes.hpp"
 #include "span.hpp"
 #include "time_tagged_events.hpp"
@@ -711,7 +712,16 @@ class decode_bh_spc {
     explicit decode_bh_spc(Downstream downstream)
         : downstream(std::move(downstream)) {}
 
-    // Rule of zero
+    [[nodiscard]] auto introspect_node() const -> processor_info {
+        processor_info info(this, "decode_bh_spc");
+        return info;
+    }
+
+    [[nodiscard]] auto introspect_graph() const -> processor_graph {
+        auto g = downstream.introspect_graph();
+        g.push_entry_point(this);
+        return g;
+    }
 
     void handle(BHSPCEvent const &event) {
         if (event.is_multiple_macrotime_overflow()) {

@@ -8,6 +8,7 @@
 
 #include "libtcspc/event_set.hpp"
 #include "libtcspc/test_utils.hpp"
+#include "test_checkers.hpp"
 
 #include <catch2/catch_all.hpp>
 
@@ -21,6 +22,11 @@ using misc_event = timestamped_test_event<2>;
 using out_events = event_set<trigger_event, output_event, misc_event>;
 
 } // namespace
+
+TEST_CASE("introspect generate", "[introspect]") {
+    check_introspect_simple_processor(generate<trigger_event>(
+        null_timing_generator<output_event>(), null_sink()));
+}
 
 TEST_CASE("Generate null timing") {
     auto ctx = std::make_shared<processor_context>();

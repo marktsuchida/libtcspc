@@ -8,6 +8,7 @@
 
 #include "common.hpp"
 #include "event_set.hpp"
+#include "introspect.hpp"
 #include "vector_queue.hpp"
 
 #include <algorithm>
@@ -92,6 +93,17 @@ class merge_impl {
     auto operator=(merge_impl &&) = delete;
     ~merge_impl() = default;
 
+    [[nodiscard]] auto introspect_node() const -> processor_info {
+        processor_info info(this, "merge_impl");
+        return info;
+    }
+
+    [[nodiscard]] auto introspect_graph() const -> processor_graph {
+        auto g = downstream.introspect_graph();
+        g.push_entry_point(this);
+        return g;
+    }
+
     template <unsigned InputChannel, typename Event>
     void handle(Event const &event) {
         static_assert(contains_event_v<EventSet, Event>);
@@ -168,6 +180,17 @@ class merge_input {
     merge_input(merge_input &&) noexcept = default;
     auto operator=(merge_input &&) noexcept -> merge_input & = default;
     ~merge_input() = default;
+
+    [[nodiscard]] auto introspect_node() const -> processor_info {
+        processor_info info(this, "merge_input");
+        return info;
+    }
+
+    [[nodiscard]] auto introspect_graph() const -> processor_graph {
+        auto g = impl->introspect_graph();
+        g.push_entry_point(this);
+        return g;
+    }
 
     template <typename Event,
               typename = std::enable_if_t<contains_event_v<EventSet, Event>>>
@@ -318,6 +341,17 @@ template <std::size_t N, typename Downstream> class merge_unsorted_impl {
     auto operator=(merge_unsorted_impl &&) = delete;
     ~merge_unsorted_impl() = default;
 
+    [[nodiscard]] auto introspect_node() const -> processor_info {
+        processor_info info(this, "merge_unsorted_impl");
+        return info;
+    }
+
+    [[nodiscard]] auto introspect_graph() const -> processor_graph {
+        auto g = downstream.introspect_graph();
+        g.push_entry_point(this);
+        return g;
+    }
+
     template <typename Event> void handle(Event const &event) {
         if (ended_with_exception)
             return;
@@ -358,6 +392,17 @@ template <std::size_t N, typename Downstream> class merge_unsorted_input {
     auto operator=(merge_unsorted_input &&) noexcept
         -> merge_unsorted_input & = default;
     ~merge_unsorted_input() = default;
+
+    [[nodiscard]] auto introspect_node() const -> processor_info {
+        processor_info info(this, "merge_unsorted_input");
+        return info;
+    }
+
+    [[nodiscard]] auto introspect_graph() const -> processor_graph {
+        auto g = impl->introspect_graph();
+        g.push_entry_point(this);
+        return g;
+    }
 
     template <typename Event> void handle(Event const &event) {
         impl->handle(event);

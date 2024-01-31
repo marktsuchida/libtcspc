@@ -9,6 +9,7 @@
 #include "libtcspc/common.hpp"
 #include "libtcspc/processor_context.hpp"
 #include "libtcspc/test_utils.hpp"
+#include "test_checkers.hpp"
 
 #include <catch2/catch_all.hpp>
 
@@ -25,6 +26,11 @@ using other_event = timestamped_test_event<0>;
 using events = event_set<other_event, time_reached_event<>>;
 
 } // namespace
+
+TEST_CASE("introspect regulate_time_reached", "[introspect]") {
+    check_introspect_simple_processor(
+        regulate_time_reached(1, 1, null_sink()));
+}
 
 TEST_CASE("regulate time reached by abstime") {
     auto ctx = std::make_shared<processor_context>();

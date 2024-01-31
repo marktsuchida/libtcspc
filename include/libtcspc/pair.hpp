@@ -7,6 +7,7 @@
 #pragma once
 
 #include "common.hpp"
+#include "introspect.hpp"
 #include "time_tagged_events.hpp"
 #include "vector_queue.hpp"
 
@@ -55,6 +56,17 @@ class pair_all {
         if (window_size < 0)
             throw std::invalid_argument(
                 "pair_all time_window must not be negative");
+    }
+
+    [[nodiscard]] auto introspect_node() const -> processor_info {
+        processor_info info(this, "pair_all");
+        return info;
+    }
+
+    [[nodiscard]] auto introspect_graph() const -> processor_graph {
+        auto g = downstream.introspect_graph();
+        g.push_entry_point(this);
+        return g;
     }
 
     template <typename DT> void handle(detection_event<DT> const &event) {
@@ -122,6 +134,17 @@ class pair_one {
                 "pair_one time_window must not be negative");
     }
 
+    [[nodiscard]] auto introspect_node() const -> processor_info {
+        processor_info info(this, "pair_one");
+        return info;
+    }
+
+    [[nodiscard]] auto introspect_graph() const -> processor_graph {
+        auto g = downstream.introspect_graph();
+        g.push_entry_point(this);
+        return g;
+    }
+
     template <typename DT> void handle(detection_event<DT> const &event) {
         static_assert(std::is_same_v<typename DT::abstime_type,
                                      typename DataTraits::abstime_type>);
@@ -182,6 +205,17 @@ class pair_all_between {
         if (window_size < 0)
             throw std::invalid_argument(
                 "pair_all_between time_window must not be negative");
+    }
+
+    [[nodiscard]] auto introspect_node() const -> processor_info {
+        processor_info info(this, "pair_all_between");
+        return info;
+    }
+
+    [[nodiscard]] auto introspect_graph() const -> processor_graph {
+        auto g = downstream.introspect_graph();
+        g.push_entry_point(this);
+        return g;
     }
 
     template <typename DT> void handle(detection_event<DT> const &event) {
@@ -248,6 +282,17 @@ class pair_one_between {
         if (window_size < 0)
             throw std::invalid_argument(
                 "pair_one_between time_window must not be negative");
+    }
+
+    [[nodiscard]] auto introspect_node() const -> processor_info {
+        processor_info info(this, "pair_one_between");
+        return info;
+    }
+
+    [[nodiscard]] auto introspect_graph() const -> processor_graph {
+        auto g = downstream.introspect_graph();
+        g.push_entry_point(this);
+        return g;
     }
 
     template <typename DT> void handle(detection_event<DT> const &event) {

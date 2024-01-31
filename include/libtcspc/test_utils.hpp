@@ -8,6 +8,7 @@
 
 #include "common.hpp"
 #include "event_set.hpp"
+#include "introspect.hpp"
 #include "processor_context.hpp"
 #include "span.hpp"
 #include "vector_queue.hpp"
@@ -423,6 +424,17 @@ template <typename EventSet> class capture_output {
         });
     }
 
+    [[nodiscard]] auto introspect_node() const -> processor_info {
+        processor_info info(this, "capture_output");
+        return info;
+    }
+
+    [[nodiscard]] auto introspect_graph() const -> processor_graph {
+        auto g = processor_graph();
+        g.push_entry_point(this);
+        return g;
+    }
+
     template <typename Event,
               typename = std::enable_if_t<contains_event_v<EventSet, Event>>>
     void handle(Event const &event) {
@@ -496,6 +508,17 @@ template <> class capture_output<event_set<>> {
         });
     }
 
+    [[nodiscard]] auto introspect_node() const -> processor_info {
+        processor_info info(this, "capture_output");
+        return info;
+    }
+
+    [[nodiscard]] auto introspect_graph() const -> processor_graph {
+        auto g = processor_graph();
+        g.push_entry_point(this);
+        return g;
+    }
+
     void flush() {
         assert(not flushed);
         if (error_on_flush) {
@@ -538,6 +561,17 @@ template <typename EventSet, typename Downstream> class feed_input {
   public:
     explicit feed_input(Downstream downstream)
         : downstream(std::move(downstream)) {}
+
+    [[nodiscard]] auto introspect_node() const -> processor_info {
+        processor_info info(this, "feed_input");
+        return info;
+    }
+
+    [[nodiscard]] auto introspect_graph() const -> processor_graph {
+        auto g = downstream.introspect_graph();
+        g.push_source(this);
+        return g;
+    }
 
     void require_output_checked(std::shared_ptr<processor_context> context,
                                 std::string name) {
@@ -633,6 +667,19 @@ template <typename T> class pvector : public std::vector<T> {
 template <typename EventSet> class event_set_sink {
   public:
     /** \brief Processor interface */
+    [[nodiscard]] auto introspect_node() const -> processor_info {
+        processor_info info(this, "event_set_sink");
+        return info;
+    }
+
+    /** \brief Processor interface */
+    [[nodiscard]] auto introspect_graph() const -> processor_graph {
+        auto g = processor_graph();
+        g.push_entry_point(this);
+        return g;
+    }
+
+    /** \brief Processor interface */
     template <typename Event,
               typename = std::enable_if_t<contains_event_v<EventSet, Event>>>
     void handle([[maybe_unused]] Event const &event) {}
@@ -649,6 +696,17 @@ template <typename EventSet, typename Downstream> class check_event_set {
   public:
     explicit check_event_set(Downstream downstream)
         : downstream(std::move(downstream)) {}
+
+    [[nodiscard]] auto introspect_node() const -> processor_info {
+        processor_info info(this, "check_event_set");
+        return info;
+    }
+
+    [[nodiscard]] auto introspect_graph() const -> processor_graph {
+        auto g = downstream.introspect_graph();
+        g.push_entry_point(this);
+        return g;
+    }
 
     template <typename Event,
               typename = std::enable_if_t<contains_event_v<EventSet, Event>>>

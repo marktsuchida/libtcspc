@@ -9,6 +9,7 @@
 #include "libtcspc/common.hpp"
 #include "libtcspc/test_utils.hpp"
 #include "libtcspc/time_tagged_events.hpp"
+#include "test_checkers.hpp"
 
 #include <catch2/catch_all.hpp>
 
@@ -18,6 +19,15 @@ namespace {
 
 using out_events = event_set<detection_event<>, detection_pair_event<>>;
 
+}
+
+TEST_CASE("introspect pair", "[introspect]") {
+    check_introspect_simple_processor(pair_all<1>(0, {1}, 1, null_sink()));
+    check_introspect_simple_processor(pair_one<1>(0, {1}, 1, null_sink()));
+    check_introspect_simple_processor(
+        pair_all_between<1>(0, {1}, 1, null_sink()));
+    check_introspect_simple_processor(
+        pair_one_between<1>(0, {1}, 1, null_sink()));
 }
 
 TEST_CASE("pair all") {

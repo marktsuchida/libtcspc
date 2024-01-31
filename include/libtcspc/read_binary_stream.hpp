@@ -7,6 +7,7 @@
 #pragma once
 
 #include "buffer.hpp"
+#include "introspect.hpp"
 #include "span.hpp"
 
 #include <cassert>
@@ -58,6 +59,20 @@ namespace tcspc {
  */
 
 namespace internal {
+
+struct null_input_stream {
+    static auto is_error() noexcept -> bool { return false; }
+    static auto is_eof() noexcept -> bool { return true; }
+    static auto is_good() noexcept -> bool { return false; }
+    static auto tell() noexcept -> std::optional<std::uint64_t> { return 0; }
+    static auto skip(std::uint64_t bytes) noexcept -> bool {
+        return bytes == 0;
+    }
+    static auto read([[maybe_unused]] span<std::byte> buffer) noexcept
+        -> std::uint64_t {
+        return 0;
+    }
+};
 
 // We turn off istream exceptions in the constructor.
 // NOLINTBEGIN(bugprone-exception-escape)
@@ -280,6 +295,17 @@ inline auto binary_cfile_input_stream(std::string const &filename,
 } // namespace internal
 
 /**
+ * \brief Create an input stream that contains no bytes.
+ *
+ * \ingroup streams
+ *
+ * \see read_binary_stream
+ *
+ * \return input stream
+ */
+inline auto null_input_stream() { return internal::null_input_stream(); }
+
+/**
  * \brief Create a binary input stream for the given file.
  *
  * \ingroup streams
@@ -410,6 +436,17 @@ class read_binary_stream {
         if (read_granularity <= 0)
             throw std::invalid_argument(
                 "read_binary_stream read_granularity_bytes must be positive");
+    }
+
+    [[nodiscard]] auto introspect_node() const -> processor_info {
+        processor_info info(this, "read_binary_stream");
+        return info;
+    }
+
+    [[nodiscard]] auto introspect_graph() const -> processor_graph {
+        auto g = downstream.introspect_graph();
+        g.push_source(this);
+        return g;
     }
 
     void pump_events() {

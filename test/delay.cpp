@@ -8,10 +8,16 @@
 
 #include "libtcspc/common.hpp"
 #include "libtcspc/test_utils.hpp"
+#include "test_checkers.hpp"
 
 #include <catch2/catch_all.hpp>
 
 namespace tcspc {
+
+TEST_CASE("introspect delay", "[introspect]") {
+    check_introspect_simple_processor(delay(0, null_sink()));
+    check_introspect_simple_processor(zero_base_abstime(null_sink()));
+}
 
 namespace {
 

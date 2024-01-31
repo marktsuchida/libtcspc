@@ -7,12 +7,18 @@
 #include "libtcspc/common.hpp"
 
 #include "libtcspc/test_utils.hpp"
+#include "test_checkers.hpp"
 
 #include <catch2/catch_all.hpp>
 
 #include <cstdint>
 
 namespace tcspc {
+
+TEST_CASE("introspect common", "[introspect]") {
+    check_introspect_simple_sink(null_sink());
+    check_introspect_simple_source(null_source(null_sink()));
+}
 
 TEST_CASE("null sink") {
     auto sink = null_sink();

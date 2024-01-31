@@ -9,6 +9,7 @@
 #include "libtcspc/span.hpp"
 #include "libtcspc/stop.hpp"
 #include "libtcspc/test_utils.hpp"
+#include "test_checkers.hpp"
 
 #include <catch2/catch_all.hpp>
 
@@ -18,6 +19,12 @@
 #include <sstream>
 
 namespace tcspc {
+
+TEST_CASE("introspect read_binary_stream", "[introspect]") {
+    check_introspect_simple_source(read_binary_stream<int, std::vector<int>>(
+        null_input_stream(), 0,
+        std::make_shared<object_pool<std::vector<int>>>(), 1, null_sink()));
+}
 
 namespace {
 

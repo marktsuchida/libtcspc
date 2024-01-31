@@ -73,6 +73,9 @@ Options:
         If given, output only the total of all frames
     --overwrite
         If given, overwrite output file if it exists
+    --dump-graph
+        Do not process input; instead emit the processing graph to standard
+        output in Graphviz dot format
     --help
         Show this usage and exit
 
@@ -135,6 +138,7 @@ struct settings {
     bin_index_type max_bin_index = 255;
     bool cumulative = false;
     bool truncate = false;
+    bool dump_graph = false;
 };
 
 template <bool Cumulative>
@@ -278,6 +282,12 @@ void print_stats(settings const &settings,
 template <bool Cumulative> auto run_and_print(settings const &settings) {
     auto ctx = std::make_shared<tcspc::processor_context>();
     auto proc = make_processor<Cumulative>(settings, ctx);
+    if (settings.dump_graph) {
+        auto graph = proc.introspect_graph();
+        std::fputs(tcspc::graphviz_from_processor_graph(graph).c_str(),
+                   stdout);
+        return;
+    }
     try {
         proc.pump_events();
     } catch (tcspc::end_processing const &exc) {
@@ -359,6 +369,8 @@ void parse_option(settings &dest, std::string const &key, GetValue get_value) {
             dest.cumulative = true;
         } else if (key == "overwrite") {
             dest.truncate = true;
+        } else if (key == "dump-graph") {
+            dest.dump_graph = true;
         } else if (key == "help") {
             usage();
             std::exit(EXIT_SUCCESS);

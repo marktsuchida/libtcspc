@@ -7,6 +7,7 @@
 #pragma once
 
 #include "common.hpp"
+#include "introspect.hpp"
 #include "read_bytes.hpp"
 #include "time_tagged_events.hpp"
 
@@ -419,6 +420,17 @@ class decode_pqt3 {
   public:
     explicit decode_pqt3(Downstream downstream)
         : downstream(std::move(downstream)) {}
+
+    [[nodiscard]] auto introspect_node() const -> processor_info {
+        processor_info info(this, "decode_pqt3");
+        return info;
+    }
+
+    [[nodiscard]] auto introspect_graph() const -> processor_graph {
+        auto g = downstream.introspect_graph();
+        g.push_entry_point(this);
+        return g;
+    }
 
     void handle(PQT3Event const &event) {
         if (event.is_nsync_overflow()) {

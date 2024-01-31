@@ -7,6 +7,7 @@
 #pragma once
 
 #include "common.hpp"
+#include "introspect.hpp"
 
 #include <cstddef>
 #include <optional>
@@ -40,6 +41,17 @@ class generate {
   public:
     explicit generate(TimingGenerator generator, Downstream downstream)
         : generator(std::move(generator)), downstream(std::move(downstream)) {}
+
+    [[nodiscard]] auto introspect_node() const -> processor_info {
+        processor_info info(this, "generate");
+        return info;
+    }
+
+    [[nodiscard]] auto introspect_graph() const -> processor_graph {
+        auto g = downstream.introspect_graph();
+        g.push_entry_point(this);
+        return g;
+    }
 
     void handle(TriggerEvent const &event) {
         emit([now = event.abstime](auto t) { return t < now; });

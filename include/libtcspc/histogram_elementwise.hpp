@@ -10,6 +10,7 @@
 #include "common.hpp"
 #include "histogram_events.hpp"
 #include "histogramming.hpp"
+#include "introspect.hpp"
 #include "span.hpp"
 
 #include <cstddef>
@@ -69,6 +70,17 @@ class histogram_elementwise {
           hist_arr(hist_arr_mem.get(), num_elements * num_bins),
           mhist(hist_arr, max_per_bin, num_bins, num_elements, true),
           downstream(std::move(downstream)) {}
+
+    [[nodiscard]] auto introspect_node() const -> processor_info {
+        processor_info info(this, "histogram_elementwise");
+        return info;
+    }
+
+    [[nodiscard]] auto introspect_graph() const -> processor_graph {
+        auto g = downstream.introspect_graph();
+        g.push_entry_point(this);
+        return g;
+    }
 
     template <typename DT>
     void handle(bin_increment_batch_event<DT> const &event) {
@@ -266,6 +278,17 @@ class histogram_elementwise_accumulate {
           hist_arr(hist_arr_mem.get(), num_elements * num_bins),
           mhista(hist_arr, max_per_bin, num_bins, num_elements, true),
           downstream(std::move(downstream)) {}
+
+    [[nodiscard]] auto introspect_node() const -> processor_info {
+        processor_info info(this, "histogram_elementwise_accumulate");
+        return info;
+    }
+
+    [[nodiscard]] auto introspect_graph() const -> processor_graph {
+        auto g = downstream.introspect_graph();
+        g.push_entry_point(this);
+        return g;
+    }
 
     template <typename DT>
     void handle(bin_increment_batch_event<DT> const &event) {

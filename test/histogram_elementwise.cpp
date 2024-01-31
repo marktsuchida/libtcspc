@@ -8,6 +8,7 @@
 
 #include "libtcspc/event_set.hpp"
 #include "libtcspc/test_utils.hpp"
+#include "test_checkers.hpp"
 
 #include <array>
 #include <cstdint>
@@ -33,6 +34,14 @@ struct dt88 : default_data_traits {
 };
 
 } // namespace
+
+TEST_CASE("introspect histogram_elementwise", "[introspect]") {
+    check_introspect_simple_processor(
+        histogram_elementwise<saturate_on_overflow>(1, 1, 255, null_sink()));
+    check_introspect_simple_processor(
+        histogram_elementwise_accumulate<reset_event, saturate_on_overflow>(
+            1, 1, 255, null_sink()));
+}
 
 //
 // Test cases for histogram_elementwise

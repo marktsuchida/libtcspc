@@ -8,6 +8,7 @@
 
 #include "libtcspc/event_set.hpp"
 #include "libtcspc/test_utils.hpp"
+#include "test_checkers.hpp"
 
 #include <catch2/catch_all.hpp>
 
@@ -22,6 +23,11 @@ using misc_event = empty_test_event<3>;
 using out_events = event_set<open_event, close_event, gated_event, misc_event>;
 
 } // namespace
+
+TEST_CASE("introspect gate", "[introspect]") {
+    check_introspect_simple_processor(
+        gate<gated_event, open_event, close_event>(false, null_sink()));
+}
 
 TEST_CASE("Gate events") {
     bool const initially_open = GENERATE(false, true);

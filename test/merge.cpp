@@ -9,6 +9,7 @@
 #include "libtcspc/ref_processor.hpp"
 #include "libtcspc/test_utils.hpp"
 #include "libtcspc/type_erased_processor.hpp"
+#include "test_checkers.hpp"
 
 #include <catch2/catch_all.hpp>
 
@@ -19,6 +20,72 @@ using e1 = timestamped_test_event<1>;
 using e2 = timestamped_test_event<2>;
 using e3 = timestamped_test_event<3>;
 using all_events = event_set<e0, e1, e2, e3>;
+
+namespace {
+
+// Like check_introspect_simple_processor, but for merge input.
+template <typename MI>
+auto check_introspect_merge_input(MI const &input,
+                                  std::string_view impl_name) {
+    auto const info = check_introspect_node_info(input);
+
+    auto const g = input.introspect_graph();
+    CHECK(g.nodes().size() == 3);
+    CHECK(g.entry_points().size() == 1);
+    auto const node = g.entry_points()[0];
+    CHECK(g.node_info(node) == info);
+    CHECK(g.edges().size() == 2);
+    auto const impl_node = [&] {
+        for (auto const &e : g.edges()) {
+            if (e.first == node)
+                return e.second;
+        }
+        throw;
+    }();
+    CHECK(g.node_info(impl_node).name() == impl_name);
+    auto const sink_node = [&] {
+        for (auto const &e : g.edges()) {
+            if (e.first == impl_node)
+                return e.second;
+        }
+        throw;
+    }();
+    CHECK(g.node_info(sink_node).name() == "null_sink");
+    return info;
+}
+
+} // namespace
+
+TEST_CASE("introspect merge", "[introspect]") {
+    auto const [m0, m1] = merge<all_events>(1, null_sink());
+    check_introspect_merge_input(m0, "merge_impl");
+    check_introspect_merge_input(m1, "merge_impl");
+
+    auto const [n0, n1, n2, n3, n4] = merge_n<5, all_events>(1, null_sink());
+    std::set<processor_node_id> unique_nodes;
+    std::set<std::pair<processor_node_id, processor_node_id>> unique_edges;
+    auto add_to_sets = [&](auto const &n) {
+        auto const g = n.introspect_graph();
+        auto const ns = g.nodes();
+        unique_nodes.insert(ns.begin(), ns.end());
+        auto const es = g.edges();
+        unique_edges.insert(es.begin(), es.end());
+    };
+    add_to_sets(n0);
+    add_to_sets(n1);
+    add_to_sets(n2);
+    add_to_sets(n3);
+    add_to_sets(n4);
+    CHECK(unique_nodes.size() == 13); // 4 merge_impl, 8 merge_input, null_sink
+    CHECK(unique_edges.size() == 12); // 4 merge_impl, 8 merge_input
+
+    auto const [u0, u1, u2, u3, u4] = merge_n_unsorted<5>(null_sink());
+    check_introspect_merge_input(u0, "merge_unsorted_impl");
+    check_introspect_merge_input(u1, "merge_unsorted_impl");
+    check_introspect_merge_input(u2, "merge_unsorted_impl");
+    check_introspect_merge_input(u3, "merge_unsorted_impl");
+    check_introspect_merge_input(u4, "merge_unsorted_impl");
+}
 
 TEST_CASE("Merge") {
     // The two merge inputs have different types. Wrap them so they can be

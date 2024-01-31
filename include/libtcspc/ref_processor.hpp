@@ -6,6 +6,8 @@
 
 #pragma once
 
+#include "introspect.hpp"
+
 #include <exception>
 
 namespace tcspc {
@@ -40,6 +42,19 @@ template <typename Downstream> class ref_processor {
      * \param downstream downstream processor
      */
     explicit ref_processor(Downstream &downstream) : downstream(&downstream) {}
+
+    /** \brief Processor interface */
+    [[nodiscard]] auto introspect_node() const -> processor_info {
+        processor_info info(this, "ref_processor");
+        return info;
+    }
+
+    /** \brief Processor interface */
+    [[nodiscard]] auto introspect_graph() const -> processor_graph {
+        auto g = downstream->introspect_graph();
+        g.push_entry_point(this);
+        return g;
+    }
 
     /** \brief Processor interface */
     template <typename AnyEvent> void handle(AnyEvent const &event) {
