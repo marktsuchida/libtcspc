@@ -17,7 +17,7 @@ static_assert(sizeof(u8np) == sizeof(std::uint8_t));
 static_assert(std::numeric_limits<i8np>::min() == i8np(-128));
 static_assert(std::numeric_limits<i8np>::digits == 7);
 
-TEST_CASE("integer construct and convert", "[integers]") {
+TEST_CASE("integer construct and convert") {
     static constexpr u8np ue{};
     CHECK(std::uint8_t(ue) == 0);
     CHECK(ue.value() == 0);
@@ -25,7 +25,7 @@ TEST_CASE("integer construct and convert", "[integers]") {
     CHECK(3_u8np == u8np(3));
 }
 
-TEST_CASE("integer conversions", "[integers]") {
+TEST_CASE("integer conversions") {
     CHECK(u8np(3_i8np) == 3_u8np);
     CHECK(i8np(3_u8np) == 3_i8np);
 
@@ -37,7 +37,7 @@ TEST_CASE("integer conversions", "[integers]") {
     CHECK(i8np(3_u16np) == 3_i8np);
 }
 
-TEST_CASE("integer increment and decrement", "[integers]") {
+TEST_CASE("integer increment and decrement") {
     u8np ue{};
     CHECK((++ue).value() == 1);
     CHECK((ue++).value() == 1);
@@ -47,7 +47,7 @@ TEST_CASE("integer increment and decrement", "[integers]") {
     CHECK(ue.value() == 0);
 }
 
-TEST_CASE("integer compound assignment operators", "[integers]") {
+TEST_CASE("integer compound assignment operators") {
     u8np ue{};
 
     ue += 3_u8np;
@@ -92,13 +92,13 @@ TEST_CASE("integer compound assignment operators", "[integers]") {
     }
 }
 
-TEST_CASE("integer unary operators", "[integers]") {
+TEST_CASE("integer unary operators") {
     CHECK(+3_u8np == 3_u8np);
     CHECK(-3_u8np == 253_u8np);
     CHECK(~1_u8np == 254_u8np);
 }
 
-TEST_CASE("integer binary operators", "[integers]") {
+TEST_CASE("integer binary operators") {
     CHECK(3_u8np + 5_u8np == 8_u8np);
     CHECK(5_u8np - 3_u8np == 2_u8np);
     CHECK(3_u8np * 5_u8np == 15_u8np);
@@ -124,7 +124,7 @@ TEST_CASE("integer binary operators", "[integers]") {
     }
 }
 
-TEST_CASE("integer comparison operators", "[integers]") {
+TEST_CASE("integer comparison operators") {
     CHECK(1_u8np == 1_u8np);
     CHECK_FALSE(1_u8np == 0_u8np);
     CHECK_FALSE(1_u8np != 1_u8np);
@@ -139,7 +139,7 @@ TEST_CASE("integer comparison operators", "[integers]") {
     CHECK_FALSE(1_u8np <= 0_u8np);
 }
 
-TEST_CASE("integer subclasses", "[integers]") {
+TEST_CASE("integer subclasses") {
     // Demonstrate how to use subclasses for strong typing of quantities.
 
     struct myu8 : u8np {

@@ -20,7 +20,7 @@ using e2 = timestamped_test_event<2>;
 using e3 = timestamped_test_event<3>;
 using all_events = event_set<e0, e1, e2, e3>;
 
-TEST_CASE("Merge", "[merge]") {
+TEST_CASE("Merge") {
     // The two merge inputs have different types. Wrap them so they can be
     // swapped for symmetric tests.
     // in_0 -> ref -> min0 -> merge_impl -> out
@@ -155,7 +155,7 @@ TEST_CASE("Merge", "[merge]") {
     }
 }
 
-TEST_CASE("merge single event type", "[merge]") {
+TEST_CASE("merge single event type") {
     using one_event = event_set<e0>;
     auto ctx = std::make_shared<processor_context>();
     auto [min0, min1] = merge<one_event>(
@@ -188,7 +188,7 @@ TEST_CASE("merge single event type", "[merge]") {
     REQUIRE(out.check_flushed());
 }
 
-TEST_CASE("merge N streams", "[merge_n]") {
+TEST_CASE("merge N streams") {
     auto ctx = std::make_shared<processor_context>();
 
     SECTION("Zero-stream merge_n returns empty tuple") {
@@ -235,7 +235,7 @@ TEST_CASE("merge N streams", "[merge_n]") {
     }
 }
 
-TEST_CASE("merge unsorted", "[merge_n_unsorted]") {
+TEST_CASE("merge unsorted") {
     auto ctx = std::make_shared<processor_context>();
     auto [min0, min1] = merge_n_unsorted(capture_output<all_events>(
         ctx->tracker<capture_output_access>("out")));

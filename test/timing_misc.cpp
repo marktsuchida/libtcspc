@@ -12,7 +12,7 @@
 
 namespace tcspc {
 
-TEST_CASE("retime periodic sequence events", "[retime_periodic_sequences]") {
+TEST_CASE("retime periodic sequence events") {
     using out_events = event_set<periodic_sequence_event<>>;
     auto ctx = std::make_shared<processor_context>();
     auto in = feed_input<event_set<periodic_sequence_event<>>>(

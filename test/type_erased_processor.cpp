@@ -50,7 +50,7 @@ static_assert(
         internal::virtual_processor<event_set_sink<event_set<e0, e1>>, e0, e1>,
         event_set<e0, e1>>);
 
-TEST_CASE("type_erased_processor move assignment", "[type_erased_processor]") {
+TEST_CASE("type_erased_processor move assignment") {
     // Create with stub downstream.
     type_erased_processor<event_set<e0>> tep;
 

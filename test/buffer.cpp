@@ -14,7 +14,7 @@
 
 namespace tcspc {
 
-TEST_CASE("object pool", "[object_pool]") {
+TEST_CASE("object pool") {
     auto pool = std::make_shared<object_pool<int>>(1, 3);
     auto o = pool->check_out(); // count == 1
     auto p = pool->check_out(); // count == 2
@@ -27,7 +27,7 @@ TEST_CASE("object pool", "[object_pool]") {
     CHECK_FALSE(s);
 }
 
-TEST_CASE("batch", "[batch]") {
+TEST_CASE("batch") {
     auto ctx = std::make_shared<processor_context>();
     auto in = feed_input<event_set<int>>(batch<int, pvector<int>>(
         std::make_shared<object_pool<pvector<int>>>(), 3,
@@ -59,7 +59,7 @@ TEST_CASE("batch", "[batch]") {
     }
 }
 
-TEST_CASE("unbatch", "[unbatch]") {
+TEST_CASE("unbatch") {
     auto ctx = std::make_shared<processor_context>();
     auto in = feed_input<event_set<pvector<int>>>(
         unbatch<pvector<int>, int>(capture_output<event_set<int>>(

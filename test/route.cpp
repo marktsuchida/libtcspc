@@ -23,7 +23,7 @@ using e1 = empty_test_event<1>;
 
 } // namespace
 
-TEST_CASE("Route", "[route]") {
+TEST_CASE("Route") {
     using out_events = event_set<tc_event, marker_event<>>;
     auto ctx = std::make_shared<processor_context>();
     auto in = feed_input<event_set<tc_event, marker_event<>>>(
@@ -99,7 +99,7 @@ TEST_CASE("Route", "[route]") {
     }
 }
 
-TEST_CASE("Route with heterogeneous downstreams", "[route]") {
+TEST_CASE("Route with heterogeneous downstreams") {
     auto ctx = std::make_shared<processor_context>();
     auto in = feed_input<event_set<e0>>(route<event_set<e0>, event_set<>>(
         []([[maybe_unused]] e0 const &event) { return std::size_t(0); },
@@ -116,7 +116,7 @@ TEST_CASE("Route with heterogeneous downstreams", "[route]") {
     REQUIRE(out0.check_flushed());
 }
 
-TEST_CASE("Broadcast", "[broadcast]") {
+TEST_CASE("Broadcast") {
     auto ctx = std::make_shared<processor_context>();
     auto in = feed_input<event_set<e0>>(broadcast<event_set<e0>>(
         capture_output<event_set<e0>>(

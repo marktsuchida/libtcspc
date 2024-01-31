@@ -19,7 +19,7 @@ using e1 = empty_test_event<1>;
 
 } // namespace
 
-TEST_CASE("stop with error", "[stop_with_error]") {
+TEST_CASE("stop with error") {
     auto ctx = std::make_shared<processor_context>();
 
     auto in = feed_input<event_set<e0, e1>>(stop_with_error<event_set<e0>>(
@@ -38,7 +38,7 @@ TEST_CASE("stop with error", "[stop_with_error]") {
     REQUIRE(out.check_not_flushed());
 }
 
-TEST_CASE("stop with no error", "[stop]") {
+TEST_CASE("stop with no error") {
     auto ctx = std::make_shared<processor_context>();
     auto in = feed_input<event_set<e0, e1>>(stop<event_set<e0>>(
         "end of stream", capture_output<event_set<e1>>(

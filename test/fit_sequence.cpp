@@ -18,7 +18,7 @@ namespace tcspc {
 
 namespace internal {
 
-TEST_CASE("periodic fitter", "[fit_periodic_sequences]") {
+TEST_CASE("periodic fitter") {
     using Catch::Matchers::WithinAbs;
 
     // Numbers derived from Wikipedia linear least squares example.
@@ -47,7 +47,7 @@ TEST_CASE("periodic fitter", "[fit_periodic_sequences]") {
 
 } // namespace internal
 
-TEST_CASE("fit periodic sequences", "[fit_periodic_sequences]") {
+TEST_CASE("fit periodic sequences") {
     using e0 = timestamped_test_event<0>;
     auto ctx = std::make_shared<processor_context>();
     auto in = feed_input<event_set<e0>>(fit_periodic_sequences<e0>(

@@ -12,7 +12,7 @@
 
 namespace tcspc {
 
-TEST_CASE("processor context and tracker", "[processor_context]") {
+TEST_CASE("processor context and tracker") {
     auto ctx = std::make_shared<processor_context>();
 
     struct test_accessor {
@@ -95,7 +95,7 @@ class example_processor {
 
 } // namespace
 
-TEST_CASE("processor tracker intended use", "[processor_context]") {
+TEST_CASE("processor tracker intended use") {
     auto ctx = std::make_shared<processor_context>();
     {
         // The context is injected into a processor upon creation, when later

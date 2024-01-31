@@ -15,7 +15,7 @@
 
 namespace tcspc::internal {
 
-TEST_CASE("Journal basic operations", "[bin_increment_batch_journal]") {
+TEST_CASE("Journal basic operations") {
     bin_increment_batch_journal<u16> j;
     REQUIRE(j.num_batches() == 0);
     REQUIRE(j.begin() == j.end());
@@ -40,7 +40,7 @@ TEST_CASE("Journal basic operations", "[bin_increment_batch_journal]") {
     REQUIRE(j3.num_batches() == 0);
 }
 
-TEST_CASE("Journal iterator", "[bin_increment_batch_journal]") {
+TEST_CASE("Journal iterator") {
     bin_increment_batch_journal<u16> j;
 
     SECTION("Empty") {
@@ -293,7 +293,7 @@ TEST_CASE("single_histogram: undoing correctly decrements bins and stats",
     }
 }
 
-TEST_CASE("single_histogram: saturate on overflow", "[single_histogram]") {
+TEST_CASE("single_histogram: saturate on overflow") {
     histogram_stats stats;
     SECTION("Max per bin of 0") {
         std::vector<u8> data(4, u8(0));
@@ -326,7 +326,7 @@ TEST_CASE("single_histogram: saturate on overflow", "[single_histogram]") {
     }
 }
 
-TEST_CASE("single_histogram: stop on overflow", "[single_histogram]") {
+TEST_CASE("single_histogram: stop on overflow") {
     histogram_stats stats;
     SECTION("Max per bin of 0") {
         std::vector<u8> data(4, u8(0));
@@ -511,7 +511,7 @@ TEST_CASE("multi_histogram: replay reproduces journaled data",
     CHECK(stats2 == stats);
 }
 
-TEST_CASE("multi_histogram: saturate on overflow", "[multi_histogram]") {
+TEST_CASE("multi_histogram: saturate on overflow") {
     histogram_stats stats;
     null_journal<u8> journal;
     std::vector<u8> data(12, u8(123));
@@ -527,7 +527,7 @@ TEST_CASE("multi_histogram: saturate on overflow", "[multi_histogram]") {
     CHECK(stats.saturated == 1);
 }
 
-TEST_CASE("multi_histogram: stop on overflow", "[multi_histogram]") {
+TEST_CASE("multi_histogram: stop on overflow") {
     histogram_stats stats;
     bin_increment_batch_journal<u8> journal;
     std::vector<u8> data(12, u8(123));

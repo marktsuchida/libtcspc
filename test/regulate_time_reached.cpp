@@ -26,7 +26,7 @@ using events = event_set<other_event, time_reached_event<>>;
 
 } // namespace
 
-TEST_CASE("regulate time reached by abstime", "[regulate_time_reached]") {
+TEST_CASE("regulate time reached by abstime") {
     auto ctx = std::make_shared<processor_context>();
     auto in = feed_input<events>(regulate_time_reached(
         10, std::numeric_limits<std::size_t>::max(),
@@ -94,7 +94,7 @@ TEST_CASE("regulate time reached by abstime", "[regulate_time_reached]") {
     }
 }
 
-TEST_CASE("regulate time reached by count", "[regulate_time_reached]") {
+TEST_CASE("regulate time reached by count") {
     auto ctx = std::make_shared<processor_context>();
     auto in = feed_input<events>(regulate_time_reached(
         std::numeric_limits<abstime_type>::max(), 2,

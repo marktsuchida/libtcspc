@@ -23,7 +23,7 @@ static_assert(sizeof(bh_spc_event) == 4);
 static_assert(sizeof(bh_spc600_256ch_event) == 4);
 static_assert(sizeof(bh_spc600_4096ch_event) == 6);
 
-TEST_CASE("bh spc equality and inequality", "[bh_spc_event]") {
+TEST_CASE("bh spc equality and inequality") {
     CHECK(le_event<bh_spc_event>({1, 2, 3, 4}) ==
           le_event<bh_spc_event>({1, 2, 3, 4}));
     CHECK(le_event<bh_spc600_256ch_event>({1, 2, 3, 4}) ==
@@ -50,7 +50,7 @@ TEST_CASE("bh spc equality and inequality", "[bh_spc_event]") {
 // to BH documentation. But this way most of the integer fields greater than 8
 // bits are contiguous.
 
-TEST_CASE("bh spc event type", "[bh_spc_event]") {
+TEST_CASE("bh spc event type") {
     auto const zero = le_event<bh_spc_event>(
         {0b0000'0000, 0b0000'0000, 0b0000'0000, 0b0000'0000});
     CHECK_FALSE(zero.gap_flag());
@@ -116,7 +116,7 @@ TEST_CASE("bh spc event type", "[bh_spc_event]") {
     CHECK_FALSE(mark_mtov.is_multiple_macrotime_overflow());
 }
 
-TEST_CASE("bh spc600 256ch event type", "[bh_spc_event]") {
+TEST_CASE("bh spc600 256ch event type") {
     auto const zero = le_event<bh_spc600_256ch_event>(
         {0b0000'0000, 0b0000'0000, 0b0000'0000, 0b0000'0000});
     CHECK_FALSE(zero.gap_flag());
@@ -166,7 +166,7 @@ TEST_CASE("bh spc600 256ch event type", "[bh_spc_event]") {
     CHECK(multi_mtov.is_multiple_macrotime_overflow());
 }
 
-TEST_CASE("bh spc600 4096ch event type", "[bh_spc_event]") {
+TEST_CASE("bh spc600 4096ch event type") {
     auto const zero = le_event<bh_spc600_4096ch_event>(
         {0b0000'0000, 0b0000'0000, 0b0000'0000, 0b0000'0000, 0b0000'0000,
          0b0000'0000});
@@ -223,7 +223,7 @@ TEST_CASE("bh spc600 4096ch event type", "[bh_spc_event]") {
     CHECK_FALSE(inv_mtov.is_multiple_macrotime_overflow());
 }
 
-TEST_CASE("bh spc read adc count", "[bh_spc_event]") {
+TEST_CASE("bh spc read adc count") {
     auto const adc0 = le_event<bh_spc_event>(
         {0b1111'0000, 0b0000'0000, 0b1111'1111, 0b1111'1111});
     CHECK(adc0.adc_value() == 0_u16np);
@@ -241,7 +241,7 @@ TEST_CASE("bh spc read adc count", "[bh_spc_event]") {
     CHECK(adc_max.adc_value() == 4095_u16np);
 }
 
-TEST_CASE("bh spc600 256ch read adc count", "[bh_spc_event]") {
+TEST_CASE("bh spc600 256ch read adc count") {
     auto const adc0 = le_event<bh_spc600_256ch_event>(
         {0b1111'1111, 0b1111'1111, 0b1111'1111, 0b0000'0000});
     CHECK(adc0.adc_value() == 0_u16np);
@@ -251,7 +251,7 @@ TEST_CASE("bh spc600 256ch read adc count", "[bh_spc_event]") {
     CHECK(adc_max.adc_value() == 255_u16np);
 }
 
-TEST_CASE("bh spc600 4096ch read adc count", "[bh_spc_event]") {
+TEST_CASE("bh spc600 4096ch read adc count") {
     auto const adc0 = le_event<bh_spc600_4096ch_event>(
         {0b1111'1111, 0b1111'1111, 0b1111'1111, 0b1111'1111, 0b0000'0000,
          0b0000'0000});
@@ -273,7 +273,7 @@ TEST_CASE("bh spc600 4096ch read adc count", "[bh_spc_event]") {
     CHECK(adc_max.adc_value() == 4095_u16np);
 }
 
-TEST_CASE("bh spc read routing signals", "[bh_spc_event]") {
+TEST_CASE("bh spc read routing signals") {
     auto const rout0 = le_event<bh_spc_event>(
         {0b1111'1111, 0b1111'1111, 0b0000'1111, 0b1111'1111});
     CHECK(rout0.routing_signals() == 0_u8np);
@@ -283,7 +283,7 @@ TEST_CASE("bh spc read routing signals", "[bh_spc_event]") {
     CHECK(rout_max.routing_signals() == 15_u8np);
 }
 
-TEST_CASE("bh spc600 256ch read routing signals", "[bh_spc_event]") {
+TEST_CASE("bh spc600 256ch read routing signals") {
     auto const rout0 = le_event<bh_spc600_256ch_event>(
         {0b1111'0001, 0b1111'1111, 0b1111'1111, 0b1111'1111});
     CHECK(rout0.routing_signals() == 0_u8np);
@@ -293,7 +293,7 @@ TEST_CASE("bh spc600 256ch read routing signals", "[bh_spc_event]") {
     CHECK(rout_max.routing_signals() == 7_u8np);
 }
 
-TEST_CASE("bh spc600 4096ch read routing signals", "[bh_spc_event]") {
+TEST_CASE("bh spc600 4096ch read routing signals") {
     auto const rout0 = le_event<bh_spc600_4096ch_event>(
         {0b1111'1111, 0b1111'1111, 0b0000'0000, 0b1111'1111, 0b1111'1111,
          0b1111'1111});
@@ -305,7 +305,7 @@ TEST_CASE("bh spc600 4096ch read routing signals", "[bh_spc_event]") {
     CHECK(rout_max.routing_signals() == 255_u8np);
 }
 
-TEST_CASE("bh spc read macrotime", "[bh_spc_event]") {
+TEST_CASE("bh spc read macrotime") {
     auto const macrotime0 = le_event<bh_spc_event>(
         {0b1111'1111, 0b1111'1111, 0b1111'0000, 0b0000'0000});
     CHECK(macrotime0.macrotime() == 0_u16np);
@@ -323,7 +323,7 @@ TEST_CASE("bh spc read macrotime", "[bh_spc_event]") {
     CHECK(macrotime_max.macrotime() == 4095_u16np);
 }
 
-TEST_CASE("bh spc600 256ch read macrotime", "[bh_spc_event]") {
+TEST_CASE("bh spc600 256ch read macrotime") {
     auto const macrotime0 = le_event<bh_spc600_256ch_event>(
         {0b1111'1110, 0b0000'0000, 0b0000'0000, 0b1111'1111});
     CHECK(macrotime0.macrotime() == 0_u32np);
@@ -345,7 +345,7 @@ TEST_CASE("bh spc600 256ch read macrotime", "[bh_spc_event]") {
     CHECK(macrotime_max.macrotime() == 131'071_u32np);
 }
 
-TEST_CASE("bh spc600 4096ch read macrotime", "[bh_spc_event]") {
+TEST_CASE("bh spc600 4096ch read macrotime") {
     auto const macrotime0 = le_event<bh_spc600_4096ch_event>(
         {0b0000'0000, 0b0000'0000, 0b1111'1111, 0b0000'0000, 0b1111'1111,
          0b1111'1111});
@@ -399,7 +399,7 @@ TEMPLATE_TEST_CASE("bh spc read multiple macrotime overflow count",
     CHECK(cnt_max.multiple_macrotime_overflow_count() == 268'435'455_u32np);
 }
 
-TEST_CASE("bh spc assign", "[bh_spc_event]") {
+TEST_CASE("bh spc assign") {
     CHECK(bh_spc_event::make_photon(0_u16np, 0_u16np, 0_u8np) ==
           le_event<bh_spc_event>(
               {0b0000'0000, 0b0000'0000, 0b0000'0000, 0b0000'0000}));
@@ -496,7 +496,7 @@ TEST_CASE("bh spc assign", "[bh_spc_event]") {
               {0b1101'1111, 0b1111'1111, 0b1111'1111, 0b1111'1111}));
 }
 
-TEST_CASE("bh spc600 256ch assign", "[bh_spc_event]") {
+TEST_CASE("bh spc600 256ch assign") {
     CHECK(bh_spc600_256ch_event::make_photon(0_u32np, 0_u8np, 0_u8np) ==
           le_event<bh_spc600_256ch_event>(
               {0b0000'0000, 0b0000'0000, 0b0000'0000, 0b0000'0000}));
@@ -563,7 +563,7 @@ TEST_CASE("bh spc600 256ch assign", "[bh_spc_event]") {
               {0b1101'1111, 0b1111'1111, 0b1111'1111, 0b1111'1111}));
 }
 
-TEST_CASE("bh spc600 4096ch assign", "[bh_spc_event]") {
+TEST_CASE("bh spc600 4096ch assign") {
     CHECK(bh_spc600_4096ch_event::make_photon(0_u32np, 0_u16np, 0_u8np) ==
           le_event<bh_spc600_4096ch_event>({0b0000'0000, 0b0000'0000,
                                             0b0000'0000, 0b0000'0000,
@@ -650,7 +650,7 @@ using out_events_with_counter =
               time_reached_event<>, data_lost_event<>,
               nontagged_counts_event<>, warning_event>;
 
-TEST_CASE("decode bh spc", "[decode_bh_spc]") {
+TEST_CASE("decode bh spc") {
     auto ctx = std::make_shared<processor_context>();
     auto in = feed_input<event_set<bh_spc_event>>(
         decode_bh_spc(capture_output<out_events>(
@@ -818,7 +818,7 @@ TEST_CASE("decode bh spc with fast intensity counter",
     REQUIRE(out.check_flushed());
 }
 
-TEST_CASE("decode bh spc600 256ch", "[decode_bh_spc600_256ch]") {
+TEST_CASE("decode bh spc600 256ch") {
     auto ctx = std::make_shared<processor_context>();
     auto in = feed_input<event_set<bh_spc600_256ch_event>>(
         decode_bh_spc600_256ch(capture_output<out_events>(
@@ -898,7 +898,7 @@ TEST_CASE("decode bh spc600 256ch", "[decode_bh_spc600_256ch]") {
     REQUIRE(out.check_flushed());
 }
 
-TEST_CASE("decode bh spc600 4096ch", "[decode_bh_spc600_4096ch]") {
+TEST_CASE("decode bh spc600 4096ch") {
     auto ctx = std::make_shared<processor_context>();
     auto in = feed_input<event_set<bh_spc600_4096ch_event>>(
         decode_bh_spc600_4096ch(capture_output<out_events>(

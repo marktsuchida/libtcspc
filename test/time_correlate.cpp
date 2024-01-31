@@ -18,7 +18,7 @@ using tc_out_events = event_set<time_correlated_detection_event<>>;
 
 }
 
-TEST_CASE("time correlate at start", "[time_correlate_at_start]") {
+TEST_CASE("time correlate at start") {
     auto ctx = std::make_shared<processor_context>();
     auto in = feed_input<event_set<detection_pair_event<>>>(
         time_correlate_at_start<>(capture_output<tc_out_events>(
@@ -33,7 +33,7 @@ TEST_CASE("time correlate at start", "[time_correlate_at_start]") {
     REQUIRE(out.check_flushed());
 }
 
-TEST_CASE("time correlate at stop", "[time_correlate_at_stop]") {
+TEST_CASE("time correlate at stop") {
     auto ctx = std::make_shared<processor_context>();
     auto in = feed_input<event_set<detection_pair_event<>>>(
         time_correlate_at_stop<>(capture_output<tc_out_events>(
@@ -48,7 +48,7 @@ TEST_CASE("time correlate at stop", "[time_correlate_at_stop]") {
     REQUIRE(out.check_flushed());
 }
 
-TEST_CASE("time correlate at midpoint", "[time_correlate_at_midpoint]") {
+TEST_CASE("time correlate at midpoint") {
     auto ctx = std::make_shared<processor_context>();
 
     SECTION("use stop channel") {
@@ -81,7 +81,7 @@ TEST_CASE("time correlate at midpoint", "[time_correlate_at_midpoint]") {
     }
 }
 
-TEST_CASE("time correlate at fraction", "[time_correlate_at_fraction]") {
+TEST_CASE("time correlate at fraction") {
     auto ctx = std::make_shared<processor_context>();
 
     SECTION("use stop channel") {
@@ -117,7 +117,7 @@ TEST_CASE("time correlate at fraction", "[time_correlate_at_fraction]") {
     }
 }
 
-TEST_CASE("negate difftime", "[negate_difftime]") {
+TEST_CASE("negate difftime") {
     struct traits : default_data_traits {
         using difftime_type = std::int16_t;
     };
@@ -139,7 +139,7 @@ TEST_CASE("negate difftime", "[negate_difftime]") {
     REQUIRE(out.check_flushed());
 }
 
-TEST_CASE("remove time correlation", "[remove_time_correlation]") {
+TEST_CASE("remove time correlation") {
     auto ctx = std::make_shared<processor_context>();
     auto in = feed_input<event_set<time_correlated_detection_event<>>>(
         remove_time_correlation<>(capture_output<event_set<detection_event<>>>(

@@ -19,7 +19,7 @@ using e1 = empty_test_event<1>;
 
 } // namespace
 
-TEST_CASE("multiplex", "[multiplex]") {
+TEST_CASE("multiplex") {
     using out_events = event_set<event_variant<event_set<e0, e1>>>;
     auto ctx = std::make_shared<processor_context>();
     auto in = feed_input<event_set<e0, e1>>(
@@ -35,7 +35,7 @@ TEST_CASE("multiplex", "[multiplex]") {
     REQUIRE(out.check_flushed());
 }
 
-TEST_CASE("demultiplex", "[demultiplex]") {
+TEST_CASE("demultiplex") {
     using out_events = event_set<e0, e1>;
     auto ctx = std::make_shared<processor_context>();
     auto in = feed_input<event_set<event_variant<event_set<e0, e1>>>>(

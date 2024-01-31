@@ -24,7 +24,7 @@ static_assert(std::is_pod_v<swabian_tag_event>);
 
 static_assert(sizeof(swabian_tag_event) == 16);
 
-TEST_CASE("swabian tag equality and inequality", "[swabian_tag_event]") {
+TEST_CASE("swabian tag equality and inequality") {
     auto const ptrn =
         std::array<u8, 16>{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15};
     swabian_tag_event e0{};
@@ -47,7 +47,7 @@ TEST_CASE("swabian tag equality and inequality", "[swabian_tag_event]") {
     CHECK(e2 != e3);
 }
 
-TEST_CASE("swabian tag read", "[swabian_tag_event]") {
+TEST_CASE("swabian tag read") {
     swabian_tag_event event{};
     CHECK(event.type() == swabian_tag_event::tag_type::time_tag);
     CHECK(event.missed_event_count() == 0_u16np);
@@ -110,7 +110,7 @@ TEST_CASE("swabian tag read", "[swabian_tag_event]") {
     CHECK(event.missed_event_count() == 513_u16np);
 }
 
-TEST_CASE("swabian tag assign", "[swabian_tag_event]") {
+TEST_CASE("swabian tag assign") {
     auto event = swabian_tag_event::make_time_tag(100_i64np, 3_i32np);
     CHECK(
         std::equal(event.bytes.begin(), event.bytes.end(),
@@ -147,7 +147,7 @@ TEST_CASE("swabian tag assign", "[swabian_tag_event]") {
                        .begin()));
 }
 
-TEST_CASE("decode swabian tags", "[decode_swabian_tags]") {
+TEST_CASE("decode swabian tags") {
     using out_events =
         event_set<detection_event<>, begin_lost_interval_event<>,
                   end_lost_interval_event<>, untagged_counts_event<>,

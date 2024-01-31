@@ -23,7 +23,7 @@ using out_events = event_set<open_event, close_event, gated_event, misc_event>;
 
 } // namespace
 
-TEST_CASE("Gate events", "[gate]") {
+TEST_CASE("Gate events") {
     bool const initially_open = GENERATE(false, true);
     auto ctx = std::make_shared<processor_context>();
     auto in = feed_input<

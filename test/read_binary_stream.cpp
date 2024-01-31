@@ -35,7 +35,7 @@ class autodelete {
 
 } // namespace
 
-TEST_CASE("read file", "[read_binary_stream]") {
+TEST_CASE("read file") {
     auto path = std::filesystem::temp_directory_path() /
                 "libtcspc_test_read_binary_stream";
     std::array<std::uint64_t, 7> data{42, 43, 44, 45, 46, 47, 48};
@@ -130,7 +130,7 @@ TEST_CASE("read file", "[read_binary_stream]") {
     }
 }
 
-TEST_CASE("read existing istream, known length", "[read_binary_stream]") {
+TEST_CASE("read existing istream, known length") {
     std::array<std::uint64_t, 7> data{42, 43, 44, 45, 46, 47, 48};
     std::stringstream stream;
     // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
@@ -156,7 +156,7 @@ TEST_CASE("read existing istream, known length", "[read_binary_stream]") {
     REQUIRE(out.check_flushed());
 }
 
-TEST_CASE("read existing istream, to end", "[read_binary_stream]") {
+TEST_CASE("read existing istream, to end") {
     std::array<std::uint64_t, 7> data{42, 43, 44, 45, 46, 47, 48};
     std::stringstream stream;
     // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
@@ -183,7 +183,7 @@ TEST_CASE("read existing istream, to end", "[read_binary_stream]") {
     REQUIRE(out.check_flushed());
 }
 
-TEST_CASE("read existing istream, empty", "[read_binary_stream]") {
+TEST_CASE("read existing istream, empty") {
     std::istringstream stream;
     REQUIRE(stream.good());
 

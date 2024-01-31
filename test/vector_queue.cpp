@@ -12,7 +12,7 @@ namespace tcspc::internal {
 
 // Tests assume first allocation capacity is 3 elements.
 
-TEST_CASE("Vector queue of int", "[vector_queue]") {
+TEST_CASE("Vector queue of int") {
     vector_queue<int> q;
 
     // NOLINTBEGIN(readability-container-size-empty)
@@ -116,7 +116,7 @@ TEST_CASE("Vector queue of int", "[vector_queue]") {
     REQUIRE(q.empty());
 }
 
-TEST_CASE("Vector queue of shared_ptr", "[vector_queue]") {
+TEST_CASE("Vector queue of shared_ptr") {
     vector_queue<std::shared_ptr<int>> q;
 
     auto p = q;

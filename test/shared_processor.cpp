@@ -12,14 +12,14 @@
 
 namespace tcspc {
 
-TEST_CASE("move to shared", "[move_to_shared]") {
+TEST_CASE("move to shared") {
     std::shared_ptr<int> const spi = move_to_shared(123);
     std::string s = "hello";
     // auto const sps = move_to_shared(s); // Fails to compile with lvalue.
     auto const sps = move_to_shared(std::move(s));
 }
 
-TEST_CASE("shared_processor", "[shared_processor]") {
+TEST_CASE("shared_processor") {
     using e = empty_test_event<0>;
     auto ctx = std::make_shared<processor_context>();
     auto shptr = move_to_shared(capture_output<event_set<e>>(

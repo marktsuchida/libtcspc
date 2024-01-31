@@ -20,7 +20,7 @@ using out_events = event_set<detection_event<>, detection_pair_event<>>;
 
 }
 
-TEST_CASE("pair all", "[pair_all]") {
+TEST_CASE("pair all") {
     auto ctx = std::make_shared<processor_context>();
     auto in = feed_input<event_set<detection_event<>>>(
         pair_all(0, std::array<default_data_traits::channel_type, 1>{1}, 2,
@@ -93,7 +93,7 @@ TEST_CASE("pair all", "[pair_all]") {
     }
 }
 
-TEST_CASE("pair all with self", "[pair_all]") {
+TEST_CASE("pair all with self") {
     auto ctx = std::make_shared<processor_context>();
     auto in = feed_input<event_set<detection_event<>>>(
         pair_all(0, std::array<default_data_traits::channel_type, 1>{0}, 2,
@@ -124,7 +124,7 @@ TEST_CASE("pair all with self", "[pair_all]") {
     REQUIRE(out.check_flushed());
 }
 
-TEST_CASE("pair one", "[pair_one]") {
+TEST_CASE("pair one") {
     auto ctx = std::make_shared<processor_context>();
     auto in = feed_input<event_set<detection_event<>>>(
         pair_one(0, std::array<default_data_traits::channel_type, 1>{1}, 2,
@@ -191,7 +191,7 @@ TEST_CASE("pair one", "[pair_one]") {
     }
 }
 
-TEST_CASE("pair one with self", "[pair_one]") {
+TEST_CASE("pair one with self") {
     auto ctx = std::make_shared<processor_context>();
     auto in = feed_input<event_set<detection_event<>>>(
         pair_one(0, std::array<default_data_traits::channel_type, 1>{0}, 2,
@@ -220,7 +220,7 @@ TEST_CASE("pair one with self", "[pair_one]") {
     REQUIRE(out.check_flushed());
 }
 
-TEST_CASE("pair all between", "[pair_all_between]") {
+TEST_CASE("pair all between") {
     auto ctx = std::make_shared<processor_context>();
     auto in = feed_input<event_set<detection_event<>>>(pair_all_between(
         0, std::array<default_data_traits::channel_type, 1>{1}, 2,
@@ -289,7 +289,7 @@ TEST_CASE("pair all between", "[pair_all_between]") {
     }
 }
 
-TEST_CASE("pair all between with self", "[pair_all_between]") {
+TEST_CASE("pair all between with self") {
     auto ctx = std::make_shared<processor_context>();
     auto in = feed_input<event_set<detection_event<>>>(pair_all_between(
         0, std::array<default_data_traits::channel_type, 1>{0}, 2,
@@ -318,7 +318,7 @@ TEST_CASE("pair all between with self", "[pair_all_between]") {
     REQUIRE(out.check_flushed());
 }
 
-TEST_CASE("pair one between", "[pair_one_between]") {
+TEST_CASE("pair one between") {
     auto ctx = std::make_shared<processor_context>();
     auto in = feed_input<event_set<detection_event<>>>(pair_one_between(
         0, std::array<default_data_traits::channel_type, 1>{1}, 2,
@@ -385,7 +385,7 @@ TEST_CASE("pair one between", "[pair_one_between]") {
     }
 }
 
-TEST_CASE("pair one between with self", "[pair_one_between]") {
+TEST_CASE("pair one between with self") {
     auto ctx = std::make_shared<processor_context>();
     auto in = feed_input<event_set<detection_event<>>>(pair_one_between(
         0, std::array<default_data_traits::channel_type, 1>{0}, 2,

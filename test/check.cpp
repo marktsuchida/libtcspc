@@ -12,7 +12,7 @@
 
 namespace tcspc {
 
-TEST_CASE("check monotonic", "[check_monotonic]") {
+TEST_CASE("check monotonic") {
     using e0 = timestamped_test_event<0>;
     using out_events = event_set<e0, warning_event>;
     auto ctx = std::make_shared<processor_context>();
@@ -37,7 +37,7 @@ TEST_CASE("check monotonic", "[check_monotonic]") {
     REQUIRE(out.check_flushed());
 }
 
-TEST_CASE("check alternating", "[check_alternating]") {
+TEST_CASE("check alternating") {
     using e0 = timestamped_test_event<0>;
     using e1 = timestamped_test_event<1>;
     using e2 = timestamped_test_event<2>;

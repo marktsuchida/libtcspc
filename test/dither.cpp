@@ -21,14 +21,14 @@ using output_event = timestamped_test_event<1>;
 
 namespace internal {
 
-TEST_CASE("uniformly distributed double", "[dither]") {
+TEST_CASE("uniformly distributed double") {
     CHECK(uniform_double_0_1(0) == 0.0);
     CHECK(uniform_double_0_1(std::uint64_t(-1)) < 1.0);
     CHECK_THAT(uniform_double_0_1(std::uint64_t(-1)),
                Catch::Matchers::WithinAbs(1.0, 1e-15));
 }
 
-TEST_CASE("uniformly distributed double, for std::minstd_rand", "[dither]") {
+TEST_CASE("uniformly distributed double, for std::minstd_rand") {
     CHECK(uniform_double_0_1_minstd(0) == 0.0);
     CHECK(uniform_double_0_1_minstd(1'073'741'824) == 0.5);
     CHECK(uniform_double_0_1_minstd(2'147'483'647) < 1.0);
@@ -36,7 +36,7 @@ TEST_CASE("uniformly distributed double, for std::minstd_rand", "[dither]") {
                Catch::Matchers::WithinAbs(1.0, 1e-9));
 }
 
-TEST_CASE("dither given random double in 1.0 to 2.0", "[dither]") {
+TEST_CASE("dither given random double in 1.0 to 2.0") {
     CHECK(dither<std::int64_t>(0.0, 0.0) == 0);
     CHECK(dither<std::int64_t>(0.1, 0.0) == 0);
     CHECK(dither<std::int64_t>(0.999, 0.0) == 0);
@@ -48,7 +48,7 @@ TEST_CASE("dither given random double in 1.0 to 2.0", "[dither]") {
     CHECK(dither<std::int64_t>(1.0, 0.9999) == 1);
 }
 
-TEST_CASE("dithering quantizer", "[dither]") {
+TEST_CASE("dithering quantizer") {
     dithering_quantizer<std::int64_t> dq;
     CHECK(dq(-1.0) == -1);
     CHECK(dq(0.0) == 0);

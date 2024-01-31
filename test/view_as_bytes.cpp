@@ -19,7 +19,7 @@ using out_events = event_set<autocopy_span<std::byte const>>;
 
 }
 
-TEST_CASE("view as bytes", "[view_as_bytes]") {
+TEST_CASE("view as bytes") {
     auto ctx = std::make_shared<processor_context>();
     auto in = feed_input<event_set<int>>(
         view_as_bytes<int>(capture_output<out_events>(
@@ -35,7 +35,7 @@ TEST_CASE("view as bytes", "[view_as_bytes]") {
     REQUIRE(out.check_flushed());
 }
 
-TEST_CASE("view as bytes, vector specialization", "[view_as_bytes]") {
+TEST_CASE("view as bytes, vector specialization") {
     auto ctx = std::make_shared<processor_context>();
     auto in = feed_input<event_set<std::vector<int>>>(
         view_as_bytes<std::vector<int>>(capture_output<out_events>(
@@ -51,7 +51,7 @@ TEST_CASE("view as bytes, vector specialization", "[view_as_bytes]") {
     REQUIRE(out.check_flushed());
 }
 
-TEST_CASE("view histogram as bytes", "[view_histogram_as_bytes]") {
+TEST_CASE("view histogram as bytes") {
     auto ctx = std::make_shared<processor_context>();
     auto in = feed_input<event_set<histogram_event<>>>(
         view_histogram_as_bytes<histogram_event<>>(capture_output<out_events>(
@@ -70,7 +70,7 @@ TEST_CASE("view histogram as bytes", "[view_histogram_as_bytes]") {
     REQUIRE(out.check_flushed());
 }
 
-TEST_CASE("view histogram array as bytes", "[view_histogram_array_as_bytes]") {
+TEST_CASE("view histogram array as bytes") {
     auto ctx = std::make_shared<processor_context>();
     auto in = feed_input<event_set<histogram_array_event<>>>(
         view_histogram_array_as_bytes<histogram_array_event<>>(

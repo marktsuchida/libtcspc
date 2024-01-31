@@ -14,7 +14,7 @@
 
 namespace tcspc {
 
-TEST_CASE("Read u16np", "[read_bytes]") {
+TEST_CASE("Read u16np") {
     bool const use_memcpy = GENERATE(false, true);
     auto f = use_memcpy ? internal::read_u16le_memcpy
                         : internal::read_u16le_generic;
@@ -39,7 +39,7 @@ TEST_CASE("Read u16np", "[read_bytes]") {
     }
 }
 
-TEST_CASE("Read u32np", "[read_bytes]") {
+TEST_CASE("Read u32np") {
     bool const use_memcpy = GENERATE(false, true);
     auto f = use_memcpy ? internal::read_u32le_memcpy
                         : internal::read_u32le_generic;
@@ -66,7 +66,7 @@ TEST_CASE("Read u32np", "[read_bytes]") {
     }
 }
 
-TEST_CASE("Read u64np", "[read_bytes]") {
+TEST_CASE("Read u64np") {
     bool const use_memcpy = GENERATE(false, true);
     auto f = use_memcpy ? internal::read_u64le_memcpy
                         : internal::read_u64le_generic;

@@ -22,7 +22,7 @@ using out_events = event_set<trigger_event, output_event, misc_event>;
 
 } // namespace
 
-TEST_CASE("Generate null timing", "[generate][null_timing_generator]") {
+TEST_CASE("Generate null timing") {
     auto ctx = std::make_shared<processor_context>();
     auto in = feed_input<event_set<trigger_event>>(generate<trigger_event>(
         null_timing_generator<output_event>(),
@@ -91,7 +91,7 @@ TEST_CASE("Generate one-shot timing",
     }
 }
 
-TEST_CASE("Generate linear timing", "[generate][linear_timing_generator]") {
+TEST_CASE("Generate linear timing") {
     default_data_traits::abstime_type const delay = GENERATE(0, 1, 2);
     default_data_traits::abstime_type const interval = GENERATE(1, 2);
 

@@ -48,7 +48,7 @@ template <typename OutputStream> class ref_output_stream {
 
 }; // namespace
 
-TEST_CASE("write binary stream", "[write_binary_stream]") {
+TEST_CASE("write binary stream") {
     // We use a fixed writing granularity but vary event size and start offset
     // to test different cases.
     static constexpr auto granularity = 4;
@@ -310,7 +310,7 @@ TEST_CASE("write binary stream", "[write_binary_stream]") {
     }
 }
 
-TEST_CASE("write binary file with view as bytes", "[write_binary_file]") {
+TEST_CASE("write binary file with view as bytes") {
     auto stream = mock_output_stream();
     auto proc = view_as_bytes<int>(write_binary_stream<>(
         ref_output_stream(stream),

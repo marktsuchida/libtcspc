@@ -23,7 +23,7 @@ using out_events = event_set<tick_event, fire_event, reset_event, misc_event>;
 
 } // namespace
 
-TEST_CASE("Count up to", "[count_up_to]") {
+TEST_CASE("Count up to") {
     auto ctx = std::make_shared<processor_context>();
 
     SECTION("Threshold 0, limit 1") {
@@ -174,7 +174,7 @@ TEST_CASE("Count up to", "[count_up_to]") {
     }
 }
 
-TEST_CASE("Count down to", "[count_down_to]") {
+TEST_CASE("Count down to") {
     auto ctx = std::make_shared<processor_context>();
     auto in = feed_input<event_set<tick_event, reset_event, misc_event>>(
         count_down_to<tick_event, fire_event, reset_event, false>(
@@ -199,7 +199,7 @@ TEST_CASE("Count down to", "[count_down_to]") {
     REQUIRE(out.check_flushed());
 }
 
-TEST_CASE("event counter", "[count]") {
+TEST_CASE("event counter") {
     auto ctx = std::make_shared<processor_context>();
     auto in = feed_input<event_set<tick_event, misc_event>>(
         count<tick_event>(ctx->tracker<count_access>("counter"),

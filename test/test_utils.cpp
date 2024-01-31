@@ -20,7 +20,7 @@ namespace tcspc {
 using e0 = empty_test_event<0>;
 using e1 = timestamped_test_event<1>;
 
-TEST_CASE("Short-circuited with no events", "[test_utils]") {
+TEST_CASE("Short-circuited with no events") {
     auto ctx = std::make_shared<processor_context>();
     auto in = feed_input<event_set<>>(capture_output<event_set<>>(
         ctx->tracker<capture_output_access>("out")));
@@ -36,7 +36,7 @@ TEST_CASE("Short-circuited with no events", "[test_utils]") {
     SECTION("Unflushed end") { CHECK(out.check_not_flushed()); }
 }
 
-TEST_CASE("Short-circuited with event set", "[test_utils]") {
+TEST_CASE("Short-circuited with event set") {
     auto ctx = std::make_shared<processor_context>();
     auto in = feed_input<event_set<e0, e1>>(capture_output<event_set<e0, e1>>(
         ctx->tracker<capture_output_access>("out")));

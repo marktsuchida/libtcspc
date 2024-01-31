@@ -27,7 +27,7 @@ struct data_traits : default_data_traits {
 
 } // namespace
 
-TEMPLATE_TEST_CASE("Histogram, zero bins", "[histogram]", saturate_on_overflow,
+TEMPLATE_TEST_CASE("Histogram, zero bins", "", saturate_on_overflow,
                    reset_on_overflow, stop_on_overflow, error_on_overflow) {
     using out_events =
         event_set<histogram_event<data_traits>,
@@ -54,9 +54,8 @@ TEMPLATE_TEST_CASE("Histogram, zero bins", "[histogram]", saturate_on_overflow,
     REQUIRE(out.check_flushed());
 }
 
-TEMPLATE_TEST_CASE("Histogram, no overflow", "[histogram]",
-                   saturate_on_overflow, reset_on_overflow, stop_on_overflow,
-                   error_on_overflow) {
+TEMPLATE_TEST_CASE("Histogram, no overflow", "", saturate_on_overflow,
+                   reset_on_overflow, stop_on_overflow, error_on_overflow) {
     using out_events = event_set<histogram_event<data_traits>,
                                  concluding_histogram_event<data_traits>>;
     auto ctx = std::make_shared<processor_context>();
@@ -94,7 +93,7 @@ TEMPLATE_TEST_CASE("Histogram, no overflow", "[histogram]",
     REQUIRE(out.check_flushed());
 }
 
-TEST_CASE("Histogram, saturate on overflow", "[histogram]") {
+TEST_CASE("Histogram, saturate on overflow") {
     using out_events = event_set<histogram_event<data_traits>,
                                  concluding_histogram_event<data_traits>>;
     auto ctx = std::make_shared<processor_context>();
@@ -158,7 +157,7 @@ TEST_CASE("Histogram, saturate on overflow", "[histogram]") {
     }
 }
 
-TEST_CASE("Histogram, reset on overflow", "[histogram]") {
+TEST_CASE("Histogram, reset on overflow") {
     using out_events = event_set<histogram_event<data_traits>,
                                  concluding_histogram_event<data_traits>>;
     auto ctx = std::make_shared<processor_context>();
@@ -210,7 +209,7 @@ TEST_CASE("Histogram, reset on overflow", "[histogram]") {
     }
 }
 
-TEST_CASE("Histogram, stop on overflow", "[histogram]") {
+TEST_CASE("Histogram, stop on overflow") {
     using out_events = event_set<histogram_event<data_traits>,
                                  concluding_histogram_event<data_traits>>;
     auto ctx = std::make_shared<processor_context>();
@@ -259,7 +258,7 @@ TEST_CASE("Histogram, stop on overflow", "[histogram]") {
     }
 }
 
-TEST_CASE("Histogram, error on overflow", "[histogram]") {
+TEST_CASE("Histogram, error on overflow") {
     using out_events = event_set<histogram_event<data_traits>,
                                  concluding_histogram_event<data_traits>>;
     auto ctx = std::make_shared<processor_context>();

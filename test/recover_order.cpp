@@ -19,7 +19,7 @@ using e1 = timestamped_test_event<1>;
 
 } // namespace
 
-TEST_CASE("recover order", "[recover_order]") {
+TEST_CASE("recover order") {
     auto ctx = std::make_shared<processor_context>();
     auto in = feed_input<event_set<e0>>(recover_order<event_set<e0>>(
         3, capture_output<event_set<e0>>(
@@ -66,7 +66,7 @@ TEST_CASE("recover order", "[recover_order]") {
     }
 }
 
-TEST_CASE("recover order, empty time window", "[recover_order]") {
+TEST_CASE("recover order, empty time window") {
     auto ctx = std::make_shared<processor_context>();
     auto in = feed_input<event_set<e0>>(recover_order<event_set<e0>>(
         0, capture_output<event_set<e0>>(
@@ -119,7 +119,7 @@ TEST_CASE("recover order, empty time window", "[recover_order]") {
     }
 }
 
-TEST_CASE("recover order, multiple event types", "[recover_order]") {
+TEST_CASE("recover order, multiple event types") {
     auto ctx = std::make_shared<processor_context>();
     auto in = feed_input<event_set<e0, e1>>(recover_order<event_set<e0, e1>>(
         3, capture_output<event_set<e0, e1>>(

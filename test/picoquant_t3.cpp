@@ -23,9 +23,8 @@ static_assert(sizeof(pqt3_picoharp300_event) == 4);
 static_assert(sizeof(pqt3_hydraharpv1_event) == 4);
 static_assert(sizeof(pqt3_generic_event) == 4);
 
-TEMPLATE_TEST_CASE("pqt3 equality and inequality", "[pqt3_event]",
-                   pqt3_picoharp300_event, pqt3_hydraharpv1_event,
-                   pqt3_generic_event) {
+TEMPLATE_TEST_CASE("pqt3 equality and inequality", "", pqt3_picoharp300_event,
+                   pqt3_hydraharpv1_event, pqt3_generic_event) {
     auto const ptrn = std::array<u8, 4>{1, 2, 3, 4};
     CHECK(le_event<TestType>(ptrn) == le_event<TestType>(ptrn));
 
@@ -36,7 +35,7 @@ TEMPLATE_TEST_CASE("pqt3 equality and inequality", "[pqt3_event]",
     CHECK(le_event<TestType>(nonzero2) != le_event<TestType>(zero));
 }
 
-TEST_CASE("pqt3 picoharp300 event type", "[pqt3_event]") {
+TEST_CASE("pqt3 picoharp300 event type") {
     auto const zero = le_event<pqt3_picoharp300_event>(
         {0b0000'0000, 0b0000'0000, 0b0000'0000, 0b0000'0000});
     CHECK_FALSE(zero.is_special());
@@ -92,7 +91,7 @@ TEST_CASE("pqt3 picoharp300 event type", "[pqt3_event]") {
     CHECK_FALSE(out_of_range_marker.is_external_marker());
 }
 
-TEMPLATE_TEST_CASE("pqt3 event type", "[pqt3_event]", pqt3_hydraharpv1_event,
+TEMPLATE_TEST_CASE("pqt3 event type", "", pqt3_hydraharpv1_event,
                    pqt3_generic_event) {
     auto const zero = le_event<TestType>(
         {0b0000'0000, 0b0000'0000, 0b0000'0000, 0b0000'0000});
@@ -149,7 +148,7 @@ TEMPLATE_TEST_CASE("pqt3 event type", "[pqt3_event]", pqt3_hydraharpv1_event,
     CHECK_FALSE(out_of_range_marker.is_external_marker());
 }
 
-TEST_CASE("pqt3 picoharp300 read channel", "[pqt3_event]") {
+TEST_CASE("pqt3 picoharp300 read channel") {
     auto const chan0 = le_event<pqt3_picoharp300_event>(
         {0b0000'1111, 0b1111'1111, 0b1111'1111, 0b1111'1111});
     REQUIRE_FALSE(chan0.is_special());
@@ -161,7 +160,7 @@ TEST_CASE("pqt3 picoharp300 read channel", "[pqt3_event]") {
     CHECK(chan14.channel() == 14_u8np);
 }
 
-TEMPLATE_TEST_CASE("pqt3 read channel", "[pqt3_event]", pqt3_hydraharpv1_event,
+TEMPLATE_TEST_CASE("pqt3 read channel", "", pqt3_hydraharpv1_event,
                    pqt3_generic_event) {
     auto const chan0 = le_event<TestType>(
         {0b0000'0001, 0b1111'1111, 0b1111'1111, 0b1111'1111});
@@ -174,7 +173,7 @@ TEMPLATE_TEST_CASE("pqt3 read channel", "[pqt3_event]", pqt3_hydraharpv1_event,
     CHECK(chan63.channel() == 63_u8np);
 }
 
-TEST_CASE("pqt3 picoharp300 read dtime", "[pqt3_event]") {
+TEST_CASE("pqt3 picoharp300 read dtime") {
     auto const dtime0 = le_event<pqt3_picoharp300_event>(
         {0b0001'0000, 0b0000'0000, 0b1111'1111, 0b1111'1111});
     REQUIRE_FALSE(dtime0.is_special());
@@ -186,7 +185,7 @@ TEST_CASE("pqt3 picoharp300 read dtime", "[pqt3_event]") {
     CHECK(dtime_max.dtime() == 4095_u16np);
 }
 
-TEMPLATE_TEST_CASE("pqt3 read dtime", "[pqt3_event]", pqt3_hydraharpv1_event,
+TEMPLATE_TEST_CASE("pqt3 read dtime", "", pqt3_hydraharpv1_event,
                    pqt3_generic_event) {
     auto const dtime0 = le_event<TestType>(
         {0b0000'0010, 0b0000'0000, 0b0000'0011, 0b1111'1111});
@@ -199,7 +198,7 @@ TEMPLATE_TEST_CASE("pqt3 read dtime", "[pqt3_event]", pqt3_hydraharpv1_event,
     CHECK(dtime_max.dtime() == 32767_u16np);
 }
 
-TEST_CASE("pqt3 picoharp300 read nsync", "[pqt3_event]") {
+TEST_CASE("pqt3 picoharp300 read nsync") {
     auto const nsync0 = le_event<pqt3_picoharp300_event>(
         {0b1110'1111, 0b1111'1111, 0b0000'0000, 0b0000'0000});
     REQUIRE_FALSE(nsync0.is_special());
@@ -211,7 +210,7 @@ TEST_CASE("pqt3 picoharp300 read nsync", "[pqt3_event]") {
     CHECK(nsync_max.nsync() == 65535_u16np);
 }
 
-TEMPLATE_TEST_CASE("pqt3 read nsync", "[pqt3_event]", pqt3_hydraharpv1_event,
+TEMPLATE_TEST_CASE("pqt3 read nsync", "", pqt3_hydraharpv1_event,
                    pqt3_generic_event) {
     auto const nsync0 = le_event<TestType>(
         {0b0000'0001, 0b1111'1111, 0b1111'1100, 0b0000'0000});
@@ -224,7 +223,7 @@ TEMPLATE_TEST_CASE("pqt3 read nsync", "[pqt3_event]", pqt3_hydraharpv1_event,
     CHECK(nsync_max.nsync() == 1023_u16np);
 }
 
-TEST_CASE("pqt3 picoharp300 read nsync overflow count", "[pqt3_event]") {
+TEST_CASE("pqt3 picoharp300 read nsync overflow count") {
     auto const dtime0 = le_event<pqt3_picoharp300_event>(
         {0b1111'0000, 0b0000'0000, 0b0000'0000, 0b0000'0000});
     REQUIRE(dtime0.is_nsync_overflow());
@@ -236,7 +235,7 @@ TEST_CASE("pqt3 picoharp300 read nsync overflow count", "[pqt3_event]") {
     CHECK(dtime_max.nsync_overflow_count() == 1_u16np);
 }
 
-TEST_CASE("pqt3 hydraharlv1 read nsync overflow count", "[pqt3_event]") {
+TEST_CASE("pqt3 hydraharlv1 read nsync overflow count") {
     auto const zeros = le_event<pqt3_hydraharpv1_event>(
         {0b1111'1111, 0b1111'1111, 0b1111'1100, 0b0000'0000});
     REQUIRE(zeros.is_nsync_overflow());
@@ -248,7 +247,7 @@ TEST_CASE("pqt3 hydraharlv1 read nsync overflow count", "[pqt3_event]") {
     CHECK(ones.nsync_overflow_count() == 1_u16np);
 }
 
-TEST_CASE("pqt3 hydraharlv2 read nsync overflow count", "[pqt3_event]") {
+TEST_CASE("pqt3 hydraharlv2 read nsync overflow count") {
     auto const zeros = le_event<pqt3_generic_event>(
         {0b1111'1111, 0b1111'1111, 0b1111'1100, 0b0000'0000});
     REQUIRE(zeros.is_nsync_overflow());
@@ -260,7 +259,7 @@ TEST_CASE("pqt3 hydraharlv2 read nsync overflow count", "[pqt3_event]") {
     CHECK(ones.nsync_overflow_count() == 1023_u16np);
 }
 
-TEST_CASE("pqt3 picoharp300 read external marker bits", "[pqt3_event]") {
+TEST_CASE("pqt3 picoharp300 read external marker bits") {
     auto const marker1 = le_event<pqt3_picoharp300_event>(
         {0b1111'0000, 0b0000'0001, 0b0000'0000, 0b0000'0000});
     REQUIRE(marker1.is_external_marker());
@@ -272,7 +271,7 @@ TEST_CASE("pqt3 picoharp300 read external marker bits", "[pqt3_event]") {
     CHECK(marker_all.external_marker_bits() == 15_u16np);
 }
 
-TEMPLATE_TEST_CASE("pqt3 read external marker bits", "[pqt3_event]",
+TEMPLATE_TEST_CASE("pqt3 read external marker bits", "",
                    pqt3_hydraharpv1_event, pqt3_generic_event) {
     auto const marker1 = le_event<TestType>(
         {0b1000'0010, 0b0000'0000, 0b0000'0000, 0b0000'0000});
@@ -285,7 +284,7 @@ TEMPLATE_TEST_CASE("pqt3 read external marker bits", "[pqt3_event]",
     CHECK(marker_all.external_marker_bits() == 15_u8np);
 }
 
-TEST_CASE("pqt3 picoharp300 assign", "[pqt3_event]") {
+TEST_CASE("pqt3 picoharp300 assign") {
     CHECK(pqt3_picoharp300_event::make_nonspecial(0_u16np, 0_u8np, 0_u16np) ==
           le_event<pqt3_picoharp300_event>(
               {0b0000'0000, 0b0000'0000, 0b0000'0000, 0b0000'0000}));
@@ -316,7 +315,7 @@ TEST_CASE("pqt3 picoharp300 assign", "[pqt3_event]") {
               {0b1111'0000, 0b0000'1111, 0b1111'1111, 0b1111'1111}));
 }
 
-TEMPLATE_TEST_CASE("pqt3 assign", "[pqt3_event]", pqt3_hydraharpv1_event,
+TEMPLATE_TEST_CASE("pqt3 assign", "", pqt3_hydraharpv1_event,
                    pqt3_generic_event) {
     CHECK(TestType::make_nonspecial(0_u16np, 0_u8np, 0_u16np) ==
           le_event<TestType>(
@@ -368,7 +367,7 @@ using out_events = event_set<time_correlated_detection_event<>, marker_event<>,
 
 }
 
-TEST_CASE("decode pqt3 picoharp300", "[decode_pqt3_picoharp300]") {
+TEST_CASE("decode pqt3 picoharp300") {
     auto ctx = std::make_shared<processor_context>();
     auto in = feed_input<event_set<pqt3_picoharp300_event>>(
         decode_pqt3_picoharp300(capture_output<out_events>(
@@ -404,7 +403,7 @@ TEST_CASE("decode pqt3 picoharp300", "[decode_pqt3_picoharp300]") {
     REQUIRE(out.check_flushed());
 }
 
-TEST_CASE("decode pqt3 hydraharpv1", "[decode_pqt3_hydraharpv1]") {
+TEST_CASE("decode pqt3 hydraharpv1") {
     auto ctx = std::make_shared<processor_context>();
     auto in = feed_input<event_set<pqt3_hydraharpv1_event>>(
         decode_pqt3_hydraharpv1(capture_output<out_events>(
@@ -440,7 +439,7 @@ TEST_CASE("decode pqt3 hydraharpv1", "[decode_pqt3_hydraharpv1]") {
     REQUIRE(out.check_flushed());
 }
 
-TEST_CASE("decode pqt3 generic", "[decode_pqt3_generic]") {
+TEST_CASE("decode pqt3 generic") {
     auto ctx = std::make_shared<processor_context>();
     auto in = feed_input<event_set<pqt3_generic_event>>(
         decode_pqt3_generic(capture_output<out_events>(

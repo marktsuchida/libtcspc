@@ -14,13 +14,13 @@
 
 namespace tcspc {
 
-TEST_CASE("null sink", "[null_sink]") {
+TEST_CASE("null sink") {
     auto sink = null_sink();
     sink.handle(123);
     sink.handle(std::string("hello"));
 }
 
-TEST_CASE("null source", "[null_source]") {
+TEST_CASE("null source") {
     auto ctx = std::make_shared<processor_context>();
     auto src = null_source(capture_output<event_set<>>(
         ctx->tracker<capture_output_access>("out")));
@@ -33,7 +33,7 @@ namespace internal {
 
 static_assert(!false_for_type<int>::value);
 
-TEST_CASE("add_sat", "[common]") {
+TEST_CASE("add_sat") {
     REQUIRE(add_sat(0, 0) == 0);
     REQUIRE(add_sat(1, 2) == 3);
     REQUIRE(add_sat(1, -2) == -1);
@@ -45,7 +45,7 @@ TEST_CASE("add_sat", "[common]") {
     REQUIRE(add_sat(u8(100), u8(156)) == u8(255));
 }
 
-TEST_CASE("count_trailing_zeros_32", "[common]") {
+TEST_CASE("count_trailing_zeros_32") {
     REQUIRE(count_trailing_zeros_32(1_u32np) == 0);
     REQUIRE(count_trailing_zeros_32_nonintrinsic(1_u32np) == 0);
 
@@ -65,12 +65,12 @@ TEST_CASE("count_trailing_zeros_32", "[common]") {
     REQUIRE(count_trailing_zeros_32_nonintrinsic(1_u32np << 31) == 31);
 }
 
-TEST_CASE("as signed or unsigned", "[common]") {
+TEST_CASE("as signed or unsigned") {
     static_assert(as_signed(std::uint16_t(65535)) == std::int16_t(-1));
     static_assert(as_unsigned(std::int16_t(-1)) == std::uint16_t(65535));
 }
 
-TEST_CASE("narrow integer", "[common]") {
+TEST_CASE("narrow integer") {
     CHECK(narrow<std::uint8_t>(std::uint64_t(100)) == std::uint8_t(100));
 }
 

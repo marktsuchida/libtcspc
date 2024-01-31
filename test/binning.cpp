@@ -25,7 +25,7 @@ using misc_event = timestamped_test_event<2>;
 
 } // namespace
 
-TEST_CASE("Map to datapoints", "[map_to_datapoints][difftime_data_mapper]") {
+TEST_CASE("Map to datapoints") {
     struct data_traits : default_data_traits {
         using datapoint_type = difftime_type;
     };
@@ -49,7 +49,7 @@ TEST_CASE("Map to datapoints", "[map_to_datapoints][difftime_data_mapper]") {
     REQUIRE(out.check_flushed());
 }
 
-TEST_CASE("Map to bins", "[map_to_bin]") {
+TEST_CASE("Map to bins") {
     struct data_traits : default_data_traits {
         using datapoint_type = i32;
         using bin_index_type = u32;
@@ -110,7 +110,7 @@ TEST_CASE("Map to bins", "[map_to_bin]") {
     }
 }
 
-TEST_CASE("Power-of-2 bin mapping", "[power_of_2_bin_mapper]") {
+TEST_CASE("Power-of-2 bin mapping") {
     struct data_traits : default_data_traits {
         using datapoint_type = u32;
         using bin_index_type = u16;
@@ -239,7 +239,7 @@ TEST_CASE("Power-of-2 bin mapping", "[power_of_2_bin_mapper]") {
     REQUIRE(m32_16(m).value() == 65535);
 }
 
-TEST_CASE("Linear bin mapping", "[linear_bin_mapper]") {
+TEST_CASE("Linear bin mapping") {
     struct data_traits : default_data_traits {
         using datapoint_type = i32;
         using bin_index_type = u16;
@@ -381,7 +381,7 @@ TEST_CASE("Linear bin mapping", "[linear_bin_mapper]") {
     REQUIRE(check_clamped(flipped(65535), 0));
 }
 
-TEST_CASE("Batch bin increments", "[batch_bin_increments]") {
+TEST_CASE("Batch bin increments") {
     struct data_traits : default_data_traits {
         using bin_index_type = u32;
     };

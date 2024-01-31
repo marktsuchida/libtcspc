@@ -21,7 +21,7 @@ using out_events = event_set<marker_event<>, output_event, misc_event>;
 
 } // namespace
 
-TEST_CASE("Match and replace", "[match_replace]") {
+TEST_CASE("Match and replace") {
     auto ctx = std::make_shared<processor_context>();
     auto in = feed_input<event_set<marker_event<>, misc_event>>(
         match_replace<marker_event<>, output_event>(
@@ -42,7 +42,7 @@ TEST_CASE("Match and replace", "[match_replace]") {
     REQUIRE(out.check_flushed());
 }
 
-TEST_CASE("Match", "[match]") {
+TEST_CASE("Match") {
     auto ctx = std::make_shared<processor_context>();
     auto in = feed_input<event_set<marker_event<>, misc_event>>(
         match<marker_event<>, output_event>(

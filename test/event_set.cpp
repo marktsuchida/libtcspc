@@ -71,7 +71,7 @@ struct my_event {
 
 } // namespace
 
-TEST_CASE("Stream insertion of event_variant", "[event_variant]") {
+TEST_CASE("Stream insertion of event_variant") {
     using ev = event_variant<event_set<my_event>>;
     ev const instance(my_event{});
     std::ostringstream stream;
@@ -79,7 +79,7 @@ TEST_CASE("Stream insertion of event_variant", "[event_variant]") {
     CHECK(stream.str() == "expected output");
 }
 
-TEST_CASE("Equality comparison of event_variant", "[event_variant]") {
+TEST_CASE("Equality comparison of event_variant") {
     // Demonstrate that event_variant inherits members and operators from
     // std::variant.
     using ev = event_variant<event_set<int, double>>;

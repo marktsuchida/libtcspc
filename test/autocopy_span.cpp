@@ -14,7 +14,7 @@
 
 namespace tcspc {
 
-TEST_CASE("Autocopying span", "[autocopy_span]") {
+TEST_CASE("Autocopying span") {
     std::array a{1, 2, 3};
     autocopy_span const aspan(a); // CTAD check
 

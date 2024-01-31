@@ -21,7 +21,7 @@ using out_events = event_set<e0, e1>;
 
 } // namespace
 
-TEST_CASE("Delay", "[delay]") {
+TEST_CASE("Delay") {
     auto ctx = std::make_shared<processor_context>();
 
     SECTION("Zero delay is noop") {
@@ -71,7 +71,7 @@ TEST_CASE("Delay", "[delay]") {
     }
 }
 
-TEST_CASE("zero-base abstime", "[zero_base_abstime]") {
+TEST_CASE("zero-base abstime") {
     auto ctx = std::make_shared<processor_context>();
     auto in = feed_input<event_set<e0, e1>>(
         zero_base_abstime(capture_output<out_events>(

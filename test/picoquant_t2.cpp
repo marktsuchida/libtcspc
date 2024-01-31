@@ -23,9 +23,8 @@ static_assert(sizeof(pqt2_picoharp300_event) == 4);
 static_assert(sizeof(pqt2_hydraharpv1_event) == 4);
 static_assert(sizeof(pqt2_generic_event) == 4);
 
-TEMPLATE_TEST_CASE("pqt2 equality and inequality", "[pqt2_event]",
-                   pqt2_picoharp300_event, pqt2_hydraharpv1_event,
-                   pqt2_generic_event) {
+TEMPLATE_TEST_CASE("pqt2 equality and inequality", "", pqt2_picoharp300_event,
+                   pqt2_hydraharpv1_event, pqt2_generic_event) {
     auto const ptrn = std::array<u8, 4>{1, 2, 3, 4};
     CHECK(le_event<TestType>(ptrn) == le_event<TestType>(ptrn));
 
@@ -36,7 +35,7 @@ TEMPLATE_TEST_CASE("pqt2 equality and inequality", "[pqt2_event]",
     CHECK(le_event<TestType>(nonzero2) != le_event<TestType>(zero));
 }
 
-TEST_CASE("pqt2 picoharp300 event type", "[pqt2_event]") {
+TEST_CASE("pqt2 picoharp300 event type") {
     auto const zero = le_event<pqt2_picoharp300_event>(
         {0b0000'0000, 0b0000'0000, 0b0000'0000, 0b0000'0000});
     CHECK_FALSE(zero.is_special());
@@ -94,7 +93,7 @@ TEST_CASE("pqt2 picoharp300 event type", "[pqt2_event]") {
     CHECK(all_markers.is_external_marker());
 }
 
-TEMPLATE_TEST_CASE("pqt2 event type", "[pqt2_event]", pqt2_hydraharpv1_event,
+TEMPLATE_TEST_CASE("pqt2 event type", "", pqt2_hydraharpv1_event,
                    pqt2_generic_event) {
     auto const zero = le_event<TestType>(
         {0b0000'0000, 0b0000'0000, 0b0000'0000, 0b0000'0000});
@@ -160,7 +159,7 @@ TEMPLATE_TEST_CASE("pqt2 event type", "[pqt2_event]", pqt2_hydraharpv1_event,
     CHECK_FALSE(out_of_range_markers.is_external_marker());
 }
 
-TEST_CASE("pqt2 picoharp300 read channel", "[pqt2_event]") {
+TEST_CASE("pqt2 picoharp300 read channel") {
     auto const chan0 = le_event<pqt2_picoharp300_event>(
         {0b0000'1111, 0b1111'1111, 0b1111'1111, 0b1111'1111});
     REQUIRE_FALSE(chan0.is_special());
@@ -172,7 +171,7 @@ TEST_CASE("pqt2 picoharp300 read channel", "[pqt2_event]") {
     CHECK(chan14.channel() == 14_u8np);
 }
 
-TEMPLATE_TEST_CASE("pqt2 read channel", "[pqt2_event]", pqt2_hydraharpv1_event,
+TEMPLATE_TEST_CASE("pqt2 read channel", "", pqt2_hydraharpv1_event,
                    pqt2_generic_event) {
     auto const chan0 = le_event<TestType>(
         {0b0000'0001, 0b1111'1111, 0b1111'1111, 0b1111'1111});
@@ -185,7 +184,7 @@ TEMPLATE_TEST_CASE("pqt2 read channel", "[pqt2_event]", pqt2_hydraharpv1_event,
     CHECK(chan63.channel() == 63_u8np);
 }
 
-TEST_CASE("pqt2 picoharp300 read time tag", "[pqt2_event]") {
+TEST_CASE("pqt2 picoharp300 read time tag") {
     auto const timetag0 = le_event<pqt2_picoharp300_event>(
         {0b0001'0000, 0b0000'0000, 0b0000'0000, 0b0000'0000});
     REQUIRE_FALSE(timetag0.is_special());
@@ -197,8 +196,8 @@ TEST_CASE("pqt2 picoharp300 read time tag", "[pqt2_event]") {
     CHECK(timetag_max.timetag() == 268'435'455_u32np);
 }
 
-TEMPLATE_TEST_CASE("pqt2 read time tag", "[pqt2_event]",
-                   pqt2_hydraharpv1_event, pqt2_generic_event) {
+TEMPLATE_TEST_CASE("pqt2 read time tag", "", pqt2_hydraharpv1_event,
+                   pqt2_generic_event) {
     auto const timetag0 = le_event<TestType>(
         {0b0111'1110, 0b0000'0000, 0b0000'0000, 0b0000'0000});
     REQUIRE_FALSE(timetag0.is_special());
@@ -210,7 +209,7 @@ TEMPLATE_TEST_CASE("pqt2 read time tag", "[pqt2_event]",
     CHECK(timetag_max.timetag() == 33'554'431_u32np);
 }
 
-TEST_CASE("pqt2 picoharp300 read marker time tag", "[pqt2_event]") {
+TEST_CASE("pqt2 picoharp300 read marker time tag") {
     // Marker time tag should have low 4 bits zeroed.
     auto const marker_timetag = le_event<pqt2_picoharp300_event>(
         {0b1111'0011, 0b1100'0011, 0b0011'1100, 0b1111'1010});
@@ -219,8 +218,8 @@ TEST_CASE("pqt2 picoharp300 read marker time tag", "[pqt2_event]") {
           0b0011'1100'0011'0011'1100'1111'0000_u32np);
 }
 
-TEMPLATE_TEST_CASE("pqt2 read marker time tag", "[pqt2_event]",
-                   pqt2_hydraharpv1_event, pqt2_generic_event) {
+TEMPLATE_TEST_CASE("pqt2 read marker time tag", "", pqt2_hydraharpv1_event,
+                   pqt2_generic_event) {
     auto const timetag0 = le_event<TestType>(
         {0b1001'1110, 0b0000'0000, 0b0000'0000, 0b0000'0000});
     REQUIRE(timetag0.is_external_marker());
@@ -232,7 +231,7 @@ TEMPLATE_TEST_CASE("pqt2 read marker time tag", "[pqt2_event]",
     CHECK(timetag_max.timetag() == 33'554'431_u32np);
 }
 
-TEST_CASE("pqt2 picoharp300 read timetag overflow count", "[pqt2_event]") {
+TEST_CASE("pqt2 picoharp300 read timetag overflow count") {
     auto const zeros = le_event<pqt2_picoharp300_event>(
         {0b1111'0000, 0b0000'0000, 0b0000'0000, 0b0000'0000});
     REQUIRE(zeros.is_timetag_overflow());
@@ -244,7 +243,7 @@ TEST_CASE("pqt2 picoharp300 read timetag overflow count", "[pqt2_event]") {
     CHECK(ones.timetag_overflow_count() == 1_u32np);
 }
 
-TEST_CASE("pqt2 hydraharpv1 read time tag overflow count", "[pqt2_event]") {
+TEST_CASE("pqt2 hydraharpv1 read time tag overflow count") {
     auto const zeros = le_event<pqt2_hydraharpv1_event>(
         {0b1111'1110, 0b0000'0000, 0b0000'0000, 0b0000'0000});
     REQUIRE(zeros.is_timetag_overflow());
@@ -256,7 +255,7 @@ TEST_CASE("pqt2 hydraharpv1 read time tag overflow count", "[pqt2_event]") {
     CHECK(ones.timetag_overflow_count() == 1_u32np);
 }
 
-TEST_CASE("pqt2 generic read time tag overflow count", "[pqt2_event]") {
+TEST_CASE("pqt2 generic read time tag overflow count") {
     auto const zeros = le_event<pqt2_generic_event>(
         {0b1111'1110, 0b0000'0000, 0b0000'0000, 0b0000'0000});
     REQUIRE(zeros.is_timetag_overflow());
@@ -268,7 +267,7 @@ TEST_CASE("pqt2 generic read time tag overflow count", "[pqt2_event]") {
     CHECK(ones.timetag_overflow_count() == 33'554'431_u32np);
 }
 
-TEST_CASE("pqt2 picoharp300 read external marker bits", "[pqt2_event]") {
+TEST_CASE("pqt2 picoharp300 read external marker bits") {
     auto const marker1 = le_event<pqt2_picoharp300_event>(
         {0b1111'0000, 0b0000'0000, 0b0000'0000, 0b0000'0001});
     REQUIRE(marker1.is_external_marker());
@@ -280,7 +279,7 @@ TEST_CASE("pqt2 picoharp300 read external marker bits", "[pqt2_event]") {
     CHECK(marker_all.external_marker_bits() == 15_u8np);
 }
 
-TEMPLATE_TEST_CASE("pqt2 read external marker bits", "[pqt2_event]",
+TEMPLATE_TEST_CASE("pqt2 read external marker bits", "",
                    pqt2_hydraharpv1_event, pqt2_generic_event) {
     auto const marker1 = le_event<TestType>(
         {0b1000'0010, 0b0000'0000, 0b0000'0000, 0b0000'0000});
@@ -293,7 +292,7 @@ TEMPLATE_TEST_CASE("pqt2 read external marker bits", "[pqt2_event]",
     CHECK(marker_all.external_marker_bits() == 15_u8np);
 }
 
-TEST_CASE("pqt2 picoharp300 assign", "[pqt2_event]") {
+TEST_CASE("pqt2 picoharp300 assign") {
     CHECK(pqt2_picoharp300_event::make_nonspecial(0_u32np, 0_u8np) ==
           le_event<pqt2_picoharp300_event>(
               {0b0000'0000, 0b0000'0000, 0b0000'0000, 0b0000'0000}));
@@ -326,7 +325,7 @@ TEST_CASE("pqt2 picoharp300 assign", "[pqt2_event]") {
               {0b1111'1111, 0b1111'1111, 0b1111'1111, 0b1111'1111}));
 }
 
-TEMPLATE_TEST_CASE("pqt2 assign", "[pqt2_event]", pqt2_hydraharpv1_event,
+TEMPLATE_TEST_CASE("pqt2 assign", "", pqt2_hydraharpv1_event,
                    pqt2_generic_event) {
     CHECK(TestType::make_nonspecial(0_u32np, 0_u8np) ==
           le_event<TestType>(
@@ -391,7 +390,7 @@ using out_events = event_set<detection_event<>, marker_event<>,
 
 }
 
-TEST_CASE("decode pqt2 picoharp300", "[decode_pqt2_picoharp300]") {
+TEST_CASE("decode pqt2 picoharp300") {
     auto ctx = std::make_shared<processor_context>();
     auto in = feed_input<event_set<pqt2_picoharp300_event>>(
         decode_pqt2_picoharp300(capture_output<out_events>(
@@ -425,7 +424,7 @@ TEST_CASE("decode pqt2 picoharp300", "[decode_pqt2_picoharp300]") {
     REQUIRE(out.check_flushed());
 }
 
-TEST_CASE("decode pqt2 hydraharpv1", "[decode_pqt2_hydraharpv1]") {
+TEST_CASE("decode pqt2 hydraharpv1") {
     auto ctx = std::make_shared<processor_context>();
     auto in = feed_input<event_set<pqt2_hydraharpv1_event>>(
         decode_pqt2_hydraharpv1(capture_output<out_events>(
@@ -463,7 +462,7 @@ TEST_CASE("decode pqt2 hydraharpv1", "[decode_pqt2_hydraharpv1]") {
     REQUIRE(out.check_flushed());
 }
 
-TEST_CASE("decode pqt2 generic", "[decode_pqt2_generic]") {
+TEST_CASE("decode pqt2 generic") {
     auto ctx = std::make_shared<processor_context>();
     auto in = feed_input<event_set<pqt2_generic_event>>(
         decode_pqt2_generic(capture_output<out_events>(

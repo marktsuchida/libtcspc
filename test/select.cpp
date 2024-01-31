@@ -20,7 +20,7 @@ using out_events = event_set<e0, e1>;
 
 } // namespace
 
-TEST_CASE("select", "[select]") {
+TEST_CASE("select") {
     auto ctx = std::make_shared<processor_context>();
     auto in = feed_input<event_set<e0, e1>>(
         select<event_set<e0>>(capture_output<out_events>(
@@ -36,7 +36,7 @@ TEST_CASE("select", "[select]") {
     REQUIRE(out.check_flushed());
 }
 
-TEST_CASE("select_not", "[select]") {
+TEST_CASE("select_not") {
     auto ctx = std::make_shared<processor_context>();
     auto in = feed_input<event_set<e0, e1>>(
         select_not<event_set<e0>>(capture_output<out_events>(
@@ -52,7 +52,7 @@ TEST_CASE("select_not", "[select]") {
     REQUIRE(out.check_flushed());
 }
 
-TEST_CASE("select_none", "[select]") {
+TEST_CASE("select_none") {
     auto ctx = std::make_shared<processor_context>();
     auto in =
         feed_input<event_set<e0, e1>>(select_none(capture_output<out_events>(
@@ -67,7 +67,7 @@ TEST_CASE("select_none", "[select]") {
     REQUIRE(out.check_flushed());
 }
 
-TEST_CASE("select_all", "[select]") {
+TEST_CASE("select_all") {
     auto ctx = std::make_shared<processor_context>();
     auto in =
         feed_input<event_set<e0, e1>>(select_all(capture_output<out_events>(
