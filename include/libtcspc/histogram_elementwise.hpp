@@ -6,13 +6,14 @@
 
 #pragma once
 
-#include "binning.hpp"
+#include "autocopy_span.hpp"
 #include "common.hpp"
 #include "histogram_events.hpp"
 #include "histogramming.hpp"
 #include "introspect.hpp"
 #include "span.hpp"
 
+#include <cassert>
 #include <cstddef>
 #include <memory>
 #include <type_traits>

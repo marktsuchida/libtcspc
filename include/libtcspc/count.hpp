@@ -9,13 +9,10 @@
 #include "introspect.hpp"
 #include "processor_context.hpp"
 
-#include <cstddef>
 #include <cstdint>
-#include <exception>
 #include <functional>
 #include <stdexcept>
 #include <utility>
-#include <vector>
 
 namespace tcspc {
 

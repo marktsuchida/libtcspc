@@ -8,9 +8,9 @@
 
 // Use std::span if C++20 or later.
 #if __has_include(<version>)
-#include <version>
+#include <version> // IWYU pragma: keep
 #if __cpp_lib_span >= 202002L
-#include <span>
+#include <span> // IWYU pragma: export
 #define LIBTCSPC_SPAN_USE_STD 1
 
 namespace tcspc {
@@ -40,7 +40,7 @@ using span = std::span<T, Extent>;
 #pragma clang diagnostic ignored "-Wsign-conversion"
 #endif
 
-#include "tcb/span.hpp"
+#include "tcb/span.hpp" // IWYU pragma: export
 
 #ifdef __clang__
 #pragma clang diagnostic pop

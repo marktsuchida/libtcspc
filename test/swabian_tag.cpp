@@ -6,17 +6,21 @@
 
 #include "libtcspc/swabian_tag.hpp"
 
+#include "libtcspc/common.hpp"
+#include "libtcspc/event_set.hpp"
 #include "libtcspc/npint.hpp"
+#include "libtcspc/processor_context.hpp"
 #include "libtcspc/span.hpp"
 #include "libtcspc/test_utils.hpp"
+#include "libtcspc/time_tagged_events.hpp"
 #include "test_checkers.hpp"
 
 #include <catch2/catch_all.hpp>
 
 #include <algorithm>
 #include <array>
-#include <cstddef>
 #include <cstring>
+#include <memory>
 #include <type_traits>
 
 namespace tcspc {

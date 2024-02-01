@@ -7,7 +7,6 @@
 #pragma once
 
 #include "common.hpp"
-#include "event_set.hpp"
 
 #include <cstdint>
 #include <ostream>

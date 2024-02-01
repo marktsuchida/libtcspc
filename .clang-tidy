@@ -37,4 +37,5 @@ CheckOptions:
   readability-braces-around-statements.ShortStatementLines: 3
   readability-function-cognitive-complexity.IgnoreMacros: true
   readability-uppercase-literal-suffix.NewSuffixes: L;uL;LL;uLL
+  misc-include-cleaner.IgnoreHeaders: 'catch2/.*;.*/trompeloeil.hpp'
 ...

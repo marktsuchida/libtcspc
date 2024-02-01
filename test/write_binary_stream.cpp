@@ -7,7 +7,8 @@
 #include "libtcspc/write_binary_stream.hpp"
 
 #include "libtcspc/autocopy_span.hpp"
-#include "libtcspc/test_utils.hpp"
+#include "libtcspc/buffer.hpp"
+#include "libtcspc/span.hpp"
 #include "libtcspc/view_as_bytes.hpp"
 #include "test_checkers.hpp"
 
@@ -15,7 +16,13 @@
 #include <catch2/trompeloeil.hpp>
 
 #include <algorithm>
+#include <array>
+#include <cstddef>
+#include <cstdint>
+#include <memory>
 #include <numeric>
+#include <optional>
+#include <vector>
 
 namespace tcspc {
 

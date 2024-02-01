@@ -6,11 +6,15 @@
 
 #include "libtcspc/read_bytes.hpp"
 
+#include "libtcspc/npint.hpp"
 #include "libtcspc/span.hpp"
 
 #include <catch2/catch_all.hpp>
 
 #include <array>
+#include <cstddef>
+#include <cstdint>
+#include <cstring>
 
 namespace tcspc {
 

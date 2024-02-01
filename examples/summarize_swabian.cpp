@@ -9,20 +9,23 @@
 #include "libtcspc/common.hpp"
 #include "libtcspc/count.hpp"
 #include "libtcspc/event_set.hpp"
+#include "libtcspc/processor_context.hpp"
 #include "libtcspc/read_binary_stream.hpp"
 #include "libtcspc/stop.hpp"
 #include "libtcspc/swabian_tag.hpp"
+#include "libtcspc/time_tagged_events.hpp"
 
 #include <algorithm>
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
+#include <exception>
 #include <iterator>
 #include <limits>
 #include <memory>
 #include <sstream>
-#include <stdexcept>
 #include <string>
+#include <tuple>
 #include <vector>
 
 using channel_type = tcspc::default_data_traits::channel_type;

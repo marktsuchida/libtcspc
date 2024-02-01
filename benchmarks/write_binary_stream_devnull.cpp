@@ -6,11 +6,16 @@
 
 #include "libtcspc/write_binary_stream.hpp"
 
-#include "libtcspc/common.hpp"
+#include "libtcspc/autocopy_span.hpp"
+#include "libtcspc/buffer.hpp"
+#include "libtcspc/span.hpp"
 
 #include <benchmark/benchmark.h>
 
+#include <cstddef>
+#include <cstdint>
 #include <memory>
+#include <optional>
 #include <vector>
 
 namespace tcspc {

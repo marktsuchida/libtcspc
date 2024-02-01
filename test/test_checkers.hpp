@@ -9,9 +9,10 @@
 #include <catch2/catch_all.hpp>
 
 #include <algorithm>
+#include <array>
 #include <cstddef>
 #include <regex>
-#include <string_view>
+#include <string>
 
 namespace tcspc {
 

@@ -11,9 +11,13 @@
 
 #include <cassert>
 #include <cstdint>
+#include <exception>
 #include <limits>
+#include <ostream>
 #include <stdexcept>
+#include <string>
 #include <type_traits>
+#include <utility>
 
 #ifdef _MSC_VER
 #include <intrin.h>

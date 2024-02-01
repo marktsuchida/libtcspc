@@ -8,8 +8,6 @@
 
 #include "introspect.hpp"
 
-#include <exception>
-
 namespace tcspc {
 
 /**

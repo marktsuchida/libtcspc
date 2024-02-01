@@ -6,6 +6,9 @@
 
 #include "libtcspc/apply_class_template.hpp"
 
+#include <tuple>
+#include <type_traits>
+
 namespace tcspc::internal {
 
 namespace {

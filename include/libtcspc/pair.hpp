@@ -14,14 +14,12 @@
 #include <algorithm>
 #include <array>
 #include <bitset>
-#include <exception>
+#include <cstddef>
 #include <iterator>
-#include <limits>
 #include <optional>
 #include <stdexcept>
 #include <type_traits>
 #include <utility>
-#include <vector>
 
 namespace tcspc {
 

@@ -7,22 +7,27 @@
 #pragma once
 
 #include "buffer.hpp"
+#include "common.hpp"
 #include "introspect.hpp"
 #include "span.hpp"
 
+#include <algorithm>
 #include <cassert>
+#include <cerrno>
 #include <cstddef>
 #include <cstdint>
 #include <cstdio>
-#include <exception>
 #include <fstream>
+#include <ios>
 #include <istream>
 #include <limits>
 #include <memory>
 #include <optional>
 #include <stdexcept>
+#include <string>
 #include <system_error>
 #include <type_traits>
+#include <utility>
 #include <vector>
 
 // When editing this file, maintain partial symmetry with

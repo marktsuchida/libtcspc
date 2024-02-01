@@ -10,14 +10,18 @@
 #include "libtcspc/check.hpp"
 #include "libtcspc/common.hpp"
 #include "libtcspc/count.hpp"
+#include "libtcspc/event_set.hpp"
 #include "libtcspc/generate.hpp"
 #include "libtcspc/histogram_elementwise.hpp"
+#include "libtcspc/histogram_events.hpp"
+#include "libtcspc/introspect.hpp"
 #include "libtcspc/match.hpp"
 #include "libtcspc/processor_context.hpp"
 #include "libtcspc/read_binary_stream.hpp"
 #include "libtcspc/route.hpp"
 #include "libtcspc/select.hpp"
 #include "libtcspc/stop.hpp"
+#include "libtcspc/time_tagged_events.hpp"
 #include "libtcspc/view_as_bytes.hpp"
 #include "libtcspc/write_binary_stream.hpp"
 
@@ -25,12 +29,15 @@
 #include <cstddef>
 #include <cstdint>
 #include <cstdio>
+#include <cstdlib>
 #include <exception>
 #include <iterator>
 #include <limits>
 #include <memory>
+#include <sstream>
 #include <stdexcept>
 #include <string>
+#include <utility>
 #include <vector>
 
 void usage() {

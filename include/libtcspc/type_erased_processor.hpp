@@ -11,7 +11,6 @@
 #include "event_set.hpp"
 #include "introspect.hpp"
 
-#include <exception>
 #include <memory>
 #include <type_traits>
 #include <utility>

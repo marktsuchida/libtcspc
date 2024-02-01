@@ -6,10 +6,15 @@
 
 #include "libtcspc/select.hpp"
 
+#include "libtcspc/common.hpp"
+#include "libtcspc/event_set.hpp"
+#include "libtcspc/processor_context.hpp"
 #include "libtcspc/test_utils.hpp"
 #include "test_checkers.hpp"
 
 #include <catch2/catch_all.hpp>
+
+#include <memory>
 
 namespace tcspc {
 

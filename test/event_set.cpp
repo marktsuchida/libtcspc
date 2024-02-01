@@ -10,7 +10,10 @@
 
 #include <catch2/catch_all.hpp>
 
+#include <ostream>
 #include <sstream>
+#include <type_traits>
+#include <variant>
 
 namespace tcspc {
 

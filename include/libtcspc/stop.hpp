@@ -10,7 +10,6 @@
 #include "event_set.hpp"
 #include "introspect.hpp"
 
-#include <exception>
 #include <sstream>
 #include <stdexcept>
 #include <string>

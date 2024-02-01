@@ -7,16 +7,14 @@
 #pragma once
 
 #include <algorithm>
+#include <array>
 #include <charconv>
 #include <cstdlib>
 #include <iterator>
 #include <memory>
-#include <numeric>
 #include <stdexcept>
 #include <string>
-#include <type_traits>
 #include <typeindex>
-#include <typeinfo>
 #include <utility>
 #include <vector>
 

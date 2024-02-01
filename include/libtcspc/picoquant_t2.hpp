@@ -8,13 +8,13 @@
 
 #include "common.hpp"
 #include "introspect.hpp"
+#include "npint.hpp"
 #include "read_bytes.hpp"
 #include "time_tagged_events.hpp"
 
 #include <array>
 #include <cstddef>
 #include <cstdint>
-#include <exception>
 #include <ostream>
 #include <stdexcept>
 #include <utility>

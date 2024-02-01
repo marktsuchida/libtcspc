@@ -10,6 +10,7 @@
 
 #include <algorithm>
 #include <array>
+#include <cstddef>
 #include <memory>
 #include <ostream>
 #include <type_traits>

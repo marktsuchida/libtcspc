@@ -12,9 +12,8 @@
 #include "time_tagged_events.hpp"
 
 #include <cstddef>
-#include <exception>
+#include <cstdint>
 #include <functional>
-#include <limits>
 #include <optional>
 #include <stdexcept>
 #include <type_traits>

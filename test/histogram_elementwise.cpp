@@ -6,14 +6,20 @@
 
 #include "libtcspc/histogram_elementwise.hpp"
 
+#include "libtcspc/autocopy_span.hpp"
+#include "libtcspc/common.hpp"
 #include "libtcspc/event_set.hpp"
+#include "libtcspc/histogram_events.hpp"
+#include "libtcspc/npint.hpp"
+#include "libtcspc/processor_context.hpp"
 #include "libtcspc/test_utils.hpp"
 #include "test_checkers.hpp"
 
-#include <array>
-#include <cstdint>
-
 #include <catch2/catch_all.hpp>
+
+#include <cstddef>
+#include <memory>
+#include <vector>
 
 namespace tcspc {
 

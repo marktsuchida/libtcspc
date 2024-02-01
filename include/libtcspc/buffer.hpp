@@ -6,6 +6,7 @@
 
 #pragma once
 
+#include "common.hpp"
 #include "introspect.hpp"
 #include "vector_queue.hpp"
 
@@ -19,7 +20,6 @@
 #include <memory>
 #include <mutex>
 #include <stdexcept>
-#include <type_traits>
 #include <utility>
 #include <vector>
 

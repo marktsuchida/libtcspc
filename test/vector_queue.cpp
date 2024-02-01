@@ -8,6 +8,9 @@
 
 #include <catch2/catch_all.hpp>
 
+#include <memory>
+#include <utility>
+
 namespace tcspc::internal {
 
 // Tests assume first allocation capacity is 3 elements.

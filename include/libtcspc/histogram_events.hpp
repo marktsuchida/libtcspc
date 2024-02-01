@@ -10,16 +10,11 @@
 #include "common.hpp"
 
 #include <algorithm>
-#include <cassert>
 #include <cstddef>
 #include <cstdint>
-#include <iterator>
-#include <optional>
+#include <limits>
 #include <ostream>
-#include <string>
-#include <tuple>
 #include <type_traits>
-#include <utility>
 #include <vector>
 
 namespace tcspc {

@@ -8,7 +8,12 @@
 
 #include <catch2/catch_all.hpp>
 
+#include <cstddef>
 #include <set>
+#include <stdexcept>
+#include <string>
+#include <typeindex>
+#include <utility>
 
 namespace tcspc {
 

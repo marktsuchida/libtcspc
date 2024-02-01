@@ -8,6 +8,7 @@
 
 #include "libtcspc/common.hpp"
 #include "libtcspc/event_set.hpp"
+#include "libtcspc/introspect.hpp"
 #include "libtcspc/test_utils.hpp"
 #include "test_checkers.hpp"
 

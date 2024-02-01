@@ -8,6 +8,10 @@
 
 #include <catch2/catch_all.hpp>
 
+#include <cstdint>
+#include <limits>
+#include <type_traits>
+
 namespace tcspc {
 
 static_assert(std::is_trivial_v<u8np>);

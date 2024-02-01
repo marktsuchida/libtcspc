@@ -6,15 +6,20 @@
 
 #pragma once
 
-#include "autocopy_span.hpp"
 #include "common.hpp"
 #include "histogram_events.hpp"
 #include "span.hpp"
 
 #include <algorithm>
 #include <cassert>
+#include <cstddef>
+#include <cstdint>
 #include <iterator>
+#include <ostream>
+#include <tuple>
 #include <type_traits>
+#include <utility>
+#include <vector>
 
 namespace tcspc::internal {
 

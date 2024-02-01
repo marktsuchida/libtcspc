@@ -6,11 +6,11 @@
 
 #include "libtcspc/autocopy_span.hpp"
 
+#include <catch2/catch_all.hpp>
+
 #include <array>
 #include <utility>
 #include <vector>
-
-#include <catch2/catch_all.hpp>
 
 namespace tcspc {
 

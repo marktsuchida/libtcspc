@@ -8,6 +8,7 @@
 
 #include "apply_class_template.hpp"
 
+#include <cstddef>
 #include <ostream>
 #include <tuple>
 #include <type_traits>

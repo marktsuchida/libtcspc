@@ -4,4 +4,4 @@
  * SPDX-License-Identifier: MIT
  */
 
-#include "libtcspc/histogram_events.hpp"
+#include "libtcspc/histogram_events.hpp" // IWYU pragma: keep

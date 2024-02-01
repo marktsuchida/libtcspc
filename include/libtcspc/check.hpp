@@ -9,7 +9,6 @@
 #include "common.hpp"
 #include "introspect.hpp"
 
-#include <exception>
 #include <limits>
 #include <ostream>
 #include <sstream>

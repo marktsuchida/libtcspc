@@ -6,17 +6,27 @@
 
 #include "libtcspc/read_binary_stream.hpp"
 
-#include "libtcspc/span.hpp"
+#include "libtcspc/buffer.hpp"
+#include "libtcspc/common.hpp"
+#include "libtcspc/event_set.hpp"
+#include "libtcspc/processor_context.hpp"
 #include "libtcspc/stop.hpp"
 #include "libtcspc/test_utils.hpp"
 #include "test_checkers.hpp"
 
 #include <catch2/catch_all.hpp>
 
+#include <array>
+#include <cstdint>
 #include <cstdio>
 #include <filesystem>
 #include <fstream>
+#include <ios>
+#include <limits>
+#include <memory>
 #include <sstream>
+#include <utility>
+#include <vector>
 
 namespace tcspc {
 

@@ -6,7 +6,7 @@
 
 #pragma once
 
-#include "binning.hpp"
+#include "autocopy_span.hpp"
 #include "common.hpp"
 #include "histogram_events.hpp"
 #include "histogramming.hpp"
@@ -15,7 +15,6 @@
 
 #include <algorithm>
 #include <cstddef>
-#include <exception>
 #include <memory>
 #include <type_traits>
 #include <utility>

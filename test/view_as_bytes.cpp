@@ -6,11 +6,21 @@
 
 #include "libtcspc/view_as_bytes.hpp"
 
+#include "libtcspc/autocopy_span.hpp"
+#include "libtcspc/common.hpp"
+#include "libtcspc/event_set.hpp"
 #include "libtcspc/histogram_events.hpp"
+#include "libtcspc/processor_context.hpp"
+#include "libtcspc/span.hpp"
 #include "libtcspc/test_utils.hpp"
 #include "test_checkers.hpp"
 
 #include <catch2/catch_all.hpp>
+
+#include <cstddef>
+#include <cstdint>
+#include <memory>
+#include <vector>
 
 namespace tcspc {
 

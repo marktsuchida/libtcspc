@@ -10,6 +10,7 @@
 #include "introspect.hpp"
 
 #include <cmath>
+#include <cstddef>
 #include <ostream>
 #include <stdexcept>
 #include <type_traits>

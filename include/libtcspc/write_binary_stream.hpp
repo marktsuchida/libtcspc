@@ -11,18 +11,21 @@
 #include "introspect.hpp"
 #include "span.hpp"
 
+#include <algorithm>
+#include <cerrno>
 #include <cstddef>
 #include <cstdint>
 #include <cstdio>
-#include <exception>
 #include <fstream>
-#include <limits>
+#include <ios>
 #include <memory>
 #include <optional>
 #include <ostream>
 #include <stdexcept>
+#include <string>
 #include <system_error>
 #include <type_traits>
+#include <utility>
 #include <vector>
 
 // When editing this file, maintain partial symmetry with

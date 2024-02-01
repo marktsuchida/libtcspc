@@ -10,9 +10,7 @@
 #include "introspect.hpp"
 #include "time_tagged_events.hpp"
 
-#include <cassert>
 #include <cmath>
-#include <exception>
 #include <type_traits>
 #include <utility>
 

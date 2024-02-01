@@ -6,12 +6,15 @@
 
 #include "libtcspc/histogramming.hpp"
 
-#include <algorithm>
-#include <array>
-#include <cstdint>
-#include <vector>
+#include "libtcspc/histogram_events.hpp"
+#include "libtcspc/npint.hpp"
 
 #include <catch2/catch_all.hpp>
+
+#include <algorithm>
+#include <array>
+#include <cstddef>
+#include <vector>
 
 namespace tcspc::internal {
 

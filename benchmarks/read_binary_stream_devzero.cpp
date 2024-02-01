@@ -6,10 +6,15 @@
 
 #include "libtcspc/read_binary_stream.hpp"
 
+#include "libtcspc/buffer.hpp"
+#include "libtcspc/span.hpp"
+
 #include <benchmark/benchmark.h>
 
+#include <cstddef>
+#include <cstdint>
 #include <memory>
-#include <utility>
+#include <optional>
 #include <vector>
 
 namespace tcspc {

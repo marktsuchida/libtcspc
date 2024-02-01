@@ -8,7 +8,6 @@
 
 #include "introspect.hpp"
 
-#include <exception>
 #include <memory>
 #include <stdexcept>
 #include <type_traits>

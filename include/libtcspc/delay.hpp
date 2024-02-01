@@ -7,11 +7,8 @@
 #pragma once
 
 #include "common.hpp"
-#include "event_set.hpp"
 #include "introspect.hpp"
 
-#include <exception>
-#include <limits>
 #include <type_traits>
 #include <utility>
 

@@ -4,4 +4,4 @@
  * SPDX-License-Identifier: MIT
  */
 
-#include "libtcspc/time_tagged_events.hpp"
+#include "libtcspc/time_tagged_events.hpp" // IWYU pragma: keep

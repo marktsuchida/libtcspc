@@ -10,6 +10,9 @@
 
 #include <catch2/catch_all.hpp>
 
+#include <cstddef>
+#include <cstdint>
+
 namespace tcspc {
 
 namespace {

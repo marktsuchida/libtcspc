@@ -9,7 +9,6 @@
 #include "event_set.hpp"
 #include "introspect.hpp"
 
-#include <exception>
 #include <utility>
 
 namespace tcspc {

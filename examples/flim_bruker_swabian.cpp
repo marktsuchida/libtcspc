@@ -10,8 +10,11 @@
 #include "libtcspc/common.hpp"
 #include "libtcspc/count.hpp"
 #include "libtcspc/delay.hpp"
+#include "libtcspc/event_set.hpp"
 #include "libtcspc/generate.hpp"
 #include "libtcspc/histogram_elementwise.hpp"
+#include "libtcspc/histogram_events.hpp"
+#include "libtcspc/introspect.hpp"
 #include "libtcspc/match.hpp"
 #include "libtcspc/merge.hpp"
 #include "libtcspc/pair.hpp"
@@ -23,18 +26,24 @@
 #include "libtcspc/stop.hpp"
 #include "libtcspc/swabian_tag.hpp"
 #include "libtcspc/time_correlate.hpp"
+#include "libtcspc/time_tagged_events.hpp"
 #include "libtcspc/view_as_bytes.hpp"
 #include "libtcspc/write_binary_stream.hpp"
 
 #include <array>
 #include <cmath>
 #include <cstddef>
+#include <cstdint>
 #include <cstdio>
+#include <cstdlib>
+#include <exception>
 #include <iterator>
 #include <limits>
 #include <memory>
+#include <sstream>
 #include <stdexcept>
 #include <string>
+#include <tuple>
 #include <utility>
 #include <vector>
 

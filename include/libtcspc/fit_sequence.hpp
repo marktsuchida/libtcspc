@@ -12,14 +12,12 @@
 
 #include <algorithm>
 #include <array>
-#include <cmath>
+#include <cassert>
 #include <cstddef>
 #include <cstdint>
-#include <exception>
+#include <functional>
 #include <numeric>
-#include <ostream>
 #include <stdexcept>
-#include <string>
 #include <type_traits>
 #include <utility>
 #include <vector>

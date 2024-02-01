@@ -6,12 +6,23 @@
 
 #include "libtcspc/merge.hpp"
 
+#include "libtcspc/common.hpp"
+#include "libtcspc/event_set.hpp"
+#include "libtcspc/introspect.hpp"
+#include "libtcspc/processor_context.hpp"
 #include "libtcspc/ref_processor.hpp"
 #include "libtcspc/test_utils.hpp"
 #include "libtcspc/type_erased_processor.hpp"
 #include "test_checkers.hpp"
 
 #include <catch2/catch_all.hpp>
+
+#include <memory>
+#include <set>
+#include <string_view>
+#include <tuple>
+#include <type_traits>
+#include <utility>
 
 namespace tcspc {
 

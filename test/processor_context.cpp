@@ -8,7 +8,9 @@
 
 #include <catch2/catch_all.hpp>
 
-#include <cstddef>
+#include <functional>
+#include <memory>
+#include <utility>
 
 namespace tcspc {
 
