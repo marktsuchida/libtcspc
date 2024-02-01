@@ -121,8 +121,8 @@ class route_homogeneous {
  * All other events are broadcast to all downstreams.
  *
  * The router must implement the function call operator <tt>auto
- * operator()(Event const &) const noexcept -> std::size_t</tt>, for every \c
- * Event in \c EventSetToRoute, mapping events to downstream index.
+ * operator()(Event const &) const -> std::size_t</tt>, for every \c Event in
+ * \c EventSetToRoute, mapping events to downstream index.
  *
  * If the router maps an event to an index beyond the available downstreams,
  * that event is discarded. (Routers can return \c
@@ -195,8 +195,8 @@ auto route_homogeneous(Router &&router, Downstreams &&...downstreams) {
  * all downstreams.
  *
  * The router must implement the function call operator <tt>auto
- * operator()(Event const &) const noexcept -> std::size_t</tt>, for every \c
- * Event in \c EventSetToRoute, mapping events to downstream index.
+ * operator()(Event const &) const -> std::size_t</tt>, for every \c Event in
+ * \c EventSetToRoute, mapping events to downstream index.
  *
  * If the router maps an event to an index beyond the available downstreams,
  * that event is discarded. (Routers can return \c
@@ -244,8 +244,7 @@ class null_router {
   public:
     /** \brief Router interface. */
     template <typename Event>
-    auto operator()([[maybe_unused]] Event const &event) const noexcept
-        -> std::size_t {
+    auto operator()([[maybe_unused]] Event const &event) const -> std::size_t {
         return std::size_t(-1);
     }
 };
@@ -293,7 +292,7 @@ class channel_router {
 
     /** \brief Router interface. */
     template <typename Event>
-    auto operator()(Event const &event) const noexcept -> std::size_t {
+    auto operator()(Event const &event) const -> std::size_t {
         static_assert(std::is_same_v<decltype(event.channel),
                                      typename DataTraits::channel_type>);
         auto it = std::find(channels.begin(), channels.end(), event.channel);

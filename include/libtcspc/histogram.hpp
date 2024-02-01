@@ -53,7 +53,7 @@ class histogram {
             end_of_stream});
     }
 
-    void reset() noexcept {
+    void reset() {
         shist.clear();
         stats = {};
         time_range.reset();

@@ -178,7 +178,7 @@ template <typename BinIndex> class bin_increment_batch_journal {
         // Rule of zero
 
         /** \brief Iterator pre-increment operator. */
-        auto operator++() noexcept -> const_iterator & {
+        auto operator++() -> const_iterator & {
             assert(encoded_indices_iter != encoded_indices_end);
 
             for (;;) {
@@ -199,14 +199,14 @@ template <typename BinIndex> class bin_increment_batch_journal {
         }
 
         /** \brief Iterator post-increment operator. */
-        auto operator++(int) noexcept -> const_iterator {
+        auto operator++(int) -> const_iterator {
             const_iterator ret = *this;
             ++(*this);
             return ret;
         }
 
         /** \brief Iterator dereference operator. */
-        auto operator*() const noexcept -> value_type {
+        auto operator*() const -> value_type {
             assert(encoded_indices_iter != encoded_indices_end);
 
             std::size_t batch_index = prev_batch_index;
@@ -297,10 +297,8 @@ template <typename BinIndex> class bin_increment_batch_journal {
 // Can be used to disable journaling.
 template <typename BinIndex> struct null_journal {
     using bin_index_type = BinIndex;
-    void
-    append_batch([[maybe_unused]] span<bin_index_type const> batch) noexcept {}
+    void append_batch([[maybe_unused]] span<bin_index_type const> batch) {}
     void clear() noexcept {}
-    void clear_and_shrink_to_fit() noexcept {}
 };
 
 // Adapter which can attach to a span and treat it as a histogram.
@@ -335,8 +333,8 @@ class single_histogram {
     // OverflowStrategy is saturate_on_internal_overflow. Otherwise, it is any
     // value between 0 and increments.size(), inclusive.
     template <typename Stats>
-    auto apply_increments(span<bin_index_type const> increments,
-                          Stats &stats) noexcept -> std::size_t {
+    auto apply_increments(span<bin_index_type const> increments, Stats &stats)
+        -> std::size_t {
         for (auto it = increments.begin(); it != increments.end(); ++it) {
             assert(*it >= 0 && *it < hist.size());
             bin_type &bin = hist[*it];
@@ -361,8 +359,7 @@ class single_histogram {
     // equal the values passed to apply_increments() in an immediately prior
     // call. Behavior undefined in saturate mode.
     template <typename Stats>
-    void undo_increments(span<bin_index_type const> increments,
-                         Stats &stats) noexcept {
+    void undo_increments(span<bin_index_type const> increments, Stats &stats) {
         assert((std::is_same_v<OverflowStrategy, stop_on_internal_overflow>));
         for (bin_index_type i : increments) {
             assert(i >= 0 && i < hist.size());
@@ -429,14 +426,14 @@ class multi_histogram {
         return element_index;
     }
 
-    auto element_span(std::size_t index) noexcept -> span<bin_type> {
+    auto element_span(std::size_t index) -> span<bin_type> {
         return hist_arr.subspan(num_bins * index, num_bins);
     }
 
     // Apply 'increments' to the next element of the array of histograms.
     template <typename Stats, typename Journal>
     auto apply_increment_batch(span<bin_index_type const> batch, Stats &stats,
-                               Journal &journal) noexcept -> bool {
+                               Journal &journal) -> bool {
         static_assert(
             std::is_same_v<typename Journal::bin_index_type, bin_index_type>);
         assert(not is_complete());
@@ -468,7 +465,7 @@ class multi_histogram {
     // Call to cancel processing and ensure that the remaining elements are
     // cleared (if so requested). After the call, is_complete() and
     // is_consistent() become true.
-    void skip_remaining() noexcept {
+    void skip_remaining() {
         if (need_to_clear) {
             auto remaining = hist_arr.subspan(num_bins * element_index);
             std::fill(remaining.begin(), remaining.end(), bin_type(0));
@@ -481,7 +478,7 @@ class multi_histogram {
     // its original state (if it was not cleared) or zero. Behavior undefined
     // in saturate mode.
     template <typename Journal, typename Stats>
-    void roll_back(Journal const &journal, Stats &stats) noexcept {
+    void roll_back(Journal const &journal, Stats &stats) {
         static_assert(
             std::is_same_v<typename Journal::bin_index_type, bin_index_type>);
         assert((std::is_same_v<OverflowStrategy, stop_on_internal_overflow>));
@@ -501,7 +498,7 @@ class multi_histogram {
     // constructor) must have requested clearing, or else the span must contain
     // the same data as when the journal was constructed.
     template <typename Journal, typename Stats>
-    void replay(Journal const &journal, Stats &stats) noexcept {
+    void replay(Journal const &journal, Stats &stats) {
         static_assert(
             std::is_same_v<typename Journal::bin_index_type, bin_index_type>);
         assert((std::is_same_v<OverflowStrategy, stop_on_internal_overflow>));
@@ -569,7 +566,7 @@ class multi_histogram_accumulation {
         return cur_cycle.next_element_index();
     }
 
-    auto element_span(std::size_t index) noexcept -> span<bin_type> {
+    auto element_span(std::size_t index) -> span<bin_type> {
         return cur_cycle.element_span(index);
     }
 
@@ -581,7 +578,7 @@ class multi_histogram_accumulation {
     // each cycle of element increment batches. Passing 'journal' (which is
     // cleared) is required here to avoid forgetting to clear the journal for a
     // new cycle.
-    template <typename Journal> void new_cycle(Journal &journal) noexcept {
+    template <typename Journal> void new_cycle(Journal &journal) {
         assert(is_cycle_complete());
         ++cycle_idx;
         cur_cycle.reset(false);
@@ -590,20 +587,17 @@ class multi_histogram_accumulation {
 
     template <typename Stats, typename Journal>
     auto apply_increment_batch(span<bin_index_type const> batch, Stats &stats,
-                               Journal &journal) noexcept -> bool {
+                               Journal &journal) -> bool {
         assert(not is_cycle_complete());
         return cur_cycle.apply_increment_batch(batch, stats, journal);
     }
 
-    void skip_remainder_of_current_cycle() noexcept {
-        cur_cycle.skip_remaining();
-    }
+    void skip_remainder_of_current_cycle() { cur_cycle.skip_remaining(); }
 
     // Restores histograms and stats to state just after previous new_cycle()
     // call. Behavior undefined in saturate mode.
     template <typename Journal, typename Stats>
-    void roll_back_current_cycle(Journal const &journal,
-                                 Stats &stats) noexcept {
+    void roll_back_current_cycle(Journal const &journal, Stats &stats) {
         cur_cycle.roll_back(journal, stats);
     }
 
@@ -613,7 +607,7 @@ class multi_histogram_accumulation {
     }
 
     template <typename Journal, typename Stats>
-    void reset_and_replay(Journal const &journal, Stats &stats) noexcept {
+    void reset_and_replay(Journal const &journal, Stats &stats) {
         reset(true);
         cur_cycle.replay(journal, stats);
     }

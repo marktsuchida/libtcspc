@@ -35,8 +35,7 @@ static_assert(std::numeric_limits<double>::digits == 53);
 
 // Make a uniformly-distributed random double value in [0.0, 1.0), given a
 // uniformly-distributed 64-bit random integer r (e.g. from std::mt19937_64).
-[[nodiscard]] inline auto uniform_double_0_1(std::uint64_t r) noexcept
-    -> double {
+[[nodiscard]] inline auto uniform_double_0_1(std::uint64_t r) -> double {
     // Keep the random bits in the 52-bit fraction field, but set the sign to
     // positive and exponent to 0 (giving a value in [1.0, 2.0)).
     r &= (1uLL << 52) - 1; // Keep only fraction
@@ -48,7 +47,7 @@ static_assert(std::numeric_limits<double>::digits == 53);
 
 // Make a uniformly-distributed random double value in [0.0, 1.0), given a
 // uniformly-distributed 32-bit random integer r from std::minstd_rand.
-[[nodiscard]] inline auto uniform_double_0_1_minstd(std::uint32_t r) noexcept
+[[nodiscard]] inline auto uniform_double_0_1_minstd(std::uint32_t r)
     -> double {
     // Since r comes from std::minstd_rand, it is in [1, 2147483646].
     using minstd_type = decltype(std::minstd_rand0());
@@ -70,8 +69,7 @@ static_assert(std::numeric_limits<double>::digits == 53);
 }
 
 template <typename T>
-[[nodiscard]] inline auto dither(double value, double dither_noise) noexcept
-    -> T {
+[[nodiscard]] inline auto dither(double value, double dither_noise) -> T {
     assert(dither_noise >= 0.0);
     assert(dither_noise < 1.0);
     return static_cast<T>(std::floor(value + dither_noise));
@@ -87,7 +85,7 @@ template <typename T> class dithering_quantizer {
     std::minstd_rand prng;
 
   public:
-    [[nodiscard]] auto operator()(double value) noexcept -> T {
+    [[nodiscard]] auto operator()(double value) -> T {
         return dither<T>(value, uniform_double_0_1_minstd(prng()));
     }
 };
@@ -140,14 +138,14 @@ template <typename Event> class dithered_one_shot_timing_generator {
     }
 
     /** \brief Timing generator interface */
-    [[nodiscard]] auto peek() const noexcept -> std::optional<abstime_type> {
+    [[nodiscard]] auto peek() const -> std::optional<abstime_type> {
         if (pending)
             return next;
         return std::nullopt;
     }
 
     /** \brief Timing generator interface */
-    auto pop() noexcept -> Event {
+    auto pop() -> Event {
         Event event{};
         event.abstime = next;
         pending = false;
@@ -196,14 +194,14 @@ template <typename Event> class dynamic_dithered_one_shot_timing_generator {
     }
 
     /** \brief Timing generator interface */
-    [[nodiscard]] auto peek() const noexcept -> std::optional<abstime_type> {
+    [[nodiscard]] auto peek() const -> std::optional<abstime_type> {
         if (pending)
             return next;
         return std::nullopt;
     }
 
     /** \brief Timing generator interface */
-    auto pop() noexcept -> Event {
+    auto pop() -> Event {
         Event event{};
         event.abstime = next;
         pending = false;
@@ -224,7 +222,7 @@ template <typename Abstime> class dithered_linear_timing_generator_impl {
 
     dithering_quantizer<Abstime> dithq;
 
-    void compute_next() noexcept {
+    void compute_next() {
         if (remaining == 0)
             return;
         auto relnext = dithq(dly + intv * static_cast<double>(ct - remaining));
@@ -253,7 +251,7 @@ template <typename Abstime> class dithered_linear_timing_generator_impl {
                 "dithered timing generator interval must be positive");
     }
 
-    void trigger(Abstime abstime) noexcept {
+    void trigger(Abstime abstime) {
         trigger_time = abstime;
         remaining = ct;
         compute_next();
@@ -261,20 +259,20 @@ template <typename Abstime> class dithered_linear_timing_generator_impl {
 
     // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
     void trigger_and_configure(Abstime abstime, double delay, double interval,
-                               std::size_t count) noexcept {
+                               std::size_t count) {
         dly = delay;
         intv = interval;
         ct = count;
         trigger(abstime);
     }
 
-    [[nodiscard]] auto peek() const noexcept -> std::optional<Abstime> {
+    [[nodiscard]] auto peek() const -> std::optional<Abstime> {
         if (remaining > 0)
             return next;
         return std::nullopt;
     }
 
-    auto pop() noexcept -> Abstime {
+    auto pop() -> Abstime {
         auto const ret = next;
         --remaining;
         compute_next();
@@ -329,12 +327,12 @@ template <typename Event> class dithered_linear_timing_generator {
     }
 
     /** \brief Timing generator interface */
-    [[nodiscard]] auto peek() const noexcept -> std::optional<abstime_type> {
+    [[nodiscard]] auto peek() const -> std::optional<abstime_type> {
         return impl.peek();
     }
 
     /** \brief Timing generator interface */
-    auto pop() noexcept -> Event {
+    auto pop() -> Event {
         Event event{};
         event.abstime = impl.pop();
         return event;
@@ -382,12 +380,12 @@ template <typename Event> class dynamic_dithered_linear_timing_generator {
     }
 
     /** \brief Timing generator interface */
-    [[nodiscard]] auto peek() const noexcept -> std::optional<abstime_type> {
+    [[nodiscard]] auto peek() const -> std::optional<abstime_type> {
         return impl.peek();
     }
 
     /** \brief Timing generator interface */
-    auto pop() noexcept -> Event {
+    auto pop() -> Event {
         Event event{};
         event.abstime = impl.pop();
         return event;

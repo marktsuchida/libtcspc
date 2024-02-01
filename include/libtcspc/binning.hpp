@@ -74,7 +74,7 @@ class map_to_datapoints {
  *
  * The data mapper must define member types \c event_type and \c
  * datapoint_type, plus the function call operator <tt>datapoint_type
- * operator()(event_type const &) const noexcept</tt>.
+ * operator()(event_type const &) const</tt>.
  *
  * \c datapoint_type can be any copyable type accepted by the bin mapper used
  * downstream. Typically it is a numeric type. It must match \c
@@ -121,7 +121,7 @@ class difftime_data_mapper {
     static_assert(std::is_integral_v<datapoint_type>);
 
     /** \brief Data mapper interface */
-    auto operator()(event_type const &event) const noexcept -> datapoint_type {
+    auto operator()(event_type const &event) const -> datapoint_type {
         return event.difftime;
     }
 };
@@ -144,7 +144,7 @@ template <typename Event = nontagged_counts_event<>> class count_data_mapper {
     static_assert(std::is_integral_v<datapoint_type>);
 
     /** \brief Data mapper interface */
-    auto operator()(event_type const &event) const noexcept -> datapoint_type {
+    auto operator()(event_type const &event) const -> datapoint_type {
         return event.count;
     }
 };
@@ -210,11 +210,9 @@ class map_to_bins {
  *
  * The bin mapper must define member types \c datapoint_type and \c
  * bin_index_type, plus the function call operator
- * <tt>std::optional<bin_index_type> operator()(datapoint_type) const
- * noexcept</tt>.
+ * <tt>std::optional<bin_index_type> operator()(datapoint_type) const</tt>.
  *
- * Bin mappers should also implement <tt>std::size_t n_bins() const
- * noexcept</tt>.
+ * Bin mappers should also implement <tt>std::size_t n_bins() const</tt>.
  *
  * \c bin_index_type must be an unsigned integer type.
  *
@@ -287,13 +285,12 @@ struct power_of_2_bin_mapper {
                   NHistoBits <= 8 * sizeof(bin_index_type) - 1);
 
     /** \brief Bin mapper interface */
-    [[nodiscard]] auto n_bins() const noexcept -> std::size_t {
+    [[nodiscard]] auto n_bins() const -> std::size_t {
         return std::size_t{1} << NHistoBits;
     }
 
     /** \brief Bin mapper interface */
-    auto operator()(datapoint_type d) const noexcept
-        -> std::optional<bin_index_type> {
+    auto operator()(datapoint_type d) const -> std::optional<bin_index_type> {
         static_assert(sizeof(datapoint_type) >= sizeof(bin_index_type));
         static_assert(NDataBits <= 8 * sizeof(datapoint_type));
         static_assert(NHistoBits <= 8 * sizeof(bin_index_type));
@@ -373,13 +370,12 @@ template <typename DataTraits = default_data_traits> class linear_bin_mapper {
     }
 
     /** \brief Bin mapper interface */
-    [[nodiscard]] auto n_bins() const noexcept -> std::size_t {
+    [[nodiscard]] auto n_bins() const -> std::size_t {
         return std::size_t(max_bin_index) + 1;
     }
 
     /** \brief Bin mapper interface */
-    auto operator()(datapoint_type d) const noexcept
-        -> std::optional<bin_index_type> {
+    auto operator()(datapoint_type d) const -> std::optional<bin_index_type> {
         d -= offset;
         // Check sign before dividing to avoid rounding to zero in division.
         if ((d < 0 && bin_width > 0) || (d > 0 && bin_width < 0))

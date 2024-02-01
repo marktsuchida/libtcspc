@@ -68,7 +68,7 @@ class periodic_fitter {
         std::iota(x.begin(), x.end(), 0.0);
     }
 
-    [[nodiscard]] auto fit(std::vector<double> const &y) const noexcept
+    [[nodiscard]] auto fit(std::vector<double> const &y) const
         -> periodic_fit_result {
         assert(static_cast<double>(y.size()) == n);
 
@@ -85,13 +85,13 @@ class periodic_fitter {
         double const b = (n * sigma_xy - sigma_x * sigma_y) / det_XtX;
 
         // Sum of squared residuals
-        double const ssr = std::transform_reduce(
-            x.cbegin(), x.cend(), y.cbegin(), 0.0, std::plus<>(),
-            [&](double x, double y) noexcept {
-                auto const yfit = a + b * x;
-                auto const r = y - yfit;
-                return r * r;
-            });
+        double const ssr =
+            std::transform_reduce(x.cbegin(), x.cend(), y.cbegin(), 0.0,
+                                  std::plus<>(), [&](double x, double y) {
+                                      auto const yfit = a + b * x;
+                                      auto const r = y - yfit;
+                                      return r * r;
+                                  });
         double const mse = ssr / (n - 2.0);
 
         return {a, b, mse};

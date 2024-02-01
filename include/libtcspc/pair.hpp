@@ -36,8 +36,7 @@ class pair_all {
 
     Downstream downstream;
 
-    void expel_old_starts(
-        typename DataTraits::abstime_type earliest_stop) noexcept {
+    void expel_old_starts(typename DataTraits::abstime_type earliest_stop) {
         auto const cutoff = pairing_cutoff(earliest_stop, window_size);
         while (not starts.empty() && starts.front() < cutoff)
             starts.pop();
@@ -111,8 +110,7 @@ class pair_one {
 
     Downstream downstream;
 
-    void expel_old_starts(
-        typename DataTraits::abstime_type earliest_stop) noexcept {
+    void expel_old_starts(typename DataTraits::abstime_type earliest_stop) {
         auto const cutoff = pairing_cutoff(earliest_stop, window_size);
         while (not starts.empty() &&
                (starts.front().time < cutoff || starts.front().stopped.all()))
@@ -185,8 +183,7 @@ class pair_all_between {
 
     Downstream downstream;
 
-    void
-    expel_old_start(typename DataTraits::abstime_type earliest_stop) noexcept {
+    void expel_old_start(typename DataTraits::abstime_type earliest_stop) {
         auto const cutoff = pairing_cutoff(earliest_stop, window_size);
         if (start.has_value() && *start < cutoff)
             start = std::nullopt;
@@ -261,8 +258,7 @@ class pair_one_between {
 
     Downstream downstream;
 
-    void
-    expel_old_start(typename DataTraits::abstime_type earliest_stop) noexcept {
+    void expel_old_start(typename DataTraits::abstime_type earliest_stop) {
         auto const cutoff = pairing_cutoff(earliest_stop, window_size);
         if (start.has_value() &&
             (start->time < cutoff || start->stopped.all()))

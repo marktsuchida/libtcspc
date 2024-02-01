@@ -113,11 +113,10 @@ class generate {
  *   iteration of timing generation, based on the abstime and other parameters
  *   of the trigger event,
  *
- * - <tt>auto peek() const noexcept -> std::optional<abstime_type></tt>, which
- *   returns the abstime of the next event to be generated, if any, and
+ * - <tt>auto peek() const -> std::optional<abstime_type></tt>, which returns
+ *   the abstime of the next event to be generated, if any, and
  *
- * - <tt>auto pop() noexcept -> output_event_type</tt>, which generates the
- *   next event.
+ * - <tt>auto pop() -> output_event_type</tt>, which generates the next event.
  *
  * It is guaranteed that \c pop is only called when \c peek returns an abstime.
  * However, \c peek must return the correct value (\c std::nullopt) even if \c
@@ -169,12 +168,12 @@ template <typename Event> class null_timing_generator {
     }
 
     /** \brief Timing generator interface */
-    [[nodiscard]] auto peek() const noexcept -> std::optional<abstime_type> {
+    [[nodiscard]] auto peek() const -> std::optional<abstime_type> {
         return std::nullopt;
     }
 
     /** \brief Timing generator interface */
-    auto pop() noexcept -> Event { internal::unreachable(); }
+    auto pop() -> Event { internal::unreachable(); }
 };
 
 /**
@@ -219,14 +218,14 @@ template <typename Event> class one_shot_timing_generator {
     }
 
     /** \brief Timing generator interface */
-    [[nodiscard]] auto peek() const noexcept -> std::optional<abstime_type> {
+    [[nodiscard]] auto peek() const -> std::optional<abstime_type> {
         if (pending)
             return next;
         return std::nullopt;
     }
 
     /** \brief Timing generator interface */
-    auto pop() noexcept -> Event {
+    auto pop() -> Event {
         Event event{};
         event.abstime = next;
         pending = false;
@@ -273,14 +272,14 @@ template <typename Event> class dynamic_one_shot_timing_generator {
     }
 
     /** \brief Timing generator interface */
-    [[nodiscard]] auto peek() const noexcept -> std::optional<abstime_type> {
+    [[nodiscard]] auto peek() const -> std::optional<abstime_type> {
         if (pending)
             return next;
         return std::nullopt;
     }
 
     /** \brief Timing generator interface */
-    auto pop() noexcept -> Event {
+    auto pop() -> Event {
         Event event{};
         event.abstime = next;
         pending = false;
@@ -346,14 +345,14 @@ template <typename Event> class linear_timing_generator {
     }
 
     /** \brief Timing generator interface */
-    [[nodiscard]] auto peek() const noexcept -> std::optional<abstime_type> {
+    [[nodiscard]] auto peek() const -> std::optional<abstime_type> {
         if (remaining > 0)
             return next;
         return std::nullopt;
     }
 
     /** \brief Timing generator interface */
-    auto pop() noexcept -> Event {
+    auto pop() -> Event {
         Event event{};
         event.abstime = next;
         next += interval;
@@ -406,14 +405,14 @@ template <typename Event> class dynamic_linear_timing_generator {
     }
 
     /** \brief Timing generator interface */
-    [[nodiscard]] auto peek() const noexcept -> std::optional<abstime_type> {
+    [[nodiscard]] auto peek() const -> std::optional<abstime_type> {
         if (remaining > 0)
             return next;
         return std::nullopt;
     }
 
     /** \brief Timing generator interface */
-    auto pop() noexcept -> Event {
+    auto pop() -> Event {
         Event event{};
         event.abstime = next;
         next += interval;

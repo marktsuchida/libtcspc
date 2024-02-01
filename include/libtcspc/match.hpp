@@ -137,8 +137,7 @@ class always_matcher {
   public:
     /** \brief Matcher interface. */
     template <typename Event>
-    auto operator()([[maybe_unused]] Event const &event) const noexcept
-        -> bool {
+    auto operator()([[maybe_unused]] Event const &event) const -> bool {
         return true;
     }
 };
@@ -156,8 +155,7 @@ class never_matcher {
   public:
     /** \brief Matcher interface. */
     template <typename Event>
-    auto operator()([[maybe_unused]] Event const &event) const noexcept
-        -> bool {
+    auto operator()([[maybe_unused]] Event const &event) const -> bool {
         return false;
     }
 };
@@ -183,7 +181,7 @@ template <typename DataTraits = default_data_traits> class channel_matcher {
 
     /** \brief Matcher interface. */
     template <typename Event>
-    auto operator()(Event const &event) const noexcept -> bool {
+    auto operator()(Event const &event) const -> bool {
         static_assert(std::is_same_v<decltype(event.channel),
                                      typename DataTraits::channel_type>);
         return event.channel == channel;
