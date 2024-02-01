@@ -90,7 +90,7 @@ class count_up_to {
  *
  * All events (including \c TickEvent and \c ResetEvent) are passed through.
  *
- * \c TickEvent and \c FireEvent must have a abstime field. \c FireEvent must
+ * \c TickEvent and \c FireEvent must have an abstime field. \c FireEvent must
  * be brace-initializable with abstime (as in \c FireEvent{123} ).
  *
  * The count is incremented when a \c TickEvent is passed through. Just before

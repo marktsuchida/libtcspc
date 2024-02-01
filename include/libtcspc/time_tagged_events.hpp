@@ -79,7 +79,7 @@ struct base_channeled_time_tagged_event : base_time_tagged_event<DataTraits> {
  *
  * \ingroup events-timing
  *
- * Data sources emit this event to indicated that a abstime stamp has been
+ * Data sources emit this event to indicated that an abstime stamp has been
  * seen, without any associated event.
  *
  * This conveys useful information because timestamps are monotonic: if a
