@@ -149,10 +149,9 @@ class route_homogeneous {
 template <typename EventSetToRoute, typename Router, std::size_t N,
           typename Downstream>
 auto route_homogeneous(Router &&router,
-                       std::array<Downstream, N> &&downstreams) {
+                       std::array<Downstream, N> downstreams) {
     return internal::route_homogeneous<EventSetToRoute, Router, N, Downstream>(
-        std::forward<Router>(router),
-        std::forward<std::array<Downstream, N>>(downstreams));
+        std::forward<Router>(router), std::move(downstreams));
 }
 
 /**
@@ -291,9 +290,9 @@ class channel_router {
  * \return broadcast-homogeneous processor
  */
 template <std::size_t N, typename Downstream>
-auto broadcast_homogeneous(std::array<Downstream, N> &&downstreams) {
+auto broadcast_homogeneous(std::array<Downstream, N> downstreams) {
     return route_homogeneous<event_set<>, null_router, N, Downstream>(
-        null_router(), std::forward<std::array<Downstream, N>>(downstreams));
+        null_router(), std::move(downstreams));
 }
 
 /**

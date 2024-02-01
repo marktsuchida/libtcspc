@@ -35,10 +35,12 @@ TEST_CASE("Mangled name is demangled", "[maybe_demangle]") {
 TEST_CASE("processor graph node id", "[processor_node_id]") {
     std::type_index const ti = typeid(int);
     std::type_index const td = typeid(double);
+    // NOLINTBEGIN(cppcoreguidelines-avoid-c-arrays,modernize-avoid-c-arrays)
     union {
         int i;
         double d;
     } const uu[2]{};
+    // NOLINTEND(cppcoreguidelines-avoid-c-arrays,modernize-avoid-c-arrays)
     auto const &u0 = uu[0];
     auto const &u1 = uu[1];
     using pnid = processor_node_id;
@@ -46,6 +48,7 @@ TEST_CASE("processor graph node id", "[processor_node_id]") {
     // All pnid pairs with less/equal/greater elements.
     // Address: u0 < u1
     // Type:    i < d  or  i > d
+    // NOLINTBEGIN(cppcoreguidelines-pro-type-union-access)
     auto const ee = std::make_pair(pnid(&u0.i), pnid(&u0.i));
     auto const el = ti < td ? std::make_pair(pnid(&u0.i), pnid(&u0.d))
                             : std::make_pair(pnid(&u0.d), pnid(&u0.i));
@@ -61,6 +64,7 @@ TEST_CASE("processor graph node id", "[processor_node_id]") {
                             : std::make_pair(pnid(&u1.d), pnid(&u0.i));
     auto const gg = ti > td ? std::make_pair(pnid(&u1.i), pnid(&u0.d))
                             : std::make_pair(pnid(&u1.d), pnid(&u0.i));
+    // NOLINTEND(cppcoreguidelines-pro-type-union-access)
 
     CHECK(ee.first == ee.second);
     CHECK_FALSE(el.first == el.second);
@@ -124,7 +128,7 @@ TEST_CASE("processor graph node id", "[processor_node_id]") {
 }
 
 TEST_CASE("empty processor_graph", "[processor_graph]") {
-    int p{};
+    int const p{};
 
     auto const g = processor_graph();
     CHECK(g.nodes().empty());

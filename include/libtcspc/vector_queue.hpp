@@ -213,7 +213,7 @@ template <typename T> class vector_queue {
 
     // Not in std::queue interface
     template <typename F>
-    void for_each(F &&func) noexcept(noexcept(func(std::declval<T &>()))) {
+    void for_each(F func) noexcept(noexcept(func(std::declval<T &>()))) {
         if (head <= tail) {
             std::for_each(head, tail, func);
         } else {
@@ -223,8 +223,7 @@ template <typename T> class vector_queue {
     }
 
     template <typename F>
-    void for_each(F &&func) const
-        noexcept(noexcept(func(std::declval<T &>()))) {
+    void for_each(F func) const noexcept(noexcept(func(std::declval<T &>()))) {
         if (head <= tail) {
             std::for_each(head, tail, func);
         } else {

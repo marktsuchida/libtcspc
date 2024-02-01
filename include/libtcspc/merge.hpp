@@ -72,7 +72,7 @@ class merge_impl {
 
     // Emit pending while predicate is true.
     // Pred: bool(abstime_type const &)
-    template <typename Pred> void emit_pending(Pred &&predicate) {
+    template <typename Pred> void emit_pending(Pred predicate) {
         auto emit_of_true = [&](auto const &e) {
             bool p = predicate(e.abstime);
             if (p)

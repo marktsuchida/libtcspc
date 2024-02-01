@@ -30,7 +30,7 @@ class generate {
     Downstream downstream;
 
     // Pred: bool(abstime_type const &)
-    template <typename Pred> void emit(Pred &&predicate) {
+    template <typename Pred> void emit(Pred predicate) {
         for (std::optional<abstime_type> t = std::as_const(generator).peek();
              t && predicate(*t); t = std::as_const(generator).peek()) {
             typename TimingGenerator::output_event_type e = generator.pop();

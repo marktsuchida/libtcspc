@@ -56,7 +56,7 @@ class null_output_stream {
 
   public:
     static auto is_error() noexcept -> bool { return false; }
-    auto tell() const noexcept -> std::optional<std::uint64_t> {
+    [[nodiscard]] auto tell() const noexcept -> std::optional<std::uint64_t> {
         return bytes_written;
     }
     void write(span<std::byte const> buffer) noexcept {
@@ -78,7 +78,7 @@ template <typename OStream> class ostream_output_stream {
 
     auto is_error() noexcept -> bool { return stream.fail(); }
 
-    auto tell() noexcept -> std::optional<std::uint64_t> {
+    [[nodiscard]] auto tell() noexcept -> std::optional<std::uint64_t> {
         if (stream.fail())
             return std::nullopt; // Do not affect flags.
         std::int64_t const pos = stream.tellp();
@@ -129,7 +129,7 @@ class cfile_output_stream {
         return fp == nullptr || std::ferror(fp) != 0;
     }
 
-    auto tell() noexcept -> std::optional<std::uint64_t> {
+    [[nodiscard]] auto tell() noexcept -> std::optional<std::uint64_t> {
         if (fp == nullptr)
             return std::nullopt;
         std::int64_t pos =

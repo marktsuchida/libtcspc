@@ -38,7 +38,7 @@ namespace {
 template <typename MI>
 auto check_introspect_merge_input(MI const &input,
                                   std::string_view impl_name) {
-    auto const info = check_introspect_node_info(input);
+    auto info = check_introspect_node_info(input);
 
     auto const g = input.introspect_graph();
     CHECK(g.nodes().size() == 3);

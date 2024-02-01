@@ -130,10 +130,13 @@ TEST_CASE("Map to bins") {
 }
 
 TEST_CASE("Power-of-2 bin mapping") {
+    // NOLINTBEGIN(bugprone-unchecked-optional-access)
+
     struct data_traits : default_data_traits {
         using datapoint_type = u32;
         using bin_index_type = u16;
     };
+
     power_of_2_bin_mapper<0, 0, false, data_traits> const m00;
     REQUIRE(m00.n_bins() == 1);
     REQUIRE(m00(0).value() == 0);
@@ -256,9 +259,13 @@ TEST_CASE("Power-of-2 bin mapping") {
     REQUIRE(m32_16(m - 65536).value() == 65534);
     REQUIRE(m32_16(m - 65535).value() == 65535);
     REQUIRE(m32_16(m).value() == 65535);
+
+    // NOLINTEND(bugprone-unchecked-optional-access)
 }
 
 TEST_CASE("Linear bin mapping") {
+    // NOLINTBEGIN(bugprone-unchecked-optional-access)
+
     struct data_traits : default_data_traits {
         using datapoint_type = i32;
         using bin_index_type = u16;
@@ -398,6 +405,8 @@ TEST_CASE("Linear bin mapping") {
     REQUIRE(flipped(4095).value() == 0);
     REQUIRE(check_clamped(flipped(4096), 0));
     REQUIRE(check_clamped(flipped(65535), 0));
+
+    // NOLINTEND(bugprone-unchecked-optional-access)
 }
 
 TEST_CASE("Batch bin increments") {

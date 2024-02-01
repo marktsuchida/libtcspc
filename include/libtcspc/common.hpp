@@ -343,8 +343,7 @@ inline auto count_trailing_zeros_32(u32np x) noexcept -> int {
 }
 
 template <typename F>
-inline void for_each_set_bit(u32np bits,
-                             F &&func) noexcept(noexcept(func(0))) {
+inline void for_each_set_bit(u32np bits, F func) noexcept(noexcept(func(0))) {
     while (bits != 0_u32np) {
         func(count_trailing_zeros_32(bits));
         bits = bits & (bits - 1_u32np); // Clear the handled bit

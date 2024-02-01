@@ -31,7 +31,7 @@ namespace tcspc {
 
 namespace internal {
 
-[[nodiscard]] inline std::string maybe_demangle(char const *mangled) {
+[[nodiscard]] inline auto maybe_demangle(char const *mangled) -> std::string {
 #ifdef LIBTCSPC_HAVE_CXA_DEMANGLE
     int status{-1};
     auto demangled = std::unique_ptr<char, void (*)(void *)>(
@@ -253,7 +253,7 @@ class processor_graph {
         }
 
         auto const id = processor_node_id(processor);
-        auto const node = node_type{id, processor->introspect_node()};
+        auto node = node_type{id, processor->introspect_node()};
         auto [node_lower, node_upper] = std::equal_range(
             nds.begin(), nds.end(), node,
             [](auto const &l, auto const &r) { return l.id < r.id; });
@@ -414,14 +414,16 @@ class processor_graph {
 namespace internal {
 
 inline auto format_hex_addr(std::size_t p) -> std::string {
-    std::array<char, sizeof(std::size_t) * 2 + 3> buf;
+    std::array<char, sizeof(std::size_t) * 2 + 3> buf{};
     std::fill(buf.begin(), buf.end(), '0');
+    // NOLINTBEGIN(cppcoreguidelines-pro-bounds-pointer-arithmetic)
     auto const r =
         std::to_chars(buf.data(), buf.data() + buf.size() - 1, p, 16);
     *r.ptr = '\0';
     std::rotate(buf.begin(),
                 std::next(buf.begin(), std::distance(buf.data(), r.ptr) + 1),
                 buf.end());
+    // NOLINTEND(cppcoreguidelines-pro-bounds-pointer-arithmetic)
     buf[1] = 'x';
     return buf.data();
 };
