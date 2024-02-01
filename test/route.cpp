@@ -32,8 +32,8 @@ using e1 = empty_test_event<1>;
 } // namespace
 
 TEST_CASE("introspect route", "[introspect]") {
-    auto const rh2 = route_homogeneous<event_set<>>(
-        null_router(), std::array{null_sink(), null_sink()});
+    auto const rh2 = route_homogeneous<event_set<>>(null_router(), null_sink(),
+                                                    null_sink());
     auto const info = check_introspect_node_info(rh2);
     auto const g = rh2.introspect_graph();
     CHECK(g.nodes().size() == 3);
@@ -49,7 +49,11 @@ TEST_CASE("introspect route", "[introspect]") {
 
     // route() is just route_homogeneous + type_erased_processor; no separate
     // test needed. broadcast_homogeneous() and broadcast() are also thin
-    // wrappers.
+    // wrappers. Just check instantiation here.
+    (void)route<event_set<>>(null_router(), null_sink(),
+                             event_set_sink<event_set<>>());
+    (void)broadcast_homogeneous(null_sink(), null_sink());
+    (void)broadcast<event_set<>>(null_sink(), event_set_sink<event_set<>>());
 }
 
 TEST_CASE("Route") {

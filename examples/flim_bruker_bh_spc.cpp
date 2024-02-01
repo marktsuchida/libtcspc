@@ -155,13 +155,13 @@ auto make_processor(settings const &settings,
         "pixel time is such that pixel stop occurs after next pixel start",
     count<pixel_stop_event>(ctx->tracker<count_access>("pixel_counter"),
     route_homogeneous<event_set<time_correlated_detection_event<>>>(
+        // Use single-downstream router to select by channel.
         channel_router(
             std::array{std::make_pair(settings.channel, std::size_t(0))}),
-        std::array{
     map_to_datapoints(difftime_data_mapper(),
     map_to_bins(power_of_2_bin_mapper<12, 8, true>(),
     batch_bin_increments<pixel_start_event, pixel_stop_event>(
-    make_histo_proc<Cumulative>(settings, ctx))))}))))))))))))))));
+    make_histo_proc<Cumulative>(settings, ctx))))))))))))))))))));
     // clang-format on
 }
 

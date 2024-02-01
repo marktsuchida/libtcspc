@@ -155,6 +155,35 @@ auto route_homogeneous(Router &&router,
 }
 
 /**
+ * \brief Create a processor that routes events to multiple downstreams of the
+ * same type.
+ *
+ * \ingroup processors-basic
+ *
+ * This overload takes the downstreams as variadic arguments. See the overload
+ * taking a \c std::array of downstreams for a detailed description.
+ *
+ * \tparam EventSetToRoute event types to route
+ *
+ * \tparam Router type of router (usually deduced)
+ *
+ * \tparam Downstreams downstream processor types (usually deduced; must be all
+ * equal)
+ *
+ * \param router the router
+ *
+ * \param downstreams downstream processors
+ *
+ * \return route-homogeneous processor
+ */
+template <typename EventSetToRoute, typename Router, typename... Downstreams>
+auto route_homogeneous(Router &&router, Downstreams &&...downstreams) {
+    auto arr = std::array{std::forward<Downstreams>(downstreams)...};
+    return route_homogeneous<EventSetToRoute, Router>(
+        std::forward<Router>(router), std::move(arr));
+}
+
+/**
  * \brief Create a processor that routes events to different downstreams.
  *
  * \ingroup processors-basic
@@ -293,6 +322,25 @@ template <std::size_t N, typename Downstream>
 auto broadcast_homogeneous(std::array<Downstream, N> downstreams) {
     return route_homogeneous<event_set<>, null_router, N, Downstream>(
         null_router(), std::move(downstreams));
+}
+
+/**
+ * \brief Create a processor that broadcasts events to multiple downstream
+ * processors of the same type.
+ *
+ * \ingroup processors-basic
+ *
+ * \tparam Downstreams downstream processor types (usually deduced; must be all
+ * equal)
+ *
+ * \param downstreams downstream processors
+ *
+ * \return broadcast-homogeneous processor
+ */
+template <typename... Downstreams>
+auto broadcast_homogeneous(Downstreams &&...downstreams) {
+    auto arr = std::array{std::forward<Downstreams>(downstreams)...};
+    return broadcast_homogeneous(std::move(arr));
 }
 
 /**
