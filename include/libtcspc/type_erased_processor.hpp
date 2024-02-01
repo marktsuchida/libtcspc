@@ -78,8 +78,6 @@ class virtual_processor_impl<Interface, Proc> : public Interface {
     }
 
     void flush() final { proc.flush(); }
-
-    auto wrapped() -> Proc & { return proc; }
 };
 
 template <typename Interface, typename Proc, typename Event0,
