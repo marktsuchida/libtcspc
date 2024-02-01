@@ -18,6 +18,10 @@ template <typename... Ts> struct some_class_tmpl {};
 } // namespace
 
 static_assert(
+    std::is_same_v<apply_class_template_t<some_class_tmpl, std::tuple<>>,
+                   some_class_tmpl<>>);
+
+static_assert(
     std::is_same_v<apply_class_template_t<some_class_tmpl, std::tuple<>,
                                           unsigned, double>,
                    some_class_tmpl<unsigned, double>>);
