@@ -2,8 +2,8 @@
 # Copyright 2019-2024 Board of Regents of the University of Wisconsin System
 # SPDX-License-Identifier: MIT
 
-PROJECT_NAME           = libtcspc
-PROJECT_BRIEF          = "Streaming TCSPC and time tag data processing in C++"
+PROJECT_NAME           = "libtcspc C++ API"
+PROJECT_BRIEF          = "Streaming TCSPC and time tag data processing"
 
 INPUT                  = @DOXYGEN_INPUT@
 STRIP_FROM_PATH        = @DOXYGEN_INPUT@

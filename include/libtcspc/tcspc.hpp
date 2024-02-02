@@ -10,7 +10,7 @@
 // For now, it only serves to document the namespace and Doxygen groups.
 
 /**
- * \mainpage libtcspc Documentation
+ * \mainpage libtcspc C++ API
  *
  * All public symbols are in the namespace \ref tcspc. See Topics for a
  * categorized list.
