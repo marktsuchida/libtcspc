@@ -48,7 +48,7 @@ libtcspc_dep = declare_dependency(
 )
 
 subdir('include')
-subdir('doc')
-subdir('test')
+subdir('docs')
+subdir('tests')
 subdir('benchmarks')
 subdir('examples')
