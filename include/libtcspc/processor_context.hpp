@@ -214,6 +214,8 @@ processor_tracker<Accessor>::~processor_tracker() {
 /**
  * \brief Recover the processor address from an embedded processor tracker.
  *
+ * \ingroup misc
+ *
  * This can be used in the implementation of a processor accessor factory (see
  * \c processor_tracker::register_accessor_factory).
  *
