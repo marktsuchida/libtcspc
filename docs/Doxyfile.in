@@ -4,18 +4,35 @@
 
 PROJECT_NAME           = libtcspc
 PROJECT_BRIEF          = "Streaming TCSPC and time tag data processing in C++"
+
 INPUT                  = @DOXYGEN_INPUT@
 STRIP_FROM_PATH        = @DOXYGEN_INPUT@
 EXCLUDE                = @DOXYGEN_EXCLUDE@
 OUTPUT_DIRECTORY       = @DOXYGEN_OUTPUT@
+
+GENERATE_HTML          = YES
 GENERATE_LATEX         = NO
-HAVE_DOT               = NO
+
+DISTRIBUTE_GROUP_DOC   = NO
+EXCLUDE_SYMBOLS        = internal std
+RECURSIVE              = YES
+SORT_BRIEF_DOCS        = YES
+
 CLASS_GRAPH            = NO
 COLLABORATION_GRAPH    = NO
 GROUP_GRAPHS           = NO
-RECURSIVE              = YES
-SORT_BRIEF_DOCS        = YES
-EXCLUDE_SYMBOLS        = internal std
+HAVE_DOT               = NO
+
+# Doxygen Awesome
+DISABLE_INDEX          = NO
+FULL_SIDEBAR           = NO
+GENERATE_TREEVIEW      = YES
+HTML_COLORSTYLE        = LIGHT
+HTML_COLORSTYLE_GAMMA  = 113
+HTML_COLORSTYLE_HUE    = 209
+HTML_COLORSTYLE_SAT    = 255
+HTML_EXTRA_STYLESHEET  = @DOXYGEN_CSS@/doxygen-awesome.css \
+                         @DOXYGEN_CSS@/doxygen-awesome-sidebar-only.css
 
 # Custom commands for processor input/output events
 ALIASES += inevents="<dl class='params'><dt>Input Events</dt><dd><table class='params'>"

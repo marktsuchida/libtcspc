@@ -13,6 +13,7 @@ doxyfile = configure_file(
         'DOXYGEN_INPUT': meson.current_source_dir() / '../include',
         'DOXYGEN_EXCLUDE': meson.current_source_dir() / '../include/tcb',
         'DOXYGEN_OUTPUT': meson.current_build_dir() / 'apidoc',
+        'DOXYGEN_CSS': meson.current_source_dir() / 'doxygen-awesome-css',
     },
     input: 'Doxyfile.in',
     output: 'Doxyfile',
