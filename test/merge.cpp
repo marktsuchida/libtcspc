@@ -10,7 +10,6 @@
 #include "libtcspc/event_set.hpp"
 #include "libtcspc/introspect.hpp"
 #include "libtcspc/processor_context.hpp"
-#include "libtcspc/ref_processor.hpp"
 #include "libtcspc/test_utils.hpp"
 #include "libtcspc/type_erased_processor.hpp"
 #include "test_checkers.hpp"
@@ -99,136 +98,135 @@ TEST_CASE("introspect merge", "[introspect]") {
 }
 
 TEST_CASE("Merge") {
-    // The two merge inputs have different types. Wrap them so they can be
-    // swapped for symmetric tests.
-    // in_0 -> ref -> min0 -> merge_impl -> out
-    // in_x -> min_x -> ref -> min0/1 -> merge_impl -> out
-    //         erased
-
     auto ctx = std::make_shared<processor_context>();
-    auto [min0, min1] = merge<all_events>(
+    auto [mi0, mi1] = merge<all_events>(
         1024, capture_output<all_events>(
                   ctx->tracker<capture_output_access>("out")));
 
-    auto min_x = type_erased_processor<all_events>(ref_processor(min0));
-    auto min_y = type_erased_processor<all_events>(ref_processor(min1));
-    int const x = GENERATE(0, 1);
-    if (x != 0) {
-        using std::swap;
-        swap(min_x, min_y);
-    }
+    SECTION("asymmetric tests") {
+        auto in0 = feed_input<all_events>(std::move(mi0));
+        in0.require_output_checked(ctx, "out");
+        auto in1 = feed_input<all_events>(std::move(mi1));
+        in1.require_output_checked(ctx, "out");
+        auto out = capture_output_checker<all_events>(
+            ctx->accessor<capture_output_access>("out"));
 
-    auto in_0 = feed_input<all_events>(ref_processor(min0));
-    in_0.require_output_checked(ctx, "out");
-    auto in_1 = feed_input<all_events>(ref_processor(min1));
-    in_1.require_output_checked(ctx, "out");
-    auto in_x = feed_input<all_events>(std::move(min_x));
-    in_x.require_output_checked(ctx, "out");
-    auto in_y = feed_input<all_events>(std::move(min_y));
-    in_y.require_output_checked(ctx, "out");
+        SECTION("events from input 0 emitted before those from input 1") {
+            in1.feed(e1{42});
+            in0.feed(e0{42});
+            REQUIRE(out.check(e0{42}));
+            in1.feed(e3{42});
+            in0.feed(e2{42});
+            REQUIRE(out.check(e2{42}));
 
-    auto out = capture_output_checker<all_events>(
-        ctx->accessor<capture_output_access>("out"));
+            SECTION("end input 0 first") {
+                in0.flush();
+                REQUIRE(out.check(e1{42}));
+                REQUIRE(out.check(e3{42}));
+                REQUIRE(out.check_not_flushed());
+                in1.flush();
+                REQUIRE(out.check_flushed());
+            }
 
-    SECTION("Empty yields empty") {
-        in_x.flush();
-        REQUIRE(out.check_not_flushed());
-        in_y.flush();
-        REQUIRE(out.check_flushed());
-    }
-
-    SECTION("Events from in_0 emitted before those from in_1") {
-        in_1.feed(e1{42});
-        in_0.feed(e0{42});
-        REQUIRE(out.check(e0{42}));
-        in_1.feed(e3{42});
-        in_0.feed(e2{42});
-        REQUIRE(out.check(e2{42}));
-
-        SECTION("End in_0 first") {
-            in_0.flush();
-            REQUIRE(out.check(e1{42}));
-            REQUIRE(out.check(e3{42}));
-            REQUIRE(out.check_not_flushed());
-            in_1.flush();
-            REQUIRE(out.check_flushed());
-        }
-
-        SECTION("End in_1 first") {
-            in_1.flush();
-            REQUIRE(out.check_not_flushed());
-            in_0.flush();
-            REQUIRE(out.check(e1{42}));
-            REQUIRE(out.check(e3{42}));
-            REQUIRE(out.check_flushed());
+            SECTION("end input 1 first") {
+                in1.flush();
+                REQUIRE(out.check_not_flushed());
+                in0.flush();
+                REQUIRE(out.check(e1{42}));
+                REQUIRE(out.check(e3{42}));
+                REQUIRE(out.check_flushed());
+            }
         }
     }
 
-    SECTION("Events in abstime order") {
-        in_x.feed(e0{1});
-        in_y.feed(e1{2});
-        REQUIRE(out.check(e0{1}));
-        in_x.feed(e0{3});
-        REQUIRE(out.check(e1{2}));
+    SECTION("symmetric tests") {
+        auto temi0 = type_erased_processor<all_events>(std::move(mi0));
+        auto temi1 = type_erased_processor<all_events>(std::move(mi1));
+        int const x = GENERATE(0, 1);
+        if (x != 0) {
+            using std::swap;
+            swap(temi0, temi1);
+        }
+        auto in_x = feed_input<all_events>(std::move(temi0));
+        auto in_y = feed_input<all_events>(std::move(temi1));
+        in_x.require_output_checked(ctx, "out");
+        in_y.require_output_checked(ctx, "out");
+        auto out = capture_output_checker<all_events>(
+            ctx->accessor<capture_output_access>("out"));
 
-        SECTION("End in_x first") {
+        SECTION("empty yields empty") {
             in_x.flush();
             REQUIRE(out.check_not_flushed());
             in_y.flush();
-            REQUIRE(out.check(e0{3}));
             REQUIRE(out.check_flushed());
         }
 
-        SECTION("End in_x, additional y input") {
-            in_x.flush();
-            in_y.feed(e1{4});
-            REQUIRE(out.check(e0{3}));
-            REQUIRE(out.check(e1{4}));
-            in_y.flush();
-            REQUIRE(out.check_flushed());
+        SECTION("events in abstime order") {
+            in_x.feed(e0{1});
+            in_y.feed(e1{2});
+            REQUIRE(out.check(e0{1}));
+            in_x.feed(e0{3});
+            REQUIRE(out.check(e1{2}));
+
+            SECTION("end in_x first") {
+                in_x.flush();
+                REQUIRE(out.check_not_flushed());
+                in_y.flush();
+                REQUIRE(out.check(e0{3}));
+                REQUIRE(out.check_flushed());
+            }
+
+            SECTION("end in_x, additional y input") {
+                in_x.flush();
+                in_y.feed(e1{4});
+                REQUIRE(out.check(e0{3}));
+                REQUIRE(out.check(e1{4}));
+                in_y.flush();
+                REQUIRE(out.check_flushed());
+            }
+
+            SECTION("end in_y first") {
+                in_y.flush();
+                REQUIRE(out.check(e0{3}));
+                REQUIRE(out.check_not_flushed());
+                in_x.flush();
+                REQUIRE(out.check_flushed());
+            }
+
+            SECTION("end in_y, additional x input") {
+                in_y.flush();
+                REQUIRE(out.check(e0{3}));
+                in_x.feed(e0{4});
+                REQUIRE(out.check(e0{4}));
+                in_x.flush();
+                REQUIRE(out.check_flushed());
+            }
         }
 
-        SECTION("End in_y first") {
-            in_y.flush();
-            REQUIRE(out.check(e0{3}));
-            REQUIRE(out.check_not_flushed());
-            in_x.flush();
-            REQUIRE(out.check_flushed());
-        }
-
-        SECTION("End in_y, additional x input") {
-            in_y.flush();
-            REQUIRE(out.check(e0{3}));
+        SECTION("delayed on in_x") {
+            in_x.feed(e0{2});
+            in_y.feed(e1{1});
+            REQUIRE(out.check(e1{1}));
             in_x.feed(e0{4});
-            REQUIRE(out.check(e0{4}));
-            in_x.flush();
-            REQUIRE(out.check_flushed());
-        }
-    }
+            in_y.feed(e1{3});
+            REQUIRE(out.check(e0{2}));
+            REQUIRE(out.check(e1{3}));
 
-    SECTION("Delayed on in_x") {
-        in_x.feed(e0{2});
-        in_y.feed(e1{1});
-        REQUIRE(out.check(e1{1}));
-        in_x.feed(e0{4});
-        in_y.feed(e1{3});
-        REQUIRE(out.check(e0{2}));
-        REQUIRE(out.check(e1{3}));
+            SECTION("end in_x first") {
+                in_x.flush();
+                REQUIRE(out.check_not_flushed());
+                in_y.flush();
+                REQUIRE(out.check(e0{4}));
+                REQUIRE(out.check_flushed());
+            }
 
-        SECTION("End in_x first") {
-            in_x.flush();
-            REQUIRE(out.check_not_flushed());
-            in_y.flush();
-            REQUIRE(out.check(e0{4}));
-            REQUIRE(out.check_flushed());
-        }
-
-        SECTION("End in_y first") {
-            in_y.flush();
-            REQUIRE(out.check(e0{4}));
-            REQUIRE(out.check_not_flushed());
-            in_x.flush();
-            REQUIRE(out.check_flushed());
+            SECTION("end in_y first") {
+                in_y.flush();
+                REQUIRE(out.check(e0{4}));
+                REQUIRE(out.check_not_flushed());
+                in_x.flush();
+                REQUIRE(out.check_flushed());
+            }
         }
     }
 }

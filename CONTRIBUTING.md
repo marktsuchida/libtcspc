@@ -67,9 +67,8 @@ types should be documented with Doxygen comments (follow existing practice).
 
 - Processors (or, rather, the factory functions that create them; see below on
   this) should be named after a verb describing what the processor does.
-  - For example, `count_event`, not `event_counter`.
-  - Exception: special wrapper processors such as `ref_processor`,
-    `type_erased_processor`
+  - For example, `count`, not `counter`.
+  - Exception: special wrapper processors such as `type_erased_processor`.
 - Processors are class templates, whose last template parameter is the
   downstream processor type (`typename Downstream` by convention).
   - Sinks, of course, will not have a downstream.
@@ -78,36 +77,30 @@ types should be documented with Doxygen comments (follow existing practice).
 - Ordinary processors contain the (chain of) downstream processor(s) in a data
   member (`Downstream downstream`).
   - This should usually be the last non-static data member, so that the data
-    layout mirrors the order of processing.
+    layout mirrors the order of processing. Cold data (such as data only
+    accessed when terminating processing) should be placed after the downstream
+    member.
   - Note that the processor becomes move-only if any of its downstream
     processors are move-only.
-  - Exception: processors with special semantics such as `ref_processor` and
+  - Exception: processors with special semantics such as `merge` or
     `type_erased_processor`.
   - If the user wants to break the chain of containment for any reason, they
     can use `type_erased_processor`.
     - This can be of advantage in a few cases:
       - To allow runtime selection of the processor type (with
         `type_erased_processor`).
-      - To reduce compile time.
-      - Note: Currently even the use of these reference-semantic processors
-        does not allow upstream processors to be created before their
-        downstream. There is no plan to change this, as processor chaings are
-        designed to be single-use (i.e., used only for one event stream and
-        then discarded).
-  - The `merge` processor also implicitly breaks the chain of containment
-    (because we can't contain one downstream in two separate upstreams!).
+      - Possibly to reduce compile time.
 - Constructor
   - Processors should not have a default constructor.
-    - Exception: `discard_any`, `discard_all`; sinks with no configuration
-      parameters.
+    - Exception: sinks with no configuration parameters.
   - Processors should have an `explicit` constructor (or a few) taking
     configuration parameters and, as the last parameter, the downstream
     processor (`Downstream downstream`).
     - The downstream processor should usually be assigned to the data member
       via `std::move()`.
 - Factory function
-  - Processors in the library are defined as class templates in an internal
-    namespace.
+  - Processors in the library are usually defined as class templates in an
+    internal namespace.
   - A free function template should be provided for constructing the processor,
     given configuration parameters and the downstream processor. This function
     returns the new processor by value.
