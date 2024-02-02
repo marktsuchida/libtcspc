@@ -32,7 +32,8 @@ HTML_COLORSTYLE_GAMMA  = 113
 HTML_COLORSTYLE_HUE    = 209
 HTML_COLORSTYLE_SAT    = 255
 HTML_EXTRA_STYLESHEET  = @DOXYGEN_CSS@/doxygen-awesome.css \
-                         @DOXYGEN_CSS@/doxygen-awesome-sidebar-only.css
+                         @DOXYGEN_CSS@/doxygen-awesome-sidebar-only.css \
+                         @DOXYGEN_CSS@/custom.css
 
 # Custom commands for processor input/output events
 ALIASES += inevents="<dl class='params'><dt>Input Events</dt><dd><table class='params'>"
