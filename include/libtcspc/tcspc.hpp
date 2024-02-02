@@ -12,8 +12,8 @@
 /**
  * \mainpage libtcspc Documentation
  *
- * All public symbols are in the namespace \ref tcspc. See the Modules page for
- * a categorized list.
+ * All public symbols are in the namespace \ref tcspc. See Topics for a
+ * categorized list.
  */
 
 /**
