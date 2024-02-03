@@ -6,7 +6,6 @@
 
 #pragma once
 
-#include "apply_class_template.hpp"
 #include "common.hpp"
 #include "event_set.hpp"
 #include "introspect.hpp"
@@ -19,42 +18,43 @@ namespace tcspc {
 
 namespace internal {
 
-template <typename... Events> class abstract_processor_impl;
+template <typename EventSet> class abstract_processor;
 
-template <> class abstract_processor_impl<> {
+template <> class abstract_processor<event_set<>> {
   public:
-    abstract_processor_impl() = default;
-    abstract_processor_impl(abstract_processor_impl const &) = delete;
-    auto operator=(abstract_processor_impl const &) = delete;
-    abstract_processor_impl(abstract_processor_impl &&) = delete;
-    auto operator=(abstract_processor_impl &&) = delete;
-    virtual ~abstract_processor_impl() = default;
+    abstract_processor() = default;
+    abstract_processor(abstract_processor const &) = delete;
+    auto operator=(abstract_processor const &) = delete;
+    abstract_processor(abstract_processor &&) = delete;
+    auto operator=(abstract_processor &&) = delete;
+    virtual ~abstract_processor() = default;
     [[nodiscard]] virtual auto introspect_node() const -> processor_info = 0;
     [[nodiscard]] virtual auto introspect_graph() const -> processor_graph = 0;
     virtual void flush() = 0;
 };
 
 template <typename Event0>
-class abstract_processor_impl<Event0> : public abstract_processor_impl<> {
+class abstract_processor<event_set<Event0>>
+    : public abstract_processor<event_set<>> {
   public:
     virtual void handle(Event0 const &) = 0;
 };
 
-template <typename Event0, typename Event1, typename... Events>
-class abstract_processor_impl<Event0, Event1, Events...>
-    : public abstract_processor_impl<Event1, Events...> {
-    using base_type = abstract_processor_impl<Event1, Events...>;
+template <typename Event0, typename... Events>
+class abstract_processor<event_set<Event0, Events...>>
+    : public abstract_processor<event_set<Events...>> {
+    using base_type = abstract_processor<event_set<Events...>>;
 
   public:
     using base_type::handle; // Import overload set
     virtual void handle(Event0 const &) = 0;
 };
 
-template <typename Interface, typename Proc, typename... Events>
+template <typename Interface, typename Proc, typename EventSet>
 class virtual_processor_impl;
 
 template <typename Interface, typename Proc>
-class virtual_processor_impl<Interface, Proc> : public Interface {
+class virtual_processor_impl<Interface, Proc, event_set<>> : public Interface {
   protected:
     // NOLINTNEXTLINE(cppcoreguidelines-non-private-member-variables-in-classes,misc-non-private-member-variables-in-classes)
     Proc proc;
@@ -82,9 +82,10 @@ class virtual_processor_impl<Interface, Proc> : public Interface {
 
 template <typename Interface, typename Proc, typename Event0,
           typename... Events>
-class virtual_processor_impl<Interface, Proc, Event0, Events...>
-    : public virtual_processor_impl<Interface, Proc, Events...> {
-    using base_type = virtual_processor_impl<Interface, Proc, Events...>;
+class virtual_processor_impl<Interface, Proc, event_set<Event0, Events...>>
+    : public virtual_processor_impl<Interface, Proc, event_set<Events...>> {
+    using base_type =
+        virtual_processor_impl<Interface, Proc, event_set<Events...>>;
 
   protected:
     using base_type::proc;
@@ -96,10 +97,9 @@ class virtual_processor_impl<Interface, Proc, Event0, Events...>
     void handle(Event0 const &event) final { proc.handle(event); }
 };
 
-template <typename Proc, typename... Events>
+template <typename Proc, typename EventSet>
 using virtual_processor =
-    virtual_processor_impl<abstract_processor_impl<Events...>, Proc,
-                           Events...>;
+    virtual_processor_impl<abstract_processor<EventSet>, Proc, EventSet>;
 
 } // namespace internal
 
@@ -111,14 +111,11 @@ using virtual_processor =
  * \tparam EventSet the event set handled by the processor
  */
 template <typename EventSet> class type_erased_processor {
-    using abstract_processor =
-        internal::apply_class_template_t<internal::abstract_processor_impl,
-                                         EventSet>;
+    using abstract_processor = internal::abstract_processor<EventSet>;
 
     template <typename Proc>
     using virtual_processor =
-        internal::apply_class_template_t<internal::virtual_processor, EventSet,
-                                         Proc>;
+        typename internal::virtual_processor<Proc, EventSet>;
 
     std::unique_ptr<abstract_processor> proc;
 

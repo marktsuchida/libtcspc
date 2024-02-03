@@ -3,7 +3,6 @@
 # SPDX-License-Identifier: MIT
 
 test_libtcspc_srcs = [
-    'apply_class_template.cpp',
     'autocopy_span.cpp',
     'bh_spc.cpp',
     'binning.cpp',

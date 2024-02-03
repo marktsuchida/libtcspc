@@ -3,7 +3,6 @@
 # SPDX-License-Identifier: MIT
 
 public_cpp_headers = files(
-    'libtcspc/apply_class_template.hpp',
     'libtcspc/autocopy_span.hpp',
     'libtcspc/bh_spc.hpp',
     'libtcspc/binning.hpp',

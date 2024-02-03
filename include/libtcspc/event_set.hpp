@@ -6,8 +6,6 @@
 
 #pragma once
 
-#include "apply_class_template.hpp"
-
 #include <cstddef>
 #include <ostream>
 #include <tuple>
@@ -33,22 +31,25 @@ template <typename... Events> using event_set = std::tuple<Events...>;
  *
  * \ingroup misc
  *
- * This is just an alias for a std::variant holding the events of the given
- * event set. It can be used to store more than one kind of event, for example
- * for buffering.
+ * Derives from \c std::variant of the events in the given event set. This can
+ * be used to store more than one kind of event, for example when buffering.
+ *
+ * Stream insertion (\c operator<<) is supported.
  *
  * \tparam EventSet the event set type describing the events that the variant
  * can hold
  */
-template <typename EventSet>
-class event_variant
-    : public internal::apply_class_template_t<std::variant, EventSet> {
-    using base_type = internal::apply_class_template_t<std::variant, EventSet>;
-    using base_type::base_type;
+template <typename EventSet> class event_variant;
 
-    // Note: event_variant needs to derive from std::variant, rather than be an
-    // alias template, because we need to befriend the stream insertion
-    // operator.
+/**
+ * \brief Implementation detail of \c event_variant.
+ *
+ * \ingroup misc
+ */
+template <typename... Events>
+class event_variant<event_set<Events...>> : public std::variant<Events...> {
+    using base_type = std::variant<Events...>;
+    using base_type::base_type;
 
     /** \brief Stream insertion operator */
     friend auto operator<<(std::ostream &stream, event_variant const &event)

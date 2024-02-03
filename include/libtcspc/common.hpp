@@ -388,6 +388,11 @@ constexpr auto pairing_cutoff(T stop_time, T window_size) noexcept {
     return stop_time - window_size;
 }
 
+// C++20 std::type_identity
+template <typename T> struct type_identity {
+    using type = T;
+};
+
 } // namespace internal
 
 } // namespace tcspc

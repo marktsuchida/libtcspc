@@ -29,28 +29,32 @@ static_assert(handles_event_set_v<type_erased_processor<event_set<e0, e1>>,
                                   event_set<e0, e1>>);
 
 // handles_event_set_v works even if the functions are virtual.
-static_assert(
-    handles_event_set_v<internal::abstract_processor_impl<>, event_set<>>);
-static_assert(not handles_event_set_v<internal::abstract_processor_impl<>,
-                                      event_set<e0>>);
-static_assert(
-    handles_event_set_v<internal::abstract_processor_impl<e0>, event_set<e0>>);
-static_assert(handles_event_set_v<internal::abstract_processor_impl<e0, e1>,
-                                  event_set<e0, e1>>);
-
-static_assert(handles_event_set_v<
-              internal::virtual_processor<event_set_sink<event_set<>>>,
-              event_set<>>);
+static_assert(handles_event_set_v<internal::abstract_processor<event_set<>>,
+                                  event_set<>>);
 static_assert(not handles_event_set_v<
-              internal::virtual_processor<event_set_sink<event_set<>>>,
-              event_set<e0>>);
-static_assert(handles_event_set_v<
-              internal::virtual_processor<event_set_sink<event_set<e0>>, e0>,
-              event_set<e0>>);
+              internal::abstract_processor<event_set<>>, event_set<e0>>);
+static_assert(handles_event_set_v<internal::abstract_processor<event_set<e0>>,
+                                  event_set<e0>>);
+static_assert(
+    handles_event_set_v<internal::abstract_processor<event_set<e0, e1>>,
+                        event_set<e0, e1>>);
+
 static_assert(
     handles_event_set_v<
-        internal::virtual_processor<event_set_sink<event_set<e0, e1>>, e0, e1>,
-        event_set<e0, e1>>);
+        internal::virtual_processor<event_set_sink<event_set<>>, event_set<>>,
+        event_set<>>);
+static_assert(
+    not handles_event_set_v<
+        internal::virtual_processor<event_set_sink<event_set<>>, event_set<>>,
+        event_set<e0>>);
+static_assert(
+    handles_event_set_v<internal::virtual_processor<
+                            event_set_sink<event_set<e0>>, event_set<e0>>,
+                        event_set<e0>>);
+static_assert(handles_event_set_v<
+              internal::virtual_processor<event_set_sink<event_set<e0, e1>>,
+                                          event_set<e0, e1>>,
+              event_set<e0, e1>>);
 
 TEST_CASE("introspect type_erased_processor", "[introspect]") {
     auto const tep = type_erased_processor<event_set<>>(null_sink());
