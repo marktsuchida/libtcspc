@@ -112,13 +112,6 @@ using event_set_element = std::tuple_element<I, EventSet>;
 template <std::size_t I, typename EventSet>
 using event_set_element_t = typename event_set_element<I, EventSet>::type;
 
-namespace internal {
-
-template <typename Event, typename... Events>
-struct event_is_one_of : std::disjunction<std::is_same<Event, Events>...> {};
-
-} // namespace internal
-
 /**
  * \brief Metafunction to check whether the given event set contains the given
  * event.
@@ -133,10 +126,11 @@ struct event_is_one_of : std::disjunction<std::is_same<Event, Events>...> {};
  *
  * \tparam Event an event type to check
  */
-template <typename EventSet, typename Event>
-struct contains_event
-    : internal::apply_class_template_t<internal::event_is_one_of, EventSet,
-                                       Event> {};
+template <typename EventSet, typename Event> struct contains_event;
+
+template <typename Event, typename... Events>
+struct contains_event<event_set<Events...>, Event>
+    : std::disjunction<std::is_same<Events, Event>...> {};
 
 /**
  * \brief Helper variable to get the result of contains_event
@@ -245,10 +239,11 @@ struct handles_events_and_flush
  *
  * \tparam EventSet the event set to check
  */
-template <typename Proc, typename EventSet>
-struct handles_event_set
-    : internal::apply_class_template_t<internal::handles_events_and_flush,
-                                       EventSet, Proc> {};
+template <typename Proc, typename EventSet> struct handles_event_set;
+
+template <typename Proc, typename... Events>
+struct handles_event_set<Proc, event_set<Events...>>
+    : internal::handles_events_and_flush<Proc, Events...> {};
 
 /**
  * \brief Helper variable to get the result of handles_event_set.
