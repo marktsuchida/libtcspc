@@ -697,57 +697,6 @@ template <typename EventList> class sink_events {
     void flush() {}
 };
 
-namespace internal {
-
-template <typename EventList, typename Downstream> class check_event_set {
-    Downstream downstream;
-
-  public:
-    explicit check_event_set(Downstream downstream)
-        : downstream(std::move(downstream)) {}
-
-    [[nodiscard]] auto introspect_node() const -> processor_info {
-        processor_info info(this, "check_event_set");
-        return info;
-    }
-
-    [[nodiscard]] auto introspect_graph() const -> processor_graph {
-        auto g = downstream.introspect_graph();
-        g.push_entry_point(this);
-        return g;
-    }
-
-    template <typename Event, typename = std::enable_if_t<
-                                  type_list_contains_v<EventList, Event>>>
-    void handle(Event const &event) {
-        downstream.handle(event);
-    }
-
-    void flush() { downstream.flush(); }
-};
-
-} // namespace internal
-
-/**
- * \brief Create a processor that forwards all events in a given set only.
- *
- * \ingroup processors-testing
- *
- * This processor simply forwards all events downstream, but it is a compile
- * error if an input event is not in \c EventList.
- *
- * \tparam EventList the set of events to forward
- *
- * \tparam Downstream downstream processor type
- *
- * \param downstream downstream processor
- */
-template <typename EventList, typename Downstream>
-auto check_event_set(Downstream &&downstream) {
-    return internal::check_event_set<EventList, Downstream>(
-        std::forward<Downstream>(downstream));
-}
-
 /**
  * \brief Empty event for testing.
  *
