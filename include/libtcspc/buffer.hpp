@@ -124,7 +124,7 @@ class object_pool : public std::enable_shared_from_this<object_pool<T>> {
      *
      * \throws std::bad_alloc if allocation failed
      */
-    auto maybe_check_out() -> std::shared_ptr<T> {
+    auto try_ckeck_out() -> std::shared_ptr<T> {
         std::unique_ptr<T> uptr;
         bool should_allocate = false;
 

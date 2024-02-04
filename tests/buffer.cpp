@@ -43,7 +43,7 @@ TEST_CASE("object pool") {
     // cases.
     o = {};                     // Check-in; count == 2
     auto r = pool->check_out(); // count == 3
-    auto s = pool->maybe_check_out();
+    auto s = pool->try_ckeck_out();
     CHECK_FALSE(s);
 }
 
