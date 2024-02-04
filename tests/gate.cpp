@@ -39,11 +39,12 @@ TEST_CASE("Gate events") {
     auto in = feed_input<
         type_list<open_event, close_event, gated_event, misc_event>>(
         gate<type_list<gated_event>, open_event, close_event>(
-            initially_open, capture_output<out_events>(
-                                ctx->tracker<capture_output_access>("out"))));
+            initially_open,
+            capture_output<out_events>(
+                ctx->tracker<capture_output_accessor>("out"))));
     in.require_output_checked(ctx, "out");
     auto out = capture_output_checker<out_events>(
-        ctx->accessor<capture_output_access>("out"));
+        ctx->accessor<capture_output_accessor>("out"));
 
     SECTION("Initial state") {
         in.feed(gated_event{});

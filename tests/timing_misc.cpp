@@ -39,10 +39,10 @@ TEST_CASE("retime periodic sequence events") {
     auto in = feed_input<type_list<periodic_sequence_event<>>>(
         retime_periodic_sequences<>(
             10, capture_output<out_events>(
-                    ctx->tracker<capture_output_access>("out"))));
+                    ctx->tracker<capture_output_accessor>("out"))));
     in.require_output_checked(ctx, "out");
     auto out = capture_output_checker<out_events>(
-        ctx->accessor<capture_output_access>("out"));
+        ctx->accessor<capture_output_accessor>("out"));
 
     SECTION("normal operation") {
         in.feed(periodic_sequence_event<>{4, -8.0, 1.5});
@@ -78,10 +78,10 @@ TEST_CASE("retime periodic sequence events unsigned",
     auto in = feed_input<type_list<periodic_sequence_event<traits>>>(
         retime_periodic_sequences<traits>(
             10, capture_output<out_events>(
-                    ctx->tracker<capture_output_access>("out"))));
+                    ctx->tracker<capture_output_accessor>("out"))));
     in.require_output_checked(ctx, "out");
     auto out = capture_output_checker<out_events>(
-        ctx->accessor<capture_output_access>("out"));
+        ctx->accessor<capture_output_accessor>("out"));
 
     SECTION("normal operation") {
         in.feed(periodic_sequence_event<traits>{4, -1.5, 1.5});
@@ -104,10 +104,10 @@ TEST_CASE("extrapolate periodic sequences",
     auto in = feed_input<type_list<periodic_sequence_event<>>>(
         extrapolate_periodic_sequences(
             2, capture_output<out_events>(
-                   ctx->tracker<capture_output_access>("out"))));
+                   ctx->tracker<capture_output_accessor>("out"))));
     in.require_output_checked(ctx, "out");
     auto out = capture_output_checker<out_events>(
-        ctx->accessor<capture_output_access>("out"));
+        ctx->accessor<capture_output_accessor>("out"));
 
     in.feed(periodic_sequence_event<>{42, 0.5, 1.75});
     REQUIRE(out.check(real_one_shot_timing_event<>{42, 4.0}));
@@ -122,10 +122,10 @@ TEST_CASE("add count to periodic sequences",
     auto in = feed_input<type_list<periodic_sequence_event<>>>(
         add_count_to_periodic_sequences(
             3, capture_output<out_events>(
-                   ctx->tracker<capture_output_access>("out"))));
+                   ctx->tracker<capture_output_accessor>("out"))));
     in.require_output_checked(ctx, "out");
     auto out = capture_output_checker<out_events>(
-        ctx->accessor<capture_output_access>("out"));
+        ctx->accessor<capture_output_accessor>("out"));
 
     in.feed(periodic_sequence_event<>{42, 0.5, 1.75});
     REQUIRE(out.check(real_linear_timing_event<>{42, 0.5, 1.75, 3}));
@@ -146,10 +146,10 @@ TEST_CASE("convert sequences to start-stop",
         auto in = feed_input<type_list<inevt, otherevt>>(
             convert_sequences_to_start_stop<inevt, startevt, stopevt>(
                 0, capture_output<out_events>(
-                       ctx->tracker<capture_output_access>("out"))));
+                       ctx->tracker<capture_output_accessor>("out"))));
         in.require_output_checked(ctx, "out");
         auto out = capture_output_checker<out_events>(
-            ctx->accessor<capture_output_access>("out"));
+            ctx->accessor<capture_output_accessor>("out"));
 
         in.feed(inevt{42}); // No output.
         in.feed(inevt{42}); // No output.
@@ -164,10 +164,10 @@ TEST_CASE("convert sequences to start-stop",
         auto in = feed_input<type_list<inevt, otherevt>>(
             convert_sequences_to_start_stop<inevt, startevt, stopevt>(
                 1, capture_output<out_events>(
-                       ctx->tracker<capture_output_access>("out"))));
+                       ctx->tracker<capture_output_accessor>("out"))));
         in.require_output_checked(ctx, "out");
         auto out = capture_output_checker<out_events>(
-            ctx->accessor<capture_output_access>("out"));
+            ctx->accessor<capture_output_accessor>("out"));
 
         in.feed(inevt{42});
         REQUIRE(out.check(startevt{42}));
@@ -185,10 +185,10 @@ TEST_CASE("convert sequences to start-stop",
         auto in = feed_input<type_list<inevt, otherevt>>(
             convert_sequences_to_start_stop<inevt, startevt, stopevt>(
                 2, capture_output<out_events>(
-                       ctx->tracker<capture_output_access>("out"))));
+                       ctx->tracker<capture_output_accessor>("out"))));
         in.require_output_checked(ctx, "out");
         auto out = capture_output_checker<out_events>(
-            ctx->accessor<capture_output_access>("out"));
+            ctx->accessor<capture_output_accessor>("out"));
 
         in.feed(inevt{42});
         REQUIRE(out.check(startevt{42}));

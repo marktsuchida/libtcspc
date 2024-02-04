@@ -41,9 +41,9 @@ namespace tcspc {
  *
  * \ingroup processors-testing
  *
- * \see capture_output_accessor
+ * \see capture_output_checker
  */
-class capture_output_access {
+class capture_output_accessor {
     std::any peek_events_func; // () -> std::vector<variant_event<EventList>>
     std::function<void()> pop_event_func;
     std::function<bool()> is_empty_func;
@@ -68,7 +68,7 @@ class capture_output_access {
      * \brief Constructor used internally by \c capture_output.
      */
     template <typename EventList>
-    explicit capture_output_access(
+    explicit capture_output_accessor(
         std::function<std::vector<variant_event<EventList>>()> peek_events,
         std::function<void()> pop_event, std::function<bool()> is_empty,
         std::function<bool()> is_flushed,
@@ -84,7 +84,7 @@ class capture_output_access {
     /**
      * \brief Constructor used internally by \c capture_output.
      */
-    explicit capture_output_access(
+    explicit capture_output_accessor(
         [[maybe_unused]] empty_event_list_tag tag,
         std::function<bool()> is_flushed,
         std::function<void(std::size_t, bool)> set_up_to_throw)
@@ -93,7 +93,7 @@ class capture_output_access {
           set_up_to_throw_func(std::move(set_up_to_throw)) {}
 
     /**
-     * \brief Ensure that this access works with the given event set.
+     * \brief Ensure that this accessor works with the given event set.
      *
      * \tparam EventList event set to check
      */
@@ -282,25 +282,25 @@ class capture_output_access {
 };
 
 /**
- * \brief Event-set-specific wrapper for \c capture_output_access.
+ * \brief Event-set-specific wrapper for \c capture_output_accessor.
  *
  * \ingroup processors-testing
  *
- * This class has almost the same interface as \c capture_output_access but is
- * parameterized on \c EventList so does not require specifying the event set
- * when calling \c check() or \c pop().
+ * This class has almost the same interface as \c capture_output_accessor but
+ * is parameterized on \c EventList so does not require specifying the event
+ * set when calling \c check() or \c pop().
  *
- * \see capture_output_access
+ * \see capture_output_accessor
  */
 template <typename EventList> class capture_output_checker {
-    capture_output_access acc;
+    capture_output_accessor acc;
 
   public:
     /**
-     * \brief Construct from a \c capture_output_access.
+     * \brief Construct from a \c capture_output_accessor.
      */
-    explicit capture_output_checker(capture_output_access access)
-        : acc(std::move(access)) {
+    explicit capture_output_checker(capture_output_accessor accessor)
+        : acc(std::move(accessor)) {
         acc.check_event_list<EventList>(); // Fail early.
     }
 
@@ -410,15 +410,16 @@ template <typename EventList> class capture_output {
     bool error_on_flush = false;
     bool end_on_flush = false;
 
-    processor_tracker<capture_output_access> trk;
+    processor_tracker<capture_output_accessor> trk;
 
   public:
-    explicit capture_output(processor_tracker<capture_output_access> &&tracker)
+    explicit capture_output(
+        processor_tracker<capture_output_accessor> &&tracker)
         : trk(std::move(tracker)) {
         trk.register_accessor_factory([](auto &tracker) {
             auto *self =
                 LIBTCSPC_PROCESSOR_FROM_TRACKER(capture_output, trk, tracker);
-            return capture_output_access(
+            return capture_output_accessor(
                 std::function([self] { return self->peek(); }),
                 [self] { self->output.pop(); },
                 [self] { return self->output.empty(); },
@@ -497,16 +498,17 @@ template <> class capture_output<type_list<>> {
     bool flushed = false;
     bool error_on_flush = false;
     bool end_on_flush = false;
-    processor_tracker<capture_output_access> trk;
+    processor_tracker<capture_output_accessor> trk;
 
   public:
-    explicit capture_output(processor_tracker<capture_output_access> &&tracker)
+    explicit capture_output(
+        processor_tracker<capture_output_accessor> &&tracker)
         : trk(std::move(tracker)) {
         trk.register_accessor_factory([](auto &tracker) {
             auto *self =
                 LIBTCSPC_PROCESSOR_FROM_TRACKER(capture_output, trk, tracker);
-            return capture_output_access(
-                capture_output_access::empty_event_list_tag{},
+            return capture_output_accessor(
+                capture_output_accessor::empty_event_list_tag{},
                 [self] { return self->flushed; },
                 [self](std::size_t count, bool use_error) {
                     self->set_up_to_throw(count, use_error);
@@ -562,7 +564,7 @@ template <typename EventList, typename Downstream> class feed_input {
             throw std::logic_error(
                 "feed_input has no registered capture_output to check");
         for (auto &[context, name] : outputs_to_check)
-            context->template accessor<capture_output_access>(name)
+            context->template accessor<capture_output_accessor>(name)
                 .check_ready_for_input();
     }
 
@@ -583,7 +585,7 @@ template <typename EventList, typename Downstream> class feed_input {
 
     void require_output_checked(std::shared_ptr<processor_context> context,
                                 std::string name) {
-        context->accessor<capture_output_access>(name); // Fail early.
+        context->accessor<capture_output_accessor>(name); // Fail early.
         outputs_to_check.emplace_back(context, std::move(name));
     }
 
@@ -614,7 +616,7 @@ template <typename EventList, typename Downstream> class feed_input {
  * \return capture-output sink
  */
 template <typename EventList>
-auto capture_output(processor_tracker<capture_output_access> &&tracker) {
+auto capture_output(processor_tracker<capture_output_accessor> &&tracker) {
     return internal::capture_output<EventList>(std::move(tracker));
 }
 

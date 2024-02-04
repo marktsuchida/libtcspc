@@ -37,7 +37,7 @@ TEST_CASE("introspect count", "[introspect]") {
             1, 0, 2, null_sink()));
     auto ctx = std::make_shared<processor_context>();
     check_introspect_simple_processor(
-        count<tick_event>(ctx->tracker<count_access>("t"), null_sink()));
+        count<tick_event>(ctx->tracker<count_accessor>("t"), null_sink()));
 }
 
 TEST_CASE("Count up to") {
@@ -50,10 +50,10 @@ TEST_CASE("Count up to") {
                     count_up_to<tick_event, fire_event, reset_event, false>(
                         0, 1, 0,
                         capture_output<out_events>(
-                            ctx->tracker<capture_output_access>("out"))));
+                            ctx->tracker<capture_output_accessor>("out"))));
             in.require_output_checked(ctx, "out");
             auto out = capture_output_checker<out_events>(
-                ctx->accessor<capture_output_access>("out"));
+                ctx->accessor<capture_output_accessor>("out"));
 
             in.feed(tick_event{42});
             REQUIRE(out.check(fire_event{42}));
@@ -77,10 +77,10 @@ TEST_CASE("Count up to") {
                 count_up_to<tick_event, fire_event, reset_event, true>(
                     0, 1, 0,
                     capture_output<out_events>(
-                        ctx->tracker<capture_output_access>("out"))));
+                        ctx->tracker<capture_output_accessor>("out"))));
             in.require_output_checked(ctx, "out");
             auto out = capture_output_checker<out_events>(
-                ctx->accessor<capture_output_access>("out"));
+                ctx->accessor<capture_output_accessor>("out"));
 
             in.feed(tick_event{42});
             REQUIRE(out.check(tick_event{42}));
@@ -97,10 +97,10 @@ TEST_CASE("Count up to") {
                 count_up_to<tick_event, fire_event, reset_event, false>(
                     1, 1, 0,
                     capture_output<out_events>(
-                        ctx->tracker<capture_output_access>("out"))));
+                        ctx->tracker<capture_output_accessor>("out"))));
             in.require_output_checked(ctx, "out");
             auto out = capture_output_checker<out_events>(
-                ctx->accessor<capture_output_access>("out"));
+                ctx->accessor<capture_output_accessor>("out"));
 
             in.feed(tick_event{42});
             REQUIRE(out.check(tick_event{42}));
@@ -115,10 +115,10 @@ TEST_CASE("Count up to") {
                 count_up_to<tick_event, fire_event, reset_event, true>(
                     1, 1, 0,
                     capture_output<out_events>(
-                        ctx->tracker<capture_output_access>("out"))));
+                        ctx->tracker<capture_output_accessor>("out"))));
             in.require_output_checked(ctx, "out");
             auto out = capture_output_checker<out_events>(
-                ctx->accessor<capture_output_access>("out"));
+                ctx->accessor<capture_output_accessor>("out"));
 
             in.feed(tick_event{42});
             REQUIRE(out.check(tick_event{42}));
@@ -137,10 +137,10 @@ TEST_CASE("Count up to") {
                 count_up_to<tick_event, fire_event, reset_event, false>(
                     1, 2, 0,
                     capture_output<out_events>(
-                        ctx->tracker<capture_output_access>("out"))));
+                        ctx->tracker<capture_output_accessor>("out"))));
             in.require_output_checked(ctx, "out");
             auto out = capture_output_checker<out_events>(
-                ctx->accessor<capture_output_access>("out"));
+                ctx->accessor<capture_output_accessor>("out"));
 
             in.feed(tick_event{42});
             REQUIRE(out.check(tick_event{42}));
@@ -165,10 +165,10 @@ TEST_CASE("Count up to") {
                 count_up_to<tick_event, fire_event, reset_event, true>(
                     1, 2, 0,
                     capture_output<out_events>(
-                        ctx->tracker<capture_output_access>("out"))));
+                        ctx->tracker<capture_output_accessor>("out"))));
             in.require_output_checked(ctx, "out");
             auto out = capture_output_checker<out_events>(
-                ctx->accessor<capture_output_access>("out"));
+                ctx->accessor<capture_output_accessor>("out"));
 
             in.feed(tick_event{42});
             REQUIRE(out.check(tick_event{42}));
@@ -197,10 +197,10 @@ TEST_CASE("Count down to") {
         count_down_to<tick_event, fire_event, reset_event, false>(
             1, 0, 2,
             capture_output<out_events>(
-                ctx->tracker<capture_output_access>("out"))));
+                ctx->tracker<capture_output_accessor>("out"))));
     in.require_output_checked(ctx, "out");
     auto out = capture_output_checker<out_events>(
-        ctx->accessor<capture_output_access>("out"));
+        ctx->accessor<capture_output_accessor>("out"));
 
     in.feed(tick_event{42});
     REQUIRE(out.check(tick_event{42}));
@@ -219,13 +219,13 @@ TEST_CASE("Count down to") {
 TEST_CASE("event counter") {
     auto ctx = std::make_shared<processor_context>();
     auto in = feed_input<type_list<tick_event, misc_event>>(
-        count<tick_event>(ctx->tracker<count_access>("counter"),
+        count<tick_event>(ctx->tracker<count_accessor>("counter"),
                           capture_output<out_events>(
-                              ctx->tracker<capture_output_access>("out"))));
+                              ctx->tracker<capture_output_accessor>("out"))));
     in.require_output_checked(ctx, "out");
     auto out = capture_output_checker<out_events>(
-        ctx->accessor<capture_output_access>("out"));
-    auto counter = ctx->accessor<count_access>("counter");
+        ctx->accessor<capture_output_accessor>("out"));
+    auto counter = ctx->accessor<count_accessor>("counter");
 
     CHECK(counter.count() == 0);
     in.feed(tick_event{});

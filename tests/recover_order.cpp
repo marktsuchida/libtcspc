@@ -35,10 +35,10 @@ TEST_CASE("recover order") {
     auto ctx = std::make_shared<processor_context>();
     auto in = feed_input<type_list<e0>>(recover_order<type_list<e0>>(
         3, capture_output<type_list<e0>>(
-               ctx->tracker<capture_output_access>("out"))));
+               ctx->tracker<capture_output_accessor>("out"))));
     in.require_output_checked(ctx, "out");
     auto out = capture_output_checker<type_list<e0>>(
-        ctx->accessor<capture_output_access>("out"));
+        ctx->accessor<capture_output_accessor>("out"));
 
     SECTION("empty stream") {
         in.flush();
@@ -82,10 +82,10 @@ TEST_CASE("recover order, empty time window") {
     auto ctx = std::make_shared<processor_context>();
     auto in = feed_input<type_list<e0>>(recover_order<type_list<e0>>(
         0, capture_output<type_list<e0>>(
-               ctx->tracker<capture_output_access>("out"))));
+               ctx->tracker<capture_output_accessor>("out"))));
     in.require_output_checked(ctx, "out");
     auto out = capture_output_checker<type_list<e0>>(
-        ctx->accessor<capture_output_access>("out"));
+        ctx->accessor<capture_output_accessor>("out"));
 
     SECTION("in-order events are delayed") {
         in.feed(e0{0});
@@ -135,10 +135,10 @@ TEST_CASE("recover order, multiple event types") {
     auto ctx = std::make_shared<processor_context>();
     auto in = feed_input<type_list<e0, e1>>(recover_order<type_list<e0, e1>>(
         3, capture_output<type_list<e0, e1>>(
-               ctx->tracker<capture_output_access>("out"))));
+               ctx->tracker<capture_output_accessor>("out"))));
     in.require_output_checked(ctx, "out");
     auto out = capture_output_checker<type_list<e0, e1>>(
-        ctx->accessor<capture_output_access>("out"));
+        ctx->accessor<capture_output_accessor>("out"));
 
     in.feed(e0{3});
     in.feed(e1{0});

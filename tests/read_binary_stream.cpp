@@ -76,9 +76,9 @@ TEST_CASE("read file") {
                 "read error",
                 dereference_pointer<std::shared_ptr<pvector<std::uint64_t>>>(
                     capture_output<type_list<pvector<std::uint64_t>>>(
-                        ctx->tracker<capture_output_access>("out")))));
+                        ctx->tracker<capture_output_accessor>("out")))));
         auto out = capture_output_checker<type_list<pvector<std::uint64_t>>>(
-            ctx->accessor<capture_output_access>("out"));
+            ctx->accessor<capture_output_accessor>("out"));
         src.pump_events();
         // First read is 8 bytes to recover 16-byte aligned reads.
         REQUIRE(out.check(pvector<std::uint64_t>{43}));
@@ -95,9 +95,9 @@ TEST_CASE("read file") {
                 "read error",
                 dereference_pointer<std::shared_ptr<pvector<std::uint64_t>>>(
                     capture_output<type_list<pvector<std::uint64_t>>>(
-                        ctx->tracker<capture_output_access>("out")))));
+                        ctx->tracker<capture_output_accessor>("out")))));
         auto out = capture_output_checker<type_list<pvector<std::uint64_t>>>(
-            ctx->accessor<capture_output_access>("out"));
+            ctx->accessor<capture_output_accessor>("out"));
         src.pump_events();
         REQUIRE(out.check(pvector<std::uint64_t>{43}));
         REQUIRE(out.check(pvector<std::uint64_t>{44, 45}));
@@ -115,9 +115,9 @@ TEST_CASE("read file") {
                 "read error",
                 dereference_pointer<std::shared_ptr<pvector<std::uint64_t>>>(
                     capture_output<type_list<pvector<std::uint64_t>>>(
-                        ctx->tracker<capture_output_access>("out")))));
+                        ctx->tracker<capture_output_accessor>("out")))));
         auto out = capture_output_checker<type_list<pvector<std::uint64_t>>>(
-            ctx->accessor<capture_output_access>("out"));
+            ctx->accessor<capture_output_accessor>("out"));
         REQUIRE_THROWS_WITH(src.pump_events(),
                             Catch::Matchers::ContainsSubstring("remain"));
         REQUIRE(out.check(pvector<std::uint64_t>{43}));
@@ -134,9 +134,9 @@ TEST_CASE("read file") {
                 "read error",
                 dereference_pointer<std::shared_ptr<pvector<std::uint64_t>>>(
                     capture_output<type_list<pvector<std::uint64_t>>>(
-                        ctx->tracker<capture_output_access>("out")))));
+                        ctx->tracker<capture_output_accessor>("out")))));
         auto out = capture_output_checker<type_list<pvector<std::uint64_t>>>(
-            ctx->accessor<capture_output_access>("out"));
+            ctx->accessor<capture_output_accessor>("out"));
         src.pump_events();
         REQUIRE(out.check(pvector<std::uint64_t>{43}));
         REQUIRE(out.check(pvector<std::uint64_t>{44}));
@@ -163,9 +163,9 @@ TEST_CASE("read existing istream, known length") {
             "read error",
             dereference_pointer<std::shared_ptr<pvector<std::uint64_t>>>(
                 capture_output<type_list<pvector<std::uint64_t>>>(
-                    ctx->tracker<capture_output_access>("out")))));
+                    ctx->tracker<capture_output_accessor>("out")))));
     auto out = capture_output_checker<type_list<pvector<std::uint64_t>>>(
-        ctx->accessor<capture_output_access>("out"));
+        ctx->accessor<capture_output_accessor>("out"));
     src.pump_events();
     REQUIRE(out.check(pvector<std::uint64_t>{42, 43}));
     REQUIRE(out.check(pvector<std::uint64_t>{44, 45}));
@@ -189,9 +189,9 @@ TEST_CASE("read existing istream, to end") {
             "read error",
             dereference_pointer<std::shared_ptr<pvector<std::uint64_t>>>(
                 capture_output<type_list<pvector<std::uint64_t>>>(
-                    ctx->tracker<capture_output_access>("out")))));
+                    ctx->tracker<capture_output_accessor>("out")))));
     auto out = capture_output_checker<type_list<pvector<std::uint64_t>>>(
-        ctx->accessor<capture_output_access>("out"));
+        ctx->accessor<capture_output_accessor>("out"));
     src.pump_events();
     REQUIRE(out.check(pvector<std::uint64_t>{42, 43}));
     REQUIRE(out.check(pvector<std::uint64_t>{44, 45}));
@@ -212,9 +212,9 @@ TEST_CASE("read existing istream, empty") {
             "read error",
             dereference_pointer<std::shared_ptr<pvector<std::uint64_t>>>(
                 capture_output<type_list<pvector<std::uint64_t>>>(
-                    ctx->tracker<capture_output_access>("out")))));
+                    ctx->tracker<capture_output_accessor>("out")))));
     auto out = capture_output_checker<type_list<pvector<std::uint64_t>>>(
-        ctx->accessor<capture_output_access>("out"));
+        ctx->accessor<capture_output_accessor>("out"));
     src.pump_events();
     REQUIRE(out.check_flushed());
 }

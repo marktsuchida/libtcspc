@@ -668,10 +668,10 @@ TEST_CASE("decode bh spc") {
     auto ctx = std::make_shared<processor_context>();
     auto in = feed_input<type_list<bh_spc_event>>(
         decode_bh_spc(capture_output<out_events>(
-            ctx->tracker<capture_output_access>("out"))));
+            ctx->tracker<capture_output_accessor>("out"))));
     in.require_output_checked(ctx, "out");
     auto out = capture_output_checker<out_events>(
-        ctx->accessor<capture_output_access>("out"));
+        ctx->accessor<capture_output_accessor>("out"));
 
     bool const gap = GENERATE(false, true);
 
@@ -783,10 +783,10 @@ TEST_CASE("decode bh spc with fast intensity counter",
     auto in = feed_input<type_list<bh_spc_event>>(
         decode_bh_spc_with_fast_intensity_counter(
             capture_output<out_events_with_counter>(
-                ctx->tracker<capture_output_access>("out"))));
+                ctx->tracker<capture_output_accessor>("out"))));
     in.require_output_checked(ctx, "out");
     auto out = capture_output_checker<out_events_with_counter>(
-        ctx->accessor<capture_output_access>("out"));
+        ctx->accessor<capture_output_accessor>("out"));
 
     bool const gap = GENERATE(false, true);
 
@@ -836,10 +836,10 @@ TEST_CASE("decode bh spc600 256ch") {
     auto ctx = std::make_shared<processor_context>();
     auto in = feed_input<type_list<bh_spc600_256ch_event>>(
         decode_bh_spc600_256ch(capture_output<out_events>(
-            ctx->tracker<capture_output_access>("out"))));
+            ctx->tracker<capture_output_accessor>("out"))));
     in.require_output_checked(ctx, "out");
     auto out = capture_output_checker<out_events>(
-        ctx->accessor<capture_output_access>("out"));
+        ctx->accessor<capture_output_accessor>("out"));
 
     bool const gap = GENERATE(false, true);
 
@@ -916,10 +916,10 @@ TEST_CASE("decode bh spc600 4096ch") {
     auto ctx = std::make_shared<processor_context>();
     auto in = feed_input<type_list<bh_spc600_4096ch_event>>(
         decode_bh_spc600_4096ch(capture_output<out_events>(
-            ctx->tracker<capture_output_access>("out"))));
+            ctx->tracker<capture_output_accessor>("out"))));
     in.require_output_checked(ctx, "out");
     auto out = capture_output_checker<out_events>(
-        ctx->accessor<capture_output_access>("out"));
+        ctx->accessor<capture_output_accessor>("out"));
 
     bool const gap = GENERATE(false, true);
 

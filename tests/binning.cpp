@@ -55,10 +55,10 @@ TEST_CASE("Map to datapoints") {
             map_to_datapoints<data_traits>(
                 difftime_data_mapper<>(),
                 capture_output<out_events>(
-                    ctx->tracker<capture_output_access>("out"))));
+                    ctx->tracker<capture_output_accessor>("out"))));
     in.require_output_checked(ctx, "out");
     auto out = capture_output_checker<out_events>(
-        ctx->accessor<capture_output_access>("out"));
+        ctx->accessor<capture_output_accessor>("out"));
 
     in.feed(misc_event{42});
     REQUIRE(out.check(misc_event{42}));
@@ -92,10 +92,10 @@ TEST_CASE("Map to bins") {
                 map_to_bins<data_traits>(
                     null_bin_mapper(),
                     capture_output<out_events>(
-                        ctx->tracker<capture_output_access>("out"))));
+                        ctx->tracker<capture_output_accessor>("out"))));
         in.require_output_checked(ctx, "out");
         auto out = capture_output_checker<out_events>(
-            ctx->accessor<capture_output_access>("out"));
+            ctx->accessor<capture_output_accessor>("out"));
 
         in.feed(misc_event{42});
         REQUIRE(out.check(misc_event{42}));
@@ -117,10 +117,10 @@ TEST_CASE("Map to bins") {
             map_to_bins<data_traits>(
                 add_42_bin_mapper(),
                 capture_output<out_events>(
-                    ctx->tracker<capture_output_access>("out"))));
+                    ctx->tracker<capture_output_accessor>("out"))));
         in.require_output_checked(ctx, "out");
         auto out = capture_output_checker<out_events>(
-            ctx->accessor<capture_output_access>("out"));
+            ctx->accessor<capture_output_accessor>("out"));
 
         in.feed(datapoint_event<data_traits>{0, 10});
         REQUIRE(out.check(bin_increment_event<data_traits>{0, 52}));
@@ -420,10 +420,10 @@ TEST_CASE("Batch bin increments") {
                                    start_event, stop_event, misc_event>>(
         batch_bin_increments<start_event, stop_event, data_traits>(
             capture_output<out_events>(
-                ctx->tracker<capture_output_access>("out"))));
+                ctx->tracker<capture_output_accessor>("out"))));
     in.require_output_checked(ctx, "out");
     auto out = capture_output_checker<out_events>(
-        ctx->accessor<capture_output_access>("out"));
+        ctx->accessor<capture_output_accessor>("out"));
 
     SECTION("Pass through unrelated") {
         in.feed(misc_event{42});

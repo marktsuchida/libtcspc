@@ -53,10 +53,10 @@ TEST_CASE("batch") {
         std::make_shared<object_pool<pvector<int>>>(), 3,
         dereference_pointer<std::shared_ptr<pvector<int>>>(
             capture_output<type_list<pvector<int>>>(
-                ctx->tracker<capture_output_access>("out")))));
+                ctx->tracker<capture_output_accessor>("out")))));
     in.require_output_checked(ctx, "out");
     auto out = capture_output_checker<type_list<pvector<int>>>(
-        ctx->accessor<capture_output_access>("out"));
+        ctx->accessor<capture_output_accessor>("out"));
 
     SECTION("ending mid-batch") {
         in.feed(42);
@@ -83,10 +83,10 @@ TEST_CASE("unbatch") {
     auto ctx = std::make_shared<processor_context>();
     auto in = feed_input<type_list<pvector<int>>>(
         unbatch<pvector<int>, int>(capture_output<type_list<int>>(
-            ctx->tracker<capture_output_access>("out"))));
+            ctx->tracker<capture_output_accessor>("out"))));
     in.require_output_checked(ctx, "out");
     auto out = capture_output_checker<type_list<int>>(
-        ctx->accessor<capture_output_access>("out"));
+        ctx->accessor<capture_output_accessor>("out"));
 
     in.feed(pvector<int>{42, 43, 44});
     REQUIRE(out.check(42));

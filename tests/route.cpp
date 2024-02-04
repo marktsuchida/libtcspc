@@ -67,20 +67,20 @@ TEST_CASE("Route") {
                 std::pair{-32768, 2},
             }),
             capture_output<out_events>(
-                ctx->tracker<capture_output_access>("out0")),
+                ctx->tracker<capture_output_accessor>("out0")),
             capture_output<out_events>(
-                ctx->tracker<capture_output_access>("out1")),
+                ctx->tracker<capture_output_accessor>("out1")),
             capture_output<out_events>(
-                ctx->tracker<capture_output_access>("out2"))));
+                ctx->tracker<capture_output_accessor>("out2"))));
     in.require_output_checked(ctx, "out0");
     in.require_output_checked(ctx, "out1");
     in.require_output_checked(ctx, "out2");
     auto out0 = capture_output_checker<out_events>(
-        ctx->accessor<capture_output_access>("out0"));
+        ctx->accessor<capture_output_accessor>("out0"));
     auto out1 = capture_output_checker<out_events>(
-        ctx->accessor<capture_output_access>("out1"));
+        ctx->accessor<capture_output_accessor>("out1"));
     auto out2 = capture_output_checker<out_events>(
-        ctx->accessor<capture_output_access>("out2"));
+        ctx->accessor<capture_output_accessor>("out2"));
 
     SECTION("Route and broadcast by event type") {
         in.feed(tc_event{{{100}, 5}, 123});
@@ -137,11 +137,11 @@ TEST_CASE("Route with heterogeneous downstreams") {
     auto in = feed_input<type_list<e0>>(route<type_list<e0>, type_list<>>(
         []([[maybe_unused]] e0 const &event) { return std::size_t(0); },
         capture_output<type_list<e0>>(
-            ctx->tracker<capture_output_access>("out0")),
+            ctx->tracker<capture_output_accessor>("out0")),
         null_sink()));
     in.require_output_checked(ctx, "out0");
     auto out0 = capture_output_checker<type_list<e0>>(
-        ctx->accessor<capture_output_access>("out0"));
+        ctx->accessor<capture_output_accessor>("out0"));
 
     in.feed(e0{});
     REQUIRE(out0.check(e0{}));
@@ -153,20 +153,20 @@ TEST_CASE("Broadcast") {
     auto ctx = std::make_shared<processor_context>();
     auto in = feed_input<type_list<e0>>(broadcast<type_list<e0>>(
         capture_output<type_list<e0>>(
-            ctx->tracker<capture_output_access>("out0")),
+            ctx->tracker<capture_output_accessor>("out0")),
         capture_output<type_list<e0>>(
-            ctx->tracker<capture_output_access>("out1")),
+            ctx->tracker<capture_output_accessor>("out1")),
         capture_output<type_list<e0>>(
-            ctx->tracker<capture_output_access>("out2"))));
+            ctx->tracker<capture_output_accessor>("out2"))));
     in.require_output_checked(ctx, "out0");
     in.require_output_checked(ctx, "out1");
     in.require_output_checked(ctx, "out2");
     auto out0 = capture_output_checker<type_list<e0>>(
-        ctx->accessor<capture_output_access>("out0"));
+        ctx->accessor<capture_output_accessor>("out0"));
     auto out1 = capture_output_checker<type_list<e0>>(
-        ctx->accessor<capture_output_access>("out1"));
+        ctx->accessor<capture_output_accessor>("out1"));
     auto out2 = capture_output_checker<type_list<e0>>(
-        ctx->accessor<capture_output_access>("out2"));
+        ctx->accessor<capture_output_accessor>("out2"));
 
     SECTION("Empty stream") {
         in.flush();

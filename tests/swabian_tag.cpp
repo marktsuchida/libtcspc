@@ -164,10 +164,10 @@ TEST_CASE("decode swabian tags") {
     auto ctx = std::make_shared<processor_context>();
     auto in = feed_input<type_list<swabian_tag_event>>(
         decode_swabian_tags(capture_output<out_events>(
-            ctx->tracker<capture_output_access>("out"))));
+            ctx->tracker<capture_output_accessor>("out"))));
     in.require_output_checked(ctx, "out");
     auto out = capture_output_checker<out_events>(
-        ctx->accessor<capture_output_access>("out"));
+        ctx->accessor<capture_output_accessor>("out"));
 
     SECTION("time tag") {
         in.feed(swabian_tag_event::make_time_tag(42_i64np, 5_i32np));

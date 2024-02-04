@@ -203,7 +203,7 @@ auto count_down_to(std::uint64_t threshold, std::uint64_t limit,
  *
  * \see count
  */
-struct count_access {
+struct count_accessor {
     /**
      * \brief Get the count.
      */
@@ -218,15 +218,15 @@ template <typename Event, typename Downstream> class count {
     Downstream downstream;
 
     // Cold data after downstream.
-    processor_tracker<count_access> trk;
+    processor_tracker<count_accessor> trk;
 
   public:
-    explicit count(processor_tracker<count_access> &&tracker,
+    explicit count(processor_tracker<count_accessor> &&tracker,
                    Downstream downstream)
         : downstream(std::move(downstream)), trk(std::move(tracker)) {
         trk.register_accessor_factory([](auto &tracker) {
             auto *self = LIBTCSPC_PROCESSOR_FROM_TRACKER(count, trk, tracker);
-            return count_access{[self] { return self->ct; }};
+            return count_accessor{[self] { return self->ct; }};
         });
     }
 
@@ -268,7 +268,7 @@ template <typename Event, typename Downstream> class count {
  *
  * All other events are passed through without counting.
  *
- * \see count_access
+ * \see count_accessor
  *
  * \tparam Event type of event to count
  *
@@ -279,7 +279,7 @@ template <typename Event, typename Downstream> class count {
  * \param downstream downstream processor
  */
 template <typename Event, typename Downstream>
-auto count(processor_tracker<count_access> &&tracker,
+auto count(processor_tracker<count_accessor> &&tracker,
            Downstream &&downstream) {
     return internal::count<Event, Downstream>(
         std::move(tracker), std::forward<Downstream>(downstream));

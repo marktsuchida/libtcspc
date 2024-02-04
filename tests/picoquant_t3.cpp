@@ -384,10 +384,10 @@ TEST_CASE("decode pqt3 picoharp300") {
     auto ctx = std::make_shared<processor_context>();
     auto in = feed_input<type_list<pqt3_picoharp300_event>>(
         decode_pqt3_picoharp300(capture_output<out_events>(
-            ctx->tracker<capture_output_access>("out"))));
+            ctx->tracker<capture_output_accessor>("out"))));
     in.require_output_checked(ctx, "out");
     auto out = capture_output_checker<out_events>(
-        ctx->accessor<capture_output_access>("out"));
+        ctx->accessor<capture_output_accessor>("out"));
 
     SECTION("non-special") {
         in.feed(pqt3_picoharp300_event::make_nonspecial(42_u16np, 5_u8np,
@@ -420,10 +420,10 @@ TEST_CASE("decode pqt3 hydraharpv1") {
     auto ctx = std::make_shared<processor_context>();
     auto in = feed_input<type_list<pqt3_hydraharpv1_event>>(
         decode_pqt3_hydraharpv1(capture_output<out_events>(
-            ctx->tracker<capture_output_access>("out"))));
+            ctx->tracker<capture_output_accessor>("out"))));
     in.require_output_checked(ctx, "out");
     auto out = capture_output_checker<out_events>(
-        ctx->accessor<capture_output_access>("out"));
+        ctx->accessor<capture_output_accessor>("out"));
 
     SECTION("non-special") {
         in.feed(pqt3_hydraharpv1_event::make_nonspecial(42_u16np, 5_u8np,
@@ -456,10 +456,10 @@ TEST_CASE("decode pqt3 generic") {
     auto ctx = std::make_shared<processor_context>();
     auto in = feed_input<type_list<pqt3_generic_event>>(
         decode_pqt3_generic(capture_output<out_events>(
-            ctx->tracker<capture_output_access>("out"))));
+            ctx->tracker<capture_output_accessor>("out"))));
     in.require_output_checked(ctx, "out");
     auto out = capture_output_checker<out_events>(
-        ctx->accessor<capture_output_access>("out"));
+        ctx->accessor<capture_output_accessor>("out"));
 
     SECTION("non-special") {
         in.feed(
