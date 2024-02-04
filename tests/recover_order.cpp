@@ -7,9 +7,9 @@
 #include "libtcspc/recover_order.hpp"
 
 #include "libtcspc/common.hpp"
-#include "libtcspc/event_set.hpp"
 #include "libtcspc/processor_context.hpp"
 #include "libtcspc/test_utils.hpp"
+#include "libtcspc/type_list.hpp"
 #include "test_checkers.hpp"
 
 #include <catch2/catch_all.hpp>
@@ -28,16 +28,16 @@ using e1 = timestamped_test_event<1>;
 
 TEST_CASE("introspect recover_order", "[introspect]") {
     check_introspect_simple_processor(
-        recover_order<event_set<e0>>(1, null_sink()));
+        recover_order<type_list<e0>>(1, null_sink()));
 }
 
 TEST_CASE("recover order") {
     auto ctx = std::make_shared<processor_context>();
-    auto in = feed_input<event_set<e0>>(recover_order<event_set<e0>>(
-        3, capture_output<event_set<e0>>(
+    auto in = feed_input<type_list<e0>>(recover_order<type_list<e0>>(
+        3, capture_output<type_list<e0>>(
                ctx->tracker<capture_output_access>("out"))));
     in.require_output_checked(ctx, "out");
-    auto out = capture_output_checker<event_set<e0>>(
+    auto out = capture_output_checker<type_list<e0>>(
         ctx->accessor<capture_output_access>("out"));
 
     SECTION("empty stream") {
@@ -80,11 +80,11 @@ TEST_CASE("recover order") {
 
 TEST_CASE("recover order, empty time window") {
     auto ctx = std::make_shared<processor_context>();
-    auto in = feed_input<event_set<e0>>(recover_order<event_set<e0>>(
-        0, capture_output<event_set<e0>>(
+    auto in = feed_input<type_list<e0>>(recover_order<type_list<e0>>(
+        0, capture_output<type_list<e0>>(
                ctx->tracker<capture_output_access>("out"))));
     in.require_output_checked(ctx, "out");
-    auto out = capture_output_checker<event_set<e0>>(
+    auto out = capture_output_checker<type_list<e0>>(
         ctx->accessor<capture_output_access>("out"));
 
     SECTION("in-order events are delayed") {
@@ -133,11 +133,11 @@ TEST_CASE("recover order, empty time window") {
 
 TEST_CASE("recover order, multiple event types") {
     auto ctx = std::make_shared<processor_context>();
-    auto in = feed_input<event_set<e0, e1>>(recover_order<event_set<e0, e1>>(
-        3, capture_output<event_set<e0, e1>>(
+    auto in = feed_input<type_list<e0, e1>>(recover_order<type_list<e0, e1>>(
+        3, capture_output<type_list<e0, e1>>(
                ctx->tracker<capture_output_access>("out"))));
     in.require_output_checked(ctx, "out");
-    auto out = capture_output_checker<event_set<e0, e1>>(
+    auto out = capture_output_checker<type_list<e0, e1>>(
         ctx->accessor<capture_output_access>("out"));
 
     in.feed(e0{3});

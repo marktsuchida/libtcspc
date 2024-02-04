@@ -7,10 +7,10 @@
 #include "libtcspc/fit_sequence.hpp"
 
 #include "libtcspc/common.hpp"
-#include "libtcspc/event_set.hpp"
 #include "libtcspc/processor_context.hpp"
 #include "libtcspc/test_utils.hpp"
 #include "libtcspc/timing_misc.hpp"
+#include "libtcspc/type_list.hpp"
 #include "test_checkers.hpp"
 
 #include <catch2/catch_all.hpp>
@@ -60,12 +60,12 @@ TEST_CASE("periodic fitter") {
 TEST_CASE("fit periodic sequences") {
     using e0 = timestamped_test_event<0>;
     auto ctx = std::make_shared<processor_context>();
-    auto in = feed_input<event_set<e0>>(fit_periodic_sequences<e0>(
+    auto in = feed_input<type_list<e0>>(fit_periodic_sequences<e0>(
         4, {1.0, 2.0}, 2.5,
-        capture_output<event_set<periodic_sequence_event<>>>(
+        capture_output<type_list<periodic_sequence_event<>>>(
             ctx->tracker<capture_output_access>("out"))));
     in.require_output_checked(ctx, "out");
-    auto out = capture_output_checker<event_set<periodic_sequence_event<>>>(
+    auto out = capture_output_checker<type_list<periodic_sequence_event<>>>(
         ctx->accessor<capture_output_access>("out"));
 
     SECTION("fit succeeds") {

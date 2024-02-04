@@ -33,7 +33,17 @@ namespace tcspc {
  * \defgroup events-basic Simple events
  *
  * \brief Events with no specific meaning attached.
+ *
+ * @{
  */
+
+/**
+ * \defgroup events-variant Variant event and utilities
+ *
+ * \brief An event type representing a type-safe union of event types.
+ */
+
+/** @} <!-- group events-basic --> */
 
 /**
  * \defgroup events-device Device events
@@ -163,9 +173,15 @@ namespace tcspc {
  */
 
 /**
- * \defgroup metafunctions Metafunctions
+ * \defgroup type-list Type lists
  *
- * \brief Template metafunctions
+ * \brief Types and metafunctions for handling lists (or sets) of types.
+ */
+
+/**
+ * \defgroup processor-traits Processor traits
+ *
+ * \brief Trait metafunctions to check processor capabilities.
  */
 
 /**

@@ -10,7 +10,6 @@
 #include "libtcspc/check.hpp"
 #include "libtcspc/common.hpp"
 #include "libtcspc/count.hpp"
-#include "libtcspc/event_set.hpp"
 #include "libtcspc/generate.hpp"
 #include "libtcspc/histogram_elementwise.hpp"
 #include "libtcspc/histogram_events.hpp"
@@ -22,6 +21,7 @@
 #include "libtcspc/select.hpp"
 #include "libtcspc/stop.hpp"
 #include "libtcspc/time_tagged_events.hpp"
+#include "libtcspc/type_list.hpp"
 #include "libtcspc/view_as_bytes.hpp"
 #include "libtcspc/write_binary_stream.hpp"
 
@@ -106,7 +106,7 @@ auto make_histo_proc(settings const &settings,
             settings.pixels_per_line * settings.lines_per_frame, 256, 65535,
             count<histogram_array_event<>>(
                 ctx->tracker<count_access>("frame_counter"),
-                select<event_set<concluding_histogram_array_event<>>>(
+                select<type_list<concluding_histogram_array_event<>>>(
                     view_histogram_array_as_bytes<
                         concluding_histogram_array_event<>>(
                         std::move(writer)))));
@@ -115,7 +115,7 @@ auto make_histo_proc(settings const &settings,
             settings.pixels_per_line * settings.lines_per_frame, 256, 65535,
             count<histogram_array_event<>>(
                 ctx->tracker<count_access>("frame_counter"),
-                select<event_set<histogram_array_event<>>>(
+                select<type_list<histogram_array_event<>>>(
                     view_histogram_array_as_bytes<histogram_array_event<>>(
                         std::move(writer)))));
     }
@@ -135,26 +135,26 @@ auto make_processor(settings const &settings,
         std::numeric_limits<std::uint64_t>::max(),
         std::make_shared<object_pool<device_event_vector>>(2, 2),
         65536, // Reader produces shared_ptr of vectors of device events.
-    stop_with_error<event_set<warning_event>>("error reading input",
+    stop_with_error<type_list<warning_event>>("error reading input",
     dereference_pointer<std::shared_ptr<device_event_vector>>(
     unbatch<device_event_vector, bh_spc_event>(
     count<bh_spc_event>(ctx->tracker<count_access>("record_counter"),
     decode_bh_spc(
     check_monotonic(
-    stop_with_error<event_set<warning_event, data_lost_event<>>>(
+    stop_with_error<type_list<warning_event, data_lost_event<>>>(
         "error in input data",
     match<marker_event<>, pixel_start_event>(
         channel_matcher(0), // Extract pixel clock.
-    select_not<event_set<marker_event<>>>(
+    select_not<type_list<marker_event<>>>(
     generate<pixel_start_event>(
         one_shot_timing_generator<pixel_stop_event>(
             settings.pixel_time), // Generate pixel stop events.
-    select_not<event_set<time_reached_event<>>>(
+    select_not<type_list<time_reached_event<>>>(
     check_alternating<pixel_start_event, pixel_stop_event>(
-    stop_with_error<event_set<warning_event, data_lost_event<>>>(
+    stop_with_error<type_list<warning_event, data_lost_event<>>>(
         "pixel time is such that pixel stop occurs after next pixel start",
     count<pixel_stop_event>(ctx->tracker<count_access>("pixel_counter"),
-    route_homogeneous<event_set<time_correlated_detection_event<>>>(
+    route_homogeneous<type_list<time_correlated_detection_event<>>>(
         // Use single-downstream router to select by channel.
         channel_router(
             std::array{std::make_pair(settings.channel, std::size_t(0))}),

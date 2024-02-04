@@ -6,8 +6,10 @@
 
 #pragma once
 
-#include "event_set.hpp"
 #include "introspect.hpp"
+#include "processor_traits.hpp"
+#include "type_list.hpp"
+#include "variant_event.hpp"
 
 #include <type_traits>
 #include <utility>
@@ -17,8 +19,9 @@ namespace tcspc {
 
 namespace internal {
 
-template <typename EventSet, typename Downstream> class multiplex {
-    static_assert(handles_event_v<Downstream, event_variant<EventSet>>);
+template <typename EventList, typename Downstream> class multiplex {
+    static_assert(handles_event_v<Downstream, variant_event<EventList>>);
+    static_assert(handles_flush_v<Downstream>);
 
     Downstream downstream;
 
@@ -37,17 +40,18 @@ template <typename EventSet, typename Downstream> class multiplex {
         return g;
     }
 
-    template <typename Event,
-              typename = std::enable_if_t<contains_event_v<EventSet, Event>>>
+    template <typename Event, typename = std::enable_if_t<
+                                  type_list_contains_v<EventList, Event>>>
     void handle(Event const &event) {
-        downstream.handle(event_variant<EventSet>(event));
+        downstream.handle(variant_event<EventList>(event));
     }
 
     void flush() { downstream.flush(); }
 };
 
-template <typename EventSet, typename Downstream> class demultiplex {
-    static_assert(handles_event_set_v<Downstream, EventSet>);
+template <typename EventList, typename Downstream> class demultiplex {
+    static_assert(handles_events_v<Downstream, EventList>);
+    static_assert(handles_flush_v<Downstream>);
 
     Downstream downstream;
 
@@ -66,7 +70,7 @@ template <typename EventSet, typename Downstream> class demultiplex {
         return g;
     }
 
-    void handle(event_variant<EventSet> const &event) {
+    void handle(variant_event<EventList> const &event) {
         std::visit([&](auto const &e) { downstream.handle(e); }, event);
     }
 
@@ -82,11 +86,11 @@ template <typename EventSet, typename Downstream> class demultiplex {
  *
  * This can be used, for example, to buffer more than one type of event in a
  * stream. The emitted events are of the single type \c
- * event_variant<EventSet>.
+ * variant_event<EventList>.
  *
  * \see demultiplex
  *
- * \tparam EventSet event types to combine
+ * \tparam EventList event types to combine
  *
  * \tparam Downstream downstream processor type
  *
@@ -94,11 +98,11 @@ template <typename EventSet, typename Downstream> class demultiplex {
  *
  * \return multiplex processor
  */
-template <typename EventSet, typename Downstream>
+template <typename EventList, typename Downstream>
 auto multiplex(Downstream &&downstream) {
-    static_assert(event_set_size_v<EventSet> > 0,
-                  "multiplex requires non-empty event set");
-    return internal::multiplex<EventSet, Downstream>(
+    static_assert(type_list_size_v<EventList> > 0,
+                  "multiplex requires non-empty event list");
+    return internal::multiplex<EventList, Downstream>(
         std::forward<Downstream>(downstream));
 }
 
@@ -109,11 +113,11 @@ auto multiplex(Downstream &&downstream) {
  * \ingroup processors-basic
  *
  * This reverses the effect of \c multiplex: it accepts \c
- * event_variant<EventSet> and emits the individual events in \c EventSet.
+ * variant_event<EventList> and emits the individual events in \c EventList.
  *
  * \see multiplex
  *
- * \tparam EventSet event types to separate
+ * \tparam EventList event types to separate
  *
  * \tparam Downstream downstream processor type
  *
@@ -121,9 +125,9 @@ auto multiplex(Downstream &&downstream) {
  *
  * \return demultiplex processor
  */
-template <typename EventSet, typename Downstream>
+template <typename EventList, typename Downstream>
 auto demultiplex(Downstream &&downstream) {
-    return internal::demultiplex<EventSet, Downstream>(
+    return internal::demultiplex<EventList, Downstream>(
         std::forward<Downstream>(downstream));
 }
 

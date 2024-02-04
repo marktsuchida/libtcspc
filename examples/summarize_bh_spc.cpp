@@ -9,11 +9,11 @@
 #include "libtcspc/check.hpp"
 #include "libtcspc/common.hpp"
 #include "libtcspc/count.hpp"
-#include "libtcspc/event_set.hpp"
 #include "libtcspc/processor_context.hpp"
 #include "libtcspc/read_binary_stream.hpp"
 #include "libtcspc/stop.hpp"
 #include "libtcspc/time_tagged_events.hpp"
+#include "libtcspc/type_list.hpp"
 
 #include <array>
 #include <cstdint>
@@ -82,7 +82,7 @@ auto summarize(std::string const &filename) -> bool {
         std::numeric_limits<std::uint64_t>::max(),
         std::make_shared<object_pool<device_event_vector>>(3, 3),
         65536, // Reader produces shared_ptr of vectors of device events.
-    stop<event_set<warning_event>>("error reading input",
+    stop<type_list<warning_event>>("error reading input",
     dereference_pointer<std::shared_ptr<device_event_vector>>(
         // Get the vectors of device events.
     unbatch<device_event_vector, bh_spc_event>(
@@ -90,7 +90,7 @@ auto summarize(std::string const &filename) -> bool {
     count<bh_spc_event>(ctx->tracker<count_access>("counter"), // Count.
     decode_bh_spc<dtraits>( // Decode device events into generic TCSPC events.
     check_monotonic<dtraits>( // Ensure the abstime is non-decreasing.
-    stop<event_set<warning_event, data_lost_event<dtraits>>>("error in data",
+    stop<type_list<warning_event, data_lost_event<dtraits>>>("error in data",
     summarize_and_print()))))))));
     // clang-format on
 

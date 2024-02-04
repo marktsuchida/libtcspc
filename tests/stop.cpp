@@ -7,9 +7,9 @@
 #include "libtcspc/stop.hpp"
 
 #include "libtcspc/common.hpp"
-#include "libtcspc/event_set.hpp"
 #include "libtcspc/processor_context.hpp"
 #include "libtcspc/test_utils.hpp"
+#include "libtcspc/type_list.hpp"
 #include "test_checkers.hpp"
 
 #include <catch2/catch_all.hpp>
@@ -27,18 +27,18 @@ using e1 = empty_test_event<1>;
 
 TEST_CASE("introspect stop", "[introspect]") {
     check_introspect_simple_processor(
-        stop_with_error<event_set<>>("", null_sink()));
-    check_introspect_simple_processor(stop<event_set<>>("", null_sink()));
+        stop_with_error<type_list<>>("", null_sink()));
+    check_introspect_simple_processor(stop<type_list<>>("", null_sink()));
 }
 
 TEST_CASE("stop with error") {
     auto ctx = std::make_shared<processor_context>();
 
-    auto in = feed_input<event_set<e0, e1>>(stop_with_error<event_set<e0>>(
-        "myerror", capture_output<event_set<e1>>(
+    auto in = feed_input<type_list<e0, e1>>(stop_with_error<type_list<e0>>(
+        "myerror", capture_output<type_list<e1>>(
                        ctx->tracker<capture_output_access>("out"))));
     in.require_output_checked(ctx, "out");
-    auto out = capture_output_checker<event_set<e1>>(
+    auto out = capture_output_checker<type_list<e1>>(
         ctx->accessor<capture_output_access>("out"));
 
     in.feed(e1{});
@@ -52,11 +52,11 @@ TEST_CASE("stop with error") {
 
 TEST_CASE("stop with no error") {
     auto ctx = std::make_shared<processor_context>();
-    auto in = feed_input<event_set<e0, e1>>(stop<event_set<e0>>(
-        "end of stream", capture_output<event_set<e1>>(
+    auto in = feed_input<type_list<e0, e1>>(stop<type_list<e0>>(
+        "end of stream", capture_output<type_list<e1>>(
                              ctx->tracker<capture_output_access>("out"))));
     in.require_output_checked(ctx, "out");
-    auto out = capture_output_checker<event_set<e1>>(
+    auto out = capture_output_checker<type_list<e1>>(
         ctx->accessor<capture_output_access>("out"));
 
     in.feed(e1{});

@@ -393,6 +393,12 @@ template <typename T> struct type_identity {
     using type = T;
 };
 
+// Overloaded idiom for std::visit
+template <typename... Ts> struct overloaded : Ts... {
+    using Ts::operator()...;
+};
+template <typename... Ts> overloaded(Ts...) -> overloaded<Ts...>;
+
 } // namespace internal
 
 } // namespace tcspc

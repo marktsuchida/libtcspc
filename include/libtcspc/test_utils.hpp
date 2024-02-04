@@ -7,10 +7,12 @@
 #pragma once
 
 #include "common.hpp"
-#include "event_set.hpp"
 #include "introspect.hpp"
 #include "processor_context.hpp"
+#include "processor_traits.hpp"
 #include "span.hpp"
+#include "type_list.hpp"
+#include "variant_event.hpp"
 #include "vector_queue.hpp"
 
 #include <algorithm>
@@ -42,17 +44,17 @@ namespace tcspc {
  * \see capture_output_accessor
  */
 class capture_output_access {
-    std::any peek_events_func; // () -> std::vector<event_variant<EventSet>>
+    std::any peek_events_func; // () -> std::vector<variant_event<EventList>>
     std::function<void()> pop_event_func;
     std::function<bool()> is_empty_func;
     std::function<bool()> is_flushed_func;
     std::function<void(std::size_t, bool)> set_up_to_throw_func;
     std::function<std::string()> events_as_string_func;
 
-    template <typename EventSet>
-    auto peek_events() const -> std::vector<event_variant<EventSet>> {
+    template <typename EventList>
+    auto peek_events() const -> std::vector<variant_event<EventList>> {
         return std::any_cast<
-            std::function<std::vector<event_variant<EventSet>>()>>(
+            std::function<std::vector<variant_event<EventList>>()>>(
             peek_events_func)();
     }
 
@@ -60,14 +62,14 @@ class capture_output_access {
     /**
      * \brief Tag struct used internally for construction.
      */
-    struct empty_event_set_tag {};
+    struct empty_event_list_tag {};
 
     /**
      * \brief Constructor used internally by \c capture_output.
      */
-    template <typename EventSet>
+    template <typename EventList>
     explicit capture_output_access(
-        std::function<std::vector<event_variant<EventSet>>()> peek_events,
+        std::function<std::vector<variant_event<EventList>>()> peek_events,
         std::function<void()> pop_event, std::function<bool()> is_empty,
         std::function<bool()> is_flushed,
         std::function<void(std::size_t, bool)> set_up_to_throw,
@@ -83,7 +85,7 @@ class capture_output_access {
      * \brief Constructor used internally by \c capture_output.
      */
     explicit capture_output_access(
-        [[maybe_unused]] empty_event_set_tag tag,
+        [[maybe_unused]] empty_event_list_tag tag,
         std::function<bool()> is_flushed,
         std::function<void(std::size_t, bool)> set_up_to_throw)
         : is_empty_func([] { return true; }),
@@ -93,12 +95,12 @@ class capture_output_access {
     /**
      * \brief Ensure that this access works with the given event set.
      *
-     * \tparam EventSet event set to check
+     * \tparam EventList event set to check
      */
-    template <typename EventSet> void check_event_set() const {
-        if constexpr (std::tuple_size_v<EventSet> > 0) {
+    template <typename EventList> void check_event_list() const {
+        if constexpr (type_list_size_v<EventList> > 0) {
             (void)std::any_cast<
-                std::function<std::vector<event_variant<EventSet>>()>>(
+                std::function<std::vector<variant_event<EventList>>()>>(
                 peek_events_func);
         }
     }
@@ -126,15 +128,16 @@ class capture_output_access {
      *
      * \tparam Event the expected event type
      *
-     * \tparam EventSet the event set accepted by the \c capture_output
+     * \tparam EventList the event set accepted by the \c capture_output
      * processor
      *
      * \return the event
      */
-    template <typename Event, typename EventSet,
-              typename = std::enable_if_t<contains_event_v<EventSet, Event>>>
+    template <
+        typename Event, typename EventList,
+        typename = std::enable_if_t<type_list_contains_v<EventList, Event>>>
     auto pop() -> Event {
-        auto events = peek_events<EventSet>();
+        auto events = peek_events<EventList>();
         if (events.empty()) {
             throw std::logic_error(
                 "tried to retrieve recorded output event of type " +
@@ -164,17 +167,18 @@ class capture_output_access {
      *
      * \tparam Event the expected event type
      *
-     * \tparam EventSet the event set accepted by the \c capture_output
+     * \tparam EventList the event set accepted by the \c capture_output
      * processor
      *
      * \param expected_event the expected event
      *
      * \return true if the check was successful
      */
-    template <typename Event, typename EventSet,
-              typename = std::enable_if_t<contains_event_v<EventSet, Event>>>
+    template <
+        typename Event, typename EventList,
+        typename = std::enable_if_t<type_list_contains_v<EventList, Event>>>
     auto check(Event const &expected_event) -> bool {
-        auto events = peek_events<EventSet>();
+        auto events = peek_events<EventList>();
         if (events.empty()) {
             std::ostringstream stream;
             stream << "expected recorded output event " << expected_event
@@ -283,12 +287,12 @@ class capture_output_access {
  * \ingroup processors-testing
  *
  * This class has almost the same interface as \c capture_output_access but is
- * parameterized on \c EventSet so does not require specifying the event set
+ * parameterized on \c EventList so does not require specifying the event set
  * when calling \c check() or \c pop().
  *
  * \see capture_output_access
  */
-template <typename EventSet> class capture_output_checker {
+template <typename EventList> class capture_output_checker {
     capture_output_access acc;
 
   public:
@@ -297,7 +301,7 @@ template <typename EventSet> class capture_output_checker {
      */
     explicit capture_output_checker(capture_output_access access)
         : acc(std::move(access)) {
-        acc.check_event_set<EventSet>(); // Fail early.
+        acc.check_event_list<EventList>(); // Fail early.
     }
 
     /**
@@ -310,10 +314,10 @@ template <typename EventSet> class capture_output_checker {
      *
      * \return the event
      */
-    template <typename Event,
-              typename = std::enable_if_t<contains_event_v<EventSet, Event>>>
+    template <typename Event, typename = std::enable_if_t<
+                                  type_list_contains_v<EventList, Event>>>
     auto pop() -> Event {
-        return acc.pop<Event, EventSet>();
+        return acc.pop<Event, EventList>();
     }
 
     /**
@@ -331,10 +335,10 @@ template <typename EventSet> class capture_output_checker {
      *
      * \return true if the check was successful
      */
-    template <typename Event,
-              typename = std::enable_if_t<contains_event_v<EventSet, Event>>>
+    template <typename Event, typename = std::enable_if_t<
+                                  type_list_contains_v<EventList, Event>>>
     auto check(Event const &expected_event) -> bool {
-        return acc.check<Event, EventSet>(expected_event);
+        return acc.check<Event, EventList>(expected_event);
     }
 
     /**
@@ -398,8 +402,8 @@ template <typename EventSet> class capture_output_checker {
 
 namespace internal {
 
-template <typename EventSet> class capture_output {
-    vector_queue<event_variant<EventSet>> output;
+template <typename EventList> class capture_output {
+    vector_queue<variant_event<EventList>> output;
     bool flushed = false;
     std::size_t error_in = std::numeric_limits<std::size_t>::max();
     std::size_t end_in = std::numeric_limits<std::size_t>::max();
@@ -437,8 +441,8 @@ template <typename EventSet> class capture_output {
         return g;
     }
 
-    template <typename Event,
-              typename = std::enable_if_t<contains_event_v<EventSet, Event>>>
+    template <typename Event, typename = std::enable_if_t<
+                                  type_list_contains_v<EventList, Event>>>
     void handle(Event const &event) {
         assert(not flushed);
         if (error_in == 0)
@@ -461,8 +465,8 @@ template <typename EventSet> class capture_output {
     }
 
   private:
-    auto peek() const -> std::vector<event_variant<EventSet>> {
-        std::vector<event_variant<EventSet>> ret;
+    auto peek() const -> std::vector<variant_event<EventList>> {
+        std::vector<variant_event<EventList>> ret;
         output.for_each([&ret](auto const &event) { ret.push_back(event); });
         return ret;
     }
@@ -488,8 +492,8 @@ template <typename EventSet> class capture_output {
     }
 };
 
-// Specialization for empty event set.
-template <> class capture_output<event_set<>> {
+// Specialization for empty event list.
+template <> class capture_output<type_list<>> {
     bool flushed = false;
     bool error_on_flush = false;
     bool end_on_flush = false;
@@ -502,7 +506,7 @@ template <> class capture_output<event_set<>> {
             auto *self =
                 LIBTCSPC_PROCESSOR_FROM_TRACKER(capture_output, trk, tracker);
             return capture_output_access(
-                capture_output_access::empty_event_set_tag{},
+                capture_output_access::empty_event_list_tag{},
                 [self] { return self->flushed; },
                 [self](std::size_t count, bool use_error) {
                     self->set_up_to_throw(count, use_error);
@@ -542,14 +546,16 @@ template <> class capture_output<event_set<>> {
     }
 };
 
-template <typename EventSet, typename Downstream> class feed_input {
+template <typename EventList, typename Downstream> class feed_input {
     std::vector<std::pair<std::shared_ptr<processor_context>, std::string>>
         outputs_to_check; // (context, name)
     Downstream downstream;
 
     static_assert(
-        handles_event_set_v<Downstream, EventSet>,
-        "processor under test must handle the specified input events and flush");
+        handles_events_v<Downstream, EventList>,
+        "processor under test must handle the specified input events");
+    static_assert(handles_flush_v<Downstream>,
+                  "processor under test must handle flushing");
 
     void check_outputs_ready() {
         if (outputs_to_check.empty())
@@ -581,8 +587,8 @@ template <typename EventSet, typename Downstream> class feed_input {
         outputs_to_check.emplace_back(context, std::move(name));
     }
 
-    template <typename Event,
-              typename = std::enable_if_t<contains_event_v<EventSet, Event>>>
+    template <typename Event, typename = std::enable_if_t<
+                                  type_list_contains_v<EventList, Event>>>
     void feed(Event const &event) {
         check_outputs_ready();
         downstream.handle(event);
@@ -601,15 +607,15 @@ template <typename EventSet, typename Downstream> class feed_input {
  *
  * \ingroup processors-testing
  *
- * \tparam EventSet event set to accept
+ * \tparam EventList event set to accept
  *
  * \param tracker processor tracker for later access to state
  *
  * \return capture-output sink
  */
-template <typename EventSet>
+template <typename EventList>
 auto capture_output(processor_tracker<capture_output_access> &&tracker) {
-    return internal::capture_output<EventSet>(std::move(tracker));
+    return internal::capture_output<EventList>(std::move(tracker));
 }
 
 /**
@@ -617,7 +623,7 @@ auto capture_output(processor_tracker<capture_output_access> &&tracker) {
  *
  * \ingroup processors-testing
  *
- * \tparam EventSet input event set
+ * \tparam EventList input event set
  *
  * \tparam Downstream downstream processor type
  *
@@ -625,9 +631,9 @@ auto capture_output(processor_tracker<capture_output_access> &&tracker) {
  *
  * \return feed-input source
  */
-template <typename EventSet, typename Downstream>
+template <typename EventList, typename Downstream>
 auto feed_input(Downstream &&downstream) {
-    return internal::feed_input<EventSet, Downstream>(
+    return internal::feed_input<EventList, Downstream>(
         std::forward<Downstream>(downstream));
 }
 
@@ -656,21 +662,20 @@ template <typename T> class pvector : public std::vector<T> {
 };
 
 /**
- * \brief Processors that sinks only events in the given set, and
- * end-of-stream.
+ * \brief Processors that sinks only specific events.
  *
  * \ingroup processors-testing
  *
  * This can be used to check at compile time that output of the upstream
  * processor does not contain unexpected events.
  *
- * \tparam EventSet event types to allow
+ * \tparam EventList event types to allow
  */
-template <typename EventSet> class event_set_sink {
+template <typename EventList> class sink_events {
   public:
     /** \brief Processor interface */
     [[nodiscard]] auto introspect_node() const -> processor_info {
-        processor_info info(this, "event_set_sink");
+        processor_info info(this, "sink_events");
         return info;
     }
 
@@ -682,8 +687,8 @@ template <typename EventSet> class event_set_sink {
     }
 
     /** \brief Processor interface */
-    template <typename Event,
-              typename = std::enable_if_t<contains_event_v<EventSet, Event>>>
+    template <typename Event, typename = std::enable_if_t<
+                                  type_list_contains_v<EventList, Event>>>
     void handle([[maybe_unused]] Event const &event) {}
 
     /** \brief Processor interface */
@@ -692,7 +697,7 @@ template <typename EventSet> class event_set_sink {
 
 namespace internal {
 
-template <typename EventSet, typename Downstream> class check_event_set {
+template <typename EventList, typename Downstream> class check_event_set {
     Downstream downstream;
 
   public:
@@ -710,8 +715,8 @@ template <typename EventSet, typename Downstream> class check_event_set {
         return g;
     }
 
-    template <typename Event,
-              typename = std::enable_if_t<contains_event_v<EventSet, Event>>>
+    template <typename Event, typename = std::enable_if_t<
+                                  type_list_contains_v<EventList, Event>>>
     void handle(Event const &event) {
         downstream.handle(event);
     }
@@ -727,19 +732,17 @@ template <typename EventSet, typename Downstream> class check_event_set {
  * \ingroup processors-testing
  *
  * This processor simply forwards all events downstream, but it is a compile
- * error if an input event is not in \c EventSet.
+ * error if an input event is not in \c EventList.
  *
- * \see require_event_set
- *
- * \tparam EventSet the set of events to forward
+ * \tparam EventList the set of events to forward
  *
  * \tparam Downstream downstream processor type
  *
  * \param downstream downstream processor
  */
-template <typename EventSet, typename Downstream>
+template <typename EventList, typename Downstream>
 auto check_event_set(Downstream &&downstream) {
-    return internal::check_event_set<EventSet, Downstream>(
+    return internal::check_event_set<EventList, Downstream>(
         std::forward<Downstream>(downstream));
 }
 

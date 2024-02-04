@@ -7,10 +7,10 @@
 #include "libtcspc/pair.hpp"
 
 #include "libtcspc/common.hpp"
-#include "libtcspc/event_set.hpp"
 #include "libtcspc/processor_context.hpp"
 #include "libtcspc/test_utils.hpp"
 #include "libtcspc/time_tagged_events.hpp"
+#include "libtcspc/type_list.hpp"
 #include "test_checkers.hpp"
 
 #include <catch2/catch_all.hpp>
@@ -22,7 +22,7 @@ namespace tcspc {
 
 namespace {
 
-using out_events = event_set<detection_event<>, detection_pair_event<>>;
+using out_events = type_list<detection_event<>, detection_pair_event<>>;
 
 }
 
@@ -37,7 +37,7 @@ TEST_CASE("introspect pair", "[introspect]") {
 
 TEST_CASE("pair all") {
     auto ctx = std::make_shared<processor_context>();
-    auto in = feed_input<event_set<detection_event<>>>(
+    auto in = feed_input<type_list<detection_event<>>>(
         pair_all(0, std::array<default_data_traits::channel_type, 1>{1}, 2,
                  capture_output<out_events>(
                      ctx->tracker<capture_output_access>("out"))));
@@ -110,7 +110,7 @@ TEST_CASE("pair all") {
 
 TEST_CASE("pair all with self") {
     auto ctx = std::make_shared<processor_context>();
-    auto in = feed_input<event_set<detection_event<>>>(
+    auto in = feed_input<type_list<detection_event<>>>(
         pair_all(0, std::array<default_data_traits::channel_type, 1>{0}, 2,
                  capture_output<out_events>(
                      ctx->tracker<capture_output_access>("out"))));
@@ -141,7 +141,7 @@ TEST_CASE("pair all with self") {
 
 TEST_CASE("pair one") {
     auto ctx = std::make_shared<processor_context>();
-    auto in = feed_input<event_set<detection_event<>>>(
+    auto in = feed_input<type_list<detection_event<>>>(
         pair_one(0, std::array<default_data_traits::channel_type, 1>{1}, 2,
                  capture_output<out_events>(
                      ctx->tracker<capture_output_access>("out"))));
@@ -208,7 +208,7 @@ TEST_CASE("pair one") {
 
 TEST_CASE("pair one with self") {
     auto ctx = std::make_shared<processor_context>();
-    auto in = feed_input<event_set<detection_event<>>>(
+    auto in = feed_input<type_list<detection_event<>>>(
         pair_one(0, std::array<default_data_traits::channel_type, 1>{0}, 2,
                  capture_output<out_events>(
                      ctx->tracker<capture_output_access>("out"))));
@@ -237,7 +237,7 @@ TEST_CASE("pair one with self") {
 
 TEST_CASE("pair all between") {
     auto ctx = std::make_shared<processor_context>();
-    auto in = feed_input<event_set<detection_event<>>>(pair_all_between(
+    auto in = feed_input<type_list<detection_event<>>>(pair_all_between(
         0, std::array<default_data_traits::channel_type, 1>{1}, 2,
         capture_output<out_events>(
             ctx->tracker<capture_output_access>("out"))));
@@ -306,7 +306,7 @@ TEST_CASE("pair all between") {
 
 TEST_CASE("pair all between with self") {
     auto ctx = std::make_shared<processor_context>();
-    auto in = feed_input<event_set<detection_event<>>>(pair_all_between(
+    auto in = feed_input<type_list<detection_event<>>>(pair_all_between(
         0, std::array<default_data_traits::channel_type, 1>{0}, 2,
         capture_output<out_events>(
             ctx->tracker<capture_output_access>("out"))));
@@ -335,7 +335,7 @@ TEST_CASE("pair all between with self") {
 
 TEST_CASE("pair one between") {
     auto ctx = std::make_shared<processor_context>();
-    auto in = feed_input<event_set<detection_event<>>>(pair_one_between(
+    auto in = feed_input<type_list<detection_event<>>>(pair_one_between(
         0, std::array<default_data_traits::channel_type, 1>{1}, 2,
         capture_output<out_events>(
             ctx->tracker<capture_output_access>("out"))));
@@ -402,7 +402,7 @@ TEST_CASE("pair one between") {
 
 TEST_CASE("pair one between with self") {
     auto ctx = std::make_shared<processor_context>();
-    auto in = feed_input<event_set<detection_event<>>>(pair_one_between(
+    auto in = feed_input<type_list<detection_event<>>>(pair_one_between(
         0, std::array<default_data_traits::channel_type, 1>{0}, 2,
         capture_output<out_events>(
             ctx->tracker<capture_output_access>("out"))));

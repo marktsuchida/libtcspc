@@ -7,10 +7,10 @@
 #include "libtcspc/regulate_time_reached.hpp"
 
 #include "libtcspc/common.hpp"
-#include "libtcspc/event_set.hpp"
 #include "libtcspc/processor_context.hpp"
 #include "libtcspc/test_utils.hpp"
 #include "libtcspc/time_tagged_events.hpp"
+#include "libtcspc/type_list.hpp"
 #include "test_checkers.hpp"
 
 #include <catch2/catch_all.hpp>
@@ -25,7 +25,7 @@ namespace {
 
 using abstime_type = default_data_traits::abstime_type;
 using other_event = timestamped_test_event<0>;
-using events = event_set<other_event, time_reached_event<>>;
+using events = type_list<other_event, time_reached_event<>>;
 
 } // namespace
 

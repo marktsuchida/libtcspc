@@ -8,12 +8,12 @@
 #include "libtcspc/check.hpp"
 #include "libtcspc/common.hpp"
 #include "libtcspc/count.hpp"
-#include "libtcspc/event_set.hpp"
 #include "libtcspc/processor_context.hpp"
 #include "libtcspc/read_binary_stream.hpp"
 #include "libtcspc/stop.hpp"
 #include "libtcspc/swabian_tag.hpp"
 #include "libtcspc/time_tagged_events.hpp"
+#include "libtcspc/type_list.hpp"
 
 #include <algorithm>
 #include <cstdint>
@@ -96,7 +96,7 @@ auto summarize(std::string const &filename) -> bool {
         std::numeric_limits<std::uint64_t>::max(),
         std::make_shared<object_pool<device_event_vector>>(3, 3),
         65536, // Reader produces shared_ptr of vectors of device events.
-    stop<event_set<warning_event>>("error reading input",
+    stop<type_list<warning_event>>("error reading input",
     dereference_pointer<std::shared_ptr<device_event_vector>>(
         // Get the vectors of device events.
     unbatch<device_event_vector, swabian_tag_event>(
@@ -105,7 +105,7 @@ auto summarize(std::string const &filename) -> bool {
     decode_swabian_tags(
         // Decode device events into generic TCSPC events.
     check_monotonic( // Ensure the abstime is non-decreasing.
-    stop<event_set<warning_event,
+    stop<type_list<warning_event,
                    begin_lost_interval_event<>,
                    end_lost_interval_event<>,
                    untagged_counts_event<>>>("error",

@@ -7,8 +7,8 @@
 #include "libtcspc/test_utils.hpp"
 
 #include "libtcspc/common.hpp"
-#include "libtcspc/event_set.hpp"
 #include "libtcspc/processor_context.hpp"
+#include "libtcspc/type_list.hpp"
 #include "test_checkers.hpp"
 
 #include <catch2/catch_all.hpp>
@@ -20,14 +20,14 @@ namespace tcspc {
 
 TEST_CASE("introspect test_utils", "[introspect]") {
     auto ctx = std::make_shared<processor_context>();
-    check_introspect_simple_sink(capture_output<event_set<>>(
+    check_introspect_simple_sink(capture_output<type_list<>>(
         ctx->tracker<capture_output_access>("out0")));
-    check_introspect_simple_sink(capture_output<event_set<int>>(
+    check_introspect_simple_sink(capture_output<type_list<int>>(
         ctx->tracker<capture_output_access>("out1")));
-    check_introspect_simple_source(feed_input<event_set<>>(null_sink()));
-    check_introspect_simple_sink(event_set_sink<event_set<>>());
+    check_introspect_simple_source(feed_input<type_list<>>(null_sink()));
+    check_introspect_simple_sink(sink_events<type_list<>>());
     check_introspect_simple_processor(
-        check_event_set<event_set<>>(null_sink()));
+        check_event_set<type_list<>>(null_sink()));
 }
 
 using e0 = empty_test_event<0>;
@@ -35,10 +35,10 @@ using e1 = timestamped_test_event<1>;
 
 TEST_CASE("Short-circuited with no events") {
     auto ctx = std::make_shared<processor_context>();
-    auto in = feed_input<event_set<>>(capture_output<event_set<>>(
+    auto in = feed_input<type_list<>>(capture_output<type_list<>>(
         ctx->tracker<capture_output_access>("out")));
     in.require_output_checked(ctx, "out");
-    auto out = capture_output_checker<event_set<>>(
+    auto out = capture_output_checker<type_list<>>(
         ctx->accessor<capture_output_access>("out"));
 
     SECTION("End successfully") {
@@ -51,10 +51,10 @@ TEST_CASE("Short-circuited with no events") {
 
 TEST_CASE("Short-circuited with event set") {
     auto ctx = std::make_shared<processor_context>();
-    auto in = feed_input<event_set<e0, e1>>(capture_output<event_set<e0, e1>>(
+    auto in = feed_input<type_list<e0, e1>>(capture_output<type_list<e0, e1>>(
         ctx->tracker<capture_output_access>("out")));
     in.require_output_checked(ctx, "out");
-    auto out = capture_output_checker<event_set<e0, e1>>(
+    auto out = capture_output_checker<type_list<e0, e1>>(
         ctx->accessor<capture_output_access>("out"));
 
     in.feed(e0{});

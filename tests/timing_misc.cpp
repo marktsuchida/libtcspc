@@ -7,9 +7,9 @@
 #include "libtcspc/timing_misc.hpp"
 
 #include "libtcspc/common.hpp"
-#include "libtcspc/event_set.hpp"
 #include "libtcspc/processor_context.hpp"
 #include "libtcspc/test_utils.hpp"
+#include "libtcspc/type_list.hpp"
 #include "test_checkers.hpp"
 
 #include <catch2/catch_all.hpp>
@@ -34,9 +34,9 @@ TEST_CASE("introspect timing_misc", "[introspect]") {
 }
 
 TEST_CASE("retime periodic sequence events") {
-    using out_events = event_set<periodic_sequence_event<>>;
+    using out_events = type_list<periodic_sequence_event<>>;
     auto ctx = std::make_shared<processor_context>();
-    auto in = feed_input<event_set<periodic_sequence_event<>>>(
+    auto in = feed_input<type_list<periodic_sequence_event<>>>(
         retime_periodic_sequences<>(
             10, capture_output<out_events>(
                     ctx->tracker<capture_output_access>("out"))));
@@ -73,9 +73,9 @@ TEST_CASE("retime periodic sequence events unsigned",
     struct traits {
         using abstime_type = std::uint64_t;
     };
-    using out_events = event_set<periodic_sequence_event<traits>>;
+    using out_events = type_list<periodic_sequence_event<traits>>;
     auto ctx = std::make_shared<processor_context>();
-    auto in = feed_input<event_set<periodic_sequence_event<traits>>>(
+    auto in = feed_input<type_list<periodic_sequence_event<traits>>>(
         retime_periodic_sequences<traits>(
             10, capture_output<out_events>(
                     ctx->tracker<capture_output_access>("out"))));
@@ -99,9 +99,9 @@ TEST_CASE("retime periodic sequence events unsigned",
 
 TEST_CASE("extrapolate periodic sequences",
           "[extrapolate_periodic_sequences]") {
-    using out_events = event_set<real_one_shot_timing_event<>>;
+    using out_events = type_list<real_one_shot_timing_event<>>;
     auto ctx = std::make_shared<processor_context>();
-    auto in = feed_input<event_set<periodic_sequence_event<>>>(
+    auto in = feed_input<type_list<periodic_sequence_event<>>>(
         extrapolate_periodic_sequences(
             2, capture_output<out_events>(
                    ctx->tracker<capture_output_access>("out"))));
@@ -117,9 +117,9 @@ TEST_CASE("extrapolate periodic sequences",
 
 TEST_CASE("add count to periodic sequences",
           "[add_count_to_periodic_sequences]") {
-    using out_events = event_set<real_linear_timing_event<>>;
+    using out_events = type_list<real_linear_timing_event<>>;
     auto ctx = std::make_shared<processor_context>();
-    auto in = feed_input<event_set<periodic_sequence_event<>>>(
+    auto in = feed_input<type_list<periodic_sequence_event<>>>(
         add_count_to_periodic_sequences(
             3, capture_output<out_events>(
                    ctx->tracker<capture_output_access>("out"))));
@@ -139,11 +139,11 @@ TEST_CASE("convert sequences to start-stop",
     using startevt = timestamped_test_event<1>;
     using stopevt = timestamped_test_event<2>;
     using otherevt = timestamped_test_event<3>;
-    using out_events = event_set<startevt, stopevt, otherevt>;
+    using out_events = type_list<startevt, stopevt, otherevt>;
     auto ctx = std::make_shared<processor_context>();
 
     SECTION("zero length") {
-        auto in = feed_input<event_set<inevt, otherevt>>(
+        auto in = feed_input<type_list<inevt, otherevt>>(
             convert_sequences_to_start_stop<inevt, startevt, stopevt>(
                 0, capture_output<out_events>(
                        ctx->tracker<capture_output_access>("out"))));
@@ -161,7 +161,7 @@ TEST_CASE("convert sequences to start-stop",
     }
 
     SECTION("length 1") {
-        auto in = feed_input<event_set<inevt, otherevt>>(
+        auto in = feed_input<type_list<inevt, otherevt>>(
             convert_sequences_to_start_stop<inevt, startevt, stopevt>(
                 1, capture_output<out_events>(
                        ctx->tracker<capture_output_access>("out"))));
@@ -182,7 +182,7 @@ TEST_CASE("convert sequences to start-stop",
     }
 
     SECTION("length 2") {
-        auto in = feed_input<event_set<inevt, otherevt>>(
+        auto in = feed_input<type_list<inevt, otherevt>>(
             convert_sequences_to_start_stop<inevt, startevt, stopevt>(
                 2, capture_output<out_events>(
                        ctx->tracker<capture_output_access>("out"))));

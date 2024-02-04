@@ -7,9 +7,9 @@
 #include "libtcspc/count.hpp"
 
 #include "libtcspc/common.hpp"
-#include "libtcspc/event_set.hpp"
 #include "libtcspc/processor_context.hpp"
 #include "libtcspc/test_utils.hpp"
+#include "libtcspc/type_list.hpp"
 #include "test_checkers.hpp"
 
 #include <catch2/catch_all.hpp>
@@ -24,7 +24,7 @@ using tick_event = timestamped_test_event<0>;
 using fire_event = timestamped_test_event<1>;
 using reset_event = timestamped_test_event<2>;
 using misc_event = timestamped_test_event<3>;
-using out_events = event_set<tick_event, fire_event, reset_event, misc_event>;
+using out_events = type_list<tick_event, fire_event, reset_event, misc_event>;
 
 } // namespace
 
@@ -46,7 +46,7 @@ TEST_CASE("Count up to") {
     SECTION("Threshold 0, limit 1") {
         SECTION("Emit before") {
             auto in =
-                feed_input<event_set<tick_event, reset_event, misc_event>>(
+                feed_input<type_list<tick_event, reset_event, misc_event>>(
                     count_up_to<tick_event, fire_event, reset_event, false>(
                         0, 1, 0,
                         capture_output<out_events>(
@@ -73,7 +73,7 @@ TEST_CASE("Count up to") {
         }
 
         SECTION("Emit after") {
-            auto in = feed_input<event_set<tick_event>>(
+            auto in = feed_input<type_list<tick_event>>(
                 count_up_to<tick_event, fire_event, reset_event, true>(
                     0, 1, 0,
                     capture_output<out_events>(
@@ -93,7 +93,7 @@ TEST_CASE("Count up to") {
 
     SECTION("Threshold 1, limit 1") {
         SECTION("Emit before") {
-            auto in = feed_input<event_set<tick_event>>(
+            auto in = feed_input<type_list<tick_event>>(
                 count_up_to<tick_event, fire_event, reset_event, false>(
                     1, 1, 0,
                     capture_output<out_events>(
@@ -111,7 +111,7 @@ TEST_CASE("Count up to") {
         }
 
         SECTION("Emit after") {
-            auto in = feed_input<event_set<tick_event>>(
+            auto in = feed_input<type_list<tick_event>>(
                 count_up_to<tick_event, fire_event, reset_event, true>(
                     1, 1, 0,
                     capture_output<out_events>(
@@ -133,7 +133,7 @@ TEST_CASE("Count up to") {
 
     SECTION("Threshold 1, limit 2") {
         SECTION("Emit before") {
-            auto in = feed_input<event_set<tick_event, reset_event>>(
+            auto in = feed_input<type_list<tick_event, reset_event>>(
                 count_up_to<tick_event, fire_event, reset_event, false>(
                     1, 2, 0,
                     capture_output<out_events>(
@@ -161,7 +161,7 @@ TEST_CASE("Count up to") {
         }
 
         SECTION("Emit after") {
-            auto in = feed_input<event_set<tick_event, reset_event>>(
+            auto in = feed_input<type_list<tick_event, reset_event>>(
                 count_up_to<tick_event, fire_event, reset_event, true>(
                     1, 2, 0,
                     capture_output<out_events>(
@@ -193,7 +193,7 @@ TEST_CASE("Count up to") {
 
 TEST_CASE("Count down to") {
     auto ctx = std::make_shared<processor_context>();
-    auto in = feed_input<event_set<tick_event, reset_event, misc_event>>(
+    auto in = feed_input<type_list<tick_event, reset_event, misc_event>>(
         count_down_to<tick_event, fire_event, reset_event, false>(
             1, 0, 2,
             capture_output<out_events>(
@@ -218,7 +218,7 @@ TEST_CASE("Count down to") {
 
 TEST_CASE("event counter") {
     auto ctx = std::make_shared<processor_context>();
-    auto in = feed_input<event_set<tick_event, misc_event>>(
+    auto in = feed_input<type_list<tick_event, misc_event>>(
         count<tick_event>(ctx->tracker<count_access>("counter"),
                           capture_output<out_events>(
                               ctx->tracker<capture_output_access>("out"))));

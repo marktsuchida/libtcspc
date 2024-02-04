@@ -10,7 +10,6 @@
 #include "libtcspc/common.hpp"
 #include "libtcspc/count.hpp"
 #include "libtcspc/delay.hpp"
-#include "libtcspc/event_set.hpp"
 #include "libtcspc/generate.hpp"
 #include "libtcspc/histogram_elementwise.hpp"
 #include "libtcspc/histogram_events.hpp"
@@ -27,6 +26,7 @@
 #include "libtcspc/swabian_tag.hpp"
 #include "libtcspc/time_correlate.hpp"
 #include "libtcspc/time_tagged_events.hpp"
+#include "libtcspc/type_list.hpp"
 #include "libtcspc/view_as_bytes.hpp"
 #include "libtcspc/write_binary_stream.hpp"
 
@@ -164,7 +164,7 @@ auto make_histo_proc(settings const &settings,
             std::size_t(settings.max_bin_index) + 1, 65535,
             count<histogram_array_event<>>(
                 ctx->tracker<count_access>("frame_counter"),
-                select<event_set<concluding_histogram_array_event<>>>(
+                select<type_list<concluding_histogram_array_event<>>>(
                     view_histogram_array_as_bytes<
                         concluding_histogram_array_event<>>(
                         std::move(writer)))));
@@ -174,7 +174,7 @@ auto make_histo_proc(settings const &settings,
             std::size_t(settings.max_bin_index) + 1, 65535,
             count<histogram_array_event<>>(
                 ctx->tracker<count_access>("frame_counter"),
-                select<event_set<histogram_array_event<>>>(
+                select<type_list<histogram_array_event<>>>(
                     view_histogram_array_as_bytes<histogram_array_event<>>(
                         std::move(writer)))));
     }
@@ -189,7 +189,7 @@ auto make_processor(settings const &settings,
     // clang-format off
 
     auto [bin_increment_merge, start_stop_merge] =
-    merge<event_set<
+    merge<type_list<
         bin_increment_event<>, pixel_start_event, pixel_stop_event>>(
             1024 * 1024,
     batch_bin_increments<pixel_start_event, pixel_stop_event>(
@@ -198,12 +198,12 @@ auto make_processor(settings const &settings,
     make_histo_proc<Cumulative>(settings, ctx))));
 
     auto [sync_merge, cfd_merge] =
-    merge<event_set<detection_event<>>>(1024 * 1024,
+    merge<type_list<detection_event<>>>(1024 * 1024,
     pair_all_between(
         settings.sync_channel,
         std::array{settings.photon_trailing_channel},
         settings.max_diff_time,
-    select<event_set<detection_pair_event<>>>(
+    select<type_list<detection_pair_event<>>>(
     time_correlate_at_stop(
     map_to_datapoints(difftime_data_mapper(),
     map_to_bins(
@@ -219,20 +219,20 @@ auto make_processor(settings const &settings,
         settings.photon_leading_channel,
         std::array{settings.photon_trailing_channel},
         settings.max_photon_pulse_width,
-    select<event_set<detection_pair_event<>>>(
+    select<type_list<detection_pair_event<>>>(
     time_correlate_at_midpoint(
     remove_time_correlation(
-    recover_order<event_set<detection_event<>>>(
+    recover_order<type_list<detection_event<>>>(
         std::abs(settings.max_photon_pulse_width),
     std::move(cfd_merge))))));
 
     auto pixel_marker_processor =
     match<detection_event<>, pixel_start_event>(always_matcher(),
-    select<event_set<pixel_start_event>>(
+    select<type_list<pixel_start_event>>(
     generate<pixel_start_event>(
         one_shot_timing_generator<pixel_stop_event>(settings.pixel_time),
     check_alternating<pixel_start_event, pixel_stop_event>(
-    stop_with_error<event_set<warning_event>>(
+    stop_with_error<type_list<warning_event>>(
         "pixel time is such that pixel stop occurs after next pixel start",
     std::move(start_stop_merge))))));
 
@@ -242,19 +242,19 @@ auto make_processor(settings const &settings,
         std::numeric_limits<std::uint64_t>::max(),
         std::make_shared<object_pool<device_event_vector>>(2, 2),
         65536,
-    stop_with_error<event_set<warning_event>>("error reading input",
+    stop_with_error<type_list<warning_event>>("error reading input",
     dereference_pointer<std::shared_ptr<device_event_vector>>(
     unbatch<device_event_vector, swabian_tag_event>(
     count<swabian_tag_event>(ctx->tracker<count_access>("record_counter"),
     decode_swabian_tags(
-    stop_with_error<event_set<
+    stop_with_error<type_list<
         warning_event,
         begin_lost_interval_event<>,
         end_lost_interval_event<>,
         untagged_counts_event<>>>("error in input data",
     check_monotonic(
-    stop<event_set<warning_event>>("processing stopped",
-    route<event_set<detection_event<>>>(
+    stop<type_list<warning_event>>("processing stopped",
+    route<type_list<detection_event<>>>(
         channel_router(std::array{
             std::pair{settings.sync_channel, 0},
             std::pair{settings.photon_leading_channel, 1},

@@ -7,9 +7,9 @@
 #include "libtcspc/generate.hpp"
 
 #include "libtcspc/common.hpp"
-#include "libtcspc/event_set.hpp"
 #include "libtcspc/processor_context.hpp"
 #include "libtcspc/test_utils.hpp"
+#include "libtcspc/type_list.hpp"
 #include "test_checkers.hpp"
 
 #include <catch2/catch_all.hpp>
@@ -25,7 +25,7 @@ namespace {
 using trigger_event = timestamped_test_event<0>;
 using output_event = timestamped_test_event<1>;
 using misc_event = timestamped_test_event<2>;
-using out_events = event_set<trigger_event, output_event, misc_event>;
+using out_events = type_list<trigger_event, output_event, misc_event>;
 
 } // namespace
 
@@ -36,7 +36,7 @@ TEST_CASE("introspect generate", "[introspect]") {
 
 TEST_CASE("Generate null timing") {
     auto ctx = std::make_shared<processor_context>();
-    auto in = feed_input<event_set<trigger_event>>(generate<trigger_event>(
+    auto in = feed_input<type_list<trigger_event>>(generate<trigger_event>(
         null_timing_generator<output_event>(),
         capture_output<out_events>(
             ctx->tracker<capture_output_access>("out"))));
@@ -56,7 +56,7 @@ TEST_CASE("Generate one-shot timing",
           "[generate][one_shot_timing_generator]") {
     default_data_traits::abstime_type const delay = GENERATE(0, 1, 2);
     auto ctx = std::make_shared<processor_context>();
-    auto in = feed_input<event_set<trigger_event, misc_event>>(
+    auto in = feed_input<type_list<trigger_event, misc_event>>(
         generate<trigger_event>(
             one_shot_timing_generator<output_event>(delay),
             capture_output<out_events>(
@@ -110,7 +110,7 @@ TEST_CASE("Generate linear timing") {
     auto ctx = std::make_shared<processor_context>();
 
     SECTION("Count of 0") {
-        auto in = feed_input<event_set<trigger_event>>(generate<trigger_event>(
+        auto in = feed_input<type_list<trigger_event>>(generate<trigger_event>(
             linear_timing_generator<output_event>(delay, interval, 0),
             capture_output<out_events>(
                 ctx->tracker<capture_output_access>("out"))));
@@ -127,7 +127,7 @@ TEST_CASE("Generate linear timing") {
     }
 
     SECTION("Count of 1") {
-        auto in = feed_input<event_set<trigger_event, misc_event>>(
+        auto in = feed_input<type_list<trigger_event, misc_event>>(
             generate<trigger_event>(
                 linear_timing_generator<output_event>(delay, interval, 1),
                 capture_output<out_events>(
@@ -160,7 +160,7 @@ TEST_CASE("Generate linear timing") {
     }
 
     SECTION("Count of 2") {
-        auto in = feed_input<event_set<trigger_event, misc_event>>(
+        auto in = feed_input<type_list<trigger_event, misc_event>>(
             generate<trigger_event>(
                 linear_timing_generator<output_event>(delay, interval, 2),
                 capture_output<out_events>(

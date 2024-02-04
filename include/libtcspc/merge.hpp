@@ -7,8 +7,9 @@
 #pragma once
 
 #include "common.hpp"
-#include "event_set.hpp"
 #include "introspect.hpp"
+#include "type_list.hpp"
+#include "variant_event.hpp"
 #include "vector_queue.hpp"
 
 #include <algorithm>
@@ -28,7 +29,7 @@ namespace internal {
 
 // Internal implementation of merge processor. This processor is owned by the
 // two input processors via shared_ptr.
-template <typename EventSet, typename DataTraits, typename Downstream>
+template <typename EventList, typename DataTraits, typename Downstream>
 class merge_impl {
     // When events have equal abstime, those originating from input 0 are
     // emitted before those originating from input1. Within the same input, the
@@ -39,22 +40,10 @@ class merge_impl {
     bool pending_on_1 = false; // Pending on input 0 if false
     std::array<bool, 2> input_flushed{false, false};
     bool ended_with_exception = false;
-    using queue_element_type =
-        std::conditional_t<event_set_size_v<EventSet> == 1,
-                           event_set_element_t<0, EventSet>,
-                           event_variant<EventSet>>;
-    vector_queue<queue_element_type> pending;
+    vector_queue<variant_or_single_event<EventList>> pending;
     std::size_t max_buffered;
 
     Downstream downstream;
-
-    // Abstract away single event vs variant queue_element_type.
-    template <typename F> static auto call_or_visit(F func) {
-        if constexpr (event_set_size_v<EventSet> == 1)
-            return [func](auto const &e) { return func(e); };
-        else
-            return [func](auto const &e) { return std::visit(func, e); };
-    }
 
     template <unsigned InputChannel>
     [[nodiscard]] auto is_other_flushed() const noexcept -> bool {
@@ -73,14 +62,14 @@ class merge_impl {
     // Emit pending while predicate is true.
     // Pred: bool(abstime_type const &)
     template <typename Pred> void emit_pending(Pred predicate) {
-        auto emit_of_true = [&](auto const &e) {
+        auto emit_if_true = [&](auto const &e) {
             bool p = predicate(e.abstime);
             if (p)
                 downstream.handle(e);
             return p;
         };
         while (!pending.empty() &&
-               call_or_visit(emit_of_true)(pending.front()))
+               visit_variant_or_single_event(emit_if_true, pending.front()))
             pending.pop();
     }
 
@@ -107,7 +96,7 @@ class merge_impl {
 
     template <unsigned InputChannel, typename Event>
     void handle(Event const &event) {
-        static_assert(contains_event_v<EventSet, Event>);
+        static_assert(type_list_contains_v<EventList, Event>);
         static_assert(std::is_same_v<decltype(event.abstime),
                                      typename DataTraits::abstime_type>);
         if (ended_with_exception)
@@ -165,14 +154,14 @@ class merge_impl {
     }
 };
 
-template <unsigned InputChannel, typename EventSet, typename DataTraits,
+template <unsigned InputChannel, typename EventList, typename DataTraits,
           typename Downstream>
 class merge_input {
-    std::shared_ptr<merge_impl<EventSet, DataTraits, Downstream>> impl;
+    std::shared_ptr<merge_impl<EventList, DataTraits, Downstream>> impl;
 
   public:
     explicit merge_input(
-        std::shared_ptr<merge_impl<EventSet, DataTraits, Downstream>> impl)
+        std::shared_ptr<merge_impl<EventList, DataTraits, Downstream>> impl)
         : impl(std::move(impl)) {}
 
     // Movable but not copyable
@@ -193,8 +182,8 @@ class merge_input {
         return g;
     }
 
-    template <typename Event,
-              typename = std::enable_if_t<contains_event_v<EventSet, Event>>>
+    template <typename Event, typename = std::enable_if_t<
+                                  type_list_contains_v<EventList, Event>>>
     void handle(Event const &event) {
         static_assert(std::is_same_v<decltype(event.abstime),
                                      typename DataTraits::abstime_type>);
@@ -226,7 +215,7 @@ class merge_input {
  *
  * \see merge_n
  *
- * \tparam EventSet the event set handled by the merge processor
+ * \tparam EventList the event set handled by the merge processor
  *
  * \tparam DataTraits traits type specifying \c abstime_type
  *
@@ -239,15 +228,15 @@ class merge_input {
  *
  * \return tuple-like of two processors serving as the input to merge
  */
-template <typename EventSet, typename DataTraits = default_data_traits,
+template <typename EventList, typename DataTraits = default_data_traits,
           typename Downstream>
 auto merge(std::size_t max_buffered, Downstream &&downstream) {
     auto p = std::make_shared<
-        internal::merge_impl<EventSet, DataTraits, Downstream>>(
+        internal::merge_impl<EventList, DataTraits, Downstream>>(
         max_buffered, std::forward<Downstream>(downstream));
     return std::make_pair(
-        internal::merge_input<0, EventSet, DataTraits, Downstream>(p),
-        internal::merge_input<1, EventSet, DataTraits, Downstream>(p));
+        internal::merge_input<0, EventList, DataTraits, Downstream>(p),
+        internal::merge_input<1, EventList, DataTraits, Downstream>(p));
 }
 
 /**
@@ -278,7 +267,7 @@ auto merge(std::size_t max_buffered, Downstream &&downstream) {
  *
  * \tparam N number of input streams
  *
- * \tparam EventSet the event set handled by the merge processor
+ * \tparam EventList the event set handled by the merge processor
  *
  * \tparam DataTraits traits type specifying \c abstime_type
  *
@@ -291,7 +280,7 @@ auto merge(std::size_t max_buffered, Downstream &&downstream) {
  *
  * \return tuple-like of N processors serving as the input to merge
  */
-template <std::size_t N, typename EventSet,
+template <std::size_t N, typename EventList,
           typename DataTraits = default_data_traits, typename Downstream>
 auto merge_n(std::size_t max_buffered, Downstream &&downstream) {
     if constexpr (N == 0) {
@@ -299,7 +288,7 @@ auto merge_n(std::size_t max_buffered, Downstream &&downstream) {
     } else if constexpr (N == 1) {
         return std::tuple{std::forward<Downstream>(downstream)};
     } else {
-        auto [final_in0, final_in1] = merge<EventSet, DataTraits>(
+        auto [final_in0, final_in1] = merge<EventList, DataTraits>(
             max_buffered, std::forward<Downstream>(downstream));
 
         std::size_t const left = N / 2;
@@ -309,13 +298,13 @@ auto merge_n(std::size_t max_buffered, Downstream &&downstream) {
                 return std::tuple{std::move(final_in0), std::move(final_in1)};
             } else {
                 return std::tuple_cat(std::tuple{std::move(final_in0)},
-                                      merge_n<right, EventSet, DataTraits>(
+                                      merge_n<right, EventList, DataTraits>(
                                           max_buffered, std::move(final_in1)));
             }
         } else {
-            return std::tuple_cat(merge_n<left, EventSet, DataTraits>(
+            return std::tuple_cat(merge_n<left, EventList, DataTraits>(
                                       max_buffered, std::move(final_in0)),
-                                  merge_n<right, EventSet, DataTraits>(
+                                  merge_n<right, EventList, DataTraits>(
                                       max_buffered, std::move(final_in1)));
         }
     }

@@ -8,11 +8,11 @@
 
 #include "libtcspc/autocopy_span.hpp"
 #include "libtcspc/common.hpp"
-#include "libtcspc/event_set.hpp"
 #include "libtcspc/histogram_events.hpp"
 #include "libtcspc/npint.hpp"
 #include "libtcspc/processor_context.hpp"
 #include "libtcspc/test_utils.hpp"
+#include "libtcspc/type_list.hpp"
 #include "test_checkers.hpp"
 
 #include <catch2/catch_all.hpp>
@@ -42,11 +42,11 @@ TEST_CASE("introspect histogram", "[introspect]") {
 TEMPLATE_TEST_CASE("Histogram, zero bins", "", saturate_on_overflow,
                    reset_on_overflow, stop_on_overflow, error_on_overflow) {
     using out_events =
-        event_set<histogram_event<data_traits>,
+        type_list<histogram_event<data_traits>,
                   concluding_histogram_event<data_traits>, misc_event>;
     auto ctx = std::make_shared<processor_context>();
     auto in = feed_input<
-        event_set<bin_increment_event<data_traits>, reset_event, misc_event>>(
+        type_list<bin_increment_event<data_traits>, reset_event, misc_event>>(
         histogram<reset_event, TestType, data_traits>(
             0, 0,
             capture_output<out_events>(
@@ -68,11 +68,11 @@ TEMPLATE_TEST_CASE("Histogram, zero bins", "", saturate_on_overflow,
 
 TEMPLATE_TEST_CASE("Histogram, no overflow", "", saturate_on_overflow,
                    reset_on_overflow, stop_on_overflow, error_on_overflow) {
-    using out_events = event_set<histogram_event<data_traits>,
+    using out_events = type_list<histogram_event<data_traits>,
                                  concluding_histogram_event<data_traits>>;
     auto ctx = std::make_shared<processor_context>();
     auto in =
-        feed_input<event_set<bin_increment_event<data_traits>, reset_event>>(
+        feed_input<type_list<bin_increment_event<data_traits>, reset_event>>(
             histogram<reset_event, TestType, data_traits>(
                 2, 100,
                 capture_output<out_events>(
@@ -106,13 +106,13 @@ TEMPLATE_TEST_CASE("Histogram, no overflow", "", saturate_on_overflow,
 }
 
 TEST_CASE("Histogram, saturate on overflow") {
-    using out_events = event_set<histogram_event<data_traits>,
+    using out_events = type_list<histogram_event<data_traits>,
                                  concluding_histogram_event<data_traits>>;
     auto ctx = std::make_shared<processor_context>();
 
     SECTION("Max per bin = 0") {
         auto in = feed_input<
-            event_set<bin_increment_event<data_traits>, reset_event>>(
+            type_list<bin_increment_event<data_traits>, reset_event>>(
             histogram<reset_event, saturate_on_overflow, data_traits>(
                 1, 0,
                 capture_output<out_events>(
@@ -135,7 +135,7 @@ TEST_CASE("Histogram, saturate on overflow") {
 
     SECTION("Max per bin = 1") {
         auto in = feed_input<
-            event_set<bin_increment_event<data_traits>, reset_event>>(
+            type_list<bin_increment_event<data_traits>, reset_event>>(
             histogram<reset_event, saturate_on_overflow, data_traits>(
                 1, 1,
                 capture_output<out_events>(
@@ -170,13 +170,13 @@ TEST_CASE("Histogram, saturate on overflow") {
 }
 
 TEST_CASE("Histogram, reset on overflow") {
-    using out_events = event_set<histogram_event<data_traits>,
+    using out_events = type_list<histogram_event<data_traits>,
                                  concluding_histogram_event<data_traits>>;
     auto ctx = std::make_shared<processor_context>();
 
     SECTION("Max per bin = 0") {
         auto in = feed_input<
-            event_set<bin_increment_event<data_traits>, reset_event>>(
+            type_list<bin_increment_event<data_traits>, reset_event>>(
             histogram<reset_event, reset_on_overflow, data_traits>(
                 1, 0,
                 capture_output<out_events>(
@@ -192,7 +192,7 @@ TEST_CASE("Histogram, reset on overflow") {
 
     SECTION("Max per bin = 1") {
         auto in = feed_input<
-            event_set<bin_increment_event<data_traits>, reset_event>>(
+            type_list<bin_increment_event<data_traits>, reset_event>>(
             histogram<reset_event, reset_on_overflow, data_traits>(
                 1, 1,
                 capture_output<out_events>(
@@ -222,14 +222,14 @@ TEST_CASE("Histogram, reset on overflow") {
 }
 
 TEST_CASE("Histogram, stop on overflow") {
-    using out_events = event_set<histogram_event<data_traits>,
+    using out_events = type_list<histogram_event<data_traits>,
                                  concluding_histogram_event<data_traits>>;
     auto ctx = std::make_shared<processor_context>();
     std::vector<u16> hist;
 
     SECTION("Max per bin = 0") {
         auto in = feed_input<
-            event_set<bin_increment_event<data_traits>, reset_event>>(
+            type_list<bin_increment_event<data_traits>, reset_event>>(
             histogram<reset_event, stop_on_overflow, data_traits>(
                 1, 0,
                 capture_output<out_events>(
@@ -248,7 +248,7 @@ TEST_CASE("Histogram, stop on overflow") {
 
     SECTION("Max per bin = 1") {
         auto in = feed_input<
-            event_set<bin_increment_event<data_traits>, reset_event>>(
+            type_list<bin_increment_event<data_traits>, reset_event>>(
             histogram<reset_event, stop_on_overflow, data_traits>(
                 1, 1,
                 capture_output<out_events>(
@@ -271,13 +271,13 @@ TEST_CASE("Histogram, stop on overflow") {
 }
 
 TEST_CASE("Histogram, error on overflow") {
-    using out_events = event_set<histogram_event<data_traits>,
+    using out_events = type_list<histogram_event<data_traits>,
                                  concluding_histogram_event<data_traits>>;
     auto ctx = std::make_shared<processor_context>();
 
     SECTION("Max per bin = 0") {
         auto in = feed_input<
-            event_set<bin_increment_event<data_traits>, reset_event>>(
+            type_list<bin_increment_event<data_traits>, reset_event>>(
             histogram<reset_event, error_on_overflow, data_traits>(
                 1, 0,
                 capture_output<out_events>(
@@ -293,7 +293,7 @@ TEST_CASE("Histogram, error on overflow") {
 
     SECTION("Max per bin = 1") {
         auto in = feed_input<
-            event_set<bin_increment_event<data_traits>, reset_event>>(
+            type_list<bin_increment_event<data_traits>, reset_event>>(
             histogram<reset_event, error_on_overflow, data_traits>(
                 1, 1,
                 capture_output<out_events>(

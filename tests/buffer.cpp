@@ -7,9 +7,9 @@
 #include "libtcspc/buffer.hpp"
 
 #include "libtcspc/common.hpp"
-#include "libtcspc/event_set.hpp"
 #include "libtcspc/processor_context.hpp"
 #include "libtcspc/test_utils.hpp"
+#include "libtcspc/type_list.hpp"
 #include "test_checkers.hpp"
 
 #include <catch2/catch_all.hpp>
@@ -49,13 +49,13 @@ TEST_CASE("object pool") {
 
 TEST_CASE("batch") {
     auto ctx = std::make_shared<processor_context>();
-    auto in = feed_input<event_set<int>>(batch<int, pvector<int>>(
+    auto in = feed_input<type_list<int>>(batch<int, pvector<int>>(
         std::make_shared<object_pool<pvector<int>>>(), 3,
         dereference_pointer<std::shared_ptr<pvector<int>>>(
-            capture_output<event_set<pvector<int>>>(
+            capture_output<type_list<pvector<int>>>(
                 ctx->tracker<capture_output_access>("out")))));
     in.require_output_checked(ctx, "out");
-    auto out = capture_output_checker<event_set<pvector<int>>>(
+    auto out = capture_output_checker<type_list<pvector<int>>>(
         ctx->accessor<capture_output_access>("out"));
 
     SECTION("ending mid-batch") {
@@ -81,11 +81,11 @@ TEST_CASE("batch") {
 
 TEST_CASE("unbatch") {
     auto ctx = std::make_shared<processor_context>();
-    auto in = feed_input<event_set<pvector<int>>>(
-        unbatch<pvector<int>, int>(capture_output<event_set<int>>(
+    auto in = feed_input<type_list<pvector<int>>>(
+        unbatch<pvector<int>, int>(capture_output<type_list<int>>(
             ctx->tracker<capture_output_access>("out"))));
     in.require_output_checked(ctx, "out");
-    auto out = capture_output_checker<event_set<int>>(
+    auto out = capture_output_checker<type_list<int>>(
         ctx->accessor<capture_output_access>("out"));
 
     in.feed(pvector<int>{42, 43, 44});

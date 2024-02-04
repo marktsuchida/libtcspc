@@ -7,11 +7,11 @@
 #include "libtcspc/bh_spc.hpp"
 
 #include "libtcspc/common.hpp"
-#include "libtcspc/event_set.hpp"
 #include "libtcspc/npint.hpp"
 #include "libtcspc/processor_context.hpp"
 #include "libtcspc/test_utils.hpp"
 #include "libtcspc/time_tagged_events.hpp"
+#include "libtcspc/type_list.hpp"
 #include "test_checkers.hpp"
 
 #include <catch2/catch_all.hpp>
@@ -649,10 +649,10 @@ TEST_CASE("bh spc600 4096ch assign") {
 }
 
 using out_events =
-    event_set<time_correlated_detection_event<>, marker_event<>,
+    type_list<time_correlated_detection_event<>, marker_event<>,
               time_reached_event<>, data_lost_event<>, warning_event>;
 using out_events_with_counter =
-    event_set<time_correlated_detection_event<>, marker_event<>,
+    type_list<time_correlated_detection_event<>, marker_event<>,
               time_reached_event<>, data_lost_event<>,
               nontagged_counts_event<>, warning_event>;
 
@@ -666,7 +666,7 @@ TEST_CASE("introspect bh_spc", "[introspect]") {
 
 TEST_CASE("decode bh spc") {
     auto ctx = std::make_shared<processor_context>();
-    auto in = feed_input<event_set<bh_spc_event>>(
+    auto in = feed_input<type_list<bh_spc_event>>(
         decode_bh_spc(capture_output<out_events>(
             ctx->tracker<capture_output_access>("out"))));
     in.require_output_checked(ctx, "out");
@@ -780,7 +780,7 @@ TEST_CASE("decode bh spc") {
 TEST_CASE("decode bh spc with fast intensity counter",
           "[decode_bh_spc_with_fast_intensity_counter]") {
     auto ctx = std::make_shared<processor_context>();
-    auto in = feed_input<event_set<bh_spc_event>>(
+    auto in = feed_input<type_list<bh_spc_event>>(
         decode_bh_spc_with_fast_intensity_counter(
             capture_output<out_events_with_counter>(
                 ctx->tracker<capture_output_access>("out"))));
@@ -834,7 +834,7 @@ TEST_CASE("decode bh spc with fast intensity counter",
 
 TEST_CASE("decode bh spc600 256ch") {
     auto ctx = std::make_shared<processor_context>();
-    auto in = feed_input<event_set<bh_spc600_256ch_event>>(
+    auto in = feed_input<type_list<bh_spc600_256ch_event>>(
         decode_bh_spc600_256ch(capture_output<out_events>(
             ctx->tracker<capture_output_access>("out"))));
     in.require_output_checked(ctx, "out");
@@ -914,7 +914,7 @@ TEST_CASE("decode bh spc600 256ch") {
 
 TEST_CASE("decode bh spc600 4096ch") {
     auto ctx = std::make_shared<processor_context>();
-    auto in = feed_input<event_set<bh_spc600_4096ch_event>>(
+    auto in = feed_input<type_list<bh_spc600_4096ch_event>>(
         decode_bh_spc600_4096ch(capture_output<out_events>(
             ctx->tracker<capture_output_access>("out"))));
     in.require_output_checked(ctx, "out");

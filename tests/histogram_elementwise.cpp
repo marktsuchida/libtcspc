@@ -8,11 +8,11 @@
 
 #include "libtcspc/autocopy_span.hpp"
 #include "libtcspc/common.hpp"
-#include "libtcspc/event_set.hpp"
 #include "libtcspc/histogram_events.hpp"
 #include "libtcspc/npint.hpp"
 #include "libtcspc/processor_context.hpp"
 #include "libtcspc/test_utils.hpp"
+#include "libtcspc/type_list.hpp"
 #include "test_checkers.hpp"
 
 #include <catch2/catch_all.hpp>
@@ -56,11 +56,11 @@ TEST_CASE("introspect histogram_elementwise", "[introspect]") {
 TEMPLATE_TEST_CASE("Histogram elementwise, zero elements",
                    "[histogram_elementwise]", saturate_on_overflow,
                    error_on_overflow) {
-    using out_events = event_set<element_histogram_event<dt3216>,
+    using out_events = type_list<element_histogram_event<dt3216>,
                                  histogram_array_event<dt3216>, misc_event>;
     auto ctx = std::make_shared<processor_context>();
     auto in =
-        feed_input<event_set<bin_increment_batch_event<dt3216>, misc_event>>(
+        feed_input<type_list<bin_increment_batch_event<dt3216>, misc_event>>(
             histogram_elementwise<TestType, dt3216>(
                 0, 1, 1,
                 capture_output<out_events>(
@@ -78,10 +78,10 @@ TEMPLATE_TEST_CASE("Histogram elementwise, zero elements",
 TEMPLATE_TEST_CASE("Histogram elementwise, zero bins",
                    "[histogram_elementwise]", saturate_on_overflow,
                    error_on_overflow) {
-    using out_events = event_set<element_histogram_event<dt3216>,
+    using out_events = type_list<element_histogram_event<dt3216>,
                                  histogram_array_event<dt3216>>;
     auto ctx = std::make_shared<processor_context>();
-    auto in = feed_input<event_set<bin_increment_batch_event<dt3216>>>(
+    auto in = feed_input<type_list<bin_increment_batch_event<dt3216>>>(
         histogram_elementwise<TestType, dt3216>(
             1, 0, 1,
             capture_output<out_events>(
@@ -101,10 +101,10 @@ TEMPLATE_TEST_CASE("Histogram elementwise, zero bins",
 TEMPLATE_TEST_CASE("Histogram elementwise, no overflow",
                    "[histogram_elementwise]", saturate_on_overflow,
                    error_on_overflow) {
-    using out_events = event_set<element_histogram_event<dt3216>,
+    using out_events = type_list<element_histogram_event<dt3216>,
                                  histogram_array_event<dt3216>>;
     auto ctx = std::make_shared<processor_context>();
-    auto in = feed_input<event_set<bin_increment_batch_event<dt3216>>>(
+    auto in = feed_input<type_list<bin_increment_batch_event<dt3216>>>(
         histogram_elementwise<TestType, dt3216>(
             2, 2, 100,
             capture_output<out_events>(
@@ -132,12 +132,12 @@ TEMPLATE_TEST_CASE("Histogram elementwise, no overflow",
 
 TEST_CASE("Histogram elementwise, saturate on overflow",
           "[histogram_elementwise]") {
-    using out_events = event_set<element_histogram_event<dt3216>,
+    using out_events = type_list<element_histogram_event<dt3216>,
                                  histogram_array_event<dt3216>>;
     auto ctx = std::make_shared<processor_context>();
 
     SECTION("Max per bin = 0") {
-        auto in = feed_input<event_set<bin_increment_batch_event<dt3216>>>(
+        auto in = feed_input<type_list<bin_increment_batch_event<dt3216>>>(
             histogram_elementwise<saturate_on_overflow, dt3216>(
                 1, 1, 0,
                 capture_output<out_events>(
@@ -158,7 +158,7 @@ TEST_CASE("Histogram elementwise, saturate on overflow",
     }
 
     SECTION("Max per bin = 1") {
-        auto in = feed_input<event_set<bin_increment_batch_event<dt3216>>>(
+        auto in = feed_input<type_list<bin_increment_batch_event<dt3216>>>(
             histogram_elementwise<saturate_on_overflow, dt3216>(
                 1, 1, 1,
                 capture_output<out_events>(
@@ -182,12 +182,12 @@ TEST_CASE("Histogram elementwise, saturate on overflow",
 
 TEST_CASE("Histogram elementwise, error on overflow",
           "[histogram_elementwise]") {
-    using out_events = event_set<element_histogram_event<dt3216>,
+    using out_events = type_list<element_histogram_event<dt3216>,
                                  histogram_array_event<dt3216>>;
     auto ctx = std::make_shared<processor_context>();
 
     SECTION("Max per bin = 0") {
-        auto in = feed_input<event_set<bin_increment_batch_event<dt3216>>>(
+        auto in = feed_input<type_list<bin_increment_batch_event<dt3216>>>(
             histogram_elementwise<error_on_overflow, dt3216>(
                 1, 1, 0,
                 capture_output<out_events>(
@@ -203,7 +203,7 @@ TEST_CASE("Histogram elementwise, error on overflow",
     }
 
     SECTION("Max per bin = 1") {
-        auto in = feed_input<event_set<bin_increment_batch_event<dt3216>>>(
+        auto in = feed_input<type_list<bin_increment_batch_event<dt3216>>>(
             histogram_elementwise<error_on_overflow, dt3216>(
                 1, 1, 1,
                 capture_output<out_events>(
@@ -229,13 +229,13 @@ TEST_CASE("Histogram elementwise, error on overflow",
 namespace {
 
 using hea_input_events =
-    event_set<bin_increment_batch_event<dt88>, reset_event, misc_event>;
+    type_list<bin_increment_batch_event<dt88>, reset_event, misc_event>;
 using hea_output_events =
-    event_set<element_histogram_event<dt88>, histogram_array_event<dt88>,
+    type_list<element_histogram_event<dt88>, histogram_array_event<dt88>,
               concluding_histogram_array_event<dt88>, misc_event>;
 
 using hea_output_events_no_concluding =
-    event_set<element_histogram_event<dt88>, histogram_array_event<dt88>,
+    type_list<element_histogram_event<dt88>, histogram_array_event<dt88>,
               misc_event>;
 
 } // namespace

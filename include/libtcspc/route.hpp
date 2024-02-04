@@ -7,9 +7,9 @@
 #pragma once
 
 #include "common.hpp"
-#include "event_set.hpp"
 #include "introspect.hpp"
 #include "type_erased_processor.hpp"
+#include "type_list.hpp"
 
 #include <algorithm>
 #include <array>
@@ -31,7 +31,7 @@ namespace internal {
 // broadcast processors downstream, and it is not clear that there would be
 // much of a performance difference. So let's keep it simple.
 
-template <typename EventSetToRoute, typename Router, std::size_t N,
+template <typename RoutedEventList, typename Router, std::size_t N,
           typename Downstream>
 class route_homogeneous {
     Router router;
@@ -70,7 +70,7 @@ class route_homogeneous {
     }
 
     template <typename Event> void handle(Event const &event) {
-        if constexpr (contains_event_v<EventSetToRoute, Event>) {
+        if constexpr (type_list_contains_v<RoutedEventList, Event>) {
             std::size_t index = router(event);
             if (index >= N)
                 return;
@@ -115,14 +115,14 @@ class route_homogeneous {
  *
  * \ingroup processors-basic
  *
- * This processor forwards each event in \c EventSetToRoute to a different
+ * This processor forwards each event in \c RoutedEventList to a different
  * downstream according to the provided router.
  *
  * All other events are broadcast to all downstreams.
  *
  * The router must implement the function call operator <tt>auto
  * operator()(Event const &) const -> std::size_t</tt>, for every \c Event in
- * \c EventSetToRoute, mapping events to downstream index.
+ * \c RoutedEventList, mapping events to downstream index.
  *
  * If the router maps an event to an index beyond the available downstreams,
  * that event is discarded. (Routers can return \c
@@ -132,7 +132,7 @@ class route_homogeneous {
  *
  * \see route
  *
- * \tparam EventSetToRoute event types to route
+ * \tparam RoutedEventList event types to route
  *
  * \tparam Router type of router (usually deduced)
  *
@@ -146,11 +146,11 @@ class route_homogeneous {
  *
  * \return route-homogeneous processor
  */
-template <typename EventSetToRoute, typename Router, std::size_t N,
+template <typename RoutedEventList, typename Router, std::size_t N,
           typename Downstream>
 auto route_homogeneous(Router &&router,
                        std::array<Downstream, N> downstreams) {
-    return internal::route_homogeneous<EventSetToRoute, Router, N, Downstream>(
+    return internal::route_homogeneous<RoutedEventList, Router, N, Downstream>(
         std::forward<Router>(router), std::move(downstreams));
 }
 
@@ -163,7 +163,7 @@ auto route_homogeneous(Router &&router,
  * This overload takes the downstreams as variadic arguments. See the overload
  * taking a \c std::array of downstreams for a detailed description.
  *
- * \tparam EventSetToRoute event types to route
+ * \tparam RoutedEventList event types to route
  *
  * \tparam Router type of router (usually deduced)
  *
@@ -176,10 +176,10 @@ auto route_homogeneous(Router &&router,
  *
  * \return route-homogeneous processor
  */
-template <typename EventSetToRoute, typename Router, typename... Downstreams>
+template <typename RoutedEventList, typename Router, typename... Downstreams>
 auto route_homogeneous(Router &&router, Downstreams &&...downstreams) {
     auto arr = std::array{std::forward<Downstreams>(downstreams)...};
-    return route_homogeneous<EventSetToRoute, Router>(
+    return route_homogeneous<RoutedEventList, Router>(
         std::forward<Router>(router), std::move(arr));
 }
 
@@ -188,15 +188,15 @@ auto route_homogeneous(Router &&router, Downstreams &&...downstreams) {
  *
  * \ingroup processors-basic
  *
- * This processor forwards each event in \c EventSetToRoute to a different
+ * This processor forwards each event in \c RoutedEventList to a different
  * downstream according to the provided router.
  *
- * All other events (which must be in \c EventSetToBroadcast) are broadcast to
+ * All other events (which must be in \c BroadcastedEventList) are broadcast to
  * all downstreams.
  *
  * The router must implement the function call operator <tt>auto
  * operator()(Event const &) const -> std::size_t</tt>, for every \c Event in
- * \c EventSetToRoute, mapping events to downstream index.
+ * \c RoutedEventList, mapping events to downstream index.
  *
  * If the router maps an event to an index beyond the available downstreams,
  * that event is discarded. (Routers can return \c
@@ -206,9 +206,9 @@ auto route_homogeneous(Router &&router, Downstreams &&...downstreams) {
  *
  * \see route_homogeneous
  *
- * \tparam EventSetToRoute event types to route
+ * \tparam RoutedEventList event types to route
  *
- * \tparam EventSetToBroadcast event types to broadcast
+ * \tparam BroadcastedEventList event types to broadcast
  *
  * \tparam Router type of router
  *
@@ -220,12 +220,18 @@ auto route_homogeneous(Router &&router, Downstreams &&...downstreams) {
  *
  * \return route processor
  */
-template <typename EventSetToRoute, typename EventSetToBroadcast = event_set<>,
-          typename Router, typename... Downstreams>
+template <typename RoutedEventList,
+          typename BroadcastedEventList = type_list<>, typename Router,
+          typename... Downstreams>
 auto route(Router &&router, Downstreams &&...downstreams) {
+    static_assert(
+        type_list_size_v<
+            type_list_intersection_t<RoutedEventList, BroadcastedEventList>> ==
+            0,
+        "routed event list and broadcasted event list must not overlap");
     using type_erased_downstream = type_erased_processor<
-        concat_event_set_t<EventSetToRoute, EventSetToBroadcast>>;
-    return route_homogeneous<EventSetToRoute, Router, sizeof...(Downstreams),
+        type_list_union_t<RoutedEventList, BroadcastedEventList>>;
+    return route_homogeneous<RoutedEventList, Router, sizeof...(Downstreams),
                              type_erased_downstream>(
         std::forward<Router>(router),
         std::array<type_erased_downstream, sizeof...(Downstreams)>{
@@ -319,7 +325,7 @@ class channel_router {
  */
 template <std::size_t N, typename Downstream>
 auto broadcast_homogeneous(std::array<Downstream, N> downstreams) {
-    return route_homogeneous<event_set<>, null_router, N, Downstream>(
+    return route_homogeneous<type_list<>, null_router, N, Downstream>(
         null_router(), std::move(downstreams));
 }
 
@@ -348,7 +354,7 @@ auto broadcast_homogeneous(Downstreams &&...downstreams) {
  *
  * \ingroup processors-basic
  *
- * \tparam EventSetToBroadcast event types to handle
+ * \tparam BroadcastedEventList event types to handle
  *
  * \tparam Downstreams downstream processor classes (usually deduced)
  *
@@ -356,9 +362,9 @@ auto broadcast_homogeneous(Downstreams &&...downstreams) {
  *
  * \return broadcast processor
  */
-template <typename EventSetToBroadcast, typename... Downstreams>
+template <typename BroadcastedEventList, typename... Downstreams>
 auto broadcast(Downstreams &&...downstreams) {
-    return route<event_set<>, EventSetToBroadcast, null_router,
+    return route<type_list<>, BroadcastedEventList, null_router,
                  Downstreams...>(null_router(),
                                  std::forward<Downstreams>(downstreams)...);
 }

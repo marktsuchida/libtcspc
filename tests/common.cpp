@@ -6,10 +6,10 @@
 
 #include "libtcspc/common.hpp"
 
-#include "libtcspc/event_set.hpp"
 #include "libtcspc/npint.hpp"
 #include "libtcspc/processor_context.hpp"
 #include "libtcspc/test_utils.hpp"
+#include "libtcspc/type_list.hpp"
 #include "test_checkers.hpp"
 
 #include <catch2/catch_all.hpp>
@@ -33,7 +33,7 @@ TEST_CASE("null sink") {
 
 TEST_CASE("null source") {
     auto ctx = std::make_shared<processor_context>();
-    auto src = null_source(capture_output<event_set<>>(
+    auto src = null_source(capture_output<type_list<>>(
         ctx->tracker<capture_output_access>("out")));
     auto out = ctx->accessor<capture_output_access>("out");
     src.pump_events();

@@ -7,9 +7,9 @@
 #include "libtcspc/check.hpp"
 
 #include "libtcspc/common.hpp"
-#include "libtcspc/event_set.hpp"
 #include "libtcspc/processor_context.hpp"
 #include "libtcspc/test_utils.hpp"
+#include "libtcspc/type_list.hpp"
 #include "test_checkers.hpp"
 
 #include <catch2/catch_all.hpp>
@@ -27,9 +27,9 @@ TEST_CASE("introspect check", "[introspect]") {
 
 TEST_CASE("check monotonic") {
     using e0 = timestamped_test_event<0>;
-    using out_events = event_set<e0, warning_event>;
+    using out_events = type_list<e0, warning_event>;
     auto ctx = std::make_shared<processor_context>();
-    auto in = feed_input<event_set<e0, warning_event>>(
+    auto in = feed_input<type_list<e0, warning_event>>(
         check_monotonic(capture_output<out_events>(
             ctx->tracker<capture_output_access>("out"))));
     in.require_output_checked(ctx, "out");
@@ -54,9 +54,9 @@ TEST_CASE("check alternating") {
     using e0 = timestamped_test_event<0>;
     using e1 = timestamped_test_event<1>;
     using e2 = timestamped_test_event<2>;
-    using out_events = event_set<e0, e1, e2, warning_event>;
+    using out_events = type_list<e0, e1, e2, warning_event>;
     auto ctx = std::make_shared<processor_context>();
-    auto in = feed_input<event_set<e0, e1, e2>>(
+    auto in = feed_input<type_list<e0, e1, e2>>(
         check_alternating<e0, e1>(capture_output<out_events>(
             ctx->tracker<capture_output_access>("out"))));
     in.require_output_checked(ctx, "out");

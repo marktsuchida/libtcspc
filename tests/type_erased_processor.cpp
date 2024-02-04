@@ -7,9 +7,10 @@
 #include "libtcspc/type_erased_processor.hpp"
 
 #include "libtcspc/common.hpp"
-#include "libtcspc/event_set.hpp"
 #include "libtcspc/introspect.hpp"
+#include "libtcspc/processor_traits.hpp"
 #include "libtcspc/test_utils.hpp"
+#include "libtcspc/type_list.hpp"
 #include "test_checkers.hpp"
 
 #include <catch2/catch_all.hpp>
@@ -19,45 +20,47 @@ namespace tcspc {
 using e0 = empty_test_event<0>;
 using e1 = empty_test_event<1>;
 
+static_assert(handles_flush_v<type_erased_processor<type_list<>>>);
+static_assert(not handles_event_v<type_erased_processor<type_list<>>, e0>);
 static_assert(
-    handles_event_set_v<type_erased_processor<event_set<>>, event_set<>>);
-static_assert(not handles_event_set_v<type_erased_processor<event_set<>>,
-                                      event_set<e0>>);
-static_assert(
-    handles_event_set_v<type_erased_processor<event_set<e0>>, event_set<e0>>);
-static_assert(handles_event_set_v<type_erased_processor<event_set<e0, e1>>,
-                                  event_set<e0, e1>>);
+    handles_events_v<type_erased_processor<type_list<e0>>, type_list<e0>>);
+static_assert(handles_flush_v<type_erased_processor<type_list<e0>>>);
+static_assert(handles_events_v<type_erased_processor<type_list<e0, e1>>,
+                               type_list<e0, e1>>);
+static_assert(handles_flush_v<type_erased_processor<type_list<e0, e1>>>);
 
-// handles_event_set_v works even if the functions are virtual.
-static_assert(handles_event_set_v<internal::abstract_processor<event_set<>>,
-                                  event_set<>>);
-static_assert(not handles_event_set_v<
-              internal::abstract_processor<event_set<>>, event_set<e0>>);
-static_assert(handles_event_set_v<internal::abstract_processor<event_set<e0>>,
-                                  event_set<e0>>);
+namespace internal {
+
+// handles_events_v works even if the functions are virtual.
+static_assert(handles_flush_v<abstract_processor<type_list<>>>);
+static_assert(not handles_event_v<abstract_processor<type_list<>>, e0>);
 static_assert(
-    handles_event_set_v<internal::abstract_processor<event_set<e0, e1>>,
-                        event_set<e0, e1>>);
+    handles_events_v<abstract_processor<type_list<e0>>, type_list<e0>>);
+static_assert(handles_flush_v<abstract_processor<type_list<e0>>>);
+static_assert(handles_events_v<abstract_processor<type_list<e0, e1>>,
+                               type_list<e0, e1>>);
+static_assert(handles_flush_v<abstract_processor<type_list<e0, e1>>>);
 
 static_assert(
-    handles_event_set_v<
-        internal::virtual_processor<event_set_sink<event_set<>>, event_set<>>,
-        event_set<>>);
+    handles_flush_v<virtual_processor<sink_events<type_list<>>, type_list<>>>);
+static_assert(not handles_event_v<
+              virtual_processor<sink_events<type_list<>>, type_list<>>, e0>);
+static_assert(handles_events_v<
+              virtual_processor<sink_events<type_list<e0>>, type_list<e0>>,
+              type_list<e0>>);
+static_assert(handles_flush_v<
+              virtual_processor<sink_events<type_list<e0>>, type_list<e0>>>);
 static_assert(
-    not handles_event_set_v<
-        internal::virtual_processor<event_set_sink<event_set<>>, event_set<>>,
-        event_set<e0>>);
-static_assert(
-    handles_event_set_v<internal::virtual_processor<
-                            event_set_sink<event_set<e0>>, event_set<e0>>,
-                        event_set<e0>>);
-static_assert(handles_event_set_v<
-              internal::virtual_processor<event_set_sink<event_set<e0, e1>>,
-                                          event_set<e0, e1>>,
-              event_set<e0, e1>>);
+    handles_events_v<
+        virtual_processor<sink_events<type_list<e0, e1>>, type_list<e0, e1>>,
+        type_list<e0, e1>>);
+static_assert(handles_flush_v<virtual_processor<sink_events<type_list<e0, e1>>,
+                                                type_list<e0, e1>>>);
+
+} // namespace internal
 
 TEST_CASE("introspect type_erased_processor", "[introspect]") {
-    auto const tep = type_erased_processor<event_set<>>(null_sink());
+    auto const tep = type_erased_processor<type_list<>>(null_sink());
     auto const info = check_introspect_node_info(tep);
     auto const g = tep.introspect_graph();
     CHECK(g.nodes().size() == 3);
@@ -85,7 +88,7 @@ TEST_CASE("introspect type_erased_processor", "[introspect]") {
 
 TEST_CASE("type_erased_processor move assignment") {
     // Create with stub downstream.
-    type_erased_processor<event_set<e0>> tep;
+    type_erased_processor<type_list<e0>> tep;
 
     struct myproc {
         static void handle(e0 const &event) { (void)event; }

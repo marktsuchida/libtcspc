@@ -6,8 +6,8 @@
 
 #pragma once
 
-#include "event_set.hpp"
 #include "introspect.hpp"
+#include "type_list.hpp"
 
 #include <utility>
 
@@ -15,7 +15,8 @@ namespace tcspc {
 
 namespace internal {
 
-template <typename EventSet, bool Inverted, typename Downstream> class select {
+template <typename EventList, bool Inverted, typename Downstream>
+class select {
     Downstream downstream;
 
   public:
@@ -34,7 +35,7 @@ template <typename EventSet, bool Inverted, typename Downstream> class select {
     }
 
     template <typename AnyEvent> void handle(AnyEvent const &event) {
-        if constexpr (contains_event_v<EventSet, AnyEvent> != Inverted)
+        if constexpr (type_list_contains_v<EventList, AnyEvent> != Inverted)
             downstream.handle(event);
     }
 
@@ -53,15 +54,15 @@ template <typename EventSet, bool Inverted, typename Downstream> class select {
  * \see select_none
  * \see select_all
  *
- * \tparam EventSet event types to pass
+ * \tparam EventList event types to pass
  *
  * \tparam Downstream downstream processor type
  *
  * \param downstream downstream processor
  */
-template <typename EventSet, typename Downstream>
+template <typename EventList, typename Downstream>
 auto select(Downstream &&downstream) {
-    return internal::select<EventSet, false, Downstream>(
+    return internal::select<EventList, false, Downstream>(
         std::forward<Downstream>(downstream));
 }
 
@@ -80,7 +81,7 @@ auto select(Downstream &&downstream) {
  * \param downstream downstream processor
  */
 template <typename Downstream> auto select_none(Downstream &&downstream) {
-    return internal::select<event_set<>, false, Downstream>(
+    return internal::select<type_list<>, false, Downstream>(
         std::forward<Downstream>(downstream));
 }
 
@@ -94,15 +95,15 @@ template <typename Downstream> auto select_none(Downstream &&downstream) {
  * \see select_none
  * \see select_all
  *
- * \tparam EventSet event types to discard
+ * \tparam EventList event types to discard
  *
  * \tparam Downstream downstream processor type
  *
  * \param downstream downstream processor
  */
-template <typename EventSet, typename Downstream>
+template <typename EventList, typename Downstream>
 auto select_not(Downstream &&downstream) {
-    return internal::select<EventSet, true, Downstream>(
+    return internal::select<EventList, true, Downstream>(
         std::forward<Downstream>(downstream));
 }
 
@@ -120,7 +121,7 @@ auto select_not(Downstream &&downstream) {
  * \param downstream downstream processor
  */
 template <typename Downstream> auto select_all(Downstream &&downstream) {
-    return internal::select<event_set<>, true, Downstream>(
+    return internal::select<type_list<>, true, Downstream>(
         std::forward<Downstream>(downstream));
 }
 

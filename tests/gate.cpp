@@ -7,9 +7,9 @@
 #include "libtcspc/gate.hpp"
 
 #include "libtcspc/common.hpp"
-#include "libtcspc/event_set.hpp"
 #include "libtcspc/processor_context.hpp"
 #include "libtcspc/test_utils.hpp"
+#include "libtcspc/type_list.hpp"
 #include "test_checkers.hpp"
 
 #include <catch2/catch_all.hpp>
@@ -24,7 +24,7 @@ using open_event = empty_test_event<0>;
 using close_event = empty_test_event<1>;
 using gated_event = empty_test_event<2>;
 using misc_event = empty_test_event<3>;
-using out_events = event_set<open_event, close_event, gated_event, misc_event>;
+using out_events = type_list<open_event, close_event, gated_event, misc_event>;
 
 } // namespace
 
@@ -37,8 +37,8 @@ TEST_CASE("Gate events") {
     bool const initially_open = GENERATE(false, true);
     auto ctx = std::make_shared<processor_context>();
     auto in = feed_input<
-        event_set<open_event, close_event, gated_event, misc_event>>(
-        gate<event_set<gated_event>, open_event, close_event>(
+        type_list<open_event, close_event, gated_event, misc_event>>(
+        gate<type_list<gated_event>, open_event, close_event>(
             initially_open, capture_output<out_events>(
                                 ctx->tracker<capture_output_access>("out"))));
     in.require_output_checked(ctx, "out");

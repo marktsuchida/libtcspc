@@ -8,10 +8,10 @@
 
 #include "libtcspc/buffer.hpp"
 #include "libtcspc/common.hpp"
-#include "libtcspc/event_set.hpp"
 #include "libtcspc/processor_context.hpp"
 #include "libtcspc/stop.hpp"
 #include "libtcspc/test_utils.hpp"
+#include "libtcspc/type_list.hpp"
 #include "test_checkers.hpp"
 
 #include <catch2/catch_all.hpp>
@@ -72,12 +72,12 @@ TEST_CASE("read file") {
         auto src = read_binary_stream<std::uint64_t>(
             binary_file_input_stream(path.string(), 8), 40,
             std::make_shared<object_pool<pvector<std::uint64_t>>>(), 16,
-            stop_with_error<event_set<warning_event>>(
+            stop_with_error<type_list<warning_event>>(
                 "read error",
                 dereference_pointer<std::shared_ptr<pvector<std::uint64_t>>>(
-                    capture_output<event_set<pvector<std::uint64_t>>>(
+                    capture_output<type_list<pvector<std::uint64_t>>>(
                         ctx->tracker<capture_output_access>("out")))));
-        auto out = capture_output_checker<event_set<pvector<std::uint64_t>>>(
+        auto out = capture_output_checker<type_list<pvector<std::uint64_t>>>(
             ctx->accessor<capture_output_access>("out"));
         src.pump_events();
         // First read is 8 bytes to recover 16-byte aligned reads.
@@ -91,12 +91,12 @@ TEST_CASE("read file") {
         auto src = read_binary_stream<std::uint64_t>(
             binary_file_input_stream(path.string(), 8), 48,
             std::make_shared<object_pool<pvector<std::uint64_t>>>(), 16,
-            stop_with_error<event_set<warning_event>>(
+            stop_with_error<type_list<warning_event>>(
                 "read error",
                 dereference_pointer<std::shared_ptr<pvector<std::uint64_t>>>(
-                    capture_output<event_set<pvector<std::uint64_t>>>(
+                    capture_output<type_list<pvector<std::uint64_t>>>(
                         ctx->tracker<capture_output_access>("out")))));
-        auto out = capture_output_checker<event_set<pvector<std::uint64_t>>>(
+        auto out = capture_output_checker<type_list<pvector<std::uint64_t>>>(
             ctx->accessor<capture_output_access>("out"));
         src.pump_events();
         REQUIRE(out.check(pvector<std::uint64_t>{43}));
@@ -111,12 +111,12 @@ TEST_CASE("read file") {
             binary_file_input_stream(path.string(), 8),
             44, // 4 remainder bytes
             std::make_shared<object_pool<pvector<std::uint64_t>>>(), 16,
-            stop_with_error<event_set<warning_event>>(
+            stop_with_error<type_list<warning_event>>(
                 "read error",
                 dereference_pointer<std::shared_ptr<pvector<std::uint64_t>>>(
-                    capture_output<event_set<pvector<std::uint64_t>>>(
+                    capture_output<type_list<pvector<std::uint64_t>>>(
                         ctx->tracker<capture_output_access>("out")))));
-        auto out = capture_output_checker<event_set<pvector<std::uint64_t>>>(
+        auto out = capture_output_checker<type_list<pvector<std::uint64_t>>>(
             ctx->accessor<capture_output_access>("out"));
         REQUIRE_THROWS_WITH(src.pump_events(),
                             Catch::Matchers::ContainsSubstring("remain"));
@@ -130,12 +130,12 @@ TEST_CASE("read file") {
         auto src = read_binary_stream<std::uint64_t>(
             binary_file_input_stream(path.string(), 8), 40,
             std::make_shared<object_pool<pvector<std::uint64_t>>>(), 3,
-            stop_with_error<event_set<warning_event>>(
+            stop_with_error<type_list<warning_event>>(
                 "read error",
                 dereference_pointer<std::shared_ptr<pvector<std::uint64_t>>>(
-                    capture_output<event_set<pvector<std::uint64_t>>>(
+                    capture_output<type_list<pvector<std::uint64_t>>>(
                         ctx->tracker<capture_output_access>("out")))));
-        auto out = capture_output_checker<event_set<pvector<std::uint64_t>>>(
+        auto out = capture_output_checker<type_list<pvector<std::uint64_t>>>(
             ctx->accessor<capture_output_access>("out"));
         src.pump_events();
         REQUIRE(out.check(pvector<std::uint64_t>{43}));
@@ -159,12 +159,12 @@ TEST_CASE("read existing istream, known length") {
     auto src = read_binary_stream<std::uint64_t>(
         std::move(stream), 40,
         std::make_shared<object_pool<pvector<std::uint64_t>>>(), 16,
-        stop_with_error<event_set<warning_event>>(
+        stop_with_error<type_list<warning_event>>(
             "read error",
             dereference_pointer<std::shared_ptr<pvector<std::uint64_t>>>(
-                capture_output<event_set<pvector<std::uint64_t>>>(
+                capture_output<type_list<pvector<std::uint64_t>>>(
                     ctx->tracker<capture_output_access>("out")))));
-    auto out = capture_output_checker<event_set<pvector<std::uint64_t>>>(
+    auto out = capture_output_checker<type_list<pvector<std::uint64_t>>>(
         ctx->accessor<capture_output_access>("out"));
     src.pump_events();
     REQUIRE(out.check(pvector<std::uint64_t>{42, 43}));
@@ -185,12 +185,12 @@ TEST_CASE("read existing istream, to end") {
     auto src = read_binary_stream<std::uint64_t>(
         std::move(stream), std::numeric_limits<std::uint64_t>::max(),
         std::make_shared<object_pool<pvector<std::uint64_t>>>(), 16,
-        stop_with_error<event_set<warning_event>>(
+        stop_with_error<type_list<warning_event>>(
             "read error",
             dereference_pointer<std::shared_ptr<pvector<std::uint64_t>>>(
-                capture_output<event_set<pvector<std::uint64_t>>>(
+                capture_output<type_list<pvector<std::uint64_t>>>(
                     ctx->tracker<capture_output_access>("out")))));
-    auto out = capture_output_checker<event_set<pvector<std::uint64_t>>>(
+    auto out = capture_output_checker<type_list<pvector<std::uint64_t>>>(
         ctx->accessor<capture_output_access>("out"));
     src.pump_events();
     REQUIRE(out.check(pvector<std::uint64_t>{42, 43}));
@@ -208,12 +208,12 @@ TEST_CASE("read existing istream, empty") {
     auto src = read_binary_stream<std::uint64_t>(
         std::move(stream), std::numeric_limits<std::uint64_t>::max(),
         std::make_shared<object_pool<pvector<std::uint64_t>>>(), 16,
-        stop_with_error<event_set<warning_event>>(
+        stop_with_error<type_list<warning_event>>(
             "read error",
             dereference_pointer<std::shared_ptr<pvector<std::uint64_t>>>(
-                capture_output<event_set<pvector<std::uint64_t>>>(
+                capture_output<type_list<pvector<std::uint64_t>>>(
                     ctx->tracker<capture_output_access>("out")))));
-    auto out = capture_output_checker<event_set<pvector<std::uint64_t>>>(
+    auto out = capture_output_checker<type_list<pvector<std::uint64_t>>>(
         ctx->accessor<capture_output_access>("out"));
     src.pump_events();
     REQUIRE(out.check_flushed());

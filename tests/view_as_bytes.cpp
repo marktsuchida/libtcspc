@@ -8,11 +8,11 @@
 
 #include "libtcspc/autocopy_span.hpp"
 #include "libtcspc/common.hpp"
-#include "libtcspc/event_set.hpp"
 #include "libtcspc/histogram_events.hpp"
 #include "libtcspc/processor_context.hpp"
 #include "libtcspc/span.hpp"
 #include "libtcspc/test_utils.hpp"
+#include "libtcspc/type_list.hpp"
 #include "test_checkers.hpp"
 
 #include <catch2/catch_all.hpp>
@@ -26,7 +26,7 @@ namespace tcspc {
 
 namespace {
 
-using out_events = event_set<autocopy_span<std::byte const>>;
+using out_events = type_list<autocopy_span<std::byte const>>;
 
 }
 
@@ -40,7 +40,7 @@ TEST_CASE("introspect view_as_bytes", "[introspect]") {
 
 TEST_CASE("view as bytes") {
     auto ctx = std::make_shared<processor_context>();
-    auto in = feed_input<event_set<int>>(
+    auto in = feed_input<type_list<int>>(
         view_as_bytes<int>(capture_output<out_events>(
             ctx->tracker<capture_output_access>("out"))));
     in.require_output_checked(ctx, "out");
@@ -56,7 +56,7 @@ TEST_CASE("view as bytes") {
 
 TEST_CASE("view as bytes, vector specialization") {
     auto ctx = std::make_shared<processor_context>();
-    auto in = feed_input<event_set<std::vector<int>>>(
+    auto in = feed_input<type_list<std::vector<int>>>(
         view_as_bytes<std::vector<int>>(capture_output<out_events>(
             ctx->tracker<capture_output_access>("out"))));
     in.require_output_checked(ctx, "out");
@@ -72,7 +72,7 @@ TEST_CASE("view as bytes, vector specialization") {
 
 TEST_CASE("view histogram as bytes") {
     auto ctx = std::make_shared<processor_context>();
-    auto in = feed_input<event_set<histogram_event<>>>(
+    auto in = feed_input<type_list<histogram_event<>>>(
         view_histogram_as_bytes<histogram_event<>>(capture_output<out_events>(
             ctx->tracker<capture_output_access>("out"))));
     in.require_output_checked(ctx, "out");
@@ -91,7 +91,7 @@ TEST_CASE("view histogram as bytes") {
 
 TEST_CASE("view histogram array as bytes") {
     auto ctx = std::make_shared<processor_context>();
-    auto in = feed_input<event_set<histogram_array_event<>>>(
+    auto in = feed_input<type_list<histogram_array_event<>>>(
         view_histogram_array_as_bytes<histogram_array_event<>>(
             capture_output<out_events>(
                 ctx->tracker<capture_output_access>("out"))));

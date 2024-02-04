@@ -7,10 +7,10 @@
 #include "libtcspc/match.hpp"
 
 #include "libtcspc/common.hpp"
-#include "libtcspc/event_set.hpp"
 #include "libtcspc/processor_context.hpp"
 #include "libtcspc/test_utils.hpp"
 #include "libtcspc/time_tagged_events.hpp"
+#include "libtcspc/type_list.hpp"
 #include "test_checkers.hpp"
 
 #include <catch2/catch_all.hpp>
@@ -23,7 +23,7 @@ namespace {
 
 using output_event = timestamped_test_event<0>;
 using misc_event = timestamped_test_event<1>;
-using out_events = event_set<marker_event<>, output_event, misc_event>;
+using out_events = type_list<marker_event<>, output_event, misc_event>;
 
 } // namespace
 
@@ -36,7 +36,7 @@ TEST_CASE("introspect match", "[introspect]") {
 
 TEST_CASE("Match and replace") {
     auto ctx = std::make_shared<processor_context>();
-    auto in = feed_input<event_set<marker_event<>, misc_event>>(
+    auto in = feed_input<type_list<marker_event<>, misc_event>>(
         match_replace<marker_event<>, output_event>(
             channel_matcher(0),
             capture_output<out_events>(
@@ -57,7 +57,7 @@ TEST_CASE("Match and replace") {
 
 TEST_CASE("Match") {
     auto ctx = std::make_shared<processor_context>();
-    auto in = feed_input<event_set<marker_event<>, misc_event>>(
+    auto in = feed_input<type_list<marker_event<>, misc_event>>(
         match<marker_event<>, output_event>(
             channel_matcher(0),
             capture_output<out_events>(

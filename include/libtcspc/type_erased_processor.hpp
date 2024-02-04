@@ -7,8 +7,9 @@
 #pragma once
 
 #include "common.hpp"
-#include "event_set.hpp"
 #include "introspect.hpp"
+#include "processor_traits.hpp"
+#include "type_list.hpp"
 
 #include <memory>
 #include <type_traits>
@@ -18,9 +19,9 @@ namespace tcspc {
 
 namespace internal {
 
-template <typename EventSet> class abstract_processor;
+template <typename EventList> class abstract_processor;
 
-template <> class abstract_processor<event_set<>> {
+template <> class abstract_processor<type_list<>> {
   public:
     abstract_processor() = default;
     abstract_processor(abstract_processor const &) = delete;
@@ -34,27 +35,27 @@ template <> class abstract_processor<event_set<>> {
 };
 
 template <typename Event0>
-class abstract_processor<event_set<Event0>>
-    : public abstract_processor<event_set<>> {
+class abstract_processor<type_list<Event0>>
+    : public abstract_processor<type_list<>> {
   public:
     virtual void handle(Event0 const &) = 0;
 };
 
 template <typename Event0, typename... Events>
-class abstract_processor<event_set<Event0, Events...>>
-    : public abstract_processor<event_set<Events...>> {
-    using base_type = abstract_processor<event_set<Events...>>;
+class abstract_processor<type_list<Event0, Events...>>
+    : public abstract_processor<type_list<Events...>> {
+    using base_type = abstract_processor<type_list<Events...>>;
 
   public:
     using base_type::handle; // Import overload set
     virtual void handle(Event0 const &) = 0;
 };
 
-template <typename Interface, typename Proc, typename EventSet>
+template <typename Interface, typename Proc, typename EventList>
 class virtual_processor_impl;
 
 template <typename Interface, typename Proc>
-class virtual_processor_impl<Interface, Proc, event_set<>> : public Interface {
+class virtual_processor_impl<Interface, Proc, type_list<>> : public Interface {
   protected:
     // NOLINTNEXTLINE(cppcoreguidelines-non-private-member-variables-in-classes,misc-non-private-member-variables-in-classes)
     Proc proc;
@@ -82,10 +83,10 @@ class virtual_processor_impl<Interface, Proc, event_set<>> : public Interface {
 
 template <typename Interface, typename Proc, typename Event0,
           typename... Events>
-class virtual_processor_impl<Interface, Proc, event_set<Event0, Events...>>
-    : public virtual_processor_impl<Interface, Proc, event_set<Events...>> {
+class virtual_processor_impl<Interface, Proc, type_list<Event0, Events...>>
+    : public virtual_processor_impl<Interface, Proc, type_list<Events...>> {
     using base_type =
-        virtual_processor_impl<Interface, Proc, event_set<Events...>>;
+        virtual_processor_impl<Interface, Proc, type_list<Events...>>;
 
   protected:
     using base_type::proc;
@@ -97,9 +98,9 @@ class virtual_processor_impl<Interface, Proc, event_set<Event0, Events...>>
     void handle(Event0 const &event) final { proc.handle(event); }
 };
 
-template <typename Proc, typename EventSet>
+template <typename Proc, typename EventList>
 using virtual_processor =
-    virtual_processor_impl<abstract_processor<EventSet>, Proc, EventSet>;
+    virtual_processor_impl<abstract_processor<EventList>, Proc, EventList>;
 
 } // namespace internal
 
@@ -108,14 +109,15 @@ using virtual_processor =
  *
  * \ingroup processors-basic
  *
- * \tparam EventSet the event set handled by the processor
+ * \tparam EventList the event set handled by the processor
  */
-template <typename EventSet> class type_erased_processor {
-    using abstract_processor = internal::abstract_processor<EventSet>;
+template <typename EventList> class type_erased_processor {
+    using event_list = unique_type_list_t<EventList>;
+    using abstract_processor = internal::abstract_processor<event_list>;
 
     template <typename Proc>
     using virtual_processor =
-        typename internal::virtual_processor<Proc, EventSet>;
+        typename internal::virtual_processor<Proc, event_list>;
 
     std::unique_ptr<abstract_processor> proc;
 
@@ -131,13 +133,14 @@ template <typename EventSet> class type_erased_processor {
     /**
      * \brief Construct with the given downstream processor.
      *
-     * The downstream processor must handle all of the events in \c EventSet.
+     * The downstream processor must handle all of the events in \c EventList.
      *
      * \param downstream downstream processor
      */
     template <
         typename Downstream,
-        typename = std::enable_if_t<handles_event_set_v<Downstream, EventSet>>>
+        typename = std::enable_if_t<handles_events_v<Downstream, event_list> &&
+                                    handles_flush_v<Downstream>>>
     explicit type_erased_processor(Downstream &&downstream)
         : proc(std::make_unique<virtual_processor<Downstream>>(
               std::forward<Downstream>(downstream))) {}
@@ -156,8 +159,8 @@ template <typename EventSet> class type_erased_processor {
     }
 
     /** \brief Processor interface */
-    template <typename Event,
-              typename = std::enable_if_t<contains_event_v<EventSet, Event>>>
+    template <typename Event, typename = std::enable_if_t<
+                                  type_list_contains_v<event_list, Event>>>
     void handle(Event const &event) {
         proc->handle(event);
     }

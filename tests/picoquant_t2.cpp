@@ -7,11 +7,11 @@
 #include "libtcspc/picoquant_t2.hpp"
 
 #include "libtcspc/common.hpp"
-#include "libtcspc/event_set.hpp"
 #include "libtcspc/npint.hpp"
 #include "libtcspc/processor_context.hpp"
 #include "libtcspc/test_utils.hpp"
 #include "libtcspc/time_tagged_events.hpp"
+#include "libtcspc/type_list.hpp"
 #include "test_checkers.hpp"
 
 #include <catch2/catch_all.hpp>
@@ -392,7 +392,7 @@ TEMPLATE_TEST_CASE("pqt2 assign", "", pqt2_hydraharpv1_event,
 
 namespace {
 
-using out_events = event_set<detection_event<>, marker_event<>,
+using out_events = type_list<detection_event<>, marker_event<>,
                              time_reached_event<>, warning_event>;
 
 }
@@ -405,7 +405,7 @@ TEST_CASE("introspect picoquant_t2", "[introspect]") {
 
 TEST_CASE("decode pqt2 picoharp300") {
     auto ctx = std::make_shared<processor_context>();
-    auto in = feed_input<event_set<pqt2_picoharp300_event>>(
+    auto in = feed_input<type_list<pqt2_picoharp300_event>>(
         decode_pqt2_picoharp300(capture_output<out_events>(
             ctx->tracker<capture_output_access>("out"))));
     in.require_output_checked(ctx, "out");
@@ -439,7 +439,7 @@ TEST_CASE("decode pqt2 picoharp300") {
 
 TEST_CASE("decode pqt2 hydraharpv1") {
     auto ctx = std::make_shared<processor_context>();
-    auto in = feed_input<event_set<pqt2_hydraharpv1_event>>(
+    auto in = feed_input<type_list<pqt2_hydraharpv1_event>>(
         decode_pqt2_hydraharpv1(capture_output<out_events>(
             ctx->tracker<capture_output_access>("out"))));
     in.require_output_checked(ctx, "out");
@@ -477,7 +477,7 @@ TEST_CASE("decode pqt2 hydraharpv1") {
 
 TEST_CASE("decode pqt2 generic") {
     auto ctx = std::make_shared<processor_context>();
-    auto in = feed_input<event_set<pqt2_generic_event>>(
+    auto in = feed_input<type_list<pqt2_generic_event>>(
         decode_pqt2_generic(capture_output<out_events>(
             ctx->tracker<capture_output_access>("out"))));
     in.require_output_checked(ctx, "out");

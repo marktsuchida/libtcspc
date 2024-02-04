@@ -6,8 +6,8 @@
 
 #pragma once
 
-#include "event_set.hpp"
 #include "introspect.hpp"
+#include "type_list.hpp"
 
 #include <utility>
 
@@ -15,7 +15,7 @@ namespace tcspc {
 
 namespace internal {
 
-template <typename EventSetToGate, typename OpenEvent, typename CloseEvent,
+template <typename GatedEventList, typename OpenEvent, typename CloseEvent,
           typename Downstream>
 class gate {
     bool open;
@@ -48,7 +48,7 @@ class gate {
     }
 
     template <typename OtherEvent> void handle(OtherEvent const &event) {
-        if constexpr (contains_event_v<EventSetToGate, OtherEvent>) {
+        if constexpr (type_list_contains_v<GatedEventList, OtherEvent>) {
             if (open)
                 downstream.handle(event);
         } else {
@@ -71,13 +71,13 @@ class gate {
  * received, the gate is opened. When a \c CloseEvent is received, the gate is
  * closed.
  *
- * Events belonging to \c EventSetToGate are gated: they are passed through if
+ * Events belonging to \c GatedEventList are gated: they are passed through if
  * and only if the gate is currently open.
  *
- * All events not in \c EventSetToGate are passed through (including \c
+ * All events not in \c GatedEventList are passed through (including \c
  * OpenEvent and \c CloseEvent).
  *
- * \tparam EventSetToGate event types to gate
+ * \tparam GatedEventList event types to gate
  *
  * \tparam OpenEvent event type that opens the gate
  *
@@ -93,23 +93,23 @@ class gate {
  * \return gate-events processor
  *
  * \inevents
- * \event{Events in EventSetToGate, passed through if gate is open}
+ * \event{Events in GatedEventList, passed through if gate is open}
  * \event{OpenEvent, causes gate to open; passed through}
  * \event{CloseEvent, causes gate to close; passed through}
  * \event{All other events, passed through}
  * \endevents
  *
  * \outevents
- * \event{Events in EventSetToGate, passed through if gate is open}
+ * \event{Events in GatedEventList, passed through if gate is open}
  * \event{OpenEvent, passed through}
  * \event{CloseEvent, passed through}
  * \event{Other events, passed through}
  * \endevents
  */
-template <typename EventSetToGate, typename OpenEvent, typename CloseEvent,
+template <typename GatedEventList, typename OpenEvent, typename CloseEvent,
           typename Downstream>
 auto gate(bool initially_open, Downstream &&downstream) {
-    return internal::gate<EventSetToGate, OpenEvent, CloseEvent, Downstream>(
+    return internal::gate<GatedEventList, OpenEvent, CloseEvent, Downstream>(
         initially_open, std::forward<Downstream>(downstream));
 }
 

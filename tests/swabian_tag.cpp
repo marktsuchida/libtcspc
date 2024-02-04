@@ -7,12 +7,12 @@
 #include "libtcspc/swabian_tag.hpp"
 
 #include "libtcspc/common.hpp"
-#include "libtcspc/event_set.hpp"
 #include "libtcspc/npint.hpp"
 #include "libtcspc/processor_context.hpp"
 #include "libtcspc/span.hpp"
 #include "libtcspc/test_utils.hpp"
 #include "libtcspc/time_tagged_events.hpp"
+#include "libtcspc/type_list.hpp"
 #include "test_checkers.hpp"
 
 #include <catch2/catch_all.hpp>
@@ -158,11 +158,11 @@ TEST_CASE("introspect swabian_tag", "[introspect]") {
 
 TEST_CASE("decode swabian tags") {
     using out_events =
-        event_set<detection_event<>, begin_lost_interval_event<>,
+        type_list<detection_event<>, begin_lost_interval_event<>,
                   end_lost_interval_event<>, untagged_counts_event<>,
                   warning_event>;
     auto ctx = std::make_shared<processor_context>();
-    auto in = feed_input<event_set<swabian_tag_event>>(
+    auto in = feed_input<type_list<swabian_tag_event>>(
         decode_swabian_tags(capture_output<out_events>(
             ctx->tracker<capture_output_access>("out"))));
     in.require_output_checked(ctx, "out");

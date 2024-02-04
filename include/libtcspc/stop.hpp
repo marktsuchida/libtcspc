@@ -7,8 +7,8 @@
 #pragma once
 
 #include "common.hpp"
-#include "event_set.hpp"
 #include "introspect.hpp"
+#include "type_list.hpp"
 
 #include <sstream>
 #include <stdexcept>
@@ -20,7 +20,7 @@ namespace tcspc {
 
 namespace internal {
 
-template <typename EventSet, typename Exception, typename Downstream>
+template <typename EventList, typename Exception, typename Downstream>
 class stop {
     Downstream downstream;
 
@@ -55,7 +55,7 @@ class stop {
     }
 
     template <typename Event> void handle(Event const &event) {
-        if constexpr (contains_event_v<EventSet, Event>)
+        if constexpr (type_list_contains_v<EventList, Event>)
             handle_stop(event);
         else
             downstream.handle(event);
@@ -74,7 +74,7 @@ class stop {
  *
  * \see stop
  *
- * \tparam EventSet event types that should cause stream to end
+ * \tparam EventList event types that should cause stream to end
  *
  * \tparam Exception exception type to use (must be constructible from
  * std::string)
@@ -85,11 +85,11 @@ class stop {
  *
  * \param downstream downstream processor
  */
-template <typename EventSet, typename Exception = std::runtime_error,
+template <typename EventList, typename Exception = std::runtime_error,
           typename Downstream>
 auto stop_with_error(std::string message_prefix, Downstream &&downstream) {
     static_assert(not std::is_same_v<Exception, end_processing>);
-    return internal::stop<EventSet, Exception, Downstream>(
+    return internal::stop<EventList, Exception, Downstream>(
         std::move(message_prefix), std::forward<Downstream>(downstream));
 }
 
@@ -101,7 +101,7 @@ auto stop_with_error(std::string message_prefix, Downstream &&downstream) {
  *
  * \see stop_with_error
  *
- * \tparam EventSet event types that should cause stream to end
+ * \tparam EventList event types that should cause stream to end
  *
  * \tparam Downstream downstream processor type
  *
@@ -109,9 +109,9 @@ auto stop_with_error(std::string message_prefix, Downstream &&downstream) {
  *
  * \param downstream downstream processor
  */
-template <typename EventSet, typename Downstream>
+template <typename EventList, typename Downstream>
 auto stop(std::string message_prefix, Downstream &&downstream) {
-    return internal::stop<EventSet, end_processing, Downstream>(
+    return internal::stop<EventList, end_processing, Downstream>(
         std::move(message_prefix), std::forward<Downstream>(downstream));
 }
 

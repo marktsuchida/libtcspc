@@ -7,12 +7,12 @@
 #include "libtcspc/binning.hpp"
 
 #include "libtcspc/common.hpp"
-#include "libtcspc/event_set.hpp"
 #include "libtcspc/histogram_events.hpp"
 #include "libtcspc/npint.hpp"
 #include "libtcspc/processor_context.hpp"
 #include "libtcspc/test_utils.hpp"
 #include "libtcspc/time_tagged_events.hpp"
+#include "libtcspc/type_list.hpp"
 #include "test_checkers.hpp"
 
 #include <catch2/catch_all.hpp>
@@ -48,10 +48,10 @@ TEST_CASE("Map to datapoints") {
     struct data_traits : default_data_traits {
         using datapoint_type = difftime_type;
     };
-    using out_events = event_set<datapoint_event<data_traits>, misc_event>;
+    using out_events = type_list<datapoint_event<data_traits>, misc_event>;
     auto ctx = std::make_shared<processor_context>();
     auto in =
-        feed_input<event_set<time_correlated_detection_event<>, misc_event>>(
+        feed_input<type_list<time_correlated_detection_event<>, misc_event>>(
             map_to_datapoints<data_traits>(
                 difftime_data_mapper<>(),
                 capture_output<out_events>(
@@ -86,9 +86,9 @@ TEST_CASE("Map to bins") {
             }
         };
         using out_events =
-            event_set<bin_increment_event<data_traits>, misc_event>;
+            type_list<bin_increment_event<data_traits>, misc_event>;
         auto in =
-            feed_input<event_set<datapoint_event<data_traits>, misc_event>>(
+            feed_input<type_list<datapoint_event<data_traits>, misc_event>>(
                 map_to_bins<data_traits>(
                     null_bin_mapper(),
                     capture_output<out_events>(
@@ -112,8 +112,8 @@ TEST_CASE("Map to bins") {
                 return unsigned(d) + 42u;
             }
         };
-        using out_events = event_set<bin_increment_event<data_traits>>;
-        auto in = feed_input<event_set<datapoint_event<data_traits>>>(
+        using out_events = type_list<bin_increment_event<data_traits>>;
+        auto in = feed_input<type_list<datapoint_event<data_traits>>>(
             map_to_bins<data_traits>(
                 add_42_bin_mapper(),
                 capture_output<out_events>(
@@ -414,9 +414,9 @@ TEST_CASE("Batch bin increments") {
         using bin_index_type = u32;
     };
     using out_events =
-        event_set<bin_increment_batch_event<data_traits>, misc_event>;
+        type_list<bin_increment_batch_event<data_traits>, misc_event>;
     auto ctx = std::make_shared<processor_context>();
-    auto in = feed_input<event_set<bin_increment_event<data_traits>,
+    auto in = feed_input<type_list<bin_increment_event<data_traits>,
                                    start_event, stop_event, misc_event>>(
         batch_bin_increments<start_event, stop_event, data_traits>(
             capture_output<out_events>(
