@@ -28,7 +28,7 @@ using e1 = empty_test_event<1>;
 
 TEST_CASE("introspect multiplex", "[introspect]") {
     check_introspect_simple_processor(multiplex<type_list<e0>>(null_sink()));
-    check_introspect_simple_processor(demultiplex<type_list<>>(null_sink()));
+    check_introspect_simple_processor(demultiplex(null_sink()));
 }
 
 TEST_CASE("multiplex") {
@@ -47,11 +47,22 @@ TEST_CASE("multiplex") {
     REQUIRE(out.check_flushed());
 }
 
+TEST_CASE("demultiplex handled event types") {
+    demultiplex(sink_events<type_list<e0>>())
+        .handle(variant_event<type_list<e0>>{e0{}});
+    demultiplex(sink_events<type_list<e0, e1>>())
+        .handle(variant_event<type_list<e0>>{e0{}});
+    demultiplex(sink_events<type_list<e0, e1>>())
+        .handle(variant_event<type_list<e1>>{e1{}});
+    demultiplex(sink_events<type_list<e0, e1>>())
+        .handle(variant_event<type_list<e1, e0>>{e1{}});
+}
+
 TEST_CASE("demultiplex") {
     using out_events = type_list<e0, e1>;
     auto ctx = std::make_shared<processor_context>();
     auto in = feed_input<type_list<variant_event<type_list<e0, e1>>>>(
-        demultiplex<type_list<e0, e1>>(capture_output<out_events>(
+        demultiplex(capture_output<out_events>(
             ctx->tracker<capture_output_access>("out"))));
     in.require_output_checked(ctx, "out");
     auto out = capture_output_checker<out_events>(

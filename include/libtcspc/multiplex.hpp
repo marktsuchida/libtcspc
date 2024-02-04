@@ -49,8 +49,7 @@ template <typename EventList, typename Downstream> class multiplex {
     void flush() { downstream.flush(); }
 };
 
-template <typename EventList, typename Downstream> class demultiplex {
-    static_assert(handles_events_v<Downstream, EventList>);
+template <typename Downstream> class demultiplex {
     static_assert(handles_flush_v<Downstream>);
 
     Downstream downstream;
@@ -70,7 +69,10 @@ template <typename EventList, typename Downstream> class demultiplex {
         return g;
     }
 
-    void handle(variant_event<EventList> const &event) {
+    template <typename EL> void handle(variant_event<EL> const &event) {
+        static_assert(
+            handles_events_v<Downstream, EL>,
+            "demultiplex only accepts variant_event whose event list is a subset of the events handled by the downstream");
         std::visit([&](auto const &e) { downstream.handle(e); }, event);
     }
 
@@ -112,12 +114,11 @@ auto multiplex(Downstream &&downstream) {
  *
  * \ingroup processors-basic
  *
- * This reverses the effect of \c multiplex: it accepts \c
- * variant_event<EventList> and emits the individual events in \c EventList.
+ * This reverses the effect of \c multiplex, accepting \c variant_event and
+ * emitting the stored events. Only \c variant_event specializations whose type
+ * list is a subset of the events handled by \p downstream are handled.
  *
  * \see multiplex
- *
- * \tparam EventList event types to separate
  *
  * \tparam Downstream downstream processor type
  *
@@ -125,9 +126,8 @@ auto multiplex(Downstream &&downstream) {
  *
  * \return demultiplex processor
  */
-template <typename EventList, typename Downstream>
-auto demultiplex(Downstream &&downstream) {
-    return internal::demultiplex<EventList, Downstream>(
+template <typename Downstream> auto demultiplex(Downstream &&downstream) {
+    return internal::demultiplex<Downstream>(
         std::forward<Downstream>(downstream));
 }
 
