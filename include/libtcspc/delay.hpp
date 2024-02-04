@@ -106,10 +106,6 @@ template <typename DataTraits, typename Downstream> class zero_base_abstime {
  * \param downstream downstream processor
  *
  * \return delay processor
- *
- * \inevents
- * \event{All events, passed through with time delay applied}
- * \endevents
  */
 template <typename DataTraits = default_data_traits, typename Downstream>
 auto delay(typename DataTraits::abstime_type delta, Downstream &&downstream) {

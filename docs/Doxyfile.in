@@ -34,9 +34,3 @@ HTML_COLORSTYLE_SAT    = 255
 HTML_EXTRA_STYLESHEET  = @DOXYGEN_CSS@/doxygen-awesome.css \
                          @DOXYGEN_CSS@/doxygen-awesome-sidebar-only.css \
                          @DOXYGEN_CSS@/custom.css
-
-# Custom commands for processor input/output events
-ALIASES += inevents="<dl class='params'><dt>Input Events</dt><dd><table class='params'>"
-ALIASES += outevents="<dl class='params'><dt>Output Events</dt><dd><table class='params'>"
-ALIASES += event{2}="<tr><td class='paramname'>\1</td><td>\2</td></tr>"
-ALIASES += endevents="</table></dd></dl>"

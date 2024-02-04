@@ -104,17 +104,6 @@ auto match_replace(Matcher &&matcher, Downstream &&downstream) {
  * \param downstream downstream processor
  *
  * \return match processor
- *
- * \inevents
- * \event{Event, passed through; triggers OutEvent if matched}
- * \event{All other events, passed through}
- * \endevents
- *
- * \outevents
- * \event{Event, passed through}
- * \event{OutEvent, emitted after a matched event}
- * \event{Other events, passed through}
- * \endevents
  */
 template <typename Event, typename OutEvent, typename Matcher,
           typename Downstream>

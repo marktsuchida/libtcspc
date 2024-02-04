@@ -140,20 +140,6 @@ class count_up_to {
  * \param downstream downstream processor
  *
  * \return count-event processor
- *
- * \inevents
- * \event{TickEvent, causes the count to be incremented; passed through}
- * \event{ResetEvent, causes the count to be reset to \e initial_count; passed
- * through}
- * \event{All other events, passed through}
- * \endevents
- *
- * \outevents
- * \event{FireEvent, emitted when the count reaches \e threshold}
- * \event{TickEvent, passed through}
- * \event{ResetEvent, passed through}
- * \event{Other events, passed through}
- * \endevents
  */
 template <typename TickEvent, typename FireEvent, typename ResetEvent,
           bool FireAfterTick, typename Downstream>

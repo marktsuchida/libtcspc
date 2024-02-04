@@ -91,20 +91,6 @@ class gate {
  * \param downstream downstream processor
  *
  * \return gate-events processor
- *
- * \inevents
- * \event{Events in GatedEventList, passed through if gate is open}
- * \event{OpenEvent, causes gate to open; passed through}
- * \event{CloseEvent, causes gate to close; passed through}
- * \event{All other events, passed through}
- * \endevents
- *
- * \outevents
- * \event{Events in GatedEventList, passed through if gate is open}
- * \event{OpenEvent, passed through}
- * \event{CloseEvent, passed through}
- * \event{Other events, passed through}
- * \endevents
  */
 template <typename GatedEventList, typename OpenEvent, typename CloseEvent,
           typename Downstream>
