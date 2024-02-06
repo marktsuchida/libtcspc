@@ -6,10 +6,10 @@
 
 #include "libtcspc/histogram_elementwise.hpp"
 
-#include "libtcspc/autocopy_span.hpp"
 #include "libtcspc/common.hpp"
 #include "libtcspc/histogram_events.hpp"
 #include "libtcspc/npint.hpp"
+#include "libtcspc/own_on_copy_view.hpp"
 #include "libtcspc/processor_context.hpp"
 #include "libtcspc/test_utils.hpp"
 #include "libtcspc/type_list.hpp"
@@ -116,15 +116,15 @@ TEMPLATE_TEST_CASE("Histogram elementwise, no overflow",
     in.feed(bin_increment_batch_event<dt3216>{{42, 43}, {0}});
     std::vector<u16> elem_hist{1, 0};
     REQUIRE(out.check(element_histogram_event<dt3216>{
-        {42, 43}, 0, autocopy_span(elem_hist), {1, 0}, 0}));
+        {42, 43}, 0, own_on_copy_view(elem_hist), {1, 0}, 0}));
 
     in.feed(bin_increment_batch_event<dt3216>{{44, 45}, {0, 1}});
     elem_hist = {1, 1};
     REQUIRE(out.check(element_histogram_event<dt3216>{
-        {44, 45}, 1, autocopy_span(elem_hist), {3, 0}, 0}));
+        {44, 45}, 1, own_on_copy_view(elem_hist), {3, 0}, 0}));
     std::vector<u16> hist_arr{1, 0, 1, 1};
     REQUIRE(out.check(histogram_array_event<dt3216>{
-        {42, 45}, autocopy_span(hist_arr), {3, 0}, 1}));
+        {42, 45}, own_on_copy_view(hist_arr), {3, 0}, 1}));
 
     in.flush();
     REQUIRE(out.check_flushed());
@@ -149,10 +149,10 @@ TEST_CASE("Histogram elementwise, saturate on overflow",
         in.feed(bin_increment_batch_event<dt3216>{{42, 43}, {0}}); // Overflow
         std::vector<u16> elem_hist{0};
         REQUIRE(out.check(element_histogram_event<dt3216>{
-            {42, 43}, 0, autocopy_span(elem_hist), {1, 1}, 0}));
+            {42, 43}, 0, own_on_copy_view(elem_hist), {1, 1}, 0}));
         std::vector<u16> hist_arr{0};
         REQUIRE(out.check(histogram_array_event<dt3216>{
-            {42, 43}, autocopy_span(hist_arr), {1, 1}, 1}));
+            {42, 43}, own_on_copy_view(hist_arr), {1, 1}, 1}));
         in.flush();
         REQUIRE(out.check_flushed());
     }
@@ -171,10 +171,10 @@ TEST_CASE("Histogram elementwise, saturate on overflow",
             bin_increment_batch_event<dt3216>{{42, 43}, {0, 0}}); // Overflow
         std::vector<u16> elem_hist{1};
         REQUIRE(out.check(element_histogram_event<dt3216>{
-            {42, 43}, 0, autocopy_span(elem_hist), {2, 1}, 0}));
+            {42, 43}, 0, own_on_copy_view(elem_hist), {2, 1}, 0}));
         std::vector<u16> hist_arr{1};
         REQUIRE(out.check(histogram_array_event<dt3216>{
-            {42, 43}, autocopy_span(hist_arr), {2, 1}, 1}));
+            {42, 43}, own_on_copy_view(hist_arr), {2, 1}, 1}));
         in.flush();
         REQUIRE(out.check_flushed());
     }
@@ -295,7 +295,7 @@ TEMPLATE_TEST_CASE(
         in.feed(bin_increment_batch_event<dt88>{{42, 43}, {0}});
         elem_hist = {1, 0, 0};
         REQUIRE(out.check(element_histogram_event<dt88>{
-            {42, 43}, 0, autocopy_span(elem_hist), {1, 0}, 0}));
+            {42, 43}, 0, own_on_copy_view(elem_hist), {1, 0}, 0}));
 
         SECTION("end mid cycle 0") {
             in.flush();
@@ -306,10 +306,10 @@ TEMPLATE_TEST_CASE(
             in.feed(bin_increment_batch_event<dt88>{{44, 45}, {1}});
             elem_hist = {0, 1, 0};
             REQUIRE(out.check(element_histogram_event<dt88>{
-                {44, 45}, 1, autocopy_span(elem_hist), {2, 0}, 0}));
+                {44, 45}, 1, own_on_copy_view(elem_hist), {2, 0}, 0}));
             hist_arr = {1, 0, 0, 0, 1, 0};
             REQUIRE(out.check(histogram_array_event<dt88>{
-                {42, 45}, autocopy_span(hist_arr), {2, 0}, 1}));
+                {42, 45}, own_on_copy_view(hist_arr), {2, 0}, 1}));
 
             SECTION("end after cycle 0") {
                 in.flush();
@@ -320,7 +320,7 @@ TEMPLATE_TEST_CASE(
                 in.feed(bin_increment_batch_event<dt88>{{46, 47}, {2}});
                 elem_hist = {1, 0, 1};
                 REQUIRE(out.check(element_histogram_event<dt88>{
-                    {46, 47}, 0, autocopy_span(elem_hist), {3, 0}, 1}));
+                    {46, 47}, 0, own_on_copy_view(elem_hist), {3, 0}, 1}));
 
                 SECTION("end mid cycle 1") {
                     in.flush();
@@ -352,7 +352,7 @@ TEMPLATE_TEST_CASE(
         in.flush();
         hist_arr = {0, 0, 0, 0, 0, 0};
         REQUIRE(out.check(concluding_histogram_array_event<dt88>{
-            {}, autocopy_span(hist_arr), {0, 0}, 0, true}));
+            {}, own_on_copy_view(hist_arr), {0, 0}, 0, true}));
         REQUIRE(out.check_flushed());
     }
 
@@ -360,13 +360,13 @@ TEMPLATE_TEST_CASE(
         in.feed(bin_increment_batch_event<dt88>{{42, 43}, {0}});
         elem_hist = {1, 0, 0};
         REQUIRE(out.check(element_histogram_event<dt88>{
-            {42, 43}, 0, autocopy_span(elem_hist), {1, 0}, 0}));
+            {42, 43}, 0, own_on_copy_view(elem_hist), {1, 0}, 0}));
 
         SECTION("end mid cycle 0") {
             in.flush();
             hist_arr = {0, 0, 0, 0, 0, 0};
             REQUIRE(out.check(concluding_histogram_array_event<dt88>{
-                {}, autocopy_span(hist_arr), {0, 0}, 0, true}));
+                {}, own_on_copy_view(hist_arr), {0, 0}, 0, true}));
             REQUIRE(out.check_flushed());
         }
 
@@ -374,16 +374,16 @@ TEMPLATE_TEST_CASE(
             in.feed(bin_increment_batch_event<dt88>{{44, 45}, {1}});
             elem_hist = {0, 1, 0};
             REQUIRE(out.check(element_histogram_event<dt88>{
-                {44, 45}, 1, autocopy_span(elem_hist), {2, 0}, 0}));
+                {44, 45}, 1, own_on_copy_view(elem_hist), {2, 0}, 0}));
             hist_arr = {1, 0, 0, 0, 1, 0};
             REQUIRE(out.check(histogram_array_event<dt88>{
-                {42, 45}, autocopy_span(hist_arr), {2, 0}, 1}));
+                {42, 45}, own_on_copy_view(hist_arr), {2, 0}, 1}));
 
             SECTION("end after cycle 0") {
                 in.flush();
                 hist_arr = {1, 0, 0, 0, 1, 0};
                 REQUIRE(out.check(concluding_histogram_array_event<dt88>{
-                    {42, 45}, autocopy_span(hist_arr), {2, 0}, 1, true}));
+                    {42, 45}, own_on_copy_view(hist_arr), {2, 0}, 1, true}));
                 REQUIRE(out.check_flushed());
             }
 
@@ -391,13 +391,17 @@ TEMPLATE_TEST_CASE(
                 in.feed(bin_increment_batch_event<dt88>{{46, 47}, {2}});
                 elem_hist = {1, 0, 1};
                 REQUIRE(out.check(element_histogram_event<dt88>{
-                    {46, 47}, 0, autocopy_span(elem_hist), {3, 0}, 1}));
+                    {46, 47}, 0, own_on_copy_view(elem_hist), {3, 0}, 1}));
 
                 SECTION("end mid cycle 1") {
                     in.flush();
                     hist_arr = {1, 0, 0, 0, 1, 0}; // Rolled back
                     REQUIRE(out.check(concluding_histogram_array_event<dt88>{
-                        {42, 45}, autocopy_span(hist_arr), {2, 0}, 1, true}));
+                        {42, 45},
+                        own_on_copy_view(hist_arr),
+                        {2, 0},
+                        1,
+                        true}));
                     REQUIRE(out.check_flushed());
                 }
             }
@@ -426,11 +430,11 @@ TEMPLATE_TEST_CASE(
         in.feed(reset_event{});
         hist_arr = {0, 0, 0, 0, 0, 0};
         REQUIRE(out.check(concluding_histogram_array_event<dt88>{
-            {}, autocopy_span(hist_arr), {0, 0}, 0, false}));
+            {}, own_on_copy_view(hist_arr), {0, 0}, 0, false}));
         in.flush();
         hist_arr = {0, 0, 0, 0, 0, 0};
         REQUIRE(out.check(concluding_histogram_array_event<dt88>{
-            {}, autocopy_span(hist_arr), {0, 0}, 0, true}));
+            {}, own_on_copy_view(hist_arr), {0, 0}, 0, true}));
         REQUIRE(out.check_flushed());
     }
 
@@ -438,17 +442,17 @@ TEMPLATE_TEST_CASE(
         in.feed(bin_increment_batch_event<dt88>{{42, 43}, {0}});
         elem_hist = {1, 0, 0};
         REQUIRE(out.check(element_histogram_event<dt88>{
-            {42, 43}, 0, autocopy_span(elem_hist), {1, 0}, 0}));
+            {42, 43}, 0, own_on_copy_view(elem_hist), {1, 0}, 0}));
 
         SECTION("reset mid cycle 0") {
             in.feed(reset_event{});
             hist_arr = {0, 0, 0, 0, 0, 0};
             REQUIRE(out.check(concluding_histogram_array_event<dt88>{
-                {}, autocopy_span(hist_arr), {0, 0}, 0, false}));
+                {}, own_on_copy_view(hist_arr), {0, 0}, 0, false}));
             in.flush();
             hist_arr = {0, 0, 0, 0, 0, 0};
             REQUIRE(out.check(concluding_histogram_array_event<dt88>{
-                {}, autocopy_span(hist_arr), {0, 0}, 0, true}));
+                {}, own_on_copy_view(hist_arr), {0, 0}, 0, true}));
             REQUIRE(out.check_flushed());
         }
 
@@ -456,20 +460,20 @@ TEMPLATE_TEST_CASE(
             in.feed(bin_increment_batch_event<dt88>{{44, 45}, {1}});
             elem_hist = {0, 1, 0};
             REQUIRE(out.check(element_histogram_event<dt88>{
-                {44, 45}, 1, autocopy_span(elem_hist), {2, 0}, 0}));
+                {44, 45}, 1, own_on_copy_view(elem_hist), {2, 0}, 0}));
             hist_arr = {1, 0, 0, 0, 1, 0};
             REQUIRE(out.check(histogram_array_event<dt88>{
-                {42, 45}, autocopy_span(hist_arr), {2, 0}, 1}));
+                {42, 45}, own_on_copy_view(hist_arr), {2, 0}, 1}));
 
             SECTION("reset after cycle 0") {
                 in.feed(reset_event{});
                 hist_arr = {1, 0, 0, 0, 1, 0};
                 REQUIRE(out.check(concluding_histogram_array_event<dt88>{
-                    {42, 45}, autocopy_span(hist_arr), {2, 0}, 1, false}));
+                    {42, 45}, own_on_copy_view(hist_arr), {2, 0}, 1, false}));
                 in.flush();
                 hist_arr = {0, 0, 0, 0, 0, 0};
                 REQUIRE(out.check(concluding_histogram_array_event<dt88>{
-                    {}, autocopy_span(hist_arr), {0, 0}, 0, true}));
+                    {}, own_on_copy_view(hist_arr), {0, 0}, 0, true}));
                 REQUIRE(out.check_flushed());
             }
 
@@ -477,17 +481,21 @@ TEMPLATE_TEST_CASE(
                 in.feed(bin_increment_batch_event<dt88>{{46, 47}, {2}});
                 elem_hist = {1, 0, 1};
                 REQUIRE(out.check(element_histogram_event<dt88>{
-                    {46, 47}, 0, autocopy_span(elem_hist), {3, 0}, 1}));
+                    {46, 47}, 0, own_on_copy_view(elem_hist), {3, 0}, 1}));
 
                 SECTION("reset mid cycle 1") {
                     in.feed(reset_event{});
                     hist_arr = {1, 0, 0, 0, 1, 0}; // Rolled back
                     REQUIRE(out.check(concluding_histogram_array_event<dt88>{
-                        {42, 45}, autocopy_span(hist_arr), {2, 0}, 1, false}));
+                        {42, 45},
+                        own_on_copy_view(hist_arr),
+                        {2, 0},
+                        1,
+                        false}));
                     in.flush();
                     hist_arr = {0, 0, 0, 0, 0, 0};
                     REQUIRE(out.check(concluding_histogram_array_event<dt88>{
-                        {}, autocopy_span(hist_arr), {0, 0}, 0, true}));
+                        {}, own_on_copy_view(hist_arr), {0, 0}, 0, true}));
                     REQUIRE(out.check_flushed());
                 }
             }
@@ -514,7 +522,7 @@ TEST_CASE("histogram_elementwise_accumulate with saturate-on-overflow",
         in.feed(bin_increment_batch_event<dt88>{{42, 43}, {0, 0, 0, 0, 0, 0}});
         elem_hist = {4, 0, 0};
         REQUIRE(out.check(element_histogram_event<dt88>{
-            {42, 43}, 0, autocopy_span(elem_hist), {6, 2}, 0}));
+            {42, 43}, 0, own_on_copy_view(elem_hist), {6, 2}, 0}));
 
         SECTION("end") {
             in.flush();
@@ -528,7 +536,7 @@ TEST_CASE("histogram_elementwise_accumulate with saturate-on-overflow",
                 in.feed(bin_increment_batch_event<dt88>{{44, 45}, {}});
                 elem_hist = {0, 0, 0};
                 REQUIRE(out.check(element_histogram_event<dt88>{
-                    {44, 45}, 0, autocopy_span(elem_hist), {0, 0}, 0}));
+                    {44, 45}, 0, own_on_copy_view(elem_hist), {0, 0}, 0}));
                 in.flush();
                 REQUIRE(out.check_flushed());
             }
@@ -563,7 +571,7 @@ TEST_CASE("histogram_elementwise_accumulate with reset-on-overflow",
         in.feed(bin_increment_batch_event<dt88>{{42, 43}, {0, 0}});
         elem_hist = {2, 0, 0};
         REQUIRE(out.check(element_histogram_event<dt88>{
-            {42, 43}, 0, autocopy_span(elem_hist), {2, 0}, 0}));
+            {42, 43}, 0, own_on_copy_view(elem_hist), {2, 0}, 0}));
 
         SECTION("single-batch overflow during cycle 0, element 1") {
             REQUIRE_THROWS_AS(in.feed(bin_increment_batch_event<dt88>{
@@ -576,24 +584,24 @@ TEST_CASE("histogram_elementwise_accumulate with reset-on-overflow",
             in.feed(bin_increment_batch_event<dt88>{{44, 45}, {1, 1}});
             elem_hist = {0, 2, 0};
             REQUIRE(out.check(element_histogram_event<dt88>{
-                {44, 45}, 1, autocopy_span(elem_hist), {4, 0}, 0}));
+                {44, 45}, 1, own_on_copy_view(elem_hist), {4, 0}, 0}));
             hist_arr = {2, 0, 0, 0, 2, 0};
             REQUIRE(out.check(histogram_array_event<dt88>{
-                {42, 45}, autocopy_span(hist_arr), {4, 0}, 1}));
+                {42, 45}, own_on_copy_view(hist_arr), {4, 0}, 1}));
 
             SECTION("overflow during cycle 1, element 0") {
                 in.feed(bin_increment_batch_event<dt88>{{46, 47}, {0, 0, 0}});
                 hist_arr = {2, 0, 0, 0, 2, 0};
                 REQUIRE(out.check(concluding_histogram_array_event<dt88>{
-                    {42, 45}, autocopy_span(hist_arr), {4, 0}, 1, false}));
+                    {42, 45}, own_on_copy_view(hist_arr), {4, 0}, 1, false}));
                 elem_hist = {3, 0, 0};
                 REQUIRE(out.check(element_histogram_event<dt88>{
-                    {46, 47}, 0, autocopy_span(elem_hist), {3, 0}, 0}));
+                    {46, 47}, 0, own_on_copy_view(elem_hist), {3, 0}, 0}));
 
                 in.flush();
                 hist_arr = {0, 0, 0, 0, 0, 0};
                 REQUIRE(out.check(concluding_histogram_array_event<dt88>{
-                    {}, autocopy_span(hist_arr), {0, 0}, 0, true}));
+                    {}, own_on_copy_view(hist_arr), {0, 0}, 0, true}));
             }
 
             SECTION("single-batch overflow during cycle 1, element 0") {
@@ -602,7 +610,7 @@ TEST_CASE("histogram_elementwise_accumulate with reset-on-overflow",
                                   histogram_overflow_error);
                 hist_arr = {2, 0, 0, 0, 2, 0};
                 REQUIRE(out.check(concluding_histogram_array_event<dt88>{
-                    {42, 45}, autocopy_span(hist_arr), {4, 0}, 1, false}));
+                    {42, 45}, own_on_copy_view(hist_arr), {4, 0}, 1, false}));
                 REQUIRE(out.check_not_flushed());
             }
 
@@ -610,25 +618,33 @@ TEST_CASE("histogram_elementwise_accumulate with reset-on-overflow",
                 in.feed(bin_increment_batch_event<dt88>{{46, 47}, {0}});
                 elem_hist = {3, 0, 0};
                 REQUIRE(out.check(element_histogram_event<dt88>{
-                    {46, 47}, 0, autocopy_span(elem_hist), {5, 0}, 1}));
+                    {46, 47}, 0, own_on_copy_view(elem_hist), {5, 0}, 1}));
 
                 SECTION("overflow during cycle 1, element 1") {
                     in.feed(
                         bin_increment_batch_event<dt88>{{48, 49}, {1, 1, 1}});
                     hist_arr = {2, 0, 0, 0, 2, 0}; // Rolled back
                     REQUIRE(out.check(concluding_histogram_array_event<dt88>{
-                        {42, 45}, autocopy_span(hist_arr), {4, 0}, 1, false}));
+                        {42, 45},
+                        own_on_copy_view(hist_arr),
+                        {4, 0},
+                        1,
+                        false}));
                     elem_hist = {0, 3, 0};
                     REQUIRE(out.check(element_histogram_event<dt88>{
-                        {48, 49}, 1, autocopy_span(elem_hist), {4, 0}, 0}));
+                        {48, 49}, 1, own_on_copy_view(elem_hist), {4, 0}, 0}));
                     hist_arr = {1, 0, 0, 0, 3, 0};
                     REQUIRE(out.check(histogram_array_event<dt88>{
-                        {46, 49}, autocopy_span(hist_arr), {4, 0}, 1}));
+                        {46, 49}, own_on_copy_view(hist_arr), {4, 0}, 1}));
 
                     in.flush();
                     hist_arr = {1, 0, 0, 0, 3, 0};
                     REQUIRE(out.check(concluding_histogram_array_event<dt88>{
-                        {46, 49}, autocopy_span(hist_arr), {4, 0}, 1, true}));
+                        {46, 49},
+                        own_on_copy_view(hist_arr),
+                        {4, 0},
+                        1,
+                        true}));
                 }
 
                 SECTION("single-batch overflow during cycle 1, element 1") {
@@ -637,7 +653,11 @@ TEST_CASE("histogram_elementwise_accumulate with reset-on-overflow",
                                       histogram_overflow_error);
                     hist_arr = {2, 0, 0, 0, 2, 0}; // Rolled back
                     REQUIRE(out.check(concluding_histogram_array_event<dt88>{
-                        {42, 45}, autocopy_span(hist_arr), {4, 0}, 1, false}));
+                        {42, 45},
+                        own_on_copy_view(hist_arr),
+                        {4, 0},
+                        1,
+                        false}));
                     REQUIRE(out.check_not_flushed());
                 }
             }
@@ -667,7 +687,7 @@ TEST_CASE("histogram_elementwise_accumulate with stop-on-overflow",
                           end_processing);
         hist_arr = {0, 0, 0, 0, 0, 0};
         REQUIRE(out.check(concluding_histogram_array_event<dt88>{
-            {}, autocopy_span(hist_arr), {0, 0}, 0, true}));
+            {}, own_on_copy_view(hist_arr), {0, 0}, 0, true}));
         REQUIRE(out.check_flushed());
     }
 
@@ -675,7 +695,7 @@ TEST_CASE("histogram_elementwise_accumulate with stop-on-overflow",
         in.feed(bin_increment_batch_event<dt88>{{42, 43}, {0, 0}});
         elem_hist = {2, 0, 0};
         REQUIRE(out.check(element_histogram_event<dt88>{
-            {42, 43}, 0, autocopy_span(elem_hist), {2, 0}, 0}));
+            {42, 43}, 0, own_on_copy_view(elem_hist), {2, 0}, 0}));
 
         SECTION("overflow during cycle 0, element 1") {
             REQUIRE_THROWS_AS(in.feed(bin_increment_batch_event<dt88>{
@@ -683,7 +703,7 @@ TEST_CASE("histogram_elementwise_accumulate with stop-on-overflow",
                               end_processing);
             hist_arr = {0, 0, 0, 0, 0, 0};
             REQUIRE(out.check(concluding_histogram_array_event<dt88>{
-                {}, autocopy_span(hist_arr), {0, 0}, 0, true}));
+                {}, own_on_copy_view(hist_arr), {0, 0}, 0, true}));
             REQUIRE(out.check_flushed());
         }
 
@@ -691,10 +711,10 @@ TEST_CASE("histogram_elementwise_accumulate with stop-on-overflow",
             in.feed(bin_increment_batch_event<dt88>{{44, 45}, {1, 1}});
             elem_hist = {0, 2, 0};
             REQUIRE(out.check(element_histogram_event<dt88>{
-                {44, 45}, 1, autocopy_span(elem_hist), {4, 0}, 0}));
+                {44, 45}, 1, own_on_copy_view(elem_hist), {4, 0}, 0}));
             hist_arr = {2, 0, 0, 0, 2, 0};
             REQUIRE(out.check(histogram_array_event<dt88>{
-                {42, 45}, autocopy_span(hist_arr), {4, 0}, 1}));
+                {42, 45}, own_on_copy_view(hist_arr), {4, 0}, 1}));
 
             SECTION("overflow during cycle 1, element 0") {
                 REQUIRE_THROWS_AS(in.feed(bin_increment_batch_event<dt88>{
@@ -702,7 +722,7 @@ TEST_CASE("histogram_elementwise_accumulate with stop-on-overflow",
                                   end_processing);
                 hist_arr = {2, 0, 0, 0, 2, 0};
                 REQUIRE(out.check(concluding_histogram_array_event<dt88>{
-                    {42, 45}, autocopy_span(hist_arr), {4, 0}, 1, true}));
+                    {42, 45}, own_on_copy_view(hist_arr), {4, 0}, 1, true}));
                 REQUIRE(out.check_flushed());
             }
 
@@ -710,7 +730,7 @@ TEST_CASE("histogram_elementwise_accumulate with stop-on-overflow",
                 in.feed(bin_increment_batch_event<dt88>{{46, 47}, {0}});
                 elem_hist = {3, 0, 0};
                 REQUIRE(out.check(element_histogram_event<dt88>{
-                    {46, 47}, 0, autocopy_span(elem_hist), {5, 0}, 1}));
+                    {46, 47}, 0, own_on_copy_view(elem_hist), {5, 0}, 1}));
 
                 SECTION("overflow during cycle 1, element 1") {
                     REQUIRE_THROWS_AS(in.feed(bin_increment_batch_event<dt88>{
@@ -718,7 +738,11 @@ TEST_CASE("histogram_elementwise_accumulate with stop-on-overflow",
                                       end_processing);
                     hist_arr = {2, 0, 0, 0, 2, 0}; // Rolled back
                     REQUIRE(out.check(concluding_histogram_array_event<dt88>{
-                        {42, 45}, autocopy_span(hist_arr), {4, 0}, 1, true}));
+                        {42, 45},
+                        own_on_copy_view(hist_arr),
+                        {4, 0},
+                        1,
+                        true}));
                     REQUIRE(out.check_flushed());
                 }
             }
@@ -754,7 +778,7 @@ TEST_CASE(
         in.feed(bin_increment_batch_event<dt88>{{42, 43}, {0, 0}});
         elem_hist = {2, 0, 0};
         REQUIRE(out.check(element_histogram_event<dt88>{
-            {42, 43}, 0, autocopy_span(elem_hist), {2, 0}, 0}));
+            {42, 43}, 0, own_on_copy_view(elem_hist), {2, 0}, 0}));
 
         SECTION("overflow during cycle 0, element 1") {
             REQUIRE_THROWS_AS(in.feed(bin_increment_batch_event<dt88>{
@@ -767,10 +791,10 @@ TEST_CASE(
             in.feed(bin_increment_batch_event<dt88>{{44, 45}, {1, 1}});
             elem_hist = {0, 2, 0};
             REQUIRE(out.check(element_histogram_event<dt88>{
-                {44, 45}, 1, autocopy_span(elem_hist), {4, 0}, 0}));
+                {44, 45}, 1, own_on_copy_view(elem_hist), {4, 0}, 0}));
             hist_arr = {2, 0, 0, 0, 2, 0};
             REQUIRE(out.check(histogram_array_event<dt88>{
-                {42, 45}, autocopy_span(hist_arr), {4, 0}, 1}));
+                {42, 45}, own_on_copy_view(hist_arr), {4, 0}, 1}));
 
             SECTION("overflow during cycle 1, element 0") {
                 REQUIRE_THROWS_AS(in.feed(bin_increment_batch_event<dt88>{
@@ -783,7 +807,7 @@ TEST_CASE(
                 in.feed(bin_increment_batch_event<dt88>{{46, 47}, {0}});
                 elem_hist = {3, 0, 0};
                 REQUIRE(out.check(element_histogram_event<dt88>{
-                    {46, 47}, 0, autocopy_span(elem_hist), {5, 0}, 1}));
+                    {46, 47}, 0, own_on_copy_view(elem_hist), {5, 0}, 1}));
 
                 SECTION("overflow during cycle 1, element 1") {
                     REQUIRE_THROWS_AS(in.feed(bin_increment_batch_event<dt88>{
@@ -824,7 +848,7 @@ TEST_CASE(
         in.feed(bin_increment_batch_event<dt88>{{42, 43}, {0, 0}});
         elem_hist = {2, 0, 0};
         REQUIRE(out.check(element_histogram_event<dt88>{
-            {42, 43}, 0, autocopy_span(elem_hist), {2, 0}, 0}));
+            {42, 43}, 0, own_on_copy_view(elem_hist), {2, 0}, 0}));
 
         SECTION("overflow during cycle 0, element 1") {
             REQUIRE_THROWS_AS(in.feed(bin_increment_batch_event<dt88>{
@@ -837,10 +861,10 @@ TEST_CASE(
             in.feed(bin_increment_batch_event<dt88>{{44, 45}, {1, 1}});
             elem_hist = {0, 2, 0};
             REQUIRE(out.check(element_histogram_event<dt88>{
-                {44, 45}, 1, autocopy_span(elem_hist), {4, 0}, 0}));
+                {44, 45}, 1, own_on_copy_view(elem_hist), {4, 0}, 0}));
             hist_arr = {2, 0, 0, 0, 2, 0};
             REQUIRE(out.check(histogram_array_event<dt88>{
-                {42, 45}, autocopy_span(hist_arr), {4, 0}, 1}));
+                {42, 45}, own_on_copy_view(hist_arr), {4, 0}, 1}));
 
             SECTION("overflow during cycle 1, element 0") {
                 REQUIRE_THROWS_AS(in.feed(bin_increment_batch_event<dt88>{
@@ -853,7 +877,7 @@ TEST_CASE(
                 in.feed(bin_increment_batch_event<dt88>{{46, 47}, {0}});
                 elem_hist = {3, 0, 0};
                 REQUIRE(out.check(element_histogram_event<dt88>{
-                    {46, 47}, 0, autocopy_span(elem_hist), {5, 0}, 1}));
+                    {46, 47}, 0, own_on_copy_view(elem_hist), {5, 0}, 1}));
 
                 SECTION("overflow during cycle 1, element 1") {
                     REQUIRE_THROWS_AS(in.feed(bin_increment_batch_event<dt88>{

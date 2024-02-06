@@ -6,9 +6,9 @@
 
 #include "libtcspc/view_as_bytes.hpp"
 
-#include "libtcspc/autocopy_span.hpp"
 #include "libtcspc/common.hpp"
 #include "libtcspc/histogram_events.hpp"
+#include "libtcspc/own_on_copy_view.hpp"
 #include "libtcspc/processor_context.hpp"
 #include "libtcspc/span.hpp"
 #include "libtcspc/test_utils.hpp"
@@ -26,7 +26,7 @@ namespace tcspc {
 
 namespace {
 
-using out_events = type_list<autocopy_span<std::byte const>>;
+using out_events = type_list<own_on_copy_view<std::byte const>>;
 
 }
 
@@ -49,7 +49,7 @@ TEST_CASE("view as bytes") {
 
     int i = 42;
     in.feed(i);
-    REQUIRE(out.check(autocopy_span(as_bytes(span(&i, 1)))));
+    REQUIRE(out.check(own_on_copy_view(as_bytes(span(&i, 1)))));
     in.flush();
     REQUIRE(out.check_flushed());
 }
@@ -65,7 +65,7 @@ TEST_CASE("view as bytes, vector specialization") {
 
     std::vector data{42, 43};
     in.feed(data);
-    REQUIRE(out.check(autocopy_span(as_bytes(span(data)))));
+    REQUIRE(out.check(own_on_copy_view(as_bytes(span(data)))));
     in.flush();
     REQUIRE(out.check_flushed());
 }
@@ -82,9 +82,10 @@ TEST_CASE("view histogram as bytes") {
     std::vector<default_data_traits::bin_type> hist{1, 2, 3};
     histogram_event<> const event{
         abstime_range<std::int64_t>{0, 1},
-        autocopy_span<default_data_traits::bin_type>(hist), histogram_stats{}};
+        own_on_copy_view<default_data_traits::bin_type>(hist),
+        histogram_stats{}};
     in.feed(event);
-    REQUIRE(out.check(autocopy_span(as_bytes(span(hist)))));
+    REQUIRE(out.check(own_on_copy_view(as_bytes(span(hist)))));
     in.flush();
     REQUIRE(out.check_flushed());
 }
@@ -102,10 +103,10 @@ TEST_CASE("view histogram array as bytes") {
     std::vector<default_data_traits::bin_type> histarr{1, 2, 3};
     histogram_array_event<> const event{
         abstime_range<std::int64_t>{0, 1},
-        autocopy_span<default_data_traits::bin_type>(histarr),
+        own_on_copy_view<default_data_traits::bin_type>(histarr),
         histogram_stats{}};
     in.feed(event);
-    REQUIRE(out.check(autocopy_span(as_bytes(span(histarr)))));
+    REQUIRE(out.check(own_on_copy_view(as_bytes(span(histarr)))));
     in.flush();
     REQUIRE(out.check_flushed());
 }

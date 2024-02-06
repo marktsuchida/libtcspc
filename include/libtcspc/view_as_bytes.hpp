@@ -6,8 +6,8 @@
 
 #pragma once
 
-#include "autocopy_span.hpp"
 #include "introspect.hpp"
+#include "own_on_copy_view.hpp"
 #include "span.hpp"
 
 #include <cstddef>
@@ -40,7 +40,7 @@ template <typename Event, typename Downstream> class view_as_bytes {
 
     void handle(Event const &event) {
         downstream.handle(
-            autocopy_span<std::byte const>(as_bytes(span(&event, 1))));
+            own_on_copy_view<std::byte const>(as_bytes(span(&event, 1))));
     }
 
     void flush() { downstream.flush(); }
@@ -68,7 +68,7 @@ class view_as_bytes<std::vector<Event>, Downstream> {
 
     void handle(std::vector<Event> const &event) {
         downstream.handle(
-            autocopy_span<std::byte const>(as_bytes(span(event))));
+            own_on_copy_view<std::byte const>(as_bytes(span(event))));
     }
 
     void flush() { downstream.flush(); }
@@ -93,7 +93,8 @@ template <typename Event, typename Downstream> class view_histogram_as_bytes {
     }
 
     void handle(Event const &event) {
-        downstream.handle(autocopy_span(as_bytes(event.histogram.as_span())));
+        downstream.handle(
+            own_on_copy_view(as_bytes(event.histogram.as_span())));
     }
 
     void flush() { downstream.flush(); }
@@ -120,7 +121,7 @@ class view_histogram_array_as_bytes {
 
     void handle(Event const &event) {
         downstream.handle(
-            autocopy_span(as_bytes(event.histogram_array.as_span())));
+            own_on_copy_view(as_bytes(event.histogram_array.as_span())));
     }
 
     void flush() { downstream.flush(); }
@@ -135,7 +136,7 @@ class view_histogram_array_as_bytes {
  *
  * This processor handles events of type \c Event (which must be trivial) and
  * sends them, without copying, to the downstream processor as
- * <tt>autocopy_span<std::byte const></tt>.
+ * <tt>own_on_copy_view<std::byte const></tt>.
  *
  * A specialization is available if \c Event matches \c std::vector<T> where \c
  * T must be trivial. In this case, the span of the vector elements is used.
@@ -163,7 +164,7 @@ auto view_as_bytes(Downstream &&downstream) {
  *
  * This is similar to \ref view_as_bytes, but rather than viewing the whole
  * event as a byte buffer, extracts the 'histogram' data member (which must be
- * an \ref autocopy_span).
+ * an \ref own_on_copy_view).
  *
  * \see view_as_bytes
  * \see view_histogram_array_as_bytes
@@ -171,7 +172,7 @@ auto view_as_bytes(Downstream &&downstream) {
  * \see concluding_histogram_event
  * \see element_histogram_event
  *
- * \tparam Event histogram event type, which must have an \ref autocopy_span
+ * \tparam Event histogram event type, which must have an \ref own_on_copy_view
  * 'histogram' data member
  *
  * \tparam Downstream downstream processor type
@@ -193,7 +194,7 @@ auto view_histogram_as_bytes(Downstream &&downstream) {
  *
  * This is similar to \ref view_as_bytes, but rather than viewing the whole
  * event as a byte buffer, extracts the 'histogram_array' data member (which
- * must be an \ref autocopy_span).
+ * must be an \ref own_on_copy_view).
  *
  * \see view_as_bytes
  * \see view_histogram_as_bytes
@@ -201,7 +202,7 @@ auto view_histogram_as_bytes(Downstream &&downstream) {
  * \see concluding_histogram_array_event
  *
  * \tparam Event histogram array event type, which must have an \ref
- * autocopy_span 'histogram_array' data member
+ * own_on_copy_view 'histogram_array' data member
  *
  * \tparam Downstream downstream processor type
  *

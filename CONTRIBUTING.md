@@ -43,9 +43,9 @@ types should be documented with Doxygen comments (follow existing practice).
   - Usually there should be no need for user-defined move/copy constructors and
     assignment operators (Rule of Zero).
   - If a data member is a large array that is expensive to copy, it can be an
-    `autocopy_span`.
+    `own_on_copy_view`.
     - The producer of the event does not copy the data when creating the
-      `autocopy_span`.
+      `own_on_copy_view`.
     - Well-designed downstream processors will not copy events unless
       necessary, so will not suffer any overhead.
     - When making a copy of the event _is_ necessary, it works seamlessly.

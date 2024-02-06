@@ -6,11 +6,11 @@
 
 #pragma once
 
-#include "autocopy_span.hpp"
 #include "common.hpp"
 #include "histogram_events.hpp"
 #include "histogramming.hpp"
 #include "introspect.hpp"
+#include "own_on_copy_view.hpp"
 #include "span.hpp"
 
 #include <cassert>
@@ -95,12 +95,12 @@ class histogram_elementwise {
 
         downstream.handle(element_histogram_event<DataTraits>{
             event.time_range, element_index,
-            autocopy_span<bin_type>(mhist.element_span(element_index)), stats,
-            0});
+            own_on_copy_view<bin_type>(mhist.element_span(element_index)),
+            stats, 0});
 
         if (mhist.is_complete()) {
             downstream.handle(histogram_array_event<DataTraits>{
-                cycle_time_range, autocopy_span<bin_type>(hist_arr), stats,
+                cycle_time_range, own_on_copy_view<bin_type>(hist_arr), stats,
                 1});
             mhist.reset(true);
             cycle_time_range.reset();
@@ -225,7 +225,7 @@ class histogram_elementwise_accumulate {
     void emit_concluding(bool end_of_stream) {
         assert(mhista.is_consistent());
         downstream.handle(concluding_histogram_array_event<DataTraits>{
-            total_time_range, autocopy_span<bin_type>(hist_arr), stats,
+            total_time_range, own_on_copy_view<bin_type>(hist_arr), stats,
             mhista.cycle_index(), end_of_stream});
     }
 
@@ -304,14 +304,14 @@ class histogram_elementwise_accumulate {
 
         downstream.handle(element_histogram_event<DataTraits>{
             event.time_range, element_index,
-            autocopy_span<bin_type>(mhista.element_span(element_index)), stats,
-            mhista.cycle_index()});
+            own_on_copy_view<bin_type>(mhista.element_span(element_index)),
+            stats, mhista.cycle_index()});
 
         if (mhista.is_cycle_complete()) {
             total_time_range.extend(cycle_time_range);
             mhista.new_cycle(journal);
             downstream.handle(histogram_array_event<DataTraits>{
-                total_time_range, autocopy_span<bin_type>(hist_arr), stats,
+                total_time_range, own_on_copy_view<bin_type>(hist_arr), stats,
                 mhista.cycle_index()});
             cycle_time_range.reset();
         }

@@ -6,8 +6,8 @@
 
 #include "libtcspc/write_binary_stream.hpp"
 
-#include "libtcspc/autocopy_span.hpp"
 #include "libtcspc/buffer.hpp"
+#include "libtcspc/own_on_copy_view.hpp"
 #include "libtcspc/span.hpp"
 #include "libtcspc/view_as_bytes.hpp"
 #include "test_checkers.hpp"
@@ -84,21 +84,21 @@ TEST_CASE("write binary stream") {
 
         auto const start = GENERATE(0, 1, 4);
         ALLOW_CALL(stream, tell()).RETURN(start);
-        proc.handle(autocopy_span<std::byte>());
-        proc.handle(autocopy_span<std::byte>());
+        proc.handle(own_on_copy_view<std::byte>());
+        proc.handle(own_on_copy_view<std::byte>());
         proc.flush();
     }
 
     SECTION("initially bad stream") {
         ALLOW_CALL(stream, is_error()).RETURN(true);
         ALLOW_CALL(stream, tell()).RETURN(std::nullopt);
-        proc.handle(autocopy_span<std::byte>()); // Empty spans are okay.
+        proc.handle(own_on_copy_view<std::byte>()); // Empty spans are okay.
         std::array data{std::byte(0)};
-        proc.handle(autocopy_span(data));
-        proc.handle(autocopy_span(data));
-        proc.handle(autocopy_span(data));
+        proc.handle(own_on_copy_view(data));
+        proc.handle(own_on_copy_view(data));
+        proc.handle(own_on_copy_view(data));
         REQUIRE_CALL(stream, write(_)).TIMES(1).WITH(_1.size() == granularity);
-        REQUIRE_THROWS_WITH(proc.handle(autocopy_span(data)),
+        REQUIRE_THROWS_WITH(proc.handle(own_on_copy_view(data)),
                             Catch::Matchers::ContainsSubstring("write"));
     }
 
@@ -106,11 +106,11 @@ TEST_CASE("write binary stream") {
         ALLOW_CALL(stream, is_error()).RETURN(false);
         REQUIRE_CALL(stream, tell()).TIMES(1, 4).RETURN(std::nullopt);
         std::array data{std::byte(0)};
-        proc.handle(autocopy_span(data));
-        proc.handle(autocopy_span(data));
-        proc.handle(autocopy_span(data));
+        proc.handle(own_on_copy_view(data));
+        proc.handle(own_on_copy_view(data));
+        proc.handle(own_on_copy_view(data));
         REQUIRE_CALL(stream, write(_)).TIMES(1).WITH(_1.size() == granularity);
-        proc.handle(autocopy_span(data));
+        proc.handle(own_on_copy_view(data));
         proc.flush();
     }
 
@@ -123,12 +123,12 @@ TEST_CASE("write binary stream") {
             std::array<std::uint8_t, 8> data{};
             std::iota(data.begin(), data.end(), std::uint8_t(0));
             auto const data_bytes = as_bytes(span(data));
-            proc.handle(autocopy_span(data_bytes.subspan(0, 2)));
+            proc.handle(own_on_copy_view(data_bytes.subspan(0, 2)));
             REQUIRE_CALL(stream, write(_))
                 .TIMES(1)
                 .WITH(equal_span(_1, data_bytes.subspan(0, 4)));
-            proc.handle(autocopy_span(data_bytes.subspan(2, 2)));
-            proc.handle(autocopy_span(data_bytes.subspan(4, 2)));
+            proc.handle(own_on_copy_view(data_bytes.subspan(2, 2)));
+            proc.handle(own_on_copy_view(data_bytes.subspan(4, 2)));
             REQUIRE_CALL(stream, write(_))
                 .TIMES(1)
                 .WITH(equal_span(_1, data_bytes.subspan(4, 4)));
@@ -136,11 +136,11 @@ TEST_CASE("write binary stream") {
             SECTION("write fails") {
                 ALLOW_CALL(stream, is_error()).RETURN(true);
                 REQUIRE_THROWS(
-                    proc.handle(autocopy_span(data_bytes.subspan(6, 2))));
+                    proc.handle(own_on_copy_view(data_bytes.subspan(6, 2))));
             }
 
             SECTION("clean end") {
-                proc.handle(autocopy_span(data_bytes.subspan(6, 2)));
+                proc.handle(own_on_copy_view(data_bytes.subspan(6, 2)));
                 proc.flush();
             }
         }
@@ -149,20 +149,20 @@ TEST_CASE("write binary stream") {
             std::array<std::uint8_t, 18> data{};
             std::iota(data.begin(), data.end(), std::uint8_t(0));
             auto const data_bytes = as_bytes(span(data));
-            proc.handle(autocopy_span(data_bytes.subspan(0, 3)));
+            proc.handle(own_on_copy_view(data_bytes.subspan(0, 3)));
             REQUIRE_CALL(stream, write(_))
                 .TIMES(1)
                 .WITH(equal_span(_1, data_bytes.subspan(0, 4)));
-            proc.handle(autocopy_span(data_bytes.subspan(3, 3)));
+            proc.handle(own_on_copy_view(data_bytes.subspan(3, 3)));
             REQUIRE_CALL(stream, write(_))
                 .TIMES(1)
                 .WITH(equal_span(_1, data_bytes.subspan(4, 4)));
-            proc.handle(autocopy_span(data_bytes.subspan(6, 3)));
+            proc.handle(own_on_copy_view(data_bytes.subspan(6, 3)));
             REQUIRE_CALL(stream, write(_))
                 .TIMES(1)
                 .WITH(equal_span(_1, data_bytes.subspan(8, 4)));
-            proc.handle(autocopy_span(data_bytes.subspan(9, 3)));
-            proc.handle(autocopy_span(data_bytes.subspan(12, 3)));
+            proc.handle(own_on_copy_view(data_bytes.subspan(9, 3)));
+            proc.handle(own_on_copy_view(data_bytes.subspan(12, 3)));
             REQUIRE_CALL(stream, write(_))
                 .TIMES(1)
                 .WITH(equal_span(_1, data_bytes.subspan(12, 4)));
@@ -170,11 +170,11 @@ TEST_CASE("write binary stream") {
             SECTION("write fails") {
                 ALLOW_CALL(stream, is_error()).RETURN(true);
                 REQUIRE_THROWS(
-                    proc.handle(autocopy_span(data_bytes.subspan(15, 3))));
+                    proc.handle(own_on_copy_view(data_bytes.subspan(15, 3))));
             }
 
             SECTION("clean end") {
-                proc.handle(autocopy_span(data_bytes.subspan(15, 3)));
+                proc.handle(own_on_copy_view(data_bytes.subspan(15, 3)));
                 REQUIRE_CALL(stream, write(_))
                     .TIMES(1)
                     .WITH(equal_span(_1, data_bytes.subspan(16)));
@@ -189,7 +189,7 @@ TEST_CASE("write binary stream") {
             REQUIRE_CALL(stream, write(_))
                 .TIMES(1)
                 .WITH(equal_span(_1, data_bytes.subspan(0, 4)));
-            proc.handle(autocopy_span(data_bytes.subspan(0, 4)));
+            proc.handle(own_on_copy_view(data_bytes.subspan(0, 4)));
             REQUIRE_CALL(stream, write(_))
                 .TIMES(1)
                 .WITH(equal_span(_1, data_bytes.subspan(4, 4)));
@@ -197,7 +197,7 @@ TEST_CASE("write binary stream") {
             SECTION("write fails") {
                 ALLOW_CALL(stream, is_error()).RETURN(true);
                 REQUIRE_THROWS(
-                    proc.handle(autocopy_span(data_bytes.subspan(4, 4))));
+                    proc.handle(own_on_copy_view(data_bytes.subspan(4, 4))));
             }
         }
 
@@ -208,17 +208,17 @@ TEST_CASE("write binary stream") {
             REQUIRE_CALL(stream, write(_))
                 .TIMES(1)
                 .WITH(equal_span(_1, data_bytes.subspan(0, 4)));
-            proc.handle(autocopy_span(data_bytes.subspan(0, 5)));
+            proc.handle(own_on_copy_view(data_bytes.subspan(0, 5)));
             REQUIRE_CALL(stream, write(_))
                 .TIMES(1)
                 .WITH(equal_span(_1, data_bytes.subspan(4, 4)));
-            proc.handle(autocopy_span(data_bytes.subspan(5, 5)));
+            proc.handle(own_on_copy_view(data_bytes.subspan(5, 5)));
             REQUIRE_CALL(stream, write(_))
                 .TIMES(1)
                 .WITH(equal_span(_1, data_bytes.subspan(8, 4)));
             ALLOW_CALL(stream, is_error()).RETURN(true);
             REQUIRE_THROWS(
-                proc.handle(autocopy_span(data_bytes.subspan(10, 5))));
+                proc.handle(own_on_copy_view(data_bytes.subspan(10, 5))));
         }
 
         SECTION("event size 9") {
@@ -228,7 +228,7 @@ TEST_CASE("write binary stream") {
             REQUIRE_CALL(stream, write(_))
                 .TIMES(1)
                 .WITH(equal_span(_1, data_bytes.subspan(0, 8)));
-            proc.handle(autocopy_span(data_bytes.subspan(0, 9)));
+            proc.handle(own_on_copy_view(data_bytes.subspan(0, 9)));
             REQUIRE_CALL(stream, write(_))
                 .TIMES(1)
                 .WITH(equal_span(_1, data_bytes.subspan(8, 4)));
@@ -236,14 +236,14 @@ TEST_CASE("write binary stream") {
             SECTION("write fails") {
                 ALLOW_CALL(stream, is_error()).RETURN(true);
                 REQUIRE_THROWS(
-                    proc.handle(autocopy_span(data_bytes.subspan(9, 9))));
+                    proc.handle(own_on_copy_view(data_bytes.subspan(9, 9))));
             }
 
             SECTION("clean end") {
                 REQUIRE_CALL(stream, write(_))
                     .TIMES(1)
                     .WITH(equal_span(_1, data_bytes.subspan(12, 4)));
-                proc.handle(autocopy_span(data_bytes.subspan(9, 9)));
+                proc.handle(own_on_copy_view(data_bytes.subspan(9, 9)));
                 REQUIRE_CALL(stream, write(_))
                     .TIMES(1)
                     .WITH(equal_span(_1, data_bytes.subspan(16, 2)));
@@ -268,29 +268,29 @@ TEST_CASE("write binary stream") {
             SECTION("write fails") {
                 ALLOW_CALL(stream, is_error()).RETURN(true);
                 REQUIRE_THROWS(
-                    proc.handle(autocopy_span(data_bytes.subspan(0, 3))));
+                    proc.handle(own_on_copy_view(data_bytes.subspan(0, 3))));
             }
 
             SECTION("clean end") {
-                proc.handle(autocopy_span(data_bytes.subspan(0, 3)));
+                proc.handle(own_on_copy_view(data_bytes.subspan(0, 3)));
                 proc.flush();
             }
 
             SECTION("continue") {
-                proc.handle(autocopy_span(data_bytes.subspan(0, 3)));
-                proc.handle(autocopy_span(data_bytes.subspan(3, 3)));
+                proc.handle(own_on_copy_view(data_bytes.subspan(0, 3)));
+                proc.handle(own_on_copy_view(data_bytes.subspan(3, 3)));
                 REQUIRE_CALL(stream, write(_))
                     .TIMES(1)
                     .WITH(equal_span(_1, data_bytes.subspan(3, 4)));
 
                 SECTION("write fails") {
                     ALLOW_CALL(stream, is_error()).RETURN(true);
-                    REQUIRE_THROWS(
-                        proc.handle(autocopy_span(data_bytes.subspan(6, 3))));
+                    REQUIRE_THROWS(proc.handle(
+                        own_on_copy_view(data_bytes.subspan(6, 3))));
                 }
 
                 SECTION("clean end") {
-                    proc.handle(autocopy_span(data_bytes.subspan(6, 3)));
+                    proc.handle(own_on_copy_view(data_bytes.subspan(6, 3)));
                     REQUIRE_CALL(stream, write(_))
                         .TIMES(1)
                         .WITH(equal_span(_1, data_bytes.subspan(7, 2)));
@@ -310,11 +310,11 @@ TEST_CASE("write binary stream") {
             SECTION("write fails") {
                 ALLOW_CALL(stream, is_error()).RETURN(true);
                 REQUIRE_THROWS(
-                    proc.handle(autocopy_span(data_bytes.subspan(0, 4))));
+                    proc.handle(own_on_copy_view(data_bytes.subspan(0, 4))));
             }
 
             SECTION("clean end") {
-                proc.handle(autocopy_span(data_bytes.subspan(0, 4)));
+                proc.handle(own_on_copy_view(data_bytes.subspan(0, 4)));
                 REQUIRE_CALL(stream, write(_))
                     .TIMES(1)
                     .WITH(equal_span(_1, data_bytes.subspan(3, 1)));

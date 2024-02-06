@@ -6,9 +6,9 @@
 
 #pragma once
 
-#include "autocopy_span.hpp"
 #include "buffer.hpp"
 #include "introspect.hpp"
+#include "own_on_copy_view.hpp"
 #include "span.hpp"
 
 #include <algorithm>
@@ -373,11 +373,11 @@ template <typename OutputStream> class write_binary_stream {
         return g;
     }
 
-    void handle(autocopy_span<std::byte> const &event) {
+    void handle(own_on_copy_view<std::byte> const &event) {
         handle_span(event.as_span());
     }
 
-    void handle(autocopy_span<std::byte const> const &event) {
+    void handle(own_on_copy_view<std::byte const> const &event) {
         handle_span(event.as_span());
     }
 
@@ -459,7 +459,7 @@ template <typename OutputStream> class write_binary_stream {
  * \ref ostream_output_stream. (Use of iostreams is not recommended due to
  * often poor performance.)
  *
- * The processor receives data in the form of <tt>autocopy_span<std::byte
+ * The processor receives data in the form of <tt>own_on_copy_view<std::byte
  * const></tt> (see \ref view_as_bytes). The bytes are written sequentially and
  * contiguously to the stream.
  *

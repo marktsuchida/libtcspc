@@ -3,7 +3,6 @@
 # SPDX-License-Identifier: MIT
 
 public_cpp_headers = files(
-    'libtcspc/autocopy_span.hpp',
     'libtcspc/bh_spc.hpp',
     'libtcspc/binning.hpp',
     'libtcspc/buffer.hpp',
@@ -23,6 +22,7 @@ public_cpp_headers = files(
     'libtcspc/merge.hpp',
     'libtcspc/multiplex.hpp',
     'libtcspc/npint.hpp',
+    'libtcspc/own_on_copy_view.hpp',
     'libtcspc/pair.hpp',
     'libtcspc/picoquant_t2.hpp',
     'libtcspc/picoquant_t3.hpp',

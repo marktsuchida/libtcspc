@@ -6,8 +6,8 @@
 
 #include "libtcspc/write_binary_stream.hpp"
 
-#include "libtcspc/autocopy_span.hpp"
 #include "libtcspc/buffer.hpp"
+#include "libtcspc/own_on_copy_view.hpp"
 #include "libtcspc/span.hpp"
 
 #include <benchmark/benchmark.h>
@@ -68,7 +68,7 @@ void ofstream_unbuf(benchmark::State &state) {
         auto proc =
             write_binary_stream(ref_output_stream(stream), pool, write_size);
         for (auto n = num_writes; n > 0; --n)
-            proc.handle(autocopy_span(data));
+            proc.handle(own_on_copy_view(data));
     }
 }
 
@@ -83,7 +83,7 @@ void ofstream(benchmark::State &state) {
         auto proc =
             write_binary_stream(ref_output_stream(stream), pool, write_size);
         for (auto n = num_writes; n > 0; --n)
-            proc.handle(autocopy_span(data));
+            proc.handle(own_on_copy_view(data));
     }
 }
 
@@ -98,7 +98,7 @@ void cfile_unbuf(benchmark::State &state) {
         auto proc =
             write_binary_stream(ref_output_stream(stream), pool, write_size);
         for (auto n = num_writes; n > 0; --n)
-            proc.handle(autocopy_span(data));
+            proc.handle(own_on_copy_view(data));
     }
 }
 
@@ -113,7 +113,7 @@ void cfile(benchmark::State &state) {
         auto proc =
             write_binary_stream(ref_output_stream(stream), pool, write_size);
         for (auto n = num_writes; n > 0; --n)
-            proc.handle(autocopy_span(data));
+            proc.handle(own_on_copy_view(data));
     }
 }
 

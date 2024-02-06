@@ -3,7 +3,6 @@
 # SPDX-License-Identifier: MIT
 
 test_libtcspc_srcs = [
-    'autocopy_span.cpp',
     'bh_spc.cpp',
     'binning.cpp',
     'buffer.cpp',
@@ -24,6 +23,7 @@ test_libtcspc_srcs = [
     'merge.cpp',
     'multiplex.cpp',
     'npint.cpp',
+    'own_on_copy_view.cpp',
     'pair.cpp',
     'picoquant_t2.cpp',
     'picoquant_t3.cpp',

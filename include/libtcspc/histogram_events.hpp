@@ -6,8 +6,8 @@
 
 #pragma once
 
-#include "autocopy_span.hpp"
 #include "common.hpp"
+#include "own_on_copy_view.hpp"
 
 #include <algorithm>
 #include <cstddef>
@@ -292,7 +292,7 @@ template <typename DataTraits = default_data_traits> struct histogram_event {
     /**
      * \brief The histogram.
      */
-    autocopy_span<typename DataTraits::bin_type> histogram;
+    own_on_copy_view<typename DataTraits::bin_type> histogram;
 
     /** \brief Statistics. */
     histogram_stats stats;
@@ -344,7 +344,7 @@ struct concluding_histogram_event {
     /**
      * \brief The accumulated histogram.
      */
-    autocopy_span<typename DataTraits::bin_type> histogram;
+    own_on_copy_view<typename DataTraits::bin_type> histogram;
 
     /** \brief Statistics. */
     histogram_stats stats;
@@ -425,7 +425,7 @@ struct element_histogram_event {
     /**
      * \brief View of the histogram data.
      */
-    autocopy_span<typename DataTraits::bin_type> histogram;
+    own_on_copy_view<typename DataTraits::bin_type> histogram;
 
     /** \brief Statistics (for the histogram array). */
     histogram_stats stats;
@@ -489,7 +489,7 @@ struct histogram_array_event {
     /**
      * \brief View of the histogram array.
      */
-    autocopy_span<typename DataTraits::bin_type> histogram_array;
+    own_on_copy_view<typename DataTraits::bin_type> histogram_array;
 
     /** \brief Statistics. */
     histogram_stats stats;
@@ -551,7 +551,7 @@ struct concluding_histogram_array_event {
     /**
      * \brief View of the histogram array.
      */
-    autocopy_span<typename DataTraits::bin_type> histogram_array;
+    own_on_copy_view<typename DataTraits::bin_type> histogram_array;
 
     /** \brief Statistics. */
     histogram_stats stats;

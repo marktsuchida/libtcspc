@@ -6,11 +6,11 @@
 
 #pragma once
 
-#include "autocopy_span.hpp"
 #include "common.hpp"
 #include "histogram_events.hpp"
 #include "histogramming.hpp"
 #include "introspect.hpp"
+#include "own_on_copy_view.hpp"
 #include "span.hpp"
 
 #include <algorithm>
@@ -49,7 +49,7 @@ class histogram {
 
     void emit_concluding(bool end_of_stream) {
         downstream.handle(concluding_histogram_event<DataTraits>{
-            time_range, autocopy_span<bin_type>(hist), stats, 0,
+            time_range, own_on_copy_view<bin_type>(hist), stats, 0,
             end_of_stream});
     }
 
@@ -116,7 +116,7 @@ class histogram {
             return handle_overflow(event);
         time_range.extend(event.abstime);
         downstream.handle(histogram_event<DataTraits>{
-            time_range, autocopy_span<bin_type>(hist), stats});
+            time_range, own_on_copy_view<bin_type>(hist), stats});
     }
 
     void handle([[maybe_unused]] ResetEvent const &event) {
