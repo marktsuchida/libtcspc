@@ -43,16 +43,16 @@ namespace tcspc {
  * default-initializabile, copyabile, and equality comparable) value semantics
  * that make testing easier.
  *
- * Instances hold a \c span of a copyable type \c T, whose storage may or may
+ * Instances hold a \ref span of a copyable type \c T, whose storage may or may
  * not be owned by the instance. Copying any instance copies the data, and the
  * result is an instance that owns the memory for its data.
  *
- * Producers of own_on_copy_view normally create the instance from a \c span of
- * memory owned by the producer and pass the instance to a consumer function,
- * guaranteeing that the producer-owned referenced memory survives the call.
- * (It is usually inappropriate to use own_on_copy_view as a function return
- * value.) Producers should only pass to consumers a const reference to the
- * instance (using \c std::as_const as needed).
+ * Producers of own_on_copy_view normally create the instance from a \ref span
+ * of memory owned by the producer and pass the instance to a consumer
+ * function, guaranteeing that the producer-owned referenced memory survives
+ * the call. (It is usually inappropriate to use own_on_copy_view as a function
+ * return value.) Producers should only pass to consumers a const reference to
+ * the instance (using \c std::as_const as needed).
  *
  * Consumers of own_on_copy_view normally recieve an instance as a function
  * parameter (which should be a const lvalue reference) and read the referred

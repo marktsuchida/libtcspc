@@ -6,6 +6,8 @@
 
 #pragma once
 
+#include <cstddef>
+
 // Use std::span if C++20 or later.
 #if __has_include(<version>)
 #include <version> // IWYU pragma: keep
@@ -20,7 +22,7 @@ namespace tcspc {
  *
  * \ingroup misc
  *
- * For C++20 and later, this is an alias of \c std::span.
+ * For C++20 and later, this is an alias of `std::span<T, Extent>`.
  * For C++17, this is replaced with a local implementation (tcbrindle/span).
  */
 template <class T, std::size_t Extent = std::dynamic_extent>
@@ -33,17 +35,30 @@ using span = std::span<T, Extent>;
 
 #if not LIBTCSPC_SPAN_USE_STD
 
-#define TCB_SPAN_NAMESPACE_NAME tcspc
-
 #ifdef __clang__
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wsign-conversion"
 #endif
 
+#define TCB_SPAN_NAMESPACE_NAME tcspc
 #include "tcb/span.hpp" // IWYU pragma: export
 
 #ifdef __clang__
 #pragma clang diagnostic pop
 #endif
 
-#endif
+namespace tcspc {
+
+/**
+ * \brief Span, an alias or replacement for \c std::span.
+ *
+ * \ingroup misc
+ *
+ * For C++20 and later, this is an alias of `std::span<T, Extent>`.
+ * For C++17, a local implementation (tcbrindle/span) is used.
+ */
+template <typename T, std::size_t Extent> class span;
+
+} // namespace tcspc
+
+#endif // not LIBTCSPC_SPAN_USE_STD
