@@ -504,7 +504,7 @@ class buffer {
         has_data_condition.notify_one();
     }
 
-    void notify_halt() noexcept {
+    void halt() noexcept {
         {
             std::scoped_lock lock(mutex);
             upstream_halted = true;
@@ -607,9 +607,12 @@ auto buffer(std::size_t threshold, Downstream &&downstream) {
  * function blocks until the upstream has signaled the end of stream and all
  * events have been emitted downstream.
  *
- * The thread sending events to the buffer must call <tt>void notify_halt()
- * noexcept</tt> when it will not send anything more, whether or not it flushed
- * the stream.
+ * The thread sending events to the buffer must call `void halt() noexcept`
+ * when it will not send anything more. Note that this call is required even if
+ * processing terminated by an exception (including during an explicit flush),
+ * because such an exception may have been thrown upstream of the buffer
+ * without its knowledge. Without the call to \c halt(), the downstream call to
+ * \c pump() may block indefinitely.
  *
  * Usually \c Event should be EventArray in order to reduce overhead.
  *
