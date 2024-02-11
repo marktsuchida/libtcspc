@@ -13,7 +13,7 @@
 #include "libtcspc/type_list.hpp"
 #include "test_checkers.hpp"
 
-#include <catch2/catch_all.hpp>
+#include <catch2/catch_test_macros.hpp>
 
 #include <array>
 #include <cstddef>

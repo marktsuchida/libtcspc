@@ -12,6 +12,8 @@
 #include "libtcspc/view_as_bytes.hpp"
 #include "test_checkers.hpp"
 
+// Trompeloeil requires catch2 to be included first, but does not define which
+// subset of Catch2 3.x is required. So include catch_all.hpp.
 #include <catch2/catch_all.hpp>
 #include <catch2/trompeloeil.hpp>
 
