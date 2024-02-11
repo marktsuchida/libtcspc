@@ -513,6 +513,9 @@ class buffer {
     }
 
     void pump() {
+        if (upstream_flushed || upstream_halted || downstream_threw)
+            throw std::logic_error("buffer may not be pumped a second time");
+
         try {
             std::unique_lock lock(mutex);
             for (;;) {

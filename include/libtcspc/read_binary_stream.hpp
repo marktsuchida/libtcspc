@@ -426,6 +426,9 @@ class read_binary_stream {
 
     Downstream downstream;
 
+    // Cold data after downstream
+    bool pumped = false;
+
   public:
     explicit read_binary_stream(
         InputStream stream, std::uint64_t max_length,
@@ -455,6 +458,12 @@ class read_binary_stream {
     }
 
     void pump() {
+        if (pumped) {
+            throw std::logic_error(
+                "read_binary_stream may not be pumped a second time");
+        }
+        pumped = true;
+
         auto first_read_size = read_granularity;
         if (stream.is_good()) {
             // Align second and subsequent reads to read_granularity if current
