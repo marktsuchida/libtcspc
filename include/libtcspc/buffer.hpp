@@ -589,6 +589,10 @@ class buffer {
  * \param downstream downstream processor
  *
  * \return buffer pseudo-processor having \c pump member function
+ *
+ * \todo Currently there is no reasonable way to pump the buffer once it has
+ * been placed within a processing graph. This needs to be fixed by introducing
+ * a processor tracker.
  */
 template <typename Event, typename Downstream>
 auto buffer(std::size_t threshold, Downstream &&downstream) {
@@ -630,6 +634,10 @@ auto buffer(std::size_t threshold, Downstream &&downstream) {
  * \param downstream downstream processor
  *
  * \return buffer pseudo-processor having \c pump member function
+ *
+ * \todo Currently there is no reasonable way to pump the buffer once it has
+ * been placed within a processing graph. This needs to be fixed by introducing
+ * a processor tracker.
  */
 template <typename Event, typename Duration, typename Downstream>
 auto real_time_buffer(std::size_t threshold, Duration latency_limit,
