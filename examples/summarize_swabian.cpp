@@ -113,7 +113,7 @@ auto summarize(std::string const &filename) -> bool {
     // clang-format on
 
     try {
-        proc.pump_events(); // Run it all.
+        proc.pump(); // Run it all.
     } catch (end_processing const &exc) {
         // Explicit stop; counts were printed on flush.
         std::fputs(exc.what(), stderr);

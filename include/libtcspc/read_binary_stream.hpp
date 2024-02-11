@@ -454,7 +454,7 @@ class read_binary_stream {
         return g;
     }
 
-    void pump_events() {
+    void pump() {
         auto first_read_size = read_granularity;
         if (stream.is_good()) {
             // Align second and subsequent reads to read_granularity if current
@@ -598,7 +598,7 @@ class read_binary_stream {
  *
  * \param downstream downstream processor
  *
- * \return read-binary-stream source having \c pump_events member function
+ * \return read-binary-stream source having \c pump member function
  */
 template <typename Event, typename EventVector, typename InputStream,
           typename Downstream>

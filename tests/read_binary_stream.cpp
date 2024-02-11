@@ -79,7 +79,7 @@ TEST_CASE("read file") {
                         ctx->tracker<capture_output_accessor>("out")))));
         auto out = capture_output_checker<type_list<pvector<std::uint64_t>>>(
             ctx->accessor<capture_output_accessor>("out"));
-        src.pump_events();
+        src.pump();
         // First read is 8 bytes to recover 16-byte aligned reads.
         REQUIRE(out.check(pvector<std::uint64_t>{43}));
         REQUIRE(out.check(pvector<std::uint64_t>{44, 45}));
@@ -98,7 +98,7 @@ TEST_CASE("read file") {
                         ctx->tracker<capture_output_accessor>("out")))));
         auto out = capture_output_checker<type_list<pvector<std::uint64_t>>>(
             ctx->accessor<capture_output_accessor>("out"));
-        src.pump_events();
+        src.pump();
         REQUIRE(out.check(pvector<std::uint64_t>{43}));
         REQUIRE(out.check(pvector<std::uint64_t>{44, 45}));
         REQUIRE(out.check(pvector<std::uint64_t>{46, 47}));
@@ -118,7 +118,7 @@ TEST_CASE("read file") {
                         ctx->tracker<capture_output_accessor>("out")))));
         auto out = capture_output_checker<type_list<pvector<std::uint64_t>>>(
             ctx->accessor<capture_output_accessor>("out"));
-        REQUIRE_THROWS_WITH(src.pump_events(),
+        REQUIRE_THROWS_WITH(src.pump(),
                             Catch::Matchers::ContainsSubstring("remain"));
         REQUIRE(out.check(pvector<std::uint64_t>{43}));
         REQUIRE(out.check(pvector<std::uint64_t>{44, 45}));
@@ -137,7 +137,7 @@ TEST_CASE("read file") {
                         ctx->tracker<capture_output_accessor>("out")))));
         auto out = capture_output_checker<type_list<pvector<std::uint64_t>>>(
             ctx->accessor<capture_output_accessor>("out"));
-        src.pump_events();
+        src.pump();
         REQUIRE(out.check(pvector<std::uint64_t>{43}));
         REQUIRE(out.check(pvector<std::uint64_t>{44}));
         REQUIRE(out.check(pvector<std::uint64_t>{45}));
@@ -166,7 +166,7 @@ TEST_CASE("read existing istream, known length") {
                     ctx->tracker<capture_output_accessor>("out")))));
     auto out = capture_output_checker<type_list<pvector<std::uint64_t>>>(
         ctx->accessor<capture_output_accessor>("out"));
-    src.pump_events();
+    src.pump();
     REQUIRE(out.check(pvector<std::uint64_t>{42, 43}));
     REQUIRE(out.check(pvector<std::uint64_t>{44, 45}));
     REQUIRE(out.check(pvector<std::uint64_t>{46}));
@@ -192,7 +192,7 @@ TEST_CASE("read existing istream, to end") {
                     ctx->tracker<capture_output_accessor>("out")))));
     auto out = capture_output_checker<type_list<pvector<std::uint64_t>>>(
         ctx->accessor<capture_output_accessor>("out"));
-    src.pump_events();
+    src.pump();
     REQUIRE(out.check(pvector<std::uint64_t>{42, 43}));
     REQUIRE(out.check(pvector<std::uint64_t>{44, 45}));
     REQUIRE(out.check(pvector<std::uint64_t>{46, 47}));
@@ -215,7 +215,7 @@ TEST_CASE("read existing istream, empty") {
                     ctx->tracker<capture_output_accessor>("out")))));
     auto out = capture_output_checker<type_list<pvector<std::uint64_t>>>(
         ctx->accessor<capture_output_accessor>("out"));
-    src.pump_events();
+    src.pump();
     REQUIRE(out.check_flushed());
 }
 

@@ -191,7 +191,7 @@ template <typename Downstream> class null_source {
         return g;
     }
 
-    void pump_events() { downstream.flush(); }
+    void pump() { downstream.flush(); }
 };
 
 } // namespace internal
@@ -205,7 +205,7 @@ template <typename Downstream> class null_source {
  *
  * \param downstream downstream processor
  *
- * \return null source having \c pump_events member function
+ * \return null source having \c pump member function
  */
 template <typename Downstream> auto null_source(Downstream &&downstream) {
     return internal::null_source<Downstream>(

@@ -512,7 +512,7 @@ class buffer {
         has_data_condition.notify_one();
     }
 
-    void pump_events() {
+    void pump() {
         try {
             std::unique_lock lock(mutex);
             for (;;) {
@@ -572,10 +572,10 @@ class buffer {
  * \ingroup processors-basic
  *
  * This receives events of type \c Event from upstream like a normal processor,
- * but stores them in a buffer. By calling <tt>void pump_events()</tt> on a
- * different thread, the buffered events can be sent downstream on that thread.
- * The \c pump_events function blocks until the upstream has signaled the end
- * of stream and all events have been emitted downstream.
+ * but stores them in a buffer. By calling `void pump()` on a different thread,
+ * the buffered events can be sent downstream on that thread. The \c pump
+ * function blocks until the upstream has signaled the end of stream and all
+ * events have been emitted downstream.
  *
  * Usually \c Event should be EventArray in order to reduce overhead.
  *
@@ -588,7 +588,7 @@ class buffer {
  *
  * \param downstream downstream processor
  *
- * \return buffer pseudo-processor having \c pump_events member function
+ * \return buffer pseudo-processor having \c pump member function
  */
 template <typename Event, typename Downstream>
 auto buffer(std::size_t threshold, Downstream &&downstream) {
@@ -602,10 +602,10 @@ auto buffer(std::size_t threshold, Downstream &&downstream) {
  * \ingroup processors-basic
  *
  * This receives events of type \c Event from upstream like a normal processor,
- * but stores them in a buffer. By calling <tt>void pump_events()</tt> on a
- * different thread, the buffered events can be sent downstream on that thread.
- * The \c pump_events function blocks until the upstream has signaled the end
- * of stream and all events have been emitted downstream.
+ * but stores them in a buffer. By calling `void pump()` on a different thread,
+ * the buffered events can be sent downstream on that thread. The \c pump
+ * function blocks until the upstream has signaled the end of stream and all
+ * events have been emitted downstream.
  *
  * The thread sending events to the buffer must call <tt>void notify_halt()
  * noexcept</tt> when it will not send anything more, whether or not it flushed
@@ -626,7 +626,7 @@ auto buffer(std::size_t threshold, Downstream &&downstream) {
  *
  * \param downstream downstream processor
  *
- * \return buffer pseudo-processor having \c pump_events member function
+ * \return buffer pseudo-processor having \c pump member function
  */
 template <typename Event, typename Duration, typename Downstream>
 auto real_time_buffer(std::size_t threshold, Duration latency_limit,

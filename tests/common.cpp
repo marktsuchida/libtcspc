@@ -36,7 +36,7 @@ TEST_CASE("null source") {
     auto src = null_source(capture_output<type_list<>>(
         ctx->tracker<capture_output_accessor>("out")));
     auto out = ctx->accessor<capture_output_accessor>("out");
-    src.pump_events();
+    src.pump();
     REQUIRE(out.check_flushed());
 }
 

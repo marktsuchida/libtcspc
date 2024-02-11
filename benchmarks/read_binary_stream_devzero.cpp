@@ -82,7 +82,7 @@ void ifstream_unbuf(benchmark::State &state) {
         auto src =
             read_binary_stream<int>(ref_input_stream(stream), total_bytes,
                                     pool, read_size, unoptimized_null_sink());
-        src.pump_events();
+        src.pump();
     }
 }
 
@@ -94,7 +94,7 @@ void ifstream(benchmark::State &state) {
         auto src =
             read_binary_stream<int>(ref_input_stream(stream), total_bytes,
                                     pool, read_size, unoptimized_null_sink());
-        src.pump_events();
+        src.pump();
     }
 }
 
@@ -106,7 +106,7 @@ void cfile_unbuf(benchmark::State &state) {
         auto src =
             read_binary_stream<int>(ref_input_stream(stream), total_bytes,
                                     pool, read_size, unoptimized_null_sink());
-        src.pump_events();
+        src.pump();
     }
 }
 
@@ -118,7 +118,7 @@ void cfile(benchmark::State &state) {
         auto src =
             read_binary_stream<int>(ref_input_stream(stream), total_bytes,
                                     pool, read_size, unoptimized_null_sink());
-        src.pump_events();
+        src.pump();
     }
 }
 
