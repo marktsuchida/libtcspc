@@ -56,13 +56,12 @@ class buffer {
     using queue_type = vector_queue<Event>;
 
     std::size_t threshold;
-    std::chrono::time_point<clock_type>::duration max_latency =
-        std::chrono::time_point<clock_type>::duration::max();
+    clock_type::duration max_latency = std::chrono::hours(24);
 
     std::mutex mutex;
     std::condition_variable has_data_condition;
     queue_type shared_queue;
-    std::chrono::time_point<clock_type> oldest_enqueued_time;
+    clock_type::time_point oldest_enqueued_time;
     bool upstream_flushed = false;
     bool upstream_halted = false;
     bool downstream_threw = false;
@@ -81,17 +80,27 @@ class buffer {
 
     Downstream downstream;
 
+    // Cold data after downstream.
+    bool pumped = false;
+
   public:
     template <typename Duration>
     explicit buffer(std::size_t threshold, Duration latency_limit,
                     Downstream downstream)
-        : threshold(threshold),
-          max_latency(std::chrono::duration_cast<decltype(max_latency)>(
-              latency_limit)),
-          downstream(std::move(downstream)) {}
+        : threshold(threshold >= 0 ? threshold : 1),
+          max_latency(
+              std::chrono::duration_cast<clock_type::duration>(latency_limit)),
+          downstream(std::move(downstream)) {
+        // Limit to avoid integer overflow.
+        if (max_latency > std::chrono::hours(24)) {
+            throw std::logic_error(
+                "buffer latency limit must not be greater than 24 h");
+        }
+    }
 
     explicit buffer(std::size_t threshold, Downstream downstream)
-        : threshold(threshold), downstream(std::move(downstream)) {}
+        : threshold(threshold >= 0 ? threshold : 1),
+          downstream(std::move(downstream)) {}
 
     [[nodiscard]] auto introspect_node() const -> processor_info {
         processor_info info(this, "buffer");
@@ -145,17 +154,21 @@ class buffer {
     }
 
     void pump() {
-        if (upstream_flushed || upstream_halted || downstream_threw)
-            throw std::logic_error("buffer may not be pumped a second time");
-
         try {
             std::unique_lock lock(mutex);
+            if (pumped) {
+                throw std::logic_error(
+                    "buffer may not be pumped a second time");
+            }
+            pumped = true;
+
             for (;;) {
                 if constexpr (LatencyLimited) {
                     has_data_condition.wait(lock, [&] {
                         return not shared_queue.empty() || upstream_flushed ||
                                upstream_halted;
                     });
+                    // Won't overflow due to 24 h limit on max_latency:
                     auto const deadline = oldest_enqueued_time + max_latency;
                     has_data_condition.wait_until(lock, deadline, [&] {
                         return shared_queue.size() >= threshold ||
@@ -168,25 +181,19 @@ class buffer {
                     });
                 }
 
-                if (shared_queue.empty()) {
-                    if (upstream_flushed) {
-                        lock.unlock();
-                        downstream.flush();
-                        return;
-                    }
-                    if (upstream_halted) // Ended without flushing.
-                        throw source_halted();
+                if (not upstream_flushed && upstream_halted)
+                    throw source_halted();
+                if (shared_queue.empty() && upstream_flushed) {
+                    lock.unlock();
+                    return downstream.flush();
                 }
 
                 emit_queue.swap(shared_queue);
-
                 lock.unlock();
-
                 while (!emit_queue.empty()) {
                     downstream.handle(emit_queue.front());
                     emit_queue.pop();
                 }
-
                 lock.lock();
             }
         } catch (source_halted const &) {
@@ -264,7 +271,7 @@ auto buffer(std::size_t threshold, Downstream &&downstream) {
  *
  * \param latency_limit a \c std::chrono::duration specifying the maximum time
  * an event can remain in the buffer before sending to downstream is started
- * even if there are fewer events than threshold
+ * even if there are fewer events than threshold. Must not exceed 24 hours.
  *
  * \param downstream downstream processor
  *
