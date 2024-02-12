@@ -31,7 +31,6 @@ Checks: >-
 #   constants would be merely circuitous; and tests.
 
 CheckOptions:
-  bugprone-easily-swappable-parameters.MinimumLength: 3
   cppcoreguidelines-avoid-do-while.IgnoreMacros: true
   misc-non-private-member-variables-in-classes.IgnoreClassesWithAllMemberVariablesBeingPublic: true
   readability-braces-around-statements.ShortStatementLines: 3

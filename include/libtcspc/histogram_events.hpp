@@ -94,14 +94,15 @@ template <typename Abstime> struct abstime_range {
     }
 
     /** \brief Extend the time range to include the given time range. */
-    constexpr void extend(Abstime other_start, Abstime other_stop) noexcept {
-        start = std::min(start, other_start);
-        stop = std::max(stop, other_stop);
+    constexpr void extend(arg_start<Abstime> other_start,
+                          arg_stop<Abstime> other_stop) noexcept {
+        start = std::min(start, other_start.value);
+        stop = std::max(stop, other_stop.value);
     }
 
     /** \brief Extend the time range to include the given time range. */
     constexpr void extend(abstime_range const &other) noexcept {
-        extend(other.start, other.stop);
+        extend(arg_start{other.start}, arg_stop{other.stop});
     }
 
     /** \brief Equality comparison operator. */

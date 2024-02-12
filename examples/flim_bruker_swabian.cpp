@@ -208,7 +208,10 @@ auto make_processor(settings const &settings,
     time_correlate_at_stop(
     map_to_datapoints(difftime_data_mapper(),
     map_to_bins(
-        linear_bin_mapper(0, settings.bin_width, settings.max_bin_index),
+        linear_bin_mapper(
+            arg_offset{0},
+            arg_bin_width{settings.bin_width},
+            arg_max_bin_index{settings.max_bin_index}),
     std::move(bin_increment_merge)))))));
 
     auto sync_processor =

@@ -18,7 +18,6 @@
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/generators/catch_generators.hpp>
 
-#include <cstdint>
 #include <limits>
 #include <memory>
 #include <optional>
@@ -35,12 +34,14 @@ using misc_event = timestamped_test_event<2>;
 
 TEST_CASE("introspect binning", "[introspect]") {
     struct count_traits : default_data_traits {
-        using datapoint_type = std::uint32_t;
+        using datapoint_type = u32;
     };
     check_introspect_simple_processor(
         map_to_datapoints<count_traits>(count_data_mapper(), null_sink()));
     check_introspect_simple_processor(
-        map_to_bins(linear_bin_mapper(0, 1, 10), null_sink()));
+        map_to_bins(linear_bin_mapper(arg_offset{0}, arg_bin_width{1},
+                                      arg_max_bin_index<u16>{10}),
+                    null_sink()));
     check_introspect_simple_processor(
         batch_bin_increments<start_event, stop_event>(null_sink()));
 }
@@ -279,106 +280,123 @@ TEST_CASE("Linear bin mapping") {
         return !o;
     };
 
-    linear_bin_mapper<data_traits> const m010(0, 1, 0, clamp);
+    linear_bin_mapper<data_traits> const m010(
+        arg_offset{0}, arg_bin_width{1}, arg_max_bin_index<u16>{0}, clamp);
     REQUIRE(m010.n_bins() == 1);
     REQUIRE(check_clamped(m010(-1), 0));
     REQUIRE(m010(0).value() == 0);
     REQUIRE(check_clamped(m010(1), 0));
 
-    linear_bin_mapper<data_traits> const m110(1, 1, 0, clamp);
+    linear_bin_mapper<data_traits> const m110(
+        arg_offset{1}, arg_bin_width{1}, arg_max_bin_index<u16>{0}, clamp);
     REQUIRE(m110.n_bins() == 1);
     REQUIRE(check_clamped(m110(0), 0));
     REQUIRE(m110(1).value() == 0);
     REQUIRE(check_clamped(m110(2), 0));
 
-    linear_bin_mapper<data_traits> const nn10(-1, 1, 0, clamp);
+    linear_bin_mapper<data_traits> const nn10(
+        arg_offset{-1}, arg_bin_width{1}, arg_max_bin_index<u16>{0}, clamp);
     REQUIRE(nn10.n_bins() == 1);
     REQUIRE(check_clamped(nn10(-2), 0));
     REQUIRE(nn10(-1).value() == 0);
     REQUIRE(check_clamped(nn10(0), 0));
 
-    linear_bin_mapper<data_traits> const m020(0, 2, 0, clamp);
+    linear_bin_mapper<data_traits> const m020(
+        arg_offset{0}, arg_bin_width{2}, arg_max_bin_index<u16>{0}, clamp);
     REQUIRE(m020.n_bins() == 1);
     REQUIRE(check_clamped(m020(-1), 0));
     REQUIRE(m020(0).value() == 0);
     REQUIRE(m020(1).value() == 0);
     REQUIRE(check_clamped(m020(2), 0));
 
-    linear_bin_mapper<data_traits> const m120(1, 2, 0, clamp);
+    linear_bin_mapper<data_traits> const m120(
+        arg_offset{1}, arg_bin_width{2}, arg_max_bin_index<u16>{0}, clamp);
     REQUIRE(m120.n_bins() == 1);
     REQUIRE(check_clamped(m120(0), 0));
     REQUIRE(m120(1).value() == 0);
     REQUIRE(m120(2).value() == 0);
     REQUIRE(check_clamped(m120(3), 0));
 
-    linear_bin_mapper<data_traits> const mn20(-1, 2, 0, clamp);
+    linear_bin_mapper<data_traits> const mn20(
+        arg_offset{-1}, arg_bin_width{2}, arg_max_bin_index<u16>{0}, clamp);
     REQUIRE(mn20.n_bins() == 1);
     REQUIRE(check_clamped(mn20(-2), 0));
     REQUIRE(mn20(-1).value() == 0);
     REQUIRE(mn20(0).value() == 0);
     REQUIRE(check_clamped(mn20(1), 0));
 
-    linear_bin_mapper<data_traits> const m0n0(0, -1, 0, clamp);
+    linear_bin_mapper<data_traits> const m0n0(
+        arg_offset{0}, arg_bin_width{-1}, arg_max_bin_index<u16>{0}, clamp);
     REQUIRE(m0n0.n_bins() == 1);
     REQUIRE(check_clamped(m0n0(1), 0));
     REQUIRE(m0n0(0).value() == 0);
     REQUIRE(check_clamped(m0n0(-1), 0));
 
-    linear_bin_mapper<data_traits> const m1n0(1, -1, 0, clamp);
+    linear_bin_mapper<data_traits> const m1n0(
+        arg_offset{1}, arg_bin_width{-1}, arg_max_bin_index<u16>{0}, clamp);
     REQUIRE(m1n0.n_bins() == 1);
     REQUIRE(check_clamped(m1n0(2), 0));
     REQUIRE(m1n0(1).value() == 0);
     REQUIRE(check_clamped(m1n0(0), 0));
 
-    linear_bin_mapper<data_traits> const mnn0(-1, -1, 0, clamp);
+    linear_bin_mapper<data_traits> const mnn0(
+        arg_offset{-1}, arg_bin_width{-1}, arg_max_bin_index<u16>{0}, clamp);
     REQUIRE(mnn0.n_bins() == 1);
     REQUIRE(check_clamped(mnn0(0), 0));
     REQUIRE(mnn0(-1).value() == 0);
     REQUIRE(check_clamped(mnn0(-2), 0));
 
-    linear_bin_mapper<data_traits> const m011(0, 1, 1, clamp);
+    linear_bin_mapper<data_traits> const m011(
+        arg_offset{0}, arg_bin_width{1}, arg_max_bin_index<u16>{1}, clamp);
     REQUIRE(m011.n_bins() == 2);
     REQUIRE(check_clamped(m011(-1), 0));
     REQUIRE(m011(0).value() == 0);
     REQUIRE(m011(1).value() == 1);
     REQUIRE(check_clamped(m011(2), 1));
 
-    linear_bin_mapper<data_traits> const m111(1, 1, 1, clamp);
+    linear_bin_mapper<data_traits> const m111(
+        arg_offset{1}, arg_bin_width{1}, arg_max_bin_index<u16>{1}, clamp);
     REQUIRE(m111.n_bins() == 2);
     REQUIRE(check_clamped(m111(0), 0));
     REQUIRE(m111(1).value() == 0);
     REQUIRE(m111(2).value() == 1);
     REQUIRE(check_clamped(m111(3), 1));
 
-    linear_bin_mapper<data_traits> const mn11(-1, 1, 1, clamp);
+    linear_bin_mapper<data_traits> const mn11(
+        arg_offset{-1}, arg_bin_width{1}, arg_max_bin_index<u16>{1}, clamp);
     REQUIRE(mn11.n_bins() == 2);
     REQUIRE(check_clamped(mn11(-2), 0));
     REQUIRE(mn11(-1).value() == 0);
     REQUIRE(mn11(0).value() == 1);
     REQUIRE(check_clamped(mn11(1), 1));
 
-    linear_bin_mapper<data_traits> const m0n1(0, -1, 1, clamp);
+    linear_bin_mapper<data_traits> const m0n1(
+        arg_offset{0}, arg_bin_width{-1}, arg_max_bin_index<u16>{1}, clamp);
     REQUIRE(m0n1.n_bins() == 2);
     REQUIRE(check_clamped(m0n1(1), 0));
     REQUIRE(m0n1(0).value() == 0);
     REQUIRE(m0n1(-1).value() == 1);
     REQUIRE(check_clamped(m0n1(-2), 1));
 
-    linear_bin_mapper<data_traits> const m1n1(1, -1, 1, clamp);
+    linear_bin_mapper<data_traits> const m1n1(
+        arg_offset{1}, arg_bin_width{-1}, arg_max_bin_index<u16>{1}, clamp);
     REQUIRE(m1n1.n_bins() == 2);
     REQUIRE(check_clamped(m1n1(2), 0));
     REQUIRE(m1n1(1).value() == 0);
     REQUIRE(m1n1(0).value() == 1);
     REQUIRE(check_clamped(m1n1(-1), 1));
 
-    linear_bin_mapper<data_traits> const mnn1(-1, -1, 1, clamp);
+    linear_bin_mapper<data_traits> const mnn1(
+        arg_offset{-1}, arg_bin_width{-1}, arg_max_bin_index<u16>{1}, clamp);
     REQUIRE(mnn1.n_bins() == 2);
     REQUIRE(check_clamped(mnn1(0), 0));
     REQUIRE(mnn1(-1).value() == 0);
     REQUIRE(mnn1(-2).value() == 1);
     REQUIRE(check_clamped(mnn1(-3), 1));
 
-    linear_bin_mapper<data_traits> const maxint(0, 32768, 65535, clamp);
+    linear_bin_mapper<data_traits> const maxint(
+        arg_offset{0}, arg_bin_width{32768}, arg_max_bin_index<u16>{65535},
+        clamp);
     REQUIRE(maxint.n_bins() == 65536);
     REQUIRE(maxint(0).value() == 0);
     REQUIRE(maxint(32767).value() == 0);
@@ -388,7 +406,9 @@ TEST_CASE("Linear bin mapping") {
     struct data_traits_u32 : data_traits {
         using datapoint_type = u32;
     };
-    linear_bin_mapper<data_traits_u32> const maxuint(0, 65536, 65535, clamp);
+    linear_bin_mapper<data_traits_u32> const maxuint(
+        arg_offset{0u}, arg_bin_width{65536u}, arg_max_bin_index<u16>{65535},
+        clamp);
     REQUIRE(maxuint.n_bins() == 65536);
     REQUIRE(maxuint(0).value() == 0);
     REQUIRE(maxuint(65535).value() == 0);
@@ -396,7 +416,9 @@ TEST_CASE("Linear bin mapping") {
     REQUIRE(maxuint(std::numeric_limits<u32>::max()) == 65535);
 
     // Typical flipped 12-bit -> 8-bit
-    linear_bin_mapper<data_traits> const flipped(4095, -16, 255, clamp);
+    linear_bin_mapper<data_traits> const flipped(
+        arg_offset{4095}, arg_bin_width{-16}, arg_max_bin_index<u16>{255},
+        clamp);
     REQUIRE(flipped.n_bins() == 256);
     REQUIRE(flipped(0).value() == 255);
     REQUIRE(flipped(15).value() == 255);

@@ -416,7 +416,7 @@ template <typename... Ts> overloaded(Ts...) -> overloaded<Ts...>;
 // Ordered alphabetically.
 
 /**
- * \brief Function argument wrapper for delay parameter.
+ * \brief Function argument wrapper for abstime parameter.
  * \ingroup arg-wrappers
  */
 template <typename T> struct arg_abstime {
@@ -427,7 +427,18 @@ template <typename T> struct arg_abstime {
 };
 
 /**
- * \brief Function argument wrapper for delay parameter.
+ * \brief Function argument wrapper for bin width parameter.
+ * \ingroup arg-wrappers
+ */
+template <typename T> struct arg_bin_width {
+    /** \brief The argument value. */
+    T value;
+    /** \brief Construct by wrapping a value. */
+    explicit arg_bin_width(T arg) : value(arg) {}
+};
+
+/**
+ * \brief Function argument wrapper for count parameter.
  * \ingroup arg-wrappers
  */
 template <typename T> struct arg_count {
@@ -479,6 +490,50 @@ template <typename T> struct arg_limit {
     T value;
     /** \brief Construct by wrapping a value. */
     explicit arg_limit(T arg) : value(arg) {}
+};
+
+/**
+ * \brief Function argument wrapper for max bin index parameter.
+ * \ingroup arg-wrappers
+ */
+template <typename T> struct arg_max_bin_index {
+    /** \brief The argument value. */
+    T value;
+    /** \brief Construct by wrapping a value. */
+    explicit arg_max_bin_index(T arg) : value(arg) {}
+};
+
+/**
+ * \brief Function argument wrapper for offset parameter.
+ * \ingroup arg-wrappers
+ */
+template <typename T> struct arg_offset {
+    /** \brief The argument value. */
+    T value;
+    /** \brief Construct by wrapping a value. */
+    explicit arg_offset(T arg) : value(arg) {}
+};
+
+/**
+ * \brief Function argument wrapper for start parameter.
+ * \ingroup arg-wrappers
+ */
+template <typename T> struct arg_start {
+    /** \brief The argument value. */
+    T value;
+    /** \brief Construct by wrapping a value. */
+    explicit arg_start(T arg) : value(arg) {}
+};
+
+/**
+ * \brief Function argument wrapper for stop parameter.
+ * \ingroup arg-wrappers
+ */
+template <typename T> struct arg_stop {
+    /** \brief The argument value. */
+    T value;
+    /** \brief Construct by wrapping a value. */
+    explicit arg_stop(T arg) : value(arg) {}
 };
 
 /**

@@ -322,9 +322,9 @@ struct power_of_2_bin_mapper {
  * bin_index_type
  */
 template <typename DataTraits = default_data_traits> class linear_bin_mapper {
-    typename DataTraits::datapoint_type offset;
-    typename DataTraits::datapoint_type bin_width;
-    typename DataTraits::bin_index_type max_bin_index;
+    typename DataTraits::datapoint_type off;
+    typename DataTraits::datapoint_type bwidth;
+    typename DataTraits::bin_index_type max_index;
     bool clamp;
 
     static_assert(std::is_integral_v<typename DataTraits::datapoint_type>,
@@ -356,34 +356,35 @@ template <typename DataTraits = default_data_traits> class linear_bin_mapper {
      * \param clamp if true, include datapoints outside of the mapped range in
      * the first and last bins
      */
-    explicit linear_bin_mapper(datapoint_type offset, datapoint_type bin_width,
-                               bin_index_type max_bin_index,
+    explicit linear_bin_mapper(arg_offset<datapoint_type> offset,
+                               arg_bin_width<datapoint_type> bin_width,
+                               arg_max_bin_index<bin_index_type> max_bin_index,
                                bool clamp = false)
-        : offset(offset), bin_width(bin_width), max_bin_index(max_bin_index),
-          clamp(clamp) {
-        if (bin_width == 0)
+        : off(offset.value), bwidth(bin_width.value),
+          max_index(max_bin_index.value), clamp(clamp) {
+        if (bwidth == 0)
             throw std::invalid_argument(
                 "linear_bin_mapper bin_width must not be zero");
-        if (max_bin_index < 0)
+        if (max_index < 0)
             throw std::invalid_argument(
                 "linear_bin_mapper max_bin_index must not be negative");
     }
 
     /** \brief Bin mapper interface */
     [[nodiscard]] auto n_bins() const -> std::size_t {
-        return std::size_t(max_bin_index) + 1;
+        return std::size_t(max_index) + 1;
     }
 
     /** \brief Bin mapper interface */
     auto operator()(datapoint_type d) const -> std::optional<bin_index_type> {
-        d -= offset;
+        d -= off;
         // Check sign before dividing to avoid rounding to zero in division.
-        if ((d < 0 && bin_width > 0) || (d > 0 && bin_width < 0))
+        if ((d < 0 && bwidth > 0) || (d > 0 && bwidth < 0))
             return clamp ? std::make_optional(bin_index_type{0})
                          : std::nullopt;
-        d /= bin_width;
-        if (std::uint64_t(d) > max_bin_index)
-            return clamp ? std::make_optional(max_bin_index) : std::nullopt;
+        d /= bwidth;
+        if (std::uint64_t(d) > max_index)
+            return clamp ? std::make_optional(max_index) : std::nullopt;
         return bin_index_type(d);
     }
 };

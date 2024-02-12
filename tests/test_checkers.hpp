@@ -18,6 +18,7 @@ namespace tcspc {
 
 namespace internal {
 
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 inline void check_type_name(std::string const &type_name,
                             std::string const &name) {
     // With unknown compiler/platform, there is no guarantee about type_name.
