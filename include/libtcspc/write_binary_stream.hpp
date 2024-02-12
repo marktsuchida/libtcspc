@@ -6,8 +6,8 @@
 
 #pragma once
 
-#include "buffer.hpp"
 #include "introspect.hpp"
+#include "object_pool.hpp"
 #include "own_on_copy_view.hpp"
 #include "span.hpp"
 

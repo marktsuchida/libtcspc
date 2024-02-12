@@ -6,7 +6,7 @@
 
 #include "libtcspc/read_binary_stream.hpp"
 
-#include "libtcspc/buffer.hpp"
+#include "libtcspc/object_pool.hpp"
 #include "libtcspc/span.hpp"
 
 #include <benchmark/benchmark.h>

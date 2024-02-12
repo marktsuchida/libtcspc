@@ -6,7 +6,7 @@
 
 #include "libtcspc/write_binary_stream.hpp"
 
-#include "libtcspc/buffer.hpp"
+#include "libtcspc/object_pool.hpp"
 #include "libtcspc/own_on_copy_view.hpp"
 #include "libtcspc/span.hpp"
 #include "libtcspc/view_as_bytes.hpp"

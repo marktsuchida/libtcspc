@@ -6,8 +6,8 @@
 
 #include "libtcspc/read_binary_stream.hpp"
 
-#include "libtcspc/buffer.hpp"
 #include "libtcspc/common.hpp"
+#include "libtcspc/object_pool.hpp"
 #include "libtcspc/processor_context.hpp"
 #include "libtcspc/stop.hpp"
 #include "libtcspc/test_utils.hpp"

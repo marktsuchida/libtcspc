@@ -6,9 +6,9 @@
 
 #pragma once
 
-#include "buffer.hpp"
 #include "common.hpp"
 #include "introspect.hpp"
+#include "object_pool.hpp"
 #include "span.hpp"
 
 #include <algorithm>

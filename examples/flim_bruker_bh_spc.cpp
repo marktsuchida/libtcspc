@@ -4,9 +4,9 @@
  * SPDX-License-Identifier: MIT
  */
 
+#include "libtcspc/batch.hpp"
 #include "libtcspc/bh_spc.hpp"
 #include "libtcspc/binning.hpp"
-#include "libtcspc/buffer.hpp"
 #include "libtcspc/check.hpp"
 #include "libtcspc/common.hpp"
 #include "libtcspc/count.hpp"
@@ -15,6 +15,7 @@
 #include "libtcspc/histogram_events.hpp"
 #include "libtcspc/introspect.hpp"
 #include "libtcspc/match.hpp"
+#include "libtcspc/object_pool.hpp"
 #include "libtcspc/processor_context.hpp"
 #include "libtcspc/read_binary_stream.hpp"
 #include "libtcspc/route.hpp"
