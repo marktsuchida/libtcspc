@@ -8,7 +8,7 @@
 
 #include "libtcspc/common.hpp"
 #include "libtcspc/histogram_events.hpp"
-#include "libtcspc/npint.hpp"
+#include "libtcspc/int_types.hpp"
 #include "libtcspc/own_on_copy_view.hpp"
 #include "libtcspc/processor_context.hpp"
 #include "libtcspc/test_utils.hpp"

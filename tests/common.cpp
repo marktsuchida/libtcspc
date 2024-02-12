@@ -6,6 +6,7 @@
 
 #include "libtcspc/common.hpp"
 
+#include "libtcspc/int_types.hpp"
 #include "libtcspc/npint.hpp"
 #include "libtcspc/processor_context.hpp"
 #include "libtcspc/test_utils.hpp"

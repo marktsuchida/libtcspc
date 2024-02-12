@@ -6,6 +6,7 @@
 
 #pragma once
 
+#include "int_types.hpp"
 #include "npint.hpp"
 #include "span.hpp"
 

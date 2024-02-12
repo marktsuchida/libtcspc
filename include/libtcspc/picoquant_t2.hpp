@@ -7,6 +7,7 @@
 #pragma once
 
 #include "common.hpp"
+#include "int_types.hpp"
 #include "introspect.hpp"
 #include "npint.hpp"
 #include "read_bytes.hpp"

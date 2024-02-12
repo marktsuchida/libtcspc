@@ -7,7 +7,7 @@
 #include "libtcspc/histogramming.hpp"
 
 #include "libtcspc/histogram_events.hpp"
-#include "libtcspc/npint.hpp"
+#include "libtcspc/int_types.hpp"
 
 #include <catch2/catch_template_test_macros.hpp>
 #include <catch2/catch_test_macros.hpp>
