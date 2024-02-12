@@ -50,16 +50,17 @@ struct mock_output_stream {
     // NOLINTEND(modernize-use-trailing-return-type)
 };
 
+// Reference-semantic output stream, to work with Trompeloeil mocks that cannot
+// be moved.
 template <typename OutputStream> class ref_output_stream {
-    // NOLINTNEXTLINE(cppcoreguidelines-avoid-const-or-ref-data-members)
-    OutputStream &ref;
+    OutputStream *strm;
 
   public:
-    explicit ref_output_stream(OutputStream &stream) : ref(stream) {}
+    explicit ref_output_stream(OutputStream &stream) : strm(&stream) {}
 
-    auto is_error() -> bool { return ref.is_error(); }
-    auto tell() -> std::optional<std::uint64_t> { return ref.tell(); }
-    void write(span<std::byte const> buf) { ref.write(buf); }
+    auto is_error() -> bool { return strm->is_error(); }
+    auto tell() -> std::optional<std::uint64_t> { return strm->tell(); }
+    void write(span<std::byte const> buf) { strm->write(buf); }
 };
 
 }; // namespace
