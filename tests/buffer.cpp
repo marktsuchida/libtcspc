@@ -7,6 +7,7 @@
 #include "libtcspc/buffer.hpp"
 
 #include "libtcspc/common.hpp"
+#include "libtcspc/processor_context.hpp"
 #include "test_checkers.hpp"
 
 // Trompeloeil requires catch2 to be included first, but does not define which
@@ -26,9 +27,12 @@
 namespace tcspc {
 
 TEST_CASE("introspect buffer", "[introspect]") {
-    check_introspect_simple_processor(buffer<int>(1, null_sink()));
+    auto ctx = std::make_shared<processor_context>();
     check_introspect_simple_processor(
-        real_time_buffer<int>(1, std::chrono::seconds(1), null_sink()));
+        buffer<int>(1, ctx->tracker<buffer_accessor>("buf"), null_sink()));
+    check_introspect_simple_processor(real_time_buffer<int>(
+        1, std::chrono::seconds(1), ctx->tracker<buffer_accessor>("rtbuf"),
+        null_sink()));
 }
 
 // We use Trompeloeil rather than feed_input/capture_output for fine-grain
@@ -115,14 +119,17 @@ void wait_a_little() noexcept {
 } // namespace
 
 TEST_CASE("buffer empty stream") {
+    auto ctx = std::make_shared<processor_context>();
     auto out = mock_downstream();
-    auto buf = buffer<int>(3, ref_proc(out));
+    auto buf =
+        buffer<int>(3, ctx->tracker<buffer_accessor>("buf"), ref_proc(out));
+    auto buf_acc = ctx->accessor<buffer_accessor>("buf");
 
     SECTION("pump in thread") {
         latch thread_start_latch(1);
         std::thread t([&] {
             thread_start_latch.count_down();
-            buf.pump();
+            buf_acc.pump();
         });
         thread_start_latch.wait();
         wait_a_little(); // For likely pump loop start.
@@ -134,13 +141,16 @@ TEST_CASE("buffer empty stream") {
     SECTION("pump only after flush") {
         buf.flush();
         REQUIRE_CALL(out, flush()).TIMES(1);
-        buf.pump();
+        buf_acc.pump();
     }
 }
 
 TEST_CASE("buffer stream ended downstream") {
+    auto ctx = std::make_shared<processor_context>();
     auto out = mock_downstream();
-    auto buf = buffer<int>(1, ref_proc(out));
+    auto buf =
+        buffer<int>(1, ctx->tracker<buffer_accessor>("buf"), ref_proc(out));
+    auto buf_acc = ctx->accessor<buffer_accessor>("buf");
 
     SECTION("pump in thread") {
         bool threw = false;
@@ -148,7 +158,7 @@ TEST_CASE("buffer stream ended downstream") {
         std::thread t([&] {
             thread_start_latch.count_down();
             try {
-                buf.pump();
+                buf_acc.pump();
             } catch (end_processing const &) {
                 threw = true;
             }
@@ -164,13 +174,16 @@ TEST_CASE("buffer stream ended downstream") {
     SECTION("pump only after input") {
         buf.handle(42);
         REQUIRE_CALL(out, handle(42)).TIMES(1).THROW(end_processing({}));
-        CHECK_THROWS_AS(buf.pump(), end_processing);
+        CHECK_THROWS_AS(buf_acc.pump(), end_processing);
     }
 }
 
 TEST_CASE("buffer stream error downstream") {
+    auto ctx = std::make_shared<processor_context>();
     auto out = mock_downstream();
-    auto buf = buffer<int>(1, ref_proc(out));
+    auto buf =
+        buffer<int>(1, ctx->tracker<buffer_accessor>("buf"), ref_proc(out));
+    auto buf_acc = ctx->accessor<buffer_accessor>("buf");
 
     SECTION("pump in thread") {
         bool threw = false;
@@ -178,7 +191,7 @@ TEST_CASE("buffer stream error downstream") {
         std::thread t([&] {
             thread_start_latch.count_down();
             try {
-                buf.pump();
+                buf_acc.pump();
             } catch (std::runtime_error const &) {
                 threw = true;
             }
@@ -194,13 +207,16 @@ TEST_CASE("buffer stream error downstream") {
     SECTION("pump only after input") {
         buf.handle(42);
         REQUIRE_CALL(out, handle(42)).TIMES(1).THROW(std::runtime_error(""));
-        CHECK_THROWS_AS(buf.pump(), std::runtime_error);
+        CHECK_THROWS_AS(buf_acc.pump(), std::runtime_error);
     }
 }
 
 TEST_CASE("buffer stream halted") {
+    auto ctx = std::make_shared<processor_context>();
     auto out = mock_downstream();
-    auto buf = buffer<int>(1, ref_proc(out));
+    auto buf =
+        buffer<int>(1, ctx->tracker<buffer_accessor>("buf"), ref_proc(out));
+    auto buf_acc = ctx->accessor<buffer_accessor>("buf");
 
     SECTION("pump in thread") {
         bool threw = false;
@@ -208,7 +224,7 @@ TEST_CASE("buffer stream halted") {
         std::thread t([&] {
             thread_start_latch.count_down();
             try {
-                buf.pump();
+                buf_acc.pump();
             } catch (source_halted const &) {
                 threw = true;
             }
@@ -217,20 +233,23 @@ TEST_CASE("buffer stream halted") {
         // Wait for the pump loop to start (best-effort).
         std::this_thread::sleep_for(std::chrono::milliseconds(1));
         // No calls allowed to mock 'out'.
-        buf.halt();
+        buf_acc.halt();
         t.join();
         CHECK(threw);
     }
 
     SECTION("pump only after halt") {
-        buf.halt();
-        CHECK_THROWS_AS(buf.pump(), source_halted);
+        buf_acc.halt();
+        CHECK_THROWS_AS(buf_acc.pump(), source_halted);
     }
 }
 
 TEST_CASE("buffer does not emit events before threshold") {
+    auto ctx = std::make_shared<processor_context>();
     auto out = mock_downstream();
-    auto buf = buffer<int>(3, ref_proc(out));
+    auto buf =
+        buffer<int>(3, ctx->tracker<buffer_accessor>("buf"), ref_proc(out));
+    auto buf_acc = ctx->accessor<buffer_accessor>("buf");
 
     SECTION("pump in thread") {
         bool threw = false;
@@ -238,7 +257,7 @@ TEST_CASE("buffer does not emit events before threshold") {
         std::thread t([&] {
             thread_start_latch.count_down();
             try {
-                buf.pump();
+                buf_acc.pump();
             } catch (source_halted const &) {
                 threw = true;
             }
@@ -248,7 +267,7 @@ TEST_CASE("buffer does not emit events before threshold") {
         buf.handle(42);
         buf.handle(43);
         wait_a_little(); // Likely catch any incorrect call to out.
-        buf.halt();
+        buf_acc.halt();
         t.join();
         CHECK(threw);
     }
@@ -256,20 +275,23 @@ TEST_CASE("buffer does not emit events before threshold") {
     SECTION("pump only after input") {
         buf.handle(42);
         buf.handle(43);
-        buf.halt();
-        CHECK_THROWS_AS(buf.pump(), source_halted);
+        buf_acc.halt();
+        CHECK_THROWS_AS(buf_acc.pump(), source_halted);
     }
 }
 
 TEST_CASE("buffer flushes stored events") {
+    auto ctx = std::make_shared<processor_context>();
     auto out = mock_downstream();
-    auto buf = buffer<int>(3, ref_proc(out));
+    auto buf =
+        buffer<int>(3, ctx->tracker<buffer_accessor>("buf"), ref_proc(out));
+    auto buf_acc = ctx->accessor<buffer_accessor>("buf");
 
     SECTION("pump in thread") {
         latch thread_start_latch(1);
         std::thread t([&] {
             thread_start_latch.count_down();
-            buf.pump();
+            buf_acc.pump();
         });
         thread_start_latch.wait();
         wait_a_little(); // For likely pump loop start.
@@ -290,19 +312,22 @@ TEST_CASE("buffer flushes stored events") {
         REQUIRE_CALL(out, handle(42)).TIMES(1);
         REQUIRE_CALL(out, handle(43)).TIMES(1);
         REQUIRE_CALL(out, flush()).TIMES(1);
-        buf.pump();
+        buf_acc.pump();
     }
 }
 
 TEST_CASE("buffer emits stored events on reaching threshold") {
+    auto ctx = std::make_shared<processor_context>();
     auto out = mock_downstream();
-    auto buf = buffer<int>(3, ref_proc(out));
+    auto buf =
+        buffer<int>(3, ctx->tracker<buffer_accessor>("buf"), ref_proc(out));
+    auto buf_acc = ctx->accessor<buffer_accessor>("buf");
 
     SECTION("pump in thread") {
         latch thread_start_latch(1);
         std::thread t([&] {
             thread_start_latch.count_down();
-            buf.pump();
+            buf_acc.pump();
         });
         thread_start_latch.wait();
         wait_a_little(); // For likely pump loop start.
@@ -331,7 +356,7 @@ TEST_CASE("buffer emits stored events on reaching threshold") {
         latch pump_start_latch(1);
         std::thread t([&] {
             pump_start_latch.wait();
-            buf.pump();
+            buf_acc.pump();
         });
         {
             latch event44_emit_latch(1);
@@ -351,8 +376,11 @@ TEST_CASE("buffer emits stored events on reaching threshold") {
 
 TEMPLATE_TEST_CASE("buffer input throws after downstream stopped", "",
                    end_processing, std::runtime_error) {
+    auto ctx = std::make_shared<processor_context>();
     auto out = mock_downstream();
-    auto buf = buffer<int>(1, ref_proc(out));
+    auto buf =
+        buffer<int>(1, ctx->tracker<buffer_accessor>("buf"), ref_proc(out));
+    auto buf_acc = ctx->accessor<buffer_accessor>("buf");
 
     SECTION("pump in thread") {
         bool threw = false;
@@ -360,7 +388,7 @@ TEMPLATE_TEST_CASE("buffer input throws after downstream stopped", "",
         std::thread t([&] {
             thread_start_latch.count_down();
             try {
-                buf.pump();
+                buf_acc.pump();
             } catch (TestType const &) {
                 threw = true;
             }
@@ -384,8 +412,12 @@ TEMPLATE_TEST_CASE("buffer input throws after downstream stopped", "",
 
 TEST_CASE(
     "real_time_buffer with large latency does not emit before threshold") {
+    auto ctx = std::make_shared<processor_context>();
     auto out = mock_downstream();
-    auto buf = real_time_buffer<int>(3, std::chrono::hours(1), ref_proc(out));
+    auto buf = real_time_buffer<int>(3, std::chrono::hours(1),
+                                     ctx->tracker<buffer_accessor>("buf"),
+                                     ref_proc(out));
+    auto buf_acc = ctx->accessor<buffer_accessor>("buf");
 
     SECTION("pump in thread") {
         bool threw = false;
@@ -393,7 +425,7 @@ TEST_CASE(
         std::thread t([&] {
             thread_start_latch.count_down();
             try {
-                buf.pump();
+                buf_acc.pump();
             } catch (source_halted const &) {
                 threw = true;
             }
@@ -403,7 +435,7 @@ TEST_CASE(
         buf.handle(42);
         buf.handle(43);
         wait_a_little(); // Likely catch any incorrect call to out.
-        buf.halt();
+        buf_acc.halt();
         t.join();
         CHECK(threw);
     }
@@ -411,21 +443,24 @@ TEST_CASE(
     SECTION("pump only after input") {
         buf.handle(42);
         buf.handle(43);
-        buf.halt();
-        CHECK_THROWS_AS(buf.pump(), source_halted);
+        buf_acc.halt();
+        CHECK_THROWS_AS(buf_acc.pump(), source_halted);
     }
 }
 
 TEST_CASE("real_time_buffer emits event before threshold after latency") {
+    auto ctx = std::make_shared<processor_context>();
     auto out = mock_downstream();
     auto const latency = std::chrono::microseconds(100);
-    auto buf = real_time_buffer<int>(2, latency, ref_proc(out));
+    auto buf = real_time_buffer<int>(
+        2, latency, ctx->tracker<buffer_accessor>("buf"), ref_proc(out));
+    auto buf_acc = ctx->accessor<buffer_accessor>("buf");
 
     SECTION("pump in thread") {
         latch thread_start_latch(1);
         std::thread t([&] {
             thread_start_latch.count_down();
-            buf.pump();
+            buf_acc.pump();
         });
         thread_start_latch.wait();
         wait_a_little(); // For likely pump loop start.

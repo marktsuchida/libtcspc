@@ -8,6 +8,7 @@
 
 #include "common.hpp"
 #include "introspect.hpp"
+#include "processor_context.hpp"
 #include "vector_queue.hpp"
 
 #include <algorithm>
@@ -15,6 +16,7 @@
 #include <condition_variable>
 #include <cstddef>
 #include <exception>
+#include <functional>
 #include <mutex>
 #include <stdexcept>
 #include <utility>
@@ -48,6 +50,60 @@ class source_halted final : std::exception {
     }
 };
 
+/**
+ * \brief Accessor for buffer processor.
+ *
+ * \ingroup processors-basic
+ *
+ * \see buffer
+ * \see real_time_buffer
+ */
+class buffer_accessor {
+    std::function<void()> halt_fn;
+    std::function<void()> pump_fn;
+
+  public:
+    /** \brief Constructor; not for client use. */
+    template <typename HaltFunc, typename PumpFunc>
+    explicit buffer_accessor(HaltFunc halt_func, PumpFunc pump_func)
+        : halt_fn(halt_func), pump_fn(pump_func) {}
+
+    /**
+     * \brief Halt pumping of the buffer.
+     *
+     * The call to pump() will return without flushing the downstream.
+     *
+     * This function must always be called when the upstream processor will no
+     * longer send events (or a flush) to the buffer. This includes when
+     * upstream processing terminated by an exception (including during an
+     * explicit flush), because such an exception may have been thrown upstream
+     * of the buffer without its knowledge.
+     */
+    void halt() noexcept { halt_fn(); } // NOLINT(bugprone-exception-escape)
+
+    /**
+     * \brief Pump buffered events downstream.
+     *
+     * This function should be called on a thread other than the one on which
+     * upstream events are sent. Events will be emitted downstream on the
+     * calling thread.
+     *
+     * This function exits normally when a flush has been propagated from
+     * upstream to downstream without an exception being thrown. If an
+     * exception is thrown by a downstream processor (including \ref
+     * end_processing), it is propagated out of this function. If halt() is
+     * called when events are still being pumped, this function throws \ref
+     * source_halted.
+     *
+     * Applications should generally report errors for exceptions other than
+     * \ref end_processing and \ref source_halted. Note that such exceptions
+     * are not propagated to upstream processors (this is because there may not
+     * be the opportunity to do so if the upstream never calls the buffer
+     * again).
+     */
+    void pump() { pump_fn(); }
+};
+
 namespace internal {
 
 template <typename Event, bool LatencyLimited, typename Downstream>
@@ -56,7 +112,7 @@ class buffer {
     using queue_type = vector_queue<Event>;
 
     std::size_t threshold;
-    clock_type::duration max_latency = std::chrono::hours(24);
+    clock_type::duration max_latency;
 
     std::mutex mutex;
     std::condition_variable has_data_condition;
@@ -82,68 +138,7 @@ class buffer {
 
     // Cold data after downstream.
     bool pumped = false;
-
-  public:
-    template <typename Duration>
-    explicit buffer(std::size_t threshold, Duration latency_limit,
-                    Downstream downstream)
-        : threshold(threshold >= 0 ? threshold : 1),
-          max_latency(
-              std::chrono::duration_cast<clock_type::duration>(latency_limit)),
-          downstream(std::move(downstream)) {
-        // Limit to avoid integer overflow.
-        if (max_latency > std::chrono::hours(24)) {
-            throw std::logic_error(
-                "buffer latency limit must not be greater than 24 h");
-        }
-    }
-
-    explicit buffer(std::size_t threshold, Downstream downstream)
-        : threshold(threshold >= 0 ? threshold : 1),
-          downstream(std::move(downstream)) {}
-
-    [[nodiscard]] auto introspect_node() const -> processor_info {
-        processor_info info(this, "buffer");
-        return info;
-    }
-
-    [[nodiscard]] auto introspect_graph() const -> processor_graph {
-        auto g = downstream.introspect_graph();
-        g.push_entry_point(this);
-        return g;
-    }
-
-    void handle(Event const &event) {
-        bool should_notify{};
-        {
-            std::scoped_lock lock(mutex);
-            if (downstream_threw)
-                throw end_processing(
-                    "ending upstream of buffer upon end of downstream processing");
-
-            shared_queue.push(event);
-            should_notify = shared_queue.size() == threshold;
-            if constexpr (LatencyLimited) {
-                if (shared_queue.size() == 1) {
-                    oldest_enqueued_time = clock_type::now();
-                    should_notify = true; // Wake up once to set deadline.
-                }
-            }
-        }
-        if (should_notify)
-            has_data_condition.notify_one();
-    }
-
-    void flush() {
-        {
-            std::scoped_lock lock(mutex);
-            if (downstream_threw)
-                throw end_processing(
-                    "ending upstream of buffer upon end of downstream processing");
-            upstream_flushed = true;
-        }
-        has_data_condition.notify_one();
-    }
+    processor_tracker<buffer_accessor> trk;
 
     void halt() noexcept {
         {
@@ -204,22 +199,102 @@ class buffer {
             throw;
         }
     }
+
+  public:
+    template <typename Duration>
+    explicit buffer(std::size_t threshold, Duration latency_limit,
+                    processor_tracker<buffer_accessor> &&tracker,
+                    Downstream downstream)
+        : threshold(threshold >= 0 ? threshold : 1),
+          max_latency(
+              std::chrono::duration_cast<clock_type::duration>(latency_limit)),
+          downstream(std::move(downstream)), trk(std::move(tracker)) {
+        // Limit to avoid integer overflow.
+        if (max_latency > std::chrono::hours(24)) {
+            throw std::logic_error(
+                "buffer latency limit must not be greater than 24 h");
+        }
+
+        trk.register_accessor_factory([](auto &tracker) {
+            auto *self = LIBTCSPC_PROCESSOR_FROM_TRACKER(buffer, trk, tracker);
+            return buffer_accessor([self] { self->halt(); },
+                                   [self] { self->pump(); });
+        });
+    }
+
+    // NOLINTBEGIN(cppcoreguidelines-pro-type-member-init)
+    explicit buffer(std::size_t threshold,
+                    processor_tracker<buffer_accessor> &&tracker,
+                    Downstream downstream)
+        : buffer(threshold, std::chrono::hours(24), std::move(tracker),
+                 std::move(downstream)) {}
+    // NOLINTEND(cppcoreguidelines-pro-type-member-init)
+
+    [[nodiscard]] auto introspect_node() const -> processor_info {
+        processor_info info(this, "buffer");
+        return info;
+    }
+
+    [[nodiscard]] auto introspect_graph() const -> processor_graph {
+        auto g = downstream.introspect_graph();
+        g.push_entry_point(this);
+        return g;
+    }
+
+    void handle(Event const &event) {
+        bool should_notify{};
+        {
+            std::scoped_lock lock(mutex);
+            if (downstream_threw)
+                throw end_processing(
+                    "ending upstream of buffer upon end of downstream processing");
+
+            shared_queue.push(event);
+            should_notify = shared_queue.size() == threshold;
+            if constexpr (LatencyLimited) {
+                if (shared_queue.size() == 1) {
+                    oldest_enqueued_time = clock_type::now();
+                    should_notify = true; // Wake up once to set deadline.
+                }
+            }
+        }
+        if (should_notify)
+            has_data_condition.notify_one();
+    }
+
+    void flush() {
+        {
+            std::scoped_lock lock(mutex);
+            if (downstream_threw)
+                throw end_processing(
+                    "ending upstream of buffer upon end of downstream processing");
+            upstream_flushed = true;
+        }
+        has_data_condition.notify_one();
+    }
 };
 
 } // namespace internal
 
 /**
- * \brief Create a pseudo-processor that buffers events.
+ * \brief Create a pseudo-processor that buffers events and emits them on a
+ * different thread.
  *
  * \ingroup processors-basic
  *
  * This receives events of type \c Event from upstream like a normal processor,
- * but stores them in a buffer. By calling `void pump()` on a different thread,
- * the buffered events can be sent downstream on that thread. The \c pump
- * function blocks until the upstream has signaled the end of stream and all
- * events have been emitted downstream.
+ * but stores them in a buffer. By pumping on a different thread (see
+ * buffer_accessor::pump()), the buffered events can be sent downstream on that
+ * thread.
  *
- * Usually \c Event should be EventArray in order to reduce overhead.
+ * Events are emitted downstream when the number of buffered events reaches the
+ * \p threshold.
+ *
+ * The thread sending events to the buffer must notify the buffer via
+ * buffer_accessor::halt() when it will not send anything more. Note that this
+ * call is required even if upstream processing terminated by an exception
+ * (including during an explicit flush), because such an exception may have
+ * been thrown upstream of the buffer without its knowledge.
  *
  * \tparam Event the event type
  *
@@ -228,39 +303,38 @@ class buffer {
  * \param threshold number of events to buffer before start sending to
  * downstream
  *
+ * \param tracker processor tracker for later access
+ *
  * \param downstream downstream processor
- *
- * \return buffer pseudo-processor having \c pump member function
- *
- * \todo Currently there is no reasonable way to pump the buffer once it has
- * been placed within a processing graph. This needs to be fixed by introducing
- * a processor tracker.
  */
 template <typename Event, typename Downstream>
-auto buffer(std::size_t threshold, Downstream &&downstream) {
+auto buffer(std::size_t threshold,
+            processor_tracker<buffer_accessor> &&tracker,
+            Downstream &&downstream) {
     return internal::buffer<Event, false, Downstream>(
-        threshold, std::forward<Downstream>(downstream));
+        threshold, std::move(tracker), std::forward<Downstream>(downstream));
 }
 
 /**
- * \brief Create a pseudo-processor that buffers events with limited latency.
+ * \brief Create a pseudo-processor that buffers events and emits them on a
+ * different thread, with limited latency.
  *
  * \ingroup processors-basic
  *
  * This receives events of type \c Event from upstream like a normal processor,
- * but stores them in a buffer. By calling `void pump()` on a different thread,
- * the buffered events can be sent downstream on that thread. The \c pump
- * function blocks until the upstream has signaled the end of stream and all
- * events have been emitted downstream.
+ * but stores them in a buffer. By pumping on a different thread (see
+ * buffer_accessor::pump()), the buffered events can be sent downstream on that
+ * thread.
  *
- * The thread sending events to the buffer must call `void halt() noexcept`
- * when it will not send anything more. Note that this call is required even if
- * processing terminated by an exception (including during an explicit flush),
- * because such an exception may have been thrown upstream of the buffer
- * without its knowledge. Without the call to \c halt(), the downstream call to
- * \c pump() may block indefinitely.
+ * Events are emitted downstream when either the number of buffered events
+ * reaches the \p threshold or when the oldest event has been buffered for at
+ * least \p latency_limit.
  *
- * Usually \c Event should be EventArray in order to reduce overhead.
+ * The thread sending events to the buffer must notify the buffer via
+ * buffer_accessor::halt() when it will not send anything more. Note that this
+ * call is required even if upstream processing terminated by an exception
+ * (including during an explicit flush), because such an exception may have
+ * been thrown upstream of the buffer without its knowledge.
  *
  * \tparam Event the event type
  *
@@ -273,19 +347,17 @@ auto buffer(std::size_t threshold, Downstream &&downstream) {
  * an event can remain in the buffer before sending to downstream is started
  * even if there are fewer events than threshold. Must not exceed 24 hours.
  *
+ * \param tracker processor tracker for later access
+ *
  * \param downstream downstream processor
- *
- * \return buffer pseudo-processor having \c pump member function
- *
- * \todo Currently there is no reasonable way to pump the buffer once it has
- * been placed within a processing graph. This needs to be fixed by introducing
- * a processor tracker.
  */
 template <typename Event, typename Duration, typename Downstream>
 auto real_time_buffer(std::size_t threshold, Duration latency_limit,
+                      processor_tracker<buffer_accessor> &&tracker,
                       Downstream &&downstream) {
     return internal::buffer<Event, true, Downstream>(
-        threshold, latency_limit, std::forward<Downstream>(downstream));
+        threshold, latency_limit, std::move(tracker),
+        std::forward<Downstream>(downstream));
 }
 
 } // namespace tcspc
