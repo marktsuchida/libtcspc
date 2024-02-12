@@ -6,6 +6,7 @@
 
 #pragma once
 
+#include "common.hpp"
 #include "introspect.hpp"
 #include "processor_context.hpp"
 
@@ -24,17 +25,19 @@ class count_up_to {
     std::uint64_t count;
     std::uint64_t init;
     std::uint64_t thresh;
-    std::uint64_t limit;
+    std::uint64_t lmt;
 
     Downstream downstream;
 
   public:
-    // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
-    explicit count_up_to(std::uint64_t threshold, std::uint64_t limit,
-                         std::uint64_t initial_count, Downstream downstream)
-        : count(initial_count), init(initial_count), thresh(threshold),
-          limit(limit), downstream(std::move(downstream)) {
-        if (init >= limit)
+    explicit count_up_to(arg_threshold<std::uint64_t> threshold,
+                         arg_limit<std::uint64_t> limit,
+                         arg_initial_count<std::uint64_t> initial_count,
+                         Downstream downstream)
+        : count(initial_count.value), init(initial_count.value),
+          thresh(threshold.value), lmt(limit.value),
+          downstream(std::move(downstream)) {
+        if (init >= lmt)
             throw std::invalid_argument(
                 "count_up_to limit must be greater than initial_count");
     }
@@ -64,7 +67,7 @@ class count_up_to {
                 downstream.handle(FireEvent{event.abstime});
         }
 
-        if (count == limit)
+        if (count == lmt)
             count = init;
     }
 
@@ -143,8 +146,10 @@ class count_up_to {
  */
 template <typename TickEvent, typename FireEvent, typename ResetEvent,
           bool FireAfterTick, typename Downstream>
-auto count_up_to(std::uint64_t threshold, std::uint64_t limit,
-                 std::uint64_t initial_count, Downstream &&downstream) {
+auto count_up_to(arg_threshold<std::uint64_t> threshold,
+                 arg_limit<std::uint64_t> limit,
+                 arg_initial_count<std::uint64_t> initial_count,
+                 Downstream &&downstream) {
     return internal::count_up_to<TickEvent, FireEvent, ResetEvent,
                                  FireAfterTick, Downstream>(
         threshold, limit, initial_count, std::forward<Downstream>(downstream));
@@ -162,20 +167,24 @@ auto count_up_to(std::uint64_t threshold, std::uint64_t limit,
  */
 template <typename TickEvent, typename FireEvent, typename ResetEvent,
           bool FireAfterTick, typename Downstream>
-auto count_down_to(std::uint64_t threshold, std::uint64_t limit,
-                   std::uint64_t initial_count, Downstream &&downstream) {
+auto count_down_to(arg_threshold<std::uint64_t> threshold,
+                   arg_limit<std::uint64_t> limit,
+                   arg_initial_count<std::uint64_t> initial_count,
+                   Downstream &&downstream) {
     // Alter parameters to emulate count down using count up.
-    if (limit >= initial_count)
+    if (limit.value >= initial_count.value)
         throw std::invalid_argument(
             "count_down_to limit must be less than initial_count");
-    if (threshold > initial_count || threshold < limit) {
+    if (threshold.value > initial_count.value ||
+        threshold.value < limit.value) {
         // Counter will never fire; no change to threshold needed.
     } else {
         // Mirror threshold around midpoint of initial_count and limit.
-        threshold = limit + (initial_count - threshold);
+        threshold.value =
+            limit.value + (initial_count.value - threshold.value);
     }
     using std::swap;
-    swap(initial_count, limit);
+    swap(initial_count.value, limit.value);
 
     return internal::count_up_to<TickEvent, FireEvent, ResetEvent,
                                  FireAfterTick, Downstream>(

@@ -409,4 +409,87 @@ template <typename... Ts> overloaded(Ts...) -> overloaded<Ts...>;
 
 } // namespace internal
 
+// Function argument wrappers for strong typing (avoiding mistakes with
+// otherwise easily swappable parameters). Each has a constructor for two
+// reasons: (1) To avoid default-constructing without initializing the value
+// and (2) so that CTAD works.
+// Ordered alphabetically.
+
+/**
+ * \brief Function argument wrapper for delay parameter.
+ * \ingroup arg-wrappers
+ */
+template <typename T> struct arg_abstime {
+    /** \brief The argument value. */
+    T value;
+    /** \brief Construct by wrapping a value. */
+    explicit arg_abstime(T arg) : value(arg) {}
+};
+
+/**
+ * \brief Function argument wrapper for delay parameter.
+ * \ingroup arg-wrappers
+ */
+template <typename T> struct arg_count {
+    /** \brief The argument value. */
+    T value;
+    /** \brief Construct by wrapping a value. */
+    explicit arg_count(T arg) : value(arg) {}
+};
+
+/**
+ * \brief Function argument wrapper for delay parameter.
+ * \ingroup arg-wrappers
+ */
+template <typename T> struct arg_delay {
+    /** \brief The argument value. */
+    T value;
+    /** \brief Construct by wrapping a value. */
+    explicit arg_delay(T arg) : value(arg) {}
+};
+
+/**
+ * \brief Function argument wrapper for initial count parameter.
+ * \ingroup arg-wrappers
+ */
+template <typename T> struct arg_initial_count {
+    /** \brief The argument value. */
+    T value;
+    /** \brief Construct by wrapping a value. */
+    explicit arg_initial_count(T arg) : value(arg) {}
+};
+
+/**
+ * \brief Function argument wrapper for interval parameter.
+ * \ingroup arg-wrappers
+ */
+template <typename T> struct arg_interval {
+    /** \brief The argument value. */
+    T value;
+    /** \brief Construct by wrapping a value. */
+    explicit arg_interval(T arg) : value(arg) {}
+};
+
+/**
+ * \brief Function argument wrapper for limit parameter.
+ * \ingroup arg-wrappers
+ */
+template <typename T> struct arg_limit {
+    /** \brief The argument value. */
+    T value;
+    /** \brief Construct by wrapping a value. */
+    explicit arg_limit(T arg) : value(arg) {}
+};
+
+/**
+ * \brief Function argument wrapper for threshold parameter.
+ * \ingroup arg-wrappers
+ */
+template <typename T> struct arg_threshold {
+    /** \brief The argument value. */
+    T value;
+    /** \brief Construct by wrapping a value. */
+    explicit arg_threshold(T arg) : value(arg) {}
+};
+
 } // namespace tcspc

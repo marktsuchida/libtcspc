@@ -185,6 +185,12 @@ namespace tcspc {
  */
 
 /**
+ * \defgroup arg-wrappers Function parameter wrappers
+ *
+ * \brief Trivial types for strong typing of function arguments.
+ */
+
+/**
  * \defgroup misc Miscellaneous
  *
  * \brief Everything else

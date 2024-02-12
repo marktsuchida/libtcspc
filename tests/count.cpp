@@ -7,6 +7,7 @@
 #include "libtcspc/count.hpp"
 
 #include "libtcspc/common.hpp"
+#include "libtcspc/int_types.hpp"
 #include "libtcspc/processor_context.hpp"
 #include "libtcspc/test_utils.hpp"
 #include "libtcspc/type_list.hpp"
@@ -30,11 +31,13 @@ using out_events = type_list<tick_event, fire_event, reset_event, misc_event>;
 
 TEST_CASE("introspect count", "[introspect]") {
     check_introspect_simple_processor(
-        count_up_to<tick_event, fire_event, reset_event, false>(1, 2, 0,
-                                                                null_sink()));
+        count_up_to<tick_event, fire_event, reset_event, false>(
+            arg_threshold<u64>{1}, arg_limit<u64>{2},
+            arg_initial_count<u64>{0}, null_sink()));
     check_introspect_simple_processor(
         count_down_to<tick_event, fire_event, reset_event, false>(
-            1, 0, 2, null_sink()));
+            arg_threshold<u64>{1}, arg_limit<u64>{0},
+            arg_initial_count<u64>{2}, null_sink()));
     auto ctx = std::make_shared<processor_context>();
     check_introspect_simple_processor(
         count<tick_event>(ctx->tracker<count_accessor>("t"), null_sink()));
@@ -48,7 +51,8 @@ TEST_CASE("Count up to") {
             auto in =
                 feed_input<type_list<tick_event, reset_event, misc_event>>(
                     count_up_to<tick_event, fire_event, reset_event, false>(
-                        0, 1, 0,
+                        arg_threshold<u64>{0}, arg_limit<u64>{1},
+                        arg_initial_count<u64>{0},
                         capture_output<out_events>(
                             ctx->tracker<capture_output_accessor>("out"))));
             in.require_output_checked(ctx, "out");
@@ -75,7 +79,8 @@ TEST_CASE("Count up to") {
         SECTION("Emit after") {
             auto in = feed_input<type_list<tick_event>>(
                 count_up_to<tick_event, fire_event, reset_event, true>(
-                    0, 1, 0,
+                    arg_threshold<u64>{0}, arg_limit<u64>{1},
+                    arg_initial_count<u64>{0},
                     capture_output<out_events>(
                         ctx->tracker<capture_output_accessor>("out"))));
             in.require_output_checked(ctx, "out");
@@ -95,7 +100,8 @@ TEST_CASE("Count up to") {
         SECTION("Emit before") {
             auto in = feed_input<type_list<tick_event>>(
                 count_up_to<tick_event, fire_event, reset_event, false>(
-                    1, 1, 0,
+                    arg_threshold<u64>{1}, arg_limit<u64>{1},
+                    arg_initial_count<u64>{0},
                     capture_output<out_events>(
                         ctx->tracker<capture_output_accessor>("out"))));
             in.require_output_checked(ctx, "out");
@@ -113,7 +119,8 @@ TEST_CASE("Count up to") {
         SECTION("Emit after") {
             auto in = feed_input<type_list<tick_event>>(
                 count_up_to<tick_event, fire_event, reset_event, true>(
-                    1, 1, 0,
+                    arg_threshold<u64>{1}, arg_limit<u64>{1},
+                    arg_initial_count<u64>{0},
                     capture_output<out_events>(
                         ctx->tracker<capture_output_accessor>("out"))));
             in.require_output_checked(ctx, "out");
@@ -135,7 +142,8 @@ TEST_CASE("Count up to") {
         SECTION("Emit before") {
             auto in = feed_input<type_list<tick_event, reset_event>>(
                 count_up_to<tick_event, fire_event, reset_event, false>(
-                    1, 2, 0,
+                    arg_threshold<u64>{1}, arg_limit<u64>{2},
+                    arg_initial_count<u64>{0},
                     capture_output<out_events>(
                         ctx->tracker<capture_output_accessor>("out"))));
             in.require_output_checked(ctx, "out");
@@ -163,7 +171,8 @@ TEST_CASE("Count up to") {
         SECTION("Emit after") {
             auto in = feed_input<type_list<tick_event, reset_event>>(
                 count_up_to<tick_event, fire_event, reset_event, true>(
-                    1, 2, 0,
+                    arg_threshold<u64>{1}, arg_limit<u64>{2},
+                    arg_initial_count<u64>{0},
                     capture_output<out_events>(
                         ctx->tracker<capture_output_accessor>("out"))));
             in.require_output_checked(ctx, "out");
@@ -195,7 +204,8 @@ TEST_CASE("Count down to") {
     auto ctx = std::make_shared<processor_context>();
     auto in = feed_input<type_list<tick_event, reset_event, misc_event>>(
         count_down_to<tick_event, fire_event, reset_event, false>(
-            1, 0, 2,
+            arg_threshold<u64>{1}, arg_limit<u64>{0},
+            arg_initial_count<u64>{2},
             capture_output<out_events>(
                 ctx->tracker<capture_output_accessor>("out"))));
     in.require_output_checked(ctx, "out");

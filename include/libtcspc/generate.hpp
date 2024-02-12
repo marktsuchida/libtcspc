@@ -309,9 +309,9 @@ template <typename Event> class linear_timing_generator {
     abstime_type next = 0;
     std::size_t remaining = 0;
 
-    abstime_type delay;
-    abstime_type interval;
-    std::size_t count;
+    abstime_type dly;
+    abstime_type intval;
+    std::size_t ct;
 
   public:
     /**
@@ -325,14 +325,14 @@ template <typename Event> class linear_timing_generator {
      *
      * \param count number of output events to generate for each trigger
      */
-    // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
-    explicit linear_timing_generator(abstime_type delay, abstime_type interval,
-                                     std::size_t count)
-        : delay(delay), interval(interval), count(count) {
-        if (delay < 0)
+    explicit linear_timing_generator(arg_delay<abstime_type> delay,
+                                     arg_interval<abstime_type> interval,
+                                     arg_count<std::size_t> count)
+        : dly(delay.value), intval(interval.value), ct(count.value) {
+        if (dly < 0)
             throw std::invalid_argument(
                 "linear_timing_generator delay must not be negative");
-        if (interval <= 0)
+        if (intval <= 0)
             throw std::invalid_argument(
                 "linear_timing_generator interval must be positive");
     }
@@ -340,8 +340,8 @@ template <typename Event> class linear_timing_generator {
     /** \brief Timing generator interface */
     template <typename TriggerEvent> void trigger(TriggerEvent const &event) {
         static_assert(std::is_same_v<decltype(event.abstime), abstime_type>);
-        next = event.abstime + delay;
-        remaining = count;
+        next = event.abstime + dly;
+        remaining = ct;
     }
 
     /** \brief Timing generator interface */
@@ -355,7 +355,7 @@ template <typename Event> class linear_timing_generator {
     auto pop() -> Event {
         Event event{};
         event.abstime = next;
-        next += interval;
+        next += intval;
         --remaining;
         return event;
     }

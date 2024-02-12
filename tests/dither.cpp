@@ -6,6 +6,7 @@
 
 #include "libtcspc/dither.hpp"
 
+#include "libtcspc/common.hpp"
 #include "libtcspc/test_utils.hpp"
 
 #include <catch2/catch_test_macros.hpp>
@@ -111,7 +112,8 @@ TEST_CASE("dithered linear timing generator",
     bool seen_t1_53 = false;
     bool seen_t01_10 = false;
     bool seen_t01_11 = false;
-    auto tg = dithered_linear_timing_generator<output_event>(0.5, 10.25, 2);
+    auto tg = dithered_linear_timing_generator<output_event>(
+        arg_delay{0.5}, arg_interval{10.25}, arg_count<std::size_t>{2});
     for (std::size_t i = 0; i < 5; ++i) { // 5 is the sharp minimum to pass.
         CHECK_FALSE(tg.peek().has_value());
         tg.trigger(trigger_event{42});
