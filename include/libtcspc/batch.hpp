@@ -13,6 +13,7 @@
 #include <memory>
 #include <stdexcept>
 #include <utility>
+#include <vector>
 
 namespace tcspc {
 
@@ -182,6 +183,35 @@ template <typename EventContainer, typename Event, typename Downstream>
 auto unbatch(Downstream &&downstream) {
     return internal::unbatch<EventContainer, Event, Downstream>(
         std::forward<Downstream>(downstream));
+}
+
+/**
+ * \brief Create a processor that buffers events up to equally sized batches
+ * and passes them downstream in a tight loop.
+ *
+ * \ingroup processors-basic
+ *
+ * This is intended for use in cases where separating the processing loop is
+ * beneficial, for example to limit the (code or data) working set size.
+ * Usually the regular \c buffer (requiring two separate threads) is more
+ * beneficial because it can exploit parallellism, but a single-threaded buffer
+ * is easier to introduce (it can simply be inserted in a processor chain) so
+ * may be convenient for experimentation.
+ *
+ * Events are buffered until \p batch_size is reached, without regard to
+ * timing, so this type of buffer is usually not appropriate for live
+ * processing.
+ *
+ * \see buffer
+ */
+template <typename Event, typename Downstream>
+auto process_in_batches(std::size_t batch_size, Downstream &&downstream) {
+    using event_vector = std::vector<Event>;
+    return batch<Event, event_vector>(
+        std::make_shared<object_pool<event_vector>>(0, 1), batch_size,
+        dereference_pointer<std::shared_ptr<event_vector>>(
+            unbatch<event_vector, Event>(
+                std::forward<Downstream>(downstream))));
 }
 
 } // namespace tcspc

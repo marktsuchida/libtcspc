@@ -19,8 +19,6 @@ TEST_CASE("introspect buffer", "[introspect]") {
     check_introspect_simple_processor(buffer<int>(1, null_sink()));
     check_introspect_simple_processor(
         real_time_buffer<int>(1, std::chrono::seconds(1), null_sink()));
-    check_introspect_simple_processor(
-        single_threaded_buffer<int>(1, null_sink()));
 }
 
 } // namespace tcspc

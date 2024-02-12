@@ -18,7 +18,6 @@
 #include <mutex>
 #include <stdexcept>
 #include <utility>
-#include <vector>
 
 namespace tcspc {
 
@@ -280,85 +279,6 @@ auto real_time_buffer(std::size_t threshold, Duration latency_limit,
                       Downstream &&downstream) {
     return internal::buffer<Event, true, Downstream>(
         threshold, latency_limit, std::forward<Downstream>(downstream));
-}
-
-namespace internal {
-
-template <typename Event, typename Downstream> class single_threaded_buffer {
-    std::size_t threshold;
-    std::vector<Event> buf;
-
-    Downstream downstream;
-
-    LIBTCSPC_NOINLINE void drain() {
-        for (auto &event : buf)
-            downstream.handle(event);
-        buf.clear();
-    }
-
-  public:
-    explicit single_threaded_buffer(std::size_t threshold,
-                                    Downstream downstream)
-        : threshold(threshold), downstream(std::move(downstream)) {}
-
-    [[nodiscard]] auto introspect_node() const -> processor_info {
-        processor_info info(this, "single_threaded_buffer");
-        return info;
-    }
-
-    [[nodiscard]] auto introspect_graph() const -> processor_graph {
-        auto g = downstream.introspect_graph();
-        g.push_entry_point(this);
-        return g;
-    }
-
-    void handle(Event const &event) {
-        buf.push_back(event);
-        if (buf.size() >= threshold)
-            drain();
-    }
-
-    void flush() {
-        drain();
-        downstream.flush();
-    }
-};
-
-} // namespace internal
-
-/**
- * \brief Create a processor that buffers events and passes them downstream
- * when a threshold capacity is reached.
- *
- * \ingroup processors-basic
- *
- * This is intended for use in cases where separating the processing loop is
- * beneficial, for example to limit the (code or data) working set size.
- * Usually the regular \c buffer (requiring two separate threads) is more
- * beneficial because it can exploit parallellism, but a single-threaded buffer
- * is easier to introduce (it can simply be inserted in a processor chain) so
- * may be convenient for experimentation.
- *
- * Events are buffered until the threshold is reached, without regard to
- * timing, so this type of buffer is usually not appropriate for live
- * processing.
- *
- * \see buffer
- *
- * \tparam Event the event type
- *
- * \tparam Downstream downstream processor type
- *
- * \param threshold number of events to buffer before passing them downstream
- *
- * \param downstream downstream processor
- *
- * \return single-threaded-buffer processor
- */
-template <typename Event, typename Downstream>
-auto single_threaded_buffer(std::size_t threshold, Downstream &&downstream) {
-    return internal::single_threaded_buffer<Event, Downstream>(
-        threshold, std::forward<Downstream>(downstream));
 }
 
 } // namespace tcspc

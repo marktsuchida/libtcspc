@@ -80,4 +80,25 @@ TEST_CASE("unbatch") {
     REQUIRE(out.check_flushed());
 }
 
+TEST_CASE("process_in_batches") {
+    auto ctx = std::make_shared<processor_context>();
+    auto in = feed_input<type_list<int>>(process_in_batches<int>(
+        3, capture_output<type_list<int>>(
+               ctx->tracker<capture_output_accessor>("out"))));
+    in.require_output_checked(ctx, "out");
+    auto out = capture_output_checker<type_list<int>>(
+        ctx->accessor<capture_output_accessor>("out"));
+
+    in.feed(42);
+    in.feed(43);
+    in.feed(44);
+    REQUIRE(out.check(42));
+    REQUIRE(out.check(43));
+    REQUIRE(out.check(44));
+    in.feed(45);
+    in.flush();
+    REQUIRE(out.check(45));
+    REQUIRE(out.check_flushed());
+}
+
 } // namespace tcspc
