@@ -141,6 +141,10 @@ class histogram_elementwise {
  * At the end of each cycle a histogram_array_event is emitted, referencing the
  * whole array of histograms from the cycle.
  *
+ * The input events are not required to be in correct abstime order; the event
+ * abstime is only used to compute the time range in the emitted histogram
+ * events.
+ *
  * \tparam OverflowStrategy strategy tag type to select how to handle bin
  * overflows
  *

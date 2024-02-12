@@ -154,6 +154,10 @@ class histogram {
  * histogram_event<Bin> (or empty if there was none since the start or last
  * reset).
  *
+ * The input events are not required to be in correct abstime order; the event
+ * abstime is only used to compute the time range in the emitted histogram
+ * events.
+ *
  * Behavior is undefined if an incoming \c bin_increment_event contains a bin
  * index beyond the size of the histogram.
  *
