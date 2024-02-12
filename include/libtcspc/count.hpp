@@ -189,11 +189,18 @@ auto count_down_to(std::uint64_t threshold, std::uint64_t limit,
  *
  * \see count
  */
-struct count_accessor {
+class count_accessor {
+    std::function<std::uint64_t()> count_fn;
+
+  public:
+    /** \brief Constructor; not for client use. */
+    template <typename Func>
+    explicit count_accessor(Func count_func) : count_fn(count_func) {}
+
     /**
-     * \brief Get the count.
+     * \brief Return the count value of the associated processor.
      */
-    std::function<std::uint64_t()> count;
+    auto count() -> std::uint64_t { return count_fn(); }
 };
 
 namespace internal {
@@ -212,7 +219,7 @@ template <typename Event, typename Downstream> class count {
         : downstream(std::move(downstream)), trk(std::move(tracker)) {
         trk.register_accessor_factory([](auto &tracker) {
             auto *self = LIBTCSPC_PROCESSOR_FROM_TRACKER(count, trk, tracker);
-            return count_accessor{[self] { return self->ct; }};
+            return count_accessor([self] { return self->ct; });
         });
     }
 
@@ -260,7 +267,7 @@ template <typename Event, typename Downstream> class count {
  *
  * \tparam Downstream downstream processor type
  *
- * \param tracker processor tracker for later access to state
+ * \param tracker processor tracker for later access of the count result
  *
  * \param downstream downstream processor
  */
