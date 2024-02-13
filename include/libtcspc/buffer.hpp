@@ -42,7 +42,7 @@ constexpr std::size_t destructive_interference_size = 64;
  * \brief Exception type thrown when buffer source was discontinued without
  * reaching the point of flushing.
  */
-class source_halted final : std::exception {
+class source_halted final : public std::exception {
   public:
     /** \brief std::exception interface. */
     [[nodiscard]] auto what() const noexcept -> char const * override {
