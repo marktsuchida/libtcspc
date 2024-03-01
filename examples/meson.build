@@ -4,7 +4,7 @@
 
 if not get_option('examples').disabled()
 
-summarize_bh_spc = executable(
+executable(
     'summarize_bh_spc',
     'summarize_bh_spc.cpp',
     dependencies: [
@@ -13,7 +13,7 @@ summarize_bh_spc = executable(
     ],
 )
 
-summarize_swabian = executable(
+executable(
     'summarize_swabian',
     'summarize_swabian.cpp',
     dependencies: [
@@ -22,7 +22,7 @@ summarize_swabian = executable(
     ],
 )
 
-flim_bruker_bh_spc = executable(
+executable(
     'flim_bruker_bh_spc',
     'flim_bruker_bh_spc.cpp',
     dependencies: [
@@ -31,7 +31,7 @@ flim_bruker_bh_spc = executable(
     ],
 )
 
-flim_bruker_swabian = executable(
+executable(
     'flim_bruker_swabian',
     'flim_bruker_swabian.cpp',
     dependencies: [
