@@ -6,34 +6,27 @@
 
 #pragma once
 
-#include <cstddef>
-
-// Use std::span if C++20 or later.
 #if __has_include(<version>)
 #include <version> // IWYU pragma: keep
 #if __cpp_lib_span >= 202002L
 #include <span> // IWYU pragma: export
-#define LIBTCSPC_SPAN_USE_STD 1
+#define LIBTCSPC_SPAN_USE_STD
 
 namespace tcspc {
 
-/**
- * \brief Span, an alias or replacement for \c std::span.
- *
- * \ingroup misc
- *
- * For C++20 and later, this is an alias of `std::span<T, Extent>`.
- * For C++17, this is replaced with a local implementation (tcbrindle/span).
- */
-template <class T, std::size_t Extent = std::dynamic_extent>
-using span = std::span<T, Extent>;
+using std::as_bytes;
+using std::as_writable_bytes;
+using std::dynamic_extent;
+using std::span;
 
 } // namespace tcspc
 
 #endif // __cpp_lib_span
 #endif // <version>
 
-#if not LIBTCSPC_SPAN_USE_STD
+#ifndef LIBTCSPC_SPAN_USE_STD
+
+#include <cstddef>
 
 #ifdef __clang__
 #pragma clang diagnostic push
@@ -50,15 +43,15 @@ using span = std::span<T, Extent>;
 namespace tcspc {
 
 /**
- * \brief Span, an alias or replacement for \c std::span.
+ * \brief Shim for \c std::span.
  *
  * \ingroup misc
  *
- * For C++20 and later, this is an alias of `std::span<T, Extent>`.
- * For C++17, a local implementation (tcbrindle/span) is used.
+ * For C++20 and later, this is just `using std::span`. For C++17, a local
+ * implementation is provided.
  */
 template <typename T, std::size_t Extent> class span;
 
 } // namespace tcspc
 
-#endif // not LIBTCSPC_SPAN_USE_STD
+#endif // ndef LIBTCSPC_SPAN_USE_STD
