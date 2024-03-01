@@ -586,7 +586,7 @@ template <typename EventList, typename Downstream> class feed_input {
     void require_output_checked(std::shared_ptr<processor_context> context,
                                 std::string name) {
         context->accessor<capture_output_accessor>(name); // Fail early.
-        outputs_to_check.emplace_back(context, std::move(name));
+        outputs_to_check.emplace_back(std::move(context), std::move(name));
     }
 
     template <typename Event, typename = std::enable_if_t<
