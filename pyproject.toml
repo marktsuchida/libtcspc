@@ -1,0 +1,30 @@
+# This file is part of libtcspc
+# Copyright 2019-2024 Board of Regents of the University of Wisconsin System
+# SPDX-License-Identifier: MIT
+
+[project]
+name = "libtcspc"
+dynamic = ["version"]
+requires-python = ">=3.10"
+dependencies = ["cppyy"]
+readme = "README.md"
+license = {file = "LICENSE.txt"}
+
+[build-system]
+requires = ["meson-python"]
+build-backend = "mesonpy"
+
+[tool.meson-python.args]
+setup = [
+    '-Ddocs=disabled',
+    '-Dtests=disabled',
+    '-Dbenchmarks=disabled',
+    '-Dexamples=disabled',
+]
+install = ["--tags=python-runtime"]
+
+[tool.ruff]
+line-length = 79
+
+[tool.ruff.lint]
+select = ["E", "F", "UP", "B", "SIM", "I"]

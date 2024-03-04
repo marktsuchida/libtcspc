@@ -17,6 +17,12 @@ repos:
     hooks:
       - id: editorconfig-checker
         alias: ec
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.3.0
+    hooks:
+      - id: ruff
+        args: ["--fix"]
+      - id: ruff-format
   - repo: https://github.com/executablebooks/mdformat
     rev: 0.7.17
     hooks:

@@ -5,6 +5,8 @@
 project(
     'libtcspc',
     'cpp',
+    # Follow Python version identifier spec
+    version: '0.1.0.dev0',
     default_options: [
         'cpp_std=c++17',
         'warning_level=3',
@@ -52,3 +54,4 @@ subdir('docs')
 subdir('tests')
 subdir('benchmarks')
 subdir('examples')
+subdir('python/libtcspc')
