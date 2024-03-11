@@ -196,7 +196,7 @@ template <bool Cumulative> auto run_and_print(settings const &settings) {
         return;
     }
     try {
-        proc.pump();
+        proc.flush();
     } catch (tcspc::end_processing const &exc) {
         std::fputs(exc.what(), stderr);
         std::fputs("\n", stderr);

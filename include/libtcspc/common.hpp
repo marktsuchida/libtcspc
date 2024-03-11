@@ -175,7 +175,7 @@ class null_sink {
 namespace internal {
 
 template <typename Downstream> class null_source {
-    bool pumped = false;
+    bool flushed = false;
     Downstream downstream;
 
   public:
@@ -192,12 +192,12 @@ template <typename Downstream> class null_source {
         return g;
     }
 
-    void pump() {
-        if (pumped) {
+    void flush() {
+        if (flushed) {
             throw std::logic_error(
-                "null_source may not be pumped a second time");
+                "null_source may not be flushed a second time");
         }
-        pumped = true;
+        flushed = true;
         downstream.flush();
     }
 };
@@ -213,7 +213,7 @@ template <typename Downstream> class null_source {
  *
  * \param downstream downstream processor
  *
- * \return null source having \c pump member function
+ * \return null source processor
  */
 template <typename Downstream> auto null_source(Downstream &&downstream) {
     return internal::null_source<Downstream>(

@@ -427,7 +427,7 @@ class read_binary_stream {
     Downstream downstream;
 
     // Cold data after downstream
-    bool pumped = false;
+    bool flushed = false;
 
   public:
     explicit read_binary_stream(
@@ -457,12 +457,12 @@ class read_binary_stream {
         return g;
     }
 
-    void pump() {
-        if (pumped) {
+    void flush() {
+        if (flushed) {
             throw std::logic_error(
-                "read_binary_stream may not be pumped a second time");
+                "read_binary_stream may not be flushed a second time");
         }
-        pumped = true;
+        flushed = true;
 
         auto first_read_size = read_granularity;
         if (stream.is_good()) {
@@ -607,7 +607,7 @@ class read_binary_stream {
  *
  * \param downstream downstream processor
  *
- * \return read-binary-stream source having \c pump member function
+ * \return read-binary-stream source processor
  */
 template <typename Event, typename EventVector, typename InputStream,
           typename Downstream>
