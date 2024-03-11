@@ -27,9 +27,8 @@ namespace internal {
 // Design note: Currently the router produces a single downstream index per
 // event. We could generalize this so that the router produces a boolean mask
 // of the downstreams, such that a single event can be routed to multiple
-// downstreams. However, the exact same effect can also be achieved by adding
-// broadcast processors downstream, and it is not clear that there would be
-// much of a performance difference. So let's keep it simple.
+// downstreams. But let's keep it simple. If necessary, a "multiroute"
+// processor can be added.
 
 template <typename RoutedEventList, typename Router, std::size_t N,
           typename Downstream>
