@@ -16,7 +16,9 @@ configure_file(
 )
 
 py_sources = files(
-    '__init__.py'
+    '__init__.py',
+    '_events.py',
+    '_graph.py',
 )
 
 python.install_sources(

@@ -8,3 +8,4 @@
 # Python
 /build/
 /dist/
+__pycache__/
