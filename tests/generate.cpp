@@ -40,10 +40,10 @@ TEST_CASE("Generate null timing") {
     auto in = feed_input<type_list<trigger_event>>(generate<trigger_event>(
         null_timing_generator<output_event>(),
         capture_output<out_events>(
-            ctx->tracker<capture_output_accessor>("out"))));
+            ctx->tracker<capture_output_access>("out"))));
     in.require_output_checked(ctx, "out");
     auto out = capture_output_checker<out_events>(
-        ctx->accessor<capture_output_accessor>("out"));
+        ctx->access<capture_output_access>("out"));
 
     in.feed(trigger_event{42});
     REQUIRE(out.check(trigger_event{42}));
@@ -61,10 +61,10 @@ TEST_CASE("Generate one-shot timing",
         generate<trigger_event>(
             one_shot_timing_generator<output_event>(delay),
             capture_output<out_events>(
-                ctx->tracker<capture_output_accessor>("out"))));
+                ctx->tracker<capture_output_access>("out"))));
     in.require_output_checked(ctx, "out");
     auto out = capture_output_checker<out_events>(
-        ctx->accessor<capture_output_accessor>("out"));
+        ctx->access<capture_output_access>("out"));
 
     SECTION("No trigger, no output") {
         SECTION("No events") {}
@@ -116,10 +116,10 @@ TEST_CASE("Generate linear timing") {
                                                   arg_interval{interval},
                                                   arg_count<std::size_t>{0}),
             capture_output<out_events>(
-                ctx->tracker<capture_output_accessor>("out"))));
+                ctx->tracker<capture_output_access>("out"))));
         in.require_output_checked(ctx, "out");
         auto out = capture_output_checker<out_events>(
-            ctx->accessor<capture_output_accessor>("out"));
+            ctx->access<capture_output_access>("out"));
 
         in.feed(trigger_event{42});
         REQUIRE(out.check(trigger_event{42}));
@@ -136,10 +136,10 @@ TEST_CASE("Generate linear timing") {
                     arg_delay{delay}, arg_interval{interval},
                     arg_count<std::size_t>{1}),
                 capture_output<out_events>(
-                    ctx->tracker<capture_output_accessor>("out"))));
+                    ctx->tracker<capture_output_access>("out"))));
         in.require_output_checked(ctx, "out");
         auto out = capture_output_checker<out_events>(
-            ctx->accessor<capture_output_accessor>("out"));
+            ctx->access<capture_output_access>("out"));
 
         SECTION("Delayed output") {
             in.feed(trigger_event{42});
@@ -171,10 +171,10 @@ TEST_CASE("Generate linear timing") {
                     arg_delay{delay}, arg_interval{interval},
                     arg_count<std::size_t>{2}),
                 capture_output<out_events>(
-                    ctx->tracker<capture_output_accessor>("out"))));
+                    ctx->tracker<capture_output_access>("out"))));
         in.require_output_checked(ctx, "out");
         auto out = capture_output_checker<out_events>(
-            ctx->accessor<capture_output_accessor>("out"));
+            ctx->access<capture_output_access>("out"));
 
         in.feed(trigger_event{42});
         REQUIRE(out.check(trigger_event{42}));

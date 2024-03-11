@@ -37,10 +37,10 @@ TEST_CASE("stop with error") {
 
     auto in = feed_input<type_list<e0, e1>>(stop_with_error<type_list<e0>>(
         "myerror", capture_output<type_list<e1>>(
-                       ctx->tracker<capture_output_accessor>("out"))));
+                       ctx->tracker<capture_output_access>("out"))));
     in.require_output_checked(ctx, "out");
     auto out = capture_output_checker<type_list<e1>>(
-        ctx->accessor<capture_output_accessor>("out"));
+        ctx->access<capture_output_access>("out"));
 
     in.feed(e1{});
     REQUIRE(out.check(e1{}));
@@ -55,10 +55,10 @@ TEST_CASE("stop with no error") {
     auto ctx = std::make_shared<processor_context>();
     auto in = feed_input<type_list<e0, e1>>(stop<type_list<e0>>(
         "end of stream", capture_output<type_list<e1>>(
-                             ctx->tracker<capture_output_accessor>("out"))));
+                             ctx->tracker<capture_output_access>("out"))));
     in.require_output_checked(ctx, "out");
     auto out = capture_output_checker<type_list<e1>>(
-        ctx->accessor<capture_output_accessor>("out"));
+        ctx->access<capture_output_access>("out"));
 
     in.feed(e1{});
     REQUIRE(out.check(e1{}));

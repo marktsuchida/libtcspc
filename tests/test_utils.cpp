@@ -21,9 +21,9 @@ namespace tcspc {
 TEST_CASE("introspect test_utils", "[introspect]") {
     auto ctx = std::make_shared<processor_context>();
     check_introspect_simple_sink(capture_output<type_list<>>(
-        ctx->tracker<capture_output_accessor>("out0")));
+        ctx->tracker<capture_output_access>("out0")));
     check_introspect_simple_sink(capture_output<type_list<int>>(
-        ctx->tracker<capture_output_accessor>("out1")));
+        ctx->tracker<capture_output_access>("out1")));
     check_introspect_simple_source(feed_input<type_list<>>(null_sink()));
     check_introspect_simple_sink(sink_events<type_list<>>());
 }
@@ -34,10 +34,10 @@ using e1 = timestamped_test_event<1>;
 TEST_CASE("Short-circuited with no events") {
     auto ctx = std::make_shared<processor_context>();
     auto in = feed_input<type_list<>>(capture_output<type_list<>>(
-        ctx->tracker<capture_output_accessor>("out")));
+        ctx->tracker<capture_output_access>("out")));
     in.require_output_checked(ctx, "out");
     auto out = capture_output_checker<type_list<>>(
-        ctx->accessor<capture_output_accessor>("out"));
+        ctx->access<capture_output_access>("out"));
 
     SECTION("End successfully") {
         in.flush();
@@ -50,10 +50,10 @@ TEST_CASE("Short-circuited with no events") {
 TEST_CASE("Short-circuited with event set") {
     auto ctx = std::make_shared<processor_context>();
     auto in = feed_input<type_list<e0, e1>>(capture_output<type_list<e0, e1>>(
-        ctx->tracker<capture_output_accessor>("out")));
+        ctx->tracker<capture_output_access>("out")));
     in.require_output_checked(ctx, "out");
     auto out = capture_output_checker<type_list<e0, e1>>(
-        ctx->accessor<capture_output_accessor>("out"));
+        ctx->access<capture_output_access>("out"));
 
     in.feed(e0{});
     CHECK(out.check(e0{}));

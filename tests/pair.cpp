@@ -40,10 +40,10 @@ TEST_CASE("pair all") {
     auto in = feed_input<type_list<detection_event<>>>(
         pair_all(0, std::array<default_data_traits::channel_type, 1>{1}, 2,
                  capture_output<out_events>(
-                     ctx->tracker<capture_output_accessor>("out"))));
+                     ctx->tracker<capture_output_access>("out"))));
     in.require_output_checked(ctx, "out");
     auto out = capture_output_checker<out_events>(
-        ctx->accessor<capture_output_accessor>("out"));
+        ctx->access<capture_output_access>("out"));
 
     SECTION("empty stream") {
         in.flush();
@@ -113,10 +113,10 @@ TEST_CASE("pair all with self") {
     auto in = feed_input<type_list<detection_event<>>>(
         pair_all(0, std::array<default_data_traits::channel_type, 1>{0}, 2,
                  capture_output<out_events>(
-                     ctx->tracker<capture_output_accessor>("out"))));
+                     ctx->tracker<capture_output_access>("out"))));
     in.require_output_checked(ctx, "out");
     auto out = capture_output_checker<out_events>(
-        ctx->accessor<capture_output_accessor>("out"));
+        ctx->access<capture_output_access>("out"));
 
     in.feed(detection_event<>{{{0}, 0}});
     REQUIRE(out.check(detection_event<>{{{0}, 0}}));
@@ -144,10 +144,10 @@ TEST_CASE("pair one") {
     auto in = feed_input<type_list<detection_event<>>>(
         pair_one(0, std::array<default_data_traits::channel_type, 1>{1}, 2,
                  capture_output<out_events>(
-                     ctx->tracker<capture_output_accessor>("out"))));
+                     ctx->tracker<capture_output_access>("out"))));
     in.require_output_checked(ctx, "out");
     auto out = capture_output_checker<out_events>(
-        ctx->accessor<capture_output_accessor>("out"));
+        ctx->access<capture_output_access>("out"));
 
     SECTION("empty stream") {
         in.flush();
@@ -211,10 +211,10 @@ TEST_CASE("pair one with self") {
     auto in = feed_input<type_list<detection_event<>>>(
         pair_one(0, std::array<default_data_traits::channel_type, 1>{0}, 2,
                  capture_output<out_events>(
-                     ctx->tracker<capture_output_accessor>("out"))));
+                     ctx->tracker<capture_output_access>("out"))));
     in.require_output_checked(ctx, "out");
     auto out = capture_output_checker<out_events>(
-        ctx->accessor<capture_output_accessor>("out"));
+        ctx->access<capture_output_access>("out"));
 
     in.feed(detection_event<>{{{0}, 0}});
     REQUIRE(out.check(detection_event<>{{{0}, 0}}));
@@ -240,10 +240,10 @@ TEST_CASE("pair all between") {
     auto in = feed_input<type_list<detection_event<>>>(pair_all_between(
         0, std::array<default_data_traits::channel_type, 1>{1}, 2,
         capture_output<out_events>(
-            ctx->tracker<capture_output_accessor>("out"))));
+            ctx->tracker<capture_output_access>("out"))));
     in.require_output_checked(ctx, "out");
     auto out = capture_output_checker<out_events>(
-        ctx->accessor<capture_output_accessor>("out"));
+        ctx->access<capture_output_access>("out"));
 
     SECTION("empty stream") {
         in.flush();
@@ -309,10 +309,10 @@ TEST_CASE("pair all between with self") {
     auto in = feed_input<type_list<detection_event<>>>(pair_all_between(
         0, std::array<default_data_traits::channel_type, 1>{0}, 2,
         capture_output<out_events>(
-            ctx->tracker<capture_output_accessor>("out"))));
+            ctx->tracker<capture_output_access>("out"))));
     in.require_output_checked(ctx, "out");
     auto out = capture_output_checker<out_events>(
-        ctx->accessor<capture_output_accessor>("out"));
+        ctx->access<capture_output_access>("out"));
 
     in.feed(detection_event<>{{{0}, 0}});
     REQUIRE(out.check(detection_event<>{{{0}, 0}}));
@@ -338,10 +338,10 @@ TEST_CASE("pair one between") {
     auto in = feed_input<type_list<detection_event<>>>(pair_one_between(
         0, std::array<default_data_traits::channel_type, 1>{1}, 2,
         capture_output<out_events>(
-            ctx->tracker<capture_output_accessor>("out"))));
+            ctx->tracker<capture_output_access>("out"))));
     in.require_output_checked(ctx, "out");
     auto out = capture_output_checker<out_events>(
-        ctx->accessor<capture_output_accessor>("out"));
+        ctx->access<capture_output_access>("out"));
 
     SECTION("empty stream") {
         in.flush();
@@ -405,10 +405,10 @@ TEST_CASE("pair one between with self") {
     auto in = feed_input<type_list<detection_event<>>>(pair_one_between(
         0, std::array<default_data_traits::channel_type, 1>{0}, 2,
         capture_output<out_events>(
-            ctx->tracker<capture_output_accessor>("out"))));
+            ctx->tracker<capture_output_access>("out"))));
     in.require_output_checked(ctx, "out");
     auto out = capture_output_checker<out_events>(
-        ctx->accessor<capture_output_accessor>("out"));
+        ctx->access<capture_output_access>("out"));
 
     in.feed(detection_event<>{{{0}, 0}});
     REQUIRE(out.check(detection_event<>{{{0}, 0}}));

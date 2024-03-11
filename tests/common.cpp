@@ -35,8 +35,8 @@ TEST_CASE("null sink") {
 TEST_CASE("null source") {
     auto ctx = std::make_shared<processor_context>();
     auto src = null_source(capture_output<type_list<>>(
-        ctx->tracker<capture_output_accessor>("out")));
-    auto out = ctx->accessor<capture_output_accessor>("out");
+        ctx->tracker<capture_output_access>("out")));
+    auto out = ctx->access<capture_output_access>("out");
     src.flush();
     REQUIRE(out.check_flushed());
 }

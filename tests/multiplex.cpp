@@ -36,10 +36,10 @@ TEST_CASE("multiplex") {
     auto ctx = std::make_shared<processor_context>();
     auto in = feed_input<type_list<e0, e1>>(
         multiplex<type_list<e0, e1>>(capture_output<out_events>(
-            ctx->tracker<capture_output_accessor>("out"))));
+            ctx->tracker<capture_output_access>("out"))));
     in.require_output_checked(ctx, "out");
     auto out = capture_output_checker<out_events>(
-        ctx->accessor<capture_output_accessor>("out"));
+        ctx->access<capture_output_access>("out"));
 
     in.feed(e0{});
     REQUIRE(out.check(variant_event<type_list<e0, e1>>(e0{})));
@@ -63,10 +63,10 @@ TEST_CASE("demultiplex") {
     auto ctx = std::make_shared<processor_context>();
     auto in = feed_input<type_list<variant_event<type_list<e0, e1>>>>(
         demultiplex(capture_output<out_events>(
-            ctx->tracker<capture_output_accessor>("out"))));
+            ctx->tracker<capture_output_access>("out"))));
     in.require_output_checked(ctx, "out");
     auto out = capture_output_checker<out_events>(
-        ctx->accessor<capture_output_accessor>("out"));
+        ctx->access<capture_output_access>("out"));
 
     in.feed(variant_event<type_list<e0, e1>>(e1{}));
     REQUIRE(out.check(e1{}));

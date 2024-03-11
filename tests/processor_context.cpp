@@ -17,42 +17,41 @@ namespace tcspc {
 TEST_CASE("processor context and tracker") {
     auto ctx = std::make_shared<processor_context>();
 
-    struct test_accessor {
+    struct test_access {
         void *tracker_addr;
     };
 
-    CHECK_THROWS(ctx->accessor<test_accessor>("nonexistent"));
+    CHECK_THROWS(ctx->access<test_access>("nonexistent"));
 
     // Scope to test tracker destruction.
     {
-        auto trk = ctx->tracker<test_accessor>("myproc");
-        trk.register_accessor_factory(
-            [](auto &tracker) { return test_accessor{&tracker}; });
-        CHECK(ctx->accessor<test_accessor>("myproc").tracker_addr == &trk);
+        auto trk = ctx->tracker<test_access>("myproc");
+        trk.register_access_factory(
+            [](auto &tracker) { return test_access{&tracker}; });
+        CHECK(ctx->access<test_access>("myproc").tracker_addr == &trk);
 
         // No duplicates.
-        CHECK_THROWS(ctx->tracker<test_accessor>("myproc"));
+        CHECK_THROWS(ctx->tracker<test_access>("myproc"));
 
         auto moved_trk = std::move(trk);
-        CHECK(ctx->accessor<test_accessor>("myproc").tracker_addr ==
-              &moved_trk);
+        CHECK(ctx->access<test_access>("myproc").tracker_addr == &moved_trk);
 
-        processor_tracker<test_accessor> move_assigned_trk;
+        processor_tracker<test_access> move_assigned_trk;
         move_assigned_trk = std::move(moved_trk);
-        CHECK(ctx->accessor<test_accessor>("myproc").tracker_addr ==
+        CHECK(ctx->access<test_access>("myproc").tracker_addr ==
               &move_assigned_trk);
     }
 
-    CHECK_THROWS(ctx->accessor<test_accessor>("myproc"));
+    CHECK_THROWS(ctx->access<test_access>("myproc"));
 
     // No duplicates even after destruction.
-    CHECK_THROWS(ctx->tracker<test_accessor>("myproc"));
+    CHECK_THROWS(ctx->tracker<test_access>("myproc"));
 }
 
 namespace {
 
-struct example_accessor {
-    // An accessor shoulud be a single (unparameterized) type per processor
+struct example_access {
+    // An access shoulud be a single (unparameterized) type per processor
     // template. Type erasure of the processor can be afforded by storing
     // std::function instances for actual access to the processor.
     std::function<int()> value;
@@ -68,28 +67,27 @@ class example_processor {
 
     // Cold data after downstream. The tracker should be here, since it is
     // accessed at much lower frequency than the actual processing.
-    processor_tracker<example_accessor> trk;
+    processor_tracker<example_access> trk;
 
   public:
     // Processors supporting context-base access should have a constructor that
     // takes a tracker as its first parameter (and also an otherwise equivalent
     // constructor that does not; not shown).
-    explicit example_processor(processor_tracker<example_accessor> &&tracker)
+    explicit example_processor(processor_tracker<example_access> &&tracker)
         : trk(std::move(tracker)) {
-        trk.register_accessor_factory(
-            // We register a callable that can create an accessor given the
-            // tracker. The accessor is only valid while the processor (and
+        trk.register_access_factory(
+            // We register a callable that can create an access given the
+            // tracker. The access is only valid while the processor (and
             // therefore its tracker) stay alive in its current location, so
             // within the callable we can make these assumptions.
-            [](processor_tracker<example_accessor> &t) {
+            [](processor_tracker<example_access> &t) {
                 auto *self =
                     LIBTCSPC_PROCESSOR_FROM_TRACKER(example_processor, trk, t);
                 // Finally, we use lambda(s) to supply the type-erased
-                // function(s) by which the accessor interacts with the
+                // function(s) by which the access interacts with the
                 // processor. As stated above, we assume 'self' remains valid
-                // during the lifetime of the accessor.
-                return example_accessor{
-                    [self]() -> int { return self->value; }};
+                // during the lifetime of the access.
+                return example_access{[self]() -> int { return self->value; }};
             });
     }
 
@@ -104,15 +102,15 @@ TEST_CASE("processor tracker intended use") {
         // The context is injected into a processor upon creation, when later
         // access to the processor is desired.
         auto proc =
-            example_processor(ctx->tracker<example_accessor>("test_proc"));
+            example_processor(ctx->tracker<example_access>("test_proc"));
 
         // Then, the processor can be accessed by name at a later time, even if
         // the processor has been moved.
-        CHECK(ctx->accessor<example_accessor>("test_proc").value() == 42);
+        CHECK(ctx->access<example_access>("test_proc").value() == 42);
         auto moved_proc = std::move(proc);
-        CHECK(ctx->accessor<example_accessor>("test_proc").value() == 42);
+        CHECK(ctx->access<example_access>("test_proc").value() == 42);
     }
-    CHECK_THROWS(ctx->accessor<example_accessor>("test_proc"));
+    CHECK_THROWS(ctx->access<example_access>("test_proc"));
 }
 
 } // namespace tcspc

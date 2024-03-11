@@ -29,9 +29,9 @@ namespace tcspc {
 TEST_CASE("introspect buffer", "[introspect]") {
     auto ctx = std::make_shared<processor_context>();
     check_introspect_simple_processor(
-        buffer<int>(1, ctx->tracker<buffer_accessor>("buf"), null_sink()));
+        buffer<int>(1, ctx->tracker<buffer_access>("buf"), null_sink()));
     check_introspect_simple_processor(real_time_buffer<int>(
-        1, std::chrono::seconds(1), ctx->tracker<buffer_accessor>("rtbuf"),
+        1, std::chrono::seconds(1), ctx->tracker<buffer_access>("rtbuf"),
         null_sink()));
 }
 
@@ -122,8 +122,8 @@ TEST_CASE("buffer empty stream") {
     auto ctx = std::make_shared<processor_context>();
     auto out = mock_downstream();
     auto buf =
-        buffer<int>(3, ctx->tracker<buffer_accessor>("buf"), ref_proc(out));
-    auto buf_acc = ctx->accessor<buffer_accessor>("buf");
+        buffer<int>(3, ctx->tracker<buffer_access>("buf"), ref_proc(out));
+    auto buf_acc = ctx->access<buffer_access>("buf");
 
     SECTION("pump in thread") {
         latch thread_start_latch(1);
@@ -149,8 +149,8 @@ TEST_CASE("buffer stream ended downstream") {
     auto ctx = std::make_shared<processor_context>();
     auto out = mock_downstream();
     auto buf =
-        buffer<int>(1, ctx->tracker<buffer_accessor>("buf"), ref_proc(out));
-    auto buf_acc = ctx->accessor<buffer_accessor>("buf");
+        buffer<int>(1, ctx->tracker<buffer_access>("buf"), ref_proc(out));
+    auto buf_acc = ctx->access<buffer_access>("buf");
 
     SECTION("pump in thread") {
         bool threw = false;
@@ -182,8 +182,8 @@ TEST_CASE("buffer stream error downstream") {
     auto ctx = std::make_shared<processor_context>();
     auto out = mock_downstream();
     auto buf =
-        buffer<int>(1, ctx->tracker<buffer_accessor>("buf"), ref_proc(out));
-    auto buf_acc = ctx->accessor<buffer_accessor>("buf");
+        buffer<int>(1, ctx->tracker<buffer_access>("buf"), ref_proc(out));
+    auto buf_acc = ctx->access<buffer_access>("buf");
 
     SECTION("pump in thread") {
         bool threw = false;
@@ -215,8 +215,8 @@ TEST_CASE("buffer stream halted") {
     auto ctx = std::make_shared<processor_context>();
     auto out = mock_downstream();
     auto buf =
-        buffer<int>(1, ctx->tracker<buffer_accessor>("buf"), ref_proc(out));
-    auto buf_acc = ctx->accessor<buffer_accessor>("buf");
+        buffer<int>(1, ctx->tracker<buffer_access>("buf"), ref_proc(out));
+    auto buf_acc = ctx->access<buffer_access>("buf");
 
     SECTION("pump in thread") {
         bool threw = false;
@@ -248,8 +248,8 @@ TEST_CASE("buffer does not emit events before threshold") {
     auto ctx = std::make_shared<processor_context>();
     auto out = mock_downstream();
     auto buf =
-        buffer<int>(3, ctx->tracker<buffer_accessor>("buf"), ref_proc(out));
-    auto buf_acc = ctx->accessor<buffer_accessor>("buf");
+        buffer<int>(3, ctx->tracker<buffer_access>("buf"), ref_proc(out));
+    auto buf_acc = ctx->access<buffer_access>("buf");
 
     SECTION("pump in thread") {
         bool threw = false;
@@ -284,8 +284,8 @@ TEST_CASE("buffer flushes stored events") {
     auto ctx = std::make_shared<processor_context>();
     auto out = mock_downstream();
     auto buf =
-        buffer<int>(3, ctx->tracker<buffer_accessor>("buf"), ref_proc(out));
-    auto buf_acc = ctx->accessor<buffer_accessor>("buf");
+        buffer<int>(3, ctx->tracker<buffer_access>("buf"), ref_proc(out));
+    auto buf_acc = ctx->access<buffer_access>("buf");
 
     SECTION("pump in thread") {
         latch thread_start_latch(1);
@@ -320,8 +320,8 @@ TEST_CASE("buffer emits stored events on reaching threshold") {
     auto ctx = std::make_shared<processor_context>();
     auto out = mock_downstream();
     auto buf =
-        buffer<int>(3, ctx->tracker<buffer_accessor>("buf"), ref_proc(out));
-    auto buf_acc = ctx->accessor<buffer_accessor>("buf");
+        buffer<int>(3, ctx->tracker<buffer_access>("buf"), ref_proc(out));
+    auto buf_acc = ctx->access<buffer_access>("buf");
 
     SECTION("pump in thread") {
         latch thread_start_latch(1);
@@ -379,8 +379,8 @@ TEMPLATE_TEST_CASE("buffer input throws after downstream stopped", "",
     auto ctx = std::make_shared<processor_context>();
     auto out = mock_downstream();
     auto buf =
-        buffer<int>(1, ctx->tracker<buffer_accessor>("buf"), ref_proc(out));
-    auto buf_acc = ctx->accessor<buffer_accessor>("buf");
+        buffer<int>(1, ctx->tracker<buffer_access>("buf"), ref_proc(out));
+    auto buf_acc = ctx->access<buffer_access>("buf");
 
     SECTION("pump in thread") {
         bool threw = false;
@@ -415,9 +415,9 @@ TEST_CASE(
     auto ctx = std::make_shared<processor_context>();
     auto out = mock_downstream();
     auto buf = real_time_buffer<int>(3, std::chrono::hours(1),
-                                     ctx->tracker<buffer_accessor>("buf"),
+                                     ctx->tracker<buffer_access>("buf"),
                                      ref_proc(out));
-    auto buf_acc = ctx->accessor<buffer_accessor>("buf");
+    auto buf_acc = ctx->access<buffer_access>("buf");
 
     SECTION("pump in thread") {
         bool threw = false;
@@ -453,8 +453,8 @@ TEST_CASE("real_time_buffer emits event before threshold after latency") {
     auto out = mock_downstream();
     auto const latency = std::chrono::microseconds(100);
     auto buf = real_time_buffer<int>(
-        2, latency, ctx->tracker<buffer_accessor>("buf"), ref_proc(out));
-    auto buf_acc = ctx->accessor<buffer_accessor>("buf");
+        2, latency, ctx->tracker<buffer_access>("buf"), ref_proc(out));
+    auto buf_acc = ctx->access<buffer_access>("buf");
 
     SECTION("pump in thread") {
         latch thread_start_latch(1);

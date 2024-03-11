@@ -40,7 +40,7 @@ TEST_CASE("introspect count", "[introspect]") {
             arg_initial_count<u64>{2}, null_sink()));
     auto ctx = std::make_shared<processor_context>();
     check_introspect_simple_processor(
-        count<tick_event>(ctx->tracker<count_accessor>("t"), null_sink()));
+        count<tick_event>(ctx->tracker<count_access>("t"), null_sink()));
 }
 
 TEST_CASE("Count up to") {
@@ -54,10 +54,10 @@ TEST_CASE("Count up to") {
                         arg_threshold<u64>{0}, arg_limit<u64>{1},
                         arg_initial_count<u64>{0},
                         capture_output<out_events>(
-                            ctx->tracker<capture_output_accessor>("out"))));
+                            ctx->tracker<capture_output_access>("out"))));
             in.require_output_checked(ctx, "out");
             auto out = capture_output_checker<out_events>(
-                ctx->accessor<capture_output_accessor>("out"));
+                ctx->access<capture_output_access>("out"));
 
             in.feed(tick_event{42});
             REQUIRE(out.check(fire_event{42}));
@@ -82,10 +82,10 @@ TEST_CASE("Count up to") {
                     arg_threshold<u64>{0}, arg_limit<u64>{1},
                     arg_initial_count<u64>{0},
                     capture_output<out_events>(
-                        ctx->tracker<capture_output_accessor>("out"))));
+                        ctx->tracker<capture_output_access>("out"))));
             in.require_output_checked(ctx, "out");
             auto out = capture_output_checker<out_events>(
-                ctx->accessor<capture_output_accessor>("out"));
+                ctx->access<capture_output_access>("out"));
 
             in.feed(tick_event{42});
             REQUIRE(out.check(tick_event{42}));
@@ -103,10 +103,10 @@ TEST_CASE("Count up to") {
                     arg_threshold<u64>{1}, arg_limit<u64>{1},
                     arg_initial_count<u64>{0},
                     capture_output<out_events>(
-                        ctx->tracker<capture_output_accessor>("out"))));
+                        ctx->tracker<capture_output_access>("out"))));
             in.require_output_checked(ctx, "out");
             auto out = capture_output_checker<out_events>(
-                ctx->accessor<capture_output_accessor>("out"));
+                ctx->access<capture_output_access>("out"));
 
             in.feed(tick_event{42});
             REQUIRE(out.check(tick_event{42}));
@@ -122,10 +122,10 @@ TEST_CASE("Count up to") {
                     arg_threshold<u64>{1}, arg_limit<u64>{1},
                     arg_initial_count<u64>{0},
                     capture_output<out_events>(
-                        ctx->tracker<capture_output_accessor>("out"))));
+                        ctx->tracker<capture_output_access>("out"))));
             in.require_output_checked(ctx, "out");
             auto out = capture_output_checker<out_events>(
-                ctx->accessor<capture_output_accessor>("out"));
+                ctx->access<capture_output_access>("out"));
 
             in.feed(tick_event{42});
             REQUIRE(out.check(tick_event{42}));
@@ -145,10 +145,10 @@ TEST_CASE("Count up to") {
                     arg_threshold<u64>{1}, arg_limit<u64>{2},
                     arg_initial_count<u64>{0},
                     capture_output<out_events>(
-                        ctx->tracker<capture_output_accessor>("out"))));
+                        ctx->tracker<capture_output_access>("out"))));
             in.require_output_checked(ctx, "out");
             auto out = capture_output_checker<out_events>(
-                ctx->accessor<capture_output_accessor>("out"));
+                ctx->access<capture_output_access>("out"));
 
             in.feed(tick_event{42});
             REQUIRE(out.check(tick_event{42}));
@@ -174,10 +174,10 @@ TEST_CASE("Count up to") {
                     arg_threshold<u64>{1}, arg_limit<u64>{2},
                     arg_initial_count<u64>{0},
                     capture_output<out_events>(
-                        ctx->tracker<capture_output_accessor>("out"))));
+                        ctx->tracker<capture_output_access>("out"))));
             in.require_output_checked(ctx, "out");
             auto out = capture_output_checker<out_events>(
-                ctx->accessor<capture_output_accessor>("out"));
+                ctx->access<capture_output_access>("out"));
 
             in.feed(tick_event{42});
             REQUIRE(out.check(tick_event{42}));
@@ -207,10 +207,10 @@ TEST_CASE("Count down to") {
             arg_threshold<u64>{1}, arg_limit<u64>{0},
             arg_initial_count<u64>{2},
             capture_output<out_events>(
-                ctx->tracker<capture_output_accessor>("out"))));
+                ctx->tracker<capture_output_access>("out"))));
     in.require_output_checked(ctx, "out");
     auto out = capture_output_checker<out_events>(
-        ctx->accessor<capture_output_accessor>("out"));
+        ctx->access<capture_output_access>("out"));
 
     in.feed(tick_event{42});
     REQUIRE(out.check(tick_event{42}));
@@ -229,13 +229,13 @@ TEST_CASE("Count down to") {
 TEST_CASE("event counter") {
     auto ctx = std::make_shared<processor_context>();
     auto in = feed_input<type_list<tick_event, misc_event>>(
-        count<tick_event>(ctx->tracker<count_accessor>("counter"),
+        count<tick_event>(ctx->tracker<count_access>("counter"),
                           capture_output<out_events>(
-                              ctx->tracker<capture_output_accessor>("out"))));
+                              ctx->tracker<capture_output_access>("out"))));
     in.require_output_checked(ctx, "out");
     auto out = capture_output_checker<out_events>(
-        ctx->accessor<capture_output_accessor>("out"));
-    auto counter = ctx->accessor<count_accessor>("counter");
+        ctx->access<capture_output_access>("out"));
+    auto counter = ctx->access<count_access>("counter");
 
     CHECK(counter.count() == 0);
     in.feed(tick_event{});

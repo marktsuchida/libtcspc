@@ -64,10 +64,10 @@ TEST_CASE("fit periodic sequences") {
     auto in = feed_input<type_list<e0>>(fit_periodic_sequences<e0>(
         4, {1.0, 2.0}, 2.5,
         capture_output<type_list<periodic_sequence_event<>>>(
-            ctx->tracker<capture_output_accessor>("out"))));
+            ctx->tracker<capture_output_access>("out"))));
     in.require_output_checked(ctx, "out");
     auto out = capture_output_checker<type_list<periodic_sequence_event<>>>(
-        ctx->accessor<capture_output_accessor>("out"));
+        ctx->access<capture_output_access>("out"));
 
     SECTION("fit succeeds") {
         in.feed(e0{6});

@@ -51,21 +51,21 @@ class source_halted final : public std::exception {
 };
 
 /**
- * \brief Accessor for buffer processor.
+ * \brief Access for buffer processor.
  *
  * \ingroup processors-basic
  *
  * \see buffer
  * \see real_time_buffer
  */
-class buffer_accessor {
+class buffer_access {
     std::function<void()> halt_fn;
     std::function<void()> pump_fn;
 
   public:
     /** \brief Constructor; not for client use. */
     template <typename HaltFunc, typename PumpFunc>
-    explicit buffer_accessor(HaltFunc halt_func, PumpFunc pump_func)
+    explicit buffer_access(HaltFunc halt_func, PumpFunc pump_func)
         : halt_fn(halt_func), pump_fn(pump_func) {}
 
     /**
@@ -138,7 +138,7 @@ class buffer {
 
     // Cold data after downstream.
     bool pumped = false;
-    processor_tracker<buffer_accessor> trk;
+    processor_tracker<buffer_access> trk;
 
     void halt() noexcept {
         {
@@ -203,7 +203,7 @@ class buffer {
   public:
     template <typename Duration>
     explicit buffer(std::size_t threshold, Duration latency_limit,
-                    processor_tracker<buffer_accessor> &&tracker,
+                    processor_tracker<buffer_access> &&tracker,
                     Downstream downstream)
         : threshold(threshold >= 0 ? threshold : 1),
           max_latency(
@@ -215,16 +215,16 @@ class buffer {
                 "buffer latency limit must not be greater than 24 h");
         }
 
-        trk.register_accessor_factory([](auto &tracker) {
+        trk.register_access_factory([](auto &tracker) {
             auto *self = LIBTCSPC_PROCESSOR_FROM_TRACKER(buffer, trk, tracker);
-            return buffer_accessor([self] { self->halt(); },
-                                   [self] { self->pump(); });
+            return buffer_access([self] { self->halt(); },
+                                 [self] { self->pump(); });
         });
     }
 
     // NOLINTBEGIN(cppcoreguidelines-pro-type-member-init)
     explicit buffer(std::size_t threshold,
-                    processor_tracker<buffer_accessor> &&tracker,
+                    processor_tracker<buffer_access> &&tracker,
                     Downstream downstream)
         : buffer(threshold, std::chrono::hours(24), std::move(tracker),
                  std::move(downstream)) {}
@@ -284,14 +284,14 @@ class buffer {
  *
  * This receives events of type \c Event from upstream like a normal processor,
  * but stores them in a buffer. By pumping on a different thread (see
- * buffer_accessor::pump()), the buffered events can be sent downstream on that
+ * buffer_access::pump()), the buffered events can be sent downstream on that
  * thread.
  *
  * Events are emitted downstream when the number of buffered events reaches the
  * \p threshold.
  *
  * The thread sending events to the buffer must notify the buffer via
- * buffer_accessor::halt() when it will not send anything more. Note that this
+ * buffer_access::halt() when it will not send anything more. Note that this
  * call is required even if upstream processing terminated by an exception
  * (including during an explicit flush), because such an exception may have
  * been thrown upstream of the buffer without its knowledge.
@@ -308,8 +308,7 @@ class buffer {
  * \param downstream downstream processor
  */
 template <typename Event, typename Downstream>
-auto buffer(std::size_t threshold,
-            processor_tracker<buffer_accessor> &&tracker,
+auto buffer(std::size_t threshold, processor_tracker<buffer_access> &&tracker,
             Downstream &&downstream) {
     return internal::buffer<Event, false, Downstream>(
         threshold, std::move(tracker), std::forward<Downstream>(downstream));
@@ -323,7 +322,7 @@ auto buffer(std::size_t threshold,
  *
  * This receives events of type \c Event from upstream like a normal processor,
  * but stores them in a buffer. By pumping on a different thread (see
- * buffer_accessor::pump()), the buffered events can be sent downstream on that
+ * buffer_access::pump()), the buffered events can be sent downstream on that
  * thread.
  *
  * Events are emitted downstream when either the number of buffered events
@@ -331,7 +330,7 @@ auto buffer(std::size_t threshold,
  * least \p latency_limit.
  *
  * The thread sending events to the buffer must notify the buffer via
- * buffer_accessor::halt() when it will not send anything more. Note that this
+ * buffer_access::halt() when it will not send anything more. Note that this
  * call is required even if upstream processing terminated by an exception
  * (including during an explicit flush), because such an exception may have
  * been thrown upstream of the buffer without its knowledge.
@@ -353,7 +352,7 @@ auto buffer(std::size_t threshold,
  */
 template <typename Event, typename Duration, typename Downstream>
 auto real_time_buffer(std::size_t threshold, Duration latency_limit,
-                      processor_tracker<buffer_accessor> &&tracker,
+                      processor_tracker<buffer_access> &&tracker,
                       Downstream &&downstream) {
     return internal::buffer<Event, true, Downstream>(
         threshold, latency_limit, std::move(tracker),

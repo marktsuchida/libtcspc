@@ -66,10 +66,10 @@ TEMPLATE_TEST_CASE("Histogram elementwise, zero elements",
             histogram_elementwise<TestType, dt3216>(
                 0, 1, 1,
                 capture_output<out_events>(
-                    ctx->tracker<capture_output_accessor>("out"))));
+                    ctx->tracker<capture_output_access>("out"))));
     in.require_output_checked(ctx, "out");
     auto out = capture_output_checker<out_events>(
-        ctx->accessor<capture_output_accessor>("out"));
+        ctx->access<capture_output_access>("out"));
 
     in.feed(misc_event{42});
     REQUIRE(out.check(misc_event{42}));
@@ -87,10 +87,10 @@ TEMPLATE_TEST_CASE("Histogram elementwise, zero bins",
         histogram_elementwise<TestType, dt3216>(
             1, 0, 1,
             capture_output<out_events>(
-                ctx->tracker<capture_output_accessor>("out"))));
+                ctx->tracker<capture_output_access>("out"))));
     in.require_output_checked(ctx, "out");
     auto out = capture_output_checker<out_events>(
-        ctx->accessor<capture_output_accessor>("out"));
+        ctx->access<capture_output_access>("out"));
 
     in.feed(bin_increment_batch_event<dt3216>{{42, 43}, {}});
     REQUIRE(out.check(
@@ -110,10 +110,10 @@ TEMPLATE_TEST_CASE("Histogram elementwise, no overflow",
         histogram_elementwise<TestType, dt3216>(
             2, 2, 100,
             capture_output<out_events>(
-                ctx->tracker<capture_output_accessor>("out"))));
+                ctx->tracker<capture_output_access>("out"))));
     in.require_output_checked(ctx, "out");
     auto out = capture_output_checker<out_events>(
-        ctx->accessor<capture_output_accessor>("out"));
+        ctx->access<capture_output_access>("out"));
 
     in.feed(bin_increment_batch_event<dt3216>{{42, 43}, {0}});
     std::vector<u16> elem_hist{1, 0};
@@ -143,10 +143,10 @@ TEST_CASE("Histogram elementwise, saturate on overflow",
             histogram_elementwise<saturate_on_overflow, dt3216>(
                 1, 1, 0,
                 capture_output<out_events>(
-                    ctx->tracker<capture_output_accessor>("out"))));
+                    ctx->tracker<capture_output_access>("out"))));
         in.require_output_checked(ctx, "out");
         auto out = capture_output_checker<out_events>(
-            ctx->accessor<capture_output_accessor>("out"));
+            ctx->access<capture_output_access>("out"));
 
         in.feed(bin_increment_batch_event<dt3216>{{42, 43}, {0}}); // Overflow
         std::vector<u16> elem_hist{0};
@@ -164,10 +164,10 @@ TEST_CASE("Histogram elementwise, saturate on overflow",
             histogram_elementwise<saturate_on_overflow, dt3216>(
                 1, 1, 1,
                 capture_output<out_events>(
-                    ctx->tracker<capture_output_accessor>("out"))));
+                    ctx->tracker<capture_output_access>("out"))));
         in.require_output_checked(ctx, "out");
         auto out = capture_output_checker<out_events>(
-            ctx->accessor<capture_output_accessor>("out"));
+            ctx->access<capture_output_access>("out"));
 
         in.feed(
             bin_increment_batch_event<dt3216>{{42, 43}, {0, 0}}); // Overflow
@@ -193,10 +193,10 @@ TEST_CASE("Histogram elementwise, error on overflow",
             histogram_elementwise<error_on_overflow, dt3216>(
                 1, 1, 0,
                 capture_output<out_events>(
-                    ctx->tracker<capture_output_accessor>("out"))));
+                    ctx->tracker<capture_output_access>("out"))));
         in.require_output_checked(ctx, "out");
         auto out = capture_output_checker<out_events>(
-            ctx->accessor<capture_output_accessor>("out"));
+            ctx->access<capture_output_access>("out"));
 
         REQUIRE_THROWS_AS(
             in.feed(bin_increment_batch_event<dt3216>{{42, 43}, {0}}),
@@ -209,10 +209,10 @@ TEST_CASE("Histogram elementwise, error on overflow",
             histogram_elementwise<error_on_overflow, dt3216>(
                 1, 1, 1,
                 capture_output<out_events>(
-                    ctx->tracker<capture_output_accessor>("out"))));
+                    ctx->tracker<capture_output_access>("out"))));
         in.require_output_checked(ctx, "out");
         auto out = capture_output_checker<out_events>(
-            ctx->accessor<capture_output_accessor>("out"));
+            ctx->access<capture_output_access>("out"));
 
         REQUIRE_THROWS_AS(
             in.feed(bin_increment_batch_event<dt3216>{{42, 43}, {0, 0}}),
@@ -253,10 +253,10 @@ TEMPLATE_TEST_CASE(
         histogram_elementwise_accumulate<reset_event, TestType, false, dt88>(
             num_elements, num_bins, 10,
             capture_output<hea_output_events_no_concluding>(
-                ctx->tracker<capture_output_accessor>("out"))));
+                ctx->tracker<capture_output_access>("out"))));
     in.require_output_checked(ctx, "out");
     auto out = capture_output_checker<hea_output_events_no_concluding>(
-        ctx->accessor<capture_output_accessor>("out"));
+        ctx->access<capture_output_access>("out"));
 
     SECTION("empty stream") {
         in.flush();
@@ -280,10 +280,10 @@ TEMPLATE_TEST_CASE(
         histogram_elementwise_accumulate<reset_event, TestType, false, dt88>(
             2, 3, 255,
             capture_output<hea_output_events_no_concluding>(
-                ctx->tracker<capture_output_accessor>("out"))));
+                ctx->tracker<capture_output_access>("out"))));
     in.require_output_checked(ctx, "out");
     auto out = capture_output_checker<hea_output_events_no_concluding>(
-        ctx->accessor<capture_output_accessor>("out"));
+        ctx->access<capture_output_access>("out"));
 
     std::vector<u8> elem_hist;
     std::vector<u8> hist_arr;
@@ -342,10 +342,10 @@ TEMPLATE_TEST_CASE(
         histogram_elementwise_accumulate<reset_event, TestType, true, dt88>(
             2, 3, 255,
             capture_output<hea_output_events>(
-                ctx->tracker<capture_output_accessor>("out"))));
+                ctx->tracker<capture_output_access>("out"))));
     in.require_output_checked(ctx, "out");
     auto out = capture_output_checker<hea_output_events>(
-        ctx->accessor<capture_output_accessor>("out"));
+        ctx->access<capture_output_access>("out"));
 
     std::vector<u8> elem_hist;
     std::vector<u8> hist_arr;
@@ -420,10 +420,10 @@ TEMPLATE_TEST_CASE(
         histogram_elementwise_accumulate<reset_event, TestType, true, dt88>(
             2, 3, 255,
             capture_output<hea_output_events>(
-                ctx->tracker<capture_output_accessor>("out"))));
+                ctx->tracker<capture_output_access>("out"))));
     in.require_output_checked(ctx, "out");
     auto out = capture_output_checker<hea_output_events>(
-        ctx->accessor<capture_output_accessor>("out"));
+        ctx->access<capture_output_access>("out"));
 
     std::vector<u8> elem_hist;
     std::vector<u8> hist_arr;
@@ -513,10 +513,10 @@ TEST_CASE("histogram_elementwise_accumulate with saturate-on-overflow",
                                          false, dt88>(
             2, 3, 4,
             capture_output<hea_output_events_no_concluding>(
-                ctx->tracker<capture_output_accessor>("out"))));
+                ctx->tracker<capture_output_access>("out"))));
     in.require_output_checked(ctx, "out");
     auto out = capture_output_checker<hea_output_events_no_concluding>(
-        ctx->accessor<capture_output_accessor>("out"));
+        ctx->access<capture_output_access>("out"));
 
     std::vector<u8> elem_hist;
 
@@ -554,10 +554,10 @@ TEST_CASE("histogram_elementwise_accumulate with reset-on-overflow",
                                          dt88>(
             2, 3, 4,
             capture_output<hea_output_events>(
-                ctx->tracker<capture_output_accessor>("out"))));
+                ctx->tracker<capture_output_access>("out"))));
     in.require_output_checked(ctx, "out");
     auto out = capture_output_checker<hea_output_events>(
-        ctx->accessor<capture_output_accessor>("out"));
+        ctx->access<capture_output_access>("out"));
 
     std::vector<u8> elem_hist;
     std::vector<u8> hist_arr;
@@ -675,10 +675,10 @@ TEST_CASE("histogram_elementwise_accumulate with stop-on-overflow",
                                          dt88>(
             2, 3, 4,
             capture_output<hea_output_events>(
-                ctx->tracker<capture_output_accessor>("out"))));
+                ctx->tracker<capture_output_access>("out"))));
     in.require_output_checked(ctx, "out");
     auto out = capture_output_checker<hea_output_events>(
-        ctx->accessor<capture_output_accessor>("out"));
+        ctx->access<capture_output_access>("out"));
 
     std::vector<u8> elem_hist;
     std::vector<u8> hist_arr;
@@ -761,10 +761,10 @@ TEST_CASE(
                                          dt88>(
             2, 3, 4,
             capture_output<hea_output_events>(
-                ctx->tracker<capture_output_accessor>("out"))));
+                ctx->tracker<capture_output_access>("out"))));
     in.require_output_checked(ctx, "out");
     auto out = capture_output_checker<hea_output_events>(
-        ctx->accessor<capture_output_accessor>("out"));
+        ctx->access<capture_output_access>("out"));
 
     std::vector<u8> elem_hist;
     std::vector<u8> hist_arr;
@@ -831,10 +831,10 @@ TEST_CASE(
                                          dt88>(
             2, 3, 4,
             capture_output<hea_output_events_no_concluding>(
-                ctx->tracker<capture_output_accessor>("out"))));
+                ctx->tracker<capture_output_access>("out"))));
     in.require_output_checked(ctx, "out");
     auto out = capture_output_checker<hea_output_events_no_concluding>(
-        ctx->accessor<capture_output_accessor>("out"));
+        ctx->access<capture_output_access>("out"));
 
     std::vector<u8> elem_hist;
     std::vector<u8> hist_arr;

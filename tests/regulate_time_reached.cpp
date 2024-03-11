@@ -38,10 +38,10 @@ TEST_CASE("regulate time reached by abstime") {
     auto ctx = std::make_shared<processor_context>();
     auto in = feed_input<events>(regulate_time_reached(
         10, std::numeric_limits<std::size_t>::max(),
-        capture_output<events>(ctx->tracker<capture_output_accessor>("out"))));
+        capture_output<events>(ctx->tracker<capture_output_access>("out"))));
     in.require_output_checked(ctx, "out");
     auto out = capture_output_checker<events>(
-        ctx->accessor<capture_output_accessor>("out"));
+        ctx->access<capture_output_access>("out"));
 
     SECTION("empty stream yields empty stream") {
         in.flush();
@@ -106,10 +106,10 @@ TEST_CASE("regulate time reached by count") {
     auto ctx = std::make_shared<processor_context>();
     auto in = feed_input<events>(regulate_time_reached(
         std::numeric_limits<abstime_type>::max(), 2,
-        capture_output<events>(ctx->tracker<capture_output_accessor>("out"))));
+        capture_output<events>(ctx->tracker<capture_output_access>("out"))));
     in.require_output_checked(ctx, "out");
     auto out = capture_output_checker<events>(
-        ctx->accessor<capture_output_accessor>("out"));
+        ctx->access<capture_output_access>("out"));
 
     SECTION("empty stream yields empty stream") {
         in.flush();
@@ -173,10 +173,10 @@ TEST_CASE("regulate time reached, zero count threshold",
     auto ctx = std::make_shared<processor_context>();
     auto in = feed_input<events>(regulate_time_reached(
         std::numeric_limits<abstime_type>::max(), 0,
-        capture_output<events>(ctx->tracker<capture_output_accessor>("out"))));
+        capture_output<events>(ctx->tracker<capture_output_access>("out"))));
     in.require_output_checked(ctx, "out");
     auto out = capture_output_checker<events>(
-        ctx->accessor<capture_output_accessor>("out"));
+        ctx->access<capture_output_access>("out"));
 
     SECTION("empty stream yields empty stream") {
         in.flush();

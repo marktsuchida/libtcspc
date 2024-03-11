@@ -104,13 +104,13 @@ TEST_CASE("Merge") {
     SECTION("asymmetric tests") {
         auto [mi0, mi1] = merge<all_events>(
             1024, capture_output<all_events>(
-                      ctx->tracker<capture_output_accessor>("out")));
+                      ctx->tracker<capture_output_access>("out")));
         auto in0 = feed_input<all_events>(std::move(mi0));
         in0.require_output_checked(ctx, "out");
         auto in1 = feed_input<all_events>(std::move(mi1));
         in1.require_output_checked(ctx, "out");
         auto out = capture_output_checker<all_events>(
-            ctx->accessor<capture_output_accessor>("out"));
+            ctx->access<capture_output_access>("out"));
 
         SECTION("events from input 0 emitted before those from input 1") {
             in1.feed(e1{42});
@@ -143,7 +143,7 @@ TEST_CASE("Merge") {
     SECTION("symmetric tests") {
         auto [mi0, mi1] = merge<all_events>(
             1024, capture_output<all_events>(
-                      ctx->tracker<capture_output_accessor>("out")));
+                      ctx->tracker<capture_output_access>("out")));
         auto temi0 = type_erased_processor<all_events>(std::move(mi0));
         auto temi1 = type_erased_processor<all_events>(std::move(mi1));
         int const x = GENERATE(0, 1);
@@ -156,7 +156,7 @@ TEST_CASE("Merge") {
         in_x.require_output_checked(ctx, "out");
         in_y.require_output_checked(ctx, "out");
         auto out = capture_output_checker<all_events>(
-            ctx->accessor<capture_output_accessor>("out"));
+            ctx->access<capture_output_access>("out"));
 
         SECTION("empty yields empty") {
             in_x.flush();
@@ -239,14 +239,14 @@ TEST_CASE("merge single event type") {
     using one_event = type_list<e0>;
     auto ctx = std::make_shared<processor_context>();
     auto [min0, min1] = merge<one_event>(
-        1024, capture_output<one_event>(
-                  ctx->tracker<capture_output_accessor>("out")));
+        1024,
+        capture_output<one_event>(ctx->tracker<capture_output_access>("out")));
     auto in0 = feed_input<one_event>(std::move(min0));
     in0.require_output_checked(ctx, "out");
     auto in1 = feed_input<one_event>(std::move(min1));
     in1.require_output_checked(ctx, "out");
     auto out = capture_output_checker<one_event>(
-        ctx->accessor<capture_output_accessor>("out"));
+        ctx->access<capture_output_access>("out"));
 
     // The only non-common code for the single-event-type case is in
     // emit_pending, so lightly test that.
@@ -275,7 +275,7 @@ TEST_CASE("merge N streams") {
         // NOLINTBEGIN(clang-analyzer-deadcode.DeadStores)
         auto tup = merge_n<0, all_events>(
             1024, capture_output<all_events>(
-                      ctx->tracker<capture_output_accessor>("out")));
+                      ctx->tracker<capture_output_access>("out")));
         static_assert(std::tuple_size_v<decltype(tup)> == 0);
         // NOLINTEND(clang-analyzer-deadcode.DeadStores)
     }
@@ -283,15 +283,15 @@ TEST_CASE("merge N streams") {
     SECTION("Single-stream merge_n returns downstream in tuple") {
         auto [m0] = merge_n<1, all_events>(
             1024, capture_output<all_events>(
-                      ctx->tracker<capture_output_accessor>("out")));
-        static_assert(std::is_same_v<decltype(m0),
-                                     decltype(capture_output<all_events>(
-                                         ctx->tracker<capture_output_accessor>(
-                                             "out")))>);
+                      ctx->tracker<capture_output_access>("out")));
+        static_assert(
+            std::is_same_v<decltype(m0),
+                           decltype(capture_output<all_events>(
+                               ctx->tracker<capture_output_access>("out")))>);
         auto in = feed_input<all_events>(std::move(m0));
         in.require_output_checked(ctx, "out");
         auto out = capture_output_checker<all_events>(
-            ctx->accessor<capture_output_accessor>("out"));
+            ctx->access<capture_output_access>("out"));
 
         in.feed(e0{0});
         REQUIRE(out.check(e0{0}));
@@ -302,29 +302,29 @@ TEST_CASE("merge N streams") {
     SECTION("Multi-stream merge_n can be instantiated") {
         auto [m0, m1] = merge_n<2, all_events>(
             1024, capture_output<all_events>(
-                      ctx->tracker<capture_output_accessor>("out2")));
+                      ctx->tracker<capture_output_access>("out2")));
         auto [n0, n1, n2] = merge_n<3, all_events>(
             1024, capture_output<all_events>(
-                      ctx->tracker<capture_output_accessor>("out3")));
+                      ctx->tracker<capture_output_access>("out3")));
         auto [o0, o1, o2, o3] = merge_n<4, all_events>(
             1024, capture_output<all_events>(
-                      ctx->tracker<capture_output_accessor>("out4")));
+                      ctx->tracker<capture_output_access>("out4")));
         auto [p0, p1, p2, p3, p4] = merge_n<5, all_events>(
             1024, capture_output<all_events>(
-                      ctx->tracker<capture_output_accessor>("out5")));
+                      ctx->tracker<capture_output_access>("out5")));
     }
 }
 
 TEST_CASE("merge unsorted") {
     auto ctx = std::make_shared<processor_context>();
     auto [min0, min1] = merge_n_unsorted(capture_output<all_events>(
-        ctx->tracker<capture_output_accessor>("out")));
+        ctx->tracker<capture_output_access>("out")));
     auto in0 = feed_input<all_events>(std::move(min0));
     auto in1 = feed_input<all_events>(std::move(min1));
     in0.require_output_checked(ctx, "out");
     in1.require_output_checked(ctx, "out");
     auto out = capture_output_checker<all_events>(
-        ctx->accessor<capture_output_accessor>("out"));
+        ctx->access<capture_output_access>("out"));
 
     SECTION("empty yields empty") {
         in0.flush();

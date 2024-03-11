@@ -31,10 +31,10 @@ TEST_CASE("check monotonic") {
     auto ctx = std::make_shared<processor_context>();
     auto in = feed_input<type_list<e0, warning_event>>(
         check_monotonic(capture_output<out_events>(
-            ctx->tracker<capture_output_accessor>("out"))));
+            ctx->tracker<capture_output_access>("out"))));
     in.require_output_checked(ctx, "out");
     auto out = capture_output_checker<out_events>(
-        ctx->accessor<capture_output_accessor>("out"));
+        ctx->access<capture_output_access>("out"));
 
     in.feed(e0{-10});
     REQUIRE(out.check(e0{-10}));
@@ -58,10 +58,10 @@ TEST_CASE("check alternating") {
     auto ctx = std::make_shared<processor_context>();
     auto in = feed_input<type_list<e0, e1, e2>>(
         check_alternating<e0, e1>(capture_output<out_events>(
-            ctx->tracker<capture_output_accessor>("out"))));
+            ctx->tracker<capture_output_access>("out"))));
     in.require_output_checked(ctx, "out");
     auto out = capture_output_checker<out_events>(
-        ctx->accessor<capture_output_accessor>("out"));
+        ctx->access<capture_output_access>("out"));
 
     SECTION("correct") {
         in.feed(e0{42});

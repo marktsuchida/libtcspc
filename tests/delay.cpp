@@ -38,10 +38,10 @@ TEST_CASE("Delay") {
     SECTION("Zero delay is noop") {
         auto in = feed_input<type_list<e0>>(
             delay(0, capture_output<out_events>(
-                         ctx->tracker<capture_output_accessor>("out"))));
+                         ctx->tracker<capture_output_access>("out"))));
         in.require_output_checked(ctx, "out");
         auto out = capture_output_checker<out_events>(
-            ctx->accessor<capture_output_accessor>("out"));
+            ctx->access<capture_output_access>("out"));
 
         in.feed(e0{0});
         REQUIRE(out.check(e0{0}));
@@ -52,10 +52,10 @@ TEST_CASE("Delay") {
     SECTION("Delay +1") {
         auto in = feed_input<type_list<e0, e1>>(
             delay(1, capture_output<out_events>(
-                         ctx->tracker<capture_output_accessor>("out"))));
+                         ctx->tracker<capture_output_access>("out"))));
         in.require_output_checked(ctx, "out");
         auto out = capture_output_checker<out_events>(
-            ctx->accessor<capture_output_accessor>("out"));
+            ctx->access<capture_output_access>("out"));
 
         in.feed(e0{0});
         REQUIRE(out.check(e0{1}));
@@ -68,10 +68,10 @@ TEST_CASE("Delay") {
     SECTION("Delay -1") {
         auto in = feed_input<type_list<e0, e1>>(
             delay(-1, capture_output<out_events>(
-                          ctx->tracker<capture_output_accessor>("out"))));
+                          ctx->tracker<capture_output_access>("out"))));
         in.require_output_checked(ctx, "out");
         auto out = capture_output_checker<out_events>(
-            ctx->accessor<capture_output_accessor>("out"));
+            ctx->access<capture_output_access>("out"));
 
         in.feed(e0{0});
         REQUIRE(out.check(e0{-1}));
@@ -86,10 +86,10 @@ TEST_CASE("zero-base abstime") {
     auto ctx = std::make_shared<processor_context>();
     auto in = feed_input<type_list<e0, e1>>(
         zero_base_abstime(capture_output<out_events>(
-            ctx->tracker<capture_output_accessor>("out"))));
+            ctx->tracker<capture_output_access>("out"))));
     in.require_output_checked(ctx, "out");
     auto out = capture_output_checker<out_events>(
-        ctx->accessor<capture_output_accessor>("out"));
+        ctx->access<capture_output_access>("out"));
 
     SECTION("Positive") {
         in.feed(e0{123});

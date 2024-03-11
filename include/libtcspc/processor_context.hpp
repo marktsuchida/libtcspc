@@ -27,18 +27,18 @@ class processor_context;
  * \ingroup misc
  *
  * Instances should be obtained from a \ref processor_context. A processor
- * stores the instance as a data member and also registers an accessor factory
+ * stores the instance as a data member and also registers an access factory
  * in its constructor. This allows code other than upstream processors to later
  * access the processor state.
  *
  * \see processor_context
  *
- * \tparam Accessor type of accessor interface for processor
+ * \tparam Access type of access interface for processor
  */
-template <typename Accessor> class processor_tracker {
+template <typename Access> class processor_tracker {
     std::shared_ptr<processor_context> ctx; // Null iff 'empty' state.
     std::string name;
-    std::function<Accessor(processor_tracker &)> accessor_factory;
+    std::function<Access(processor_tracker &)> access_factory;
 
     friend class processor_context;
 
@@ -71,20 +71,20 @@ template <typename Accessor> class processor_tracker {
     ~processor_tracker();
 
     /**
-     * \brief Register an accessor factory with this tracker's context.
+     * \brief Register an access factory with this tracker's context.
      *
      * This is usually called in the processors constructor to arrange for
-     * later access to the processor via an accessor.
+     * later access to the processor via an access.
      *
      * \tparam F factory function type
      *
      * \param factory factory function taking reference to this tracker and
-     * returning the accessor of type \c Accessor
+     * returning the access of type \c Access
      */
-    template <typename F> void register_accessor_factory(F factory) {
+    template <typename F> void register_access_factory(F factory) {
         assert(ctx);
-        assert(not accessor_factory);
-        accessor_factory = std::move(factory);
+        assert(not access_factory);
+        access_factory = std::move(factory);
     }
 };
 
@@ -107,7 +107,7 @@ template <typename Accessor> class processor_tracker {
  * given context (and may not be reused even after destroying the corresponding
  * processor/tracker).
  *
- * Actual access to processor state is through an \e accessor object whose type
+ * Actual access to processor state is through an \e access object whose type
  * is defined by the processor and whose instances can be obtained from the
  * context by giving the processor name.
  *
@@ -116,19 +116,19 @@ template <typename Accessor> class processor_tracker {
 class processor_context
     : public std::enable_shared_from_this<processor_context> {
     // Map keys are processor names and values are pointer to
-    // processor_tracker<Accessor> for some Accessor. Values are kept up to
+    // processor_tracker<Access> for some Access. Values are kept up to
     // date when tracker is moved or destroyed. If the tracked processor has
     // been destroyed, the entry remains and the value is an empty std::any()).
     // Reuse of name is not allowed.
     std::unordered_map<std::string, std::any> trackers;
 
-    template <typename Accessor> friend class processor_tracker;
+    template <typename Access> friend class processor_tracker;
 
-    template <typename Accessor>
+    template <typename Access>
     void update_tracker_address(std::string const &processor_name,
-                                processor_tracker<Accessor> *ptr) {
+                                processor_tracker<Access> *ptr) {
         // Enforce no type change in std::any; just update the value directly.
-        *std::any_cast<processor_tracker<Accessor> *>(
+        *std::any_cast<processor_tracker<Access> *>(
             &trackers.at(processor_name)) = ptr;
     }
 
@@ -143,70 +143,69 @@ class processor_context
     /**
      * \brief Obtain a tracker for a processor with the given name.
      *
-     * \tparam Accessor the processor's accessor type
+     * \tparam Access the processor's access type
      *
      * \param processor_name name to assign to the tracked processor
      *
      * \return tracker to be stored in the processor
      */
-    template <typename Accessor>
-    auto tracker(std::string processor_name) -> processor_tracker<Accessor> {
+    template <typename Access>
+    auto tracker(std::string processor_name) -> processor_tracker<Access> {
         if (trackers.count(processor_name) != 0) {
             throw std::logic_error(
                 "cannot create tracker for existing processor name: " +
                 processor_name);
         }
-        auto ret = processor_tracker<Accessor>(shared_from_this(),
-                                               std::move(processor_name));
+        auto ret = processor_tracker<Access>(shared_from_this(),
+                                             std::move(processor_name));
         trackers.insert({ret.name, std::any(&ret)});
         return ret;
     }
 
     /**
-     * \brief Obtain an accessor for the named processor.
+     * \brief Obtain an access for the named processor.
      *
-     * The returned accessor is only valid while the processor is alive and
+     * The returned access is only valid while the processor is alive and
      * unmoved, so it should not be stored by the caller.
      *
-     * \tparam Accessor the accessor type (documented by the processor)
+     * \tparam Access the access type (documented by the processor)
      *
      * \param processor_name the processor name
      */
-    template <typename Accessor>
-    auto accessor(std::string const &processor_name) -> Accessor {
-        auto tracker_ptr = std::any_cast<processor_tracker<Accessor> *>(
+    template <typename Access>
+    auto access(std::string const &processor_name) -> Access {
+        auto tracker_ptr = std::any_cast<processor_tracker<Access> *>(
             trackers.at(processor_name));
         if (tracker_ptr == nullptr)
             throw std::logic_error("cannot access destroyed processor: " +
                                    processor_name);
-        return tracker_ptr->accessor_factory(*tracker_ptr);
+        return tracker_ptr->access_factory(*tracker_ptr);
     }
 };
 
-template <typename Accessor>
-processor_tracker<Accessor>::processor_tracker(
+template <typename Access>
+processor_tracker<Access>::processor_tracker(
     processor_tracker &&other) noexcept
     : ctx(std::move(other.ctx)), name(std::move(other.name)),
-      accessor_factory(std::move(other.accessor_factory)) {
+      access_factory(std::move(other.access_factory)) {
     if (ctx)
         ctx->update_tracker_address(name, this);
 }
 
-template <typename Accessor>
-auto processor_tracker<Accessor>::operator=(processor_tracker &&rhs) noexcept
+template <typename Access>
+auto processor_tracker<Access>::operator=(processor_tracker &&rhs) noexcept
     -> processor_tracker & {
     ctx = std::move(rhs.ctx);
     name = std::move(rhs.name);
-    accessor_factory = std::move(rhs.accessor_factory);
+    access_factory = std::move(rhs.access_factory);
     if (ctx)
         ctx->update_tracker_address(name, this);
     return *this;
 }
 
-template <typename Accessor>
-processor_tracker<Accessor>::~processor_tracker() {
+template <typename Access> processor_tracker<Access>::~processor_tracker() {
     if (ctx)
-        ctx->update_tracker_address<Accessor>(name, nullptr);
+        ctx->update_tracker_address<Access>(name, nullptr);
 }
 
 // NOLINTBEGIN
@@ -216,8 +215,8 @@ processor_tracker<Accessor>::~processor_tracker() {
  *
  * \ingroup misc
  *
- * This can be used in the implementation of a processor accessor factory (see
- * \c processor_tracker::register_accessor_factory).
+ * This can be used in the implementation of a processor access factory (see
+ * \c processor_tracker::register_access_factory).
  *
  * \param proc_type processor type (no commas or angle brackets)
  *

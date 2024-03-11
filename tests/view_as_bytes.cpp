@@ -42,10 +42,10 @@ TEST_CASE("view as bytes") {
     auto ctx = std::make_shared<processor_context>();
     auto in = feed_input<type_list<int>>(
         view_as_bytes<int>(capture_output<out_events>(
-            ctx->tracker<capture_output_accessor>("out"))));
+            ctx->tracker<capture_output_access>("out"))));
     in.require_output_checked(ctx, "out");
     auto out = capture_output_checker<out_events>(
-        ctx->accessor<capture_output_accessor>("out"));
+        ctx->access<capture_output_access>("out"));
 
     int i = 42;
     in.feed(i);
@@ -58,10 +58,10 @@ TEST_CASE("view as bytes, vector specialization") {
     auto ctx = std::make_shared<processor_context>();
     auto in = feed_input<type_list<std::vector<int>>>(
         view_as_bytes<std::vector<int>>(capture_output<out_events>(
-            ctx->tracker<capture_output_accessor>("out"))));
+            ctx->tracker<capture_output_access>("out"))));
     in.require_output_checked(ctx, "out");
     auto out = capture_output_checker<out_events>(
-        ctx->accessor<capture_output_accessor>("out"));
+        ctx->access<capture_output_access>("out"));
 
     std::vector data{42, 43};
     in.feed(data);
@@ -74,10 +74,10 @@ TEST_CASE("view histogram as bytes") {
     auto ctx = std::make_shared<processor_context>();
     auto in = feed_input<type_list<histogram_event<>>>(
         view_histogram_as_bytes<histogram_event<>>(capture_output<out_events>(
-            ctx->tracker<capture_output_accessor>("out"))));
+            ctx->tracker<capture_output_access>("out"))));
     in.require_output_checked(ctx, "out");
     auto out = capture_output_checker<out_events>(
-        ctx->accessor<capture_output_accessor>("out"));
+        ctx->access<capture_output_access>("out"));
 
     std::vector<default_data_traits::bin_type> hist{1, 2, 3};
     histogram_event<> const event{
@@ -95,10 +95,10 @@ TEST_CASE("view histogram array as bytes") {
     auto in = feed_input<type_list<histogram_array_event<>>>(
         view_histogram_array_as_bytes<histogram_array_event<>>(
             capture_output<out_events>(
-                ctx->tracker<capture_output_accessor>("out"))));
+                ctx->tracker<capture_output_access>("out"))));
     in.require_output_checked(ctx, "out");
     auto out = capture_output_checker<out_events>(
-        ctx->accessor<capture_output_accessor>("out"));
+        ctx->access<capture_output_access>("out"));
 
     std::vector<default_data_traits::bin_type> histarr{1, 2, 3};
     histogram_array_event<> const event{

@@ -102,7 +102,7 @@ auto summarize(std::string const &filename) -> bool {
         // Get the vectors of device events.
     unbatch<device_event_vector, swabian_tag_event>(
         // Get individual device events.
-    count<swabian_tag_event>(ctx->tracker<count_accessor>("counter"), // Count.
+    count<swabian_tag_event>(ctx->tracker<count_access>("counter"), // Count.
     decode_swabian_tags(
         // Decode device events into generic TCSPC events.
     check_monotonic( // Ensure the abstime is non-decreasing.
@@ -126,11 +126,10 @@ auto summarize(std::string const &filename) -> bool {
         std::fputs("\n", stderr);
         return false;
     }
-    std::fputs(
-        (std::to_string(ctx->accessor<count_accessor>("counter").count()) +
-         " records decoded\n")
-            .c_str(),
-        stderr);
+    std::fputs((std::to_string(ctx->access<count_access>("counter").count()) +
+                " records decoded\n")
+                   .c_str(),
+               stderr);
     return true;
 }
 
