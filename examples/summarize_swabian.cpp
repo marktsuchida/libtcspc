@@ -26,7 +26,7 @@
 #include <memory>
 #include <sstream>
 #include <string>
-#include <tuple>
+#include <utility>
 #include <vector>
 
 using channel_type = tcspc::default_data_traits::channel_type;
@@ -68,12 +68,12 @@ class summarize_and_print {
             stream << "Time of first event: \t" << first_abstime << '\n';
             stream << "Time of last event: \t" << last_abstime << '\n';
             // Print channel counts in channel number order.
-            std::vector<std::tuple<channel_type, std::uint64_t>> counts(
+            std::vector<std::pair<channel_type, std::uint64_t>> counts(
                 channel_numbers.size());
             std::transform(channel_numbers.cbegin(), channel_numbers.cend(),
                            channel_counts.cbegin(), counts.begin(),
                            [](auto chnum, auto chcnt) {
-                               return std::make_tuple(chnum, chcnt);
+                               return std::pair{chnum, chcnt};
                            });
             std::sort(counts.begin(), counts.end());
             for (auto const &[chnum, chcnt] : counts)

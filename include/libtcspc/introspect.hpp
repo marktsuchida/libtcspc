@@ -266,7 +266,7 @@ class processor_graph {
         if (entrypts.empty()) {
             entrypts.push_back(id);
         } else {
-            auto const edge = std::make_pair(id, entrypts[0]);
+            auto const edge = std::pair{id, entrypts[0]};
             auto edge_inspt = std::upper_bound(edgs.begin(), edgs.end(), edge);
             edgs.insert(edge_inspt, edge);
             entrypts[0] = id;

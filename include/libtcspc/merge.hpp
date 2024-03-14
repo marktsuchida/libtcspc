@@ -234,9 +234,9 @@ auto merge(std::size_t max_buffered, Downstream &&downstream) {
     auto p = std::make_shared<
         internal::merge_impl<EventList, DataTraits, Downstream>>(
         max_buffered, std::forward<Downstream>(downstream));
-    return std::make_pair(
+    return std::pair{
         internal::merge_input<0, EventList, DataTraits, Downstream>(p),
-        internal::merge_input<1, EventList, DataTraits, Downstream>(p));
+        internal::merge_input<1, EventList, DataTraits, Downstream>(p)};
 }
 
 /**

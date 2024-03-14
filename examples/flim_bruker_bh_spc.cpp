@@ -158,7 +158,7 @@ auto make_processor(settings const &settings,
     route_homogeneous<type_list<time_correlated_detection_event<>>>(
         // Use single-downstream router to select by channel.
         channel_router(
-            std::array{std::make_pair(settings.channel, std::size_t(0))}),
+            std::array{std::pair{settings.channel, std::size_t(0)}}),
     map_to_datapoints(difftime_data_mapper(),
     map_to_bins(power_of_2_bin_mapper<12, 8, true>(),
     batch_bin_increments<pixel_start_event, pixel_stop_event>(

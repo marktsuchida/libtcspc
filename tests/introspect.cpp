@@ -49,21 +49,21 @@ TEST_CASE("processor graph node id", "[processor_node_id]") {
     // Address: u0 < u1
     // Type:    i < d  or  i > d
     // NOLINTBEGIN(cppcoreguidelines-pro-type-union-access)
-    auto const ee = std::make_pair(pnid(&u0.i), pnid(&u0.i));
-    auto const el = ti < td ? std::make_pair(pnid(&u0.i), pnid(&u0.d))
-                            : std::make_pair(pnid(&u0.d), pnid(&u0.i));
-    auto const eg = ti > td ? std::make_pair(pnid(&u0.i), pnid(&u0.d))
-                            : std::make_pair(pnid(&u0.d), pnid(&u0.i));
-    auto const le = std::make_pair(pnid(&u0.i), pnid(&u1.i));
-    auto const ll = ti < td ? std::make_pair(pnid(&u0.i), pnid(&u1.d))
-                            : std::make_pair(pnid(&u0.d), pnid(&u1.i));
-    auto const lg = ti > td ? std::make_pair(pnid(&u0.i), pnid(&u1.d))
-                            : std::make_pair(pnid(&u0.d), pnid(&u1.i));
-    auto const ge = std::make_pair(pnid(&u1.i), pnid(&u0.i));
-    auto const gl = ti < td ? std::make_pair(pnid(&u1.i), pnid(&u0.d))
-                            : std::make_pair(pnid(&u1.d), pnid(&u0.i));
-    auto const gg = ti > td ? std::make_pair(pnid(&u1.i), pnid(&u0.d))
-                            : std::make_pair(pnid(&u1.d), pnid(&u0.i));
+    auto const ee = std::pair{pnid(&u0.i), pnid(&u0.i)};
+    auto const el = ti < td ? std::pair{pnid(&u0.i), pnid(&u0.d)}
+                            : std::pair{pnid(&u0.d), pnid(&u0.i)};
+    auto const eg = ti > td ? std::pair{pnid(&u0.i), pnid(&u0.d)}
+                            : std::pair{pnid(&u0.d), pnid(&u0.i)};
+    auto const le = std::pair{pnid(&u0.i), pnid(&u1.i)};
+    auto const ll = ti < td ? std::pair{pnid(&u0.i), pnid(&u1.d)}
+                            : std::pair{pnid(&u0.d), pnid(&u1.i)};
+    auto const lg = ti > td ? std::pair{pnid(&u0.i), pnid(&u1.d)}
+                            : std::pair{pnid(&u0.d), pnid(&u1.i)};
+    auto const ge = std::pair{pnid(&u1.i), pnid(&u0.i)};
+    auto const gl = ti < td ? std::pair{pnid(&u1.i), pnid(&u0.d)}
+                            : std::pair{pnid(&u1.d), pnid(&u0.i)};
+    auto const gg = ti > td ? std::pair{pnid(&u1.i), pnid(&u0.d)}
+                            : std::pair{pnid(&u1.d), pnid(&u0.i)};
     // NOLINTEND(cppcoreguidelines-pro-type-union-access)
 
     CHECK(ee.first == ee.second);
@@ -166,7 +166,7 @@ TEST_CASE("processor_graph push_entry_point", "[processor_graph]") {
         return nodes[0] == node0 ? nodes[1] : nodes[0];
     }();
     CHECK(g.edges().size() == 1);
-    CHECK(g.edges()[0] == std::make_pair(node1, node0));
+    CHECK(g.edges()[0] == std::pair{node1, node0});
     CHECK_FALSE(g.is_entry_point(node0));
     CHECK(g.is_entry_point(node1));
 
