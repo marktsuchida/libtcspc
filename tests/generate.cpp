@@ -6,6 +6,7 @@
 
 #include "libtcspc/generate.hpp"
 
+#include "libtcspc/arg_wrappers.hpp"
 #include "libtcspc/common.hpp"
 #include "libtcspc/processor_context.hpp"
 #include "libtcspc/test_utils.hpp"

@@ -3,6 +3,7 @@
 # SPDX-License-Identifier: MIT
 
 public_cpp_headers = files(
+    'libtcspc/arg_wrappers.hpp',
     'libtcspc/batch.hpp',
     'libtcspc/bh_spc.hpp',
     'libtcspc/binning.hpp',

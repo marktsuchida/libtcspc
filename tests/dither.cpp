@@ -6,7 +6,7 @@
 
 #include "libtcspc/dither.hpp"
 
-#include "libtcspc/common.hpp"
+#include "libtcspc/arg_wrappers.hpp"
 #include "libtcspc/test_utils.hpp"
 
 #include <catch2/catch_test_macros.hpp>

@@ -4,6 +4,7 @@
  * SPDX-License-Identifier: MIT
  */
 
+#include "libtcspc/arg_wrappers.hpp"
 #include "libtcspc/batch.hpp"
 #include "libtcspc/binning.hpp"
 #include "libtcspc/check.hpp"

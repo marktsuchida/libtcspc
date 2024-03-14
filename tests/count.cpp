@@ -6,6 +6,7 @@
 
 #include "libtcspc/count.hpp"
 
+#include "libtcspc/arg_wrappers.hpp"
 #include "libtcspc/common.hpp"
 #include "libtcspc/int_types.hpp"
 #include "libtcspc/processor_context.hpp"

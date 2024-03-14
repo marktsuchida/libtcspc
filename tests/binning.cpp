@@ -6,6 +6,7 @@
 
 #include "libtcspc/binning.hpp"
 
+#include "libtcspc/arg_wrappers.hpp"
 #include "libtcspc/common.hpp"
 #include "libtcspc/histogram_events.hpp"
 #include "libtcspc/int_types.hpp"

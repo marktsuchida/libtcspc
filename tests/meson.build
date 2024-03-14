@@ -3,6 +3,7 @@
 # SPDX-License-Identifier: MIT
 
 test_libtcspc_srcs = [
+    'arg_wrappers.cpp',
     'batch.cpp',
     'bh_spc.cpp',
     'binning.cpp',
