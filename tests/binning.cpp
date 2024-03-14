@@ -65,7 +65,7 @@ TEST_CASE("Map to datapoints") {
 
     in.feed(misc_event{42});
     REQUIRE(out.check(misc_event{42}));
-    in.feed(time_correlated_detection_event<>{{{123}, 0}, 42});
+    in.feed(time_correlated_detection_event<>{123, 0, 42});
     REQUIRE(out.check(datapoint_event<data_traits>{123, 42}));
     in.flush();
     REQUIRE(out.check_flushed());

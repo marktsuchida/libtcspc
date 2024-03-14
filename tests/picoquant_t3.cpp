@@ -394,14 +394,14 @@ TEST_CASE("decode pqt3 picoharp300") {
     SECTION("non-special") {
         in.feed(pqt3_picoharp300_event::make_nonspecial(42_u16np, 5_u8np,
                                                         123_u16np));
-        REQUIRE(out.check(time_correlated_detection_event<>{{{42}, 5}, 123}));
+        REQUIRE(out.check(time_correlated_detection_event<>{42, 5, 123}));
     }
 
     SECTION("external marker") {
         in.feed(
             pqt3_picoharp300_event::make_external_marker(42_u16np, 5_u8np));
-        REQUIRE(out.check(marker_event<>{{{42}, 0}}));
-        REQUIRE(out.check(marker_event<>{{{42}, 2}}));
+        REQUIRE(out.check(marker_event<>{42, 0}));
+        REQUIRE(out.check(marker_event<>{42, 2}));
     }
 
     SECTION("nsync overflow") {
@@ -410,8 +410,8 @@ TEST_CASE("decode pqt3 picoharp300") {
 
         in.feed(pqt3_picoharp300_event::make_nonspecial(42_u16np, 5_u8np,
                                                         123_u16np));
-        REQUIRE(out.check(
-            time_correlated_detection_event<>{{{65536 + 42}, 5}, 123}));
+        REQUIRE(
+            out.check(time_correlated_detection_event<>{65536 + 42, 5, 123}));
     }
 
     in.flush();
@@ -430,14 +430,14 @@ TEST_CASE("decode pqt3 hydraharpv1") {
     SECTION("non-special") {
         in.feed(pqt3_hydraharpv1_event::make_nonspecial(42_u16np, 5_u8np,
                                                         123_u16np));
-        REQUIRE(out.check(time_correlated_detection_event<>{{{42}, 5}, 123}));
+        REQUIRE(out.check(time_correlated_detection_event<>{42, 5, 123}));
     }
 
     SECTION("external marker") {
         in.feed(
             pqt3_hydraharpv1_event::make_external_marker(42_u16np, 5_u8np));
-        REQUIRE(out.check(marker_event<>{{{42}, 0}}));
-        REQUIRE(out.check(marker_event<>{{{42}, 2}}));
+        REQUIRE(out.check(marker_event<>{42, 0}));
+        REQUIRE(out.check(marker_event<>{42, 2}));
     }
 
     SECTION("nsync overflow") {
@@ -446,8 +446,8 @@ TEST_CASE("decode pqt3 hydraharpv1") {
 
         in.feed(pqt3_hydraharpv1_event::make_nonspecial(42_u16np, 5_u8np,
                                                         123_u16np));
-        REQUIRE(out.check(
-            time_correlated_detection_event<>{{{1024 + 42}, 5}, 123}));
+        REQUIRE(
+            out.check(time_correlated_detection_event<>{1024 + 42, 5, 123}));
     }
 
     in.flush();
@@ -466,13 +466,13 @@ TEST_CASE("decode pqt3 generic") {
     SECTION("non-special") {
         in.feed(
             pqt3_generic_event::make_nonspecial(42_u16np, 5_u8np, 123_u16np));
-        REQUIRE(out.check(time_correlated_detection_event<>{{{42}, 5}, 123}));
+        REQUIRE(out.check(time_correlated_detection_event<>{42, 5, 123}));
     }
 
     SECTION("external marker") {
         in.feed(pqt3_generic_event::make_external_marker(42_u16np, 5_u8np));
-        REQUIRE(out.check(marker_event<>{{{42}, 0}}));
-        REQUIRE(out.check(marker_event<>{{{42}, 2}}));
+        REQUIRE(out.check(marker_event<>{42, 0}));
+        REQUIRE(out.check(marker_event<>{42, 2}));
     }
 
     SECTION("nsync overflow") {
@@ -481,8 +481,8 @@ TEST_CASE("decode pqt3 generic") {
 
         in.feed(
             pqt3_generic_event::make_nonspecial(42_u16np, 5_u8np, 123_u16np));
-        REQUIRE(out.check(time_correlated_detection_event<>{
-            {{i64(1024) * 3 + 42}, 5}, 123}));
+        REQUIRE(out.check(
+            time_correlated_detection_event<>{i64(1024) * 3 + 42, 5, 123}));
     }
 
     in.flush();

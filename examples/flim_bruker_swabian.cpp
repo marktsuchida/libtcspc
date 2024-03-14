@@ -127,8 +127,14 @@ using abstime_type = tcspc::default_data_traits::abstime_type;
 using difftime_type = tcspc::default_data_traits::difftime_type;
 using channel_type = tcspc::default_data_traits::channel_type;
 using bin_index_type = tcspc::default_data_traits::bin_index_type;
-struct pixel_start_event : tcspc::base_time_tagged_event<> {};
-struct pixel_stop_event : tcspc::base_time_tagged_event<> {};
+
+struct pixel_start_event {
+    std::int64_t abstime;
+};
+
+struct pixel_stop_event {
+    std::int64_t abstime;
+};
 
 // Workaround for https://github.com/llvm/llvm-project/issues/54668 (probably
 // fixed in LLVM 18):

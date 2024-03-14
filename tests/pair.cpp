@@ -51,57 +51,57 @@ TEST_CASE("pair all") {
     }
 
     SECTION("stops following starts") {
-        in.feed(detection_event<>{{{0}, 0}});
-        REQUIRE(out.check(detection_event<>{{{0}, 0}}));
-        in.feed(detection_event<>{{{0}, 1}});
-        REQUIRE(out.check(detection_pair_event<>{{{{0}, 0}}, {{{0}, 1}}}));
-        REQUIRE(out.check(detection_event<>{{{0}, 1}}));
+        in.feed(detection_event<>{0, 0});
+        REQUIRE(out.check(detection_event<>{0, 0}));
+        in.feed(detection_event<>{0, 1});
+        REQUIRE(out.check(detection_pair_event<>{{0, 0}, {0, 1}}));
+        REQUIRE(out.check(detection_event<>{0, 1}));
 
-        in.feed(detection_event<>{{{1}, 0}});
-        REQUIRE(out.check(detection_event<>{{{1}, 0}}));
-        in.feed(detection_event<>{{{1}, 1}});
-        REQUIRE(out.check(detection_pair_event<>{{{{0}, 0}}, {{{1}, 1}}}));
-        REQUIRE(out.check(detection_pair_event<>{{{{1}, 0}}, {{{1}, 1}}}));
-        REQUIRE(out.check(detection_event<>{{{1}, 1}}));
+        in.feed(detection_event<>{1, 0});
+        REQUIRE(out.check(detection_event<>{1, 0}));
+        in.feed(detection_event<>{1, 1});
+        REQUIRE(out.check(detection_pair_event<>{{0, 0}, {1, 1}}));
+        REQUIRE(out.check(detection_pair_event<>{{1, 0}, {1, 1}}));
+        REQUIRE(out.check(detection_event<>{1, 1}));
 
-        in.feed(detection_event<>{{{2}, 1}});
-        REQUIRE(out.check(detection_pair_event<>{{{{0}, 0}}, {{{2}, 1}}}));
-        REQUIRE(out.check(detection_pair_event<>{{{{1}, 0}}, {{{2}, 1}}}));
-        REQUIRE(out.check(detection_event<>{{{2}, 1}}));
+        in.feed(detection_event<>{2, 1});
+        REQUIRE(out.check(detection_pair_event<>{{0, 0}, {2, 1}}));
+        REQUIRE(out.check(detection_pair_event<>{{1, 0}, {2, 1}}));
+        REQUIRE(out.check(detection_event<>{2, 1}));
 
-        in.feed(detection_event<>{{{3}, 0}});
-        REQUIRE(out.check(detection_event<>{{{3}, 0}}));
-        in.feed(detection_event<>{{{3}, 1}});
-        REQUIRE(out.check(detection_pair_event<>{{{{1}, 0}}, {{{3}, 1}}}));
-        REQUIRE(out.check(detection_pair_event<>{{{{3}, 0}}, {{{3}, 1}}}));
-        REQUIRE(out.check(detection_event<>{{{3}, 1}}));
+        in.feed(detection_event<>{3, 0});
+        REQUIRE(out.check(detection_event<>{3, 0}));
+        in.feed(detection_event<>{3, 1});
+        REQUIRE(out.check(detection_pair_event<>{{1, 0}, {3, 1}}));
+        REQUIRE(out.check(detection_pair_event<>{{3, 0}, {3, 1}}));
+        REQUIRE(out.check(detection_event<>{3, 1}));
 
         in.flush();
         REQUIRE(out.check_flushed());
     }
 
     SECTION("starts following stops") {
-        in.feed(detection_event<>{{{0}, 1}});
-        REQUIRE(out.check(detection_event<>{{{0}, 1}}));
-        in.feed(detection_event<>{{{0}, 0}});
-        REQUIRE(out.check(detection_event<>{{{0}, 0}}));
+        in.feed(detection_event<>{0, 1});
+        REQUIRE(out.check(detection_event<>{0, 1}));
+        in.feed(detection_event<>{0, 0});
+        REQUIRE(out.check(detection_event<>{0, 0}));
 
-        in.feed(detection_event<>{{{1}, 1}});
-        REQUIRE(out.check(detection_pair_event<>{{{{0}, 0}}, {{{1}, 1}}}));
-        REQUIRE(out.check(detection_event<>{{{1}, 1}}));
-        in.feed(detection_event<>{{{1}, 0}});
-        REQUIRE(out.check(detection_event<>{{{1}, 0}}));
+        in.feed(detection_event<>{1, 1});
+        REQUIRE(out.check(detection_pair_event<>{{0, 0}, {1, 1}}));
+        REQUIRE(out.check(detection_event<>{1, 1}));
+        in.feed(detection_event<>{1, 0});
+        REQUIRE(out.check(detection_event<>{1, 0}));
 
-        in.feed(detection_event<>{{{2}, 1}});
-        REQUIRE(out.check(detection_pair_event<>{{{{0}, 0}}, {{{2}, 1}}}));
-        REQUIRE(out.check(detection_pair_event<>{{{{1}, 0}}, {{{2}, 1}}}));
-        REQUIRE(out.check(detection_event<>{{{2}, 1}}));
+        in.feed(detection_event<>{2, 1});
+        REQUIRE(out.check(detection_pair_event<>{{0, 0}, {2, 1}}));
+        REQUIRE(out.check(detection_pair_event<>{{1, 0}, {2, 1}}));
+        REQUIRE(out.check(detection_event<>{2, 1}));
 
-        in.feed(detection_event<>{{{3}, 1}});
-        REQUIRE(out.check(detection_pair_event<>{{{{1}, 0}}, {{{3}, 1}}}));
-        REQUIRE(out.check(detection_event<>{{{3}, 1}}));
-        in.feed(detection_event<>{{{3}, 0}});
-        REQUIRE(out.check(detection_event<>{{{3}, 0}}));
+        in.feed(detection_event<>{3, 1});
+        REQUIRE(out.check(detection_pair_event<>{{1, 0}, {3, 1}}));
+        REQUIRE(out.check(detection_event<>{3, 1}));
+        in.feed(detection_event<>{3, 0});
+        REQUIRE(out.check(detection_event<>{3, 0}));
 
         in.flush();
         REQUIRE(out.check_flushed());
@@ -118,22 +118,22 @@ TEST_CASE("pair all with self") {
     auto out = capture_output_checker<out_events>(
         ctx->access<capture_output_access>("out"));
 
-    in.feed(detection_event<>{{{0}, 0}});
-    REQUIRE(out.check(detection_event<>{{{0}, 0}}));
+    in.feed(detection_event<>{0, 0});
+    REQUIRE(out.check(detection_event<>{0, 0}));
 
-    in.feed(detection_event<>{{{1}, 0}});
-    REQUIRE(out.check(detection_pair_event<>{{{{0}, 0}}, {{{1}, 0}}}));
-    REQUIRE(out.check(detection_event<>{{{1}, 0}}));
+    in.feed(detection_event<>{1, 0});
+    REQUIRE(out.check(detection_pair_event<>{{0, 0}, {1, 0}}));
+    REQUIRE(out.check(detection_event<>{1, 0}));
 
-    in.feed(detection_event<>{{{2}, 0}});
-    REQUIRE(out.check(detection_pair_event<>{{{{0}, 0}}, {{{2}, 0}}}));
-    REQUIRE(out.check(detection_pair_event<>{{{{1}, 0}}, {{{2}, 0}}}));
-    REQUIRE(out.check(detection_event<>{{{2}, 0}}));
+    in.feed(detection_event<>{2, 0});
+    REQUIRE(out.check(detection_pair_event<>{{0, 0}, {2, 0}}));
+    REQUIRE(out.check(detection_pair_event<>{{1, 0}, {2, 0}}));
+    REQUIRE(out.check(detection_event<>{2, 0}));
 
-    in.feed(detection_event<>{{{3}, 0}});
-    REQUIRE(out.check(detection_pair_event<>{{{{1}, 0}}, {{{3}, 0}}}));
-    REQUIRE(out.check(detection_pair_event<>{{{{2}, 0}}, {{{3}, 0}}}));
-    REQUIRE(out.check(detection_event<>{{{3}, 0}}));
+    in.feed(detection_event<>{3, 0});
+    REQUIRE(out.check(detection_pair_event<>{{1, 0}, {3, 0}}));
+    REQUIRE(out.check(detection_pair_event<>{{2, 0}, {3, 0}}));
+    REQUIRE(out.check(detection_event<>{3, 0}));
 
     in.flush();
     REQUIRE(out.check_flushed());
@@ -155,51 +155,51 @@ TEST_CASE("pair one") {
     }
 
     SECTION("stops following starts") {
-        in.feed(detection_event<>{{{0}, 0}});
-        REQUIRE(out.check(detection_event<>{{{0}, 0}}));
-        in.feed(detection_event<>{{{0}, 1}});
-        REQUIRE(out.check(detection_pair_event<>{{{{0}, 0}}, {{{0}, 1}}}));
-        REQUIRE(out.check(detection_event<>{{{0}, 1}}));
+        in.feed(detection_event<>{0, 0});
+        REQUIRE(out.check(detection_event<>{0, 0}));
+        in.feed(detection_event<>{0, 1});
+        REQUIRE(out.check(detection_pair_event<>{{0, 0}, {0, 1}}));
+        REQUIRE(out.check(detection_event<>{0, 1}));
 
-        in.feed(detection_event<>{{{1}, 0}});
-        REQUIRE(out.check(detection_event<>{{{1}, 0}}));
-        in.feed(detection_event<>{{{1}, 1}});
-        REQUIRE(out.check(detection_pair_event<>{{{{1}, 0}}, {{{1}, 1}}}));
-        REQUIRE(out.check(detection_event<>{{{1}, 1}}));
+        in.feed(detection_event<>{1, 0});
+        REQUIRE(out.check(detection_event<>{1, 0}));
+        in.feed(detection_event<>{1, 1});
+        REQUIRE(out.check(detection_pair_event<>{{1, 0}, {1, 1}}));
+        REQUIRE(out.check(detection_event<>{1, 1}));
 
-        in.feed(detection_event<>{{{2}, 1}});
-        REQUIRE(out.check(detection_event<>{{{2}, 1}}));
+        in.feed(detection_event<>{2, 1});
+        REQUIRE(out.check(detection_event<>{2, 1}));
 
-        in.feed(detection_event<>{{{3}, 0}});
-        REQUIRE(out.check(detection_event<>{{{3}, 0}}));
-        in.feed(detection_event<>{{{3}, 1}});
-        REQUIRE(out.check(detection_pair_event<>{{{{3}, 0}}, {{{3}, 1}}}));
-        REQUIRE(out.check(detection_event<>{{{3}, 1}}));
+        in.feed(detection_event<>{3, 0});
+        REQUIRE(out.check(detection_event<>{3, 0}));
+        in.feed(detection_event<>{3, 1});
+        REQUIRE(out.check(detection_pair_event<>{{3, 0}, {3, 1}}));
+        REQUIRE(out.check(detection_event<>{3, 1}));
 
         in.flush();
         REQUIRE(out.check_flushed());
     }
 
     SECTION("starts following stops") {
-        in.feed(detection_event<>{{{0}, 1}});
-        REQUIRE(out.check(detection_event<>{{{0}, 1}}));
-        in.feed(detection_event<>{{{0}, 0}});
-        REQUIRE(out.check(detection_event<>{{{0}, 0}}));
+        in.feed(detection_event<>{0, 1});
+        REQUIRE(out.check(detection_event<>{0, 1}));
+        in.feed(detection_event<>{0, 0});
+        REQUIRE(out.check(detection_event<>{0, 0}));
 
-        in.feed(detection_event<>{{{1}, 1}});
-        REQUIRE(out.check(detection_pair_event<>{{{{0}, 0}}, {{{1}, 1}}}));
-        REQUIRE(out.check(detection_event<>{{{1}, 1}}));
-        in.feed(detection_event<>{{{1}, 0}});
-        REQUIRE(out.check(detection_event<>{{{1}, 0}}));
+        in.feed(detection_event<>{1, 1});
+        REQUIRE(out.check(detection_pair_event<>{{0, 0}, {1, 1}}));
+        REQUIRE(out.check(detection_event<>{1, 1}));
+        in.feed(detection_event<>{1, 0});
+        REQUIRE(out.check(detection_event<>{1, 0}));
 
-        in.feed(detection_event<>{{{2}, 1}});
-        REQUIRE(out.check(detection_pair_event<>{{{{1}, 0}}, {{{2}, 1}}}));
-        REQUIRE(out.check(detection_event<>{{{2}, 1}}));
+        in.feed(detection_event<>{2, 1});
+        REQUIRE(out.check(detection_pair_event<>{{1, 0}, {2, 1}}));
+        REQUIRE(out.check(detection_event<>{2, 1}));
 
-        in.feed(detection_event<>{{{3}, 1}});
-        REQUIRE(out.check(detection_event<>{{{3}, 1}}));
-        in.feed(detection_event<>{{{3}, 0}});
-        REQUIRE(out.check(detection_event<>{{{3}, 0}}));
+        in.feed(detection_event<>{3, 1});
+        REQUIRE(out.check(detection_event<>{3, 1}));
+        in.feed(detection_event<>{3, 0});
+        REQUIRE(out.check(detection_event<>{3, 0}));
 
         in.flush();
         REQUIRE(out.check_flushed());
@@ -216,20 +216,20 @@ TEST_CASE("pair one with self") {
     auto out = capture_output_checker<out_events>(
         ctx->access<capture_output_access>("out"));
 
-    in.feed(detection_event<>{{{0}, 0}});
-    REQUIRE(out.check(detection_event<>{{{0}, 0}}));
+    in.feed(detection_event<>{0, 0});
+    REQUIRE(out.check(detection_event<>{0, 0}));
 
-    in.feed(detection_event<>{{{1}, 0}});
-    REQUIRE(out.check(detection_pair_event<>{{{{0}, 0}}, {{{1}, 0}}}));
-    REQUIRE(out.check(detection_event<>{{{1}, 0}}));
+    in.feed(detection_event<>{1, 0});
+    REQUIRE(out.check(detection_pair_event<>{{0, 0}, {1, 0}}));
+    REQUIRE(out.check(detection_event<>{1, 0}));
 
-    in.feed(detection_event<>{{{2}, 0}});
-    REQUIRE(out.check(detection_pair_event<>{{{{1}, 0}}, {{{2}, 0}}}));
-    REQUIRE(out.check(detection_event<>{{{2}, 0}}));
+    in.feed(detection_event<>{2, 0});
+    REQUIRE(out.check(detection_pair_event<>{{1, 0}, {2, 0}}));
+    REQUIRE(out.check(detection_event<>{2, 0}));
 
-    in.feed(detection_event<>{{{3}, 0}});
-    REQUIRE(out.check(detection_pair_event<>{{{{2}, 0}}, {{{3}, 0}}}));
-    REQUIRE(out.check(detection_event<>{{{3}, 0}}));
+    in.feed(detection_event<>{3, 0});
+    REQUIRE(out.check(detection_pair_event<>{{2, 0}, {3, 0}}));
+    REQUIRE(out.check(detection_event<>{3, 0}));
 
     in.flush();
     REQUIRE(out.check_flushed());
@@ -251,53 +251,53 @@ TEST_CASE("pair all between") {
     }
 
     SECTION("stops following starts") {
-        in.feed(detection_event<>{{{0}, 0}});
-        REQUIRE(out.check(detection_event<>{{{0}, 0}}));
-        in.feed(detection_event<>{{{0}, 1}});
-        REQUIRE(out.check(detection_pair_event<>{{{{0}, 0}}, {{{0}, 1}}}));
-        REQUIRE(out.check(detection_event<>{{{0}, 1}}));
+        in.feed(detection_event<>{0, 0});
+        REQUIRE(out.check(detection_event<>{0, 0}));
+        in.feed(detection_event<>{0, 1});
+        REQUIRE(out.check(detection_pair_event<>{{0, 0}, {0, 1}}));
+        REQUIRE(out.check(detection_event<>{0, 1}));
 
-        in.feed(detection_event<>{{{1}, 0}});
-        REQUIRE(out.check(detection_event<>{{{1}, 0}}));
-        in.feed(detection_event<>{{{1}, 1}});
-        REQUIRE(out.check(detection_pair_event<>{{{{1}, 0}}, {{{1}, 1}}}));
-        REQUIRE(out.check(detection_event<>{{{1}, 1}}));
+        in.feed(detection_event<>{1, 0});
+        REQUIRE(out.check(detection_event<>{1, 0}));
+        in.feed(detection_event<>{1, 1});
+        REQUIRE(out.check(detection_pair_event<>{{1, 0}, {1, 1}}));
+        REQUIRE(out.check(detection_event<>{1, 1}));
 
-        in.feed(detection_event<>{{{2}, 1}});
-        REQUIRE(out.check(detection_pair_event<>{{{{1}, 0}}, {{{2}, 1}}}));
-        REQUIRE(out.check(detection_event<>{{{2}, 1}}));
+        in.feed(detection_event<>{2, 1});
+        REQUIRE(out.check(detection_pair_event<>{{1, 0}, {2, 1}}));
+        REQUIRE(out.check(detection_event<>{2, 1}));
 
-        in.feed(detection_event<>{{{3}, 0}});
-        REQUIRE(out.check(detection_event<>{{{3}, 0}}));
-        in.feed(detection_event<>{{{3}, 1}});
-        REQUIRE(out.check(detection_pair_event<>{{{{3}, 0}}, {{{3}, 1}}}));
-        REQUIRE(out.check(detection_event<>{{{3}, 1}}));
+        in.feed(detection_event<>{3, 0});
+        REQUIRE(out.check(detection_event<>{3, 0}));
+        in.feed(detection_event<>{3, 1});
+        REQUIRE(out.check(detection_pair_event<>{{3, 0}, {3, 1}}));
+        REQUIRE(out.check(detection_event<>{3, 1}));
 
         in.flush();
         REQUIRE(out.check_flushed());
     }
 
     SECTION("starts following stops") {
-        in.feed(detection_event<>{{{0}, 1}});
-        REQUIRE(out.check(detection_event<>{{{0}, 1}}));
-        in.feed(detection_event<>{{{0}, 0}});
-        REQUIRE(out.check(detection_event<>{{{0}, 0}}));
+        in.feed(detection_event<>{0, 1});
+        REQUIRE(out.check(detection_event<>{0, 1}));
+        in.feed(detection_event<>{0, 0});
+        REQUIRE(out.check(detection_event<>{0, 0}));
 
-        in.feed(detection_event<>{{{1}, 1}});
-        REQUIRE(out.check(detection_pair_event<>{{{{0}, 0}}, {{{1}, 1}}}));
-        REQUIRE(out.check(detection_event<>{{{1}, 1}}));
-        in.feed(detection_event<>{{{1}, 0}});
-        REQUIRE(out.check(detection_event<>{{{1}, 0}}));
+        in.feed(detection_event<>{1, 1});
+        REQUIRE(out.check(detection_pair_event<>{{0, 0}, {1, 1}}));
+        REQUIRE(out.check(detection_event<>{1, 1}));
+        in.feed(detection_event<>{1, 0});
+        REQUIRE(out.check(detection_event<>{1, 0}));
 
-        in.feed(detection_event<>{{{2}, 1}});
-        REQUIRE(out.check(detection_pair_event<>{{{{1}, 0}}, {{{2}, 1}}}));
-        REQUIRE(out.check(detection_event<>{{{2}, 1}}));
+        in.feed(detection_event<>{2, 1});
+        REQUIRE(out.check(detection_pair_event<>{{1, 0}, {2, 1}}));
+        REQUIRE(out.check(detection_event<>{2, 1}));
 
-        in.feed(detection_event<>{{{3}, 1}});
-        REQUIRE(out.check(detection_pair_event<>{{{{1}, 0}}, {{{3}, 1}}}));
-        REQUIRE(out.check(detection_event<>{{{3}, 1}}));
-        in.feed(detection_event<>{{{3}, 0}});
-        REQUIRE(out.check(detection_event<>{{{3}, 0}}));
+        in.feed(detection_event<>{3, 1});
+        REQUIRE(out.check(detection_pair_event<>{{1, 0}, {3, 1}}));
+        REQUIRE(out.check(detection_event<>{3, 1}));
+        in.feed(detection_event<>{3, 0});
+        REQUIRE(out.check(detection_event<>{3, 0}));
 
         in.flush();
         REQUIRE(out.check_flushed());
@@ -314,20 +314,20 @@ TEST_CASE("pair all between with self") {
     auto out = capture_output_checker<out_events>(
         ctx->access<capture_output_access>("out"));
 
-    in.feed(detection_event<>{{{0}, 0}});
-    REQUIRE(out.check(detection_event<>{{{0}, 0}}));
+    in.feed(detection_event<>{0, 0});
+    REQUIRE(out.check(detection_event<>{0, 0}));
 
-    in.feed(detection_event<>{{{1}, 0}});
-    REQUIRE(out.check(detection_pair_event<>{{{{0}, 0}}, {{{1}, 0}}}));
-    REQUIRE(out.check(detection_event<>{{{1}, 0}}));
+    in.feed(detection_event<>{1, 0});
+    REQUIRE(out.check(detection_pair_event<>{{0, 0}, {1, 0}}));
+    REQUIRE(out.check(detection_event<>{1, 0}));
 
-    in.feed(detection_event<>{{{2}, 0}});
-    REQUIRE(out.check(detection_pair_event<>{{{{1}, 0}}, {{{2}, 0}}}));
-    REQUIRE(out.check(detection_event<>{{{2}, 0}}));
+    in.feed(detection_event<>{2, 0});
+    REQUIRE(out.check(detection_pair_event<>{{1, 0}, {2, 0}}));
+    REQUIRE(out.check(detection_event<>{2, 0}));
 
-    in.feed(detection_event<>{{{3}, 0}});
-    REQUIRE(out.check(detection_pair_event<>{{{{2}, 0}}, {{{3}, 0}}}));
-    REQUIRE(out.check(detection_event<>{{{3}, 0}}));
+    in.feed(detection_event<>{3, 0});
+    REQUIRE(out.check(detection_pair_event<>{{2, 0}, {3, 0}}));
+    REQUIRE(out.check(detection_event<>{3, 0}));
 
     in.flush();
     REQUIRE(out.check_flushed());
@@ -349,51 +349,51 @@ TEST_CASE("pair one between") {
     }
 
     SECTION("stops following starts") {
-        in.feed(detection_event<>{{{0}, 0}});
-        REQUIRE(out.check(detection_event<>{{{0}, 0}}));
-        in.feed(detection_event<>{{{0}, 1}});
-        REQUIRE(out.check(detection_pair_event<>{{{{0}, 0}}, {{{0}, 1}}}));
-        REQUIRE(out.check(detection_event<>{{{0}, 1}}));
+        in.feed(detection_event<>{0, 0});
+        REQUIRE(out.check(detection_event<>{0, 0}));
+        in.feed(detection_event<>{0, 1});
+        REQUIRE(out.check(detection_pair_event<>{{0, 0}, {0, 1}}));
+        REQUIRE(out.check(detection_event<>{0, 1}));
 
-        in.feed(detection_event<>{{{1}, 0}});
-        REQUIRE(out.check(detection_event<>{{{1}, 0}}));
-        in.feed(detection_event<>{{{1}, 1}});
-        REQUIRE(out.check(detection_pair_event<>{{{{1}, 0}}, {{{1}, 1}}}));
-        REQUIRE(out.check(detection_event<>{{{1}, 1}}));
+        in.feed(detection_event<>{1, 0});
+        REQUIRE(out.check(detection_event<>{1, 0}));
+        in.feed(detection_event<>{1, 1});
+        REQUIRE(out.check(detection_pair_event<>{{1, 0}, {1, 1}}));
+        REQUIRE(out.check(detection_event<>{1, 1}));
 
-        in.feed(detection_event<>{{{2}, 1}});
-        REQUIRE(out.check(detection_event<>{{{2}, 1}}));
+        in.feed(detection_event<>{2, 1});
+        REQUIRE(out.check(detection_event<>{2, 1}));
 
-        in.feed(detection_event<>{{{3}, 0}});
-        REQUIRE(out.check(detection_event<>{{{3}, 0}}));
-        in.feed(detection_event<>{{{3}, 1}});
-        REQUIRE(out.check(detection_pair_event<>{{{{3}, 0}}, {{{3}, 1}}}));
-        REQUIRE(out.check(detection_event<>{{{3}, 1}}));
+        in.feed(detection_event<>{3, 0});
+        REQUIRE(out.check(detection_event<>{3, 0}));
+        in.feed(detection_event<>{3, 1});
+        REQUIRE(out.check(detection_pair_event<>{{3, 0}, {3, 1}}));
+        REQUIRE(out.check(detection_event<>{3, 1}));
 
         in.flush();
         REQUIRE(out.check_flushed());
     }
 
     SECTION("starts following stops") {
-        in.feed(detection_event<>{{{0}, 1}});
-        REQUIRE(out.check(detection_event<>{{{0}, 1}}));
-        in.feed(detection_event<>{{{0}, 0}});
-        REQUIRE(out.check(detection_event<>{{{0}, 0}}));
+        in.feed(detection_event<>{0, 1});
+        REQUIRE(out.check(detection_event<>{0, 1}));
+        in.feed(detection_event<>{0, 0});
+        REQUIRE(out.check(detection_event<>{0, 0}));
 
-        in.feed(detection_event<>{{{1}, 1}});
-        REQUIRE(out.check(detection_pair_event<>{{{{0}, 0}}, {{{1}, 1}}}));
-        REQUIRE(out.check(detection_event<>{{{1}, 1}}));
-        in.feed(detection_event<>{{{1}, 0}});
-        REQUIRE(out.check(detection_event<>{{{1}, 0}}));
+        in.feed(detection_event<>{1, 1});
+        REQUIRE(out.check(detection_pair_event<>{{0, 0}, {1, 1}}));
+        REQUIRE(out.check(detection_event<>{1, 1}));
+        in.feed(detection_event<>{1, 0});
+        REQUIRE(out.check(detection_event<>{1, 0}));
 
-        in.feed(detection_event<>{{{2}, 1}});
-        REQUIRE(out.check(detection_pair_event<>{{{{1}, 0}}, {{{2}, 1}}}));
-        REQUIRE(out.check(detection_event<>{{{2}, 1}}));
+        in.feed(detection_event<>{2, 1});
+        REQUIRE(out.check(detection_pair_event<>{{1, 0}, {2, 1}}));
+        REQUIRE(out.check(detection_event<>{2, 1}));
 
-        in.feed(detection_event<>{{{3}, 1}});
-        REQUIRE(out.check(detection_event<>{{{3}, 1}}));
-        in.feed(detection_event<>{{{3}, 0}});
-        REQUIRE(out.check(detection_event<>{{{3}, 0}}));
+        in.feed(detection_event<>{3, 1});
+        REQUIRE(out.check(detection_event<>{3, 1}));
+        in.feed(detection_event<>{3, 0});
+        REQUIRE(out.check(detection_event<>{3, 0}));
 
         in.flush();
         REQUIRE(out.check_flushed());
@@ -410,20 +410,20 @@ TEST_CASE("pair one between with self") {
     auto out = capture_output_checker<out_events>(
         ctx->access<capture_output_access>("out"));
 
-    in.feed(detection_event<>{{{0}, 0}});
-    REQUIRE(out.check(detection_event<>{{{0}, 0}}));
+    in.feed(detection_event<>{0, 0});
+    REQUIRE(out.check(detection_event<>{0, 0}));
 
-    in.feed(detection_event<>{{{1}, 0}});
-    REQUIRE(out.check(detection_pair_event<>{{{{0}, 0}}, {{{1}, 0}}}));
-    REQUIRE(out.check(detection_event<>{{{1}, 0}}));
+    in.feed(detection_event<>{1, 0});
+    REQUIRE(out.check(detection_pair_event<>{{0, 0}, {1, 0}}));
+    REQUIRE(out.check(detection_event<>{1, 0}));
 
-    in.feed(detection_event<>{{{2}, 0}});
-    REQUIRE(out.check(detection_pair_event<>{{{{1}, 0}}, {{{2}, 0}}}));
-    REQUIRE(out.check(detection_event<>{{{2}, 0}}));
+    in.feed(detection_event<>{2, 0});
+    REQUIRE(out.check(detection_pair_event<>{{1, 0}, {2, 0}}));
+    REQUIRE(out.check(detection_event<>{2, 0}));
 
-    in.feed(detection_event<>{{{3}, 0}});
-    REQUIRE(out.check(detection_pair_event<>{{{{2}, 0}}, {{{3}, 0}}}));
-    REQUIRE(out.check(detection_event<>{{{3}, 0}}));
+    in.feed(detection_event<>{3, 0});
+    REQUIRE(out.check(detection_pair_event<>{{2, 0}, {3, 0}}));
+    REQUIRE(out.check(detection_event<>{3, 0}));
 
     in.flush();
     REQUIRE(out.check_flushed());

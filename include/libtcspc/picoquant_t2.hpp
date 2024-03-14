@@ -467,7 +467,7 @@ class decode_pqt2 {
             timetag_base += abstime_type(PQT2Event::overflow_period) *
                             event.timetag_overflow_count().value();
             return downstream.handle(
-                time_reached_event<DataTraits>{{timetag_base}});
+                time_reached_event<DataTraits>{timetag_base});
         }
 
         // In the case where the overflow period is smaller than one plus the
@@ -479,13 +479,12 @@ class decode_pqt2 {
             abstime_type const timetag =
                 timetag_base + event.timetag().value();
             downstream.handle(detection_event<DataTraits>{
-                {{timetag},
-                 event.is_special() ? -1 : event.channel().value()}});
+                timetag, event.is_special() ? -1 : event.channel().value()});
         } else if (event.is_external_marker()) {
             abstime_type const timetag =
                 timetag_base + event.external_marker_timetag().value();
             for_each_set_bit(u32np(event.external_marker_bits()), [&](int b) {
-                downstream.handle(marker_event<DataTraits>{{{timetag}, b}});
+                downstream.handle(marker_event<DataTraits>{timetag, b});
             });
         } else {
             issue_warning("invalid special event encountered");

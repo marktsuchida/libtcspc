@@ -45,8 +45,8 @@ TEST_CASE("time correlate at start") {
     auto out = capture_output_checker<tc_out_events>(
         ctx->access<capture_output_access>("out"));
 
-    in.feed(detection_pair_event<>{{{{3}, 0}}, {{{5}, 1}}});
-    REQUIRE(out.check(time_correlated_detection_event<>{{{3}, 0}, 2}));
+    in.feed(detection_pair_event<>{{3, 0}, {5, 1}});
+    REQUIRE(out.check(time_correlated_detection_event<>{3, 0, 2}));
     in.flush();
     REQUIRE(out.check_flushed());
 }
@@ -60,8 +60,8 @@ TEST_CASE("time correlate at stop") {
     auto out = capture_output_checker<tc_out_events>(
         ctx->access<capture_output_access>("out"));
 
-    in.feed(detection_pair_event<>{{{{3}, 0}}, {{{5}, 1}}});
-    REQUIRE(out.check(time_correlated_detection_event<>{{{5}, 1}, 2}));
+    in.feed(detection_pair_event<>{{3, 0}, {5, 1}});
+    REQUIRE(out.check(time_correlated_detection_event<>{5, 1, 2}));
     in.flush();
     REQUIRE(out.check_flushed());
 }
@@ -77,8 +77,8 @@ TEST_CASE("time correlate at midpoint") {
         auto out = capture_output_checker<tc_out_events>(
             ctx->access<capture_output_access>("out"));
 
-        in.feed(detection_pair_event<>{{{{3}, 0}}, {{{5}, 1}}});
-        REQUIRE(out.check(time_correlated_detection_event<>{{{4}, 1}, 2}));
+        in.feed(detection_pair_event<>{{3, 0}, {5, 1}});
+        REQUIRE(out.check(time_correlated_detection_event<>{4, 1, 2}));
         in.flush();
         REQUIRE(out.check_flushed());
     }
@@ -92,8 +92,8 @@ TEST_CASE("time correlate at midpoint") {
         auto out = capture_output_checker<tc_out_events>(
             ctx->access<capture_output_access>("out"));
 
-        in.feed(detection_pair_event<>{{{{3}, 0}}, {{{5}, 1}}});
-        REQUIRE(out.check(time_correlated_detection_event<>{{{4}, 0}, 2}));
+        in.feed(detection_pair_event<>{{3, 0}, {5, 1}});
+        REQUIRE(out.check(time_correlated_detection_event<>{4, 0, 2}));
         in.flush();
         REQUIRE(out.check_flushed());
     }
@@ -111,9 +111,8 @@ TEST_CASE("time correlate at fraction") {
         auto out = capture_output_checker<tc_out_events>(
             ctx->access<capture_output_access>("out"));
 
-        in.feed(detection_pair_event<>{{{{3000}, 0}}, {{{6000}, 1}}});
-        REQUIRE(
-            out.check(time_correlated_detection_event<>{{{4000}, 1}, 3000}));
+        in.feed(detection_pair_event<>{{3000, 0}, {6000, 1}});
+        REQUIRE(out.check(time_correlated_detection_event<>{4000, 1, 3000}));
         in.flush();
         REQUIRE(out.check_flushed());
     }
@@ -127,9 +126,8 @@ TEST_CASE("time correlate at fraction") {
         auto out = capture_output_checker<tc_out_events>(
             ctx->access<capture_output_access>("out"));
 
-        in.feed(detection_pair_event<>{{{{3000}, 0}}, {{{6000}, 1}}});
-        REQUIRE(
-            out.check(time_correlated_detection_event<>{{{4000}, 0}, 3000}));
+        in.feed(detection_pair_event<>{{3000, 0}, {6000, 1}});
+        REQUIRE(out.check(time_correlated_detection_event<>{4000, 0, 3000}));
         in.flush();
         REQUIRE(out.check_flushed());
     }
@@ -149,10 +147,10 @@ TEST_CASE("negate difftime") {
         type_list<time_correlated_detection_event<traits>>>(
         ctx->access<capture_output_access>("out"));
 
-    in.feed(time_correlated_detection_event<traits>{{{3}, 1}, 2});
-    REQUIRE(out.check(time_correlated_detection_event<traits>{{{3}, 1}, -2}));
-    in.feed(time_correlated_detection_event<traits>{{{5}, 1}, -7});
-    REQUIRE(out.check(time_correlated_detection_event<traits>{{{5}, 1}, 7}));
+    in.feed(time_correlated_detection_event<traits>{3, 1, 2});
+    REQUIRE(out.check(time_correlated_detection_event<traits>{3, 1, -2}));
+    in.feed(time_correlated_detection_event<traits>{5, 1, -7});
+    REQUIRE(out.check(time_correlated_detection_event<traits>{5, 1, 7}));
     in.flush();
     REQUIRE(out.check_flushed());
 }
@@ -166,8 +164,8 @@ TEST_CASE("remove time correlation") {
     auto out = capture_output_checker<type_list<detection_event<>>>(
         ctx->access<capture_output_access>("out"));
 
-    in.feed(time_correlated_detection_event<>{{{3}, 1}, 2});
-    REQUIRE(out.check(detection_event<>{{{3}, 1}}));
+    in.feed(time_correlated_detection_event<>{3, 1, 2});
+    REQUIRE(out.check(detection_event<>{3, 1}));
     in.flush();
     REQUIRE(out.check_flushed());
 }

@@ -84,15 +84,15 @@ TEST_CASE("Route") {
         ctx->access<capture_output_access>("out2"));
 
     SECTION("Route and broadcast by event type") {
-        in.feed(tc_event{{{100}, 5}, 123});
-        REQUIRE(out0.check(tc_event{{{100}, 5}, 123}));
-        in.feed(tc_event{{{101}, -3}, 123});
-        REQUIRE(out1.check(tc_event{{{101}, -3}, 123}));
-        in.feed(tc_event{{{102}, 0}, 124});
-        in.feed(marker_event<>{{{103}, 0}});
-        REQUIRE(out0.check(marker_event<>{{{103}, 0}}));
-        REQUIRE(out1.check(marker_event<>{{{103}, 0}}));
-        REQUIRE(out2.check(marker_event<>{{{103}, 0}}));
+        in.feed(tc_event{100, 5, 123});
+        REQUIRE(out0.check(tc_event{100, 5, 123}));
+        in.feed(tc_event{101, -3, 123});
+        REQUIRE(out1.check(tc_event{101, -3, 123}));
+        in.feed(tc_event{102, 0, 124});
+        in.feed(marker_event<>{103, 0});
+        REQUIRE(out0.check(marker_event<>{103, 0}));
+        REQUIRE(out1.check(marker_event<>{103, 0}));
+        REQUIRE(out2.check(marker_event<>{103, 0}));
         in.flush();
         REQUIRE(out0.check_flushed());
         REQUIRE(out1.check_flushed());
@@ -101,7 +101,7 @@ TEST_CASE("Route") {
 
     SECTION("Error on routed propagates without flushing others") {
         out1.throw_error_on_next();
-        REQUIRE_THROWS(in.feed(tc_event{{{101}, -3}, 123}));
+        REQUIRE_THROWS(in.feed(tc_event{101, -3, 123}));
         REQUIRE(out0.check_not_flushed());
         REQUIRE(out2.check_not_flushed());
     }
@@ -109,8 +109,7 @@ TEST_CASE("Route") {
     SECTION("End on routed propagates, flushing others") {
         SECTION("Others not throwing") {
             out1.throw_end_processing_on_next();
-            REQUIRE_THROWS_AS(in.feed(tc_event{{{101}, -3}, 123}),
-                              end_processing);
+            REQUIRE_THROWS_AS(in.feed(tc_event{101, -3, 123}), end_processing);
             REQUIRE(out0.check_flushed());
             REQUIRE(out2.check_flushed());
         }
@@ -118,7 +117,7 @@ TEST_CASE("Route") {
         SECTION("Other throwing error") {
             out1.throw_end_processing_on_next();
             out2.throw_error_on_flush();
-            REQUIRE_THROWS_AS(in.feed(tc_event{{{101}, -3}, 123}),
+            REQUIRE_THROWS_AS(in.feed(tc_event{101, -3, 123}),
                               std::runtime_error);
             REQUIRE(out0.check_flushed());
         }
@@ -126,8 +125,7 @@ TEST_CASE("Route") {
         SECTION("Other throwing end") {
             out1.throw_end_processing_on_next();
             out2.throw_end_processing_on_flush();
-            REQUIRE_THROWS_AS(in.feed(tc_event{{{101}, -3}, 123}),
-                              end_processing);
+            REQUIRE_THROWS_AS(in.feed(tc_event{101, -3, 123}), end_processing);
             REQUIRE(out0.check_flushed());
         }
     }

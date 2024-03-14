@@ -743,7 +743,7 @@ class decode_bh_spc {
         if (not event.marker_flag()) {
             if (not event.invalid_flag()) { // Valid photon
                 downstream.handle(time_correlated_detection_event<DataTraits>{
-                    {{abstime}, event.routing_signals().value()},
+                    abstime, event.routing_signals().value(),
                     event.adc_value().value()});
             } else { // Invalid photon
                 downstream.handle(time_reached_event<DataTraits>{abstime});
@@ -754,12 +754,12 @@ class decode_bh_spc {
                 if constexpr (HasIntensityCounter) {    // SPC-180
                     if ((bits & 0x01_u32np) != 0_u32np) // Marker 0
                         downstream.handle(nontagged_counts_event<DataTraits>{
-                            {{abstime}, -1}, event.adc_value().value()});
+                            abstime, -1, event.adc_value().value()});
                 }
                 for_each_set_bit(bits, [&](int b) {
                     downstream.handle(marker_event<DataTraits>{
-                        {{abstime},
-                         static_cast<typename DataTraits::channel_type>(b)}});
+                        abstime,
+                        static_cast<typename DataTraits::channel_type>(b)});
                 });
             } else {
                 // Although not clearly documented, the combination of

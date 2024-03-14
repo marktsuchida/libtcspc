@@ -54,7 +54,7 @@ class time_correlate_at_start_or_stop {
         auto const &anchor =
             UseStartTimeAndChannel ? event.first : event.second;
         downstream.handle(time_correlated_detection_event<DataTraits>{
-            {{anchor.abstime}, anchor.channel},
+            anchor.abstime, anchor.channel,
             static_cast<typename DataTraits::difftime_type>(difftime)});
     }
 
@@ -94,7 +94,7 @@ class time_correlate_at_midpoint {
         auto const channel =
             UseStartChannel ? event.first.channel : event.second.channel;
         downstream.handle(time_correlated_detection_event<DataTraits>{
-            {{abstime}, channel},
+            abstime, channel,
             static_cast<typename DataTraits::difftime_type>(difftime)});
     }
 
@@ -138,7 +138,7 @@ class time_correlate_at_fraction {
         auto const channel =
             UseStartChannel ? event.first.channel : event.second.channel;
         downstream.handle(time_correlated_detection_event<DataTraits>{
-            {{abstime}, channel},
+            abstime, channel,
             static_cast<typename DataTraits::difftime_type>(difftime)});
     }
 
@@ -357,7 +357,7 @@ class remove_time_correlation {
                                      typename DataTraits::channel_type>);
 
         downstream.handle(
-            detection_event<DataTraits>{{{event.abstime}, event.channel}});
+            detection_event<DataTraits>{event.abstime, event.channel});
     }
 
     template <typename OtherEvent> void handle(OtherEvent const &event) {

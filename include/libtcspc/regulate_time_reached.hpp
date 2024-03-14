@@ -37,7 +37,7 @@ class regulate_time_reached {
         ++seen_since_prev_time_reached;
         if (abstime >= next_time_thresh ||
             emitted_since_prev_time_reached >= count_thresh) {
-            downstream.handle(time_reached_event<DataTraits>{{abstime}});
+            downstream.handle(time_reached_event<DataTraits>{abstime});
             next_time_thresh = add_sat(abstime, interval_thresh);
             emitted_since_prev_time_reached = 0;
             seen_since_prev_time_reached = 0;
@@ -82,7 +82,7 @@ class regulate_time_reached {
         // was something other than time-reached.
         if (exact_reached > std::numeric_limits<abstime_type>::min() &&
             seen_since_prev_time_reached > 0)
-            downstream.handle(time_reached_event<DataTraits>{{exact_reached}});
+            downstream.handle(time_reached_event<DataTraits>{exact_reached});
         downstream.flush();
     }
 };

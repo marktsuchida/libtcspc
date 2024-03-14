@@ -164,7 +164,7 @@ TEST_CASE("decode swabian tags") {
 
     SECTION("time tag") {
         in.feed(swabian_tag_event::make_time_tag(42_i64np, 5_i32np));
-        REQUIRE(out.check(detection_event<>{{{42}, 5}}));
+        REQUIRE(out.check(detection_event<>{42, 5}));
     }
 
     SECTION("error") {
@@ -175,18 +175,18 @@ TEST_CASE("decode swabian tags") {
 
     SECTION("overflow begin") {
         in.feed(swabian_tag_event::make_overflow_begin(42_i64np));
-        REQUIRE(out.check(begin_lost_interval_event<>{{42}}));
+        REQUIRE(out.check(begin_lost_interval_event<>{42}));
     }
 
     SECTION("overflow end") {
         in.feed(swabian_tag_event::make_overflow_end(42_i64np));
-        REQUIRE(out.check(end_lost_interval_event<>{{42}}));
+        REQUIRE(out.check(end_lost_interval_event<>{42}));
     }
 
     SECTION("missed events") {
         in.feed(swabian_tag_event::make_missed_events(42_i64np, 5_i32np,
                                                       123_u16np));
-        REQUIRE(out.check(untagged_counts_event<>{{{42}, 5}, 123}));
+        REQUIRE(out.check(untagged_counts_event<>{42, 5, 123}));
     }
 
     in.flush();

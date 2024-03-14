@@ -45,10 +45,10 @@ TEST_CASE("Match and replace") {
     auto out = capture_output_checker<out_events>(
         ctx->access<capture_output_access>("out"));
 
-    in.feed(marker_event<>{{{100}, 0}});
+    in.feed(marker_event<>{100, 0});
     REQUIRE(out.check(output_event{100}));
-    in.feed(marker_event<>{{{200}, 1}});
-    REQUIRE(out.check(marker_event<>{{{200}, 1}}));
+    in.feed(marker_event<>{200, 1});
+    REQUIRE(out.check(marker_event<>{200, 1}));
     in.feed(misc_event{300});
     REQUIRE(out.check(misc_event{300}));
     in.flush();
@@ -66,11 +66,11 @@ TEST_CASE("Match") {
     auto out = capture_output_checker<out_events>(
         ctx->access<capture_output_access>("out"));
 
-    in.feed(marker_event<>{{{100}, 0}});
-    REQUIRE(out.check(marker_event<>{{{100}, 0}})); // Preserved
+    in.feed(marker_event<>{100, 0});
+    REQUIRE(out.check(marker_event<>{100, 0})); // Preserved
     REQUIRE(out.check(output_event{100}));
-    in.feed(marker_event<>{{{200}, 1}});
-    REQUIRE(out.check(marker_event<>{{{200}, 1}}));
+    in.feed(marker_event<>{200, 1});
+    REQUIRE(out.check(marker_event<>{200, 1}));
     in.feed(misc_event{300});
     REQUIRE(out.check(misc_event{300}));
     in.flush();

@@ -216,15 +216,15 @@ template <typename DataTraits, typename Downstream> class decode_swabian_tags {
             break;
         case tag_type::overflow_begin:
             downstream.handle(
-                begin_lost_interval_event<DataTraits>{{event.time().value()}});
+                begin_lost_interval_event<DataTraits>{event.time().value()});
             break;
         case tag_type::overflow_end:
             downstream.handle(
-                end_lost_interval_event<DataTraits>{{event.time().value()}});
+                end_lost_interval_event<DataTraits>{event.time().value()});
             break;
         case tag_type::missed_events:
             downstream.handle(untagged_counts_event<DataTraits>{
-                {{event.time().value()}, event.channel().value()},
+                event.time().value(), event.channel().value(),
                 event.missed_event_count().value()});
             break;
         default: {
@@ -258,7 +258,7 @@ template <typename DataTraits, typename Downstream> class decode_swabian_tags {
     void handle(swabian_tag_event const &event) {
         if (event.type() == swabian_tag_event::tag_type::time_tag) {
             downstream.handle(detection_event<DataTraits>{
-                {{event.time().value()}, event.channel().value()}});
+                event.time().value(), event.channel().value()});
         } else {
             handle_coldpath_tag(event);
         }

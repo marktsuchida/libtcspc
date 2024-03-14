@@ -682,43 +682,43 @@ TEST_CASE("decode bh spc") {
         in.feed(bh_spc_event::make_photon(42_u16np, 123_u16np, 5_u8np, false)
                     .gap_flag(gap));
         if (gap)
-            REQUIRE(out.check(data_lost_event<>{{42}}));
-        REQUIRE(out.check(time_correlated_detection_event<>{{{42}, 5}, 123}));
+            REQUIRE(out.check(data_lost_event<>{42}));
+        REQUIRE(out.check(time_correlated_detection_event<>{42, 5, 123}));
     }
 
     SECTION("photon, mtov") {
         in.feed(bh_spc_event::make_photon(42_u16np, 123_u16np, 5_u8np, true)
                     .gap_flag(gap));
         if (gap)
-            REQUIRE(out.check(data_lost_event<>{{4096 + 42}}));
-        REQUIRE(out.check(
-            time_correlated_detection_event<>{{{4096 + 42}, 5}, 123}));
+            REQUIRE(out.check(data_lost_event<>{4096 + 42}));
+        REQUIRE(
+            out.check(time_correlated_detection_event<>{4096 + 42, 5, 123}));
     }
 
     SECTION("invalid photon") {
         in.feed(bh_spc_event::make_invalid_photon(42_u16np, 123_u16np)
                     .gap_flag(gap));
         if (gap)
-            REQUIRE(out.check(data_lost_event<>{{42}}));
-        REQUIRE(out.check(time_reached_event<>{{42}}));
+            REQUIRE(out.check(data_lost_event<>{42}));
+        REQUIRE(out.check(time_reached_event<>{42}));
     }
 
     SECTION("marker, no mtov") {
         in.feed(
             bh_spc_event::make_marker(42_u16np, 5_u8np, false).gap_flag(gap));
         if (gap)
-            REQUIRE(out.check(data_lost_event<>{{42}}));
-        REQUIRE(out.check(marker_event<>{{{42}, 0}}));
-        REQUIRE(out.check(marker_event<>{{{42}, 2}}));
+            REQUIRE(out.check(data_lost_event<>{42}));
+        REQUIRE(out.check(marker_event<>{42, 0}));
+        REQUIRE(out.check(marker_event<>{42, 2}));
     }
 
     SECTION("marker, mtov") {
         in.feed(
             bh_spc_event::make_marker(42_u16np, 5_u8np, true).gap_flag(gap));
         if (gap)
-            REQUIRE(out.check(data_lost_event<>{{4096 + 42}}));
-        REQUIRE(out.check(marker_event<>{{{4096 + 42}, 0}}));
-        REQUIRE(out.check(marker_event<>{{{4096 + 42}, 2}}));
+            REQUIRE(out.check(data_lost_event<>{4096 + 42}));
+        REQUIRE(out.check(marker_event<>{4096 + 42, 0}));
+        REQUIRE(out.check(marker_event<>{4096 + 42, 2}));
     }
 
     SECTION("multi-mtov") {
@@ -726,17 +726,17 @@ TEST_CASE("decode bh spc") {
             bh_spc_event::make_multiple_macrotime_overflow(3_u32np).gap_flag(
                 gap));
         if (gap)
-            REQUIRE(out.check(data_lost_event<>{{i64(4096) * 3}}));
-        REQUIRE(out.check(time_reached_event<>{{i64(4096) * 3}}));
+            REQUIRE(out.check(data_lost_event<>{i64(4096) * 3}));
+        REQUIRE(out.check(time_reached_event<>{i64(4096) * 3}));
 
         SECTION("photon, no mtov") {
             in.feed(
                 bh_spc_event::make_photon(42_u16np, 123_u16np, 5_u8np, false)
                     .gap_flag(gap));
             if (gap)
-                REQUIRE(out.check(data_lost_event<>{{i64(4096) * 3 + 42}}));
+                REQUIRE(out.check(data_lost_event<>{i64(4096) * 3 + 42}));
             REQUIRE(out.check(time_correlated_detection_event<>{
-                {{i64(4096) * 3 + 42}, 5}, 123}));
+                i64(4096) * 3 + 42, 5, 123}));
         }
 
         SECTION("photon, mtov") {
@@ -744,35 +744,35 @@ TEST_CASE("decode bh spc") {
                 bh_spc_event::make_photon(42_u16np, 123_u16np, 5_u8np, true)
                     .gap_flag(gap));
             if (gap)
-                REQUIRE(out.check(data_lost_event<>{{i64(4096) * 4 + 42}}));
+                REQUIRE(out.check(data_lost_event<>{i64(4096) * 4 + 42}));
             REQUIRE(out.check(time_correlated_detection_event<>{
-                {{i64(4096) * 4 + 42}, 5}, 123}));
+                i64(4096) * 4 + 42, 5, 123}));
         }
 
         SECTION("invalid photon") {
             in.feed(bh_spc_event::make_invalid_photon(42_u16np, 123_u16np)
                         .gap_flag(gap));
             if (gap)
-                REQUIRE(out.check(data_lost_event<>{{i64(4096) * 3 + 42}}));
-            REQUIRE(out.check(time_reached_event<>{{i64(4096) * 3 + 42}}));
+                REQUIRE(out.check(data_lost_event<>{i64(4096) * 3 + 42}));
+            REQUIRE(out.check(time_reached_event<>{i64(4096) * 3 + 42}));
         }
 
         SECTION("marker, no mtov") {
             in.feed(bh_spc_event::make_marker(42_u16np, 5_u8np, false)
                         .gap_flag(gap));
             if (gap)
-                REQUIRE(out.check(data_lost_event<>{{i64(4096) * 3 + 42}}));
-            REQUIRE(out.check(marker_event<>{{{i64(4096) * 3 + 42}, 0}}));
-            REQUIRE(out.check(marker_event<>{{{i64(4096) * 3 + 42}, 2}}));
+                REQUIRE(out.check(data_lost_event<>{i64(4096) * 3 + 42}));
+            REQUIRE(out.check(marker_event<>{i64(4096) * 3 + 42, 0}));
+            REQUIRE(out.check(marker_event<>{i64(4096) * 3 + 42, 2}));
         }
 
         SECTION("marker, mtov") {
             in.feed(bh_spc_event::make_marker(42_u16np, 5_u8np, true)
                         .gap_flag(gap));
             if (gap)
-                REQUIRE(out.check(data_lost_event<>{{i64(4096) * 4 + 42}}));
-            REQUIRE(out.check(marker_event<>{{{i64(4096) * 4 + 42}, 0}}));
-            REQUIRE(out.check(marker_event<>{{{i64(4096) * 4 + 42}, 2}}));
+                REQUIRE(out.check(data_lost_event<>{i64(4096) * 4 + 42}));
+            REQUIRE(out.check(marker_event<>{i64(4096) * 4 + 42, 0}));
+            REQUIRE(out.check(marker_event<>{i64(4096) * 4 + 42, 2}));
         }
     }
 
@@ -797,16 +797,16 @@ TEST_CASE("decode bh spc with fast intensity counter",
         in.feed(
             bh_spc_event::make_marker(42_u16np, 4_u8np, false).gap_flag(gap));
         if (gap)
-            REQUIRE(out.check(data_lost_event<>{{42}}));
-        REQUIRE(out.check(marker_event<>{{{42}, 2}}));
+            REQUIRE(out.check(data_lost_event<>{42}));
+        REQUIRE(out.check(marker_event<>{42, 2}));
     }
 
     SECTION("no marker 0, mtov") {
         in.feed(
             bh_spc_event::make_marker(42_u16np, 4_u8np, true).gap_flag(gap));
         if (gap)
-            REQUIRE(out.check(data_lost_event<>{{4096 + 42}}));
-        REQUIRE(out.check(marker_event<>{{{4096 + 42}, 2}}));
+            REQUIRE(out.check(data_lost_event<>{4096 + 42}));
+        REQUIRE(out.check(marker_event<>{4096 + 42, 2}));
     }
 
     SECTION("with marker 0, no mtov") {
@@ -814,10 +814,10 @@ TEST_CASE("decode bh spc with fast intensity counter",
                     42_u16np, 5_u8np, 123_u16np, false)
                     .gap_flag(gap));
         if (gap)
-            REQUIRE(out.check(data_lost_event<>{{42}}));
-        REQUIRE(out.check(nontagged_counts_event<>{{{42}, -1}, 123}));
-        REQUIRE(out.check(marker_event<>{{{42}, 0}}));
-        REQUIRE(out.check(marker_event<>{{{42}, 2}}));
+            REQUIRE(out.check(data_lost_event<>{42}));
+        REQUIRE(out.check(nontagged_counts_event<>{42, -1, 123}));
+        REQUIRE(out.check(marker_event<>{42, 0}));
+        REQUIRE(out.check(marker_event<>{42, 2}));
     }
 
     SECTION("with marker 0, mtov") {
@@ -825,10 +825,10 @@ TEST_CASE("decode bh spc with fast intensity counter",
                     42_u16np, 5_u8np, 123_u16np, true)
                     .gap_flag(gap));
         if (gap)
-            REQUIRE(out.check(data_lost_event<>{{4096 + 42}}));
-        REQUIRE(out.check(nontagged_counts_event<>{{{4096 + 42}, -1}, 123}));
-        REQUIRE(out.check(marker_event<>{{{4096 + 42}, 0}}));
-        REQUIRE(out.check(marker_event<>{{{4096 + 42}, 2}}));
+            REQUIRE(out.check(data_lost_event<>{4096 + 42}));
+        REQUIRE(out.check(nontagged_counts_event<>{4096 + 42, -1, 123}));
+        REQUIRE(out.check(marker_event<>{4096 + 42, 0}));
+        REQUIRE(out.check(marker_event<>{4096 + 42, 2}));
     }
 
     in.flush();
@@ -851,8 +851,8 @@ TEST_CASE("decode bh spc600 256ch") {
                                                    false)
                     .gap_flag(gap));
         if (gap)
-            REQUIRE(out.check(data_lost_event<>{{42}}));
-        REQUIRE(out.check(time_correlated_detection_event<>{{{42}, 5}, 123}));
+            REQUIRE(out.check(data_lost_event<>{42}));
+        REQUIRE(out.check(time_correlated_detection_event<>{42, 5, 123}));
     }
 
     SECTION("photon, mtov") {
@@ -860,17 +860,17 @@ TEST_CASE("decode bh spc600 256ch") {
                                                    true)
                     .gap_flag(gap));
         if (gap)
-            REQUIRE(out.check(data_lost_event<>{{131'072 + 42}}));
+            REQUIRE(out.check(data_lost_event<>{131'072 + 42}));
         REQUIRE(out.check(
-            time_correlated_detection_event<>{{{131'072 + 42}, 5}, 123}));
+            time_correlated_detection_event<>{131'072 + 42, 5, 123}));
     }
 
     SECTION("invalid photon") {
         in.feed(bh_spc600_256ch_event::make_invalid_photon(42_u32np, 123_u8np)
                     .gap_flag(gap));
         if (gap)
-            REQUIRE(out.check(data_lost_event<>{{42}}));
-        REQUIRE(out.check(time_reached_event<>{{42}}));
+            REQUIRE(out.check(data_lost_event<>{42}));
+        REQUIRE(out.check(time_reached_event<>{42}));
     }
 
     SECTION("multi-mtov") {
@@ -878,17 +878,17 @@ TEST_CASE("decode bh spc600 256ch") {
             bh_spc600_256ch_event::make_multiple_macrotime_overflow(3_u32np)
                 .gap_flag(gap));
         if (gap)
-            REQUIRE(out.check(data_lost_event<>{{i64(131'072) * 3}}));
-        REQUIRE(out.check(time_reached_event<>{{i64(131'072) * 3}}));
+            REQUIRE(out.check(data_lost_event<>{i64(131'072) * 3}));
+        REQUIRE(out.check(time_reached_event<>{i64(131'072) * 3}));
 
         SECTION("photon, no mtov") {
             in.feed(bh_spc600_256ch_event::make_photon(42_u32np, 123_u8np,
                                                        5_u8np, false)
                         .gap_flag(gap));
             if (gap)
-                REQUIRE(out.check(data_lost_event<>{{i64(131'072) * 3 + 42}}));
+                REQUIRE(out.check(data_lost_event<>{i64(131'072) * 3 + 42}));
             REQUIRE(out.check(time_correlated_detection_event<>{
-                {{i64(131'072) * 3 + 42}, 5}, 123}));
+                i64(131'072) * 3 + 42, 5, 123}));
         }
 
         SECTION("photon, mtov") {
@@ -896,9 +896,9 @@ TEST_CASE("decode bh spc600 256ch") {
                                                        5_u8np, true)
                         .gap_flag(gap));
             if (gap)
-                REQUIRE(out.check(data_lost_event<>{{i64(131'072) * 4 + 42}}));
+                REQUIRE(out.check(data_lost_event<>{i64(131'072) * 4 + 42}));
             REQUIRE(out.check(time_correlated_detection_event<>{
-                {{i64(131'072) * 4 + 42}, 5}, 123}));
+                i64(131'072) * 4 + 42, 5, 123}));
         }
 
         SECTION("invalid photon") {
@@ -906,8 +906,8 @@ TEST_CASE("decode bh spc600 256ch") {
                 bh_spc600_256ch_event::make_invalid_photon(42_u32np, 123_u8np)
                     .gap_flag(gap));
             if (gap)
-                REQUIRE(out.check(data_lost_event<>{{i64(131'072) * 3 + 42}}));
-            REQUIRE(out.check(time_reached_event<>{{i64(131'072) * 3 + 42}}));
+                REQUIRE(out.check(data_lost_event<>{i64(131'072) * 3 + 42}));
+            REQUIRE(out.check(time_reached_event<>{i64(131'072) * 3 + 42}));
         }
     }
 
@@ -931,8 +931,8 @@ TEST_CASE("decode bh spc600 4096ch") {
                                                     5_u8np, false)
                     .gap_flag(gap));
         if (gap)
-            REQUIRE(out.check(data_lost_event<>{{42}}));
-        REQUIRE(out.check(time_correlated_detection_event<>{{{42}, 5}, 123}));
+            REQUIRE(out.check(data_lost_event<>{42}));
+        REQUIRE(out.check(time_correlated_detection_event<>{42, 5, 123}));
     }
 
     SECTION("photon, mtov") {
@@ -940,9 +940,9 @@ TEST_CASE("decode bh spc600 4096ch") {
                                                     5_u8np, true)
                     .gap_flag(gap));
         if (gap)
-            REQUIRE(out.check(data_lost_event<>{{16'777'216 + 42}}));
+            REQUIRE(out.check(data_lost_event<>{16'777'216 + 42}));
         REQUIRE(out.check(
-            time_correlated_detection_event<>{{{16'777'216 + 42}, 5}, 123}));
+            time_correlated_detection_event<>{16'777'216 + 42, 5, 123}));
     }
 
     SECTION("invalid photon, no mtov") {
@@ -950,8 +950,8 @@ TEST_CASE("decode bh spc600 4096ch") {
                                                             123_u16np, false)
                     .gap_flag(gap));
         if (gap)
-            REQUIRE(out.check(data_lost_event<>{{42}}));
-        REQUIRE(out.check(time_reached_event<>{{42}}));
+            REQUIRE(out.check(data_lost_event<>{42}));
+        REQUIRE(out.check(time_reached_event<>{42}));
     }
 
     SECTION("invalid photon, mtov") {
@@ -959,8 +959,8 @@ TEST_CASE("decode bh spc600 4096ch") {
                                                             123_u16np, true)
                     .gap_flag(gap));
         if (gap)
-            REQUIRE(out.check(data_lost_event<>{{16'777'216 + 42}}));
-        REQUIRE(out.check(time_reached_event<>{{16'777'216 + 42}}));
+            REQUIRE(out.check(data_lost_event<>{16'777'216 + 42}));
+        REQUIRE(out.check(time_reached_event<>{16'777'216 + 42}));
     }
 
     in.flush();

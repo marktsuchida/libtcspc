@@ -79,7 +79,7 @@ class pair_all {
         if (std::size_t(chan_index) < NStopChannels) {
             starts.for_each([&](auto start_time) {
                 downstream.handle(detection_pair_event<DataTraits>{
-                    {{{start_time}, start_chan}}, event});
+                    {start_time, start_chan}, event});
             });
         }
         if (event.channel == start_chan)
@@ -155,7 +155,7 @@ class pair_one {
             starts.for_each([&](start_and_flags &sf) {
                 if (not sf.stopped[chan_index]) {
                     downstream.handle(detection_pair_event<DataTraits>{
-                        {{{sf.time}, start_chan}}, event});
+                        {sf.time, start_chan}, event});
                     sf.stopped[chan_index] = true;
                 }
             });
@@ -227,7 +227,7 @@ class pair_all_between {
                                         event.channel));
             if (std::size_t(chan_index) < NStopChannels) {
                 downstream.handle(detection_pair_event<DataTraits>{
-                    {{{*start}, start_chan}}, event});
+                    {*start, start_chan}, event});
             }
         }
         if (event.channel == start_chan)
@@ -303,7 +303,7 @@ class pair_one_between {
                                         event.channel)));
             if (chan_index < NStopChannels && not start->stopped[chan_index]) {
                 downstream.handle(detection_pair_event<DataTraits>{
-                    {{{start->time}, start_chan}}, event});
+                    {start->time, start_chan}, event});
                 start->stopped[chan_index] = true;
             }
         }

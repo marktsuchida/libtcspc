@@ -438,17 +438,17 @@ class decode_pqt3 {
             nsync_base += abstime_type(PQT3Event::nsync_overflow_period) *
                           event.nsync_overflow_count().value();
             return downstream.handle(
-                time_reached_event<DataTraits>{{nsync_base}});
+                time_reached_event<DataTraits>{nsync_base});
         }
 
         abstime_type const nsync = nsync_base + event.nsync().value();
 
         if (not event.is_special()) {
             downstream.handle(time_correlated_detection_event<DataTraits>{
-                {{nsync}, event.channel().value()}, event.dtime().value()});
+                nsync, event.channel().value(), event.dtime().value()});
         } else if (event.is_external_marker()) {
             for_each_set_bit(u32np(event.external_marker_bits()), [&](int b) {
-                downstream.handle(marker_event<DataTraits>{{{nsync}, b}});
+                downstream.handle(marker_event<DataTraits>{nsync, b});
             });
         } else {
             issue_warning("invalid special event encountered");
