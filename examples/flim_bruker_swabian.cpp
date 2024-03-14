@@ -387,7 +387,7 @@ void parse_option(settings &dest, std::string const &key, GetValue get_value) {
             dest.dump_graph = true;
         } else if (key == "help") {
             usage();
-            std::exit(EXIT_SUCCESS);
+            std::_Exit(EXIT_SUCCESS);
         } else {
             throw std::invalid_argument("unrecognized option");
         }

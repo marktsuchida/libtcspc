@@ -8,6 +8,7 @@ Checks: >-
     bugprone-*,
     clang-analyzer-*,
     clang-diagnostic-*,
+    concurrency-*,
     cppcoreguidelines-*,
     misc-*,
     modernize-*,
