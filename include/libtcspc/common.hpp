@@ -11,7 +11,6 @@
 
 #include <cassert>
 #include <cstdint>
-#include <exception>
 #include <limits>
 #include <ostream>
 #include <stdexcept>
@@ -74,28 +73,6 @@ struct default_data_traits {
      * \brief Type of histogram bin value (count).
      */
     using bin_type = std::uint16_t;
-};
-
-/**
- * \brief Exception type used to indicate processor-initiated non-error end of
- * processing.
- */
-class end_processing final : public std::exception {
-    std::string msg;
-
-  public:
-    /**
-     * \brief Construct with status message.
-     *
-     * \param message the message, which should describe the reason for the end
-     * of processing
-     */
-    explicit end_processing(std::string message) : msg(std::move(message)) {}
-
-    /** \brief std::exception interface. */
-    [[nodiscard]] auto what() const noexcept -> char const * override {
-        return msg.c_str();
-    }
 };
 
 /**
@@ -258,37 +235,6 @@ struct stop_on_overflow {
  */
 struct error_on_overflow {
     explicit error_on_overflow() = default;
-};
-
-/**
- * \brief Error raised when a histogram bin overflows.
- *
- * \ingroup exceptions
- *
- * This error is raised when the error_on_overflow strategy is requested and
- * there was an overflow. It is also raised when reset_on_overflow is requested
- * but a reset would result in an infinite loop: in the case of histogram if
- * maximum per bin set to 0, or accumulate_histograms if a single batch
- * contains enough increments to overflow a bin.
- */
-class histogram_overflow_error : public std::runtime_error {
-  public:
-    using std::runtime_error::runtime_error;
-};
-
-/**
- * \brief Error raised when histogram array cycle is incomplete.
- *
- * \ingroup exceptions
- *
- * All but the last cycle before a reset or end-of-stream must be complete for
- * processors computing histogram arrays. This exception is thrown if a
- * new-cycle event is received before the current cycle has had the expected
- * number of batches.
- */
-class incomplete_array_cycle_error : public std::runtime_error {
-  public:
-    using std::runtime_error::runtime_error;
 };
 
 namespace internal {

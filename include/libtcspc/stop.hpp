@@ -7,6 +7,7 @@
 #pragma once
 
 #include "common.hpp"
+#include "errors.hpp"
 #include "introspect.hpp"
 #include "type_list.hpp"
 

@@ -7,6 +7,7 @@
 #pragma once
 
 #include "common.hpp"
+#include "errors.hpp"
 #include "histogram_events.hpp"
 #include "histogramming.hpp"
 #include "introspect.hpp"

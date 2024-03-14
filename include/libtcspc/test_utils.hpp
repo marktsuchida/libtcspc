@@ -7,6 +7,7 @@
 #pragma once
 
 #include "common.hpp"
+#include "errors.hpp"
 #include "introspect.hpp"
 #include "processor_context.hpp"
 #include "processor_traits.hpp"

@@ -7,6 +7,7 @@
 #include "libtcspc/histogram.hpp"
 
 #include "libtcspc/common.hpp"
+#include "libtcspc/errors.hpp"
 #include "libtcspc/histogram_events.hpp"
 #include "libtcspc/int_types.hpp"
 #include "libtcspc/own_on_copy_view.hpp"

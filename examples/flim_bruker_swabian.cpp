@@ -10,6 +10,7 @@
 #include "libtcspc/common.hpp"
 #include "libtcspc/count.hpp"
 #include "libtcspc/delay.hpp"
+#include "libtcspc/errors.hpp"
 #include "libtcspc/generate.hpp"
 #include "libtcspc/histogram_elementwise.hpp"
 #include "libtcspc/histogram_events.hpp"
