@@ -56,12 +56,12 @@ class variant_event<type_list<Events...>> : public std::variant<Events...> {
 namespace internal {
 
 template <typename EventList>
-struct variant_or_single_event_impl
-    : internal::type_identity<variant_event<EventList>> {};
+struct variant_or_single_event_impl : type_identity<variant_event<EventList>> {
+};
 
 template <typename Event>
-struct variant_or_single_event_impl<type_list<Event>>
-    : internal::type_identity<Event> {};
+struct variant_or_single_event_impl<type_list<Event>> : type_identity<Event> {
+};
 
 } // namespace internal
 
