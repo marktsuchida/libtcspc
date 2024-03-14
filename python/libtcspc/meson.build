@@ -17,6 +17,7 @@ configure_file(
 
 py_sources = files(
     '__init__.py',
+    '_cpp_utils.py',
     '_events.py',
     '_graph.py',
 )
