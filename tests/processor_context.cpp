@@ -57,8 +57,6 @@ struct example_access {
     std::function<int()> value;
 };
 
-// Workaround for spurious clang-tidy warning:
-// NOLINTNEXTLINE(bugprone-exception-escape)
 class example_processor {
     // Processor data.
     int value = 42;
