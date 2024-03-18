@@ -20,6 +20,7 @@ py_sources = files(
     '_cpp_utils.py',
     '_events.py',
     '_graph.py',
+    'py.typed',
 )
 
 python.install_sources(
