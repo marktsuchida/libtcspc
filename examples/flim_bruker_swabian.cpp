@@ -4,34 +4,7 @@
  * SPDX-License-Identifier: MIT
  */
 
-#include "libtcspc/arg_wrappers.hpp"
-#include "libtcspc/batch.hpp"
-#include "libtcspc/binning.hpp"
-#include "libtcspc/check.hpp"
-#include "libtcspc/common.hpp"
-#include "libtcspc/count.hpp"
-#include "libtcspc/delay.hpp"
-#include "libtcspc/errors.hpp"
-#include "libtcspc/generate.hpp"
-#include "libtcspc/histogram_elementwise.hpp"
-#include "libtcspc/histogram_events.hpp"
-#include "libtcspc/introspect.hpp"
-#include "libtcspc/match.hpp"
-#include "libtcspc/merge.hpp"
-#include "libtcspc/object_pool.hpp"
-#include "libtcspc/pair.hpp"
-#include "libtcspc/processor_context.hpp"
-#include "libtcspc/read_binary_stream.hpp"
-#include "libtcspc/recover_order.hpp"
-#include "libtcspc/route.hpp"
-#include "libtcspc/select.hpp"
-#include "libtcspc/stop.hpp"
-#include "libtcspc/swabian_tag.hpp"
-#include "libtcspc/time_correlate.hpp"
-#include "libtcspc/time_tagged_events.hpp"
-#include "libtcspc/type_list.hpp"
-#include "libtcspc/view_as_bytes.hpp"
-#include "libtcspc/write_binary_stream.hpp"
+#include "libtcspc/tcspc.hpp"
 
 #include <array>
 #include <cmath>
