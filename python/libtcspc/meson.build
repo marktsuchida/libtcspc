@@ -17,9 +17,14 @@ configure_file(
 
 py_sources = files(
     '__init__.py',
+    '_access.py',
+    '_context.py',
     '_cpp_utils.py',
     '_events.py',
     '_graph.py',
+    '_misc.py',
+    '_processors.py',
+    '_streams.py',
     'py.typed',
 )
 

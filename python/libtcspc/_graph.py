@@ -2,27 +2,18 @@
 # Copyright 2019-2024 Board of Regents of the University of Wisconsin System
 # SPDX-License-Identifier: MIT
 
-import contextlib
 import itertools
-import sys
 from collections.abc import Collection, Mapping, Sequence
 from copy import deepcopy
 from dataclasses import dataclass
+from textwrap import dedent
 from typing import final
 
 import cppyy
+from typing_extensions import override
 
+from ._access import Access
 from ._events import EventType
-
-if sys.version_info >= (3, 12):
-    from typing import override
-else:
-
-    def override(f):
-        with contextlib.suppress(Exception):
-            f.__override__ = True
-        return f
-
 
 cppyy.include("tuple")
 cppyy.include("utility")
@@ -62,7 +53,7 @@ class Node:
         """
         Initialize with the given ports.
 
-        A subclass's `__init__` should call this function if the node is not a
+        A subclass's `__init__` must call this function if the node is not a
         single-input, single-output node.
 
         Parameters
@@ -95,6 +86,13 @@ class Node:
         Returns the names of the node's output ports.
         """
         return self._outputs
+
+    def access_type(self) -> type[Access] | None:
+        """
+        Returns the wrapper type for run-time node access, or `None` if there
+        is no access.
+        """
+        pass
 
     def map_event_sets(
         self, input_event_sets: Sequence[Collection[EventType]]
@@ -247,6 +245,20 @@ class OneToOneNode(Node):
             C++ code for this node.
         """
         raise NotImplementedError()
+
+
+class OneToOnePassThroughNode(OneToOneNode):
+    """
+    A one-to-one node whose output event set matches its input event set.
+
+    Subclasses need only override `generate_cpp_one_to_one`.
+    """
+
+    @override
+    def map_event_set(
+        self, input_event_set: Collection[EventType]
+    ) -> tuple[EventType, ...]:
+        return tuple(input_event_set)
 
 
 @dataclass
@@ -491,6 +503,15 @@ class Graph:
         if upstream is not None and downstream is not None:
             self.connect(upstream, downstream)
 
+    def node(self, name: str) -> Node:
+        split = name.split("/", 1)
+        nm, node = self._nodes[self._node_name_index[split[0]]]
+        if len(split) == 2:
+            if not isinstance(node, Subgraph):
+                raise LookupError(f"Node {split[0]} is not a sub-graph")
+            return node.graph().node(split[1])
+        return node
+
     def _inputs(self) -> tuple[tuple[int, int], ...]:
         result: list[tuple[int, int]] = []
         for node_id in range(len(self._nodes)):
@@ -565,8 +586,12 @@ class Graph:
         return tuple(edge.event_set for edge in output_pseudo_edges)
 
     def generate_cpp(
-        self, name_prefix: str, context: str, downstreams: Sequence[str]
+        self,
+        name_prefix: str,
+        context: str,
+        downstreams: Sequence[str] | None = None,
     ) -> str:
+        downstreams = downstreams if downstreams is not None else ()
         external_names = [f"d{i}" for i in range(len(downstreams))]
         external_name_index = {
             (n, p): name
@@ -601,7 +626,7 @@ class Graph:
                 inputs.append(input)
 
             node_code = node.generate_cpp(
-                f"{name_prefix}/{node_name}", context, outputs
+                f"{name_prefix}/{node_name}", "ctx", outputs
             )
             if len(inputs) > 1:
                 input_list = ", ".join(inputs)
@@ -623,16 +648,30 @@ class Graph:
         external_name_params = ", ".join(f"auto &&{d}" for d in external_names)
         downstream_args = ", ".join(downstreams)
         node_def_lines = "\n".join(node_defs)
-        return f"""[]({external_name_params}) {{
-{node_def_lines}
-return {input_ref_maybe_tuple};
-}}({downstream_args})"""
+        return dedent(f"""\
+            [ctx = {context}]({external_name_params}) {{
+                {node_def_lines}
+                return {input_ref_maybe_tuple};
+            }}({downstream_args})""")
 
 
 @final
 class Subgraph(Node):
     """
     Node that wraps a nested Graph.
+
+    Parameters
+    ----------
+    graph
+        The subgraph to wrap
+    input_map:
+        Mapping from input port names of this node to (node, input_port) pairs
+        of the graph. Any ports that are not mapped use the standard naming of
+        node:input_port. Default: only use standard names.
+    output_map:
+        Mapping from output port names of this node to (node, output_port)
+        pairs of the graph. Any ports that are not mapped use the standard
+        naming of node:output_port. Default: only use standard names.
     """
 
     def __init__(
@@ -642,22 +681,6 @@ class Subgraph(Node):
         input_map: Mapping[str, tuple[str, str]] = {},
         output_map: Mapping[str, tuple[str, str]] = {},
     ) -> None:
-        """
-        Initialize with the given graph and port mappings.
-
-        Parameters
-        ----------
-        graph
-            The subgraph to wrap
-        input_map:
-            Mapping from input port names of this node to (node, input_port)
-            pairs of the graph. Any ports that are not mapped use the standard
-            naming of node:input_port. Default: only use standard names.
-        output_map:
-            Mapping from output port names of this node to (node, output_port)
-            pairs of the graph. Any ports that are not mapped use the standard
-            naming of node:output_port. Default: only use standard names.
-        """
         self._graph = deepcopy(graph)
 
         input_rmap = {v: k for k, v in input_map.items()}
@@ -673,6 +696,9 @@ class Subgraph(Node):
                 for n, p in self._graph.outputs()
             ),
         )
+
+    def graph(self) -> Graph:
+        return self._graph
 
     @override
     def map_event_sets(

@@ -6,7 +6,10 @@
 name = "libtcspc"
 dynamic = ["version"]
 requires-python = ">=3.10"
-dependencies = ["cppyy"]
+dependencies = [
+    "cppyy",
+    "typing-extensions",
+]
 readme = "README.md"
 license = {file = "LICENSE.txt"}
 

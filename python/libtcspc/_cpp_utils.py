@@ -4,6 +4,7 @@
 
 import functools
 import itertools
+from collections.abc import Iterable
 
 import cppyy
 
@@ -28,3 +29,17 @@ def is_same_type(t0: str, t1: str) -> bool:
     if t0 > t1:
         t0, t1 = t1, t0
     return _is_same_type_impl(t0, t1)
+
+
+def contains_type(s: Iterable[str], t: str) -> bool:
+    return any(is_same_type(t, t1) for t1 in s)
+
+
+def quote_string(s: str) -> str:
+    return '"{}"'.format(
+        s.replace("\\", "\\\\")
+        .replace("'", "\\'")
+        .replace('"', '\\"')
+        .replace("\n", "\\n")
+        .replace("\t", "\\t")
+    )

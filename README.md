@@ -20,6 +20,13 @@ acquired or replayed from disk.
 
 To build unit tests and examples, use Meson.
 
+## Requirements
+
+The Python library does not support macOS arm64 (Apple Silicon) due to
+limitation in exception handling in current versions of cppyy
+([wlav/cppyy#68](https://github.com/wlav/cppyy/issues/68); exceptions thrown in
+C++ compiled by cppyy cannot be caught in C++).
+
 ## Performance
 
 It should be noted that `libtcspc` benefits greatly from compiler optimization.
