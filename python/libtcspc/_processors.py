@@ -12,7 +12,13 @@ from typing_extensions import override
 from . import _access, _cpp_utils, _events, _misc, _streams
 from ._data_traits import DataTraits
 from ._events import EventType
-from ._graph import Node, OneToOneNode, OneToOnePassThroughNode
+from ._graph import (
+    Graph,
+    Node,
+    OneToOneNode,
+    OneToOnePassThroughNode,
+    Subgraph,
+)
 
 cppyy.include("libtcspc/tcspc.hpp")
 
@@ -42,6 +48,59 @@ def _remove_events_from_set(
         if not _cpp_utils.contains_type(
             (u.cpp_type for u in events_to_remove), t.cpp_type
         )
+    )
+
+
+def _make_type_list(event_types: Iterable[EventType]) -> str:
+    return "tcspc::type_list<{}>".format(
+        ", ".join(t.cpp_type for t in event_types)
+    )
+
+
+def read_events_from_binary_file(
+    event_type: EventType,
+    filename: str,
+    *,
+    start_offset: int = 0,
+    max_length: int = -1,
+    read_granularity_bytes: int = 65536,
+    stop_normally_on_error: bool = False,
+) -> Node:
+    g = Graph()
+    stop_proc = Stop if stop_normally_on_error else StopWithError
+    g.add_sequence(
+        [
+            (
+                "reader",
+                ReadBinaryStream(
+                    event_type,
+                    _events.VectorEvent(event_type),
+                    _streams.BinaryFileInputStream(
+                        filename, start=start_offset
+                    ),
+                    max_length,
+                    _misc.ObjectPool(
+                        _events.VectorEvent(event_type),
+                        initial_count=0,
+                        max_count=2,
+                    ),
+                    read_granularity_bytes,
+                ),
+            ),
+            stop_proc((_events.WarningEvent,), "error reading input"),
+            DereferencePointer(
+                _events.SharedPtrEvent(_events.VectorEvent(event_type))
+            ),
+            (
+                "unbatcher",
+                Unbatch(_events.VectorEvent(event_type), event_type),
+            ),
+        ]
+    )
+    return Subgraph(
+        g,
+        input_map={"input": ("reader", "input")},
+        output_map={"output": ("unbatcher", "output")},
     )
 
 
@@ -229,13 +288,43 @@ class Stop(OneToOneNode):
     def generate_cpp_one_to_one(
         self, node_name: str, context: str, downstream: str
     ) -> str:
-        type_list = "tcspc::type_list<{}>".format(
-            ", ".join(t.cpp_type for t in self._event_types)
-        )
         prefix = _cpp_utils.quote_string(self._msg_prefix)
         return dedent(f"""\
             tcspc::stop<
-                {type_list}
+                {_make_type_list(self._event_types)}
+            >(
+                {prefix},
+                {downstream}
+            )""")
+
+
+@final
+class StopWithError(OneToOneNode):
+    def __init__(
+        self,
+        event_types: Iterable[EventType],
+        exception_type: str,
+        message_prefix: str,
+    ) -> None:
+        self._event_types = list(event_types)
+        self._exception_type = exception_type
+        self._msg_prefix = message_prefix
+
+    @override
+    def map_event_set(
+        self, input_event_set: Collection[EventType]
+    ) -> tuple[EventType, ...]:
+        return _remove_events_from_set(input_event_set, self._event_types)
+
+    @override
+    def generate_cpp_one_to_one(
+        self, node_name: str, context: str, downstream: str
+    ) -> str:
+        prefix = _cpp_utils.quote_string(self._msg_prefix)
+        return dedent(f"""\
+            tcspc::stop_with_error<
+                {_make_type_list(self._event_types)}
+                {self._exception_type}
             >(
                 {prefix},
                 {downstream}

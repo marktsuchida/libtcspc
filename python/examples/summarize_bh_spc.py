@@ -17,24 +17,11 @@ def summarize(filename: str) -> int:
     g = tcspc.Graph()
     g.add_sequence(
         [
-            tcspc.ReadBinaryStream(
+            tcspc.read_events_from_binary_file(
                 tcspc.BHSPCEvent,
-                tcspc.VectorEvent(tcspc.BHSPCEvent),
-                tcspc.BinaryFileInputStream(filename, start=4),
-                -1,
-                tcspc.ObjectPool(
-                    tcspc.VectorEvent(tcspc.BHSPCEvent),
-                    initial_count=0,
-                    max_count=2,
-                ),
-                65536,
-            ),
-            tcspc.Stop((tcspc.WarningEvent,), "error reading input"),
-            tcspc.DereferencePointer(
-                tcspc.SharedPtrEvent(tcspc.VectorEvent(tcspc.BHSPCEvent))
-            ),
-            tcspc.Unbatch(
-                tcspc.VectorEvent(tcspc.BHSPCEvent), tcspc.BHSPCEvent
+                filename,
+                start_offset=4,
+                stop_normally_on_error=True,
             ),
             ("count-records", tcspc.Count(tcspc.BHSPCEvent)),
             tcspc.DecodeBHSPC(dtraits),
