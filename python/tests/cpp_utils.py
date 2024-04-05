@@ -3,6 +3,7 @@
 # SPDX-License-Identifier: MIT
 
 import itertools
+from textwrap import dedent
 
 import cppyy
 
@@ -12,8 +13,9 @@ _cpp_ns_counter = itertools.count()
 def isolated_cppdef(code: str):
     # Run C++ code in a unique namespace and return the cppyy namespace object.
     ns = f"cppyy_test_{next(_cpp_ns_counter)}"
-    code = f"""namespace tcspc::{ns} {{
-{code}
-}}"""
+    code = dedent(f"""\
+        namespace tcspc::{ns} {{
+            {code}
+        }}""")
     cppyy.cppdef(code)
     return getattr(cppyy.gbl.tcspc, ns)

@@ -5,6 +5,7 @@
 import functools
 import itertools
 from collections.abc import Iterable
+from textwrap import dedent
 
 import cppyy
 
@@ -16,9 +17,12 @@ _cppyy_check_counter = itertools.count()
 @functools.cache
 def _is_same_type_impl(t0: str, t1: str) -> bool:
     result_name = f"is_same_type_impl_{next(_cppyy_check_counter)}"
-    cppyy.cppdef(f"""namespace tcspc::cppyy_cpp_utils {{
-constexpr bool {result_name} = std::is_same_v<{t0}, {t1}>;
-}}""")
+    cppyy.cppdef(
+        dedent(f"""\
+            namespace tcspc::cppyy_cpp_utils {{
+                constexpr bool {result_name} = std::is_same_v<{t0}, {t1}>;
+            }}""")
+    )
     return getattr(cppyy.gbl.tcspc.cppyy_cpp_utils, result_name)
 
 
