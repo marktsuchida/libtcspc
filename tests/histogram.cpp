@@ -60,11 +60,9 @@ TEMPLATE_TEST_CASE("Histogram, zero bins", "", saturate_on_overflow,
     in.feed(misc_event{42});
     REQUIRE(out.check(misc_event{42}));
     in.feed(reset_event{});
-    REQUIRE(out.check(
-        concluding_histogram_event<data_traits>{{}, {}, {0, 0}, 0, false}));
+    REQUIRE(out.check(concluding_histogram_event<data_traits>{{}}));
     in.flush();
-    REQUIRE(out.check(
-        concluding_histogram_event<data_traits>{{}, {}, {0, 0}, 0, true}));
+    REQUIRE(out.check(concluding_histogram_event<data_traits>{{}}));
     REQUIRE(out.check_flushed());
 }
 
@@ -86,24 +84,21 @@ TEMPLATE_TEST_CASE("Histogram, no overflow", "", saturate_on_overflow,
     std::vector<u16> hist;
     in.feed(bin_increment_event<data_traits>{42, 0});
     hist = {1, 0};
-    REQUIRE(out.check(histogram_event<data_traits>{
-        {42, 42}, own_on_copy_view(hist), {1, 0}}));
+    REQUIRE(out.check(histogram_event<data_traits>{own_on_copy_view(hist)}));
     in.feed(bin_increment_event<data_traits>{43, 1});
     hist = {1, 1};
-    REQUIRE(out.check(histogram_event<data_traits>{
-        {42, 43}, own_on_copy_view(hist), {2, 0}}));
+    REQUIRE(out.check(histogram_event<data_traits>{own_on_copy_view(hist)}));
     in.feed(reset_event{44});
     hist = {1, 1};
-    REQUIRE(out.check(concluding_histogram_event<data_traits>{
-        {42, 43}, own_on_copy_view(hist), {2, 0}, 0, false}));
+    REQUIRE(out.check(
+        concluding_histogram_event<data_traits>{own_on_copy_view(hist)}));
     in.feed(bin_increment_event<data_traits>{45, 0});
     hist = {1, 0};
-    REQUIRE(out.check(histogram_event<data_traits>{
-        {45, 45}, own_on_copy_view(hist), {1, 0}}));
+    REQUIRE(out.check(histogram_event<data_traits>{own_on_copy_view(hist)}));
     in.flush();
     hist = {1, 0};
-    REQUIRE(out.check(concluding_histogram_event<data_traits>{
-        {45, 45}, own_on_copy_view(hist), {1, 0}, 0, true}));
+    REQUIRE(out.check(
+        concluding_histogram_event<data_traits>{own_on_copy_view(hist)}));
     REQUIRE(out.check_flushed());
 }
 
@@ -126,12 +121,12 @@ TEST_CASE("Histogram, saturate on overflow") {
         std::vector<u16> hist;
         in.feed(bin_increment_event<data_traits>{42, 0}); // Overflow
         hist = {0};
-        REQUIRE(out.check(histogram_event<data_traits>{
-            {42, 42}, own_on_copy_view(hist), {1, 1}}));
+        REQUIRE(
+            out.check(histogram_event<data_traits>{own_on_copy_view(hist)}));
         in.flush();
         hist = {0};
-        REQUIRE(out.check(concluding_histogram_event<data_traits>{
-            {42, 42}, own_on_copy_view(hist), {1, 1}, 0, true}));
+        REQUIRE(out.check(
+            concluding_histogram_event<data_traits>{own_on_copy_view(hist)}));
         REQUIRE(out.check_flushed());
     }
 
@@ -149,24 +144,24 @@ TEST_CASE("Histogram, saturate on overflow") {
         std::vector<u16> hist;
         in.feed(bin_increment_event<data_traits>{42, 0});
         hist = {1};
-        REQUIRE(out.check(histogram_event<data_traits>{
-            {42, 42}, own_on_copy_view(hist), {1, 0}}));
+        REQUIRE(
+            out.check(histogram_event<data_traits>{own_on_copy_view(hist)}));
         in.feed(bin_increment_event<data_traits>{43, 0}); // Overflow
         hist = {1};
-        REQUIRE(out.check(histogram_event<data_traits>{
-            {42, 43}, own_on_copy_view(hist), {2, 1}}));
+        REQUIRE(
+            out.check(histogram_event<data_traits>{own_on_copy_view(hist)}));
         in.feed(reset_event{44});
         hist = {1};
-        REQUIRE(out.check(concluding_histogram_event<data_traits>{
-            {42, 43}, own_on_copy_view(hist), {2, 1}, 0, false}));
+        REQUIRE(out.check(
+            concluding_histogram_event<data_traits>{own_on_copy_view(hist)}));
         in.feed(bin_increment_event<data_traits>{45, 0});
         hist = {1};
-        REQUIRE(out.check(histogram_event<data_traits>{
-            {45, 45}, own_on_copy_view(hist), {1, 0}}));
+        REQUIRE(
+            out.check(histogram_event<data_traits>{own_on_copy_view(hist)}));
         in.flush();
         hist = {1};
-        REQUIRE(out.check(concluding_histogram_event<data_traits>{
-            {45, 45}, own_on_copy_view(hist), {1, 0}, 0, true}));
+        REQUIRE(out.check(
+            concluding_histogram_event<data_traits>{own_on_copy_view(hist)}));
         REQUIRE(out.check_flushed());
     }
 }
@@ -206,19 +201,19 @@ TEST_CASE("Histogram, reset on overflow") {
         std::vector<u16> hist;
         in.feed(bin_increment_event<data_traits>{42, 0});
         hist = {1};
-        REQUIRE(out.check(histogram_event<data_traits>{
-            {42, 42}, own_on_copy_view(hist), {1, 0}}));
+        REQUIRE(
+            out.check(histogram_event<data_traits>{own_on_copy_view(hist)}));
         in.feed(bin_increment_event<data_traits>{43, 0}); // Overflow
         hist = {1};
-        REQUIRE(out.check(concluding_histogram_event<data_traits>{
-            {42, 42}, own_on_copy_view(hist), {1, 0}, 0, false}));
+        REQUIRE(out.check(
+            concluding_histogram_event<data_traits>{own_on_copy_view(hist)}));
         hist = {1};
-        REQUIRE(out.check(histogram_event<data_traits>{
-            {43, 43}, own_on_copy_view(hist), {1, 0}}));
+        REQUIRE(
+            out.check(histogram_event<data_traits>{own_on_copy_view(hist)}));
         in.flush();
         hist = {1};
-        REQUIRE(out.check(concluding_histogram_event<data_traits>{
-            {43, 43}, own_on_copy_view(hist), {1, 0}, 0, true}));
+        REQUIRE(out.check(
+            concluding_histogram_event<data_traits>{own_on_copy_view(hist)}));
         REQUIRE(out.check_flushed());
     }
 }
@@ -243,8 +238,8 @@ TEST_CASE("Histogram, stop on overflow") {
         REQUIRE_THROWS_AS(in.feed(bin_increment_event<data_traits>{42, 0}),
                           end_processing); // Overflow
         hist = {0};
-        REQUIRE(out.check(concluding_histogram_event<data_traits>{
-            {}, own_on_copy_view(hist), {0, 0}, 0, true}));
+        REQUIRE(out.check(
+            concluding_histogram_event<data_traits>{own_on_copy_view(hist)}));
         REQUIRE(out.check_flushed());
     }
 
@@ -261,13 +256,13 @@ TEST_CASE("Histogram, stop on overflow") {
 
         in.feed(bin_increment_event<data_traits>{42, 0});
         hist = {1};
-        REQUIRE(out.check(histogram_event<data_traits>{
-            {42, 42}, own_on_copy_view(hist), {1, 0}}));
+        REQUIRE(
+            out.check(histogram_event<data_traits>{own_on_copy_view(hist)}));
         REQUIRE_THROWS_AS(in.feed(bin_increment_event<data_traits>{43, 0}),
                           end_processing); // Overflow
         hist = {1};
-        REQUIRE(out.check(concluding_histogram_event<data_traits>{
-            {42, 42}, own_on_copy_view(hist), {1, 0}, 0, true}));
+        REQUIRE(out.check(
+            concluding_histogram_event<data_traits>{own_on_copy_view(hist)}));
         REQUIRE(out.check_flushed());
     }
 }
@@ -307,8 +302,8 @@ TEST_CASE("Histogram, error on overflow") {
         std::vector<u16> hist;
         in.feed(bin_increment_event<data_traits>{42, 0});
         hist = {1};
-        REQUIRE(out.check(histogram_event<data_traits>{
-            {42, 42}, own_on_copy_view(hist), {1, 0}}));
+        REQUIRE(
+            out.check(histogram_event<data_traits>{own_on_copy_view(hist)}));
         REQUIRE_THROWS_AS(in.feed(bin_increment_event<data_traits>{43, 0}),
                           histogram_overflow_error);
         REQUIRE(out.check_not_flushed());

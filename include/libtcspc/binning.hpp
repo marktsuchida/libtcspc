@@ -422,15 +422,13 @@ class batch_bin_increments {
             batch.bin_indices.push_back(event.bin_index);
     }
 
-    void handle(StartEvent const &event) {
+    void handle([[maybe_unused]] StartEvent const &event) {
         batch.bin_indices.clear();
         in_batch = true;
-        batch.time_range.start = event.abstime;
     }
 
-    void handle(StopEvent const &event) {
+    void handle([[maybe_unused]] StopEvent const &event) {
         if (in_batch) {
-            batch.time_range.stop = event.abstime;
             downstream.handle(std::as_const(batch));
             in_batch = false;
         }

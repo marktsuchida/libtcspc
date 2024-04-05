@@ -44,21 +44,14 @@ class histogram {
     span<bin_type> hist;
     single_histogram<bin_index_type, bin_type, internal_overflow_strategy>
         shist;
-    histogram_stats stats;
-    abstime_range<typename DataTraits::abstime_type> time_range;
     Downstream downstream;
 
-    void emit_concluding(bool end_of_stream) {
+    void emit_concluding() {
         downstream.handle(concluding_histogram_event<DataTraits>{
-            time_range, own_on_copy_view<bin_type>(hist), stats, 0,
-            end_of_stream});
+            own_on_copy_view<bin_type>(hist)});
     }
 
-    void reset() {
-        shist.clear();
-        stats = {};
-        time_range.reset();
-    }
+    void reset() { shist.clear(); }
 
     [[noreturn]] void stop() {
         downstream.flush();
@@ -76,12 +69,12 @@ class histogram {
                                             reset_on_overflow>) {
             if (shist.max_per_bin() == 0)
                 overflow_error();
-            emit_concluding(false);
+            emit_concluding();
             reset();
             return handle(event); // Recurse max once
         } else if constexpr (std::is_same_v<OverflowStrategy,
                                             stop_on_overflow>) {
-            emit_concluding(true);
+            emit_concluding();
             stop();
         } else if constexpr (std::is_same_v<OverflowStrategy,
                                             error_on_overflow>) {
@@ -113,15 +106,14 @@ class histogram {
     template <typename DT> void handle(bin_increment_event<DT> const &event) {
         static_assert(std::is_same_v<typename DT::bin_index_type,
                                      typename DataTraits::bin_index_type>);
-        if (not shist.apply_increments({&event.bin_index, 1}, stats))
+        if (not shist.apply_increments({&event.bin_index, 1}))
             return handle_overflow(event);
-        time_range.extend(event.abstime);
-        downstream.handle(histogram_event<DataTraits>{
-            time_range, own_on_copy_view<bin_type>(hist), stats});
+        downstream.handle(
+            histogram_event<DataTraits>{own_on_copy_view<bin_type>(hist)});
     }
 
     void handle([[maybe_unused]] ResetEvent const &event) {
-        emit_concluding(false);
+        emit_concluding();
         reset();
     }
 
@@ -130,7 +122,7 @@ class histogram {
     }
 
     void flush() {
-        emit_concluding(true);
+        emit_concluding();
         downstream.flush();
     }
 };
@@ -156,8 +148,7 @@ class histogram {
  * reset).
  *
  * The input events are not required to be in correct abstime order; the event
- * abstime is only used to compute the time range in the emitted histogram
- * events.
+ * abstime is not used.
  *
  * Behavior is undefined if an incoming \c bin_increment_event contains a bin
  * index beyond the size of the histogram.
@@ -167,8 +158,7 @@ class histogram {
  * \tparam OverflowStrategy strategy tag type to select how to handle bin
  * overflows
  *
- * \tparam DataTraits traits type specifying \c abstime_type, \c
- * bin_index_type, and \c bin_type
+ * \tparam DataTraits traits type specifying \c bin_index_type, and \c bin_type
  *
  * \tparam Downstream downstream processor type
  *

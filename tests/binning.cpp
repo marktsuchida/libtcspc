@@ -473,14 +473,12 @@ TEST_CASE("Batch bin increments") {
         in.feed(start_event{42});
         in.feed(bin_increment_event<data_traits>{43, 123});
         in.feed(stop_event{44});
-        REQUIRE(out.check(
-            bin_increment_batch_event<data_traits>{{42, 44}, {123}}));
+        REQUIRE(out.check(bin_increment_batch_event<data_traits>{{123}}));
         in.feed(start_event{45});
         in.feed(bin_increment_event<data_traits>{46, 124});
         in.feed(bin_increment_event<data_traits>{47, 125});
         in.feed(stop_event{48});
-        REQUIRE(out.check(
-            bin_increment_batch_event<data_traits>{{45, 48}, {124, 125}}));
+        REQUIRE(out.check(bin_increment_batch_event<data_traits>{{124, 125}}));
         in.flush();
         REQUIRE(out.check_flushed());
     }

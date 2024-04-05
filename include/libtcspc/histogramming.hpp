@@ -332,8 +332,7 @@ class single_histogram {
     // applied. The return value always equals increments.size() if
     // OverflowStrategy is saturate_on_internal_overflow. Otherwise, it is any
     // value between 0 and increments.size(), inclusive.
-    template <typename Stats>
-    auto apply_increments(span<bin_index_type const> increments, Stats &stats)
+    auto apply_increments(span<bin_index_type const> increments)
         -> std::size_t {
         for (auto it = increments.begin(); it != increments.end(); ++it) {
             assert(*it >= 0 && *it < hist.size());
@@ -343,14 +342,12 @@ class single_histogram {
             } else if constexpr (std::is_same_v<
                                      OverflowStrategy,
                                      saturate_on_internal_overflow>) {
-                ++stats.saturated;
             } else if constexpr (std::is_same_v<OverflowStrategy,
                                                 stop_on_internal_overflow>) {
                 return as_unsigned(std::distance(increments.begin(), it));
             } else {
                 static_assert(false_for_type<OverflowStrategy>::value);
             }
-            ++stats.total;
         }
         return increments.size();
     }
@@ -358,13 +355,11 @@ class single_histogram {
     // Undo the given 'increments'. Behavior is undefined unless 'increments'
     // equal the values passed to apply_increments() in an immediately prior
     // call. Behavior undefined in saturate mode.
-    template <typename Stats>
-    void undo_increments(span<bin_index_type const> increments, Stats &stats) {
+    void undo_increments(span<bin_index_type const> increments) {
         assert((std::is_same_v<OverflowStrategy, stop_on_internal_overflow>));
         for (bin_index_type i : increments) {
             assert(i >= 0 && i < hist.size());
             --hist[i];
-            --stats.total;
         }
     }
 };
@@ -431,8 +426,8 @@ class multi_histogram {
     }
 
     // Apply 'increments' to the next element of the array of histograms.
-    template <typename Stats, typename Journal>
-    auto apply_increment_batch(span<bin_index_type const> batch, Stats &stats,
+    template <typename Journal>
+    auto apply_increment_batch(span<bin_index_type const> batch,
                                Journal &journal) -> bool {
         static_assert(
             std::is_same_v<typename Journal::bin_index_type, bin_index_type>);
@@ -442,7 +437,7 @@ class multi_histogram {
                         max_per_bin);
         if (need_to_clear)
             single_hist.clear();
-        auto n_applied = single_hist.apply_increments(batch, stats);
+        auto n_applied = single_hist.apply_increments(batch);
         if (n_applied == batch.size()) {
             journal.append_batch(batch);
             ++element_index;
@@ -454,7 +449,7 @@ class multi_histogram {
         } else if constexpr (std::is_same_v<OverflowStrategy,
                                             stop_on_internal_overflow>) {
             // Always handle increment batches atomically.
-            single_hist.undo_increments(batch.first(n_applied), stats);
+            single_hist.undo_increments(batch.first(n_applied));
             skip_remaining();
             return false;
         } else {
@@ -477,8 +472,7 @@ class multi_histogram {
     // Roll back journaled increments and recover the array of histograms to
     // its original state (if it was not cleared) or zero. Behavior undefined
     // in saturate mode.
-    template <typename Journal, typename Stats>
-    void roll_back(Journal const &journal, Stats &stats) {
+    template <typename Journal> void roll_back(Journal const &journal) {
         static_assert(
             std::is_same_v<typename Journal::bin_index_type, bin_index_type>);
         assert((std::is_same_v<OverflowStrategy, stop_on_internal_overflow>));
@@ -486,7 +480,7 @@ class multi_histogram {
             single_histogram<bin_index_type, bin_type, OverflowStrategy>
                 single_hist(hist_arr.subspan(num_bins * index, num_bins),
                             max_per_bin);
-            single_hist.undo_increments(bin_index_span, stats);
+            single_hist.undo_increments(bin_index_span);
         }
         // Ensure the previously untouched tail of the span gets cleared, if
         // clearing was requested and has not happened yet.
@@ -497,8 +491,7 @@ class multi_histogram {
     // Replay journal. Must be in unstarted state. Previous reset (or
     // constructor) must have requested clearing, or else the span must contain
     // the same data as when the journal was constructed.
-    template <typename Journal, typename Stats>
-    void replay(Journal const &journal, Stats &stats) {
+    template <typename Journal> void replay(Journal const &journal) {
         static_assert(
             std::is_same_v<typename Journal::bin_index_type, bin_index_type>);
         assert((std::is_same_v<OverflowStrategy, stop_on_internal_overflow>));
@@ -510,7 +503,7 @@ class multi_histogram {
             if (need_to_clear)
                 single_hist.clear();
             [[maybe_unused]] auto n_applied =
-                single_hist.apply_increments(bin_index_span, stats);
+                single_hist.apply_increments(bin_index_span);
             // Under correct usage, 'journal' only repeats previous success, so
             // cannot overflow.
             assert(n_applied ==
@@ -585,20 +578,20 @@ class multi_histogram_accumulation {
         journal.clear();
     }
 
-    template <typename Stats, typename Journal>
-    auto apply_increment_batch(span<bin_index_type const> batch, Stats &stats,
+    template <typename Journal>
+    auto apply_increment_batch(span<bin_index_type const> batch,
                                Journal &journal) -> bool {
         assert(not is_cycle_complete());
-        return cur_cycle.apply_increment_batch(batch, stats, journal);
+        return cur_cycle.apply_increment_batch(batch, journal);
     }
 
     void skip_remainder_of_current_cycle() { cur_cycle.skip_remaining(); }
 
-    // Restores histograms and stats to state just after previous new_cycle()
-    // call. Behavior undefined in saturate mode.
-    template <typename Journal, typename Stats>
-    void roll_back_current_cycle(Journal const &journal, Stats &stats) {
-        cur_cycle.roll_back(journal, stats);
+    // Restores histograms to state just after previous new_cycle() call.
+    // Behavior undefined in saturate mode.
+    template <typename Journal>
+    void roll_back_current_cycle(Journal const &journal) {
+        cur_cycle.roll_back(journal);
     }
 
     void reset(bool clear_first = true) noexcept {
@@ -606,10 +599,9 @@ class multi_histogram_accumulation {
         cur_cycle.reset(clear_first);
     }
 
-    template <typename Journal, typename Stats>
-    void reset_and_replay(Journal const &journal, Stats &stats) {
+    template <typename Journal> void reset_and_replay(Journal const &journal) {
         reset(true);
-        cur_cycle.replay(journal, stats);
+        cur_cycle.replay(journal);
     }
 };
 

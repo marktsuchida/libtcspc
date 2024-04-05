@@ -18,7 +18,6 @@
 #include <catch2/catch_test_macros.hpp>
 
 #include <cstddef>
-#include <cstdint>
 #include <memory>
 #include <vector>
 
@@ -81,9 +80,7 @@ TEST_CASE("view histogram as bytes") {
 
     std::vector<default_data_traits::bin_type> hist{1, 2, 3};
     histogram_event<> const event{
-        abstime_range<std::int64_t>{0, 1},
-        own_on_copy_view<default_data_traits::bin_type>(hist),
-        histogram_stats{}};
+        own_on_copy_view<default_data_traits::bin_type>(hist)};
     in.feed(event);
     REQUIRE(out.check(own_on_copy_view(as_bytes(span(hist)))));
     in.flush();
@@ -102,9 +99,7 @@ TEST_CASE("view histogram array as bytes") {
 
     std::vector<default_data_traits::bin_type> histarr{1, 2, 3};
     histogram_array_event<> const event{
-        abstime_range<std::int64_t>{0, 1},
-        own_on_copy_view<default_data_traits::bin_type>(histarr),
-        histogram_stats{}};
+        own_on_copy_view<default_data_traits::bin_type>(histarr)};
     in.feed(event);
     REQUIRE(out.check(own_on_copy_view(as_bytes(span(histarr)))));
     in.flush();

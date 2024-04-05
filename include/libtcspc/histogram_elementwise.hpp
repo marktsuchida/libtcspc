@@ -44,9 +44,7 @@ class histogram_elementwise {
     span<bin_type> hist_arr;
     multi_histogram<bin_index_type, bin_type, internal_overflow_strategy>
         mhist;
-    histogram_stats stats;
     null_journal<bin_index_type> journal; // Journaling not required
-    abstime_range<typename DataTraits::abstime_type> cycle_time_range;
     Downstream downstream;
 
     [[noreturn]] void overflow_error() {
@@ -90,21 +88,16 @@ class histogram_elementwise {
                                      typename DataTraits::bin_index_type>);
         assert(not mhist.is_complete());
         auto element_index = mhist.next_element_index();
-        if (not mhist.apply_increment_batch(event.bin_indices, stats, journal))
+        if (not mhist.apply_increment_batch(event.bin_indices, journal))
             handle_overflow();
-        cycle_time_range.extend(event.time_range);
 
         downstream.handle(element_histogram_event<DataTraits>{
-            event.time_range, element_index,
-            own_on_copy_view<bin_type>(mhist.element_span(element_index)),
-            stats, 0});
+            own_on_copy_view<bin_type>(mhist.element_span(element_index))});
 
         if (mhist.is_complete()) {
             downstream.handle(histogram_array_event<DataTraits>{
-                cycle_time_range, own_on_copy_view<bin_type>(hist_arr), stats,
-                1});
+                own_on_copy_view<bin_type>(hist_arr)});
             mhist.reset(true);
-            cycle_time_range.reset();
         }
     }
 
@@ -143,14 +136,12 @@ class histogram_elementwise {
  * whole array of histograms from the cycle.
  *
  * The input events are not required to be in correct abstime order; the event
- * abstime is only used to compute the time range in the emitted histogram
- * events.
+ * abstime is not used.
  *
  * \tparam OverflowStrategy strategy tag type to select how to handle bin
  * overflows
  *
- * \tparam DataTraits traits type specifying \c abstime_type, \c
- * bin_index_type, and \c bin_type
+ * \tparam DataTraits traits type specifying \c bin_index_type, and \c bin_type
  *
  * \tparam Downstream downstream processor type
  *
@@ -221,17 +212,13 @@ class histogram_elementwise_accumulate {
     multi_histogram_accumulation<bin_index_type, bin_type,
                                  internal_overflow_strategy>
         mhista;
-    histogram_stats stats;
     journal_type journal;
-    abstime_range<typename DataTraits::abstime_type> cycle_time_range;
-    abstime_range<typename DataTraits::abstime_type> total_time_range;
     Downstream downstream;
 
-    void emit_concluding(bool end_of_stream) {
+    void emit_concluding() {
         assert(mhista.is_consistent());
         downstream.handle(concluding_histogram_array_event<DataTraits>{
-            total_time_range, own_on_copy_view<bin_type>(hist_arr), stats,
-            mhista.cycle_index(), end_of_stream});
+            own_on_copy_view<bin_type>(hist_arr)});
     }
 
     [[noreturn]] void stop() {
@@ -252,19 +239,16 @@ class histogram_elementwise_accumulate {
                 overflow_error(
                     "elementwise histogram bin overflowed on a single batch");
             }
-            mhista.roll_back_current_cycle(journal, stats);
+            mhista.roll_back_current_cycle(journal);
             if constexpr (EmitConcluding)
-                emit_concluding(false);
-            stats = decltype(stats){};
-            total_time_range.reset();
-            // Keep journal and cycle time range!
-            mhista.reset_and_replay(journal, stats);
+                emit_concluding();
+            mhista.reset_and_replay(journal);
             return handle(event); // Recurse max once
         } else if constexpr (std::is_same_v<OverflowStrategy,
                                             stop_on_overflow>) {
             if constexpr (EmitConcluding) {
-                mhista.roll_back_current_cycle(journal, stats);
-                emit_concluding(true);
+                mhista.roll_back_current_cycle(journal);
+                emit_concluding();
             }
             stop();
         } else if constexpr (std::is_same_v<OverflowStrategy,
@@ -302,36 +286,26 @@ class histogram_elementwise_accumulate {
                                      typename DataTraits::bin_index_type>);
         assert(not mhista.is_cycle_complete());
         auto element_index = mhista.next_element_index();
-        if (not mhista.apply_increment_batch(event.bin_indices, stats,
-                                             journal))
+        if (not mhista.apply_increment_batch(event.bin_indices, journal))
             return handle_overflow(event);
-        cycle_time_range.extend(event.time_range);
 
         downstream.handle(element_histogram_event<DataTraits>{
-            event.time_range, element_index,
-            own_on_copy_view<bin_type>(mhista.element_span(element_index)),
-            stats, mhista.cycle_index()});
+            own_on_copy_view<bin_type>(mhista.element_span(element_index))});
 
         if (mhista.is_cycle_complete()) {
-            total_time_range.extend(cycle_time_range);
             mhista.new_cycle(journal);
             downstream.handle(histogram_array_event<DataTraits>{
-                total_time_range, own_on_copy_view<bin_type>(hist_arr), stats,
-                mhista.cycle_index()});
-            cycle_time_range.reset();
+                own_on_copy_view<bin_type>(hist_arr)});
         }
     }
 
     void handle([[maybe_unused]] ResetEvent const &event) {
         if constexpr (EmitConcluding) {
-            mhista.roll_back_current_cycle(journal, stats);
-            emit_concluding(false);
+            mhista.roll_back_current_cycle(journal);
+            emit_concluding();
         }
         mhista.reset(true);
         journal.clear();
-        stats = decltype(stats){};
-        total_time_range.reset();
-        cycle_time_range.reset();
     }
 
     template <typename Event> void handle(Event const &event) {
@@ -340,8 +314,8 @@ class histogram_elementwise_accumulate {
 
     void flush() {
         if constexpr (EmitConcluding) {
-            mhista.roll_back_current_cycle(journal, stats);
-            emit_concluding(true);
+            mhista.roll_back_current_cycle(journal);
+            emit_concluding();
         }
         downstream.flush();
     }
