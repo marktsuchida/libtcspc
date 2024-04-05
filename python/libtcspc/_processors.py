@@ -10,6 +10,7 @@ import cppyy
 from typing_extensions import override
 
 from . import _access, _cpp_utils, _events, _misc, _streams
+from ._data_traits import DataTraits
 from ._events import EventType
 from ._graph import Node, OneToOneNode, OneToOnePassThroughNode
 
@@ -50,17 +51,17 @@ def _remove_events_from_set(
 
 @final
 class CheckMonotonic(OneToOnePassThroughNode):
-    def __init__(
-        self, data_traits: str = "tcspc::default_data_traits"
-    ) -> None:
-        self._data_traits = data_traits  # TODO Data traits type
+    def __init__(self, data_traits: DataTraits | None = None) -> None:
+        self._data_traits = (
+            data_traits if data_traits is not None else DataTraits()
+        )
 
     @override
     def generate_cpp_one_to_one(
         self, node_name: str, context: str, downstream: str
     ) -> str:
         return dedent(f"""\
-            tcspc::check_monotonic<{self._data_traits}>(
+            tcspc::check_monotonic<{self._data_traits.cpp()}>(
                 {downstream}
             )""")
 
@@ -87,10 +88,10 @@ class Count(OneToOnePassThroughNode):
 
 @final
 class DecodeBHSPC(OneToOneNode):
-    def __init__(
-        self, data_traits: str = "tcspc::default_data_traits"
-    ) -> None:
-        self._data_traits = data_traits
+    def __init__(self, data_traits: DataTraits | None = None) -> None:
+        self._data_traits = (
+            data_traits if data_traits is not None else DataTraits()
+        )
 
     @override
     def map_event_set(
@@ -112,7 +113,7 @@ class DecodeBHSPC(OneToOneNode):
         self, node_name: str, context: str, downstream: str
     ) -> str:
         return dedent(f"""\
-            tcspc::decode_bh_spc<{self._data_traits}>(
+            tcspc::decode_bh_spc<{self._data_traits.cpp()}>(
                 {downstream}
             )""")
 

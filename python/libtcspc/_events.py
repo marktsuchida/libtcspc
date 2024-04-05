@@ -5,6 +5,7 @@
 import cppyy
 
 from . import _cpp_utils
+from ._data_traits import DataTraits
 
 cppyy.include("memory")
 cppyy.include("vector")
@@ -44,28 +45,32 @@ class VectorEvent(EventType):
 BHSPCEvent = EventType("tcspc::bh_spc_event")
 
 
-def DataLostEvent(
-    data_traits: str = "tcspc::default_data_traits",
-) -> EventType:
-    return EventType(f"tcspc::data_lost_event<{data_traits}>")
+def DataLostEvent(data_traits: DataTraits | None = None) -> EventType:
+    if data_traits is None:
+        data_traits = DataTraits()
+    return EventType(f"tcspc::data_lost_event<{data_traits.cpp()}>")
 
 
-def MarkerEvent(
-    data_traits: str = "tcspc::default_data_traits",
-) -> EventType:
-    return EventType(f"tcspc::marker_event<{data_traits}>")
+def MarkerEvent(data_traits: DataTraits | None = None) -> EventType:
+    if data_traits is None:
+        data_traits = DataTraits()
+    return EventType(f"tcspc::marker_event<{data_traits.cpp()}>")
 
 
 def TimeCorrelatedDetectionEvent(
-    data_traits: str = "tcspc::default_data_traits",
+    data_traits: DataTraits | None = None,
 ) -> EventType:
-    return EventType(f"tcspc::time_correlated_detection_event<{data_traits}>")
+    if data_traits is None:
+        data_traits = DataTraits()
+    return EventType(
+        f"tcspc::time_correlated_detection_event<{data_traits.cpp()}>"
+    )
 
 
-def TimeReachedEvent(
-    data_traits: str = "tcspc::default_data_traits",
-) -> EventType:
-    return EventType(f"tcspc::time_reached_event<{data_traits}>")
+def TimeReachedEvent(data_traits: DataTraits | None = None) -> EventType:
+    if data_traits is None:
+        data_traits = DataTraits()
+    return EventType(f"tcspc::time_reached_event<{data_traits.cpp()}>")
 
 
 WarningEvent = EventType("tcspc::warning_event")

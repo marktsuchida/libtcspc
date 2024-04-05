@@ -20,6 +20,7 @@ py_sources = files(
     '_access.py',
     '_context.py',
     '_cpp_utils.py',
+    '_data_traits.py',
     '_events.py',
     '_graph.py',
     '_misc.py',
