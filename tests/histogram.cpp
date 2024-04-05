@@ -43,9 +43,9 @@ TEST_CASE("introspect histogram", "[introspect]") {
 
 TEMPLATE_TEST_CASE("Histogram, zero bins", "", saturate_on_overflow,
                    reset_on_overflow, stop_on_overflow, error_on_overflow) {
-    using out_events =
-        type_list<histogram_event<data_traits>,
-                  concluding_histogram_event<data_traits>, misc_event>;
+    using out_events = type_list<histogram_event<data_traits>,
+                                 concluding_histogram_event<data_traits>,
+                                 warning_event, misc_event>;
     auto ctx = std::make_shared<processor_context>();
     auto in = feed_input<
         type_list<bin_increment_event<data_traits>, reset_event, misc_event>>(
@@ -68,8 +68,9 @@ TEMPLATE_TEST_CASE("Histogram, zero bins", "", saturate_on_overflow,
 
 TEMPLATE_TEST_CASE("Histogram, no overflow", "", saturate_on_overflow,
                    reset_on_overflow, stop_on_overflow, error_on_overflow) {
-    using out_events = type_list<histogram_event<data_traits>,
-                                 concluding_histogram_event<data_traits>>;
+    using out_events =
+        type_list<histogram_event<data_traits>,
+                  concluding_histogram_event<data_traits>, warning_event>;
     auto ctx = std::make_shared<processor_context>();
     auto in =
         feed_input<type_list<bin_increment_event<data_traits>, reset_event>>(
@@ -103,8 +104,9 @@ TEMPLATE_TEST_CASE("Histogram, no overflow", "", saturate_on_overflow,
 }
 
 TEST_CASE("Histogram, saturate on overflow") {
-    using out_events = type_list<histogram_event<data_traits>,
-                                 concluding_histogram_event<data_traits>>;
+    using out_events =
+        type_list<histogram_event<data_traits>,
+                  concluding_histogram_event<data_traits>, warning_event>;
     auto ctx = std::make_shared<processor_context>();
 
     SECTION("Max per bin = 0") {
@@ -120,6 +122,7 @@ TEST_CASE("Histogram, saturate on overflow") {
 
         std::vector<u16> hist;
         in.feed(bin_increment_event<data_traits>{42, 0}); // Overflow
+        REQUIRE(out.check(warning_event{"histogram saturated"}));
         hist = {0};
         REQUIRE(
             out.check(histogram_event<data_traits>{own_on_copy_view(hist)}));
@@ -147,6 +150,7 @@ TEST_CASE("Histogram, saturate on overflow") {
         REQUIRE(
             out.check(histogram_event<data_traits>{own_on_copy_view(hist)}));
         in.feed(bin_increment_event<data_traits>{43, 0}); // Overflow
+        REQUIRE(out.check(warning_event{"histogram saturated"}));
         hist = {1};
         REQUIRE(
             out.check(histogram_event<data_traits>{own_on_copy_view(hist)}));

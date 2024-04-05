@@ -280,7 +280,7 @@ TEST_CASE("single_histogram: saturate on overflow") {
         std::vector<u8> data(4, u8(0));
         single_histogram<u8, u8, saturate_on_internal_overflow> shist(data, 0);
         CHECK(shist.apply_increments(std::array<u8, 7>{0, 1, 2, 1, 3, 3, 1}) ==
-              7);
+              0);
         CHECK(data == std::vector<u8>{0, 0, 0, 0});
     }
     SECTION("Max per bin in middle of range") {
@@ -288,7 +288,7 @@ TEST_CASE("single_histogram: saturate on overflow") {
         single_histogram<u8, u8, saturate_on_internal_overflow> shist(data,
                                                                       124);
         CHECK(shist.apply_increments(std::array<u8, 7>{0, 1, 2, 1, 3, 3, 1}) ==
-              7);
+              4);
         CHECK(data == std::vector<u8>{124, 124, 124, 124});
     }
     SECTION("Max per bin at max representable") {
@@ -296,7 +296,7 @@ TEST_CASE("single_histogram: saturate on overflow") {
         single_histogram<u8, u8, saturate_on_internal_overflow> shist(data,
                                                                       255);
         CHECK(shist.apply_increments(std::array<u8, 7>{0, 1, 2, 1, 3, 3, 1}) ==
-              7);
+              4);
         CHECK(data == std::vector<u8>{255, 255, 255, 255});
     }
 }
@@ -466,7 +466,8 @@ TEST_CASE("multi_histogram: saturate on overflow") {
     std::vector<u8> data(12, u8(123));
     multi_histogram<u8, u8, saturate_on_internal_overflow> mhist(data, 124, 4,
                                                                  3, false);
-    CHECK(mhist.apply_increment_batch(std::array<u8, 4>{1, 0, 1, 3}, journal));
+    CHECK_FALSE(
+        mhist.apply_increment_batch(std::array<u8, 4>{1, 0, 1, 3}, journal));
     CHECK(mhist.apply_increment_batch({}, journal));
     CHECK(mhist.apply_increment_batch(std::array<u8, 1>{1}, journal));
     CHECK(data == std::vector<u8>{124, 124, 123, 124, 123, 123, 123, 123, 123,

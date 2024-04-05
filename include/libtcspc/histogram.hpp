@@ -44,6 +44,7 @@ class histogram {
     span<bin_type> hist;
     single_histogram<bin_index_type, bin_type, internal_overflow_strategy>
         shist;
+    bool saturated = false;
     Downstream downstream;
 
     void emit_concluding() {
@@ -51,7 +52,12 @@ class histogram {
             own_on_copy_view<bin_type>(hist)});
     }
 
-    void reset() { shist.clear(); }
+    void reset() {
+        shist.clear();
+        if constexpr (std::is_same_v<OverflowStrategy, saturate_on_overflow>) {
+            saturated = false;
+        }
+    }
 
     [[noreturn]] void stop() {
         downstream.flush();
@@ -62,16 +68,17 @@ class histogram {
         throw histogram_overflow_error("histogram bin overflowed");
     }
 
-    void handle_overflow(bin_increment_event<DataTraits> const &event) {
+    LIBTCSPC_NOINLINE void
+    handle_overflow(bin_increment_event<DataTraits> const &event) {
         if constexpr (std::is_same_v<OverflowStrategy, saturate_on_overflow>) {
-            unreachable();
+            downstream.handle(warning_event{"histogram saturated"});
         } else if constexpr (std::is_same_v<OverflowStrategy,
                                             reset_on_overflow>) {
             if (shist.max_per_bin() == 0)
                 overflow_error();
             emit_concluding();
             reset();
-            return handle(event); // Recurse max once
+            handle(event); // Recurse max once
         } else if constexpr (std::is_same_v<OverflowStrategy,
                                             stop_on_overflow>) {
             emit_concluding();
@@ -106,8 +113,17 @@ class histogram {
     template <typename DT> void handle(bin_increment_event<DT> const &event) {
         static_assert(std::is_same_v<typename DT::bin_index_type,
                                      typename DataTraits::bin_index_type>);
-        if (not shist.apply_increments({&event.bin_index, 1}))
-            return handle_overflow(event);
+        if (not shist.apply_increments({&event.bin_index, 1})) {
+            if constexpr (std::is_same_v<OverflowStrategy,
+                                         saturate_on_overflow>) {
+                if (not saturated) {
+                    saturated = true;
+                    handle_overflow(event);
+                }
+            } else {
+                return handle_overflow(event);
+            }
+        }
         downstream.handle(
             histogram_event<DataTraits>{own_on_copy_view<bin_type>(hist)});
     }
@@ -146,6 +162,10 @@ class histogram {
  * before successful end of stream, containing the same data as the previous \c
  * histogram_event<Bin> (or empty if there was none since the start or last
  * reset).
+ *
+ * A \c warning_event is emitted if \c OverflowStrategy is \c
+ * saturate_on_overflow and a saturation occurred for the first time since the
+ * last reset (or start of stream).
  *
  * The input events are not required to be in correct abstime order; the event
  * abstime is not used.

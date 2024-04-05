@@ -44,19 +44,16 @@ class histogram_elementwise {
     span<bin_type> hist_arr;
     multi_histogram<bin_index_type, bin_type, internal_overflow_strategy>
         mhist;
+    bool saturated = false;
     null_journal<bin_index_type> journal; // Journaling not required
     Downstream downstream;
 
-    [[noreturn]] void overflow_error() {
-        throw histogram_overflow_error("elementwise histogram bin overflowed");
-    }
-
-    [[noreturn]] void handle_overflow() {
+    LIBTCSPC_NOINLINE void handle_overflow() {
         if constexpr (std::is_same_v<OverflowStrategy, saturate_on_overflow>) {
-            unreachable();
+            downstream.handle(warning_event{"histogram array saturated"});
         } else if constexpr (std::is_same_v<OverflowStrategy,
                                             error_on_overflow>) {
-            overflow_error();
+            throw histogram_overflow_error("histogram array bin overflowed");
         } else {
             static_assert(false_for_type<OverflowStrategy>::value);
         }
@@ -88,8 +85,17 @@ class histogram_elementwise {
                                      typename DataTraits::bin_index_type>);
         assert(not mhist.is_complete());
         auto element_index = mhist.next_element_index();
-        if (not mhist.apply_increment_batch(event.bin_indices, journal))
-            handle_overflow();
+        if (not mhist.apply_increment_batch(event.bin_indices, journal)) {
+            if constexpr (std::is_same_v<OverflowStrategy,
+                                         saturate_on_overflow>) {
+                if (not saturated) {
+                    saturated = true;
+                    handle_overflow();
+                }
+            } else {
+                return handle_overflow();
+            }
+        }
 
         downstream.handle(element_histogram_event<DataTraits>{
             own_on_copy_view<bin_type>(mhist.element_span(element_index))});
@@ -98,6 +104,10 @@ class histogram_elementwise {
             downstream.handle(histogram_array_event<DataTraits>{
                 own_on_copy_view<bin_type>(hist_arr)});
             mhist.reset(true);
+            if constexpr (std::is_same_v<OverflowStrategy,
+                                         saturate_on_overflow>) {
+                saturated = false;
+            }
         }
     }
 
@@ -134,6 +144,10 @@ class histogram_elementwise {
  *
  * At the end of each cycle a histogram_array_event is emitted, referencing the
  * whole array of histograms from the cycle.
+ *
+ * A \c warning_event is emitted if \c OverflowStrategy is \c
+ * saturate_on_overflow and a saturation occurred for the first time in the
+ * current cycle.
  *
  * The input events are not required to be in correct abstime order; the event
  * abstime is not used.
@@ -212,6 +226,7 @@ class histogram_elementwise_accumulate {
     multi_histogram_accumulation<bin_index_type, bin_type,
                                  internal_overflow_strategy>
         mhista;
+    bool saturated = false;
     journal_type journal;
     Downstream downstream;
 
@@ -223,21 +238,22 @@ class histogram_elementwise_accumulate {
 
     [[noreturn]] void stop() {
         downstream.flush();
-        throw end_processing("elementwise histogram bin overflowed");
+        throw end_processing("histogram array bin overflowed");
     }
 
     [[noreturn]] void overflow_error(char const *msg) {
         throw histogram_overflow_error(msg);
     }
 
-    void handle_overflow(bin_increment_batch_event<DataTraits> const &event) {
+    LIBTCSPC_NOINLINE void
+    handle_overflow(bin_increment_batch_event<DataTraits> const &event) {
         if constexpr (std::is_same_v<OverflowStrategy, saturate_on_overflow>) {
-            unreachable();
+            downstream.handle(warning_event{"histogram array saturated"});
         } else if constexpr (std::is_same_v<OverflowStrategy,
                                             reset_on_overflow>) {
             if (mhista.cycle_index() == 0) {
                 overflow_error(
-                    "elementwise histogram bin overflowed on a single batch");
+                    "histogram array bin overflowed on a single batch");
             }
             mhista.roll_back_current_cycle(journal);
             if constexpr (EmitConcluding)
@@ -253,7 +269,7 @@ class histogram_elementwise_accumulate {
             stop();
         } else if constexpr (std::is_same_v<OverflowStrategy,
                                             error_on_overflow>) {
-            overflow_error("elementwise histogram bin overflowed");
+            overflow_error("histogram array bin overflowed");
         } else {
             static_assert(false_for_type<OverflowStrategy>::value);
         }
@@ -286,8 +302,17 @@ class histogram_elementwise_accumulate {
                                      typename DataTraits::bin_index_type>);
         assert(not mhista.is_cycle_complete());
         auto element_index = mhista.next_element_index();
-        if (not mhista.apply_increment_batch(event.bin_indices, journal))
-            return handle_overflow(event);
+        if (not mhista.apply_increment_batch(event.bin_indices, journal)) {
+            if constexpr (std::is_same_v<OverflowStrategy,
+                                         saturate_on_overflow>) {
+                if (not saturated) {
+                    saturated = true;
+                    handle_overflow(event);
+                }
+            } else {
+                return handle_overflow(event);
+            }
+        }
 
         downstream.handle(element_histogram_event<DataTraits>{
             own_on_copy_view<bin_type>(mhista.element_span(element_index))});
@@ -305,6 +330,9 @@ class histogram_elementwise_accumulate {
             emit_concluding();
         }
         mhista.reset(true);
+        if constexpr (std::is_same_v<OverflowStrategy, saturate_on_overflow>) {
+            saturated = false;
+        }
         journal.clear();
     }
 
@@ -331,6 +359,10 @@ class histogram_elementwise_accumulate {
  *
  * The reset event \c ResetEvent causes the array of histograms to be cleared
  * and a new accumulation to be started.
+ *
+ * A \c warning_event is emitted if \c OverflowStrategy is \c
+ * saturate_on_overflow and a saturation occurred for the first time since the
+ * last reset (or start of stream).
  *
  * \tparam ResetEvent type of event causing histograms to reset
  *

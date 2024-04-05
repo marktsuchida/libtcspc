@@ -59,8 +59,9 @@ TEST_CASE("introspect histogram_elementwise", "[introspect]") {
 TEMPLATE_TEST_CASE("Histogram elementwise, zero elements",
                    "[histogram_elementwise]", saturate_on_overflow,
                    error_on_overflow) {
-    using out_events = type_list<element_histogram_event<dt3216>,
-                                 histogram_array_event<dt3216>, misc_event>;
+    using out_events =
+        type_list<element_histogram_event<dt3216>,
+                  histogram_array_event<dt3216>, warning_event, misc_event>;
     auto ctx = std::make_shared<processor_context>();
     auto in =
         feed_input<type_list<bin_increment_batch_event<dt3216>, misc_event>>(
@@ -82,7 +83,7 @@ TEMPLATE_TEST_CASE("Histogram elementwise, zero bins",
                    "[histogram_elementwise]", saturate_on_overflow,
                    error_on_overflow) {
     using out_events = type_list<element_histogram_event<dt3216>,
-                                 histogram_array_event<dt3216>>;
+                                 histogram_array_event<dt3216>, warning_event>;
     auto ctx = std::make_shared<processor_context>();
     auto in = feed_input<type_list<bin_increment_batch_event<dt3216>>>(
         histogram_elementwise<TestType, dt3216>(
@@ -104,7 +105,7 @@ TEMPLATE_TEST_CASE("Histogram elementwise, no overflow",
                    "[histogram_elementwise]", saturate_on_overflow,
                    error_on_overflow) {
     using out_events = type_list<element_histogram_event<dt3216>,
-                                 histogram_array_event<dt3216>>;
+                                 histogram_array_event<dt3216>, warning_event>;
     auto ctx = std::make_shared<processor_context>();
     auto in = feed_input<type_list<bin_increment_batch_event<dt3216>>>(
         histogram_elementwise<TestType, dt3216>(
@@ -135,7 +136,7 @@ TEMPLATE_TEST_CASE("Histogram elementwise, no overflow",
 TEST_CASE("Histogram elementwise, saturate on overflow",
           "[histogram_elementwise]") {
     using out_events = type_list<element_histogram_event<dt3216>,
-                                 histogram_array_event<dt3216>>;
+                                 histogram_array_event<dt3216>, warning_event>;
     auto ctx = std::make_shared<processor_context>();
 
     SECTION("Max per bin = 0") {
@@ -149,6 +150,7 @@ TEST_CASE("Histogram elementwise, saturate on overflow",
             ctx->access<capture_output_access>("out"));
 
         in.feed(bin_increment_batch_event<dt3216>{{0}}); // Overflow
+        REQUIRE(out.check(warning_event{"histogram array saturated"}));
         std::vector<u16> elem_hist{0};
         REQUIRE(out.check(
             element_histogram_event<dt3216>{own_on_copy_view(elem_hist)}));
@@ -170,6 +172,7 @@ TEST_CASE("Histogram elementwise, saturate on overflow",
             ctx->access<capture_output_access>("out"));
 
         in.feed(bin_increment_batch_event<dt3216>{{0, 0}}); // Overflow
+        REQUIRE(out.check(warning_event{"histogram array saturated"}));
         std::vector<u16> elem_hist{1};
         REQUIRE(out.check(
             element_histogram_event<dt3216>{own_on_copy_view(elem_hist)}));
@@ -235,7 +238,7 @@ using hea_output_events =
 
 using hea_output_events_no_concluding =
     type_list<element_histogram_event<dt88>, histogram_array_event<dt88>,
-              misc_event>;
+              warning_event, misc_event>;
 
 } // namespace
 
@@ -511,6 +514,7 @@ TEST_CASE("histogram_elementwise_accumulate with saturate-on-overflow",
 
     SECTION("overflow during cycle 0, element 0") {
         in.feed(bin_increment_batch_event<dt88>{{0, 0, 0, 0, 0, 0}});
+        REQUIRE(out.check(warning_event{"histogram array saturated"}));
         elem_hist = {4, 0, 0};
         REQUIRE(out.check(
             element_histogram_event<dt88>{own_on_copy_view(elem_hist)}));
@@ -523,9 +527,10 @@ TEST_CASE("histogram_elementwise_accumulate with saturate-on-overflow",
         SECTION("reset") {
             in.feed(reset_event{});
 
-            SECTION("saturated count zeroed after reset") {
-                in.feed(bin_increment_batch_event<dt88>{{}});
-                elem_hist = {0, 0, 0};
+            SECTION("saturate warned again after reset") {
+                in.feed(bin_increment_batch_event<dt88>{{1, 1, 1, 1, 1}});
+                REQUIRE(out.check(warning_event{"histogram array saturated"}));
+                elem_hist = {0, 4, 0};
                 REQUIRE(out.check(element_histogram_event<dt88>{
                     own_on_copy_view(elem_hist)}));
                 in.flush();

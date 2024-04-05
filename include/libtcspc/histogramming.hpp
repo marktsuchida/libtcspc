@@ -328,28 +328,30 @@ class single_histogram {
 
     auto max_per_bin() const noexcept -> bin_type { return bin_max; }
 
-    // Increment each bin in 'increments'. Return actual number of increments
-    // applied. The return value always equals increments.size() if
-    // OverflowStrategy is saturate_on_internal_overflow. Otherwise, it is any
-    // value between 0 and increments.size(), inclusive.
+    // Increment each bin in 'increments'. Return n_applied, the actual number
+    // of increments applied without saturation. This value is between 0 and
+    // increments.size(), inclusive.
     auto apply_increments(span<bin_index_type const> increments)
         -> std::size_t {
+        std::size_t n_applied = 0;
         for (auto it = increments.begin(); it != increments.end(); ++it) {
             assert(*it >= 0 && *it < hist.size());
             bin_type &bin = hist[*it];
             if (bin < bin_max) {
                 ++bin;
+                ++n_applied;
             } else if constexpr (std::is_same_v<
                                      OverflowStrategy,
                                      saturate_on_internal_overflow>) {
+                continue;
             } else if constexpr (std::is_same_v<OverflowStrategy,
                                                 stop_on_internal_overflow>) {
-                return as_unsigned(std::distance(increments.begin(), it));
+                return n_applied;
             } else {
                 static_assert(false_for_type<OverflowStrategy>::value);
             }
         }
-        return increments.size();
+        return n_applied;
     }
 
     // Undo the given 'increments'. Behavior is undefined unless 'increments'
@@ -408,7 +410,7 @@ class multi_histogram {
     // has been reached. When clearing is requested, the data is consistent
     // when:
     // - All elements have had increments applied,
-    // - apply_increments() returned false,
+    // - apply_increment_batch() returned false,
     // - skip_remaining() was called at least once, or
     // - roll_back() was called at least once.
     // When clearing is not requested, the data is also consistent when no
@@ -425,7 +427,9 @@ class multi_histogram {
         return hist_arr.subspan(num_bins * index, num_bins);
     }
 
-    // Apply 'increments' to the next element of the array of histograms.
+    // Apply 'batch' to the next element of the array of histograms. Return
+    // true if the entire batch could be applied (without saturation); false if
+    // there was saturation or we stopped and rolled back.
     template <typename Journal>
     auto apply_increment_batch(span<bin_index_type const> batch,
                                Journal &journal) -> bool {
@@ -437,17 +441,21 @@ class multi_histogram {
                         max_per_bin);
         if (need_to_clear)
             single_hist.clear();
+
         auto n_applied = single_hist.apply_increments(batch);
-        if (n_applied == batch.size()) {
-            journal.append_batch(batch);
-            ++element_index;
-            return true;
-        }
+
         if constexpr (std::is_same_v<OverflowStrategy,
                                      saturate_on_internal_overflow>) {
-            unreachable();
+            journal.append_batch(batch);
+            ++element_index;
+            return n_applied == batch.size();
         } else if constexpr (std::is_same_v<OverflowStrategy,
                                             stop_on_internal_overflow>) {
+            if (n_applied == batch.size()) {
+                journal.append_batch(batch);
+                ++element_index;
+                return true;
+            }
             // Always handle increment batches atomically.
             single_hist.undo_increments(batch.first(n_applied));
             skip_remaining();
