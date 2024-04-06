@@ -229,7 +229,7 @@ auto make_processor(settings const &settings,
         65536,
     stop_with_error<type_list<warning_event>>("error reading input",
     dereference_pointer<std::shared_ptr<device_event_vector>>(
-    unbatch<device_event_vector, swabian_tag_event>(
+    unbatch<swabian_tag_event>(
     count<swabian_tag_event>(ctx->tracker<count_access>("record_counter"),
     decode_swabian_tags(
     stop_with_error<type_list<

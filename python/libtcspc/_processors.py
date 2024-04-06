@@ -93,7 +93,7 @@ def read_events_from_binary_file(
             ),
             (
                 "unbatcher",
-                Unbatch(_events.VectorEvent(event_type), event_type),
+                Unbatch(event_type),
             ),
         ]
     )
@@ -333,19 +333,14 @@ class StopWithError(OneToOneNode):
 
 @final
 class Unbatch(OneToOneNode):
-    def __init__(
-        self, container_type: EventType, event_type: EventType
-    ) -> None:
-        self._container_type = container_type
+    def __init__(self, event_type: EventType) -> None:
         self._event_type = event_type
 
     @override
     def map_event_set(
         self, input_event_set: Collection[EventType]
     ) -> tuple[EventType, ...]:
-        _check_events_subset_of(
-            input_event_set, (self._container_type,), self.__class__.__name__
-        )
+        # TODO Check if input event set contains only iterables of event_type.
         return (self._event_type,)
 
     @override
@@ -353,9 +348,6 @@ class Unbatch(OneToOneNode):
         self, node_name: str, context: str, downstream: str
     ) -> str:
         return dedent(f"""\
-            tcspc::unbatch<
-                {self._container_type.cpp_type},
-                {self._event_type.cpp_type}
-            >(
+            tcspc::unbatch<{self._event_type.cpp_type}>(
                 {downstream}
             )""")

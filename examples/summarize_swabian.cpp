@@ -90,7 +90,7 @@ auto summarize(std::string const &filename) -> bool {
     stop<type_list<warning_event>>("error reading input",
     dereference_pointer<std::shared_ptr<device_event_vector>>(
         // Get the vectors of device events.
-    unbatch<device_event_vector, swabian_tag_event>(
+    unbatch<swabian_tag_event>(
         // Get individual device events.
     count<swabian_tag_event>(ctx->tracker<count_access>("counter"), // Count.
     decode_swabian_tags(

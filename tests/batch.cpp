@@ -23,8 +23,7 @@ namespace tcspc {
 TEST_CASE("introspect batch, unbatch", "[introspect]") {
     check_introspect_simple_processor(batch<int, std::vector<int>>(
         std::shared_ptr<object_pool<std::vector<int>>>{}, 1, null_sink()));
-    check_introspect_simple_processor(
-        unbatch<std::vector<int>, int>(null_sink()));
+    check_introspect_simple_processor(unbatch<int>(null_sink()));
 }
 
 TEST_CASE("batch") {
@@ -62,7 +61,7 @@ TEST_CASE("batch") {
 TEST_CASE("unbatch") {
     auto ctx = std::make_shared<processor_context>();
     auto in = feed_input<type_list<pvector<int>>>(
-        unbatch<pvector<int>, int>(capture_output<type_list<int>>(
+        unbatch<int>(capture_output<type_list<int>>(
             ctx->tracker<capture_output_access>("out"))));
     in.require_output_checked(ctx, "out");
     auto out = capture_output_checker<type_list<int>>(

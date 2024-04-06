@@ -124,7 +124,7 @@ auto make_processor(settings const &settings,
         65536, // Reader produces shared_ptr of vectors of device events.
     stop_with_error<type_list<warning_event>>("error reading input",
     dereference_pointer<std::shared_ptr<device_event_vector>>(
-    unbatch<device_event_vector, bh_spc_event>(
+    unbatch<bh_spc_event>(
     count<bh_spc_event>(ctx->tracker<count_access>("record_counter"),
     decode_bh_spc(
     check_monotonic(

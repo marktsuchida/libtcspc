@@ -76,7 +76,7 @@ auto summarize(std::string const &filename) -> bool {
     stop<type_list<warning_event>>("error reading input",
     dereference_pointer<std::shared_ptr<device_event_vector>>(
         // Get the vectors of device events.
-    unbatch<device_event_vector, bh_spc_event>(
+    unbatch<bh_spc_event>(
         // Get individual device events.
     count<bh_spc_event>(ctx->tracker<count_access>("counter"), // Count.
     decode_bh_spc<dtraits>( // Decode device events into generic TCSPC events.

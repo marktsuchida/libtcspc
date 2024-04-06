@@ -71,8 +71,7 @@ class batch {
     }
 };
 
-template <typename EventContainer, typename Event, typename Downstream>
-class unbatch {
+template <typename Event, typename Downstream> class unbatch {
     Downstream downstream;
 
   public:
@@ -98,6 +97,7 @@ class unbatch {
     // inlined even if this function is marked noinline. There may be
     // borderline cases where this doesn't hold, but it is probably best to
     // leave it to the compiler.
+    template <typename EventContainer>
     void handle(EventContainer const &events) {
         for (auto const &event : events)
             downstream.handle(event);
@@ -161,7 +161,7 @@ auto batch(std::shared_ptr<object_pool<EventVector>> buffer_pool,
  *
  * \ingroup processors-basic
  *
- * Events in (ordered) containers are emitted one by one.
+ * Events in (ordered) containers or spans are emitted one by one.
  *
  * This is not quite symmetric with \ref batch, which requires the container to
  * be vector-like, and emits them via \c std::shared_ptr.
@@ -169,8 +169,6 @@ auto batch(std::shared_ptr<object_pool<EventVector>> buffer_pool,
  * \see batch
  *
  * \see dereference_pointer
- *
- * \tparam EventContainer event container type
  *
  * \tparam Event the event type (must be a trivial type)
  *
@@ -180,9 +178,9 @@ auto batch(std::shared_ptr<object_pool<EventVector>> buffer_pool,
  *
  * \return unbatch processor
  */
-template <typename EventContainer, typename Event, typename Downstream>
+template <typename Event, typename Downstream>
 auto unbatch(Downstream &&downstream) {
-    return internal::unbatch<EventContainer, Event, Downstream>(
+    return internal::unbatch<Event, Downstream>(
         std::forward<Downstream>(downstream));
 }
 
@@ -211,8 +209,7 @@ auto process_in_batches(std::size_t batch_size, Downstream &&downstream) {
     return batch<Event, event_vector>(
         std::make_shared<object_pool<event_vector>>(0, 1), batch_size,
         dereference_pointer<std::shared_ptr<event_vector>>(
-            unbatch<event_vector, Event>(
-                std::forward<Downstream>(downstream))));
+            unbatch<Event>(std::forward<Downstream>(downstream))));
 }
 
 } // namespace tcspc
