@@ -20,7 +20,7 @@
 
 namespace tcspc {
 
-TEST_CASE("introspect batch", "[introspect]") {
+TEST_CASE("introspect batch, unbatch", "[introspect]") {
     check_introspect_simple_processor(batch<int, std::vector<int>>(
         std::shared_ptr<object_pool<std::vector<int>>>{}, 1, null_sink()));
     check_introspect_simple_processor(

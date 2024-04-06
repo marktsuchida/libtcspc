@@ -133,7 +133,7 @@ class unbatch {
  *
  * \see unbatch
  *
- * \tparam Event the event type
+ * \tparam Event the event type (must be a trivial type)
  *
  * \tparam EventVector vector-like container of events
  *
@@ -151,7 +151,8 @@ template <typename Event, typename EventVector, typename Downstream>
 auto batch(std::shared_ptr<object_pool<EventVector>> buffer_pool,
            std::size_t batch_size, Downstream &&downstream) {
     return internal::batch<Event, EventVector, Downstream>(
-        buffer_pool, batch_size, std::forward<Downstream>(downstream));
+        std::move(buffer_pool), batch_size,
+        std::forward<Downstream>(downstream));
 }
 
 /**
@@ -171,7 +172,7 @@ auto batch(std::shared_ptr<object_pool<EventVector>> buffer_pool,
  *
  * \tparam EventContainer event container type
  *
- * \tparam Event the event type
+ * \tparam Event the event type (must be a trivial type)
  *
  * \tparam Downstream downstream processor type
  *

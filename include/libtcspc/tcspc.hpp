@@ -9,6 +9,7 @@
 // IWYU pragma: begin_exports
 #include "arg_wrappers.hpp"
 #include "batch.hpp"
+#include "batch_unbatch_from_bytes.hpp"
 #include "bh_spc.hpp"
 #include "binning.hpp"
 #include "buffer.hpp"

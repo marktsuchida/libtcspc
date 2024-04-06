@@ -5,6 +5,7 @@
 test_libtcspc_srcs = [
     'arg_wrappers.cpp',
     'batch.cpp',
+    'batch_unbatch_from_bytes.cpp',
     'bh_spc.cpp',
     'binning.cpp',
     'buffer.cpp',

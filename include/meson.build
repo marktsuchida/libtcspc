@@ -5,6 +5,7 @@
 public_cpp_headers = files(
     'libtcspc/arg_wrappers.hpp',
     'libtcspc/batch.hpp',
+    'libtcspc/batch_unbatch_from_bytes.hpp',
     'libtcspc/bh_spc.hpp',
     'libtcspc/binning.hpp',
     'libtcspc/buffer.hpp',

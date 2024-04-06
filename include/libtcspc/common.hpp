@@ -304,6 +304,13 @@ inline void for_each_set_bit(u32np bits, F func) noexcept(noexcept(func(0))) {
     }
 }
 
+template <typename T>
+inline auto is_aligned(void const *ptr) noexcept -> bool {
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
+    auto const start = reinterpret_cast<uintptr_t>(ptr);
+    return start % alignof(T) == 0;
+}
+
 template <typename T, typename... U> struct is_any_of {
     static constexpr bool value = (std::is_same_v<T, U> || ...);
 };
