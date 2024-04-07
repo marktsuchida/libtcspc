@@ -12,6 +12,7 @@
 #include <cstddef>
 #include <memory>
 #include <stdexcept>
+#include <type_traits>
 #include <utility>
 #include <vector>
 
@@ -49,18 +50,20 @@ class batch {
         return g;
     }
 
-    void handle(Event const &event) {
+    template <typename E,
+              typename = std::enable_if_t<std::is_convertible_v<E, Event>>>
+    void handle(E &&event) {
         if (not cur_batch) {
             cur_batch = buffer_pool->check_out();
-            cur_batch->reserve(batch_size);
             cur_batch->clear();
+            cur_batch->reserve(batch_size);
         }
 
-        cur_batch->push_back(event);
+        cur_batch->push_back(std::forward<E>(event));
 
         if (cur_batch->size() == batch_size) {
-            downstream.handle(cur_batch);
-            cur_batch.reset();
+            downstream.handle(std::move(cur_batch));
+            cur_batch.reset(); // In case not moved out.
         }
     }
 
@@ -101,6 +104,21 @@ template <typename Event, typename Downstream> class unbatch {
     void handle(EventContainer const &events) {
         for (auto const &event : events)
             downstream.handle(event);
+    }
+
+    // If the container is passed by rvalue ref and its elements are not const,
+    // move out individually. (For what it's worth: it will not make a
+    // difference for trivial element types, which is the typical usage.)
+    // Note that we do not do a move if the container is not passed by rvalue
+    // ref, even if its elements are non-const (e.g., a const span to
+    // non-const), because that would lead to surprises.
+    template <typename EC, typename = std::enable_if_t<
+                               not std::is_lvalue_reference_v<EC> &&
+                               not std::is_const_v<std::remove_reference_t<
+                                   decltype(*std::declval<EC>().begin())>>>>
+    void handle(EC &&events) { // NOLINT(cppcoreguidelines-missing-std-forward)
+        for (auto &event : events)
+            downstream.handle(std::move(event));
     }
 
     void flush() { downstream.flush(); }

@@ -533,7 +533,7 @@ class read_binary_stream {
 
             if (this_batch_size > 0) {
                 buf->resize(this_batch_size);
-                downstream.handle(buf);
+                downstream.handle(std::move(buf));
             }
             buf = std::move(next_buf);
         }

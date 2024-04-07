@@ -9,6 +9,7 @@
 #include "libtcspc/common.hpp"
 #include "libtcspc/object_pool.hpp"
 #include "libtcspc/processor_context.hpp"
+#include "libtcspc/span.hpp"
 #include "libtcspc/test_utils.hpp"
 #include "libtcspc/type_list.hpp"
 #include "test_checkers.hpp"
@@ -16,6 +17,7 @@
 #include <catch2/catch_test_macros.hpp>
 
 #include <memory>
+#include <utility>
 #include <vector>
 
 namespace tcspc {
@@ -55,6 +57,44 @@ TEST_CASE("batch") {
         REQUIRE(out.check(pvector<int>{42, 43, 44}));
         in.flush();
         REQUIRE(out.check_flushed());
+    }
+}
+
+struct move_out_sink {
+    template <typename T> void handle(T &&t) {
+        [[maybe_unused]] T u = std::forward<T>(t);
+    }
+    void flush() {}
+};
+
+TEST_CASE("unbatch lvalue and rvalue correctly") {
+    auto ctx = std::make_shared<processor_context>();
+    auto proc = unbatch<std::unique_ptr<int>>(move_out_sink());
+    std::vector<std::unique_ptr<int>> v;
+    v.push_back(std::make_unique<int>(42));
+
+    SECTION("container lvalue ref") {
+        proc.handle(v);
+        REQUIRE(v[0]);
+        REQUIRE(*v[0] == 42);
+    }
+
+    SECTION("container lvalue ref with mutable elements") {
+        auto s = span(v);
+        proc.handle(s);
+        REQUIRE(v[0]);
+        REQUIRE(*v[0] == 42);
+    }
+
+    SECTION("container rvalue ref with mutable elements") {
+        proc.handle(std::move(v));
+        REQUIRE_FALSE(v[0]); // NOLINT(bugprone-use-after-move)
+    }
+
+    SECTION("container rvalue ref with const elements") {
+        proc.handle(span(std::as_const(v)));
+        REQUIRE(v[0]);
+        REQUIRE(*v[0] == 42);
     }
 }
 

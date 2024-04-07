@@ -24,6 +24,7 @@
 #include <mutex>
 #include <stdexcept>
 #include <thread>
+#include <utility>
 
 namespace tcspc {
 
@@ -118,6 +119,15 @@ void wait_a_little() noexcept {
 }
 
 } // namespace
+
+TEST_CASE("buffer moves out rvalue events") {
+    auto ctx = std::make_shared<processor_context>();
+    auto buf = buffer<std::unique_ptr<int>>(
+        3, ctx->tracker<buffer_access>("buf"), null_sink());
+    auto event = std::make_unique<int>(42);
+    buf.handle(std::move(event));
+    CHECK_FALSE(event);
+}
 
 TEST_CASE("buffer empty stream") {
     auto ctx = std::make_shared<processor_context>();

@@ -19,6 +19,7 @@
 #include <functional>
 #include <mutex>
 #include <stdexcept>
+#include <type_traits>
 #include <utility>
 
 namespace tcspc {
@@ -186,7 +187,7 @@ class buffer {
                 emit_queue.swap(shared_queue);
                 lock.unlock();
                 while (!emit_queue.empty()) {
-                    downstream.handle(emit_queue.front());
+                    downstream.handle(std::move(emit_queue.front()));
                     emit_queue.pop();
                 }
                 lock.lock();
@@ -241,7 +242,9 @@ class buffer {
         return g;
     }
 
-    void handle(Event const &event) {
+    template <typename E,
+              typename = std::enable_if_t<std::is_convertible_v<E, Event>>>
+    void handle(E &&event) {
         bool should_notify{};
         {
             std::scoped_lock lock(mutex);
@@ -249,7 +252,7 @@ class buffer {
                 throw end_processing(
                     "ending upstream of buffer upon end of downstream processing");
 
-            shared_queue.push(event);
+            shared_queue.push(std::forward<E>(event));
             should_notify = shared_queue.size() == threshold;
             if constexpr (LatencyLimited) {
                 if (shared_queue.size() == 1) {
