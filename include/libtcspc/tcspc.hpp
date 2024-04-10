@@ -12,6 +12,7 @@
 #include "batch_unbatch_from_bytes.hpp"
 #include "bh_spc.hpp"
 #include "binning.hpp"
+#include "bucket.hpp"
 #include "buffer.hpp"
 #include "check.hpp"
 #include "common.hpp"
@@ -29,6 +30,7 @@
 #include "introspect.hpp"
 #include "match.hpp"
 #include "merge.hpp"
+#include "move_only_any.hpp"
 #include "multiplex.hpp"
 #include "npint.hpp"
 #include "object_pool.hpp"
@@ -208,6 +210,12 @@ namespace tcspc {
  * \defgroup integers Integer handling
  *
  * \brief Facilities for reading integers from bit-packed records.
+ */
+
+/**
+ * \defgroup buckets Buckets and bucket sources
+ *
+ * \brief Container type for zero-copy passing of large data arrays.
  */
 
 /**

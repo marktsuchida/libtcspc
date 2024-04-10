@@ -10,6 +10,7 @@
 #include "libtcspc/errors.hpp"
 #include "libtcspc/processor_context.hpp"
 #include "test_checkers.hpp"
+#include "test_thread_utils.hpp"
 
 // Trompeloeil requires catch2 to be included first, but does not define which
 // subset of Catch2 3.x is required. So include catch_all.hpp.
@@ -17,11 +18,7 @@
 #include <catch2/trompeloeil.hpp>
 
 #include <chrono>
-#include <condition_variable>
-#include <cstddef>
-#include <limits>
 #include <memory>
-#include <mutex>
 #include <stdexcept>
 #include <thread>
 #include <utility>
@@ -61,62 +58,6 @@ template <typename Downstream> class ref_proc {
 
     void flush() { d->flush(); }
 };
-
-// C++20 latch equivalent
-class latch {
-    mutable std::mutex mut;
-    mutable std::condition_variable cv;
-    std::ptrdiff_t ct;
-
-  public:
-    [[maybe_unused]] static constexpr std::ptrdiff_t max =
-        std::numeric_limits<std::ptrdiff_t>::max();
-
-    explicit latch(std::ptrdiff_t count) : ct(count) {}
-    ~latch() = default;
-    latch(latch const &) = delete;
-    auto operator=(latch const &) = delete;
-    latch(latch &&) = delete;
-    auto operator=(latch &&) = delete;
-
-    void count_down(std::ptrdiff_t n = 1) {
-        bool should_notify{};
-        {
-            std::scoped_lock const lock(mut);
-            ct -= n;
-            should_notify = ct == 0;
-        }
-        if (should_notify)
-            cv.notify_all();
-    }
-
-    auto try_wait() const noexcept -> bool {
-        std::scoped_lock const lock(mut);
-        return ct == 0;
-    }
-
-    void wait() const {
-        std::unique_lock lock(mut);
-        cv.wait(lock, [&] { return ct == 0; });
-    }
-
-    void arrive_and_wait(std::ptrdiff_t n = 1) {
-        bool should_notify{};
-        {
-            std::unique_lock lock(mut);
-            ct -= n;
-            should_notify = ct == 0;
-            if (not should_notify)
-                return cv.wait(lock, [&] { return ct == 0; });
-        }
-        if (should_notify)
-            cv.notify_all();
-    }
-};
-
-void wait_a_little() noexcept {
-    std::this_thread::sleep_for(std::chrono::milliseconds(1));
-}
 
 } // namespace
 
