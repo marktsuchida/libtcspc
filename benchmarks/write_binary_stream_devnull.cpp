@@ -6,8 +6,7 @@
 
 #include "libtcspc/write_binary_stream.hpp"
 
-#include "libtcspc/object_pool.hpp"
-#include "libtcspc/own_on_copy_view.hpp"
+#include "libtcspc/bucket.hpp"
 #include "libtcspc/span.hpp"
 
 #include <benchmark/benchmark.h>
@@ -63,12 +62,12 @@ void ofstream_unbuf(benchmark::State &state) {
     auto const write_size = static_cast<std::size_t>(state.range(0));
     auto const num_writes = total_bytes / write_size;
     std::vector<std::byte> data(write_size);
-    auto pool = std::make_shared<object_pool<std::vector<std::byte>>>();
+    auto bsrc = recycling_bucket_source<std::byte>::create();
     for ([[maybe_unused]] auto _ : state) {
         auto proc =
-            write_binary_stream(ref_output_stream(stream), pool, write_size);
+            write_binary_stream(ref_output_stream(stream), bsrc, write_size);
         for (auto n = num_writes; n > 0; --n)
-            proc.handle(own_on_copy_view(data));
+            proc.handle(data);
     }
 }
 
@@ -78,12 +77,12 @@ void ofstream(benchmark::State &state) {
     auto const write_size = static_cast<std::size_t>(state.range(0));
     auto const num_writes = total_bytes / write_size;
     std::vector<std::byte> data(write_size);
-    auto pool = std::make_shared<object_pool<std::vector<std::byte>>>();
+    auto bsrc = recycling_bucket_source<std::byte>::create();
     for ([[maybe_unused]] auto _ : state) {
         auto proc =
-            write_binary_stream(ref_output_stream(stream), pool, write_size);
+            write_binary_stream(ref_output_stream(stream), bsrc, write_size);
         for (auto n = num_writes; n > 0; --n)
-            proc.handle(own_on_copy_view(data));
+            proc.handle(data);
     }
 }
 
@@ -93,12 +92,12 @@ void cfile_unbuf(benchmark::State &state) {
     auto const write_size = static_cast<std::size_t>(state.range(0));
     auto const num_writes = total_bytes / write_size;
     std::vector<std::byte> data(write_size);
-    auto pool = std::make_shared<object_pool<std::vector<std::byte>>>();
+    auto bsrc = recycling_bucket_source<std::byte>::create();
     for ([[maybe_unused]] auto _ : state) {
         auto proc =
-            write_binary_stream(ref_output_stream(stream), pool, write_size);
+            write_binary_stream(ref_output_stream(stream), bsrc, write_size);
         for (auto n = num_writes; n > 0; --n)
-            proc.handle(own_on_copy_view(data));
+            proc.handle(data);
     }
 }
 
@@ -108,12 +107,12 @@ void cfile(benchmark::State &state) {
     auto const write_size = static_cast<std::size_t>(state.range(0));
     auto const num_writes = total_bytes / write_size;
     std::vector<std::byte> data(write_size);
-    auto pool = std::make_shared<object_pool<std::vector<std::byte>>>();
+    auto bsrc = recycling_bucket_source<std::byte>::create();
     for ([[maybe_unused]] auto _ : state) {
         auto proc =
-            write_binary_stream(ref_output_stream(stream), pool, write_size);
+            write_binary_stream(ref_output_stream(stream), bsrc, write_size);
         for (auto n = num_writes; n > 0; --n)
-            proc.handle(own_on_copy_view(data));
+            proc.handle(data);
     }
 }
 

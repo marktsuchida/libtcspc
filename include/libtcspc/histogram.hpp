@@ -6,12 +6,12 @@
 
 #pragma once
 
+#include "bucket.hpp"
 #include "common.hpp"
 #include "errors.hpp"
 #include "histogram_events.hpp"
 #include "histogramming.hpp"
 #include "introspect.hpp"
-#include "own_on_copy_view.hpp"
 #include "span.hpp"
 
 #include <algorithm>
@@ -39,21 +39,29 @@ class histogram {
         std::is_same_v<OverflowStrategy, saturate_on_overflow>,
         saturate_on_internal_overflow, stop_on_internal_overflow>;
 
-    // NOLINTNEXTLINE(cppcoreguidelines-avoid-c-arrays,modernize-avoid-c-arrays)
-    std::unique_ptr<bin_type[]> hist_mem;
-    span<bin_type> hist;
+    std::shared_ptr<bucket_source<bin_type>> bsource;
+    bucket<bin_type> hist_bucket;
     single_histogram<bin_index_type, bin_type, internal_overflow_strategy>
         shist;
     bool saturated = false;
     Downstream downstream;
 
+    void lazy_start() {
+        if (hist_bucket.empty()) { // First time, or after reset.
+            hist_bucket = bsource->bucket_of_size(shist.num_bins());
+            shist = decltype(shist){hist_bucket, shist};
+            shist.clear();
+        }
+    }
+
     void emit_concluding() {
-        downstream.handle(concluding_histogram_event<DataTraits>{
-            own_on_copy_view<bin_type>(hist)});
+        downstream.handle(
+            concluding_histogram_event<DataTraits>{std::move(hist_bucket)});
+        hist_bucket = {};
     }
 
     void reset() {
-        shist.clear();
+        hist_bucket = {};
         if constexpr (std::is_same_v<OverflowStrategy, saturate_on_overflow>) {
             saturated = false;
         }
@@ -93,10 +101,13 @@ class histogram {
 
   public:
     explicit histogram(std::size_t num_bins, bin_type max_per_bin,
+                       std::shared_ptr<bucket_source<bin_type>> bucket_source,
                        Downstream downstream)
-        : hist_mem(new bin_type[num_bins]), hist(hist_mem.get(), num_bins),
-          shist(hist, max_per_bin), downstream(std::move(downstream)) {
-        shist.clear();
+        : bsource(std::move(bucket_source)),
+          shist(hist_bucket, max_per_bin, num_bins),
+          downstream(std::move(downstream)) {
+        if (num_bins == 0)
+            throw std::logic_error("histogram must have at least 1 bin");
     }
 
     [[nodiscard]] auto introspect_node() const -> processor_info {
@@ -113,6 +124,7 @@ class histogram {
     template <typename DT> void handle(bin_increment_event<DT> const &event) {
         static_assert(std::is_same_v<typename DT::bin_index_type,
                                      typename DataTraits::bin_index_type>);
+        lazy_start();
         if (not shist.apply_increments({&event.bin_index, 1})) {
             if constexpr (std::is_same_v<OverflowStrategy,
                                          saturate_on_overflow>) {
@@ -124,11 +136,13 @@ class histogram {
                 return handle_overflow(event);
             }
         }
-        downstream.handle(
-            histogram_event<DataTraits>{own_on_copy_view<bin_type>(hist)});
+        auto const hist_event =
+            histogram_event<DataTraits>{hist_bucket.subbucket(0)};
+        downstream.handle(hist_event);
     }
 
     void handle([[maybe_unused]] ResetEvent const &event) {
+        lazy_start();
         emit_concluding();
         reset();
     }
@@ -138,6 +152,7 @@ class histogram {
     }
 
     void flush() {
+        lazy_start();
         emit_concluding();
         downstream.flush();
     }
@@ -187,6 +202,9 @@ class histogram {
  *
  * \param max_per_bin maximum value allowed in each bin
  *
+ * \param bucket_source bucket source providing series of buffers (a new one is
+ * used after every reset)
+ *
  * \param downstream downstream processor (moved out)
  *
  * \return histogram processor
@@ -194,10 +212,13 @@ class histogram {
 template <typename ResetEvent, typename OverflowStrategy,
           typename DataTraits = default_data_traits, typename Downstream>
 auto histogram(std::size_t num_bins, typename DataTraits::bin_type max_per_bin,
+               std::shared_ptr<bucket_source<typename DataTraits::bin_type>>
+                   bucket_source,
                Downstream &&downstream) {
     return internal::histogram<ResetEvent, OverflowStrategy, DataTraits,
                                Downstream>(
-        num_bins, max_per_bin, std ::forward<Downstream>(downstream));
+        num_bins, max_per_bin, std::move(bucket_source),
+        std ::forward<Downstream>(downstream));
 }
 
 } // namespace tcspc

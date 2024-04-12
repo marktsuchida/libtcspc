@@ -6,9 +6,8 @@
 
 #pragma once
 
+#include "bucket.hpp"
 #include "introspect.hpp"
-#include "object_pool.hpp"
-#include "own_on_copy_view.hpp"
 #include "span.hpp"
 
 #include <algorithm>
@@ -340,23 +339,25 @@ namespace internal {
 
 template <typename OutputStream> class write_binary_stream {
     OutputStream strm;
-    std::shared_ptr<object_pool<std::vector<std::byte>>> bufpool;
+    std::shared_ptr<bucket_source<std::byte>> bsource;
     std::size_t write_granularity;
 
     std::uint64_t total_bytes_written = 0;
-    // If not null, buffer to use next, containing a partial event:
-    std::shared_ptr<std::vector<std::byte>> buf;
+
+    // If not empty, buffer to use next, containing a partial event:
+    bucket<std::byte> buffer;
+    std::size_t bytes_buffered = 0;
 
   public:
     explicit write_binary_stream(
         OutputStream stream,
-        std::shared_ptr<object_pool<std::vector<std::byte>>> buffer_pool,
+        std::shared_ptr<bucket_source<std::byte>> bucket_source,
         std::size_t write_granularity_bytes)
-        : strm(std::move(stream)), bufpool(std::move(buffer_pool)),
+        : strm(std::move(stream)), bsource(std::move(bucket_source)),
           write_granularity(write_granularity_bytes) {
-        if (not bufpool)
+        if (not bsource)
             throw std::invalid_argument(
-                "write_binary_stream buffer_pool must not be null");
+                "write_binary_stream bucket_source must not be null");
         if (write_granularity <= 0)
             throw std::invalid_argument(
                 "write_binary_stream write_granularity_bytes must be positive");
@@ -373,18 +374,14 @@ template <typename OutputStream> class write_binary_stream {
         return g;
     }
 
-    void handle(own_on_copy_view<std::byte> const &event) {
-        handle_span(event.as_span());
-    }
-
-    void handle(own_on_copy_view<std::byte const> const &event) {
-        handle_span(event.as_span());
+    template <typename Span> void handle(Span const &event) {
+        handle_span(span<std::byte const>(event));
     }
 
     void flush() {
-        if (buf) {
-            strm.write(span(*buf));
-            buf.reset();
+        if (bytes_buffered > 0) {
+            strm.write(span(buffer).first(bytes_buffered));
+            buffer = {};
             if (strm.is_error())
                 throw std::runtime_error("failed to write output");
         }
@@ -405,25 +402,25 @@ template <typename OutputStream> class write_binary_stream {
             }
         }
 
-        if ((buf || first_block_size < write_granularity) &&
-            not event_span.empty()) {
-            auto const leftover_bytes = buf ? buf->size() : 0;
-            auto const buffer_size =
-                std::min(leftover_bytes + event_span.size(), first_block_size);
-            if (not buf)
-                buf = bufpool->check_out();
-            buf->reserve(write_granularity);
-            buf->resize(buffer_size);
-            auto const dest_span = span(*buf).subspan(leftover_bytes);
-            auto const src_span = event_span.subspan(
-                0, std::min(event_span.size(), dest_span.size()));
+        if (bytes_buffered > 0 || first_block_size < write_granularity) {
+            auto const bytes_available =
+                std::min(bytes_buffered + event_span.size(), first_block_size);
+            if (buffer.empty())
+                buffer = bsource->bucket_of_size(write_granularity);
+            auto const dest_span =
+                buffer.first(bytes_available).subspan(bytes_buffered);
+            auto const src_span = event_span.first(
+                std::min(event_span.size(), dest_span.size()));
             std::copy(src_span.begin(), src_span.end(), dest_span.begin());
-            if (buffer_size == first_block_size) {
-                strm.write(span(*buf));
-                buf.reset();
+            if (bytes_available == first_block_size) {
+                strm.write(buffer.first(bytes_available));
+                buffer = {};
+                bytes_buffered = 0;
                 if (strm.is_error())
                     throw std::runtime_error("failed to write output");
-                total_bytes_written += buffer_size;
+                total_bytes_written += bytes_available;
+            } else {
+                bytes_buffered = bytes_available;
             }
             event_span = event_span.subspan(src_span.size());
         }
@@ -431,7 +428,7 @@ template <typename OutputStream> class write_binary_stream {
         auto const direct_write_size =
             event_span.size() / write_granularity * write_granularity;
         if (direct_write_size > 0) {
-            strm.write(event_span.subspan(0, direct_write_size));
+            strm.write(event_span.first(direct_write_size));
             if (strm.is_error())
                 throw std::runtime_error("failed to write output");
             total_bytes_written += direct_write_size;
@@ -439,10 +436,9 @@ template <typename OutputStream> class write_binary_stream {
         }
 
         if (not event_span.empty()) {
-            buf = bufpool->check_out();
-            buf->reserve(write_granularity);
-            buf->resize(event_span.size());
-            std::copy(event_span.begin(), event_span.end(), buf->begin());
+            buffer = bsource->bucket_of_size(write_granularity);
+            bytes_buffered = event_span.size();
+            std::copy(event_span.begin(), event_span.end(), buffer.begin());
         }
     }
 };
@@ -459,9 +455,9 @@ template <typename OutputStream> class write_binary_stream {
  * \ref ostream_output_stream. (Use of iostreams is not recommended due to
  * often poor performance.)
  *
- * The processor receives data in the form of <tt>own_on_copy_view<std::byte
- * const></tt> (see \ref view_as_bytes). The bytes are written sequentially and
- * contiguously to the stream.
+ * The processor receives data in the form of \ref span of bytes or another
+ * type that can be explicitly converted to `span<std::byte const>`. The bytes
+ * are written sequentially and contiguously to the stream.
  *
  * For efficiency, data is written in batches of at least \e
  * write_granularity_bytes (except possibly at the beginning and end of the
@@ -485,30 +481,31 @@ template <typename OutputStream> class write_binary_stream {
  *
  * \param stream the output stream (see \ref streams)
  *
- * \param buffer_pool object pool providing write buffers; must be able to
- * circulate at least 1 buffer to avoid deadlock; may not be used if all events
+ * \param bucket_source bucket source providing write buffers; must be able to
+ * circulate at least 1 bucket without blocking; may not be used if all events
  * can be written directly
  *
  * \param write_granularity_bytes minimum size, in bytes, to write; all writes
- * (except possible the first and last ones) will be a multiple of this value
+ * (except possible the first and last ones, for alignment) will be a multiple
+ * of this value
  *
  * \return write-binary-stream processor
  */
 template <typename OutputStream>
 auto write_binary_stream(
     OutputStream &&stream,
-    std::shared_ptr<object_pool<std::vector<std::byte>>> buffer_pool,
+    std::shared_ptr<bucket_source<std::byte>> bucket_source,
     std::size_t write_granularity_bytes) {
     // Support direct passing of C++ iostreams stream.
     if constexpr (std::is_base_of_v<std::ostream, OutputStream>) {
         auto wrapped =
             ostream_output_stream(std::forward<OutputStream>(stream));
         return internal::write_binary_stream<decltype(wrapped)>(
-            std::move(wrapped), std::move(buffer_pool),
+            std::move(wrapped), std::move(bucket_source),
             write_granularity_bytes);
     } else {
         return internal::write_binary_stream<OutputStream>(
-            std::forward<OutputStream>(stream), std::move(buffer_pool),
+            std::forward<OutputStream>(stream), std::move(bucket_source),
             write_granularity_bytes);
     }
 }

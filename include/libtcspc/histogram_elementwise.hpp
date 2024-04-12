@@ -6,12 +6,12 @@
 
 #pragma once
 
+#include "bucket.hpp"
 #include "common.hpp"
 #include "errors.hpp"
 #include "histogram_events.hpp"
 #include "histogramming.hpp"
 #include "introspect.hpp"
-#include "own_on_copy_view.hpp"
 #include "span.hpp"
 
 #include <cassert>
@@ -37,11 +37,8 @@ class histogram_elementwise {
         std::is_same_v<OverflowStrategy, saturate_on_overflow>,
         saturate_on_internal_overflow, stop_on_internal_overflow>;
 
-    // We use unique_ptr<T[]> rather than vector<T> because, among other
-    // things, the latter cannot be allocated without zeroing.
-    // NOLINTNEXTLINE(cppcoreguidelines-avoid-c-arrays,modernize-avoid-c-arrays)
-    std::unique_ptr<bin_type[]> hist_arr_mem;
-    span<bin_type> hist_arr;
+    std::shared_ptr<bucket_source<bin_type>> bsource;
+    bucket<bin_type> hist_bucket;
     multi_histogram<bin_index_type, bin_type, internal_overflow_strategy>
         mhist;
     bool saturated = false;
@@ -60,13 +57,20 @@ class histogram_elementwise {
     }
 
   public:
-    explicit histogram_elementwise(std::size_t num_elements,
-                                   std::size_t num_bins, bin_type max_per_bin,
-                                   Downstream downstream)
-        : hist_arr_mem(new bin_type[num_elements * num_bins]),
-          hist_arr(hist_arr_mem.get(), num_elements * num_bins),
-          mhist(hist_arr, max_per_bin, num_bins, num_elements, true),
-          downstream(std::move(downstream)) {}
+    explicit histogram_elementwise(
+        std::size_t num_elements, std::size_t num_bins, bin_type max_per_bin,
+        std::shared_ptr<bucket_source<bin_type>> bucket_source,
+        Downstream downstream)
+        : bsource(std::move(bucket_source)),
+          mhist(hist_bucket, max_per_bin, num_bins, num_elements, true),
+          downstream(std::move(downstream)) {
+        if (num_elements == 0)
+            throw std::logic_error(
+                "histogram_elementsiwe must have at least 1 element");
+        if (num_bins == 0)
+            throw std::logic_error(
+                "histogram_elementsiwe must have at least 1 bin per element");
+    }
 
     [[nodiscard]] auto introspect_node() const -> processor_info {
         processor_info info(this, "histogram_elementwise");
@@ -83,6 +87,11 @@ class histogram_elementwise {
     void handle(bin_increment_batch_event<DT> const &event) {
         static_assert(std::is_same_v<typename DT::bin_index_type,
                                      typename DataTraits::bin_index_type>);
+        if (hist_bucket.empty()) { // First time, or after completion.
+            hist_bucket = bsource->bucket_of_size(mhist.num_elements() *
+                                                  mhist.num_bins());
+            mhist = decltype(mhist){hist_bucket, mhist, true};
+        }
         assert(not mhist.is_complete());
         auto element_index = mhist.next_element_index();
         if (not mhist.apply_increment_batch(event.bin_indices, journal)) {
@@ -97,13 +106,15 @@ class histogram_elementwise {
             }
         }
 
-        downstream.handle(element_histogram_event<DataTraits>{
-            own_on_copy_view<bin_type>(mhist.element_span(element_index))});
+        auto const elem_event =
+            element_histogram_event<DataTraits>{hist_bucket.subbucket(
+                element_index * mhist.num_bins(), mhist.num_bins())};
+        downstream.handle(elem_event);
 
         if (mhist.is_complete()) {
-            downstream.handle(histogram_array_event<DataTraits>{
-                own_on_copy_view<bin_type>(hist_arr)});
-            mhist.reset(true);
+            downstream.handle(
+                histogram_array_event<DataTraits>{std::move(hist_bucket)});
+            hist_bucket = {};
             if constexpr (std::is_same_v<OverflowStrategy,
                                          saturate_on_overflow>) {
                 saturated = false;
@@ -166,18 +177,24 @@ class histogram_elementwise {
  *
  * \param max_per_bin maximum value allowed in each bin
  *
+ * \param bucket_source bucket source providing series of buffers for each
+ * histogram array
+ *
  * \param downstream downstream processor (moved out)
  *
  * \return histogram-array processor
  */
 template <typename OverflowStrategy, typename DataTraits = default_data_traits,
           typename Downstream>
-auto histogram_elementwise(std::size_t num_elements, std::size_t num_bins,
-                           typename DataTraits::bin_type max_per_bin,
-                           Downstream &&downstream) {
+auto histogram_elementwise(
+    std::size_t num_elements, std::size_t num_bins,
+    typename DataTraits::bin_type max_per_bin,
+    std::shared_ptr<bucket_source<typename DataTraits::bin_type>>
+        bucket_source,
+    Downstream &&downstream) {
     return internal::histogram_elementwise<OverflowStrategy, DataTraits,
                                            Downstream>(
-        num_elements, num_bins, max_per_bin,
+        num_elements, num_bins, max_per_bin, std::move(bucket_source),
         std::forward<Downstream>(downstream));
 }
 
@@ -220,9 +237,8 @@ class histogram_elementwise_accumulate {
                            bin_increment_batch_journal<bin_index_type>,
                            null_journal<bin_index_type>>;
 
-    // NOLINTNEXTLINE(cppcoreguidelines-avoid-c-arrays,modernize-avoid-c-arrays)
-    std::unique_ptr<bin_type[]> hist_arr_mem;
-    span<bin_type> hist_arr;
+    std::shared_ptr<bucket_source<bin_type>> bsource;
+    bucket<bin_type> hist_bucket;
     multi_histogram_accumulation<bin_index_type, bin_type,
                                  internal_overflow_strategy>
         mhista;
@@ -230,10 +246,19 @@ class histogram_elementwise_accumulate {
     journal_type journal;
     Downstream downstream;
 
+    void lazy_start() {
+        if (hist_bucket.empty()) { // First time, or after reset.
+            hist_bucket = bsource->bucket_of_size(mhista.num_elements() *
+                                                  mhista.num_bins());
+            mhista = decltype(mhista){hist_bucket, mhista, true};
+        }
+    }
+
     void emit_concluding() {
         assert(mhista.is_consistent());
         downstream.handle(concluding_histogram_array_event<DataTraits>{
-            own_on_copy_view<bin_type>(hist_arr)});
+            std::move(hist_bucket)});
+        hist_bucket = {};
     }
 
     [[noreturn]] void stop() {
@@ -258,7 +283,10 @@ class histogram_elementwise_accumulate {
             mhista.roll_back_current_cycle(journal);
             if constexpr (EmitConcluding)
                 emit_concluding();
-            mhista.reset_and_replay(journal);
+            hist_bucket = bsource->bucket_of_size(mhista.num_elements() *
+                                                  mhista.num_bins());
+            mhista = decltype(mhista){hist_bucket, mhista, true};
+            mhista.replay(journal);
             return handle(event); // Recurse max once
         } else if constexpr (std::is_same_v<OverflowStrategy,
                                             stop_on_overflow>) {
@@ -276,14 +304,20 @@ class histogram_elementwise_accumulate {
     }
 
   public:
-    explicit histogram_elementwise_accumulate(std::size_t num_elements,
-                                              std::size_t num_bins,
-                                              bin_type max_per_bin,
-                                              Downstream downstream)
-        : hist_arr_mem(new bin_type[num_elements * num_bins]),
-          hist_arr(hist_arr_mem.get(), num_elements * num_bins),
-          mhista(hist_arr, max_per_bin, num_bins, num_elements, true),
-          downstream(std::move(downstream)) {}
+    explicit histogram_elementwise_accumulate(
+        std::size_t num_elements, std::size_t num_bins, bin_type max_per_bin,
+        std::shared_ptr<bucket_source<bin_type>> bucket_source,
+        Downstream downstream)
+        : bsource(std::move(bucket_source)),
+          mhista(hist_bucket, max_per_bin, num_bins, num_elements, true),
+          downstream(std::move(downstream)) {
+        if (num_elements == 0)
+            throw std::logic_error(
+                "histogram_elementsiwe_accumulate must have at least 1 element");
+        if (num_bins == 0)
+            throw std::logic_error(
+                "histogram_elementsiwe_accumulate must have at least 1 bin per element");
+    }
 
     [[nodiscard]] auto introspect_node() const -> processor_info {
         processor_info info(this, "histogram_elementwise_accumulate");
@@ -300,6 +334,7 @@ class histogram_elementwise_accumulate {
     void handle(bin_increment_batch_event<DT> const &event) {
         static_assert(std::is_same_v<typename DT::bin_index_type,
                                      typename DataTraits::bin_index_type>);
+        lazy_start();
         assert(not mhista.is_cycle_complete());
         auto element_index = mhista.next_element_index();
         if (not mhista.apply_increment_batch(event.bin_indices, journal)) {
@@ -314,22 +349,26 @@ class histogram_elementwise_accumulate {
             }
         }
 
-        downstream.handle(element_histogram_event<DataTraits>{
-            own_on_copy_view<bin_type>(mhista.element_span(element_index))});
+        auto const elem_event =
+            element_histogram_event<DataTraits>{hist_bucket.subbucket(
+                element_index * mhista.num_bins(), mhista.num_bins())};
+        downstream.handle(elem_event);
 
         if (mhista.is_cycle_complete()) {
             mhista.new_cycle(journal);
-            downstream.handle(histogram_array_event<DataTraits>{
-                own_on_copy_view<bin_type>(hist_arr)});
+            auto const array_event =
+                histogram_array_event<DataTraits>{hist_bucket.subbucket(0)};
+            downstream.handle(array_event);
         }
     }
 
     void handle([[maybe_unused]] ResetEvent const &event) {
         if constexpr (EmitConcluding) {
+            lazy_start();
             mhista.roll_back_current_cycle(journal);
             emit_concluding();
         }
-        mhista.reset(true);
+        hist_bucket = {};
         if constexpr (std::is_same_v<OverflowStrategy, saturate_on_overflow>) {
             saturated = false;
         }
@@ -342,6 +381,7 @@ class histogram_elementwise_accumulate {
 
     void flush() {
         if constexpr (EmitConcluding) {
+            lazy_start();
             mhista.roll_back_current_cycle(journal);
             emit_concluding();
         }
@@ -384,6 +424,9 @@ class histogram_elementwise_accumulate {
  *
  * \param max_per_bin maximum value allowed in each bin
  *
+ * \param bucket_source bucket source providing series of buffers (a new one is
+ * used after each reset)
+ *
  * \param downstream downstream processor (moved out)
  *
  * \return accumulate-histogram-arrays processor
@@ -393,10 +436,13 @@ template <typename ResetEvent, typename OverflowStrategy,
           typename DataTraits = default_data_traits, typename Downstream>
 auto histogram_elementwise_accumulate(
     std::size_t num_elements, std::size_t num_bins,
-    typename DataTraits::bin_type max_per_bin, Downstream &&downstream) {
+    typename DataTraits::bin_type max_per_bin,
+    std::shared_ptr<bucket_source<typename DataTraits::bin_type>>
+        bucket_source,
+    Downstream &&downstream) {
     return internal::histogram_elementwise_accumulate<
         ResetEvent, OverflowStrategy, EmitConcluding, DataTraits, Downstream>(
-        num_elements, num_bins, max_per_bin,
+        num_elements, num_bins, max_per_bin, std::move(bucket_source),
         std::forward<Downstream>(downstream));
 }
 

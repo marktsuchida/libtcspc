@@ -6,7 +6,9 @@
 
 #include "libtcspc/bucket.hpp"
 
+#include "libtcspc/common.hpp"
 #include "libtcspc/span.hpp"
+#include "test_checkers.hpp"
 #include "test_thread_utils.hpp"
 
 #include <catch2/catch_test_macros.hpp>
@@ -90,10 +92,11 @@ TEST_CASE("subbucket shares observable storage") {
 }
 
 TEST_CASE("unrelated buckets compare equal if data equal") {
+    struct ignore_storage {};
     std::vector<int> v{42, 43, 44};
-    auto b = bucket<int>(span(v), std::move(v));
+    auto b = bucket<int>(span(v), ignore_storage{});
     std::array<int, 3> a{42, 43, 44};
-    auto bb = bucket<int>(span(a), nullptr);
+    auto bb = bucket<int>(span(a), ignore_storage{});
     CHECK(b == bb);
 }
 
@@ -163,6 +166,13 @@ TEST_CASE(
     third_bucket_obtained_latch.wait();
     t.join();
     auto bb = source->bucket_of_size(9);
+}
+
+TEST_CASE("introspect extract_bucket", "[introspect]") {
+    struct evt {
+        bucket<int> bucket;
+    };
+    check_introspect_simple_processor(extract_bucket<evt>(null_sink()));
 }
 
 } // namespace tcspc

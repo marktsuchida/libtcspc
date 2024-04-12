@@ -133,38 +133,40 @@ struct settings {
 };
 
 template <bool Cumulative>
-auto make_histo_proc(settings const &settings,
-                     std::shared_ptr<tcspc::processor_context> const &ctx) {
+auto make_histo_proc(
+    settings const &settings,
+    std::shared_ptr<tcspc::processor_context> const &ctx,
+    std::shared_ptr<tcspc::bucket_source<std::uint16_t>> bsource) {
     using namespace tcspc;
     auto writer = write_binary_stream(
         binary_file_output_stream(settings.output_filename, settings.truncate),
-        std::make_shared<object_pool<std::vector<std::byte>>>(), 65536);
+        recycling_bucket_source<std::byte>::create(), 65536);
     if constexpr (Cumulative) {
         return histogram_elementwise_accumulate<never_event, error_on_overflow,
                                                 true>(
             settings.pixels_per_line * settings.lines_per_frame,
-            std::size_t(settings.max_bin_index) + 1, 65535,
+            std::size_t(settings.max_bin_index) + 1, 65535, bsource,
             count<histogram_array_event<>>(
                 ctx->tracker<count_access>("frame_counter"),
                 select<type_list<concluding_histogram_array_event<>>>(
-                    view_histogram_array_as_bytes<
-                        concluding_histogram_array_event<>>(
-                        std::move(writer)))));
+                    extract_bucket<concluding_histogram_array_event<>>(
+                        view_as_bytes(std::move(writer))))));
     } else {
         return histogram_elementwise<error_on_overflow>(
             settings.pixels_per_line * settings.lines_per_frame,
-            std::size_t(settings.max_bin_index) + 1, 65535,
+            std::size_t(settings.max_bin_index) + 1, 65535, bsource,
             count<histogram_array_event<>>(
                 ctx->tracker<count_access>("frame_counter"),
                 select<type_list<histogram_array_event<>>>(
-                    view_histogram_array_as_bytes<histogram_array_event<>>(
-                        std::move(writer)))));
+                    extract_bucket<histogram_array_event<>>(
+                        view_as_bytes(std::move(writer))))));
     }
 }
 
 template <bool Cumulative>
-auto make_processor(settings const &settings,
-                    std::shared_ptr<tcspc::processor_context> ctx) {
+auto make_processor(
+    settings const &settings, std::shared_ptr<tcspc::processor_context> ctx,
+    std::shared_ptr<tcspc::bucket_source<std::uint16_t>> bsource) {
     using namespace tcspc;
     using device_event_vector = std::vector<swabian_tag_event>;
 
@@ -177,7 +179,7 @@ auto make_processor(settings const &settings,
     batch_bin_increments<pixel_start_event, pixel_stop_event>(
     count<bin_increment_batch_event<>>(
         ctx->tracker<count_access>("pixel_counter"),
-    make_histo_proc<Cumulative>(settings, ctx))));
+    make_histo_proc<Cumulative>(settings, ctx, bsource))));
 
     auto [sync_merge, cfd_merge] =
     merge<type_list<detection_event<>>>(1024 * 1024,
@@ -273,9 +275,10 @@ void print_stats(settings const &settings,
     std::fputs(stream.str().c_str(), stdout);
 }
 
-template <bool Cumulative> auto run_and_print(settings const &settings) {
+template <bool Cumulative> void run_and_print(settings const &settings) {
+    auto bsource = tcspc::recycling_bucket_source<std::uint16_t>::create();
     auto ctx = std::make_shared<tcspc::processor_context>();
-    auto proc = make_processor<Cumulative>(settings, ctx);
+    auto proc = make_processor<Cumulative>(settings, ctx, bsource);
     if (settings.dump_graph) {
         auto graph = proc.introspect_graph();
         std::fputs(tcspc::graphviz_from_processor_graph(graph).c_str(),

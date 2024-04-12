@@ -6,8 +6,8 @@
 
 #pragma once
 
+#include "bucket.hpp"
 #include "common.hpp"
-#include "own_on_copy_view.hpp"
 
 #include <cstdint>
 #include <ostream>
@@ -15,22 +15,6 @@
 #include <vector>
 
 namespace tcspc {
-
-namespace internal {
-
-template <typename It>
-inline void print_range(std::ostream &s, It first, It last) {
-    using raw_type = std::remove_reference_t<decltype(*first)>;
-    static_assert(std::is_integral_v<raw_type>);
-    using int_type = std::conditional_t<std::is_unsigned_v<raw_type>,
-                                        std::uint64_t, std::int64_t>;
-    s << "{ ";
-    while (first != last)
-        s << int_type{*first++} << ", ";
-    s << '}';
-}
-
-} // namespace internal
 
 /**
  * \brief Event representing a datapoint for histogramming.
@@ -154,7 +138,8 @@ struct bin_increment_batch_event {
     friend auto operator<<(std::ostream &s, bin_increment_batch_event const &e)
         -> std::ostream & {
         s << "bin_increment_batch(";
-        internal::print_range(s, e.bin_indices.begin(), e.bin_indices.end());
+        for (auto const ind : e.bin_indices)
+            s << ind << ", ";
         return s << ')';
     }
 };
@@ -173,13 +158,13 @@ template <typename DataTraits = default_data_traits> struct histogram_event {
     /**
      * \brief The histogram.
      */
-    own_on_copy_view<typename DataTraits::bin_type> histogram;
+    bucket<typename DataTraits::bin_type> bucket;
 
     /** \brief Equality comparison operator. */
     friend constexpr auto operator==(histogram_event const &lhs,
                                      histogram_event const &rhs) noexcept
         -> bool {
-        return lhs.histogram == rhs.histogram;
+        return lhs.bucket == rhs.bucket;
     }
 
     /** \brief Inequality comparison operator. */
@@ -192,10 +177,7 @@ template <typename DataTraits = default_data_traits> struct histogram_event {
     /** \brief Stream insertion operator. */
     friend auto operator<<(std::ostream &s, histogram_event const &e)
         -> std::ostream & {
-        s << "histogram(";
-        internal::print_range(s, e.histogram.as_span().begin(),
-                              e.histogram.as_span().end());
-        return s << ')';
+        return s << "histogram(" << e.bucket << ')';
     }
 };
 
@@ -216,13 +198,13 @@ struct concluding_histogram_event {
     /**
      * \brief The accumulated histogram.
      */
-    own_on_copy_view<typename DataTraits::bin_type> histogram;
+    bucket<typename DataTraits::bin_type> bucket;
 
     /** \brief Equality comparison operator. */
     friend constexpr auto
     operator==(concluding_histogram_event const &lhs,
                concluding_histogram_event const &rhs) noexcept -> bool {
-        return lhs.histogram == rhs.histogram;
+        return lhs.bucket == rhs.bucket;
     }
 
     /** \brief Inequality comparison operator. */
@@ -236,10 +218,7 @@ struct concluding_histogram_event {
     friend auto operator<<(std::ostream &s,
                            concluding_histogram_event const &e)
         -> std::ostream & {
-        s << "concluding_histogram(";
-        internal::print_range(s, e.histogram.as_span().begin(),
-                              e.histogram.as_span().end());
-        return s << ')';
+        return s << "concluding_histogram(" << e.bucket << ')';
     }
 };
 
@@ -260,13 +239,13 @@ struct element_histogram_event {
     /**
      * \brief View of the histogram data.
      */
-    own_on_copy_view<typename DataTraits::bin_type> histogram;
+    bucket<typename DataTraits::bin_type> bucket;
 
     /** \brief Equality comparison operator. */
     friend auto operator==(element_histogram_event const &lhs,
                            element_histogram_event const &rhs) noexcept
         -> bool {
-        return lhs.histogram == rhs.histogram;
+        return lhs.bucket == rhs.bucket;
     }
 
     /** \brief Inequality comparison operator. */
@@ -279,10 +258,7 @@ struct element_histogram_event {
     /** \brief Stream insertion operator. */
     friend auto operator<<(std::ostream &s, element_histogram_event const &e)
         -> std::ostream & {
-        s << "element_histogram(";
-        internal::print_range(s, e.histogram.as_span().begin(),
-                              e.histogram.as_span().end());
-        return s << ')';
+        return s << "element_histogram(" << e.bucket << ')';
     }
 };
 
@@ -303,12 +279,12 @@ struct histogram_array_event {
     /**
      * \brief View of the histogram array.
      */
-    own_on_copy_view<typename DataTraits::bin_type> histogram_array;
+    bucket<typename DataTraits::bin_type> bucket;
 
     /** \brief Equality comparison operator. */
     friend auto operator==(histogram_array_event const &lhs,
                            histogram_array_event const &rhs) noexcept -> bool {
-        return lhs.histogram_array == rhs.histogram_array;
+        return lhs.bucket == rhs.bucket;
     }
 
     /** \brief Inequality comparison operator. */
@@ -320,10 +296,7 @@ struct histogram_array_event {
     /** \brief Stream insertion operator. */
     friend auto operator<<(std::ostream &s, histogram_array_event const &e)
         -> std::ostream & {
-        s << "histogram_array(";
-        internal::print_range(s, e.histogram_array.as_span().begin(),
-                              e.histogram_array.as_span().end());
-        return s << ')';
+        return s << "histogram_array(" << e.bucket << ')';
     }
 };
 
@@ -345,13 +318,13 @@ struct concluding_histogram_array_event {
     /**
      * \brief View of the histogram array.
      */
-    own_on_copy_view<typename DataTraits::bin_type> histogram_array;
+    bucket<typename DataTraits::bin_type> bucket;
 
     /** \brief Equality comparison operator. */
     friend auto
     operator==(concluding_histogram_array_event const &lhs,
                concluding_histogram_array_event const &rhs) noexcept -> bool {
-        return lhs.histogram_array == rhs.histogram_array;
+        return lhs.bucket == rhs.bucket;
     }
 
     /** \brief Inequality comparison operator. */
@@ -365,10 +338,7 @@ struct concluding_histogram_array_event {
     friend auto operator<<(std::ostream &s,
                            concluding_histogram_array_event const &e)
         -> std::ostream & {
-        s << "concluding_histogram_array(";
-        internal::print_range(s, e.histogram_array.as_span().begin(),
-                              e.histogram_array.as_span().end());
-        return s << ')';
+        return s << "concluding_histogram_array(" << e.bucket << ')';
     }
 };
 

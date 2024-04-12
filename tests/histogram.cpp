@@ -6,11 +6,11 @@
 
 #include "libtcspc/histogram.hpp"
 
+#include "libtcspc/bucket.hpp"
 #include "libtcspc/common.hpp"
 #include "libtcspc/errors.hpp"
 #include "libtcspc/histogram_events.hpp"
 #include "libtcspc/int_types.hpp"
-#include "libtcspc/own_on_copy_view.hpp"
 #include "libtcspc/processor_context.hpp"
 #include "libtcspc/test_utils.hpp"
 #include "libtcspc/type_list.hpp"
@@ -34,36 +34,17 @@ struct data_traits : default_data_traits {
     using bin_type = u16;
 };
 
+template <typename T> auto tmp_bucket(T &v) {
+    struct ignore_storage {};
+    return bucket(span(v), ignore_storage{});
+}
+
 } // namespace
 
 TEST_CASE("introspect histogram", "[introspect]") {
     check_introspect_simple_processor(
-        histogram<reset_event, saturate_on_overflow>(1, 255, null_sink()));
-}
-
-TEMPLATE_TEST_CASE("Histogram, zero bins", "", saturate_on_overflow,
-                   reset_on_overflow, stop_on_overflow, error_on_overflow) {
-    using out_events = type_list<histogram_event<data_traits>,
-                                 concluding_histogram_event<data_traits>,
-                                 warning_event, misc_event>;
-    auto ctx = std::make_shared<processor_context>();
-    auto in = feed_input<
-        type_list<bin_increment_event<data_traits>, reset_event, misc_event>>(
-        histogram<reset_event, TestType, data_traits>(
-            0, 0,
-            capture_output<out_events>(
-                ctx->tracker<capture_output_access>("out"))));
-    in.require_output_checked(ctx, "out");
-    auto out = capture_output_checker<out_events>(
-        ctx->access<capture_output_access>("out"));
-
-    in.feed(misc_event{42});
-    REQUIRE(out.check(misc_event{42}));
-    in.feed(reset_event{});
-    REQUIRE(out.check(concluding_histogram_event<data_traits>{{}}));
-    in.flush();
-    REQUIRE(out.check(concluding_histogram_event<data_traits>{{}}));
-    REQUIRE(out.check_flushed());
+        histogram<reset_event, saturate_on_overflow>(
+            1, 255, new_delete_bucket_source<u16>::create(), null_sink()));
 }
 
 TEMPLATE_TEST_CASE("Histogram, no overflow", "", saturate_on_overflow,
@@ -75,7 +56,7 @@ TEMPLATE_TEST_CASE("Histogram, no overflow", "", saturate_on_overflow,
     auto in =
         feed_input<type_list<bin_increment_event<data_traits>, reset_event>>(
             histogram<reset_event, TestType, data_traits>(
-                2, 100,
+                2, 100, new_delete_bucket_source<u16>::create(),
                 capture_output<out_events>(
                     ctx->tracker<capture_output_access>("out"))));
     in.require_output_checked(ctx, "out");
@@ -85,21 +66,21 @@ TEMPLATE_TEST_CASE("Histogram, no overflow", "", saturate_on_overflow,
     std::vector<u16> hist;
     in.feed(bin_increment_event<data_traits>{42, 0});
     hist = {1, 0};
-    REQUIRE(out.check(histogram_event<data_traits>{own_on_copy_view(hist)}));
+    REQUIRE(out.check(histogram_event<data_traits>{tmp_bucket(hist)}));
     in.feed(bin_increment_event<data_traits>{43, 1});
     hist = {1, 1};
-    REQUIRE(out.check(histogram_event<data_traits>{own_on_copy_view(hist)}));
+    REQUIRE(out.check(histogram_event<data_traits>{tmp_bucket(hist)}));
     in.feed(reset_event{44});
     hist = {1, 1};
-    REQUIRE(out.check(
-        concluding_histogram_event<data_traits>{own_on_copy_view(hist)}));
+    REQUIRE(
+        out.check(concluding_histogram_event<data_traits>{tmp_bucket(hist)}));
     in.feed(bin_increment_event<data_traits>{45, 0});
     hist = {1, 0};
-    REQUIRE(out.check(histogram_event<data_traits>{own_on_copy_view(hist)}));
+    REQUIRE(out.check(histogram_event<data_traits>{tmp_bucket(hist)}));
     in.flush();
     hist = {1, 0};
-    REQUIRE(out.check(
-        concluding_histogram_event<data_traits>{own_on_copy_view(hist)}));
+    REQUIRE(
+        out.check(concluding_histogram_event<data_traits>{tmp_bucket(hist)}));
     REQUIRE(out.check_flushed());
 }
 
@@ -113,7 +94,7 @@ TEST_CASE("Histogram, saturate on overflow") {
         auto in = feed_input<
             type_list<bin_increment_event<data_traits>, reset_event>>(
             histogram<reset_event, saturate_on_overflow, data_traits>(
-                1, 0,
+                1, 0, new_delete_bucket_source<u16>::create(),
                 capture_output<out_events>(
                     ctx->tracker<capture_output_access>("out"))));
         in.require_output_checked(ctx, "out");
@@ -124,12 +105,11 @@ TEST_CASE("Histogram, saturate on overflow") {
         in.feed(bin_increment_event<data_traits>{42, 0}); // Overflow
         REQUIRE(out.check(warning_event{"histogram saturated"}));
         hist = {0};
-        REQUIRE(
-            out.check(histogram_event<data_traits>{own_on_copy_view(hist)}));
+        REQUIRE(out.check(histogram_event<data_traits>{tmp_bucket(hist)}));
         in.flush();
         hist = {0};
         REQUIRE(out.check(
-            concluding_histogram_event<data_traits>{own_on_copy_view(hist)}));
+            concluding_histogram_event<data_traits>{tmp_bucket(hist)}));
         REQUIRE(out.check_flushed());
     }
 
@@ -137,7 +117,7 @@ TEST_CASE("Histogram, saturate on overflow") {
         auto in = feed_input<
             type_list<bin_increment_event<data_traits>, reset_event>>(
             histogram<reset_event, saturate_on_overflow, data_traits>(
-                1, 1,
+                1, 1, new_delete_bucket_source<u16>::create(),
                 capture_output<out_events>(
                     ctx->tracker<capture_output_access>("out"))));
         in.require_output_checked(ctx, "out");
@@ -147,25 +127,22 @@ TEST_CASE("Histogram, saturate on overflow") {
         std::vector<u16> hist;
         in.feed(bin_increment_event<data_traits>{42, 0});
         hist = {1};
-        REQUIRE(
-            out.check(histogram_event<data_traits>{own_on_copy_view(hist)}));
+        REQUIRE(out.check(histogram_event<data_traits>{tmp_bucket(hist)}));
         in.feed(bin_increment_event<data_traits>{43, 0}); // Overflow
         REQUIRE(out.check(warning_event{"histogram saturated"}));
         hist = {1};
-        REQUIRE(
-            out.check(histogram_event<data_traits>{own_on_copy_view(hist)}));
+        REQUIRE(out.check(histogram_event<data_traits>{tmp_bucket(hist)}));
         in.feed(reset_event{44});
         hist = {1};
         REQUIRE(out.check(
-            concluding_histogram_event<data_traits>{own_on_copy_view(hist)}));
+            concluding_histogram_event<data_traits>{tmp_bucket(hist)}));
         in.feed(bin_increment_event<data_traits>{45, 0});
         hist = {1};
-        REQUIRE(
-            out.check(histogram_event<data_traits>{own_on_copy_view(hist)}));
+        REQUIRE(out.check(histogram_event<data_traits>{tmp_bucket(hist)}));
         in.flush();
         hist = {1};
         REQUIRE(out.check(
-            concluding_histogram_event<data_traits>{own_on_copy_view(hist)}));
+            concluding_histogram_event<data_traits>{tmp_bucket(hist)}));
         REQUIRE(out.check_flushed());
     }
 }
@@ -179,7 +156,7 @@ TEST_CASE("Histogram, reset on overflow") {
         auto in = feed_input<
             type_list<bin_increment_event<data_traits>, reset_event>>(
             histogram<reset_event, reset_on_overflow, data_traits>(
-                1, 0,
+                1, 0, new_delete_bucket_source<u16>::create(),
                 capture_output<out_events>(
                     ctx->tracker<capture_output_access>("out"))));
         in.require_output_checked(ctx, "out");
@@ -195,7 +172,7 @@ TEST_CASE("Histogram, reset on overflow") {
         auto in = feed_input<
             type_list<bin_increment_event<data_traits>, reset_event>>(
             histogram<reset_event, reset_on_overflow, data_traits>(
-                1, 1,
+                1, 1, new_delete_bucket_source<u16>::create(),
                 capture_output<out_events>(
                     ctx->tracker<capture_output_access>("out"))));
         in.require_output_checked(ctx, "out");
@@ -205,19 +182,17 @@ TEST_CASE("Histogram, reset on overflow") {
         std::vector<u16> hist;
         in.feed(bin_increment_event<data_traits>{42, 0});
         hist = {1};
-        REQUIRE(
-            out.check(histogram_event<data_traits>{own_on_copy_view(hist)}));
+        REQUIRE(out.check(histogram_event<data_traits>{tmp_bucket(hist)}));
         in.feed(bin_increment_event<data_traits>{43, 0}); // Overflow
         hist = {1};
         REQUIRE(out.check(
-            concluding_histogram_event<data_traits>{own_on_copy_view(hist)}));
+            concluding_histogram_event<data_traits>{tmp_bucket(hist)}));
         hist = {1};
-        REQUIRE(
-            out.check(histogram_event<data_traits>{own_on_copy_view(hist)}));
+        REQUIRE(out.check(histogram_event<data_traits>{tmp_bucket(hist)}));
         in.flush();
         hist = {1};
         REQUIRE(out.check(
-            concluding_histogram_event<data_traits>{own_on_copy_view(hist)}));
+            concluding_histogram_event<data_traits>{tmp_bucket(hist)}));
         REQUIRE(out.check_flushed());
     }
 }
@@ -232,7 +207,7 @@ TEST_CASE("Histogram, stop on overflow") {
         auto in = feed_input<
             type_list<bin_increment_event<data_traits>, reset_event>>(
             histogram<reset_event, stop_on_overflow, data_traits>(
-                1, 0,
+                1, 0, new_delete_bucket_source<u16>::create(),
                 capture_output<out_events>(
                     ctx->tracker<capture_output_access>("out"))));
         in.require_output_checked(ctx, "out");
@@ -243,7 +218,7 @@ TEST_CASE("Histogram, stop on overflow") {
                           end_processing); // Overflow
         hist = {0};
         REQUIRE(out.check(
-            concluding_histogram_event<data_traits>{own_on_copy_view(hist)}));
+            concluding_histogram_event<data_traits>{tmp_bucket(hist)}));
         REQUIRE(out.check_flushed());
     }
 
@@ -251,7 +226,7 @@ TEST_CASE("Histogram, stop on overflow") {
         auto in = feed_input<
             type_list<bin_increment_event<data_traits>, reset_event>>(
             histogram<reset_event, stop_on_overflow, data_traits>(
-                1, 1,
+                1, 1, new_delete_bucket_source<u16>::create(),
                 capture_output<out_events>(
                     ctx->tracker<capture_output_access>("out"))));
         in.require_output_checked(ctx, "out");
@@ -260,13 +235,12 @@ TEST_CASE("Histogram, stop on overflow") {
 
         in.feed(bin_increment_event<data_traits>{42, 0});
         hist = {1};
-        REQUIRE(
-            out.check(histogram_event<data_traits>{own_on_copy_view(hist)}));
+        REQUIRE(out.check(histogram_event<data_traits>{tmp_bucket(hist)}));
         REQUIRE_THROWS_AS(in.feed(bin_increment_event<data_traits>{43, 0}),
                           end_processing); // Overflow
         hist = {1};
         REQUIRE(out.check(
-            concluding_histogram_event<data_traits>{own_on_copy_view(hist)}));
+            concluding_histogram_event<data_traits>{tmp_bucket(hist)}));
         REQUIRE(out.check_flushed());
     }
 }
@@ -280,7 +254,7 @@ TEST_CASE("Histogram, error on overflow") {
         auto in = feed_input<
             type_list<bin_increment_event<data_traits>, reset_event>>(
             histogram<reset_event, error_on_overflow, data_traits>(
-                1, 0,
+                1, 0, new_delete_bucket_source<u16>::create(),
                 capture_output<out_events>(
                     ctx->tracker<capture_output_access>("out"))));
         in.require_output_checked(ctx, "out");
@@ -296,7 +270,7 @@ TEST_CASE("Histogram, error on overflow") {
         auto in = feed_input<
             type_list<bin_increment_event<data_traits>, reset_event>>(
             histogram<reset_event, error_on_overflow, data_traits>(
-                1, 1,
+                1, 1, new_delete_bucket_source<u16>::create(),
                 capture_output<out_events>(
                     ctx->tracker<capture_output_access>("out"))));
         in.require_output_checked(ctx, "out");
@@ -306,8 +280,7 @@ TEST_CASE("Histogram, error on overflow") {
         std::vector<u16> hist;
         in.feed(bin_increment_event<data_traits>{42, 0});
         hist = {1};
-        REQUIRE(
-            out.check(histogram_event<data_traits>{own_on_copy_view(hist)}));
+        REQUIRE(out.check(histogram_event<data_traits>{tmp_bucket(hist)}));
         REQUIRE_THROWS_AS(in.feed(bin_increment_event<data_traits>{43, 0}),
                           histogram_overflow_error);
         REQUIRE(out.check_not_flushed());

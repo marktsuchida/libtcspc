@@ -6,8 +6,8 @@
 
 #pragma once
 
+#include "bucket.hpp"
 #include "introspect.hpp"
-#include "own_on_copy_view.hpp"
 #include "span.hpp"
 
 #include <cstddef>
@@ -19,8 +19,7 @@ namespace tcspc {
 
 namespace internal {
 
-template <typename Event, typename Downstream> class view_as_bytes {
-    static_assert(std::is_trivial_v<Event>);
+template <typename Downstream> class view_as_bytes {
     Downstream downstream;
 
   public:
@@ -38,90 +37,21 @@ template <typename Event, typename Downstream> class view_as_bytes {
         return g;
     }
 
-    void handle(Event const &event) {
-        downstream.handle(
-            own_on_copy_view<std::byte const>(as_bytes(span(&event, 1))));
+    template <typename Event> void handle(Event const &event) {
+        static_assert(std::is_trivial_v<Event>);
+        struct private_storage {};
+        auto const b = bucket<Event const>(span(&event, 1), private_storage{})
+                           .byte_bucket();
+        downstream.handle(b);
     }
 
-    void flush() { downstream.flush(); }
-};
-
-template <typename Event, typename Downstream>
-class view_as_bytes<std::vector<Event>, Downstream> {
-    static_assert(std::is_trivial_v<Event>);
-    Downstream downstream;
-
-  public:
-    explicit view_as_bytes(Downstream downstream)
-        : downstream(std::move(downstream)) {}
-
-    [[nodiscard]] auto introspect_node() const -> processor_info {
-        processor_info info(this, "view_as_bytes");
-        return info;
-    }
-
-    [[nodiscard]] auto introspect_graph() const -> processor_graph {
-        auto g = downstream.introspect_graph();
-        g.push_entry_point(this);
-        return g;
-    }
-
-    void handle(std::vector<Event> const &event) {
-        downstream.handle(
-            own_on_copy_view<std::byte const>(as_bytes(span(event))));
-    }
-
-    void flush() { downstream.flush(); }
-};
-
-template <typename Event, typename Downstream> class view_histogram_as_bytes {
-    Downstream downstream;
-
-  public:
-    explicit view_histogram_as_bytes(Downstream downstream)
-        : downstream(std::move(downstream)) {}
-
-    [[nodiscard]] auto introspect_node() const -> processor_info {
-        processor_info info(this, "view_histogram_as_bytes");
-        return info;
-    }
-
-    [[nodiscard]] auto introspect_graph() const -> processor_graph {
-        auto g = downstream.introspect_graph();
-        g.push_entry_point(this);
-        return g;
-    }
-
-    void handle(Event const &event) {
-        downstream.handle(
-            own_on_copy_view(as_bytes(event.histogram.as_span())));
-    }
-
-    void flush() { downstream.flush(); }
-};
-
-template <typename Event, typename Downstream>
-class view_histogram_array_as_bytes {
-    Downstream downstream;
-
-  public:
-    explicit view_histogram_array_as_bytes(Downstream downstream)
-        : downstream(std::move(downstream)) {}
-
-    [[nodiscard]] auto introspect_node() const -> processor_info {
-        processor_info info(this, "view_histogram_array_as_bytes");
-        return info;
-    }
-
-    [[nodiscard]] auto introspect_graph() const -> processor_graph {
-        auto g = downstream.introspect_graph();
-        g.push_entry_point(this);
-        return g;
-    }
-
-    void handle(Event const &event) {
-        downstream.handle(
-            own_on_copy_view(as_bytes(event.histogram_array.as_span())));
+    template <typename T> void handle(bucket<T> const &event) {
+        if constexpr (std::is_same_v<std::remove_cv_t<T>, std::byte>) {
+            downstream.handle(event);
+        } else {
+            auto const b = event.const_bucket().byte_bucket();
+            downstream.handle(b);
+        }
     }
 
     void flush() { downstream.flush(); }
@@ -134,16 +64,11 @@ class view_histogram_array_as_bytes {
  *
  * \ingroup processors-basic
  *
- * This processor handles events of type \c Event (which must be trivial) and
- * sends them, without copying, to the downstream processor as
- * <tt>own_on_copy_view<std::byte const></tt>.
- *
- * A specialization is available if \c Event matches \c std::vector<T> where \c
- * T must be trivial. In this case, the span of the vector elements is used.
+ * This processor handles events of trivial types or buckets of trivial types
+ * and sends them, without copying, to the downstream processor as (const
+ * lvalue) `bucket<std::byte const>`.
  *
  * \see write_binary_file
- *
- * \tparam Event event type
  *
  * \tparam Downstream downstream processor type
  *
@@ -151,68 +76,8 @@ class view_histogram_array_as_bytes {
  *
  * \return view-as-bytes processor
  */
-template <typename Event, typename Downstream>
-auto view_as_bytes(Downstream &&downstream) {
-    return internal::view_as_bytes<Event, Downstream>(
-        std::forward<Downstream>(downstream));
-}
-
-/**
- * \brief Create a processor that extracts histogram data as byte spans.
- *
- * \ingroup processors-basic
- *
- * This is similar to \ref view_as_bytes, but rather than viewing the whole
- * event as a byte buffer, extracts the 'histogram' data member (which must be
- * an \ref own_on_copy_view).
- *
- * \see view_as_bytes
- * \see view_histogram_array_as_bytes
- * \see histogram_event
- * \see concluding_histogram_event
- * \see element_histogram_event
- *
- * \tparam Event histogram event type, which must have an \ref own_on_copy_view
- * 'histogram' data member
- *
- * \tparam Downstream downstream processor type
- *
- * \param downstream downstream processor
- *
- * \return view-histogram-as-bytes processor
- */
-template <typename Event, typename Downstream>
-auto view_histogram_as_bytes(Downstream &&downstream) {
-    return internal::view_histogram_as_bytes<Event, Downstream>(
-        std::forward<Downstream>(downstream));
-}
-
-/**
- * \brief Create a processor that extracts histogram array data as byte spans.
- *
- * \ingroup processors-basic
- *
- * This is similar to \ref view_as_bytes, but rather than viewing the whole
- * event as a byte buffer, extracts the 'histogram_array' data member (which
- * must be an \ref own_on_copy_view).
- *
- * \see view_as_bytes
- * \see view_histogram_as_bytes
- * \see histogram_array_event
- * \see concluding_histogram_array_event
- *
- * \tparam Event histogram array event type, which must have an \ref
- * own_on_copy_view 'histogram_array' data member
- *
- * \tparam Downstream downstream processor type
- *
- * \param downstream downstream processor
- *
- * \return view-histogram-array-as-bytes processor
- */
-template <typename Event, typename Downstream>
-auto view_histogram_array_as_bytes(Downstream &&downstream) {
-    return internal::view_histogram_array_as_bytes<Event, Downstream>(
+template <typename Downstream> auto view_as_bytes(Downstream &&downstream) {
+    return internal::view_as_bytes<Downstream>(
         std::forward<Downstream>(downstream));
 }
 

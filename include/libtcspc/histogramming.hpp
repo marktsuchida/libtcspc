@@ -286,9 +286,9 @@ template <typename BinIndex> class bin_increment_batch_journal {
 
         s << "journal(" << j.num_batches() << ", { ";
         for (auto [index, begin, end] : j) {
-            s << '(' << index << ", ";
-            internal::print_range(s, begin, end);
-            s << ')';
+            s << '(' << index << ", {";
+            std::for_each(begin, end, [&](auto v) { s << v << ", "; });
+            s << "})";
         }
         return s << "})";
     }
@@ -313,15 +313,22 @@ class single_histogram {
   private:
     span<bin_type> hist;
     bin_type bin_max = 0;
+    std::size_t n_bins;
 
   public:
     // Attach to 'histogram' and allow bin values up to max_per_bin.
-    explicit single_histogram(span<bin_type> histogram,
-                              bin_type max_per_bin) noexcept
-        : hist(histogram), bin_max(max_per_bin) {}
+    explicit single_histogram(span<bin_type> histogram, bin_type max_per_bin,
+                              std::size_t num_bins) noexcept
+        : hist(histogram), bin_max(max_per_bin), n_bins(num_bins) {}
 
-    // We do not disallow copy/move. Copy is "valid" because we do not hold any
-    // state outside of the span.
+    // Reconstruct with new span.
+    explicit single_histogram(span<bin_type> histogram,
+                              single_histogram const &params) noexcept
+        : single_histogram(histogram, params.bin_max, params.n_bins) {}
+
+    [[nodiscard]] auto num_bins() const noexcept -> std::size_t {
+        return n_bins;
+    }
 
     // Clear the histogram by setting all bins to zero.
     void clear() noexcept { std::fill(hist.begin(), hist.end(), bin_type(0)); }
@@ -333,6 +340,7 @@ class single_histogram {
     // increments.size(), inclusive.
     auto apply_increments(span<bin_index_type const> increments)
         -> std::size_t {
+        assert(not hist.empty());
         std::size_t n_applied = 0;
         for (auto it = increments.begin(); it != increments.end(); ++it) {
             assert(*it >= 0 && *it < hist.size());
@@ -359,6 +367,7 @@ class single_histogram {
     // call. Behavior undefined in saturate mode.
     void undo_increments(span<bin_index_type const> increments) {
         assert((std::is_same_v<OverflowStrategy, stop_on_internal_overflow>));
+        assert(not hist.empty());
         for (bin_index_type i : increments) {
             assert(i >= 0 && i < hist.size());
             --hist[i];
@@ -379,18 +388,37 @@ class multi_histogram {
   private:
     span<bin_type> hist_arr;
     std::size_t element_index = 0;
-    bin_type max_per_bin = 0;
-    std::size_t num_bins = 0;
-    std::size_t num_elements = 0;
+    bin_type bin_max = 0;
+    std::size_t n_bins = 0;
+    std::size_t n_elements = 0;
     bool need_to_clear = false;
 
   public:
     explicit multi_histogram(span<bin_type> hist_array, bin_type max_per_bin,
                              std::size_t num_bins, std::size_t num_elements,
                              bool clear) noexcept
-        : hist_arr(hist_array), max_per_bin(max_per_bin), num_bins(num_bins),
-          num_elements(num_elements), need_to_clear(clear) {
-        assert(hist_array.size() == num_bins * num_elements);
+        : hist_arr(hist_array), bin_max(max_per_bin), n_bins(num_bins),
+          n_elements(num_elements), need_to_clear(clear) {
+        assert(hist_array.empty() || hist_array.size() == n_bins * n_elements);
+    }
+
+    // Reconstruct with new span.
+    explicit multi_histogram(span<bin_type> hist_array,
+                             multi_histogram const &params,
+                             bool clear) noexcept
+        : multi_histogram(hist_array, params.bin_max, params.n_bins,
+                          params.n_elements, clear) {}
+
+    [[nodiscard]] auto max_per_bin() const noexcept -> bin_type {
+        return bin_max;
+    }
+
+    [[nodiscard]] auto num_bins() const noexcept -> std::size_t {
+        return n_bins;
+    }
+
+    [[nodiscard]] auto num_elements() const noexcept -> std::size_t {
+        return n_elements;
     }
 
     // True if any increment batches have been applied (and not rolled back).
@@ -401,7 +429,7 @@ class multi_histogram {
     // True if cycle is completed (applying further increment batches is
     // incorrect).
     [[nodiscard]] auto is_complete() const noexcept -> bool {
-        return element_index >= num_elements;
+        return element_index >= n_elements;
     }
 
     // True if every bin of every element histogram has been initialized
@@ -423,10 +451,6 @@ class multi_histogram {
         return element_index;
     }
 
-    auto element_span(std::size_t index) -> span<bin_type> {
-        return hist_arr.subspan(num_bins * index, num_bins);
-    }
-
     // Apply 'batch' to the next element of the array of histograms. Return
     // true if the entire batch could be applied (without saturation); false if
     // there was saturation or we stopped and rolled back.
@@ -435,10 +459,11 @@ class multi_histogram {
                                Journal &journal) -> bool {
         static_assert(
             std::is_same_v<typename Journal::bin_index_type, bin_index_type>);
+        assert(not hist_arr.empty());
         assert(not is_complete());
         single_histogram<bin_index_type, bin_type, OverflowStrategy>
-            single_hist(hist_arr.subspan(num_bins * element_index, num_bins),
-                        max_per_bin);
+            single_hist(hist_arr.subspan(n_bins * element_index, n_bins),
+                        bin_max, n_bins);
         if (need_to_clear)
             single_hist.clear();
 
@@ -469,12 +494,13 @@ class multi_histogram {
     // cleared (if so requested). After the call, is_complete() and
     // is_consistent() become true.
     void skip_remaining() {
+        assert(not hist_arr.empty());
         if (need_to_clear) {
-            auto remaining = hist_arr.subspan(num_bins * element_index);
+            auto remaining = hist_arr.subspan(n_bins * element_index);
             std::fill(remaining.begin(), remaining.end(), bin_type(0));
             need_to_clear = false;
         }
-        element_index = num_elements;
+        element_index = n_elements;
     }
 
     // Roll back journaled increments and recover the array of histograms to
@@ -484,10 +510,11 @@ class multi_histogram {
         static_assert(
             std::is_same_v<typename Journal::bin_index_type, bin_index_type>);
         assert((std::is_same_v<OverflowStrategy, stop_on_internal_overflow>));
+        assert(not hist_arr.empty());
         for (auto [index, bin_index_span] : journal) {
             single_histogram<bin_index_type, bin_type, OverflowStrategy>
-                single_hist(hist_arr.subspan(num_bins * index, num_bins),
-                            max_per_bin);
+                single_hist(hist_arr.subspan(n_bins * index, n_bins), bin_max,
+                            n_bins);
             single_hist.undo_increments(bin_index_span);
         }
         // Ensure the previously untouched tail of the span gets cleared, if
@@ -503,11 +530,12 @@ class multi_histogram {
         static_assert(
             std::is_same_v<typename Journal::bin_index_type, bin_index_type>);
         assert((std::is_same_v<OverflowStrategy, stop_on_internal_overflow>));
+        assert(not hist_arr.empty());
         assert(not is_started());
         for (auto [index, bin_index_span] : journal) {
             single_histogram<bin_index_type, bin_type, OverflowStrategy>
-                single_hist(hist_arr.subspan(num_bins * index, num_bins),
-                            max_per_bin);
+                single_hist(hist_arr.subspan(n_bins * index, n_bins), bin_max,
+                            n_bins);
             if (need_to_clear)
                 single_hist.clear();
             [[maybe_unused]] auto n_applied =
@@ -538,7 +566,6 @@ class multi_histogram_accumulation {
                               stop_on_internal_overflow>);
 
   private:
-    span<bin_type> hist_arr;
     std::size_t cycle_idx = 0;
     multi_histogram<bin_index_type, bin_type, OverflowStrategy> cur_cycle;
 
@@ -548,8 +575,28 @@ class multi_histogram_accumulation {
                                           std::size_t num_bins,
                                           std::size_t num_elements,
                                           bool clear_first) noexcept
-        : hist_arr(hist_array), cur_cycle(hist_array, max_per_bin, num_bins,
-                                          num_elements, clear_first) {}
+        : cur_cycle(hist_array, max_per_bin, num_bins, num_elements,
+                    clear_first) {}
+
+    // Reconstruct with new span.
+    explicit multi_histogram_accumulation(
+        span<bin_type> hist_array, multi_histogram_accumulation const &params,
+        bool clear_first) noexcept
+        : multi_histogram_accumulation(hist_array, params.max_per_bin(),
+                                       params.num_bins(),
+                                       params.num_elements(), clear_first) {}
+
+    [[nodiscard]] auto max_per_bin() const noexcept -> bin_type {
+        return cur_cycle.max_per_bin();
+    }
+
+    [[nodiscard]] auto num_bins() const noexcept -> std::size_t {
+        return cur_cycle.num_bins();
+    }
+
+    [[nodiscard]] auto num_elements() const noexcept -> std::size_t {
+        return cur_cycle.num_elements();
+    }
 
     [[nodiscard]] auto is_cycle_started() const noexcept -> bool {
         return cur_cycle.is_started();
@@ -565,10 +612,6 @@ class multi_histogram_accumulation {
 
     [[nodiscard]] auto next_element_index() const noexcept -> std::size_t {
         return cur_cycle.next_element_index();
-    }
-
-    auto element_span(std::size_t index) -> span<bin_type> {
-        return cur_cycle.element_span(index);
     }
 
     [[nodiscard]] auto cycle_index() const noexcept -> std::size_t {
@@ -607,8 +650,7 @@ class multi_histogram_accumulation {
         cur_cycle.reset(clear_first);
     }
 
-    template <typename Journal> void reset_and_replay(Journal const &journal) {
-        reset(true);
+    template <typename Journal> void replay(Journal const &journal) {
         cur_cycle.replay(journal);
     }
 };

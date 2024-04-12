@@ -30,7 +30,6 @@ test_libtcspc_srcs = [
     'multiplex.cpp',
     'npint.cpp',
     'object_pool.cpp',
-    'own_on_copy_view.cpp',
     'pair.cpp',
     'picoquant_t2.cpp',
     'picoquant_t3.cpp',

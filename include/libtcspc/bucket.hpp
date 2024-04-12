@@ -6,6 +6,7 @@
 
 #pragma once
 
+#include "introspect.hpp"
 #include "move_only_any.hpp"
 #include "span.hpp"
 
@@ -649,5 +650,51 @@ class recycling_bucket_source final
             spn, bucket_storage{this->shared_from_this(), std::move(p)}};
     }
 };
+
+namespace internal {
+
+template <typename Event, typename Downstream> class extract_bucket {
+    Downstream downstream;
+
+  public:
+    explicit extract_bucket(Downstream &&downstream)
+        : downstream(std::move(downstream)) {}
+
+    [[nodiscard]] auto introspect_node() const -> processor_info {
+        processor_info info(this, "extract_bucket");
+        return info;
+    }
+
+    [[nodiscard]] auto introspect_graph() const -> processor_graph {
+        auto g = downstream.introspect_graph();
+        g.push_entry_point(this);
+        return g;
+    }
+
+    void handle(Event const &event) { downstream.handle(event.bucket); }
+
+    void handle(Event &&event) { downstream.handle(std::move(event.bucket)); }
+
+    void flush() { downstream.flush(); }
+};
+
+} // namespace internal
+
+/**
+ * Create a processor that extracts the bucket carried by an event.
+ *
+ * \ingroup buckets
+ *
+ * \tparam Event the event type, which must have a data member `bucket`
+ *
+ * \tparam Downstream downstream processor type (usually inferred)
+ *
+ * \param downstream downstream processor
+ */
+template <typename Event, typename Downstream>
+auto extract_bucket(Downstream &&downstream) {
+    return internal::extract_bucket<Event, Downstream>(
+        std::forward<Downstream>(downstream));
+}
 
 } // namespace tcspc
