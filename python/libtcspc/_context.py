@@ -77,7 +77,7 @@ class ProcessorContext:
                 f"graph is not executable (must have no output ports; found {n_out})"
             )
         self._graph = copy.deepcopy(graph)
-        self._ctx = cppyy.gbl.std.make_shared["tcspc::processor_context"]()
+        self._ctx = cppyy.gbl.tcspc.processor_context.create()
         ctx_var = "ctx"
         code = graph.generate_cpp("", ctx_var)
         self._proc = _instantiator(code, ctx_var)(self._ctx)

@@ -75,7 +75,7 @@ TEST_CASE("read file") {
     REQUIRE(stream.good());
     stream.close();
 
-    auto ctx = std::make_shared<processor_context>();
+    auto ctx = processor_context::create();
 
     SECTION("whole events") {
         auto src = read_binary_stream<std::uint64_t>(
@@ -160,7 +160,7 @@ TEST_CASE("read existing istream, known length") {
                  sizeof(std::uint64_t) * data.size());
     REQUIRE(stream.good());
 
-    auto ctx = std::make_shared<processor_context>();
+    auto ctx = processor_context::create();
     auto src = read_binary_stream<std::uint64_t>(
         std::move(stream), 40,
         new_delete_bucket_source<std::uint64_t>::create(), 16,
@@ -184,7 +184,7 @@ TEST_CASE("read existing istream, to end") {
                  sizeof(std::uint64_t) * data.size());
     REQUIRE(stream.good());
 
-    auto ctx = std::make_shared<processor_context>();
+    auto ctx = processor_context::create();
     auto src = read_binary_stream<std::uint64_t>(
         std::move(stream), std::numeric_limits<std::uint64_t>::max(),
         new_delete_bucket_source<std::uint64_t>::create(), 16,
@@ -205,7 +205,7 @@ TEST_CASE("read existing istream, empty") {
     std::istringstream stream;
     REQUIRE(stream.good());
 
-    auto ctx = std::make_shared<processor_context>();
+    auto ctx = processor_context::create();
     auto src = read_binary_stream<std::uint64_t>(
         std::move(stream), std::numeric_limits<std::uint64_t>::max(),
         new_delete_bucket_source<std::uint64_t>::create(), 16,

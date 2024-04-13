@@ -53,7 +53,7 @@ TEMPLATE_TEST_CASE("Histogram, no overflow", "", saturate_on_overflow,
     using out_events =
         type_list<histogram_event<data_traits>,
                   concluding_histogram_event<data_traits>, warning_event>;
-    auto ctx = std::make_shared<processor_context>();
+    auto ctx = processor_context::create();
     auto in =
         feed_input<type_list<bin_increment_event<data_traits>, reset_event>>(
             histogram<reset_event, TestType, data_traits>(
@@ -89,7 +89,7 @@ TEST_CASE("Histogram, saturate on overflow") {
     using out_events =
         type_list<histogram_event<data_traits>,
                   concluding_histogram_event<data_traits>, warning_event>;
-    auto ctx = std::make_shared<processor_context>();
+    auto ctx = processor_context::create();
 
     SECTION("Max per bin = 0") {
         auto in = feed_input<
@@ -151,7 +151,7 @@ TEST_CASE("Histogram, saturate on overflow") {
 TEST_CASE("Histogram, reset on overflow") {
     using out_events = type_list<histogram_event<data_traits>,
                                  concluding_histogram_event<data_traits>>;
-    auto ctx = std::make_shared<processor_context>();
+    auto ctx = processor_context::create();
 
     SECTION("Max per bin = 0") {
         auto in = feed_input<
@@ -201,7 +201,7 @@ TEST_CASE("Histogram, reset on overflow") {
 TEST_CASE("Histogram, stop on overflow") {
     using out_events = type_list<histogram_event<data_traits>,
                                  concluding_histogram_event<data_traits>>;
-    auto ctx = std::make_shared<processor_context>();
+    auto ctx = processor_context::create();
     std::vector<u16> hist;
 
     SECTION("Max per bin = 0") {
@@ -249,7 +249,7 @@ TEST_CASE("Histogram, stop on overflow") {
 TEST_CASE("Histogram, error on overflow") {
     using out_events = type_list<histogram_event<data_traits>,
                                  concluding_histogram_event<data_traits>>;
-    auto ctx = std::make_shared<processor_context>();
+    auto ctx = processor_context::create();
 
     SECTION("Max per bin = 0") {
         auto in = feed_input<

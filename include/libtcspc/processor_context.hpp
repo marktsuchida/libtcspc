@@ -132,13 +132,21 @@ class processor_context
             &trackers.at(processor_name)) = ptr;
     }
 
-  public:
     processor_context() = default;
+
+  public:
     processor_context(processor_context const &) = delete;
     auto operator=(processor_context const &) = delete;
     processor_context(processor_context &&) = delete;
     auto operator=(processor_context &&) = delete;
     ~processor_context() = default;
+
+    /**
+     * \brief Create an instance.
+     */
+    static auto create() -> std::shared_ptr<processor_context> {
+        return std::shared_ptr<processor_context>(new processor_context());
+    }
 
     /**
      * \brief Obtain a tracker for a processor with the given name.

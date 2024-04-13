@@ -668,7 +668,7 @@ TEST_CASE("introspect bh_spc", "[introspect]") {
 }
 
 TEST_CASE("decode bh spc") {
-    auto ctx = std::make_shared<processor_context>();
+    auto ctx = processor_context::create();
     auto in = feed_input<type_list<bh_spc_event>>(
         decode_bh_spc(capture_output<out_events>(
             ctx->tracker<capture_output_access>("out"))));
@@ -782,7 +782,7 @@ TEST_CASE("decode bh spc") {
 
 TEST_CASE("decode bh spc with fast intensity counter",
           "[decode_bh_spc_with_fast_intensity_counter]") {
-    auto ctx = std::make_shared<processor_context>();
+    auto ctx = processor_context::create();
     auto in = feed_input<type_list<bh_spc_event>>(
         decode_bh_spc_with_fast_intensity_counter(
             capture_output<out_events_with_counter>(
@@ -836,7 +836,7 @@ TEST_CASE("decode bh spc with fast intensity counter",
 }
 
 TEST_CASE("decode bh spc600 256ch") {
-    auto ctx = std::make_shared<processor_context>();
+    auto ctx = processor_context::create();
     auto in = feed_input<type_list<bh_spc600_256ch_event>>(
         decode_bh_spc600_256ch(capture_output<out_events>(
             ctx->tracker<capture_output_access>("out"))));
@@ -916,7 +916,7 @@ TEST_CASE("decode bh spc600 256ch") {
 }
 
 TEST_CASE("decode bh spc600 4096ch") {
-    auto ctx = std::make_shared<processor_context>();
+    auto ctx = processor_context::create();
     auto in = feed_input<type_list<bh_spc600_4096ch_event>>(
         decode_bh_spc600_4096ch(capture_output<out_events>(
             ctx->tracker<capture_output_access>("out"))));

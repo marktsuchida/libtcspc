@@ -36,7 +36,7 @@ TEST_CASE("introspect timing_misc", "[introspect]") {
 
 TEST_CASE("retime periodic sequence events") {
     using out_events = type_list<periodic_sequence_event<>>;
-    auto ctx = std::make_shared<processor_context>();
+    auto ctx = processor_context::create();
     auto in = feed_input<type_list<periodic_sequence_event<>>>(
         retime_periodic_sequences<>(
             10, capture_output<out_events>(
@@ -75,7 +75,7 @@ TEST_CASE("retime periodic sequence events unsigned",
         using abstime_type = std::uint64_t;
     };
     using out_events = type_list<periodic_sequence_event<traits>>;
-    auto ctx = std::make_shared<processor_context>();
+    auto ctx = processor_context::create();
     auto in = feed_input<type_list<periodic_sequence_event<traits>>>(
         retime_periodic_sequences<traits>(
             10, capture_output<out_events>(
@@ -101,7 +101,7 @@ TEST_CASE("retime periodic sequence events unsigned",
 TEST_CASE("extrapolate periodic sequences",
           "[extrapolate_periodic_sequences]") {
     using out_events = type_list<real_one_shot_timing_event<>>;
-    auto ctx = std::make_shared<processor_context>();
+    auto ctx = processor_context::create();
     auto in = feed_input<type_list<periodic_sequence_event<>>>(
         extrapolate_periodic_sequences(
             2, capture_output<out_events>(
@@ -119,7 +119,7 @@ TEST_CASE("extrapolate periodic sequences",
 TEST_CASE("add count to periodic sequences",
           "[add_count_to_periodic_sequences]") {
     using out_events = type_list<real_linear_timing_event<>>;
-    auto ctx = std::make_shared<processor_context>();
+    auto ctx = processor_context::create();
     auto in = feed_input<type_list<periodic_sequence_event<>>>(
         add_count_to_periodic_sequences(
             3, capture_output<out_events>(
@@ -141,7 +141,7 @@ TEST_CASE("convert sequences to start-stop",
     using stopevt = timestamped_test_event<2>;
     using otherevt = timestamped_test_event<3>;
     using out_events = type_list<startevt, stopevt, otherevt>;
-    auto ctx = std::make_shared<processor_context>();
+    auto ctx = processor_context::create();
 
     SECTION("zero length") {
         auto in = feed_input<type_list<inevt, otherevt>>(

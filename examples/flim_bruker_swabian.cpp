@@ -272,7 +272,7 @@ void print_stats(settings const &settings,
 }
 
 template <bool Cumulative> void run_and_print(settings const &settings) {
-    auto ctx = std::make_shared<tcspc::processor_context>();
+    auto ctx = tcspc::processor_context::create();
     auto proc = make_processor<Cumulative>(settings, ctx);
     if (settings.dump_graph) {
         auto graph = proc.introspect_graph();

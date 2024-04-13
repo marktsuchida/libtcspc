@@ -52,7 +52,7 @@ TEST_CASE("Map to datapoints") {
         using datapoint_type = difftime_type;
     };
     using out_events = type_list<datapoint_event<data_traits>, misc_event>;
-    auto ctx = std::make_shared<processor_context>();
+    auto ctx = processor_context::create();
     auto in =
         feed_input<type_list<time_correlated_detection_event<>, misc_event>>(
             map_to_datapoints<data_traits>(
@@ -77,7 +77,7 @@ TEST_CASE("Map to bins") {
         using bin_index_type = u32;
     };
 
-    auto ctx = std::make_shared<processor_context>();
+    auto ctx = processor_context::create();
 
     SECTION("Out of range") {
         struct null_bin_mapper {
@@ -439,7 +439,7 @@ TEST_CASE("Batch bin increments") {
     };
     using out_events =
         type_list<bin_increment_batch_event<data_traits>, misc_event>;
-    auto ctx = std::make_shared<processor_context>();
+    auto ctx = processor_context::create();
     auto in = feed_input<type_list<bin_increment_event<data_traits>,
                                    start_event, stop_event, misc_event>>(
         batch_bin_increments<start_event, stop_event, data_traits>(

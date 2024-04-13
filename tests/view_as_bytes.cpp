@@ -39,7 +39,7 @@ TEST_CASE("introspect view_as_bytes", "[introspect]") {
 }
 
 TEST_CASE("view as bytes") {
-    auto ctx = std::make_shared<processor_context>();
+    auto ctx = processor_context::create();
     auto in =
         feed_input<type_list<int>>(view_as_bytes(capture_output<out_events>(
             ctx->tracker<capture_output_access>("out"))));
@@ -55,7 +55,7 @@ TEST_CASE("view as bytes") {
 }
 
 TEST_CASE("view as bytes, bucket input") {
-    auto ctx = std::make_shared<processor_context>();
+    auto ctx = processor_context::create();
     auto in = feed_input<type_list<bucket<int const>>>(
         view_as_bytes(capture_output<out_events>(
             ctx->tracker<capture_output_access>("out"))));

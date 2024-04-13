@@ -37,7 +37,7 @@ TEST_CASE("introspect time_correlate", "[introspect]") {
 }
 
 TEST_CASE("time correlate at start") {
-    auto ctx = std::make_shared<processor_context>();
+    auto ctx = processor_context::create();
     auto in = feed_input<type_list<detection_pair_event<>>>(
         time_correlate_at_start<>(capture_output<tc_out_events>(
             ctx->tracker<capture_output_access>("out"))));
@@ -52,7 +52,7 @@ TEST_CASE("time correlate at start") {
 }
 
 TEST_CASE("time correlate at stop") {
-    auto ctx = std::make_shared<processor_context>();
+    auto ctx = processor_context::create();
     auto in = feed_input<type_list<detection_pair_event<>>>(
         time_correlate_at_stop<>(capture_output<tc_out_events>(
             ctx->tracker<capture_output_access>("out"))));
@@ -67,7 +67,7 @@ TEST_CASE("time correlate at stop") {
 }
 
 TEST_CASE("time correlate at midpoint") {
-    auto ctx = std::make_shared<processor_context>();
+    auto ctx = processor_context::create();
 
     SECTION("use stop channel") {
         auto in = feed_input<type_list<detection_pair_event<>>>(
@@ -100,7 +100,7 @@ TEST_CASE("time correlate at midpoint") {
 }
 
 TEST_CASE("time correlate at fraction") {
-    auto ctx = std::make_shared<processor_context>();
+    auto ctx = processor_context::create();
 
     SECTION("use stop channel") {
         auto in = feed_input<type_list<detection_pair_event<>>>(
@@ -137,7 +137,7 @@ TEST_CASE("negate difftime") {
     struct traits : default_data_traits {
         using difftime_type = std::int16_t;
     };
-    auto ctx = std::make_shared<processor_context>();
+    auto ctx = processor_context::create();
     auto in = feed_input<type_list<time_correlated_detection_event<traits>>>(
         negate_difftime(
             capture_output<type_list<time_correlated_detection_event<traits>>>(
@@ -156,7 +156,7 @@ TEST_CASE("negate difftime") {
 }
 
 TEST_CASE("remove time correlation") {
-    auto ctx = std::make_shared<processor_context>();
+    auto ctx = processor_context::create();
     auto in = feed_input<type_list<time_correlated_detection_event<>>>(
         remove_time_correlation<>(capture_output<type_list<detection_event<>>>(
             ctx->tracker<capture_output_access>("out"))));

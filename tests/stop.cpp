@@ -34,7 +34,7 @@ TEST_CASE("introspect stop", "[introspect]") {
 }
 
 TEST_CASE("stop with error") {
-    auto ctx = std::make_shared<processor_context>();
+    auto ctx = processor_context::create();
 
     auto in = feed_input<type_list<e0, e1>>(stop_with_error<type_list<e0>>(
         "myerror", capture_output<type_list<e1>>(
@@ -53,7 +53,7 @@ TEST_CASE("stop with error") {
 }
 
 TEST_CASE("stop with no error") {
-    auto ctx = std::make_shared<processor_context>();
+    auto ctx = processor_context::create();
     auto in = feed_input<type_list<e0, e1>>(stop<type_list<e0>>(
         "end of stream", capture_output<type_list<e1>>(
                              ctx->tracker<capture_output_access>("out"))));

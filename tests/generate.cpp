@@ -37,7 +37,7 @@ TEST_CASE("introspect generate", "[introspect]") {
 }
 
 TEST_CASE("Generate null timing") {
-    auto ctx = std::make_shared<processor_context>();
+    auto ctx = processor_context::create();
     auto in = feed_input<type_list<trigger_event>>(generate<trigger_event>(
         null_timing_generator<output_event>(),
         capture_output<out_events>(
@@ -57,7 +57,7 @@ TEST_CASE("Generate null timing") {
 TEST_CASE("Generate one-shot timing",
           "[generate][one_shot_timing_generator]") {
     default_data_traits::abstime_type const delay = GENERATE(0, 1, 2);
-    auto ctx = std::make_shared<processor_context>();
+    auto ctx = processor_context::create();
     auto in = feed_input<type_list<trigger_event, misc_event>>(
         generate<trigger_event>(
             one_shot_timing_generator<output_event>(delay),
@@ -109,7 +109,7 @@ TEST_CASE("Generate linear timing") {
     default_data_traits::abstime_type const delay = GENERATE(0, 1, 2);
     default_data_traits::abstime_type const interval = GENERATE(1, 2);
 
-    auto ctx = std::make_shared<processor_context>();
+    auto ctx = processor_context::create();
 
     SECTION("Count of 0") {
         auto in = feed_input<type_list<trigger_event>>(generate<trigger_event>(

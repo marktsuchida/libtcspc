@@ -33,7 +33,7 @@ TEST_CASE("introspect multiplex", "[introspect]") {
 
 TEST_CASE("multiplex") {
     using out_events = type_list<variant_event<type_list<e0, e1>>>;
-    auto ctx = std::make_shared<processor_context>();
+    auto ctx = processor_context::create();
     auto in = feed_input<type_list<e0, e1>>(
         multiplex<type_list<e0, e1>>(capture_output<out_events>(
             ctx->tracker<capture_output_access>("out"))));
@@ -60,7 +60,7 @@ TEST_CASE("demultiplex handled event types") {
 
 TEST_CASE("demultiplex") {
     using out_events = type_list<e0, e1>;
-    auto ctx = std::make_shared<processor_context>();
+    auto ctx = processor_context::create();
     auto in = feed_input<type_list<variant_event<type_list<e0, e1>>>>(
         demultiplex(capture_output<out_events>(
             ctx->tracker<capture_output_access>("out"))));

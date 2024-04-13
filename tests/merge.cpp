@@ -99,7 +99,7 @@ TEST_CASE("introspect merge", "[introspect]") {
 }
 
 TEST_CASE("Merge") {
-    auto ctx = std::make_shared<processor_context>();
+    auto ctx = processor_context::create();
 
     SECTION("asymmetric tests") {
         auto [mi0, mi1] = merge<all_events>(
@@ -237,7 +237,7 @@ TEST_CASE("Merge") {
 
 TEST_CASE("merge single event type") {
     using one_event = type_list<e0>;
-    auto ctx = std::make_shared<processor_context>();
+    auto ctx = processor_context::create();
     auto [min0, min1] = merge<one_event>(
         1024,
         capture_output<one_event>(ctx->tracker<capture_output_access>("out")));
@@ -269,7 +269,7 @@ TEST_CASE("merge single event type") {
 }
 
 TEST_CASE("merge N streams") {
-    auto ctx = std::make_shared<processor_context>();
+    auto ctx = processor_context::create();
 
     SECTION("Zero-stream merge_n returns empty tuple") {
         // NOLINTBEGIN(clang-analyzer-deadcode.DeadStores)
@@ -316,7 +316,7 @@ TEST_CASE("merge N streams") {
 }
 
 TEST_CASE("merge unsorted") {
-    auto ctx = std::make_shared<processor_context>();
+    auto ctx = processor_context::create();
     auto [min0, min1] = merge_n_unsorted(capture_output<all_events>(
         ctx->tracker<capture_output_access>("out")));
     auto in0 = feed_input<all_events>(std::move(min0));

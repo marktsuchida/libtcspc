@@ -15,7 +15,7 @@
 namespace tcspc {
 
 TEST_CASE("processor context and tracker") {
-    auto ctx = std::make_shared<processor_context>();
+    auto ctx = processor_context::create();
 
     struct test_access {
         void *tracker_addr;
@@ -95,7 +95,7 @@ class example_processor {
 } // namespace
 
 TEST_CASE("processor tracker intended use") {
-    auto ctx = std::make_shared<processor_context>();
+    auto ctx = processor_context::create();
     {
         // The context is injected into a processor upon creation, when later
         // access to the processor is desired.

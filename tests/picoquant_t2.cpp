@@ -406,7 +406,7 @@ TEST_CASE("introspect picoquant_t2", "[introspect]") {
 }
 
 TEST_CASE("decode pqt2 picoharp300") {
-    auto ctx = std::make_shared<processor_context>();
+    auto ctx = processor_context::create();
     auto in = feed_input<type_list<pqt2_picoharp300_event>>(
         decode_pqt2_picoharp300(capture_output<out_events>(
             ctx->tracker<capture_output_access>("out"))));
@@ -440,7 +440,7 @@ TEST_CASE("decode pqt2 picoharp300") {
 }
 
 TEST_CASE("decode pqt2 hydraharpv1") {
-    auto ctx = std::make_shared<processor_context>();
+    auto ctx = processor_context::create();
     auto in = feed_input<type_list<pqt2_hydraharpv1_event>>(
         decode_pqt2_hydraharpv1(capture_output<out_events>(
             ctx->tracker<capture_output_access>("out"))));
@@ -478,7 +478,7 @@ TEST_CASE("decode pqt2 hydraharpv1") {
 }
 
 TEST_CASE("decode pqt2 generic") {
-    auto ctx = std::make_shared<processor_context>();
+    auto ctx = processor_context::create();
     auto in = feed_input<type_list<pqt2_generic_event>>(
         decode_pqt2_generic(capture_output<out_events>(
             ctx->tracker<capture_output_access>("out"))));

@@ -35,7 +35,7 @@ TEST_CASE("introspect match", "[introspect]") {
 }
 
 TEST_CASE("Match and replace") {
-    auto ctx = std::make_shared<processor_context>();
+    auto ctx = processor_context::create();
     auto in = feed_input<type_list<marker_event<>, misc_event>>(
         match_replace<marker_event<>, output_event>(
             channel_matcher(0),
@@ -56,7 +56,7 @@ TEST_CASE("Match and replace") {
 }
 
 TEST_CASE("Match") {
-    auto ctx = std::make_shared<processor_context>();
+    auto ctx = processor_context::create();
     auto in = feed_input<type_list<marker_event<>, misc_event>>(
         match<marker_event<>, output_event>(
             channel_matcher(0),
