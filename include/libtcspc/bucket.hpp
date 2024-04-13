@@ -368,6 +368,20 @@ template <typename T> class bucket {
     }
 
     /**
+     * \brief Shrink the span of the bucket data.
+     *
+     * Mutates this bucket in place so that its span becomes a subspan of its
+     * current span. There is no effect on the storage.
+     *
+     * Once shrunk, the excluded part of the data is no longer accessible
+     * (unless there is a sub-bucket, byte bucket, or const bucket previously
+     * created from this bucket).
+     */
+    void shrink(std::size_t start, std::size_t count = dynamic_extent) {
+        s = s.subspan(start, count);
+    }
+
+    /**
      * \brief Obtain a sub-bucket referring to the given range of elements.
      *
      * The returned bucket is a view object that shares the underlying storage

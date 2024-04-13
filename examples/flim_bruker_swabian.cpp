@@ -168,7 +168,6 @@ auto make_processor(
     settings const &settings, std::shared_ptr<tcspc::processor_context> ctx,
     std::shared_ptr<tcspc::bucket_source<std::uint16_t>> bsource) {
     using namespace tcspc;
-    using device_event_vector = std::vector<swabian_tag_event>;
 
     // clang-format off
 
@@ -227,10 +226,9 @@ auto make_processor(
     read_binary_stream<swabian_tag_event>(
         binary_file_input_stream(settings.input_filename),
         std::numeric_limits<std::uint64_t>::max(),
-        std::make_shared<object_pool<device_event_vector>>(2, 2),
+        recycling_bucket_source<swabian_tag_event>::create(),
         65536,
     stop_with_error<type_list<warning_event>>("error reading input",
-    dereference_pointer<std::shared_ptr<device_event_vector>>(
     unbatch<swabian_tag_event>(
     count<swabian_tag_event>(ctx->tracker<count_access>("record_counter"),
     decode_swabian_tags(
@@ -250,7 +248,7 @@ auto make_processor(
         }),
         std::move(sync_processor),
         std::move(photon_processor),
-        std::move(pixel_marker_processor)))))))))));
+        std::move(pixel_marker_processor))))))))));
 
     // clang-format on
 }

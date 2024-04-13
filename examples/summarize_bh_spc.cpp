@@ -62,7 +62,6 @@ class summarize_and_print {
 
 auto summarize(std::string const &filename) -> bool {
     using namespace tcspc;
-    using device_event_vector = std::vector<bh_spc_event>;
 
     auto ctx = std::make_shared<processor_context>();
 
@@ -71,18 +70,15 @@ auto summarize(std::string const &filename) -> bool {
     read_binary_stream<bh_spc_event>(
         binary_file_input_stream(filename, 4), // Assume 4-byte .spc header.
         std::numeric_limits<std::uint64_t>::max(),
-        std::make_shared<object_pool<device_event_vector>>(3, 3),
-        65536, // Reader produces shared_ptr of vectors of device events.
+        recycling_bucket_source<bh_spc_event>::create(),
+        65536,
     stop<type_list<warning_event>>("error reading input",
-    dereference_pointer<std::shared_ptr<device_event_vector>>(
-        // Get the vectors of device events.
-    unbatch<bh_spc_event>(
-        // Get individual device events.
+    unbatch<bh_spc_event>( // Get individual device events.
     count<bh_spc_event>(ctx->tracker<count_access>("counter"), // Count.
     decode_bh_spc<dtraits>( // Decode device events into generic TCSPC events.
     check_monotonic<dtraits>( // Ensure the abstime is non-decreasing.
     stop<type_list<warning_event, data_lost_event<dtraits>>>("error in data",
-    summarize_and_print()))))))));
+    summarize_and_print())))))));
     // clang-format on
 
     try {

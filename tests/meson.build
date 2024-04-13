@@ -29,7 +29,6 @@ test_libtcspc_srcs = [
     'merge.cpp',
     'multiplex.cpp',
     'npint.cpp',
-    'object_pool.cpp',
     'pair.cpp',
     'picoquant_t2.cpp',
     'picoquant_t3.cpp',

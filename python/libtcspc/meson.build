@@ -18,12 +18,12 @@ configure_file(
 py_sources = files(
     '__init__.py',
     '_access.py',
+    '_bucket_sources.py',
     '_context.py',
     '_cpp_utils.py',
     '_data_traits.py',
     '_events.py',
     '_graph.py',
-    '_misc.py',
     '_processors.py',
     '_streams.py',
     'py.typed',

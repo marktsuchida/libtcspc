@@ -6,7 +6,7 @@
 
 #include "libtcspc/read_binary_stream.hpp"
 
-#include "libtcspc/object_pool.hpp"
+#include "libtcspc/bucket.hpp"
 #include "libtcspc/span.hpp"
 
 #include <benchmark/benchmark.h>
@@ -77,11 +77,11 @@ void ifstream_unbuf(benchmark::State &state) {
     auto stream =
         internal::unbuffered_binary_ifstream_input_stream("/dev/zero");
     auto const read_size = static_cast<std::size_t>(state.range(0));
-    auto pool = std::make_shared<object_pool<std::vector<int>>>();
+    auto bsrc = recycling_bucket_source<int>::create();
     for ([[maybe_unused]] auto _ : state) {
         auto src =
             read_binary_stream<int>(ref_input_stream(stream), total_bytes,
-                                    pool, read_size, unoptimized_null_sink());
+                                    bsrc, read_size, unoptimized_null_sink());
         src.flush();
     }
 }
@@ -89,11 +89,11 @@ void ifstream_unbuf(benchmark::State &state) {
 void ifstream(benchmark::State &state) {
     auto stream = internal::binary_ifstream_input_stream("/dev/zero");
     auto const read_size = static_cast<std::size_t>(state.range(0));
-    auto pool = std::make_shared<object_pool<std::vector<int>>>();
+    auto bsrc = recycling_bucket_source<int>::create();
     for ([[maybe_unused]] auto _ : state) {
         auto src =
             read_binary_stream<int>(ref_input_stream(stream), total_bytes,
-                                    pool, read_size, unoptimized_null_sink());
+                                    bsrc, read_size, unoptimized_null_sink());
         src.flush();
     }
 }
@@ -101,11 +101,11 @@ void ifstream(benchmark::State &state) {
 void cfile_unbuf(benchmark::State &state) {
     auto stream = internal::unbuffered_binary_cfile_input_stream("/dev/zero");
     auto const read_size = static_cast<std::size_t>(state.range(0));
-    auto pool = std::make_shared<object_pool<std::vector<int>>>();
+    auto bsrc = recycling_bucket_source<int>::create();
     for ([[maybe_unused]] auto _ : state) {
         auto src =
             read_binary_stream<int>(ref_input_stream(stream), total_bytes,
-                                    pool, read_size, unoptimized_null_sink());
+                                    bsrc, read_size, unoptimized_null_sink());
         src.flush();
     }
 }
@@ -113,11 +113,11 @@ void cfile_unbuf(benchmark::State &state) {
 void cfile(benchmark::State &state) {
     auto stream = internal::binary_cfile_input_stream("/dev/zero");
     auto const read_size = static_cast<std::size_t>(state.range(0));
-    auto pool = std::make_shared<object_pool<std::vector<int>>>();
+    auto bsrc = recycling_bucket_source<int>::create();
     for ([[maybe_unused]] auto _ : state) {
         auto src =
             read_binary_stream<int>(ref_input_stream(stream), total_bytes,
-                                    pool, read_size, unoptimized_null_sink());
+                                    bsrc, read_size, unoptimized_null_sink());
         src.flush();
     }
 }

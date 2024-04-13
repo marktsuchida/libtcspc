@@ -28,7 +28,6 @@ public_cpp_headers = files(
     'libtcspc/merge.hpp',
     'libtcspc/multiplex.hpp',
     'libtcspc/npint.hpp',
-    'libtcspc/object_pool.hpp',
     'libtcspc/pair.hpp',
     'libtcspc/picoquant_t2.hpp',
     'libtcspc/picoquant_t3.hpp',

@@ -33,7 +33,6 @@
 #include "move_only_any.hpp"
 #include "multiplex.hpp"
 #include "npint.hpp"
-#include "object_pool.hpp"
 #include "pair.hpp"
 #include "picoquant_t2.hpp"
 #include "picoquant_t3.hpp"

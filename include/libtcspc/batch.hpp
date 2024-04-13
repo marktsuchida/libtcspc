@@ -6,8 +6,8 @@
 
 #pragma once
 
+#include "bucket.hpp"
 #include "introspect.hpp"
-#include "object_pool.hpp"
 
 #include <cstddef>
 #include <memory>
@@ -20,19 +20,19 @@ namespace tcspc {
 
 namespace internal {
 
-template <typename Event, typename EventVector, typename Downstream>
-class batch {
-    std::shared_ptr<object_pool<EventVector>> buffer_pool;
+template <typename Event, typename Downstream> class batch {
+    std::shared_ptr<bucket_source<Event>> bsource;
     std::size_t batch_size;
 
-    std::shared_ptr<EventVector> cur_batch;
+    bucket<Event> cur_bucket;
+    std::size_t n_filled = 0;
 
     Downstream downstream;
 
   public:
-    explicit batch(std::shared_ptr<object_pool<EventVector>> buffer_pool,
+    explicit batch(std::shared_ptr<bucket_source<Event>> bucket_source,
                    std::size_t batch_size, Downstream downstream)
-        : buffer_pool(std::move(buffer_pool)), batch_size(batch_size),
+        : bsource(std::move(bucket_source)), batch_size(batch_size),
           downstream(std::move(downstream)) {
         if (batch_size == 0)
             throw std::invalid_argument(
@@ -53,23 +53,25 @@ class batch {
     template <typename E,
               typename = std::enable_if_t<std::is_convertible_v<E, Event>>>
     void handle(E &&event) {
-        if (not cur_batch) {
-            cur_batch = buffer_pool->check_out();
-            cur_batch->clear();
-            cur_batch->reserve(batch_size);
+        if (cur_bucket.empty()) {
+            cur_bucket = bsource->bucket_of_size(batch_size);
         }
 
-        cur_batch->push_back(std::forward<E>(event));
+        cur_bucket[n_filled] = std::forward<E>(event);
+        ++n_filled;
 
-        if (cur_batch->size() == batch_size) {
-            downstream.handle(std::move(cur_batch));
-            cur_batch.reset(); // In case not moved out.
+        if (n_filled == batch_size) {
+            downstream.handle(std::move(cur_bucket));
+            cur_bucket = {};
+            n_filled = 0;
         }
     }
 
     void flush() {
-        if (cur_batch && not cur_batch->empty())
-            downstream.handle(std::move(cur_batch));
+        if (n_filled > 0) {
+            cur_bucket.shrink(0, n_filled);
+            downstream.handle(std::move(cur_bucket));
+        }
         downstream.flush();
     }
 };
@@ -127,49 +129,39 @@ template <typename Event, typename Downstream> class unbatch {
 } // namespace internal
 
 /**
- * \brief Create a processor that batches events into vectors for buffering.
+ * \brief Create a processor that batches events into buckets for buffering.
  *
  * \ingroup processors-basic
  *
- * Collects every \e batch_size events into vectors. The vectors are obtained
- * from the given \e buffer_pool and are passed downstream via \c
- * std::shared_ptr.
+ * Collects every \e batch_size events into a bucket. The buckets are obtained
+ * from the given \e bucket_source.
  *
- * This is not quite symmetric with \ref unbatch, which handles bare event
- * containers.
+ * The buckets are emitted as rvalue reference.
  *
  * This processor does not perform time-based batching, so may introduce
  * arbitrary delays to real-time event streams. For this reason, batching
  * should not be performed (and is not necessary) for intermediate buffering of
- * real-time streams in most cases. Batching is useful for writing to files
- * efficiently.
- *
- * In contrast, streams originating from a stored source (e.g., a file) would
- * cause buffers to grow unbounded if not regulated. In this case, buffers
- * should use batching, with a size-limited \e buffer_pool so that buffer sizes
- * are bounded.
+ * real-time streams in most cases.
  *
  * \see unbatch
  *
  * \tparam Event the event type (must be a trivial type)
  *
- * \tparam EventVector vector-like container of events
- *
  * \tparam Downstream downstream processor type
  *
- * \param buffer_pool object pool providing event vectors
+ * \param bucket_source bucket source providing event buffers
  *
- * \param batch_size number of events to collect in each batch
+ * \param batch_size number of events to collect in each bucket
  *
  * \param downstream downstream processor
  *
  * \return batch processor
  */
-template <typename Event, typename EventVector, typename Downstream>
-auto batch(std::shared_ptr<object_pool<EventVector>> buffer_pool,
+template <typename Event, typename Downstream>
+auto batch(std::shared_ptr<bucket_source<Event>> bucket_source,
            std::size_t batch_size, Downstream &&downstream) {
-    return internal::batch<Event, EventVector, Downstream>(
-        std::move(buffer_pool), batch_size,
+    return internal::batch<Event, Downstream>(
+        std::move(bucket_source), batch_size,
         std::forward<Downstream>(downstream));
 }
 
@@ -181,12 +173,7 @@ auto batch(std::shared_ptr<object_pool<EventVector>> buffer_pool,
  *
  * Events in (ordered) containers or spans are emitted one by one.
  *
- * This is not quite symmetric with \ref batch, which requires the container to
- * be vector-like, and emits them via \c std::shared_ptr.
- *
  * \see batch
- *
- * \see dereference_pointer
  *
  * \tparam Event the event type (must be a trivial type)
  *
@@ -223,11 +210,8 @@ auto unbatch(Downstream &&downstream) {
  */
 template <typename Event, typename Downstream>
 auto process_in_batches(std::size_t batch_size, Downstream &&downstream) {
-    using event_vector = std::vector<Event>;
-    return batch<Event, event_vector>(
-        std::make_shared<object_pool<event_vector>>(0, 1), batch_size,
-        dereference_pointer<std::shared_ptr<event_vector>>(
-            unbatch<Event>(std::forward<Downstream>(downstream))));
+    return batch<Event>(recycling_bucket_source<Event>::create(1), batch_size,
+                        unbatch<Event>(std::forward<Downstream>(downstream)));
 }
 
 } // namespace tcspc

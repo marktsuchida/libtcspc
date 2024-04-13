@@ -6,8 +6,8 @@
 
 #include "libtcspc/batch.hpp"
 
+#include "libtcspc/bucket.hpp"
 #include "libtcspc/common.hpp"
-#include "libtcspc/object_pool.hpp"
 #include "libtcspc/processor_context.hpp"
 #include "libtcspc/span.hpp"
 #include "libtcspc/test_utils.hpp"
@@ -22,31 +22,42 @@
 
 namespace tcspc {
 
+namespace {
+
+template <typename T, typename U>
+auto tmp_bucket(std::initializer_list<U> il) {
+    static auto src = new_delete_bucket_source<T>::create();
+    auto b = src->bucket_of_size(il.size());
+    std::copy(il.begin(), il.end(), b.begin());
+    return b;
+}
+
+} // namespace
+
 TEST_CASE("introspect batch, unbatch", "[introspect]") {
-    check_introspect_simple_processor(batch<int, std::vector<int>>(
-        std::shared_ptr<object_pool<std::vector<int>>>{}, 1, null_sink()));
+    check_introspect_simple_processor(
+        batch<int>(new_delete_bucket_source<int>::create(), 1, null_sink()));
     check_introspect_simple_processor(unbatch<int>(null_sink()));
 }
 
 TEST_CASE("batch") {
     auto ctx = std::make_shared<processor_context>();
-    auto in = feed_input<type_list<int>>(batch<int, pvector<int>>(
-        std::make_shared<object_pool<pvector<int>>>(), 3,
-        dereference_pointer<std::shared_ptr<pvector<int>>>(
-            capture_output<type_list<pvector<int>>>(
-                ctx->tracker<capture_output_access>("out")))));
+    auto in = feed_input<type_list<int>>(
+        batch<int>(new_delete_bucket_source<int>::create(), 3,
+                   capture_output<type_list<bucket<int>>>(
+                       ctx->tracker<capture_output_access>("out"))));
     in.require_output_checked(ctx, "out");
-    auto out = capture_output_checker<type_list<pvector<int>>>(
+    auto out = capture_output_checker<type_list<bucket<int>>>(
         ctx->access<capture_output_access>("out"));
 
     SECTION("ending mid-batch") {
         in.feed(42);
         in.feed(43);
         in.feed(44);
-        REQUIRE(out.check(pvector<int>{42, 43, 44}));
+        REQUIRE(out.check(tmp_bucket<int>({42, 43, 44})));
         in.feed(45);
         in.flush();
-        REQUIRE(out.check(pvector<int>{45}));
+        REQUIRE(out.check(tmp_bucket<int>({45})));
         REQUIRE(out.check_flushed());
     }
 
@@ -54,7 +65,7 @@ TEST_CASE("batch") {
         in.feed(42);
         in.feed(43);
         in.feed(44);
-        REQUIRE(out.check(pvector<int>{42, 43, 44}));
+        REQUIRE(out.check(tmp_bucket<int>({42, 43, 44})));
         in.flush();
         REQUIRE(out.check_flushed());
     }

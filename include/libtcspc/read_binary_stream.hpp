@@ -6,9 +6,9 @@
 
 #pragma once
 
+#include "bucket.hpp"
 #include "common.hpp"
 #include "introspect.hpp"
-#include "object_pool.hpp"
 #include "span.hpp"
 
 #include <algorithm>
@@ -411,8 +411,7 @@ inline auto borrowed_cfile_input_stream(std::FILE *fp) {
 
 namespace internal {
 
-template <typename InputStream, typename Event, typename EventVector,
-          typename Downstream>
+template <typename InputStream, typename Event, typename Downstream>
 class read_binary_stream {
     static_assert(
         std::is_trivial_v<Event>,
@@ -421,26 +420,57 @@ class read_binary_stream {
     InputStream stream;
     std::uint64_t length;
 
-    std::shared_ptr<object_pool<EventVector>> bufpool;
     std::size_t read_granularity;
+    std::shared_ptr<bucket_source<Event>> bsource;
 
     Downstream downstream;
 
-    // Cold data after downstream
-    bool flushed = false;
+    LIBTCSPC_NOINLINE auto first_read_size() -> std::uint64_t {
+        auto ret = read_granularity;
+        if (stream.is_good()) {
+            // Align second and subsequent reads to read_granularity if current
+            // offset is available. This may or may not improve read
+            // performance (when the read_granularity is a multiple of the page
+            // size or block size), but shouldn't hurt.
+            std::optional<std::uint64_t> pos = stream.tell();
+            if (pos.has_value())
+                ret -= *pos % read_granularity;
+        }
+        return ret;
+    }
+
+    // Read some multiple (max: max_units) of the read granularity that fits in
+    // dest, subject to first-read size and max length.
+    auto read_units(span<std::byte> dest, std::size_t max_units,
+                    std::uint64_t &total_bytes_read) -> std::uint64_t {
+        auto bytes_to_read =
+            std::min<std::uint64_t>(dest.size(), length - total_bytes_read);
+        if (total_bytes_read == 0) {
+            bytes_to_read =
+                std::min<std::uint64_t>(bytes_to_read, first_read_size());
+        }
+        if (bytes_to_read > read_granularity) {
+            bytes_to_read = read_granularity *
+                            std::min<std::uint64_t>(
+                                max_units, bytes_to_read / read_granularity);
+        }
+        auto const bytes_read = stream.read(dest.first(bytes_to_read));
+        total_bytes_read += bytes_read;
+        return bytes_read;
+    }
 
   public:
     explicit read_binary_stream(
         InputStream stream, std::uint64_t max_length,
-        std::shared_ptr<object_pool<EventVector>> buffer_pool,
+        std::shared_ptr<bucket_source<Event>> bucket_source,
         std::size_t read_granularity_bytes, Downstream downstream)
         : stream(std::move(stream)), length(max_length),
-          bufpool(std::move(buffer_pool)),
           read_granularity(read_granularity_bytes),
+          bsource(std::move(bucket_source)),
           downstream(std::move(downstream)) {
-        if (not bufpool)
+        if (not bsource)
             throw std::invalid_argument(
-                "read_binary_stream buffer_pool must not be null");
+                "read_binary_stream bucket_source must not be null");
         if (read_granularity <= 0)
             throw std::invalid_argument(
                 "read_binary_stream read_granularity_bytes must be positive");
@@ -458,84 +488,63 @@ class read_binary_stream {
     }
 
     void flush() {
-        if (flushed) {
-            throw std::logic_error(
-                "read_binary_stream may not be flushed a second time");
-        }
-        flushed = true;
+        auto const bucket_size =
+            sizeof(Event) >= read_granularity
+                ? 1
+                : (read_granularity - 1) / sizeof(Event) + 1;
+        auto const bucket_size_bytes = bucket_size * sizeof(Event);
 
-        auto first_read_size = read_granularity;
-        if (stream.is_good()) {
-            // Align second and subsequent reads to read_granularity if current
-            // offset is available. This may or may not improve read
-            // performance (when the read_granularity is a multiple of the page
-            // size or block size), but shouldn't hurt.
-            std::optional<std::uint64_t> pos = stream.tell();
-            if (pos.has_value())
-                first_read_size -= *pos % read_granularity;
-        }
-
-        // State carried across iterations.
         std::uint64_t total_bytes_read = 0;
-        // If not null, buffer to use next, containing a partial event:
-        std::shared_ptr<EventVector> buf;
-        // Bytes of new event contained in buf:
+        bucket<Event> bkt;
         std::size_t remainder_nbytes = 0; // Always < sizeof(Event)
-        bool const events_are_large = sizeof(Event) > read_granularity;
 
         while (total_bytes_read < length && stream.is_good()) {
-            std::uint64_t read_size = read_granularity;
-            if (total_bytes_read == 0) {
-                read_size = first_read_size;
-            } else if (events_are_large) {
-                // Smallest multiple of read_granularity resulting in nonempty
-                // batch.
-                read_size = ((sizeof(Event) - remainder_nbytes - 1) /
-                                 read_granularity +
-                             1) *
-                            read_granularity;
-            }
-            read_size = std::min<std::uint64_t>(
-                read_size, length - total_bytes_read); // > 0
-
-            auto const bufsize_bytes = remainder_nbytes + read_size;
-            auto const bufsize_elements =
-                (bufsize_bytes - 1) / sizeof(Event) + 1;
-            if (not buf)
-                buf = bufpool->check_out();
-            buf->resize(bufsize_elements);
-            auto const buffer_span =
-                as_writable_bytes(span(*buf)).subspan(0, bufsize_bytes);
-            auto const read_span = buffer_span.subspan(remainder_nbytes);
-            assert(read_span.size() == read_size);
-
-            auto const bytes_read = stream.read(read_span);
-            total_bytes_read += bytes_read;
-            auto const data_span =
-                buffer_span.subspan(0, remainder_nbytes + bytes_read);
-
-            auto const this_batch_size = data_span.size() / sizeof(Event);
-            remainder_nbytes = data_span.size() % sizeof(Event);
-            auto const batch_span =
-                data_span.subspan(0, data_span.size() - remainder_nbytes);
-            auto const remainder_span = data_span.subspan(batch_span.size());
-
-            std::shared_ptr<EventVector> next_buf;
-            if (remainder_nbytes > 0) {
-                next_buf = bufpool->check_out();
-                next_buf->resize(1);
-                auto const next_buffer_span =
-                    as_writable_bytes(span(*next_buf))
-                        .subspan(0, remainder_nbytes);
+            auto const bytes_left_in_bucket =
+                bucket_size_bytes - remainder_nbytes;
+            if (bytes_left_in_bucket >= read_granularity) {
+                if (bkt.empty())
+                    bkt = bsource->bucket_of_size(bucket_size);
+                auto const bytes_read = read_units(
+                    as_writable_bytes(span(bkt)).subspan(remainder_nbytes),
+                    std::numeric_limits<std::size_t>::max(), total_bytes_read);
+                auto const available_nbytes = remainder_nbytes + bytes_read;
+                auto const this_batch_size = available_nbytes / sizeof(Event);
+                remainder_nbytes = available_nbytes % sizeof(Event);
+                if (this_batch_size == 0)
+                    continue; // Leave incomplete event in current bucket.
+                bucket<Event> bkt2;
+                if (remainder_nbytes > 0) {
+                    bkt2 = bsource->bucket_of_size(bucket_size);
+                    auto const remainder_span = as_bytes(span(bkt)).subspan(
+                        available_nbytes - remainder_nbytes);
+                    std::copy(remainder_span.begin(), remainder_span.end(),
+                              as_writable_bytes(span(bkt2)).begin());
+                }
+                bkt.shrink(0, this_batch_size);
+                downstream.handle(std::move(bkt));
+                bkt = std::move(bkt2);
+            } else { // Top off single event.
+                bucket<Event> bkt2;
+                bkt2 = bsource->bucket_of_size(bucket_size);
+                auto const bytes_read = read_units(
+                    as_writable_bytes(span(bkt2)), 1, total_bytes_read);
+                if (bytes_read < bytes_left_in_bucket)
+                    break;
+                auto const top_off_span =
+                    as_bytes(span(bkt2)).first(bytes_left_in_bucket);
+                auto const remainder_span = as_bytes(span(bkt2))
+                                                .first(bytes_read)
+                                                .subspan(bytes_left_in_bucket);
+                std::copy(top_off_span.begin(), top_off_span.end(),
+                          as_writable_bytes(span(bkt))
+                              .last(bytes_left_in_bucket)
+                              .begin());
                 std::copy(remainder_span.begin(), remainder_span.end(),
-                          next_buffer_span.begin());
+                          as_writable_bytes(span(bkt2)).begin());
+                downstream.handle(std::move(bkt));
+                bkt = std::move(bkt2);
+                remainder_nbytes = remainder_span.size();
             }
-
-            if (this_batch_size > 0) {
-                buf->resize(this_batch_size);
-                downstream.handle(std::move(buf));
-            }
-            buf = std::move(next_buf);
         }
 
         if (stream.is_error())
@@ -563,19 +572,16 @@ class read_binary_stream {
  *
  * The stream must contain a contiguous array of events (of type \c Event,
  * which must be a trivial type). Events are read from the stream in batches
- * and placed into buffers (of type \c EventContainer) supplied by an \ref
- * object_pool. The events sent to the downstream processor are of the type \c
- * std::shared_ptr<EventVector>.
+ * and placed into buckets (of type \c Event) supplied by a \ref bucket_source.
  *
  * Each time the stream is read, events that have been completely read are sent
- * downstream as a batch. The size of each read is controlled by \e
+ * downstream in a bucket. The size of each read is controlled by \e
  * read_granularity_bytes and the size of \c Event. When the former is not
  * smaller, it is used as the read size. When the size of \c Event is larger,
- * the smallest multiple of \e read_granularity_bytes that would produce a
- * non-empty (i.e., size 1) batch is used. The first read may be adjusted to a
- * smaller size to align subsequent read offsets to the read granularity. The
- * last read may be adjusted to a smaller size to avoid reading past \e
- * max_length.
+ * multiples of \e read_granularity_bytes may be read at once for efficiency.
+ * The first read may be adjusted to a smaller size to align subsequent read
+ * offsets to the read granularity. The last read may be adjusted to a smaller
+ * size to avoid reading past \e max_length.
  *
  * The \e read_granularity_bytes can be tuned for best performance. If too
  * small, reads may incur more overhead per byte read; if too large, CPU caches
@@ -585,9 +591,6 @@ class read_binary_stream {
  * \see write_binary_stream
  *
  * \tparam Event the event type
- *
- * \tparam EventVector vector-like container of Event used for buffering (must
- * provide \c data() and \c resize())
  *
  * \tparam InputStream input stream type
  *
@@ -599,8 +602,8 @@ class read_binary_stream {
  * multiple of \c sizeof(Event), or \c std::numeric_limit<std::size_t>::max()
  * to read to the end of the stream)
  *
- * \param buffer_pool object pool providing event buffers; must be able to
- * circulate at least 2 buffers to avoid deadlock
+ * \param bucket_source bucket source providing event buffers; must be able to
+ * circulate at least 2 buckets without blocking
  *
  * \param read_granularity_bytes minimum size, in bytes, to read in each
  * iteration; a multiple of this value may be used if \c Event is larger
@@ -609,24 +612,22 @@ class read_binary_stream {
  *
  * \return read-binary-stream source processor
  */
-template <typename Event, typename EventVector, typename InputStream,
-          typename Downstream>
+template <typename Event, typename InputStream, typename Downstream>
 auto read_binary_stream(InputStream &&stream, std::uint64_t max_length,
-                        std::shared_ptr<object_pool<EventVector>> buffer_pool,
+                        std::shared_ptr<bucket_source<Event>> bucket_source,
                         std::size_t read_granularity_bytes,
                         Downstream &&downstream) {
     // Support direct passing of C++ iostreams stream.
     if constexpr (std::is_base_of_v<std::istream, InputStream>) {
         auto wrapped = istream_input_stream(std::forward<InputStream>(stream));
         return internal::read_binary_stream<decltype(wrapped), Event,
-                                            EventVector, Downstream>(
-            std::move(wrapped), max_length, std::move(buffer_pool),
+                                            Downstream>(
+            std::move(wrapped), max_length, std::move(bucket_source),
             read_granularity_bytes, std::forward<Downstream>(downstream));
     } else {
-        return internal::read_binary_stream<InputStream, Event, EventVector,
-                                            Downstream>(
+        return internal::read_binary_stream<InputStream, Event, Downstream>(
             std::forward<InputStream>(stream), max_length,
-            std::move(buffer_pool), read_granularity_bytes,
+            std::move(bucket_source), read_granularity_bytes,
             std::forward<Downstream>(downstream));
     }
 }

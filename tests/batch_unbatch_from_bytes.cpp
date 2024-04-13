@@ -6,8 +6,8 @@
 
 #include "libtcspc/batch_unbatch_from_bytes.hpp"
 
+#include "libtcspc/bucket.hpp"
 #include "libtcspc/common.hpp"
-#include "libtcspc/object_pool.hpp"
 #include "libtcspc/processor_context.hpp"
 #include "libtcspc/span.hpp"
 #include "libtcspc/test_utils.hpp"
@@ -26,22 +26,33 @@
 
 namespace tcspc {
 
+namespace {
+
+template <typename T, typename U>
+auto tmp_bucket(std::initializer_list<U> il) {
+    static auto src = new_delete_bucket_source<T>::create();
+    auto b = src->bucket_of_size(il.size());
+    std::copy(il.begin(), il.end(), b.begin());
+    return b;
+}
+
+} // namespace
+
 TEST_CASE("introspect batch_from_bytes, unbatch_from_bytes", "[introspect]") {
-    check_introspect_simple_processor(batch_from_bytes<int, std::vector<int>>(
-        std::shared_ptr<object_pool<std::vector<int>>>{}, null_sink()));
+    check_introspect_simple_processor(batch_from_bytes<int>(
+        new_delete_bucket_source<int>::create(), null_sink()));
     check_introspect_simple_processor(unbatch_from_bytes<int>(null_sink()));
 }
 
 TEST_CASE("batch_from_bytes") {
     auto ctx = std::make_shared<processor_context>();
-    auto in = feed_input<type_list<span<std::byte const>>>(
-        batch_from_bytes<int, pvector<int>>(
-            std::make_shared<object_pool<pvector<int>>>(),
-            dereference_pointer<std::shared_ptr<pvector<int>>>(
-                capture_output<type_list<pvector<int>>>(
-                    ctx->tracker<capture_output_access>("out")))));
+    auto in =
+        feed_input<type_list<span<std::byte const>>>(batch_from_bytes<int>(
+            new_delete_bucket_source<int>::create(),
+            capture_output<type_list<bucket<int>>>(
+                ctx->tracker<capture_output_access>("out"))));
     in.require_output_checked(ctx, "out");
-    auto out = capture_output_checker<type_list<pvector<int>>>(
+    auto out = capture_output_checker<type_list<bucket<int>>>(
         ctx->access<capture_output_access>("out"));
 
     SECTION("empty input does not emitted batch") {
@@ -53,7 +64,7 @@ TEST_CASE("batch_from_bytes") {
     SECTION("input with whole elements is emitted exactly") {
         std::vector<int> data{1, 2, 3};
         in.feed(as_bytes(span(data)));
-        REQUIRE(out.check(pvector<int>{1, 2, 3}));
+        REQUIRE(out.check(tmp_bucket<int>({1, 2, 3})));
         in.flush();
         REQUIRE(out.check_flushed());
     }
@@ -61,9 +72,9 @@ TEST_CASE("batch_from_bytes") {
     SECTION("split elements are emitted in next batch") {
         std::vector<int> data{1, 2, 3};
         in.feed(as_bytes(span(data)).subspan(0, 5));
-        REQUIRE(out.check(pvector<int>{1}));
+        REQUIRE(out.check(tmp_bucket<int>({1})));
         in.feed(as_bytes(span(data)).subspan(5));
-        REQUIRE(out.check(pvector<int>{2, 3}));
+        REQUIRE(out.check(tmp_bucket<int>({2, 3})));
         in.flush();
         REQUIRE(out.check_flushed());
     }
@@ -74,7 +85,7 @@ TEST_CASE("batch_from_bytes") {
         in.feed(as_bytes(span(data)).subspan(1, 1));
         in.feed(as_bytes(span(data)).subspan(2, 0));
         in.feed(as_bytes(span(data)).subspan(2));
-        REQUIRE(out.check(pvector<int>{42}));
+        REQUIRE(out.check(tmp_bucket<int>({42})));
         in.flush();
         REQUIRE(out.check_flushed());
     }

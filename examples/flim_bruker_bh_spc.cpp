@@ -116,7 +116,6 @@ auto make_processor(
     settings const &settings, std::shared_ptr<tcspc::processor_context> ctx,
     std::shared_ptr<tcspc::bucket_source<std::uint16_t>> bsource) {
     using namespace tcspc;
-    using device_event_vector = std::vector<bh_spc_event>;
 
     // clang-format off
     return
@@ -124,10 +123,9 @@ auto make_processor(
         binary_file_input_stream(settings.input_filename,
                                  4), // Skip 4-byte header.
         std::numeric_limits<std::uint64_t>::max(),
-        std::make_shared<object_pool<device_event_vector>>(2, 2),
-        65536, // Reader produces shared_ptr of vectors of device events.
+        recycling_bucket_source<bh_spc_event>::create(),
+        65536,
     stop_with_error<type_list<warning_event>>("error reading input",
-    dereference_pointer<std::shared_ptr<device_event_vector>>(
     unbatch<bh_spc_event>(
     count<bh_spc_event>(ctx->tracker<count_access>("record_counter"),
     decode_bh_spc(
@@ -152,7 +150,7 @@ auto make_processor(
     map_to_datapoints(difftime_data_mapper(),
     map_to_bins(power_of_2_bin_mapper<12, 8, true>(),
     batch_bin_increments<pixel_start_event, pixel_stop_event>(
-    make_histo_proc<Cumulative>(settings, ctx, bsource))))))))))))))))))));
+    make_histo_proc<Cumulative>(settings, ctx, bsource)))))))))))))))))));
     // clang-format on
 }
 

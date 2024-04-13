@@ -9,7 +9,7 @@ from typing import final
 import cppyy
 from typing_extensions import override
 
-from . import _access, _cpp_utils, _events, _misc, _streams
+from . import _access, _bucket_sources, _cpp_utils, _events, _streams
 from ._data_traits import DataTraits
 from ._events import EventType
 from ._graph import (
@@ -74,23 +74,15 @@ def read_events_from_binary_file(
                 "reader",
                 ReadBinaryStream(
                     event_type,
-                    _events.VectorEvent(event_type),
                     _streams.BinaryFileInputStream(
                         filename, start=start_offset
                     ),
                     max_length,
-                    _misc.ObjectPool(
-                        _events.VectorEvent(event_type),
-                        initial_count=0,
-                        max_count=2,
-                    ),
+                    _bucket_sources.RecyclingBucketSource(event_type),
                     read_granularity_bytes,
                 ),
             ),
             stop_proc((_events.WarningEvent,), "error reading input"),
-            DereferencePointer(
-                _events.SharedPtrEvent(_events.VectorEvent(event_type))
-            ),
             (
                 "unbatcher",
                 Unbatch(event_type),
@@ -178,35 +170,6 @@ class DecodeBHSPC(OneToOneNode):
 
 
 @final
-class DereferencePointer(OneToOneNode):
-    def __init__(self, ptr_type: EventType) -> None:
-        self._ptr_type = ptr_type
-
-    @override
-    def map_event_set(
-        self, input_event_set: Collection[EventType]
-    ) -> tuple[EventType, ...]:
-        _check_events_subset_of(
-            input_event_set, (self._ptr_type,), self.__class__.__name__
-        )
-        ptr = self._ptr_type.cpp_type
-        return (
-            EventType(
-                f"std::remove_reference_t<decltype(*std::declval<{ptr}>())>"
-            ),
-        )
-
-    @override
-    def generate_cpp_one_to_one(
-        self, node_name: str, context: str, downstream: str
-    ) -> str:
-        return dedent(f"""\
-            tcspc::dereference_pointer<{self._ptr_type.cpp_type}>(
-                {downstream}
-            )""")
-
-
-@final
 class NullSink(Node):
     def __init__(self) -> None:
         super().__init__(output=())
@@ -229,17 +192,15 @@ class ReadBinaryStream(OneToOneNode):
     def __init__(
         self,
         event_type: EventType,
-        event_vector_type: EventType,
         stream: _streams.InputStream,
         max_length: int,
-        buffer_pool: _misc.ObjectPool,
+        bucket_source: _bucket_sources.BucketSource,
         read_granularity_bytes: int,
     ):
         self._event_type = event_type
-        self._event_vector_type = event_vector_type
         self._stream = stream
         self._maxlen = max_length
-        self._pool = buffer_pool
+        self._bucket_source = bucket_source
         self._granularity = read_granularity_bytes
 
     @override
@@ -254,17 +215,16 @@ class ReadBinaryStream(OneToOneNode):
         self, node_name: str, context: str, downstream: str
     ) -> str:
         event = self._event_type.cpp_type
-        vector = self._event_vector_type.cpp_type
         maxlen = (
             self._maxlen
             if self._maxlen >= 0
             else "std::numeric_limits<std::uint64_t>::max()"
         )
         return dedent(f"""\
-            tcspc::read_binary_stream<{event}, {vector}>(
+            tcspc::read_binary_stream<{event}>(
                 {self._stream.cpp},
                 {maxlen},
-                {self._pool.cpp},
+                {self._bucket_source.cpp},
                 {self._granularity},
                 {downstream}
             )""")

@@ -6,9 +6,9 @@
 
 #pragma once
 
+#include "bucket.hpp"
 #include "common.hpp"
 #include "introspect.hpp"
-#include "object_pool.hpp"
 #include "span.hpp"
 
 #include <algorithm>
@@ -23,11 +23,10 @@ namespace tcspc {
 
 namespace internal {
 
-template <typename Event, typename EventVector, typename Downstream>
-class batch_from_bytes {
+template <typename Event, typename Downstream> class batch_from_bytes {
     static_assert(std::is_trivial_v<Event>);
 
-    std::shared_ptr<object_pool<EventVector>> buffer_pool;
+    std::shared_ptr<bucket_source<Event>> bsource;
 
     std::size_t bytes_buffered = 0; // < buf.size()
     std::array<std::byte, sizeof(Event)> buf;
@@ -36,9 +35,9 @@ class batch_from_bytes {
 
   public:
     explicit batch_from_bytes(
-        std::shared_ptr<object_pool<EventVector>> buffer_pool,
+        std::shared_ptr<bucket_source<Event>> bucket_source,
         Downstream &&downstream)
-        : buffer_pool(std::move(buffer_pool)),
+        : bsource(std::move(bucket_source)),
           downstream(std::move(downstream)) {}
 
     [[nodiscard]] auto introspect_node() const -> processor_info {
@@ -63,10 +62,8 @@ class batch_from_bytes {
         }
 
         auto const batch_size = bytes_available / sizeof(Event);
-        auto batch = buffer_pool->check_out();
-        batch->resize(batch_size);
-        auto const output_span =
-            as_writable_bytes(span(batch->data(), batch_size));
+        auto bucket = bsource->bucket_of_size(batch_size);
+        auto const output_span = as_writable_bytes(span(bucket));
         auto const input_bulk =
             input_span.subspan(0, output_span.size() - bytes_buffered);
         auto const remainder = input_span.subspan(input_bulk.size());
@@ -77,7 +74,7 @@ class batch_from_bytes {
         std::copy(remainder.begin(), remainder.end(), buf.begin());
         bytes_buffered = remainder.size();
 
-        downstream.handle(std::move(batch));
+        downstream.handle(std::move(bucket));
     }
 
     void flush() {
@@ -172,31 +169,31 @@ template <typename Event, typename Downstream> class unbatch_from_bytes {
  * \ingroup processors-basic
  *
  * Copies incoming events (which must be a vector or span of `std::byte`) into
- * vectors of type \c Event, provided by the given \c buffer_pool, and emit as
- * \c std::shared_ptr to the event vector.
+ * buckets holding type \c Event, provided by the given \c bucket_source.
  *
  * Any input bytes that do not make up a whole \c Event are stored and combined
  * with subsequent input.
+ *
+ * The output bucket size is variable and contains as many events as can be
+ * constructed from the buffered bytes and the input event.
  *
  * \see unbatch_from_bytes
  *
  * \tparam Event the event type (must be a trivial type)
  *
- * \tparam EventVector vector-like container of events
- *
  * \tparam Downstream downstream processor type
  *
- * \param buffer_pool object pool providing event vectors
+ * \param bucket_source bucket source providing event buckets
  *
  * \param downstream downstream processor
  *
  * \return batch-from-bytes processor
  */
-template <typename Event, typename EventVector, typename Downstream>
-auto batch_from_bytes(std::shared_ptr<object_pool<EventVector>> buffer_pool,
+template <typename Event, typename Downstream>
+auto batch_from_bytes(std::shared_ptr<bucket_source<Event>> bucket_source,
                       Downstream &&downstream) {
-    return internal::batch_from_bytes<Event, EventVector, Downstream>(
-        std::move(buffer_pool), std::forward<Downstream>(downstream));
+    return internal::batch_from_bytes<Event, Downstream>(
+        std::move(bucket_source), std::forward<Downstream>(downstream));
 }
 
 /**
