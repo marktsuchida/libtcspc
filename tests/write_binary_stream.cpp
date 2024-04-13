@@ -20,7 +20,6 @@
 #include <array>
 #include <cstddef>
 #include <cstdint>
-#include <memory>
 #include <numeric>
 #include <optional>
 #include <vector>
@@ -94,7 +93,7 @@ TEST_CASE("write binary stream") {
         ALLOW_CALL(stream, is_error()).RETURN(true);
         ALLOW_CALL(stream, tell()).RETURN(std::nullopt);
         proc.handle(span<std::byte>()); // Empty spans are okay.
-        std::array data{std::byte(0)};
+        std::array const data{std::byte(0)};
         proc.handle(data);
         proc.handle(data);
         proc.handle(data);
@@ -106,7 +105,7 @@ TEST_CASE("write binary stream") {
     SECTION("tell() failure is ignored") {
         ALLOW_CALL(stream, is_error()).RETURN(false);
         REQUIRE_CALL(stream, tell()).TIMES(1, 4).RETURN(std::nullopt);
-        std::array data{std::byte(0)};
+        std::array const data{std::byte(0)};
         proc.handle(data);
         proc.handle(data);
         proc.handle(data);

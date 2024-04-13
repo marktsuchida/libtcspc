@@ -6,17 +6,18 @@
 
 #pragma once
 
+#include "arg_wrappers.hpp"
 #include "bucket.hpp"
 #include "common.hpp"
 #include "errors.hpp"
 #include "histogram_events.hpp"
 #include "histogramming.hpp"
 #include "introspect.hpp"
-#include "span.hpp"
 
 #include <algorithm>
 #include <cstddef>
 #include <memory>
+#include <stdexcept>
 #include <type_traits>
 #include <utility>
 
@@ -104,7 +105,8 @@ class histogram {
                        std::shared_ptr<bucket_source<bin_type>> bucket_source,
                        Downstream downstream)
         : bsource(std::move(bucket_source)),
-          shist(hist_bucket, max_per_bin, num_bins),
+          shist(hist_bucket, arg_max_per_bin{max_per_bin},
+                arg_num_bins{num_bins}),
           downstream(std::move(downstream)) {
         if (num_bins == 0)
             throw std::logic_error("histogram must have at least 1 bin");

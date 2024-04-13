@@ -6,17 +6,18 @@
 
 #pragma once
 
+#include "arg_wrappers.hpp"
 #include "bucket.hpp"
 #include "common.hpp"
 #include "errors.hpp"
 #include "histogram_events.hpp"
 #include "histogramming.hpp"
 #include "introspect.hpp"
-#include "span.hpp"
 
 #include <cassert>
 #include <cstddef>
 #include <memory>
+#include <stdexcept>
 #include <type_traits>
 #include <utility>
 
@@ -62,7 +63,8 @@ class histogram_elementwise {
         std::shared_ptr<bucket_source<bin_type>> bucket_source,
         Downstream downstream)
         : bsource(std::move(bucket_source)),
-          mhist(hist_bucket, max_per_bin, num_bins, num_elements, true),
+          mhist(hist_bucket, arg_max_per_bin{max_per_bin},
+                arg_num_bins{num_bins}, arg_num_elements{num_elements}, true),
           downstream(std::move(downstream)) {
         if (num_elements == 0)
             throw std::logic_error(
@@ -309,7 +311,8 @@ class histogram_elementwise_accumulate {
         std::shared_ptr<bucket_source<bin_type>> bucket_source,
         Downstream downstream)
         : bsource(std::move(bucket_source)),
-          mhista(hist_bucket, max_per_bin, num_bins, num_elements, true),
+          mhista(hist_bucket, arg_max_per_bin{max_per_bin},
+                 arg_num_bins{num_bins}, arg_num_elements{num_elements}, true),
           downstream(std::move(downstream)) {
         if (num_elements == 0)
             throw std::logic_error(

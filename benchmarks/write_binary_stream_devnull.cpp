@@ -61,7 +61,7 @@ void ofstream_unbuf(benchmark::State &state) {
         "/dev/null", false, true);
     auto const write_size = static_cast<std::size_t>(state.range(0));
     auto const num_writes = total_bytes / write_size;
-    std::vector<std::byte> data(write_size);
+    std::vector<std::byte> const data(write_size);
     auto bsrc = recycling_bucket_source<std::byte>::create();
     for ([[maybe_unused]] auto _ : state) {
         auto proc =
@@ -76,7 +76,7 @@ void ofstream(benchmark::State &state) {
         internal::binary_ofstream_output_stream("/dev/null", false, true);
     auto const write_size = static_cast<std::size_t>(state.range(0));
     auto const num_writes = total_bytes / write_size;
-    std::vector<std::byte> data(write_size);
+    std::vector<std::byte> const data(write_size);
     auto bsrc = recycling_bucket_source<std::byte>::create();
     for ([[maybe_unused]] auto _ : state) {
         auto proc =
@@ -91,7 +91,7 @@ void cfile_unbuf(benchmark::State &state) {
                                                                   false, true);
     auto const write_size = static_cast<std::size_t>(state.range(0));
     auto const num_writes = total_bytes / write_size;
-    std::vector<std::byte> data(write_size);
+    std::vector<std::byte> const data(write_size);
     auto bsrc = recycling_bucket_source<std::byte>::create();
     for ([[maybe_unused]] auto _ : state) {
         auto proc =
@@ -106,7 +106,7 @@ void cfile(benchmark::State &state) {
         internal::binary_cfile_output_stream("/dev/null", false, true);
     auto const write_size = static_cast<std::size_t>(state.range(0));
     auto const num_writes = total_bytes / write_size;
-    std::vector<std::byte> data(write_size);
+    std::vector<std::byte> const data(write_size);
     auto bsrc = recycling_bucket_source<std::byte>::create();
     for ([[maybe_unused]] auto _ : state) {
         auto proc =

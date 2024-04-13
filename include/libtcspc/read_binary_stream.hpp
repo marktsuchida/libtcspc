@@ -12,7 +12,6 @@
 #include "span.hpp"
 
 #include <algorithm>
-#include <cassert>
 #include <cerrno>
 #include <cstddef>
 #include <cstdint>

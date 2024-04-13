@@ -81,11 +81,10 @@ struct settings {
 };
 
 template <bool Cumulative>
-auto make_histo_proc(
-    settings const &settings,
-    std::shared_ptr<tcspc::processor_context> const &ctx,
-    std::shared_ptr<tcspc::bucket_source<std::uint16_t>> bsource) {
+auto make_histo_proc(settings const &settings,
+                     std::shared_ptr<tcspc::processor_context> const &ctx) {
     using namespace tcspc;
+    auto bsource = recycling_bucket_source<std::uint16_t>::create();
     auto writer = write_binary_stream(
         binary_file_output_stream(settings.output_filename, settings.truncate),
         recycling_bucket_source<std::byte>::create(), 65536);
@@ -112,9 +111,8 @@ auto make_histo_proc(
 }
 
 template <bool Cumulative>
-auto make_processor(
-    settings const &settings, std::shared_ptr<tcspc::processor_context> ctx,
-    std::shared_ptr<tcspc::bucket_source<std::uint16_t>> bsource) {
+auto make_processor(settings const &settings,
+                    std::shared_ptr<tcspc::processor_context> ctx) {
     using namespace tcspc;
 
     // clang-format off
@@ -150,7 +148,7 @@ auto make_processor(
     map_to_datapoints(difftime_data_mapper(),
     map_to_bins(power_of_2_bin_mapper<12, 8, true>(),
     batch_bin_increments<pixel_start_event, pixel_stop_event>(
-    make_histo_proc<Cumulative>(settings, ctx, bsource)))))))))))))))))));
+    make_histo_proc<Cumulative>(settings, ctx)))))))))))))))))));
     // clang-format on
 }
 
@@ -175,9 +173,8 @@ void print_stats(settings const &settings,
 }
 
 template <bool Cumulative> void run_and_print(settings const &settings) {
-    auto bsource = tcspc::recycling_bucket_source<std::uint16_t>::create();
     auto ctx = std::make_shared<tcspc::processor_context>();
-    auto proc = make_processor<Cumulative>(settings, ctx, bsource);
+    auto proc = make_processor<Cumulative>(settings, ctx);
     if (settings.dump_graph) {
         auto graph = proc.introspect_graph();
         std::fputs(tcspc::graphviz_from_processor_graph(graph).c_str(),

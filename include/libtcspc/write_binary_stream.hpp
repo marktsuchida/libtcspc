@@ -25,7 +25,6 @@
 #include <system_error>
 #include <type_traits>
 #include <utility>
-#include <vector>
 
 // When editing this file, maintain partial symmetry with
 // read_binary_stream.hpp.

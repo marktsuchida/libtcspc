@@ -19,6 +19,7 @@
 #include <array>
 #include <cstddef>
 #include <cstring>
+#include <initializer_list>
 #include <memory>
 #include <stdexcept>
 #include <utility>

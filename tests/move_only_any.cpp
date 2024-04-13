@@ -9,6 +9,8 @@
 #include <catch2/catch_test_macros.hpp>
 
 #include <array>
+#include <cstddef>
+#include <initializer_list>
 #include <memory>
 #include <memory_resource>
 #include <typeinfo>
@@ -44,6 +46,7 @@ TEST_CASE("empty move_only_any behaves as expected") {
 
         CHECK_THROWS_AS(move_only_any_cast<int>(std::move(a)),
                         bad_move_only_any_cast);
+        // NOLINTNEXTLINE(bugprone-use-after-move,clang-analyzer-cplusplus.Move)
         CHECK_THROWS_AS(move_only_any_cast<int const &>(std::move(a)),
                         bad_move_only_any_cast);
     }
@@ -61,6 +64,7 @@ TEST_CASE("move_only_any sbo") {
     SECTION("can move construct") {
         move_only_any b = std::move(a);
         CHECK(b.has_value());
+        // NOLINTNEXTLINE(bugprone-use-after-move,clang-analyzer-cplusplus.Move)
         CHECK_FALSE(a.has_value());
         CHECK(*move_only_any_cast<std::unique_ptr<int> const &>(b) == 42);
     }
@@ -69,6 +73,7 @@ TEST_CASE("move_only_any sbo") {
         move_only_any b;
         b = std::move(a);
         CHECK(b.has_value());
+        // NOLINTNEXTLINE(bugprone-use-after-move,clang-analyzer-cplusplus.Move)
         CHECK_FALSE(a.has_value());
         CHECK(*move_only_any_cast<std::unique_ptr<int> const &>(b) == 42);
     }
@@ -90,6 +95,7 @@ TEST_CASE("move_only_any non-sbo") {
     SECTION("can move construct") {
         move_only_any b = std::move(a);
         CHECK(b.has_value());
+        // NOLINTNEXTLINE(bugprone-use-after-move,clang-analyzer-cplusplus.Move)
         CHECK_FALSE(a.has_value());
         auto const &v = move_only_any_cast<non_copyable_large const &>(b);
         CHECK(v.a[0] == 42);
@@ -99,6 +105,7 @@ TEST_CASE("move_only_any non-sbo") {
         move_only_any b;
         b = std::move(a);
         CHECK(b.has_value());
+        // NOLINTNEXTLINE(bugprone-use-after-move,clang-analyzer-cplusplus.Move)
         CHECK_FALSE(a.has_value());
         auto const &v = move_only_any_cast<non_copyable_large const &>(b);
         CHECK(v.a[0] == 42);
@@ -108,20 +115,20 @@ TEST_CASE("move_only_any non-sbo") {
 TEST_CASE(
     "move_only_any construct or assign from lvalue ref of copyable type") {
     SECTION("sbo") {
-        int v = 42;
+        int const v = 42;
         move_only_any a(v);
         CHECK(move_only_any_cast<int const &>(a) == 42);
-        int v2 = 43;
+        int const v2 = 43;
         a = v2;
         CHECK(move_only_any_cast<int const &>(a) == 43);
     }
 
     SECTION("heap") {
         using i100 = std::array<int, 100>;
-        i100 v{42, 43};
+        i100 const v{42, 43};
         move_only_any a(v);
         CHECK(move_only_any_cast<i100 const &>(a) == i100{42, 43});
-        i100 v2{44, 45};
+        i100 const v2{44, 45};
         a = v2;
         CHECK(move_only_any_cast<i100 const &>(a) == i100{44, 45});
     }
@@ -131,7 +138,7 @@ TEST_CASE(
 // args in non-sbo (heap) mode.
 template <typename V> struct large_value {
     std::pmr::vector<V> v;
-    std::array<int, 100> a; // Don't fit in sbo.
+    std::array<int, 100> a{}; // Don't fit in sbo.
 
     template <typename T, typename... Args>
     explicit large_value(std::initializer_list<T> il, Args &&...args)
@@ -160,7 +167,7 @@ TEST_CASE("move_only_any in-place construct") {
             // (std::initializer_list<T>, std::pmr::polymorphic_allocator<T>
             // const&). Note that std::pmr::polymorphic_allocator<T> is
             // implicitly constructed from std::pmr::memory_resource *.
-            std::array<std::byte, 128> buffer;
+            std::array<std::byte, 128> buffer{};
             std::pmr::monotonic_buffer_resource pool(buffer.data(),
                                                      buffer.size());
             move_only_any a(std::in_place_type<std::pmr::vector<int>>,
@@ -202,7 +209,7 @@ TEST_CASE("move_only_any emplace") {
             // (std::initializer_list<T>, std::pmr::polymorphic_allocator<T>
             // const&). Note that std::pmr::polymorphic_allocator<T> is
             // implicitly constructed from std::pmr::memory_resource *.
-            std::array<std::byte, 128> buffer;
+            std::array<std::byte, 128> buffer{};
             std::pmr::monotonic_buffer_resource pool(buffer.data(),
                                                      buffer.size());
             move_only_any a;

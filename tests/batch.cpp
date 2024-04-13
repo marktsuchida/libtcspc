@@ -16,6 +16,7 @@
 
 #include <catch2/catch_test_macros.hpp>
 
+#include <initializer_list>
 #include <memory>
 #include <utility>
 #include <vector>

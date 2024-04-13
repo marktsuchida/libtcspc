@@ -12,6 +12,7 @@
 #include "libtcspc/histogram_events.hpp"
 #include "libtcspc/int_types.hpp"
 #include "libtcspc/processor_context.hpp"
+#include "libtcspc/span.hpp"
 #include "libtcspc/test_utils.hpp"
 #include "libtcspc/type_list.hpp"
 #include "test_checkers.hpp"

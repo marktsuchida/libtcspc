@@ -6,6 +6,7 @@
 
 #include "libtcspc/histogramming.hpp"
 
+#include "libtcspc/arg_wrappers.hpp"
 #include "libtcspc/int_types.hpp"
 
 #include <catch2/catch_template_test_macros.hpp>
@@ -203,8 +204,8 @@ TEMPLATE_TEST_CASE(
     auto max_per_bin = GENERATE(u8(0), 1, 255);
     std::vector<u8> data(num_bins, u8(123));
     {
-        single_histogram<u8, u8, TestType> const shist(data, max_per_bin,
-                                                       num_bins);
+        single_histogram<u8, u8, TestType> const shist(
+            data, arg_max_per_bin{max_per_bin}, arg_num_bins{num_bins});
         CHECK(std::all_of(data.begin(), data.end(),
                           [](u8 e) { return e == 123; }));
     }
@@ -218,7 +219,8 @@ TEMPLATE_TEST_CASE("single_histogram: clearing zeroes the span",
     auto num_bins = GENERATE(std::size_t{0}, 1, 42, 255);
     auto max_per_bin = GENERATE(u8(0), 1, 255);
     std::vector<u8> data(num_bins, u8(123));
-    single_histogram<u8, u8, TestType> shist(data, max_per_bin, num_bins);
+    single_histogram<u8, u8, TestType> shist(
+        data, arg_max_per_bin{max_per_bin}, arg_num_bins{num_bins});
     shist.clear();
     CHECK(std::all_of(data.begin(), data.end(), [](u8 e) { return e == 0; }));
 }
@@ -229,7 +231,8 @@ TEMPLATE_TEST_CASE(
     stop_on_internal_overflow) {
     SECTION("1 bin") {
         std::vector<u8> data(1, u8(123));
-        single_histogram<u8, u8, TestType> shist(data, 255, 1);
+        single_histogram<u8, u8, TestType> shist(
+            data, arg_max_per_bin<u8>{255}, arg_num_bins<>{1});
         CHECK(shist.apply_increments({}) == 0);
         CHECK(data[0] == 123);
         CHECK(shist.apply_increments(std::array<u8, 1>{0}) == 1);
@@ -237,7 +240,8 @@ TEMPLATE_TEST_CASE(
     }
     SECTION("Many bins") {
         std::vector<u8> data(256, u8(123));
-        single_histogram<u8, u8, TestType> shist(data, 255, data.size());
+        single_histogram<u8, u8, TestType> shist(
+            data, arg_max_per_bin<u8>{255}, arg_num_bins{data.size()});
         CHECK(shist.apply_increments(std::array<u8, 5>{42, 128, 42, 0, 255}) ==
               5);
         CHECK(data[0] == 124);
@@ -251,8 +255,8 @@ TEST_CASE("single_histogram: undoing correctly decrements bins",
           "[single_histogram]") {
     SECTION("1 bin") {
         std::vector<u8> data(1, u8(123));
-        single_histogram<u8, u8, stop_on_internal_overflow> shist(data, 255,
-                                                                  data.size());
+        single_histogram<u8, u8, stop_on_internal_overflow> shist(
+            data, arg_max_per_bin<u8>{255}, arg_num_bins{data.size()});
         shist.undo_increments({});
         CHECK(data[0] == 123);
         shist.undo_increments(std::array<u8, 1>{0});
@@ -260,8 +264,8 @@ TEST_CASE("single_histogram: undoing correctly decrements bins",
     }
     SECTION("Many bins") {
         std::vector<u8> data(256, u8(123));
-        single_histogram<u8, u8, stop_on_internal_overflow> shist(data, 255,
-                                                                  data.size());
+        single_histogram<u8, u8, stop_on_internal_overflow> shist(
+            data, arg_max_per_bin<u8>{255}, arg_num_bins{data.size()});
         shist.undo_increments(std::array<u8, 5>{42, 128, 42, 0, 255});
         CHECK(data[0] == 122);
         CHECK(data[42] == 121);
@@ -274,7 +278,7 @@ TEST_CASE("single_histogram: saturate on overflow") {
     SECTION("Max per bin of 0") {
         std::vector<u8> data(4, u8(0));
         single_histogram<u8, u8, saturate_on_internal_overflow> shist(
-            data, 0, data.size());
+            data, arg_max_per_bin<u8>{0}, arg_num_bins{data.size()});
         CHECK(shist.apply_increments(std::array<u8, 7>{0, 1, 2, 1, 3, 3, 1}) ==
               0);
         CHECK(data == std::vector<u8>{0, 0, 0, 0});
@@ -282,7 +286,7 @@ TEST_CASE("single_histogram: saturate on overflow") {
     SECTION("Max per bin in middle of range") {
         std::vector<u8> data(4, u8(123));
         single_histogram<u8, u8, saturate_on_internal_overflow> shist(
-            data, 124, data.size());
+            data, arg_max_per_bin<u8>{124}, arg_num_bins{data.size()});
         CHECK(shist.apply_increments(std::array<u8, 7>{0, 1, 2, 1, 3, 3, 1}) ==
               4);
         CHECK(data == std::vector<u8>{124, 124, 124, 124});
@@ -290,7 +294,7 @@ TEST_CASE("single_histogram: saturate on overflow") {
     SECTION("Max per bin at max representable") {
         std::vector<u8> data(4, u8(254));
         single_histogram<u8, u8, saturate_on_internal_overflow> shist(
-            data, 255, data.size());
+            data, arg_max_per_bin<u8>{255}, arg_num_bins{data.size()});
         CHECK(shist.apply_increments(std::array<u8, 7>{0, 1, 2, 1, 3, 3, 1}) ==
               4);
         CHECK(data == std::vector<u8>{255, 255, 255, 255});
@@ -300,24 +304,24 @@ TEST_CASE("single_histogram: saturate on overflow") {
 TEST_CASE("single_histogram: stop on overflow") {
     SECTION("Max per bin of 0") {
         std::vector<u8> data(4, u8(0));
-        single_histogram<u8, u8, stop_on_internal_overflow> shist(data, 0,
-                                                                  data.size());
+        single_histogram<u8, u8, stop_on_internal_overflow> shist(
+            data, arg_max_per_bin<u8>{0}, arg_num_bins{data.size()});
         CHECK(shist.apply_increments(std::array<u8, 7>{0, 1, 2, 1, 3, 3, 1}) ==
               0);
         CHECK(data == std::vector<u8>{0, 0, 0, 0});
     }
     SECTION("Max per bin in middle of range") {
         std::vector<u8> data(4, u8(123));
-        single_histogram<u8, u8, stop_on_internal_overflow> shist(data, 124,
-                                                                  data.size());
+        single_histogram<u8, u8, stop_on_internal_overflow> shist(
+            data, arg_max_per_bin<u8>{124}, arg_num_bins{data.size()});
         CHECK(shist.apply_increments(std::array<u8, 7>{0, 1, 2, 1, 3, 3, 1}) ==
               3);
         CHECK(data == std::vector<u8>{124, 124, 124, 123});
     }
     SECTION("Max per bin at max representable") {
         std::vector<u8> data(4, u8(254));
-        single_histogram<u8, u8, stop_on_internal_overflow> shist(data, 255,
-                                                                  data.size());
+        single_histogram<u8, u8, stop_on_internal_overflow> shist(
+            data, arg_max_per_bin<u8>{255}, arg_num_bins{data.size()});
         CHECK(shist.apply_increments(std::array<u8, 7>{0, 1, 2, 1, 3, 3, 1}) ==
               3);
         CHECK(data == std::vector<u8>{255, 255, 255, 254});
@@ -335,7 +339,8 @@ TEMPLATE_TEST_CASE(
     std::vector<u8> data(num_elements * num_bins, u8(123));
     {
         multi_histogram<u8, u8, TestType> const mhist(
-            data, max_per_bin, num_bins, num_elements, clear);
+            data, arg_max_per_bin{max_per_bin}, arg_num_bins{num_bins},
+            arg_num_elements{num_elements}, clear);
         CHECK(std::all_of(data.begin(), data.end(),
                           [](u8 e) { return e == 123; }));
     }
@@ -349,7 +354,9 @@ TEMPLATE_TEST_CASE(
     stop_on_internal_overflow) {
     null_journal<u8> journal;
     std::vector<u8> data(12, u8(123));
-    multi_histogram<u8, u8, TestType> mhist(data, 255, 4, 3, false);
+    multi_histogram<u8, u8, TestType> mhist(data, arg_max_per_bin<u8>{255},
+                                            arg_num_bins<>{4},
+                                            arg_num_elements<>{3}, false);
     CHECK(mhist.apply_increment_batch(std::array<u8, 3>{0, 1, 3}, journal));
     CHECK(mhist.apply_increment_batch({}, journal));
     CHECK(mhist.apply_increment_batch(std::array<u8, 1>{1}, journal));
@@ -364,7 +371,9 @@ TEMPLATE_TEST_CASE(
     stop_on_internal_overflow) {
     null_journal<u8> journal;
     std::vector<u8> data(12, u8(123));
-    multi_histogram<u8, u8, TestType> mhist(data, 255, 4, 3, true);
+    multi_histogram<u8, u8, TestType> mhist(data, arg_max_per_bin<u8>{255},
+                                            arg_num_bins<>{4},
+                                            arg_num_elements<>{3}, true);
     SECTION("Skip all elements") {
         mhist.skip_remaining();
         CHECK(mhist.is_complete());
@@ -394,8 +403,9 @@ TEST_CASE("multi_histogram: rolling back works and applies clearing",
           "[multi_histogram]") {
     bin_increment_batch_journal<u8> journal;
     std::vector<u8> data(12, u8(123));
-    multi_histogram<u8, u8, stop_on_internal_overflow> mhist(data, 255, 4, 3,
-                                                             true);
+    multi_histogram<u8, u8, stop_on_internal_overflow> mhist(
+        data, arg_max_per_bin<u8>{255}, arg_num_bins<>{4},
+        arg_num_elements<>{3}, true);
     CHECK_FALSE(mhist.is_consistent());
     SECTION("Roll back no elements") {
         mhist.roll_back(journal);
@@ -431,8 +441,9 @@ TEST_CASE("multi_histogram: replay reproduces journaled data",
           "[multi_histogram]") {
     bin_increment_batch_journal<u8> journal;
     std::vector<u8> data(12, u8(0));
-    multi_histogram<u8, u8, stop_on_internal_overflow> mhist(data, 255, 4, 3,
-                                                             true);
+    multi_histogram<u8, u8, stop_on_internal_overflow> mhist(
+        data, arg_max_per_bin<u8>{255}, arg_num_bins<>{4},
+        arg_num_elements<>{3}, true);
     CHECK(mhist.apply_increment_batch(std::array<u8, 3>{0, 1, 3}, journal));
     CHECK(mhist.apply_increment_batch(std::array<u8, 1>{2}, journal));
     auto data_copy = data;
@@ -444,8 +455,9 @@ TEST_CASE("multi_histogram: replay reproduces journaled data",
 TEST_CASE("multi_histogram: saturate on overflow") {
     null_journal<u8> journal;
     std::vector<u8> data(12, u8(123));
-    multi_histogram<u8, u8, saturate_on_internal_overflow> mhist(data, 124, 4,
-                                                                 3, false);
+    multi_histogram<u8, u8, saturate_on_internal_overflow> mhist(
+        data, arg_max_per_bin<u8>{124}, arg_num_bins<>{4},
+        arg_num_elements<>{3}, false);
     CHECK_FALSE(
         mhist.apply_increment_batch(std::array<u8, 4>{1, 0, 1, 3}, journal));
     CHECK(mhist.apply_increment_batch({}, journal));
@@ -457,8 +469,9 @@ TEST_CASE("multi_histogram: saturate on overflow") {
 TEST_CASE("multi_histogram: stop on overflow") {
     bin_increment_batch_journal<u8> journal;
     std::vector<u8> data(12, u8(123));
-    multi_histogram<u8, u8, stop_on_internal_overflow> mhist(data, 1, 4, 3,
-                                                             true);
+    multi_histogram<u8, u8, stop_on_internal_overflow> mhist(
+        data, arg_max_per_bin<u8>{1}, arg_num_bins<>{4}, arg_num_elements<>{3},
+        true);
     CHECK(mhist.apply_increment_batch(std::array<u8, 2>{2, 1}, journal));
     CHECK_FALSE(
         mhist.apply_increment_batch(std::array<u8, 4>{1, 0, 1, 3}, journal));
@@ -479,7 +492,8 @@ TEMPLATE_TEST_CASE(
     std::vector<u8> data(num_elements * num_bins, u8(123));
     {
         multi_histogram_accumulation<u8, u8, TestType> const mhista(
-            data, max_per_bin, num_bins, num_elements, clear_first);
+            data, arg_max_per_bin{max_per_bin}, arg_num_bins{num_bins},
+            arg_num_elements{num_elements}, clear_first);
         CHECK(std::all_of(data.begin(), data.end(),
                           [](u8 e) { return e == 123; }));
     }
@@ -493,8 +507,9 @@ TEMPLATE_TEST_CASE(
     stop_on_internal_overflow) {
     null_journal<u8> journal;
     std::vector<u8> data(12, u8(123));
-    multi_histogram_accumulation<u8, u8, TestType> mhista(data, 255, 4, 3,
-                                                          false);
+    multi_histogram_accumulation<u8, u8, TestType> mhista(
+        data, arg_max_per_bin<u8>{255}, arg_num_bins<>{4},
+        arg_num_elements<>{3}, false);
     CHECK(mhista.apply_increment_batch(std::array<u8, 3>{0, 1, 3}, journal));
     CHECK(mhista.apply_increment_batch({}, journal));
     CHECK(mhista.apply_increment_batch(std::array<u8, 1>{1}, journal));
@@ -513,8 +528,9 @@ TEMPLATE_TEST_CASE(
     stop_on_internal_overflow) {
     null_journal<u8> journal;
     std::vector<u8> data(12, u8(123));
-    multi_histogram_accumulation<u8, u8, TestType> mhista(data, 255, 4, 3,
-                                                          true);
+    multi_histogram_accumulation<u8, u8, TestType> mhista(
+        data, arg_max_per_bin<u8>{255}, arg_num_bins<>{4},
+        arg_num_elements<>{3}, true);
     CHECK(mhista.apply_increment_batch(std::array<u8, 3>{0, 1, 3}, journal));
     CHECK(mhista.apply_increment_batch({}, journal));
     CHECK(mhista.apply_increment_batch(std::array<u8, 1>{1}, journal));
@@ -530,7 +546,8 @@ TEST_CASE("multi_histogram_accumulation: rolling back restores previous cycle",
     bin_increment_batch_journal<u8> journal;
     std::vector<u8> data(12, u8(123));
     multi_histogram_accumulation<u8, u8, stop_on_internal_overflow> mhista(
-        data, 255, 4, 3, true);
+        data, arg_max_per_bin<u8>{255}, arg_num_bins<>{4},
+        arg_num_elements<>{3}, true);
     CHECK(mhista.apply_increment_batch(std::array<u8, 3>{0, 1, 3}, journal));
     CHECK(mhista.apply_increment_batch({}, journal));
     CHECK(mhista.apply_increment_batch(std::array<u8, 1>{1}, journal));
@@ -546,7 +563,8 @@ TEST_CASE("multi_histogram_accumulation: replay reproduces rolled-back delta",
     bin_increment_batch_journal<u8> journal;
     std::vector<u8> data(12, u8(123));
     multi_histogram_accumulation<u8, u8, stop_on_internal_overflow> mhista(
-        data, 255, 4, 3, true);
+        data, arg_max_per_bin<u8>{255}, arg_num_bins<>{4},
+        arg_num_elements<>{3}, true);
     CHECK(mhista.apply_increment_batch(std::array<u8, 3>{0, 1, 3}, journal));
     CHECK(mhista.apply_increment_batch({}, journal));
     CHECK(mhista.apply_increment_batch(std::array<u8, 1>{1}, journal));

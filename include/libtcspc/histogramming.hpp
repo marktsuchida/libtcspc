@@ -6,8 +6,8 @@
 
 #pragma once
 
+#include "arg_wrappers.hpp"
 #include "common.hpp"
-#include "histogram_events.hpp"
 #include "span.hpp"
 
 #include <algorithm>
@@ -313,18 +313,21 @@ class single_histogram {
   private:
     span<bin_type> hist;
     bin_type bin_max = 0;
-    std::size_t n_bins;
+    std::size_t n_bins{};
 
   public:
     // Attach to 'histogram' and allow bin values up to max_per_bin.
-    explicit single_histogram(span<bin_type> histogram, bin_type max_per_bin,
-                              std::size_t num_bins) noexcept
-        : hist(histogram), bin_max(max_per_bin), n_bins(num_bins) {}
+    explicit single_histogram(span<bin_type> histogram,
+                              arg_max_per_bin<bin_type> max_per_bin,
+                              arg_num_bins<std::size_t> num_bins) noexcept
+        : hist(histogram), bin_max(max_per_bin.value), n_bins(num_bins.value) {
+    }
 
     // Reconstruct with new span.
     explicit single_histogram(span<bin_type> histogram,
                               single_histogram const &params) noexcept
-        : single_histogram(histogram, params.bin_max, params.n_bins) {}
+        : single_histogram(histogram, arg_max_per_bin{params.bin_max},
+                           arg_num_bins{params.n_bins}) {}
 
     [[nodiscard]] auto num_bins() const noexcept -> std::size_t {
         return n_bins;
@@ -394,11 +397,14 @@ class multi_histogram {
     bool need_to_clear = false;
 
   public:
-    explicit multi_histogram(span<bin_type> hist_array, bin_type max_per_bin,
-                             std::size_t num_bins, std::size_t num_elements,
+    explicit multi_histogram(span<bin_type> hist_array,
+                             arg_max_per_bin<bin_type> max_per_bin,
+                             arg_num_bins<std::size_t> num_bins,
+                             arg_num_elements<std::size_t> num_elements,
                              bool clear) noexcept
-        : hist_arr(hist_array), bin_max(max_per_bin), n_bins(num_bins),
-          n_elements(num_elements), need_to_clear(clear) {
+        : hist_arr(hist_array), bin_max(max_per_bin.value),
+          n_bins(num_bins.value), n_elements(num_elements.value),
+          need_to_clear(clear) {
         assert(hist_array.empty() || hist_array.size() == n_bins * n_elements);
     }
 
@@ -406,8 +412,9 @@ class multi_histogram {
     explicit multi_histogram(span<bin_type> hist_array,
                              multi_histogram const &params,
                              bool clear) noexcept
-        : multi_histogram(hist_array, params.bin_max, params.n_bins,
-                          params.n_elements, clear) {}
+        : multi_histogram(hist_array, arg_max_per_bin{params.bin_max},
+                          arg_num_bins{params.n_bins},
+                          arg_num_elements{params.n_elements}, clear) {}
 
     [[nodiscard]] auto max_per_bin() const noexcept -> bin_type {
         return bin_max;
@@ -463,7 +470,7 @@ class multi_histogram {
         assert(not is_complete());
         single_histogram<bin_index_type, bin_type, OverflowStrategy>
             single_hist(hist_arr.subspan(n_bins * element_index, n_bins),
-                        bin_max, n_bins);
+                        arg_max_per_bin{bin_max}, arg_num_bins{n_bins});
         if (need_to_clear)
             single_hist.clear();
 
@@ -513,8 +520,8 @@ class multi_histogram {
         assert(not hist_arr.empty());
         for (auto [index, bin_index_span] : journal) {
             single_histogram<bin_index_type, bin_type, OverflowStrategy>
-                single_hist(hist_arr.subspan(n_bins * index, n_bins), bin_max,
-                            n_bins);
+                single_hist(hist_arr.subspan(n_bins * index, n_bins),
+                            arg_max_per_bin{bin_max}, arg_num_bins{n_bins});
             single_hist.undo_increments(bin_index_span);
         }
         // Ensure the previously untouched tail of the span gets cleared, if
@@ -534,8 +541,8 @@ class multi_histogram {
         assert(not is_started());
         for (auto [index, bin_index_span] : journal) {
             single_histogram<bin_index_type, bin_type, OverflowStrategy>
-                single_hist(hist_arr.subspan(n_bins * index, n_bins), bin_max,
-                            n_bins);
+                single_hist(hist_arr.subspan(n_bins * index, n_bins),
+                            arg_max_per_bin{bin_max}, arg_num_bins{n_bins});
             if (need_to_clear)
                 single_hist.clear();
             [[maybe_unused]] auto n_applied =
@@ -570,11 +577,10 @@ class multi_histogram_accumulation {
     multi_histogram<bin_index_type, bin_type, OverflowStrategy> cur_cycle;
 
   public:
-    explicit multi_histogram_accumulation(span<bin_type> hist_array,
-                                          bin_type max_per_bin,
-                                          std::size_t num_bins,
-                                          std::size_t num_elements,
-                                          bool clear_first) noexcept
+    explicit multi_histogram_accumulation(
+        span<bin_type> hist_array, arg_max_per_bin<bin_type> max_per_bin,
+        arg_num_bins<std::size_t> num_bins,
+        arg_num_elements<std::size_t> num_elements, bool clear_first) noexcept
         : cur_cycle(hist_array, max_per_bin, num_bins, num_elements,
                     clear_first) {}
 
@@ -582,9 +588,10 @@ class multi_histogram_accumulation {
     explicit multi_histogram_accumulation(
         span<bin_type> hist_array, multi_histogram_accumulation const &params,
         bool clear_first) noexcept
-        : multi_histogram_accumulation(hist_array, params.max_per_bin(),
-                                       params.num_bins(),
-                                       params.num_elements(), clear_first) {}
+        : multi_histogram_accumulation(
+              hist_array, arg_max_per_bin{params.max_per_bin()},
+              arg_num_bins{params.num_bins()},
+              arg_num_elements{params.num_elements()}, clear_first) {}
 
     [[nodiscard]] auto max_per_bin() const noexcept -> bin_type {
         return cur_cycle.max_per_bin();

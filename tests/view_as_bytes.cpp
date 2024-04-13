@@ -26,7 +26,8 @@ namespace {
 
 using out_events = type_list<bucket<std::byte const>>;
 
-template <typename T> auto tmp_bucket(T &&v) {
+template <typename T>
+auto tmp_bucket(T &&v) { // NOLINT(cppcoreguidelines-missing-std-forward)
     struct ignore_storage {};
     return bucket(span(v), ignore_storage{});
 }

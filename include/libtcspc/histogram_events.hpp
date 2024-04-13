@@ -9,9 +9,7 @@
 #include "bucket.hpp"
 #include "common.hpp"
 
-#include <cstdint>
 #include <ostream>
-#include <type_traits>
 #include <vector>
 
 namespace tcspc {

@@ -22,12 +22,12 @@
 #include <cstdio>
 #include <filesystem>
 #include <fstream>
+#include <initializer_list>
 #include <ios>
 #include <limits>
 #include <memory>
 #include <sstream>
 #include <utility>
-#include <vector>
 
 namespace tcspc {
 

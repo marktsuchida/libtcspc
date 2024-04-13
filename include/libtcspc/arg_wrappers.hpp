@@ -6,6 +6,8 @@
 
 #pragma once
 
+#include <cstddef>
+
 namespace tcspc {
 
 // Function argument wrappers for strong typing (avoiding mistakes with
@@ -92,7 +94,7 @@ template <typename T> struct arg_limit {
 };
 
 /**
- * \brief Function argument wrapper for max bin index parameter.
+ * \brief Function argument wrapper for maximum bin index parameter.
  * \ingroup arg-wrappers
  */
 template <typename T> struct arg_max_bin_index {
@@ -100,6 +102,39 @@ template <typename T> struct arg_max_bin_index {
     T value;
     /** \brief Construct by wrapping a value. */
     explicit arg_max_bin_index(T arg) : value(arg) {}
+};
+
+/**
+ * \brief Function argument wrapper for maximum bin value.
+ * \ingroup arg-wrappers
+ */
+template <typename T> struct arg_max_per_bin {
+    /** \brief The argument value. */
+    T value;
+    /** \brief Construct by wrapping a value. */
+    explicit arg_max_per_bin(T arg) : value(arg) {}
+};
+
+/**
+ * \brief Function argument wrapper for number of bins parameter.
+ * \ingroup arg-wrappers
+ */
+template <typename T = std::size_t> struct arg_num_bins {
+    /** \brief The argument value. */
+    T value;
+    /** \brief Construct by wrapping a value. */
+    explicit arg_num_bins(T arg) : value(arg) {}
+};
+
+/**
+ * \brief Function argument wrapper for number of elements parameter.
+ * \ingroup arg-wrappers
+ */
+template <typename T = std::size_t> struct arg_num_elements {
+    /** \brief The argument value. */
+    T value;
+    /** \brief Construct by wrapping a value. */
+    explicit arg_num_elements(T arg) : value(arg) {}
 };
 
 /**

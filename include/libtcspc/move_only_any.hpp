@@ -10,7 +10,6 @@
 #include <cstddef>
 #include <initializer_list>
 #include <memory>
-#include <new>
 #include <type_traits>
 #include <typeinfo>
 #include <utility>
@@ -25,10 +24,12 @@ class move_only_any {
     struct polymorphic {
         virtual ~polymorphic() = default;
         virtual void move_construct_at(std::byte *storage) noexcept = 0;
-        virtual auto const_ptr() const noexcept -> void const * = 0;
-        virtual auto ptr() noexcept -> void * = 0;
-        virtual auto has_value() const noexcept -> bool = 0;
-        virtual auto type() const noexcept -> std::type_info const & = 0;
+        [[nodiscard]] virtual auto const_ptr() const noexcept
+            -> void const * = 0;
+        [[nodiscard]] virtual auto ptr() noexcept -> void * = 0;
+        [[nodiscard]] virtual auto has_value() const noexcept -> bool = 0;
+        [[nodiscard]] virtual auto type() const noexcept
+            -> std::type_info const & = 0;
     };
 
     struct polymorphic_no_value : public polymorphic {
@@ -36,15 +37,21 @@ class move_only_any {
             new (storage) polymorphic_no_value();
         }
 
-        auto const_ptr() const noexcept -> void const * override {
+        [[nodiscard]] auto const_ptr() const noexcept
+            -> void const * override {
             return nullptr;
         }
 
-        auto ptr() noexcept -> void * override { return nullptr; }
+        [[nodiscard]] auto ptr() noexcept -> void * override {
+            return nullptr;
+        }
 
-        auto has_value() const noexcept -> bool override { return false; }
+        [[nodiscard]] auto has_value() const noexcept -> bool override {
+            return false;
+        }
 
-        auto type() const noexcept -> std::type_info const & override {
+        [[nodiscard]] auto type() const noexcept
+            -> std::type_info const & override {
             return typeid(void);
         }
     };
@@ -60,15 +67,21 @@ class move_only_any {
             new (storage) polymorphic_on_heap(std::move(value));
         }
 
-        auto const_ptr() const noexcept -> void const * override {
+        [[nodiscard]] auto const_ptr() const noexcept
+            -> void const * override {
             return value.get();
         }
 
-        auto ptr() noexcept -> void * override { return value.get(); }
+        [[nodiscard]] auto ptr() noexcept -> void * override {
+            return value.get();
+        }
 
-        auto has_value() const noexcept -> bool override { return true; }
+        [[nodiscard]] auto has_value() const noexcept -> bool override {
+            return true;
+        }
 
-        auto type() const noexcept -> std::type_info const & override {
+        [[nodiscard]] auto type() const noexcept
+            -> std::type_info const & override {
             return typeid(V);
         }
     };
@@ -85,32 +98,45 @@ class move_only_any {
             new (storage) polymorphic_sbo(std::move(value));
         }
 
-        auto const_ptr() const noexcept -> void const * override {
+        [[nodiscard]] auto const_ptr() const noexcept
+            -> void const * override {
             return &value;
         }
 
-        auto ptr() noexcept -> void * override { return &value; }
+        [[nodiscard]] auto ptr() noexcept -> void * override { return &value; }
 
-        auto has_value() const noexcept -> bool override { return true; }
+        [[nodiscard]] auto has_value() const noexcept -> bool override {
+            return true;
+        }
 
-        auto type() const noexcept -> std::type_info const & override {
+        [[nodiscard]] auto type() const noexcept
+            -> std::type_info const & override {
             return typeid(V);
         }
     };
 
     static constexpr std::size_t storage_size = std::max(
+        // NOLINTNEXTLINE(cppcoreguidelines-avoid-c-arrays,modernize-avoid-c-arrays)
         sizeof(polymorphic_on_heap<int>), sizeof(polymorphic_sbo<void *[3]>));
 
     static constexpr std::size_t storage_align =
         alignof(polymorphic_on_heap<int>);
 
+    // NOLINTNEXTLINE(cppcoreguidelines-avoid-c-arrays,modernize-avoid-c-arrays)
     alignas(storage_align) std::byte storage[storage_size];
 
-    auto poly() noexcept -> polymorphic * {
+    // Explicit decay to stop clang-tidy from complaining.
+    [[nodiscard]] auto p_storage() noexcept -> std::byte * {
+        return static_cast<std::byte *>(storage);
+    }
+
+    [[nodiscard]] auto poly() noexcept -> polymorphic * {
+        // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
         return reinterpret_cast<polymorphic *>(storage);
     }
 
-    auto poly() const noexcept -> polymorphic const * {
+    [[nodiscard]] auto poly() const noexcept -> polymorphic const * {
+        // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
         return reinterpret_cast<polymorphic const *>(storage);
     }
 
@@ -133,31 +159,36 @@ class move_only_any {
     friend auto move_only_any_cast(move_only_any *operand) noexcept -> V *;
 
   public:
-    move_only_any() { new (storage) polymorphic_no_value(); }
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
+    move_only_any() { new (p_storage()) polymorphic_no_value(); }
 
     ~move_only_any() { poly()->~polymorphic(); }
 
     move_only_any(move_only_any const &other) = delete;
     auto operator=(move_only_any const &rhs) = delete;
 
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
     move_only_any(move_only_any &&other) noexcept {
-        other.poly()->move_construct_at(storage);
+        other.poly()->move_construct_at(p_storage());
         other.reset();
     }
 
     auto operator=(move_only_any &&rhs) noexcept -> move_only_any & {
         poly()->~polymorphic();
-        rhs.poly()->move_construct_at(storage);
+        rhs.poly()->move_construct_at(p_storage());
         rhs.reset();
         return *this;
     }
 
-    template <typename V> move_only_any(V &&value) {
+    template <typename V, typename = std::enable_if_t<not std::is_same_v<
+                              std::remove_reference_t<V>, move_only_any>>>
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
+    move_only_any(V &&value) {
         using U = std::decay_t<V>;
         if constexpr (uses_sbo<U>()) {
-            new (storage) polymorphic_sbo<U>(std::forward<V>(value));
+            new (p_storage()) polymorphic_sbo<U>(std::forward<V>(value));
         } else {
-            new (storage) polymorphic_on_heap<U>(
+            new (p_storage()) polymorphic_on_heap<U>(
                 std::make_unique<U>(std::forward<V>(value)));
         }
     }
@@ -166,31 +197,35 @@ class move_only_any {
         using U = std::decay_t<V>;
         poly()->~polymorphic();
         if constexpr (uses_sbo<U>()) {
-            new (storage) polymorphic_sbo<U>(std::forward<V>(rhs));
+            new (p_storage()) polymorphic_sbo<U>(std::forward<V>(rhs));
         } else {
-            new (storage) polymorphic_on_heap<U>(
+            new (p_storage()) polymorphic_on_heap<U>(
                 std::make_unique<U>(std::forward<V>(rhs)));
         }
         return *this;
     }
 
     template <typename V, typename... Args>
-    explicit move_only_any(std::in_place_type_t<V>, Args &&...args) {
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
+    explicit move_only_any([[maybe_unused]] std::in_place_type_t<V> tag,
+                           Args &&...args) {
         if constexpr (uses_sbo<V>()) {
-            new (storage) polymorphic_sbo<V>(std::forward<Args>(args)...);
+            new (p_storage()) polymorphic_sbo<V>(std::forward<Args>(args)...);
         } else {
-            new (storage) polymorphic_on_heap(
+            new (p_storage()) polymorphic_on_heap(
                 std::make_unique<V>(std::forward<Args>(args)...));
         }
     }
 
     template <typename V, typename T, typename... Args>
-    explicit move_only_any(std::in_place_type_t<V>,
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
+    explicit move_only_any([[maybe_unused]] std::in_place_type_t<V> tag,
                            std::initializer_list<T> il, Args &&...args) {
         if constexpr (uses_sbo<V>()) {
-            new (storage) polymorphic_sbo<V>(il, std::forward<Args>(args)...);
+            new (p_storage())
+                polymorphic_sbo<V>(il, std::forward<Args>(args)...);
         } else {
-            new (storage) polymorphic_on_heap(
+            new (p_storage()) polymorphic_on_heap(
                 std::make_unique<V>(il, std::forward<Args>(args)...));
         }
     }
@@ -200,13 +235,15 @@ class move_only_any {
         using U = std::decay_t<V>;
         poly()->~polymorphic();
         if constexpr (uses_sbo<U>()) {
-            new (storage) polymorphic_sbo<U>(std::forward<Args>(args)...);
+            new (p_storage()) polymorphic_sbo<U>(std::forward<Args>(args)...);
             return *static_cast<U *>(
+                // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
                 reinterpret_cast<polymorphic_sbo<U> *>(storage)->ptr());
         } else {
-            new (storage) polymorphic_on_heap<U>(
+            new (p_storage()) polymorphic_on_heap<U>(
                 std::make_unique<U>(std::forward<Args>(args)...));
             return *static_cast<U *>(
+                // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
                 reinterpret_cast<polymorphic_on_heap<U> *>(storage)->ptr());
         }
     }
@@ -217,20 +254,23 @@ class move_only_any {
         using U = std::decay_t<V>;
         poly()->~polymorphic();
         if constexpr (uses_sbo<U>()) {
-            new (storage) polymorphic_sbo<U>(il, std::forward<Args>(args)...);
+            new (p_storage())
+                polymorphic_sbo<U>(il, std::forward<Args>(args)...);
             return *static_cast<U *>(
+                // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
                 reinterpret_cast<polymorphic_sbo<U> *>(storage)->ptr());
         } else {
-            new (storage) polymorphic_on_heap<U>(
+            new (p_storage()) polymorphic_on_heap<U>(
                 std::make_unique<U>(il, std::forward<Args>(args)...));
             return *static_cast<U *>(
+                // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
                 reinterpret_cast<polymorphic_on_heap<U> *>(storage)->ptr());
         }
     }
 
     void reset() noexcept {
         poly()->~polymorphic();
-        new (storage) polymorphic_no_value();
+        new (p_storage()) polymorphic_no_value();
     }
 
     void swap(move_only_any &other) noexcept {
@@ -238,14 +278,14 @@ class move_only_any {
         swap(*this, other);
     }
 
-    auto has_value() const noexcept -> bool {
+    [[nodiscard]] auto has_value() const noexcept -> bool {
         // We could use type() == typeid(void), but this can avoid value
         // comparison of std::type_info (which, at least in theory, could
         // involve a strcmp).
         return poly()->has_value();
     }
 
-    auto type() const noexcept -> std::type_info const & {
+    [[nodiscard]] auto type() const noexcept -> std::type_info const & {
         return poly()->type();
     }
 };
@@ -270,6 +310,7 @@ template <typename U> auto move_only_any_cast(move_only_any &operand) -> U {
 }
 
 // U can be V const & or V, but not V &.
+// NOLINTNEXTLINE(cppcoreguidelines-rvalue-reference-param-not-moved)
 template <typename U> auto move_only_any_cast(move_only_any &&operand) -> U {
     using V = std::remove_cv_t<std::remove_reference_t<U>>;
     auto *ptr = move_only_any_cast<V>(&operand);

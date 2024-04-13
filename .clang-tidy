@@ -33,9 +33,10 @@ Checks: >-
 
 CheckOptions:
   cppcoreguidelines-avoid-do-while.IgnoreMacros: true
+  cppcoreguidelines-special-member-functions.AllowSoleDefaultDtor: true
+  misc-include-cleaner.IgnoreHeaders: 'catch2/.*;.*/trompeloeil.hpp'
   misc-non-private-member-variables-in-classes.IgnoreClassesWithAllMemberVariablesBeingPublic: true
   readability-braces-around-statements.ShortStatementLines: 3
   readability-function-cognitive-complexity.IgnoreMacros: true
   readability-uppercase-literal-suffix.NewSuffixes: L;uL;LL;uLL
-  misc-include-cleaner.IgnoreHeaders: 'catch2/.*;.*/trompeloeil.hpp'
 ...
