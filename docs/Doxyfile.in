@@ -16,6 +16,7 @@ GENERATE_LATEX         = NO
 DISTRIBUTE_GROUP_DOC   = NO
 EXCLUDE_SYMBOLS        = internal std
 RECURSIVE              = YES
+SHOW_HEADERFILE        = NO
 SORT_BRIEF_DOCS        = YES
 
 CLASS_GRAPH            = NO
