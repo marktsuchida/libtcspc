@@ -20,6 +20,12 @@ doxygen_layout = custom_target(
     output: ['DoxygenLayout.xml'],
 )
 
+doxygen_css = files(
+    # Rebuild docs when custom CSS changes. Do not bother listing files from
+    # doxygen-awesome-css, which we do not regularly edit.
+    'doxygen-awesome-css/custom.css',
+)
+
 doxyfile = configure_file(
     configuration: {
         'DOXYGEN_INPUT': meson.current_source_dir() / '../include',
@@ -38,7 +44,7 @@ custom_target(
     'docs',
     command: [doxygen, '-q', doxyfile],
     depends: [doxygen_layout],
-    depend_files: [public_cpp_headers],
+    depend_files: [public_cpp_headers, doxygen_css],
     output: ['apidoc'],
     install: true,
     install_dir: doc_install_dir,
