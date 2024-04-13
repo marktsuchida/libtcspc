@@ -65,7 +65,7 @@ template <typename Event, typename Downstream> class batch_from_bytes {
         auto bucket = bsource->bucket_of_size(batch_size);
         auto const output_span = as_writable_bytes(span(bucket));
         auto const input_bulk =
-            input_span.subspan(0, output_span.size() - bytes_buffered);
+            input_span.first(output_span.size() - bytes_buffered);
         auto const remainder = input_span.subspan(input_bulk.size());
         auto const output_bulk = output_span.subspan(bytes_buffered);
 
@@ -129,7 +129,7 @@ template <typename Event, typename Downstream> class unbatch_from_bytes {
 
         auto const n_whole = input_span.size() / sizeof(Event);
         auto const whole_event_bytes =
-            input_span.subspan(0, n_whole * sizeof(Event));
+            input_span.first(n_whole * sizeof(Event));
         auto const remainder = input_span.subspan(whole_event_bytes.size());
 
         if (is_aligned<Event>(input_span.data())) {

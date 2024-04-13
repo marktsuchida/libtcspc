@@ -72,7 +72,7 @@ TEST_CASE("batch_from_bytes") {
 
     SECTION("split elements are emitted in next batch") {
         std::vector<int> data{1, 2, 3};
-        in.feed(as_bytes(span(data)).subspan(0, 5));
+        in.feed(as_bytes(span(data)).first(5));
         REQUIRE(out.check(tmp_bucket<int>({1})));
         in.feed(as_bytes(span(data)).subspan(5));
         REQUIRE(out.check(tmp_bucket<int>({2, 3})));
@@ -82,7 +82,7 @@ TEST_CASE("batch_from_bytes") {
 
     SECTION("element can be split over more than 2 inputs") {
         std::vector<int> data{42};
-        in.feed(as_bytes(span(data)).subspan(0, 1));
+        in.feed(as_bytes(span(data)).first(1));
         in.feed(as_bytes(span(data)).subspan(1, 1));
         in.feed(as_bytes(span(data)).subspan(2, 0));
         in.feed(as_bytes(span(data)).subspan(2));
@@ -139,7 +139,7 @@ TEST_CASE("unbatch_from_bytes") {
 
     SECTION("split elements are emitted upon next input") {
         std::vector<int> data{1, 2, 3};
-        in.feed(as_bytes(span(data)).subspan(0, 5));
+        in.feed(as_bytes(span(data)).first(5));
         REQUIRE(out.check(1));
         in.feed(as_bytes(span(data)).subspan(5));
         REQUIRE(out.check(2));
@@ -150,7 +150,7 @@ TEST_CASE("unbatch_from_bytes") {
 
     SECTION("element can be split over more than 2 inputs") {
         std::vector<int> data{42};
-        in.feed(as_bytes(span(data)).subspan(0, 1));
+        in.feed(as_bytes(span(data)).first(1));
         in.feed(as_bytes(span(data)).subspan(1, 1));
         in.feed(as_bytes(span(data)).subspan(2, 0));
         in.feed(as_bytes(span(data)).subspan(2));

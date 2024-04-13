@@ -123,10 +123,10 @@ TEST_CASE("write binary stream") {
             std::array<std::uint8_t, 8> data{};
             std::iota(data.begin(), data.end(), std::uint8_t(0));
             auto const data_bytes = as_bytes(span(data));
-            proc.handle(data_bytes.subspan(0, 2));
+            proc.handle(data_bytes.first(2));
             REQUIRE_CALL(stream, write(_))
                 .TIMES(1)
-                .WITH(equal_span(_1, data_bytes.subspan(0, 4)));
+                .WITH(equal_span(_1, data_bytes.first(4)));
             proc.handle(data_bytes.subspan(2, 2));
             proc.handle(data_bytes.subspan(4, 2));
             REQUIRE_CALL(stream, write(_))
@@ -148,10 +148,10 @@ TEST_CASE("write binary stream") {
             std::array<std::uint8_t, 18> data{};
             std::iota(data.begin(), data.end(), std::uint8_t(0));
             auto const data_bytes = as_bytes(span(data));
-            proc.handle(data_bytes.subspan(0, 3));
+            proc.handle(data_bytes.first(3));
             REQUIRE_CALL(stream, write(_))
                 .TIMES(1)
-                .WITH(equal_span(_1, data_bytes.subspan(0, 4)));
+                .WITH(equal_span(_1, data_bytes.first(4)));
             proc.handle(data_bytes.subspan(3, 3));
             REQUIRE_CALL(stream, write(_))
                 .TIMES(1)
@@ -186,8 +186,8 @@ TEST_CASE("write binary stream") {
             auto const data_bytes = as_bytes(span(data));
             REQUIRE_CALL(stream, write(_))
                 .TIMES(1)
-                .WITH(equal_span(_1, data_bytes.subspan(0, 4)));
-            proc.handle(data_bytes.subspan(0, 4));
+                .WITH(equal_span(_1, data_bytes.first(4)));
+            proc.handle(data_bytes.first(4));
             REQUIRE_CALL(stream, write(_))
                 .TIMES(1)
                 .WITH(equal_span(_1, data_bytes.subspan(4, 4)));
@@ -204,8 +204,8 @@ TEST_CASE("write binary stream") {
             auto const data_bytes = as_bytes(span(data));
             REQUIRE_CALL(stream, write(_))
                 .TIMES(1)
-                .WITH(equal_span(_1, data_bytes.subspan(0, 4)));
-            proc.handle(data_bytes.subspan(0, 5));
+                .WITH(equal_span(_1, data_bytes.first(4)));
+            proc.handle(data_bytes.first(5));
             REQUIRE_CALL(stream, write(_))
                 .TIMES(1)
                 .WITH(equal_span(_1, data_bytes.subspan(4, 4)));
@@ -223,8 +223,8 @@ TEST_CASE("write binary stream") {
             auto const data_bytes = as_bytes(span(data));
             REQUIRE_CALL(stream, write(_))
                 .TIMES(1)
-                .WITH(equal_span(_1, data_bytes.subspan(0, 8)));
-            proc.handle(data_bytes.subspan(0, 9));
+                .WITH(equal_span(_1, data_bytes.first(8)));
+            proc.handle(data_bytes.first(9));
             REQUIRE_CALL(stream, write(_))
                 .TIMES(1)
                 .WITH(equal_span(_1, data_bytes.subspan(8, 4)));
@@ -258,20 +258,20 @@ TEST_CASE("write binary stream") {
             auto const data_bytes = as_bytes(span(data));
             REQUIRE_CALL(stream, write(_))
                 .TIMES(1)
-                .WITH(equal_span(_1, data_bytes.subspan(0, 3)));
+                .WITH(equal_span(_1, data_bytes.first(3)));
 
             SECTION("write fails") {
                 ALLOW_CALL(stream, is_error()).RETURN(true);
-                REQUIRE_THROWS(proc.handle(data_bytes.subspan(0, 3)));
+                REQUIRE_THROWS(proc.handle(data_bytes.first(3)));
             }
 
             SECTION("clean end") {
-                proc.handle(data_bytes.subspan(0, 3));
+                proc.handle(data_bytes.first(3));
                 proc.flush();
             }
 
             SECTION("continue") {
-                proc.handle(data_bytes.subspan(0, 3));
+                proc.handle(data_bytes.first(3));
                 proc.handle(data_bytes.subspan(3, 3));
                 REQUIRE_CALL(stream, write(_))
                     .TIMES(1)
@@ -298,15 +298,15 @@ TEST_CASE("write binary stream") {
             auto const data_bytes = as_bytes(span(data));
             REQUIRE_CALL(stream, write(_))
                 .TIMES(1)
-                .WITH(equal_span(_1, data_bytes.subspan(0, 3)));
+                .WITH(equal_span(_1, data_bytes.first(3)));
 
             SECTION("write fails") {
                 ALLOW_CALL(stream, is_error()).RETURN(true);
-                REQUIRE_THROWS(proc.handle(data_bytes.subspan(0, 4)));
+                REQUIRE_THROWS(proc.handle(data_bytes.first(4)));
             }
 
             SECTION("clean end") {
-                proc.handle(data_bytes.subspan(0, 4));
+                proc.handle(data_bytes.first(4));
                 REQUIRE_CALL(stream, write(_))
                     .TIMES(1)
                     .WITH(equal_span(_1, data_bytes.subspan(3, 1)));

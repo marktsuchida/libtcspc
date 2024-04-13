@@ -216,7 +216,7 @@ inline void skip_stream_bytes(InputStream &stream, std::uint64_t bytes) {
         while (bytes_discarded < bytes) {
             auto read_size =
                 std::min<std::uint64_t>(bufsize, bytes - bytes_discarded);
-            bytes_discarded += stream.read(bufspan.subspan(0, read_size));
+            bytes_discarded += stream.read(bufspan.first(read_size));
             if (not stream.is_good())
                 break;
         }
