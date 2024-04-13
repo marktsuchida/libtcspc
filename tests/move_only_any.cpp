@@ -167,9 +167,7 @@ TEST_CASE("move_only_any in-place construct") {
             // (std::initializer_list<T>, std::pmr::polymorphic_allocator<T>
             // const&). Note that std::pmr::polymorphic_allocator<T> is
             // implicitly constructed from std::pmr::memory_resource *.
-            std::array<std::byte, 128> buffer{};
-            std::pmr::monotonic_buffer_resource pool(buffer.data(),
-                                                     buffer.size());
+            std::pmr::monotonic_buffer_resource pool(128);
             move_only_any a(std::in_place_type<std::pmr::vector<int>>,
                             {42, 43, 44}, &pool);
             CHECK(
