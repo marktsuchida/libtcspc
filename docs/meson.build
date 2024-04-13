@@ -8,11 +8,24 @@ doxygen = find_program(
     disabler: true,
 )
 
+doxygen_layout_in = custom_target(
+    command: [doxygen, '-l', '@OUTPUT@'],
+    output: ['DoxygenLayout.xml.in'],
+)
+
+genlayout = find_program('genlayout.py')
+
+doxygen_layout = custom_target(
+    command: [genlayout, doxygen_layout_in, '@OUTPUT@'],
+    output: ['DoxygenLayout.xml'],
+)
+
 doxyfile = configure_file(
     configuration: {
         'DOXYGEN_INPUT': meson.current_source_dir() / '../include',
         'DOXYGEN_EXCLUDE': meson.current_source_dir() / '../include/tcb',
         'DOXYGEN_OUTPUT': meson.current_build_dir() / 'apidoc',
+        'DOXYGEN_LAYOUT': meson.current_build_dir() / 'DoxygenLayout.xml',
         'DOXYGEN_CSS': meson.current_source_dir() / 'doxygen-awesome-css',
     },
     input: 'Doxyfile.in',
@@ -24,6 +37,7 @@ doc_install_dir = get_option('datadir') / 'doc/libtcspc'
 custom_target(
     'docs',
     command: [doxygen, '-q', doxyfile],
+    depends: [doxygen_layout],
     depend_files: [public_cpp_headers],
     output: ['apidoc'],
     install: true,
