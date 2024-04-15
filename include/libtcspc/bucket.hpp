@@ -29,21 +29,23 @@ namespace tcspc {
  * \brief Value-semantic container for array data allowing use of custom
  * storage.
  *
- * \ingroup buckets
+ * \ingroup events-core
  *
  * Bucket objects are used where a single event carries a large quantity of
  * data, such that it is beneficial to avoid copying the data, including to its
  * ultimate destination. Correct use of buckets enables zero-copy writing of
  * processing results to externally-provided destination memory.
  *
- * A bucket may be used as an event type (as in the output of \c batch or \c
- * read_binary_stream), or as a field in another event (as in the histogram
- * events).
+ * A bucket may be used as an event type (as in the output of `tcspc::batch` or
+ * `tcspc::read_binary_stream`), or as a field in another event (as in the
+ * histogram events).
  *
- * Bucket instances are obtained from a bucket_source.
+ * Bucket instances are obtained from a `tcspc::bucket_source` (see \ref
+ * bucket-sources).
  *
- * A bucket implements, among other things, an interface similar to \c span,
- * allowing it to be treated as a contiguous container of \c T objects.
+ * A bucket implements, among other things, an interface similar to
+ * `tcspc::span`, allowing it to be treated as a contiguous container of \p T
+ * objects.
  *
  * Copying a bucket copies the data into newly allocated memory. This should be
  * avoided in production code, but is convenient for testing of processors that
@@ -52,34 +54,38 @@ namespace tcspc {
  * Moving a bucket transfers both its data and underlying storage to the
  * destination.
  *
- * A bucket carries a 'storage', which can contain ownership or information
- * about the bucket's underlying storage. The type of the storage is
- * dependent on the bucket source (it is stored in the bucket in a type-erased
- * form). Where supported by the bucket source, the storage has a known type
- * and can be observed or extracted from a bucket, recovering direct access to
- * the underlying storage.
+ * A bucket holds a _storage_, which can carry ownership or information about
+ * the bucket's underlying storage. The type of the storage is dependent on the
+ * bucket source (it is stored in the bucket in a type-erased form). Where
+ * supported by the bucket source, the storage has a known type and can be
+ * observed or extracted from a bucket, recovering direct access to the
+ * underlying storage.
  *
  * A default-constructed bucket is empty and has no observable or extractable
  * storage.
  *
  * Comparing two buckets for equality (`==`) or inequality (`!=`) returns
- * whether the data is equal or not (note that this differs from \c span).
- * Together with the copy behavior, this makes \c bucket a regular type.
+ * whether the data is equal or not (note that this differs from
+ * `tcspc::span`). Together with the copy behavior, this makes `bucket<T>` a
+ * regular type.
  *
  * Processors emitting buckets are typically constructed by passing in the
- * bucket source. They should emit buckets (or events containing them) by const
- * reference when letting the downstream observe the bucket contents before the
- * processor finishes filling them. Finished buckets should be emitted by
- * rvalue reference (`std::move`) so that the downstream processor can extract
- * the storage if it so desires. Processors that emit a sequence of buckets in
- * these ways should document the semantics of the sequence, and (usually)
- * obtain buckets from the provided bucket source in the exact order in which
- * they are emitted.
+ * bucket source. They should emit buckets (or events containing buckets) by
+ * const reference when letting the downstream observe the bucket contents
+ * before the processor finishes filling them. Finished buckets should be
+ * emitted by rvalue reference (`std::move`) so that the downstream processor
+ * can extract the storage if it so desires. Processors that emit a sequence of
+ * buckets in these ways should document the semantics of the sequence, and
+ * (usually) obtain buckets from the provided bucket source in the exact order
+ * in which they are emitted.
  *
- * Buckets of const elements (\c T is const-qualified) are sometimes used to
+ * Buckets of const elements (\p T is const-qualified) are sometimes used to
  * construct views of const data, in contexts where the ability to extract
  * storage is not relevant. In this case the bucket is used as a read-only data
- * handle similar to \c span, but with the convenience of a regular type.
+ * handle similar to `tcspc::span`, but with the convenience of a regular type.
+ *
+ * \see \link bucket-sources Bucket sources \endlink
+ * \see tcspc::extract_bucket
  *
  * \tparam T element type of the data array carried by the bucket
  */
@@ -104,15 +110,11 @@ template <typename T> class bucket {
     bucket() noexcept = default;
 
     /**
-     * \brief Construct with the given memory span and underlying storage.
+     * \brief Construct a bucket referenceing a \p span and holding \p storage.
      *
-     * This constructor is to be used by bucket sources.
+     * This constructor is normally used by bucket sources.
      *
      * \tparam S storage type (deduced)
-     *
-     * \param span the span of the data buffer
-     *
-     * \param storage the storage object, which can be of any movable type
      */
     template <typename S>
     explicit bucket(span<T> span, S &&storage)
@@ -163,7 +165,7 @@ template <typename T> class bucket {
     using pointer = typename span<T>::pointer;
     /** \brief Element const pointer type. */
     using const_pointer = typename span<T>::const_pointer;
-    /** \brief Element reference type type. */
+    /** \brief Element reference type. */
     using reference = typename span<T>::reference;
     /** \brief Element const reference type. */
     using const_reference = typename span<T>::const_reference;
@@ -335,7 +337,7 @@ template <typename T> class bucket {
      *
      * \return const reference to the storage object
      *
-     * \throw std::bad_cast if \c S does not match the storage type of this
+     * \throw std::bad_cast if \p S does not match the storage type of this
      * bucket
      */
     template <typename S> [[nodiscard]] auto storage() const -> S const & {
@@ -374,7 +376,7 @@ template <typename T> class bucket {
      * current span. There is no effect on the storage.
      *
      * Once shrunk, the excluded part of the data is no longer accessible
-     * (unless there is a sub-bucket, byte bucket, or const bucket previously
+     * (except via a sub-bucket, byte bucket, or const bucket previously
      * created from this bucket).
      */
     void shrink(std::size_t start, std::size_t count = dynamic_extent) {
@@ -411,8 +413,8 @@ template <typename T> class bucket {
      * bucket. Usually this means that the byte bucket should only be published
      * (e.g., by emitting to downstream) via const reference.
      *
-     * \return bucket of `std::byte const` if `T` is const; otherwise bucket of
-     * `std::byte`.
+     * \return `tcspc::bucket<std::byte const>` if \p T is const; otherwise
+     * `tcspc::bucket<std::byte>`.
      */
     [[nodiscard]] auto byte_bucket() {
         static_assert(std::is_trivial_v<T>);
@@ -436,8 +438,8 @@ template <typename T> class bucket {
      * Const buckets can be used to obtain a nominally mutable bucket from a
      * const one. This allows further creating sub-buckets or byte buckets that
      * refer to the same data. Buckets of const element type are useful when
-     * buckets are used as a \c span alternative (but with the properties of a
-     * regular type), such that storage extraction is not relevant.
+     * buckets are used as a `tcspc::span` alternative (but with the properties
+     * of a regular type), such that storage extraction is not relevant.
      */
     [[nodiscard]] auto const_bucket() const -> bucket<T const> {
         return bucket<T const>(span<T const>(s), view_storage{this});
@@ -492,9 +494,11 @@ template <typename T> class bucket {
 /**
  * \brief Abstract base class for polymorphic bucket sources.
  *
- * \ingroup buckets
+ * \ingroup bucket-sources
  *
- * Bucket source instances are handled via \c std::shared_ptr.
+ * Bucket source instances are handled via `std::shared_ptr`.
+ *
+ * \see \ref bucket-sources
  *
  * \tparam T the bucket data element type
  */
@@ -502,7 +506,7 @@ template <typename T> struct bucket_source {
     virtual ~bucket_source() = default;
 
     /**
-     * \brief Create a bucket for \c size elements of type \c T.
+     * \brief Create a bucket of \p size elements of type \p T.
      */
     virtual auto bucket_of_size(std::size_t size) -> bucket<T> = 0;
 };
@@ -510,7 +514,7 @@ template <typename T> struct bucket_source {
 /**
  * \brief Bucket source using regular memory allocation.
  *
- * \ingroup buckets
+ * \ingroup bucket-sources
  *
  * This bucket source provides buckets whose underlying memory is allocated via
  * `new[]`. Extraction of the storage is supported and results in a
@@ -546,7 +550,7 @@ class new_delete_bucket_source final : public bucket_source<T> {
 /**
  * \brief Bucket source that reuses storage.
  *
- * \ingroup buckets
+ * \ingroup bucket-sources
  *
  * This bucket source provides buckets whose underlying memory is allocated via
  * `new[]`, but storage from destroyed buckets is reused for new buckets.
@@ -631,12 +635,12 @@ class recycling_bucket_source final
     /**
      * \copydoc bucket_source::bucket_of_size()
      *
-     * This function will block if this bucket source is set to block and
-     * the maximum bucket count has been reached. It will then unblock when
-     * an outstanding bucket is destroyed.
+     * This function will block if \p Blocking is true and the maximum bucket
+     * count has been reached. It will then unblock when an outstanding bucket
+     * is destroyed.
      *
-     * \throw std::runtime_error if this bucket source is \e not set to
-     * block and the maximum bucket count has been reached.
+     * \throw std::runtime_error if \p Blocking is false and the maximum bucket
+     * count has been reached.
      */
     auto bucket_of_size(std::size_t size) -> bucket<T> {
         std::unique_ptr<std::vector<T>> p;
@@ -698,13 +702,20 @@ template <typename Event, typename Downstream> class extract_bucket {
 /**
  * Create a processor that extracts the bucket carried by an event.
  *
- * \ingroup buckets
+ * \ingroup processors-io
  *
- * \tparam Event the event type, which must have a data member `bucket`
+ * \tparam Event the event type, which must have the public data member
+ * `bucket`
  *
- * \tparam Downstream downstream processor type (usually inferred)
+ * \tparam Downstream downstream processor type (usually deduced)
  *
  * \param downstream downstream processor
+ *
+ * \return processor
+ *
+ * \par Events handled
+ * - `Event`: pass its `bucket` field downstream
+ * - Flush: pass through with no action
  */
 template <typename Event, typename Downstream>
 auto extract_bucket(Downstream &&downstream) {

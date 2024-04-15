@@ -60,9 +60,9 @@ class histogram_elementwise {
   public:
     explicit histogram_elementwise(
         std::size_t num_elements, std::size_t num_bins, bin_type max_per_bin,
-        std::shared_ptr<bucket_source<bin_type>> bucket_source,
+        std::shared_ptr<bucket_source<bin_type>> buffer_provider,
         Downstream downstream)
-        : bsource(std::move(bucket_source)),
+        : bsource(std::move(buffer_provider)),
           mhist(hist_bucket, arg_max_per_bin{max_per_bin},
                 arg_num_bins{num_bins}, arg_num_elements{num_elements}, true),
           downstream(std::move(downstream)) {
@@ -133,44 +133,36 @@ class histogram_elementwise {
 
 } // namespace internal
 
-// Design notes:
-//
-// 1. The non-accumulating histogram_elementwise does not provide a "reset"
-// input. It is not clear if this is ever needed, so leaving it out for now.
-//
-// 2. If the last cycle is left incomplete, no event is emitted containing the
-// incomplete array of histograms. Such an event would only be useful for
-// progressive display, but progressive display should (necessarily) rely on
-// `element_histogram_event`.
-
 /**
- * \brief Create a processor that computes an array of histograms over cycles
- * of batches of datapoints.
+ * \brief Create a processor that collects time-divided arrays of histograms.
  *
- * \ingroup processors-histogram
+ * \ingroup processors-histogramming
  *
- * This is the array version of histogram_in_batches (rather than histogram).
+ * The processor builds an array of histograms sequentially, computing each
+ * element histogram from an incoming `tcspc::bin_increment_batch_event`. When
+ * it has finished filling the histogram array, it starts over with a new
+ * array.
  *
- * Each incoming bin_increment_batch_event is stored as successive elements in
- * an array of histograms. On each batch, an element_histogram_event is
- * emitted, referencing the corresponding (single) histogram.
+ * The histogram array is stored in a `tcspc::bucket<DataTraits::bin_type>` of
+ * size `num_elements * num_bins`. Each cycle (of `num_elements` bin increment
+ * batches) uses (sequentially) a new bucket from the \p buffer_provider.
  *
- * At the end of each cycle a histogram_array_event is emitted, referencing the
- * whole array of histograms from the cycle.
+ * On every bin increment batch received a `tcspc::element_histogram_event` is
+ * emitted containing the corresponding subview of the histogram array bucket
+ * (whose storage is observable but not extractable). At the end of each cycle,
+ * a `tcspc::histogram_array_event` is emitted, carrying the histogram array
+ * bucket (storage can be extracted).
  *
- * A \c warning_event is emitted if \c OverflowStrategy is \c
- * saturate_on_overflow and a saturation occurred for the first time in the
- * current cycle.
- *
- * The input events are not required to be in correct abstime order; the event
- * abstime is not used.
+ * \attention Behavior is undefined if an incoming
+ * `tcspc::bin_increment_batch_event` contains a bin index beyond the size of
+ * the histogram. The bin mapper should be chosen so that this does not occur.
  *
  * \tparam OverflowStrategy strategy tag type to select how to handle bin
  * overflows
  *
- * \tparam DataTraits traits type specifying \c bin_index_type, and \c bin_type
+ * \tparam DataTraits traits type specifying `bin_index_type` and `bin_type`
  *
- * \tparam Downstream downstream processor type
+ * \tparam Downstream downstream processor type (usually deduced)
  *
  * \param num_elements the number of elements (each a histogram) in the array
  *
@@ -179,12 +171,25 @@ class histogram_elementwise {
  *
  * \param max_per_bin maximum value allowed in each bin
  *
- * \param bucket_source bucket source providing series of buffers for each
+ * \param buffer_provider bucket source providing series of buffers for each
  * histogram array
  *
- * \param downstream downstream processor (moved out)
+ * \param downstream downstream processor
  *
- * \return histogram-array processor
+ * \return processor
+ *
+ * \par Events handled
+ * - `tcspc::bin_increment_batch_event<DT>`: apply the increments to the next
+ *   element histogram of the array and emit (const)
+ *   `tcspc::element_histogram_event<DataTraits>`; if the batch filled the last
+ *   element of the array, emit (rvalue)
+ *   `tcspc::histogram_array_event<DataTraits>`; if a bin overflowed, behavior
+ *   (taken before emitting the above events) depends on `OverflowStrategy`:
+ *   - If `tcspc::saturate_on_overflow`, ignore the increment, emitting
+ *     `tcspc::warning_event` only on the first overflow of the cycle
+ *   - If `tcspc::error_on_overflow`, throw `tcspc::histogram_overflow_error`
+ * - All other types: pass through with no action
+ * - Flush: pass through with no action
  */
 template <typename OverflowStrategy, typename DataTraits = default_data_traits,
           typename Downstream>
@@ -192,11 +197,11 @@ auto histogram_elementwise(
     std::size_t num_elements, std::size_t num_bins,
     typename DataTraits::bin_type max_per_bin,
     std::shared_ptr<bucket_source<typename DataTraits::bin_type>>
-        bucket_source,
+        buffer_provider,
     Downstream &&downstream) {
     return internal::histogram_elementwise<OverflowStrategy, DataTraits,
                                            Downstream>(
-        num_elements, num_bins, max_per_bin, std::move(bucket_source),
+        num_elements, num_bins, max_per_bin, std::move(buffer_provider),
         std::forward<Downstream>(downstream));
 }
 
@@ -308,9 +313,9 @@ class histogram_elementwise_accumulate {
   public:
     explicit histogram_elementwise_accumulate(
         std::size_t num_elements, std::size_t num_bins, bin_type max_per_bin,
-        std::shared_ptr<bucket_source<bin_type>> bucket_source,
+        std::shared_ptr<bucket_source<bin_type>> buffer_provider,
         Downstream downstream)
-        : bsource(std::move(bucket_source)),
+        : bsource(std::move(buffer_provider)),
           mhista(hist_bucket, arg_max_per_bin{max_per_bin},
                  arg_num_bins{num_bins}, arg_num_elements{num_elements}, true),
           downstream(std::move(downstream)) {
@@ -395,30 +400,51 @@ class histogram_elementwise_accumulate {
 } // namespace internal
 
 /**
- * \brief Create a processor that collects an array of histograms accumulated
- * over cycles of batches of datapoints.
+ * \brief Create a processor that collects time-divided arrays of histograms
+ * accumulated over multiple cycles.
  *
- * \ingroup processors-histogram
+ * \ingroup processors-histogramming
  *
- * The reset event \c ResetEvent causes the array of histograms to be cleared
- * and a new accumulation to be started.
+ * The processor builds an array of histograms sequentially, incrementing bins
+ * in each element histogram based on incoming
+ * `tcspc::bin_increment_batch_event`s. When it has finished updating all
+ * elements of the histogram array, it returns to the beginning of the array
+ * and continues to accumulate counts. A round of accumulation is ended when a
+ * \p ResetEvent is received, upon which accumulation is restarted with an
+ * empty histogram array.
  *
- * A \c warning_event is emitted if \c OverflowStrategy is \c
- * saturate_on_overflow and a saturation occurred for the first time since the
- * last reset (or start of stream).
+ * The histogram array is stored in a `tcspc::bucket<DataTraits::bin_type>` of
+ * size `num_elements * num_bins`. Each round of accumulation uses
+ * (sequentially) a new bucket from the \p buffer_provider.
+ *
+ * On every bin increment batch received a `tcspc::element_histogram_event` is
+ * emitted containing the corresponding subview of the histogram array bucket
+ * (whose storage is observable but not extractable). At the end of each cycle
+ * through the array, a `tcspc::histogram_array_event` is emitted, containing a
+ * view of the whole histogram array bucket (again, with observable but
+ * non-extractable storage).
+ *
+ * At the end of each round of accumulation (i.e., upon a reset), any
+ * incomplete cycle through the array is rolled back and a
+ * `tcspc::concluding_histogram_array_event` is emitted, carrying the histogram
+ * array bucket (storage can be extracted).
+ *
+ * \attention Behavior is undefined if an incoming `tcspc::bin_increment_event`
+ * contains a bin index beyond the size of the histogram. The bin mapper should
+ * be chosen so that this does not occur.
  *
  * \tparam ResetEvent type of event causing histograms to reset
  *
  * \tparam OverflowStrategy strategy tag type to select how to handle bin
  * overflows
  *
- * \tparam EmitConcluding if true, emit a \c concluding_histogram_array_event
- * each time a cycle completes
+ * \tparam EmitConcluding if true, emit a
+ * `tcspc::concluding_histogram_array_event` each time a round of accumulation
+ * completes
  *
- * \tparam DataTraits traits type specifying \c abstime_type, \c
- * bin_index_type, and \c bin_type
+ * \tparam DataTraits traits type specifying `bin_index_type` and `bin_type`
  *
- * \tparam Downstream downstream processor type
+ * \tparam Downstream downstream processor type (usually deduced)
  *
  * \param num_elements the number of elements (each a histogram) in the array
  *
@@ -427,12 +453,39 @@ class histogram_elementwise_accumulate {
  *
  * \param max_per_bin maximum value allowed in each bin
  *
- * \param bucket_source bucket source providing series of buffers (a new one is
- * used after each reset)
+ * \param buffer_provider bucket source providing series of buffers (a new one
+ * is used after each reset)
  *
- * \param downstream downstream processor (moved out)
+ * \param downstream downstream processor
  *
- * \return accumulate-histogram-arrays processor
+ * \return processor
+ *
+ * \par Events handled
+ * - `tcspc::bin_increment_batch_event<DT>`: apply the increments to the next
+ *   element histogram of the array and emit (const)
+ *   `tcspc::element_histogram_event<DataTraits>`; if the batch updated the
+ *   last element of the array, emit (rvalue)
+ *   `tcspc::histogram_array_event<DataTraits>`; if a bin overflowed, behavior
+ *   (taken before emitting the above events) depends on `OverflowStrategy`:
+ *   - If `tcspc::saturate_on_overflow`, ignore the increment, emitting
+ *     `tcspc::warning_event` only on the first overflow of the current round
+ *     of accumulation
+ *   - If `tcspc::reset_on_overflow`, behave as if a `ResetEvent` was received
+ *     just prior to the current event; then replay any partial cycle that was
+ *     rolled back during the reset and reapply the current event (but throw
+ *     `tcspc::histogram_overflow_error` if this causes an overflow by itself)
+ *   - If `tcspc::stop_on_overflow`, behave as if a `ResetEvent` was received
+ *     instead of the current event; then flush the downstream and throw
+ *     `tcspc::end_processing`
+ *   - If `tcspc::error_on_overflow`, throw `tcspc::histogram_overflow_error`
+ * - `ResetEvent`: if `EmitConcluding` is true, emit (rvalue)
+ *   `tcspc::concluding_histogram_array_event<DataTraits>` with the current
+ *   histogram array (after rolling back any partial cycle); then clear the
+ *   array and other state
+ * - All other types: pass through with no action
+ * - Flush: if `EmitConcluding` is true, emit (rvalue)
+ *   `tcspc::concluding_histogram_array_event<DataTraits>` with the current
+ *   histogram array (after rolling back any partial cycle); pass through
  */
 template <typename ResetEvent, typename OverflowStrategy,
           bool EmitConcluding = false,
@@ -441,11 +494,11 @@ auto histogram_elementwise_accumulate(
     std::size_t num_elements, std::size_t num_bins,
     typename DataTraits::bin_type max_per_bin,
     std::shared_ptr<bucket_source<typename DataTraits::bin_type>>
-        bucket_source,
+        buffer_provider,
     Downstream &&downstream) {
     return internal::histogram_elementwise_accumulate<
         ResetEvent, OverflowStrategy, EmitConcluding, DataTraits, Downstream>(
-        num_elements, num_bins, max_per_bin, std::move(bucket_source),
+        num_elements, num_bins, max_per_bin, std::move(buffer_provider),
         std::forward<Downstream>(downstream));
 }
 

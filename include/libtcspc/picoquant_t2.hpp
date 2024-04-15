@@ -39,7 +39,7 @@ namespace tcspc {
 /**
  * \brief Binary record interpretation for PicoHarp 300 T2 Format.
  *
- * \ingroup events-device
+ * \ingroup events-pq
  *
  * RecType 0x00010203.
  */
@@ -158,7 +158,7 @@ struct pqt2_picoharp300_event {
     /**
      * \brief Make an event representing an external marker.
      *
-     * \param timetag the time tag; 0 to 268'435'455; the lower 4 bits are
+     * \param timetag the time tag; 0 to 268,435,455; the lower 4 bits are
      * discarded
      *
      * \param marker_bits the marker bitmask; 1 to 15 (0 is forbidden)
@@ -215,10 +215,10 @@ struct pqt2_picoharp300_event {
  * \brief Implementation for binary record interpretation for HydraHarp,
  * MultiHarp, TimeHarp 260, and PicoHarp 330 T2 format.
  *
- * \ingroup events-device
+ * \ingroup events-pq
  *
  * This class is documented to show the available member functions. User code
- * should use \ref pqt2_hydraharpv1_event or \ref pqt2_generic_event.
+ * should use `tcspc::pqt2_hydraharpv1_event` or `tcspc::pqt2_generic_event`.
  *
  * \tparam OverflowPeriod the time tag overflow period
  *
@@ -415,7 +415,7 @@ struct basic_pqt2_event {
 /**
  * \brief Binary record interpretation for HydraHarp V1 T2 format.
  *
- * \ingroup events-device
+ * \ingroup events-pq
  *
  * RecType 0x00010204.
  */
@@ -425,7 +425,7 @@ using pqt2_hydraharpv1_event = basic_pqt2_event<33552000, true>;
  * \brief Binary record interpretation for HydraHarp V2, MultiHarp,
  * TimeHarp 260, and PicoHarp 330 "Generic" T2 format.
  *
- * \ingroup events-device
+ * \ingroup events-pq
  *
  * RecType 0x01010204, 0x00010205, 0x00010206, 0x00010207.
  */
@@ -499,16 +499,23 @@ class decode_pqt2 {
 /**
  * \brief Create a processor that decodes PicoQuant PicoHarp 300 T2 events.
  *
- * \ingroup processors-decode
+ * \ingroup processors-pq
  *
- * \tparam DataTraits traits type specifying \c abstime_type and \c
- * channel_type for the emitted events
+ * \tparam DataTraits traits type specifying `abstime_type` and `channel_type`
+ * for the emitted events
  *
  * \tparam Downstream downstream processor type
  *
  * \param downstream downstream processor
  *
- * \return decode-pqt2-picoharp300 processor
+ * \return processor
+ *
+ * \par Events handled
+ * - `tcspc::pqt2_picoharp300_event`: decode and emit one or more of
+ *   `tcspc::time_reached_event<DataTraits>`,
+ *   `tcspc::detection_event<DataTraits>`, `tcspc::marker_event<DataTraits>`,
+ *   `tcspc::warning_event` (warning in the case of an invalid event)
+ * - Flush: pass through with no action
  */
 template <typename DataTraits = default_data_traits, typename Downstream>
 auto decode_pqt2_picoharp300(Downstream &&downstream) {
@@ -520,19 +527,26 @@ auto decode_pqt2_picoharp300(Downstream &&downstream) {
 /**
  * \brief Create a processor that decodes PicoQuant HydraHarp V1 T2 events.
  *
- * \ingroup processors-decode
+ * \ingroup processors-pq
  *
  * Sync events (edges detected on the sync channel) are reported as detection
  * events on channel -1.
  *
- * \tparam DataTraits traits type specifying \c abstime_type and \c
- * channel_type for the emitted events
+ * \tparam DataTraits traits type specifying `abstime_type` and `channel_type`
+ * for the emitted events
  *
  * \tparam Downstream downstream processor type
  *
  * \param downstream downstream processor
  *
- * \return decode-pqt2-hydraharpv1 processor
+ * \return processor
+ *
+ * \par Events handled
+ * - `tcspc::pqt2_hydraharpv1_event`: decode and emit one or more of
+ *   `tcspc::time_reached_event<DataTraits>`,
+ *   `tcspc::detection_event<DataTraits>`, `tcspc::marker_event<DataTraits>`,
+ *   `tcspc::warning_event` (warning in the case of an invalid event)
+ * - Flush: pass through with no action
  */
 template <typename DataTraits = default_data_traits, typename Downstream>
 auto decode_pqt2_hydraharpv1(Downstream &&downstream) {
@@ -545,19 +559,26 @@ auto decode_pqt2_hydraharpv1(Downstream &&downstream) {
  * \brief Create a processor that decodes PicoQuant HydraHarp V2, MultiHarp,
  * TimeHarp 260, and PicoHarp 330 "Generic" T2 events.
  *
- * \ingroup processors-decode
+ * \ingroup processors-pq
  *
  * Sync events (edges detected on the sync channel) are reported as detection
  * events on channel -1.
  *
- * \tparam DataTraits traits type specifying \c abstime_type and \c
- * channel_type for the emitted events
+ * \tparam DataTraits traits type specifying `abstime_type` and `channel_type`
+ * for the emitted events
  *
  * \tparam Downstream downstream processor type
  *
  * \param downstream downstream processor
  *
- * \return decode-pqt2-generic processor
+ * \return processor
+ *
+ * \par Events handled
+ * - `tcspc::pqt2_generic_event`: decode and emit one or more of
+ *   `tcspc::time_reached_event<DataTraits>`,
+ *   `tcspc::detection_event<DataTraits>`, `tcspc::marker_event<DataTraits>`,
+ *   `tcspc::warning_event` (warning in the case of an invalid event)
+ * - Flush: pass through with no action
  */
 template <typename DataTraits = default_data_traits, typename Downstream>
 auto decode_pqt2_generic(Downstream &&downstream) {

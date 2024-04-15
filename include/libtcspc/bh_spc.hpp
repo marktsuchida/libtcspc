@@ -28,10 +28,10 @@ namespace tcspc {
 /**
  * \brief Binary record interpretation for raw BH SPC event.
  *
- * \ingroup events-device
+ * \ingroup events-bh
  *
  * This interprets the FIFO format used by most BH SPC models, except for
- * SPC-600 and SPC-630.
+ * SPC-600, SPC-630, and TDC models.
  */
 struct bh_spc_event {
     /**
@@ -290,7 +290,7 @@ struct bh_spc_event {
  * \brief Binary record interpretation for raw events from SPC-600/630 in
  * 4096-channel mode.
  *
- * \ingroup events-device
+ * \ingroup events-bh
  */
 struct bh_spc600_4096ch_event {
     /**
@@ -483,7 +483,7 @@ struct bh_spc600_4096ch_event {
  * \brief Binary record interpretation for raw events from SPC-600/630 in
  * 256-channel mode.
  *
- * \ingroup events-device
+ * \ingroup events-bh
  */
 struct bh_spc600_256ch_event {
     /**
@@ -776,26 +776,34 @@ class decode_bh_spc {
 } // namespace internal
 
 /**
- * \brief Create a processor that decodes Becker & Hickl SPC (most models) FIFO
- * records.
+ * \brief Create a processor that decodes FIFO records from most Becker & Hickl
+ * SPC models.
  *
- * \ingroup processors-decode
+ * \ingroup processors-bh
  *
- * Decoder for SPC-130, SPC-140, SPC-150, SPC-160, SPC-180, SPC-830.
+ * Decoder for SPC-130, 830, 140, 930, 150, 130EM, 150N (NX, NXX), 130EMN, 160
+ * (X, PCIE), 180N (NX, NXX), and 130IN (INX, INXX).
  *
- * This decoder does not read the SPC-180 fast intensity counter values, but
- * may be used for SPC-180 models if the counter value is not of interest.
+ * This decoder does not read the fast intensity counter values produced by
+ * SPC-160 and SPC-180N (see
+ * `tcspc::decode_bh_spc_with_fast_intensity_counter()`), but can be used for
+ * these models if the counter value is not of interest.
  *
- * \see decode_bh_spc_with_fast_intensity_counter
- *
- * \tparam DataTraits traits type specifying \c abstime_type, \c channel_type,
- * and \c difftime_type for the emitted events
+ * \tparam DataTraits traits type specifying `abstime_type`, `channel_type`,
+ * and `difftime_type` for the emitted events
  *
  * \tparam Downstream downstream processor type
  *
  * \param downstream downstream processor
  *
- * \return decode-bh-spc processor
+ * \return processor
+ *
+ * \par Events handled
+ * - `tcspc::bh_spc_event`: decode and emit one or more of
+ *   `tcspc::time_reached_event<DataTraits>`,
+ *   `tcspc::time_correlated_detection_event<DataTraits>`,
+ *   `tcspc::marker_event<DataTraits>`, `tcspc::data_lost_event<DataTraits>`
+ * - Flush: pass through with no action
  */
 template <typename DataTraits = default_data_traits, typename Downstream>
 auto decode_bh_spc(Downstream &&downstream) {
@@ -805,24 +813,30 @@ auto decode_bh_spc(Downstream &&downstream) {
 }
 
 /**
- * \brief Create a processor that decodes Becker & Hickl SPC (most models) FIFO
- * records.
+ * \brief Create a processor that decodes FIFO records from Becker & Hickl
+ * SPC-160 and SPC-180N with fast intensity counter
  *
- * \ingroup processors-decode
+ * \ingroup processors-bh
  *
- * Decoder for SPC-180. Generates events for the fast intensity counter on
- * marker 0.
+ * Decoder for SPC-160 and SPC-180N. Generates events for the fast intensity
+ * counter on marker 0. Otherwise the same as `tcspc::decode_bh_spc()`.
  *
- * \see decode_bh_spc
- *
- * \tparam DataTraits traits type specifying \c abstime_type, \c channel_type,
- * and \c difftime_type for the emitted events
+ * \tparam DataTraits traits type specifying `abstime_type`, `channel_type`,
+ * and `difftime_type` for the emitted events
  *
  * \tparam Downstream downstream processor type
  *
  * \param downstream downstream processor
  *
- * \return decode-bh-spc processor
+ * \return processor
+ *
+ * \par Events handled
+ * - `tcspc::bh_spc_event`: decode and emit one or more of
+ *   `tcspc::time_reached_event<DataTraits>`,
+ *   `tcspc::time_correlated_detection_event<DataTraits>`,
+ *   `tcspc::nontagged_counts_event<DataTraits>`
+ *   `tcspc::marker_event<DataTraits>`, `tcspc::data_lost_event<DataTraits>`
+ * - Flush: pass through with no action
  */
 template <typename DataTraits = default_data_traits, typename Downstream>
 auto decode_bh_spc_with_fast_intensity_counter(Downstream &&downstream) {
@@ -831,19 +845,26 @@ auto decode_bh_spc_with_fast_intensity_counter(Downstream &&downstream) {
 }
 
 /**
- * \brief Create a processor that decodes Becker & Hickl SPC-600/630
- * 4096-channel mode FIFO records.
+ * \brief Create a processor that decodes 48-bit FIFO records from Becker &
+ * Hickl SPC-600/630 in 4096-channel mode.
  *
- * \ingroup processors-decode
+ * \ingroup processors-bh
  *
- * \tparam DataTraits traits type specifying \c abstime_type, \c channel_type,
- * and \c difftime_type for the emitted events
+ * \tparam DataTraits traits type specifying `abstime_type`, `channel_type`,
+ * and `difftime_type` for the emitted events
  *
  * \tparam Downstream downstream processor type
  *
  * \param downstream downstream processor
  *
- * \return decode-bh-spc-600-4096ch processor
+ * \return processor
+ *
+ * \par Events handled
+ * - `tcspc::bh_spc600_4096ch_event`: decode and emit one or more of
+ *   `tcspc::time_reached_event<DataTraits>`,
+ *   `tcspc::time_correlated_detection_event<DataTraits>`,
+ *   `tcspc::data_lost_event<DataTraits>`
+ * - Flush: pass through with no action
  */
 template <typename DataTraits = default_data_traits, typename Downstream>
 auto decode_bh_spc600_4096ch(Downstream &&downstream) {
@@ -853,19 +874,26 @@ auto decode_bh_spc600_4096ch(Downstream &&downstream) {
 }
 
 /**
- * \brief Create a processor that decodes Becker & Hickl SPC-600/630
- * 256-channel mode FIFO records.
+ * \brief Create a processor that decodes 32-bit FIFO records from Becker &
+ * Hickl SPC-600/630 in 256-channel mode.
  *
- * \ingroup processors-decode
+ * \ingroup processors-bh
  *
- * \tparam DataTraits traits type specifying \c abstime_type, \c channel_type,
- * and \c difftime_type for the emitted events
+ * \tparam DataTraits traits type specifying `abstime_type`, `channel_type`,
+ * and `difftime_type` for the emitted events
  *
  * \tparam Downstream downstream processor type
  *
  * \param downstream downstream processor
  *
- * \return decode-bh-spc-600-256ch processor
+ * \return processor
+ *
+ * \par Events handled
+ * - `tcspc::bh_spc600_256ch_event`: decode and emit one or more of
+ *   `tcspc::time_reached_event<DataTraits>`,
+ *   `tcspc::time_correlated_detection_event<DataTraits>`,
+ *   `tcspc::data_lost_event<DataTraits>`
+ * - Flush: pass through with no action
  */
 template <typename DataTraits = default_data_traits, typename Downstream>
 auto decode_bh_spc600_256ch(Downstream &&downstream) {

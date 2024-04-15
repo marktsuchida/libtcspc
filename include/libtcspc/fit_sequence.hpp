@@ -127,7 +127,7 @@ class fit_periodic_sequences {
         if (result.slope < min_interval_cutoff ||
             result.slope > max_interval_cutoff)
             throw std::runtime_error(
-                "fit periodic sequences: stimated time interval was not in expected range");
+                "fit periodic sequences: estimated time interval was not in expected range");
 
         // Convert intercept (relative to first_tick_time + tick_offset) to
         // delay (relative to last_tick_time).
@@ -200,27 +200,27 @@ class fit_periodic_sequences {
  * \brief Create a processor that fits fixed-length periodic sequences of
  * events and estimates the start time and interval.
  *
- * \ingroup processors-timing
+ * \ingroup processors-timing-modeling
  *
- * The processor accepts a single event type, \c Event. Every \e length events
+ * The processor accepts a single event type, \p Event. Every \p length events
  * are grouped together and a model of regularly spaced events is fit to their
- * abstimes. If the fit is successful (see below for criteria), then an \c
- * periodic_sequence_event is emitted, containing the fit results, upon
- * receiving the last \c Event of the series. If the fit is not successful,
- * processing is halted with an error.
+ * abstimes. If the fit is successful (see below for criteria), then a
+ * `tcspc::periodic_sequence_event` is emitted, containing the fit results,
+ * upon receiving the last \p Event of the series. If the fit is not
+ * successful, processing is halted with an error.
  *
- * The emitted event's abstime is set to the abstime of the last observed \c
+ * The emitted event's `abstime` is set to the abstime of the last observed \p
  * Event (during which handling the event is emitted). The emitted fit
  * parameters consist of a start offset and interval. The start offset is
- * relative to the emitted event's abstime.
+ * relative to the emitted event's `abstime`.
  *
  * The fit is considered successful if all of the following criteria are
  * satisfied:
  *
- * -# the mean squared error is no more than \e max_mse
- * -# the estimated event interval is within \e min_max_interval
+ * -# the mean squared error is no more than \p max_mse
+ * -# the estimated event interval is within \p min_max_interval
  *
- * This processor does not pass through \c Event, but passes through any other
+ * This processor does not pass through \p Event, but passes through any other
  * event.
  *
  * \tparam Event event whose timing is to be fit
@@ -229,7 +229,7 @@ class fit_periodic_sequences {
  *
  * \tparam Downstream downstream processor type
  *
- * \param length number of \c Event events to fit
+ * \param length number of \p Event events in each sequence to fit
  *
  * \param min_max_interval allowed range of estimated event interval for the
  * fit to be considered successful
@@ -238,6 +238,15 @@ class fit_periodic_sequences {
  * considered successful
  *
  * \param downstream downstream processor
+ *
+ * \return processor
+ *
+ * \par Events handled
+ * - `Event`: buffer every \p length events, fit to model, then emit
+ *   `tcspc::periodic_sequence_event<DataTraits>` with the fit results; throw
+ *   `std::runtime_error` if fit criteria were not met
+ * - All other types: pass through with no action
+ * - Flush: pass through with no action
  */
 template <typename Event, typename DataTraits = default_data_traits,
           typename Downstream>

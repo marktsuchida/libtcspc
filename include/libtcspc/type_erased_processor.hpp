@@ -107,9 +107,13 @@ using virtual_processor =
 /**
  * \brief Processor that type-erases the downstream processor.
  *
- * \ingroup processors-basic
+ * \ingroup processors-core
  *
  * \tparam EventList the event set handled by the processor
+ *
+ * \par Events handled
+ * - Events in `EventList`: pass through with no action
+ * - Flush: pass through with no action
  */
 template <typename EventList> class type_erased_processor {
     using event_list = unique_type_list_t<EventList>;
@@ -133,7 +137,7 @@ template <typename EventList> class type_erased_processor {
     /**
      * \brief Construct with the given downstream processor.
      *
-     * The downstream processor must handle all of the events in \c EventList.
+     * The downstream processor must handle all of the events in \p EventList.
      *
      * \param downstream downstream processor
      */
@@ -145,27 +149,27 @@ template <typename EventList> class type_erased_processor {
         : proc(std::make_unique<virtual_processor<Downstream>>(
               std::forward<Downstream>(downstream))) {}
 
-    /** \brief Processor interface */
+    /** \brief Implements processor requirement. */
     [[nodiscard]] auto introspect_node() const -> processor_info {
         processor_info info(this, "type_erased_processor");
         return info;
     }
 
-    /** \brief Processor interface */
+    /** \brief Implements processor requirement. */
     [[nodiscard]] auto introspect_graph() const -> processor_graph {
         auto g = proc->introspect_graph();
         g.push_entry_point(this);
         return g;
     }
 
-    /** \brief Processor interface */
+    /** \brief Implements processor requirement. */
     template <typename Event, typename = std::enable_if_t<
                                   type_list_contains_v<event_list, Event>>>
     void handle(Event const &event) {
         proc->handle(event);
     }
 
-    /** \brief Processor interface */
+    /** \brief Implements processor requirement. */
     void flush() { proc->flush(); }
 };
 

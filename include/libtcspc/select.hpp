@@ -48,17 +48,20 @@ class select {
  * \brief Create a processor that passes a given set of events and discards
  * others.
  *
- * \ingroup processors-basic
- *
- * \see select_not
- * \see select_none
- * \see select_all
+ * \ingroup processors-filtering
  *
  * \tparam EventList event types to pass
  *
  * \tparam Downstream downstream processor type
  *
  * \param downstream downstream processor
+ *
+ * \return processor
+ *
+ * \par Events handled
+ * - Types in `EventList`: pass through with no action
+ * - Types not in `EventList`: ignore
+ * - Flush: pass through with no action
  */
 template <typename EventList, typename Downstream>
 auto select(Downstream &&downstream) {
@@ -69,16 +72,20 @@ auto select(Downstream &&downstream) {
 /**
  * \brief Create a processor that passes no events.
  *
- * \ingroup processors-basic
+ * \ingroup processors-filtering
  *
  * The processor does pass end-of-stream, so can be used as a way to detect the
  * end of the stream.
  *
- * \see select_all
- *
  * \tparam Downstream downstream processor type
  *
  * \param downstream downstream processor
+ *
+ * \return processor
+ *
+ * \par Events handled
+ * - All types: ignore
+ * - Flush: pass through with no action
  */
 template <typename Downstream> auto select_none(Downstream &&downstream) {
     return internal::select<type_list<>, false, Downstream>(
@@ -89,17 +96,20 @@ template <typename Downstream> auto select_none(Downstream &&downstream) {
  * \brief Create a processor that discards a given set of events and passes
  * others.
  *
- * \ingroup processors-basic
- *
- * \see select
- * \see select_none
- * \see select_all
+ * \ingroup processors-filtering
  *
  * \tparam EventList event types to discard
  *
  * \tparam Downstream downstream processor type
  *
  * \param downstream downstream processor
+ *
+ * \return processor
+ *
+ * \par Events handled
+ * - Types in `EventList`: ignore
+ * - Types not in `EventList`: pass through with no action
+ * - Flush: pass through with no action
  */
 template <typename EventList, typename Downstream>
 auto select_not(Downstream &&downstream) {
@@ -110,15 +120,19 @@ auto select_not(Downstream &&downstream) {
 /**
  * \brief Create a processor that passes all events.
  *
- * \ingroup processors-basic
+ * \ingroup processors-filtering
  *
  * In other words, this is a no-op processor.
- *
- * \see select_none
  *
  * \tparam Downstream downstream processor type
  *
  * \param downstream downstream processor
+ *
+ * \return processor
+ *
+ * \par Events handled
+ * - All types: pass through with no action
+ * - Flush: pass through with no action
  */
 template <typename Downstream> auto select_all(Downstream &&downstream) {
     return internal::select<type_list<>, true, Downstream>(

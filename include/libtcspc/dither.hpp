@@ -24,6 +24,12 @@ namespace tcspc {
 
 namespace internal {
 
+// TODO Dithering should add triangular-distributed noise (width 2), not
+// uniformly distributed. Otherwise the effective distribution is
+// sample-dependent. The distribution can be produced by adding two random
+// samples from uniformly distributed [0, 1) (and subtracting 0.5 before taking
+// floor).
+
 // Design note: We do not use std::uniform_real_distribution or
 // std::generate_canonical, because they may have issues (may return the upper
 // bound, depending on implementation). (Also, they do not produce the same
@@ -98,18 +104,16 @@ template <typename T> class dithering_quantizer {
  * \brief Timing generator that generates a single, delayed output event whose
  * abstime is dithered.
  *
- * \ingroup timing-generators
- *
- * Timing generator for use with \ref generate.
+ * \ingroup timing-generators-dither
  *
  * \tparam Event output event type
  */
 template <typename Event> class dithered_one_shot_timing_generator {
   public:
-    /** \brief Timing generator interface */
+    /** \brief Implements timing generator requirement. */
     using abstime_type = decltype(std::declval<Event>().abstime);
 
-    /** \brief Timing generator interface */
+    /** \brief Implements timing generator requirement. */
     using output_event_type = Event;
 
   private:
@@ -132,21 +136,21 @@ template <typename Event> class dithered_one_shot_timing_generator {
                 "dithered one-shot timing generator delay must be non-negative");
     }
 
-    /** \brief Timing generator interface */
+    /** \brief Implements timing generator requirement. */
     template <typename TriggerEvent> void trigger(TriggerEvent const &event) {
         static_assert(std::is_same_v<decltype(event.abstime), abstime_type>);
         pending = true;
         next = event.abstime + dithq(dly);
     }
 
-    /** \brief Timing generator interface */
+    /** \brief Implements timing generator requirement. */
     [[nodiscard]] auto peek() const -> std::optional<abstime_type> {
         if (pending)
             return next;
         return std::nullopt;
     }
 
-    /** \brief Timing generator interface */
+    /** \brief Implements timing generator requirement. */
     auto pop() -> Event {
         Event event{};
         event.abstime = next;
@@ -159,21 +163,19 @@ template <typename Event> class dithered_one_shot_timing_generator {
  * \brief Timing generator that generates a single, delayed output event whose
  * abstime is dithered, configured by the trigger event.
  *
- * \ingroup timing-generators
- *
- * Timing generator for use with \ref generate.
+ * \ingroup timing-generators-dither
  *
  * The delay of the output event (relative to the trigger event) is obtained
- * from the \c delay data member (type \c double) of each trigger event.
+ * from the `delay` data member (type `double`) of each trigger event.
  *
  * \tparam Event output event type
  */
 template <typename Event> class dynamic_dithered_one_shot_timing_generator {
   public:
-    /** \brief Timing generator interface */
+    /** \brief Implements timing generator requirement. */
     using abstime_type = decltype(std::declval<Event>().abstime);
 
-    /** \brief Timing generator interface */
+    /** \brief Implements timing generator requirement. */
     using output_event_type = Event;
 
   private:
@@ -188,21 +190,21 @@ template <typename Event> class dynamic_dithered_one_shot_timing_generator {
      */
     explicit dynamic_dithered_one_shot_timing_generator() = default;
 
-    /** \brief Timing generator interface */
+    /** \brief Implements timing generator requirement. */
     template <typename TriggerEvent> void trigger(TriggerEvent const &event) {
         static_assert(std::is_same_v<decltype(event.abstime), abstime_type>);
         pending = true;
         next = event.abstime + dithq(event.delay);
     }
 
-    /** \brief Timing generator interface */
+    /** \brief Implements timing generator requirement. */
     [[nodiscard]] auto peek() const -> std::optional<abstime_type> {
         if (pending)
             return next;
         return std::nullopt;
     }
 
-    /** \brief Timing generator interface */
+    /** \brief Implements timing generator requirement. */
     auto pop() -> Event {
         Event event{};
         event.abstime = next;
@@ -288,18 +290,16 @@ template <typename Abstime> class dithered_linear_timing_generator_impl {
  * \brief Timing generator that generates a periodic series of output events,
  * with temporal dithering.
  *
- * \ingroup timing-generators
- *
- * Timing generator for use with \ref generate.
+ * \ingroup timing-generators-dither
  *
  * \tparam Event output event type
  */
 template <typename Event> class dithered_linear_timing_generator {
   public:
-    /** \brief Timing generator interface */
+    /** \brief Implements timing generator requirement. */
     using abstime_type = decltype(std::declval<Event>().abstime);
 
-    /** \brief Timing generator interface */
+    /** \brief Implements timing generator requirement. */
     using output_event_type = Event;
 
   private:
@@ -322,18 +322,18 @@ template <typename Event> class dithered_linear_timing_generator {
                                               arg_count<std::size_t> count)
         : impl(delay, interval, count) {}
 
-    /** \brief Timing generator interface */
+    /** \brief Implements timing generator requirement. */
     template <typename TriggerEvent> void trigger(TriggerEvent const &event) {
         static_assert(std::is_same_v<decltype(event.abstime), abstime_type>);
         impl.trigger(arg_abstime{event.abstime});
     }
 
-    /** \brief Timing generator interface */
+    /** \brief Implements timing generator requirement. */
     [[nodiscard]] auto peek() const -> std::optional<abstime_type> {
         return impl.peek();
     }
 
-    /** \brief Timing generator interface */
+    /** \brief Implements timing generator requirement. */
     auto pop() -> Event {
         Event event{};
         event.abstime = impl.pop();
@@ -345,24 +345,22 @@ template <typename Event> class dithered_linear_timing_generator {
  * \brief Timing generator that generates a periodic series of output events,
  * with temporal dithering, configured by the trigger event.
  *
- * \ingroup timing-generators
- *
- * Timing generator for use with \ref generate.
+ * \ingroup timing-generators-dither
  *
  * The delay, interval, and count of the output events are obtained from the
  * data members of each trigger event:
- * - \c double \c delay
- * - \c double \c interval
- * - \c std::size_t \c count
+ * - `double delay`
+ * - `double interval`
+ * - `std::size_t count`
  *
  * \tparam Event output event type
  */
 template <typename Event> class dynamic_dithered_linear_timing_generator {
   public:
-    /** \brief Timing generator interface */
+    /** \brief Implements timing generator requirement. */
     using abstime_type = decltype(std::declval<Event>().abstime);
 
-    /** \brief Timing generator interface */
+    /** \brief Implements timing generator requirement. */
     using output_event_type = Event;
 
   private:
@@ -375,7 +373,7 @@ template <typename Event> class dynamic_dithered_linear_timing_generator {
     explicit dynamic_dithered_linear_timing_generator()
         : impl(arg_delay{0.0}, arg_interval{1.0}, arg_count<std::size_t>{0}) {}
 
-    /** \brief Timing generator interface */
+    /** \brief Implements timing generator requirement. */
     template <typename TriggerEvent> void trigger(TriggerEvent const &event) {
         static_assert(std::is_same_v<decltype(event.abstime), abstime_type>);
         impl.trigger_and_configure(
@@ -383,12 +381,12 @@ template <typename Event> class dynamic_dithered_linear_timing_generator {
             arg_interval{event.interval}, arg_count{event.count});
     }
 
-    /** \brief Timing generator interface */
+    /** \brief Implements timing generator requirement. */
     [[nodiscard]] auto peek() const -> std::optional<abstime_type> {
         return impl.peek();
     }
 
-    /** \brief Timing generator interface */
+    /** \brief Implements timing generator requirement. */
     auto pop() -> Event {
         Event event{};
         event.abstime = impl.pop();

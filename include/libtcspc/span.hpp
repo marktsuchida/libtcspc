@@ -47,8 +47,19 @@ namespace tcspc {
  *
  * \ingroup misc
  *
- * For C++20 and later, this is just `using std::span`. For C++17, a local
- * implementation is provided.
+ * For C++20 and later, this is just an alias of `std::span`. For C++17, a
+ * local implementation is provided (using [Tristan Brindle's
+ * implementation](https://github.com/tcbrindle/span)).
+ *
+ * The following non-member functions are also provided:
+ * - `tcspc::as_bytes()`
+ * - `tcspc::as_writable_bytes()`
+ *
+ * The following non-member constant is also provided:
+ * - `tcspc::dynamic_extent`
+ *
+ * The interface is the same as `std::span` and its associated non-member
+ * functions and constant.
  */
 template <typename T, std::size_t Extent> class span;
 

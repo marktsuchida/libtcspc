@@ -18,15 +18,21 @@ namespace tcspc {
  *
  * \ingroup type-list
  *
- * In libtcspc, specializations of \c type_list are frequently used to specify
+ * In libtcspc, specializations of `type_list` are frequently used to specify
  * sets of events to be processed in a certain way.
  *
- * We use a "list" of types, rather than a "set", because there is no way to
- * implement a type that has set semantics (because there is no total order of
- * types available at compile time). Therefore, the order of the types \p Ts is
- * significant for the purpose of type identity (\c std::is_same). However, we
- * provide metafunctions to perform set operations on \c type_list
- * specializations.
+ * We use a "list" of types, rather than a "set", because there is no way in
+ * C++ to implement a type that has set semantics (because there is no total
+ * order of types available at compile time; Cf. ISO C++ proposal
+ * [P2830R3](https://wg21.link/p2830r3)). Therefore, the order of the types \p
+ * Ts is significant for the purpose of type identity (\c std::is_same) of two
+ * `type_list` specializations. However, we provide metafunctions to perform
+ * set operations on `type_list` specializations, such as
+ * `tcspc::type_list_is_equal_set`.
+ *
+ * \note It is good practice to use consistent ordering of the \p Ts within
+ * your project. Using equivalent but differently ordered types can lead to
+ * code bloat.
  */
 template <typename... Ts> struct type_list {
     type_list() = delete;
@@ -40,12 +46,13 @@ template <typename... Ts> struct type_list {
  */
 
 /**
- * \brief Metafunction to tell if a type is a \c type_list type.
+ * \brief Metafunction to tell if a type is a type list.
+ * specialization.
  *
- * Checks if \p T is a specialization of \c type_list and provides the result
- * in the \c bool member \c value.
+ * Checks if \p T is a specialization of `tcspc::type_list` and provides the
+ * result in the `bool` member `value`.
  *
- * \see is_type_list_v
+ * \see `tcspc::is_type_list_v`
  */
 template <typename T> struct is_type_list : std::false_type {};
 
@@ -57,7 +64,7 @@ struct is_type_list<type_list<Ts...>> : std::true_type {};
 /** \endcond */
 
 /**
- * \brief Helper variable template for \c is_type_list.
+ * \brief Helper variable template for `tcspc::is_type_list`.
  */
 template <typename T> constexpr bool is_type_list_v = is_type_list<T>::value;
 
@@ -73,12 +80,12 @@ template <typename T> constexpr bool is_type_list_v = is_type_list<T>::value;
 /**
  * \brief Metafunction to obtain the size (length) of a type list.
  *
- * Provides the size of the \c type_list specialization \p TypeList in the \c
- * std::size_t member \c value.
+ * Provides the size of the `tcspc::type_list` specialization \p TypeList in
+ * the `std::size_t` member `value`.
  *
  * No deduplication is performed on the type arguments of \p TypeList.
  *
- * \see type_list_size_v
+ * \see `tcspc::type_list_size_v`
  */
 template <typename TypeList> struct type_list_size;
 
@@ -91,7 +98,7 @@ struct type_list_size<type_list<Ts...>>
 /** \endcond */
 
 /**
- * \brief Helper variable template for \c type_list_size.
+ * \brief Helper variable template for `tcspc::type_list_size`.
  */
 template <typename TypeList>
 constexpr std::size_t type_list_size_v = type_list_size<TypeList>::value;
@@ -108,11 +115,10 @@ constexpr std::size_t type_list_size_v = type_list_size<TypeList>::value;
 /**
  * \brief Metafunction to obtain the contained type of a singleton type list.
  *
- * Extracts the first type argument of the \c type_list specialization \p
- * TypeList, which must have a size of 1, and provides it as the member \c
- * type.
+ * Extracts the first type argument of the `tcspc::type_list` specialization \p
+ * TypeList, which must have a size of 1, and provides it as the member `type`.
  *
- * \see type_list_singleton_element_t
+ * \see `tcspc::type_list_singleton_element_t`
  */
 template <typename TypeList> struct type_list_singleton_element;
 
@@ -125,7 +131,7 @@ struct type_list_singleton_element<type_list<T>> : internal::type_identity<T> {
 /** \endcond */
 
 /**
- * \brief Helper type for \c type_list_singleton_element.
+ * \brief Helper type for `tcspc::type_list_singleton_element`.
  */
 template <typename TypeList>
 using type_list_singleton_element_t =
@@ -143,11 +149,11 @@ using type_list_singleton_element_t =
 /**
  * \brief Metafunction to determine if a type is contained in a type list.
  *
- * Checks if \p Type is in the template arguments of the \c type_list
- * specialization \p TypeList and provides the result in the \c bool member \c
- * value.
+ * Checks if \p Type is in the template arguments of the `tcspc::type_list`
+ * specialization \p TypeList and provides the result in the `bool` member
+ * `value`.
  *
- * \see type_list_contains_v
+ * \see `tcspc::type_list_contains_v`
  */
 template <typename TypeList, typename Type> struct type_list_contains;
 
@@ -160,7 +166,7 @@ struct type_list_contains<type_list<Ts...>, Type>
 /** \endcond */
 
 /**
- * \brief Helper variable template for \c type_list_contains.
+ * \brief Helper variable template for `tcspc::type_list_contains`.
  */
 template <typename TypeList, typename Type>
 constexpr bool type_list_contains_v =
@@ -178,11 +184,11 @@ constexpr bool type_list_contains_v =
 /**
  * \brief Metafunction to determine if a type list is a subset of another.
  *
- * Determines if all type arguments of the \c type_list specialization \p TL0
- * are contained by the \c type_list specialization \p TL1 and provides the
- * result in the \c bool member \c value.
+ * Determines if all type arguments of a `tcspc::type_list` specialization \p
+ * TL0 are contained by another `tcspc::type_list` specialization \p TL1 and
+ * provides the result in the `bool` member `value`.
  *
- * \see type_list_is_subset_v
+ * \see `tcspc::type_list_is_subset_v`
  */
 template <typename TL0, typename TL1> struct type_list_is_subset;
 
@@ -195,7 +201,7 @@ struct type_list_is_subset<type_list<T0s...>, TL1>
 /** \endcond */
 
 /**
- * \brief Helper variable template for \c type_list_is_subset.
+ * \brief Helper variable template for `tcspc::type_list_is_subset`.
  */
 template <typename TL0, typename TL1>
 constexpr bool type_list_is_subset_v = type_list_is_subset<TL0, TL1>::value;
@@ -213,11 +219,11 @@ constexpr bool type_list_is_subset_v = type_list_is_subset<TL0, TL1>::value;
  * \brief Metafunction to determine if a type list is set-equivalent to
  * another.
  *
- * Determines if the type arguments of the \c type_list specializations \p TL0
- * and \p TL1 match, disregarding ordering and duplication, and provides the
- * result in the \c bool member \c value.
+ * Determines if the type arguments of the `tcspc::type_list` specializations
+ * \p TL0 and \p TL1 match, disregarding ordering and duplication, and provides
+ * the result in the `bool` member `value`.
  *
- * \see type_list_is_equal_set_v
+ * \see `tcspc::type_list_is_equal_set_v`
  */
 template <typename TL0, typename TL1>
 struct type_list_is_equal_set
@@ -225,7 +231,7 @@ struct type_list_is_equal_set
                        type_list_is_subset<TL1, TL0>> {};
 
 /**
- * \brief Helper variable template for \c type_list_is_equal_set.
+ * \brief Helper variable template for `tcspc::type_list_is_equal_set`.
  */
 template <typename TL0, typename TL1>
 constexpr bool type_list_is_equal_set_v =
@@ -260,17 +266,17 @@ struct unique_type_list_impl<type_list<Ds...>, type_list<T, Ts...>>
 /**
  * \brief Metafunction to remove duplicate types from a type list.
  *
- * Removes duplicate types from the \c type_list specialization \p TypeList and
- * provides the result as member \c type.
+ * Removes duplicate types from the `tcspc::type_list` specialization \p
+ * TypeList and provides the result as member `type`.
  *
- * \see unique_type_list_t
+ * \see `tcspc::unique_type_list_t`
  */
 template <typename TypeList>
 struct unique_type_list
     : internal::unique_type_list_impl<type_list<>, TypeList> {};
 
 /**
- * \brief Helper type for \c unique_type_list.
+ * \brief Helper type for `tcspc::unique_type_list`.
  */
 template <typename TypeList>
 using unique_type_list_t = typename unique_type_list<TypeList>::type;
@@ -318,21 +324,21 @@ struct type_list_union_impl<type_list<Ds...>, type_list<S0, S0s...>,
 /**
  * \brief Metafunction to obtain the union of two sets of types.
  *
- * Forms a \c type_list specialization containing the set-union of the types
- * contained in the \c type_list specializations \p TL0 and \p TL1 and provides
- * the result as member \c type.
+ * Forms a `tcspc::type_list` specialization containing the set-union of the
+ * types contained in the `tcspc::type_list` specializations \p TL0 and \p TL1
+ * and provides the result as member `type`.
  *
  * In the resulting type, the type arguments are ordered by first appearance in
  * the concatenation of \p TL0 and \p TL1.
  *
- * \see type_list_union_t
+ * \see `tcspc::type_list_union_t`
  */
 template <typename TL0, typename TL1>
 struct type_list_union
     : internal::type_list_union_impl<type_list<>, TL0, TL1> {};
 
 /**
- * \brief Helper type for \c type_list_union.
+ * \brief Helper type for `tcspc::type_list_union`.
  */
 template <typename TL0, typename TL1>
 using type_list_union_t = typename type_list_union<TL0, TL1>::type;
@@ -371,22 +377,22 @@ struct type_list_intersection_impl<type_list<Ds...>, type_list<S0, S0s...>,
 /**
  * \brief Metafunction to obtain the intersection of two sets of types.
  *
- * Forms a \c type_list specialization containing the set-intersection of the
- * types contained in the \c type_list specializations \p TL0 and \p TL1 and
- * provides the result as member \c type.
+ * Forms a `tcspc::type_list` specialization containing the set-intersection of
+ * the types contained in the `tcspc::type_list` specializations \p TL0 and \p
+ * TL1 and provides the result as member `type`.
  *
  * In the resulting type, the type arguments are ordered by appearance in \p
  * TL0. If \p TL0 contains duplicate type arguments (not recommended usage),
  * the resulting type may also contain duplicate type arguments.
  *
- * \see type_list_intersection_t
+ * \see `tcspc::type_list_intersection_t`
  */
 template <typename TL0, typename TL1>
 struct type_list_intersection
     : internal::type_list_intersection_impl<type_list<>, TL0, TL1> {};
 
 /**
- * \brief Helper type for \c type_list_intersection.
+ * \brief Helper type for `tcspc::type_list_intersection`.
  */
 template <typename TL0, typename TL1>
 using type_list_intersection_t =
@@ -426,23 +432,23 @@ struct type_list_set_difference_impl<type_list<Ds...>, type_list<S0, S0s...>,
 /**
  * \brief Metafunction to obtain the set difference of two sets of types.
  *
- * Forms a \c type_list specialization containing the set difference of the
- * types contained in the \c type_list specializations \p TL0 and \p TL1
- * (namely, the types contained by \p TL0 but not by \p TL1) and provides the
- * result as member \c type.
+ * Forms a `tcspc::type_list` specialization containing the set difference of
+ * the types contained in the `tcspc::type_list` specializations \p TL0 and \p
+ * TL1 (namely, the types contained by \p TL0 but not by \p TL1) and provides
+ * the result as member `type`.
  *
  * In the resulting type, the type arguments are ordered by appearance in \p
  * TL0. If \p TL0 contains duplicate type arguments (not recommended usage),
  * the resulting type may also contain duplicate type arguments.
  *
- * \see type_list_set_difference_t
+ * \see `tcspc::type_list_set_difference_t`
  */
 template <typename TL0, typename TL1>
 struct type_list_set_difference
     : internal::type_list_set_difference_impl<type_list<>, TL0, TL1> {};
 
 /**
- * \brief Helper type for \c type_list_set_difference.
+ * \brief Helper type for `tcspc::type_list_set_difference`.
  */
 template <typename TL0, typename TL1>
 using type_list_set_difference_t =

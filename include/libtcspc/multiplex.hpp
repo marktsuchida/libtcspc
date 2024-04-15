@@ -84,13 +84,13 @@ template <typename Downstream> class demultiplex {
 /**
  * \brief Create a processor that passes events as a single variant type.
  *
- * \ingroup processors-basic
+ * \ingroup processors-mux
  *
  * This can be used, for example, to buffer more than one type of event in a
- * stream. The emitted events are of the single type \c
- * variant_event<EventList>.
+ * stream. The emitted events are of the single type
+ * `tcspc::variant_event<EventList>`.
  *
- * \see demultiplex
+ * \see `tcspc::demultiplex()`
  *
  * \tparam EventList event types to combine
  *
@@ -98,7 +98,12 @@ template <typename Downstream> class demultiplex {
  *
  * \param downstream downstream processor
  *
- * \return multiplex processor
+ * \return processor
+ *
+ * \par Events handled
+ * - Types in `EventList`: pass through wrapped in
+ *   `tcspc::variant_event<EventList>`
+ * - Flush: pass through with no action
  */
 template <typename EventList, typename Downstream>
 auto multiplex(Downstream &&downstream) {
@@ -112,19 +117,25 @@ auto multiplex(Downstream &&downstream) {
  * \brief Create a processor that transforms an event variant type back to
  * individual event types.
  *
- * \ingroup processors-basic
+ * \ingroup processors-mux
  *
- * This reverses the effect of \c multiplex, accepting \c variant_event and
- * emitting the stored events. Only \c variant_event specializations whose type
- * list is a subset of the events handled by \p downstream are handled.
+ * This reverses the effect of `tcspc::multiplex()`, accepting
+ * `tcspc::variant_event` and emitting the stored events. Only
+ * `tcspc::variant_event` specializations whose type list is a subset of the
+ * events handled by \p downstream are handled.
  *
- * \see multiplex
+ * \see `tcspc::multiplex()`
  *
  * \tparam Downstream downstream processor type
  *
  * \param downstream downstream processor
  *
- * \return demultiplex processor
+ * \return processor
+ *
+ * \par Events handled
+ * - `tcspc::variant_event<TL>`, where all types in the `tcspc::type_list` `TL`
+ *   are handled by `downstream`: pass through unwrapped
+ * - Flush: pass through with no action
  */
 template <typename Downstream> auto demultiplex(Downstream &&downstream) {
     return internal::demultiplex<Downstream>(

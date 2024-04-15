@@ -93,39 +93,39 @@ class regulate_time_reached {
  * \brief Create a processor that regulates the frequency of time-reached
  * events.
  *
- * \ingroup processors-timing
+ * \ingroup processors-timeline
  *
  * This processor can be used to ensure that the event stream contains
- * time-reached events at reasonable abstime intervals (to keep live displays
- * responsive) and at reasonable frequency in terms of event count (to prevent
- * unbounded growth of buffer size at merge processors). It also removes excess
- * time-reached events based on the same criteria.
+ * `tcspc::time_reached_event` at reasonable abstime intervals (to keep live
+ * displays responsive) and at reasonable frequency in terms of event count (to
+ * prevent unbounded growth of buffer size at merge processors). It also
+ * removes excess time-reached events based on the same criteria.
  *
  * This type of regulation is necessary when there is no guarantee that the
  * upstream input contains time-reached events at regular intervals and there
  * are processors downstream that sort events from multiple streams by abstime:
- * specifically, \ref merge or \ref merge_n. This is because merge processors
- * are unable to emit the buffered events until they know that all earlier
- * upstream events have been seen.
+ * specifically, `tcspc::merge()` or `tcspc::merge_n()`. This is because merge
+ * processors are unable to emit the buffered events until they know that all
+ * earlier upstream events have been seen.
  *
- * Processors that have multiple downstreams (such as \ref route) should
+ * Processors that have multiple downstreams (such as `tcspc::route()`) should
  * broadcast time-reached events so that each branch carries information about
  * elapsed time, allowing merging processors to limit buffering to reasonable
  * latency and capacity.
  *
- * Note that the abstime-based criterion is not absolute and depends on the
+ * Note that the abstime-based criterion is not perfect and depends on the
  * upstream containing (any) events at reasonable abstime intervals, because
  * the time-reached event is only emitted upon receiving an upstream event past
  * the interval threshold.
  *
  * When procssing stored data, or when live display update is not a
- * requirement, the \c interval_threshold can be set to the maximum value of
- * the \c abstime_type to disable the criterion, relying solely on the \c
- * count_threshold. It is recommended that \c count_threshold be set to a
- * reasonable limit even when \c interval_threshold is used as the main
+ * requirement, the \p interval_threshold can be set to the maximum value of
+ * the `abstime_type` to disable the criterion, relying solely on the \p
+ * count_threshold. It is recommended that \p count_threshold be set to a
+ * reasonable limit even when \p interval_threshold is used as the main
  * criterion.
  *
- * \tparam DataTraits traits type specifying \c abstime_type
+ * \tparam DataTraits traits type specifying `abstime_type`
  *
  * \tparam Downstream downstream processor type
  *
@@ -137,6 +137,16 @@ class regulate_time_reached {
  * have been emitted since the previously emitted time-reached event
  *
  * \param downstream downstream processor
+ *
+ * \return processor
+ *
+ * \par Events handled
+ * - `tcspc::time_reached_event<DT>`: emit as
+ *   `tcspc::time_reached_event<DataTraits>` with rate limiting
+ * - All types with `abstime` field: passed through, possibly followed by
+ *   `tcspc::time_reached_event<DataTraits>`
+ * - Flush: emit `tcspc::time_reached_event<DataTraits>` with time of last
+ *   passed event; pass through
  */
 template <typename DataTraits = default_data_traits, typename Downstream>
 auto regulate_time_reached(

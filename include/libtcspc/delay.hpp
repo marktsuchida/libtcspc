@@ -91,13 +91,13 @@ template <typename DataTraits, typename Downstream> class zero_base_abstime {
 /**
  * \brief Create a processor that applies an abstime offset to all events.
  *
- * \ingroup processors-timing
+ * \ingroup processors-timeline
  *
- * All events processed must have an \c abstime field, and no other fields
- * derived from the abstime (because only the \c abstime field will be
+ * All events processed must have an `abstime` field, and no other fields
+ * derived from the abstime (because only the `abstime` field will be
  * adjusted).
  *
- * \tparam DataTraits traits type specifying \c abstime_type
+ * \tparam DataTraits traits type specifying `abstime_type`
  *
  * \tparam Downstream downstream processor type
  *
@@ -105,7 +105,12 @@ template <typename DataTraits, typename Downstream> class zero_base_abstime {
  *
  * \param downstream downstream processor
  *
- * \return delay processor
+ * \return processor
+ *
+ * \par Events handled
+ * - All types with `abstime` field: pass through with \p delta added to
+ *   `abstime`
+ * - Flush: pass through with no action
  */
 template <typename DataTraits = default_data_traits, typename Downstream>
 auto delay(typename DataTraits::abstime_type delta, Downstream &&downstream) {
@@ -117,21 +122,26 @@ auto delay(typename DataTraits::abstime_type delta, Downstream &&downstream) {
  * \brief Create a processor that offsets abstime so that the first event is at
  * time zero.
  *
- * \ingroup processors-timing
+ * \ingroup processors-timeline
  *
  * This can be used to ensure that downstream processing will not encounter
- * integer overflow within a moderate amount of time. Even if the \c
- * abstime_type is a signed integer type, wrap-around is handled correctly.
+ * integer overflow within a moderate amount of time. Even if the
+ * `abstime_type` is a signed integer type, wrap-around is handled correctly.
  *
  * \see delay
  *
- * \tparam DataTraits traits type specifying \c abstime_type
+ * \tparam DataTraits traits type specifying `abstime_type`
  *
  * \tparam Downstream downstream processor type
  *
  * \param downstream downstream processor
  *
- * \return zero_base_abstime processor
+ * \return processor
+ *
+ * \par Events handled
+ * - All types with `abstime` field: pass through with the `abstime` made
+ *   relative to the first event encountered
+ * - Flush: pass through with no action
  */
 template <typename DataTraits = default_data_traits, typename Downstream>
 auto zero_base_abstime(Downstream &&downstream) {

@@ -64,18 +64,18 @@ class gate {
 /**
  * \brief Create a processor that gates events depending on current state.
  *
- * \ingroup processors-timing
+ * \ingroup processors-filtering
  *
- * The processor keeps an internal boolean state: the "gate". The initial state
- * of the gate is determined by \e initially_open. When an \c OpenEvent is
- * received, the gate is opened. When a \c CloseEvent is received, the gate is
+ * The processor keeps an internal boolean state: the _gate_. The initial state
+ * of the gate is determined by \p initially_open. When an \p OpenEvent is
+ * received, the gate is opened. When a \p CloseEvent is received, the gate is
  * closed.
  *
- * Events belonging to \c GatedEventList are gated: they are passed through if
+ * Events belonging to \p GatedEventList are gated: they are passed through if
  * and only if the gate is currently open.
  *
- * All events not in \c GatedEventList are passed through (including \c
- * OpenEvent and \c CloseEvent).
+ * All events not in \p GatedEventList are passed through (including \p
+ * OpenEvent and \p CloseEvent).
  *
  * \tparam GatedEventList event types to gate
  *
@@ -85,12 +85,19 @@ class gate {
  *
  * \tparam Downstream downstream processor type
  *
- * \param initially_open whether the gate is open before the first \c OpenEvent
- * or \c CloseEvent event is received
+ * \param initially_open whether the gate is open before the first \p OpenEvent
+ * or \p CloseEvent event is received
  *
  * \param downstream downstream processor
  *
- * \return gate-events processor
+ * \return processor
+ *
+ * \par Events handled
+ * - `OpenEvent`: open the gate; pass through
+ * - `CloseEvent`: close the gate; pass through
+ * - Types in `GatedEventList`: pass through if gate open; otherwise no action
+ * - All other types: pass through with no action
+ * - Flush: pass through with no action
  */
 template <typename GatedEventList, typename OpenEvent, typename CloseEvent,
           typename Downstream>

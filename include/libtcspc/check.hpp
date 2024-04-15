@@ -73,29 +73,35 @@ class check_monotonic {
  * \brief Create a processor that checks that abstime is monotonically
  * increasing or nondecreasing.
  *
- * \ingroup processors-timing
+ * \ingroup processors-validation
  *
- * This processor passes through time-tagged events and checks that their
- * abstime is monotonic (that is, increasing or not decreasing compared to the
- * previous event). If a violation is detected, a \c warning_event is emitted
- * just before the offending event.
+ * The processor passes through time-tagged events and checks that their
+ * `abstime` is monotonic (that is, increasing or non-decreasing). If a
+ * violation is detected, a `tcspc::warning_event` is emitted just before the
+ * offending event.
  *
  * Checking abstime monotonicity is often a good way to detect gross issues in
  * the data, such as reading data in an incorrect format or using text mode to
  * read binary data.
  *
- * Any received \c warning_event instances are passed through.
+ * Any received `tcspc::warning_event` instances are passed through.
  *
- * \tparam DataTraits traits type specifying \c abstime_type
+ * \tparam DataTraits traits type specifying `abstime_type`
  *
  * \tparam RequireStrictlyIncreasing if true, issue warning on consecutive
  * equal timestamps
  *
- * \tparam Downstream downstream processor type
+ * \tparam Downstream downstream processor type (usually deduced)
  *
  * \param downstream downstream processor
  *
- * \return check-monotonic processor
+ * \return processor
+ *
+ * \par Events handled
+ * - `Event`: check monotonicity and emit `tcspc::warning_event` on violation;
+ *   pass through
+ * - All other types: pass through with no action
+ * - Flush: pass through with no action
  */
 template <typename DataTraits = default_data_traits,
           bool RequireStrictlyIncreasing = false, typename Downstream>
@@ -158,22 +164,28 @@ class check_alternating {
  * \brief Create a processor that checks that events of two types appear in
  * alternation.
  *
- * The processor passes through all events. It examines events of types \c
- * Event0 and \c Event1, and checks that they alternate, starting with \c
- * Event0. If a violation is detected, a \c warning_event is emitted just
+ * The processor passes through all events. It examines events of types \p
+ * Event0 and \p Event1, and checks that they alternate, starting with \p
+ * Event0. If a violation is detected, a `tcspc::warning_event` is emitted just
  * before the offending event.
  *
- * \ingroup processors-timing
+ * \ingroup processors-validation
  *
  * \tparam Event0 event type expected first
  *
  * \tparam Event1 event type expected second
  *
- * \tparam Downstream downstream processor type
+ * \tparam Downstream downstream processor type (usually deduced)
  *
  * \param downstream downstream processor
  *
- * \return check-alternating processor
+ * \return processor
+ *
+ * \par Events handled
+ * - `Event0`, `Event1`: if not strictly alternating, starting with `Event0`,
+ *   emit `tcspc::warning_event`; pass through
+ * - All other types: pass through with no action
+ * - Flush: pass through with no action
  */
 template <typename Event0, typename Event1, typename Downstream>
 auto check_alternating(Downstream &&downstream) {

@@ -71,20 +71,27 @@ class stop {
  * \brief Create a processor that ends the stream with an error when a given
  * event type is received.
  *
- * \ingroup processors-basic
+ * \ingroup processors-stopping
  *
- * \see stop
+ * \see `tcspc::stop()`
  *
  * \tparam EventList event types that should cause stream to end
  *
  * \tparam Exception exception type to use (must be constructible from
- * std::string)
+ * `std::string`)
  *
  * \tparam Downstream downstream processor type
  *
  * \param message_prefix error message prefix
  *
  * \param downstream downstream processor
+ *
+ * \return processor
+ *
+ * \par Events handled
+ * - Types in `EventList`: throw `Exception`
+ * - Types not in `EventList`: pass through with no action
+ * - Flush: pass through with no action
  */
 template <typename EventList, typename Exception = std::runtime_error,
           typename Downstream>
@@ -98,9 +105,9 @@ auto stop_with_error(std::string message_prefix, Downstream &&downstream) {
  * \brief Create a processor that ends the stream when a given event type is
  * received.
  *
- * \ingroup processors-basic
+ * \ingroup processors-stopping
  *
- * \see stop_with_error
+ * \see `tcspc::stop_with_error()`
  *
  * \tparam EventList event types that should cause stream to end
  *
@@ -109,6 +116,13 @@ auto stop_with_error(std::string message_prefix, Downstream &&downstream) {
  * \param message_prefix error message prefix
  *
  * \param downstream downstream processor
+ *
+ * \return processor
+ *
+ * \par Events handled
+ * - Types in `EventList`: flush downstream and throw `tcspc::end_processing`
+ * - Types not in `EventList`: pass through with no action
+ * - Flush: pass through with no action
  */
 template <typename EventList, typename Downstream>
 auto stop(std::string message_prefix, Downstream &&downstream) {

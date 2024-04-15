@@ -34,34 +34,6 @@
 
 namespace tcspc {
 
-/**
- * \addtogroup streams
- *
- * \par Requirements for input streams
- * An input stream must be a movable (usually noncopyable) object with the
- * following member functions:
- * - <tt>auto is_error() noexcept -> bool;</tt>\n
- *   Return true if the stream is not available or the previous read operation
- *   resulted in an error (\e not including reaching EOF). Not influenced by
- *   failure of \c tell() or \c skip().
- * - <tt>auto is_eof() noexcept -> bool;</tt>\n
- *   Return true if the previous read operation tried to read beyond the end of
- *   the stream (or if the stream is not available). Not influenced by failure
- *   of \c tell() or \c skip().
- * - <tt>auto is_good() noexcept -> bool;</tt>\n
- *   Return true if neiter \c is_error() nor \c is_eof() is true.
- * - <tt>auto tell() noexcept -> std::optional<std::uint64_t>;</tt>\n
- *   Return the current stream position if supported by the stream, or \c
- *   std::nullopt.
- * - <tt>auto skip(std::uint64_t bytes) noexcept -> bool;</tt>\n
- *   Seek, relative to the current offset, forward by \e bytes. Return true if
- *   successful.
- * - <tt>auto read(tcspc::span<std::byte> buffer) noexcept ->
- *   std::uint64_t;</tt>\n
- *   Read into the given buffer, up to the buffer size. Return the number of
- *   bytes read.
- */
-
 namespace internal {
 
 struct null_input_stream {
@@ -301,9 +273,7 @@ inline auto binary_cfile_input_stream(std::string const &filename,
 /**
  * \brief Create an input stream that contains no bytes.
  *
- * \ingroup streams
- *
- * \see read_binary_stream
+ * \ingroup streams-input
  *
  * \return input stream
  */
@@ -312,12 +282,10 @@ inline auto null_input_stream() { return internal::null_input_stream(); }
 /**
  * \brief Create a binary input stream for the given file.
  *
- * \ingroup streams
+ * \ingroup streams-input
  *
- * If the file cannot be opened, or is smaller than \e start bytes, the stream
+ * If the file cannot be opened, or is smaller than \p start bytes, the stream
  * will be in an error state.
- *
- * \see read_binary_stream
  *
  * \param filename the filename
  *
@@ -333,21 +301,19 @@ inline auto binary_file_input_stream(std::string const &filename,
 }
 
 /**
- * \brief Create an abstract input stream from an \c std::istream instance.
+ * \brief Create an input stream from an `std::istream` instance.
  *
- * \ingroup streams
+ * \ingroup streams-input
  *
  * The istream is moved into the returned input stream and destroyed together,
- * so you cannot use this with an istream that you do not own (such as \c
- * std::cin). For that, see \ref borrowed_cfile_input_stream (which works with
- * \c stdin).
+ * so you cannot use this with an istream that you do not own (such as
+ * `std::cin`). For that, see `tcspc::borrowed_cfile_input_stream` (which works
+ * with `stdin`).
  *
- * Due to poor performance, use of \c istream_input_stream is not recommended
- * unless you must interface with an existing \c std::istream.
+ * Due to poor performance, use of this stream type is not recommended unless
+ * you must interface with an existing `std::istream`.
  *
- * \see read_binary_stream
- *
- * \param stream an istream (derived from \c std::istream)
+ * \param stream an istream (derived from `std::istream`)
  *
  * \return input stream
  */
@@ -358,20 +324,18 @@ inline auto istream_input_stream(IStream &&stream) {
 }
 
 /**
- * \brief Create an abstract input stream from a C file pointer, taking
- * ownership.
+ * \brief Create an input stream from a C file pointer, taking ownership.
  *
- * \ingroup streams
+ * \ingroup streams-input
  *
- * The stream will use the C stdio functions, such as \c std::fread(). The file
+ * The stream will use the C stdio functions, such as `std::fread()`. The file
  * pointer is closed when the stream is destroyed.
  *
- * The file pointer \e fp should have been opened in binary mode.
+ * The file pointer \p fp should have been opened in binary mode.
  *
- * If \e fp is null, the stream will always be in an error state.
+ * If \p fp is null, the stream will always be in an error state.
  *
- * \see borrowed_cfile_input_stream
- * \see read_binary_stream
+ * \see `tcspc::borrowed_cfile_input_stream`
  *
  * \param fp a file pointer
  *
@@ -382,23 +346,22 @@ inline auto owning_cfile_input_stream(std::FILE *fp) {
 }
 
 /**
- * \brief Create an abstract input stream from a non-owned C file pointer.
+ * \brief Create an input stream from a non-owned C file pointer.
  *
- * \ingroup streams
+ * \ingroup streams-input
  *
- * The stream will use the C stdio functions, such as \c std::fread(). The file
+ * The stream will use the C stdio functions, such as `std::fread()`. The file
  * pointer is not closed when the stream is destroyed. The caller is
  * responsible for ensuring that the file pointer will remain valid throughout
  * the lifetime of the returned input stream.
  *
- * The file pointer \e fp should have been opened in binary mode. (If using
- * \c stdin, use \c std::freopen() with a null filename on POSIX or \c
- * _setmode() with \c _O_BINARY on Windows (via \c _fileno()).)
+ * The file pointer \p fp should have been opened in binary mode. (If using
+ * `stdin`, use `std::freopen()` with a null filename on POSIX or `_setmode()`
+ * with `_O_BINARY` on Windows (via `_fileno()`).)
  *
- * If \e fp is null, the stream will always be in an error state.
+ * If \p fp is null, the stream will always be in an error state.
  *
- * \see owning_cfile_input_stream
- * \see read_binary_stream
+ * \see `tcspc::owning_cfile_input_stream`
  *
  * \param fp a file pointer
  *
@@ -461,15 +424,15 @@ class read_binary_stream {
   public:
     explicit read_binary_stream(
         InputStream stream, std::uint64_t max_length,
-        std::shared_ptr<bucket_source<Event>> bucket_source,
+        std::shared_ptr<bucket_source<Event>> buffer_provider,
         std::size_t read_granularity_bytes, Downstream downstream)
         : stream(std::move(stream)), length(max_length),
           read_granularity(read_granularity_bytes),
-          bsource(std::move(bucket_source)),
+          bsource(std::move(buffer_provider)),
           downstream(std::move(downstream)) {
         if (not bsource)
             throw std::invalid_argument(
-                "read_binary_stream bucket_source must not be null");
+                "read_binary_stream buffer_provider must not be null");
         if (read_granularity <= 0)
             throw std::invalid_argument(
                 "read_binary_stream read_granularity_bytes must be positive");
@@ -562,32 +525,32 @@ class read_binary_stream {
  * \brief Create a source that reads batches of events from a binary stream,
  * such as a file.
  *
- * \ingroup processors-basic
+ * \ingroup processors-io
  *
- * The stream is either libtcspc's input stream abstraction (see \ref streams)
- * or an iostreams \c std::istream. In the latter case, it is wrapped using
- * \ref istream_input_stream. (Use of iostreams is not recommended due to often
- * poor performance.)
+ * The stream is either libtcspc's input stream abstraction (see \ref
+ * streams-input) or an iostreams `std::istream`. In the latter case, it is
+ * wrapped using `tcspc::istream_input_stream()`. (Use of iostreams is not
+ * recommended due to usually poor performance.)
  *
- * The stream must contain a contiguous array of events (of type \c Event,
- * which must be a trivial type). Events are read from the stream in batches
- * and placed into buckets (of type \c Event) supplied by a \ref bucket_source.
+ * The stream must contain a contiguous array of \p Event, which must be a
+ * trivial type. Events are read from the stream in batches and placed into
+ * `tcspc::bucket<Event>` instances supplied by the given \p buffer_provider.
  *
  * Each time the stream is read, events that have been completely read are sent
- * downstream in a bucket. The size of each read is controlled by \e
- * read_granularity_bytes and the size of \c Event. When the former is not
- * smaller, it is used as the read size. When the size of \c Event is larger,
- * multiples of \e read_granularity_bytes may be read at once for efficiency.
- * The first read may be adjusted to a smaller size to align subsequent read
- * offsets to the read granularity. The last read may be adjusted to a smaller
- * size to avoid reading past \e max_length.
+ * downstream in a bucket. The size of each read is controlled by \p
+ * read_granularity_bytes and the size of \p Event. When the former is not
+ * smaller, it is used as the read size. When the size of \p Event is larger,
+ * multiples of \p read_granularity_bytes may be read at once. The first read
+ * may be adjusted to a smaller size to align subsequent read offsets to the
+ * read granularity. The last read may be adjusted to a smaller size to avoid
+ * reading past \p max_length.
  *
- * The \e read_granularity_bytes can be tuned for best performance. If too
+ * The \p read_granularity_bytes can be tuned for best performance. If too
  * small, reads may incur more overhead per byte read; if too large, CPU caches
  * may be polluted. Small batch sizes may also pessimize downstream processing.
  * It is best to try different powers of 2 and measure.
  *
- * \see write_binary_stream
+ * \see `tcspc::write_binary_stream()`
  *
  * \tparam Event the event type
  *
@@ -595,25 +558,31 @@ class read_binary_stream {
  *
  * \tparam Downstream downstream processor type
  *
- * \param stream the input stream (see \ref streams)
+ * \param stream the input stream (see \ref streams-input)
  *
  * \param max_length maximum number of bytes to read from stream (should be a
- * multiple of \c sizeof(Event), or \c std::numeric_limit<std::size_t>::max()
- * to read to the end of the stream)
+ * multiple of `sizeof(Event)`, or `std::numeric_limit<std::size_t>::max()` to
+ * read to the end of the stream)
  *
- * \param bucket_source bucket source providing event buffers; must be able to
- * circulate at least 2 buckets without blocking
+ * \param buffer_provider bucket source providing event buffers; must be able
+ * to circulate at least 2 buckets without blocking
  *
  * \param read_granularity_bytes minimum size, in bytes, to read in each
- * iteration; a multiple of this value may be used if \c Event is larger
+ * iteration; a multiple of this value may be used if \p Event is larger
  *
  * \param downstream downstream processor
  *
- * \return read-binary-stream source processor
+ * \return source processor
+ *
+ * \par Events handled
+ * - Flush: read the stream and emit `tcspc::bucket<Event>` instances; throw
+ *   `std::runtime_error` on stream read error; emit `tcspc::warning_event` at
+ *   the end of the stream if there are fewer than `sizeof(Event)` bytes left
+ *   over
  */
 template <typename Event, typename InputStream, typename Downstream>
 auto read_binary_stream(InputStream &&stream, std::uint64_t max_length,
-                        std::shared_ptr<bucket_source<Event>> bucket_source,
+                        std::shared_ptr<bucket_source<Event>> buffer_provider,
                         std::size_t read_granularity_bytes,
                         Downstream &&downstream) {
     // Support direct passing of C++ iostreams stream.
@@ -621,12 +590,12 @@ auto read_binary_stream(InputStream &&stream, std::uint64_t max_length,
         auto wrapped = istream_input_stream(std::forward<InputStream>(stream));
         return internal::read_binary_stream<decltype(wrapped), Event,
                                             Downstream>(
-            std::move(wrapped), max_length, std::move(bucket_source),
+            std::move(wrapped), max_length, std::move(buffer_provider),
             read_granularity_bytes, std::forward<Downstream>(downstream));
     } else {
         return internal::read_binary_stream<InputStream, Event, Downstream>(
             std::forward<InputStream>(stream), max_length,
-            std::move(bucket_source), read_granularity_bytes,
+            std::move(buffer_provider), read_granularity_bytes,
             std::forward<Downstream>(downstream));
     }
 }

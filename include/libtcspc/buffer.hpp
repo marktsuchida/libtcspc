@@ -40,31 +40,29 @@ constexpr std::size_t destructive_interference_size = 64;
 } // namespace internal
 
 /**
- * \brief Exception type thrown when buffer source was discontinued without
- * reaching the point of flushing.
+ * \brief Exception type thrown to pumping thread when buffer source was
+ * discontinued without reaching the point of flushing.
  */
 class source_halted final : public std::exception {
   public:
-    /** \brief std::exception interface. */
+    /** \brief Implements std::exception interface. */
     [[nodiscard]] auto what() const noexcept -> char const * override {
         return "source halted without flushing";
     }
 };
 
 /**
- * \brief Access for buffer processor.
+ * \brief Access for `tcspc::buffer()` and `tcspc::real_time_buffer()`
+ * processors.
  *
- * \ingroup processors-basic
- *
- * \see buffer
- * \see real_time_buffer
+ * \ingroup processor-access
  */
 class buffer_access {
     std::function<void()> halt_fn;
     std::function<void()> pump_fn;
 
   public:
-    /** \brief Constructor; not for client use. */
+    /** \private */
     template <typename HaltFunc, typename PumpFunc>
     explicit buffer_access(HaltFunc halt_func, PumpFunc pump_func)
         : halt_fn(halt_func), pump_fn(pump_func) {}
@@ -72,7 +70,7 @@ class buffer_access {
     /**
      * \brief Halt pumping of the buffer.
      *
-     * The call to pump() will return without flushing the downstream.
+     * The call to `pump()` will return without flushing the downstream.
      *
      * This function must always be called when the upstream processor will no
      * longer send events (or a flush) to the buffer. This includes when
@@ -91,16 +89,16 @@ class buffer_access {
      *
      * This function exits normally when a flush has been propagated from
      * upstream to downstream without an exception being thrown. If an
-     * exception is thrown by a downstream processor (including \ref
-     * end_processing), it is propagated out of this function. If halt() is
-     * called when events are still being pumped, this function throws \ref
-     * source_halted.
+     * exception is thrown by a downstream processor (including
+     * `tcspc::end_processing`), it is propagated out of this function. If
+     * `halt()` is called when events are still being pumped, this function
+     * throws `tcspc::source_halted`.
      *
      * Applications should generally report errors for exceptions other than
-     * \ref end_processing and \ref source_halted. Note that such exceptions
-     * are not propagated to upstream processors (this is because there may not
-     * be the opportunity to do so if the upstream never calls the buffer
-     * again).
+     * `tcspc::end_processing` and `tcspc::source_halted`. Note that such
+     * exceptions are not propagated to upstream processors (this is because
+     * there may not be the opportunity to do so if the upstream never calls
+     * the buffer again).
      */
     void pump() { pump_fn(); }
 };
@@ -280,24 +278,30 @@ class buffer {
 } // namespace internal
 
 /**
- * \brief Create a pseudo-processor that buffers events and emits them on a
- * different thread.
- *
- * \ingroup processors-basic
- *
- * This receives events of type \c Event from upstream like a normal processor,
- * but stores them in a buffer. By pumping on a different thread (see
- * buffer_access::pump()), the buffered events can be sent downstream on that
+ * \brief Create a processor that buffers events and emits them on a different
  * thread.
  *
- * Events are emitted downstream when the number of buffered events reaches the
- * \p threshold.
+ * \ingroup processors-buffering
  *
- * The thread sending events to the buffer must notify the buffer via
- * buffer_access::halt() when it will not send anything more. Note that this
- * call is required even if upstream processing terminated by an exception
+ * The processor receives events of type \p Event from upstream like a normal
+ * processor, but stores them in a buffer. By _pumping_ on a different thread,
+ * the buffered events can be sent downstream on that thread.
+ *
+ * On the pumping thread, events are emitted downstream when the number of
+ * buffered events reaches the \p threshold.
+ *
+ * The upstream thread (the thread sending events to this processor) must
+ * _halt_ this processor when it will not send anything more. Note that halting
+ * is required even if upstream processing terminated by an exception
  * (including during an explicit flush), because such an exception may have
  * been thrown upstream of the buffer without its knowledge.
+ *
+ * Pumping and halting is done through a `tcspc::buffer_access` object
+ * retrieved from the `tcspc::processor_context` from which \p tracker was
+ * obtained.
+ *
+ * \see `tcspc::process_in_batches()`
+ * \see `tcspc::real_time_buffer()`
  *
  * \tparam Event the event type
  *
@@ -309,6 +313,16 @@ class buffer {
  * \param tracker processor tracker for later access
  *
  * \param downstream downstream processor
+ *
+ * \return processor
+ *
+ * \par Events handled
+ * - `Event`: buffer and pass through on the pumping thread; throw
+ *   `tcspc::end_processing` if pumping thread has exited (normally or with
+ *   error)
+ * - Flush: buffer and pass through on the pumping thread; throw
+ *   `tcspc::end_processing` if pumping thread has exited (normally or with
+ *   error)
  */
 template <typename Event, typename Downstream>
 auto buffer(std::size_t threshold, processor_tracker<buffer_access> &&tracker,
@@ -318,25 +332,30 @@ auto buffer(std::size_t threshold, processor_tracker<buffer_access> &&tracker,
 }
 
 /**
- * \brief Create a pseudo-processor that buffers events and emits them on a
- * different thread, with limited latency.
+ * \brief Create a processor that buffers events and emits them on a different
+ * thread, with limited latency.
  *
- * \ingroup processors-basic
+ * \ingroup processors-buffering
  *
- * This receives events of type \c Event from upstream like a normal processor,
- * but stores them in a buffer. By pumping on a different thread (see
- * buffer_access::pump()), the buffered events can be sent downstream on that
- * thread.
+ * The processor receives events of type \p Event from upstream like a normal
+ * processor, but stores them in a buffer. By _pumping_ on a different thread,
+ * the buffered events can be sent downstream on that thread.
  *
- * Events are emitted downstream when either the number of buffered events
- * reaches the \p threshold or when the oldest event has been buffered for at
- * least \p latency_limit.
+ * On the pumping thread, events are emitted downstream when either the number
+ * of buffered events reaches the \p threshold or when the oldest event has
+ * been buffered for a duration of at least \p latency_limit.
  *
- * The thread sending events to the buffer must notify the buffer via
- * buffer_access::halt() when it will not send anything more. Note that this
- * call is required even if upstream processing terminated by an exception
+ * The upstream thread (the thread sending events to this processor) must
+ * _halt_ this processor when it will not send anything more. Note that halting
+ * is required even if upstream processing terminated by an exception
  * (including during an explicit flush), because such an exception may have
  * been thrown upstream of the buffer without its knowledge.
+ *
+ * Pumping and halting is done through a `tcspc::buffer_access` object
+ * retrieved from the `tcspc::processor_context` from which \p tracker was
+ * obtained.
+ *
+ * \see `tcspc::buffer()`
  *
  * \tparam Event the event type
  *
@@ -345,13 +364,23 @@ auto buffer(std::size_t threshold, processor_tracker<buffer_access> &&tracker,
  * \param threshold number of events to buffer before start sending to
  * downstream
  *
- * \param latency_limit a \c std::chrono::duration specifying the maximum time
+ * \param latency_limit a `std::chrono::duration` specifying the maximum time
  * an event can remain in the buffer before sending to downstream is started
  * even if there are fewer events than threshold. Must not exceed 24 hours.
  *
  * \param tracker processor tracker for later access
  *
  * \param downstream downstream processor
+ *
+ * \return processor
+ *
+ * \par Events handled
+ * - `Event`: buffer and pass through on pumping thread; throw
+ *   `tcspc::end_processing` if pumping thread has exited (normally or with
+ *   error)
+ * - Flush: buffer and pass through on the pumping thread; throw
+ *   `tcspc::end_processing` if pumping thread has exited (normally or with
+ *   error)
  */
 template <typename Event, typename Duration, typename Downstream>
 auto real_time_buffer(std::size_t threshold, Duration latency_limit,

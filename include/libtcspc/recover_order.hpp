@@ -121,11 +121,11 @@ class recover_order {
  * \brief Create a processor that sorts events by abstime, provided that they
  * are out of order only within a bounded time window.
  *
- * \ingroup processors-timing
+ * \ingroup processors-time-corr
  *
  * \tparam EventList events to sort
  *
- * \tparam DataTraits traits type specifying \c abstime_type
+ * \tparam DataTraits traits type specifying `abstime_type`
  *
  * \tparam Downstream downstream processor type
  *
@@ -133,6 +133,14 @@ class recover_order {
  * not be negative
  *
  * \param downstream downstream processor
+ *
+ * \return processor
+ *
+ * \par Events handled
+ * - `Event` (with `abstime` field): buffer and forward in `abstime` order once
+ *   \p time_window has elapsed; throw `std::runtime_error` if order could not
+ *   be maintained
+ * - Flush: emit any buffered `Event`s in `abstime` order; pass through
  */
 template <typename EventList, typename DataTraits = default_data_traits,
           typename Downstream>

@@ -155,26 +155,34 @@ class time_correlate_at_fraction {
  * \brief Create a processor that collapses detection pairs into
  * time-correlated detection events at the start time of the pair.
  *
- * \ingroup processors-timing
+ * \ingroup processors-time-corr
  *
  * No reordering of events takes place. If the incoming events have their stop
  * time in order and start time within a known time window of the stop time,
  * then the output events are time-bound out-of-order with that window size.
  *
  * The difference between the abstime of the start and stop event in each pair
- * must be representable by both \c abstime_type and \c difftime_type without
+ * must be representable by both `abstime_type` and `difftime_type` without
  * overflowing.
  *
- * \see time_correlate_at_stop
- * \see time_correlate_at_midpoint
- * \see time_correlate_at_fraction
+ * \tparam DataTraits traits type specifying `abstime_type`, `channel_type`,
+ * and `difftime_type`
  *
- * \tparam DataTraits traits type specifying \c abstime_type, \c channel_type,
- * and \c difftime_type
- *
- * \tparam Downstream downstream processor type
+ * \tparam Downstream downstream processor type (usually deduced)
  *
  * \param downstream downstream processor
+ *
+ * \return processor
+ *
+ * \par Events handled
+ * - `tcspc::detection_pair_event<DT>`: emit
+ *   `tcspc::time_correlated_detection_event<DataTraits>` with
+ *   - `abstime` set equal to that of the first event of the pair
+ *   - `channel` set to the channel of the first event of the pair if
+ *     `UseStartChannel` is true, else of the second
+ *   - `difftime` set to the `abstime` difference of the pair
+ * - All other types: pass through with no action
+ * - Flush: pass through with no action
  */
 template <typename DataTraits = default_data_traits, typename Downstream>
 auto time_correlate_at_start(Downstream &&downstream) {
@@ -187,25 +195,33 @@ auto time_correlate_at_start(Downstream &&downstream) {
  * \brief Create a processor that collapses detection pairs into
  * time-correlated detection events at the stop time of the pair.
  *
- * \ingroup processors-timing
+ * \ingroup processors-time-corr
  *
  * No reordering of events takes place. The output events are in order if the
  * stop times of the incoming pairs are in order.
  *
  * The difference between the abstime of the start and stop event in each pair
- * must be representable by both \c abstime_type and \c difftime_type without
+ * must be representable by both `abstime_type` and `difftime_type` without
  * overflowing.
  *
- * \see time_correlate_at_start
- * \see time_correlate_at_midpoint
- * \see time_correlate_at_fraction
+ * \tparam DataTraits traits type specifying `abstime_type`, `channel_type`,
+ * and `difftime_type`
  *
- * \tparam DataTraits traits type specifying \c abstime_type, \c channel_type,
- * and \c difftime_type
- *
- * \tparam Downstream downstream processor type
+ * \tparam Downstream downstream processor type (usually deduced)
  *
  * \param downstream downstream processor
+ *
+ * \return processor
+ *
+ * \par Events handled
+ * - `tcspc::detection_pair_event<DT>`: emit
+ *   `tcspc::time_correlated_detection_event<DataTraits>` with
+ *   - `abstime` set equal to that of the second event of the pair
+ *   - `channel` set to the channel of the first event of the pair if
+ *     `UseStartChannel` is true, else of the second
+ *   - `difftime` set to the `abstime` difference of the pair
+ * - All other types: pass through with no action
+ * - Flush: pass through with no action
  */
 template <typename DataTraits = default_data_traits, typename Downstream>
 auto time_correlate_at_stop(Downstream &&downstream) {
@@ -219,7 +235,7 @@ auto time_correlate_at_stop(Downstream &&downstream) {
  * time-correlated detection events at the midpoint between the start and stop
  * times of the pair.
  *
- * \ingroup processors-timing
+ * \ingroup processors-time-corr
  *
  * No reordering of events takes place. If the incoming events have their stop
  * time in order and start time within a known time window of the stop time,
@@ -227,22 +243,30 @@ auto time_correlate_at_stop(Downstream &&downstream) {
  * size.
  *
  * The difference between the abstime of the start and stop event in each pair
- * must be representable by both \c abstime_type and \c difftime_type without
+ * must be representable by both `abstime_type` and `difftime_type` without
  * overflowing.
  *
- * \see time_correlate_at_start
- * \see time_correlate_at_stop
- * \see time_correlate_at_fraction
- *
- * \tparam DataTraits traits type specifying \c abstime_type, \c channel_type,
- * and \c difftime_type
+ * \tparam DataTraits traits type specifying `abstime_type`, `channel_type`,
+ * and `difftime_type`
  *
  * \tparam UseStartChannel if true, use the channel of the start of the pair as
  * the channel of the emitted events; otherwise use the stop channel
  *
- * \tparam Downstream downstream processor type
+ * \tparam Downstream downstream processor type (usually deduced)
  *
  * \param downstream downstream processor
+ *
+ * \return processor
+ *
+ * \par Events handled
+ * - `tcspc::detection_pair_event<DT>`: emit
+ *   `tcspc::time_correlated_detection_event<DataTraits>` with
+ *   - `abstime` set to the midpoint of the pair's abstimes
+ *   - `channel` set to the channel of the first event of the pair if
+ *     `UseStartChannel` is true, else of the second
+ *   - `difftime` set to the `abstime` difference of the pair
+ * - All other types: pass through with no action
+ * - Flush: pass through with no action
  */
 template <typename DataTraits = default_data_traits,
           bool UseStartChannel = false, typename Downstream>
@@ -257,33 +281,41 @@ auto time_correlate_at_midpoint(Downstream &&downstream) {
  * time-correlated detection events at a fractional dividing point between the
  * start and stop times of the pair.
  *
- * \ingroup processors-timing
+ * \ingroup processors-time-corr
  *
  * No reordering of events takes place. If the incoming events have their stop
  * time in order and start time within a known time window of the stop time,
- * then the output events are time-bound out-of-order with (1 - fraction) times
+ * then the output events are time-bound out-of-order with `1 - fraction` times
  * that window size.
  *
  * The difference between the abstime of the start and stop event in each pair
- * must be representable by \c abstime_type, \c difftime_type, and \c double
+ * must be representable by `abstime_type`, `difftime_type`, and `double`
  * without overflowing.
  *
- * \see time_correlate_at_start
- * \see time_correlate_at_stop
- * \see time_correlate_at_midpoint
- *
- * \tparam DataTraits traits type specifying \c abstime_type, \c channel_type,
- * and \c difftime_type
+ * \tparam DataTraits traits type specifying `abstime_type`, `channel_type`,
+ * and `difftime_type`
  *
  * \tparam UseStartChannel if true, use the channel of the start of the pair as
  * the channel of the emitted events; otherwise use the stop channel
  *
- * \tparam Downstream downstream processor type
+ * \tparam Downstream downstream processor type (usually deduced)
  *
  * \param fraction the dividing fraction of start and stop time: 0.0 for start
  * time; 1.0 for stop time; 0.5 for the midpoint
  *
  * \param downstream downstream processor
+ *
+ * \return processor
+ *
+ * \par Events handled
+ * - `tcspc::detection_pair_event<DT>`: emit
+ *   `tcspc::time_correlated_detection_event<DataTraits>` with
+ *   - `abstime` set to the fractional division point of the pair's abstimes
+ *   - `channel` set to the channel of the first event of the pair if
+ *     `UseStartChannel` is true, else of the second
+ *   - `difftime` set to the `abstime` difference of the pair
+ * - All other types: pass through with no action
+ * - Flush: pass through with no action
  */
 template <typename DataTraits = default_data_traits,
           bool UseStartChannel = false, typename Downstream>
@@ -373,11 +405,19 @@ class remove_time_correlation {
  * \brief Create a processor that changes the sign of difftime in
  * time-correlated detection events.
  *
- * \ingroup processors-timing
+ * \ingroup processors-time-corr
  *
- * \tparam Downstream downstream processor type
+ * \tparam Downstream downstream processor type (usually deduced)
  *
  * \param downstream downstream processor
+ *
+ * \return processor
+ *
+ * \par Events handled
+ * - `tcspc::time_correlated_detection_event<DT>`: pass through a copy where
+ *   the `difftime` has been negated
+ * - All other types: pass through with no action
+ * - Flush: pass through with no action
  */
 template <typename Downstream> auto negate_difftime(Downstream &&downstream) {
     return internal::negate_difftime<Downstream>(
@@ -387,14 +427,21 @@ template <typename Downstream> auto negate_difftime(Downstream &&downstream) {
 /**
  * \brief Create a processor that removes the difftime from detection events.
  *
- * \ingroup processors-timing
+ * \ingroup processors-time-corr
  *
- * \tparam DataTraits traits type specifying \c abstime_type and \c
- * channel_type.
+ * \tparam DataTraits traits type specifying `abstime_type` and `channel_type`
  *
  * \tparam Downstream downstream processor type
  *
  * \param downstream downstream processor
+ *
+ * \return processor
+ *
+ * \par Events handled
+ * - `tcspc::time_correlated_detection_event<DT>`: emit
+ *   `tcspc::detection_event<DataTraits>`
+ * - All other types: pass through with no action
+ * - Flush: pass through with no action
  */
 template <typename DataTraits = default_data_traits, typename Downstream>
 auto remove_time_correlation(Downstream &&downstream) {

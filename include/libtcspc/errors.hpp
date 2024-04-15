@@ -38,7 +38,7 @@ class end_processing final : public std::exception {
      */
     explicit end_processing(std::string message) : msg(std::move(message)) {}
 
-    /** \brief std::exception interface. */
+    /** \brief Implements std::exception interface. */
     [[nodiscard]] auto what() const noexcept -> char const * override {
         return msg.c_str();
     }
@@ -49,27 +49,20 @@ class end_processing final : public std::exception {
  *
  * \ingroup exceptions
  *
- * This error is raised when the error_on_overflow strategy is requested and
- * there was an overflow. It is also raised when reset_on_overflow is requested
- * but a reset would result in an infinite loop: in the case of histogram if
- * maximum per bin set to 0, or accumulate_histograms if a single batch
- * contains enough increments to overflow a bin.
+ * This error (derived from `std::runtime_error`) is raised when the
+ * `tcspc::error_on_overflow` strategy was requested and there was an overflow.
+ * It is also raised when `tcspc::reset_on_overflow` was requested but a reset
+ * would result in an infinite loop: in the case of `tcspc::histogram()` when
+ * maximum-per-bin set to 0, or `tcspc::histogram_elementwise_accumulate()`
+ * when a single batch contains enough increments to overflow a bin.
  */
 class histogram_overflow_error : public std::runtime_error {
   public:
     using std::runtime_error::runtime_error;
 };
 
-/**
- * \brief Error raised when histogram array cycle is incomplete.
- *
- * \ingroup exceptions
- *
- * All but the last cycle before a reset or end-of-stream must be complete for
- * processors computing histogram arrays. This exception is thrown if a
- * new-cycle event is received before the current cycle has had the expected
- * number of batches.
- */
+// TODO Obsolete; remove.
+/** \private */
 class incomplete_array_cycle_error : public std::runtime_error {
   public:
     using std::runtime_error::runtime_error;

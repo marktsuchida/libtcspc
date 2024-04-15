@@ -22,9 +22,9 @@ namespace tcspc {
  * \brief Event representing a summarized model of a periodic sequence of
  * events.
  *
- * \ingroup events-timing
+ * \ingroup events-timing-modeling
  *
- * \tparam DataTraits traits type specifying \c abstime_type
+ * \tparam DataTraits traits type specifying `abstime_type`
  */
 template <typename DataTraits = default_data_traits>
 struct periodic_sequence_event {
@@ -34,10 +34,10 @@ struct periodic_sequence_event {
     typename DataTraits::abstime_type abstime;
 
     /**
-     * \brief The estimated time of the first event, relative to \c abstime.
+     * \brief The estimated time of the first event, relative to `abstime`.
      *
-     * The modeled time of the first tick of the sequence is at <tt>abstime +
-     * delay</tt>.
+     * The modeled time of the first tick of the sequence is at _abstime_ +
+     * _delay_.
      */
     double delay;
 
@@ -74,9 +74,9 @@ struct periodic_sequence_event {
  * \brief Event representing a prescription for one-shot timing generation with
  * real (fractional) delay.
  *
- * \ingroup events-timing
+ * \ingroup events-timing-modeling
  *
- * \tparam DataTraits traits type specifying \c abstime_type
+ * \tparam DataTraits traits type specifying `abstime_type`
  */
 template <typename DataTraits = default_data_traits>
 struct real_one_shot_timing_event {
@@ -86,7 +86,7 @@ struct real_one_shot_timing_event {
     typename DataTraits::abstime_type abstime;
 
     /**
-     * \brief The time delay relative to \c abstime.
+     * \brief The time delay relative to `abstime`.
      */
     double delay;
 
@@ -117,9 +117,9 @@ struct real_one_shot_timing_event {
  * \brief Event representing a prescription for linear timing generation with
  * real (fractional) delay and interval.
  *
- * \ingroup events-timing
+ * \ingroup events-timing-modeling
  *
- * \tparam DataTraits traits type specifying \c abstime_type
+ * \tparam DataTraits traits type specifying `abstime_type`
  */
 template <typename DataTraits = default_data_traits>
 struct real_linear_timing_event {
@@ -129,7 +129,7 @@ struct real_linear_timing_event {
     typename DataTraits::abstime_type abstime;
 
     /**
-     * \brief The time delay relative to \c abstime.
+     * \brief The time delay relative to `abstime`.
      */
     double delay;
 
@@ -233,37 +233,37 @@ class retime_periodic_sequences {
 } // namespace internal
 
 /**
- * \brief Create a processor that adjusts the abstime of \c
- * periodic_sequence_event to be earlier than the modeled sequence.
+ * \brief Create a processor that adjusts the abstime of
+ * `tcspc::periodic_sequence_event` to be earlier than the modeled sequence.
  *
- * \ingroup processors-timing
+ * \ingroup processors-timing-modeling
  *
- * Events of type \c periodic_sequence_event (with matching \c abstime_type)
- * have their \c abstime and \c delay modified, such that \c delay is at least
- * 1.0 and no more than 2.0.
+ * Events of type `tcspc::periodic_sequence_event` (with matching
+ * `abstime_type`) have their `abstime` and `delay` noramlized, such that
+ * `delay` is at least 1.0 and no more than 2.0, without altering the modeled
+ * tick sequence.
  *
- * This means that the events are timed before any of the modeled tick times of
- * the sequences they represent, so that they can be used for event generation
- * downstream.
+ * This means that the events have an `abstime` before any of the modeled tick
+ * times of the sequences they represent, so that they can be used for event
+ * generation downstream.
  *
- * The choice of the \c start_time range of <tt>[1.0, 2.0)</tt> (rather than
- * <tt>[0.0, 1.0)</tt>) is to avoid subnormal floating point values.
+ * The choice of the `start_time` range of `[1.0, 2.0)` (rather than
+ * `[0.0, 1.0)`) is to avoid subnormal floating point values.
  *
- * If the adjustment would result in altering the abstime by more than \e
+ * If the adjustment would result in altering the `abstime` by more than \p
  * max_time_shift (in either direction), processing is halted with an error.
- * This can be used to guarantee that any downstream (\ref merge) works
- * correctly (provided that the resulting abstimes are in order, which needs to
- * be guaranteed by the manner in which the original events were generated).
+ * This can be used to help make sure that the emitted events have a
+ * monotonically increasing `abstime`.
  *
- * If the adjustment would result in a negative abstime, but the abstime type
+ * If the adjustment would result in a negative `abstime`, but `abstime_type`
  * is an unsigned integer type, processing is halted with an error.
  *
  * No other events are handled (because this processor would cause their
  * abstimes to be out of order).
  *
- * \see fit_periodic_sequences
+ * \see `tcspc::fit_periodic_sequences()`
  *
- * \tparam DataTraits traits type specifying \c abstime_type and traits for
+ * \tparam DataTraits traits type specifying `abstime_type` and traits for
  * emitted events
  *
  * \tparam Downstream downstream processor type
@@ -271,6 +271,14 @@ class retime_periodic_sequences {
  * \param max_time_shift maximum allowed (absolute value of) timeshift
  *
  * \param downstream downstream processor
+ *
+ * \return processor
+ *
+ * \par Events handled
+ * - `tcspc::periodic_sequence_event<DT>`: emit with normalized `abstime` and
+ *   `delay` as `tcspc::periodic_sequence_event<DataTraits>`; throw
+ *   `std::runime_error` if the time shift or result range criteria are not met
+ * - Flush: pass through with no action
  */
 template <typename DataTraits = default_data_traits, typename Downstream>
 auto retime_periodic_sequences(
@@ -323,18 +331,21 @@ class extrapolate_periodic_sequences {
 
 /**
  * \brief Create a processor that emits an extrapolated one-shot timing event
- * based on \c periodic_sequence_event.
+ * based on `tcspc::periodic_sequence_event`.
  *
- * \ingroup processors-timing
+ * \ingroup processors-timing-modeling
  *
- * Events of type \c periodic_sequence_event (with matching \c abstime_type)
- * are converted to \c real_one_shot_timing_event with the same \c abstime and
- * a \c delay computed by extrapolated the model sequence to the given \e
- * tick_index.
+ * Events of type `tcspc::periodic_sequence_event` (with matching
+ * `abstime_type`) are converted to `tcspc::real_one_shot_timing_event` with
+ * the same `abstime` and a `delay` computed by extrapolating the model
+ * sequence to the given \p tick_index.
  *
  * All other events are passed through.
  *
- * \tparam DataTraits traits type specifying \c abstime_type and traits for
+ * \remark This is one way to synthesize an extra tick needed for use with
+ * `tcspc::convert_sequences_to_start_stop()`.
+ *
+ * \tparam DataTraits traits type specifying `abstime_type` and traits for
  * emitted events
  *
  * \tparam Downstream downstream processor type
@@ -342,6 +353,13 @@ class extrapolate_periodic_sequences {
  * \param tick_index tick index to extrapolate to
  *
  * \param downstream downstream processor
+ *
+ * \return processor
+ *
+ * \par Events handled
+ * - `tcspc::periodic_sequence_event<DT>`: emit
+ *   `tcspc::real_one_shot_timing_event<DataTraits>` with the same `abstime`
+ *   but the `delay` offset by `interval` times `tick_index`
  */
 template <typename DataTraits = default_data_traits, typename Downstream>
 auto extrapolate_periodic_sequences(std::size_t tick_index,
@@ -391,21 +409,21 @@ class add_count_to_periodic_sequences {
 } // namespace internal
 
 /**
- * \brief Create a processor that emits a linear timing event based on \c
- * periodic_sequence_event by adding a fixed sequence length.
+ * \brief Create a processor that emits a linear timing event based on
+ * `tcspc::periodic_sequence_event` by adding a fixed sequence length.
  *
- * \ingroup processors-timing
+ * \ingroup processors-timing-modeling
  *
- * Events of type \c periodic_sequence_event (with matching \c abstime_type)
- * are converted to \c real_linear_timing_event with the same \c abstime, \c
- * delay, and \c interval, and with the given \e count.
+ * Events of type `tcspc::periodic_sequence_event` (with matching
+ * `abstime_type`) are converted to `tcspc::real_linear_timing_event` with the
+ * same `abstime`, `delay`, and `interval`, and with the given \p count.
  *
- * Typically, this processor should be applied to the output of \ref
- * retime_periodic_sequences.
+ * Typically, this processor is applied to the output of
+ * `tcspc::retime_periodic_sequences()`.
  *
  * All other events are passed through.
  *
- * \tparam DataTraits traits type specifying \c abstime_type and traits for
+ * \tparam DataTraits traits type specifying `abstime_type` and traits for
  * emitted events
  *
  * \tparam Downstream downstream processor type
@@ -413,6 +431,15 @@ class add_count_to_periodic_sequences {
  * \param count sequence length to use
  *
  * \param downstream downstream processor
+ *
+ * \return processor
+ *
+ * \par Events handled
+ * - `tcspc::periodic_sequence_event<DT>`: emit
+ *   `tcspc::real_linear_timing_event<DataTraits>` with the same `abstime`,
+ *   `delay`, and `interval` and added `count`.
+ * - All other types: pass through with no action
+ * - Flush: pass through with no action
  */
 template <typename DataTraits = default_data_traits, typename Downstream>
 auto add_count_to_periodic_sequences(std::size_t count,
@@ -481,17 +508,22 @@ class convert_sequences_to_start_stop {
  * \brief Create a processor that converts sequences of ticks to sequences of
  * start-stop event pairs with no gaps.
  *
- * \ingroup processors-timing
+ * \ingroup processors-timing-modeling
  *
- * Every sequence of \e count + 1 events of type \c TickEvent is replaced by
- * a series of \c StartEvent and \c StopEvent events that bracket each tick
- * interval. The \c StopEvent for one interval and the \c StartEvent for the
- * next interval are emitted at the same abstime.
+ * Every sequence of `count + 1` events of type \p TickEvent is replaced by
+ * a series of \p StartEvent and \p StopEvent events that bracket each tick
+ * interval. The \p StopEvent for one interval and the \p StartEvent for the
+ * next interval are emitted with the same abstime.
  *
- * This can be used to synthesize the start and stop events for \ref
- * histogram_elementwise, given a single sequence of timing markers. (Another
- * method is to synthesize the stop events as a delayed copy of the start
- * events, using \ref generate with \ref one_shot_timing_generator.)
+ * This can be used to synthesize the start and stop events for
+ * `tcspc::histogram_elementwise()`, given a single sequence of timing markers.
+ * (Another method is to synthesize the stop events as a delayed copy of the
+ * start events, using `tcspc::generate()` with
+ * `tcspc::one_shot_timing_generator`.)
+ *
+ * \attention Beware of fencepost errors: `count` is the number of start-stop
+ * pairs in each sequence, which is one less than the number of ticks needed to
+ * produce them.
  *
  * All other events are passed through.
  *
@@ -504,6 +536,15 @@ class convert_sequences_to_start_stop {
  * \param count sequence length of the emitted start-stop pairs
  *
  * \param downstream doownstream processor
+ *
+ * \return processor
+ *
+ * \par Events handled
+ * - `TickEvent`: emit `StopEvent` if not the first tick in a sequence, then
+ *   `StartEvent` if not the last tick in a sequence, where a sequence is every
+ *   series of `count + 1` ticks
+ * - All other types: pass through with no action
+ * - Flush: pass through with no action
  */
 template <typename TickEvent, typename StartEvent, typename StopEvent,
           typename Downstream>

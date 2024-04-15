@@ -25,7 +25,7 @@ namespace tcspc {
 template <std::size_t Extent> using byte_span = span<std::byte const, Extent>;
 
 /**
- * \brief Get a subspan of an array of constant bytes.
+ * \brief Get a subspan of an `std::array` of constant bytes.
  *
  * \ingroup misc
  */

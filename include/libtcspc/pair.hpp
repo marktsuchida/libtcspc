@@ -325,25 +325,21 @@ class pair_one_between {
  * \brief Create a processor that generates all ordered pairs of detection
  * events within a time window.
  *
- * \ingroup processors-timing
+ * \ingroup processors-pairing
  *
  * All events are passed through.
  *
- * Just before a \ref detection_event whose channel is one of the stop channels
- * (a stop event) is passed through, a \ref detection_pair_event is emitted,
- * pairing the stop event with every preceding \ref detection_event on the
- * start channel that is within \e time_window of the stop event.
- *
- * \see pair_one
- * \see pair_all_between
- * \see pair_one_between
+ * Just before a `tcspc::detection_event` whose channel is one of the stop
+ * channels (a stop event) is passed through, a `tcspc::detection_pair_event`
+ * is emitted, pairing the stop event with every preceding
+ * `tcspc::detection_event` on the start channel that is within \p time_window
+ * of the stop event.
  *
  * \tparam NStopChannels number of stop channels
  *
- * \tparam DataTraits traits type specifying \c abstime_type and \c
- * channel_type
+ * \tparam DataTraits traits type specifying `abstime_type` and `channel_type`
  *
- * \tparam Downstream downstream processor type
+ * \tparam Downstream downstream processor type (usually deduced)
  *
  * \param start_channel the start channel number
  *
@@ -353,6 +349,15 @@ class pair_one_between {
  * detection events
  *
  * \param downstream downstream processor
+ *
+ * \return processor
+ *
+ * \par Events handled
+ * - `tcspc::detection_event<DT>`: emit (as
+ *   `tcspc::detection_pair_event<DataTraits>`) any pairs where the current
+ *   event serves as the stop event; pass through
+ * - All other types: pass through with no action
+ * - Flush: pass through with no action
  */
 template <std::size_t NStopChannels, typename DataTraits = default_data_traits,
           typename Downstream>
@@ -370,26 +375,22 @@ auto pair_all(
  * within a time window, pairing only the first eligible stop event with each
  * start event.
  *
- * \ingroup processors-timing
+ * \ingroup processors-pairing
  *
  * All events are passed through.
  *
- * Just before a \ref detection_event whose channel is one of the stop channels
- * (a stop event) is passed through, a \ref detection_pair_event is emitted,
- * pairing the stop event with every preceding \ref detection_event on the
- * start channel that is within \e time_window of the stop event and more
- * recent than the previous stop event on the same channel.
- *
- * \see pair_all
- * \see pair_all_between
- * \see pair_one_between
+ * Just before a `tcspc::detection_event` whose channel is one of the stop
+ * channels (a stop event) is passed through, a `tcspc::detection_pair_event`
+ * is emitted, pairing the stop event with every preceding
+ * `tcspc::detection_event` on the start channel that is within \p time_window
+ * of the stop event and more recent than the previous stop event on the same
+ * channel.
  *
  * \tparam NStopChannels number of stop channels
  *
- * \tparam DataTraits traits type specifying \c abstime_type and \c
- * channel_type
+ * \tparam DataTraits traits type specifying `abstime_type` and `channel_type`
  *
- * \tparam Downstream downstream processor type
+ * \tparam Downstream downstream processor type (usually deduced)
  *
  * \param start_channel the start channel number
  *
@@ -399,6 +400,15 @@ auto pair_all(
  * detection events
  *
  * \param downstream downstream processor
+ *
+ * \return processor
+ *
+ * \par Events handled
+ * - `tcspc::detection_event<DT>`: emit  (as
+ *   `tcspc::detection_pair_event<DataTraits>`) any pairs where the current
+ *   event serves as the stop event; pass through
+ * - All other types: pass through with no action
+ * - Flush: pass through with no action
  */
 template <std::size_t NStopChannels, typename DataTraits = default_data_traits,
           typename Downstream>
@@ -416,25 +426,21 @@ auto pair_one(
  * within a time window, pairing only the last eligible start event with each
  * stop event.
  *
- * \ingroup processors-timing
+ * \ingroup processors-pairing
  *
  * All events are passed through.
  *
- * Just before a \ref detection_event whose channel is one of the stop channels
- * (a stop event) is passed through, a \ref detection_pair_event is emitted,
- * pairing the stop event with the most recent \ref detection_event on the
- * start channel, if there is one within \e time_window of the stop event.
- *
- * \see pair_all
- * \see pair_one
- * \see pair_one_between
+ * Just before a `tcspc::detection_event` whose channel is one of the stop
+ * channels (a stop event) is passed through, a `tcspc::detection_pair_event`
+ * is emitted, pairing the stop event with the most recent
+ * `tcspc::detection_event` on the start channel, if there is one within \p
+ * time_window of the stop event.
  *
  * \tparam NStopChannels number of stop channels
  *
- * \tparam DataTraits traits type specifying \c abstime_type and \c
- * channel_type
+ * \tparam DataTraits traits type specifying `abstime_type` and `channel_type`
  *
- * \tparam Downstream downstream processor type
+ * \tparam Downstream downstream processor type (usually deduced)
  *
  * \param start_channel the start channel number
  *
@@ -444,6 +450,15 @@ auto pair_one(
  * detection events
  *
  * \param downstream downstream processor
+ *
+ * \return processor
+ *
+ * \par Events handled
+ * - `tcspc::detection_event<DT>`: emit (as
+ *   `tcspc::detection_pair_event<DataTraits>`), if any, the pair where the
+ *   current event serves as the stop event; pass through
+ * - All other types: pass through with no action
+ * - Flush: pass through with no action
  */
 template <std::size_t NStopChannels, typename DataTraits = default_data_traits,
           typename Downstream>
@@ -461,26 +476,22 @@ auto pair_all_between(
  * within a time window, pairing only a start event with a stop event such that
  * no start events, or stop events on the same channel, occur in between.
  *
- * \ingroup processors-timing
+ * \ingroup processors-pairing
  *
  * All events are passed through.
  *
- * Just before a \ref detection_event whose channel is one of the stop channels
- * (a stop event) is passed through, a \ref detection_pair_event is emitted,
- * pairing the stop event with the most recent \ref detection_event on the
- * start channel, if there is one within \e time_window of the stop event and
- * more recent than the previous stop event on the same channel.
- *
- * \see pair_all
- * \see pair_one
- * \see pair_all_between
+ * Just before a `tcspc::detection_event` whose channel is one of the stop
+ * channels (a stop event) is passed through, a `tcspc::detection_pair_event`
+ * is emitted, pairing the stop event with the most recent
+ * `tcspc::detection_event` on the start channel, if there is one within \p
+ * time_window of the stop event and more recent than the previous stop event
+ * on the same channel.
  *
  * \tparam NStopChannels number of stop channels
  *
- * \tparam DataTraits traits type specifying \c abstime_type and \c
- * channel_type
+ * \tparam DataTraits traits type specifying `abstime_type` and `channel_type`
  *
- * \tparam Downstream downstream processor type
+ * \tparam Downstream downstream processor type (usually deduced)
  *
  * \param start_channel the start channel number
  *
@@ -490,6 +501,15 @@ auto pair_all_between(
  * detection events
  *
  * \param downstream downstream processor
+ *
+ * \return processor
+ *
+ * \par Events handled
+ * - `tcspc::detection_event<DT>`: emit (as
+ *   `tcspc::detection_pair_event<DataTraits>`), if any, the pair where the
+ *   current event serves as the stop event; pass through
+ * - All other types: pass through with no action
+ * - Flush: pass through with no action
  */
 template <std::size_t NStopChannels, typename DataTraits = default_data_traits,
           typename Downstream>

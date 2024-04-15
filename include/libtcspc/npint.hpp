@@ -22,7 +22,9 @@ namespace tcspc {
  *
  * Objects of this type behave similarly to the underlying integer type, except
  * that no integer promotion is applied automatically and no implicit
- * conversion is performed to or from any other type (including boolean).
+ * conversion is performed to or from any other type (including `bool`).
+ *
+ * Specializations `std::numeric_limits<tcspc::npint<T>>` are provided.
  *
  * \tparam T underlying (scalar) integer type
  */
@@ -37,10 +39,10 @@ class npint {
     // Rule of zero
 
     /**
-     * \brief Default constructor.
+     * \brief Construct an uninitialized value.
      *
      * Note that the value is not zero-initialized, as with regular integer
-     * types (this is necessary for \c npint to be a trivial type). Brace
+     * types (this is necessary for `npint` to be a trivial type). Brace
      * initialization can be used to zero initialize.
      */
     constexpr npint() noexcept = default;
@@ -53,7 +55,7 @@ class npint {
     explicit constexpr npint(T value) noexcept : v(value) {}
 
     /**
-     * \brief Explicit conversion operator to the underlying integer type.
+     * \brief Explicitly convert to the underlying integer type.
      */
     explicit constexpr operator T() const noexcept { return v; }
 
@@ -65,12 +67,12 @@ class npint {
     [[nodiscard]] constexpr auto value() const noexcept -> T { return v; }
 
     /**
-     * \brief Construct from an \c npint with a different underlying integer
-     * type.
+     * \brief Explicitly convert from an `npint` with a different underlying
+     * integer type.
      *
      * Conversions that would both widen the integer and change the signedness
-     * are prohibited, because they would make it ambiguous whether a signed or
-     * unsigned extension is desired.
+     * are prohibited (will not compile), because they would make it ambiguous
+     * whether a signed or unsigned extension is desired.
      *
      * \tparam U underlying integer type of source
      *
@@ -367,53 +369,46 @@ using i32np = npint<i32>;
 using i64np = npint<i64>;
 
 /**
- * \brief User-defined literals for \ref npint.
+ * \brief User-defined literals for `tcspc::npint`.
+ *
+ * \ingroup integers
  */
 namespace literals {
 
 /**
- * \brief User defined literal for \ref u8np.
- *
- * \ingroup integers
+ * \brief User defined literal for `tcspc::u8np`.
  */
 constexpr auto operator""_u8np(unsigned long long v) -> u8np {
     return u8np(u8(v));
 }
 
 /**
- * \brief User defined literal for \ref u16np.
- *
- * \ingroup integers
+ * \brief User defined literal for `tcspc::u16np`.
  */
 constexpr auto operator""_u16np(unsigned long long v) -> u16np {
     return u16np(u16(v));
 }
 
 /**
- * \brief User defined literal for \ref u32np.
- *
- * \ingroup integers
+ * \brief User defined literal for `tcspc::u32np`.
  */
 constexpr auto operator""_u32np(unsigned long long v) -> u32np {
     return u32np(u32(v));
 }
 
 /**
- * \brief User defined literal for \ref u64np.
- *
- * \ingroup integers
+ * \brief User defined literal for `tcspc::u64np`.
  */
 constexpr auto operator""_u64np(unsigned long long v) -> u64np {
     return u64np(v);
 }
 
 /**
- * \brief User defined literal for \ref i8np.
+ * \brief User defined literal for `tcspc::i8np`.
  *
- * \ingroup integers
- *
- * The minimum value cannot be represented with this, because the positive
- * value of equal magnitude is out of range.
+ * \note The minimum value cannot be represented as `-128_i8np`, because
+ * `128_i8np` would be out of range. Use
+ * `std::numeric_limits<tcspc::i8np>::min()`.
  */
 constexpr auto operator""_i8np(unsigned long long v) -> i8np {
     return v <= u8(std::numeric_limits<i8>::max()) ? i8np(static_cast<i8>(v))
@@ -421,12 +416,11 @@ constexpr auto operator""_i8np(unsigned long long v) -> i8np {
 }
 
 /**
- * \brief User defined literal for \ref i16np.
+ * \brief User defined literal for `tcspc::i16np`.
  *
- * \ingroup integers
- *
- * The minimum value cannot be represented with this, because the positive
- * value of equal magnitude is out of range.
+ * \note The minimum value cannot be represented as `-32'768_i16np`, because
+ * `32'768_i16np` would be out of range. Use
+ * `std::numeric_limits<tcspc::i16np>::min()`.
  */
 constexpr auto operator""_i16np(unsigned long long v) -> i16np {
     return v <= u16(std::numeric_limits<i16>::max())
@@ -435,12 +429,11 @@ constexpr auto operator""_i16np(unsigned long long v) -> i16np {
 }
 
 /**
- * \brief User defined literal for \ref i32np.
+ * \brief User defined literal for `tcspc::i32np`.
  *
- * \ingroup integers
- *
- * The minimum value cannot be represented with this, because the positive
- * value of equal magnitude is out of range.
+ * \note The minimum value cannot be represented as `-2'147'483'648_i32np`,
+ * because `2'147'483'648_i32np` would be out of range. Use
+ * `std::numeric_limits<tcspc::i32np>::min()`.
  */
 constexpr auto operator""_i32np(unsigned long long v) -> i32np {
     return v <= u32(std::numeric_limits<i32>::max())
@@ -449,12 +442,12 @@ constexpr auto operator""_i32np(unsigned long long v) -> i32np {
 }
 
 /**
- * \brief User defined literal for \ref i64np.
+ * \brief User defined literal for `tcspc::i64np`.
  *
- * \ingroup integers
- *
- * The minimum value cannot be represented with this, because the positive
- * value of equal magnitude is out of range.
+ * \note The minimum value cannot be represented as
+ * `-9'223'372'036'854'775'808_i64np`, because
+ * `9'223'372'036'854'775'808_i64np` would be out of range. Use
+ * `std::numeric_limits<tcspc::i64np>::min()`.
  */
 constexpr auto operator""_i64np(unsigned long long v) -> i64np {
     return v <= u64(std::numeric_limits<i64>::max())

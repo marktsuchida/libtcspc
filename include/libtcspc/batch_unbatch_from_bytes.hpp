@@ -35,9 +35,9 @@ template <typename Event, typename Downstream> class batch_from_bytes {
 
   public:
     explicit batch_from_bytes(
-        std::shared_ptr<bucket_source<Event>> bucket_source,
+        std::shared_ptr<bucket_source<Event>> buffer_provider,
         Downstream &&downstream)
-        : bsource(std::move(bucket_source)),
+        : bsource(std::move(buffer_provider)),
           downstream(std::move(downstream)) {}
 
     [[nodiscard]] auto introspect_node() const -> processor_info {
@@ -166,50 +166,59 @@ template <typename Event, typename Downstream> class unbatch_from_bytes {
  * \brief Create a processor that converts batches of bytes into batches of
  * events.
  *
- * \ingroup processors-basic
+ * \ingroup processors-binary
  *
- * Copies incoming events (which must be a vector or span of `std::byte`) into
- * buckets holding type \c Event, provided by the given \c bucket_source.
+ * Copies incoming events (which must be a span, vector, or bucket of
+ * `std::byte`) into `tcspc::bucket<Event>`, provided by the given \p
+ * buffer_provider.
  *
- * Any input bytes that do not make up a whole \c Event are stored and combined
+ * Any input bytes that do not make up a whole \p Event are stored and combined
  * with subsequent input.
  *
  * The output bucket size is variable and contains as many events as can be
  * constructed from the buffered bytes and the input event.
  *
- * \see unbatch_from_bytes
+ * \see `tcspc::unbatch_from_bytes()`
  *
  * \tparam Event the event type (must be a trivial type)
  *
  * \tparam Downstream downstream processor type
  *
- * \param bucket_source bucket source providing event buckets
+ * \param buffer_provider bucket source providing event buckets
  *
  * \param downstream downstream processor
  *
- * \return batch-from-bytes processor
+ * \return processor
+ *
+ * \par Events handled
+ * - Contiguous container or span of `std::byte` or `std::byte const`: copy up
+ *   to object boundary to `tcspc::bucket<Event>` and emit as batch
+ * - Flush: throw `std::runtime_error` if bytes fewer than `sizeof(Event)` are
+ *   left over; pass through
+ *
  */
 template <typename Event, typename Downstream>
-auto batch_from_bytes(std::shared_ptr<bucket_source<Event>> bucket_source,
+auto batch_from_bytes(std::shared_ptr<bucket_source<Event>> buffer_provider,
                       Downstream &&downstream) {
     return internal::batch_from_bytes<Event, Downstream>(
-        std::move(bucket_source), std::forward<Downstream>(downstream));
+        std::move(buffer_provider), std::forward<Downstream>(downstream));
 }
 
 /**
  * \brief Create a processor that converts batches of bytes into individual
  * events.
  *
- * \ingroup processors-basic
+ * \ingroup processors-binary
  *
- * The incoming bytes are interpreted as a contiguous stream of \c Event
- * objects, and emitted individually. The emitted events are aligned to \c
- * alignof(Event) even if the input data is not aligned.
+ * The incoming bytes are interpreted as a contiguous stream of \p Event
+ * objects, and emitted individually. The emitted events are aligned to
+ * `alignof(Event)` even if the input data is not aligned (by copying if
+ * necessary).
  *
- * Any input bytes that do not make up a whole \c Event are stored and combined
+ * Any input bytes that do not make up a whole \p Event are stored and combined
  * with subsequent input.
  *
- * \see batch_from_bytes
+ * \see `tcspc::batch_from_bytes()`
  *
  * \tparam Event the event type (must be a trivial type)
  *
@@ -217,7 +226,13 @@ auto batch_from_bytes(std::shared_ptr<bucket_source<Event>> bucket_source,
  *
  * \param downstream downstream processor
  *
- * \return unbatch-from-events processor
+ * \return processor
+ *
+ * \par Events handled
+ * - Contiguous container or span of `std::byte` or `std::byte const`:
+ *   collect bytes into `Event` objects and emit
+ * - Flush: throw `std::runtime_error` if bytes fewer than `sizeof(Event)` are
+ *   left over; pass through
  */
 template <typename Event, typename Downstream>
 auto unbatch_from_bytes(Downstream &&downstream) {

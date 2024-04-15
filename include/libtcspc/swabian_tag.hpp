@@ -37,12 +37,13 @@ namespace tcspc {
 // at run time.
 
 /**
- * \brief Binary record interpretation for 16-byte Swabian 'Tag'.
+ * \brief Binary record interpretation for 16-byte Swabian time tag.
  *
- * \ingroup events-device
+ * \ingroup events-swabian
  *
- * This has the same size and memory layout as the 'Tag' struct in the Swabian
- * Time Tagger C++ API.
+ * This has the same size and memory layout as the `Tag` struct in the Swabian
+ * Time Tagger C++ API, which is also the format used by the Python API
+ * `CustomMeasurement` class.
  */
 struct swabian_tag_event {
     /**
@@ -272,16 +273,25 @@ template <typename DataTraits, typename Downstream> class decode_swabian_tags {
 /**
  * \brief Create a processor that decodes Swabian Tag events.
  *
- * \ingroup processors-decode
+ * \ingroup processors-swabian
  *
- * \tparam DataTraits traits type specifying \c abstime_type and \c
- * channel_type for the emitted events
+ * \tparam DataTraits traits type specifying `abstime_type` and `channel_type`
+ * for the emitted events
  *
  * \tparam Downstream downstream processor type
  *
- * \param downstream downstream processor (moved out)
+ * \param downstream downstream processor
  *
- * \return decode-swabian-tags processor
+ * \return processor
+ *
+ * \par Events handled
+ * - `tcspc::swabian_tag_event`: decode and emit one of
+ *   `tcspc::detection_event<DataTraits>`,
+ *   `tcspc::begin_lost_interval_event<DataTraits>`,
+ *   `tcspc::end_lost_interval_event<DataTraits>`,
+ *   `tcspc::untagged_counts_event<DataTraits>`, `warning_event` (warning in
+ *   the case of an error tag or unknown tag)
+ * - Flush: passed through with no action
  */
 template <typename DataTraits = default_data_traits, typename Downstream>
 auto decode_swabian_tags(Downstream &&downstream) {

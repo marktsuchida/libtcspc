@@ -22,11 +22,10 @@ namespace tcspc {
 /**
  * \brief Metafunction to check whether a processor handles flushing.
  *
- * Determines whether the processor \p Proc handles \c flush() (which all
- * non-source processors should) and provides the result in the \c bool member
- * \c value.
+ * Determines whether the processor \p Proc handles `flush()` (which all
+ * processors should) and provides the result in the `bool` member `value`.
  *
- * \see handles_flush_v
+ * \see `tcspc::handles_flush_v`
  */
 template <typename Proc, typename = void>
 struct handles_flush : std::false_type {};
@@ -40,7 +39,7 @@ struct handles_flush<Proc, std::void_t<decltype(std::declval<Proc>().flush())>>
 /** \endcond */
 
 /**
- * \brief Helper variable template for \c handles_flush.
+ * \brief Helper variable template for `tcspc::handles_flush`.
  */
 template <typename Proc>
 inline constexpr bool handles_flush_v = handles_flush<Proc>::value;
@@ -58,9 +57,9 @@ inline constexpr bool handles_flush_v = handles_flush<Proc>::value;
  * \brief Metafunction to check whether a processor handles an event type.
  *
  * Determines whether the processor \p Proc handles the event type \p Event and
- * provides the result in the \c bool member \c value.
+ * provides the result in the `bool` member `value`.
  *
- * \see handles_event_v
+ * \see `tcspc::handles_event_v`
  */
 template <typename Proc, typename Event, typename = void>
 struct handles_event : std::false_type {};
@@ -77,7 +76,7 @@ struct handles_event<Proc, Event,
 /** \endcond */
 
 /**
- * \brief Helper variable template for \c handles_event.
+ * \brief Helper variable template for `tcspc::handles_event`.
  */
 template <typename Proc, typename Event>
 inline constexpr bool handles_event_v = handles_event<Proc, Event>::value;
@@ -96,10 +95,10 @@ inline constexpr bool handles_event_v = handles_event<Proc, Event>::value;
  * types.
  *
  * Determines whether the processor \p Proc handles all of the event types in
- * the \c type_list specialization \p EventList and provides the result in the
- * \c bool member \c value.
+ * the `tcspc::type_list` specialization \p EventList and provides the result
+ * in the `bool` member `value`.
  *
- * \see handles_events_v
+ * \see `tcspc::handles_events_v`
  */
 template <typename Proc, typename EventList> struct handles_events;
 
@@ -112,7 +111,7 @@ struct handles_events<Proc, type_list<Events...>>
 /** \endcond */
 
 /**
- * \brief Helper variable template for \c handles_events.
+ * \brief Helper variable template for `tcspc::handles_events`.
  */
 template <typename Proc, typename EventList>
 inline constexpr bool handles_events_v =

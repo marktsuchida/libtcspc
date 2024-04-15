@@ -39,7 +39,7 @@ namespace tcspc {
 /**
  * \brief Binary record interpretation for PicoHarp 300 T3 Format.
  *
- * \ingroup events-device
+ * \ingroup events-pq
  *
  * RecType 0x00010303.
  */
@@ -120,7 +120,7 @@ struct pqt3_picoharp300_event {
     /**
      * \brief Make an event representing a non-special (photon) event.
      *
-     * \param nsync the nsync count; 0 to 65535
+     * \param nsync the nsync count; 0 to 65,535
      *
      * \param channel the channel; 0 to 14
      *
@@ -148,7 +148,7 @@ struct pqt3_picoharp300_event {
     /**
      * \brief Make an event representing an external marker.
      *
-     * \param nsync the nsync count; 0 to 65535
+     * \param nsync the nsync count; 0 to 65,535
      *
      * \param marker_bits the marker bitmask; 1 to 15 (0 is forbidden)
      *
@@ -204,10 +204,10 @@ struct pqt3_picoharp300_event {
  * \brief Implementation for binary record interpretation for HydraHarp,
  * MultiHarp, TimeHarp 260, and PicoHarp 330 T3 format.
  *
- * \ingroup events-device
+ * \ingroup events-pq
  *
  * This class is documented to show the available member functions. User code
- * should use \ref pqt3_hydraharpv1_event or \ref pqt3_generic_event.
+ * should use `tcspc::pqt3_hydraharpv1_event` or `tcspc::pqt3_generic_event`.
  *
  * \tparam IsNSyncOverflowAlwaysSingle if true, interpret as HydraHarp V1
  * (RecType 0x00010304) format, in which nsync overflow records always indicate
@@ -386,7 +386,7 @@ template <bool IsNSyncOverflowAlwaysSingle> struct basic_pqt3_event {
 /**
  * \brief Binary record interpretation for HydraHarp V1 T3 format.
  *
- * \ingroup events-device
+ * \ingroup events-pq
  *
  * RecType 0x00010304.
  */
@@ -396,7 +396,7 @@ using pqt3_hydraharpv1_event = basic_pqt3_event<true>;
  * \brief Binary record interpretation for HydraHarp V2, MultiHarp,
  * TimeHarp 260, and PicoHarp 330 "Generic" T3 format.
  *
- * \ingroup events-device
+ * \ingroup events-pq
  *
  * RecType 0x01010304, 0x00010305, 0x00010306, 0x00010307.
  */
@@ -462,16 +462,24 @@ class decode_pqt3 {
 /**
  * \brief Create a processor that decodes PicoQuant PicoHarp 300 T3 events.
  *
- * \ingroup processors-decode
+ * \ingroup processors-pq
  *
- * \tparam DataTraits traits type specifying \c abstime_type, \c channel_type,
- * and \c difftime_type for the emitted events
+ * \tparam DataTraits traits type specifying `abstime_type`, `channel_type`,
+ * and `difftime_type` for the emitted events
  *
  * \tparam Downstream downstream processor type
  *
  * \param downstream downstream processor
  *
- * \return decode-pqt3-picoharp300 processor
+ * \return processor
+ *
+ * \par Events handled
+ * - `tcspc::pqt3_picoharp300_event`: decode and emit one or more of
+ *   `tcspc::time_reached_event<DataTraits>`,
+ *   `tcspc::time_correlated_detection_event<DataTraits>`,
+ *   `tcspc::marker_event<DataTraits>`, `tcspc::warning_event` (warning in the
+ *   case of an invalid event)
+ * - Flush: pass through with no action
  */
 template <typename DataTraits = default_data_traits, typename Downstream>
 auto decode_pqt3_picoharp300(Downstream &&downstream) {
@@ -483,16 +491,24 @@ auto decode_pqt3_picoharp300(Downstream &&downstream) {
 /**
  * \brief Create a processor that decodes PicoQuant HydraHarp V1 T3 events.
  *
- * \ingroup processors-decode
+ * \ingroup processors-pq
  *
- * \tparam DataTraits traits type specifying \c abstime_type, \c channel_type,
- * and \c difftime_type for the emitted events
+ * \tparam DataTraits traits type specifying `abstime_type`, `channel_type`,
+ * and `difftime_type` for the emitted events
  *
  * \tparam Downstream downstream processor type
  *
  * \param downstream downstream processor
  *
- * \return decode-pqt3-hydraharpv1 processor
+ * \return processor
+ *
+ * \par Events handled
+ * - `tcspc::pqt3_hydraharpv1_event`: decode and emit one or more of
+ *   `tcspc::time_reached_event<DataTraits>`,
+ *   `tcspc::time_correlated_detection_event<DataTraits>`,
+ *   `tcspc::marker_event<DataTraits>`, `tcspc::warning_event` (warning in the
+ *   case of an invalid event)
+ * - Flush: pass through with no action
  */
 template <typename DataTraits = default_data_traits, typename Downstream>
 auto decode_pqt3_hydraharpv1(Downstream &&downstream) {
@@ -505,16 +521,24 @@ auto decode_pqt3_hydraharpv1(Downstream &&downstream) {
  * \brief Create a processor that decodes PicoQuant HydraHarp V2, MultiHarp,
  * TimeHarp 260, and PicoHarp 330 "Generic" T3 events.
  *
- * \ingroup processors-decode
+ * \ingroup processors-pq
  *
- * \tparam DataTraits traits type specifying \c abstime_type, \c channel_type,
- * and \c difftime_type for the emitted events
+ * \tparam DataTraits traits type specifying `abstime_type`, `channel_type`,
+ * and `difftime_type` for the emitted events
  *
  * \tparam Downstream downstream processor type
  *
  * \param downstream downstream processor
  *
- * \return decode-pqt3-generic processor
+ * \return processor
+ *
+ * \par Events handled
+ * - `tcspc::pqt3_generic_event`: decode and emit one or more of
+ *   `tcspc::time_reached_event<DataTraits>`,
+ *   `tcspc::time_correlated_detection_event<DataTraits>`,
+ *   `tcspc::marker_event<DataTraits>`, `tcspc::warning_event` (warning in the
+ *   case of an invalid event)
+ * - Flush: pass through with no action
  */
 template <typename DataTraits = default_data_traits, typename Downstream>
 auto decode_pqt3_generic(Downstream &&downstream) {

@@ -91,58 +91,70 @@ class count_up_to {
  *
  * \ingroup processors-timing
  *
- * All events (including \c TickEvent and \c ResetEvent) are passed through.
+ * All events (including \p TickEvent and \p ResetEvent) are passed through.
  *
- * \c TickEvent and \c FireEvent must have an abstime field. \c FireEvent must
- * be brace-initializable with abstime (as in \c FireEvent{123} ).
+ * \p TickEvent and \p FireEvent must have an `abstime` field. \p FireEvent
+ * must be brace-initializable with abstime (as in `FireEvent{123}`).
  *
- * The count is incremented when a \c TickEvent is passed through. Just before
- * or after the \c TickEvent is emitted (depending on whether \c FireAfterTick
- * is false or true), the count is compared to the \e threshold and if equal,
- * \c FireEvent is emitted. The abstime of the \c FireEvent is set equal to
- * the \c TickEvent that triggered it.
+ * The internal counter starts at \p initial_count and is incremented when a \p
+ * TickEvent is passed through. Just before or after the \p TickEvent is
+ * emitted (depending on whether \p FireAfterTick is false or true), the count
+ * is compared to the \p threshold and if equal, \p FireEvent is emitted. The
+ * abstime of the \p FireEvent is set equal to the \p TickEvent that triggered
+ * it.
  *
  * After incrementing the count and processing the threshold, if the count
- * equals \e limit, then the count is reset to \e initial_count. Automatic
- * resetting can be effectively disabled by setting \e limit to \c
- * std::uint64_t{-1} .
+ * equals \p limit, then the count is reset to \p initial_count. Automatic
+ * resetting can be effectively disabled by setting \p limit to
+ * `std::numeric_limits<std::uint64_t>::max()`.
  *
- * The \e limit must be greater than \e initial_count. When \c FireAfterTick is
- * false, \e threshold should be greater than or equal to \e initial_count and
- * less than \e limit; otherwise \c FireEvent is never emitted. When \c
- * FireAfterTick is true, \e threshold should be greater than \e initial_count
- * and less than or equal to \e limit; otherwise \c FireEvent is never emitted.
+ * The \p limit must be greater than \p initial_count. When \p FireAfterTick is
+ * false, \p threshold should be greater than or equal to \p initial_count and
+ * less than \p limit; otherwise \p FireEvent is never emitted. When \p
+ * FireAfterTick is true, \p threshold should be greater than \p initial_count
+ * and less than or equal to \p limit; otherwise \p FireEvent is never emitted.
  *
- * When a \c ResetEvent is received (and passed through), the count is reset to
- * \e initial_count. No \c FireEvent is emitted on reset, but if \c
- * FireAfterTick is false and \e threshold is set equal to \e initial_count,
- * then a \c FireEvent is emitted on the next \c TickEvent received.
+ * When a \p ResetEvent is received (and passed through), the count is reset to
+ * \p initial_count. No \p FireEvent is emitted on reset, but if \p
+ * FireAfterTick is false and \p threshold is set equal to \p initial_count,
+ * then a \p FireEvent is emitted on the next \p TickEvent received.
  *
- * \see count_down_to
+ * \remark Applications of this processor include converting fast raster clocks
+ * (e.g., pixel clock) to slower ones (e.g., line clock) or detecting when a
+ * desired number of detection events have been accumulated.
+ *
+ * \see `tcspc::count_down_to()`
  *
  * \tparam TickEvent the event type to count
  *
- * \tparam FireEvent the event type to emit when the count reaches \e threshold
+ * \tparam FireEvent the event type to emit when the count reaches \p threshold
  *
- * \tparam ResetEvent an event type that causes the count to be reset to \e
+ * \tparam ResetEvent an event type that causes the count to be reset to \p
  * initial_count
  *
- * \tparam FireAfterTick whether to emit \c FireEvent after passing through \c
+ * \tparam FireAfterTick whether to emit \p FireEvent after passing through \p
  * TickEvent, rather than before
  *
  * \tparam Downstream downstream processor type
  *
- * \param threshold the count value at which to emit \c FireEvent
+ * \param threshold the count value at which to emit \p FireEvent
  *
- * \param limit the count value at which to reset to \e initial_count; must be
- * greater than \e initial_count
+ * \param limit the count value at which to reset to \p initial_count; must be
+ * greater than \p initial_count
  *
  * \param initial_count the value at which the count starts and to which it is
  * reset
  *
  * \param downstream downstream processor
  *
- * \return count-event processor
+ * \return processor
+ *
+ * \par Events handled
+ * - `TickEvent`: increment counter; pass through; before or after doing so,
+ *   emit `FireEvent` if at threshold; if at limit reset counter
+ * - `ResetEvent`: reset counter; pass through
+ * - All other types: pass through with no action
+ * - Flush: pass through with no action
  */
 template <typename TickEvent, typename FireEvent, typename ResetEvent,
           bool FireAfterTick, typename Downstream>
@@ -156,14 +168,15 @@ auto count_up_to(arg_threshold<std::uint64_t> threshold,
 }
 
 /**
- * \brief Like \ref count_up_to, but decrement the count on each tick event.
+ * \brief Like `tcspc::count_up_to()`, but decrement the count on each tick
+ * event.
  *
  * \ingroup processors-timing
  *
- * All behavior is symmetric to \c count_up_to. \e limit must be less than \e
- * initial_count.
+ * All behavior is symmetric to `tcspc::count_up_to()`. \p limit must be less
+ * than \p initial_count.
  *
- * \see count_up_to
+ * \see `tcspc::count_up_to()`
  */
 template <typename TickEvent, typename FireEvent, typename ResetEvent,
           bool FireAfterTick, typename Downstream>
@@ -192,17 +205,15 @@ auto count_down_to(arg_threshold<std::uint64_t> threshold,
 }
 
 /**
- * \brief Access for count processor data.
+ * \brief Access for `tcspc::count()` processor data.
  *
- * \ingroup processors-basic
- *
- * \see count
+ * \ingroup processor-access
  */
 class count_access {
     std::function<std::uint64_t()> count_fn;
 
   public:
-    /** \brief Constructor; not for client use. */
+    /** \private. */
     template <typename Func>
     explicit count_access(Func count_func) : count_fn(count_func) {}
 
@@ -258,27 +269,32 @@ template <typename Event, typename Downstream> class count {
 } // namespace internal
 
 /**
- * \brief Create a processor that counts events.
+ * \brief Create a processor that counts events of a given type.
  *
- * \ingroup processors-basic
+ * \ingroup processors-stats
  *
- * The count can be retrieved using a \c processor_context.
+ * The count can be retrieved through a `tcspc::count_access` retrieved from
+ * the `tcspc::processor_context` from which \p tracker was obtained.
  *
- * Note that the count is incremented \e before the events of type \c Event are
+ * Note that the count is incremented \e before the events of type \p Event are
  * sent to the downstream processor. This means that the event will be counted
- * even if it results in an error or end-of-stream in a downstream processor.
- *
- * All other events are passed through without counting.
- *
- * \see count_access
+ * even if it subsequently results in an error or end-of-stream in a downstream
+ * processor.
  *
  * \tparam Event type of event to count
  *
- * \tparam Downstream downstream processor type
+ * \tparam Downstream downstream processor type (usually deduced)
  *
  * \param tracker processor tracker for later access of the count result
  *
  * \param downstream downstream processor
+ *
+ * \return processor
+ *
+ * \par Events handled
+ * - `Event`: increment the count; pass through
+ * - All other types: pass through with no action
+ * - Flush: pass through with no action
  */
 template <typename Event, typename Downstream>
 auto count(processor_tracker<count_access> &&tracker,

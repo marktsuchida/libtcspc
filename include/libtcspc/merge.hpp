@@ -196,9 +196,9 @@ class merge_input {
 } // namespace internal
 
 /**
- * \brief Create a processor that merges two event streams.
+ * \brief Create a pair of processors that merge two event streams.
  *
- * \ingroup processors-basic
+ * \ingroup processors-merging
  *
  * The merged stream will be produced in non-decreasing abstime order, provided
  * that the two input streams have events in non-decreasing abstime order.
@@ -207,26 +207,32 @@ class merge_input {
  * on input 0 are emitted before those received on input 1.
  *
  * If one input falls far behind the other input (in terms of abstime), an
- * unidesirably large number of events may be buffered (undesirable either in
- * terms of timely update of downstream or in terms of excessive memory use).
- * The only way to prevent such a situation is to ensure that both inputs carry
- * events at some minimal frequency, for example by injecting \c
- * time_reached_event.
+ * undesirably large number of events may need to be buffered (undesirable
+ * either in terms of timely update of downstream or in terms of excessive
+ * memory use). The only way to prevent such a situation is to ensure that both
+ * inputs carry events at some minimal frequency, for example by injecting
+ * `tcspc::time_reached_event` (see `tcspc::regulate_time_reached()`).
  *
- * \see merge_n
+ * \see `tcspc::merge_n()`
  *
  * \tparam EventList the event set handled by the merge processor
  *
- * \tparam DataTraits traits type specifying \c abstime_type
+ * \tparam DataTraits traits type specifying `abstime_type`
  *
- * \tparam Downstream downstream processor type
+ * \tparam Downstream downstream processor type (usually deduced)
  *
  * \param max_buffered maximum capacity for buffered events (beyond which an
  * error is thrown)
  *
  * \param downstream downstream processor
  *
- * \return tuple-like of two processors serving as the input to merge
+ * \return tuple-like of two input processors (0 and 1)
+ *
+ * \par Events handled
+ * - Types in `EventList`: pass through with buffering to ensure non-decreasing
+ *   abstime order
+ * - Flush: pass through a single flush after both inputs flushed, after
+ *   emitting any buffered events.
  */
 template <typename EventList, typename DataTraits = default_data_traits,
           typename Downstream>
@@ -242,7 +248,7 @@ auto merge(std::size_t max_buffered, Downstream &&downstream) {
 /**
  * \brief Create a processor that merges a given number of event streams.
  *
- * \ingroup processors-basic
+ * \ingroup processors-merging
  *
  * The merged stream will be produced in non-decreasing abstime order, provided
  * that all input streams have events in non-decreasing abstime order.
@@ -250,8 +256,8 @@ auto merge(std::size_t max_buffered, Downstream &&downstream) {
  * This is useful when merging a (compile-time) variable number of similar
  * streams. If the streams to be merged are dissimilar (have different pairwise
  * time shift and especially event frequency), it may be more efficient to
- * manually build a tree using the 2-way \ref merge such that the streams with
- * less frequent events are merged together first.
+ * manually build a tree using the 2-way `tcspc::merge()` such that the streams
+ * with less frequent events are merged together first.
  *
  * This processor does not guarantee any particular ordering for events of
  * equal abstime.
@@ -260,10 +266,11 @@ auto merge(std::size_t max_buffered, Downstream &&downstream) {
  * unidesirably large number of events may be buffered (undesirable either in
  * terms of timely update of downstream or in terms of excessive memory use).
  * The only way to prevent such a situation is to ensure that all inputs carry
- * events at some minimal frequency, for example by injecting \c
- * time_reached_event.
+ * events at some minimal frequency, for example by injecting
+ * `tcspc::time_reached_event` (see `tcspc::regulate_time_reached()`).
  *
- * \see merge
+ * \see `tcspc::merge()`
+ * \see `tcspc::merge_n_unsorted()`
  *
  * \tparam N number of input streams
  *
@@ -278,7 +285,13 @@ auto merge(std::size_t max_buffered, Downstream &&downstream) {
  *
  * \param downstream downstream processor
  *
- * \return tuple-like of N processors serving as the input to merge
+ * \return tuple-like of \p N input processors
+ *
+ * \par Events handled
+ * - Types in `EventList`: pass through with buffering to ensure non-decreasing
+ *   abstime order
+ * - Flush: pass through a single flush after all inputs flushed, after
+ *   emitting any buffered events.
  */
 template <std::size_t N, typename EventList,
           typename DataTraits = default_data_traits, typename Downstream>
@@ -415,16 +428,15 @@ auto make_merge_unsorted_inputs(
  * \brief Create a processor that merges a given number of event streams
  * without sorting by abstime.
  *
- * \ingroup processors-basic
+ * \ingroup processors-merging
  *
  * The merged stream will handle events in the temporal order they are passed
  * from the upstreams.
  *
  * This is useful when the events on the input streams are known to arrive in
- * the correct order.
+ * the correct order, or when order does not matter for downstream processing.
  *
- * \see merge
- * \see merge_n
+ * \see `tcspc::merge_n()`
  *
  * \tparam N number of input streams
  *
@@ -432,7 +444,11 @@ auto make_merge_unsorted_inputs(
  *
  * \param downstream downstream processor
  *
- * \return std::array of N processors serving as the input to merge
+ * \return std::array of \p N input processors
+ *
+ * \par Events handled
+ * - All types: pass through with no action
+ * - Flush: pass through a single flush once all inputs have been flushed
  */
 template <std::size_t N = 2, typename Downstream>
 auto merge_n_unsorted(Downstream &&downstream) {

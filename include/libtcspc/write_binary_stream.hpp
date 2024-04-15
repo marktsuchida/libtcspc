@@ -31,22 +31,6 @@
 
 namespace tcspc {
 
-/**
- * \addtogroup streams
- *
- * \par Requirements for output streams
- * An output stream must be a movable (usually noncopyable) object with the
- * following member functions:
- * - <tt>auto is_error() noexcept -> bool;</tt>\n
- *   Return true if the stream is not available or the previous write operation
- *   resulted in an error. Not influenced by failure of \c tell().
- * - <tt>auto tell() noexcept -> std::optional<std::uint64_t>;</tt>\n
- *   Return the current stream position if supported by the stream, or \c
- *   std::nullopt.
- * - <tt>void write(tcspc::span<std::byte const> buffer) noexcept;</tt>\n
- *   Write the given bytes to the stream.
- */
-
 namespace internal {
 
 class null_output_stream {
@@ -226,9 +210,7 @@ inline auto binary_cfile_output_stream(std::string const &filename,
 /**
  * \brief Create an output stream that discards all written bytes.
  *
- * \ingroup streams
- *
- * \see write_binary_stream
+ * \ingroup streams-output
  *
  * \return output stream
  */
@@ -237,14 +219,12 @@ inline auto null_output_stream() { return internal::null_output_stream(); }
 /**
  * \brief Create a binary output stream for the given file.
  *
- * \ingroup streams
+ * \ingroup streams-output
  *
- * If both \e truncate and \e append are true, behave as if only \e truncate is
+ * If both \p truncate and \p append are true, behave as if only \p truncate is
  * true. If neither are true, the file must not exist or the stream will be in
  * an error state. If the file cannot be opened, the stream will be in an error
  * state.
- *
- * \see write_binary_stream
  *
  * \param filename the filename
  *
@@ -262,18 +242,16 @@ inline auto binary_file_output_stream(std::string const &filename,
 }
 
 /**
- * \brief Create an abstract output stream from an \c std::ostream instance.
+ * \brief Create an output stream from an `std::ostream` instance.
  *
- * \ingroup streams
+ * \ingroup streams-output
  *
  * The ostream is moved into the returned output stream and destroyed together,
- * so you cannot use this with an ostream that you do not own (such as \c
- * std::cout). For that, see \ref borrowed_cfile_output_stream (which works
- * with \c stdout).
+ * so you cannot use this with an ostream that you do not own (such as
+ * `std::cout`). For that, see `tcspc::borrowed_cfile_output_stream` (which
+ * works with `stdout`).
  *
- * \see write_binary_stream
- *
- * \param stream an ostream (derived from \c std::ostream)
+ * \param stream an ostream (derived from `std::ostream`)
  *
  * \return output stream
  */
@@ -284,20 +262,18 @@ inline auto ostream_output_stream(OStream &&stream) {
 }
 
 /**
- * \brief Create an abstract output stream from a C file pointer, taking
- * ownership.
+ * \brief Create an output stream from a C file pointer, taking ownership.
  *
- * \ingroup streams
+ * \ingroup streams-output
  *
- * The stream will use the C stdio functions, such as \c std::fwrite(). The
+ * The stream will use the C stdio functions, such as `std::fwrite()`. The
  * file pointer is closed when the stream is destroyed.
  *
- * The file pointer \e fp should have been opened in binary mode.
+ * The file pointer \p fp should have been opened in binary mode.
  *
- * If \e fp is null, the stream will always be in an error state.
+ * If \p fp is null, the stream will always be in an error state.
  *
- * \see borrowed_cfile_output_stream
- * \see write_binary_stream
+ * \see `tcspc::borrowed_cfile_output_stream`
  *
  * \param fp a file pointer
  *
@@ -308,23 +284,22 @@ inline auto owning_cfile_output_stream(std::FILE *fp) {
 }
 
 /**
- * \brief Create an abstract output stream from a non-owned C file pointer.
+ * \brief Create an output stream from a non-owned C file pointer.
  *
- * \ingroup streams
+ * \ingroup streams-output
  *
- * The stream will use the C stdio functions, such as \c std::fwrite(). The
+ * The stream will use the C stdio functions, such as `std::fwrite()`. The
  * file pointer is not closed when the stream is destroyed. The call is
  * responsible for ensuring that the file pointer will remain valid throughout
  * the lifetime of the returned output stream.
  *
- * The file pointer \e fp should have been opened in binary mode. (If using \c
- * stdout, use \c std::freopen() with a full filename on POSIX or \c _setmode()
- * with \c _O_BINARY on Windows (via \c _fileno()).)
+ * The file pointer \p fp should have been opened in binary mode. (If using
+ * `stdout`, use `std::freopen()` with a full filename on POSIX or `_setmode()`
+ * with `_O_BINARY` on Windows (via `_fileno()`).)
  *
- * If \e fp is null, the stream will always be in an error state.
+ * If \p fp is null, the stream will always be in an error state.
  *
- * \see owning_cfile_output_stream
- * \see write_binary_stream
+ * \see `tcspc::owning_cfile_output_stream`
  *
  * \param fp a file pointer
  *
@@ -350,13 +325,13 @@ template <typename OutputStream> class write_binary_stream {
   public:
     explicit write_binary_stream(
         OutputStream stream,
-        std::shared_ptr<bucket_source<std::byte>> bucket_source,
+        std::shared_ptr<bucket_source<std::byte>> buffer_provider,
         std::size_t write_granularity_bytes)
-        : strm(std::move(stream)), bsource(std::move(bucket_source)),
+        : strm(std::move(stream)), bsource(std::move(buffer_provider)),
           write_granularity(write_granularity_bytes) {
         if (not bsource)
             throw std::invalid_argument(
-                "write_binary_stream bucket_source must not be null");
+                "write_binary_stream buffer_provider must not be null");
         if (write_granularity <= 0)
             throw std::invalid_argument(
                 "write_binary_stream write_granularity_bytes must be positive");
@@ -447,22 +422,23 @@ template <typename OutputStream> class write_binary_stream {
 /**
  * \brief Create a sink that writes bytes to a binary stream, such as a file.
  *
- * \ingroup processors-basic
+ * \ingroup processors-io
  *
- * The stream is either libtcspc's output stream abstraction (see \ref streams)
- * or an iostreams \c std::ostream. In the latter case, it is wrapped using
- * \ref ostream_output_stream. (Use of iostreams is not recommended due to
- * often poor performance.)
+ * The stream is either libtcspc's output stream abstraction (see \ref
+ * streams-output) or an iostreams `std::ostream`. In the latter case, it is
+ * wrapped using `tcspc::ostream_output_stream()`. (Use of iostreams is not
+ * recommended due to usually poor performance.)
  *
- * The processor receives data in the form of \ref span of bytes or another
- * type that can be explicitly converted to `span<std::byte const>`. The bytes
- * are written sequentially and contiguously to the stream.
+ * The processor receives data in the form of `tcspc::bucket<std::byte>` or
+ * another type that can be explicitly converted to `tcspc::span<std::byte
+ * const>` (see `tcspc::view_as_bytes()`). The bytes are written sequentially
+ * and contiguously to the stream.
  *
- * For efficiency, data is written in batches of at least \e
+ * For efficiency, data is written in batches whose size is a multiple of \p
  * write_granularity_bytes (except possibly at the beginning and end of the
  * stream).
  *
- * The \e write_granularity_bytes can be tuned for best performance. If too
+ * The \p write_granularity_bytes can be tuned for best performance. If too
  * small, writes may incur more overhead per byte written; if too large, CPU
  * caches may be polluted (if the event size and write granularity is such that
  * buffering is necessary). It is best to try different powers of 2 and
@@ -470,41 +446,48 @@ template <typename OutputStream> class write_binary_stream {
  *
  * If there is an error (either in this processor or upstream), an incomplete
  * file may be left (if the output stream was a regular file). Application
- * code, if it so desires, should delete this file after closing the file (by
+ * code, if it so desires, should delete this file after closing it (by
  * destroying the processor, if the file lifetime is tied to the output
  * stream).
  *
- * \see read_binary_stream
+ * \see `tcspc::read_binary_stream()`
  *
  * \tparam OutputStream output stream type
  *
- * \param stream the output stream (see \ref streams)
+ * \param stream the output stream (see \ref streams-output)
  *
- * \param bucket_source bucket source providing write buffers; must be able to
- * circulate at least 1 bucket without blocking; may not be used if all events
- * can be written directly
+ * \param buffer_provider bucket source providing write buffers; must be able
+ * to circulate at least 1 bucket without blocking; may not be used if all
+ * events can be written directly
  *
  * \param write_granularity_bytes minimum size, in bytes, to write; all writes
  * (except possible the first and last ones, for alignment) will be a multiple
  * of this value
  *
- * \return write-binary-stream processor
+ * \return processor
+ *
+ * \par Events handled
+ * - `tcspc::bucket<std::byte>`, `tcspc::bucket<std::byte const>` or other
+ *   contiguous container or span of `std::byte const`: write to the output
+ *   stream; throw `std::runtime_error` on stream write error
+ * - Flush: write any buffered bytes to the stream; throw `std::runtime_error`
+ *   on stream write error
  */
 template <typename OutputStream>
 auto write_binary_stream(
     OutputStream &&stream,
-    std::shared_ptr<bucket_source<std::byte>> bucket_source,
+    std::shared_ptr<bucket_source<std::byte>> buffer_provider,
     std::size_t write_granularity_bytes) {
     // Support direct passing of C++ iostreams stream.
     if constexpr (std::is_base_of_v<std::ostream, OutputStream>) {
         auto wrapped =
             ostream_output_stream(std::forward<OutputStream>(stream));
         return internal::write_binary_stream<decltype(wrapped)>(
-            std::move(wrapped), std::move(bucket_source),
+            std::move(wrapped), std::move(buffer_provider),
             write_granularity_bytes);
     } else {
         return internal::write_binary_stream<OutputStream>(
-            std::forward<OutputStream>(stream), std::move(bucket_source),
+            std::forward<OutputStream>(stream), std::move(buffer_provider),
             write_granularity_bytes);
     }
 }

@@ -101,10 +101,11 @@ class histogram {
     }
 
   public:
-    explicit histogram(std::size_t num_bins, bin_type max_per_bin,
-                       std::shared_ptr<bucket_source<bin_type>> bucket_source,
-                       Downstream downstream)
-        : bsource(std::move(bucket_source)),
+    explicit histogram(
+        std::size_t num_bins, bin_type max_per_bin,
+        std::shared_ptr<bucket_source<bin_type>> buffer_provider,
+        Downstream downstream)
+        : bsource(std::move(buffer_provider)),
           shist(hist_bucket, arg_max_per_bin{max_per_bin},
                 arg_num_bins{num_bins}),
           downstream(std::move(downstream)) {
@@ -163,63 +164,82 @@ class histogram {
 } // namespace internal
 
 /**
- * \brief Create a processor that collects a histogram of datapoints.
+ * \brief Create a processor that collects a histogram.
  *
- * \ingroup processors-histogram
+ * \ingroup processors-histogramming
  *
- * Every incoming \c bin_increment_event<BinIndex> causes the matching bin in
- * the histogram to be incremented. On every update, the current histogram is
- * emitted as a \c histogram_event<Bin> event.
+ * The processor builds histograms out of incoming
+ * `tcspc::bin_increment_event`s by incrementing the bin at the `bin_index`
+ * given by the event. The `abstime` of this event is not used and need not be
+ * monotonic. A round of accumulation is ended when a \p ResetEvent is
+ * received, upon which accumulation is restarted with an empty histogram.
  *
- * When a reset occurs (via incoming \c ResetEvent or by overflowing when \c
- * OverflowStrategy is reset_on_overflow), the stored histogram is cleared and
- * restarted.
+ * The histogram is stored in a `tcspc::bucket<DataTraits::bin_type>`. Each
+ * round of accumulation uses (sequentially) a new bucket from the \p
+ * buffer_provider.
  *
- * A \c concluding_histogram_event<Bin> is emitted before each reset and
- * before successful end of stream, containing the same data as the previous \c
- * histogram_event<Bin> (or empty if there was none since the start or last
- * reset).
+ * On every update a `tcspc::histogram_event` is emitted containing a view of
+ * the histogram bucket (whose storage is observable but not extractable). At
+ * the end of each round of accumulation (i.e., upon a reset), a
+ * `tcspc::concluding_histogram_event` is emitted, carrying the histogram
+ * bucket (storage can be extracted).
  *
- * A \c warning_event is emitted if \c OverflowStrategy is \c
- * saturate_on_overflow and a saturation occurred for the first time since the
- * last reset (or start of stream).
+ * \attention Behavior is undefined if an incoming `tcspc::bin_increment_event`
+ * contains a bin index beyond the size of the histogram. The bin mapper should
+ * be chosen so that this does not occur.
  *
- * The input events are not required to be in correct abstime order; the event
- * abstime is not used.
- *
- * Behavior is undefined if an incoming \c bin_increment_event contains a bin
- * index beyond the size of the histogram.
- *
- * \tparam ResetEvent type of event causing histogram to reset
+ * \tparam ResetEvent event type causing histogram to reset
  *
  * \tparam OverflowStrategy strategy tag type to select how to handle bin
  * overflows
  *
- * \tparam DataTraits traits type specifying \c bin_index_type, and \c bin_type
+ * \tparam DataTraits traits type specifying `bin_index_type` and `bin_type`
  *
- * \tparam Downstream downstream processor type
+ * \tparam Downstream downstream processor type (usually deduced)
  *
  * \param num_bins number of bins in the histogram (must match the bin mapper
  * used upstream)
  *
  * \param max_per_bin maximum value allowed in each bin
  *
- * \param bucket_source bucket source providing series of buffers (a new one is
- * used after every reset)
+ * \param buffer_provider bucket source providing series of buffers (a new
+ * bucket is used after every reset)
  *
- * \param downstream downstream processor (moved out)
+ * \param downstream downstream processor
  *
- * \return histogram processor
+ * \return processor
+ *
+ * \par Events handled
+ * - `tcspc::bin_increment_event<DT>`: apply the increment to the histogram and
+ *   emit (const) `tcspc::histogram_event<DataTraits>`; if a bin overflowed,
+ *   behavior (taken before emitting the histogram) depends on
+ *   `OverflowStrategy`:
+ *   - If `tcspc::saturate_on_overflow`, ignore the event, emitting
+ *     `tcspc::warning_event` only on the first overflow since the start or
+ *     last reset
+ *   - If `tcspc::reset_on_overflow`, behave as if a `ResetEvent` was received
+ *     just prior to the current event; then reapply the current event (but
+ *     throw `tcspc::histogram_overflow_error` if `max_per_bin` equals 0)
+ *   - If `tcspc::stop_on_overflow`, behave as if a `ResetEvent` was received
+ *     instead of the current event; then flush the downstream and throw
+ *     `tcspc::end_processing`
+ *   - If `tcspc::error_on_overflow`, throw `tcspc::histogram_overflow_error`
+ * - `ResetEvent`: emit (rvalue)
+ *   `tcspc::concluding_histogram_event<DataTraits>` with the current
+ *   histogram; then clear the histogram and other state
+ * - All other types: pass through with no action
+ * - Flush: emit (rvalue) `tcspc::concluding_histogram_event<DataTraits>` with
+ *   the current histogram; pass through
  */
 template <typename ResetEvent, typename OverflowStrategy,
           typename DataTraits = default_data_traits, typename Downstream>
 auto histogram(std::size_t num_bins, typename DataTraits::bin_type max_per_bin,
                std::shared_ptr<bucket_source<typename DataTraits::bin_type>>
-                   bucket_source,
+                   buffer_provider,
                Downstream &&downstream) {
     return internal::histogram<ResetEvent, OverflowStrategy, DataTraits,
                                Downstream>(
-        num_bins, max_per_bin, std::move(bucket_source),
+        num_bins, max_per_bin, std::move(buffer_provider),
         std ::forward<Downstream>(downstream));
 }
 

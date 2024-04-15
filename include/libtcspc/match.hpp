@@ -59,14 +59,19 @@ class match {
 } // namespace internal
 
 /**
- * \brief Like \ref match, but do not pass through matched events.
+ * \brief Like `tcspc::match()`, but do not pass through matched events.
  *
  * \ingroup processors-timing
  *
- * All behavior is the same as \c match, except that input events that are
- * matched are discarded.
+ * All behavior is the same as `tcspc::match()`, except that input events that
+ * are matched are discarded.
  *
- * \see match
+ * \see `tcspc::match()`
+ *
+ * \par Events handled
+ * - `Event`: pass through only if not a match; if a match, emit `OutEvent`
+ * - All other types: pass through with no action
+ * - Flush: pass through with no action
  */
 template <typename Event, typename OutEvent, typename Matcher,
           typename Downstream>
@@ -82,28 +87,33 @@ auto match_replace(Matcher &&matcher, Downstream &&downstream) {
  *
  * All events are passed through.
  *
- * Any event of type \c Event is tested by the given \e matcher. If it is a
- * matched, an \c OutEvent is generated with the same abstime.
+ * Any event of type \p Event is tested by the given \p matcher. If it is a
+ * match, an \p OutEvent is generated with the same `abstime` as the \p Event.
  *
- * Both \c Event and \c OutEvent must have a \c abstime field.
+ * Both \p Event and \p OutEvent must have a `abstime` field.
  *
  * For matchers provided by libtcspc, see \ref matchers.
  *
- * \see match_replace
+ * \see `tcspc::match_replace()`
  *
  * \tparam Event event type to match
  *
  * \tparam OutEvent event type to emit on match
  *
- * \tparam Matcher type of matcher
+ * \tparam Matcher type of matcher (usually deduced)
  *
- * \tparam Downstream downstream processor type
+ * \tparam Downstream downstream processor type (usually deduced)
  *
  * \param matcher the matcher
  *
  * \param downstream downstream processor
  *
- * \return match processor
+ * \return processor
+ *
+ * \par Events handled
+ * - `Event`: pass through; if a match, emit `OutEvent`
+ * - All other types: pass through with no action
+ * - Flush: pass through with no action
  */
 template <typename Event, typename OutEvent, typename Matcher,
           typename Downstream>
@@ -113,18 +123,13 @@ auto match(Matcher &&matcher, Downstream &&downstream) {
 }
 
 /**
- * \brief Matcher that always matches.
+ * \brief Matcher that matches all events.
  *
  * \ingroup matchers
- *
- * This allows \c match to be used used to unconditionally convert events of a
- * certain type.
- *
- * \see never_matcher
  */
 class always_matcher {
   public:
-    /** \brief Matcher interface. */
+    /** \brief Implements matcher requirement; return true. */
     template <typename Event>
     auto operator()([[maybe_unused]] Event const &event) const -> bool {
         return true;
@@ -132,17 +137,13 @@ class always_matcher {
 };
 
 /**
- * \brief Matcher that never matches.
+ * \brief Matcher that matches no event.
  *
  * \ingroup matchers
- *
- * Provided for symmetry with \c always_matcher.
- *
- * \see always_matcher
  */
 class never_matcher {
   public:
-    /** \brief Matcher interface. */
+    /** \brief Implements matcher requirement; return false. */
     template <typename Event>
     auto operator()([[maybe_unused]] Event const &event) const -> bool {
         return false;
@@ -154,21 +155,21 @@ class never_matcher {
  *
  * \ingroup matchers
  *
- * \tparam DataTraits traits type specifying \c channel_type
+ * The events to be matched must contain a `channel` field.
+ *
+ * \tparam DataTraits traits type specifying `channel_type`
  */
 template <typename DataTraits = default_data_traits> class channel_matcher {
     typename DataTraits::channel_type channel;
 
   public:
     /**
-     * \brief Construct with a channel number.
-     *
-     * \param channel the channel number to match
+     * \brief Construct with the given \p channel to match.
      */
     explicit channel_matcher(typename DataTraits::channel_type channel)
         : channel(channel) {}
 
-    /** \brief Matcher interface. */
+    /** \brief Implements matcher requirement. */
     template <typename Event>
     auto operator()(Event const &event) const -> bool {
         static_assert(std::is_same_v<decltype(event.channel),

@@ -61,19 +61,24 @@ template <typename Downstream> class view_as_bytes {
 /**
  * \brief Create a processor that views events to byte spans.
  *
- * \ingroup processors-basic
+ * \ingroup processors-binary
  *
  * This processor handles events of trivial types or buckets of trivial types
  * and sends them, without copying, to the downstream processor as (const
  * lvalue) `bucket<std::byte const>`.
  *
- * \see write_binary_file
+ * \see `tcspc::write_binary_stream()`
  *
  * \tparam Downstream downstream processor type
  *
  * \param downstream downstream processor
  *
- * \return view-as-bytes processor
+ * \return processor
+ *
+ * \par Events handled
+ * - Any trivial type: emit its span as `tcspc::bucket<std::byte const>`
+ * - `tcspc::bucket<T>`: emit its data span as `tcspc::bucket<std::byte const>`
+ * - Flush: pass through with no action
  */
 template <typename Downstream> auto view_as_bytes(Downstream &&downstream) {
     return internal::view_as_bytes<Downstream>(

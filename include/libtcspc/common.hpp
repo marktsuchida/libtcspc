@@ -36,13 +36,19 @@ namespace tcspc {
 /**
  * \brief Default traits for integer data types.
  *
+ * Many events and processors in libtcspc deal with multiple integer types, so
+ * specifying them individually would be cumbersome. We therefore usually
+ * specify them as a single unit called _data traits_, which is a type
+ * containing several type aliases to be used across a processing graph (or
+ * part of a processing graph). This is the default data traits type.
+ *
  * \ingroup misc
  */
 struct default_data_traits {
     /**
      * \brief Absolute time type.
      *
-     * The default of \c int64_t is chosen because 64-bit precision is
+     * The default of `std::int64_t` is chosen because 64-bit precision is
      * reasonable (32-bit would overflow; 128-bit would hurt performance and is
      * not required for most applications) and because we want to allow
      * negative time stamps.
@@ -78,14 +84,15 @@ struct default_data_traits {
 /**
  * \brief An event type indicating a warning.
  *
- * \ingroup events-basic
+ * \ingroup events-core
  *
- * Some processors that perform checks on data may emit this event. It can be
- * used together with \ref stop_with_error to stop processing.
+ * Processors that encounter recoverable errors emit this event. It can be used
+ * together with `tcspc::stop()` or `tcspc::stop_with_error()` to stop
+ * processing.
  *
  * Processors that generate this event should also pass through this event. In
- * this way, multiple check processors can be chained before a single point
- * where the warnings are handled.
+ * this way, multiple warning-emitting processors can be chained before a
+ * single point where the warnings are handled.
  */
 struct warning_event {
     /** \brief A human-readable message describing the warning. */
@@ -113,7 +120,7 @@ struct warning_event {
 /**
  * \brief An event type whose instances never occur.
  *
- * \ingroup events-basic
+ * \ingroup events-core
  *
  * This can be used to configure unused inputs to processors.
  */
@@ -125,27 +132,31 @@ struct never_event {
  * \brief Processor that sinks any event and the end-of-stream and does
  * nothing.
  *
- * \ingroup processors-basic
+ * \ingroup processors-core
+ *
+ * \par Events handled
+ * - All types: ignore
+ * - Flush: ignore
  */
 class null_sink {
   public:
-    /** \brief Processor interface */
+    /** \brief Implements processor requirement. */
     template <typename Event>
     void handle([[maybe_unused]] Event const &event) {}
 
-    /** \brief Processor interface */
+    /** \brief Implements processor requirement. */
     [[nodiscard]] auto introspect_node() const -> processor_info {
         return processor_info(this, "null_sink");
     }
 
-    /** \brief Processor interface */
+    /** \brief Implements processor requirement. */
     [[nodiscard]] auto introspect_graph() const -> processor_graph {
         auto g = processor_graph();
         g.push_entry_point(this);
         return g;
     }
 
-    /** \brief Processor interface */
+    /** \brief Implements processor requirement. */
     void flush() {}
 };
 
@@ -184,13 +195,16 @@ template <typename Downstream> class null_source {
 /**
  * \brief Create a processor that sources an empty stream.
  *
- * \ingroup processors-basic
+ * \ingroup processors-core
  *
  * \tparam Downstream downstream processor type
  *
  * \param downstream downstream processor
  *
- * \return null source processor
+ * \return processor
+ *
+ * \par Events handled
+ * - Flush: pass through with no action
  */
 template <typename Downstream> auto null_source(Downstream &&downstream) {
     return internal::null_source<Downstream>(

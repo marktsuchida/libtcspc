@@ -17,10 +17,10 @@ namespace tcspc {
 /**
  * \brief Event representing a datapoint for histogramming.
  *
- * \ingroup events-histogram
+ * \ingroup events-binning
  *
- * \tparam DataTraits traits type specifying \c abstime_type and \c
- * datapoint_type
+ * \tparam DataTraits traits type specifying `abstime_type` and
+ * `datapoint_type`
  */
 template <typename DataTraits = default_data_traits> struct datapoint_event {
     /**
@@ -62,10 +62,10 @@ template <typename DataTraits = default_data_traits> struct datapoint_event {
 /**
  * \brief Event representing data binned for histogramming.
  *
- * \ingroup events-histogram
+ * \ingroup events-binning
  *
- * \tparam DataTraits traits type specifying \c abstime_type and \c
- * bin_index_type
+ * \tparam DataTraits traits type specifying `abstime_type` and
+ * `bin_index_type`
  */
 template <typename DataTraits = default_data_traits>
 struct bin_increment_event {
@@ -104,12 +104,12 @@ struct bin_increment_event {
 /**
  * \brief Event representing a batch of data binned for histogramming.
  *
- * \ingroup events-histogram
+ * \ingroup events-binning
  *
  * Typically the batch represents some unit of data collection, such as a time
  * interval or pixel.
  *
- * \tparam DataTraits traits type specifying \c bin_index_type
+ * \tparam DataTraits traits type specifying `bin_index_type`
  */
 template <typename DataTraits = default_data_traits>
 struct bin_increment_batch_event {
@@ -150,7 +150,7 @@ struct bin_increment_batch_event {
  * This event may be used both for a series of independent histograms and for a
  * series of updates to the same histogram.
  *
- * \tparam DataTraits traits type specifying \c bin_type
+ * \tparam DataTraits traits type specifying `bin_type`
  */
 template <typename DataTraits = default_data_traits> struct histogram_event {
     /**
@@ -184,12 +184,12 @@ template <typename DataTraits = default_data_traits> struct histogram_event {
  *
  * \ingroup events-histogram
  *
- * This event is emitted by histogram and accumulate_histograms once per
+ * This event is emitted by the `tcspc::histogram()` processor once per
  * accumulation (that is, before each reset or end of stream) to provide the
  * accumulated result. The contained histogram covers only whole batches;
  * counts from any partial batch are not included.
  *
- * \tparam DataTraits traits type specifying \c bin_type
+ * \tparam DataTraits traits type specifying `bin_type`
  */
 template <typename DataTraits = default_data_traits>
 struct concluding_histogram_event {
@@ -230,7 +230,7 @@ struct concluding_histogram_event {
  * histogram arrays. The data it references is not owned by the event, and must
  * be copied if needed after event handling returns.
  *
- * \tparam DataTraits traits type specifying \c bin_type
+ * \tparam DataTraits traits type specifying `bin_type`
  */
 template <typename DataTraits = default_data_traits>
 struct element_histogram_event {
@@ -265,12 +265,12 @@ struct element_histogram_event {
  *
  * \ingroup events-histogram
  *
- * This even is used both for a series of independent arrays of histograms (as
- * with the output of \ref histogram_elementwise) and for a series of updates
- * to the same histogram array (as with the output of \ref
- * histogram_elementwise_accumulate).
+ * This event is used both for a series of independent arrays of histograms (as
+ * with the output of the `tcspc::histogram_elementwise()` processor) and for a
+ * series of updates to the same histogram array (as with the output of
+ * `tcspc::histogram_elementwise_accumulate()` processor).
  *
- * \tparam DataTraits traits type specifying \c bin_type
+ * \tparam DataTraits traits type specifying `bin_type`
  */
 template <typename DataTraits = default_data_traits>
 struct histogram_array_event {
@@ -304,12 +304,12 @@ struct histogram_array_event {
  *
  * \ingroup events-histogram
  *
- * This event is emitted by \ref histogram_elementwise_accumulate once per
- * accumulation (that is, before each reset or end of stream) to provide the
- * accumulated result. The contained histogram array covers only whole cycles;
- * counts from any partial cycle are not included.
+ * This event is emitted by the `tcspc::histogram_elementwise_accumulate()`
+ * processor once per accumulation (that is, before each reset or end of
+ * stream) to provide the accumulated result. The contained histogram array
+ * covers only whole cycles; counts from any partial cycle are not included.
  *
- * \tparam DataTraits traits type specifying \c bin_type
+ * \tparam DataTraits traits type specifying `bin_type`
  */
 template <typename DataTraits = default_data_traits>
 struct concluding_histogram_array_event {

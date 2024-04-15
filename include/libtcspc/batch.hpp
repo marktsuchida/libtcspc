@@ -29,9 +29,9 @@ template <typename Event, typename Downstream> class batch {
     Downstream downstream;
 
   public:
-    explicit batch(std::shared_ptr<bucket_source<Event>> bucket_source,
+    explicit batch(std::shared_ptr<bucket_source<Event>> buffer_provider,
                    std::size_t batch_size, Downstream downstream)
-        : bsource(std::move(bucket_source)), batch_size(batch_size),
+        : bsource(std::move(buffer_provider)), batch_size(batch_size),
           downstream(std::move(downstream)) {
         if (batch_size == 0)
             throw std::invalid_argument(
@@ -130,10 +130,10 @@ template <typename Event, typename Downstream> class unbatch {
 /**
  * \brief Create a processor that batches events into buckets for buffering.
  *
- * \ingroup processors-basic
+ * \ingroup processors-batching
  *
- * Collects every \e batch_size events into a bucket. The buckets are obtained
- * from the given \e bucket_source.
+ * Collects every \p batch_size events into a bucket. The buckets are obtained
+ * from the given \p buffer_provider.
  *
  * The buckets are emitted as rvalue reference.
  *
@@ -142,25 +142,29 @@ template <typename Event, typename Downstream> class unbatch {
  * should not be performed (and is not necessary) for intermediate buffering of
  * real-time streams in most cases.
  *
- * \see unbatch
+ * \see `tcspc::unbatch()`
  *
  * \tparam Event the event type (must be a trivial type)
  *
  * \tparam Downstream downstream processor type
  *
- * \param bucket_source bucket source providing event buffers
+ * \param buffer_provider bucket source providing event buffers
  *
  * \param batch_size number of events to collect in each bucket
  *
  * \param downstream downstream processor
  *
- * \return batch processor
+ * \return processor
+ *
+ * \par Events handled
+ * - `Event`: collected into `tcspc::bucket<Event>` and emitted as batch
+ * - Flush: emit any buffered events as `tcspc::bucket<Event>`; pass through
  */
 template <typename Event, typename Downstream>
-auto batch(std::shared_ptr<bucket_source<Event>> bucket_source,
+auto batch(std::shared_ptr<bucket_source<Event>> buffer_provider,
            std::size_t batch_size, Downstream &&downstream) {
     return internal::batch<Event, Downstream>(
-        std::move(bucket_source), batch_size,
+        std::move(buffer_provider), batch_size,
         std::forward<Downstream>(downstream));
 }
 
@@ -168,11 +172,11 @@ auto batch(std::shared_ptr<bucket_source<Event>> bucket_source,
  * \brief Create a processor transforming batches of events to individual
  * events.
  *
- * \ingroup processors-basic
+ * \ingroup processors-batching
  *
  * Events in (ordered) containers or spans are emitted one by one.
  *
- * \see batch
+ * \see `tcspc::batch()`
  *
  * \tparam Event the event type (must be a trivial type)
  *
@@ -180,7 +184,12 @@ auto batch(std::shared_ptr<bucket_source<Event>> bucket_source,
  *
  * \param downstream downstream processor
  *
- * \return unbatch processor
+ * \return processor
+ *
+ * \par Events handled
+ * - Range (container, iterable) of `Event`: each element event emitted in
+ *   order
+ * - Flush: pass through with no action
  */
 template <typename Event, typename Downstream>
 auto unbatch(Downstream &&downstream) {
@@ -192,20 +201,26 @@ auto unbatch(Downstream &&downstream) {
  * \brief Create a processor that buffers events up to equally sized batches
  * and passes them downstream in a tight loop.
  *
- * \ingroup processors-basic
+ * \ingroup processors-buffering
  *
  * This is intended for use in cases where separating the processing loop is
  * beneficial, for example to limit the (code or data) working set size.
- * Usually the regular \c buffer (requiring two separate threads) is more
- * beneficial because it can exploit parallellism, but a single-threaded buffer
- * is easier to introduce (it can simply be inserted in a processor chain) so
- * may be convenient for experimentation.
+ * Usually the regular `tcspc::buffer()` (requiring two separate threads) is
+ * more beneficial because it can exploit parallellism, but a single-threaded
+ * buffer is easier to introduce (it can simply be inserted in a processor
+ * graph) so may be convenient for experimentation.
  *
  * Events are buffered until \p batch_size is reached, without regard to
  * timing, so this type of buffer is usually not appropriate for live
  * processing.
  *
- * \see buffer
+ * \see `tcspc::buffer()`
+ *
+ * \return processor
+ *
+ * \par Events handled
+ * - `Event`: buffer up to \p batch_size; then emit all buffered
+ * - Flush: emit any buffered events; pass through
  */
 template <typename Event, typename Downstream>
 auto process_in_batches(std::size_t batch_size, Downstream &&downstream) {

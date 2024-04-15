@@ -38,11 +38,13 @@
 namespace tcspc {
 
 /**
- * \brief Access for \c capture_output processors.
+ * \brief Access for `tcspc::capture_output()` processors.
  *
- * \ingroup processors-testing
+ * \note It is recommended to wrap this object in
+ * `tcspc::capture_output_checker`, which provides a similar interface but
+ * simplifies calling `check()` and `pop()`.
  *
- * \see capture_output_checker
+ * \ingroup processor-access
  */
 class capture_output_access {
     std::any peek_events_func; // () -> std::vector<variant_event<EventList>>
@@ -60,14 +62,10 @@ class capture_output_access {
     }
 
   public:
-    /**
-     * \brief Tag struct used internally for construction.
-     */
+    /** \private */
     struct empty_event_list_tag {};
 
-    /**
-     * \brief Constructor used internally by \c capture_output.
-     */
+    /** \private */
     template <typename EventList>
     explicit capture_output_access(
         std::function<std::vector<variant_event<EventList>>()> peek_events,
@@ -82,9 +80,7 @@ class capture_output_access {
           set_up_to_throw_func(std::move(set_up_to_throw)),
           events_as_string_func(std::move(events_as_string)) {}
 
-    /**
-     * \brief Constructor used internally by \c capture_output.
-     */
+    /** \private */
     explicit capture_output_access(
         [[maybe_unused]] empty_event_list_tag tag,
         std::function<bool()> is_flushed,
@@ -107,7 +103,8 @@ class capture_output_access {
     }
 
     /**
-     * \brief Check if ready for input; used internally by \c feed_input.
+     * \brief Check if ready for input; normally used internally by
+     * `tcspc::feed_input()`.
      */
     void check_ready_for_input() const {
         if (not is_empty_func()) {
@@ -124,13 +121,13 @@ class capture_output_access {
     /**
      * \brief Retrieve the next recorded output event.
      *
-     * This can be used when \c check() is not convenient (for example, because
+     * This can be used when `check()` is not convenient (for example, because
      * the exactly matching event is not known).
      *
      * \tparam Event the expected event type
      *
-     * \tparam EventList the event set accepted by the \c capture_output
-     * processor
+     * \tparam EventList the event set accepted by the
+     * `tcspc::capture_output()` processor
      *
      * \return the event
      */
@@ -161,15 +158,15 @@ class capture_output_access {
      * \brief Check that the next recorded output event matches with the given
      * one.
      *
-     * This function never returns false; a \c std::logic_error is thrown if
-     * the check is unsuccessful. It returns true for convenient use with
-     * testing framework macros such as \c CHECK() or \c REQUIRE() (which
-     * typically help locate where an exception was thrown).
+     * This function never returns false; a `std::logic_error` is thrown if the
+     * check is unsuccessful. It returns true for convenient use with testing
+     * framework macros such as `CHECK()` or `REQUIRE()` (which typically help
+     * locate where an exception was thrown).
      *
      * \tparam Event the expected event type
      *
-     * \tparam EventList the event set accepted by the \c capture_output
-     * processor
+     * \tparam EventList the event set accepted by the
+     * `tcspc::capture_output()` processor
      *
      * \param expected_event the expected event
      *
@@ -203,10 +200,10 @@ class capture_output_access {
      * \brief Check that no recorded output events remain but the output has
      * not been flushed.
      *
-     * This function never returns false; a \c std::logic_error is thrown if
-     * the check is unsuccessful. It returns true for convenient use with
-     * testing framework macros such as \c CHECK() or \c REQUIRE() (which
-     * typically help locate where an exception was thrown).
+     * This function never returns false; a `std::logic_error` is thrown if the
+     * check is unsuccessful. It returns true for convenient use with testing
+     * framework macros such as `CHECK()` or `REQUIRE()` (which typically help
+     * locate where an exception was thrown).
      *
      * \return true if the check was successful.
      */
@@ -227,10 +224,10 @@ class capture_output_access {
      * \brief Check that no recorded output events remain and the output has
      * been flushed.
      *
-     * This function never returns false; a \c std::logic_error is thrown if
-     * the check is unsuccessful. It returns true for convenient use with
-     * testing framework macros such as \c CHECK() or \c REQUIRE() (which
-     * typically help locate where an exception was thrown).
+     * This function never returns false; a `std::logic_error` is thrown if the
+     * check is unsuccessful. It returns true for convenient use with testing
+     * framework macros such as `CHECK()` or `REQUIRE()` (which typically help
+     * locate where an exception was thrown).
      *
      * \return true if the check was successful.
      */
@@ -258,7 +255,7 @@ class capture_output_access {
     }
 
     /**
-     * \brief Arrange to throw an \c end_processing on receiving the given
+     * \brief Arrange to throw `tcspc::end_processing` on receiving the given
      * number of events.
      *
      * \param count number of events to handle normally before throwing
@@ -275,7 +272,7 @@ class capture_output_access {
     }
 
     /**
-     * \brief Arrange to throw an \c end_processing on receiving a flush.
+     * \brief Arrange to throw `tcspc::end_processing` on receiving a flush.
      */
     void throw_end_processing_on_flush() {
         set_up_to_throw_func(std::numeric_limits<std::size_t>::max(), false);
@@ -283,22 +280,20 @@ class capture_output_access {
 };
 
 /**
- * \brief Event-set-specific wrapper for \c capture_output_access.
+ * \brief Event-set-specific wrapper for `tcspc::capture_output_access`.
  *
- * \ingroup processors-testing
+ * \ingroup processor-access
  *
- * This class has almost the same interface as \c capture_output_access but
- * is parameterized on \c EventList so does not require specifying the event
- * set when calling \c check() or \c pop().
- *
- * \see capture_output_access
+ * This class has almost the same interface as `tcspc::capture_output_access`
+ * but is parameterized on \p EventList so does not require specifying the
+ * event set when calling `check()` or `pop()`.
  */
 template <typename EventList> class capture_output_checker {
     capture_output_access acc;
 
   public:
     /**
-     * \brief Construct from a \c capture_output_access.
+     * \brief Construct from a `tcspc::capture_output_access`.
      */
     explicit capture_output_checker(capture_output_access access)
         : acc(std::move(access)) {
@@ -308,7 +303,7 @@ template <typename EventList> class capture_output_checker {
     /**
      * \brief Retrieve the next recorded output event.
      *
-     * This can be used when \c check() is not convenient (for example, because
+     * This can be used when `check()` is not convenient (for example, because
      * the exactly matching event is not known).
      *
      * \tparam Event the expected event type
@@ -325,10 +320,10 @@ template <typename EventList> class capture_output_checker {
      * \brief Check that the next recorded output event matches with the given
      * one.
      *
-     * This function never returns false; a \c std::logic_error is thrown if
-     * the check is unsuccessful. It returns true for convenient use with
-     * testing framework macros such as \c CHECK() or \c REQUIRE() (which
-     * typically help locate where an exception was thrown).
+     * This function never returns false; a `std::logic_error` is thrown if the
+     * check is unsuccessful. It returns true for convenient use with testing
+     * framework macros such as `CHECK()` or `REQUIRE()` (which typically help
+     * locate where an exception was thrown).
      *
      * \tparam Event the expected event type
      *
@@ -346,10 +341,10 @@ template <typename EventList> class capture_output_checker {
      * \brief Check that no recorded output events remain but the output has
      * not been flushed.
      *
-     * This function never returns false; a \c std::logic_error is thrown if
-     * the check is unsuccessful. It returns true for convenient use with
-     * testing framework macros such as \c CHECK() or \c REQUIRE() (which
-     * typically help locate where an exception was thrown).
+     * This function never returns false; a `std::logic_error` is thrown if the
+     * check is unsuccessful. It returns true for convenient use with testing
+     * framework macros such as `CHECK()` or `REQUIRE()` (which typically help
+     * locate where an exception was thrown).
      *
      * \return true if the check was successful.
      */
@@ -359,10 +354,10 @@ template <typename EventList> class capture_output_checker {
      * \brief Check that no recorded output events remain and the output has
      * been flushed.
      *
-     * This function never returns false; a \c std::logic_error is thrown if
-     * the check is unsuccessful. It returns true for convenient use with
-     * testing framework macros such as \c CHECK() or \c REQUIRE() (which
-     * typically help locate where an exception was thrown).
+     * This function never returns false; a `std::logic_error` is thrown if the
+     * check is unsuccessful. It returns true for convenient use with testing
+     * framework macros such as `CHECK()` or `REQUIRE()` (which typically help
+     * locate where an exception was thrown).
      *
      * \return true if the check was successful.
      */
@@ -379,7 +374,7 @@ template <typename EventList> class capture_output_checker {
     }
 
     /**
-     * \brief Arrange to throw an \c end_processing on receiving the given
+     * \brief Arrange to throw `tcspc::end_processing` on receiving the given
      * number of events.
      *
      * \param count number of events to handle normally before throwing
@@ -394,7 +389,7 @@ template <typename EventList> class capture_output_checker {
     void throw_error_on_flush() { acc.throw_error_on_flush(); }
 
     /**
-     * \brief Arrange to throw an \c end_processing on receiving a flush.
+     * \brief Arrange to throw `tcspc::end_processing` on receiving a flush.
      */
     void throw_end_processing_on_flush() {
         acc.throw_end_processing_on_flush();
@@ -604,15 +599,28 @@ template <typename EventList, typename Downstream> class feed_input {
 } // namespace internal
 
 /**
- * \brief Create a sink that logs test output for checking.
+ * \brief Create a sink that records the output of a processor under test.
  *
  * \ingroup processors-testing
+ *
+ * In order to access the recorded output or arrange to simulate errors and
+ * end-of-processing, use a `tcspc::capture_output_access` (usually accessed
+ * through the wrapper `tcspc::capture_output_checker`) retrieved from the
+ * `tcspc::processor_context` from which \p tracker was obtained..
  *
  * \tparam EventList event set to accept
  *
  * \param tracker processor tracker for later access to state
  *
- * \return capture-output sink
+ * \return processor
+ *
+ * \par Events handled
+ * - Types in `EventList`: throw `std::runtime_error` if error simulation
+ *   requested; record the event; throw `tcspc::end_processing` if stop
+ *   simulation requested; otherwise record for later analysis
+ * - Flush: throw `std::runtime_error` if error simulation requested; record
+ *   the flush; throw `tcspc::end_processing` if stop simulation requested;
+ *   otherwise record for later analysis
  */
 template <typename EventList>
 auto capture_output(processor_tracker<capture_output_access> &&tracker) {
@@ -620,17 +628,30 @@ auto capture_output(processor_tracker<capture_output_access> &&tracker) {
 }
 
 /**
- * \brief Create a source for feeding test input to a processor.
+ * \brief Create a source for feeding test input to a processor under test.
  *
  * \ingroup processors-testing
  *
+ * In addition to `flush()` and introspection, the processor has these member
+ * functions:
+ * - `void require_output_checked(std::shared_ptr<tcspc::processor_context>
+ *   context, std::string name)`: register a `tcspc::capture_output` processor
+ *   whose recorded output should be fully checked before events (and flush)
+ *   are fed
+ * - `template <typename Event> void feed(Event const &event)`: feed an event
+ *   into \p downstream after checking that registered outputs have been
+ *   checked
+ *
  * \tparam EventList input event set
  *
- * \tparam Downstream downstream processor type
+ * \tparam Downstream downstream processor type (usually deduced)
  *
- * \param downstream downstream processor (moved out)
+ * \param downstream downstream processor
  *
- * \return feed-input source
+ * \return processor
+ *
+ * \par Events handled
+ * - Flush: check that the registered outputs have been checked; pass through
  */
 template <typename EventList, typename Downstream>
 auto feed_input(Downstream &&downstream) {
@@ -650,25 +671,25 @@ auto feed_input(Downstream &&downstream) {
  */
 template <typename EventList> class sink_events {
   public:
-    /** \brief Processor interface */
+    /** \brief Implements processor requirement. */
     [[nodiscard]] auto introspect_node() const -> processor_info {
         processor_info info(this, "sink_events");
         return info;
     }
 
-    /** \brief Processor interface */
+    /** \brief Implements processor requirement. */
     [[nodiscard]] auto introspect_graph() const -> processor_graph {
         auto g = processor_graph();
         g.push_entry_point(this);
         return g;
     }
 
-    /** \brief Processor interface */
+    /** \brief Implements processor requirement. */
     template <typename Event, typename = std::enable_if_t<
                                   type_list_contains_v<EventList, Event>>>
     void handle([[maybe_unused]] Event const &event) {}
 
-    /** \brief Processor interface */
+    /** \brief Implements processor requirement. */
     void flush() {}
 };
 
@@ -709,7 +730,7 @@ template <int N> struct empty_test_event {
  *
  * \tparam N a number to distinguish event types.
  *
- * \tparam DataTraits traits type specifying \c abstime_type
+ * \tparam DataTraits traits type specifying `abstime_type`
  */
 template <int N, typename DataTraits = default_data_traits>
 struct timestamped_test_event {
@@ -743,14 +764,14 @@ struct timestamped_test_event {
  *
  * \ingroup misc
  *
- * This is a helper for writing readable unit tests for raw device events that
- * are documented in little-endian byte order.
+ * This is a helper for writing more readable unit tests for raw device events
+ * that are specified in little-endian byte order.
  *
- * The given array, which should be in big-endian order, is reversed and cast
- * to the type \c Event (which must be trivial).
+ * The given array of \p bytes, which should be in big-endian order, is
+ * reversed and cast to the type \p Event (which must be trivial).
  *
- * (There is currently no analogous \c be_event because device events specified
- * in big-endian order have not been encountered.)
+ * (There is no analogous `be_event` because device events specified in
+ * big-endian order have not been encountered.)
  *
  * \tparam Event the returned event type
  *

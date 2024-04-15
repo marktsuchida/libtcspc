@@ -21,17 +21,18 @@ namespace tcspc {
 class processor_context;
 
 /**
- * \brief Tracker object that mediates access to processors via a \c
- * processor_context.
+ * \brief Tracker object that mediates access to processors via a
+ * `tcspc::processor_context`.
  *
- * \ingroup misc
+ * \ingroup processor-context
  *
- * Instances should be obtained from a \ref processor_context. A processor
- * stores the instance as a data member and also registers an access factory
- * in its constructor. This allows code other than upstream processors to later
- * access the processor state.
+ * This is a movable (noncopyable) object that tracks its address when moved.
+ * The address is stored in the associated `tcspc::processor_context` from
+ * which the tracker was created.
  *
- * \see processor_context
+ * A processor stores the instance as a data member and also registers an
+ * access factory in its constructor. This allows code other than upstream
+ * processors to later access the processor state.
  *
  * \tparam Access type of access interface for processor
  */
@@ -49,37 +50,36 @@ template <typename Access> class processor_tracker {
 
   public:
     /**
-     * \brief Default constructor.
+     * \brief Construct an empty tracker.
      *
-     * Constructs in the "empty" state, unconnected to a processor context.
      * Empty instances cannot be used other than by assigning a non-empty
      * instance.
+     *
+     * Non-empty instances can only be obtained from a
+     * `tcspc::processor_context`.
      */
     processor_tracker() = default;
 
-    // Noncopyable.
+    /** \cond hidden-from-docs */
     processor_tracker(processor_tracker const &) = delete;
     auto operator=(processor_tracker const &) = delete;
 
-    /** \brief Move constructor. */
+    // Definitions for move and destruction are below, out of line.
     processor_tracker(processor_tracker &&other) noexcept;
-
-    /** \brief Move assignment operator. */
     auto operator=(processor_tracker &&rhs) noexcept -> processor_tracker &;
-
-    /** \brief Destructor. */
     ~processor_tracker();
+    /** \endcond */
 
     /**
      * \brief Register an access factory with this tracker's context.
      *
-     * This is usually called in the processors constructor to arrange for
+     * This is usually called in the processor's constructor to arrange for
      * later access to the processor via an access.
      *
      * \tparam F factory function type
      *
-     * \param factory factory function taking reference to this tracker and
-     * returning the access of type \c Access
+     * \param factory function taking reference to this tracker and returning
+     * the access object of type \p Access
      */
     template <typename F> void register_access_factory(F factory) {
         assert(ctx);
@@ -90,28 +90,27 @@ template <typename Access> class processor_tracker {
 
 /**
  * \brief Context for enabling access to processors after they have been
- * incorporated into a processing chain.
+ * incorporated into a processing graph.
  *
- * \ingroup misc
+ * \ingroup processor-context
  *
- * Instances must be handled by \c std::shared_ptr.
+ * Instances are nonmovable must be handled by `std::shared_ptr`.
  *
  * A processor context mediates access to the state of individual processors
- * from outside of the processing chain/pipeline. This is done by means of \c
- * processor_tracker objects that are obtained from the context and need to be
- * embedded into processors when constructing the latter. The tracker moves and
- * is destroyed together with the processor, allowing the context to track how
- * to access the processor after being moved into the processing chain.
+ * from outside of the processing graph. This is done by means of
+ * `tcspc::processor_tracker` objects that are obtained from the context and
+ * need to be embedded into processors when constructing the latter. The
+ * tracker moves and is destroyed together with the processor, allowing the
+ * context to track how to access the processor after being moved into the
+ * processing graph.
  *
  * Each processor/tracker is associated a name, which must be unique within a
  * given context (and may not be reused even after destroying the corresponding
  * processor/tracker).
  *
- * Actual access to processor state is through an \e access object whose type
+ * Actual access to processor state is through an _access_ object whose type
  * is defined by the processor and whose instances can be obtained from the
  * context by giving the processor name.
- *
- * \see processor_tracker
  */
 class processor_context
     : public std::enable_shared_from_this<processor_context> {
@@ -135,11 +134,14 @@ class processor_context
     processor_context() = default;
 
   public:
+    // Move not permitted (only handled by shared_ptr).
+    /** \cond hidden-from-docs */
     processor_context(processor_context const &) = delete;
     auto operator=(processor_context const &) = delete;
     processor_context(processor_context &&) = delete;
     auto operator=(processor_context &&) = delete;
     ~processor_context() = default;
+    /** \endcond */
 
     /**
      * \brief Create an instance.
@@ -173,8 +175,8 @@ class processor_context
     /**
      * \brief Obtain an access for the named processor.
      *
-     * The returned access is only valid while the processor is alive and
-     * unmoved, so it should not be stored by the caller.
+     * \attention The returned access object becomes invalid if the processor
+     * to which it refers is moved or destroyed. Do not store access instances.
      *
      * \tparam Access the access type (documented by the processor)
      *
@@ -190,6 +192,11 @@ class processor_context
         return tracker_ptr->access_factory(*tracker_ptr);
     }
 };
+
+/** \cond hidden-from-docs */
+
+// Move/destroy for processor_tracker, defined out-of-line because they require
+// the definition of processor_context.
 
 template <typename Access>
 processor_tracker<Access>::processor_tracker(
@@ -216,19 +223,24 @@ template <typename Access> processor_tracker<Access>::~processor_tracker() {
         ctx->update_tracker_address<Access>(name, nullptr);
 }
 
+/** \endcond */
+
 // NOLINTBEGIN
 
 /**
- * \brief Recover the processor address from an embedded processor tracker.
+ * \brief Recover the processor address from a `tcspc::processor_tracker`
+ * embedded in the processor object.
  *
- * \ingroup misc
+ * \ingroup processor-context
  *
  * This can be used in the implementation of a processor access factory (see
- * \c processor_tracker::register_access_factory).
+ * `tcspc::processor_tracker::register_access_factory()`).
+ *
+ * \hideinitializer
  *
  * \param proc_type processor type (no commas or angle brackets)
  *
- * \param tracker_field_name name of data member of proc_type holding the
+ * \param tracker_field_name name of data member of \p proc_type holding the
  * tracker
  *
  * \param tracker the tracker (must be lvalue)

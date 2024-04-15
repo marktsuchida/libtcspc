@@ -49,9 +49,10 @@ namespace internal {
  *
  * \ingroup introspect
  *
- * Each processor (or source, sink) implements a member function \c
- * introspect_node() that returns an object of this type. The same result can
- * also be obtained for nodes of a \ref processor_graph.
+ * Each processor (or source, sink) implements a member function
+ * `auto introspect_node() const -> processor_info` that returns an object of
+ * this type. The same result can also be obtained from
+ * `tcspc::processor_graph::node_info()`.
  */
 class processor_info {
     void const *addr;
@@ -90,10 +91,10 @@ class processor_info {
      * \brief Return the C++ type name of the processor.
      *
      * Where possible, the demangled C++ type name is returned; otherwise the
-     * returned name is whatever the platform's \c std::type_info::name()
+     * returned name is whatever the platform's `std::type_info::name()`
      * returns.
      *
-     * Processor type names can be quite long when they have a chain of
+     * Processor type names can be quite long when they have more than a few
      * downstream processors.
      *
      * \return name of processor class
@@ -127,14 +128,11 @@ class processor_info {
  *
  * \ingroup introspect
  *
- * This type is used to represent a node in a processor_graph. Usually
- * instances are obtained through methods or processor_graph.
+ * This type is used to represent a node in a `tcspc::processor_graph`. Usually
+ * instances are obtained through methods of `tcspc::processor_graph`.
  *
- * The mapping between a processor_node_id value and a processor instance is
- * bijective, provided that the processor is not moved or destroyed.
- *
- * It is not possible to generate a concise and unique name for a node from the
- * processor_node_id alone; this requires the context of a processor_graph.
+ * Values of this type bijectively map to processor instances, provided that
+ * the processors are not moved or destroyed.
  */
 class processor_node_id {
     // The processor address is not sufficient as a unique id, because some
@@ -201,11 +199,11 @@ class processor_node_id {
  *
  * \ingroup introspect
  *
- * Each processor (or source/sink) implements a member function \c
- * introspect_graph() that returns an instance representing the processor and
+ * Each processor implements a member function `auto introspect_graph() const
+ * -> processor_graph` that returns an instance representing that processor and
  * all of its downstream nodes.
  *
- * The graph includes the notion of "entry points" in addition to nodes and
+ * The graph includes the notion of _entry points_ in addition to nodes and
  * (directed) edges. The entry points are the upstream-most processors
  * represented in the graph.
  *
@@ -213,9 +211,9 @@ class processor_node_id {
  * after the processors from which they were constructed are moved or
  * destroyed.
  *
- * Note that the proceessor graph exposes implementation details that are not
+ * \note The proceessor graph exposes implementation details that may not be
  * stable (even once we have a stable API). It is intended primarily for
- * visualization, debugging, and testing, not as a basis for automation.
+ * visualization, debugging, and testing; not as a basis for automation.
  */
 class processor_graph {
     struct node_type {
@@ -233,8 +231,8 @@ class processor_graph {
      * \brief Add a processor node to this graph, upstream of the current entry
      * point (if any), making it the new entry point.
      *
-     * \pre The graph must have no more than 1 entry point. The processor must
-     * not already be part of the graph.
+     * \pre The graph must have no more than one entry point. The processor
+     * must not already be part of the graph.
      *
      * \post A new node is added to the graph, representing the given
      * processor, and made the sole entry point. If there was a previous entry
@@ -333,7 +331,7 @@ class processor_graph {
      *
      * \param id the node id
      *
-     * \return true if \c id is an entry point of this graph
+     * \return true if \p id is an entry point of this graph
      */
     [[nodiscard]] auto is_entry_point(processor_node_id id) const -> bool {
         return std::find(entrypts.begin(), entrypts.end(), id) !=
@@ -383,6 +381,9 @@ class processor_graph {
  * \brief Create a new processor graph by merging two existing ones.
  *
  * \ingroup introspect
+ *
+ * The resulting graph contains all of the nodes and edges of \p a and \p b.
+ * Its entry points are the union of the entry points of \p a and \p b.
  *
  * \param a the first processor graph to merge
  *

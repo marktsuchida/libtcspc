@@ -194,13 +194,13 @@ class ReadBinaryStream(OneToOneNode):
         event_type: EventType,
         stream: _streams.InputStream,
         max_length: int,
-        bucket_source: _bucket_sources.BucketSource,
+        buffer_provider: _bucket_sources.BucketSource,
         read_granularity_bytes: int,
     ):
         self._event_type = event_type
         self._stream = stream
         self._maxlen = max_length
-        self._bucket_source = bucket_source
+        self._bucket_source = buffer_provider
         self._granularity = read_granularity_bytes
 
     @override
