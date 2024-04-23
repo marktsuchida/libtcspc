@@ -224,7 +224,7 @@ template <typename DataTraits, typename Downstream> class decode_swabian_tags {
                 end_lost_interval_event<DataTraits>{event.time().value()});
             break;
         case tag_type::missed_events:
-            downstream.handle(untagged_counts_event<DataTraits>{
+            downstream.handle(lost_counts_event<DataTraits>{
                 event.time().value(), event.channel().value(),
                 event.missed_event_count().value()});
             break;
@@ -289,7 +289,7 @@ template <typename DataTraits, typename Downstream> class decode_swabian_tags {
  *   `tcspc::detection_event<DataTraits>`,
  *   `tcspc::begin_lost_interval_event<DataTraits>`,
  *   `tcspc::end_lost_interval_event<DataTraits>`,
- *   `tcspc::untagged_counts_event<DataTraits>`, `warning_event` (warning in
+ *   `tcspc::lost_counts_event<DataTraits>`, `warning_event` (warning in
  *   the case of an error tag or unknown tag)
  * - Flush: passed through with no action
  */

@@ -152,7 +152,7 @@ TEST_CASE("introspect swabian_tag", "[introspect]") {
 TEST_CASE("decode swabian tags") {
     using out_events =
         type_list<detection_event<>, begin_lost_interval_event<>,
-                  end_lost_interval_event<>, untagged_counts_event<>,
+                  end_lost_interval_event<>, lost_counts_event<>,
                   warning_event>;
     auto ctx = processor_context::create();
     auto in = feed_input<type_list<swabian_tag_event>>(
@@ -186,7 +186,7 @@ TEST_CASE("decode swabian tags") {
     SECTION("missed events") {
         in.feed(swabian_tag_event::make_missed_events(42_i64np, 5_i32np,
                                                       123_u16np));
-        REQUIRE(out.check(untagged_counts_event<>{42, 5, 123}));
+        REQUIRE(out.check(lost_counts_event<>{42, 5, 123}));
     }
 
     in.flush();

@@ -656,8 +656,8 @@ using out_events =
               time_reached_event<>, data_lost_event<>, warning_event>;
 using out_events_with_counter =
     type_list<time_correlated_detection_event<>, marker_event<>,
-              time_reached_event<>, data_lost_event<>,
-              nontagged_counts_event<>, warning_event>;
+              time_reached_event<>, data_lost_event<>, bulk_counts_event<>,
+              warning_event>;
 
 TEST_CASE("introspect bh_spc", "[introspect]") {
     check_introspect_simple_processor(decode_bh_spc(null_sink()));
@@ -815,7 +815,7 @@ TEST_CASE("decode bh spc with fast intensity counter",
                     .gap_flag(gap));
         if (gap)
             REQUIRE(out.check(data_lost_event<>{42}));
-        REQUIRE(out.check(nontagged_counts_event<>{42, -1, 123}));
+        REQUIRE(out.check(bulk_counts_event<>{42, -1, 123}));
         REQUIRE(out.check(marker_event<>{42, 0}));
         REQUIRE(out.check(marker_event<>{42, 2}));
     }
@@ -826,7 +826,7 @@ TEST_CASE("decode bh spc with fast intensity counter",
                     .gap_flag(gap));
         if (gap)
             REQUIRE(out.check(data_lost_event<>{4096 + 42}));
-        REQUIRE(out.check(nontagged_counts_event<>{4096 + 42, -1, 123}));
+        REQUIRE(out.check(bulk_counts_event<>{4096 + 42, -1, 123}));
         REQUIRE(out.check(marker_event<>{4096 + 42, 0}));
         REQUIRE(out.check(marker_event<>{4096 + 42, 2}));
     }

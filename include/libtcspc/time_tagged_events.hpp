@@ -117,7 +117,7 @@ template <typename DataTraits = default_data_traits> struct data_lost_event {
  * before, during, and after the lost interval.
  *
  * If detected events during the interval could be counted (but not
- * time-tagged), they should be indicated by `tcspc::untagged_counts_event`.
+ * time-tagged), they should be indicated by `tcspc::lost_counts_event`.
  *
  * \tparam DataTraits traits type specifying `abstime_type`
  */
@@ -192,12 +192,9 @@ struct end_lost_interval_event {
  * This event should only occur between `tcspc::begin_lost_interval_event` and
  * `tcspc::end_lost_interval_event`.
  *
- * Not to be confused with `tcspc::nontagged_counts_event`.
- *
  * \tparam DataTraits traits type specifying `abstime_type` and `channel_type`
  */
-template <typename DataTraits = default_data_traits>
-struct untagged_counts_event {
+template <typename DataTraits = default_data_traits> struct lost_counts_event {
     /** \brief The absolute time (a.k.a. macrotime) of this event. */
     typename DataTraits::abstime_type abstime;
     static_assert(std::is_integral_v<decltype(abstime)>);
@@ -212,23 +209,23 @@ struct untagged_counts_event {
     std::uint32_t count;
 
     /** \brief Equality comparison operator. */
-    friend auto operator==(untagged_counts_event const &lhs,
-                           untagged_counts_event const &rhs) noexcept -> bool {
+    friend auto operator==(lost_counts_event const &lhs,
+                           lost_counts_event const &rhs) noexcept -> bool {
         return lhs.abstime == rhs.abstime && lhs.channel == rhs.channel &&
                lhs.count == rhs.count;
     }
 
     /** \brief Inequality comparison operator. */
-    friend auto operator!=(untagged_counts_event const &lhs,
-                           untagged_counts_event const &rhs) noexcept -> bool {
+    friend auto operator!=(lost_counts_event const &lhs,
+                           lost_counts_event const &rhs) noexcept -> bool {
         return not(lhs == rhs);
     }
 
     /** \brief Stream insertion operator. */
-    friend auto operator<<(std::ostream &s, untagged_counts_event const &e)
+    friend auto operator<<(std::ostream &s, lost_counts_event const &e)
         -> std::ostream & {
-        return s << "untagged_counts(" << e.abstime << ", " << e.channel
-                 << ", " << e.count << ')';
+        return s << "lost_counts(" << e.abstime << ", " << e.channel << ", "
+                 << e.count << ')';
     }
 };
 
@@ -241,12 +238,9 @@ struct untagged_counts_event {
  * individual detections but emits counter values at some interval (usually
  * based on some external or internal clock signal).
  *
- * Not to be confused with `tcspc::untagged_counts_event`.
- *
  * \tparam DataTraits traits type specifying `abstime_type` and `channel_type`
  */
-template <typename DataTraits = default_data_traits>
-struct nontagged_counts_event {
+template <typename DataTraits = default_data_traits> struct bulk_counts_event {
     /** \brief The absolute time (a.k.a. macrotime) of this event. */
     typename DataTraits::abstime_type abstime;
     static_assert(std::is_integral_v<decltype(abstime)>);
@@ -261,25 +255,23 @@ struct nontagged_counts_event {
     std::uint32_t count;
 
     /** \brief Equality comparison operator. */
-    friend auto operator==(nontagged_counts_event const &lhs,
-                           nontagged_counts_event const &rhs) noexcept
-        -> bool {
+    friend auto operator==(bulk_counts_event const &lhs,
+                           bulk_counts_event const &rhs) noexcept -> bool {
         return lhs.abstime == rhs.abstime && lhs.channel == rhs.channel &&
                lhs.count == rhs.count;
     }
 
     /** \brief Inequality comparison operator. */
-    friend auto operator!=(nontagged_counts_event const &lhs,
-                           nontagged_counts_event const &rhs) noexcept
-        -> bool {
+    friend auto operator!=(bulk_counts_event const &lhs,
+                           bulk_counts_event const &rhs) noexcept -> bool {
         return not(lhs == rhs);
     }
 
     /** \brief Stream insertion operator. */
-    friend auto operator<<(std::ostream &s, nontagged_counts_event const &e)
+    friend auto operator<<(std::ostream &s, bulk_counts_event const &e)
         -> std::ostream & {
-        return s << "nontagged_counts(" << e.abstime << ", " << e.channel
-                 << ", " << e.count << ')';
+        return s << "bulk_counts(" << e.abstime << ", " << e.channel << ", "
+                 << e.count << ')';
     }
 };
 

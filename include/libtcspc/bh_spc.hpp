@@ -753,7 +753,7 @@ class decode_bh_spc {
                 auto const bits = u32np(event.marker_bits());
                 if constexpr (HasIntensityCounter) {    // SPC-160, 180N
                     if ((bits & 0x01_u32np) != 0_u32np) // Marker 0
-                        downstream.handle(nontagged_counts_event<DataTraits>{
+                        downstream.handle(bulk_counts_event<DataTraits>{
                             abstime, -1, event.adc_value().value()});
                 }
                 for_each_set_bit(bits, [&](int b) {
@@ -834,7 +834,7 @@ auto decode_bh_spc(Downstream &&downstream) {
  * - `tcspc::bh_spc_event`: decode and emit one or more of
  *   `tcspc::time_reached_event<DataTraits>`,
  *   `tcspc::time_correlated_detection_event<DataTraits>`,
- *   `tcspc::nontagged_counts_event<DataTraits>`
+ *   `tcspc::bulk_counts_event<DataTraits>`
  *   `tcspc::marker_event<DataTraits>`, `tcspc::data_lost_event<DataTraits>`
  * - Flush: pass through with no action
  */

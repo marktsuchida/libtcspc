@@ -234,7 +234,7 @@ auto make_processor(settings const &settings,
         warning_event,
         begin_lost_interval_event<>,
         end_lost_interval_event<>,
-        untagged_counts_event<>>>("error in input data",
+        lost_counts_event<>>>("error in input data",
     check_monotonic(
     stop<type_list<warning_event>>("processing stopped",
     route<type_list<detection_event<>>>(

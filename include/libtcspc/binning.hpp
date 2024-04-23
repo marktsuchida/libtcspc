@@ -130,7 +130,7 @@ class difftime_data_mapper {
  *
  * \tparam Event event type to map (must have `count` field)
  */
-template <typename Event = nontagged_counts_event<>> class count_data_mapper {
+template <typename Event = bulk_counts_event<>> class count_data_mapper {
   public:
     /** \brief Implements data mapper requirement */
     using event_type = Event;

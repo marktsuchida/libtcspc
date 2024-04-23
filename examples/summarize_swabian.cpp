@@ -95,7 +95,7 @@ auto summarize(std::string const &filename) -> bool {
     stop<type_list<warning_event,
                    begin_lost_interval_event<>,
                    end_lost_interval_event<>,
-                   untagged_counts_event<>>>("error",
+                   lost_counts_event<>>>("error",
     summarize_and_print())))))));
     // clang-format on
 
