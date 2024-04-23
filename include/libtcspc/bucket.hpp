@@ -642,7 +642,7 @@ class recycling_bucket_source final
      * \throw std::runtime_error if \p Blocking is false and the maximum bucket
      * count has been reached.
      */
-    auto bucket_of_size(std::size_t size) -> bucket<T> {
+    auto bucket_of_size(std::size_t size) -> bucket<T> override {
         std::unique_ptr<std::vector<T>> p;
         {
             std::unique_lock lock(mutex);
