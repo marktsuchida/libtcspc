@@ -193,6 +193,8 @@ class npint {
 
     /** \brief Unary minus operator. */
     constexpr auto operator-() const noexcept -> npint { return npint(-v); }
+    // Note that unary minus is supported for unsigned T, because it is
+    // well-defined (wraps).
 
     // Binary arithmetic operators
 
