@@ -131,10 +131,8 @@ class capture_output_access {
      *
      * \return the event
      */
-    template <
-        typename Event, typename EventList,
-        typename = std::enable_if_t<type_list_contains_v<EventList, Event>>>
-    auto pop() -> Event {
+    template <typename Event, typename EventList> auto pop() -> Event {
+        static_assert(type_list_contains_v<EventList, Event>);
         auto events = peek_events<EventList>();
         if (events.empty()) {
             throw std::logic_error(
@@ -172,10 +170,9 @@ class capture_output_access {
      *
      * \return true if the check was successful
      */
-    template <
-        typename Event, typename EventList,
-        typename = std::enable_if_t<type_list_contains_v<EventList, Event>>>
+    template <typename Event, typename EventList>
     auto check(Event const &expected_event) -> bool {
+        static_assert(type_list_contains_v<EventList, Event>);
         auto events = peek_events<EventList>();
         if (events.empty()) {
             std::ostringstream stream;
@@ -310,9 +307,8 @@ template <typename EventList> class capture_output_checker {
      *
      * \return the event
      */
-    template <typename Event, typename = std::enable_if_t<
-                                  type_list_contains_v<EventList, Event>>>
-    auto pop() -> Event {
+    template <typename Event> auto pop() -> Event {
+        static_assert(type_list_contains_v<EventList, Event>);
         return acc.pop<Event, EventList>();
     }
 
@@ -331,9 +327,8 @@ template <typename EventList> class capture_output_checker {
      *
      * \return true if the check was successful
      */
-    template <typename Event, typename = std::enable_if_t<
-                                  type_list_contains_v<EventList, Event>>>
-    auto check(Event const &expected_event) -> bool {
+    template <typename Event> auto check(Event const &expected_event) -> bool {
+        static_assert(type_list_contains_v<EventList, Event>);
         return acc.check<Event, EventList>(expected_event);
     }
 
@@ -583,9 +578,8 @@ template <typename EventList, typename Downstream> class feed_input {
         outputs_to_check.emplace_back(std::move(context), std::move(name));
     }
 
-    template <typename Event, typename = std::enable_if_t<
-                                  type_list_contains_v<EventList, Event>>>
-    void feed(Event const &event) {
+    template <typename Event> void feed(Event const &event) {
+        static_assert(type_list_contains_v<EventList, Event>);
         check_outputs_ready();
         downstream.handle(event);
     }

@@ -313,6 +313,16 @@ namespace tcspc {
  *   the event needs to be reused afterwards, the event should be passed using
  *   `std::as_const()`. Conversely, if the local event will not be reused, it
  *   may be passed using `std::move()`.
+ * - The `handle()` member function is often overloaded for multiple event
+ *   types, some of which may be template parameters, possibly with SFINAE
+ *   (`std::enable_if_t`). Choose carefully between `std::enable_if_t` and
+ *   `static_assert` when specifying requirements on the handled event types,
+ *   because they have different implications. Requirements specified by
+ *   `std::enable_if_t` are detected by `tcspc::handles_event` and will prevent
+ *   the overload from competing with other overloads when not satisfied.
+ *   Requirements specified by `static_assert`, if not satisfied, will cause a
+ *   compile error _after_ the overload has been selected. There are use cases
+ *   for both.
  *
  * @{
  */

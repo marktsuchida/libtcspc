@@ -299,25 +299,31 @@ class channel_router {
      * \param channel_indices pairs of channels with downstream indices to
      * route to
      */
-    template <
-        typename Ch, typename I,
-        typename = std::enable_if_t<
-            std::is_convertible_v<Ch, typename DataTraits::channel_type> &&
-            std::is_convertible_v<I, std::size_t>>>
+    template <typename ChannelIndexPair>
     explicit channel_router(
-        std::array<std::pair<Ch, I>, N> const &channel_indices)
+        std::array<ChannelIndexPair, N> const &channel_indices)
         : channels([&] {
               std::array<typename DataTraits::channel_type, N> ret{};
               std::transform(channel_indices.begin(), channel_indices.end(),
-                             ret.begin(), [](auto p) { return p.first; });
+                             ret.begin(),
+                             [](auto p) { return std::get<0>(p); });
               return ret;
           }()),
           indices([&] {
               std::array<std::size_t, N> ret{};
               std::transform(channel_indices.begin(), channel_indices.end(),
-                             ret.begin(), [](auto p) { return p.second; });
+                             ret.begin(),
+                             [](auto p) { return std::get<1>(p); });
               return ret;
-          }()) {}
+          }()) {
+
+        static_assert(
+            std::is_convertible_v<decltype(std::get<0>(channel_indices[0])),
+                                  typename DataTraits::channel_type> &&
+                std::is_convertible_v<
+                    decltype(std::get<1>(channel_indices[0])), std::size_t>,
+            "channel_indices must be an array of pair-like convertible to (channel, std::size_t)");
+    }
 
     /** \brief Implements router requirement. */
     template <typename Event>

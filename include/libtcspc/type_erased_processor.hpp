@@ -141,13 +141,16 @@ template <typename EventList> class type_erased_processor {
      *
      * \param downstream downstream processor
      */
-    template <
-        typename Downstream,
-        typename = std::enable_if_t<handles_events_v<Downstream, event_list> &&
-                                    handles_flush_v<Downstream>>>
+    template <typename Downstream>
     explicit type_erased_processor(Downstream &&downstream)
         : proc(std::make_unique<virtual_processor<Downstream>>(
-              std::forward<Downstream>(downstream))) {}
+              std::forward<Downstream>(downstream))) {
+        static_assert(
+            handles_events_v<Downstream, event_list>,
+            "downstream of type_erased_processor must handle all specified events");
+        static_assert(handles_flush_v<Downstream>,
+                      "downstream of type_erased_processor must handle flush");
+    }
 
     /** \brief Implements processor requirement. */
     [[nodiscard]] auto introspect_node() const -> processor_info {

@@ -59,6 +59,10 @@ inline constexpr bool handles_flush_v = handles_flush<Proc>::value;
  * Determines whether the processor \p Proc handles the event type \p Event and
  * provides the result in the `bool` member `value`.
  *
+ * \note Even if this metafunction is true, it is possible for a processor to
+ * fail (at compile time) to handle the event due to `static_assert` or other
+ * implicit requirements.
+ *
  * \see `tcspc::handles_event_v`
  */
 template <typename Proc, typename Event, typename = void>
@@ -97,6 +101,10 @@ inline constexpr bool handles_event_v = handles_event<Proc, Event>::value;
  * Determines whether the processor \p Proc handles all of the event types in
  * the `tcspc::type_list` specialization \p EventList and provides the result
  * in the `bool` member `value`.
+ *
+ * \note Even if this metafunction is true, it is possible for a processor to
+ * fail (at compile time) to handle the events due to `static_assert` or other
+ * implicit requirements.
  *
  * \see `tcspc::handles_events_v`
  */
