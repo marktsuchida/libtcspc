@@ -35,9 +35,9 @@ TEST_CASE("introspect timing_misc", "[introspect]") {
 }
 
 TEST_CASE("retime periodic sequence events") {
-    using out_events = type_list<periodic_sequence_event<>>;
+    using out_events = type_list<periodic_sequence_model_event<>>;
     auto ctx = processor_context::create();
-    auto in = feed_input<type_list<periodic_sequence_event<>>>(
+    auto in = feed_input<type_list<periodic_sequence_model_event<>>>(
         retime_periodic_sequences<>(
             10, capture_output<out_events>(
                     ctx->tracker<capture_output_access>("out"))));
@@ -46,26 +46,28 @@ TEST_CASE("retime periodic sequence events") {
         ctx->access<capture_output_access>("out"));
 
     SECTION("normal operation") {
-        in.feed(periodic_sequence_event<>{4, -8.0, 1.5});
-        REQUIRE(out.check(periodic_sequence_event<>{-5, 1.0, 1.5}));
-        in.feed(periodic_sequence_event<>{4, -8.5, 1.5});
-        REQUIRE(out.check(periodic_sequence_event<>{-6, 1.5, 1.5}));
-        in.feed(periodic_sequence_event<>{4, 10.0, 1.5});
-        REQUIRE(out.check(periodic_sequence_event<>{13, 1.0, 1.5}));
+        in.feed(periodic_sequence_model_event<>{4, -8.0, 1.5});
+        REQUIRE(out.check(periodic_sequence_model_event<>{-5, 1.0, 1.5}));
+        in.feed(periodic_sequence_model_event<>{4, -8.5, 1.5});
+        REQUIRE(out.check(periodic_sequence_model_event<>{-6, 1.5, 1.5}));
+        in.feed(periodic_sequence_model_event<>{4, 10.0, 1.5});
+        REQUIRE(out.check(periodic_sequence_model_event<>{13, 1.0, 1.5}));
     }
 
     SECTION("max time shift") {
-        in.feed(periodic_sequence_event<>{4, -9.0, 1.5});
-        REQUIRE(out.check(periodic_sequence_event<>{-6, 1.0, 1.5}));
-        in.feed(periodic_sequence_event<>{4, 11.75, 1.5});
-        REQUIRE(out.check(periodic_sequence_event<>{14, 1.75, 1.5}));
+        in.feed(periodic_sequence_model_event<>{4, -9.0, 1.5});
+        REQUIRE(out.check(periodic_sequence_model_event<>{-6, 1.0, 1.5}));
+        in.feed(periodic_sequence_model_event<>{4, 11.75, 1.5});
+        REQUIRE(out.check(periodic_sequence_model_event<>{14, 1.75, 1.5}));
     }
 
     SECTION("fail above max time shift") {
-        REQUIRE_THROWS_WITH(in.feed(periodic_sequence_event<>{4, -9.01, 1.5}),
-                            Catch::Matchers::ContainsSubstring("shift"));
-        REQUIRE_THROWS_WITH(in.feed(periodic_sequence_event<>{4, 12.0, 1.5}),
-                            Catch::Matchers::ContainsSubstring("shift"));
+        REQUIRE_THROWS_WITH(
+            in.feed(periodic_sequence_model_event<>{4, -9.01, 1.5}),
+            Catch::Matchers::ContainsSubstring("shift"));
+        REQUIRE_THROWS_WITH(
+            in.feed(periodic_sequence_model_event<>{4, 12.0, 1.5}),
+            Catch::Matchers::ContainsSubstring("shift"));
     }
 }
 
@@ -74,9 +76,9 @@ TEST_CASE("retime periodic sequence events unsigned",
     struct traits {
         using abstime_type = std::uint64_t;
     };
-    using out_events = type_list<periodic_sequence_event<traits>>;
+    using out_events = type_list<periodic_sequence_model_event<traits>>;
     auto ctx = processor_context::create();
-    auto in = feed_input<type_list<periodic_sequence_event<traits>>>(
+    auto in = feed_input<type_list<periodic_sequence_model_event<traits>>>(
         retime_periodic_sequences<traits>(
             10, capture_output<out_events>(
                     ctx->tracker<capture_output_access>("out"))));
@@ -85,15 +87,15 @@ TEST_CASE("retime periodic sequence events unsigned",
         ctx->access<capture_output_access>("out"));
 
     SECTION("normal operation") {
-        in.feed(periodic_sequence_event<traits>{4, -1.5, 1.5});
-        REQUIRE(out.check(periodic_sequence_event<traits>{1, 1.5, 1.5}));
-        in.feed(periodic_sequence_event<traits>{4, -3.0, 1.5});
-        REQUIRE(out.check(periodic_sequence_event<traits>{0, 1.0, 1.5}));
+        in.feed(periodic_sequence_model_event<traits>{4, -1.5, 1.5});
+        REQUIRE(out.check(periodic_sequence_model_event<traits>{1, 1.5, 1.5}));
+        in.feed(periodic_sequence_model_event<traits>{4, -3.0, 1.5});
+        REQUIRE(out.check(periodic_sequence_model_event<traits>{0, 1.0, 1.5}));
     }
 
     SECTION("unsigned underflow") {
         REQUIRE_THROWS_WITH(
-            in.feed(periodic_sequence_event<traits>{4, -3.01, 1.5}),
+            in.feed(periodic_sequence_model_event<traits>{4, -3.01, 1.5}),
             Catch::Matchers::ContainsSubstring("unsigned"));
     }
 }
@@ -102,7 +104,7 @@ TEST_CASE("extrapolate periodic sequences",
           "[extrapolate_periodic_sequences]") {
     using out_events = type_list<real_one_shot_timing_event<>>;
     auto ctx = processor_context::create();
-    auto in = feed_input<type_list<periodic_sequence_event<>>>(
+    auto in = feed_input<type_list<periodic_sequence_model_event<>>>(
         extrapolate_periodic_sequences(
             2, capture_output<out_events>(
                    ctx->tracker<capture_output_access>("out"))));
@@ -110,7 +112,7 @@ TEST_CASE("extrapolate periodic sequences",
     auto out = capture_output_checker<out_events>(
         ctx->access<capture_output_access>("out"));
 
-    in.feed(periodic_sequence_event<>{42, 0.5, 1.75});
+    in.feed(periodic_sequence_model_event<>{42, 0.5, 1.75});
     REQUIRE(out.check(real_one_shot_timing_event<>{42, 4.0}));
     in.flush();
     REQUIRE(out.check_flushed());
@@ -120,7 +122,7 @@ TEST_CASE("add count to periodic sequences",
           "[add_count_to_periodic_sequences]") {
     using out_events = type_list<real_linear_timing_event<>>;
     auto ctx = processor_context::create();
-    auto in = feed_input<type_list<periodic_sequence_event<>>>(
+    auto in = feed_input<type_list<periodic_sequence_model_event<>>>(
         add_count_to_periodic_sequences(
             3, capture_output<out_events>(
                    ctx->tracker<capture_output_access>("out"))));
@@ -128,7 +130,7 @@ TEST_CASE("add count to periodic sequences",
     auto out = capture_output_checker<out_events>(
         ctx->access<capture_output_access>("out"));
 
-    in.feed(periodic_sequence_event<>{42, 0.5, 1.75});
+    in.feed(periodic_sequence_model_event<>{42, 0.5, 1.75});
     REQUIRE(out.check(real_linear_timing_event<>{42, 0.5, 1.75, 3}));
     in.flush();
     REQUIRE(out.check_flushed());

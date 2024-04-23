@@ -27,7 +27,7 @@ namespace tcspc {
  * \tparam DataTraits traits type specifying `abstime_type`
  */
 template <typename DataTraits = default_data_traits>
-struct periodic_sequence_event {
+struct periodic_sequence_model_event {
     /**
      * \brief Absolute time of this event, used as a reference point.
      */
@@ -47,23 +47,23 @@ struct periodic_sequence_event {
     double interval;
 
     /** \brief Equality comparison operator. */
-    friend auto operator==(periodic_sequence_event const &lhs,
-                           periodic_sequence_event const &rhs) noexcept
+    friend auto operator==(periodic_sequence_model_event const &lhs,
+                           periodic_sequence_model_event const &rhs) noexcept
         -> bool {
         return lhs.abstime == rhs.abstime && lhs.delay == rhs.delay &&
                lhs.interval == rhs.interval;
     }
 
     /** \brief Inequality comparison operator. */
-    friend auto operator!=(periodic_sequence_event const &lhs,
-                           periodic_sequence_event const &rhs) noexcept
+    friend auto operator!=(periodic_sequence_model_event const &lhs,
+                           periodic_sequence_model_event const &rhs) noexcept
         -> bool {
         return not(lhs == rhs);
     }
 
     /** \brief Stream insertion operator. */
     friend auto operator<<(std::ostream &stream,
-                           periodic_sequence_event const &event)
+                           periodic_sequence_model_event const &event)
         -> std::ostream & {
         return stream << "offset_and_interval(" << event.abstime << " + "
                       << event.delay << ", " << event.interval << ')';
@@ -200,7 +200,7 @@ class retime_periodic_sequences {
     }
 
     template <typename DT>
-    void handle(periodic_sequence_event<DT> const &event) {
+    void handle(periodic_sequence_model_event<DT> const &event) {
         static_assert(std::is_same_v<typename DT::abstime_type, abstime_type>);
 
         auto delta = std::floor(event.delay) - 1.0;
@@ -223,7 +223,7 @@ class retime_periodic_sequences {
             abstime = event.abstime + static_cast<abstime_type>(delta);
         }
 
-        downstream.handle(periodic_sequence_event<DataTraits>{
+        downstream.handle(periodic_sequence_model_event<DataTraits>{
             abstime, event.delay - delta, event.interval});
     }
 
@@ -234,11 +234,12 @@ class retime_periodic_sequences {
 
 /**
  * \brief Create a processor that adjusts the abstime of
- * `tcspc::periodic_sequence_event` to be earlier than the modeled sequence.
+ * `tcspc::periodic_sequence_model_event` to be earlier than the modeled
+ * sequence.
  *
  * \ingroup processors-timing-modeling
  *
- * Events of type `tcspc::periodic_sequence_event` (with matching
+ * Events of type `tcspc::periodic_sequence_model_event` (with matching
  * `abstime_type`) have their `abstime` and `delay` noramlized, such that
  * `delay` is at least 1.0 and no more than 2.0, without altering the modeled
  * tick sequence.
@@ -275,8 +276,8 @@ class retime_periodic_sequences {
  * \return processor
  *
  * \par Events handled
- * - `tcspc::periodic_sequence_event<DT>`: emit with normalized `abstime` and
- *   `delay` as `tcspc::periodic_sequence_event<DataTraits>`; throw
+ * - `tcspc::periodic_sequence_model_event<DT>`: emit with normalized `abstime`
+ * and `delay` as `tcspc::periodic_sequence_model_event<DataTraits>`; throw
  *   `std::runime_error` if the time shift or result range criteria are not met
  * - Flush: pass through with no action
  */
@@ -313,7 +314,7 @@ class extrapolate_periodic_sequences {
     }
 
     template <typename DT>
-    void handle(periodic_sequence_event<DT> const &event) {
+    void handle(periodic_sequence_model_event<DT> const &event) {
         static_assert(std::is_same_v<typename DT::abstime_type,
                                      typename DataTraits::abstime_type>);
         downstream.handle(real_one_shot_timing_event<DataTraits>{
@@ -331,11 +332,11 @@ class extrapolate_periodic_sequences {
 
 /**
  * \brief Create a processor that emits an extrapolated one-shot timing event
- * based on `tcspc::periodic_sequence_event`.
+ * based on `tcspc::periodic_sequence_model_event`.
  *
  * \ingroup processors-timing-modeling
  *
- * Events of type `tcspc::periodic_sequence_event` (with matching
+ * Events of type `tcspc::periodic_sequence_model_event` (with matching
  * `abstime_type`) are converted to `tcspc::real_one_shot_timing_event` with
  * the same `abstime` and a `delay` computed by extrapolating the model
  * sequence to the given \p tick_index.
@@ -357,7 +358,7 @@ class extrapolate_periodic_sequences {
  * \return processor
  *
  * \par Events handled
- * - `tcspc::periodic_sequence_event<DT>`: emit
+ * - `tcspc::periodic_sequence_model_event<DT>`: emit
  *   `tcspc::real_one_shot_timing_event<DataTraits>` with the same `abstime`
  *   but the `delay` offset by `interval` times `tick_index`
  */
@@ -392,7 +393,7 @@ class add_count_to_periodic_sequences {
     }
 
     template <typename DT>
-    void handle(periodic_sequence_event<DT> const &event) {
+    void handle(periodic_sequence_model_event<DT> const &event) {
         static_assert(std::is_same_v<typename DT::abstime_type,
                                      typename DataTraits::abstime_type>);
         downstream.handle(real_linear_timing_event<DataTraits>{
@@ -410,11 +411,11 @@ class add_count_to_periodic_sequences {
 
 /**
  * \brief Create a processor that emits a linear timing event based on
- * `tcspc::periodic_sequence_event` by adding a fixed sequence length.
+ * `tcspc::periodic_sequence_model_event` by adding a fixed sequence length.
  *
  * \ingroup processors-timing-modeling
  *
- * Events of type `tcspc::periodic_sequence_event` (with matching
+ * Events of type `tcspc::periodic_sequence_model_event` (with matching
  * `abstime_type`) are converted to `tcspc::real_linear_timing_event` with the
  * same `abstime`, `delay`, and `interval`, and with the given \p count.
  *
@@ -435,7 +436,7 @@ class add_count_to_periodic_sequences {
  * \return processor
  *
  * \par Events handled
- * - `tcspc::periodic_sequence_event<DT>`: emit
+ * - `tcspc::periodic_sequence_model_event<DT>`: emit
  *   `tcspc::real_linear_timing_event<DataTraits>` with the same `abstime`,
  *   `delay`, and `interval` and added `count`.
  * - All other types: pass through with no action

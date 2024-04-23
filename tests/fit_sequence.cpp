@@ -63,18 +63,19 @@ TEST_CASE("fit periodic sequences") {
     auto ctx = processor_context::create();
     auto in = feed_input<type_list<e0>>(fit_periodic_sequences<e0>(
         4, {1.0, 2.0}, 2.5,
-        capture_output<type_list<periodic_sequence_event<>>>(
+        capture_output<type_list<periodic_sequence_model_event<>>>(
             ctx->tracker<capture_output_access>("out"))));
     in.require_output_checked(ctx, "out");
-    auto out = capture_output_checker<type_list<periodic_sequence_event<>>>(
-        ctx->access<capture_output_access>("out"));
+    auto out =
+        capture_output_checker<type_list<periodic_sequence_model_event<>>>(
+            ctx->access<capture_output_access>("out"));
 
     SECTION("fit succeeds") {
         in.feed(e0{6});
         in.feed(e0{5});
         in.feed(e0{7});
         in.feed(e0{10});
-        auto const out_event = out.pop<periodic_sequence_event<>>();
+        auto const out_event = out.pop<periodic_sequence_model_event<>>();
         CHECK(out_event.abstime == 10);
         CHECK_THAT(static_cast<double>(out_event.abstime) + out_event.delay,
                    Catch::Matchers::WithinRel(4.9, 1e-12));

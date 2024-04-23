@@ -136,7 +136,7 @@ class fit_periodic_sequences {
             static_cast<double>(last_tick_time - first_tick_time) -
             static_cast<double>(tick_offset);
 
-        downstream.handle(periodic_sequence_event<DataTraits>{
+        downstream.handle(periodic_sequence_model_event<DataTraits>{
             last_tick_time, delay, result.slope});
     }
 
@@ -205,8 +205,8 @@ class fit_periodic_sequences {
  * The processor accepts a single event type, \p Event. Every \p length events
  * are grouped together and a model of regularly spaced events is fit to their
  * abstimes. If the fit is successful (see below for criteria), then a
- * `tcspc::periodic_sequence_event` is emitted, containing the fit results,
- * upon receiving the last \p Event of the series. If the fit is not
+ * `tcspc::periodic_sequence_model_event` is emitted, containing the fit
+ * results, upon receiving the last \p Event of the series. If the fit is not
  * successful, processing is halted with an error.
  *
  * The emitted event's `abstime` is set to the abstime of the last observed \p
@@ -243,8 +243,8 @@ class fit_periodic_sequences {
  *
  * \par Events handled
  * - `Event`: buffer every \p length events, fit to model, then emit
- *   `tcspc::periodic_sequence_event<DataTraits>` with the fit results; throw
- *   `std::runtime_error` if fit criteria were not met
+ *   `tcspc::periodic_sequence_model_event<DataTraits>` with the fit results;
+ *   throw `std::runtime_error` if fit criteria were not met
  * - All other types: pass through with no action
  * - Flush: pass through with no action
  */
