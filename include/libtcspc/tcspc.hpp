@@ -263,7 +263,7 @@ namespace tcspc {
  * - `void flush()`, which conveys the end of stream. The processor emits any
  *   remaining events (due, for example, to buffered state), and flushes its
  *   downstream.
- * - Introspection functions:
+ * - Introspection functions (see the return types for details):
  *   - `[[nodiscard]] auto introspect_node() const -> tcspc::processor_info`.
  *   - `[[nodiscard]] auto introspect_graph() const -> tcspc::processor_graph`.
  *
@@ -722,6 +722,10 @@ namespace tcspc {
  * \defgroup introspect Introspection
  *
  * \brief Processor introspection and Graphviz graph generation.
+ *
+ * \note Proceessor info and graph expose implementation details that may not
+ * be stable. It is intended primarily for visualization, debugging, and
+ * testing; not as a basis for automation.
  */
 
 /**

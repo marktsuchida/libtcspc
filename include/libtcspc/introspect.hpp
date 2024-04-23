@@ -210,10 +210,6 @@ class processor_node_id {
  * The graph and its nodes are pure data types, so that they remain valid even
  * after the processors from which they were constructed are moved or
  * destroyed.
- *
- * \note The proceessor graph exposes implementation details that may not be
- * stable (even once we have a stable API). It is intended primarily for
- * visualization, debugging, and testing; not as a basis for automation.
  */
 class processor_graph {
     struct node_type {
