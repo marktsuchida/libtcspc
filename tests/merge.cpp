@@ -26,10 +26,10 @@
 
 namespace tcspc {
 
-using e0 = timestamped_test_event<0>;
-using e1 = timestamped_test_event<1>;
-using e2 = timestamped_test_event<2>;
-using e3 = timestamped_test_event<3>;
+using e0 = time_tagged_test_event<0>;
+using e1 = time_tagged_test_event<1>;
+using e2 = time_tagged_test_event<2>;
+using e3 = time_tagged_test_event<3>;
 using all_events = type_list<e0, e1, e2, e3>;
 
 namespace {

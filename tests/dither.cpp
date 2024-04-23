@@ -19,8 +19,8 @@ namespace tcspc {
 
 namespace {
 
-using trigger_event = timestamped_test_event<0>;
-using output_event = timestamped_test_event<1>;
+using trigger_event = time_tagged_test_event<0>;
+using output_event = time_tagged_test_event<1>;
 
 } // namespace
 

@@ -30,9 +30,9 @@ namespace tcspc {
 
 namespace {
 
-using start_event = timestamped_test_event<0>;
-using reset_event = timestamped_test_event<2>;
-using misc_event = timestamped_test_event<3>;
+using start_event = time_tagged_test_event<0>;
+using reset_event = time_tagged_test_event<2>;
+using misc_event = time_tagged_test_event<3>;
 
 struct dt3216 : default_data_traits {
     using bin_index_type = u32;

@@ -24,7 +24,7 @@ namespace tcspc {
 namespace {
 
 using abstime_type = default_data_traits::abstime_type;
-using other_event = timestamped_test_event<0>;
+using other_event = time_tagged_test_event<0>;
 using events = type_list<other_event, time_reached_event<>>;
 
 } // namespace

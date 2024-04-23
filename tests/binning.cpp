@@ -27,9 +27,9 @@ namespace tcspc {
 
 namespace {
 
-using start_event = timestamped_test_event<0>;
-using stop_event = timestamped_test_event<1>;
-using misc_event = timestamped_test_event<2>;
+using start_event = time_tagged_test_event<0>;
+using stop_event = time_tagged_test_event<1>;
+using misc_event = time_tagged_test_event<2>;
 
 } // namespace
 

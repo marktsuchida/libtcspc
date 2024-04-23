@@ -26,8 +26,8 @@ TEST_CASE("introspect delay", "[introspect]") {
 
 namespace {
 
-using e0 = timestamped_test_event<0>;
-using e1 = timestamped_test_event<1>;
+using e0 = time_tagged_test_event<0>;
+using e1 = time_tagged_test_event<1>;
 using out_events = type_list<e0, e1>;
 
 } // namespace

@@ -727,28 +727,28 @@ template <int N> struct empty_test_event {
  * \tparam DataTraits traits type specifying `abstime_type`
  */
 template <int N, typename DataTraits = default_data_traits>
-struct timestamped_test_event {
+struct time_tagged_test_event {
     /** \brief Timestamp. */
     typename DataTraits::abstime_type abstime;
 
     /** \brief Equality comparison operator. */
-    friend auto operator==(timestamped_test_event const &lhs,
-                           timestamped_test_event const &rhs) noexcept
+    friend auto operator==(time_tagged_test_event const &lhs,
+                           time_tagged_test_event const &rhs) noexcept
         -> bool {
         return lhs.abstime == rhs.abstime;
     }
 
     /** \brief Inequality comparison operator. */
-    friend auto operator!=(timestamped_test_event const &lhs,
-                           timestamped_test_event const &rhs) noexcept
+    friend auto operator!=(time_tagged_test_event const &lhs,
+                           time_tagged_test_event const &rhs) noexcept
         -> bool {
         return not(lhs == rhs);
     }
 
     /** \brief Stream insertion operator. */
-    friend auto operator<<(std::ostream &strm, timestamped_test_event const &e)
+    friend auto operator<<(std::ostream &strm, time_tagged_test_event const &e)
         -> std::ostream & {
-        return strm << "timestamped_test_event<" << N << ">{" << e.abstime
+        return strm << "time_tagged_test_event<" << N << ">{" << e.abstime
                     << "}";
     }
 };

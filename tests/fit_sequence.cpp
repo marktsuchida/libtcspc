@@ -59,7 +59,7 @@ TEST_CASE("periodic fitter") {
 } // namespace internal
 
 TEST_CASE("fit periodic sequences") {
-    using e0 = timestamped_test_event<0>;
+    using e0 = time_tagged_test_event<0>;
     auto ctx = processor_context::create();
     auto in = feed_input<type_list<e0>>(fit_periodic_sequences<e0>(
         4, {1.0, 2.0}, 2.5,

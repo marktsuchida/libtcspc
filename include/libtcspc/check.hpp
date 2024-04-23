@@ -88,8 +88,8 @@ class check_monotonic {
  *
  * \tparam DataTraits traits type specifying `abstime_type`
  *
- * \tparam RequireStrictlyIncreasing if true, issue warning on consecutive
- * equal timestamps
+ * \tparam RequireStrictlyIncreasing if true, issue warning also on equal
+ * `abstime`
  *
  * \tparam Downstream downstream processor type (usually deduced)
  *

@@ -29,7 +29,7 @@ TEST_CASE("introspect test_utils", "[introspect]") {
 }
 
 using e0 = empty_test_event<0>;
-using e1 = timestamped_test_event<1>;
+using e1 = time_tagged_test_event<1>;
 
 TEST_CASE("Short-circuited with no events") {
     auto ctx = processor_context::create();

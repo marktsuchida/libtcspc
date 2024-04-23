@@ -27,8 +27,8 @@ namespace tcspc {
 
 namespace {
 
-using reset_event = timestamped_test_event<0>;
-using misc_event = timestamped_test_event<1>;
+using reset_event = time_tagged_test_event<0>;
+using misc_event = time_tagged_test_event<1>;
 
 struct data_traits : default_data_traits {
     using bin_index_type = u32;

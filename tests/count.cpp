@@ -22,10 +22,10 @@ namespace tcspc {
 
 namespace {
 
-using tick_event = timestamped_test_event<0>;
-using fire_event = timestamped_test_event<1>;
-using reset_event = timestamped_test_event<2>;
-using misc_event = timestamped_test_event<3>;
+using tick_event = time_tagged_test_event<0>;
+using fire_event = time_tagged_test_event<1>;
+using reset_event = time_tagged_test_event<2>;
+using misc_event = time_tagged_test_event<3>;
 using out_events = type_list<tick_event, fire_event, reset_event, misc_event>;
 
 } // namespace

@@ -64,7 +64,7 @@ class map_to_datapoints {
 } // namespace internal
 
 /**
- * \brief Create a processor that maps arbitrary timestamped events to
+ * \brief Create a processor that maps arbitrary time-tagged events to
  * datapoint events.
  *
  * \ingroup processors-binning

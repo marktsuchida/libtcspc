@@ -27,9 +27,9 @@ TEST_CASE("introspect timing_misc", "[introspect]") {
         extrapolate_periodic_sequences(1, null_sink()));
     check_introspect_simple_processor(
         add_count_to_periodic_sequences(1, null_sink()));
-    using etick = timestamped_test_event<0>;
-    using estart = timestamped_test_event<1>;
-    using estop = timestamped_test_event<2>;
+    using etick = time_tagged_test_event<0>;
+    using estart = time_tagged_test_event<1>;
+    using estop = time_tagged_test_event<2>;
     check_introspect_simple_processor(
         convert_sequences_to_start_stop<etick, estart, estop>(1, null_sink()));
 }
@@ -136,10 +136,10 @@ TEST_CASE("add count to periodic sequences",
 
 TEST_CASE("convert sequences to start-stop",
           "[convert_sequences_to_start_stop]") {
-    using inevt = timestamped_test_event<0>;
-    using startevt = timestamped_test_event<1>;
-    using stopevt = timestamped_test_event<2>;
-    using otherevt = timestamped_test_event<3>;
+    using inevt = time_tagged_test_event<0>;
+    using startevt = time_tagged_test_event<1>;
+    using stopevt = time_tagged_test_event<2>;
+    using otherevt = time_tagged_test_event<3>;
     using out_events = type_list<startevt, stopevt, otherevt>;
     auto ctx = processor_context::create();
 
