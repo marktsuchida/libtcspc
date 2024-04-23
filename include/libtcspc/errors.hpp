@@ -61,11 +61,4 @@ class histogram_overflow_error : public std::runtime_error {
     using std::runtime_error::runtime_error;
 };
 
-// TODO Obsolete; remove.
-/** \private */
-class incomplete_array_cycle_error : public std::runtime_error {
-  public:
-    using std::runtime_error::runtime_error;
-};
-
 } // namespace tcspc
