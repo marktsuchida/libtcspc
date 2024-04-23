@@ -79,7 +79,7 @@ class npint {
      * \param other source
      */
     template <typename U,
-              typename = std::enable_if_t<std::negation_v<std::is_same<T, U>>>>
+              typename = std::enable_if_t<not std::is_same_v<T, U>>>
     explicit constexpr npint(npint<U> const &other) noexcept
         : v(T(other.value())) {
         static_assert(
