@@ -454,24 +454,24 @@ TEST_CASE("bh spc assign") {
           le_event<bh_spc_event>(
               {0b1001'0000, 0b0000'0000, 0b1111'1111, 0b1111'1111}));
 
-    CHECK(bh_spc_event::make_spc180_marker0_with_intensity_count(
-              0_u16np, 1_u8np, 0_u16np) ==
+    CHECK(bh_spc_event::make_marker0_with_intensity_count(0_u16np, 1_u8np,
+                                                          0_u16np) ==
           le_event<bh_spc_event>(
               {0b1001'0000, 0b0000'0000, 0b0001'0000, 0b0000'0000}));
-    CHECK(bh_spc_event::make_spc180_marker0_with_intensity_count(
-              1_u16np, 3_u8np, 2_u16np) ==
+    CHECK(bh_spc_event::make_marker0_with_intensity_count(1_u16np, 3_u8np,
+                                                          2_u16np) ==
           le_event<bh_spc_event>(
               {0b1001'0000, 0b0000'0010, 0b0011'0000, 0b0000'0001}));
-    CHECK(bh_spc_event::make_spc180_marker0_with_intensity_count(
-              1_u16np, 3_u8np, 2_u16np, true) ==
+    CHECK(bh_spc_event::make_marker0_with_intensity_count(1_u16np, 3_u8np,
+                                                          2_u16np, true) ==
           le_event<bh_spc_event>(
               {0b1101'0000, 0b0000'0010, 0b0011'0000, 0b0000'0001}));
-    CHECK(bh_spc_event::make_spc180_marker0_with_intensity_count(
-              4094_u16np, 13_u8np, 4093_u16np) ==
+    CHECK(bh_spc_event::make_marker0_with_intensity_count(4094_u16np, 13_u8np,
+                                                          4093_u16np) ==
           le_event<bh_spc_event>(
               {0b1001'1111, 0b1111'1101, 0b1101'1111, 0b1111'1110}));
-    CHECK(bh_spc_event::make_spc180_marker0_with_intensity_count(
-              4095_u16np, 15_u8np, 4095_u16np) ==
+    CHECK(bh_spc_event::make_marker0_with_intensity_count(4095_u16np, 15_u8np,
+                                                          4095_u16np) ==
           le_event<bh_spc_event>(
               {0b1001'1111, 0b1111'1111, 0b1111'1111, 0b1111'1111}));
 
@@ -662,7 +662,7 @@ using out_events_with_counter =
 TEST_CASE("introspect bh_spc", "[introspect]") {
     check_introspect_simple_processor(decode_bh_spc(null_sink()));
     check_introspect_simple_processor(
-        decode_bh_spc_with_fast_intensity_counter(null_sink()));
+        decode_bh_spc_with_intensity_counter(null_sink()));
     check_introspect_simple_processor(decode_bh_spc600_4096ch(null_sink()));
     check_introspect_simple_processor(decode_bh_spc600_256ch(null_sink()));
 }
@@ -781,10 +781,10 @@ TEST_CASE("decode bh spc") {
 }
 
 TEST_CASE("decode bh spc with fast intensity counter",
-          "[decode_bh_spc_with_fast_intensity_counter]") {
+          "[decode_bh_spc_with_intensity_counter]") {
     auto ctx = processor_context::create();
     auto in = feed_input<type_list<bh_spc_event>>(
-        decode_bh_spc_with_fast_intensity_counter(
+        decode_bh_spc_with_intensity_counter(
             capture_output<out_events_with_counter>(
                 ctx->tracker<capture_output_access>("out"))));
     in.require_output_checked(ctx, "out");
@@ -810,7 +810,7 @@ TEST_CASE("decode bh spc with fast intensity counter",
     }
 
     SECTION("with marker 0, no mtov") {
-        in.feed(bh_spc_event::make_spc180_marker0_with_intensity_count(
+        in.feed(bh_spc_event::make_marker0_with_intensity_count(
                     42_u16np, 5_u8np, 123_u16np, false)
                     .gap_flag(gap));
         if (gap)
@@ -821,7 +821,7 @@ TEST_CASE("decode bh spc with fast intensity counter",
     }
 
     SECTION("with marker 0, mtov") {
-        in.feed(bh_spc_event::make_spc180_marker0_with_intensity_count(
+        in.feed(bh_spc_event::make_marker0_with_intensity_count(
                     42_u16np, 5_u8np, 123_u16np, true)
                     .gap_flag(gap));
         if (gap)
