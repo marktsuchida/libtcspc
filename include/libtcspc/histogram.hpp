@@ -25,25 +25,24 @@ namespace tcspc {
 
 namespace internal {
 
-template <typename ResetEvent, typename OverflowStrategy, typename DataTraits,
+template <typename ResetEvent, typename OverflowPolicy, typename DataTraits,
           typename Downstream>
 class histogram {
   public:
     using bin_index_type = typename DataTraits::bin_index_type;
     using bin_type = typename DataTraits::bin_type;
     static_assert(
-        is_any_of_v<OverflowStrategy, saturate_on_overflow, reset_on_overflow,
+        is_any_of_v<OverflowPolicy, saturate_on_overflow, reset_on_overflow,
                     stop_on_overflow, error_on_overflow>);
 
   private:
-    using internal_overflow_strategy = std::conditional_t<
-        std::is_same_v<OverflowStrategy, saturate_on_overflow>,
+    using internal_overflow_policy = std::conditional_t<
+        std::is_same_v<OverflowPolicy, saturate_on_overflow>,
         saturate_on_internal_overflow, stop_on_internal_overflow>;
 
     std::shared_ptr<bucket_source<bin_type>> bsource;
     bucket<bin_type> hist_bucket;
-    single_histogram<bin_index_type, bin_type, internal_overflow_strategy>
-        shist;
+    single_histogram<bin_index_type, bin_type, internal_overflow_policy> shist;
     bool saturated = false;
     Downstream downstream;
 
@@ -63,7 +62,7 @@ class histogram {
 
     void reset() {
         hist_bucket = {};
-        if constexpr (std::is_same_v<OverflowStrategy, saturate_on_overflow>) {
+        if constexpr (std::is_same_v<OverflowPolicy, saturate_on_overflow>) {
             saturated = false;
         }
     }
@@ -79,24 +78,24 @@ class histogram {
 
     LIBTCSPC_NOINLINE void
     handle_overflow(bin_increment_event<DataTraits> const &event) {
-        if constexpr (std::is_same_v<OverflowStrategy, saturate_on_overflow>) {
+        if constexpr (std::is_same_v<OverflowPolicy, saturate_on_overflow>) {
             downstream.handle(warning_event{"histogram saturated"});
-        } else if constexpr (std::is_same_v<OverflowStrategy,
+        } else if constexpr (std::is_same_v<OverflowPolicy,
                                             reset_on_overflow>) {
             if (shist.max_per_bin() == 0)
                 overflow_error();
             emit_concluding();
             reset();
             handle(event); // Recurse max once
-        } else if constexpr (std::is_same_v<OverflowStrategy,
+        } else if constexpr (std::is_same_v<OverflowPolicy,
                                             stop_on_overflow>) {
             emit_concluding();
             stop();
-        } else if constexpr (std::is_same_v<OverflowStrategy,
+        } else if constexpr (std::is_same_v<OverflowPolicy,
                                             error_on_overflow>) {
             overflow_error();
         } else {
-            static_assert(false_for_type<OverflowStrategy>::value);
+            static_assert(false_for_type<OverflowPolicy>::value);
         }
     }
 
@@ -129,7 +128,7 @@ class histogram {
                                      typename DataTraits::bin_index_type>);
         lazy_start();
         if (not shist.apply_increments({&event.bin_index, 1})) {
-            if constexpr (std::is_same_v<OverflowStrategy,
+            if constexpr (std::is_same_v<OverflowPolicy,
                                          saturate_on_overflow>) {
                 if (not saturated) {
                     saturated = true;
@@ -190,7 +189,7 @@ class histogram {
  *
  * \tparam ResetEvent event type causing histogram to reset
  *
- * \tparam OverflowStrategy strategy tag type to select how to handle bin
+ * \tparam OverflowPolicy policy tag type to select how to handle bin
  * overflows
  *
  * \tparam DataTraits traits type specifying `bin_index_type` and `bin_type`
@@ -213,7 +212,7 @@ class histogram {
  * - `tcspc::bin_increment_event<DT>`: apply the increment to the histogram and
  *   emit (const) `tcspc::histogram_event<DataTraits>`; if a bin overflowed,
  *   behavior (taken before emitting the histogram) depends on
- *   `OverflowStrategy`:
+ *   `OverflowPolicy`:
  *   - If `tcspc::saturate_on_overflow`, ignore the event, emitting
  *     `tcspc::warning_event` only on the first overflow since the start or
  *     last reset
@@ -231,13 +230,13 @@ class histogram {
  * - Flush: emit (rvalue) `tcspc::concluding_histogram_event<DataTraits>` with
  *   the current histogram; pass through
  */
-template <typename ResetEvent, typename OverflowStrategy,
+template <typename ResetEvent, typename OverflowPolicy,
           typename DataTraits = default_data_traits, typename Downstream>
 auto histogram(std::size_t num_bins, typename DataTraits::bin_type max_per_bin,
                std::shared_ptr<bucket_source<typename DataTraits::bin_type>>
                    buffer_provider,
                Downstream &&downstream) {
-    return internal::histogram<ResetEvent, OverflowStrategy, DataTraits,
+    return internal::histogram<ResetEvent, OverflowPolicy, DataTraits,
                                Downstream>(
         num_bins, max_per_bin, std::move(buffer_provider),
         std ::forward<Downstream>(downstream));

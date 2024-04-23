@@ -302,12 +302,12 @@ template <typename BinIndex> struct null_journal {
 };
 
 // Adapter which can attach to a span and treat it as a histogram.
-template <typename BinIndex, typename Bin, typename OverflowStrategy>
+template <typename BinIndex, typename Bin, typename OverflowPolicy>
 class single_histogram {
   public:
     using bin_index_type = BinIndex;
     using bin_type = Bin;
-    static_assert(is_any_of_v<OverflowStrategy, saturate_on_internal_overflow,
+    static_assert(is_any_of_v<OverflowPolicy, saturate_on_internal_overflow,
                               stop_on_internal_overflow>);
 
   private:
@@ -352,14 +352,14 @@ class single_histogram {
                 ++bin;
                 ++n_applied;
             } else if constexpr (std::is_same_v<
-                                     OverflowStrategy,
+                                     OverflowPolicy,
                                      saturate_on_internal_overflow>) {
                 continue;
-            } else if constexpr (std::is_same_v<OverflowStrategy,
+            } else if constexpr (std::is_same_v<OverflowPolicy,
                                                 stop_on_internal_overflow>) {
                 return n_applied;
             } else {
-                static_assert(false_for_type<OverflowStrategy>::value);
+                static_assert(false_for_type<OverflowPolicy>::value);
             }
         }
         return n_applied;
@@ -369,7 +369,7 @@ class single_histogram {
     // equal the values passed to apply_increments() in an immediately prior
     // call. Behavior undefined in saturate mode.
     void undo_increments(span<bin_index_type const> increments) {
-        assert((std::is_same_v<OverflowStrategy, stop_on_internal_overflow>));
+        assert((std::is_same_v<OverflowPolicy, stop_on_internal_overflow>));
         assert(not hist.empty());
         for (bin_index_type i : increments) {
             assert(i >= 0 && i < hist.size());
@@ -380,12 +380,12 @@ class single_histogram {
 
 // One cycle (frame, repeat unit) of an array of histograms.
 // Adapter which can attach to a span.
-template <typename BinIndex, typename Bin, typename OverflowStrategy>
+template <typename BinIndex, typename Bin, typename OverflowPolicy>
 class multi_histogram {
   public:
     using bin_index_type = BinIndex;
     using bin_type = Bin;
-    static_assert(is_any_of_v<OverflowStrategy, saturate_on_internal_overflow,
+    static_assert(is_any_of_v<OverflowPolicy, saturate_on_internal_overflow,
                               stop_on_internal_overflow>);
 
   private:
@@ -468,20 +468,20 @@ class multi_histogram {
             std::is_same_v<typename Journal::bin_index_type, bin_index_type>);
         assert(not hist_arr.empty());
         assert(not is_complete());
-        single_histogram<bin_index_type, bin_type, OverflowStrategy>
-            single_hist(hist_arr.subspan(n_bins * element_index, n_bins),
-                        arg_max_per_bin{bin_max}, arg_num_bins{n_bins});
+        single_histogram<bin_index_type, bin_type, OverflowPolicy> single_hist(
+            hist_arr.subspan(n_bins * element_index, n_bins),
+            arg_max_per_bin{bin_max}, arg_num_bins{n_bins});
         if (need_to_clear)
             single_hist.clear();
 
         auto n_applied = single_hist.apply_increments(batch);
 
-        if constexpr (std::is_same_v<OverflowStrategy,
+        if constexpr (std::is_same_v<OverflowPolicy,
                                      saturate_on_internal_overflow>) {
             journal.append_batch(batch);
             ++element_index;
             return n_applied == batch.size();
-        } else if constexpr (std::is_same_v<OverflowStrategy,
+        } else if constexpr (std::is_same_v<OverflowPolicy,
                                             stop_on_internal_overflow>) {
             if (n_applied == batch.size()) {
                 journal.append_batch(batch);
@@ -493,7 +493,7 @@ class multi_histogram {
             skip_remaining();
             return false;
         } else {
-            static_assert(false_for_type<OverflowStrategy>::value);
+            static_assert(false_for_type<OverflowPolicy>::value);
         }
     }
 
@@ -516,10 +516,10 @@ class multi_histogram {
     template <typename Journal> void roll_back(Journal const &journal) {
         static_assert(
             std::is_same_v<typename Journal::bin_index_type, bin_index_type>);
-        assert((std::is_same_v<OverflowStrategy, stop_on_internal_overflow>));
+        assert((std::is_same_v<OverflowPolicy, stop_on_internal_overflow>));
         assert(not hist_arr.empty());
         for (auto [index, bin_index_span] : journal) {
-            single_histogram<bin_index_type, bin_type, OverflowStrategy>
+            single_histogram<bin_index_type, bin_type, OverflowPolicy>
                 single_hist(hist_arr.subspan(n_bins * index, n_bins),
                             arg_max_per_bin{bin_max}, arg_num_bins{n_bins});
             single_hist.undo_increments(bin_index_span);
@@ -536,11 +536,11 @@ class multi_histogram {
     template <typename Journal> void replay(Journal const &journal) {
         static_assert(
             std::is_same_v<typename Journal::bin_index_type, bin_index_type>);
-        assert((std::is_same_v<OverflowStrategy, stop_on_internal_overflow>));
+        assert((std::is_same_v<OverflowPolicy, stop_on_internal_overflow>));
         assert(not hist_arr.empty());
         assert(not is_started());
         for (auto [index, bin_index_span] : journal) {
-            single_histogram<bin_index_type, bin_type, OverflowStrategy>
+            single_histogram<bin_index_type, bin_type, OverflowPolicy>
                 single_hist(hist_arr.subspan(n_bins * index, n_bins),
                             arg_max_per_bin{bin_max}, arg_num_bins{n_bins});
             if (need_to_clear)
@@ -564,17 +564,17 @@ class multi_histogram {
 
 // An accumulation (over multiple cycles) of an array of histograms.
 // Adapter which can attach to a span.
-template <typename BinIndex, typename Bin, typename OverflowStrategy>
+template <typename BinIndex, typename Bin, typename OverflowPolicy>
 class multi_histogram_accumulation {
   public:
     using bin_index_type = BinIndex;
     using bin_type = Bin;
-    static_assert(is_any_of_v<OverflowStrategy, saturate_on_internal_overflow,
+    static_assert(is_any_of_v<OverflowPolicy, saturate_on_internal_overflow,
                               stop_on_internal_overflow>);
 
   private:
     std::size_t cycle_idx = 0;
-    multi_histogram<bin_index_type, bin_type, OverflowStrategy> cur_cycle;
+    multi_histogram<bin_index_type, bin_type, OverflowPolicy> cur_cycle;
 
   public:
     explicit multi_histogram_accumulation(

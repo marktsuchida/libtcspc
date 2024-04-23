@@ -25,35 +25,34 @@ namespace tcspc {
 
 namespace internal {
 
-template <typename OverflowStrategy, typename DataTraits, typename Downstream>
+template <typename OverflowPolicy, typename DataTraits, typename Downstream>
 class histogram_elementwise {
   public:
     using bin_index_type = typename DataTraits::bin_index_type;
     using bin_type = typename DataTraits::bin_type;
-    static_assert(is_any_of_v<OverflowStrategy, saturate_on_overflow,
-                              error_on_overflow>);
+    static_assert(
+        is_any_of_v<OverflowPolicy, saturate_on_overflow, error_on_overflow>);
 
   private:
-    using internal_overflow_strategy = std::conditional_t<
-        std::is_same_v<OverflowStrategy, saturate_on_overflow>,
+    using internal_overflow_policy = std::conditional_t<
+        std::is_same_v<OverflowPolicy, saturate_on_overflow>,
         saturate_on_internal_overflow, stop_on_internal_overflow>;
 
     std::shared_ptr<bucket_source<bin_type>> bsource;
     bucket<bin_type> hist_bucket;
-    multi_histogram<bin_index_type, bin_type, internal_overflow_strategy>
-        mhist;
+    multi_histogram<bin_index_type, bin_type, internal_overflow_policy> mhist;
     bool saturated = false;
     null_journal<bin_index_type> journal; // Journaling not required
     Downstream downstream;
 
     LIBTCSPC_NOINLINE void handle_overflow() {
-        if constexpr (std::is_same_v<OverflowStrategy, saturate_on_overflow>) {
+        if constexpr (std::is_same_v<OverflowPolicy, saturate_on_overflow>) {
             downstream.handle(warning_event{"histogram array saturated"});
-        } else if constexpr (std::is_same_v<OverflowStrategy,
+        } else if constexpr (std::is_same_v<OverflowPolicy,
                                             error_on_overflow>) {
             throw histogram_overflow_error("histogram array bin overflowed");
         } else {
-            static_assert(false_for_type<OverflowStrategy>::value);
+            static_assert(false_for_type<OverflowPolicy>::value);
         }
     }
 
@@ -97,7 +96,7 @@ class histogram_elementwise {
         assert(not mhist.is_complete());
         auto element_index = mhist.next_element_index();
         if (not mhist.apply_increment_batch(event.bin_indices, journal)) {
-            if constexpr (std::is_same_v<OverflowStrategy,
+            if constexpr (std::is_same_v<OverflowPolicy,
                                          saturate_on_overflow>) {
                 if (not saturated) {
                     saturated = true;
@@ -117,7 +116,7 @@ class histogram_elementwise {
             downstream.handle(
                 histogram_array_event<DataTraits>{std::move(hist_bucket)});
             hist_bucket = {};
-            if constexpr (std::is_same_v<OverflowStrategy,
+            if constexpr (std::is_same_v<OverflowPolicy,
                                          saturate_on_overflow>) {
                 saturated = false;
             }
@@ -157,7 +156,7 @@ class histogram_elementwise {
  * `tcspc::bin_increment_batch_event` contains a bin index beyond the size of
  * the histogram. The bin mapper should be chosen so that this does not occur.
  *
- * \tparam OverflowStrategy strategy tag type to select how to handle bin
+ * \tparam OverflowPolicy policy tag type to select how to handle bin
  * overflows
  *
  * \tparam DataTraits traits type specifying `bin_index_type` and `bin_type`
@@ -184,14 +183,14 @@ class histogram_elementwise {
  *   `tcspc::element_histogram_event<DataTraits>`; if the batch filled the last
  *   element of the array, emit (rvalue)
  *   `tcspc::histogram_array_event<DataTraits>`; if a bin overflowed, behavior
- *   (taken before emitting the above events) depends on `OverflowStrategy`:
+ *   (taken before emitting the above events) depends on `OverflowPolicy`:
  *   - If `tcspc::saturate_on_overflow`, ignore the increment, emitting
  *     `tcspc::warning_event` only on the first overflow of the cycle
  *   - If `tcspc::error_on_overflow`, throw `tcspc::histogram_overflow_error`
  * - All other types: pass through with no action
  * - Flush: pass through with no action
  */
-template <typename OverflowStrategy, typename DataTraits = default_data_traits,
+template <typename OverflowPolicy, typename DataTraits = default_data_traits,
           typename Downstream>
 auto histogram_elementwise(
     std::size_t num_elements, std::size_t num_bins,
@@ -199,7 +198,7 @@ auto histogram_elementwise(
     std::shared_ptr<bucket_source<typename DataTraits::bin_type>>
         buffer_provider,
     Downstream &&downstream) {
-    return internal::histogram_elementwise<OverflowStrategy, DataTraits,
+    return internal::histogram_elementwise<OverflowPolicy, DataTraits,
                                            Downstream>(
         num_elements, num_bins, max_per_bin, std::move(buffer_provider),
         std::forward<Downstream>(downstream));
@@ -207,7 +206,7 @@ auto histogram_elementwise(
 
 namespace internal {
 
-template <typename ResetEvent, typename OverflowStrategy, bool EmitConcluding,
+template <typename ResetEvent, typename OverflowPolicy, bool EmitConcluding,
           typename DataTraits, typename Downstream>
 class histogram_elementwise_accumulate {
   public:
@@ -215,14 +214,14 @@ class histogram_elementwise_accumulate {
     using bin_type = typename DataTraits::bin_type;
 
     static_assert(
-        is_any_of_v<OverflowStrategy, saturate_on_overflow, reset_on_overflow,
+        is_any_of_v<OverflowPolicy, saturate_on_overflow, reset_on_overflow,
                     stop_on_overflow, error_on_overflow>);
 
     // EmitConcluding cannot be used with saturate-on-overflow because there is
     // no way to roll back the current cycle in the presense of lost counts due
     // to saturation.
     static_assert(not(EmitConcluding &&
-                      std::is_same_v<OverflowStrategy, saturate_on_overflow>),
+                      std::is_same_v<OverflowPolicy, saturate_on_overflow>),
                   "EmitConcluding is incompatible with saturate_on_overflow");
 
     // We require EmitConcluding for reset/stop-on-overflow, because it doesn't
@@ -234,11 +233,11 @@ class histogram_elementwise_accumulate {
                   "EmitConcluding must be true for this overflow policy");
 
   private:
-    using internal_overflow_strategy = std::conditional_t<
-        std::is_same_v<OverflowStrategy, saturate_on_overflow>,
+    using internal_overflow_policy = std::conditional_t<
+        std::is_same_v<OverflowPolicy, saturate_on_overflow>,
         saturate_on_internal_overflow, stop_on_internal_overflow>;
     static constexpr bool need_journal =
-        EmitConcluding || std::is_same_v<OverflowStrategy, reset_on_overflow>;
+        EmitConcluding || std::is_same_v<OverflowPolicy, reset_on_overflow>;
     using journal_type =
         std::conditional_t<need_journal,
                            bin_increment_batch_journal<bin_index_type>,
@@ -247,7 +246,7 @@ class histogram_elementwise_accumulate {
     std::shared_ptr<bucket_source<bin_type>> bsource;
     bucket<bin_type> hist_bucket;
     multi_histogram_accumulation<bin_index_type, bin_type,
-                                 internal_overflow_strategy>
+                                 internal_overflow_policy>
         mhista;
     bool saturated = false;
     journal_type journal;
@@ -279,9 +278,9 @@ class histogram_elementwise_accumulate {
 
     LIBTCSPC_NOINLINE void
     handle_overflow(bin_increment_batch_event<DataTraits> const &event) {
-        if constexpr (std::is_same_v<OverflowStrategy, saturate_on_overflow>) {
+        if constexpr (std::is_same_v<OverflowPolicy, saturate_on_overflow>) {
             downstream.handle(warning_event{"histogram array saturated"});
-        } else if constexpr (std::is_same_v<OverflowStrategy,
+        } else if constexpr (std::is_same_v<OverflowPolicy,
                                             reset_on_overflow>) {
             if (mhista.cycle_index() == 0) {
                 overflow_error(
@@ -295,18 +294,18 @@ class histogram_elementwise_accumulate {
             mhista = decltype(mhista){hist_bucket, mhista, true};
             mhista.replay(journal);
             return handle(event); // Recurse max once
-        } else if constexpr (std::is_same_v<OverflowStrategy,
+        } else if constexpr (std::is_same_v<OverflowPolicy,
                                             stop_on_overflow>) {
             if constexpr (EmitConcluding) {
                 mhista.roll_back_current_cycle(journal);
                 emit_concluding();
             }
             stop();
-        } else if constexpr (std::is_same_v<OverflowStrategy,
+        } else if constexpr (std::is_same_v<OverflowPolicy,
                                             error_on_overflow>) {
             overflow_error("histogram array bin overflowed");
         } else {
-            static_assert(false_for_type<OverflowStrategy>::value);
+            static_assert(false_for_type<OverflowPolicy>::value);
         }
     }
 
@@ -346,7 +345,7 @@ class histogram_elementwise_accumulate {
         assert(not mhista.is_cycle_complete());
         auto element_index = mhista.next_element_index();
         if (not mhista.apply_increment_batch(event.bin_indices, journal)) {
-            if constexpr (std::is_same_v<OverflowStrategy,
+            if constexpr (std::is_same_v<OverflowPolicy,
                                          saturate_on_overflow>) {
                 if (not saturated) {
                     saturated = true;
@@ -377,7 +376,7 @@ class histogram_elementwise_accumulate {
             emit_concluding();
         }
         hist_bucket = {};
-        if constexpr (std::is_same_v<OverflowStrategy, saturate_on_overflow>) {
+        if constexpr (std::is_same_v<OverflowPolicy, saturate_on_overflow>) {
             saturated = false;
         }
         journal.clear();
@@ -435,7 +434,7 @@ class histogram_elementwise_accumulate {
  *
  * \tparam ResetEvent type of event causing histograms to reset
  *
- * \tparam OverflowStrategy strategy tag type to select how to handle bin
+ * \tparam OverflowPolicy policy tag type to select how to handle bin
  * overflows
  *
  * \tparam EmitConcluding if true, emit a
@@ -466,7 +465,7 @@ class histogram_elementwise_accumulate {
  *   `tcspc::element_histogram_event<DataTraits>`; if the batch updated the
  *   last element of the array, emit (rvalue)
  *   `tcspc::histogram_array_event<DataTraits>`; if a bin overflowed, behavior
- *   (taken before emitting the above events) depends on `OverflowStrategy`:
+ *   (taken before emitting the above events) depends on `OverflowPolicy`:
  *   - If `tcspc::saturate_on_overflow`, ignore the increment, emitting
  *     `tcspc::warning_event` only on the first overflow of the current round
  *     of accumulation
@@ -487,7 +486,7 @@ class histogram_elementwise_accumulate {
  *   `tcspc::concluding_histogram_array_event<DataTraits>` with the current
  *   histogram array (after rolling back any partial cycle); pass through
  */
-template <typename ResetEvent, typename OverflowStrategy,
+template <typename ResetEvent, typename OverflowPolicy,
           bool EmitConcluding = false,
           typename DataTraits = default_data_traits, typename Downstream>
 auto histogram_elementwise_accumulate(
@@ -497,7 +496,7 @@ auto histogram_elementwise_accumulate(
         buffer_provider,
     Downstream &&downstream) {
     return internal::histogram_elementwise_accumulate<
-        ResetEvent, OverflowStrategy, EmitConcluding, DataTraits, Downstream>(
+        ResetEvent, OverflowPolicy, EmitConcluding, DataTraits, Downstream>(
         num_elements, num_bins, max_per_bin, std::move(buffer_provider),
         std::forward<Downstream>(downstream));
 }

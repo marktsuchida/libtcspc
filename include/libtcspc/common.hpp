@@ -212,7 +212,7 @@ template <typename Downstream> auto null_source(Downstream &&downstream) {
 }
 
 /**
- * \brief Histogram overflow strategy tag to request saturating addition on
+ * \brief Histogram overflow policy tag to request saturating addition on
  * overflowed bins.
  *
  * \ingroup overflow-strategies
@@ -222,7 +222,7 @@ struct saturate_on_overflow {
 };
 
 /**
- * \brief Histogram overflow strategy tag to request resetting the histogram
+ * \brief Histogram overflow policy tag to request resetting the histogram
  * when a bin is about to overflow.
  *
  * \ingroup overflow-strategies
@@ -232,7 +232,7 @@ struct reset_on_overflow {
 };
 
 /**
- * \brief Histogram overflow strategy tag to request ending the processing when
+ * \brief Histogram overflow policy tag to request ending the processing when
  * a bin is about to overflow.
  *
  * \ingroup overflow-strategies
@@ -242,7 +242,7 @@ struct stop_on_overflow {
 };
 
 /**
- * \brief Histogram overflow strategy tag to request treating bin overflows as
+ * \brief Histogram overflow policy tag to request treating bin overflows as
  * errors.
  *
  * \ingroup overflow-strategies
