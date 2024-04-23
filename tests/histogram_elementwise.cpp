@@ -76,7 +76,7 @@ TEST_CASE("introspect histogram_elementwise", "[introspect]") {
 TEMPLATE_TEST_CASE("Histogram elementwise, no overflow",
                    "[histogram_elementwise]", saturate_on_overflow,
                    error_on_overflow) {
-    using out_events = type_list<element_histogram_event<dt3216>,
+    using out_events = type_list<histogram_event<dt3216>,
                                  histogram_array_event<dt3216>, warning_event>;
     auto ctx = processor_context::create();
     auto in = feed_input<type_list<bin_increment_batch_event<dt3216>>>(
@@ -90,11 +90,11 @@ TEMPLATE_TEST_CASE("Histogram elementwise, no overflow",
 
     in.feed(bin_increment_batch_event<dt3216>{{0}});
     std::vector<u16> elem_hist{1, 0};
-    REQUIRE(out.check(element_histogram_event<dt3216>{tmp_bucket(elem_hist)}));
+    REQUIRE(out.check(histogram_event<dt3216>{tmp_bucket(elem_hist)}));
 
     in.feed(bin_increment_batch_event<dt3216>{{0, 1}});
     elem_hist = {1, 1};
-    REQUIRE(out.check(element_histogram_event<dt3216>{tmp_bucket(elem_hist)}));
+    REQUIRE(out.check(histogram_event<dt3216>{tmp_bucket(elem_hist)}));
     std::vector<u16> hist_arr{1, 0, 1, 1};
     REQUIRE(out.check(histogram_array_event<dt3216>{tmp_bucket(hist_arr)}));
 
@@ -104,7 +104,7 @@ TEMPLATE_TEST_CASE("Histogram elementwise, no overflow",
 
 TEST_CASE("Histogram elementwise, saturate on overflow",
           "[histogram_elementwise]") {
-    using out_events = type_list<element_histogram_event<dt3216>,
+    using out_events = type_list<histogram_event<dt3216>,
                                  histogram_array_event<dt3216>, warning_event>;
     auto ctx = processor_context::create();
 
@@ -121,8 +121,7 @@ TEST_CASE("Histogram elementwise, saturate on overflow",
         in.feed(bin_increment_batch_event<dt3216>{{0}}); // Overflow
         REQUIRE(out.check(warning_event{"histogram array saturated"}));
         std::vector<u16> elem_hist{0};
-        REQUIRE(
-            out.check(element_histogram_event<dt3216>{tmp_bucket(elem_hist)}));
+        REQUIRE(out.check(histogram_event<dt3216>{tmp_bucket(elem_hist)}));
         std::vector<u16> hist_arr{0};
         REQUIRE(
             out.check(histogram_array_event<dt3216>{tmp_bucket(hist_arr)}));
@@ -143,8 +142,7 @@ TEST_CASE("Histogram elementwise, saturate on overflow",
         in.feed(bin_increment_batch_event<dt3216>{{0, 0}}); // Overflow
         REQUIRE(out.check(warning_event{"histogram array saturated"}));
         std::vector<u16> elem_hist{1};
-        REQUIRE(
-            out.check(element_histogram_event<dt3216>{tmp_bucket(elem_hist)}));
+        REQUIRE(out.check(histogram_event<dt3216>{tmp_bucket(elem_hist)}));
         std::vector<u16> hist_arr{1};
         REQUIRE(
             out.check(histogram_array_event<dt3216>{tmp_bucket(hist_arr)}));
@@ -155,8 +153,8 @@ TEST_CASE("Histogram elementwise, saturate on overflow",
 
 TEST_CASE("Histogram elementwise, error on overflow",
           "[histogram_elementwise]") {
-    using out_events = type_list<element_histogram_event<dt3216>,
-                                 histogram_array_event<dt3216>>;
+    using out_events =
+        type_list<histogram_event<dt3216>, histogram_array_event<dt3216>>;
     auto ctx = processor_context::create();
 
     SECTION("Max per bin = 0") {
@@ -202,11 +200,11 @@ namespace {
 using hea_input_events =
     type_list<bin_increment_batch_event<dt88>, reset_event, misc_event>;
 using hea_output_events =
-    type_list<element_histogram_event<dt88>, histogram_array_event<dt88>,
+    type_list<histogram_event<dt88>, histogram_array_event<dt88>,
               concluding_histogram_array_event<dt88>, misc_event>;
 
 using hea_output_events_no_concluding =
-    type_list<element_histogram_event<dt88>, histogram_array_event<dt88>,
+    type_list<histogram_event<dt88>, histogram_array_event<dt88>,
               warning_event, misc_event>;
 
 } // namespace
@@ -265,8 +263,7 @@ TEMPLATE_TEST_CASE(
     SECTION("feed cycle 0, element 0") {
         in.feed(bin_increment_batch_event<dt88>{{0}});
         elem_hist = {1, 0, 0};
-        REQUIRE(
-            out.check(element_histogram_event<dt88>{tmp_bucket(elem_hist)}));
+        REQUIRE(out.check(histogram_event<dt88>{tmp_bucket(elem_hist)}));
 
         SECTION("end mid cycle 0") {
             in.flush();
@@ -276,8 +273,7 @@ TEMPLATE_TEST_CASE(
         SECTION("feed cycle 0, element 1") {
             in.feed(bin_increment_batch_event<dt88>{{1}});
             elem_hist = {0, 1, 0};
-            REQUIRE(out.check(
-                element_histogram_event<dt88>{tmp_bucket(elem_hist)}));
+            REQUIRE(out.check(histogram_event<dt88>{tmp_bucket(elem_hist)}));
             hist_arr = {1, 0, 0, 0, 1, 0};
             REQUIRE(
                 out.check(histogram_array_event<dt88>{tmp_bucket(hist_arr)}));
@@ -290,8 +286,8 @@ TEMPLATE_TEST_CASE(
             SECTION("feed cycle 1, element 0") {
                 in.feed(bin_increment_batch_event<dt88>{{2}});
                 elem_hist = {1, 0, 1};
-                REQUIRE(out.check(
-                    element_histogram_event<dt88>{tmp_bucket(elem_hist)}));
+                REQUIRE(
+                    out.check(histogram_event<dt88>{tmp_bucket(elem_hist)}));
 
                 SECTION("end mid cycle 1") {
                     in.flush();
@@ -330,8 +326,7 @@ TEMPLATE_TEST_CASE(
     SECTION("feed cycle 0, element 0") {
         in.feed(bin_increment_batch_event<dt88>{{0}});
         elem_hist = {1, 0, 0};
-        REQUIRE(
-            out.check(element_histogram_event<dt88>{tmp_bucket(elem_hist)}));
+        REQUIRE(out.check(histogram_event<dt88>{tmp_bucket(elem_hist)}));
 
         SECTION("end mid cycle 0") {
             in.flush();
@@ -344,8 +339,7 @@ TEMPLATE_TEST_CASE(
         SECTION("feed cycle 0, element 1") {
             in.feed(bin_increment_batch_event<dt88>{{1}});
             elem_hist = {0, 1, 0};
-            REQUIRE(out.check(
-                element_histogram_event<dt88>{tmp_bucket(elem_hist)}));
+            REQUIRE(out.check(histogram_event<dt88>{tmp_bucket(elem_hist)}));
             hist_arr = {1, 0, 0, 0, 1, 0};
             REQUIRE(
                 out.check(histogram_array_event<dt88>{tmp_bucket(hist_arr)}));
@@ -361,8 +355,8 @@ TEMPLATE_TEST_CASE(
             SECTION("feed cycle 1, element 0") {
                 in.feed(bin_increment_batch_event<dt88>{{2}});
                 elem_hist = {1, 0, 1};
-                REQUIRE(out.check(
-                    element_histogram_event<dt88>{tmp_bucket(elem_hist)}));
+                REQUIRE(
+                    out.check(histogram_event<dt88>{tmp_bucket(elem_hist)}));
 
                 SECTION("end mid cycle 1") {
                     in.flush();
@@ -408,8 +402,7 @@ TEMPLATE_TEST_CASE(
     SECTION("feed cycle 0, element 0") {
         in.feed(bin_increment_batch_event<dt88>{{0}});
         elem_hist = {1, 0, 0};
-        REQUIRE(
-            out.check(element_histogram_event<dt88>{tmp_bucket(elem_hist)}));
+        REQUIRE(out.check(histogram_event<dt88>{tmp_bucket(elem_hist)}));
 
         SECTION("reset mid cycle 0") {
             in.feed(reset_event{});
@@ -426,8 +419,7 @@ TEMPLATE_TEST_CASE(
         SECTION("feed cycle 0, element 1") {
             in.feed(bin_increment_batch_event<dt88>{{1}});
             elem_hist = {0, 1, 0};
-            REQUIRE(out.check(
-                element_histogram_event<dt88>{tmp_bucket(elem_hist)}));
+            REQUIRE(out.check(histogram_event<dt88>{tmp_bucket(elem_hist)}));
             hist_arr = {1, 0, 0, 0, 1, 0};
             REQUIRE(
                 out.check(histogram_array_event<dt88>{tmp_bucket(hist_arr)}));
@@ -447,8 +439,8 @@ TEMPLATE_TEST_CASE(
             SECTION("feed cycle 1, element 0") {
                 in.feed(bin_increment_batch_event<dt88>{{2}});
                 elem_hist = {1, 0, 1};
-                REQUIRE(out.check(
-                    element_histogram_event<dt88>{tmp_bucket(elem_hist)}));
+                REQUIRE(
+                    out.check(histogram_event<dt88>{tmp_bucket(elem_hist)}));
 
                 SECTION("reset mid cycle 1") {
                     in.feed(reset_event{});
@@ -485,8 +477,7 @@ TEST_CASE("histogram_elementwise_accumulate with saturate-on-overflow",
         in.feed(bin_increment_batch_event<dt88>{{0, 0, 0, 0, 0, 0}});
         REQUIRE(out.check(warning_event{"histogram array saturated"}));
         elem_hist = {4, 0, 0};
-        REQUIRE(
-            out.check(element_histogram_event<dt88>{tmp_bucket(elem_hist)}));
+        REQUIRE(out.check(histogram_event<dt88>{tmp_bucket(elem_hist)}));
 
         SECTION("end") {
             in.flush();
@@ -500,8 +491,8 @@ TEST_CASE("histogram_elementwise_accumulate with saturate-on-overflow",
                 in.feed(bin_increment_batch_event<dt88>{{1, 1, 1, 1, 1}});
                 REQUIRE(out.check(warning_event{"histogram array saturated"}));
                 elem_hist = {0, 4, 0};
-                REQUIRE(out.check(
-                    element_histogram_event<dt88>{tmp_bucket(elem_hist)}));
+                REQUIRE(
+                    out.check(histogram_event<dt88>{tmp_bucket(elem_hist)}));
                 in.flush();
                 REQUIRE(out.check_flushed());
             }
@@ -535,8 +526,7 @@ TEST_CASE("histogram_elementwise_accumulate with reset-on-overflow",
     SECTION("no overflow during cycle 0, element 0") {
         in.feed(bin_increment_batch_event<dt88>{{0, 0}});
         elem_hist = {2, 0, 0};
-        REQUIRE(
-            out.check(element_histogram_event<dt88>{tmp_bucket(elem_hist)}));
+        REQUIRE(out.check(histogram_event<dt88>{tmp_bucket(elem_hist)}));
 
         SECTION("single-batch overflow during cycle 0, element 1") {
             REQUIRE_THROWS_AS(
@@ -548,8 +538,7 @@ TEST_CASE("histogram_elementwise_accumulate with reset-on-overflow",
         SECTION("no overflow during cycle 0, element 1") {
             in.feed(bin_increment_batch_event<dt88>{{1, 1}});
             elem_hist = {0, 2, 0};
-            REQUIRE(out.check(
-                element_histogram_event<dt88>{tmp_bucket(elem_hist)}));
+            REQUIRE(out.check(histogram_event<dt88>{tmp_bucket(elem_hist)}));
             hist_arr = {2, 0, 0, 0, 2, 0};
             REQUIRE(
                 out.check(histogram_array_event<dt88>{tmp_bucket(hist_arr)}));
@@ -560,8 +549,8 @@ TEST_CASE("histogram_elementwise_accumulate with reset-on-overflow",
                 REQUIRE(out.check(concluding_histogram_array_event<dt88>{
                     tmp_bucket(hist_arr)}));
                 elem_hist = {3, 0, 0};
-                REQUIRE(out.check(
-                    element_histogram_event<dt88>{tmp_bucket(elem_hist)}));
+                REQUIRE(
+                    out.check(histogram_event<dt88>{tmp_bucket(elem_hist)}));
 
                 in.flush();
                 hist_arr = {0, 0, 0, 0, 0, 0};
@@ -582,8 +571,8 @@ TEST_CASE("histogram_elementwise_accumulate with reset-on-overflow",
             SECTION("no overflow during cycle 1, element 0") {
                 in.feed(bin_increment_batch_event<dt88>{{0}});
                 elem_hist = {3, 0, 0};
-                REQUIRE(out.check(
-                    element_histogram_event<dt88>{tmp_bucket(elem_hist)}));
+                REQUIRE(
+                    out.check(histogram_event<dt88>{tmp_bucket(elem_hist)}));
 
                 SECTION("overflow during cycle 1, element 1") {
                     in.feed(bin_increment_batch_event<dt88>{{1, 1, 1}});
@@ -592,7 +581,7 @@ TEST_CASE("histogram_elementwise_accumulate with reset-on-overflow",
                         tmp_bucket(hist_arr)}));
                     elem_hist = {0, 3, 0};
                     REQUIRE(out.check(
-                        element_histogram_event<dt88>{tmp_bucket(elem_hist)}));
+                        histogram_event<dt88>{tmp_bucket(elem_hist)}));
                     hist_arr = {1, 0, 0, 0, 3, 0};
                     REQUIRE(out.check(
                         histogram_array_event<dt88>{tmp_bucket(hist_arr)}));
@@ -646,8 +635,7 @@ TEST_CASE("histogram_elementwise_accumulate with stop-on-overflow",
     SECTION("no overflow during cycle 0, element 0") {
         in.feed(bin_increment_batch_event<dt88>{{0, 0}});
         elem_hist = {2, 0, 0};
-        REQUIRE(
-            out.check(element_histogram_event<dt88>{tmp_bucket(elem_hist)}));
+        REQUIRE(out.check(histogram_event<dt88>{tmp_bucket(elem_hist)}));
 
         SECTION("overflow during cycle 0, element 1") {
             REQUIRE_THROWS_AS(
@@ -662,8 +650,7 @@ TEST_CASE("histogram_elementwise_accumulate with stop-on-overflow",
         SECTION("no overflow during cycle 0, element 1") {
             in.feed(bin_increment_batch_event<dt88>{{1, 1}});
             elem_hist = {0, 2, 0};
-            REQUIRE(out.check(
-                element_histogram_event<dt88>{tmp_bucket(elem_hist)}));
+            REQUIRE(out.check(histogram_event<dt88>{tmp_bucket(elem_hist)}));
             hist_arr = {2, 0, 0, 0, 2, 0};
             REQUIRE(
                 out.check(histogram_array_event<dt88>{tmp_bucket(hist_arr)}));
@@ -681,8 +668,8 @@ TEST_CASE("histogram_elementwise_accumulate with stop-on-overflow",
             SECTION("no overflow during cycle 1, element 0") {
                 in.feed(bin_increment_batch_event<dt88>{{0}});
                 elem_hist = {3, 0, 0};
-                REQUIRE(out.check(
-                    element_histogram_event<dt88>{tmp_bucket(elem_hist)}));
+                REQUIRE(
+                    out.check(histogram_event<dt88>{tmp_bucket(elem_hist)}));
 
                 SECTION("overflow during cycle 1, element 1") {
                     REQUIRE_THROWS_AS(
@@ -725,8 +712,7 @@ TEST_CASE(
     SECTION("no overflow during cycle 0, element 0") {
         in.feed(bin_increment_batch_event<dt88>{{0, 0}});
         elem_hist = {2, 0, 0};
-        REQUIRE(
-            out.check(element_histogram_event<dt88>{tmp_bucket(elem_hist)}));
+        REQUIRE(out.check(histogram_event<dt88>{tmp_bucket(elem_hist)}));
 
         SECTION("overflow during cycle 0, element 1") {
             REQUIRE_THROWS_AS(
@@ -738,8 +724,7 @@ TEST_CASE(
         SECTION("no overflow during cycle 0, element 1") {
             in.feed(bin_increment_batch_event<dt88>{{1, 1}});
             elem_hist = {0, 2, 0};
-            REQUIRE(out.check(
-                element_histogram_event<dt88>{tmp_bucket(elem_hist)}));
+            REQUIRE(out.check(histogram_event<dt88>{tmp_bucket(elem_hist)}));
             hist_arr = {2, 0, 0, 0, 2, 0};
             REQUIRE(
                 out.check(histogram_array_event<dt88>{tmp_bucket(hist_arr)}));
@@ -754,8 +739,8 @@ TEST_CASE(
             SECTION("no overflow during cycle 1, element 0") {
                 in.feed(bin_increment_batch_event<dt88>{{0}});
                 elem_hist = {3, 0, 0};
-                REQUIRE(out.check(
-                    element_histogram_event<dt88>{tmp_bucket(elem_hist)}));
+                REQUIRE(
+                    out.check(histogram_event<dt88>{tmp_bucket(elem_hist)}));
 
                 SECTION("overflow during cycle 1, element 1") {
                     REQUIRE_THROWS_AS(
@@ -795,8 +780,7 @@ TEST_CASE(
     SECTION("no overflow during cycle 0, element 0") {
         in.feed(bin_increment_batch_event<dt88>{{0, 0}});
         elem_hist = {2, 0, 0};
-        REQUIRE(
-            out.check(element_histogram_event<dt88>{tmp_bucket(elem_hist)}));
+        REQUIRE(out.check(histogram_event<dt88>{tmp_bucket(elem_hist)}));
 
         SECTION("overflow during cycle 0, element 1") {
             REQUIRE_THROWS_AS(
@@ -808,8 +792,7 @@ TEST_CASE(
         SECTION("no overflow during cycle 0, element 1") {
             in.feed(bin_increment_batch_event<dt88>{{1, 1}});
             elem_hist = {0, 2, 0};
-            REQUIRE(out.check(
-                element_histogram_event<dt88>{tmp_bucket(elem_hist)}));
+            REQUIRE(out.check(histogram_event<dt88>{tmp_bucket(elem_hist)}));
             hist_arr = {2, 0, 0, 0, 2, 0};
             REQUIRE(
                 out.check(histogram_array_event<dt88>{tmp_bucket(hist_arr)}));
@@ -824,8 +807,8 @@ TEST_CASE(
             SECTION("no overflow during cycle 1, element 0") {
                 in.feed(bin_increment_batch_event<dt88>{{0}});
                 elem_hist = {3, 0, 0};
-                REQUIRE(out.check(
-                    element_histogram_event<dt88>{tmp_bucket(elem_hist)}));
+                REQUIRE(
+                    out.check(histogram_event<dt88>{tmp_bucket(elem_hist)}));
 
                 SECTION("overflow during cycle 1, element 1") {
                     REQUIRE_THROWS_AS(

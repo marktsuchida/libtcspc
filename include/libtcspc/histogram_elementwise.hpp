@@ -108,7 +108,7 @@ class histogram_elementwise {
         }
 
         auto const elem_event =
-            element_histogram_event<DataTraits>{hist_bucket.subbucket(
+            histogram_event<DataTraits>{hist_bucket.subbucket(
                 element_index * mhist.num_bins(), mhist.num_bins())};
         downstream.handle(elem_event);
 
@@ -146,7 +146,7 @@ class histogram_elementwise {
  * size `num_elements * num_bins`. Each cycle (of `num_elements` bin increment
  * batches) uses (sequentially) a new bucket from the \p buffer_provider.
  *
- * On every bin increment batch received a `tcspc::element_histogram_event` is
+ * On every bin increment batch received a `tcspc::histogram_event` is
  * emitted containing the corresponding subview of the histogram array bucket
  * (whose storage is observable but not extractable). At the end of each cycle,
  * a `tcspc::histogram_array_event` is emitted, carrying the histogram array
@@ -180,7 +180,7 @@ class histogram_elementwise {
  * \par Events handled
  * - `tcspc::bin_increment_batch_event<DT>`: apply the increments to the next
  *   element histogram of the array and emit (const)
- *   `tcspc::element_histogram_event<DataTraits>`; if the batch filled the last
+ *   `tcspc::histogram_event<DataTraits>`; if the batch filled the last
  *   element of the array, emit (rvalue)
  *   `tcspc::histogram_array_event<DataTraits>`; if a bin overflowed, behavior
  *   (taken before emitting the above events) depends on `OverflowPolicy`:
@@ -357,7 +357,7 @@ class histogram_elementwise_accumulate {
         }
 
         auto const elem_event =
-            element_histogram_event<DataTraits>{hist_bucket.subbucket(
+            histogram_event<DataTraits>{hist_bucket.subbucket(
                 element_index * mhista.num_bins(), mhista.num_bins())};
         downstream.handle(elem_event);
 
@@ -416,7 +416,7 @@ class histogram_elementwise_accumulate {
  * size `num_elements * num_bins`. Each round of accumulation uses
  * (sequentially) a new bucket from the \p buffer_provider.
  *
- * On every bin increment batch received a `tcspc::element_histogram_event` is
+ * On every bin increment batch received a `tcspc::histogram_event` is
  * emitted containing the corresponding subview of the histogram array bucket
  * (whose storage is observable but not extractable). At the end of each cycle
  * through the array, a `tcspc::histogram_array_event` is emitted, containing a
@@ -462,7 +462,7 @@ class histogram_elementwise_accumulate {
  * \par Events handled
  * - `tcspc::bin_increment_batch_event<DT>`: apply the increments to the next
  *   element histogram of the array and emit (const)
- *   `tcspc::element_histogram_event<DataTraits>`; if the batch updated the
+ *   `tcspc::histogram_event<DataTraits>`; if the batch updated the
  *   last element of the array, emit (rvalue)
  *   `tcspc::histogram_array_event<DataTraits>`; if a bin overflowed, behavior
  *   (taken before emitting the above events) depends on `OverflowPolicy`:

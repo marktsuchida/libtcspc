@@ -221,46 +221,6 @@ struct concluding_histogram_event {
 };
 
 /**
- * \brief Event representing an element histogram update in an array of
- * histograms.
- *
- * \ingroup events-histogram
- *
- * This event is used to provide progressive (elementwise) results for
- * histogram arrays. The data it references is not owned by the event, and must
- * be copied if needed after event handling returns.
- *
- * \tparam DataTraits traits type specifying `bin_type`
- */
-template <typename DataTraits = default_data_traits>
-struct element_histogram_event {
-    /**
-     * \brief View of the histogram data.
-     */
-    bucket<typename DataTraits::bin_type> bucket;
-
-    /** \brief Equality comparison operator. */
-    friend auto operator==(element_histogram_event const &lhs,
-                           element_histogram_event const &rhs) noexcept
-        -> bool {
-        return lhs.bucket == rhs.bucket;
-    }
-
-    /** \brief Inequality comparison operator. */
-    friend auto operator!=(element_histogram_event const &lhs,
-                           element_histogram_event const &rhs) noexcept
-        -> bool {
-        return not(lhs == rhs);
-    }
-
-    /** \brief Stream insertion operator. */
-    friend auto operator<<(std::ostream &s, element_histogram_event const &e)
-        -> std::ostream & {
-        return s << "element_histogram(" << e.bucket << ')';
-    }
-};
-
-/**
  * \brief Event representing an array of histograms.
  *
  * \ingroup events-histogram
