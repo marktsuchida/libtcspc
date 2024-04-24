@@ -6,6 +6,7 @@
 Checks: >-
     -*,
     bugprone-*,
+    cert-*,
     clang-analyzer-*,
     clang-diagnostic-*,
     concurrency-*,
@@ -15,21 +16,21 @@ Checks: >-
     performance-*,
     portability-*,
     readability-*,
-    -cppcoreguidelines-avoid-magic-numbers,
+    -cert-msc32-c,-cert-msc51-cpp,
+    -cppcoreguidelines-avoid-magic-numbers,-readability-magic-numbers,
     -misc-use-anonymous-namespace,
     -readability-identifier-length,
-    -readability-magic-numbers,
 
 # Reasons for disabled checks:
-# [cppcoreguidelines-avoid-magic-numbers]
-#   See readability-magic-numbers
+# [cert-msc32-c,cert-msc51-cpp] "properly seed PRNG"
+#   Not relevant to this library; in fact we want reproducible random numbers.
+# [cppcoreguidelines-avoid-magic-numbers,readability-magic-numbers]
+#   Too many false positives from bit manipulation code where defining
+#   constants would be merely circuitous; and tests.
 # [misc-use-anonymous-namespace]
 #   Too much noise from Catch2 and no way to selectively disable.
 # [readability-identifier-length]
 #   TBD
-# [readability-magic-numbers]
-#   Too many false positives from bit manipulation code where defining
-#   constants would be merely circuitous; and tests.
 
 CheckOptions:
   cppcoreguidelines-avoid-do-while.IgnoreMacros: true

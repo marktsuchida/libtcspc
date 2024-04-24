@@ -23,8 +23,18 @@
 #include <utility>
 #include <vector>
 
+void print_out(char const *str) {
+    if (std::fputs(str, stdout) == EOF)
+        std::terminate();
+}
+
+void print_err(char const *str) {
+    if (std::fputs(str, stderr) == EOF)
+        std::terminate();
+}
+
 void usage() {
-    std::fputs(R"(
+    print_err(R"(
 Usage: flim_bruker_swabian options input_file output_file
 
 Options:
@@ -92,8 +102,7 @@ excluded from the output.
 
 To work with data produced by Bruker software, processing stops without an
 error upon detection of a decreasing timestamp in the input.
-)",
-               stderr);
+)");
 }
 
 using abstime_type = tcspc::default_data_types::abstime_type;
@@ -274,7 +283,7 @@ void print_stats(settings const &settings,
     stream << "frames finished: " << frames << '\n';
     stream << "discarded pixels in incomplete frame: "
            << (pixels - frames * pixels_per_frame) << '\n';
-    std::fputs(stream.str().c_str(), stdout);
+    print_out(stream.str().c_str());
 }
 
 template <bool Cumulative> void run_and_print(settings const &settings) {
@@ -282,15 +291,14 @@ template <bool Cumulative> void run_and_print(settings const &settings) {
     auto proc = make_processor<Cumulative>(settings, ctx);
     if (settings.dump_graph) {
         auto graph = proc.introspect_graph();
-        std::fputs(tcspc::graphviz_from_processor_graph(graph).c_str(),
-                   stdout);
+        print_out(tcspc::graphviz_from_processor_graph(graph).c_str());
         return;
     }
     try {
         proc.flush();
     } catch (tcspc::end_of_processing const &exc) {
-        std::fputs(exc.what(), stderr);
-        std::fputs("\n", stderr);
+        print_err(exc.what());
+        print_err("\n");
     }
     print_stats(settings, ctx);
 }
@@ -444,13 +452,13 @@ auto main(int argc, char *argv[]) -> int {
         else
             run_and_print<false>(settings);
     } catch (tcspc::end_of_processing const &exc) {
-        std::fputs(exc.what(), stderr);
-        std::fputs("\n", stderr);
+        print_err(exc.what());
+        print_err("\n");
     } catch (std::exception const &exc) {
-        std::fputs(exc.what(), stderr);
-        std::fputs("\n", stderr);
+        print_err(exc.what());
+        print_err("\n");
         if (dynamic_cast<std::invalid_argument const *>(&exc) != nullptr)
-            std::fputs("use --help for usage\n", stderr);
+            print_err("use --help for usage\n");
         return EXIT_FAILURE;
     }
     return EXIT_SUCCESS;

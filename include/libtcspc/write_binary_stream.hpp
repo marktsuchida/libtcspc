@@ -96,7 +96,7 @@ class cfile_output_stream {
     auto operator=(cfile_output_stream &&rhs) noexcept
         -> cfile_output_stream & {
         if (should_close)
-            std::fclose(fp); // NOLINT(cppcoreguidelines-owning-memory)
+            (void)std::fclose(fp); // NOLINT(cppcoreguidelines-owning-memory)
         fp = std::exchange(rhs.fp, nullptr);
         should_close = std::exchange(rhs.should_close, false);
         return *this;
@@ -104,7 +104,7 @@ class cfile_output_stream {
 
     ~cfile_output_stream() {
         if (should_close)
-            std::fclose(fp); // NOLINT(cppcoreguidelines-owning-memory)
+            (void)std::fclose(fp); // NOLINT(cppcoreguidelines-owning-memory)
     }
 
     auto is_error() noexcept -> bool {
@@ -126,9 +126,10 @@ class cfile_output_stream {
     }
 
     void write(span<std::byte const> buffer) noexcept {
+        // Errors are checked separately by is_error(); ignore here.
         if (fp == nullptr)
-            return; // Error detected by calling is_error().
-        std::fwrite(buffer.data(), 1, buffer.size(), fp);
+            return;
+        (void)std::fwrite(buffer.data(), 1, buffer.size(), fp);
     }
 };
 
@@ -180,7 +181,9 @@ inline auto unbuffered_binary_cfile_output_stream(std::string const &filename,
             throw std::system_error(errno, std::generic_category());
         throw std::runtime_error("failed to open output file: " + filename);
     }
-    std::setvbuf(fp, nullptr, _IONBF, 0);
+    if (std::setvbuf(fp, nullptr, _IONBF, 0) != 0)
+        throw std::runtime_error(
+            "failed to disable buffering for output file: " + filename);
     return internal::cfile_output_stream(fp, true);
 }
 

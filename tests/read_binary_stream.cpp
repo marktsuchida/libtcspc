@@ -48,7 +48,7 @@ class autodelete {
     auto operator=(autodelete const &) = delete;
     autodelete(autodelete &&) = delete;
     auto operator=(autodelete &&) = delete;
-    ~autodelete() { std::remove(path.string().c_str()); }
+    ~autodelete() { (void)std::remove(path.string().c_str()); }
 };
 
 template <typename T, typename U>

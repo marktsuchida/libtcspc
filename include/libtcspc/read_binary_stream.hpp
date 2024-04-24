@@ -117,7 +117,7 @@ class cfile_input_stream {
 
     auto operator=(cfile_input_stream &&rhs) noexcept -> cfile_input_stream & {
         if (should_close)
-            std::fclose(fp); // NOLINT(cppcoreguidelines-owning-memory)
+            (void)std::fclose(fp); // NOLINT(cppcoreguidelines-owning-memory)
         fp = std::exchange(rhs.fp, nullptr);
         should_close = std::exchange(rhs.should_close, false);
         return *this;
@@ -125,7 +125,7 @@ class cfile_input_stream {
 
     ~cfile_input_stream() {
         if (should_close)
-            std::fclose(fp); // NOLINT(cppcoreguidelines-owning-memory)
+            (void)std::fclose(fp); // NOLINT(cppcoreguidelines-owning-memory)
     }
 
     auto is_error() noexcept -> bool {
@@ -241,7 +241,9 @@ inline auto unbuffered_binary_cfile_input_stream(std::string const &filename,
             throw std::system_error(errno, std::generic_category());
         throw std::runtime_error("failed to open input file: " + filename);
     }
-    std::setvbuf(fp, nullptr, _IONBF, 0);
+    if (std::setvbuf(fp, nullptr, _IONBF, 0) != 0)
+        throw std::runtime_error(
+            "failed to disable buffering for input file: " + filename);
     auto ret = internal::cfile_input_stream(fp, true);
     skip_stream_bytes(ret, start);
     return ret;

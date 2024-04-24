@@ -27,6 +27,16 @@ struct dtypes : tcspc::default_data_types {
 using channel_type = dtypes::channel_type;
 using abstime_type = dtypes::abstime_type;
 
+void print_out(char const *str) {
+    if (std::fputs(str, stdout) == EOF)
+        std::terminate();
+}
+
+void print_err(char const *str) {
+    if (std::fputs(str, stderr) == EOF)
+        std::terminate();
+}
+
 // Custom sink that counts events in all channels, and prints the results at
 // the end of the stream.
 class summarize_and_print {
@@ -56,7 +66,7 @@ class summarize_and_print {
             stream << "route " << i << ": \t" << photon_counts.at(i) << '\n';
         for (std::size_t i = 0; i < marker_counts.size(); ++i)
             stream << "mark " << i << ": \t" << marker_counts.at(i) << '\n';
-        std::fputs(stream.str().c_str(), stdout);
+        print_out(stream.str().c_str());
     }
 };
 
@@ -85,19 +95,18 @@ auto summarize(std::string const &filename) -> bool {
         proc.flush(); // Run it all.
     } catch (end_of_processing const &exc) {
         // Explicit stop; counts were printed on flush.
-        std::fputs(exc.what(), stderr);
-        std::fputs("\n", stderr);
-        std::fputs("The above results are up to the error\n", stderr);
+        print_err(exc.what());
+        print_err("\n");
+        print_err("The above results are up to the error\n");
     } catch (std::exception const &exc) {
         // Other error; counts were not printed.
-        std::fputs(exc.what(), stderr);
-        std::fputs("\n", stderr);
+        print_err(exc.what());
+        print_err("\n");
         return false;
     }
-    std::fputs((std::to_string(ctx->access<count_access>("counter").count()) +
-                " records decoded\n")
-                   .c_str(),
-               stderr);
+    print_err((std::to_string(ctx->access<count_access>("counter").count()) +
+               " records decoded\n")
+                  .c_str());
     return true;
 }
 
@@ -106,16 +115,15 @@ auto main(int argc, char const *argv[]) -> int {
         std::vector<std::string> const args(std::next(argv),
                                             std::next(argv, argc));
         if (args.size() != 1) {
-            std::fputs("A single argument (the filename) is required\n",
-                       stderr);
+            print_err("A single argument (the filename) is required\n");
             return EXIT_FAILURE;
         }
         auto const &filename = args.front();
         return summarize(filename) ? EXIT_SUCCESS : EXIT_FAILURE;
     } catch (std::exception const &exc) {
-        std::fputs("error: ", stderr);
-        std::fputs(exc.what(), stderr);
-        std::fputs("\n", stderr);
+        print_err("error: ");
+        print_err(exc.what());
+        print_err("\n");
         return EXIT_FAILURE;
     }
 }
