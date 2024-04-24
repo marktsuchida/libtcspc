@@ -80,8 +80,7 @@ class npint {
      */
     template <typename U,
               typename = std::enable_if_t<not std::is_same_v<T, U>>>
-    explicit constexpr npint(npint<U> const &other) noexcept
-        : v(T(other.value())) {
+    explicit constexpr npint(npint<U> const &other) : v(T(other.value())) {
         static_assert(
             sizeof(T) <= sizeof(U) ||
                 std::is_unsigned_v<T> == std::is_unsigned_v<U>,
@@ -97,45 +96,45 @@ class npint {
     // Increment and decrement operators
 
     /** \brief Prefix increment operator. */
-    constexpr auto operator++() noexcept -> npint { return npint(++v); }
+    constexpr auto operator++() -> npint { return npint(++v); }
 
     /** \brief Postfix increment operator. */
-    constexpr auto operator++(int) noexcept -> npint { return npint(v++); }
+    constexpr auto operator++(int) -> npint { return npint(v++); }
 
     /** \brief Prefix decrement operator. */
-    constexpr auto operator--() noexcept -> npint { return npint(--v); }
+    constexpr auto operator--() -> npint { return npint(--v); }
 
     /** \brief Postfix decrement operator. */
-    constexpr auto operator--(int) noexcept -> npint { return npint(v--); }
+    constexpr auto operator--(int) -> npint { return npint(v--); }
 
     // Compound assignment operators
 
     /** \brief Addition asignment operator. */
-    constexpr auto operator+=(npint rhs) noexcept -> npint & {
+    constexpr auto operator+=(npint rhs) -> npint & {
         v += rhs.v;
         return *this;
     }
 
     /** \brief Subtraction asignment operator. */
-    constexpr auto operator-=(npint rhs) noexcept -> npint & {
+    constexpr auto operator-=(npint rhs) -> npint & {
         v -= rhs.v;
         return *this;
     }
 
     /** \brief Multiplication asignment operator. */
-    constexpr auto operator*=(npint rhs) noexcept -> npint & {
+    constexpr auto operator*=(npint rhs) -> npint & {
         v *= rhs.v;
         return *this;
     }
 
     /** \brief Division asignment operator. */
-    constexpr auto operator/=(npint rhs) noexcept -> npint & {
+    constexpr auto operator/=(npint rhs) -> npint & {
         v /= rhs.v;
         return *this;
     }
 
     /** \brief Remainder asignment operator. */
-    constexpr auto operator%=(npint rhs) noexcept -> npint & {
+    constexpr auto operator%=(npint rhs) -> npint & {
         v %= rhs.v;
         return *this;
     }
@@ -159,29 +158,27 @@ class npint {
     }
 
     /** \brief Bitwise right shift assignment operator. */
-    template <typename U>
-    constexpr auto operator>>=(npint<U> rhs) noexcept -> npint & {
+    template <typename U> constexpr auto operator>>=(npint<U> rhs) -> npint & {
         v >>= rhs.value();
         return *this;
     }
 
     /** \brief Bitwise left shift assignment operator. */
-    template <typename U>
-    constexpr auto operator<<=(npint<U> rhs) noexcept -> npint & {
+    template <typename U> constexpr auto operator<<=(npint<U> rhs) -> npint & {
         v <<= rhs.value();
         return *this;
     }
 
     /** \brief Bitwise right shift assignment operator. */
     template <typename U, typename = std::enable_if_t<std::is_integral_v<U>>>
-    constexpr auto operator>>=(U rhs) noexcept -> npint & {
+    constexpr auto operator>>=(U rhs) -> npint & {
         v >>= rhs;
         return *this;
     }
 
     /** \brief Bitwise left shift assignment operator. */
     template <typename U, typename = std::enable_if_t<std::is_integral_v<U>>>
-    constexpr auto operator<<=(U rhs) noexcept -> npint & {
+    constexpr auto operator<<=(U rhs) -> npint & {
         v <<= rhs;
         return *this;
     }
@@ -192,34 +189,32 @@ class npint {
     constexpr auto operator+() const noexcept -> npint { return *this; }
 
     /** \brief Unary minus operator. */
-    constexpr auto operator-() const noexcept -> npint { return npint(-v); }
-    // Note that unary minus is supported for unsigned T, because it is
-    // well-defined (wraps).
+    constexpr auto operator-() const -> npint { return npint(-v); }
 
     // Binary arithmetic operators
 
     /** \brief Addition operator. */
-    friend constexpr auto operator+(npint lhs, npint rhs) noexcept -> npint {
+    friend constexpr auto operator+(npint lhs, npint rhs) -> npint {
         return lhs += rhs;
     }
 
     /** \brief Subtraction operator. */
-    friend constexpr auto operator-(npint lhs, npint rhs) noexcept -> npint {
+    friend constexpr auto operator-(npint lhs, npint rhs) -> npint {
         return lhs -= rhs;
     }
 
     /** \brief Multiplication operator. */
-    friend constexpr auto operator*(npint lhs, npint rhs) noexcept -> npint {
+    friend constexpr auto operator*(npint lhs, npint rhs) -> npint {
         return lhs *= rhs;
     }
 
     /** \brief Division operator. */
-    friend constexpr auto operator/(npint lhs, npint rhs) noexcept -> npint {
+    friend constexpr auto operator/(npint lhs, npint rhs) -> npint {
         return lhs /= rhs;
     }
 
     /** \brief Remainder operator. */
-    friend constexpr auto operator%(npint lhs, npint rhs) noexcept -> npint {
+    friend constexpr auto operator%(npint lhs, npint rhs) -> npint {
         return lhs %= rhs;
     }
 
@@ -245,27 +240,25 @@ class npint {
 
     /** \brief Bitwise left shift operator. */
     template <typename U>
-    friend constexpr auto operator<<(npint lhs, npint<U> rhs) noexcept
-        -> npint {
+    friend constexpr auto operator<<(npint lhs, npint<U> rhs) -> npint {
         return lhs <<= rhs;
     }
 
     /** \brief Bitwise right shift operator. */
     template <typename U>
-    friend constexpr auto operator>>(npint lhs, npint<U> rhs) noexcept
-        -> npint {
+    friend constexpr auto operator>>(npint lhs, npint<U> rhs) -> npint {
         return lhs >>= rhs;
     }
 
     /** \brief Bitwise left shift operator. */
     template <typename U, typename = std::enable_if_t<std::is_integral_v<U>>>
-    friend constexpr auto operator<<(npint lhs, U rhs) noexcept -> npint {
+    friend constexpr auto operator<<(npint lhs, U rhs) -> npint {
         return lhs <<= rhs;
     }
 
     /** \brief Bitwise right shift operator. */
     template <typename U, typename = std::enable_if_t<std::is_integral_v<U>>>
-    friend constexpr auto operator>>(npint lhs, U rhs) noexcept -> npint {
+    friend constexpr auto operator>>(npint lhs, U rhs) -> npint {
         return lhs >>= rhs;
     }
 
