@@ -10,10 +10,10 @@
 #include "npint.hpp"
 #include "span.hpp"
 
-#include <array>
 #include <cassert>
 #include <cstddef>
 #include <cstring>
+#include <type_traits>
 
 namespace tcspc {
 

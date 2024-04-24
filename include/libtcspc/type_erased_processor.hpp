@@ -141,7 +141,10 @@ template <typename EventList> class type_erased_processor {
      *
      * \param downstream downstream processor
      */
-    template <typename Downstream>
+    template <typename Downstream,
+              typename = std::enable_if_t<not std::is_same_v<
+                  std::remove_cv_t<std::remove_reference_t<Downstream>>,
+                  type_erased_processor>>>
     explicit type_erased_processor(Downstream &&downstream)
         : proc(std::make_unique<virtual_processor<Downstream>>(
               std::forward<Downstream>(downstream))) {

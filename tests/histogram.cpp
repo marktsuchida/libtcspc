@@ -6,6 +6,7 @@
 
 #include "libtcspc/histogram.hpp"
 
+#include "libtcspc/arg_wrappers.hpp"
 #include "libtcspc/bucket.hpp"
 #include "libtcspc/common.hpp"
 #include "libtcspc/context.hpp"
@@ -20,6 +21,7 @@
 #include <catch2/catch_template_test_macros.hpp>
 #include <catch2/catch_test_macros.hpp>
 
+#include <cstddef>
 #include <memory>
 #include <vector>
 

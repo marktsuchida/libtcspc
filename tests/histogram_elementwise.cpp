@@ -6,6 +6,7 @@
 
 #include "libtcspc/histogram_elementwise.hpp"
 
+#include "libtcspc/arg_wrappers.hpp"
 #include "libtcspc/bucket.hpp"
 #include "libtcspc/common.hpp"
 #include "libtcspc/context.hpp"
