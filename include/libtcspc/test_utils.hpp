@@ -754,7 +754,7 @@ struct time_tagged_test_event {
 };
 
 /**
- * \brief Bit-cast an array of bytes to an event in little-endian order.
+ * \brief Bit-cast an array of bytes to an event after reversing the order.
  *
  * \ingroup misc
  *
@@ -767,12 +767,16 @@ struct time_tagged_test_event {
  * (There is no analogous `be_event` because device events specified in
  * big-endian order have not been encountered.)
  *
+ * \note It is not enforced that `sizeof(Event)` be a power of 2 (for which
+ * endianness makes sense).
+ *
  * \tparam Event the returned event type
  *
  * \param bytes bytes constituting the event, in big-endian order
  */
 template <typename Event>
-inline auto le_event(std::array<std::uint8_t, sizeof(Event)> bytes) noexcept {
+inline auto
+from_reversed_bytes(std::array<std::uint8_t, sizeof(Event)> bytes) noexcept {
     static_assert(std::is_trivial_v<Event>);
     auto const srcspan = as_bytes(span(&bytes, 1));
     Event ret{};
