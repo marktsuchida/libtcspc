@@ -58,17 +58,18 @@ class histogram_elementwise {
 
   public:
     explicit histogram_elementwise(
-        std::size_t num_elements, std::size_t num_bins, bin_type max_per_bin,
+        arg_num_elements<std::size_t> num_elements,
+        arg_num_bins<std::size_t> num_bins,
+        arg_max_per_bin<bin_type> max_per_bin,
         std::shared_ptr<bucket_source<bin_type>> buffer_provider,
         Downstream downstream)
         : bsource(std::move(buffer_provider)),
-          mhist(hist_bucket, arg_max_per_bin{max_per_bin},
-                arg_num_bins{num_bins}, arg_num_elements{num_elements}, true),
+          mhist(hist_bucket, max_per_bin, num_bins, num_elements, true),
           downstream(std::move(downstream)) {
-        if (num_elements == 0)
+        if (num_elements.value == 0)
             throw std::logic_error(
                 "histogram_elementsiwe must have at least 1 element");
-        if (num_bins == 0)
+        if (num_bins.value == 0)
             throw std::logic_error(
                 "histogram_elementsiwe must have at least 1 bin per element");
     }
@@ -193,8 +194,9 @@ class histogram_elementwise {
 template <typename OverflowPolicy, typename DataTypes = default_data_types,
           typename Downstream>
 auto histogram_elementwise(
-    std::size_t num_elements, std::size_t num_bins,
-    typename DataTypes::bin_type max_per_bin,
+    arg_num_elements<std::size_t> num_elements,
+    arg_num_bins<std::size_t> num_bins,
+    arg_max_per_bin<typename DataTypes::bin_type> max_per_bin,
     std::shared_ptr<bucket_source<typename DataTypes::bin_type>>
         buffer_provider,
     Downstream &&downstream) {
@@ -311,17 +313,18 @@ class histogram_elementwise_accumulate {
 
   public:
     explicit histogram_elementwise_accumulate(
-        std::size_t num_elements, std::size_t num_bins, bin_type max_per_bin,
+        arg_num_elements<std::size_t> num_elements,
+        arg_num_bins<std::size_t> num_bins,
+        arg_max_per_bin<bin_type> max_per_bin,
         std::shared_ptr<bucket_source<bin_type>> buffer_provider,
         Downstream downstream)
         : bsource(std::move(buffer_provider)),
-          mhista(hist_bucket, arg_max_per_bin{max_per_bin},
-                 arg_num_bins{num_bins}, arg_num_elements{num_elements}, true),
+          mhista(hist_bucket, max_per_bin, num_bins, num_elements, true),
           downstream(std::move(downstream)) {
-        if (num_elements == 0)
+        if (num_elements.value == 0)
             throw std::logic_error(
                 "histogram_elementsiwe_accumulate must have at least 1 element");
-        if (num_bins == 0)
+        if (num_bins.value == 0)
             throw std::logic_error(
                 "histogram_elementsiwe_accumulate must have at least 1 bin per element");
     }
@@ -490,8 +493,9 @@ template <typename ResetEvent, typename OverflowPolicy,
           bool EmitConcluding = false, typename DataTypes = default_data_types,
           typename Downstream>
 auto histogram_elementwise_accumulate(
-    std::size_t num_elements, std::size_t num_bins,
-    typename DataTypes::bin_type max_per_bin,
+    arg_num_elements<std::size_t> num_elements,
+    arg_num_bins<std::size_t> num_bins,
+    arg_max_per_bin<typename DataTypes::bin_type> max_per_bin,
     std::shared_ptr<bucket_source<typename DataTypes::bin_type>>
         buffer_provider,
     Downstream &&downstream) {

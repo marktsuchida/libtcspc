@@ -143,8 +143,10 @@ auto make_histo_proc(settings const &settings,
     if constexpr (Cumulative) {
         return histogram_elementwise_accumulate<never_event, error_on_overflow,
                                                 true>(
-            settings.pixels_per_line * settings.lines_per_frame,
-            std::size_t(settings.max_bin_index) + 1, 65535, bsource,
+            arg_num_elements{settings.pixels_per_line *
+                             settings.lines_per_frame},
+            arg_num_bins{std::size_t(settings.max_bin_index) + 1},
+            arg_max_per_bin<u16>{65535}, bsource,
             count<histogram_array_event<>>(
                 ctx->tracker<count_access>("frame_counter"),
                 select<type_list<concluding_histogram_array_event<>>>(
@@ -152,8 +154,10 @@ auto make_histo_proc(settings const &settings,
                         view_as_bytes(std::move(writer))))));
     } else {
         return histogram_elementwise<error_on_overflow>(
-            settings.pixels_per_line * settings.lines_per_frame,
-            std::size_t(settings.max_bin_index) + 1, 65535, bsource,
+            arg_num_elements{settings.pixels_per_line *
+                             settings.lines_per_frame},
+            arg_num_bins{std::size_t(settings.max_bin_index) + 1},
+            arg_max_per_bin<u16>{65535}, bsource,
             count<histogram_array_event<>>(
                 ctx->tracker<count_access>("frame_counter"),
                 select<type_list<histogram_array_event<>>>(

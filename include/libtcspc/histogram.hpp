@@ -101,15 +101,15 @@ class histogram {
 
   public:
     explicit histogram(
-        std::size_t num_bins, bin_type max_per_bin,
+        arg_num_bins<std::size_t> num_bins,
+        arg_max_per_bin<bin_type> max_per_bin,
         std::shared_ptr<bucket_source<bin_type>> buffer_provider,
         Downstream downstream)
         : bsource(std::move(buffer_provider)),
-          shist(hist_bucket, arg_max_per_bin{max_per_bin},
-                arg_num_bins{num_bins}),
+          shist(hist_bucket, max_per_bin, num_bins),
           downstream(std::move(downstream)) {
-        if (num_bins == 0)
-            throw std::logic_error("histogram must have at least 1 bin");
+        if (num_bins.value == 0)
+            throw std::invalid_argument("histogram must have at least 1 bin");
     }
 
     [[nodiscard]] auto introspect_node() const -> processor_info {
@@ -231,7 +231,8 @@ class histogram {
  */
 template <typename ResetEvent, typename OverflowPolicy,
           typename DataTypes = default_data_types, typename Downstream>
-auto histogram(std::size_t num_bins, typename DataTypes::bin_type max_per_bin,
+auto histogram(arg_num_bins<std::size_t> num_bins,
+               arg_max_per_bin<typename DataTypes::bin_type> max_per_bin,
                std::shared_ptr<bucket_source<typename DataTypes::bin_type>>
                    buffer_provider,
                Downstream &&downstream) {
