@@ -7,8 +7,8 @@
 #include "libtcspc/buffer.hpp"
 
 #include "libtcspc/common.hpp"
+#include "libtcspc/context.hpp"
 #include "libtcspc/errors.hpp"
-#include "libtcspc/processor_context.hpp"
 #include "test_checkers.hpp"
 #include "test_thread_utils.hpp"
 

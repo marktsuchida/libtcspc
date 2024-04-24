@@ -7,8 +7,8 @@
 #include "libtcspc/merge.hpp"
 
 #include "libtcspc/common.hpp"
+#include "libtcspc/context.hpp"
 #include "libtcspc/introspect.hpp"
-#include "libtcspc/processor_context.hpp"
 #include "libtcspc/test_utils.hpp"
 #include "libtcspc/type_erased_processor.hpp"
 #include "libtcspc/type_list.hpp"

@@ -6,9 +6,9 @@
 
 #pragma once
 
+#include "context.hpp"
 #include "errors.hpp"
 #include "introspect.hpp"
-#include "processor_context.hpp"
 #include "vector_queue.hpp"
 
 #include <algorithm>

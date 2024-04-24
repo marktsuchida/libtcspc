@@ -7,7 +7,7 @@
 #include "libtcspc/fit_sequence.hpp"
 
 #include "libtcspc/common.hpp"
-#include "libtcspc/processor_context.hpp"
+#include "libtcspc/context.hpp"
 #include "libtcspc/test_utils.hpp"
 #include "libtcspc/timing_misc.hpp"
 #include "libtcspc/type_list.hpp"

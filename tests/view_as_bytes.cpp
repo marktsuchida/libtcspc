@@ -8,7 +8,7 @@
 
 #include "libtcspc/bucket.hpp"
 #include "libtcspc/common.hpp"
-#include "libtcspc/processor_context.hpp"
+#include "libtcspc/context.hpp"
 #include "libtcspc/span.hpp"
 #include "libtcspc/test_utils.hpp"
 #include "libtcspc/type_list.hpp"

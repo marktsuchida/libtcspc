@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: MIT
  */
 
-#include "libtcspc/processor_context.hpp"
+#include "libtcspc/context.hpp"
 
 #include <catch2/catch_test_macros.hpp>
 

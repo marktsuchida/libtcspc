@@ -7,9 +7,9 @@
 #include "libtcspc/bh_spc.hpp"
 
 #include "libtcspc/common.hpp"
+#include "libtcspc/context.hpp"
 #include "libtcspc/int_types.hpp"
 #include "libtcspc/npint.hpp"
-#include "libtcspc/processor_context.hpp"
 #include "libtcspc/test_utils.hpp"
 #include "libtcspc/time_tagged_events.hpp"
 #include "libtcspc/type_list.hpp"

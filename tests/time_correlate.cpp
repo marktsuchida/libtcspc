@@ -7,7 +7,7 @@
 #include "libtcspc/time_correlate.hpp"
 
 #include "libtcspc/common.hpp"
-#include "libtcspc/processor_context.hpp"
+#include "libtcspc/context.hpp"
 #include "libtcspc/test_utils.hpp"
 #include "libtcspc/time_tagged_events.hpp"
 #include "libtcspc/type_list.hpp"
