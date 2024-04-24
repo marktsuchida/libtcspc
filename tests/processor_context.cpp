@@ -14,8 +14,8 @@
 
 namespace tcspc {
 
-TEST_CASE("processor context and tracker") {
-    auto ctx = processor_context::create();
+TEST_CASE("context and tracker") {
+    auto ctx = context::create();
 
     struct test_access {
         void *tracker_addr;
@@ -94,7 +94,7 @@ class example_processor {
 } // namespace
 
 TEST_CASE("access tracker intended use") {
-    auto ctx = processor_context::create();
+    auto ctx = context::create();
     {
         // The context is injected into the processor upon creation.
         auto proc =

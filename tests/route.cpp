@@ -59,7 +59,7 @@ TEST_CASE("introspect route", "[introspect]") {
 
 TEST_CASE("Route") {
     using out_events = type_list<tc_event, marker_event<>>;
-    auto ctx = processor_context::create();
+    auto ctx = context::create();
     auto in = feed_input<type_list<tc_event, marker_event<>>>(
         route<type_list<tc_event>, type_list<marker_event<>>>(
             channel_router(std::array{
@@ -132,7 +132,7 @@ TEST_CASE("Route") {
 }
 
 TEST_CASE("Route with heterogeneous downstreams") {
-    auto ctx = processor_context::create();
+    auto ctx = context::create();
     auto in = feed_input<type_list<e0>>(route<type_list<e0>, type_list<>>(
         []([[maybe_unused]] e0 const &event) { return std::size_t(0); },
         capture_output<type_list<e0>>(
@@ -149,7 +149,7 @@ TEST_CASE("Route with heterogeneous downstreams") {
 }
 
 TEST_CASE("Broadcast") {
-    auto ctx = processor_context::create();
+    auto ctx = context::create();
     auto in = feed_input<type_list<e0>>(broadcast<type_list<e0>>(
         capture_output<type_list<e0>>(
             ctx->tracker<capture_output_access>("out0")),

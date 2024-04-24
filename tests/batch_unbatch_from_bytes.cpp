@@ -46,7 +46,7 @@ TEST_CASE("introspect batch_from_bytes, unbatch_from_bytes", "[introspect]") {
 }
 
 TEST_CASE("batch_from_bytes") {
-    auto ctx = processor_context::create();
+    auto ctx = context::create();
     auto in =
         feed_input<type_list<span<std::byte const>>>(batch_from_bytes<int>(
             new_delete_bucket_source<int>::create(),
@@ -100,7 +100,7 @@ TEST_CASE("batch_from_bytes") {
 }
 
 TEST_CASE("unbatch_from_bytes") {
-    auto ctx = processor_context::create();
+    auto ctx = context::create();
     auto in = feed_input<type_list<span<std::byte const>>>(
         unbatch_from_bytes<int>(capture_output<type_list<int>>(
             ctx->tracker<capture_output_access>("out"))));

@@ -77,7 +77,7 @@ class summarize_and_print {
 auto summarize(std::string const &filename) -> bool {
     using namespace tcspc;
 
-    auto ctx = processor_context::create();
+    auto ctx = context::create();
 
     // clang-format off
     auto proc =

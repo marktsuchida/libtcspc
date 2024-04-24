@@ -33,7 +33,7 @@ using out_events = type_list<e0, e1>;
 } // namespace
 
 TEST_CASE("Delay") {
-    auto ctx = processor_context::create();
+    auto ctx = context::create();
 
     SECTION("Zero delay is noop") {
         auto in = feed_input<type_list<e0>>(
@@ -83,7 +83,7 @@ TEST_CASE("Delay") {
 }
 
 TEST_CASE("zero-base abstime") {
-    auto ctx = processor_context::create();
+    auto ctx = context::create();
     auto in = feed_input<type_list<e0, e1>>(
         zero_base_abstime(capture_output<out_events>(
             ctx->tracker<capture_output_access>("out"))));

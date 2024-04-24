@@ -33,7 +33,7 @@ TEST_CASE("null sink") {
 }
 
 TEST_CASE("null source") {
-    auto ctx = processor_context::create();
+    auto ctx = context::create();
     auto src = null_source(capture_output<type_list<>>(
         ctx->tracker<capture_output_access>("out")));
     auto out = ctx->access<capture_output_access>("out");

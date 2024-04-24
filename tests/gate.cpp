@@ -36,7 +36,7 @@ TEST_CASE("introspect gate", "[introspect]") {
 
 TEST_CASE("Gate events") {
     bool const initially_open = GENERATE(false, true);
-    auto ctx = processor_context::create();
+    auto ctx = context::create();
     auto in = feed_input<
         type_list<open_event, close_event, gated_event, misc_event>>(
         gate<type_list<gated_event>, open_event, close_event>(

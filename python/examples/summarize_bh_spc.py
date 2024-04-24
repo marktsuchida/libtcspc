@@ -43,7 +43,7 @@ def summarize(filename: str) -> int:
 
     ret = 0
     try:
-        ctx = tcspc.ProcessorContext(g)
+        ctx = tcspc.Context(g)
         ctx.flush()
     except tcspc.EndProcessing as e:
         print(f"Stopped because: {e}")

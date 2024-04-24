@@ -137,8 +137,8 @@ class Node:
             The unique name of this node, optionally used for access tracker
             naming.
         context
-            The processor context (C++ lvalue reference to
-            ``std::shared_ptr<tcspc::processor_context>``).
+            The context (C++ lvalue reference to
+            ``std::shared_ptr<tcspc::context>``).
         downstreams
             For each output port, the C++ code representing an rvalue reference
             to the downstream.
@@ -234,8 +234,8 @@ class OneToOneNode(Node):
             The unique name of this node, optionally used for access tracker
             naming.
         context
-            The processor context (C++ lvalue reference to
-            ``std::shared_ptr<tcspc::processor_context>``).
+            The context (C++ lvalue reference to
+            ``std::shared_ptr<tcspc::context>``).
         downstream
             The C++ code representing an rvalue reference ot the downstream.
 

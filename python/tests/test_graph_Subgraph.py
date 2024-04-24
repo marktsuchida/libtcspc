@@ -19,7 +19,7 @@ def test_empty_subgraph():
 
     code = sg.generate_cpp("empty_sg", "ctx", [])
     isolated_cppdef(f"""\
-        auto ctx = tcspc::processor_context::create();
+        auto ctx = tcspc::context::create();
         std::tuple<> t = {code};
     """)
 
@@ -64,7 +64,7 @@ def test_nested_subgraph(mocker):
 
     code = sg1.generate_cpp("sg1", "ctx", ["std::move(dstream)"])
     ns = isolated_cppdef(f"""\
-        auto ctx = tcspc::processor_context::create();
+        auto ctx = tcspc::context::create();
         int dstream = 42;
         auto proc = {code};
         static_assert(std::is_same_v<decltype(proc), int>);

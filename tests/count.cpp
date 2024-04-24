@@ -39,13 +39,13 @@ TEST_CASE("introspect count", "[introspect]") {
         count_down_to<tick_event, fire_event, reset_event, false>(
             arg_threshold<u64>{1}, arg_limit<u64>{0},
             arg_initial_count<u64>{2}, null_sink()));
-    auto ctx = processor_context::create();
+    auto ctx = context::create();
     check_introspect_simple_processor(
         count<tick_event>(ctx->tracker<count_access>("t"), null_sink()));
 }
 
 TEST_CASE("Count up to") {
-    auto ctx = processor_context::create();
+    auto ctx = context::create();
 
     SECTION("Threshold 0, limit 1") {
         SECTION("Emit before") {
@@ -202,7 +202,7 @@ TEST_CASE("Count up to") {
 }
 
 TEST_CASE("Count down to") {
-    auto ctx = processor_context::create();
+    auto ctx = context::create();
     auto in = feed_input<type_list<tick_event, reset_event, misc_event>>(
         count_down_to<tick_event, fire_event, reset_event, false>(
             arg_threshold<u64>{1}, arg_limit<u64>{0},
@@ -228,7 +228,7 @@ TEST_CASE("Count down to") {
 }
 
 TEST_CASE("event counter") {
-    auto ctx = processor_context::create();
+    auto ctx = context::create();
     auto in = feed_input<type_list<tick_event, misc_event>>(
         count<tick_event>(ctx->tracker<count_access>("counter"),
                           capture_output<out_events>(

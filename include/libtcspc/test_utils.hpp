@@ -44,7 +44,7 @@ namespace tcspc {
  * `tcspc::capture_output_checker`, which provides a similar interface but
  * simplifies calling `check()` and `pop()`.
  *
- * \ingroup processor-access
+ * \ingroup context-access
  */
 class capture_output_access {
     std::any peek_events_func; // () -> std::vector<variant_event<EventList>>
@@ -279,7 +279,7 @@ class capture_output_access {
 /**
  * \brief Event-set-specific wrapper for `tcspc::capture_output_access`.
  *
- * \ingroup processor-access
+ * \ingroup context-access
  *
  * This class has almost the same interface as `tcspc::capture_output_access`
  * but is parameterized on \p EventList so does not require specifying the
@@ -538,7 +538,7 @@ template <> class capture_output<type_list<>> {
 };
 
 template <typename EventList, typename Downstream> class feed_input {
-    std::vector<std::pair<std::shared_ptr<processor_context>, std::string>>
+    std::vector<std::pair<std::shared_ptr<context>, std::string>>
         outputs_to_check; // (context, name)
     Downstream downstream;
 
@@ -572,7 +572,7 @@ template <typename EventList, typename Downstream> class feed_input {
         return g;
     }
 
-    void require_output_checked(std::shared_ptr<processor_context> context,
+    void require_output_checked(std::shared_ptr<context> context,
                                 std::string name) {
         context->access<capture_output_access>(name); // Fail early.
         outputs_to_check.emplace_back(std::move(context), std::move(name));
@@ -600,7 +600,7 @@ template <typename EventList, typename Downstream> class feed_input {
  * In order to access the recorded output or arrange to simulate errors and
  * end-of-processing, use a `tcspc::capture_output_access` (usually accessed
  * through the wrapper `tcspc::capture_output_checker`) retrieved from the
- * `tcspc::processor_context` from which \p tracker was obtained..
+ * `tcspc::context` from which \p tracker was obtained..
  *
  * \tparam EventList event set to accept
  *
@@ -628,7 +628,7 @@ auto capture_output(access_tracker<capture_output_access> &&tracker) {
  *
  * In addition to `flush()` and introspection, the processor has these member
  * functions:
- * - `void require_output_checked(std::shared_ptr<tcspc::processor_context>
+ * - `void require_output_checked(std::shared_ptr<tcspc::context>
  *   context, std::string name)`: register a `tcspc::capture_output` processor
  *   whose recorded output should be fully checked before events (and flush)
  *   are fed

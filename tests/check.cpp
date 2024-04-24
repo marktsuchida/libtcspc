@@ -28,7 +28,7 @@ TEST_CASE("introspect check", "[introspect]") {
 TEST_CASE("check monotonic") {
     using e0 = time_tagged_test_event<0>;
     using out_events = type_list<e0, warning_event>;
-    auto ctx = processor_context::create();
+    auto ctx = context::create();
     auto in = feed_input<type_list<e0, warning_event>>(
         check_monotonic(capture_output<out_events>(
             ctx->tracker<capture_output_access>("out"))));
@@ -55,7 +55,7 @@ TEST_CASE("check alternating") {
     using e1 = time_tagged_test_event<1>;
     using e2 = time_tagged_test_event<2>;
     using out_events = type_list<e0, e1, e2, warning_event>;
-    auto ctx = processor_context::create();
+    auto ctx = context::create();
     auto in = feed_input<type_list<e0, e1, e2>>(
         check_alternating<e0, e1>(capture_output<out_events>(
             ctx->tracker<capture_output_access>("out"))));

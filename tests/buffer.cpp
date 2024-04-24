@@ -26,7 +26,7 @@
 namespace tcspc {
 
 TEST_CASE("introspect buffer", "[introspect]") {
-    auto ctx = processor_context::create();
+    auto ctx = context::create();
     check_introspect_simple_processor(
         buffer<int>(1, ctx->tracker<buffer_access>("buf"), null_sink()));
     check_introspect_simple_processor(real_time_buffer<int>(
@@ -62,7 +62,7 @@ template <typename Downstream> class ref_proc {
 } // namespace
 
 TEST_CASE("buffer moves out rvalue events") {
-    auto ctx = processor_context::create();
+    auto ctx = context::create();
     auto buf = buffer<std::unique_ptr<int>>(
         3, ctx->tracker<buffer_access>("buf"), null_sink());
     auto event = std::make_unique<int>(42);
@@ -71,7 +71,7 @@ TEST_CASE("buffer moves out rvalue events") {
 }
 
 TEST_CASE("buffer empty stream") {
-    auto ctx = processor_context::create();
+    auto ctx = context::create();
     auto out = mock_downstream();
     auto buf =
         buffer<int>(3, ctx->tracker<buffer_access>("buf"), ref_proc(out));
@@ -98,7 +98,7 @@ TEST_CASE("buffer empty stream") {
 }
 
 TEST_CASE("buffer stream ended downstream") {
-    auto ctx = processor_context::create();
+    auto ctx = context::create();
     auto out = mock_downstream();
     auto buf =
         buffer<int>(1, ctx->tracker<buffer_access>("buf"), ref_proc(out));
@@ -131,7 +131,7 @@ TEST_CASE("buffer stream ended downstream") {
 }
 
 TEST_CASE("buffer stream error downstream") {
-    auto ctx = processor_context::create();
+    auto ctx = context::create();
     auto out = mock_downstream();
     auto buf =
         buffer<int>(1, ctx->tracker<buffer_access>("buf"), ref_proc(out));
@@ -164,7 +164,7 @@ TEST_CASE("buffer stream error downstream") {
 }
 
 TEST_CASE("buffer stream halted") {
-    auto ctx = processor_context::create();
+    auto ctx = context::create();
     auto out = mock_downstream();
     auto buf =
         buffer<int>(1, ctx->tracker<buffer_access>("buf"), ref_proc(out));
@@ -197,7 +197,7 @@ TEST_CASE("buffer stream halted") {
 }
 
 TEST_CASE("buffer does not emit events before threshold") {
-    auto ctx = processor_context::create();
+    auto ctx = context::create();
     auto out = mock_downstream();
     auto buf =
         buffer<int>(3, ctx->tracker<buffer_access>("buf"), ref_proc(out));
@@ -233,7 +233,7 @@ TEST_CASE("buffer does not emit events before threshold") {
 }
 
 TEST_CASE("buffer flushes stored events") {
-    auto ctx = processor_context::create();
+    auto ctx = context::create();
     auto out = mock_downstream();
     auto buf =
         buffer<int>(3, ctx->tracker<buffer_access>("buf"), ref_proc(out));
@@ -269,7 +269,7 @@ TEST_CASE("buffer flushes stored events") {
 }
 
 TEST_CASE("buffer emits stored events on reaching threshold") {
-    auto ctx = processor_context::create();
+    auto ctx = context::create();
     auto out = mock_downstream();
     auto buf =
         buffer<int>(3, ctx->tracker<buffer_access>("buf"), ref_proc(out));
@@ -328,7 +328,7 @@ TEST_CASE("buffer emits stored events on reaching threshold") {
 
 TEMPLATE_TEST_CASE("buffer input throws after downstream stopped", "",
                    end_processing, std::runtime_error) {
-    auto ctx = processor_context::create();
+    auto ctx = context::create();
     auto out = mock_downstream();
     auto buf =
         buffer<int>(1, ctx->tracker<buffer_access>("buf"), ref_proc(out));
@@ -364,7 +364,7 @@ TEMPLATE_TEST_CASE("buffer input throws after downstream stopped", "",
 
 TEST_CASE(
     "real_time_buffer with large latency does not emit before threshold") {
-    auto ctx = processor_context::create();
+    auto ctx = context::create();
     auto out = mock_downstream();
     auto buf = real_time_buffer<int>(3, std::chrono::hours(1),
                                      ctx->tracker<buffer_access>("buf"),
@@ -401,7 +401,7 @@ TEST_CASE(
 }
 
 TEST_CASE("real_time_buffer emits event before threshold after latency") {
-    auto ctx = processor_context::create();
+    auto ctx = context::create();
     auto out = mock_downstream();
     auto const latency = std::chrono::microseconds(100);
     auto buf = real_time_buffer<int>(

@@ -31,7 +31,7 @@ def test_empty_graph():
     # An empty graph has no inputs, so generates a lambda that returns an empty
     # tuple. Assignment should succeed.
     isolated_cppdef(f"""\
-        auto ctx = tcspc::processor_context::create();
+        auto ctx = tcspc::context::create();
         std::tuple<> t = {code};
     """)
 
@@ -69,7 +69,7 @@ def test_single_node(mocker):
     # The generated lambda should return a single-element tuple whose element
     # was moved from 'ds'.
     ns = isolated_cppdef(f"""\
-        auto ctx = tcspc::processor_context::create();
+        auto ctx = tcspc::context::create();
         int dstream = 42; // Fake the downstream processor with int
         auto proc = {code};
         static_assert(std::is_same_v<decltype(proc), int>);
@@ -113,7 +113,7 @@ def test_two_nodes_two_inputs_two_outputs(mocker):
     node1.generate_cpp = mocker.MagicMock(side_effect=node1_codegen)
     code = g.generate_cpp("g", "ctx", ["std::move(ds0)", "std::move(ds1)"])
     ns = isolated_cppdef(f"""\
-        auto ctx = tcspc::processor_context::create();
+        auto ctx = tcspc::context::create();
         int ds0 = 42, ds1 = 43;
         auto [p0, p1] = {code};
         static_assert(std::is_same_v<decltype(p0), int>);
@@ -167,7 +167,7 @@ def test_two_nodes_two_internal_edges(mocker):
     node1.generate_cpp = mocker.MagicMock(side_effect=node1_codegen)
     code = g.generate_cpp("g", "ctx", ["std::move(ds)"])
     ns = isolated_cppdef(f"""\
-        auto ctx = tcspc::processor_context::create();
+        auto ctx = tcspc::context::create();
         int ds = 42;
         auto proc = {code};
         static_assert(std::is_same_v<decltype(proc), int>);
@@ -199,7 +199,7 @@ def test_add_sequence(mocker):
     g.add_sequence([node4], downstream=("Node-0", "input"))
     code = g.generate_cpp("g", "ctx", ["std::move(ds)"])
     ns = isolated_cppdef(f"""\
-        auto ctx = tcspc::processor_context::create();
+        auto ctx = tcspc::context::create();
         int ds = 42;
         auto proc = {code};
         static_assert(std::is_same_v<decltype(proc), int>);

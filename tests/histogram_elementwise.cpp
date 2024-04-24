@@ -78,7 +78,7 @@ TEMPLATE_TEST_CASE("Histogram elementwise, no overflow",
                    error_on_overflow) {
     using out_events = type_list<histogram_event<dt3216>,
                                  histogram_array_event<dt3216>, warning_event>;
-    auto ctx = processor_context::create();
+    auto ctx = context::create();
     auto in = feed_input<type_list<bin_increment_batch_event<dt3216>>>(
         histogram_elementwise<TestType, dt3216>(
             2, 2, 100, new_delete_bucket_source<u16>::create(),
@@ -106,7 +106,7 @@ TEST_CASE("Histogram elementwise, saturate on overflow",
           "[histogram_elementwise]") {
     using out_events = type_list<histogram_event<dt3216>,
                                  histogram_array_event<dt3216>, warning_event>;
-    auto ctx = processor_context::create();
+    auto ctx = context::create();
 
     SECTION("Max per bin = 0") {
         auto in = feed_input<type_list<bin_increment_batch_event<dt3216>>>(
@@ -155,7 +155,7 @@ TEST_CASE("Histogram elementwise, error on overflow",
           "[histogram_elementwise]") {
     using out_events =
         type_list<histogram_event<dt3216>, histogram_array_event<dt3216>>;
-    auto ctx = processor_context::create();
+    auto ctx = context::create();
 
     SECTION("Max per bin = 0") {
         auto in = feed_input<type_list<bin_increment_batch_event<dt3216>>>(
@@ -215,7 +215,7 @@ TEMPLATE_TEST_CASE(
     reset_on_overflow, stop_on_overflow, error_on_overflow) {
     auto num_elements = GENERATE(std::size_t(1), 3);
     auto num_bins = GENERATE(std::size_t(1), 4);
-    auto ctx = processor_context::create();
+    auto ctx = context::create();
     auto in = feed_input<hea_input_events>(
         histogram_elementwise_accumulate<reset_event, TestType, false, dt88>(
             num_elements, num_bins, 10, new_delete_bucket_source<u8>::create(),
@@ -242,7 +242,7 @@ TEMPLATE_TEST_CASE(
     "histogram_elementwise_accumulate without emit-concluding finishes correctly",
     "[histogram_elementwise_accumulate]", saturate_on_overflow,
     reset_on_overflow, stop_on_overflow, error_on_overflow) {
-    auto ctx = processor_context::create();
+    auto ctx = context::create();
     auto in = feed_input<hea_input_events>(
         histogram_elementwise_accumulate<reset_event, TestType, false, dt88>(
             2, 3, 255, new_delete_bucket_source<u8>::create(),
@@ -302,7 +302,7 @@ TEMPLATE_TEST_CASE(
     "histogram_elementwise_accumulate with emit-concluding emits concluding event when ended",
     "[histogram_elementwise_accumulate]", reset_on_overflow, stop_on_overflow,
     error_on_overflow) {
-    auto ctx = processor_context::create();
+    auto ctx = context::create();
     auto in = feed_input<hea_input_events>(
         histogram_elementwise_accumulate<reset_event, TestType, true, dt88>(
             2, 3, 255, new_delete_bucket_source<u8>::create(),
@@ -374,7 +374,7 @@ TEMPLATE_TEST_CASE(
     "histogram_elementwise_accumulate with emit-concluding emits concluding event when reset",
     "[histogram_elementwise_accumulate]", reset_on_overflow, stop_on_overflow,
     error_on_overflow) {
-    auto ctx = processor_context::create();
+    auto ctx = context::create();
     auto in = feed_input<hea_input_events>(
         histogram_elementwise_accumulate<reset_event, TestType, true, dt88>(
             2, 3, 255, new_delete_bucket_source<u8>::create(),
@@ -460,7 +460,7 @@ TEMPLATE_TEST_CASE(
 
 TEST_CASE("histogram_elementwise_accumulate with saturate-on-overflow",
           "[histogram_elementwise_accumulate]") {
-    auto ctx = processor_context::create();
+    auto ctx = context::create();
     auto in = feed_input<hea_input_events>(
         histogram_elementwise_accumulate<reset_event, saturate_on_overflow,
                                          false, dt88>(
@@ -502,7 +502,7 @@ TEST_CASE("histogram_elementwise_accumulate with saturate-on-overflow",
 
 TEST_CASE("histogram_elementwise_accumulate with reset-on-overflow",
           "[histogram_elementwise_accumulate]") {
-    auto ctx = processor_context::create();
+    auto ctx = context::create();
     auto in = feed_input<hea_input_events>(
         histogram_elementwise_accumulate<reset_event, reset_on_overflow, true,
                                          dt88>(
@@ -608,7 +608,7 @@ TEST_CASE("histogram_elementwise_accumulate with reset-on-overflow",
 
 TEST_CASE("histogram_elementwise_accumulate with stop-on-overflow",
           "[histogram_elementwise_accumulate]") {
-    auto ctx = processor_context::create();
+    auto ctx = context::create();
     auto in = feed_input<hea_input_events>(
         histogram_elementwise_accumulate<reset_event, stop_on_overflow, true,
                                          dt88>(
@@ -688,7 +688,7 @@ TEST_CASE("histogram_elementwise_accumulate with stop-on-overflow",
 TEST_CASE(
     "histogram_elementwise_accumulate with error-on-overflow, emit-concluding",
     "[histogram_elementwise_accumulate]") {
-    auto ctx = processor_context::create();
+    auto ctx = context::create();
     auto in = feed_input<hea_input_events>(
         histogram_elementwise_accumulate<reset_event, error_on_overflow, true,
                                          dt88>(
@@ -756,7 +756,7 @@ TEST_CASE(
 TEST_CASE(
     "histogram_elementwise_accumulate with error-on-overflow, no emit-concluding",
     "[histogram_elementwise_accumulate]") {
-    auto ctx = processor_context::create();
+    auto ctx = context::create();
     auto in = feed_input<hea_input_events>(
         histogram_elementwise_accumulate<reset_event, error_on_overflow, false,
                                          dt88>(

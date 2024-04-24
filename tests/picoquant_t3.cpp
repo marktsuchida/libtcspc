@@ -383,7 +383,7 @@ TEST_CASE("introspect picoquant_t3", "[introspect]") {
 }
 
 TEST_CASE("decode pqt3 picoharp300") {
-    auto ctx = processor_context::create();
+    auto ctx = context::create();
     auto in = feed_input<type_list<pqt3_picoharp300_event>>(
         decode_pqt3_picoharp300(capture_output<out_events>(
             ctx->tracker<capture_output_access>("out"))));
@@ -419,7 +419,7 @@ TEST_CASE("decode pqt3 picoharp300") {
 }
 
 TEST_CASE("decode pqt3 hydraharpv1") {
-    auto ctx = processor_context::create();
+    auto ctx = context::create();
     auto in = feed_input<type_list<pqt3_hydraharpv1_event>>(
         decode_pqt3_hydraharpv1(capture_output<out_events>(
             ctx->tracker<capture_output_access>("out"))));
@@ -455,7 +455,7 @@ TEST_CASE("decode pqt3 hydraharpv1") {
 }
 
 TEST_CASE("decode pqt3 generic") {
-    auto ctx = processor_context::create();
+    auto ctx = context::create();
     auto in = feed_input<type_list<pqt3_generic_event>>(
         decode_pqt3_generic(capture_output<out_events>(
             ctx->tracker<capture_output_access>("out"))));

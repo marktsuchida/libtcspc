@@ -42,7 +42,7 @@ TEST_CASE("introspect batch, unbatch", "[introspect]") {
 }
 
 TEST_CASE("batch") {
-    auto ctx = processor_context::create();
+    auto ctx = context::create();
     auto in = feed_input<type_list<int>>(
         batch<int>(new_delete_bucket_source<int>::create(), 3,
                    capture_output<type_list<bucket<int>>>(
@@ -80,7 +80,7 @@ struct move_out_sink {
 };
 
 TEST_CASE("unbatch lvalue and rvalue correctly") {
-    auto ctx = processor_context::create();
+    auto ctx = context::create();
     auto proc = unbatch<std::unique_ptr<int>>(move_out_sink());
     std::vector<std::unique_ptr<int>> v;
     v.push_back(std::make_unique<int>(42));
@@ -111,7 +111,7 @@ TEST_CASE("unbatch lvalue and rvalue correctly") {
 }
 
 TEST_CASE("unbatch") {
-    auto ctx = processor_context::create();
+    auto ctx = context::create();
     auto in = feed_input<type_list<std::vector<int>>>(
         unbatch<int>(capture_output<type_list<int>>(
             ctx->tracker<capture_output_access>("out"))));
@@ -132,7 +132,7 @@ TEST_CASE("unbatch") {
 }
 
 TEST_CASE("process_in_batches") {
-    auto ctx = processor_context::create();
+    auto ctx = context::create();
     auto in = feed_input<type_list<int>>(process_in_batches<int>(
         3, capture_output<type_list<int>>(
                ctx->tracker<capture_output_access>("out"))));

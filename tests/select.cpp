@@ -34,7 +34,7 @@ TEST_CASE("introspect select", "[introspect]") {
 }
 
 TEST_CASE("select") {
-    auto ctx = processor_context::create();
+    auto ctx = context::create();
     auto in = feed_input<type_list<e0, e1>>(
         select<type_list<e0>>(capture_output<out_events>(
             ctx->tracker<capture_output_access>("out"))));
@@ -50,7 +50,7 @@ TEST_CASE("select") {
 }
 
 TEST_CASE("select_not") {
-    auto ctx = processor_context::create();
+    auto ctx = context::create();
     auto in = feed_input<type_list<e0, e1>>(
         select_not<type_list<e0>>(capture_output<out_events>(
             ctx->tracker<capture_output_access>("out"))));
@@ -66,7 +66,7 @@ TEST_CASE("select_not") {
 }
 
 TEST_CASE("select_none") {
-    auto ctx = processor_context::create();
+    auto ctx = context::create();
     auto in =
         feed_input<type_list<e0, e1>>(select_none(capture_output<out_events>(
             ctx->tracker<capture_output_access>("out"))));
@@ -81,7 +81,7 @@ TEST_CASE("select_none") {
 }
 
 TEST_CASE("select_all") {
-    auto ctx = processor_context::create();
+    auto ctx = context::create();
     auto in =
         feed_input<type_list<e0, e1>>(select_all(capture_output<out_events>(
             ctx->tracker<capture_output_access>("out"))));

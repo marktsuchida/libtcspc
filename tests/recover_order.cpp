@@ -32,7 +32,7 @@ TEST_CASE("introspect recover_order", "[introspect]") {
 }
 
 TEST_CASE("recover order") {
-    auto ctx = processor_context::create();
+    auto ctx = context::create();
     auto in = feed_input<type_list<e0>>(recover_order<type_list<e0>>(
         3, capture_output<type_list<e0>>(
                ctx->tracker<capture_output_access>("out"))));
@@ -79,7 +79,7 @@ TEST_CASE("recover order") {
 }
 
 TEST_CASE("recover order, empty time window") {
-    auto ctx = processor_context::create();
+    auto ctx = context::create();
     auto in = feed_input<type_list<e0>>(recover_order<type_list<e0>>(
         0, capture_output<type_list<e0>>(
                ctx->tracker<capture_output_access>("out"))));
@@ -132,7 +132,7 @@ TEST_CASE("recover order, empty time window") {
 }
 
 TEST_CASE("recover order, multiple event types") {
-    auto ctx = processor_context::create();
+    auto ctx = context::create();
     auto in = feed_input<type_list<e0, e1>>(recover_order<type_list<e0, e1>>(
         3, capture_output<type_list<e0, e1>>(
                ctx->tracker<capture_output_access>("out"))));

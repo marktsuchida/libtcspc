@@ -35,7 +35,7 @@ TEST_CASE("introspect regulate_time_reached", "[introspect]") {
 }
 
 TEST_CASE("regulate time reached by abstime") {
-    auto ctx = processor_context::create();
+    auto ctx = context::create();
     auto in = feed_input<events>(regulate_time_reached(
         10, std::numeric_limits<std::size_t>::max(),
         capture_output<events>(ctx->tracker<capture_output_access>("out"))));
@@ -103,7 +103,7 @@ TEST_CASE("regulate time reached by abstime") {
 }
 
 TEST_CASE("regulate time reached by count") {
-    auto ctx = processor_context::create();
+    auto ctx = context::create();
     auto in = feed_input<events>(regulate_time_reached(
         std::numeric_limits<abstime_type>::max(), 2,
         capture_output<events>(ctx->tracker<capture_output_access>("out"))));
@@ -170,7 +170,7 @@ TEST_CASE("regulate time reached by count") {
 
 TEST_CASE("regulate time reached, zero count threshold",
           "[regulate_time_reached]") {
-    auto ctx = processor_context::create();
+    auto ctx = context::create();
     auto in = feed_input<events>(regulate_time_reached(
         std::numeric_limits<abstime_type>::max(), 0,
         capture_output<events>(ctx->tracker<capture_output_access>("out"))));

@@ -154,7 +154,7 @@ TEST_CASE("decode swabian tags") {
         type_list<detection_event<>, begin_lost_interval_event<>,
                   end_lost_interval_event<>, lost_counts_event<>,
                   warning_event>;
-    auto ctx = processor_context::create();
+    auto ctx = context::create();
     auto in = feed_input<type_list<swabian_tag_event>>(
         decode_swabian_tags(capture_output<out_events>(
             ctx->tracker<capture_output_access>("out"))));

@@ -36,7 +36,7 @@ TEST_CASE("introspect pair", "[introspect]") {
 }
 
 TEST_CASE("pair all") {
-    auto ctx = processor_context::create();
+    auto ctx = context::create();
     auto in = feed_input<type_list<detection_event<>>>(
         pair_all(0, std::array<default_data_traits::channel_type, 1>{1}, 2,
                  capture_output<out_events>(
@@ -109,7 +109,7 @@ TEST_CASE("pair all") {
 }
 
 TEST_CASE("pair all with self") {
-    auto ctx = processor_context::create();
+    auto ctx = context::create();
     auto in = feed_input<type_list<detection_event<>>>(
         pair_all(0, std::array<default_data_traits::channel_type, 1>{0}, 2,
                  capture_output<out_events>(
@@ -140,7 +140,7 @@ TEST_CASE("pair all with self") {
 }
 
 TEST_CASE("pair one") {
-    auto ctx = processor_context::create();
+    auto ctx = context::create();
     auto in = feed_input<type_list<detection_event<>>>(
         pair_one(0, std::array<default_data_traits::channel_type, 1>{1}, 2,
                  capture_output<out_events>(
@@ -207,7 +207,7 @@ TEST_CASE("pair one") {
 }
 
 TEST_CASE("pair one with self") {
-    auto ctx = processor_context::create();
+    auto ctx = context::create();
     auto in = feed_input<type_list<detection_event<>>>(
         pair_one(0, std::array<default_data_traits::channel_type, 1>{0}, 2,
                  capture_output<out_events>(
@@ -236,7 +236,7 @@ TEST_CASE("pair one with self") {
 }
 
 TEST_CASE("pair all between") {
-    auto ctx = processor_context::create();
+    auto ctx = context::create();
     auto in = feed_input<type_list<detection_event<>>>(pair_all_between(
         0, std::array<default_data_traits::channel_type, 1>{1}, 2,
         capture_output<out_events>(
@@ -305,7 +305,7 @@ TEST_CASE("pair all between") {
 }
 
 TEST_CASE("pair all between with self") {
-    auto ctx = processor_context::create();
+    auto ctx = context::create();
     auto in = feed_input<type_list<detection_event<>>>(pair_all_between(
         0, std::array<default_data_traits::channel_type, 1>{0}, 2,
         capture_output<out_events>(
@@ -334,7 +334,7 @@ TEST_CASE("pair all between with self") {
 }
 
 TEST_CASE("pair one between") {
-    auto ctx = processor_context::create();
+    auto ctx = context::create();
     auto in = feed_input<type_list<detection_event<>>>(pair_one_between(
         0, std::array<default_data_traits::channel_type, 1>{1}, 2,
         capture_output<out_events>(
@@ -401,7 +401,7 @@ TEST_CASE("pair one between") {
 }
 
 TEST_CASE("pair one between with self") {
-    auto ctx = processor_context::create();
+    auto ctx = context::create();
     auto in = feed_input<type_list<detection_event<>>>(pair_one_between(
         0, std::array<default_data_traits::channel_type, 1>{0}, 2,
         capture_output<out_events>(

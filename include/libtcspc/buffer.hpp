@@ -55,7 +55,7 @@ class source_halted final : public std::exception {
  * \brief Access for `tcspc::buffer()` and `tcspc::real_time_buffer()`
  * processors.
  *
- * \ingroup processor-access
+ * \ingroup context-access
  */
 class buffer_access {
     std::function<void()> halt_fn;
@@ -297,7 +297,7 @@ class buffer {
  * been thrown upstream of the buffer without its knowledge.
  *
  * Pumping and halting is done through a `tcspc::buffer_access` object
- * retrieved from the `tcspc::processor_context` from which \p tracker was
+ * retrieved from the `tcspc::context` from which \p tracker was
  * obtained.
  *
  * \see `tcspc::process_in_batches()`
@@ -352,7 +352,7 @@ auto buffer(std::size_t threshold, access_tracker<buffer_access> &&tracker,
  * been thrown upstream of the buffer without its knowledge.
  *
  * Pumping and halting is done through a `tcspc::buffer_access` object
- * retrieved from the `tcspc::processor_context` from which \p tracker was
+ * retrieved from the `tcspc::context` from which \p tracker was
  * obtained.
  *
  * \see `tcspc::buffer()`

@@ -207,7 +207,7 @@ auto count_down_to(arg_threshold<std::uint64_t> threshold,
 /**
  * \brief Access for `tcspc::count()` processor data.
  *
- * \ingroup processor-access
+ * \ingroup context-access
  */
 class count_access {
     std::function<std::uint64_t()> count_fn;
@@ -274,7 +274,7 @@ template <typename Event, typename Downstream> class count {
  * \ingroup processors-stats
  *
  * The count can be retrieved through a `tcspc::count_access` retrieved from
- * the `tcspc::processor_context` from which \p tracker was obtained.
+ * the `tcspc::context` from which \p tracker was obtained.
  *
  * Note that the count is incremented \e before the events of type \p Event are
  * sent to the downstream processor. This means that the event will be counted

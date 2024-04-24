@@ -26,7 +26,7 @@ def _instantiator(graph_code: str, context_varname: str) -> Any:
     fname = f"instantiate_graph_{next(_cppyy_context_counter)}"
     cppyy.cppdef(f"""\
         namespace tcspc::cppyy_context {{
-            auto {fname}(std::shared_ptr<tcspc::processor_context>
+            auto {fname}(std::shared_ptr<tcspc::context>
                          {context_varname}) {{
                 return {graph_code};
             }}
@@ -45,7 +45,7 @@ class EndProcessing(Exception):
     pass
 
 
-class ProcessorContext:
+class Context:
     """
     An execution context for a processing graph.
 
@@ -77,7 +77,7 @@ class ProcessorContext:
                 f"graph is not executable (must have no output ports; found {n_out})"
             )
         self._graph = copy.deepcopy(graph)
-        self._ctx = cppyy.gbl.tcspc.processor_context.create()
+        self._ctx = cppyy.gbl.tcspc.context.create()
         ctx_var = "ctx"
         code = graph.generate_cpp("", ctx_var)
         self._proc = _instantiator(code, ctx_var)(self._ctx)

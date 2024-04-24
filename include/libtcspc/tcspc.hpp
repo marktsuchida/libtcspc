@@ -292,9 +292,9 @@ namespace tcspc {
  * than throwing an exception. The tcspc::stop() and tcspc::stop_with_error()
  * processors can be used to end processing on a warning event.
  *
- * **Processor context, trackers, and accessors**
+ * **Context, trackers, and accessors**
  *
- * See tcspc::processor_context.
+ * See tcspc::context.
  *
  * **Guidelines for writing processors**
  *
@@ -672,14 +672,14 @@ namespace tcspc {
 /** @} <!-- group auxiliary --> */
 
 /**
- * \defgroup processor-context Processor context
+ * \defgroup context Context
  *
  * \brief Mechanism providing access to objects (especially processors) after
  * they have been incorporated into a processing graph.
  *
  * From the viewpoint of user code, this works as follows:
  *
- * -# Create a `tcspc::processor_context`.
+ * -# Create a `tcspc::context`.
  * -# Build the processing graph. Some processors (and auxiliary objects)
  *    require a `tcspc::access_tracker`; obtain trackers from the context
  *    (specifying a uniquely identifying name).
@@ -695,14 +695,14 @@ namespace tcspc {
  * -# Also during construction, the object calls the tracker's
  *    `tcspc::access_tracker::register_access_factory()` member function,
  *    passing the _access factory_, which is a function (usually a lambda)
- *    taking a reference to the tracker and returning an access object.
+ *    taking a reference to the tracker and returning an _accessor_.
  * -# The tracker stored in the member variable tracks the object as it is
  *    moved or destroyed, updating the associated context's mapping from name
  *    to tracker address.
- * -# When user code retrieves an access from the context, the access factory
+ * -# When user code retrieves an accessor from the context, the access factory
  *    is called with a reference to the (potentially moved) tracker. The access
  *    factory usually converts this to a reference (address) to the object, and
- *    returns an access object holding a reference to the object.
+ *    returns an accessor object holding a reference to the object.
  *
  * The macro #LIBTCSPC_OBJECT_FROM_TRACKER() can be used by access factories
  * to obtain the address of an object holding a tracker in a data member.
@@ -711,12 +711,12 @@ namespace tcspc {
  */
 
 /**
- * \defgroup processor-access Processor access types
+ * \defgroup context-access Accessor types
  *
- * \brief Object types for access to processors via processor context.
+ * \brief Objects providing access via context.
  */
 
-/** @} <!-- group processor-context --> */
+/** @} <!-- group context --> */
 
 /**
  * \defgroup introspect Introspection
