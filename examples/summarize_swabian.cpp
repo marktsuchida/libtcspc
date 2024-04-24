@@ -19,8 +19,8 @@
 #include <utility>
 #include <vector>
 
-using channel_type = tcspc::default_data_traits::channel_type;
-using abstime_type = tcspc::default_data_traits::abstime_type;
+using channel_type = tcspc::default_data_types::channel_type;
+using abstime_type = tcspc::default_data_types::abstime_type;
 
 // Custom sink that counts detection events in all channels encountered, and
 // prints the results at the end of the stream.

@@ -205,7 +205,7 @@ struct swabian_tag_event {
 
 namespace internal {
 
-template <typename DataTraits, typename Downstream> class decode_swabian_tags {
+template <typename DataTypes, typename Downstream> class decode_swabian_tags {
     Downstream downstream;
 
     LIBTCSPC_NOINLINE
@@ -217,14 +217,14 @@ template <typename DataTraits, typename Downstream> class decode_swabian_tags {
             break;
         case tag_type::overflow_begin:
             downstream.handle(
-                begin_lost_interval_event<DataTraits>{event.time().value()});
+                begin_lost_interval_event<DataTypes>{event.time().value()});
             break;
         case tag_type::overflow_end:
             downstream.handle(
-                end_lost_interval_event<DataTraits>{event.time().value()});
+                end_lost_interval_event<DataTypes>{event.time().value()});
             break;
         case tag_type::missed_events:
-            downstream.handle(lost_counts_event<DataTraits>{
+            downstream.handle(lost_counts_event<DataTypes>{
                 event.time().value(), event.channel().value(),
                 event.missed_event_count().value()});
             break;
@@ -258,7 +258,7 @@ template <typename DataTraits, typename Downstream> class decode_swabian_tags {
 
     void handle(swabian_tag_event const &event) {
         if (event.type() == swabian_tag_event::tag_type::time_tag) {
-            downstream.handle(detection_event<DataTraits>{
+            downstream.handle(detection_event<DataTypes>{
                 event.time().value(), event.channel().value()});
         } else {
             handle_coldpath_tag(event);
@@ -275,7 +275,7 @@ template <typename DataTraits, typename Downstream> class decode_swabian_tags {
  *
  * \ingroup processors-swabian
  *
- * \tparam DataTraits traits type specifying `abstime_type` and `channel_type`
+ * \tparam DataTypes data type set specifying `abstime_type` and `channel_type`
  * for the emitted events
  *
  * \tparam Downstream downstream processor type
@@ -286,16 +286,16 @@ template <typename DataTraits, typename Downstream> class decode_swabian_tags {
  *
  * \par Events handled
  * - `tcspc::swabian_tag_event`: decode and emit one of
- *   `tcspc::detection_event<DataTraits>`,
- *   `tcspc::begin_lost_interval_event<DataTraits>`,
- *   `tcspc::end_lost_interval_event<DataTraits>`,
- *   `tcspc::lost_counts_event<DataTraits>`, `warning_event` (warning in
+ *   `tcspc::detection_event<DataTypes>`,
+ *   `tcspc::begin_lost_interval_event<DataTypes>`,
+ *   `tcspc::end_lost_interval_event<DataTypes>`,
+ *   `tcspc::lost_counts_event<DataTypes>`, `warning_event` (warning in
  *   the case of an error tag or unknown tag)
  * - Flush: passed through with no action
  */
-template <typename DataTraits = default_data_traits, typename Downstream>
+template <typename DataTypes = default_data_types, typename Downstream>
 auto decode_swabian_tags(Downstream &&downstream) {
-    return internal::decode_swabian_tags<DataTraits, Downstream>(
+    return internal::decode_swabian_tags<DataTypes, Downstream>(
         std::forward<Downstream>(downstream));
 }
 

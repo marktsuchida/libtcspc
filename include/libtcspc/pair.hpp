@@ -25,18 +25,18 @@ namespace tcspc {
 
 namespace internal {
 
-template <std::size_t NStopChannels, typename DataTraits, typename Downstream>
+template <std::size_t NStopChannels, typename DataTypes, typename Downstream>
 class pair_all {
-    typename DataTraits::channel_type start_chan;
-    std::array<typename DataTraits::channel_type, NStopChannels> stop_chans;
-    typename DataTraits::abstime_type window_size;
+    typename DataTypes::channel_type start_chan;
+    std::array<typename DataTypes::channel_type, NStopChannels> stop_chans;
+    typename DataTypes::abstime_type window_size;
 
     // Buffer all starts within time window.
-    internal::vector_queue<typename DataTraits::abstime_type> starts;
+    internal::vector_queue<typename DataTypes::abstime_type> starts;
 
     Downstream downstream;
 
-    void expel_old_starts(typename DataTraits::abstime_type earliest_stop) {
+    void expel_old_starts(typename DataTypes::abstime_type earliest_stop) {
         auto const cutoff = pairing_cutoff(earliest_stop, window_size);
         while (not starts.empty() && starts.front() < cutoff)
             starts.pop();
@@ -44,10 +44,10 @@ class pair_all {
 
   public:
     explicit pair_all(
-        typename DataTraits::channel_type start_channel,
-        std::array<typename DataTraits::channel_type, NStopChannels>
+        typename DataTypes::channel_type start_channel,
+        std::array<typename DataTypes::channel_type, NStopChannels>
             stop_channels,
-        typename DataTraits::abstime_type time_window, Downstream downstream)
+        typename DataTypes::abstime_type time_window, Downstream downstream)
         : start_chan(start_channel), stop_chans(stop_channels),
           window_size(time_window), downstream(std::move(downstream)) {
         if (window_size < 0)
@@ -68,9 +68,9 @@ class pair_all {
 
     template <typename DT> void handle(detection_event<DT> const &event) {
         static_assert(std::is_same_v<typename DT::abstime_type,
-                                     typename DataTraits::abstime_type>);
+                                     typename DataTypes::abstime_type>);
         static_assert(std::is_same_v<typename DT::channel_type,
-                                     typename DataTraits::channel_type>);
+                                     typename DataTypes::channel_type>);
 
         expel_old_starts(event.abstime);
         auto chan_index = std::distance(
@@ -78,7 +78,7 @@ class pair_all {
             std::find(stop_chans.cbegin(), stop_chans.cend(), event.channel));
         if (std::size_t(chan_index) < NStopChannels) {
             starts.for_each([&](auto start_time) {
-                downstream.handle(detection_pair_event<DataTraits>{
+                downstream.handle(detection_pair_event<DataTypes>{
                     {start_time, start_chan}, event});
             });
         }
@@ -94,23 +94,23 @@ class pair_all {
     void flush() { downstream.flush(); }
 };
 
-template <std::size_t NStopChannels, typename DataTraits, typename Downstream>
+template <std::size_t NStopChannels, typename DataTypes, typename Downstream>
 class pair_one {
-    typename DataTraits::channel_type start_chan;
-    std::array<typename DataTraits::channel_type, NStopChannels> stop_chans;
-    typename DataTraits::abstime_type window_size;
+    typename DataTypes::channel_type start_chan;
+    std::array<typename DataTypes::channel_type, NStopChannels> stop_chans;
+    typename DataTypes::abstime_type window_size;
 
     // Buffer all starts within time window, and mark stop channels that have
     // been matched.
     struct start_and_flags {
-        typename DataTraits::abstime_type time;
+        typename DataTypes::abstime_type time;
         std::bitset<NStopChannels> stopped;
     };
     internal::vector_queue<start_and_flags> starts;
 
     Downstream downstream;
 
-    void expel_old_starts(typename DataTraits::abstime_type earliest_stop) {
+    void expel_old_starts(typename DataTypes::abstime_type earliest_stop) {
         auto const cutoff = pairing_cutoff(earliest_stop, window_size);
         while (not starts.empty() &&
                (starts.front().time < cutoff || starts.front().stopped.all()))
@@ -119,10 +119,10 @@ class pair_one {
 
   public:
     explicit pair_one(
-        typename DataTraits::channel_type start_channel,
-        std::array<typename DataTraits::channel_type, NStopChannels>
+        typename DataTypes::channel_type start_channel,
+        std::array<typename DataTypes::channel_type, NStopChannels>
             stop_channels,
-        typename DataTraits::abstime_type time_window, Downstream downstream)
+        typename DataTypes::abstime_type time_window, Downstream downstream)
         : start_chan(start_channel), stop_chans(stop_channels),
           window_size(time_window), downstream(std::move(downstream)) {
         if (window_size < 0)
@@ -143,9 +143,9 @@ class pair_one {
 
     template <typename DT> void handle(detection_event<DT> const &event) {
         static_assert(std::is_same_v<typename DT::abstime_type,
-                                     typename DataTraits::abstime_type>);
+                                     typename DataTypes::abstime_type>);
         static_assert(std::is_same_v<typename DT::channel_type,
-                                     typename DataTraits::channel_type>);
+                                     typename DataTypes::channel_type>);
 
         expel_old_starts(event.abstime);
         auto const chan_index = static_cast<std::size_t>(std::distance(
@@ -154,7 +154,7 @@ class pair_one {
         if (chan_index < NStopChannels) {
             starts.for_each([&](start_and_flags &sf) {
                 if (not sf.stopped[chan_index]) {
-                    downstream.handle(detection_pair_event<DataTraits>{
+                    downstream.handle(detection_pair_event<DataTypes>{
                         {sf.time, start_chan}, event});
                     sf.stopped[chan_index] = true;
                 }
@@ -172,18 +172,18 @@ class pair_one {
     void flush() { downstream.flush(); }
 };
 
-template <std::size_t NStopChannels, typename DataTraits, typename Downstream>
+template <std::size_t NStopChannels, typename DataTypes, typename Downstream>
 class pair_all_between {
-    typename DataTraits::channel_type start_chan;
-    std::array<typename DataTraits::channel_type, NStopChannels> stop_chans;
-    typename DataTraits::abstime_type window_size;
+    typename DataTypes::channel_type start_chan;
+    std::array<typename DataTypes::channel_type, NStopChannels> stop_chans;
+    typename DataTypes::abstime_type window_size;
 
     // Buffer the most recent start within the time window.
-    std::optional<typename DataTraits::abstime_type> start;
+    std::optional<typename DataTypes::abstime_type> start;
 
     Downstream downstream;
 
-    void expel_old_start(typename DataTraits::abstime_type earliest_stop) {
+    void expel_old_start(typename DataTypes::abstime_type earliest_stop) {
         auto const cutoff = pairing_cutoff(earliest_stop, window_size);
         if (start.has_value() && *start < cutoff)
             start = std::nullopt;
@@ -191,10 +191,10 @@ class pair_all_between {
 
   public:
     explicit pair_all_between(
-        typename DataTraits::channel_type start_channel,
-        std::array<typename DataTraits::channel_type, NStopChannels>
+        typename DataTypes::channel_type start_channel,
+        std::array<typename DataTypes::channel_type, NStopChannels>
             stop_channels,
-        typename DataTraits::abstime_type time_window, Downstream downstream)
+        typename DataTypes::abstime_type time_window, Downstream downstream)
         : start_chan(start_channel), stop_chans(stop_channels),
           window_size(time_window), downstream(std::move(downstream)) {
         if (window_size < 0)
@@ -215,9 +215,9 @@ class pair_all_between {
 
     template <typename DT> void handle(detection_event<DT> const &event) {
         static_assert(std::is_same_v<typename DT::abstime_type,
-                                     typename DataTraits::abstime_type>);
+                                     typename DataTypes::abstime_type>);
         static_assert(std::is_same_v<typename DT::channel_type,
-                                     typename DataTraits::channel_type>);
+                                     typename DataTypes::channel_type>);
 
         expel_old_start(event.abstime);
         if (start.has_value()) {
@@ -226,7 +226,7 @@ class pair_all_between {
                               std::find(stop_chans.cbegin(), stop_chans.cend(),
                                         event.channel));
             if (std::size_t(chan_index) < NStopChannels) {
-                downstream.handle(detection_pair_event<DataTraits>{
+                downstream.handle(detection_pair_event<DataTypes>{
                     {*start, start_chan}, event});
             }
         }
@@ -242,23 +242,23 @@ class pair_all_between {
     void flush() { downstream.flush(); }
 };
 
-template <std::size_t NStopChannels, typename DataTraits, typename Downstream>
+template <std::size_t NStopChannels, typename DataTypes, typename Downstream>
 class pair_one_between {
-    typename DataTraits::channel_type start_chan;
-    std::array<typename DataTraits::channel_type, NStopChannels> stop_chans;
-    typename DataTraits::abstime_type window_size;
+    typename DataTypes::channel_type start_chan;
+    std::array<typename DataTypes::channel_type, NStopChannels> stop_chans;
+    typename DataTypes::abstime_type window_size;
 
     // Buffer the most recent start within the time window, and mark stop
     // channels that have been matched.
     struct start_and_flags {
-        typename DataTraits::abstime_type time;
+        typename DataTypes::abstime_type time;
         std::bitset<NStopChannels> stopped;
     };
     std::optional<start_and_flags> start;
 
     Downstream downstream;
 
-    void expel_old_start(typename DataTraits::abstime_type earliest_stop) {
+    void expel_old_start(typename DataTypes::abstime_type earliest_stop) {
         auto const cutoff = pairing_cutoff(earliest_stop, window_size);
         if (start.has_value() &&
             (start->time < cutoff || start->stopped.all()))
@@ -267,10 +267,10 @@ class pair_one_between {
 
   public:
     explicit pair_one_between(
-        typename DataTraits::channel_type start_channel,
-        std::array<typename DataTraits::channel_type, NStopChannels>
+        typename DataTypes::channel_type start_channel,
+        std::array<typename DataTypes::channel_type, NStopChannels>
             stop_channels,
-        typename DataTraits::abstime_type time_window, Downstream downstream)
+        typename DataTypes::abstime_type time_window, Downstream downstream)
         : start_chan(start_channel), stop_chans(stop_channels),
           window_size(time_window), downstream(std::move(downstream)) {
         if (window_size < 0)
@@ -291,9 +291,9 @@ class pair_one_between {
 
     template <typename DT> void handle(detection_event<DT> const &event) {
         static_assert(std::is_same_v<typename DT::abstime_type,
-                                     typename DataTraits::abstime_type>);
+                                     typename DataTypes::abstime_type>);
         static_assert(std::is_same_v<typename DT::channel_type,
-                                     typename DataTraits::channel_type>);
+                                     typename DataTypes::channel_type>);
 
         expel_old_start(event.abstime);
         if (start.has_value()) {
@@ -302,7 +302,7 @@ class pair_one_between {
                               std::find(stop_chans.cbegin(), stop_chans.cend(),
                                         event.channel)));
             if (chan_index < NStopChannels && not start->stopped[chan_index]) {
-                downstream.handle(detection_pair_event<DataTraits>{
+                downstream.handle(detection_pair_event<DataTypes>{
                     {start->time, start_chan}, event});
                 start->stopped[chan_index] = true;
             }
@@ -337,7 +337,7 @@ class pair_one_between {
  *
  * \tparam NStopChannels number of stop channels
  *
- * \tparam DataTraits traits type specifying `abstime_type` and `channel_type`
+ * \tparam DataTypes data type set specifying `abstime_type` and `channel_type`
  *
  * \tparam Downstream downstream processor type (usually deduced)
  *
@@ -354,18 +354,18 @@ class pair_one_between {
  *
  * \par Events handled
  * - `tcspc::detection_event<DT>`: emit (as
- *   `tcspc::detection_pair_event<DataTraits>`) any pairs where the current
+ *   `tcspc::detection_pair_event<DataTypes>`) any pairs where the current
  *   event serves as the stop event; pass through
  * - All other types: pass through with no action
  * - Flush: pass through with no action
  */
-template <std::size_t NStopChannels, typename DataTraits = default_data_traits,
+template <std::size_t NStopChannels, typename DataTypes = default_data_types,
           typename Downstream>
 auto pair_all(
-    typename DataTraits::channel_type start_channel,
-    std::array<typename DataTraits::channel_type, NStopChannels> stop_channels,
-    typename DataTraits::abstime_type time_window, Downstream &&downstream) {
-    return internal::pair_all<NStopChannels, DataTraits, Downstream>(
+    typename DataTypes::channel_type start_channel,
+    std::array<typename DataTypes::channel_type, NStopChannels> stop_channels,
+    typename DataTypes::abstime_type time_window, Downstream &&downstream) {
+    return internal::pair_all<NStopChannels, DataTypes, Downstream>(
         start_channel, stop_channels, time_window,
         std::forward<Downstream>(downstream));
 }
@@ -388,7 +388,7 @@ auto pair_all(
  *
  * \tparam NStopChannels number of stop channels
  *
- * \tparam DataTraits traits type specifying `abstime_type` and `channel_type`
+ * \tparam DataTypes data type set specifying `abstime_type` and `channel_type`
  *
  * \tparam Downstream downstream processor type (usually deduced)
  *
@@ -405,18 +405,18 @@ auto pair_all(
  *
  * \par Events handled
  * - `tcspc::detection_event<DT>`: emit  (as
- *   `tcspc::detection_pair_event<DataTraits>`) any pairs where the current
+ *   `tcspc::detection_pair_event<DataTypes>`) any pairs where the current
  *   event serves as the stop event; pass through
  * - All other types: pass through with no action
  * - Flush: pass through with no action
  */
-template <std::size_t NStopChannels, typename DataTraits = default_data_traits,
+template <std::size_t NStopChannels, typename DataTypes = default_data_types,
           typename Downstream>
 auto pair_one(
-    typename DataTraits::channel_type start_channel,
-    std::array<typename DataTraits::channel_type, NStopChannels> stop_channels,
-    typename DataTraits::abstime_type time_window, Downstream &&downstream) {
-    return internal::pair_one<NStopChannels, DataTraits, Downstream>(
+    typename DataTypes::channel_type start_channel,
+    std::array<typename DataTypes::channel_type, NStopChannels> stop_channels,
+    typename DataTypes::abstime_type time_window, Downstream &&downstream) {
+    return internal::pair_one<NStopChannels, DataTypes, Downstream>(
         start_channel, stop_channels, time_window,
         std::forward<Downstream>(downstream));
 }
@@ -438,7 +438,7 @@ auto pair_one(
  *
  * \tparam NStopChannels number of stop channels
  *
- * \tparam DataTraits traits type specifying `abstime_type` and `channel_type`
+ * \tparam DataTypes data type set specifying `abstime_type` and `channel_type`
  *
  * \tparam Downstream downstream processor type (usually deduced)
  *
@@ -455,18 +455,18 @@ auto pair_one(
  *
  * \par Events handled
  * - `tcspc::detection_event<DT>`: emit (as
- *   `tcspc::detection_pair_event<DataTraits>`), if any, the pair where the
+ *   `tcspc::detection_pair_event<DataTypes>`), if any, the pair where the
  *   current event serves as the stop event; pass through
  * - All other types: pass through with no action
  * - Flush: pass through with no action
  */
-template <std::size_t NStopChannels, typename DataTraits = default_data_traits,
+template <std::size_t NStopChannels, typename DataTypes = default_data_types,
           typename Downstream>
 auto pair_all_between(
-    typename DataTraits::channel_type start_channel,
-    std::array<typename DataTraits::channel_type, NStopChannels> stop_channels,
-    typename DataTraits::abstime_type time_window, Downstream &&downstream) {
-    return internal::pair_all_between<NStopChannels, DataTraits, Downstream>(
+    typename DataTypes::channel_type start_channel,
+    std::array<typename DataTypes::channel_type, NStopChannels> stop_channels,
+    typename DataTypes::abstime_type time_window, Downstream &&downstream) {
+    return internal::pair_all_between<NStopChannels, DataTypes, Downstream>(
         start_channel, stop_channels, time_window,
         std::forward<Downstream>(downstream));
 }
@@ -489,7 +489,7 @@ auto pair_all_between(
  *
  * \tparam NStopChannels number of stop channels
  *
- * \tparam DataTraits traits type specifying `abstime_type` and `channel_type`
+ * \tparam DataTypes data type set specifying `abstime_type` and `channel_type`
  *
  * \tparam Downstream downstream processor type (usually deduced)
  *
@@ -506,18 +506,18 @@ auto pair_all_between(
  *
  * \par Events handled
  * - `tcspc::detection_event<DT>`: emit (as
- *   `tcspc::detection_pair_event<DataTraits>`), if any, the pair where the
+ *   `tcspc::detection_pair_event<DataTypes>`), if any, the pair where the
  *   current event serves as the stop event; pass through
  * - All other types: pass through with no action
  * - Flush: pass through with no action
  */
-template <std::size_t NStopChannels, typename DataTraits = default_data_traits,
+template <std::size_t NStopChannels, typename DataTypes = default_data_types,
           typename Downstream>
 auto pair_one_between(
-    typename DataTraits::channel_type start_channel,
-    std::array<typename DataTraits::channel_type, NStopChannels> stop_channels,
-    typename DataTraits::abstime_type time_window, Downstream &&downstream) {
-    return internal::pair_one_between<NStopChannels, DataTraits, Downstream>(
+    typename DataTypes::channel_type start_channel,
+    std::array<typename DataTypes::channel_type, NStopChannels> stop_channels,
+    typename DataTypes::abstime_type time_window, Downstream &&downstream) {
+    return internal::pair_one_between<NStopChannels, DataTypes, Downstream>(
         start_channel, stop_channels, time_window,
         std::forward<Downstream>(downstream));
 }

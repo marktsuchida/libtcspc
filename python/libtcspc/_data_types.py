@@ -10,10 +10,10 @@ from typing import TypedDict, Unpack
 import cppyy
 from typeguard import typechecked
 
-_cppyy_data_traits_counter = itertools.count()
+_cppyy_data_types_counter = itertools.count()
 
 
-class _DataTraits(TypedDict, total=False):
+class _DataTypes(TypedDict, total=False):
     abstime_type: str
     channel_type: str
     difftime_type: str
@@ -24,27 +24,27 @@ class _DataTraits(TypedDict, total=False):
 
 @functools.cache
 @typechecked
-def _data_traits_class(**kwargs: Unpack[_DataTraits]) -> str:
+def _data_types_class(**kwargs: Unpack[_DataTypes]) -> str:
     types = [f"using {k} = {kwargs[k]};" for k in kwargs]  # type: ignore[literal-required]
     if not len(types):
-        return "tcspc::default_data_traits"
+        return "tcspc::default_data_types"
 
-    class_name = f"data_traits_{next(_cppyy_data_traits_counter)}"
+    class_name = f"data_types_{next(_cppyy_data_types_counter)}"
     typedefs = ("\n" + "    " * 5).join(types)
     cppyy.cppdef(
         dedent(f"""\
-            namespace tcspc::cppyy_data_traits {{
-                class {class_name} : public default_data_traits {{
+            namespace tcspc::cppyy_data_types {{
+                class {class_name} : public default_data_types {{
                     {typedefs}
                 }};
             }}""")
     )
-    return f"tcspc::cppyy_data_traits::{class_name}"
+    return f"tcspc::cppyy_data_types::{class_name}"
 
 
-class DataTraits:
-    def __init__(self, **kwargs: Unpack[_DataTraits]) -> None:
-        self._traits_class = _data_traits_class(**kwargs)
+class DataTypes:
+    def __init__(self, **kwargs: Unpack[_DataTypes]) -> None:
+        self._type_set_class = _data_types_class(**kwargs)
 
     def cpp(self) -> str:
-        return self._traits_class
+        return self._type_set_class

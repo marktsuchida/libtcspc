@@ -34,12 +34,12 @@ using start_event = time_tagged_test_event<0>;
 using reset_event = time_tagged_test_event<2>;
 using misc_event = time_tagged_test_event<3>;
 
-struct dt3216 : default_data_traits {
+struct dt3216 : default_data_types {
     using bin_index_type = u32;
     using bin_type = u16;
 };
 
-struct dt88 : default_data_traits {
+struct dt88 : default_data_types {
     using bin_index_type = u8;
     using bin_type = u8;
 };

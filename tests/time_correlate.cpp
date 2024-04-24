@@ -85,7 +85,7 @@ TEST_CASE("time correlate at midpoint") {
 
     SECTION("use start channel") {
         auto in = feed_input<type_list<detection_pair_event<>>>(
-            time_correlate_at_midpoint<default_data_traits, true>(
+            time_correlate_at_midpoint<default_data_types, true>(
                 capture_output<tc_out_events>(
                     ctx->tracker<capture_output_access>("out"))));
         in.require_output_checked(ctx, "out");
@@ -119,7 +119,7 @@ TEST_CASE("time correlate at fraction") {
 
     SECTION("use start channel") {
         auto in = feed_input<type_list<detection_pair_event<>>>(
-            time_correlate_at_fraction<default_data_traits, true>(
+            time_correlate_at_fraction<default_data_types, true>(
                 1.0 / 3.0, capture_output<tc_out_events>(
                                ctx->tracker<capture_output_access>("out"))));
         in.require_output_checked(ctx, "out");
@@ -134,23 +134,23 @@ TEST_CASE("time correlate at fraction") {
 }
 
 TEST_CASE("negate difftime") {
-    struct traits : default_data_traits {
+    struct types : default_data_types {
         using difftime_type = std::int16_t;
     };
     auto ctx = context::create();
-    auto in = feed_input<type_list<time_correlated_detection_event<traits>>>(
+    auto in = feed_input<type_list<time_correlated_detection_event<types>>>(
         negate_difftime(
-            capture_output<type_list<time_correlated_detection_event<traits>>>(
+            capture_output<type_list<time_correlated_detection_event<types>>>(
                 ctx->tracker<capture_output_access>("out"))));
     in.require_output_checked(ctx, "out");
     auto out = capture_output_checker<
-        type_list<time_correlated_detection_event<traits>>>(
+        type_list<time_correlated_detection_event<types>>>(
         ctx->access<capture_output_access>("out"));
 
-    in.feed(time_correlated_detection_event<traits>{3, 1, 2});
-    REQUIRE(out.check(time_correlated_detection_event<traits>{3, 1, -2}));
-    in.feed(time_correlated_detection_event<traits>{5, 1, -7});
-    REQUIRE(out.check(time_correlated_detection_event<traits>{5, 1, 7}));
+    in.feed(time_correlated_detection_event<types>{3, 1, 2});
+    REQUIRE(out.check(time_correlated_detection_event<types>{3, 1, -2}));
+    in.feed(time_correlated_detection_event<types>{5, 1, -7});
+    REQUIRE(out.check(time_correlated_detection_event<types>{5, 1, 7}));
     in.flush();
     REQUIRE(out.check_flushed());
 }

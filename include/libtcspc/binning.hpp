@@ -24,7 +24,7 @@ namespace tcspc {
 
 namespace internal {
 
-template <typename DataTraits, typename DataMapper, typename Downstream>
+template <typename DataTypes, typename DataMapper, typename Downstream>
 class map_to_datapoints {
     DataMapper mapper;
     Downstream downstream;
@@ -33,7 +33,7 @@ class map_to_datapoints {
     using event_type = typename DataMapper::event_type;
     using datapoint_type = typename DataMapper::datapoint_type;
     static_assert(
-        std::is_same_v<datapoint_type, typename DataTraits::datapoint_type>);
+        std::is_same_v<datapoint_type, typename DataTypes::datapoint_type>);
 
     explicit map_to_datapoints(DataMapper mapper, Downstream downstream)
         : mapper(std::move(mapper)), downstream(std::move(downstream)) {}
@@ -51,7 +51,7 @@ class map_to_datapoints {
 
     void handle(event_type const &event) {
         downstream.handle(
-            datapoint_event<DataTraits>{std::invoke(mapper, event)});
+            datapoint_event<DataTypes>{std::invoke(mapper, event)});
     }
 
     template <typename OtherEvent> void handle(OtherEvent const &event) {
@@ -75,7 +75,7 @@ class map_to_datapoints {
  *
  * All other events are passed through.
  *
- * \tparam DataTraits traits type for emitted events
+ * \tparam DataTypes data type set for emitted events
  *
  * \tparam DataMapper type of data mapper (usually deduced)
  *
@@ -89,14 +89,14 @@ class map_to_datapoints {
  *
  * \par Events handled
  * - `DataMapper::event_type`: map to datapoint with data mapper and emit as
- *   `tcspc::datapoint_event<DataTraits>`
+ *   `tcspc::datapoint_event<DataTypes>`
  * - All other types: pass through with no action
  * - Flush: pass through with no action
  */
-template <typename DataTraits = default_data_traits, typename DataMapper,
+template <typename DataTypes = default_data_types, typename DataMapper,
           typename Downstream>
 auto map_to_datapoints(DataMapper &&mapper, Downstream &&downstream) {
-    return internal::map_to_datapoints<DataTraits, DataMapper, Downstream>(
+    return internal::map_to_datapoints<DataTypes, DataMapper, Downstream>(
         std::forward<DataMapper>(mapper),
         std::forward<Downstream>(downstream));
 }
@@ -146,7 +146,7 @@ template <typename Event = bulk_counts_event<>> class count_data_mapper {
 
 namespace internal {
 
-template <typename DataTraits, typename BinMapper, typename Downstream>
+template <typename DataTypes, typename BinMapper, typename Downstream>
 class map_to_bins {
     BinMapper bin_mapper;
     Downstream downstream;
@@ -159,7 +159,7 @@ class map_to_bins {
     using datapoint_type = typename BinMapper::datapoint_type;
     using bin_index_type = typename BinMapper::bin_index_type;
     static_assert(
-        std::is_same_v<bin_index_type, typename DataTraits::bin_index_type>);
+        std::is_same_v<bin_index_type, typename DataTypes::bin_index_type>);
 
     explicit map_to_bins(BinMapper bin_mapper, Downstream downstream)
         : bin_mapper(std::move(bin_mapper)),
@@ -181,7 +181,7 @@ class map_to_bins {
             std::is_same_v<typename DT::datapoint_type, datapoint_type>);
         auto bin = std::invoke(bin_mapper, event.value);
         if (bin)
-            downstream.handle(bin_increment_event<DataTraits>{bin.value()});
+            downstream.handle(bin_increment_event<DataTypes>{bin.value()});
     }
 
     template <typename OtherEvent> void handle(OtherEvent const &event) {
@@ -204,7 +204,7 @@ class map_to_bins {
  *
  * All other events are passed through.
  *
- * \tparam DataTraits traits type for emitted events
+ * \tparam DataTypes data type set for emitted events
  *
  * \tparam BinMapper type of bin mapper (usually deduced)
  *
@@ -219,14 +219,14 @@ class map_to_bins {
  * \par Events handled
  * - `tcspc::datapoint_event<DT>`: map to bin index with bin mapper; if not
  *   discarded by the bin mapper, emit as
- *   `tcspc::bin_increment_event<DataTraits>`
+ *   `tcspc::bin_increment_event<DataTypes>`
  * - All other types: pass through with no action
  * - Flush: pass through with no action
  */
-template <typename DataTraits = default_data_traits, typename BinMapper,
+template <typename DataTypes = default_data_types, typename BinMapper,
           typename Downstream>
 auto map_to_bins(BinMapper &&bin_mapper, Downstream &&downstream) {
-    return internal::map_to_bins<DataTraits, BinMapper, Downstream>(
+    return internal::map_to_bins<DataTypes, BinMapper, Downstream>(
         std::forward<BinMapper>(bin_mapper),
         std::forward<Downstream>(downstream));
 }
@@ -253,20 +253,20 @@ auto map_to_bins(BinMapper &&bin_mapper, Downstream &&downstream) {
  *
  * \tparam Flip whether to flip the bin indices
  *
- * \tparam DataTraits traits type specifying `datapoint_type` and
+ * \tparam DataTypes data type set specifying `datapoint_type` and
  * `bin_index_type`
  */
 template <unsigned NDataBits, unsigned NHistoBits, bool Flip = false,
-          typename DataTraits = default_data_traits>
+          typename DataTypes = default_data_types>
 struct power_of_2_bin_mapper {
     /** \brief Implements bin mapper requirement. */
-    using datapoint_type = typename DataTraits::datapoint_type;
+    using datapoint_type = typename DataTypes::datapoint_type;
     static_assert((std::is_unsigned_v<datapoint_type> &&
                    NDataBits <= 8 * sizeof(datapoint_type)) ||
                   NDataBits <= 8 * sizeof(datapoint_type) - 1);
 
     /** \brief Implements bin mapper requirement. */
-    using bin_index_type = typename DataTraits::bin_index_type;
+    using bin_index_type = typename DataTypes::bin_index_type;
     static_assert((std::is_unsigned_v<bin_index_type> &&
                    NHistoBits <= 8 * sizeof(bin_index_type)) ||
                   NHistoBits <= 8 * sizeof(bin_index_type) - 1);
@@ -303,25 +303,25 @@ struct power_of_2_bin_mapper {
  *
  * \ingroup bin-mappers
  *
- * \tparam DataTraits traits type specifying `datapoint_type` and
+ * \tparam DataTypes data type set specifying `datapoint_type` and
  * `bin_index_type`
  */
-template <typename DataTraits = default_data_traits> class linear_bin_mapper {
-    typename DataTraits::datapoint_type off;
-    typename DataTraits::datapoint_type bwidth;
-    typename DataTraits::bin_index_type max_index;
+template <typename DataTypes = default_data_types> class linear_bin_mapper {
+    typename DataTypes::datapoint_type off;
+    typename DataTypes::datapoint_type bwidth;
+    typename DataTypes::bin_index_type max_index;
     bool clamp;
 
-    static_assert(std::is_integral_v<typename DataTraits::datapoint_type>,
+    static_assert(std::is_integral_v<typename DataTypes::datapoint_type>,
                   "datapoint_type must be an integer type");
-    static_assert(std::is_unsigned_v<typename DataTraits::bin_index_type>,
+    static_assert(std::is_unsigned_v<typename DataTypes::bin_index_type>,
                   "bin_index_type must be an unsigned integer type");
 
   public:
     /** \brief Implements bin mapper requirement. */
-    using datapoint_type = typename DataTraits::datapoint_type;
+    using datapoint_type = typename DataTypes::datapoint_type;
     /** \brief Implements bin mapper requirement. */
-    using bin_index_type = typename DataTraits::bin_index_type;
+    using bin_index_type = typename DataTypes::bin_index_type;
 
     /**
      * \brief Construct with parameters.
@@ -376,11 +376,11 @@ template <typename DataTraits = default_data_traits> class linear_bin_mapper {
 
 namespace internal {
 
-template <typename StartEvent, typename StopEvent, typename DataTraits,
+template <typename StartEvent, typename StopEvent, typename DataTypes,
           typename Downstream>
 class batch_bin_increments {
     bool in_batch = false;
-    bin_increment_batch_event<DataTraits> batch;
+    bin_increment_batch_event<DataTypes> batch;
 
     Downstream downstream;
 
@@ -401,7 +401,7 @@ class batch_bin_increments {
 
     template <typename DT> void handle(bin_increment_event<DT> const &event) {
         static_assert(std::is_same_v<typename DT::bin_index_type,
-                                     typename DataTraits::bin_index_type>);
+                                     typename DataTypes::bin_index_type>);
         if (in_batch)
             batch.bin_indices.push_back(event.bin_index);
     }
@@ -436,8 +436,8 @@ class batch_bin_increments {
  *
  * \tparam StopEvent end-of-batch event type
  *
- * \tparam DataTraits traits type specifying `bin_index_type` and used for
- * emitted events
+ * \tparam DataTypes data type set specifying `bin_index_type` and emitted
+ * events
  *
  * \tparam Downstream downstream processor type (usually deduced)
  *
@@ -448,15 +448,15 @@ class batch_bin_increments {
  * \par Events handled
  * - `StartEvent`: discard any unfinished batch; start recording a batch
  * - `StopEvent`: ignore if not in batch; finish recording the current batch
- *   and emit as `tcspc::bin_increment_batch_event<DataTraits>`
+ *   and emit as `tcspc::bin_increment_batch_event<DataTypes>`
  * - `tcspc::bin_increment_event<DT>`: record if currently within a batch
  * - All other types: pass through with no action
  * - Flush: pass through with no action
  */
 template <typename StartEvent, typename StopEvent,
-          typename DataTraits = default_data_traits, typename Downstream>
+          typename DataTypes = default_data_types, typename Downstream>
 auto batch_bin_increments(Downstream &&downstream) {
-    return internal::batch_bin_increments<StartEvent, StopEvent, DataTraits,
+    return internal::batch_bin_increments<StartEvent, StopEvent, DataTypes,
                                           Downstream>(
         std::forward<Downstream>(downstream));
 }

@@ -22,9 +22,9 @@ namespace tcspc {
 
 namespace internal {
 
-template <typename EventList, typename DataTraits, typename Downstream>
+template <typename EventList, typename DataTypes, typename Downstream>
 class recover_order {
-    using abstime_type = typename DataTraits::abstime_type;
+    using abstime_type = typename DataTypes::abstime_type;
     abstime_type window_size;
 
     // We just use a sorted vector, because the intended use cases do not
@@ -125,7 +125,7 @@ class recover_order {
  *
  * \tparam EventList events to sort
  *
- * \tparam DataTraits traits type specifying `abstime_type`
+ * \tparam DataTypes data type set specifying `abstime_type`
  *
  * \tparam Downstream downstream processor type
  *
@@ -142,13 +142,13 @@ class recover_order {
  *   be maintained
  * - Flush: emit any buffered `Event`s in `abstime` order; pass through
  */
-template <typename EventList, typename DataTraits = default_data_traits,
+template <typename EventList, typename DataTypes = default_data_types,
           typename Downstream>
-auto recover_order(typename DataTraits::abstime_type time_window,
+auto recover_order(typename DataTypes::abstime_type time_window,
                    Downstream &&downstream) {
     static_assert(type_list_size_v<EventList> > 0,
                   "recover_order requires non-empty event list");
-    return internal::recover_order<EventList, DataTraits, Downstream>(
+    return internal::recover_order<EventList, DataTypes, Downstream>(
         time_window, std::forward<Downstream>(downstream));
 }
 

@@ -18,9 +18,9 @@ namespace tcspc {
 
 namespace internal {
 
-template <typename DataTraits, typename Downstream>
+template <typename DataTypes, typename Downstream>
 class regulate_time_reached {
-    using abstime_type = typename DataTraits::abstime_type;
+    using abstime_type = typename DataTypes::abstime_type;
 
     abstime_type interval_thresh;
     std::size_t count_thresh;
@@ -37,7 +37,7 @@ class regulate_time_reached {
         ++seen_since_prev_time_reached;
         if (abstime >= next_time_thresh ||
             emitted_since_prev_time_reached >= count_thresh) {
-            downstream.handle(time_reached_event<DataTraits>{abstime});
+            downstream.handle(time_reached_event<DataTypes>{abstime});
             next_time_thresh = add_sat(abstime, interval_thresh);
             emitted_since_prev_time_reached = 0;
             seen_since_prev_time_reached = 0;
@@ -82,7 +82,7 @@ class regulate_time_reached {
         // was something other than time-reached.
         if (exact_reached > std::numeric_limits<abstime_type>::min() &&
             seen_since_prev_time_reached > 0)
-            downstream.handle(time_reached_event<DataTraits>{exact_reached});
+            downstream.handle(time_reached_event<DataTypes>{exact_reached});
         downstream.flush();
     }
 };
@@ -125,7 +125,7 @@ class regulate_time_reached {
  * reasonable limit even when \p interval_threshold is used as the main
  * criterion.
  *
- * \tparam DataTraits traits type specifying `abstime_type`
+ * \tparam DataTypes data type set specifying `abstime_type`
  *
  * \tparam Downstream downstream processor type
  *
@@ -142,17 +142,17 @@ class regulate_time_reached {
  *
  * \par Events handled
  * - `tcspc::time_reached_event<DT>`: emit as
- *   `tcspc::time_reached_event<DataTraits>` with rate limiting
+ *   `tcspc::time_reached_event<DataTypes>` with rate limiting
  * - All types with `abstime` field: passed through, possibly followed by
- *   `tcspc::time_reached_event<DataTraits>`
- * - Flush: emit `tcspc::time_reached_event<DataTraits>` with time of last
+ *   `tcspc::time_reached_event<DataTypes>`
+ * - Flush: emit `tcspc::time_reached_event<DataTypes>` with time of last
  *   passed event; pass through
  */
-template <typename DataTraits = default_data_traits, typename Downstream>
-auto regulate_time_reached(
-    typename DataTraits::abstime_type interval_threshold,
-    std::size_t count_threshold, Downstream downstream) {
-    return internal::regulate_time_reached<DataTraits, Downstream>(
+template <typename DataTypes = default_data_types, typename Downstream>
+auto regulate_time_reached(typename DataTypes::abstime_type interval_threshold,
+                           std::size_t count_threshold,
+                           Downstream downstream) {
+    return internal::regulate_time_reached<DataTypes, Downstream>(
         interval_threshold, count_threshold,
         std::forward<Downstream>(downstream));
 }

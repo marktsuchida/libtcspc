@@ -694,10 +694,10 @@ namespace internal {
 
 // Common implementation for decode_bh_spc*.
 // BHEvent is the binary record event class.
-template <typename DataTraits, typename BHSPCEvent, bool HasIntensityCounter,
+template <typename DataTypes, typename BHSPCEvent, bool HasIntensityCounter,
           typename Downstream>
 class decode_bh_spc {
-    using abstime_type = typename DataTraits::abstime_type;
+    using abstime_type = typename DataTypes::abstime_type;
 
     abstime_type abstime_base = 0; // Time of last overflow
 
@@ -728,9 +728,9 @@ class decode_bh_spc {
                 abstime_type(BHSPCEvent::macrotime_overflow_period) *
                 event.multiple_macrotime_overflow_count().value();
             if (event.gap_flag())
-                downstream.handle(data_lost_event<DataTraits>{abstime_base});
+                downstream.handle(data_lost_event<DataTypes>{abstime_base});
             return downstream.handle(
-                time_reached_event<DataTraits>{abstime_base});
+                time_reached_event<DataTypes>{abstime_base});
         }
 
         if (event.macrotime_overflow_flag())
@@ -738,28 +738,28 @@ class decode_bh_spc {
         abstime_type const abstime = abstime_base + event.macrotime().value();
 
         if (event.gap_flag())
-            downstream.handle(data_lost_event<DataTraits>{abstime});
+            downstream.handle(data_lost_event<DataTypes>{abstime});
 
         if (not event.marker_flag()) {
             if (not event.invalid_flag()) { // Valid photon
-                downstream.handle(time_correlated_detection_event<DataTraits>{
+                downstream.handle(time_correlated_detection_event<DataTypes>{
                     abstime, event.routing_signals().value(),
                     event.adc_value().value()});
             } else { // Invalid photon
-                downstream.handle(time_reached_event<DataTraits>{abstime});
+                downstream.handle(time_reached_event<DataTypes>{abstime});
             }
         } else {
             if (event.invalid_flag()) { // Marker
                 auto const bits = u32np(event.marker_bits());
                 if constexpr (HasIntensityCounter) {    // SPC-160, 180N
                     if ((bits & 0x01_u32np) != 0_u32np) // Marker 0
-                        downstream.handle(bulk_counts_event<DataTraits>{
+                        downstream.handle(bulk_counts_event<DataTypes>{
                             abstime, -1, event.adc_value().value()});
                 }
                 for_each_set_bit(bits, [&](int b) {
-                    downstream.handle(marker_event<DataTraits>{
+                    downstream.handle(marker_event<DataTypes>{
                         abstime,
-                        static_cast<typename DataTraits::channel_type>(b)});
+                        static_cast<typename DataTypes::channel_type>(b)});
                 });
             } else {
                 // Although not clearly documented, the combination of
@@ -789,7 +789,7 @@ class decode_bh_spc {
  * `tcspc::decode_bh_spc_with_intensity_counter()`), but can be used for these
  * models if the counter value is not of interest.
  *
- * \tparam DataTraits traits type specifying `abstime_type`, `channel_type`,
+ * \tparam DataTypes data type set specifying `abstime_type`, `channel_type`,
  * and `difftime_type` for the emitted events
  *
  * \tparam Downstream downstream processor type
@@ -800,15 +800,14 @@ class decode_bh_spc {
  *
  * \par Events handled
  * - `tcspc::bh_spc_event`: decode and emit one or more of
- *   `tcspc::time_reached_event<DataTraits>`,
- *   `tcspc::time_correlated_detection_event<DataTraits>`,
- *   `tcspc::marker_event<DataTraits>`, `tcspc::data_lost_event<DataTraits>`
+ *   `tcspc::time_reached_event<DataTypes>`,
+ *   `tcspc::time_correlated_detection_event<DataTypes>`,
+ *   `tcspc::marker_event<DataTypes>`, `tcspc::data_lost_event<DataTypes>`
  * - Flush: pass through with no action
  */
-template <typename DataTraits = default_data_traits, typename Downstream>
+template <typename DataTypes = default_data_types, typename Downstream>
 auto decode_bh_spc(Downstream &&downstream) {
-    return internal::decode_bh_spc<DataTraits, bh_spc_event, false,
-                                   Downstream>(
+    return internal::decode_bh_spc<DataTypes, bh_spc_event, false, Downstream>(
         std::forward<Downstream>(downstream));
 }
 
@@ -821,7 +820,7 @@ auto decode_bh_spc(Downstream &&downstream) {
  * Decoder for SPC-160 and SPC-180N. Generates events for the fast intensity
  * counter on marker 0. Otherwise the same as `tcspc::decode_bh_spc()`.
  *
- * \tparam DataTraits traits type specifying `abstime_type`, `channel_type`,
+ * \tparam DataTypes data type set specifying `abstime_type`, `channel_type`,
  * and `difftime_type` for the emitted events
  *
  * \tparam Downstream downstream processor type
@@ -832,15 +831,15 @@ auto decode_bh_spc(Downstream &&downstream) {
  *
  * \par Events handled
  * - `tcspc::bh_spc_event`: decode and emit one or more of
- *   `tcspc::time_reached_event<DataTraits>`,
- *   `tcspc::time_correlated_detection_event<DataTraits>`,
- *   `tcspc::bulk_counts_event<DataTraits>`
- *   `tcspc::marker_event<DataTraits>`, `tcspc::data_lost_event<DataTraits>`
+ *   `tcspc::time_reached_event<DataTypes>`,
+ *   `tcspc::time_correlated_detection_event<DataTypes>`,
+ *   `tcspc::bulk_counts_event<DataTypes>`
+ *   `tcspc::marker_event<DataTypes>`, `tcspc::data_lost_event<DataTypes>`
  * - Flush: pass through with no action
  */
-template <typename DataTraits = default_data_traits, typename Downstream>
+template <typename DataTypes = default_data_types, typename Downstream>
 auto decode_bh_spc_with_intensity_counter(Downstream &&downstream) {
-    return internal::decode_bh_spc<DataTraits, bh_spc_event, true, Downstream>(
+    return internal::decode_bh_spc<DataTypes, bh_spc_event, true, Downstream>(
         std::forward<Downstream>(downstream));
 }
 
@@ -850,7 +849,7 @@ auto decode_bh_spc_with_intensity_counter(Downstream &&downstream) {
  *
  * \ingroup processors-bh
  *
- * \tparam DataTraits traits type specifying `abstime_type`, `channel_type`,
+ * \tparam DataTypes data type set specifying `abstime_type`, `channel_type`,
  * and `difftime_type` for the emitted events
  *
  * \tparam Downstream downstream processor type
@@ -861,14 +860,14 @@ auto decode_bh_spc_with_intensity_counter(Downstream &&downstream) {
  *
  * \par Events handled
  * - `tcspc::bh_spc600_4096ch_event`: decode and emit one or more of
- *   `tcspc::time_reached_event<DataTraits>`,
- *   `tcspc::time_correlated_detection_event<DataTraits>`,
- *   `tcspc::data_lost_event<DataTraits>`
+ *   `tcspc::time_reached_event<DataTypes>`,
+ *   `tcspc::time_correlated_detection_event<DataTypes>`,
+ *   `tcspc::data_lost_event<DataTypes>`
  * - Flush: pass through with no action
  */
-template <typename DataTraits = default_data_traits, typename Downstream>
+template <typename DataTypes = default_data_types, typename Downstream>
 auto decode_bh_spc600_4096ch(Downstream &&downstream) {
-    return internal::decode_bh_spc<DataTraits, bh_spc600_4096ch_event, false,
+    return internal::decode_bh_spc<DataTypes, bh_spc600_4096ch_event, false,
                                    Downstream>(
         std::forward<Downstream>(downstream));
 }
@@ -879,7 +878,7 @@ auto decode_bh_spc600_4096ch(Downstream &&downstream) {
  *
  * \ingroup processors-bh
  *
- * \tparam DataTraits traits type specifying `abstime_type`, `channel_type`,
+ * \tparam DataTypes data type set specifying `abstime_type`, `channel_type`,
  * and `difftime_type` for the emitted events
  *
  * \tparam Downstream downstream processor type
@@ -890,14 +889,14 @@ auto decode_bh_spc600_4096ch(Downstream &&downstream) {
  *
  * \par Events handled
  * - `tcspc::bh_spc600_256ch_event`: decode and emit one or more of
- *   `tcspc::time_reached_event<DataTraits>`,
- *   `tcspc::time_correlated_detection_event<DataTraits>`,
- *   `tcspc::data_lost_event<DataTraits>`
+ *   `tcspc::time_reached_event<DataTypes>`,
+ *   `tcspc::time_correlated_detection_event<DataTypes>`,
+ *   `tcspc::data_lost_event<DataTypes>`
  * - Flush: pass through with no action
  */
-template <typename DataTraits = default_data_traits, typename Downstream>
+template <typename DataTypes = default_data_types, typename Downstream>
 auto decode_bh_spc600_256ch(Downstream &&downstream) {
-    return internal::decode_bh_spc<DataTraits, bh_spc600_256ch_event, false,
+    return internal::decode_bh_spc<DataTypes, bh_spc600_256ch_event, false,
                                    Downstream>(
         std::forward<Downstream>(downstream));
 }

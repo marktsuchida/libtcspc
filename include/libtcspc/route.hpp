@@ -285,11 +285,11 @@ class null_router {
  *
  * \tparam N the number of channels to route
  *
- * \tparam DataTraits traits type specifying `channel_type`
+ * \tparam DataTypes data type set specifying `channel_type`
  */
-template <std::size_t N, typename DataTraits = default_data_traits>
+template <std::size_t N, typename DataTypes = default_data_types>
 class channel_router {
-    std::array<typename DataTraits::channel_type, N> channels;
+    std::array<typename DataTypes::channel_type, N> channels;
     std::array<std::size_t, N> indices;
 
   public:
@@ -303,7 +303,7 @@ class channel_router {
     explicit channel_router(
         std::array<ChannelIndexPair, N> const &channel_indices)
         : channels([&] {
-              std::array<typename DataTraits::channel_type, N> ret{};
+              std::array<typename DataTypes::channel_type, N> ret{};
               std::transform(channel_indices.begin(), channel_indices.end(),
                              ret.begin(),
                              [](auto p) { return std::get<0>(p); });
@@ -319,7 +319,7 @@ class channel_router {
 
         static_assert(
             std::is_convertible_v<decltype(std::get<0>(channel_indices[0])),
-                                  typename DataTraits::channel_type> &&
+                                  typename DataTypes::channel_type> &&
                 std::is_convertible_v<
                     decltype(std::get<1>(channel_indices[0])), std::size_t>,
             "channel_indices must be an array of pair-like convertible to (channel, std::size_t)");
@@ -329,7 +329,7 @@ class channel_router {
     template <typename Event>
     auto operator()(Event const &event) const -> std::size_t {
         static_assert(std::is_same_v<decltype(event.channel),
-                                     typename DataTraits::channel_type>);
+                                     typename DataTypes::channel_type>);
         auto it = std::find(channels.begin(), channels.end(), event.channel);
         if (it == channels.end())
             return std::numeric_limits<std::size_t>::max();

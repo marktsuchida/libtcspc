@@ -10,7 +10,7 @@ import cppyy
 from typing_extensions import override
 
 from . import _access, _bucket_sources, _cpp_utils, _events, _streams
-from ._data_traits import DataTraits
+from ._data_types import DataTypes
 from ._events import EventType
 from ._graph import (
     Graph,
@@ -102,9 +102,9 @@ def read_events_from_binary_file(
 
 @final
 class CheckMonotonic(OneToOnePassThroughNode):
-    def __init__(self, data_traits: DataTraits | None = None) -> None:
-        self._data_traits = (
-            data_traits if data_traits is not None else DataTraits()
+    def __init__(self, data_types: DataTypes | None = None) -> None:
+        self._data_types = (
+            data_types if data_types is not None else DataTypes()
         )
 
     @override
@@ -112,7 +112,7 @@ class CheckMonotonic(OneToOnePassThroughNode):
         self, node_name: str, context: str, downstream: str
     ) -> str:
         return dedent(f"""\
-            tcspc::check_monotonic<{self._data_traits.cpp()}>(
+            tcspc::check_monotonic<{self._data_types.cpp()}>(
                 {downstream}
             )""")
 
@@ -139,9 +139,9 @@ class Count(OneToOnePassThroughNode):
 
 @final
 class DecodeBHSPC(OneToOneNode):
-    def __init__(self, data_traits: DataTraits | None = None) -> None:
-        self._data_traits = (
-            data_traits if data_traits is not None else DataTraits()
+    def __init__(self, data_types: DataTypes | None = None) -> None:
+        self._data_types = (
+            data_types if data_types is not None else DataTypes()
         )
 
     @override
@@ -152,10 +152,10 @@ class DecodeBHSPC(OneToOneNode):
             input_event_set, (_events.BHSPCEvent,), self.__class__.__name__
         )
         return (
-            _events.DataLostEvent(self._data_traits),
-            _events.MarkerEvent(self._data_traits),
-            _events.TimeCorrelatedDetectionEvent(self._data_traits),
-            _events.TimeReachedEvent(self._data_traits),
+            _events.DataLostEvent(self._data_types),
+            _events.MarkerEvent(self._data_types),
+            _events.TimeCorrelatedDetectionEvent(self._data_types),
+            _events.TimeReachedEvent(self._data_types),
             _events.WarningEvent,
         )
 
@@ -164,7 +164,7 @@ class DecodeBHSPC(OneToOneNode):
         self, node_name: str, context: str, downstream: str
     ) -> str:
         return dedent(f"""\
-            tcspc::decode_bh_spc<{self._data_traits.cpp()}>(
+            tcspc::decode_bh_spc<{self._data_types.cpp()}>(
                 {downstream}
             )""")
 

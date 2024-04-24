@@ -724,12 +724,12 @@ template <int N> struct empty_test_event {
  *
  * \tparam N a number to distinguish event types.
  *
- * \tparam DataTraits traits type specifying `abstime_type`
+ * \tparam DataTypes data type set specifying `abstime_type`
  */
-template <int N, typename DataTraits = default_data_traits>
+template <int N, typename DataTypes = default_data_types>
 struct time_tagged_test_event {
     /** \brief Timestamp. */
-    typename DataTraits::abstime_type abstime;
+    typename DataTypes::abstime_type abstime;
 
     /** \brief Equality comparison operator. */
     friend auto operator==(time_tagged_test_event const &lhs,

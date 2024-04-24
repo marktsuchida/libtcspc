@@ -645,7 +645,7 @@ namespace tcspc {
  * Data mappers define the following members:
  * - `event_type`: the event type to map to datapoints
  * - `datapoint_type`, which must match the `tcspc::map_to_datapoints`'s
- *   `DataTraits::datapoint_type`
+ *   `DataTypes::datapoint_type`
  * - `auto operator()(event_type const &) const -> datapoint_type`: the mapping
  *   function
  */
@@ -658,7 +658,7 @@ namespace tcspc {
  * Bin mappers define the following members:
  * - `datapoint_type`
  * - `bin_index_type`, which must be an unsigned integer type matching the
- *   `tcspc::map_to_bins`'s `DataTraits::bin_index_type`
+ *   `tcspc::map_to_bins`'s `DataTypes::bin_index_type`
  * - `[[nodiscard]] auto n_bins() const -> std::size_t`
  * - `auto operator()(datapoint_type d) const -> std::optional<bin_index_type>`
  */

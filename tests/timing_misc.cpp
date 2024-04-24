@@ -73,13 +73,13 @@ TEST_CASE("retime periodic sequence events") {
 
 TEST_CASE("retime periodic sequence events unsigned",
           "[retime_periodic_sequences]") {
-    struct traits {
+    struct types {
         using abstime_type = std::uint64_t;
     };
-    using out_events = type_list<periodic_sequence_model_event<traits>>;
+    using out_events = type_list<periodic_sequence_model_event<types>>;
     auto ctx = context::create();
-    auto in = feed_input<type_list<periodic_sequence_model_event<traits>>>(
-        retime_periodic_sequences<traits>(
+    auto in = feed_input<type_list<periodic_sequence_model_event<types>>>(
+        retime_periodic_sequences<types>(
             10, capture_output<out_events>(
                     ctx->tracker<capture_output_access>("out"))));
     in.require_output_checked(ctx, "out");
@@ -87,15 +87,15 @@ TEST_CASE("retime periodic sequence events unsigned",
         ctx->access<capture_output_access>("out"));
 
     SECTION("normal operation") {
-        in.feed(periodic_sequence_model_event<traits>{4, -1.5, 1.5});
-        REQUIRE(out.check(periodic_sequence_model_event<traits>{1, 1.5, 1.5}));
-        in.feed(periodic_sequence_model_event<traits>{4, -3.0, 1.5});
-        REQUIRE(out.check(periodic_sequence_model_event<traits>{0, 1.0, 1.5}));
+        in.feed(periodic_sequence_model_event<types>{4, -1.5, 1.5});
+        REQUIRE(out.check(periodic_sequence_model_event<types>{1, 1.5, 1.5}));
+        in.feed(periodic_sequence_model_event<types>{4, -3.0, 1.5});
+        REQUIRE(out.check(periodic_sequence_model_event<types>{0, 1.0, 1.5}));
     }
 
     SECTION("unsigned underflow") {
         REQUIRE_THROWS_WITH(
-            in.feed(periodic_sequence_model_event<traits>{4, -3.01, 1.5}),
+            in.feed(periodic_sequence_model_event<types>{4, -3.01, 1.5}),
             Catch::Matchers::ContainsSubstring("unsigned"));
     }
 }

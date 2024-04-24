@@ -97,9 +97,9 @@ TEST_CASE("zero-base abstime") {
         in.feed(e1{125});
         REQUIRE(out.check(e1{2}));
         in.feed(
-            e0{std::numeric_limits<default_data_traits::abstime_type>::min()});
+            e0{std::numeric_limits<default_data_types::abstime_type>::min()});
         REQUIRE(out.check(
-            e0{std::numeric_limits<default_data_traits::abstime_type>::max() -
+            e0{std::numeric_limits<default_data_types::abstime_type>::max() -
                122}));
         in.flush();
         REQUIRE(out.check_flushed());
@@ -111,9 +111,9 @@ TEST_CASE("zero-base abstime") {
         in.feed(e1{-121});
         REQUIRE(out.check(e1{2}));
         in.feed(
-            e0{std::numeric_limits<default_data_traits::abstime_type>::max()});
+            e0{std::numeric_limits<default_data_types::abstime_type>::max()});
         REQUIRE(out.check(
-            e0{std::numeric_limits<default_data_traits::abstime_type>::min() +
+            e0{std::numeric_limits<default_data_types::abstime_type>::min() +
                122}));
         in.flush();
         REQUIRE(out.check_flushed());

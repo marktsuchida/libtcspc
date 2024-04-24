@@ -19,13 +19,13 @@ namespace tcspc {
  *
  * \ingroup events-binning
  *
- * \tparam DataTraits traits type specifying `datapoint_type`
+ * \tparam DataTypes data type set specifying `datapoint_type`
  */
-template <typename DataTraits = default_data_traits> struct datapoint_event {
+template <typename DataTypes = default_data_types> struct datapoint_event {
     /**
      * \brief The data type.
      */
-    using datapoint_type = typename DataTraits::datapoint_type;
+    using datapoint_type = typename DataTypes::datapoint_type;
 
     /**
      * \brief The datapoint value.
@@ -58,14 +58,13 @@ template <typename DataTraits = default_data_traits> struct datapoint_event {
  *
  * \ingroup events-binning
  *
- * \tparam DataTraits traits type specifying and `bin_index_type`
+ * \tparam DataTypes data type set specifying and `bin_index_type`
  */
-template <typename DataTraits = default_data_traits>
-struct bin_increment_event {
+template <typename DataTypes = default_data_types> struct bin_increment_event {
     /**
      * \brief The histogram bin index to which the data value was mapped.
      */
-    typename DataTraits::bin_index_type bin_index;
+    typename DataTypes::bin_index_type bin_index;
 
     /** \brief Equality comparison operator. */
     friend constexpr auto operator==(bin_increment_event const &lhs,
@@ -96,14 +95,14 @@ struct bin_increment_event {
  * Typically the batch represents some unit of data collection, such as a time
  * interval or pixel.
  *
- * \tparam DataTraits traits type specifying `bin_index_type`
+ * \tparam DataTypes data type set specifying `bin_index_type`
  */
-template <typename DataTraits = default_data_traits>
+template <typename DataTypes = default_data_types>
 struct bin_increment_batch_event {
     /**
      * \brief The bin indices for the datapoints in the batch.
      */
-    std::vector<typename DataTraits::bin_index_type> bin_indices;
+    std::vector<typename DataTypes::bin_index_type> bin_indices;
 
     /** \brief Equality comparison operator. */
     friend auto operator==(bin_increment_batch_event const &lhs,
@@ -137,13 +136,13 @@ struct bin_increment_batch_event {
  * This event may be used both for a series of independent histograms and for a
  * series of updates to the same histogram.
  *
- * \tparam DataTraits traits type specifying `bin_type`
+ * \tparam DataTypes data type set specifying `bin_type`
  */
-template <typename DataTraits = default_data_traits> struct histogram_event {
+template <typename DataTypes = default_data_types> struct histogram_event {
     /**
      * \brief The histogram.
      */
-    bucket<typename DataTraits::bin_type> bucket;
+    bucket<typename DataTypes::bin_type> bucket;
 
     /** \brief Equality comparison operator. */
     friend constexpr auto operator==(histogram_event const &lhs,
@@ -176,14 +175,14 @@ template <typename DataTraits = default_data_traits> struct histogram_event {
  * accumulated result. The contained histogram covers only whole batches;
  * counts from any partial batch are not included.
  *
- * \tparam DataTraits traits type specifying `bin_type`
+ * \tparam DataTypes data type set specifying `bin_type`
  */
-template <typename DataTraits = default_data_traits>
+template <typename DataTypes = default_data_types>
 struct concluding_histogram_event {
     /**
      * \brief The accumulated histogram.
      */
-    bucket<typename DataTraits::bin_type> bucket;
+    bucket<typename DataTypes::bin_type> bucket;
 
     /** \brief Equality comparison operator. */
     friend constexpr auto
@@ -217,14 +216,14 @@ struct concluding_histogram_event {
  * series of updates to the same histogram array (as with the output of
  * `tcspc::histogram_elementwise_accumulate()` processor).
  *
- * \tparam DataTraits traits type specifying `bin_type`
+ * \tparam DataTypes data type set specifying `bin_type`
  */
-template <typename DataTraits = default_data_traits>
+template <typename DataTypes = default_data_types>
 struct histogram_array_event {
     /**
      * \brief View of the histogram array.
      */
-    bucket<typename DataTraits::bin_type> bucket;
+    bucket<typename DataTypes::bin_type> bucket;
 
     /** \brief Equality comparison operator. */
     friend auto operator==(histogram_array_event const &lhs,
@@ -256,14 +255,14 @@ struct histogram_array_event {
  * stream) to provide the accumulated result. The contained histogram array
  * covers only whole cycles; counts from any partial cycle are not included.
  *
- * \tparam DataTraits traits type specifying `bin_type`
+ * \tparam DataTypes data type set specifying `bin_type`
  */
-template <typename DataTraits = default_data_traits>
+template <typename DataTypes = default_data_types>
 struct concluding_histogram_array_event {
     /**
      * \brief View of the histogram array.
      */
-    bucket<typename DataTraits::bin_type> bucket;
+    bucket<typename DataTypes::bin_type> bucket;
 
     /** \brief Equality comparison operator. */
     friend auto

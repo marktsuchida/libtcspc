@@ -24,14 +24,14 @@ namespace tcspc {
  *
  * \ingroup events-timing-modeling
  *
- * \tparam DataTraits traits type specifying `abstime_type`
+ * \tparam DataTypes data type set specifying `abstime_type`
  */
-template <typename DataTraits = default_data_traits>
+template <typename DataTypes = default_data_types>
 struct periodic_sequence_model_event {
     /**
      * \brief Absolute time of this event, used as a reference point.
      */
-    typename DataTraits::abstime_type abstime;
+    typename DataTypes::abstime_type abstime;
 
     /**
      * \brief The estimated time of the first event, relative to `abstime`.
@@ -76,14 +76,14 @@ struct periodic_sequence_model_event {
  *
  * \ingroup events-timing-modeling
  *
- * \tparam DataTraits traits type specifying `abstime_type`
+ * \tparam DataTypes data type set specifying `abstime_type`
  */
-template <typename DataTraits = default_data_traits>
+template <typename DataTypes = default_data_types>
 struct real_one_shot_timing_event {
     /**
      * \brief Absolute time of this event, used as a reference point.
      */
-    typename DataTraits::abstime_type abstime;
+    typename DataTypes::abstime_type abstime;
 
     /**
      * \brief The time delay relative to `abstime`.
@@ -119,14 +119,14 @@ struct real_one_shot_timing_event {
  *
  * \ingroup events-timing-modeling
  *
- * \tparam DataTraits traits type specifying `abstime_type`
+ * \tparam DataTypes data type set specifying `abstime_type`
  */
-template <typename DataTraits = default_data_traits>
+template <typename DataTypes = default_data_types>
 struct real_linear_timing_event {
     /**
      * \brief Absolute time of this event, used as a reference point.
      */
-    typename DataTraits::abstime_type abstime;
+    typename DataTypes::abstime_type abstime;
 
     /**
      * \brief The time delay relative to `abstime`.
@@ -170,9 +170,9 @@ struct real_linear_timing_event {
 
 namespace internal {
 
-template <typename DataTraits, typename Downstream>
+template <typename DataTypes, typename Downstream>
 class retime_periodic_sequences {
-    using abstime_type = typename DataTraits::abstime_type;
+    using abstime_type = typename DataTypes::abstime_type;
 
     abstime_type max_shift;
 
@@ -180,8 +180,7 @@ class retime_periodic_sequences {
 
   public:
     explicit retime_periodic_sequences(
-        typename DataTraits::abstime_type max_time_shift,
-        Downstream downstream)
+        typename DataTypes::abstime_type max_time_shift, Downstream downstream)
         : max_shift(max_time_shift), downstream(std::move(downstream)) {
         if (max_shift < 0)
             throw std::invalid_argument(
@@ -223,7 +222,7 @@ class retime_periodic_sequences {
             abstime = event.abstime + static_cast<abstime_type>(delta);
         }
 
-        downstream.handle(periodic_sequence_model_event<DataTraits>{
+        downstream.handle(periodic_sequence_model_event<DataTypes>{
             abstime, event.delay - delta, event.interval});
     }
 
@@ -264,8 +263,7 @@ class retime_periodic_sequences {
  *
  * \see `tcspc::fit_periodic_sequences()`
  *
- * \tparam DataTraits traits type specifying `abstime_type` and traits for
- * emitted events
+ * \tparam DataTypes data type set specifying `abstime_type` and emitted events
  *
  * \tparam Downstream downstream processor type
  *
@@ -277,21 +275,20 @@ class retime_periodic_sequences {
  *
  * \par Events handled
  * - `tcspc::periodic_sequence_model_event<DT>`: emit with normalized `abstime`
- * and `delay` as `tcspc::periodic_sequence_model_event<DataTraits>`; throw
+ * and `delay` as `tcspc::periodic_sequence_model_event<DataTypes>`; throw
  *   `std::runime_error` if the time shift or result range criteria are not met
  * - Flush: pass through with no action
  */
-template <typename DataTraits = default_data_traits, typename Downstream>
-auto retime_periodic_sequences(
-    typename DataTraits::abstime_type max_time_shift,
-    Downstream &&downstream) {
-    return internal::retime_periodic_sequences<DataTraits, Downstream>(
+template <typename DataTypes = default_data_types, typename Downstream>
+auto retime_periodic_sequences(typename DataTypes::abstime_type max_time_shift,
+                               Downstream &&downstream) {
+    return internal::retime_periodic_sequences<DataTypes, Downstream>(
         max_time_shift, std::forward<Downstream>(downstream));
 }
 
 namespace internal {
 
-template <typename DataTraits, typename Downstream>
+template <typename DataTypes, typename Downstream>
 class extrapolate_periodic_sequences {
     double m;
     Downstream downstream;
@@ -316,8 +313,8 @@ class extrapolate_periodic_sequences {
     template <typename DT>
     void handle(periodic_sequence_model_event<DT> const &event) {
         static_assert(std::is_same_v<typename DT::abstime_type,
-                                     typename DataTraits::abstime_type>);
-        downstream.handle(real_one_shot_timing_event<DataTraits>{
+                                     typename DataTypes::abstime_type>);
+        downstream.handle(real_one_shot_timing_event<DataTypes>{
             event.abstime, event.delay + event.interval * m});
     }
 
@@ -346,8 +343,7 @@ class extrapolate_periodic_sequences {
  * \remark This is one way to synthesize an extra tick needed for use with
  * `tcspc::convert_sequences_to_start_stop()`.
  *
- * \tparam DataTraits traits type specifying `abstime_type` and traits for
- * emitted events
+ * \tparam DataTypes data type set specifying `abstime_type` and emitted events
  *
  * \tparam Downstream downstream processor type
  *
@@ -359,19 +355,19 @@ class extrapolate_periodic_sequences {
  *
  * \par Events handled
  * - `tcspc::periodic_sequence_model_event<DT>`: emit
- *   `tcspc::real_one_shot_timing_event<DataTraits>` with the same `abstime`
+ *   `tcspc::real_one_shot_timing_event<DataTypes>` with the same `abstime`
  *   but the `delay` offset by `interval` times `tick_index`
  */
-template <typename DataTraits = default_data_traits, typename Downstream>
+template <typename DataTypes = default_data_types, typename Downstream>
 auto extrapolate_periodic_sequences(std::size_t tick_index,
                                     Downstream &&downstream) {
-    return internal::extrapolate_periodic_sequences<DataTraits, Downstream>(
+    return internal::extrapolate_periodic_sequences<DataTypes, Downstream>(
         tick_index, std::forward<Downstream>(downstream));
 }
 
 namespace internal {
 
-template <typename DataTraits, typename Downstream>
+template <typename DataTypes, typename Downstream>
 class add_count_to_periodic_sequences {
     std::size_t ct;
     Downstream downstream;
@@ -395,8 +391,8 @@ class add_count_to_periodic_sequences {
     template <typename DT>
     void handle(periodic_sequence_model_event<DT> const &event) {
         static_assert(std::is_same_v<typename DT::abstime_type,
-                                     typename DataTraits::abstime_type>);
-        downstream.handle(real_linear_timing_event<DataTraits>{
+                                     typename DataTypes::abstime_type>);
+        downstream.handle(real_linear_timing_event<DataTypes>{
             event.abstime, event.delay, event.interval, ct});
     }
 
@@ -424,8 +420,7 @@ class add_count_to_periodic_sequences {
  *
  * All other events are passed through.
  *
- * \tparam DataTraits traits type specifying `abstime_type` and traits for
- * emitted events
+ * \tparam DataTypes data type set specifying `abstime_type` and emitted events
  *
  * \tparam Downstream downstream processor type
  *
@@ -437,15 +432,15 @@ class add_count_to_periodic_sequences {
  *
  * \par Events handled
  * - `tcspc::periodic_sequence_model_event<DT>`: emit
- *   `tcspc::real_linear_timing_event<DataTraits>` with the same `abstime`,
+ *   `tcspc::real_linear_timing_event<DataTypes>` with the same `abstime`,
  *   `delay`, and `interval` and added `count`.
  * - All other types: pass through with no action
  * - Flush: pass through with no action
  */
-template <typename DataTraits = default_data_traits, typename Downstream>
+template <typename DataTypes = default_data_types, typename Downstream>
 auto add_count_to_periodic_sequences(std::size_t count,
                                      Downstream &&downstream) {
-    return internal::add_count_to_periodic_sequences<DataTraits, Downstream>(
+    return internal::add_count_to_periodic_sequences<DataTypes, Downstream>(
         count, std::forward<Downstream>(downstream));
 }
 

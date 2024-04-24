@@ -25,11 +25,11 @@ namespace tcspc {
 
 namespace internal {
 
-template <typename OverflowPolicy, typename DataTraits, typename Downstream>
+template <typename OverflowPolicy, typename DataTypes, typename Downstream>
 class histogram_elementwise {
   public:
-    using bin_index_type = typename DataTraits::bin_index_type;
-    using bin_type = typename DataTraits::bin_type;
+    using bin_index_type = typename DataTypes::bin_index_type;
+    using bin_type = typename DataTypes::bin_type;
     static_assert(
         is_any_of_v<OverflowPolicy, saturate_on_overflow, error_on_overflow>);
 
@@ -87,7 +87,7 @@ class histogram_elementwise {
     template <typename DT>
     void handle(bin_increment_batch_event<DT> const &event) {
         static_assert(std::is_same_v<typename DT::bin_index_type,
-                                     typename DataTraits::bin_index_type>);
+                                     typename DataTypes::bin_index_type>);
         if (hist_bucket.empty()) { // First time, or after completion.
             hist_bucket = bsource->bucket_of_size(mhist.num_elements() *
                                                   mhist.num_bins());
@@ -108,13 +108,13 @@ class histogram_elementwise {
         }
 
         auto const elem_event =
-            histogram_event<DataTraits>{hist_bucket.subbucket(
+            histogram_event<DataTypes>{hist_bucket.subbucket(
                 element_index * mhist.num_bins(), mhist.num_bins())};
         downstream.handle(elem_event);
 
         if (mhist.is_complete()) {
             downstream.handle(
-                histogram_array_event<DataTraits>{std::move(hist_bucket)});
+                histogram_array_event<DataTypes>{std::move(hist_bucket)});
             hist_bucket = {};
             if constexpr (std::is_same_v<OverflowPolicy,
                                          saturate_on_overflow>) {
@@ -142,7 +142,7 @@ class histogram_elementwise {
  * it has finished filling the histogram array, it starts over with a new
  * array.
  *
- * The histogram array is stored in a `tcspc::bucket<DataTraits::bin_type>` of
+ * The histogram array is stored in a `tcspc::bucket<DataTypes::bin_type>` of
  * size `num_elements * num_bins`. Each cycle (of `num_elements` bin increment
  * batches) uses (sequentially) a new bucket from the \p buffer_provider.
  *
@@ -159,7 +159,7 @@ class histogram_elementwise {
  * \tparam OverflowPolicy policy tag type to select how to handle bin
  * overflows
  *
- * \tparam DataTraits traits type specifying `bin_index_type` and `bin_type`
+ * \tparam DataTypes data type set specifying `bin_index_type` and `bin_type`
  *
  * \tparam Downstream downstream processor type (usually deduced)
  *
@@ -180,9 +180,9 @@ class histogram_elementwise {
  * \par Events handled
  * - `tcspc::bin_increment_batch_event<DT>`: apply the increments to the next
  *   element histogram of the array and emit (const)
- *   `tcspc::histogram_event<DataTraits>`; if the batch filled the last
+ *   `tcspc::histogram_event<DataTypes>`; if the batch filled the last
  *   element of the array, emit (rvalue)
- *   `tcspc::histogram_array_event<DataTraits>`; if a bin overflowed, behavior
+ *   `tcspc::histogram_array_event<DataTypes>`; if a bin overflowed, behavior
  *   (taken before emitting the above events) depends on `OverflowPolicy`:
  *   - If `tcspc::saturate_on_overflow`, ignore the increment, emitting
  *     `tcspc::warning_event` only on the first overflow of the cycle
@@ -190,15 +190,15 @@ class histogram_elementwise {
  * - All other types: pass through with no action
  * - Flush: pass through with no action
  */
-template <typename OverflowPolicy, typename DataTraits = default_data_traits,
+template <typename OverflowPolicy, typename DataTypes = default_data_types,
           typename Downstream>
 auto histogram_elementwise(
     std::size_t num_elements, std::size_t num_bins,
-    typename DataTraits::bin_type max_per_bin,
-    std::shared_ptr<bucket_source<typename DataTraits::bin_type>>
+    typename DataTypes::bin_type max_per_bin,
+    std::shared_ptr<bucket_source<typename DataTypes::bin_type>>
         buffer_provider,
     Downstream &&downstream) {
-    return internal::histogram_elementwise<OverflowPolicy, DataTraits,
+    return internal::histogram_elementwise<OverflowPolicy, DataTypes,
                                            Downstream>(
         num_elements, num_bins, max_per_bin, std::move(buffer_provider),
         std::forward<Downstream>(downstream));
@@ -207,11 +207,11 @@ auto histogram_elementwise(
 namespace internal {
 
 template <typename ResetEvent, typename OverflowPolicy, bool EmitConcluding,
-          typename DataTraits, typename Downstream>
+          typename DataTypes, typename Downstream>
 class histogram_elementwise_accumulate {
   public:
-    using bin_index_type = typename DataTraits::bin_index_type;
-    using bin_type = typename DataTraits::bin_type;
+    using bin_index_type = typename DataTypes::bin_index_type;
+    using bin_type = typename DataTypes::bin_type;
 
     static_assert(
         is_any_of_v<OverflowPolicy, saturate_on_overflow, reset_on_overflow,
@@ -262,7 +262,7 @@ class histogram_elementwise_accumulate {
 
     void emit_concluding() {
         assert(mhista.is_consistent());
-        downstream.handle(concluding_histogram_array_event<DataTraits>{
+        downstream.handle(concluding_histogram_array_event<DataTypes>{
             std::move(hist_bucket)});
         hist_bucket = {};
     }
@@ -277,7 +277,7 @@ class histogram_elementwise_accumulate {
     }
 
     LIBTCSPC_NOINLINE void
-    handle_overflow(bin_increment_batch_event<DataTraits> const &event) {
+    handle_overflow(bin_increment_batch_event<DataTypes> const &event) {
         if constexpr (std::is_same_v<OverflowPolicy, saturate_on_overflow>) {
             downstream.handle(warning_event{"histogram array saturated"});
         } else if constexpr (std::is_same_v<OverflowPolicy,
@@ -340,7 +340,7 @@ class histogram_elementwise_accumulate {
     template <typename DT>
     void handle(bin_increment_batch_event<DT> const &event) {
         static_assert(std::is_same_v<typename DT::bin_index_type,
-                                     typename DataTraits::bin_index_type>);
+                                     typename DataTypes::bin_index_type>);
         lazy_start();
         assert(not mhista.is_cycle_complete());
         auto element_index = mhista.next_element_index();
@@ -357,14 +357,14 @@ class histogram_elementwise_accumulate {
         }
 
         auto const elem_event =
-            histogram_event<DataTraits>{hist_bucket.subbucket(
+            histogram_event<DataTypes>{hist_bucket.subbucket(
                 element_index * mhista.num_bins(), mhista.num_bins())};
         downstream.handle(elem_event);
 
         if (mhista.is_cycle_complete()) {
             mhista.new_cycle(journal);
             auto const array_event =
-                histogram_array_event<DataTraits>{hist_bucket.subbucket(0)};
+                histogram_array_event<DataTypes>{hist_bucket.subbucket(0)};
             downstream.handle(array_event);
         }
     }
@@ -412,7 +412,7 @@ class histogram_elementwise_accumulate {
  * \p ResetEvent is received, upon which accumulation is restarted with an
  * empty histogram array.
  *
- * The histogram array is stored in a `tcspc::bucket<DataTraits::bin_type>` of
+ * The histogram array is stored in a `tcspc::bucket<DataTypes::bin_type>` of
  * size `num_elements * num_bins`. Each round of accumulation uses
  * (sequentially) a new bucket from the \p buffer_provider.
  *
@@ -441,7 +441,7 @@ class histogram_elementwise_accumulate {
  * `tcspc::concluding_histogram_array_event` each time a round of accumulation
  * completes
  *
- * \tparam DataTraits traits type specifying `bin_index_type` and `bin_type`
+ * \tparam DataTypes data type set specifying `bin_index_type` and `bin_type`
  *
  * \tparam Downstream downstream processor type (usually deduced)
  *
@@ -462,9 +462,9 @@ class histogram_elementwise_accumulate {
  * \par Events handled
  * - `tcspc::bin_increment_batch_event<DT>`: apply the increments to the next
  *   element histogram of the array and emit (const)
- *   `tcspc::histogram_event<DataTraits>`; if the batch updated the
+ *   `tcspc::histogram_event<DataTypes>`; if the batch updated the
  *   last element of the array, emit (rvalue)
- *   `tcspc::histogram_array_event<DataTraits>`; if a bin overflowed, behavior
+ *   `tcspc::histogram_array_event<DataTypes>`; if a bin overflowed, behavior
  *   (taken before emitting the above events) depends on `OverflowPolicy`:
  *   - If `tcspc::saturate_on_overflow`, ignore the increment, emitting
  *     `tcspc::warning_event` only on the first overflow of the current round
@@ -478,25 +478,25 @@ class histogram_elementwise_accumulate {
  *     `tcspc::end_processing`
  *   - If `tcspc::error_on_overflow`, throw `tcspc::histogram_overflow_error`
  * - `ResetEvent`: if `EmitConcluding` is true, emit (rvalue)
- *   `tcspc::concluding_histogram_array_event<DataTraits>` with the current
+ *   `tcspc::concluding_histogram_array_event<DataTypes>` with the current
  *   histogram array (after rolling back any partial cycle); then clear the
  *   array and other state
  * - All other types: pass through with no action
  * - Flush: if `EmitConcluding` is true, emit (rvalue)
- *   `tcspc::concluding_histogram_array_event<DataTraits>` with the current
+ *   `tcspc::concluding_histogram_array_event<DataTypes>` with the current
  *   histogram array (after rolling back any partial cycle); pass through
  */
 template <typename ResetEvent, typename OverflowPolicy,
-          bool EmitConcluding = false,
-          typename DataTraits = default_data_traits, typename Downstream>
+          bool EmitConcluding = false, typename DataTypes = default_data_types,
+          typename Downstream>
 auto histogram_elementwise_accumulate(
     std::size_t num_elements, std::size_t num_bins,
-    typename DataTraits::bin_type max_per_bin,
-    std::shared_ptr<bucket_source<typename DataTraits::bin_type>>
+    typename DataTypes::bin_type max_per_bin,
+    std::shared_ptr<bucket_source<typename DataTypes::bin_type>>
         buffer_provider,
     Downstream &&downstream) {
     return internal::histogram_elementwise_accumulate<
-        ResetEvent, OverflowPolicy, EmitConcluding, DataTraits, Downstream>(
+        ResetEvent, OverflowPolicy, EmitConcluding, DataTypes, Downstream>(
         num_elements, num_bins, max_per_bin, std::move(buffer_provider),
         std::forward<Downstream>(downstream));
 }

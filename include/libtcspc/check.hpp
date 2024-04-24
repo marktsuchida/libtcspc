@@ -19,16 +19,16 @@ namespace tcspc {
 
 namespace internal {
 
-template <typename DataTraits, bool RequireStrictlyIncreasing,
+template <typename DataTypes, bool RequireStrictlyIncreasing,
           typename Downstream>
 class check_monotonic {
-    typename DataTraits::abstime_type last_seen =
-        std::numeric_limits<typename DataTraits::abstime_type>::min();
+    typename DataTypes::abstime_type last_seen =
+        std::numeric_limits<typename DataTypes::abstime_type>::min();
 
     Downstream downstream;
 
     LIBTCSPC_NOINLINE void
-    issue_warning(typename DataTraits::abstime_type abstime) {
+    issue_warning(typename DataTypes::abstime_type abstime) {
         std::ostringstream stream;
         stream << "non-monotonic abstime: " << last_seen << " followed by "
                << abstime;
@@ -52,7 +52,7 @@ class check_monotonic {
 
     template <typename Event> void handle(Event const &event) {
         static_assert(std::is_same_v<decltype(event.abstime),
-                                     typename DataTraits::abstime_type>);
+                                     typename DataTypes::abstime_type>);
         bool const monotonic = RequireStrictlyIncreasing
                                    ? event.abstime > last_seen
                                    : event.abstime >= last_seen;
@@ -86,7 +86,7 @@ class check_monotonic {
  *
  * Any received `tcspc::warning_event` instances are passed through.
  *
- * \tparam DataTraits traits type specifying `abstime_type`
+ * \tparam DataTypes data type set specifying `abstime_type`
  *
  * \tparam RequireStrictlyIncreasing if true, issue warning also on equal
  * `abstime`
@@ -103,10 +103,10 @@ class check_monotonic {
  * - All other types: pass through with no action
  * - Flush: pass through with no action
  */
-template <typename DataTraits = default_data_traits,
+template <typename DataTypes = default_data_types,
           bool RequireStrictlyIncreasing = false, typename Downstream>
 auto check_monotonic(Downstream &&downstream) {
-    return internal::check_monotonic<DataTraits, RequireStrictlyIncreasing,
+    return internal::check_monotonic<DataTypes, RequireStrictlyIncreasing,
                                      Downstream>(
         std::forward<Downstream>(downstream));
 }

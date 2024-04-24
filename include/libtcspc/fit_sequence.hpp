@@ -98,9 +98,9 @@ class periodic_fitter {
     }
 };
 
-template <typename Event, typename DataTraits, typename Downstream>
+template <typename Event, typename DataTypes, typename Downstream>
 class fit_periodic_sequences {
-    using abstime_type = typename DataTraits::abstime_type;
+    using abstime_type = typename DataTypes::abstime_type;
 
     std::size_t len; // At least 3
 
@@ -136,7 +136,7 @@ class fit_periodic_sequences {
             static_cast<double>(last_tick_time - first_tick_time) -
             static_cast<double>(tick_offset);
 
-        downstream.handle(periodic_sequence_model_event<DataTraits>{
+        downstream.handle(periodic_sequence_model_event<DataTypes>{
             last_tick_time, delay, result.slope});
     }
 
@@ -225,7 +225,7 @@ class fit_periodic_sequences {
  *
  * \tparam Event event whose timing is to be fit
  *
- * \tparam DataTraits traits type specifying data types for emitted event
+ * \tparam DataTypes data type set specifying data types for emitted event
  *
  * \tparam Downstream downstream processor type
  *
@@ -243,17 +243,17 @@ class fit_periodic_sequences {
  *
  * \par Events handled
  * - `Event`: buffer every \p length events, fit to model, then emit
- *   `tcspc::periodic_sequence_model_event<DataTraits>` with the fit results;
+ *   `tcspc::periodic_sequence_model_event<DataTypes>` with the fit results;
  *   throw `std::runtime_error` if fit criteria were not met
  * - All other types: pass through with no action
  * - Flush: pass through with no action
  */
-template <typename Event, typename DataTraits = default_data_traits,
+template <typename Event, typename DataTypes = default_data_types,
           typename Downstream>
 auto fit_periodic_sequences(std::size_t length,
                             std::array<double, 2> min_max_interval,
                             double max_mse, Downstream &&downstream) {
-    return internal::fit_periodic_sequences<Event, DataTraits, Downstream>(
+    return internal::fit_periodic_sequences<Event, DataTypes, Downstream>(
         length, min_max_interval, max_mse,
         std::forward<Downstream>(downstream));
 }

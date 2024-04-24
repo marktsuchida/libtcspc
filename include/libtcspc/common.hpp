@@ -34,17 +34,18 @@
 namespace tcspc {
 
 /**
- * \brief Default traits for integer data types.
+ * \brief Default set of integer data types.
  *
  * Many events and processors in libtcspc deal with multiple integer types, so
  * specifying them individually would be cumbersome. We therefore usually
- * specify them as a single unit called _data traits_, which is a type
- * containing several type aliases to be used across a processing graph (or
- * part of a processing graph). This is the default data traits type.
+ * specify them as a single unit called the _data type set_ (usually template
+ * parameter `DataTypes`), which is a type containing several type aliases to
+ * be used across a processing graph (or part of a processing graph). This is
+ * the default data type set.
  *
  * \ingroup misc
  */
-struct default_data_traits {
+struct default_data_types {
     /**
      * \brief Absolute time type.
      *

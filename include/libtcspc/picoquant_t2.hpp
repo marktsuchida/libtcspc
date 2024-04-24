@@ -435,9 +435,9 @@ namespace internal {
 
 // Common implementation for decode_pqt2_*.
 // PQT2Event is the binary record event class.
-template <typename DataTraits, typename PQT2Event, typename Downstream>
+template <typename DataTypes, typename PQT2Event, typename Downstream>
 class decode_pqt2 {
-    using abstime_type = typename DataTraits::abstime_type;
+    using abstime_type = typename DataTypes::abstime_type;
 
     abstime_type timetag_base = 0;
 
@@ -467,7 +467,7 @@ class decode_pqt2 {
             timetag_base += abstime_type(PQT2Event::overflow_period) *
                             event.timetag_overflow_count().value();
             return downstream.handle(
-                time_reached_event<DataTraits>{timetag_base});
+                time_reached_event<DataTypes>{timetag_base});
         }
 
         // In the case where the overflow period is smaller than one plus the
@@ -478,13 +478,13 @@ class decode_pqt2 {
         if (not event.is_special() || event.is_sync_event()) {
             abstime_type const timetag =
                 timetag_base + event.timetag().value();
-            downstream.handle(detection_event<DataTraits>{
+            downstream.handle(detection_event<DataTypes>{
                 timetag, event.is_special() ? -1 : event.channel().value()});
         } else if (event.is_external_marker()) {
             abstime_type const timetag =
                 timetag_base + event.external_marker_timetag().value();
             for_each_set_bit(u32np(event.external_marker_bits()), [&](int b) {
-                downstream.handle(marker_event<DataTraits>{timetag, b});
+                downstream.handle(marker_event<DataTypes>{timetag, b});
             });
         } else {
             issue_warning("invalid special event encountered");
@@ -501,7 +501,7 @@ class decode_pqt2 {
  *
  * \ingroup processors-pq
  *
- * \tparam DataTraits traits type specifying `abstime_type` and `channel_type`
+ * \tparam DataTypes data type set specifying `abstime_type` and `channel_type`
  * for the emitted events
  *
  * \tparam Downstream downstream processor type
@@ -512,14 +512,14 @@ class decode_pqt2 {
  *
  * \par Events handled
  * - `tcspc::pqt2_picoharp300_event`: decode and emit one or more of
- *   `tcspc::time_reached_event<DataTraits>`,
- *   `tcspc::detection_event<DataTraits>`, `tcspc::marker_event<DataTraits>`,
+ *   `tcspc::time_reached_event<DataTypes>`,
+ *   `tcspc::detection_event<DataTypes>`, `tcspc::marker_event<DataTypes>`,
  *   `tcspc::warning_event` (warning in the case of an invalid event)
  * - Flush: pass through with no action
  */
-template <typename DataTraits = default_data_traits, typename Downstream>
+template <typename DataTypes = default_data_types, typename Downstream>
 auto decode_pqt2_picoharp300(Downstream &&downstream) {
-    return internal::decode_pqt2<DataTraits, pqt2_picoharp300_event,
+    return internal::decode_pqt2<DataTypes, pqt2_picoharp300_event,
                                  Downstream>(
         std::forward<Downstream>(downstream));
 }
@@ -532,7 +532,7 @@ auto decode_pqt2_picoharp300(Downstream &&downstream) {
  * Sync events (edges detected on the sync channel) are reported as detection
  * events on channel -1.
  *
- * \tparam DataTraits traits type specifying `abstime_type` and `channel_type`
+ * \tparam DataTypes data type set specifying `abstime_type` and `channel_type`
  * for the emitted events
  *
  * \tparam Downstream downstream processor type
@@ -543,14 +543,14 @@ auto decode_pqt2_picoharp300(Downstream &&downstream) {
  *
  * \par Events handled
  * - `tcspc::pqt2_hydraharpv1_event`: decode and emit one or more of
- *   `tcspc::time_reached_event<DataTraits>`,
- *   `tcspc::detection_event<DataTraits>`, `tcspc::marker_event<DataTraits>`,
+ *   `tcspc::time_reached_event<DataTypes>`,
+ *   `tcspc::detection_event<DataTypes>`, `tcspc::marker_event<DataTypes>`,
  *   `tcspc::warning_event` (warning in the case of an invalid event)
  * - Flush: pass through with no action
  */
-template <typename DataTraits = default_data_traits, typename Downstream>
+template <typename DataTypes = default_data_types, typename Downstream>
 auto decode_pqt2_hydraharpv1(Downstream &&downstream) {
-    return internal::decode_pqt2<DataTraits, pqt2_hydraharpv1_event,
+    return internal::decode_pqt2<DataTypes, pqt2_hydraharpv1_event,
                                  Downstream>(
         std::forward<Downstream>(downstream));
 }
@@ -564,7 +564,7 @@ auto decode_pqt2_hydraharpv1(Downstream &&downstream) {
  * Sync events (edges detected on the sync channel) are reported as detection
  * events on channel -1.
  *
- * \tparam DataTraits traits type specifying `abstime_type` and `channel_type`
+ * \tparam DataTypes data type set specifying `abstime_type` and `channel_type`
  * for the emitted events
  *
  * \tparam Downstream downstream processor type
@@ -575,14 +575,14 @@ auto decode_pqt2_hydraharpv1(Downstream &&downstream) {
  *
  * \par Events handled
  * - `tcspc::pqt2_generic_event`: decode and emit one or more of
- *   `tcspc::time_reached_event<DataTraits>`,
- *   `tcspc::detection_event<DataTraits>`, `tcspc::marker_event<DataTraits>`,
+ *   `tcspc::time_reached_event<DataTypes>`,
+ *   `tcspc::detection_event<DataTypes>`, `tcspc::marker_event<DataTypes>`,
  *   `tcspc::warning_event` (warning in the case of an invalid event)
  * - Flush: pass through with no action
  */
-template <typename DataTraits = default_data_traits, typename Downstream>
+template <typename DataTypes = default_data_types, typename Downstream>
 auto decode_pqt2_generic(Downstream &&downstream) {
-    return internal::decode_pqt2<DataTraits, pqt2_generic_event, Downstream>(
+    return internal::decode_pqt2<DataTypes, pqt2_generic_event, Downstream>(
         std::forward<Downstream>(downstream));
 }
 

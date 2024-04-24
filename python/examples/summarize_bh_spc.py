@@ -12,7 +12,7 @@ cppyy.include("cstdint")
 
 def summarize(filename: str) -> int:
     # BH SPC has no negative channel or marker numbers.
-    dtraits = tcspc.DataTraits(channel_type="std::uint32_t")
+    dtypes = tcspc.DataTypes(channel_type="std::uint32_t")
 
     g = tcspc.Graph()
     g.add_sequence(
@@ -24,17 +24,17 @@ def summarize(filename: str) -> int:
                 stop_normally_on_error=True,
             ),
             ("count-records", tcspc.Count(tcspc.BHSPCEvent)),
-            tcspc.DecodeBHSPC(dtraits),
-            tcspc.CheckMonotonic(dtraits),
+            tcspc.DecodeBHSPC(dtypes),
+            tcspc.CheckMonotonic(dtypes),
             tcspc.Stop(
-                (tcspc.WarningEvent, tcspc.DataLostEvent(dtraits)),
+                (tcspc.WarningEvent, tcspc.DataLostEvent(dtypes)),
                 "error in data",
             ),
             (
                 "count-phot",
-                tcspc.Count(tcspc.TimeCorrelatedDetectionEvent(dtraits)),
+                tcspc.Count(tcspc.TimeCorrelatedDetectionEvent(dtypes)),
             ),
-            ("count-mark", tcspc.Count(tcspc.MarkerEvent(dtraits))),
+            ("count-mark", tcspc.Count(tcspc.MarkerEvent(dtypes))),
             # Simplified for now compared to the C++ example (no per-channel
             # counts and time range).
         ]

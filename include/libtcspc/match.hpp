@@ -157,23 +157,23 @@ class never_matcher {
  *
  * The events to be matched must contain a `channel` field.
  *
- * \tparam DataTraits traits type specifying `channel_type`
+ * \tparam DataTypes data type set specifying `channel_type`
  */
-template <typename DataTraits = default_data_traits> class channel_matcher {
-    typename DataTraits::channel_type channel;
+template <typename DataTypes = default_data_types> class channel_matcher {
+    typename DataTypes::channel_type channel;
 
   public:
     /**
      * \brief Construct with the given \p channel to match.
      */
-    explicit channel_matcher(typename DataTraits::channel_type channel)
+    explicit channel_matcher(typename DataTypes::channel_type channel)
         : channel(channel) {}
 
     /** \brief Implements matcher requirement. */
     template <typename Event>
     auto operator()(Event const &event) const -> bool {
         static_assert(std::is_same_v<decltype(event.channel),
-                                     typename DataTraits::channel_type>);
+                                     typename DataTypes::channel_type>);
         return event.channel == channel;
     }
 };

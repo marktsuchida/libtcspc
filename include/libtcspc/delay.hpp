@@ -16,12 +16,12 @@ namespace tcspc {
 
 namespace internal {
 
-template <typename DataTraits, typename Downstream> class delay {
-    typename DataTraits::abstime_type delta;
+template <typename DataTypes, typename Downstream> class delay {
+    typename DataTypes::abstime_type delta;
     Downstream downstream;
 
   public:
-    explicit delay(typename DataTraits::abstime_type delta,
+    explicit delay(typename DataTypes::abstime_type delta,
                    Downstream downstream)
         : delta(delta), downstream(std::move(downstream)) {}
 
@@ -39,7 +39,7 @@ template <typename DataTraits, typename Downstream> class delay {
     template <typename TimeTaggedEvent>
     void handle(TimeTaggedEvent const &event) {
         static_assert(std::is_same_v<decltype(event.abstime),
-                                     typename DataTraits::abstime_type>);
+                                     typename DataTypes::abstime_type>);
         TimeTaggedEvent copy(event);
         copy.abstime += delta;
         downstream.handle(copy);
@@ -48,9 +48,9 @@ template <typename DataTraits, typename Downstream> class delay {
     void flush() { downstream.flush(); }
 };
 
-template <typename DataTraits, typename Downstream> class zero_base_abstime {
+template <typename DataTypes, typename Downstream> class zero_base_abstime {
     bool initialized = false;
-    typename DataTraits::abstime_type minus_delta{};
+    typename DataTypes::abstime_type minus_delta{};
     Downstream downstream;
 
   public:
@@ -71,7 +71,7 @@ template <typename DataTraits, typename Downstream> class zero_base_abstime {
     template <typename TimeTaggedEvent>
     void handle(TimeTaggedEvent const &event) {
         static_assert(std::is_same_v<decltype(event.abstime),
-                                     typename DataTraits::abstime_type>);
+                                     typename DataTypes::abstime_type>);
         if (not initialized) {
             minus_delta = event.abstime;
             initialized = true;
@@ -97,7 +97,7 @@ template <typename DataTraits, typename Downstream> class zero_base_abstime {
  * derived from the abstime (because only the `abstime` field will be
  * adjusted).
  *
- * \tparam DataTraits traits type specifying `abstime_type`
+ * \tparam DataTypes data type set specifying `abstime_type`
  *
  * \tparam Downstream downstream processor type
  *
@@ -112,9 +112,9 @@ template <typename DataTraits, typename Downstream> class zero_base_abstime {
  *   `abstime`
  * - Flush: pass through with no action
  */
-template <typename DataTraits = default_data_traits, typename Downstream>
-auto delay(typename DataTraits::abstime_type delta, Downstream &&downstream) {
-    return internal::delay<DataTraits, Downstream>(
+template <typename DataTypes = default_data_types, typename Downstream>
+auto delay(typename DataTypes::abstime_type delta, Downstream &&downstream) {
+    return internal::delay<DataTypes, Downstream>(
         delta, std::forward<Downstream>(downstream));
 }
 
@@ -130,7 +130,7 @@ auto delay(typename DataTraits::abstime_type delta, Downstream &&downstream) {
  *
  * \see delay
  *
- * \tparam DataTraits traits type specifying `abstime_type`
+ * \tparam DataTypes data type set specifying `abstime_type`
  *
  * \tparam Downstream downstream processor type
  *
@@ -143,9 +143,9 @@ auto delay(typename DataTraits::abstime_type delta, Downstream &&downstream) {
  *   relative to the first event encountered
  * - Flush: pass through with no action
  */
-template <typename DataTraits = default_data_traits, typename Downstream>
+template <typename DataTypes = default_data_types, typename Downstream>
 auto zero_base_abstime(Downstream &&downstream) {
-    return internal::zero_base_abstime<DataTraits, Downstream>(
+    return internal::zero_base_abstime<DataTypes, Downstream>(
         std::forward<Downstream>(downstream));
 }
 

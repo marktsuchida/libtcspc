@@ -25,8 +25,7 @@ namespace internal {
 // that the ratio would be something experimentally determined and not a simple
 // integer ratio.
 
-template <typename DataTraits, bool UseStartTimeAndChannel,
-          typename Downstream>
+template <typename DataTypes, bool UseStartTimeAndChannel, typename Downstream>
 class time_correlate_at_start_or_stop {
     Downstream downstream;
 
@@ -47,15 +46,15 @@ class time_correlate_at_start_or_stop {
 
     template <typename DT> void handle(detection_pair_event<DT> const &event) {
         static_assert(std::is_same_v<typename DT::abstime_type,
-                                     typename DataTraits::abstime_type>);
+                                     typename DataTypes::abstime_type>);
         static_assert(std::is_same_v<typename DT::channel_type,
-                                     typename DataTraits::channel_type>);
+                                     typename DataTypes::channel_type>);
         auto const difftime = event.second.abstime - event.first.abstime;
         auto const &anchor =
             UseStartTimeAndChannel ? event.first : event.second;
-        downstream.handle(time_correlated_detection_event<DataTraits>{
+        downstream.handle(time_correlated_detection_event<DataTypes>{
             anchor.abstime, anchor.channel,
-            static_cast<typename DataTraits::difftime_type>(difftime)});
+            static_cast<typename DataTypes::difftime_type>(difftime)});
     }
 
     template <typename OtherEvent> void handle(OtherEvent const &event) {
@@ -65,7 +64,7 @@ class time_correlate_at_start_or_stop {
     void flush() { downstream.flush(); }
 };
 
-template <typename DataTraits, bool UseStartChannel, typename Downstream>
+template <typename DataTypes, bool UseStartChannel, typename Downstream>
 class time_correlate_at_midpoint {
     Downstream downstream;
 
@@ -86,16 +85,16 @@ class time_correlate_at_midpoint {
 
     template <typename DT> void handle(detection_pair_event<DT> const &event) {
         static_assert(std::is_same_v<typename DT::abstime_type,
-                                     typename DataTraits::abstime_type>);
+                                     typename DataTypes::abstime_type>);
         static_assert(std::is_same_v<typename DT::channel_type,
-                                     typename DataTraits::channel_type>);
+                                     typename DataTypes::channel_type>);
         auto const difftime = event.second.abstime - event.first.abstime;
         auto const abstime = event.first.abstime + difftime / 2;
         auto const channel =
             UseStartChannel ? event.first.channel : event.second.channel;
-        downstream.handle(time_correlated_detection_event<DataTraits>{
+        downstream.handle(time_correlated_detection_event<DataTypes>{
             abstime, channel,
-            static_cast<typename DataTraits::difftime_type>(difftime)});
+            static_cast<typename DataTypes::difftime_type>(difftime)});
     }
 
     template <typename OtherEvent> void handle(OtherEvent const &event) {
@@ -105,7 +104,7 @@ class time_correlate_at_midpoint {
     void flush() { downstream.flush(); }
 };
 
-template <typename DataTraits, bool UseStartChannel, typename Downstream>
+template <typename DataTypes, bool UseStartChannel, typename Downstream>
 class time_correlate_at_fraction {
     double fraction; // 0.0-1.0 for internal division of start-stop
     Downstream downstream;
@@ -127,19 +126,19 @@ class time_correlate_at_fraction {
 
     template <typename DT> void handle(detection_pair_event<DT> const &event) {
         static_assert(std::is_same_v<typename DT::abstime_type,
-                                     typename DataTraits::abstime_type>);
+                                     typename DataTypes::abstime_type>);
         static_assert(std::is_same_v<typename DT::channel_type,
-                                     typename DataTraits::channel_type>);
+                                     typename DataTypes::channel_type>);
         auto const difftime = event.second.abstime - event.first.abstime;
         auto const abstime =
             event.first.abstime +
-            static_cast<typename DataTraits::abstime_type>(
+            static_cast<typename DataTypes::abstime_type>(
                 std::llround(static_cast<double>(difftime) * fraction));
         auto const channel =
             UseStartChannel ? event.first.channel : event.second.channel;
-        downstream.handle(time_correlated_detection_event<DataTraits>{
+        downstream.handle(time_correlated_detection_event<DataTypes>{
             abstime, channel,
-            static_cast<typename DataTraits::difftime_type>(difftime)});
+            static_cast<typename DataTypes::difftime_type>(difftime)});
     }
 
     template <typename OtherEvent> void handle(OtherEvent const &event) {
@@ -165,7 +164,7 @@ class time_correlate_at_fraction {
  * must be representable by both `abstime_type` and `difftime_type` without
  * overflowing.
  *
- * \tparam DataTraits traits type specifying `abstime_type`, `channel_type`,
+ * \tparam DataTypes data type set specifying `abstime_type`, `channel_type`,
  * and `difftime_type`
  *
  * \tparam Downstream downstream processor type (usually deduced)
@@ -176,7 +175,7 @@ class time_correlate_at_fraction {
  *
  * \par Events handled
  * - `tcspc::detection_pair_event<DT>`: emit
- *   `tcspc::time_correlated_detection_event<DataTraits>` with
+ *   `tcspc::time_correlated_detection_event<DataTypes>` with
  *   - `abstime` set equal to that of the first event of the pair
  *   - `channel` set to the channel of the first event of the pair if
  *     `UseStartChannel` is true, else of the second
@@ -184,9 +183,9 @@ class time_correlate_at_fraction {
  * - All other types: pass through with no action
  * - Flush: pass through with no action
  */
-template <typename DataTraits = default_data_traits, typename Downstream>
+template <typename DataTypes = default_data_types, typename Downstream>
 auto time_correlate_at_start(Downstream &&downstream) {
-    return internal::time_correlate_at_start_or_stop<DataTraits, true,
+    return internal::time_correlate_at_start_or_stop<DataTypes, true,
                                                      Downstream>(
         std::forward<Downstream>(downstream));
 }
@@ -204,7 +203,7 @@ auto time_correlate_at_start(Downstream &&downstream) {
  * must be representable by both `abstime_type` and `difftime_type` without
  * overflowing.
  *
- * \tparam DataTraits traits type specifying `abstime_type`, `channel_type`,
+ * \tparam DataTypes data type set specifying `abstime_type`, `channel_type`,
  * and `difftime_type`
  *
  * \tparam Downstream downstream processor type (usually deduced)
@@ -215,7 +214,7 @@ auto time_correlate_at_start(Downstream &&downstream) {
  *
  * \par Events handled
  * - `tcspc::detection_pair_event<DT>`: emit
- *   `tcspc::time_correlated_detection_event<DataTraits>` with
+ *   `tcspc::time_correlated_detection_event<DataTypes>` with
  *   - `abstime` set equal to that of the second event of the pair
  *   - `channel` set to the channel of the first event of the pair if
  *     `UseStartChannel` is true, else of the second
@@ -223,9 +222,9 @@ auto time_correlate_at_start(Downstream &&downstream) {
  * - All other types: pass through with no action
  * - Flush: pass through with no action
  */
-template <typename DataTraits = default_data_traits, typename Downstream>
+template <typename DataTypes = default_data_types, typename Downstream>
 auto time_correlate_at_stop(Downstream &&downstream) {
-    return internal::time_correlate_at_start_or_stop<DataTraits, false,
+    return internal::time_correlate_at_start_or_stop<DataTypes, false,
                                                      Downstream>(
         std::forward<Downstream>(downstream));
 }
@@ -246,7 +245,7 @@ auto time_correlate_at_stop(Downstream &&downstream) {
  * must be representable by both `abstime_type` and `difftime_type` without
  * overflowing.
  *
- * \tparam DataTraits traits type specifying `abstime_type`, `channel_type`,
+ * \tparam DataTypes data type set specifying `abstime_type`, `channel_type`,
  * and `difftime_type`
  *
  * \tparam UseStartChannel if true, use the channel of the start of the pair as
@@ -260,7 +259,7 @@ auto time_correlate_at_stop(Downstream &&downstream) {
  *
  * \par Events handled
  * - `tcspc::detection_pair_event<DT>`: emit
- *   `tcspc::time_correlated_detection_event<DataTraits>` with
+ *   `tcspc::time_correlated_detection_event<DataTypes>` with
  *   - `abstime` set to the midpoint of the pair's abstimes
  *   - `channel` set to the channel of the first event of the pair if
  *     `UseStartChannel` is true, else of the second
@@ -268,10 +267,10 @@ auto time_correlate_at_stop(Downstream &&downstream) {
  * - All other types: pass through with no action
  * - Flush: pass through with no action
  */
-template <typename DataTraits = default_data_traits,
+template <typename DataTypes = default_data_types,
           bool UseStartChannel = false, typename Downstream>
 auto time_correlate_at_midpoint(Downstream &&downstream) {
-    return internal::time_correlate_at_midpoint<DataTraits, UseStartChannel,
+    return internal::time_correlate_at_midpoint<DataTypes, UseStartChannel,
                                                 Downstream>(
         std::forward<Downstream>(downstream));
 }
@@ -292,7 +291,7 @@ auto time_correlate_at_midpoint(Downstream &&downstream) {
  * must be representable by `abstime_type`, `difftime_type`, and `double`
  * without overflowing.
  *
- * \tparam DataTraits traits type specifying `abstime_type`, `channel_type`,
+ * \tparam DataTypes data type set specifying `abstime_type`, `channel_type`,
  * and `difftime_type`
  *
  * \tparam UseStartChannel if true, use the channel of the start of the pair as
@@ -309,7 +308,7 @@ auto time_correlate_at_midpoint(Downstream &&downstream) {
  *
  * \par Events handled
  * - `tcspc::detection_pair_event<DT>`: emit
- *   `tcspc::time_correlated_detection_event<DataTraits>` with
+ *   `tcspc::time_correlated_detection_event<DataTypes>` with
  *   - `abstime` set to the fractional division point of the pair's abstimes
  *   - `channel` set to the channel of the first event of the pair if
  *     `UseStartChannel` is true, else of the second
@@ -317,10 +316,10 @@ auto time_correlate_at_midpoint(Downstream &&downstream) {
  * - All other types: pass through with no action
  * - Flush: pass through with no action
  */
-template <typename DataTraits = default_data_traits,
+template <typename DataTypes = default_data_types,
           bool UseStartChannel = false, typename Downstream>
 auto time_correlate_at_fraction(double fraction, Downstream &&downstream) {
-    return internal::time_correlate_at_fraction<DataTraits, UseStartChannel,
+    return internal::time_correlate_at_fraction<DataTypes, UseStartChannel,
                                                 Downstream>(
         fraction, std::forward<Downstream>(downstream));
 }
@@ -345,12 +344,12 @@ template <typename Downstream> class negate_difftime {
         return g;
     }
 
-    template <typename DataTraits>
-    void handle(time_correlated_detection_event<DataTraits> const &event) {
+    template <typename DataTypes>
+    void handle(time_correlated_detection_event<DataTypes> const &event) {
         static_assert(
-            std::is_signed_v<typename DataTraits::difftime_type>,
+            std::is_signed_v<typename DataTypes::difftime_type>,
             "difftime_type of time_correlated_detection_event used with negate_difftime must be a signed integer type");
-        time_correlated_detection_event<DataTraits> copy(event);
+        time_correlated_detection_event<DataTypes> copy(event);
         copy.difftime = -event.difftime;
         downstream.handle(copy);
     }
@@ -362,7 +361,7 @@ template <typename Downstream> class negate_difftime {
     void flush() { downstream.flush(); }
 };
 
-template <typename DataTraits, typename Downstream>
+template <typename DataTypes, typename Downstream>
 class remove_time_correlation {
     Downstream downstream;
 
@@ -384,12 +383,12 @@ class remove_time_correlation {
     template <typename DT>
     void handle(time_correlated_detection_event<DT> const &event) {
         static_assert(std::is_same_v<typename DT::abstime_type,
-                                     typename DataTraits::abstime_type>);
+                                     typename DataTypes::abstime_type>);
         static_assert(std::is_same_v<typename DT::channel_type,
-                                     typename DataTraits::channel_type>);
+                                     typename DataTypes::channel_type>);
 
         downstream.handle(
-            detection_event<DataTraits>{event.abstime, event.channel});
+            detection_event<DataTypes>{event.abstime, event.channel});
     }
 
     template <typename OtherEvent> void handle(OtherEvent const &event) {
@@ -429,7 +428,7 @@ template <typename Downstream> auto negate_difftime(Downstream &&downstream) {
  *
  * \ingroup processors-time-corr
  *
- * \tparam DataTraits traits type specifying `abstime_type` and `channel_type`
+ * \tparam DataTypes data type set specifying `abstime_type` and `channel_type`
  *
  * \tparam Downstream downstream processor type
  *
@@ -439,13 +438,13 @@ template <typename Downstream> auto negate_difftime(Downstream &&downstream) {
  *
  * \par Events handled
  * - `tcspc::time_correlated_detection_event<DT>`: emit
- *   `tcspc::detection_event<DataTraits>`
+ *   `tcspc::detection_event<DataTypes>`
  * - All other types: pass through with no action
  * - Flush: pass through with no action
  */
-template <typename DataTraits = default_data_traits, typename Downstream>
+template <typename DataTypes = default_data_types, typename Downstream>
 auto remove_time_correlation(Downstream &&downstream) {
-    return internal::remove_time_correlation<DataTraits, Downstream>(
+    return internal::remove_time_correlation<DataTypes, Downstream>(
         std::forward<Downstream>(downstream));
 }
 

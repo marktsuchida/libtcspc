@@ -54,8 +54,8 @@ excluded from the output.
                stderr);
 }
 
-using abstime_type = tcspc::default_data_traits::abstime_type;
-using channel_type = tcspc::default_data_traits::channel_type;
+using abstime_type = tcspc::default_data_types::abstime_type;
+using channel_type = tcspc::default_data_types::channel_type;
 
 struct pixel_start_event {
     std::int64_t abstime;
