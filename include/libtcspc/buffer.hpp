@@ -90,12 +90,12 @@ class buffer_access {
      * This function exits normally when a flush has been propagated from
      * upstream to downstream without an exception being thrown. If an
      * exception is thrown by a downstream processor (including
-     * `tcspc::end_processing`), it is propagated out of this function. If
+     * `tcspc::end_of_processing`), it is propagated out of this function. If
      * `halt()` is called when events are still being pumped, this function
      * throws `tcspc::source_halted`.
      *
      * Applications should generally report errors for exceptions other than
-     * `tcspc::end_processing` and `tcspc::source_halted`. Note that such
+     * `tcspc::end_of_processing` and `tcspc::source_halted`. Note that such
      * exceptions are not propagated to upstream processors (this is because
      * there may not be the opportunity to do so if the upstream never calls
      * the buffer again).
@@ -247,7 +247,7 @@ class buffer {
         {
             std::scoped_lock lock(mutex);
             if (downstream_threw)
-                throw end_processing(
+                throw end_of_processing(
                     "ending upstream of buffer upon end of downstream processing");
 
             shared_queue.push(std::forward<E>(event));
@@ -267,7 +267,7 @@ class buffer {
         {
             std::scoped_lock lock(mutex);
             if (downstream_threw)
-                throw end_processing(
+                throw end_of_processing(
                     "ending upstream of buffer upon end of downstream processing");
             upstream_flushed = true;
         }
@@ -318,10 +318,10 @@ class buffer {
  *
  * \par Events handled
  * - `Event`: buffer and pass through on the pumping thread; throw
- *   `tcspc::end_processing` if pumping thread has exited (normally or with
+ *   `tcspc::end_of_processing` if pumping thread has exited (normally or with
  *   error)
  * - Flush: buffer and pass through on the pumping thread; throw
- *   `tcspc::end_processing` if pumping thread has exited (normally or with
+ *   `tcspc::end_of_processing` if pumping thread has exited (normally or with
  *   error)
  */
 template <typename Event, typename Downstream>
@@ -376,10 +376,10 @@ auto buffer(std::size_t threshold, access_tracker<buffer_access> &&tracker,
  *
  * \par Events handled
  * - `Event`: buffer and pass through on pumping thread; throw
- *   `tcspc::end_processing` if pumping thread has exited (normally or with
+ *   `tcspc::end_of_processing` if pumping thread has exited (normally or with
  *   error)
  * - Flush: buffer and pass through on the pumping thread; throw
- *   `tcspc::end_processing` if pumping thread has exited (normally or with
+ *   `tcspc::end_of_processing` if pumping thread has exited (normally or with
  *   error)
  */
 template <typename Event, typename Duration, typename Downstream>

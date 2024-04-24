@@ -252,8 +252,8 @@ class capture_output_access {
     }
 
     /**
-     * \brief Arrange to throw `tcspc::end_processing` on receiving the given
-     * number of events.
+     * \brief Arrange to throw `tcspc::end_of_processing` on receiving the
+     * given number of events.
      *
      * \param count number of events to handle normally before throwing
      */
@@ -269,7 +269,7 @@ class capture_output_access {
     }
 
     /**
-     * \brief Arrange to throw `tcspc::end_processing` on receiving a flush.
+     * \brief Arrange to throw `tcspc::end_of_processing` on receiving a flush.
      */
     void throw_end_processing_on_flush() {
         set_up_to_throw_func(std::numeric_limits<std::size_t>::max(), false);
@@ -369,8 +369,8 @@ template <typename EventList> class capture_output_checker {
     }
 
     /**
-     * \brief Arrange to throw `tcspc::end_processing` on receiving the given
-     * number of events.
+     * \brief Arrange to throw `tcspc::end_of_processing` on receiving the
+     * given number of events.
      *
      * \param count number of events to handle normally before throwing
      */
@@ -384,7 +384,7 @@ template <typename EventList> class capture_output_checker {
     void throw_error_on_flush() { acc.throw_error_on_flush(); }
 
     /**
-     * \brief Arrange to throw `tcspc::end_processing` on receiving a flush.
+     * \brief Arrange to throw `tcspc::end_of_processing` on receiving a flush.
      */
     void throw_end_processing_on_flush() {
         acc.throw_end_processing_on_flush();
@@ -440,7 +440,7 @@ template <typename EventList> class capture_output {
             throw std::runtime_error("test error upon event");
         output.push(event);
         if (end_in == 0)
-            throw end_processing("test end-of-stream upon event");
+            throw end_of_processing("test end-of-stream upon event");
         --error_in;
         --end_in;
     }
@@ -452,7 +452,7 @@ template <typename EventList> class capture_output {
         }
         flushed = true;
         if (end_on_flush)
-            throw end_processing("test end-of-stream upon flush");
+            throw end_of_processing("test end-of-stream upon flush");
     }
 
   private:
@@ -523,7 +523,7 @@ template <> class capture_output<type_list<>> {
         }
         flushed = true;
         if (end_on_flush)
-            throw end_processing("test end-of-stream upon flush");
+            throw end_of_processing("test end-of-stream upon flush");
     }
 
   private:
@@ -610,10 +610,10 @@ template <typename EventList, typename Downstream> class feed_input {
  *
  * \par Events handled
  * - Types in `EventList`: throw `std::runtime_error` if error simulation
- *   requested; record the event; throw `tcspc::end_processing` if stop
+ *   requested; record the event; throw `tcspc::end_of_processing` if stop
  *   simulation requested; otherwise record for later analysis
  * - Flush: throw `std::runtime_error` if error simulation requested; record
- *   the flush; throw `tcspc::end_processing` if stop simulation requested;
+ *   the flush; throw `tcspc::end_of_processing` if stop simulation requested;
  *   otherwise record for later analysis
  */
 template <typename EventList>

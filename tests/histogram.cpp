@@ -223,7 +223,7 @@ TEST_CASE("Histogram, stop on overflow") {
             ctx->access<capture_output_access>("out"));
 
         REQUIRE_THROWS_AS(in.feed(bin_increment_event<data_types>{0}),
-                          end_processing); // Overflow
+                          end_of_processing); // Overflow
         hist = {0};
         REQUIRE(out.check(
             concluding_histogram_event<data_types>{tmp_bucket(hist)}));
@@ -246,7 +246,7 @@ TEST_CASE("Histogram, stop on overflow") {
         hist = {1};
         REQUIRE(out.check(histogram_event<data_types>{tmp_bucket(hist)}));
         REQUIRE_THROWS_AS(in.feed(bin_increment_event<data_types>{0}),
-                          end_processing); // Overflow
+                          end_of_processing); // Overflow
         hist = {1};
         REQUIRE(out.check(
             concluding_histogram_event<data_types>{tmp_bucket(hist)}));

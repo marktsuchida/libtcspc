@@ -101,7 +101,7 @@ auto summarize(std::string const &filename) -> bool {
 
     try {
         proc.flush(); // Run it all.
-    } catch (end_processing const &exc) {
+    } catch (end_of_processing const &exc) {
         // Explicit stop; counts were printed on flush.
         std::fputs(exc.what(), stderr);
         std::fputs("\n", stderr);

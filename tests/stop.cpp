@@ -63,7 +63,7 @@ TEST_CASE("stop with no error") {
 
     in.feed(e1{});
     REQUIRE(out.check(e1{}));
-    REQUIRE_THROWS_AS(in.feed(e0{}), end_processing);
+    REQUIRE_THROWS_AS(in.feed(e0{}), end_of_processing);
     REQUIRE(out.check_flushed());
 }
 

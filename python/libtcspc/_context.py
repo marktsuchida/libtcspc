@@ -34,7 +34,7 @@ def _instantiator(graph_code: str, context_varname: str) -> Any:
     return getattr(cppyy.gbl.tcspc.cppyy_context, fname)
 
 
-class EndProcessing(Exception):
+class EndOfProcessing(Exception):
     """
     Exception raised when processing finished without error, but for a reason
     other than reaching the end of the input.
@@ -115,7 +115,7 @@ class Context:
 
         Raises
         ------
-        EndProcessing
+        EndOfProcessing
             If processing finished without error, but for a reason other than
             the end of the input being reached.
         cppyy.gbl.std.exception
@@ -126,5 +126,5 @@ class Context:
         self._flushable = False
         try:
             self._proc.flush()
-        except cppyy.gbl.tcspc.end_processing as e:
-            raise EndProcessing(e.what()) from e
+        except cppyy.gbl.tcspc.end_of_processing as e:
+            raise EndOfProcessing(e.what()) from e

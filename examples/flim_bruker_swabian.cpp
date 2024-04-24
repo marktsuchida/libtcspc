@@ -288,7 +288,7 @@ template <bool Cumulative> void run_and_print(settings const &settings) {
     }
     try {
         proc.flush();
-    } catch (tcspc::end_processing const &exc) {
+    } catch (tcspc::end_of_processing const &exc) {
         std::fputs(exc.what(), stderr);
         std::fputs("\n", stderr);
     }
@@ -443,7 +443,7 @@ auto main(int argc, char *argv[]) -> int {
             run_and_print<true>(settings);
         else
             run_and_print<false>(settings);
-    } catch (tcspc::end_processing const &exc) {
+    } catch (tcspc::end_of_processing const &exc) {
         std::fputs(exc.what(), stderr);
         std::fputs("\n", stderr);
     } catch (std::exception const &exc) {

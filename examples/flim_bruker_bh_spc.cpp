@@ -187,7 +187,7 @@ template <bool Cumulative> void run_and_print(settings const &settings) {
     }
     try {
         proc.flush();
-    } catch (tcspc::end_processing const &exc) {
+    } catch (tcspc::end_of_processing const &exc) {
         std::fputs(exc.what(), stderr);
         std::fputs("\n", stderr);
     }

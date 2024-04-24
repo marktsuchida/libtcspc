@@ -281,7 +281,7 @@ namespace tcspc {
  *   detected the end of the part of the input that is of interest. In this
  *   case, the processor first calls `flush()` on its downstream(s). Then (if
  *   the call to downstream `flush()` did not throw) it throws
- *   tcspc::end_processing (derived from `std::exception`).
+ *   tcspc::end_of_processing (derived from `std::exception`).
  * - The processor encountered an error. In this case it throws an appropriate
  *   exception (always derived from `std::exception`) _without_ flushing the
  *   downstream.

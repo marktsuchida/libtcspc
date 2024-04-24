@@ -42,7 +42,7 @@ class route_homogeneous {
             if (&d != &excluded) {
                 try {
                     d.flush();
-                } catch (end_processing const &) {
+                } catch (end_of_processing const &) {
                     ;
                 }
             }
@@ -76,7 +76,7 @@ class route_homogeneous {
                 return;
             try {
                 downstreams[index].handle(event);
-            } catch (end_processing const &) {
+            } catch (end_of_processing const &) {
                 flush_all_but(downstreams[index]);
                 throw;
             }
@@ -84,7 +84,7 @@ class route_homogeneous {
             for (auto &d : downstreams) {
                 try {
                     d.handle(event);
-                } catch (end_processing const &) {
+                } catch (end_of_processing const &) {
                     flush_all_but(d);
                     throw;
                 }
@@ -97,7 +97,7 @@ class route_homogeneous {
         for (auto &d : downstreams) {
             try {
                 d.flush();
-            } catch (end_processing const &) {
+            } catch (end_of_processing const &) {
                 if (not end)
                     end = std::current_exception();
             }

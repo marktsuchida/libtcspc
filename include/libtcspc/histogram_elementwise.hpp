@@ -271,7 +271,7 @@ class histogram_elementwise_accumulate {
 
     [[noreturn]] void stop() {
         downstream.flush();
-        throw end_processing("histogram array bin overflowed");
+        throw end_of_processing("histogram array bin overflowed");
     }
 
     [[noreturn]] void overflow_error(char const *msg) {
@@ -478,7 +478,7 @@ class histogram_elementwise_accumulate {
  *     `tcspc::histogram_overflow_error` if this causes an overflow by itself)
  *   - If `tcspc::stop_on_overflow`, behave as if a `ResetEvent` was received
  *     instead of the current event; then flush the downstream and throw
- *     `tcspc::end_processing`
+ *     `tcspc::end_of_processing`
  *   - If `tcspc::error_on_overflow`, throw `tcspc::histogram_overflow_error`
  * - `ResetEvent`: if `EmitConcluding` is true, emit (rvalue)
  *   `tcspc::concluding_histogram_array_event<DataTypes>` with the current

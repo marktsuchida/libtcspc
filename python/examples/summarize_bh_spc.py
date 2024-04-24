@@ -45,7 +45,7 @@ def summarize(filename: str) -> int:
     try:
         ctx = tcspc.Context(g)
         ctx.flush()
-    except tcspc.EndProcessing as e:
+    except tcspc.EndOfProcessing as e:
         print(f"Stopped because: {e}")
         print("The following results are up to where processing stopped.")
         ret = 1

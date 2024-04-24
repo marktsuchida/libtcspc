@@ -645,7 +645,7 @@ TEST_CASE("histogram_elementwise_accumulate with stop-on-overflow",
     SECTION("overflow during cycle 0, element 0") {
         REQUIRE_THROWS_AS(
             in.feed(bin_increment_batch_event<dt88>{{0, 0, 0, 0, 0}}),
-            end_processing);
+            end_of_processing);
         hist_arr = {0, 0, 0, 0, 0, 0};
         REQUIRE(out.check(
             concluding_histogram_array_event<dt88>{tmp_bucket(hist_arr)}));
@@ -660,7 +660,7 @@ TEST_CASE("histogram_elementwise_accumulate with stop-on-overflow",
         SECTION("overflow during cycle 0, element 1") {
             REQUIRE_THROWS_AS(
                 in.feed(bin_increment_batch_event<dt88>{{1, 1, 1, 1, 1, 1}}),
-                end_processing);
+                end_of_processing);
             hist_arr = {0, 0, 0, 0, 0, 0};
             REQUIRE(out.check(
                 concluding_histogram_array_event<dt88>{tmp_bucket(hist_arr)}));
@@ -678,7 +678,7 @@ TEST_CASE("histogram_elementwise_accumulate with stop-on-overflow",
             SECTION("overflow during cycle 1, element 0") {
                 REQUIRE_THROWS_AS(
                     in.feed(bin_increment_batch_event<dt88>{{0, 0, 0}}),
-                    end_processing);
+                    end_of_processing);
                 hist_arr = {2, 0, 0, 0, 2, 0};
                 REQUIRE(out.check(concluding_histogram_array_event<dt88>{
                     tmp_bucket(hist_arr)}));
@@ -694,7 +694,7 @@ TEST_CASE("histogram_elementwise_accumulate with stop-on-overflow",
                 SECTION("overflow during cycle 1, element 1") {
                     REQUIRE_THROWS_AS(
                         in.feed(bin_increment_batch_event<dt88>{{1, 1, 1}}),
-                        end_processing);
+                        end_of_processing);
                     hist_arr = {2, 0, 0, 0, 2, 0}; // Rolled back
                     REQUIRE(out.check(concluding_histogram_array_event<dt88>{
                         tmp_bucket(hist_arr)}));

@@ -111,13 +111,13 @@ TEST_CASE("buffer stream ended downstream") {
             thread_start_latch.count_down();
             try {
                 buf_acc.pump();
-            } catch (end_processing const &) {
+            } catch (end_of_processing const &) {
                 threw = true;
             }
         });
         thread_start_latch.wait();
         wait_a_little(); // For likely pump loop start.
-        REQUIRE_CALL(out, handle(42)).TIMES(1).THROW(end_processing({}));
+        REQUIRE_CALL(out, handle(42)).TIMES(1).THROW(end_of_processing({}));
         buf.handle(42);
         t.join();
         CHECK(threw);
@@ -125,8 +125,8 @@ TEST_CASE("buffer stream ended downstream") {
 
     SECTION("pump only after input") {
         buf.handle(42);
-        REQUIRE_CALL(out, handle(42)).TIMES(1).THROW(end_processing({}));
-        CHECK_THROWS_AS(buf_acc.pump(), end_processing);
+        REQUIRE_CALL(out, handle(42)).TIMES(1).THROW(end_of_processing({}));
+        CHECK_THROWS_AS(buf_acc.pump(), end_of_processing);
     }
 }
 
@@ -327,7 +327,7 @@ TEST_CASE("buffer emits stored events on reaching threshold") {
 }
 
 TEMPLATE_TEST_CASE("buffer input throws after downstream stopped", "",
-                   end_processing, std::runtime_error) {
+                   end_of_processing, std::runtime_error) {
     auto ctx = context::create();
     auto out = mock_downstream();
     auto buf =
@@ -355,10 +355,10 @@ TEMPLATE_TEST_CASE("buffer input throws after downstream stopped", "",
         }
 
         SECTION("next event") {
-            CHECK_THROWS_AS(buf.handle(43), end_processing);
+            CHECK_THROWS_AS(buf.handle(43), end_of_processing);
         }
 
-        SECTION("flush") { CHECK_THROWS_AS(buf.flush(), end_processing); }
+        SECTION("flush") { CHECK_THROWS_AS(buf.flush(), end_of_processing); }
     }
 }
 

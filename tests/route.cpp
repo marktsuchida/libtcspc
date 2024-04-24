@@ -109,7 +109,8 @@ TEST_CASE("Route") {
     SECTION("End on routed propagates, flushing others") {
         SECTION("Others not throwing") {
             out1.throw_end_processing_on_next();
-            REQUIRE_THROWS_AS(in.feed(tc_event{101, -3, 123}), end_processing);
+            REQUIRE_THROWS_AS(in.feed(tc_event{101, -3, 123}),
+                              end_of_processing);
             REQUIRE(out0.check_flushed());
             REQUIRE(out2.check_flushed());
         }
@@ -125,7 +126,8 @@ TEST_CASE("Route") {
         SECTION("Other throwing end") {
             out1.throw_end_processing_on_next();
             out2.throw_end_processing_on_flush();
-            REQUIRE_THROWS_AS(in.feed(tc_event{101, -3, 123}), end_processing);
+            REQUIRE_THROWS_AS(in.feed(tc_event{101, -3, 123}),
+                              end_of_processing);
             REQUIRE(out0.check_flushed());
         }
     }
@@ -196,7 +198,7 @@ TEST_CASE("Broadcast") {
     SECTION("End on output propagates, flushing others") {
         SECTION("Others not throwing") {
             out1.throw_end_processing_on_next();
-            REQUIRE_THROWS_AS(in.feed(e0{}), end_processing);
+            REQUIRE_THROWS_AS(in.feed(e0{}), end_of_processing);
             REQUIRE(out0.check(e0{})); // Received before out1 threw
             REQUIRE(out0.check_flushed());
             REQUIRE(out2.check_flushed());
@@ -213,7 +215,7 @@ TEST_CASE("Broadcast") {
         SECTION("Other throwing end") {
             out1.throw_end_processing_on_next();
             out2.throw_end_processing_on_flush();
-            REQUIRE_THROWS_AS(in.feed(e0{}), end_processing);
+            REQUIRE_THROWS_AS(in.feed(e0{}), end_of_processing);
             REQUIRE(out0.check(e0{})); // Received before out1 threw
             REQUIRE(out0.check_flushed());
             REQUIRE(out2.check_flushed());
@@ -230,7 +232,7 @@ TEST_CASE("Broadcast") {
     SECTION("End on output flush propagates, flushing others") {
         SECTION("Others not throwing") {
             out1.throw_end_processing_on_flush();
-            REQUIRE_THROWS_AS(in.flush(), end_processing);
+            REQUIRE_THROWS_AS(in.flush(), end_of_processing);
             REQUIRE(out0.check_flushed());
             REQUIRE(out2.check_flushed());
         }
@@ -245,7 +247,7 @@ TEST_CASE("Broadcast") {
         SECTION("Other throwing end") {
             out1.throw_end_processing_on_flush();
             out2.throw_end_processing_on_flush();
-            REQUIRE_THROWS_AS(in.flush(), end_processing);
+            REQUIRE_THROWS_AS(in.flush(), end_of_processing);
             REQUIRE(out0.check_flushed());
         }
     }

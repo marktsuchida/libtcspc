@@ -30,7 +30,7 @@ class stop {
 
     template <typename Event>
     [[noreturn]] LIBTCSPC_NOINLINE void handle_stop(Event const &event) {
-        if constexpr (std::is_same_v<Exception, end_processing>)
+        if constexpr (std::is_same_v<Exception, end_of_processing>)
             downstream.flush();
         std::ostringstream stream;
         if (not message_prefix.empty())
@@ -96,7 +96,7 @@ class stop {
 template <typename EventList, typename Exception = std::runtime_error,
           typename Downstream>
 auto stop_with_error(std::string message_prefix, Downstream &&downstream) {
-    static_assert(not std::is_same_v<Exception, end_processing>);
+    static_assert(not std::is_same_v<Exception, end_of_processing>);
     return internal::stop<EventList, Exception, Downstream>(
         std::move(message_prefix), std::forward<Downstream>(downstream));
 }
@@ -120,13 +120,14 @@ auto stop_with_error(std::string message_prefix, Downstream &&downstream) {
  * \return processor
  *
  * \par Events handled
- * - Types in `EventList`: flush downstream and throw `tcspc::end_processing`
+ * - Types in `EventList`: flush downstream and throw
+ *   `tcspc::end_of_processing`
  * - Types not in `EventList`: pass through with no action
  * - Flush: pass through with no action
  */
 template <typename EventList, typename Downstream>
 auto stop(std::string message_prefix, Downstream &&downstream) {
-    return internal::stop<EventList, end_processing, Downstream>(
+    return internal::stop<EventList, end_of_processing, Downstream>(
         std::move(message_prefix), std::forward<Downstream>(downstream));
 }
 

@@ -69,7 +69,7 @@ class histogram {
 
     [[noreturn]] void stop() {
         downstream.flush();
-        throw end_processing("histogram bin overflowed");
+        throw end_of_processing("histogram bin overflowed");
     }
 
     [[noreturn]] void overflow_error() {
@@ -220,7 +220,7 @@ class histogram {
  *     throw `tcspc::histogram_overflow_error` if `max_per_bin` equals 0)
  *   - If `tcspc::stop_on_overflow`, behave as if a `ResetEvent` was received
  *     instead of the current event; then flush the downstream and throw
- *     `tcspc::end_processing`
+ *     `tcspc::end_of_processing`
  *   - If `tcspc::error_on_overflow`, throw `tcspc::histogram_overflow_error`
  * - `ResetEvent`: emit (rvalue)
  *   `tcspc::concluding_histogram_event<DataTypes>` with the current

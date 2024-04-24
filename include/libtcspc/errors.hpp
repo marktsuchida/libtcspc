@@ -22,11 +22,11 @@ namespace tcspc {
  * End of processing can be initiated either by the data source (which should
  * then `flush()` the processors) or by any processor. When a processor
  * initiates a non-error end of processing, it does so by first `flush()`ing
- * the downstream processors and then throwing `end_processing`. The data
+ * the downstream processors and then throwing `end_of_processing`. The data
  * source should catch this exception and subsequently must not send events or
  * flush the processors.
  */
-class end_processing final : public std::exception {
+class end_of_processing final : public std::exception {
     std::string msg;
 
   public:
@@ -36,7 +36,8 @@ class end_processing final : public std::exception {
      * \param message the message, which should describe the reason for the end
      * of processing
      */
-    explicit end_processing(std::string message) : msg(std::move(message)) {}
+    explicit end_of_processing(std::string message)
+        : msg(std::move(message)) {}
 
     /** \brief Implements std::exception interface. */
     [[nodiscard]] auto what() const noexcept -> char const * override {
