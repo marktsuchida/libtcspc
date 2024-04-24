@@ -126,7 +126,7 @@ TEST_CASE("Map to bins") {
             ctx->access<capture_output_access>("out"));
 
         in.feed(datapoint_event<data_traits>{0, 10});
-        REQUIRE(out.check(bin_increment_event<data_traits>{0, 52}));
+        REQUIRE(out.check(bin_increment_event<data_traits>{52}));
         in.flush();
         REQUIRE(out.check_flushed());
     }
@@ -464,19 +464,19 @@ TEST_CASE("Batch bin increments") {
 
     SECTION("Start with no stop ignored") {
         in.feed(start_event{42});
-        in.feed(bin_increment_event<data_traits>{43, 123});
+        in.feed(bin_increment_event<data_traits>{123});
         in.flush();
         REQUIRE(out.check_flushed());
     }
 
     SECTION("Events passed only between start and stop") {
         in.feed(start_event{42});
-        in.feed(bin_increment_event<data_traits>{43, 123});
+        in.feed(bin_increment_event<data_traits>{123});
         in.feed(stop_event{44});
         REQUIRE(out.check(bin_increment_batch_event<data_traits>{{123}}));
         in.feed(start_event{45});
-        in.feed(bin_increment_event<data_traits>{46, 124});
-        in.feed(bin_increment_event<data_traits>{47, 125});
+        in.feed(bin_increment_event<data_traits>{124});
+        in.feed(bin_increment_event<data_traits>{125});
         in.feed(stop_event{48});
         REQUIRE(out.check(bin_increment_batch_event<data_traits>{{124, 125}}));
         in.flush();

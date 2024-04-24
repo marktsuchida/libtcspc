@@ -169,14 +169,22 @@ auto make_processor(settings const &settings,
 
     // clang-format off
 
-    auto [bin_increment_merge, start_stop_merge] =
+    auto [tc_merge, start_stop_merge] =
     merge<type_list<
-        bin_increment_event<>, pixel_start_event, pixel_stop_event>>(
+        time_correlated_detection_event<>,
+        pixel_start_event,
+        pixel_stop_event>>(
             1024 * 1024,
+    map_to_datapoints(difftime_data_mapper(),
+    map_to_bins(
+        linear_bin_mapper(
+            arg_offset{0},
+            arg_bin_width{settings.bin_width},
+            arg_max_bin_index{settings.max_bin_index}),
     batch_bin_increments<pixel_start_event, pixel_stop_event>(
     count<bin_increment_batch_event<>>(
         ctx->tracker<count_access>("pixel_counter"),
-    make_histo_proc<Cumulative>(settings, ctx))));
+    make_histo_proc<Cumulative>(settings, ctx))))));
 
     auto [sync_merge, cfd_merge] =
     merge<type_list<detection_event<>>>(1024 * 1024,
@@ -186,13 +194,7 @@ auto make_processor(settings const &settings,
         settings.max_diff_time,
     select<type_list<detection_pair_event<>>>(
     time_correlate_at_stop(
-    map_to_datapoints(difftime_data_mapper(),
-    map_to_bins(
-        linear_bin_mapper(
-            arg_offset{0},
-            arg_bin_width{settings.bin_width},
-            arg_max_bin_index{settings.max_bin_index}),
-    std::move(bin_increment_merge)))))));
+    std::move(tc_merge)))));
 
     auto sync_processor =
     delay(settings.sync_delay,

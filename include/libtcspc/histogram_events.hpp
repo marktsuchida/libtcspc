@@ -64,16 +64,10 @@ template <typename DataTraits = default_data_traits> struct datapoint_event {
  *
  * \ingroup events-binning
  *
- * \tparam DataTraits traits type specifying `abstime_type` and
- * `bin_index_type`
+ * \tparam DataTraits traits type specifying and `bin_index_type`
  */
 template <typename DataTraits = default_data_traits>
 struct bin_increment_event {
-    /**
-     * \brief The abstime of the binned datapoint.
-     */
-    typename DataTraits::abstime_type abstime;
-
     /**
      * \brief The histogram bin index to which the data value was mapped.
      */
@@ -83,7 +77,7 @@ struct bin_increment_event {
     friend constexpr auto operator==(bin_increment_event const &lhs,
                                      bin_increment_event const &rhs) noexcept
         -> bool {
-        return lhs.abstime == rhs.abstime && lhs.bin_index == rhs.bin_index;
+        return lhs.bin_index == rhs.bin_index;
     }
 
     /** \brief Inequality comparison operator. */
@@ -96,8 +90,7 @@ struct bin_increment_event {
     /** \brief Stream insertion operator. */
     friend auto operator<<(std::ostream &s, bin_increment_event const &e)
         -> std::ostream & {
-        return s << "bin_increment(" << e.abstime << ", " << e.bin_index
-                 << ')';
+        return s << "bin_increment(" << e.bin_index << ')';
     }
 };
 

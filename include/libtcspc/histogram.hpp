@@ -169,8 +169,7 @@ class histogram {
  *
  * The processor builds histograms out of incoming
  * `tcspc::bin_increment_event`s by incrementing the bin at the `bin_index`
- * given by the event. The `abstime` of this event is not used and need not be
- * monotonic. A round of accumulation is ended when a \p ResetEvent is
+ * given by the event. A round of accumulation is ended when a \p ResetEvent is
  * received, upon which accumulation is restarted with an empty histogram.
  *
  * The histogram is stored in a `tcspc::bucket<DataTraits::bin_type>`. Each

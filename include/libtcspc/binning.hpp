@@ -181,8 +181,7 @@ class map_to_bins {
             std::is_same_v<typename DT::datapoint_type, datapoint_type>);
         auto bin = std::invoke(bin_mapper, event.value);
         if (bin)
-            downstream.handle(
-                bin_increment_event<DataTraits>{event.abstime, bin.value()});
+            downstream.handle(bin_increment_event<DataTraits>{bin.value()});
     }
 
     template <typename OtherEvent> void handle(OtherEvent const &event) {

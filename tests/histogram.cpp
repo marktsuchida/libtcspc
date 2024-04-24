@@ -65,17 +65,17 @@ TEMPLATE_TEST_CASE("Histogram, no overflow", "", saturate_on_overflow,
         ctx->access<capture_output_access>("out"));
 
     std::vector<u16> hist;
-    in.feed(bin_increment_event<data_traits>{42, 0});
+    in.feed(bin_increment_event<data_traits>{0});
     hist = {1, 0};
     REQUIRE(out.check(histogram_event<data_traits>{tmp_bucket(hist)}));
-    in.feed(bin_increment_event<data_traits>{43, 1});
+    in.feed(bin_increment_event<data_traits>{1});
     hist = {1, 1};
     REQUIRE(out.check(histogram_event<data_traits>{tmp_bucket(hist)}));
     in.feed(reset_event{44});
     hist = {1, 1};
     REQUIRE(
         out.check(concluding_histogram_event<data_traits>{tmp_bucket(hist)}));
-    in.feed(bin_increment_event<data_traits>{45, 0});
+    in.feed(bin_increment_event<data_traits>{0});
     hist = {1, 0};
     REQUIRE(out.check(histogram_event<data_traits>{tmp_bucket(hist)}));
     in.flush();
@@ -103,7 +103,7 @@ TEST_CASE("Histogram, saturate on overflow") {
             ctx->access<capture_output_access>("out"));
 
         std::vector<u16> hist;
-        in.feed(bin_increment_event<data_traits>{42, 0}); // Overflow
+        in.feed(bin_increment_event<data_traits>{0}); // Overflow
         REQUIRE(out.check(warning_event{"histogram saturated"}));
         hist = {0};
         REQUIRE(out.check(histogram_event<data_traits>{tmp_bucket(hist)}));
@@ -126,10 +126,10 @@ TEST_CASE("Histogram, saturate on overflow") {
             ctx->access<capture_output_access>("out"));
 
         std::vector<u16> hist;
-        in.feed(bin_increment_event<data_traits>{42, 0});
+        in.feed(bin_increment_event<data_traits>{0});
         hist = {1};
         REQUIRE(out.check(histogram_event<data_traits>{tmp_bucket(hist)}));
-        in.feed(bin_increment_event<data_traits>{43, 0}); // Overflow
+        in.feed(bin_increment_event<data_traits>{0}); // Overflow
         REQUIRE(out.check(warning_event{"histogram saturated"}));
         hist = {1};
         REQUIRE(out.check(histogram_event<data_traits>{tmp_bucket(hist)}));
@@ -137,7 +137,7 @@ TEST_CASE("Histogram, saturate on overflow") {
         hist = {1};
         REQUIRE(out.check(
             concluding_histogram_event<data_traits>{tmp_bucket(hist)}));
-        in.feed(bin_increment_event<data_traits>{45, 0});
+        in.feed(bin_increment_event<data_traits>{0});
         hist = {1};
         REQUIRE(out.check(histogram_event<data_traits>{tmp_bucket(hist)}));
         in.flush();
@@ -164,7 +164,7 @@ TEST_CASE("Histogram, reset on overflow") {
         auto out = capture_output_checker<out_events>(
             ctx->access<capture_output_access>("out"));
 
-        REQUIRE_THROWS_AS(in.feed(bin_increment_event<data_traits>{42, 0}),
+        REQUIRE_THROWS_AS(in.feed(bin_increment_event<data_traits>{0}),
                           histogram_overflow_error);
         REQUIRE(out.check_not_flushed());
     }
@@ -181,10 +181,10 @@ TEST_CASE("Histogram, reset on overflow") {
             ctx->access<capture_output_access>("out"));
 
         std::vector<u16> hist;
-        in.feed(bin_increment_event<data_traits>{42, 0});
+        in.feed(bin_increment_event<data_traits>{0});
         hist = {1};
         REQUIRE(out.check(histogram_event<data_traits>{tmp_bucket(hist)}));
-        in.feed(bin_increment_event<data_traits>{43, 0}); // Overflow
+        in.feed(bin_increment_event<data_traits>{0}); // Overflow
         hist = {1};
         REQUIRE(out.check(
             concluding_histogram_event<data_traits>{tmp_bucket(hist)}));
@@ -215,7 +215,7 @@ TEST_CASE("Histogram, stop on overflow") {
         auto out = capture_output_checker<out_events>(
             ctx->access<capture_output_access>("out"));
 
-        REQUIRE_THROWS_AS(in.feed(bin_increment_event<data_traits>{42, 0}),
+        REQUIRE_THROWS_AS(in.feed(bin_increment_event<data_traits>{0}),
                           end_processing); // Overflow
         hist = {0};
         REQUIRE(out.check(
@@ -234,10 +234,10 @@ TEST_CASE("Histogram, stop on overflow") {
         auto out = capture_output_checker<out_events>(
             ctx->access<capture_output_access>("out"));
 
-        in.feed(bin_increment_event<data_traits>{42, 0});
+        in.feed(bin_increment_event<data_traits>{0});
         hist = {1};
         REQUIRE(out.check(histogram_event<data_traits>{tmp_bucket(hist)}));
-        REQUIRE_THROWS_AS(in.feed(bin_increment_event<data_traits>{43, 0}),
+        REQUIRE_THROWS_AS(in.feed(bin_increment_event<data_traits>{0}),
                           end_processing); // Overflow
         hist = {1};
         REQUIRE(out.check(
@@ -262,7 +262,7 @@ TEST_CASE("Histogram, error on overflow") {
         auto out = capture_output_checker<out_events>(
             ctx->access<capture_output_access>("out"));
 
-        REQUIRE_THROWS_AS(in.feed(bin_increment_event<data_traits>{42, 0}),
+        REQUIRE_THROWS_AS(in.feed(bin_increment_event<data_traits>{0}),
                           histogram_overflow_error);
         REQUIRE(out.check_not_flushed());
     }
@@ -279,10 +279,10 @@ TEST_CASE("Histogram, error on overflow") {
             ctx->access<capture_output_access>("out"));
 
         std::vector<u16> hist;
-        in.feed(bin_increment_event<data_traits>{42, 0});
+        in.feed(bin_increment_event<data_traits>{0});
         hist = {1};
         REQUIRE(out.check(histogram_event<data_traits>{tmp_bucket(hist)}));
-        REQUIRE_THROWS_AS(in.feed(bin_increment_event<data_traits>{43, 0}),
+        REQUIRE_THROWS_AS(in.feed(bin_increment_event<data_traits>{0}),
                           histogram_overflow_error);
         REQUIRE(out.check_not_flushed());
     }
