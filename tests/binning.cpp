@@ -66,7 +66,7 @@ TEST_CASE("Map to datapoints") {
     in.feed(misc_event{42});
     REQUIRE(out.check(misc_event{42}));
     in.feed(time_correlated_detection_event<>{123, 0, 42});
-    REQUIRE(out.check(datapoint_event<data_traits>{123, 42}));
+    REQUIRE(out.check(datapoint_event<data_traits>{42}));
     in.flush();
     REQUIRE(out.check_flushed());
 }
@@ -102,7 +102,7 @@ TEST_CASE("Map to bins") {
 
         in.feed(misc_event{42});
         REQUIRE(out.check(misc_event{42}));
-        in.feed(datapoint_event<data_traits>{43, 123});
+        in.feed(datapoint_event<data_traits>{123});
         in.flush();
         REQUIRE(out.check_flushed());
     }
@@ -125,7 +125,7 @@ TEST_CASE("Map to bins") {
         auto out = capture_output_checker<out_events>(
             ctx->access<capture_output_access>("out"));
 
-        in.feed(datapoint_event<data_traits>{0, 10});
+        in.feed(datapoint_event<data_traits>{10});
         REQUIRE(out.check(bin_increment_event<data_traits>{52}));
         in.flush();
         REQUIRE(out.check_flushed());

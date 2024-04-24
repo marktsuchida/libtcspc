@@ -19,19 +19,13 @@ namespace tcspc {
  *
  * \ingroup events-binning
  *
- * \tparam DataTraits traits type specifying `abstime_type` and
- * `datapoint_type`
+ * \tparam DataTraits traits type specifying `datapoint_type`
  */
 template <typename DataTraits = default_data_traits> struct datapoint_event {
     /**
      * \brief The data type.
      */
     using datapoint_type = typename DataTraits::datapoint_type;
-
-    /**
-     * \brief The abstime of the datapoint.
-     */
-    typename DataTraits::abstime_type abstime;
 
     /**
      * \brief The datapoint value.
@@ -42,7 +36,7 @@ template <typename DataTraits = default_data_traits> struct datapoint_event {
     friend constexpr auto operator==(datapoint_event const &lhs,
                                      datapoint_event const &rhs) noexcept
         -> bool {
-        return lhs.abstime == rhs.abstime && lhs.value == rhs.value;
+        return lhs.value == rhs.value;
     }
 
     /** \brief Inequality comparison operator. */
@@ -55,7 +49,7 @@ template <typename DataTraits = default_data_traits> struct datapoint_event {
     /** \brief Stream insertion operator. */
     friend auto operator<<(std::ostream &s, datapoint_event const &e)
         -> std::ostream & {
-        return s << "datapoint(" << e.abstime << ", " << e.value << ')';
+        return s << "datapoint(" << e.value << ')';
     }
 };
 

@@ -50,8 +50,8 @@ class map_to_datapoints {
     }
 
     void handle(event_type const &event) {
-        downstream.handle(datapoint_event<DataTraits>{
-            event.abstime, std::invoke(mapper, event)});
+        downstream.handle(
+            datapoint_event<DataTraits>{std::invoke(mapper, event)});
     }
 
     template <typename OtherEvent> void handle(OtherEvent const &event) {
