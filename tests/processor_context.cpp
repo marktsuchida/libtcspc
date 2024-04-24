@@ -79,7 +79,7 @@ class example_processor {
             // within the callable we can make these assumptions.
             [](access_tracker<example_access> &t) {
                 auto *self =
-                    LIBTCSPC_PROCESSOR_FROM_TRACKER(example_processor, trk, t);
+                    LIBTCSPC_OBJECT_FROM_TRACKER(example_processor, trk, t);
                 // Finally, we use lambda(s) to supply the type-erased
                 // function(s) by which the access interacts with the
                 // processor. As stated above, we assume 'self' remains valid

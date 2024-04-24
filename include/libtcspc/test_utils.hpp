@@ -408,7 +408,7 @@ template <typename EventList> class capture_output {
         : trk(std::move(tracker)) {
         trk.register_access_factory([](auto &tracker) {
             auto *self =
-                LIBTCSPC_PROCESSOR_FROM_TRACKER(capture_output, trk, tracker);
+                LIBTCSPC_OBJECT_FROM_TRACKER(capture_output, trk, tracker);
             return capture_output_access(
                 std::function([self] { return self->peek(); }),
                 [self] { self->output.pop(); },
@@ -495,7 +495,7 @@ template <> class capture_output<type_list<>> {
         : trk(std::move(tracker)) {
         trk.register_access_factory([](auto &tracker) {
             auto *self =
-                LIBTCSPC_PROCESSOR_FROM_TRACKER(capture_output, trk, tracker);
+                LIBTCSPC_OBJECT_FROM_TRACKER(capture_output, trk, tracker);
             return capture_output_access(
                 capture_output_access::empty_event_list_tag{},
                 [self] { return self->flushed; },

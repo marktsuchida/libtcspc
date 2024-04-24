@@ -238,7 +238,7 @@ template <typename Event, typename Downstream> class count {
                    Downstream downstream)
         : downstream(std::move(downstream)), trk(std::move(tracker)) {
         trk.register_access_factory([](auto &tracker) {
-            auto *self = LIBTCSPC_PROCESSOR_FROM_TRACKER(count, trk, tracker);
+            auto *self = LIBTCSPC_OBJECT_FROM_TRACKER(count, trk, tracker);
             return count_access([self] { return self->ct; });
         });
     }

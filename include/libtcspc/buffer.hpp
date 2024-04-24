@@ -215,7 +215,7 @@ class buffer {
         }
 
         trk.register_access_factory([](auto &tracker) {
-            auto *self = LIBTCSPC_PROCESSOR_FROM_TRACKER(buffer, trk, tracker);
+            auto *self = LIBTCSPC_OBJECT_FROM_TRACKER(buffer, trk, tracker);
             return buffer_access([self] { self->halt(); },
                                  [self] { self->pump(); });
         });

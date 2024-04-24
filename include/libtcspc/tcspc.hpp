@@ -704,7 +704,7 @@ namespace tcspc {
  *    factory usually converts this to a reference (address) to the object, and
  *    returns an access object holding a reference to the object.
  *
- * The macro #LIBTCSPC_PROCESSOR_FROM_TRACKER() can be used by access factories
+ * The macro #LIBTCSPC_OBJECT_FROM_TRACKER() can be used by access factories
  * to obtain the address of an object holding a tracker in a data member.
  *
  * @{

@@ -223,30 +223,29 @@ template <typename Access> access_tracker<Access>::~access_tracker() {
 // NOLINTBEGIN
 
 /**
- * \brief Recover the processor address from a `tcspc::access_tracker`
- * embedded in the processor object.
+ * \brief Recover the object address from a `tcspc::access_tracker` embedded in
+ * the object.
  *
  * \ingroup processor-context
  *
- * This can be used in the implementation of a processor access factory (see
+ * This can be used in the implementation of an access factory (see
  * `tcspc::access_tracker::register_access_factory()`).
  *
  * \hideinitializer
  *
- * \param proc_type processor type (no commas or angle brackets)
+ * \param obj_type object type (no commas or angle brackets)
  *
- * \param tracker_field_name name of data member of \p proc_type holding the
+ * \param tracker_field_name name of data member of \p obj_type holding the
  * tracker
  *
  * \param tracker the tracker (must be lvalue)
  *
- * \return pointer to the processor
+ * \return pointer to the object
  */
-#define LIBTCSPC_PROCESSOR_FROM_TRACKER(proc_type, tracker_field_name,        \
-                                        tracker)                              \
-    reinterpret_cast<std::add_pointer_t<proc_type>>(                          \
+#define LIBTCSPC_OBJECT_FROM_TRACKER(obj_type, tracker_field_name, tracker)   \
+    reinterpret_cast<std::add_pointer_t<obj_type>>(                           \
         reinterpret_cast<std::byte *>(&(tracker)) -                           \
-        offsetof(proc_type, tracker_field_name))
+        offsetof(obj_type, tracker_field_name))
 
 // Note: offsetof() on non-standard-layout types is "conditionally-supported"
 // as of C++17 for non-standard-layout types. I expect this not to be a problem
