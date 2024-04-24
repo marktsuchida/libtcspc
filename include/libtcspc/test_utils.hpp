@@ -401,10 +401,10 @@ template <typename EventList> class capture_output {
     bool error_on_flush = false;
     bool end_on_flush = false;
 
-    processor_tracker<capture_output_access> trk;
+    access_tracker<capture_output_access> trk;
 
   public:
-    explicit capture_output(processor_tracker<capture_output_access> &&tracker)
+    explicit capture_output(access_tracker<capture_output_access> &&tracker)
         : trk(std::move(tracker)) {
         trk.register_access_factory([](auto &tracker) {
             auto *self =
@@ -488,10 +488,10 @@ template <> class capture_output<type_list<>> {
     bool flushed = false;
     bool error_on_flush = false;
     bool end_on_flush = false;
-    processor_tracker<capture_output_access> trk;
+    access_tracker<capture_output_access> trk;
 
   public:
-    explicit capture_output(processor_tracker<capture_output_access> &&tracker)
+    explicit capture_output(access_tracker<capture_output_access> &&tracker)
         : trk(std::move(tracker)) {
         trk.register_access_factory([](auto &tracker) {
             auto *self =
@@ -604,7 +604,7 @@ template <typename EventList, typename Downstream> class feed_input {
  *
  * \tparam EventList event set to accept
  *
- * \param tracker processor tracker for later access to state
+ * \param tracker access tracker for later access to state
  *
  * \return processor
  *
@@ -617,7 +617,7 @@ template <typename EventList, typename Downstream> class feed_input {
  *   otherwise record for later analysis
  */
 template <typename EventList>
-auto capture_output(processor_tracker<capture_output_access> &&tracker) {
+auto capture_output(access_tracker<capture_output_access> &&tracker) {
     return internal::capture_output<EventList>(std::move(tracker));
 }
 

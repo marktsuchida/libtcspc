@@ -231,10 +231,10 @@ template <typename Event, typename Downstream> class count {
     Downstream downstream;
 
     // Cold data after downstream.
-    processor_tracker<count_access> trk;
+    access_tracker<count_access> trk;
 
   public:
-    explicit count(processor_tracker<count_access> &&tracker,
+    explicit count(access_tracker<count_access> &&tracker,
                    Downstream downstream)
         : downstream(std::move(downstream)), trk(std::move(tracker)) {
         trk.register_access_factory([](auto &tracker) {
@@ -285,7 +285,7 @@ template <typename Event, typename Downstream> class count {
  *
  * \tparam Downstream downstream processor type (usually deduced)
  *
- * \param tracker processor tracker for later access of the count result
+ * \param tracker access tracker for later access of the count result
  *
  * \param downstream downstream processor
  *
@@ -297,8 +297,7 @@ template <typename Event, typename Downstream> class count {
  * - Flush: pass through with no action
  */
 template <typename Event, typename Downstream>
-auto count(processor_tracker<count_access> &&tracker,
-           Downstream &&downstream) {
+auto count(access_tracker<count_access> &&tracker, Downstream &&downstream) {
     return internal::count<Event, Downstream>(
         std::move(tracker), std::forward<Downstream>(downstream));
 }

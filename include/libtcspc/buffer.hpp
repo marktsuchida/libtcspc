@@ -137,7 +137,7 @@ class buffer {
 
     // Cold data after downstream.
     bool pumped = false;
-    processor_tracker<buffer_access> trk;
+    access_tracker<buffer_access> trk;
 
     void halt() noexcept {
         {
@@ -202,7 +202,7 @@ class buffer {
   public:
     template <typename Duration>
     explicit buffer(std::size_t threshold, Duration latency_limit,
-                    processor_tracker<buffer_access> &&tracker,
+                    access_tracker<buffer_access> &&tracker,
                     Downstream downstream)
         : threshold(threshold >= 0 ? threshold : 1),
           max_latency(
@@ -223,7 +223,7 @@ class buffer {
 
     // NOLINTBEGIN(cppcoreguidelines-pro-type-member-init)
     explicit buffer(std::size_t threshold,
-                    processor_tracker<buffer_access> &&tracker,
+                    access_tracker<buffer_access> &&tracker,
                     Downstream downstream)
         : buffer(threshold, std::chrono::hours(24), std::move(tracker),
                  std::move(downstream)) {}
@@ -310,7 +310,7 @@ class buffer {
  * \param threshold number of events to buffer before start sending to
  * downstream
  *
- * \param tracker processor tracker for later access
+ * \param tracker access tracker for later access
  *
  * \param downstream downstream processor
  *
@@ -325,7 +325,7 @@ class buffer {
  *   error)
  */
 template <typename Event, typename Downstream>
-auto buffer(std::size_t threshold, processor_tracker<buffer_access> &&tracker,
+auto buffer(std::size_t threshold, access_tracker<buffer_access> &&tracker,
             Downstream &&downstream) {
     return internal::buffer<Event, false, Downstream>(
         threshold, std::move(tracker), std::forward<Downstream>(downstream));
@@ -368,7 +368,7 @@ auto buffer(std::size_t threshold, processor_tracker<buffer_access> &&tracker,
  * an event can remain in the buffer before sending to downstream is started
  * even if there are fewer events than threshold. Must not exceed 24 hours.
  *
- * \param tracker processor tracker for later access
+ * \param tracker access tracker for later access
  *
  * \param downstream downstream processor
  *
@@ -384,7 +384,7 @@ auto buffer(std::size_t threshold, processor_tracker<buffer_access> &&tracker,
  */
 template <typename Event, typename Duration, typename Downstream>
 auto real_time_buffer(std::size_t threshold, Duration latency_limit,
-                      processor_tracker<buffer_access> &&tracker,
+                      access_tracker<buffer_access> &&tracker,
                       Downstream &&downstream) {
     return internal::buffer<Event, true, Downstream>(
         threshold, latency_limit, std::move(tracker),

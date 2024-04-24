@@ -134,7 +134,7 @@ class Node:
         Parameters
         ----------
         node_name
-            The unique name of this node, optionally used for processor tracker
+            The unique name of this node, optionally used for access tracker
             naming.
         context
             The processor context (C++ lvalue reference to
@@ -231,7 +231,7 @@ class OneToOneNode(Node):
         Parameters
         ----------
         node_name
-            The unique name of this node, optionally used for processor tracker
+            The unique name of this node, optionally used for access tracker
             naming.
         context
             The processor context (C++ lvalue reference to

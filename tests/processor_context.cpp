@@ -36,7 +36,7 @@ TEST_CASE("processor context and tracker") {
         auto moved_trk = std::move(trk);
         CHECK(ctx->access<test_access>("myproc").tracker_addr == &moved_trk);
 
-        processor_tracker<test_access> move_assigned_trk;
+        access_tracker<test_access> move_assigned_trk;
         move_assigned_trk = std::move(moved_trk);
         CHECK(ctx->access<test_access>("myproc").tracker_addr ==
               &move_assigned_trk);
@@ -51,9 +51,9 @@ TEST_CASE("processor context and tracker") {
 namespace {
 
 struct example_access {
-    // An access shoulud be a single (unparameterized) type per processor
-    // template. Type erasure of the processor can be afforded by storing
-    // std::function instances for actual access to the processor.
+    // An access shoulud be a single (unparameterized) type per object type or
+    // template. Type erasure of the object can be afforded by storing
+    // std::function instances for actual access to the object.
     std::function<int()> value;
 };
 
@@ -65,20 +65,19 @@ class example_processor {
 
     // Cold data after downstream. The tracker should be here, since it is
     // accessed at much lower frequency than the actual processing.
-    processor_tracker<example_access> trk;
+    access_tracker<example_access> trk;
 
   public:
     // Processors supporting context-base access should have a constructor that
-    // takes a tracker as its first parameter (and also an otherwise equivalent
-    // constructor that does not; not shown).
-    explicit example_processor(processor_tracker<example_access> &&tracker)
+    // takes a tracker as its first parameter.
+    explicit example_processor(access_tracker<example_access> &&tracker)
         : trk(std::move(tracker)) {
         trk.register_access_factory(
             // We register a callable that can create an access given the
             // tracker. The access is only valid while the processor (and
             // therefore its tracker) stay alive in its current location, so
             // within the callable we can make these assumptions.
-            [](processor_tracker<example_access> &t) {
+            [](access_tracker<example_access> &t) {
                 auto *self =
                     LIBTCSPC_PROCESSOR_FROM_TRACKER(example_processor, trk, t);
                 // Finally, we use lambda(s) to supply the type-erased
@@ -94,11 +93,10 @@ class example_processor {
 
 } // namespace
 
-TEST_CASE("processor tracker intended use") {
+TEST_CASE("access tracker intended use") {
     auto ctx = processor_context::create();
     {
-        // The context is injected into a processor upon creation, when later
-        // access to the processor is desired.
+        // The context is injected into the processor upon creation.
         auto proc =
             example_processor(ctx->tracker<example_access>("test_proc"));
 
