@@ -66,7 +66,7 @@ struct swabian_tag_event {
      * \brief Read the event type.
      */
     [[nodiscard]] auto type() const noexcept -> tag_type {
-        return tag_type(read_u8(byte_subspan<0, 1>(bytes)).value());
+        return tag_type(read_u8_at<0>(span(bytes)).value());
     }
 
     // bytes[1] is reserved and should be written zero.
@@ -75,21 +75,21 @@ struct swabian_tag_event {
      * \brief Read the missed event count if this is a missed events event.
      */
     [[nodiscard]] auto missed_event_count() const noexcept -> u16np {
-        return read_u16le(byte_subspan<2, 2>(bytes));
+        return read_u16le_at<2>(span(bytes));
     }
 
     /**
      * \brief Read the channel if this is a time tag or missed events event.
      */
     [[nodiscard]] auto channel() const noexcept -> i32np {
-        return read_i32le(byte_subspan<4, 4>(bytes));
+        return read_i32le_at<4>(span(bytes));
     }
 
     /**
      * \brief Read the time (picoseconds).
      */
     [[nodiscard]] auto time() const noexcept -> i64np {
-        return read_i64le(byte_subspan<8, 8>(bytes));
+        return read_i64le_at<8>(span(bytes));
     }
 
     /**

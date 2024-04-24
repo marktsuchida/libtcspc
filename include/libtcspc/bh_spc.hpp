@@ -49,7 +49,7 @@ struct bh_spc_event {
      * represents a photon.
      */
     [[nodiscard]] auto adc_value() const noexcept -> u16np {
-        return read_u16le(byte_subspan<2, 2>(bytes)) & 0x0fff_u16np;
+        return read_u16le_at<2>(span(bytes)) & 0x0fff_u16np;
     }
 
     /**
@@ -60,21 +60,21 @@ struct bh_spc_event {
         // The documentation somewhat confusingly says that these bits are
         // "inverted", but what they mean is that the TTL inputs are active
         // low. The bits in the FIFO data are not inverted.
-        return read_u8(byte_subspan<1, 1>(bytes)) >> 4;
+        return read_u8_at<1>(span(bytes)) >> 4;
     }
 
     /**
      * \brief Read the macrotime counter value (no rollover correction).
      */
     [[nodiscard]] auto macrotime() const noexcept -> u16np {
-        return read_u16le(byte_subspan<0, 2>(bytes)) & 0x0fff_u16np;
+        return read_u16le_at<0>(span(bytes)) & 0x0fff_u16np;
     }
 
     /**
      * \brief Read the 'marker' flag.
      */
     [[nodiscard]] auto marker_flag() const noexcept -> bool {
-        return (read_u8(byte_subspan<3, 1>(bytes)) & (1_u8np << 4)) != 0_u8np;
+        return (read_u8_at<3>(span(bytes)) & (1_u8np << 4)) != 0_u8np;
     }
 
     /**
@@ -88,21 +88,21 @@ struct bh_spc_event {
      * \brief Read the 'gap' (data lost) flag.
      */
     [[nodiscard]] auto gap_flag() const noexcept -> bool {
-        return (read_u8(byte_subspan<3, 1>(bytes)) & (1_u8np << 5)) != 0_u8np;
+        return (read_u8_at<3>(span(bytes)) & (1_u8np << 5)) != 0_u8np;
     }
 
     /**
      * \brief Read the 'macrotime overflow' flag.
      */
     [[nodiscard]] auto macrotime_overflow_flag() const noexcept -> bool {
-        return (read_u8(byte_subspan<3, 1>(bytes)) & (1_u8np << 6)) != 0_u8np;
+        return (read_u8_at<3>(span(bytes)) & (1_u8np << 6)) != 0_u8np;
     }
 
     /**
      * \brief Read the 'invalid' flag.
      */
     [[nodiscard]] auto invalid_flag() const noexcept -> bool {
-        return (read_u8(byte_subspan<3, 1>(bytes)) & (1_u8np << 7)) != 0_u8np;
+        return (read_u8_at<3>(span(bytes)) & (1_u8np << 7)) != 0_u8np;
     }
 
     /**
@@ -121,7 +121,7 @@ struct bh_spc_event {
      */
     [[nodiscard]] auto multiple_macrotime_overflow_count() const noexcept
         -> u32np {
-        return read_u32le(byte_subspan<0, 4>(bytes)) & 0x0fff'ffff_u32np;
+        return read_u32le_at<0>(span(bytes)) & 0x0fff'ffff_u32np;
     }
 
     /**
@@ -308,7 +308,7 @@ struct bh_spc600_4096ch_event {
      * represents a photon.
      */
     [[nodiscard]] auto adc_value() const noexcept -> u16np {
-        return read_u16le(byte_subspan<0, 2>(bytes)) & 0x0fff_u16np;
+        return read_u16le_at<0>(span(bytes)) & 0x0fff_u16np;
     }
 
     /**
@@ -316,16 +316,16 @@ struct bh_spc600_4096ch_event {
      * event represents a photon.
      */
     [[nodiscard]] auto routing_signals() const noexcept -> u8np {
-        return read_u8(byte_subspan<3, 1>(bytes));
+        return read_u8_at<3>(span(bytes));
     }
 
     /**
      * \brief Read the macrotime counter value (no rollover correction).
      */
     [[nodiscard]] auto macrotime() const noexcept -> u32np {
-        auto const lo8 = u32np(read_u8(byte_subspan<4, 1>(bytes)));
-        auto const mid8 = u32np(read_u8(byte_subspan<5, 1>(bytes)));
-        auto const hi8 = u32np(read_u8(byte_subspan<2, 1>(bytes)));
+        auto const lo8 = u32np(read_u8_at<4>(span(bytes)));
+        auto const mid8 = u32np(read_u8_at<5>(span(bytes)));
+        auto const hi8 = u32np(read_u8_at<2>(span(bytes)));
         return lo8 | (mid8 << 8) | (hi8 << 16);
     }
 
@@ -343,21 +343,21 @@ struct bh_spc600_4096ch_event {
      * \brief Read the 'gap' (data lost) flag.
      */
     [[nodiscard]] auto gap_flag() const noexcept -> bool {
-        return (read_u8(byte_subspan<1, 1>(bytes)) & (1_u8np << 6)) != 0_u8np;
+        return (read_u8_at<1>(span(bytes)) & (1_u8np << 6)) != 0_u8np;
     }
 
     /**
      * \brief Read the 'macrotime overflow' flag.
      */
     [[nodiscard]] auto macrotime_overflow_flag() const noexcept -> bool {
-        return (read_u8(byte_subspan<1, 1>(bytes)) & (1_u8np << 5)) != 0_u8np;
+        return (read_u8_at<1>(span(bytes)) & (1_u8np << 5)) != 0_u8np;
     }
 
     /**
      * \brief Read the 'invalid' flag.
      */
     [[nodiscard]] auto invalid_flag() const noexcept -> bool {
-        return (read_u8(byte_subspan<1, 1>(bytes)) & (1_u8np << 4)) != 0_u8np;
+        return (read_u8_at<1>(span(bytes)) & (1_u8np << 4)) != 0_u8np;
     }
 
     /**
@@ -452,7 +452,7 @@ struct bh_spc600_4096ch_event {
     friend auto operator<<(std::ostream &strm, bh_spc600_4096ch_event const &e)
         -> std::ostream & {
         bool const unused_bit =
-            (read_u8(byte_subspan<1, 1>(e.bytes)) & (1_u8np << 7)) != 0_u8np;
+            (read_u8_at<1>(span(e.bytes)) & (1_u8np << 7)) != 0_u8np;
         return strm << "bh_spc600_4096ch(MT=" << e.macrotime()
                     << ", R=" << unsigned(e.routing_signals().value())
                     << ", ADC=" << e.adc_value()
@@ -501,7 +501,7 @@ struct bh_spc600_256ch_event {
      * represents a photon.
      */
     [[nodiscard]] auto adc_value() const noexcept -> u16np {
-        return u16np(read_u8(byte_subspan<0, 1>(bytes)));
+        return u16np(read_u8_at<0>(span(bytes)));
     }
 
     /**
@@ -509,16 +509,16 @@ struct bh_spc600_256ch_event {
      * event represents a photon.
      */
     [[nodiscard]] auto routing_signals() const noexcept -> u8np {
-        return (read_u8(byte_subspan<3, 1>(bytes)) & 0x0f_u8np) >> 1;
+        return (read_u8_at<3>(span(bytes)) & 0x0f_u8np) >> 1;
     }
 
     /**
      * \brief Read the macrotime counter value (no rollover correction).
      */
     [[nodiscard]] auto macrotime() const noexcept -> u32np {
-        auto const lo8 = u32np(read_u8(byte_subspan<1, 1>(bytes)));
-        auto const mid8 = u32np(read_u8(byte_subspan<2, 1>(bytes)));
-        auto const hi1 = u32np(read_u8(byte_subspan<3, 1>(bytes))) & 1_u32np;
+        auto const lo8 = u32np(read_u8_at<1>(span(bytes)));
+        auto const mid8 = u32np(read_u8_at<2>(span(bytes)));
+        auto const hi1 = u32np(read_u8_at<3>(span(bytes))) & 1_u32np;
         return lo8 | (mid8 << 8) | (hi1 << 16);
     }
 
@@ -536,21 +536,21 @@ struct bh_spc600_256ch_event {
      * \brief Read the 'gap' (data lost) flag.
      */
     [[nodiscard]] auto gap_flag() const noexcept -> bool {
-        return (read_u8(byte_subspan<3, 1>(bytes)) & (1_u8np << 5)) != 0_u8np;
+        return (read_u8_at<3>(span(bytes)) & (1_u8np << 5)) != 0_u8np;
     }
 
     /**
      * \brief Read the 'macrotime overflow' flag.
      */
     [[nodiscard]] auto macrotime_overflow_flag() const noexcept -> bool {
-        return (read_u8(byte_subspan<3, 1>(bytes)) & (1_u8np << 6)) != 0_u8np;
+        return (read_u8_at<3>(span(bytes)) & (1_u8np << 6)) != 0_u8np;
     }
 
     /**
      * \brief Read the 'invalid' flag.
      */
     [[nodiscard]] auto invalid_flag() const noexcept -> bool {
-        return (read_u8(byte_subspan<3, 1>(bytes)) & (1_u8np << 7)) != 0_u8np;
+        return (read_u8_at<3>(span(bytes)) & (1_u8np << 7)) != 0_u8np;
     }
 
     /**
@@ -567,7 +567,7 @@ struct bh_spc600_256ch_event {
      */
     [[nodiscard]] auto multiple_macrotime_overflow_count() const noexcept
         -> u32np {
-        return read_u32le(byte_subspan<0, 4>(bytes)) & 0x0fff'ffff_u32np;
+        return read_u32le_at<0>(span(bytes)) & 0x0fff'ffff_u32np;
     }
 
     /**
@@ -663,7 +663,7 @@ struct bh_spc600_256ch_event {
     friend auto operator<<(std::ostream &strm, bh_spc600_256ch_event const &e)
         -> std::ostream & {
         bool const unused_bit =
-            (read_u8(byte_subspan<3, 1>(e.bytes)) & (1_u8np << 4)) != 0_u8np;
+            (read_u8_at<3>(span(e.bytes)) & (1_u8np << 4)) != 0_u8np;
         return strm << "bh_spc600_256ch(MT=" << e.macrotime()
                     << ", R=" << unsigned(e.routing_signals().value())
                     << ", ADC=" << e.adc_value()

@@ -58,14 +58,14 @@ struct pqt3_picoharp300_event {
      * \brief Read the channel if this event is a non-special event.
      */
     [[nodiscard]] auto channel() const noexcept -> u8np {
-        return read_u8(byte_subspan<3, 1>(bytes)) >> 4;
+        return read_u8_at<3>(span(bytes)) >> 4;
     }
 
     /**
      * \brief Read the difference time if this event is a non-special event.
      */
     [[nodiscard]] auto dtime() const noexcept -> u16np {
-        return read_u16le(byte_subspan<2, 2>(bytes)) & 0x0fff_u16np;
+        return read_u16le_at<2>(span(bytes)) & 0x0fff_u16np;
     }
 
     /**
@@ -73,7 +73,7 @@ struct pqt3_picoharp300_event {
      * or an external marker event.
      */
     [[nodiscard]] auto nsync() const noexcept -> u16np {
-        return read_u16le(byte_subspan<0, 2>(bytes));
+        return read_u16le_at<0>(span(bytes));
     }
 
     /**
@@ -228,16 +228,16 @@ template <bool IsNSyncOverflowAlwaysSingle> struct basic_pqt3_event {
      * \brief Read the channel if this event is a non-special event.
      */
     [[nodiscard]] auto channel() const noexcept -> u8np {
-        return (read_u8(byte_subspan<3, 1>(bytes)) & 0x7f_u8np) >> 1;
+        return (read_u8_at<3>(span(bytes)) & 0x7f_u8np) >> 1;
     }
 
     /**
      * \brief Read the difference time if this event is a non-special event.
      */
     [[nodiscard]] auto dtime() const noexcept -> u16np {
-        auto const lo6 = u16np(read_u8(byte_subspan<1, 1>(bytes))) >> 2;
-        auto const mid8 = u16np(read_u8(byte_subspan<2, 1>(bytes)));
-        auto const hi1 = u16np(read_u8(byte_subspan<3, 1>(bytes))) & 1_u16np;
+        auto const lo6 = u16np(read_u8_at<1>(span(bytes))) >> 2;
+        auto const mid8 = u16np(read_u8_at<2>(span(bytes)));
+        auto const hi1 = u16np(read_u8_at<3>(span(bytes))) & 1_u16np;
         return lo6 | (mid8 << 6) | (hi1 << 14);
     }
 
@@ -246,14 +246,14 @@ template <bool IsNSyncOverflowAlwaysSingle> struct basic_pqt3_event {
      * or an external marker event.
      */
     [[nodiscard]] auto nsync() const noexcept -> u16np {
-        return read_u16le(byte_subspan<0, 2>(bytes)) & 0x03ff_u16np;
+        return read_u16le_at<0>(span(bytes)) & 0x03ff_u16np;
     }
 
     /**
      * \brief Determine if this event is a special event.
      */
     [[nodiscard]] auto is_special() const noexcept -> bool {
-        return (read_u8(byte_subspan<3, 1>(bytes)) & (1_u8np << 7)) != 0_u8np;
+        return (read_u8_at<3>(span(bytes)) & (1_u8np << 7)) != 0_u8np;
     }
 
     /**

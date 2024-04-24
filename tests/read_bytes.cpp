@@ -19,7 +19,19 @@
 
 namespace tcspc {
 
-TEST_CASE("Read u16np") {
+TEST_CASE("Read u8 compiles") {
+    std::array<std::byte, 2> data{};
+    CHECK(read_u8_at<0>(span(data)) == 0_u8np);
+    CHECK(read_u8_at<1>(span(std::as_const(data))) == 0_u8np);
+}
+
+TEST_CASE("Read u16 compiles") {
+    std::array<std::byte, 3> data{};
+    CHECK(read_u16le_at<0>(span(data)) == 0_u16np);
+    CHECK(read_u16le_at<1>(span(std::as_const(data))) == 0_u16np);
+}
+
+TEST_CASE("Read u16np impl") {
     bool const use_memcpy = GENERATE(false, true);
     auto f = use_memcpy ? internal::read_u16le_memcpy
                         : internal::read_u16le_generic;
@@ -44,7 +56,7 @@ TEST_CASE("Read u16np") {
     }
 }
 
-TEST_CASE("Read u32np") {
+TEST_CASE("Read u32np impl") {
     bool const use_memcpy = GENERATE(false, true);
     auto f = use_memcpy ? internal::read_u32le_memcpy
                         : internal::read_u32le_generic;
@@ -71,7 +83,7 @@ TEST_CASE("Read u32np") {
     }
 }
 
-TEST_CASE("Read u64np") {
+TEST_CASE("Read u64np impl") {
     bool const use_memcpy = GENERATE(false, true);
     auto f = use_memcpy ? internal::read_u64le_memcpy
                         : internal::read_u64le_generic;

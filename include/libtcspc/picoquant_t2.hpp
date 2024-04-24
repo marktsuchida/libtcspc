@@ -61,7 +61,7 @@ struct pqt2_picoharp300_event {
      * \brief Read the channel if this event is a non-special event.
      */
     [[nodiscard]] auto channel() const noexcept -> u8np {
-        return read_u8(byte_subspan<3, 1>(bytes)) >> 4;
+        return read_u8_at<3>(span(bytes)) >> 4;
     }
 
     /**
@@ -69,7 +69,7 @@ struct pqt2_picoharp300_event {
      * external marker event).
      */
     [[nodiscard]] auto timetag() const noexcept -> u32np {
-        return read_u32le(bytes) & 0x0fff'ffff_u32np;
+        return read_u32le_at<0>(span(bytes)) & 0x0fff'ffff_u32np;
     }
 
     /**
@@ -244,14 +244,14 @@ struct basic_pqt2_event {
      * \brief Read the channel if this event is a non-special event.
      */
     [[nodiscard]] auto channel() const noexcept -> u8np {
-        return (read_u8(byte_subspan<3, 1>(bytes)) & 0x7f_u8np) >> 1;
+        return (read_u8_at<3>(span(bytes)) & 0x7f_u8np) >> 1;
     }
 
     /**
      * \brief Read the time tag if this event is a non-special event.
      */
     [[nodiscard]] auto timetag() const noexcept -> u32np {
-        return read_u32le(bytes) & 0x01ff'ffff_u32np;
+        return read_u32le_at<0>(span(bytes)) & 0x01ff'ffff_u32np;
     }
 
     /**
@@ -265,7 +265,7 @@ struct basic_pqt2_event {
      * \brief Determine if this event is a special event.
      */
     [[nodiscard]] auto is_special() const noexcept -> bool {
-        return (read_u8(byte_subspan<3, 1>(bytes)) & (1_u8np << 7)) != 0_u8np;
+        return (read_u8_at<3>(span(bytes)) & (1_u8np << 7)) != 0_u8np;
     }
 
     /**
