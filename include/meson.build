@@ -35,7 +35,7 @@ public_cpp_headers = files(
     'libtcspc/picoquant_t3.hpp',
     'libtcspc/processor_traits.hpp',
     'libtcspc/read_binary_stream.hpp',
-    'libtcspc/read_bytes.hpp',
+    'libtcspc/read_integers.hpp',
     'libtcspc/recover_order.hpp',
     'libtcspc/regulate_time_reached.hpp',
     'libtcspc/route.hpp',

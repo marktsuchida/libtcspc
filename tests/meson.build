@@ -36,7 +36,7 @@ test_libtcspc_srcs = [
     'picoquant_t3.cpp',
     'processor_traits.cpp',
     'read_binary_stream.cpp',
-    'read_bytes.cpp',
+    'read_integers.cpp',
     'recover_order.cpp',
     'regulate_time_reached.cpp',
     'route.cpp',

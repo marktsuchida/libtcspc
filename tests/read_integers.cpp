@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: MIT
  */
 
-#include "libtcspc/read_bytes.hpp"
+#include "libtcspc/read_integers.hpp"
 
 #include "libtcspc/npint.hpp"
 #include "libtcspc/span.hpp"

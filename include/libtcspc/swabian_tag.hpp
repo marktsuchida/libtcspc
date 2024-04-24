@@ -9,7 +9,7 @@
 #include "common.hpp"
 #include "introspect.hpp"
 #include "npint.hpp"
-#include "read_bytes.hpp"
+#include "read_integers.hpp"
 #include "time_tagged_events.hpp"
 
 #include <array>
