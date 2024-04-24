@@ -445,7 +445,7 @@ class read_binary_stream {
 
     [[nodiscard]] auto introspect_graph() const -> processor_graph {
         auto g = downstream.introspect_graph();
-        g.push_source(this);
+        g.push_entry_point(this);
         return g;
     }
 

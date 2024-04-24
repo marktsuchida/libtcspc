@@ -32,7 +32,7 @@
 namespace tcspc {
 
 TEST_CASE("introspect read_binary_stream", "[introspect]") {
-    check_introspect_simple_source(read_binary_stream<int>(
+    check_introspect_simple_processor(read_binary_stream<int>(
         null_input_stream(), 0, new_delete_bucket_source<int>::create(), 1,
         null_sink()));
 }

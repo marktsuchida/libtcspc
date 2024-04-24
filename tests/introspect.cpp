@@ -169,21 +169,6 @@ TEST_CASE("processor_graph push_entry_point", "[processor_graph]") {
     CHECK(g.edges()[0] == std::pair{node1, node0});
     CHECK_FALSE(g.is_entry_point(node0));
     CHECK(g.is_entry_point(node1));
-
-    test_proc const p2;
-    g.push_source(&p2);
-    CHECK(g.nodes().size() == 3);
-    auto const node2 = [&] {
-        auto const nodes = g.nodes();
-        std::set<processor_node_id> nodeset(nodes.begin(), nodes.end());
-        nodeset.erase(node0);
-        nodeset.erase(node1);
-        CHECK(nodeset.size() == 1);
-        return *nodeset.begin();
-    }();
-    CHECK_FALSE(g.is_entry_point(node0));
-    CHECK_FALSE(g.is_entry_point(node1));
-    CHECK_FALSE(g.is_entry_point(node2));
 }
 
 TEST_CASE("processor_graph merge", "[processor_graph]") {

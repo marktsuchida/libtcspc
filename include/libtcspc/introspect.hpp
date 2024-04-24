@@ -268,27 +268,6 @@ class processor_graph {
     }
 
     /**
-     * \brief Add a source node to this graph, upstream of the current entry
-     * point (if any).
-     *
-     * \pre The graph must have no more than 1 entry point. The source must not
-     * already be part of the graph.
-     *
-     * \post A new node is added to the graph, representing the given
-     * source. The graph is set to have no entry point. If there was a previous
-     * entry point, an edge is added to the graph from the new node to the
-     * previous entry point.
-     *
-     * \tparam Source source type (usually deduced)
-     *
-     * \param source pointer to the source
-     */
-    template <typename Source> void push_source(Source const *source) {
-        push_entry_point(source);
-        entrypts.clear();
-    }
-
-    /**
      * \brief Return all of the nodes of this graph.
      *
      * \return node ids, sorted in ascending order

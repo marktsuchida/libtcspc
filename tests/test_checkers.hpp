@@ -64,22 +64,6 @@ check_introspect_simple_processor(Processor const &processor_with_null_sink) {
     return info;
 }
 
-template <typename Source>
-inline auto
-check_introspect_simple_source(Source const &source_with_null_sink) {
-    auto const info = check_introspect_node_info(source_with_null_sink);
-
-    auto const g = source_with_null_sink.introspect_graph();
-    CHECK(g.nodes().size() == 2);
-    CHECK(g.entry_points().size() == 0);
-    CHECK(g.edges().size() == 1);
-    auto const node = g.edges()[0].first;
-    CHECK(g.node_info(node) == info);
-    auto const downstream_node = g.edges()[0].second;
-    CHECK(g.node_info(downstream_node).name() == "null_sink");
-    return info;
-}
-
 template <typename Sink>
 inline auto check_introspect_simple_sink(Sink const &sink) {
     auto const info = check_introspect_node_info(sink);

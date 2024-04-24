@@ -23,7 +23,7 @@ namespace tcspc {
 
 TEST_CASE("introspect common", "[introspect]") {
     check_introspect_simple_sink(null_sink());
-    check_introspect_simple_source(null_source(null_sink()));
+    check_introspect_simple_processor(null_source(null_sink()));
 }
 
 TEST_CASE("null sink") {

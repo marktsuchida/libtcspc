@@ -24,7 +24,7 @@ TEST_CASE("introspect test_utils", "[introspect]") {
         ctx->tracker<capture_output_access>("out0")));
     check_introspect_simple_sink(capture_output<type_list<int>>(
         ctx->tracker<capture_output_access>("out1")));
-    check_introspect_simple_source(feed_input<type_list<>>(null_sink()));
+    check_introspect_simple_processor(feed_input<type_list<>>(null_sink()));
     check_introspect_simple_sink(sink_events<type_list<>>());
 }
 
