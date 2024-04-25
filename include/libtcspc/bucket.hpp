@@ -507,6 +507,12 @@ template <typename T> struct bucket_source {
 
     /**
      * \brief Create a bucket of \p size elements of type \p T.
+     *
+     * \attention Processors that use a bucket source must not create any
+     * buckets during construction. Buckets should be created while handling
+     * events (or flush) only. This is because we support use cases in which
+     * the bucket source is fully configured only after the processing graph
+     * has been built.
      */
     virtual auto bucket_of_size(std::size_t size) -> bucket<T> = 0;
 };
@@ -538,7 +544,7 @@ class new_delete_bucket_source final : public bucket_source<T> {
         return instance;
     }
 
-    /** \copydoc bucket_source::bucket_of_size() */
+    /** \brief Implements bucket source requirement. */
     auto bucket_of_size(std::size_t size) -> bucket<T> override {
         // NOLINTNEXTLINE(cppcoreguidelines-avoid-c-arrays,modernize-avoid-c-arrays)
         std::unique_ptr<T[]> p(new T[size]);
@@ -633,7 +639,7 @@ class recycling_bucket_source final
     }
 
     /**
-     * \copydoc bucket_source::bucket_of_size()
+     * \brief Implements bucket source requirement.
      *
      * This function will block if \p Blocking is true and the maximum bucket
      * count has been reached. It will then unblock when an outstanding bucket
