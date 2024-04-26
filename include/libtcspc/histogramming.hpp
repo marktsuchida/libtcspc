@@ -367,9 +367,10 @@ class single_histogram {
 
     // Undo the given 'increments'. Behavior is undefined unless 'increments'
     // equal the values passed to apply_increments() in an immediately prior
-    // call. Behavior undefined in saturate mode.
+    // call. Not available in saturate mode.
     void undo_increments(span<bin_index_type const> increments) {
-        assert((std::is_same_v<OverflowPolicy, stop_on_internal_overflow>));
+        static_assert(
+            std::is_same_v<OverflowPolicy, stop_on_internal_overflow>);
         assert(not hist.empty());
         for (bin_index_type i : increments) {
             assert(i >= 0 && i < hist.size());
@@ -511,12 +512,13 @@ class multi_histogram {
     }
 
     // Roll back journaled increments and recover the array of histograms to
-    // its original state (if it was not cleared) or zero. Behavior undefined
-    // in saturate mode.
+    // its original state (if it was not cleared) or zero. Not available in
+    // saturate mode.
     template <typename Journal> void roll_back(Journal const &journal) {
         static_assert(
             std::is_same_v<typename Journal::bin_index_type, bin_index_type>);
-        assert((std::is_same_v<OverflowPolicy, stop_on_internal_overflow>));
+        static_assert(
+            std::is_same_v<OverflowPolicy, stop_on_internal_overflow>);
         assert(not hist_arr.empty());
         for (auto [index, bin_index_span] : journal) {
             single_histogram<bin_index_type, bin_type, OverflowPolicy>
@@ -532,11 +534,13 @@ class multi_histogram {
 
     // Replay journal. Must be in unstarted state. Previous reset (or
     // constructor) must have requested clearing, or else the span must contain
-    // the same data as when the journal was constructed.
+    // the same data as when the journal was constructed. Not available in
+    // saturate mode.
     template <typename Journal> void replay(Journal const &journal) {
         static_assert(
             std::is_same_v<typename Journal::bin_index_type, bin_index_type>);
-        assert((std::is_same_v<OverflowPolicy, stop_on_internal_overflow>));
+        static_assert(
+            std::is_same_v<OverflowPolicy, stop_on_internal_overflow>);
         assert(not hist_arr.empty());
         assert(not is_started());
         for (auto [index, bin_index_span] : journal) {
