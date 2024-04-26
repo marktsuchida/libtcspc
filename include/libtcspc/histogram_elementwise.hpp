@@ -394,14 +394,7 @@ class histogram_elementwise_accumulate {
         downstream.handle(event);
     }
 
-    void flush() {
-        if constexpr (need_concluding) {
-            lazy_start();
-            mhista.roll_back_current_cycle(journal);
-            emit_concluding();
-        }
-        downstream.flush();
-    }
+    void flush() { downstream.flush(); }
 };
 
 } // namespace internal
@@ -492,10 +485,7 @@ class histogram_elementwise_accumulate {
  *   histogram array (after rolling back any partial cycle); then clear the
  *   array and other state
  * - All other types: pass through with no action
- * - Flush: unless the policy is `tcspc::saturate_on_overflow` or includes
- *   `tcspc::skip_concluding_event`, emit (rvalue)
- *   `tcspc::concluding_histogram_array_event<DataTypes>` with the current
- *   histogram array (after rolling back any partial cycle); pass through
+ * - Flush: pass through with no action
  */
 template <typename ResetEvent, typename DataTypes = default_data_types,
           typename Policy, typename Downstream>

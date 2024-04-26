@@ -31,9 +31,8 @@ namespace tcspc {
 
 namespace {
 
-using start_event = time_tagged_test_event<0>;
-using reset_event = time_tagged_test_event<2>;
-using misc_event = time_tagged_test_event<3>;
+using reset_event = empty_test_event<0>;
+using misc_event = empty_test_event<1>;
 
 struct dt3216 : default_data_types {
     using bin_index_type = u32;
@@ -335,10 +334,11 @@ TEMPLATE_TEST_CASE(
     std::vector<u8> hist_arr;
 
     SECTION("end before cycle 0") {
-        in.flush();
+        in.feed(reset_event{});
         hist_arr = {0, 0, 0, 0, 0, 0};
         REQUIRE(out.check(
             concluding_histogram_array_event<dt88>{tmp_bucket(hist_arr)}));
+        in.flush();
         REQUIRE(out.check_flushed());
     }
 
@@ -348,10 +348,11 @@ TEMPLATE_TEST_CASE(
         REQUIRE(out.check(histogram_event<dt88>{tmp_bucket(elem_hist)}));
 
         SECTION("end mid cycle 0") {
-            in.flush();
+            in.feed(reset_event{});
             hist_arr = {0, 0, 0, 0, 0, 0};
             REQUIRE(out.check(
                 concluding_histogram_array_event<dt88>{tmp_bucket(hist_arr)}));
+            in.flush();
             REQUIRE(out.check_flushed());
         }
 
@@ -364,10 +365,11 @@ TEMPLATE_TEST_CASE(
                 out.check(histogram_array_event<dt88>{tmp_bucket(hist_arr)}));
 
             SECTION("end after cycle 0") {
-                in.flush();
+                in.feed(reset_event{});
                 hist_arr = {1, 0, 0, 0, 1, 0};
                 REQUIRE(out.check(concluding_histogram_array_event<dt88>{
                     tmp_bucket(hist_arr)}));
+                in.flush();
                 REQUIRE(out.check_flushed());
             }
 
@@ -378,10 +380,11 @@ TEMPLATE_TEST_CASE(
                     out.check(histogram_event<dt88>{tmp_bucket(elem_hist)}));
 
                 SECTION("end mid cycle 1") {
-                    in.flush();
+                    in.feed(reset_event{});
                     hist_arr = {1, 0, 0, 0, 1, 0}; // Rolled back
                     REQUIRE(out.check(concluding_histogram_array_event<dt88>{
                         tmp_bucket(hist_arr)}));
+                    in.flush();
                     REQUIRE(out.check_flushed());
                 }
             }
@@ -413,10 +416,11 @@ TEMPLATE_TEST_CASE(
         hist_arr = {0, 0, 0, 0, 0, 0};
         REQUIRE(out.check(
             concluding_histogram_array_event<dt88>{tmp_bucket(hist_arr)}));
-        in.flush();
+        in.feed(reset_event{});
         hist_arr = {0, 0, 0, 0, 0, 0};
         REQUIRE(out.check(
             concluding_histogram_array_event<dt88>{tmp_bucket(hist_arr)}));
+        in.flush();
         REQUIRE(out.check_flushed());
     }
 
@@ -430,10 +434,11 @@ TEMPLATE_TEST_CASE(
             hist_arr = {0, 0, 0, 0, 0, 0};
             REQUIRE(out.check(
                 concluding_histogram_array_event<dt88>{tmp_bucket(hist_arr)}));
-            in.flush();
+            in.feed(reset_event{});
             hist_arr = {0, 0, 0, 0, 0, 0};
             REQUIRE(out.check(
                 concluding_histogram_array_event<dt88>{tmp_bucket(hist_arr)}));
+            in.flush();
             REQUIRE(out.check_flushed());
         }
 
@@ -450,10 +455,11 @@ TEMPLATE_TEST_CASE(
                 hist_arr = {1, 0, 0, 0, 1, 0};
                 REQUIRE(out.check(concluding_histogram_array_event<dt88>{
                     tmp_bucket(hist_arr)}));
-                in.flush();
+                in.feed(reset_event{});
                 hist_arr = {0, 0, 0, 0, 0, 0};
                 REQUIRE(out.check(concluding_histogram_array_event<dt88>{
                     tmp_bucket(hist_arr)}));
+                in.flush();
                 REQUIRE(out.check_flushed());
             }
 
@@ -468,10 +474,11 @@ TEMPLATE_TEST_CASE(
                     hist_arr = {1, 0, 0, 0, 1, 0}; // Rolled back
                     REQUIRE(out.check(concluding_histogram_array_event<dt88>{
                         tmp_bucket(hist_arr)}));
-                    in.flush();
+                    in.feed(reset_event{});
                     hist_arr = {0, 0, 0, 0, 0, 0};
                     REQUIRE(out.check(concluding_histogram_array_event<dt88>{
                         tmp_bucket(hist_arr)}));
+                    in.flush();
                     REQUIRE(out.check_flushed());
                 }
             }
@@ -575,7 +582,7 @@ TEST_CASE("histogram_elementwise_accumulate with reset-on-overflow",
                 REQUIRE(
                     out.check(histogram_event<dt88>{tmp_bucket(elem_hist)}));
 
-                in.flush();
+                in.feed(reset_event{});
                 hist_arr = {0, 0, 0, 0, 0, 0};
                 REQUIRE(out.check(concluding_histogram_array_event<dt88>{
                     tmp_bucket(hist_arr)}));
@@ -609,7 +616,7 @@ TEST_CASE("histogram_elementwise_accumulate with reset-on-overflow",
                     REQUIRE(out.check(
                         histogram_array_event<dt88>{tmp_bucket(hist_arr)}));
 
-                    in.flush();
+                    in.feed(reset_event{});
                     hist_arr = {1, 0, 0, 0, 3, 0};
                     REQUIRE(out.check(concluding_histogram_array_event<dt88>{
                         tmp_bucket(hist_arr)}));
