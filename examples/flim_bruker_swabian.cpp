@@ -188,7 +188,8 @@ auto make_processor(settings const &settings,
         pixel_start_event,
         pixel_stop_event>>(
             1024 * 1024,
-    map_to_datapoints(difftime_data_mapper(),
+    map_to_datapoints<time_correlated_detection_event<>>(
+        difftime_data_mapper(),
     map_to_bins(
         linear_bin_mapper(
             arg_offset{0},

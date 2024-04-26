@@ -38,7 +38,8 @@ TEST_CASE("introspect binning", "[introspect]") {
         using datapoint_type = u32;
     };
     check_introspect_simple_processor(
-        map_to_datapoints<count_types>(count_data_mapper(), null_sink()));
+        map_to_datapoints<bulk_counts_event<count_types>, count_types>(
+            count_data_mapper<count_types>(), null_sink()));
     check_introspect_simple_processor(
         map_to_bins(linear_bin_mapper(arg_offset{0}, arg_bin_width{1},
                                       arg_max_bin_index<u16>{10}),
@@ -55,8 +56,8 @@ TEST_CASE("Map to datapoints") {
     auto ctx = context::create();
     auto in =
         feed_input<type_list<time_correlated_detection_event<>, misc_event>>(
-            map_to_datapoints<data_types>(
-                difftime_data_mapper<>(),
+            map_to_datapoints<time_correlated_detection_event<>, data_types>(
+                difftime_data_mapper<data_types>(),
                 capture_output<out_events>(
                     ctx->tracker<capture_output_access>("out"))));
     in.require_output_checked(ctx, "out");

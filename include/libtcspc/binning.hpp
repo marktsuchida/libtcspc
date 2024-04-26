@@ -24,17 +24,17 @@ namespace tcspc {
 
 namespace internal {
 
-template <typename DataTypes, typename DataMapper, typename Downstream>
+template <typename Event, typename DataTypes, typename DataMapper,
+          typename Downstream>
 class map_to_datapoints {
+    static_assert(std::is_same_v<std::invoke_result_t<DataMapper, Event>,
+                                 typename DataTypes::datapoint_type>);
+
     DataMapper mapper;
+
     Downstream downstream;
 
   public:
-    using event_type = typename DataMapper::event_type;
-    using datapoint_type = typename DataMapper::datapoint_type;
-    static_assert(
-        std::is_same_v<datapoint_type, typename DataTypes::datapoint_type>);
-
     explicit map_to_datapoints(DataMapper mapper, Downstream downstream)
         : mapper(std::move(mapper)), downstream(std::move(downstream)) {}
 
@@ -49,7 +49,7 @@ class map_to_datapoints {
         return g;
     }
 
-    void handle(event_type const &event) {
+    void handle(Event const &event) {
         downstream.handle(
             datapoint_event<DataTypes>{std::invoke(mapper, event)});
     }
@@ -69,11 +69,12 @@ class map_to_datapoints {
  *
  * \ingroup processors-binning
  *
- * Incoming events of type `DataMapper::event_type` are mapped to
- * `tcspc::datapoint_event`s according to \p DataMapper (see \ref
- * data-mappers).
+ * Incoming events of type \p Event are mapped to `tcspc::datapoint_event`s
+ * according to \p DataMapper (see \ref data-mappers).
  *
  * All other events are passed through.
+ *
+ * \tparam Event event type to map to datapoints
  *
  * \tparam DataTypes data type set for emitted events
  *
@@ -88,15 +89,16 @@ class map_to_datapoints {
  * \return processor
  *
  * \par Events handled
- * - `DataMapper::event_type`: map to datapoint with data mapper and emit as
+ * - `Event`: map to datapoint with data mapper and emit as
  *   `tcspc::datapoint_event<DataTypes>`
  * - All other types: pass through with no action
  * - Flush: pass through with no action
  */
-template <typename DataTypes = default_data_types, typename DataMapper,
-          typename Downstream>
+template <typename Event, typename DataTypes = default_data_types,
+          typename DataMapper, typename Downstream>
 auto map_to_datapoints(DataMapper &&mapper, Downstream &&downstream) {
-    return internal::map_to_datapoints<DataTypes, DataMapper, Downstream>(
+    return internal::map_to_datapoints<Event, DataTypes, DataMapper,
+                                       Downstream>(
         std::forward<DataMapper>(mapper),
         std::forward<Downstream>(downstream));
 }
@@ -106,19 +108,16 @@ auto map_to_datapoints(DataMapper &&mapper, Downstream &&downstream) {
  *
  * \ingroup data-mappers
  *
- * \tparam Event event type to map (must have `difftime` field)
+ * The event being mapped must have a `difftime` field.
+ *
+ * \tparam DataTypes data type set specifying `datapoint_type`
  */
-template <typename Event = time_correlated_detection_event<>>
-class difftime_data_mapper {
+template <typename DataTypes = default_data_types> class difftime_data_mapper {
   public:
     /** \brief Implements data mapper requirement */
-    using event_type = Event;
-    /** \brief Implements data mapper requirement */
-    using datapoint_type = decltype(std::declval<event_type>().difftime);
-    static_assert(std::is_integral_v<datapoint_type>);
-
-    /** \brief Implements data mapper requirement */
-    auto operator()(event_type const &event) const -> datapoint_type {
+    template <typename Event>
+    auto operator()(Event const &event) const ->
+        typename DataTypes::datapoint_type {
         return event.difftime;
     }
 };
@@ -128,18 +127,16 @@ class difftime_data_mapper {
  *
  * \ingroup data-mappers
  *
- * \tparam Event event type to map (must have `count` field)
+ * The event being mapped must have a `count` field.
+ *
+ * \tparam DataTypes data type set specifying `datapoint_type`
  */
-template <typename Event = bulk_counts_event<>> class count_data_mapper {
+template <typename DataTypes = default_data_types> class count_data_mapper {
   public:
     /** \brief Implements data mapper requirement */
-    using event_type = Event;
-    /** \brief Implements data mapper requirement */
-    using datapoint_type = decltype(std::declval<event_type>().count);
-    static_assert(std::is_integral_v<datapoint_type>);
-
-    /** \brief Implements data mapper requirement */
-    auto operator()(event_type const &event) const -> datapoint_type {
+    template <typename Event>
+    auto operator()(Event const &event) const ->
+        typename DataTypes::datapoint_type {
         return event.count;
     }
 };

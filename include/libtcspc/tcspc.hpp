@@ -650,12 +650,12 @@ namespace tcspc {
  *
  * \brief Datapoint mappers for use with `tcspc::map_to_datapoints`.
  *
- * Data mappers define the following members:
- * - `event_type`: the event type to map to datapoints
- * - `datapoint_type`, which must match the `tcspc::map_to_datapoints`'s
- *   `DataTypes::datapoint_type`
- * - `auto operator()(event_type const &) const -> datapoint_type`: the mapping
- *   function
+ * Data mappers define the member `auto operator()(Event const &) const ->
+ * datapoint_type`, where `Event const &` must be implicitly convertible from
+ * the event type being mapped by the processor. `Event` can be a template
+ * parameter of the `operator()()`.
+ *
+ * (Note that lambdas can also be used as data mappers.)
  */
 
 /**
