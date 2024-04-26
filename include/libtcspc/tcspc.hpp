@@ -37,6 +37,7 @@
 #include "pair.hpp"
 #include "picoquant_t2.hpp"
 #include "picoquant_t3.hpp"
+#include "prepend_append.hpp"
 #include "processor_traits.hpp"
 #include "read_binary_stream.hpp"
 #include "read_integers.hpp"

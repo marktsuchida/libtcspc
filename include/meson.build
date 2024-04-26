@@ -33,6 +33,7 @@ public_cpp_headers = files(
     'libtcspc/pair.hpp',
     'libtcspc/picoquant_t2.hpp',
     'libtcspc/picoquant_t3.hpp',
+    'libtcspc/prepend_append.hpp',
     'libtcspc/processor_traits.hpp',
     'libtcspc/read_binary_stream.hpp',
     'libtcspc/read_integers.hpp',

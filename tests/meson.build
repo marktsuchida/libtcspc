@@ -34,6 +34,7 @@ test_libtcspc_srcs = [
     'pair.cpp',
     'picoquant_t2.cpp',
     'picoquant_t3.cpp',
+    'prepend_append.cpp',
     'processor_traits.cpp',
     'read_binary_stream.cpp',
     'read_integers.cpp',
