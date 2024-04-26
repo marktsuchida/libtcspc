@@ -98,7 +98,7 @@ auto make_histo_proc(settings const &settings,
         binary_file_output_stream(settings.output_filename, settings.truncate),
         recycling_bucket_source<std::byte>::create(), 65536);
     if constexpr (Cumulative) {
-        return histogram_elementwise_accumulate<never_event, true>(
+        return histogram_elementwise_accumulate<never_event>(
             error_on_overflow,
             arg_num_elements{settings.pixels_per_line *
                              settings.lines_per_frame},
