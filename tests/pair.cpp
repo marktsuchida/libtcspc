@@ -22,7 +22,8 @@ namespace tcspc {
 
 namespace {
 
-using out_events = type_list<detection_event<>, detection_pair_event<>>;
+using out_events =
+    type_list<detection_event<>, std::array<detection_event<>, 2>>;
 
 }
 
@@ -54,26 +55,26 @@ TEST_CASE("pair all") {
         in.feed(detection_event<>{0, 0});
         REQUIRE(out.check(detection_event<>{0, 0}));
         in.feed(detection_event<>{0, 1});
-        REQUIRE(out.check(detection_pair_event<>{{0, 0}, {0, 1}}));
+        REQUIRE(out.check(std::array<detection_event<>, 2>{{{0, 0}, {0, 1}}}));
         REQUIRE(out.check(detection_event<>{0, 1}));
 
         in.feed(detection_event<>{1, 0});
         REQUIRE(out.check(detection_event<>{1, 0}));
         in.feed(detection_event<>{1, 1});
-        REQUIRE(out.check(detection_pair_event<>{{0, 0}, {1, 1}}));
-        REQUIRE(out.check(detection_pair_event<>{{1, 0}, {1, 1}}));
+        REQUIRE(out.check(std::array<detection_event<>, 2>{{{0, 0}, {1, 1}}}));
+        REQUIRE(out.check(std::array<detection_event<>, 2>{{{1, 0}, {1, 1}}}));
         REQUIRE(out.check(detection_event<>{1, 1}));
 
         in.feed(detection_event<>{2, 1});
-        REQUIRE(out.check(detection_pair_event<>{{0, 0}, {2, 1}}));
-        REQUIRE(out.check(detection_pair_event<>{{1, 0}, {2, 1}}));
+        REQUIRE(out.check(std::array<detection_event<>, 2>{{{0, 0}, {2, 1}}}));
+        REQUIRE(out.check(std::array<detection_event<>, 2>{{{1, 0}, {2, 1}}}));
         REQUIRE(out.check(detection_event<>{2, 1}));
 
         in.feed(detection_event<>{3, 0});
         REQUIRE(out.check(detection_event<>{3, 0}));
         in.feed(detection_event<>{3, 1});
-        REQUIRE(out.check(detection_pair_event<>{{1, 0}, {3, 1}}));
-        REQUIRE(out.check(detection_pair_event<>{{3, 0}, {3, 1}}));
+        REQUIRE(out.check(std::array<detection_event<>, 2>{{{1, 0}, {3, 1}}}));
+        REQUIRE(out.check(std::array<detection_event<>, 2>{{{3, 0}, {3, 1}}}));
         REQUIRE(out.check(detection_event<>{3, 1}));
 
         in.flush();
@@ -87,18 +88,18 @@ TEST_CASE("pair all") {
         REQUIRE(out.check(detection_event<>{0, 0}));
 
         in.feed(detection_event<>{1, 1});
-        REQUIRE(out.check(detection_pair_event<>{{0, 0}, {1, 1}}));
+        REQUIRE(out.check(std::array<detection_event<>, 2>{{{0, 0}, {1, 1}}}));
         REQUIRE(out.check(detection_event<>{1, 1}));
         in.feed(detection_event<>{1, 0});
         REQUIRE(out.check(detection_event<>{1, 0}));
 
         in.feed(detection_event<>{2, 1});
-        REQUIRE(out.check(detection_pair_event<>{{0, 0}, {2, 1}}));
-        REQUIRE(out.check(detection_pair_event<>{{1, 0}, {2, 1}}));
+        REQUIRE(out.check(std::array<detection_event<>, 2>{{{0, 0}, {2, 1}}}));
+        REQUIRE(out.check(std::array<detection_event<>, 2>{{{1, 0}, {2, 1}}}));
         REQUIRE(out.check(detection_event<>{2, 1}));
 
         in.feed(detection_event<>{3, 1});
-        REQUIRE(out.check(detection_pair_event<>{{1, 0}, {3, 1}}));
+        REQUIRE(out.check(std::array<detection_event<>, 2>{{{1, 0}, {3, 1}}}));
         REQUIRE(out.check(detection_event<>{3, 1}));
         in.feed(detection_event<>{3, 0});
         REQUIRE(out.check(detection_event<>{3, 0}));
@@ -122,17 +123,17 @@ TEST_CASE("pair all with self") {
     REQUIRE(out.check(detection_event<>{0, 0}));
 
     in.feed(detection_event<>{1, 0});
-    REQUIRE(out.check(detection_pair_event<>{{0, 0}, {1, 0}}));
+    REQUIRE(out.check(std::array<detection_event<>, 2>{{{0, 0}, {1, 0}}}));
     REQUIRE(out.check(detection_event<>{1, 0}));
 
     in.feed(detection_event<>{2, 0});
-    REQUIRE(out.check(detection_pair_event<>{{0, 0}, {2, 0}}));
-    REQUIRE(out.check(detection_pair_event<>{{1, 0}, {2, 0}}));
+    REQUIRE(out.check(std::array<detection_event<>, 2>{{{0, 0}, {2, 0}}}));
+    REQUIRE(out.check(std::array<detection_event<>, 2>{{{1, 0}, {2, 0}}}));
     REQUIRE(out.check(detection_event<>{2, 0}));
 
     in.feed(detection_event<>{3, 0});
-    REQUIRE(out.check(detection_pair_event<>{{1, 0}, {3, 0}}));
-    REQUIRE(out.check(detection_pair_event<>{{2, 0}, {3, 0}}));
+    REQUIRE(out.check(std::array<detection_event<>, 2>{{{1, 0}, {3, 0}}}));
+    REQUIRE(out.check(std::array<detection_event<>, 2>{{{2, 0}, {3, 0}}}));
     REQUIRE(out.check(detection_event<>{3, 0}));
 
     in.flush();
@@ -158,13 +159,13 @@ TEST_CASE("pair one") {
         in.feed(detection_event<>{0, 0});
         REQUIRE(out.check(detection_event<>{0, 0}));
         in.feed(detection_event<>{0, 1});
-        REQUIRE(out.check(detection_pair_event<>{{0, 0}, {0, 1}}));
+        REQUIRE(out.check(std::array<detection_event<>, 2>{{{0, 0}, {0, 1}}}));
         REQUIRE(out.check(detection_event<>{0, 1}));
 
         in.feed(detection_event<>{1, 0});
         REQUIRE(out.check(detection_event<>{1, 0}));
         in.feed(detection_event<>{1, 1});
-        REQUIRE(out.check(detection_pair_event<>{{1, 0}, {1, 1}}));
+        REQUIRE(out.check(std::array<detection_event<>, 2>{{{1, 0}, {1, 1}}}));
         REQUIRE(out.check(detection_event<>{1, 1}));
 
         in.feed(detection_event<>{2, 1});
@@ -173,7 +174,7 @@ TEST_CASE("pair one") {
         in.feed(detection_event<>{3, 0});
         REQUIRE(out.check(detection_event<>{3, 0}));
         in.feed(detection_event<>{3, 1});
-        REQUIRE(out.check(detection_pair_event<>{{3, 0}, {3, 1}}));
+        REQUIRE(out.check(std::array<detection_event<>, 2>{{{3, 0}, {3, 1}}}));
         REQUIRE(out.check(detection_event<>{3, 1}));
 
         in.flush();
@@ -187,13 +188,13 @@ TEST_CASE("pair one") {
         REQUIRE(out.check(detection_event<>{0, 0}));
 
         in.feed(detection_event<>{1, 1});
-        REQUIRE(out.check(detection_pair_event<>{{0, 0}, {1, 1}}));
+        REQUIRE(out.check(std::array<detection_event<>, 2>{{{0, 0}, {1, 1}}}));
         REQUIRE(out.check(detection_event<>{1, 1}));
         in.feed(detection_event<>{1, 0});
         REQUIRE(out.check(detection_event<>{1, 0}));
 
         in.feed(detection_event<>{2, 1});
-        REQUIRE(out.check(detection_pair_event<>{{1, 0}, {2, 1}}));
+        REQUIRE(out.check(std::array<detection_event<>, 2>{{{1, 0}, {2, 1}}}));
         REQUIRE(out.check(detection_event<>{2, 1}));
 
         in.feed(detection_event<>{3, 1});
@@ -220,15 +221,15 @@ TEST_CASE("pair one with self") {
     REQUIRE(out.check(detection_event<>{0, 0}));
 
     in.feed(detection_event<>{1, 0});
-    REQUIRE(out.check(detection_pair_event<>{{0, 0}, {1, 0}}));
+    REQUIRE(out.check(std::array<detection_event<>, 2>{{{0, 0}, {1, 0}}}));
     REQUIRE(out.check(detection_event<>{1, 0}));
 
     in.feed(detection_event<>{2, 0});
-    REQUIRE(out.check(detection_pair_event<>{{1, 0}, {2, 0}}));
+    REQUIRE(out.check(std::array<detection_event<>, 2>{{{1, 0}, {2, 0}}}));
     REQUIRE(out.check(detection_event<>{2, 0}));
 
     in.feed(detection_event<>{3, 0});
-    REQUIRE(out.check(detection_pair_event<>{{2, 0}, {3, 0}}));
+    REQUIRE(out.check(std::array<detection_event<>, 2>{{{2, 0}, {3, 0}}}));
     REQUIRE(out.check(detection_event<>{3, 0}));
 
     in.flush();
@@ -254,23 +255,23 @@ TEST_CASE("pair all between") {
         in.feed(detection_event<>{0, 0});
         REQUIRE(out.check(detection_event<>{0, 0}));
         in.feed(detection_event<>{0, 1});
-        REQUIRE(out.check(detection_pair_event<>{{0, 0}, {0, 1}}));
+        REQUIRE(out.check(std::array<detection_event<>, 2>{{{0, 0}, {0, 1}}}));
         REQUIRE(out.check(detection_event<>{0, 1}));
 
         in.feed(detection_event<>{1, 0});
         REQUIRE(out.check(detection_event<>{1, 0}));
         in.feed(detection_event<>{1, 1});
-        REQUIRE(out.check(detection_pair_event<>{{1, 0}, {1, 1}}));
+        REQUIRE(out.check(std::array<detection_event<>, 2>{{{1, 0}, {1, 1}}}));
         REQUIRE(out.check(detection_event<>{1, 1}));
 
         in.feed(detection_event<>{2, 1});
-        REQUIRE(out.check(detection_pair_event<>{{1, 0}, {2, 1}}));
+        REQUIRE(out.check(std::array<detection_event<>, 2>{{{1, 0}, {2, 1}}}));
         REQUIRE(out.check(detection_event<>{2, 1}));
 
         in.feed(detection_event<>{3, 0});
         REQUIRE(out.check(detection_event<>{3, 0}));
         in.feed(detection_event<>{3, 1});
-        REQUIRE(out.check(detection_pair_event<>{{3, 0}, {3, 1}}));
+        REQUIRE(out.check(std::array<detection_event<>, 2>{{{3, 0}, {3, 1}}}));
         REQUIRE(out.check(detection_event<>{3, 1}));
 
         in.flush();
@@ -284,17 +285,17 @@ TEST_CASE("pair all between") {
         REQUIRE(out.check(detection_event<>{0, 0}));
 
         in.feed(detection_event<>{1, 1});
-        REQUIRE(out.check(detection_pair_event<>{{0, 0}, {1, 1}}));
+        REQUIRE(out.check(std::array<detection_event<>, 2>{{{0, 0}, {1, 1}}}));
         REQUIRE(out.check(detection_event<>{1, 1}));
         in.feed(detection_event<>{1, 0});
         REQUIRE(out.check(detection_event<>{1, 0}));
 
         in.feed(detection_event<>{2, 1});
-        REQUIRE(out.check(detection_pair_event<>{{1, 0}, {2, 1}}));
+        REQUIRE(out.check(std::array<detection_event<>, 2>{{{1, 0}, {2, 1}}}));
         REQUIRE(out.check(detection_event<>{2, 1}));
 
         in.feed(detection_event<>{3, 1});
-        REQUIRE(out.check(detection_pair_event<>{{1, 0}, {3, 1}}));
+        REQUIRE(out.check(std::array<detection_event<>, 2>{{{1, 0}, {3, 1}}}));
         REQUIRE(out.check(detection_event<>{3, 1}));
         in.feed(detection_event<>{3, 0});
         REQUIRE(out.check(detection_event<>{3, 0}));
@@ -318,15 +319,15 @@ TEST_CASE("pair all between with self") {
     REQUIRE(out.check(detection_event<>{0, 0}));
 
     in.feed(detection_event<>{1, 0});
-    REQUIRE(out.check(detection_pair_event<>{{0, 0}, {1, 0}}));
+    REQUIRE(out.check(std::array<detection_event<>, 2>{{{0, 0}, {1, 0}}}));
     REQUIRE(out.check(detection_event<>{1, 0}));
 
     in.feed(detection_event<>{2, 0});
-    REQUIRE(out.check(detection_pair_event<>{{1, 0}, {2, 0}}));
+    REQUIRE(out.check(std::array<detection_event<>, 2>{{{1, 0}, {2, 0}}}));
     REQUIRE(out.check(detection_event<>{2, 0}));
 
     in.feed(detection_event<>{3, 0});
-    REQUIRE(out.check(detection_pair_event<>{{2, 0}, {3, 0}}));
+    REQUIRE(out.check(std::array<detection_event<>, 2>{{{2, 0}, {3, 0}}}));
     REQUIRE(out.check(detection_event<>{3, 0}));
 
     in.flush();
@@ -352,13 +353,13 @@ TEST_CASE("pair one between") {
         in.feed(detection_event<>{0, 0});
         REQUIRE(out.check(detection_event<>{0, 0}));
         in.feed(detection_event<>{0, 1});
-        REQUIRE(out.check(detection_pair_event<>{{0, 0}, {0, 1}}));
+        REQUIRE(out.check(std::array<detection_event<>, 2>{{{0, 0}, {0, 1}}}));
         REQUIRE(out.check(detection_event<>{0, 1}));
 
         in.feed(detection_event<>{1, 0});
         REQUIRE(out.check(detection_event<>{1, 0}));
         in.feed(detection_event<>{1, 1});
-        REQUIRE(out.check(detection_pair_event<>{{1, 0}, {1, 1}}));
+        REQUIRE(out.check(std::array<detection_event<>, 2>{{{1, 0}, {1, 1}}}));
         REQUIRE(out.check(detection_event<>{1, 1}));
 
         in.feed(detection_event<>{2, 1});
@@ -367,7 +368,7 @@ TEST_CASE("pair one between") {
         in.feed(detection_event<>{3, 0});
         REQUIRE(out.check(detection_event<>{3, 0}));
         in.feed(detection_event<>{3, 1});
-        REQUIRE(out.check(detection_pair_event<>{{3, 0}, {3, 1}}));
+        REQUIRE(out.check(std::array<detection_event<>, 2>{{{3, 0}, {3, 1}}}));
         REQUIRE(out.check(detection_event<>{3, 1}));
 
         in.flush();
@@ -381,13 +382,13 @@ TEST_CASE("pair one between") {
         REQUIRE(out.check(detection_event<>{0, 0}));
 
         in.feed(detection_event<>{1, 1});
-        REQUIRE(out.check(detection_pair_event<>{{0, 0}, {1, 1}}));
+        REQUIRE(out.check(std::array<detection_event<>, 2>{{{0, 0}, {1, 1}}}));
         REQUIRE(out.check(detection_event<>{1, 1}));
         in.feed(detection_event<>{1, 0});
         REQUIRE(out.check(detection_event<>{1, 0}));
 
         in.feed(detection_event<>{2, 1});
-        REQUIRE(out.check(detection_pair_event<>{{1, 0}, {2, 1}}));
+        REQUIRE(out.check(std::array<detection_event<>, 2>{{{1, 0}, {2, 1}}}));
         REQUIRE(out.check(detection_event<>{2, 1}));
 
         in.feed(detection_event<>{3, 1});
@@ -414,15 +415,15 @@ TEST_CASE("pair one between with self") {
     REQUIRE(out.check(detection_event<>{0, 0}));
 
     in.feed(detection_event<>{1, 0});
-    REQUIRE(out.check(detection_pair_event<>{{0, 0}, {1, 0}}));
+    REQUIRE(out.check(std::array<detection_event<>, 2>{{{0, 0}, {1, 0}}}));
     REQUIRE(out.check(detection_event<>{1, 0}));
 
     in.feed(detection_event<>{2, 0});
-    REQUIRE(out.check(detection_pair_event<>{{1, 0}, {2, 0}}));
+    REQUIRE(out.check(std::array<detection_event<>, 2>{{{1, 0}, {2, 0}}}));
     REQUIRE(out.check(detection_event<>{2, 0}));
 
     in.feed(detection_event<>{3, 0});
-    REQUIRE(out.check(detection_pair_event<>{{2, 0}, {3, 0}}));
+    REQUIRE(out.check(std::array<detection_event<>, 2>{{{2, 0}, {3, 0}}}));
     REQUIRE(out.check(detection_event<>{3, 0}));
 
     in.flush();

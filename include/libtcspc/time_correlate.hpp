@@ -41,14 +41,14 @@ class time_correlate_at_start_or_stop {
         return downstream.introspect_graph().push_entry_point(this);
     }
 
-    template <typename DT> void handle(detection_pair_event<DT> const &event) {
+    template <typename DT>
+    void handle(std::array<detection_event<DT>, 2> const &event) {
         static_assert(std::is_same_v<typename DT::abstime_type,
                                      typename DataTypes::abstime_type>);
         static_assert(std::is_same_v<typename DT::channel_type,
                                      typename DataTypes::channel_type>);
-        auto const difftime = event.second.abstime - event.first.abstime;
-        auto const &anchor =
-            UseStartTimeAndChannel ? event.first : event.second;
+        auto const difftime = event[1].abstime - event[0].abstime;
+        auto const &anchor = UseStartTimeAndChannel ? event[0] : event[1];
         downstream.handle(time_correlated_detection_event<DataTypes>{
             anchor.abstime, anchor.channel,
             static_cast<typename DataTypes::difftime_type>(difftime)});
@@ -77,15 +77,16 @@ class time_correlate_at_midpoint {
         return downstream.introspect_graph().push_entry_point(this);
     }
 
-    template <typename DT> void handle(detection_pair_event<DT> const &event) {
+    template <typename DT>
+    void handle(std::array<detection_event<DT>, 2> const &event) {
         static_assert(std::is_same_v<typename DT::abstime_type,
                                      typename DataTypes::abstime_type>);
         static_assert(std::is_same_v<typename DT::channel_type,
                                      typename DataTypes::channel_type>);
-        auto const difftime = event.second.abstime - event.first.abstime;
-        auto const abstime = event.first.abstime + difftime / 2;
+        auto const difftime = event[1].abstime - event[0].abstime;
+        auto const abstime = event[0].abstime + difftime / 2;
         auto const channel =
-            UseStartChannel ? event.first.channel : event.second.channel;
+            UseStartChannel ? event[0].channel : event[1].channel;
         downstream.handle(time_correlated_detection_event<DataTypes>{
             abstime, channel,
             static_cast<typename DataTypes::difftime_type>(difftime)});
@@ -115,18 +116,19 @@ class time_correlate_at_fraction {
         return downstream.introspect_graph().push_entry_point(this);
     }
 
-    template <typename DT> void handle(detection_pair_event<DT> const &event) {
+    template <typename DT>
+    void handle(std::array<detection_event<DT>, 2> const &event) {
         static_assert(std::is_same_v<typename DT::abstime_type,
                                      typename DataTypes::abstime_type>);
         static_assert(std::is_same_v<typename DT::channel_type,
                                      typename DataTypes::channel_type>);
-        auto const difftime = event.second.abstime - event.first.abstime;
+        auto const difftime = event[1].abstime - event[0].abstime;
         auto const abstime =
-            event.first.abstime +
+            event[0].abstime +
             static_cast<typename DataTypes::abstime_type>(
                 std::llround(static_cast<double>(difftime) * fraction));
         auto const channel =
-            UseStartChannel ? event.first.channel : event.second.channel;
+            UseStartChannel ? event[0].channel : event[1].channel;
         downstream.handle(time_correlated_detection_event<DataTypes>{
             abstime, channel,
             static_cast<typename DataTypes::difftime_type>(difftime)});
@@ -165,7 +167,7 @@ class time_correlate_at_fraction {
  * \return processor
  *
  * \par Events handled
- * - `tcspc::detection_pair_event<DT>`: emit
+ * - `tcspc::std::array<detection_event<DT>, 2>`: emit
  *   `tcspc::time_correlated_detection_event<DataTypes>` with
  *   - `abstime` set equal to that of the first event of the pair
  *   - `channel` set to the channel of the first event of the pair if
@@ -204,7 +206,7 @@ auto time_correlate_at_start(Downstream &&downstream) {
  * \return processor
  *
  * \par Events handled
- * - `tcspc::detection_pair_event<DT>`: emit
+ * - `tcspc::std::array<detection_event<DT>, 2>`: emit
  *   `tcspc::time_correlated_detection_event<DataTypes>` with
  *   - `abstime` set equal to that of the second event of the pair
  *   - `channel` set to the channel of the first event of the pair if
@@ -249,7 +251,7 @@ auto time_correlate_at_stop(Downstream &&downstream) {
  * \return processor
  *
  * \par Events handled
- * - `tcspc::detection_pair_event<DT>`: emit
+ * - `tcspc::std::array<detection_event<DT>, 2>`: emit
  *   `tcspc::time_correlated_detection_event<DataTypes>` with
  *   - `abstime` set to the midpoint of the pair's abstimes
  *   - `channel` set to the channel of the first event of the pair if
@@ -298,7 +300,7 @@ auto time_correlate_at_midpoint(Downstream &&downstream) {
  * \return processor
  *
  * \par Events handled
- * - `tcspc::detection_pair_event<DT>`: emit
+ * - `tcspc::std::array<detection_event<DT>, 2>`: emit
  *   `tcspc::time_correlated_detection_event<DataTypes>` with
  *   - `abstime` set to the fractional division point of the pair's abstimes
  *   - `channel` set to the channel of the first event of the pair if

@@ -38,14 +38,14 @@ TEST_CASE("introspect time_correlate", "[introspect]") {
 
 TEST_CASE("time correlate at start") {
     auto ctx = context::create();
-    auto in = feed_input<type_list<detection_pair_event<>>>(
+    auto in = feed_input<type_list<std::array<detection_event<>, 2>>>(
         time_correlate_at_start<>(capture_output<tc_out_events>(
             ctx->tracker<capture_output_access>("out"))));
     in.require_output_checked(ctx, "out");
     auto out = capture_output_checker<tc_out_events>(
         ctx->access<capture_output_access>("out"));
 
-    in.feed(detection_pair_event<>{{3, 0}, {5, 1}});
+    in.feed(std::array<detection_event<>, 2>{{{3, 0}, {5, 1}}});
     REQUIRE(out.check(time_correlated_detection_event<>{3, 0, 2}));
     in.flush();
     REQUIRE(out.check_flushed());
@@ -53,14 +53,14 @@ TEST_CASE("time correlate at start") {
 
 TEST_CASE("time correlate at stop") {
     auto ctx = context::create();
-    auto in = feed_input<type_list<detection_pair_event<>>>(
+    auto in = feed_input<type_list<std::array<detection_event<>, 2>>>(
         time_correlate_at_stop<>(capture_output<tc_out_events>(
             ctx->tracker<capture_output_access>("out"))));
     in.require_output_checked(ctx, "out");
     auto out = capture_output_checker<tc_out_events>(
         ctx->access<capture_output_access>("out"));
 
-    in.feed(detection_pair_event<>{{3, 0}, {5, 1}});
+    in.feed(std::array<detection_event<>, 2>{{{3, 0}, {5, 1}}});
     REQUIRE(out.check(time_correlated_detection_event<>{5, 1, 2}));
     in.flush();
     REQUIRE(out.check_flushed());
@@ -70,21 +70,21 @@ TEST_CASE("time correlate at midpoint") {
     auto ctx = context::create();
 
     SECTION("use stop channel") {
-        auto in = feed_input<type_list<detection_pair_event<>>>(
+        auto in = feed_input<type_list<std::array<detection_event<>, 2>>>(
             time_correlate_at_midpoint<>(capture_output<tc_out_events>(
                 ctx->tracker<capture_output_access>("out"))));
         in.require_output_checked(ctx, "out");
         auto out = capture_output_checker<tc_out_events>(
             ctx->access<capture_output_access>("out"));
 
-        in.feed(detection_pair_event<>{{3, 0}, {5, 1}});
+        in.feed(std::array<detection_event<>, 2>{{{3, 0}, {5, 1}}});
         REQUIRE(out.check(time_correlated_detection_event<>{4, 1, 2}));
         in.flush();
         REQUIRE(out.check_flushed());
     }
 
     SECTION("use start channel") {
-        auto in = feed_input<type_list<detection_pair_event<>>>(
+        auto in = feed_input<type_list<std::array<detection_event<>, 2>>>(
             time_correlate_at_midpoint<default_data_types, true>(
                 capture_output<tc_out_events>(
                     ctx->tracker<capture_output_access>("out"))));
@@ -92,7 +92,7 @@ TEST_CASE("time correlate at midpoint") {
         auto out = capture_output_checker<tc_out_events>(
             ctx->access<capture_output_access>("out"));
 
-        in.feed(detection_pair_event<>{{3, 0}, {5, 1}});
+        in.feed(std::array<detection_event<>, 2>{{{3, 0}, {5, 1}}});
         REQUIRE(out.check(time_correlated_detection_event<>{4, 0, 2}));
         in.flush();
         REQUIRE(out.check_flushed());
@@ -103,7 +103,7 @@ TEST_CASE("time correlate at fraction") {
     auto ctx = context::create();
 
     SECTION("use stop channel") {
-        auto in = feed_input<type_list<detection_pair_event<>>>(
+        auto in = feed_input<type_list<std::array<detection_event<>, 2>>>(
             time_correlate_at_fraction<>(
                 1.0 / 3.0, capture_output<tc_out_events>(
                                ctx->tracker<capture_output_access>("out"))));
@@ -111,14 +111,14 @@ TEST_CASE("time correlate at fraction") {
         auto out = capture_output_checker<tc_out_events>(
             ctx->access<capture_output_access>("out"));
 
-        in.feed(detection_pair_event<>{{3000, 0}, {6000, 1}});
+        in.feed(std::array<detection_event<>, 2>{{{3000, 0}, {6000, 1}}});
         REQUIRE(out.check(time_correlated_detection_event<>{4000, 1, 3000}));
         in.flush();
         REQUIRE(out.check_flushed());
     }
 
     SECTION("use start channel") {
-        auto in = feed_input<type_list<detection_pair_event<>>>(
+        auto in = feed_input<type_list<std::array<detection_event<>, 2>>>(
             time_correlate_at_fraction<default_data_types, true>(
                 1.0 / 3.0, capture_output<tc_out_events>(
                                ctx->tracker<capture_output_access>("out"))));
@@ -126,7 +126,7 @@ TEST_CASE("time correlate at fraction") {
         auto out = capture_output_checker<tc_out_events>(
             ctx->access<capture_output_access>("out"));
 
-        in.feed(detection_pair_event<>{{3000, 0}, {6000, 1}});
+        in.feed(std::array<detection_event<>, 2>{{{3000, 0}, {6000, 1}}});
         REQUIRE(out.check(time_correlated_detection_event<>{4000, 0, 3000}));
         in.flush();
         REQUIRE(out.check_flushed());

@@ -411,50 +411,18 @@ template <typename DataTypes = default_data_types> struct marker_event {
 };
 
 /**
- * \brief Event representing a pair of detection events.
+ * \brief Stream insertion operator for `tcspc::detection_event` pairs.
  *
  * \ingroup events-tcspc
  *
- * This event contains a pair of `tcspc::detection_event` instances. Note that
- * it does not contain an `abstime` field and therefore cannot be handled
- * directly by processors that expect a time-stamped event stream.
- *
- * \tparam DataTypes data type set specifying `abstime_type` and `channel_type`
+ * As with all events' stream insertion operators, this is intended for unit
+ * testing.
  */
-template <typename DataTypes = default_data_types>
-struct detection_pair_event {
-    /**
-     * \brief The first detection event of the pair.
-     *
-     * In general, \c first.abstime is out of order.
-     */
-    detection_event<DataTypes> first;
-
-    /**
-     * \brief The second detection event of the pair.
-     *
-     * Usually, \c second.abstime is in order in the stream (check the
-     * documentation for the pairing processor producing the pair stream.)
-     */
-    detection_event<DataTypes> second;
-
-    /** \brief Equality comparison operator. */
-    friend auto operator==(detection_pair_event const &lhs,
-                           detection_pair_event const &rhs) noexcept -> bool {
-        return lhs.first == rhs.first && lhs.second == rhs.second;
-    }
-
-    /** \brief Inequality comparison operator. */
-    friend auto operator!=(detection_pair_event const &lhs,
-                           detection_pair_event const &rhs) noexcept -> bool {
-        return not(lhs == rhs);
-    }
-
-    /** \brief Stream insertion operator. */
-    friend auto operator<<(std::ostream &s, detection_pair_event const &e)
-        -> std::ostream & {
-        return s << "detection_pair(" << e.first << ", " << e.second << ')';
-    }
-};
+template <typename DataTypes>
+auto operator<<(std::ostream &s,
+                std::array<detection_event<DataTypes>, 2> const &e)
+    -> std::ostream & {
+    return s << "[" << e[0] << ", " << e[1] << ']';
+}
 
 } // namespace tcspc

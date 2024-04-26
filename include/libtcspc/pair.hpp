@@ -75,8 +75,8 @@ class pair_all {
             std::find(stop_chans.cbegin(), stop_chans.cend(), event.channel));
         if (std::size_t(chan_index) < NStopChannels) {
             starts.for_each([&](auto start_time) {
-                downstream.handle(detection_pair_event<DataTypes>{
-                    {start_time, start_chan}, event});
+                downstream.handle(std::array<detection_event<DataTypes>, 2>{
+                    {{start_time, start_chan}, event}});
             });
         }
         if (event.channel == start_chan)
@@ -148,8 +148,9 @@ class pair_one {
         if (chan_index < NStopChannels) {
             starts.for_each([&](start_and_flags &sf) {
                 if (not sf.stopped[chan_index]) {
-                    downstream.handle(detection_pair_event<DataTypes>{
-                        {sf.time, start_chan}, event});
+                    downstream.handle(
+                        std::array<detection_event<DataTypes>, 2>{
+                            {{sf.time, start_chan}, event}});
                     sf.stopped[chan_index] = true;
                 }
             });
@@ -217,8 +218,8 @@ class pair_all_between {
                               std::find(stop_chans.cbegin(), stop_chans.cend(),
                                         event.channel));
             if (std::size_t(chan_index) < NStopChannels) {
-                downstream.handle(detection_pair_event<DataTypes>{
-                    {*start, start_chan}, event});
+                downstream.handle(std::array<detection_event<DataTypes>, 2>{
+                    {{*start, start_chan}, event}});
             }
         }
         if (event.channel == start_chan)
@@ -290,8 +291,8 @@ class pair_one_between {
                               std::find(stop_chans.cbegin(), stop_chans.cend(),
                                         event.channel)));
             if (chan_index < NStopChannels && not start->stopped[chan_index]) {
-                downstream.handle(detection_pair_event<DataTypes>{
-                    {start->time, start_chan}, event});
+                downstream.handle(std::array<detection_event<DataTypes>, 2>{
+                    {{start->time, start_chan}, event}});
                 start->stopped[chan_index] = true;
             }
         }
@@ -318,10 +319,10 @@ class pair_one_between {
  * All events are passed through.
  *
  * Just before a `tcspc::detection_event` whose channel is one of the stop
- * channels (a stop event) is passed through, a `tcspc::detection_pair_event`
- * is emitted, pairing the stop event with every preceding
- * `tcspc::detection_event` on the start channel that is within \p time_window
- * of the stop event.
+ * channels (a stop event) is passed through,
+ * `std::array<detection_event<DataTypes>, 2>` is emitted, pairing the stop
+ * event with every preceding `tcspc::detection_event` on the start channel
+ * that is within \p time_window of the stop event.
  *
  * \tparam NStopChannels number of stop channels
  *
@@ -342,8 +343,8 @@ class pair_one_between {
  *
  * \par Events handled
  * - `tcspc::detection_event<DT>`: emit (as
- *   `tcspc::detection_pair_event<DataTypes>`) any pairs where the current
- *   event serves as the stop event; pass through
+ *   `tcspc::std::array<detection_event<DataTypes>, 2>`) any pairs where the
+ *   current event serves as the stop event; pass through
  * - All other types: pass through with no action
  * - Flush: pass through with no action
  */
@@ -368,11 +369,11 @@ auto pair_all(
  * All events are passed through.
  *
  * Just before a `tcspc::detection_event` whose channel is one of the stop
- * channels (a stop event) is passed through, a `tcspc::detection_pair_event`
- * is emitted, pairing the stop event with every preceding
- * `tcspc::detection_event` on the start channel that is within \p time_window
- * of the stop event and more recent than the previous stop event on the same
- * channel.
+ * channels (a stop event) is passed through,
+ * `std::array<detection_event<DataTypes>, 2>` is emitted, pairing the stop
+ * event with every preceding `tcspc::detection_event` on the start channel
+ * that is within \p time_window of the stop event and more recent than the
+ * previous stop event on the same channel.
  *
  * \tparam NStopChannels number of stop channels
  *
@@ -393,8 +394,8 @@ auto pair_all(
  *
  * \par Events handled
  * - `tcspc::detection_event<DT>`: emit  (as
- *   `tcspc::detection_pair_event<DataTypes>`) any pairs where the current
- *   event serves as the stop event; pass through
+ *   `tcspc::std::array<detection_event<DataTypes>, 2>`) any pairs where the
+ *   current event serves as the stop event; pass through
  * - All other types: pass through with no action
  * - Flush: pass through with no action
  */
@@ -419,10 +420,10 @@ auto pair_one(
  * All events are passed through.
  *
  * Just before a `tcspc::detection_event` whose channel is one of the stop
- * channels (a stop event) is passed through, a `tcspc::detection_pair_event`
- * is emitted, pairing the stop event with the most recent
- * `tcspc::detection_event` on the start channel, if there is one within \p
- * time_window of the stop event.
+ * channels (a stop event) is passed through,
+ * `std::array<detection_event<DataTypes>, 2>` is emitted, pairing the stop
+ * event with the most recent `tcspc::detection_event` on the start channel, if
+ * there is one within \p time_window of the stop event.
  *
  * \tparam NStopChannels number of stop channels
  *
@@ -443,8 +444,8 @@ auto pair_one(
  *
  * \par Events handled
  * - `tcspc::detection_event<DT>`: emit (as
- *   `tcspc::detection_pair_event<DataTypes>`), if any, the pair where the
- *   current event serves as the stop event; pass through
+ *   `tcspc::std::array<detection_event<DataTypes>, 2>`), if any, the pair
+ *   where the current event serves as the stop event; pass through
  * - All other types: pass through with no action
  * - Flush: pass through with no action
  */
@@ -469,11 +470,11 @@ auto pair_all_between(
  * All events are passed through.
  *
  * Just before a `tcspc::detection_event` whose channel is one of the stop
- * channels (a stop event) is passed through, a `tcspc::detection_pair_event`
- * is emitted, pairing the stop event with the most recent
- * `tcspc::detection_event` on the start channel, if there is one within \p
- * time_window of the stop event and more recent than the previous stop event
- * on the same channel.
+ * channels (a stop event) is passed through,
+ * `std::array<detection_event<DataTypes>, 2>` is emitted, pairing the stop
+ * event with the most recent `tcspc::detection_event` on the start channel, if
+ * there is one within \p time_window of the stop event and more recent than
+ * the previous stop event on the same channel.
  *
  * \tparam NStopChannels number of stop channels
  *
@@ -494,8 +495,8 @@ auto pair_all_between(
  *
  * \par Events handled
  * - `tcspc::detection_event<DT>`: emit (as
- *   `tcspc::detection_pair_event<DataTypes>`), if any, the pair where the
- *   current event serves as the stop event; pass through
+ *   `tcspc::std::array<detection_event<DataTypes>, 2>`), if any, the pair
+ *   where the current event serves as the stop event; pass through
  * - All other types: pass through with no action
  * - Flush: pass through with no action
  */

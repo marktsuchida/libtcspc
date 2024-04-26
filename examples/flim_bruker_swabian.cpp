@@ -210,7 +210,7 @@ auto make_processor(settings const &settings,
         settings.sync_channel,
         std::array{settings.photon_trailing_channel},
         settings.max_diff_time,
-    select<type_list<detection_pair_event<>>>(
+    select<type_list<std::array<detection_event<>, 2>>>(
     time_correlate_at_stop(
     std::move(tc_merge)))));
 
@@ -223,7 +223,7 @@ auto make_processor(settings const &settings,
         settings.photon_leading_channel,
         std::array{settings.photon_trailing_channel},
         settings.max_photon_pulse_width,
-    select<type_list<detection_pair_event<>>>(
+    select<type_list<std::array<detection_event<>, 2>>>(
     time_correlate_at_midpoint(
     remove_time_correlation(
     recover_order<type_list<detection_event<>>>(
