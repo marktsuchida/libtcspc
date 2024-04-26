@@ -31,13 +31,13 @@ class histogram {
   public:
     using bin_index_type = typename DataTypes::bin_index_type;
     using bin_type = typename DataTypes::bin_type;
-    static_assert(
-        is_any_of_v<OverflowPolicy, saturate_on_overflow, reset_on_overflow,
-                    stop_on_overflow, error_on_overflow>);
+    static_assert(is_any_of_v<OverflowPolicy, saturate_on_overflow_t,
+                              reset_on_overflow_t, stop_on_overflow_t,
+                              error_on_overflow_t>);
 
   private:
     using internal_overflow_policy = std::conditional_t<
-        std::is_same_v<OverflowPolicy, saturate_on_overflow>,
+        std::is_same_v<OverflowPolicy, saturate_on_overflow_t>,
         saturate_on_internal_overflow, stop_on_internal_overflow>;
 
     std::shared_ptr<bucket_source<bin_type>> bsource;
@@ -62,7 +62,7 @@ class histogram {
 
     void reset() {
         hist_bucket = {};
-        if constexpr (std::is_same_v<OverflowPolicy, saturate_on_overflow>) {
+        if constexpr (std::is_same_v<OverflowPolicy, saturate_on_overflow_t>) {
             saturated = false;
         }
     }
@@ -78,21 +78,21 @@ class histogram {
 
     LIBTCSPC_NOINLINE void
     handle_overflow(bin_increment_event<DataTypes> const &event) {
-        if constexpr (std::is_same_v<OverflowPolicy, saturate_on_overflow>) {
+        if constexpr (std::is_same_v<OverflowPolicy, saturate_on_overflow_t>) {
             downstream.handle(warning_event{"histogram saturated"});
         } else if constexpr (std::is_same_v<OverflowPolicy,
-                                            reset_on_overflow>) {
+                                            reset_on_overflow_t>) {
             if (shist.max_per_bin() == 0)
                 overflow_error();
             emit_concluding();
             reset();
             handle(event); // Recurse max once
         } else if constexpr (std::is_same_v<OverflowPolicy,
-                                            stop_on_overflow>) {
+                                            stop_on_overflow_t>) {
             emit_concluding();
             stop();
         } else if constexpr (std::is_same_v<OverflowPolicy,
-                                            error_on_overflow>) {
+                                            error_on_overflow_t>) {
             overflow_error();
         } else {
             static_assert(false_for_type<OverflowPolicy>::value);
@@ -129,7 +129,7 @@ class histogram {
         lazy_start();
         if (not shist.apply_increments({&event.bin_index, 1})) {
             if constexpr (std::is_same_v<OverflowPolicy,
-                                         saturate_on_overflow>) {
+                                         saturate_on_overflow_t>) {
                 if (not saturated) {
                     saturated = true;
                     handle_overflow(event);
@@ -212,16 +212,16 @@ class histogram {
  *   emit (const) `tcspc::histogram_event<DataTypes>`; if a bin overflowed,
  *   behavior (taken before emitting the histogram) depends on
  *   `OverflowPolicy`:
- *   - If `tcspc::saturate_on_overflow`, ignore the event, emitting
+ *   - If `tcspc::saturate_on_overflow_t`, ignore the event, emitting
  *     `tcspc::warning_event` only on the first overflow since the start or
  *     last reset
- *   - If `tcspc::reset_on_overflow`, behave as if a `ResetEvent` was received
- *     just prior to the current event; then reapply the current event (but
- *     throw `tcspc::histogram_overflow_error` if `max_per_bin` equals 0)
- *   - If `tcspc::stop_on_overflow`, behave as if a `ResetEvent` was received
+ *   - If `tcspc::reset_on_overflow_t`, behave as if a `ResetEvent` was
+ *     received just prior to the current event; then reapply the current event
+ *     (but throw `tcspc::histogram_overflow_error` if `max_per_bin` equals 0)
+ *   - If `tcspc::stop_on_overflow_t`, behave as if a `ResetEvent` was received
  *     instead of the current event; then flush the downstream and throw
  *     `tcspc::end_of_processing`
- *   - If `tcspc::error_on_overflow`, throw `tcspc::histogram_overflow_error`
+ *   - If `tcspc::error_on_overflow_t`, throw `tcspc::histogram_overflow_error`
  * - `ResetEvent`: emit (rvalue)
  *   `tcspc::concluding_histogram_event<DataTypes>` with the current
  *   histogram; then clear the histogram and other state

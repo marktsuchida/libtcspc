@@ -218,8 +218,8 @@ template <typename Downstream> auto null_source(Downstream &&downstream) {
  *
  * \ingroup overflow-strategies
  */
-struct saturate_on_overflow {
-    explicit saturate_on_overflow() = default;
+struct saturate_on_overflow_t {
+    explicit saturate_on_overflow_t() = default;
 };
 
 /**
@@ -228,8 +228,8 @@ struct saturate_on_overflow {
  *
  * \ingroup overflow-strategies
  */
-struct reset_on_overflow {
-    explicit reset_on_overflow() = default;
+struct reset_on_overflow_t {
+    explicit reset_on_overflow_t() = default;
 };
 
 /**
@@ -238,8 +238,8 @@ struct reset_on_overflow {
  *
  * \ingroup overflow-strategies
  */
-struct stop_on_overflow {
-    explicit stop_on_overflow() = default;
+struct stop_on_overflow_t {
+    explicit stop_on_overflow_t() = default;
 };
 
 /**
@@ -248,8 +248,8 @@ struct stop_on_overflow {
  *
  * \ingroup overflow-strategies
  */
-struct error_on_overflow {
-    explicit error_on_overflow() = default;
+struct error_on_overflow_t {
+    explicit error_on_overflow_t() = default;
 };
 
 namespace internal {

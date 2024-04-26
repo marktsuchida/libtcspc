@@ -30,12 +30,12 @@ class histogram_elementwise {
   public:
     using bin_index_type = typename DataTypes::bin_index_type;
     using bin_type = typename DataTypes::bin_type;
-    static_assert(
-        is_any_of_v<OverflowPolicy, saturate_on_overflow, error_on_overflow>);
+    static_assert(is_any_of_v<OverflowPolicy, saturate_on_overflow_t,
+                              error_on_overflow_t>);
 
   private:
     using internal_overflow_policy = std::conditional_t<
-        std::is_same_v<OverflowPolicy, saturate_on_overflow>,
+        std::is_same_v<OverflowPolicy, saturate_on_overflow_t>,
         saturate_on_internal_overflow, stop_on_internal_overflow>;
 
     std::shared_ptr<bucket_source<bin_type>> bsource;
@@ -46,10 +46,10 @@ class histogram_elementwise {
     Downstream downstream;
 
     LIBTCSPC_NOINLINE void handle_overflow() {
-        if constexpr (std::is_same_v<OverflowPolicy, saturate_on_overflow>) {
+        if constexpr (std::is_same_v<OverflowPolicy, saturate_on_overflow_t>) {
             downstream.handle(warning_event{"histogram array saturated"});
         } else if constexpr (std::is_same_v<OverflowPolicy,
-                                            error_on_overflow>) {
+                                            error_on_overflow_t>) {
             throw histogram_overflow_error("histogram array bin overflowed");
         } else {
             static_assert(false_for_type<OverflowPolicy>::value);
@@ -98,7 +98,7 @@ class histogram_elementwise {
         auto element_index = mhist.next_element_index();
         if (not mhist.apply_increment_batch(event.bin_indices, journal)) {
             if constexpr (std::is_same_v<OverflowPolicy,
-                                         saturate_on_overflow>) {
+                                         saturate_on_overflow_t>) {
                 if (not saturated) {
                     saturated = true;
                     handle_overflow();
@@ -118,7 +118,7 @@ class histogram_elementwise {
                 histogram_array_event<DataTypes>{std::move(hist_bucket)});
             hist_bucket = {};
             if constexpr (std::is_same_v<OverflowPolicy,
-                                         saturate_on_overflow>) {
+                                         saturate_on_overflow_t>) {
                 saturated = false;
             }
         }
@@ -185,9 +185,9 @@ class histogram_elementwise {
  *   element of the array, emit (rvalue)
  *   `tcspc::histogram_array_event<DataTypes>`; if a bin overflowed, behavior
  *   (taken before emitting the above events) depends on `OverflowPolicy`:
- *   - If `tcspc::saturate_on_overflow`, ignore the increment, emitting
+ *   - If `tcspc::saturate_on_overflow_t`, ignore the increment, emitting
  *     `tcspc::warning_event` only on the first overflow of the cycle
- *   - If `tcspc::error_on_overflow`, throw `tcspc::histogram_overflow_error`
+ *   - If `tcspc::error_on_overflow_t`, throw `tcspc::histogram_overflow_error`
  * - All other types: pass through with no action
  * - Flush: pass through with no action
  */
@@ -215,31 +215,32 @@ class histogram_elementwise_accumulate {
     using bin_index_type = typename DataTypes::bin_index_type;
     using bin_type = typename DataTypes::bin_type;
 
-    static_assert(
-        is_any_of_v<OverflowPolicy, saturate_on_overflow, reset_on_overflow,
-                    stop_on_overflow, error_on_overflow>);
+    static_assert(is_any_of_v<OverflowPolicy, saturate_on_overflow_t,
+                              reset_on_overflow_t, stop_on_overflow_t,
+                              error_on_overflow_t>);
 
     // EmitConcluding cannot be used with saturate-on-overflow because there is
     // no way to roll back the current cycle in the presense of lost counts due
     // to saturation.
-    static_assert(not(EmitConcluding &&
-                      std::is_same_v<OverflowPolicy, saturate_on_overflow>),
-                  "EmitConcluding is incompatible with saturate_on_overflow");
+    static_assert(
+        not(EmitConcluding &&
+            std::is_same_v<OverflowPolicy, saturate_on_overflow_t>),
+        "EmitConcluding is incompatible with saturate_on_overflow_t");
 
     // We require EmitConcluding for reset/stop-on-overflow, because it doesn't
     // make much sense to use those overflow policies without the
     // cycle-atomic concluding array event. I don't want to increase unit test
     // code to test such cases, so disallow.
     static_assert(EmitConcluding ||
-                      not is_any_of_v<reset_on_overflow, stop_on_overflow>,
+                      not is_any_of_v<reset_on_overflow_t, stop_on_overflow_t>,
                   "EmitConcluding must be true for this overflow policy");
 
   private:
     using internal_overflow_policy = std::conditional_t<
-        std::is_same_v<OverflowPolicy, saturate_on_overflow>,
+        std::is_same_v<OverflowPolicy, saturate_on_overflow_t>,
         saturate_on_internal_overflow, stop_on_internal_overflow>;
     static constexpr bool need_journal =
-        EmitConcluding || std::is_same_v<OverflowPolicy, reset_on_overflow>;
+        EmitConcluding || std::is_same_v<OverflowPolicy, reset_on_overflow_t>;
     using journal_type =
         std::conditional_t<need_journal,
                            bin_increment_batch_journal<bin_index_type>,
@@ -280,10 +281,10 @@ class histogram_elementwise_accumulate {
 
     LIBTCSPC_NOINLINE void
     handle_overflow(bin_increment_batch_event<DataTypes> const &event) {
-        if constexpr (std::is_same_v<OverflowPolicy, saturate_on_overflow>) {
+        if constexpr (std::is_same_v<OverflowPolicy, saturate_on_overflow_t>) {
             downstream.handle(warning_event{"histogram array saturated"});
         } else if constexpr (std::is_same_v<OverflowPolicy,
-                                            reset_on_overflow>) {
+                                            reset_on_overflow_t>) {
             if (mhista.cycle_index() == 0) {
                 overflow_error(
                     "histogram array bin overflowed on a single batch");
@@ -297,14 +298,14 @@ class histogram_elementwise_accumulate {
             mhista.replay(journal);
             return handle(event); // Recurse max once
         } else if constexpr (std::is_same_v<OverflowPolicy,
-                                            stop_on_overflow>) {
+                                            stop_on_overflow_t>) {
             if constexpr (EmitConcluding) {
                 mhista.roll_back_current_cycle(journal);
                 emit_concluding();
             }
             stop();
         } else if constexpr (std::is_same_v<OverflowPolicy,
-                                            error_on_overflow>) {
+                                            error_on_overflow_t>) {
             overflow_error("histogram array bin overflowed");
         } else {
             static_assert(false_for_type<OverflowPolicy>::value);
@@ -349,7 +350,7 @@ class histogram_elementwise_accumulate {
         auto element_index = mhista.next_element_index();
         if (not mhista.apply_increment_batch(event.bin_indices, journal)) {
             if constexpr (std::is_same_v<OverflowPolicy,
-                                         saturate_on_overflow>) {
+                                         saturate_on_overflow_t>) {
                 if (not saturated) {
                     saturated = true;
                     handle_overflow(event);
@@ -379,7 +380,7 @@ class histogram_elementwise_accumulate {
             emit_concluding();
         }
         hist_bucket = {};
-        if constexpr (std::is_same_v<OverflowPolicy, saturate_on_overflow>) {
+        if constexpr (std::is_same_v<OverflowPolicy, saturate_on_overflow_t>) {
             saturated = false;
         }
         journal.clear();
@@ -469,17 +470,18 @@ class histogram_elementwise_accumulate {
  *   last element of the array, emit (rvalue)
  *   `tcspc::histogram_array_event<DataTypes>`; if a bin overflowed, behavior
  *   (taken before emitting the above events) depends on `OverflowPolicy`:
- *   - If `tcspc::saturate_on_overflow`, ignore the increment, emitting
+ *   - If `tcspc::saturate_on_overflow_t`, ignore the increment, emitting
  *     `tcspc::warning_event` only on the first overflow of the current round
  *     of accumulation
- *   - If `tcspc::reset_on_overflow`, behave as if a `ResetEvent` was received
- *     just prior to the current event; then replay any partial cycle that was
- *     rolled back during the reset and reapply the current event (but throw
- *     `tcspc::histogram_overflow_error` if this causes an overflow by itself)
- *   - If `tcspc::stop_on_overflow`, behave as if a `ResetEvent` was received
+ *   - If `tcspc::reset_on_overflow_t`, behave as if a `ResetEvent` was
+ *     received just prior to the current event; then replay any partial cycle
+ *     that was rolled back during the reset and reapply the current event (but
+ *     throw `tcspc::histogram_overflow_error` if this causes an overflow by
+ *     itself)
+ *   - If `tcspc::stop_on_overflow_t`, behave as if a `ResetEvent` was received
  *     instead of the current event; then flush the downstream and throw
  *     `tcspc::end_of_processing`
- *   - If `tcspc::error_on_overflow`, throw `tcspc::histogram_overflow_error`
+ *   - If `tcspc::error_on_overflow_t`, throw `tcspc::histogram_overflow_error`
  * - `ResetEvent`: if `EmitConcluding` is true, emit (rvalue)
  *   `tcspc::concluding_histogram_array_event<DataTypes>` with the current
  *   histogram array (after rolling back any partial cycle); then clear the

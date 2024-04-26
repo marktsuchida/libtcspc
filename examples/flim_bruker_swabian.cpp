@@ -150,8 +150,8 @@ auto make_histo_proc(settings const &settings,
         binary_file_output_stream(settings.output_filename, settings.truncate),
         recycling_bucket_source<std::byte>::create(), 65536);
     if constexpr (Cumulative) {
-        return histogram_elementwise_accumulate<never_event, error_on_overflow,
-                                                true>(
+        return histogram_elementwise_accumulate<never_event,
+                                                error_on_overflow_t, true>(
             arg_num_elements{settings.pixels_per_line *
                              settings.lines_per_frame},
             arg_num_bins{std::size_t(settings.max_bin_index) + 1},
@@ -162,7 +162,7 @@ auto make_histo_proc(settings const &settings,
                     extract_bucket<concluding_histogram_array_event<>>(
                         view_as_bytes(std::move(writer))))));
     } else {
-        return histogram_elementwise<error_on_overflow>(
+        return histogram_elementwise<error_on_overflow_t>(
             arg_num_elements{settings.pixels_per_line *
                              settings.lines_per_frame},
             arg_num_bins{std::size_t(settings.max_bin_index) + 1},
