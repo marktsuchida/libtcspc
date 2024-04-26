@@ -115,9 +115,9 @@ TEST_CASE("Generate linear timing") {
     SECTION("Count of 0") {
         auto in = feed_input<type_list<trigger_event>>(
             generate<trigger_event, output_event>(
-                linear_timing_generator(arg_delay{delay},
-                                        arg_interval{interval},
-                                        arg_count<std::size_t>{0}),
+                linear_timing_generator(arg::delay{delay},
+                                        arg::interval{interval},
+                                        arg::count<std::size_t>{0}),
                 capture_output<out_events>(
                     ctx->tracker<capture_output_access>("out"))));
         in.require_output_checked(ctx, "out");
@@ -135,9 +135,9 @@ TEST_CASE("Generate linear timing") {
     SECTION("Count of 1") {
         auto in = feed_input<type_list<trigger_event, misc_event>>(
             generate<trigger_event, output_event>(
-                linear_timing_generator(arg_delay{delay},
-                                        arg_interval{interval},
-                                        arg_count<std::size_t>{1}),
+                linear_timing_generator(arg::delay{delay},
+                                        arg::interval{interval},
+                                        arg::count<std::size_t>{1}),
                 capture_output<out_events>(
                     ctx->tracker<capture_output_access>("out"))));
         in.require_output_checked(ctx, "out");
@@ -170,9 +170,9 @@ TEST_CASE("Generate linear timing") {
     SECTION("Count of 2") {
         auto in = feed_input<type_list<trigger_event, misc_event>>(
             generate<trigger_event, output_event>(
-                linear_timing_generator(arg_delay{delay},
-                                        arg_interval{interval},
-                                        arg_count<std::size_t>{2}),
+                linear_timing_generator(arg::delay{delay},
+                                        arg::interval{interval},
+                                        arg::count<std::size_t>{2}),
                 capture_output<out_events>(
                     ctx->tracker<capture_output_access>("out"))));
         in.require_output_checked(ctx, "out");

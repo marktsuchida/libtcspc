@@ -10,6 +10,12 @@
 
 namespace tcspc {
 
+/**
+ * \brief Argument wrappers
+ * \ingroup arg-wrappers
+ */
+namespace arg {
+
 // Function argument wrappers for strong typing (avoiding mistakes with
 // otherwise easily swappable parameters). Each has a constructor for two
 // reasons: (1) To avoid default-constructing without initializing the value
@@ -18,167 +24,154 @@ namespace tcspc {
 
 /**
  * \brief Function argument wrapper for abstime parameter.
- * \ingroup arg-wrappers
  */
-template <typename T> struct arg_abstime {
+template <typename T> struct abstime {
     /** \brief The argument value. */
     T value;
     /** \brief Construct by wrapping a value. */
-    explicit arg_abstime(T arg) : value(arg) {}
+    explicit abstime(T arg) : value(arg) {}
 };
 
 /**
  * \brief Function argument wrapper for bin width parameter.
- * \ingroup arg-wrappers
  */
-template <typename T> struct arg_bin_width {
+template <typename T> struct bin_width {
     /** \brief The argument value. */
     T value;
     /** \brief Construct by wrapping a value. */
-    explicit arg_bin_width(T arg) : value(arg) {}
+    explicit bin_width(T arg) : value(arg) {}
 };
 
 /**
  * \brief Function argument wrapper for count parameter.
- * \ingroup arg-wrappers
  */
-template <typename T> struct arg_count {
+template <typename T> struct count {
     /** \brief The argument value. */
     T value;
     /** \brief Construct by wrapping a value. */
-    explicit arg_count(T arg) : value(arg) {}
+    explicit count(T arg) : value(arg) {}
 };
 
 /**
  * \brief Function argument wrapper for delay parameter.
- * \ingroup arg-wrappers
  */
-template <typename T> struct arg_delay {
+template <typename T> struct delay {
     /** \brief The argument value. */
     T value;
     /** \brief Construct by wrapping a value. */
-    explicit arg_delay(T arg) : value(arg) {}
+    explicit delay(T arg) : value(arg) {}
 };
 
 /**
  * \brief Function argument wrapper for initial count parameter.
- * \ingroup arg-wrappers
  */
-template <typename T> struct arg_initial_count {
+template <typename T> struct initial_count {
     /** \brief The argument value. */
     T value;
     /** \brief Construct by wrapping a value. */
-    explicit arg_initial_count(T arg) : value(arg) {}
+    explicit initial_count(T arg) : value(arg) {}
 };
 
 /**
  * \brief Function argument wrapper for interval parameter.
- * \ingroup arg-wrappers
  */
-template <typename T> struct arg_interval {
+template <typename T> struct interval {
     /** \brief The argument value. */
     T value;
     /** \brief Construct by wrapping a value. */
-    explicit arg_interval(T arg) : value(arg) {}
+    explicit interval(T arg) : value(arg) {}
 };
 
 /**
  * \brief Function argument wrapper for limit parameter.
- * \ingroup arg-wrappers
  */
-template <typename T> struct arg_limit {
+template <typename T> struct limit {
     /** \brief The argument value. */
     T value;
     /** \brief Construct by wrapping a value. */
-    explicit arg_limit(T arg) : value(arg) {}
+    explicit limit(T arg) : value(arg) {}
 };
 
 /**
  * \brief Function argument wrapper for maximum bin index parameter.
- * \ingroup arg-wrappers
  */
-template <typename T> struct arg_max_bin_index {
+template <typename T> struct max_bin_index {
     /** \brief The argument value. */
     T value;
     /** \brief Construct by wrapping a value. */
-    explicit arg_max_bin_index(T arg) : value(arg) {}
+    explicit max_bin_index(T arg) : value(arg) {}
 };
 
 /**
  * \brief Function argument wrapper for maximum bin value.
- * \ingroup arg-wrappers
  */
-template <typename T> struct arg_max_per_bin {
+template <typename T> struct max_per_bin {
     /** \brief The argument value. */
     T value;
     /** \brief Construct by wrapping a value. */
-    explicit arg_max_per_bin(T arg) : value(arg) {}
+    explicit max_per_bin(T arg) : value(arg) {}
 };
 
 /**
  * \brief Function argument wrapper for number of bins parameter.
- * \ingroup arg-wrappers
  */
-template <typename T = std::size_t> struct arg_num_bins {
+template <typename T = std::size_t> struct num_bins {
     /** \brief The argument value. */
     T value;
     /** \brief Construct by wrapping a value. */
-    explicit arg_num_bins(T arg) : value(arg) {}
+    explicit num_bins(T arg) : value(arg) {}
 };
 
 /**
  * \brief Function argument wrapper for number of elements parameter.
- * \ingroup arg-wrappers
  */
-template <typename T = std::size_t> struct arg_num_elements {
+template <typename T = std::size_t> struct num_elements {
     /** \brief The argument value. */
     T value;
     /** \brief Construct by wrapping a value. */
-    explicit arg_num_elements(T arg) : value(arg) {}
+    explicit num_elements(T arg) : value(arg) {}
 };
 
 /**
  * \brief Function argument wrapper for offset parameter.
- * \ingroup arg-wrappers
  */
-template <typename T> struct arg_offset {
+template <typename T> struct offset {
     /** \brief The argument value. */
     T value;
     /** \brief Construct by wrapping a value. */
-    explicit arg_offset(T arg) : value(arg) {}
+    explicit offset(T arg) : value(arg) {}
 };
 
 /**
  * \brief Function argument wrapper for start parameter.
- * \ingroup arg-wrappers
  */
-template <typename T> struct arg_start {
+template <typename T> struct start {
     /** \brief The argument value. */
     T value;
     /** \brief Construct by wrapping a value. */
-    explicit arg_start(T arg) : value(arg) {}
+    explicit start(T arg) : value(arg) {}
 };
 
 /**
  * \brief Function argument wrapper for stop parameter.
- * \ingroup arg-wrappers
  */
-template <typename T> struct arg_stop {
+template <typename T> struct stop {
     /** \brief The argument value. */
     T value;
     /** \brief Construct by wrapping a value. */
-    explicit arg_stop(T arg) : value(arg) {}
+    explicit stop(T arg) : value(arg) {}
 };
 
 /**
  * \brief Function argument wrapper for threshold parameter.
- * \ingroup arg-wrappers
  */
-template <typename T> struct arg_threshold {
+template <typename T> struct threshold {
     /** \brief The argument value. */
     T value;
     /** \brief Construct by wrapping a value. */
-    explicit arg_threshold(T arg) : value(arg) {}
+    explicit threshold(T arg) : value(arg) {}
 };
+
+} // namespace arg
 
 } // namespace tcspc

@@ -215,8 +215,8 @@ template <typename Abstime> class dithered_linear_timing_generator_impl {
     dithered_linear_timing_generator_impl() = default;
 
     explicit dithered_linear_timing_generator_impl(
-        arg_delay<double> delay, arg_interval<double> interval,
-        arg_count<std::size_t> count)
+        arg::delay<double> delay, arg::interval<double> interval,
+        arg::count<std::size_t> count)
         : dly(delay.value), intv(interval.value), ct(count.value) {
         if (dly < 0.0)
             throw std::invalid_argument(
@@ -226,16 +226,16 @@ template <typename Abstime> class dithered_linear_timing_generator_impl {
                 "dithered timing generator interval must be positive");
     }
 
-    void trigger(arg_abstime<Abstime> abstime) {
+    void trigger(arg::abstime<Abstime> abstime) {
         trigger_time = abstime.value;
         remaining = ct;
         compute_next();
     }
 
-    void trigger_and_configure(arg_abstime<Abstime> abstime,
-                               arg_delay<double> delay,
-                               arg_interval<double> interval,
-                               arg_count<std::size_t> count) {
+    void trigger_and_configure(arg::abstime<Abstime> abstime,
+                               arg::delay<double> delay,
+                               arg::interval<double> interval,
+                               arg::count<std::size_t> count) {
         dly = delay.value;
         intv = interval.value;
         ct = count.value;
@@ -277,16 +277,16 @@ class dithered_linear_timing_generator {
      *
      * \p delay must be nonnegative; \p interval must be positive.
      */
-    explicit dithered_linear_timing_generator(arg_delay<double> delay,
-                                              arg_interval<double> interval,
-                                              arg_count<std::size_t> count)
+    explicit dithered_linear_timing_generator(arg::delay<double> delay,
+                                              arg::interval<double> interval,
+                                              arg::count<std::size_t> count)
         : impl(delay, interval, count) {}
 
     /** \brief Implements timing generator requirement. */
     template <typename TriggerEvent> void trigger(TriggerEvent const &event) {
         static_assert(std::is_same_v<decltype(event.abstime),
                                      typename DataTypes::abstime_type>);
-        impl.trigger(arg_abstime{event.abstime});
+        impl.trigger(arg::abstime{event.abstime});
     }
 
     /** \brief Implements timing generator requirement. */
@@ -323,8 +323,8 @@ class dynamic_dithered_linear_timing_generator {
         static_assert(std::is_same_v<decltype(event.abstime),
                                      typename DataTypes::abstime_type>);
         impl.trigger_and_configure(
-            arg_abstime{event.abstime}, arg_delay{event.delay},
-            arg_interval{event.interval}, arg_count{event.count});
+            arg::abstime{event.abstime}, arg::delay{event.delay},
+            arg::interval{event.interval}, arg::count{event.count});
     }
 
     /** \brief Implements timing generator requirement. */

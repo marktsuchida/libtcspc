@@ -155,10 +155,10 @@ auto make_histo_proc(settings const &settings,
             reset_event{}, // Reset before flush to get concluding array.
             histogram_elementwise_accumulate<reset_event>(
                 error_on_overflow,
-                arg_num_elements{settings.pixels_per_line *
-                                 settings.lines_per_frame},
-                arg_num_bins{std::size_t(settings.max_bin_index) + 1},
-                arg_max_per_bin<u16>{65535}, bsource,
+                arg::num_elements{settings.pixels_per_line *
+                                  settings.lines_per_frame},
+                arg::num_bins{std::size_t(settings.max_bin_index) + 1},
+                arg::max_per_bin<u16>{65535}, bsource,
                 count<histogram_array_event<>>(
                     ctx->tracker<count_access>("frame_counter"),
                     select<type_list<concluding_histogram_array_event<>>>(
@@ -167,10 +167,10 @@ auto make_histo_proc(settings const &settings,
     } else {
         return histogram_elementwise(
             error_on_overflow,
-            arg_num_elements{settings.pixels_per_line *
-                             settings.lines_per_frame},
-            arg_num_bins{std::size_t(settings.max_bin_index) + 1},
-            arg_max_per_bin<u16>{65535}, bsource,
+            arg::num_elements{settings.pixels_per_line *
+                              settings.lines_per_frame},
+            arg::num_bins{std::size_t(settings.max_bin_index) + 1},
+            arg::max_per_bin<u16>{65535}, bsource,
             count<histogram_array_event<>>(
                 ctx->tracker<count_access>("frame_counter"),
                 select<type_list<histogram_array_event<>>>(
@@ -196,9 +196,9 @@ auto make_processor(settings const &settings,
         difftime_data_mapper(),
     map_to_bins(
         linear_bin_mapper(
-            arg_offset{0},
-            arg_bin_width{settings.bin_width},
-            arg_max_bin_index{settings.max_bin_index}),
+            arg::offset{0},
+            arg::bin_width{settings.bin_width},
+            arg::max_bin_index{settings.max_bin_index}),
     batch_bin_increments<pixel_start_event, pixel_stop_event>(
     count<bin_increment_batch_event<>>(
         ctx->tracker<count_access>("pixel_counter"),

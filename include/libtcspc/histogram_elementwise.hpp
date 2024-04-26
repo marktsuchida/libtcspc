@@ -58,9 +58,9 @@ class histogram_elementwise {
 
   public:
     explicit histogram_elementwise(
-        arg_num_elements<std::size_t> num_elements,
-        arg_num_bins<std::size_t> num_bins,
-        arg_max_per_bin<bin_type> max_per_bin,
+        arg::num_elements<std::size_t> num_elements,
+        arg::num_bins<std::size_t> num_bins,
+        arg::max_per_bin<bin_type> max_per_bin,
         std::shared_ptr<bucket_source<bin_type>> buffer_provider,
         Downstream downstream)
         : bsource(std::move(buffer_provider)),
@@ -194,9 +194,9 @@ template <typename DataTypes = default_data_types, typename OverflowPolicy,
           typename Downstream>
 auto histogram_elementwise(
     [[maybe_unused]] OverflowPolicy const &policy,
-    arg_num_elements<std::size_t> num_elements,
-    arg_num_bins<std::size_t> num_bins,
-    arg_max_per_bin<typename DataTypes::bin_type> max_per_bin,
+    arg::num_elements<std::size_t> num_elements,
+    arg::num_bins<std::size_t> num_bins,
+    arg::max_per_bin<typename DataTypes::bin_type> max_per_bin,
     std::shared_ptr<bucket_source<typename DataTypes::bin_type>>
         buffer_provider,
     Downstream &&downstream) {
@@ -314,9 +314,9 @@ class histogram_elementwise_accumulate {
 
   public:
     explicit histogram_elementwise_accumulate(
-        arg_num_elements<std::size_t> num_elements,
-        arg_num_bins<std::size_t> num_bins,
-        arg_max_per_bin<bin_type> max_per_bin,
+        arg::num_elements<std::size_t> num_elements,
+        arg::num_bins<std::size_t> num_bins,
+        arg::max_per_bin<bin_type> max_per_bin,
         std::shared_ptr<bucket_source<bin_type>> buffer_provider,
         Downstream downstream)
         : bsource(std::move(buffer_provider)),
@@ -485,9 +485,9 @@ template <typename ResetEvent, typename DataTypes = default_data_types,
           typename Policy, typename Downstream>
 auto histogram_elementwise_accumulate(
     [[maybe_unused]] Policy const &policy,
-    arg_num_elements<std::size_t> num_elements,
-    arg_num_bins<std::size_t> num_bins,
-    arg_max_per_bin<typename DataTypes::bin_type> max_per_bin,
+    arg::num_elements<std::size_t> num_elements,
+    arg::num_bins<std::size_t> num_bins,
+    arg::max_per_bin<typename DataTypes::bin_type> max_per_bin,
     std::shared_ptr<bucket_source<typename DataTypes::bin_type>>
         buffer_provider,
     Downstream &&downstream) {

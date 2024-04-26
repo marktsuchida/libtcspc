@@ -111,7 +111,7 @@ TEST_CASE("dithered linear timing generator",
     bool seen_t01_10 = false;
     bool seen_t01_11 = false;
     auto tg = dithered_linear_timing_generator(
-        arg_delay{0.5}, arg_interval{10.25}, arg_count<std::size_t>{2});
+        arg::delay{0.5}, arg::interval{10.25}, arg::count<std::size_t>{2});
     for (std::size_t i = 0; i < 5; ++i) { // 5 is the sharp minimum to pass.
         CHECK_FALSE(tg.peek().has_value());
         tg.trigger(trigger_event{42});

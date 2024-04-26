@@ -101,8 +101,8 @@ class histogram {
 
   public:
     explicit histogram(
-        arg_num_bins<std::size_t> num_bins,
-        arg_max_per_bin<bin_type> max_per_bin,
+        arg::num_bins<std::size_t> num_bins,
+        arg::max_per_bin<bin_type> max_per_bin,
         std::shared_ptr<bucket_source<bin_type>> buffer_provider,
         Downstream downstream)
         : bsource(std::move(buffer_provider)),
@@ -227,8 +227,8 @@ class histogram {
 template <typename ResetEvent, typename DataTypes = default_data_types,
           typename OverflowPolicy, typename Downstream>
 auto histogram([[maybe_unused]] OverflowPolicy const &policy,
-               arg_num_bins<std::size_t> num_bins,
-               arg_max_per_bin<typename DataTypes::bin_type> max_per_bin,
+               arg::num_bins<std::size_t> num_bins,
+               arg::max_per_bin<typename DataTypes::bin_type> max_per_bin,
                std::shared_ptr<bucket_source<typename DataTypes::bin_type>>
                    buffer_provider,
                Downstream &&downstream) {

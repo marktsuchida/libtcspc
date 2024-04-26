@@ -332,10 +332,10 @@ template <typename DataTypes = default_data_types> class linear_bin_mapper {
      * \param clamp if true, include datapoints outside of the mapped range in
      * the first and last bins
      */
-    explicit linear_bin_mapper(arg_offset<datapoint_type> offset,
-                               arg_bin_width<datapoint_type> bin_width,
-                               arg_max_bin_index<bin_index_type> max_bin_index,
-                               bool clamp = false)
+    explicit linear_bin_mapper(
+        arg::offset<datapoint_type> offset,
+        arg::bin_width<datapoint_type> bin_width,
+        arg::max_bin_index<bin_index_type> max_bin_index, bool clamp = false)
         : off(offset.value), bwidth(bin_width.value),
           max_index(max_bin_index.value), clamp(clamp) {
         if (bwidth == 0)

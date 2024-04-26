@@ -30,9 +30,9 @@ class count_up_to {
     Downstream downstream;
 
   public:
-    explicit count_up_to(arg_threshold<std::uint64_t> threshold,
-                         arg_limit<std::uint64_t> limit,
-                         arg_initial_count<std::uint64_t> initial_count,
+    explicit count_up_to(arg::threshold<std::uint64_t> threshold,
+                         arg::limit<std::uint64_t> limit,
+                         arg::initial_count<std::uint64_t> initial_count,
                          Downstream downstream)
         : count(initial_count.value), init(initial_count.value),
           thresh(threshold.value), lmt(limit.value),
@@ -155,9 +155,9 @@ class count_up_to {
  */
 template <typename TickEvent, typename FireEvent, typename ResetEvent,
           bool FireAfterTick, typename Downstream>
-auto count_up_to(arg_threshold<std::uint64_t> threshold,
-                 arg_limit<std::uint64_t> limit,
-                 arg_initial_count<std::uint64_t> initial_count,
+auto count_up_to(arg::threshold<std::uint64_t> threshold,
+                 arg::limit<std::uint64_t> limit,
+                 arg::initial_count<std::uint64_t> initial_count,
                  Downstream &&downstream) {
     return internal::count_up_to<TickEvent, FireEvent, ResetEvent,
                                  FireAfterTick, Downstream>(
@@ -177,9 +177,9 @@ auto count_up_to(arg_threshold<std::uint64_t> threshold,
  */
 template <typename TickEvent, typename FireEvent, typename ResetEvent,
           bool FireAfterTick, typename Downstream>
-auto count_down_to(arg_threshold<std::uint64_t> threshold,
-                   arg_limit<std::uint64_t> limit,
-                   arg_initial_count<std::uint64_t> initial_count,
+auto count_down_to(arg::threshold<std::uint64_t> threshold,
+                   arg::limit<std::uint64_t> limit,
+                   arg::initial_count<std::uint64_t> initial_count,
                    Downstream &&downstream) {
     // Alter parameters to emulate count down using count up.
     if (limit.value >= initial_count.value)

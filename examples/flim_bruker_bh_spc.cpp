@@ -103,9 +103,9 @@ auto make_histo_proc(settings const &settings,
             reset_event{}, // Reset before flush to get concluding array.
             histogram_elementwise_accumulate<reset_event>(
                 error_on_overflow,
-                arg_num_elements{settings.pixels_per_line *
-                                 settings.lines_per_frame},
-                arg_num_bins<std::size_t>{256}, arg_max_per_bin<u16>{65535},
+                arg::num_elements{settings.pixels_per_line *
+                                  settings.lines_per_frame},
+                arg::num_bins<std::size_t>{256}, arg::max_per_bin<u16>{65535},
                 bsource,
                 count<histogram_array_event<>>(
                     ctx->tracker<count_access>("frame_counter"),
@@ -115,9 +115,9 @@ auto make_histo_proc(settings const &settings,
     } else {
         return histogram_elementwise(
             error_on_overflow,
-            arg_num_elements{settings.pixels_per_line *
-                             settings.lines_per_frame},
-            arg_num_bins<std::size_t>{256}, arg_max_per_bin<u16>{65535},
+            arg::num_elements{settings.pixels_per_line *
+                              settings.lines_per_frame},
+            arg::num_bins<std::size_t>{256}, arg::max_per_bin<u16>{65535},
             bsource,
             count<histogram_array_event<>>(
                 ctx->tracker<count_access>("frame_counter"),

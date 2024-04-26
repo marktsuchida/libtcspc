@@ -271,9 +271,9 @@ class linear_timing_generator {
      * \p delay must be nonnegative; \p interval must be positive.
      */
     explicit linear_timing_generator(
-        arg_delay<typename DataTypes::abstime_type> delay,
-        arg_interval<typename DataTypes::abstime_type> interval,
-        arg_count<std::size_t> count)
+        arg::delay<typename DataTypes::abstime_type> delay,
+        arg::interval<typename DataTypes::abstime_type> interval,
+        arg::count<std::size_t> count)
         : dly(delay.value), intval(interval.value), ct(count.value) {
         if (dly < 0)
             throw std::invalid_argument(
