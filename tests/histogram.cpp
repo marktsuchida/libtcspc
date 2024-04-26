@@ -45,10 +45,10 @@ template <typename T> auto tmp_bucket(T &v) {
 } // namespace
 
 TEST_CASE("introspect histogram", "[introspect]") {
-    check_introspect_simple_processor(
-        histogram<reset_event, saturate_on_overflow_t>(
-            arg_num_bins<std::size_t>{1}, arg_max_per_bin<u16>{255},
-            new_delete_bucket_source<u16>::create(), null_sink()));
+    check_introspect_simple_processor(histogram<reset_event>(
+        saturate_on_overflow, arg_num_bins<std::size_t>{1},
+        arg_max_per_bin<u16>{255}, new_delete_bucket_source<u16>::create(),
+        null_sink()));
 }
 
 TEMPLATE_TEST_CASE("Histogram, no overflow", "", saturate_on_overflow_t,
@@ -60,8 +60,9 @@ TEMPLATE_TEST_CASE("Histogram, no overflow", "", saturate_on_overflow_t,
     auto ctx = context::create();
     auto in =
         feed_input<type_list<bin_increment_event<data_types>, reset_event>>(
-            histogram<reset_event, TestType, data_types>(
-                arg_num_bins<std::size_t>{2}, arg_max_per_bin<u16>{100},
+            histogram<reset_event, data_types>(
+                TestType{}, arg_num_bins<std::size_t>{2},
+                arg_max_per_bin<u16>{100},
                 new_delete_bucket_source<u16>::create(),
                 capture_output<out_events>(
                     ctx->tracker<capture_output_access>("out"))));
@@ -99,8 +100,9 @@ TEST_CASE("Histogram, saturate on overflow") {
     SECTION("Max per bin = 0") {
         auto in = feed_input<
             type_list<bin_increment_event<data_types>, reset_event>>(
-            histogram<reset_event, saturate_on_overflow_t, data_types>(
-                arg_num_bins<std::size_t>{1}, arg_max_per_bin<u16>{0},
+            histogram<reset_event, data_types>(
+                saturate_on_overflow, arg_num_bins<std::size_t>{1},
+                arg_max_per_bin<u16>{0},
                 new_delete_bucket_source<u16>::create(),
                 capture_output<out_events>(
                     ctx->tracker<capture_output_access>("out"))));
@@ -123,8 +125,9 @@ TEST_CASE("Histogram, saturate on overflow") {
     SECTION("Max per bin = 1") {
         auto in = feed_input<
             type_list<bin_increment_event<data_types>, reset_event>>(
-            histogram<reset_event, saturate_on_overflow_t, data_types>(
-                arg_num_bins<std::size_t>{1}, arg_max_per_bin<u16>{1},
+            histogram<reset_event, data_types>(
+                saturate_on_overflow, arg_num_bins<std::size_t>{1},
+                arg_max_per_bin<u16>{1},
                 new_delete_bucket_source<u16>::create(),
                 capture_output<out_events>(
                     ctx->tracker<capture_output_access>("out"))));
@@ -163,8 +166,9 @@ TEST_CASE("Histogram, reset on overflow") {
     SECTION("Max per bin = 0") {
         auto in = feed_input<
             type_list<bin_increment_event<data_types>, reset_event>>(
-            histogram<reset_event, reset_on_overflow_t, data_types>(
-                arg_num_bins<std::size_t>{1}, arg_max_per_bin<u16>{0},
+            histogram<reset_event, data_types>(
+                reset_on_overflow, arg_num_bins<std::size_t>{1},
+                arg_max_per_bin<u16>{0},
                 new_delete_bucket_source<u16>::create(),
                 capture_output<out_events>(
                     ctx->tracker<capture_output_access>("out"))));
@@ -180,8 +184,9 @@ TEST_CASE("Histogram, reset on overflow") {
     SECTION("Max per bin = 1") {
         auto in = feed_input<
             type_list<bin_increment_event<data_types>, reset_event>>(
-            histogram<reset_event, reset_on_overflow_t, data_types>(
-                arg_num_bins<std::size_t>{1}, arg_max_per_bin<u16>{1},
+            histogram<reset_event, data_types>(
+                reset_on_overflow, arg_num_bins<std::size_t>{1},
+                arg_max_per_bin<u16>{1},
                 new_delete_bucket_source<u16>::create(),
                 capture_output<out_events>(
                     ctx->tracker<capture_output_access>("out"))));
@@ -216,8 +221,9 @@ TEST_CASE("Histogram, stop on overflow") {
     SECTION("Max per bin = 0") {
         auto in = feed_input<
             type_list<bin_increment_event<data_types>, reset_event>>(
-            histogram<reset_event, stop_on_overflow_t, data_types>(
-                arg_num_bins<std::size_t>{1}, arg_max_per_bin<u16>{0},
+            histogram<reset_event, data_types>(
+                stop_on_overflow, arg_num_bins<std::size_t>{1},
+                arg_max_per_bin<u16>{0},
                 new_delete_bucket_source<u16>::create(),
                 capture_output<out_events>(
                     ctx->tracker<capture_output_access>("out"))));
@@ -236,8 +242,9 @@ TEST_CASE("Histogram, stop on overflow") {
     SECTION("Max per bin = 1") {
         auto in = feed_input<
             type_list<bin_increment_event<data_types>, reset_event>>(
-            histogram<reset_event, stop_on_overflow_t, data_types>(
-                arg_num_bins<std::size_t>{1}, arg_max_per_bin<u16>{1},
+            histogram<reset_event, data_types>(
+                stop_on_overflow, arg_num_bins<std::size_t>{1},
+                arg_max_per_bin<u16>{1},
                 new_delete_bucket_source<u16>::create(),
                 capture_output<out_events>(
                     ctx->tracker<capture_output_access>("out"))));
@@ -265,8 +272,9 @@ TEST_CASE("Histogram, error on overflow") {
     SECTION("Max per bin = 0") {
         auto in = feed_input<
             type_list<bin_increment_event<data_types>, reset_event>>(
-            histogram<reset_event, error_on_overflow_t, data_types>(
-                arg_num_bins<std::size_t>{1}, arg_max_per_bin<u16>{0},
+            histogram<reset_event, data_types>(
+                error_on_overflow, arg_num_bins<std::size_t>{1},
+                arg_max_per_bin<u16>{0},
                 new_delete_bucket_source<u16>::create(),
                 capture_output<out_events>(
                     ctx->tracker<capture_output_access>("out"))));
@@ -282,8 +290,9 @@ TEST_CASE("Histogram, error on overflow") {
     SECTION("Max per bin = 1") {
         auto in = feed_input<
             type_list<bin_increment_event<data_types>, reset_event>>(
-            histogram<reset_event, error_on_overflow_t, data_types>(
-                arg_num_bins<std::size_t>{1}, arg_max_per_bin<u16>{1},
+            histogram<reset_event, data_types>(
+                error_on_overflow, arg_num_bins<std::size_t>{1},
+                arg_max_per_bin<u16>{1},
                 new_delete_bucket_source<u16>::create(),
                 capture_output<out_events>(
                     ctx->tracker<capture_output_access>("out"))));

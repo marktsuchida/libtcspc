@@ -672,9 +672,13 @@ namespace tcspc {
  */
 
 /**
- * \defgroup overflow-strategies Overflow strategies
+ * \defgroup overflow-policies Histogram bin overflow policies
  *
- * \brief Tag types for specifying histogram bin overflow handling method.
+ * \brief Tag types and values for specifying histogram bin overflow handling
+ * method.
+ *
+ * The histogram processors take the policy tag (value) as the first argument,
+ * from which the tag type is deduced.
  */
 
 /** @} <!-- group auxiliary --> */

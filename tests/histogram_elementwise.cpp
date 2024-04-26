@@ -62,16 +62,15 @@ auto make_bin_increment_batch(
 } // namespace
 
 TEST_CASE("introspect histogram_elementwise", "[introspect]") {
+    check_introspect_simple_processor(histogram_elementwise(
+        saturate_on_overflow, arg_num_elements<std::size_t>{1},
+        arg_num_bins<std::size_t>{1}, arg_max_per_bin<u16>{255},
+        new_delete_bucket_source<u16>::create(), null_sink()));
     check_introspect_simple_processor(
-        histogram_elementwise<saturate_on_overflow_t>(
-            arg_num_elements<std::size_t>{1}, arg_num_bins<std::size_t>{1},
-            arg_max_per_bin<u16>{255}, new_delete_bucket_source<u16>::create(),
-            null_sink()));
-    check_introspect_simple_processor(
-        histogram_elementwise_accumulate<reset_event, saturate_on_overflow_t>(
-            arg_num_elements<std::size_t>{1}, arg_num_bins<std::size_t>{1},
-            arg_max_per_bin<u16>{255}, new_delete_bucket_source<u16>::create(),
-            null_sink()));
+        histogram_elementwise_accumulate<reset_event>(
+            saturate_on_overflow, arg_num_elements<std::size_t>{1},
+            arg_num_bins<std::size_t>{1}, arg_max_per_bin<u16>{255},
+            new_delete_bucket_source<u16>::create(), null_sink()));
 }
 
 //
@@ -85,9 +84,10 @@ TEMPLATE_TEST_CASE("Histogram elementwise, no overflow",
                                  histogram_array_event<dt3216>, warning_event>;
     auto ctx = context::create();
     auto in = feed_input<type_list<bin_increment_batch_event<dt3216>>>(
-        histogram_elementwise<TestType, dt3216>(
-            arg_num_elements<std::size_t>{2}, arg_num_bins<std::size_t>{2},
-            arg_max_per_bin<u16>{100}, new_delete_bucket_source<u16>::create(),
+        histogram_elementwise<dt3216>(
+            TestType{}, arg_num_elements<std::size_t>{2},
+            arg_num_bins<std::size_t>{2}, arg_max_per_bin<u16>{100},
+            new_delete_bucket_source<u16>::create(),
             capture_output<out_events>(
                 ctx->tracker<capture_output_access>("out"))));
     in.require_output_checked(ctx, "out");
@@ -116,9 +116,9 @@ TEST_CASE("Histogram elementwise, saturate on overflow",
 
     SECTION("Max per bin = 0") {
         auto in = feed_input<type_list<bin_increment_batch_event<dt3216>>>(
-            histogram_elementwise<saturate_on_overflow_t, dt3216>(
-                arg_num_elements<std::size_t>{1}, arg_num_bins<std::size_t>{1},
-                arg_max_per_bin<u16>{0},
+            histogram_elementwise<dt3216>(
+                saturate_on_overflow, arg_num_elements<std::size_t>{1},
+                arg_num_bins<std::size_t>{1}, arg_max_per_bin<u16>{0},
                 new_delete_bucket_source<u16>::create(),
                 capture_output<out_events>(
                     ctx->tracker<capture_output_access>("out"))));
@@ -139,9 +139,9 @@ TEST_CASE("Histogram elementwise, saturate on overflow",
 
     SECTION("Max per bin = 1") {
         auto in = feed_input<type_list<bin_increment_batch_event<dt3216>>>(
-            histogram_elementwise<saturate_on_overflow_t, dt3216>(
-                arg_num_elements<std::size_t>{1}, arg_num_bins<std::size_t>{1},
-                arg_max_per_bin<u16>{1},
+            histogram_elementwise<dt3216>(
+                saturate_on_overflow, arg_num_elements<std::size_t>{1},
+                arg_num_bins<std::size_t>{1}, arg_max_per_bin<u16>{1},
                 new_delete_bucket_source<u16>::create(),
                 capture_output<out_events>(
                     ctx->tracker<capture_output_access>("out"))));
@@ -169,9 +169,9 @@ TEST_CASE("Histogram elementwise, error on overflow",
 
     SECTION("Max per bin = 0") {
         auto in = feed_input<type_list<bin_increment_batch_event<dt3216>>>(
-            histogram_elementwise<error_on_overflow_t, dt3216>(
-                arg_num_elements<std::size_t>{1}, arg_num_bins<std::size_t>{1},
-                arg_max_per_bin<u16>{0},
+            histogram_elementwise<dt3216>(
+                error_on_overflow, arg_num_elements<std::size_t>{1},
+                arg_num_bins<std::size_t>{1}, arg_max_per_bin<u16>{0},
                 new_delete_bucket_source<u16>::create(),
                 capture_output<out_events>(
                     ctx->tracker<capture_output_access>("out"))));
@@ -186,9 +186,9 @@ TEST_CASE("Histogram elementwise, error on overflow",
 
     SECTION("Max per bin = 1") {
         auto in = feed_input<type_list<bin_increment_batch_event<dt3216>>>(
-            histogram_elementwise<error_on_overflow_t, dt3216>(
-                arg_num_elements<std::size_t>{1}, arg_num_bins<std::size_t>{1},
-                arg_max_per_bin<u16>{1},
+            histogram_elementwise<dt3216>(
+                error_on_overflow, arg_num_elements<std::size_t>{1},
+                arg_num_bins<std::size_t>{1}, arg_max_per_bin<u16>{1},
                 new_delete_bucket_source<u16>::create(),
                 capture_output<out_events>(
                     ctx->tracker<capture_output_access>("out"))));
@@ -231,8 +231,8 @@ TEMPLATE_TEST_CASE(
     auto num_bins = GENERATE(std::size_t(1), 4);
     auto ctx = context::create();
     auto in = feed_input<hea_input_events>(
-        histogram_elementwise_accumulate<reset_event, TestType, false, dt88>(
-            arg_num_elements{num_elements}, arg_num_bins{num_bins},
+        histogram_elementwise_accumulate<reset_event, false, dt88>(
+            TestType{}, arg_num_elements{num_elements}, arg_num_bins{num_bins},
             arg_max_per_bin<u8>{10}, new_delete_bucket_source<u8>::create(),
             capture_output<hea_output_events_no_concluding>(
                 ctx->tracker<capture_output_access>("out"))));
@@ -259,9 +259,10 @@ TEMPLATE_TEST_CASE(
     reset_on_overflow_t, stop_on_overflow_t, error_on_overflow_t) {
     auto ctx = context::create();
     auto in = feed_input<hea_input_events>(
-        histogram_elementwise_accumulate<reset_event, TestType, false, dt88>(
-            arg_num_elements<std::size_t>{2}, arg_num_bins<std::size_t>{3},
-            arg_max_per_bin<u8>{255}, new_delete_bucket_source<u8>::create(),
+        histogram_elementwise_accumulate<reset_event, false, dt88>(
+            TestType{}, arg_num_elements<std::size_t>{2},
+            arg_num_bins<std::size_t>{3}, arg_max_per_bin<u8>{255},
+            new_delete_bucket_source<u8>::create(),
             capture_output<hea_output_events_no_concluding>(
                 ctx->tracker<capture_output_access>("out"))));
     in.require_output_checked(ctx, "out");
@@ -320,9 +321,10 @@ TEMPLATE_TEST_CASE(
     stop_on_overflow_t, error_on_overflow_t) {
     auto ctx = context::create();
     auto in = feed_input<hea_input_events>(
-        histogram_elementwise_accumulate<reset_event, TestType, true, dt88>(
-            arg_num_elements<std::size_t>{2}, arg_num_bins<std::size_t>{3},
-            arg_max_per_bin<u8>{255}, new_delete_bucket_source<u8>::create(),
+        histogram_elementwise_accumulate<reset_event, true, dt88>(
+            TestType{}, arg_num_elements<std::size_t>{2},
+            arg_num_bins<std::size_t>{3}, arg_max_per_bin<u8>{255},
+            new_delete_bucket_source<u8>::create(),
             capture_output<hea_output_events>(
                 ctx->tracker<capture_output_access>("out"))));
     in.require_output_checked(ctx, "out");
@@ -393,9 +395,10 @@ TEMPLATE_TEST_CASE(
     stop_on_overflow_t, error_on_overflow_t) {
     auto ctx = context::create();
     auto in = feed_input<hea_input_events>(
-        histogram_elementwise_accumulate<reset_event, TestType, true, dt88>(
-            arg_num_elements<std::size_t>{2}, arg_num_bins<std::size_t>{3},
-            arg_max_per_bin<u8>{255}, new_delete_bucket_source<u8>::create(),
+        histogram_elementwise_accumulate<reset_event, true, dt88>(
+            TestType{}, arg_num_elements<std::size_t>{2},
+            arg_num_bins<std::size_t>{3}, arg_max_per_bin<u8>{255},
+            new_delete_bucket_source<u8>::create(),
             capture_output<hea_output_events>(
                 ctx->tracker<capture_output_access>("out"))));
     in.require_output_checked(ctx, "out");
@@ -480,10 +483,10 @@ TEST_CASE("histogram_elementwise_accumulate with saturate-on-overflow",
           "[histogram_elementwise_accumulate]") {
     auto ctx = context::create();
     auto in = feed_input<hea_input_events>(
-        histogram_elementwise_accumulate<reset_event, saturate_on_overflow_t,
-                                         false, dt88>(
-            arg_num_elements<std::size_t>{2}, arg_num_bins<std::size_t>{3},
-            arg_max_per_bin<u8>{4}, new_delete_bucket_source<u8>::create(),
+        histogram_elementwise_accumulate<reset_event, false, dt88>(
+            saturate_on_overflow, arg_num_elements<std::size_t>{2},
+            arg_num_bins<std::size_t>{3}, arg_max_per_bin<u8>{4},
+            new_delete_bucket_source<u8>::create(),
             capture_output<hea_output_events_no_concluding>(
                 ctx->tracker<capture_output_access>("out"))));
     in.require_output_checked(ctx, "out");
@@ -523,10 +526,10 @@ TEST_CASE("histogram_elementwise_accumulate with reset-on-overflow",
           "[histogram_elementwise_accumulate]") {
     auto ctx = context::create();
     auto in = feed_input<hea_input_events>(
-        histogram_elementwise_accumulate<reset_event, reset_on_overflow_t,
-                                         true, dt88>(
-            arg_num_elements<std::size_t>{2}, arg_num_bins<std::size_t>{3},
-            arg_max_per_bin<u8>{4}, new_delete_bucket_source<u8>::create(),
+        histogram_elementwise_accumulate<reset_event, true, dt88>(
+            reset_on_overflow, arg_num_elements<std::size_t>{2},
+            arg_num_bins<std::size_t>{3}, arg_max_per_bin<u8>{4},
+            new_delete_bucket_source<u8>::create(),
             capture_output<hea_output_events>(
                 ctx->tracker<capture_output_access>("out"))));
     in.require_output_checked(ctx, "out");
@@ -630,10 +633,10 @@ TEST_CASE("histogram_elementwise_accumulate with stop-on-overflow",
           "[histogram_elementwise_accumulate]") {
     auto ctx = context::create();
     auto in = feed_input<hea_input_events>(
-        histogram_elementwise_accumulate<reset_event, stop_on_overflow_t, true,
-                                         dt88>(
-            arg_num_elements<std::size_t>{2}, arg_num_bins<std::size_t>{3},
-            arg_max_per_bin<u8>{4}, new_delete_bucket_source<u8>::create(),
+        histogram_elementwise_accumulate<reset_event, true, dt88>(
+            stop_on_overflow, arg_num_elements<std::size_t>{2},
+            arg_num_bins<std::size_t>{3}, arg_max_per_bin<u8>{4},
+            new_delete_bucket_source<u8>::create(),
             capture_output<hea_output_events>(
                 ctx->tracker<capture_output_access>("out"))));
     in.require_output_checked(ctx, "out");
@@ -711,10 +714,10 @@ TEST_CASE(
     "[histogram_elementwise_accumulate]") {
     auto ctx = context::create();
     auto in = feed_input<hea_input_events>(
-        histogram_elementwise_accumulate<reset_event, error_on_overflow_t,
-                                         true, dt88>(
-            arg_num_elements<std::size_t>{2}, arg_num_bins<std::size_t>{3},
-            arg_max_per_bin<u8>{4}, new_delete_bucket_source<u8>::create(),
+        histogram_elementwise_accumulate<reset_event, true, dt88>(
+            error_on_overflow, arg_num_elements<std::size_t>{2},
+            arg_num_bins<std::size_t>{3}, arg_max_per_bin<u8>{4},
+            new_delete_bucket_source<u8>::create(),
             capture_output<hea_output_events>(
                 ctx->tracker<capture_output_access>("out"))));
     in.require_output_checked(ctx, "out");
@@ -780,10 +783,10 @@ TEST_CASE(
     "[histogram_elementwise_accumulate]") {
     auto ctx = context::create();
     auto in = feed_input<hea_input_events>(
-        histogram_elementwise_accumulate<reset_event, error_on_overflow_t,
-                                         false, dt88>(
-            arg_num_elements<std::size_t>{2}, arg_num_bins<std::size_t>{3},
-            arg_max_per_bin<u8>{4}, new_delete_bucket_source<u8>::create(),
+        histogram_elementwise_accumulate<reset_event, false, dt88>(
+            error_on_overflow, arg_num_elements<std::size_t>{2},
+            arg_num_bins<std::size_t>{3}, arg_max_per_bin<u8>{4},
+            new_delete_bucket_source<u8>::create(),
             capture_output<hea_output_events_no_concluding>(
                 ctx->tracker<capture_output_access>("out"))));
     in.require_output_checked(ctx, "out");

@@ -213,44 +213,76 @@ template <typename Downstream> auto null_source(Downstream &&downstream) {
 }
 
 /**
- * \brief Histogram overflow policy tag to request saturating addition on
+ * \brief Histogram overflow policy tag type to request saturating addition on
  * overflowed bins.
  *
- * \ingroup overflow-strategies
+ * \ingroup overflow-policies
  */
 struct saturate_on_overflow_t {
     explicit saturate_on_overflow_t() = default;
 };
 
 /**
- * \brief Histogram overflow policy tag to request resetting the histogram
- * when a bin is about to overflow.
+ * \brief Histogram overflow policy tag type to request resetting the histogram
+ * (array) when a bin is about to overflow.
  *
- * \ingroup overflow-strategies
+ * \ingroup overflow-policies
  */
 struct reset_on_overflow_t {
     explicit reset_on_overflow_t() = default;
 };
 
 /**
- * \brief Histogram overflow policy tag to request ending the processing when
- * a bin is about to overflow.
+ * \brief Histogram overflow policy tag type to request ending the processing
+ * when a bin is about to overflow.
  *
- * \ingroup overflow-strategies
+ * \ingroup overflow-policies
  */
 struct stop_on_overflow_t {
     explicit stop_on_overflow_t() = default;
 };
 
 /**
- * \brief Histogram overflow policy tag to request treating bin overflows as
- * errors.
+ * \brief Histogram overflow policy tag type to request treating bin overflows
+ * as errors.
  *
- * \ingroup overflow-strategies
+ * \ingroup overflow-policies
  */
 struct error_on_overflow_t {
     explicit error_on_overflow_t() = default;
 };
+
+/**
+ * \brief Histogram overflow policy tag instance to request saturating addition
+ * on overflowed bins.
+ *
+ * \ingroup overflow-policies
+ */
+inline constexpr saturate_on_overflow_t saturate_on_overflow{};
+
+/**
+ * \brief Histogram overflow policy tag instance to request resetting the
+ * histogram (array) when a bin is about to overflow.
+ *
+ * \ingroup overflow-policies
+ */
+inline constexpr reset_on_overflow_t reset_on_overflow{};
+
+/**
+ * \brief Histogram overflow policy tag instance to request ending the
+ * processing when a bin is about to overflow.
+ *
+ * \ingroup overflow-policies
+ */
+inline constexpr stop_on_overflow_t stop_on_overflow{};
+
+/**
+ * \brief Histogram overflow policy tag instance to request treating bin
+ * overflows as errors.
+ *
+ * \ingroup overflow-policies
+ */
+inline constexpr error_on_overflow_t error_on_overflow{};
 
 namespace internal {
 

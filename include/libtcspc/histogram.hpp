@@ -188,12 +188,15 @@ class histogram {
  *
  * \tparam ResetEvent event type causing histogram to reset
  *
- * \tparam OverflowPolicy policy tag type to select how to handle bin
- * overflows
- *
  * \tparam DataTypes data type set specifying `bin_index_type` and `bin_type`
  *
+ * \tparam OverflowPolicy policy tag type (usually deduced)
+ *
  * \tparam Downstream downstream processor type (usually deduced)
+ *
+ * \param policy policy tag instance to select how to handle bin overflows
+ * (`tcspc::saturate_on_overflow`, `tcspc::reset_on_overflow`,
+ * `tcspc::stop_on_overflow`, or `tcspc::error_on_overflow`)
  *
  * \param num_bins number of bins in the histogram (must match the bin mapper
  * used upstream)
@@ -229,9 +232,10 @@ class histogram {
  * - Flush: emit (rvalue) `tcspc::concluding_histogram_event<DataTypes>` with
  *   the current histogram; pass through
  */
-template <typename ResetEvent, typename OverflowPolicy,
-          typename DataTypes = default_data_types, typename Downstream>
-auto histogram(arg_num_bins<std::size_t> num_bins,
+template <typename ResetEvent, typename DataTypes = default_data_types,
+          typename OverflowPolicy, typename Downstream>
+auto histogram([[maybe_unused]] OverflowPolicy const &policy,
+               arg_num_bins<std::size_t> num_bins,
                arg_max_per_bin<typename DataTypes::bin_type> max_per_bin,
                std::shared_ptr<bucket_source<typename DataTypes::bin_type>>
                    buffer_provider,

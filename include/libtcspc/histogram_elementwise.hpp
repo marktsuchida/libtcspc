@@ -157,12 +157,14 @@ class histogram_elementwise {
  * `tcspc::bin_increment_batch_event` contains a bin index beyond the size of
  * the histogram. The bin mapper should be chosen so that this does not occur.
  *
- * \tparam OverflowPolicy policy tag type to select how to handle bin
- * overflows
- *
  * \tparam DataTypes data type set specifying `bin_index_type` and `bin_type`
  *
+ * \tparam OverflowPolicy policy tag type (usually deduced)
+ *
  * \tparam Downstream downstream processor type (usually deduced)
+ *
+ * \param policy policy tag instance to select how to handle bin overflows
+ * (`tcspc::saturate_on_overflow` or `tcspc::error_on_overflow`)
  *
  * \param num_elements the number of elements (each a histogram) in the array
  *
@@ -191,9 +193,10 @@ class histogram_elementwise {
  * - All other types: pass through with no action
  * - Flush: pass through with no action
  */
-template <typename OverflowPolicy, typename DataTypes = default_data_types,
+template <typename DataTypes = default_data_types, typename OverflowPolicy,
           typename Downstream>
 auto histogram_elementwise(
+    [[maybe_unused]] OverflowPolicy const &policy,
     arg_num_elements<std::size_t> num_elements,
     arg_num_bins<std::size_t> num_bins,
     arg_max_per_bin<typename DataTypes::bin_type> max_per_bin,
@@ -438,16 +441,19 @@ class histogram_elementwise_accumulate {
  *
  * \tparam ResetEvent type of event causing histograms to reset
  *
- * \tparam OverflowPolicy policy tag type to select how to handle bin
- * overflows
- *
  * \tparam EmitConcluding if true, emit a
  * `tcspc::concluding_histogram_array_event` each time a round of accumulation
  * completes
  *
  * \tparam DataTypes data type set specifying `bin_index_type` and `bin_type`
  *
+ * \tparam OverflowPolicy policy tag type (usually deduced)
+ *
  * \tparam Downstream downstream processor type (usually deduced)
+ *
+ * \param policy policy tag instance to select how to handle bin overflows
+ * (`tcspc::saturate_on_overflow`, `tcspc::reset_on_overflow`,
+ * `tcspc::stop_on_overflow`, or `tcspc::error_on_overflow`)
  *
  * \param num_elements the number of elements (each a histogram) in the array
  *
@@ -491,10 +497,11 @@ class histogram_elementwise_accumulate {
  *   `tcspc::concluding_histogram_array_event<DataTypes>` with the current
  *   histogram array (after rolling back any partial cycle); pass through
  */
-template <typename ResetEvent, typename OverflowPolicy,
-          bool EmitConcluding = false, typename DataTypes = default_data_types,
+template <typename ResetEvent, bool EmitConcluding = false,
+          typename DataTypes = default_data_types, typename OverflowPolicy,
           typename Downstream>
 auto histogram_elementwise_accumulate(
+    [[maybe_unused]] OverflowPolicy const &policy,
     arg_num_elements<std::size_t> num_elements,
     arg_num_bins<std::size_t> num_bins,
     arg_max_per_bin<typename DataTypes::bin_type> max_per_bin,
