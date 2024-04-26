@@ -53,8 +53,7 @@ class regulate_time_reached {
           downstream(std::move(downstream)) {}
 
     [[nodiscard]] auto introspect_node() const -> processor_info {
-        processor_info info(this, "regulate_time_reached");
-        return info;
+        return processor_info(this, "regulate_time_reached");
     }
 
     [[nodiscard]] auto introspect_graph() const -> processor_graph {

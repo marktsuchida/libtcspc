@@ -55,8 +55,7 @@ class route_homogeneous {
         : router(std::move(router)), downstreams(std::move(downstreams)) {}
 
     [[nodiscard]] auto introspect_node() const -> processor_info {
-        processor_info info(this, "route_homogeneous");
-        return info;
+        return processor_info(this, "route_homogeneous");
     }
 
     [[nodiscard]] auto introspect_graph() const -> processor_graph {

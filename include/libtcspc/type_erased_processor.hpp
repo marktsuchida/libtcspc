@@ -68,8 +68,7 @@ class virtual_processor_impl<Interface, Proc, type_list<>> : public Interface {
         : proc(std::forward<Args>(args)...) {}
 
     [[nodiscard]] auto introspect_node() const -> processor_info final {
-        processor_info info(this, "virtual_processor_impl");
-        return info;
+        return processor_info(this, "virtual_processor_impl");
     }
 
     [[nodiscard]] auto introspect_graph() const -> processor_graph final {
@@ -157,8 +156,7 @@ template <typename EventList> class type_erased_processor {
 
     /** \brief Implements processor requirement. */
     [[nodiscard]] auto introspect_node() const -> processor_info {
-        processor_info info(this, "type_erased_processor");
-        return info;
+        return processor_info(this, "type_erased_processor");
     }
 
     /** \brief Implements processor requirement. */

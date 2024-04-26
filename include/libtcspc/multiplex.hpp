@@ -30,8 +30,7 @@ template <typename EventList, typename Downstream> class multiplex {
         : downstream(std::move(downstream)) {}
 
     [[nodiscard]] auto introspect_node() const -> processor_info {
-        processor_info info(this, "multiplex");
-        return info;
+        return processor_info(this, "multiplex");
     }
 
     [[nodiscard]] auto introspect_graph() const -> processor_graph {
@@ -59,8 +58,7 @@ template <typename Downstream> class demultiplex {
         : downstream(std::move(downstream)) {}
 
     [[nodiscard]] auto introspect_node() const -> processor_info {
-        processor_info info(this, "demultiplex");
-        return info;
+        return processor_info(this, "demultiplex");
     }
 
     [[nodiscard]] auto introspect_graph() const -> processor_graph {

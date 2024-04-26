@@ -75,8 +75,7 @@ class histogram_elementwise {
     }
 
     [[nodiscard]] auto introspect_node() const -> processor_info {
-        processor_info info(this, "histogram_elementwise");
-        return info;
+        return processor_info(this, "histogram_elementwise");
     }
 
     [[nodiscard]] auto introspect_graph() const -> processor_graph {
@@ -334,8 +333,7 @@ class histogram_elementwise_accumulate {
     }
 
     [[nodiscard]] auto introspect_node() const -> processor_info {
-        processor_info info(this, "histogram_elementwise_accumulate");
-        return info;
+        return processor_info(this, "histogram_elementwise_accumulate");
     }
 
     [[nodiscard]] auto introspect_graph() const -> processor_graph {

@@ -26,8 +26,7 @@ template <typename Downstream> class view_as_bytes {
         : downstream(std::move(downstream)) {}
 
     [[nodiscard]] auto introspect_node() const -> processor_info {
-        processor_info info(this, "view_as_bytes");
-        return info;
+        return processor_info(this, "view_as_bytes");
     }
 
     [[nodiscard]] auto introspect_graph() const -> processor_graph {

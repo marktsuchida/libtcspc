@@ -39,8 +39,7 @@ class map_to_datapoints {
         : mapper(std::move(mapper)), downstream(std::move(downstream)) {}
 
     [[nodiscard]] auto introspect_node() const -> processor_info {
-        processor_info info(this, "map_to_datapoints");
-        return info;
+        return processor_info(this, "map_to_datapoints");
     }
 
     [[nodiscard]] auto introspect_graph() const -> processor_graph {
@@ -163,8 +162,7 @@ class map_to_bins {
           downstream(std::move(downstream)) {}
 
     [[nodiscard]] auto introspect_node() const -> processor_info {
-        processor_info info(this, "map_to_bins");
-        return info;
+        return processor_info(this, "map_to_bins");
     }
 
     [[nodiscard]] auto introspect_graph() const -> processor_graph {
@@ -386,8 +384,7 @@ class batch_bin_increments {
         : downstream(std::move(downstream)) {}
 
     [[nodiscard]] auto introspect_node() const -> processor_info {
-        processor_info info(this, "batch_bin_increments");
-        return info;
+        return processor_info(this, "batch_bin_increments");
     }
 
     [[nodiscard]] auto introspect_graph() const -> processor_graph {

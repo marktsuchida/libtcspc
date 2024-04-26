@@ -422,8 +422,7 @@ template <typename EventList> class capture_output {
     }
 
     [[nodiscard]] auto introspect_node() const -> processor_info {
-        processor_info info(this, "capture_output");
-        return info;
+        return processor_info(this, "capture_output");
     }
 
     [[nodiscard]] auto introspect_graph() const -> processor_graph {
@@ -506,8 +505,7 @@ template <> class capture_output<type_list<>> {
     }
 
     [[nodiscard]] auto introspect_node() const -> processor_info {
-        processor_info info(this, "capture_output");
-        return info;
+        return processor_info(this, "capture_output");
     }
 
     [[nodiscard]] auto introspect_graph() const -> processor_graph {
@@ -562,8 +560,7 @@ template <typename EventList, typename Downstream> class feed_input {
         : downstream(std::move(downstream)) {}
 
     [[nodiscard]] auto introspect_node() const -> processor_info {
-        processor_info info(this, "feed_input");
-        return info;
+        return processor_info(this, "feed_input");
     }
 
     [[nodiscard]] auto introspect_graph() const -> processor_graph {
@@ -667,8 +664,7 @@ template <typename EventList> class sink_events {
   public:
     /** \brief Implements processor requirement. */
     [[nodiscard]] auto introspect_node() const -> processor_info {
-        processor_info info(this, "sink_events");
-        return info;
+        return processor_info(this, "sink_events");
     }
 
     /** \brief Implements processor requirement. */

@@ -685,8 +685,7 @@ template <typename Event, typename Downstream> class extract_bucket {
         : downstream(std::move(downstream)) {}
 
     [[nodiscard]] auto introspect_node() const -> processor_info {
-        processor_info info(this, "extract_bucket");
-        return info;
+        return processor_info(this, "extract_bucket");
     }
 
     [[nodiscard]] auto introspect_graph() const -> processor_graph {

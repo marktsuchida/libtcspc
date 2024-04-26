@@ -26,8 +26,7 @@ template <typename Event, typename Downstream> class prepend {
         : downstream(std::move(downstream)), evt(std::move(event)) {}
 
     [[nodiscard]] auto introspect_node() const -> processor_info {
-        processor_info info(this, "prepend");
-        return info;
+        return processor_info(this, "prepend");
     }
 
     [[nodiscard]] auto introspect_graph() const -> processor_graph {
@@ -58,8 +57,7 @@ template <typename Event, typename Downstream> class append {
         : downstream(std::move(downstream)), evt(std::move(event)) {}
 
     [[nodiscard]] auto introspect_node() const -> processor_info {
-        processor_info info(this, "append");
-        return info;
+        return processor_info(this, "append");
     }
 
     [[nodiscard]] auto introspect_graph() const -> processor_graph {

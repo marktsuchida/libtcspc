@@ -341,8 +341,7 @@ template <typename OutputStream> class write_binary_stream {
     }
 
     [[nodiscard]] auto introspect_node() const -> processor_info {
-        processor_info info(this, "write_binary_stream");
-        return info;
+        return processor_info(this, "write_binary_stream");
     }
 
     [[nodiscard]] auto introspect_graph() const -> processor_graph {

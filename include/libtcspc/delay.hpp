@@ -26,8 +26,7 @@ template <typename DataTypes, typename Downstream> class delay {
         : delta(delta), downstream(std::move(downstream)) {}
 
     [[nodiscard]] auto introspect_node() const -> processor_info {
-        processor_info info(this, "delay");
-        return info;
+        return processor_info(this, "delay");
     }
 
     [[nodiscard]] auto introspect_graph() const -> processor_graph {
@@ -58,8 +57,7 @@ template <typename DataTypes, typename Downstream> class zero_base_abstime {
         : downstream(std::move(downstream)) {}
 
     [[nodiscard]] auto introspect_node() const -> processor_info {
-        processor_info info(this, "zero_base_abstime");
-        return info;
+        return processor_info(this, "zero_base_abstime");
     }
 
     [[nodiscard]] auto introspect_graph() const -> processor_graph {

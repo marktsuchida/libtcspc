@@ -56,8 +56,7 @@ class pair_all {
     }
 
     [[nodiscard]] auto introspect_node() const -> processor_info {
-        processor_info info(this, "pair_all");
-        return info;
+        return processor_info(this, "pair_all");
     }
 
     [[nodiscard]] auto introspect_graph() const -> processor_graph {
@@ -131,8 +130,7 @@ class pair_one {
     }
 
     [[nodiscard]] auto introspect_node() const -> processor_info {
-        processor_info info(this, "pair_one");
-        return info;
+        return processor_info(this, "pair_one");
     }
 
     [[nodiscard]] auto introspect_graph() const -> processor_graph {
@@ -203,8 +201,7 @@ class pair_all_between {
     }
 
     [[nodiscard]] auto introspect_node() const -> processor_info {
-        processor_info info(this, "pair_all_between");
-        return info;
+        return processor_info(this, "pair_all_between");
     }
 
     [[nodiscard]] auto introspect_graph() const -> processor_graph {
@@ -279,8 +276,7 @@ class pair_one_between {
     }
 
     [[nodiscard]] auto introspect_node() const -> processor_info {
-        processor_info info(this, "pair_one_between");
-        return info;
+        return processor_info(this, "pair_one_between");
     }
 
     [[nodiscard]] auto introspect_graph() const -> processor_graph {

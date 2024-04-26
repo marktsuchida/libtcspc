@@ -27,8 +27,7 @@ class match {
         : matcher(std::move(matcher)), downstream(std::move(downstream)) {}
 
     [[nodiscard]] auto introspect_node() const -> processor_info {
-        processor_info info(this, "match");
-        return info;
+        return processor_info(this, "match");
     }
 
     [[nodiscard]] auto introspect_graph() const -> processor_graph {

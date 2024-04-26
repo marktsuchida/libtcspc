@@ -41,8 +41,7 @@ template <typename Event, typename Downstream> class batch_from_bytes {
           downstream(std::move(downstream)) {}
 
     [[nodiscard]] auto introspect_node() const -> processor_info {
-        processor_info info(this, "batch_from_bytes");
-        return info;
+        return processor_info(this, "batch_from_bytes");
     }
 
     [[nodiscard]] auto introspect_graph() const -> processor_graph {
@@ -97,8 +96,7 @@ template <typename Event, typename Downstream> class unbatch_from_bytes {
         : downstream(std::move(downstream)) {}
 
     [[nodiscard]] auto introspect_node() const -> processor_info {
-        processor_info info(this, "unbatch_from_bytes");
-        return info;
+        return processor_info(this, "unbatch_from_bytes");
     }
 
     [[nodiscard]] auto introspect_graph() const -> processor_graph {

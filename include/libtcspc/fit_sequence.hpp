@@ -162,8 +162,7 @@ class fit_periodic_sequences {
     }
 
     [[nodiscard]] auto introspect_node() const -> processor_info {
-        processor_info info(this, "fit_periodic_sequences");
-        return info;
+        return processor_info(this, "fit_periodic_sequences");
     }
 
     [[nodiscard]] auto introspect_graph() const -> processor_graph {

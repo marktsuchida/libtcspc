@@ -84,8 +84,7 @@ class merge_impl {
     ~merge_impl() = default;
 
     [[nodiscard]] auto introspect_node() const -> processor_info {
-        processor_info info(this, "merge_impl");
-        return info;
+        return processor_info(this, "merge_impl");
     }
 
     [[nodiscard]] auto introspect_graph() const -> processor_graph {
@@ -172,8 +171,7 @@ class merge_input {
     ~merge_input() = default;
 
     [[nodiscard]] auto introspect_node() const -> processor_info {
-        processor_info info(this, "merge_input");
-        return info;
+        return processor_info(this, "merge_input");
     }
 
     [[nodiscard]] auto introspect_graph() const -> processor_graph {
@@ -345,8 +343,7 @@ template <std::size_t N, typename Downstream> class merge_unsorted_impl {
     ~merge_unsorted_impl() = default;
 
     [[nodiscard]] auto introspect_node() const -> processor_info {
-        processor_info info(this, "merge_unsorted_impl");
-        return info;
+        return processor_info(this, "merge_unsorted_impl");
     }
 
     [[nodiscard]] auto introspect_graph() const -> processor_graph {
@@ -397,8 +394,7 @@ template <std::size_t N, typename Downstream> class merge_unsorted_input {
     ~merge_unsorted_input() = default;
 
     [[nodiscard]] auto introspect_node() const -> processor_info {
-        processor_info info(this, "merge_unsorted_input");
-        return info;
+        return processor_info(this, "merge_unsorted_input");
     }
 
     [[nodiscard]] auto introspect_graph() const -> processor_graph {

@@ -52,8 +52,7 @@ class generate {
         : generator(std::move(generator)), downstream(std::move(downstream)) {}
 
     [[nodiscard]] auto introspect_node() const -> processor_info {
-        processor_info info(this, "generate");
-        return info;
+        return processor_info(this, "generate");
     }
 
     [[nodiscard]] auto introspect_graph() const -> processor_graph {

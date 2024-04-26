@@ -34,8 +34,7 @@ class time_correlate_at_start_or_stop {
         : downstream(std::move(downstream)) {}
 
     [[nodiscard]] auto introspect_node() const -> processor_info {
-        processor_info info(this, "time_correlate_at_start_or_stop");
-        return info;
+        return processor_info(this, "time_correlate_at_start_or_stop");
     }
 
     [[nodiscard]] auto introspect_graph() const -> processor_graph {
@@ -73,8 +72,7 @@ class time_correlate_at_midpoint {
         : downstream(std::move(downstream)) {}
 
     [[nodiscard]] auto introspect_node() const -> processor_info {
-        processor_info info(this, "time_correlate_at_midpoint");
-        return info;
+        return processor_info(this, "time_correlate_at_midpoint");
     }
 
     [[nodiscard]] auto introspect_graph() const -> processor_graph {
@@ -114,8 +112,7 @@ class time_correlate_at_fraction {
         : fraction(fraction), downstream(std::move(downstream)) {}
 
     [[nodiscard]] auto introspect_node() const -> processor_info {
-        processor_info info(this, "time_correlate_at_fraction");
-        return info;
+        return processor_info(this, "time_correlate_at_fraction");
     }
 
     [[nodiscard]] auto introspect_graph() const -> processor_graph {
@@ -334,8 +331,7 @@ template <typename Downstream> class negate_difftime {
         : downstream(std::move(downstream)) {}
 
     [[nodiscard]] auto introspect_node() const -> processor_info {
-        processor_info info(this, "negate_difftime");
-        return info;
+        return processor_info(this, "negate_difftime");
     }
 
     [[nodiscard]] auto introspect_graph() const -> processor_graph {
@@ -370,8 +366,7 @@ class remove_time_correlation {
         : downstream(std::move(downstream)) {}
 
     [[nodiscard]] auto introspect_node() const -> processor_info {
-        processor_info info(this, "remove_time_correlation");
-        return info;
+        return processor_info(this, "remove_time_correlation");
     }
 
     [[nodiscard]] auto introspect_graph() const -> processor_graph {

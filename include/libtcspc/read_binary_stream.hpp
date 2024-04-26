@@ -441,8 +441,7 @@ class read_binary_stream {
     }
 
     [[nodiscard]] auto introspect_node() const -> processor_info {
-        processor_info info(this, "read_binary_stream");
-        return info;
+        return processor_info(this, "read_binary_stream");
     }
 
     [[nodiscard]] auto introspect_graph() const -> processor_graph {

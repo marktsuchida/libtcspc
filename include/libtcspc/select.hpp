@@ -24,8 +24,7 @@ class select {
         : downstream(std::move(downstream)) {}
 
     [[nodiscard]] auto introspect_node() const -> processor_info {
-        processor_info info(this, "select");
-        return info;
+        return processor_info(this, "select");
     }
 
     [[nodiscard]] auto introspect_graph() const -> processor_graph {

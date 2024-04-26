@@ -40,8 +40,7 @@ class check_monotonic {
         : downstream(std::move(downstream)) {}
 
     [[nodiscard]] auto introspect_node() const -> processor_info {
-        processor_info info(this, "check_monotonic");
-        return info;
+        return processor_info(this, "check_monotonic");
     }
 
     [[nodiscard]] auto introspect_graph() const -> processor_graph {
@@ -127,8 +126,7 @@ class check_alternating {
         : downstream(std::move(downstream)) {}
 
     [[nodiscard]] auto introspect_node() const -> processor_info {
-        processor_info info(this, "check_alternating");
-        return info;
+        return processor_info(this, "check_alternating");
     }
 
     [[nodiscard]] auto introspect_graph() const -> processor_graph {

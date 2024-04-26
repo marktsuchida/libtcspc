@@ -43,8 +43,7 @@ class count_up_to {
     }
 
     [[nodiscard]] auto introspect_node() const -> processor_info {
-        processor_info info(this, "count_up_to");
-        return info;
+        return processor_info(this, "count_up_to");
     }
 
     [[nodiscard]] auto introspect_graph() const -> processor_graph {
@@ -244,8 +243,7 @@ template <typename Event, typename Downstream> class count {
     }
 
     [[nodiscard]] auto introspect_node() const -> processor_info {
-        processor_info info(this, "count");
-        return info;
+        return processor_info(this, "count");
     }
 
     [[nodiscard]] auto introspect_graph() const -> processor_graph {

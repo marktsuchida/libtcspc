@@ -188,8 +188,7 @@ class retime_periodic_sequences {
     }
 
     [[nodiscard]] auto introspect_node() const -> processor_info {
-        processor_info info(this, "retime_periodic_sequences");
-        return info;
+        return processor_info(this, "retime_periodic_sequences");
     }
 
     [[nodiscard]] auto introspect_graph() const -> processor_graph {
@@ -300,8 +299,7 @@ class extrapolate_periodic_sequences {
           downstream(std::move(downstream)) {}
 
     [[nodiscard]] auto introspect_node() const -> processor_info {
-        processor_info info(this, "extrapolate_periodic_sequences");
-        return info;
+        return processor_info(this, "extrapolate_periodic_sequences");
     }
 
     [[nodiscard]] auto introspect_graph() const -> processor_graph {
@@ -378,8 +376,7 @@ class add_count_to_periodic_sequences {
         : ct(count), downstream(std::move(downstream)) {}
 
     [[nodiscard]] auto introspect_node() const -> processor_info {
-        processor_info info(this, "add_count_to_periodic_sequences");
-        return info;
+        return processor_info(this, "add_count_to_periodic_sequences");
     }
 
     [[nodiscard]] auto introspect_graph() const -> processor_graph {
@@ -465,8 +462,7 @@ class convert_sequences_to_start_stop {
         : input_len(count + 1), downstream(std::move(downstream)) {}
 
     [[nodiscard]] auto introspect_node() const -> processor_info {
-        processor_info info(this, "convert_sequences_to_start_stop");
-        return info;
+        return processor_info(this, "convert_sequences_to_start_stop");
     }
 
     [[nodiscard]] auto introspect_graph() const -> processor_graph {

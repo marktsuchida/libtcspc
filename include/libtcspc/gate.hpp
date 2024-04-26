@@ -27,8 +27,7 @@ class gate {
         : open(initially_open), downstream(std::move(downstream)) {}
 
     [[nodiscard]] auto introspect_node() const -> processor_info {
-        processor_info info(this, "gate");
-        return info;
+        return processor_info(this, "gate");
     }
 
     [[nodiscard]] auto introspect_graph() const -> processor_graph {

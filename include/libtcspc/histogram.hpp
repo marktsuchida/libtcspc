@@ -113,8 +113,7 @@ class histogram {
     }
 
     [[nodiscard]] auto introspect_node() const -> processor_info {
-        processor_info info(this, "histogram");
-        return info;
+        return processor_info(this, "histogram");
     }
 
     [[nodiscard]] auto introspect_graph() const -> processor_graph {

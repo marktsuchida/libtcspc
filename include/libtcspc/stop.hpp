@@ -45,8 +45,7 @@ class stop {
           message_prefix(std::move(prefix)) {}
 
     [[nodiscard]] auto introspect_node() const -> processor_info {
-        processor_info info(this, "stop");
-        return info;
+        return processor_info(this, "stop");
     }
 
     [[nodiscard]] auto introspect_graph() const -> processor_graph {

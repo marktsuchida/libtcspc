@@ -46,8 +46,7 @@ class recover_order {
     }
 
     [[nodiscard]] auto introspect_node() const -> processor_info {
-        processor_info info(this, "recover_order");
-        return info;
+        return processor_info(this, "recover_order");
     }
 
     [[nodiscard]] auto introspect_graph() const -> processor_graph {
