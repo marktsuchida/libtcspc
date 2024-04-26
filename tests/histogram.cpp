@@ -29,8 +29,7 @@ namespace tcspc {
 
 namespace {
 
-using reset_event = time_tagged_test_event<0>;
-using misc_event = time_tagged_test_event<1>;
+using reset_event = empty_test_event<0>;
 
 struct data_types : default_data_types {
     using bin_index_type = u32;
@@ -77,17 +76,18 @@ TEMPLATE_TEST_CASE("Histogram, no overflow", "", saturate_on_overflow_t,
     in.feed(bin_increment_event<data_types>{1});
     hist = {1, 1};
     REQUIRE(out.check(histogram_event<data_types>{tmp_bucket(hist)}));
-    in.feed(reset_event{44});
+    in.feed(reset_event{});
     hist = {1, 1};
     REQUIRE(
         out.check(concluding_histogram_event<data_types>{tmp_bucket(hist)}));
     in.feed(bin_increment_event<data_types>{0});
     hist = {1, 0};
     REQUIRE(out.check(histogram_event<data_types>{tmp_bucket(hist)}));
-    in.flush();
+    in.feed(reset_event{});
     hist = {1, 0};
     REQUIRE(
         out.check(concluding_histogram_event<data_types>{tmp_bucket(hist)}));
+    in.flush();
     REQUIRE(out.check_flushed());
 }
 
@@ -115,10 +115,11 @@ TEST_CASE("Histogram, saturate on overflow") {
         REQUIRE(out.check(warning_event{"histogram saturated"}));
         hist = {0};
         REQUIRE(out.check(histogram_event<data_types>{tmp_bucket(hist)}));
-        in.flush();
+        in.feed(reset_event{});
         hist = {0};
         REQUIRE(out.check(
             concluding_histogram_event<data_types>{tmp_bucket(hist)}));
+        in.flush();
         REQUIRE(out.check_flushed());
     }
 
@@ -143,17 +144,18 @@ TEST_CASE("Histogram, saturate on overflow") {
         REQUIRE(out.check(warning_event{"histogram saturated"}));
         hist = {1};
         REQUIRE(out.check(histogram_event<data_types>{tmp_bucket(hist)}));
-        in.feed(reset_event{44});
+        in.feed(reset_event{});
         hist = {1};
         REQUIRE(out.check(
             concluding_histogram_event<data_types>{tmp_bucket(hist)}));
         in.feed(bin_increment_event<data_types>{0});
         hist = {1};
         REQUIRE(out.check(histogram_event<data_types>{tmp_bucket(hist)}));
-        in.flush();
+        in.feed(reset_event{});
         hist = {1};
         REQUIRE(out.check(
             concluding_histogram_event<data_types>{tmp_bucket(hist)}));
+        in.flush();
         REQUIRE(out.check_flushed());
     }
 }
@@ -204,10 +206,11 @@ TEST_CASE("Histogram, reset on overflow") {
             concluding_histogram_event<data_types>{tmp_bucket(hist)}));
         hist = {1};
         REQUIRE(out.check(histogram_event<data_types>{tmp_bucket(hist)}));
-        in.flush();
+        in.feed(reset_event{});
         hist = {1};
         REQUIRE(out.check(
             concluding_histogram_event<data_types>{tmp_bucket(hist)}));
+        in.flush();
         REQUIRE(out.check_flushed());
     }
 }

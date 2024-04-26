@@ -153,11 +153,7 @@ class histogram {
         downstream.handle(event);
     }
 
-    void flush() {
-        lazy_start();
-        emit_concluding();
-        downstream.flush();
-    }
+    void flush() { downstream.flush(); }
 };
 
 } // namespace internal
@@ -229,8 +225,7 @@ class histogram {
  *   `tcspc::concluding_histogram_event<DataTypes>` with the current
  *   histogram; then clear the histogram and other state
  * - All other types: pass through with no action
- * - Flush: emit (rvalue) `tcspc::concluding_histogram_event<DataTypes>` with
- *   the current histogram; pass through
+ * - Flush: pass through with no action
  */
 template <typename ResetEvent, typename DataTypes = default_data_types,
           typename OverflowPolicy, typename Downstream>
