@@ -146,9 +146,9 @@ auto make_processor(settings const &settings,
     match<marker_event<>, pixel_start_event>(
         channel_matcher(0), // Extract pixel clock.
     select_not<type_list<marker_event<>>>(
-    generate<pixel_start_event>(
-        one_shot_timing_generator<pixel_stop_event>(
-            settings.pixel_time), // Generate pixel stop events.
+    generate<pixel_start_event, pixel_stop_event>(
+        // Generate pixel stop events.
+        one_shot_timing_generator(settings.pixel_time),
     select_not<type_list<time_reached_event<>>>(
     check_alternating<pixel_start_event, pixel_stop_event>(
     stop_with_error<type_list<warning_event, data_lost_event<>>>(

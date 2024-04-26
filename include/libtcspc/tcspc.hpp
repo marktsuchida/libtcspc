@@ -572,26 +572,34 @@ namespace tcspc {
  *
  * \brief Timing generators for use with `tcspc::generate()`.
  *
- * Timing generators must define the following members:
- *
- * - `abstime_type`, the integer type for absolute time,
- *
- * - `output_event_type`, the type of the generated event (which must
- *   have an `abstime` data member of type `abstime_type`),
+ * Timing generators must define the following member functions:
  *
  * - `void trigger(TriggerEvent const &event)`, which starts a new
- *   iteration of timing generation, based on the abstime and other parameters
- *   of the trigger event,
+ *   iteration of timing generation, based on the `abstime` and (optionally)
+ *   other fields of the trigger event,
  *
  * - `auto peek() const -> std::optional<abstime_type>`, which returns
  *   the abstime of the next event to be generated, if any, and
  *
- * - `auto pop() -> output_event_type`, which generates the next event.
+ * - `void pop()`, which removes the next abstime,
+ *
+ * where `abstime_type` is the type of the `abstime` fields of the
+ * `tcspc::generate()` processor's `TriggerEvent` and `OutputEvent` type
+ * parameters (which must match).
+ *
+ * `trigger()` may be a template or overload set; it must accept the
+ * `tcspc::generate()`'s `TriggerEvent` type.
+ *
+ * `peek()` must continue to return the same value if called multiple times
+ * with no call to `trigger()` or `pop()` in between.
+ *
+ * The end of a generated sequence of timings from a given trigger is indicated
+ * by `peek()` returning `std::nullopt`.
  *
  * It is guaranteed that `pop()` is only called when `peek()` returns an
- * abstime. However, `peek()` must return the correct value (`std::nullopt`)
- * even if `trigger()` has not yet been called. In other words, the generator
- * must not produce any events before the first time it is triggered.
+ * abstime. The timing generator must not produce any timings before the first
+ * time it is triggered: `peek()` must return `std::nullopt` when `trigger()`
+ * has not yet been called.
  *
  * @{
  */
@@ -599,7 +607,7 @@ namespace tcspc {
 /**
  * \defgroup timing-generators-dither Dithered timing generators
  *
- * \brief Timing generators with dithering.
+ * \brief Timing generators using a floating-point model with dithering.
  *
  * Dithering is one way to reduce statistical bias when rounding real (floating
  * point) numbers to integers. It applies noise (the 'dither') to the number

@@ -68,22 +68,21 @@ TEST_CASE("dithering quantizer") {
 
 TEST_CASE("dithered one-shot timing generator",
           "[dithered_one_shot_timing_generator]") {
-    auto tg = dithered_one_shot_timing_generator<output_event>(0.5);
+    auto tg = dithered_one_shot_timing_generator(0.5);
     CHECK_FALSE(tg.peek().has_value());
     tg.trigger(trigger_event{42});
     CHECK(tg.peek().has_value());
     auto const t0 =
         tg.peek().value(); // NOLINT(bugprone-unchecked-optional-access)
-    auto const e0 = tg.pop();
-    CHECK(t0 == e0.abstime);
     CHECK(t0 >= 42);
     CHECK(t0 <= 43);
+    tg.pop();
     CHECK_FALSE(tg.peek().has_value());
 }
 
 TEST_CASE("dynamic dithered one-shot timing generator",
           "[dynamic_dithered_one_shot_timing_generator]") {
-    auto tg = dynamic_dithered_one_shot_timing_generator<output_event>();
+    auto tg = dynamic_dithered_one_shot_timing_generator();
     CHECK_FALSE(tg.peek().has_value());
     struct trig_evt {
         std::int64_t abstime;
@@ -93,10 +92,9 @@ TEST_CASE("dynamic dithered one-shot timing generator",
     CHECK(tg.peek().has_value());
     auto const t0 =
         tg.peek().value(); // NOLINT(bugprone-unchecked-optional-access)
-    auto const e0 = tg.pop();
-    CHECK(t0 == e0.abstime);
     CHECK(t0 >= 42);
     CHECK(t0 <= 43);
+    tg.pop();
     CHECK_FALSE(tg.peek().has_value());
 }
 
@@ -112,7 +110,7 @@ TEST_CASE("dithered linear timing generator",
     bool seen_t1_53 = false;
     bool seen_t01_10 = false;
     bool seen_t01_11 = false;
-    auto tg = dithered_linear_timing_generator<output_event>(
+    auto tg = dithered_linear_timing_generator(
         arg_delay{0.5}, arg_interval{10.25}, arg_count<std::size_t>{2});
     for (std::size_t i = 0; i < 5; ++i) { // 5 is the sharp minimum to pass.
         CHECK_FALSE(tg.peek().has_value());
@@ -120,17 +118,14 @@ TEST_CASE("dithered linear timing generator",
         CHECK(tg.peek().has_value());
         auto const t0 =
             tg.peek().value(); // NOLINT(bugprone-unchecked-optional-access)
-        auto const e0 = tg.pop();
-        CHECK(t0 == e0.abstime);
         CHECK(t0 >= 42);
         CHECK(t0 <= 43);
         seen_t0_42 = seen_t0_42 || t0 == 42;
         seen_t0_43 = seen_t0_43 || t0 == 43;
+        tg.pop();
         CHECK(tg.peek().has_value());
         auto const t1 =
             tg.peek().value(); // NOLINT(bugprone-unchecked-optional-access)
-        auto const e1 = tg.pop();
-        CHECK(t1 == e1.abstime);
         CHECK(t1 >= 52);
         CHECK(t1 <= 53);
         seen_t1_52 = seen_t1_52 || t1 == 52;
@@ -139,6 +134,7 @@ TEST_CASE("dithered linear timing generator",
         CHECK(t1 - t0 <= 11);
         seen_t01_10 = seen_t01_10 || t1 - t0 == 10;
         seen_t01_11 = seen_t01_11 || t1 - t0 == 11;
+        tg.pop();
     }
     CHECK(seen_t0_42);
     CHECK(seen_t0_43);
@@ -150,7 +146,7 @@ TEST_CASE("dithered linear timing generator",
 
 TEST_CASE("dynamic dithered linear timeing generator",
           "[dynamic_dithered_linear_timing_generator]") {
-    auto tg = dynamic_dithered_linear_timing_generator<output_event>();
+    auto tg = dynamic_dithered_linear_timing_generator();
     CHECK_FALSE(tg.peek().has_value());
     struct trig_evt {
         std::int64_t abstime;
@@ -162,19 +158,18 @@ TEST_CASE("dynamic dithered linear timeing generator",
     CHECK(tg.peek().has_value());
     auto const t0 =
         tg.peek().value(); // NOLINT(bugprone-unchecked-optional-access)
-    auto const e0 = tg.pop();
-    CHECK(t0 == e0.abstime);
     CHECK(t0 >= 42);
     CHECK(t0 <= 43);
+    tg.pop();
     CHECK(tg.peek().has_value());
     auto const t1 =
         tg.peek().value(); // NOLINT(bugprone-unchecked-optional-access)
-    auto const e1 = tg.pop();
-    CHECK(t1 == e1.abstime);
     CHECK(t1 >= 52);
     CHECK(t1 <= 53);
     CHECK(t1 - t0 >= 10);
     CHECK(t1 - t0 <= 11);
+    tg.pop();
+    CHECK_FALSE(tg.peek().has_value());
 }
 
 } // namespace tcspc

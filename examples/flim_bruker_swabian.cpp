@@ -228,8 +228,8 @@ auto make_processor(settings const &settings,
     auto pixel_marker_processor =
     match<detection_event<>, pixel_start_event>(always_matcher(),
     select<type_list<pixel_start_event>>(
-    generate<pixel_start_event>(
-        one_shot_timing_generator<pixel_stop_event>(settings.pixel_time),
+    generate<pixel_start_event, pixel_stop_event>(
+        one_shot_timing_generator(settings.pixel_time),
     check_alternating<pixel_start_event, pixel_stop_event>(
     stop_with_error<type_list<warning_event>>(
         "pixel time is such that pixel stop occurs after next pixel start",

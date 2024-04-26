@@ -32,16 +32,17 @@ using out_events = type_list<trigger_event, output_event, misc_event>;
 } // namespace
 
 TEST_CASE("introspect generate", "[introspect]") {
-    check_introspect_simple_processor(generate<trigger_event>(
-        null_timing_generator<output_event>(), null_sink()));
+    check_introspect_simple_processor(generate<trigger_event, output_event>(
+        null_timing_generator(), null_sink()));
 }
 
 TEST_CASE("Generate null timing") {
     auto ctx = context::create();
-    auto in = feed_input<type_list<trigger_event>>(generate<trigger_event>(
-        null_timing_generator<output_event>(),
-        capture_output<out_events>(
-            ctx->tracker<capture_output_access>("out"))));
+    auto in = feed_input<type_list<trigger_event>>(
+        generate<trigger_event, output_event>(
+            null_timing_generator(),
+            capture_output<out_events>(
+                ctx->tracker<capture_output_access>("out"))));
     in.require_output_checked(ctx, "out");
     auto out = capture_output_checker<out_events>(
         ctx->access<capture_output_access>("out"));
@@ -59,8 +60,8 @@ TEST_CASE("Generate one-shot timing",
     default_data_types::abstime_type const delay = GENERATE(0, 1, 2);
     auto ctx = context::create();
     auto in = feed_input<type_list<trigger_event, misc_event>>(
-        generate<trigger_event>(
-            one_shot_timing_generator<output_event>(delay),
+        generate<trigger_event, output_event>(
+            one_shot_timing_generator(delay),
             capture_output<out_events>(
                 ctx->tracker<capture_output_access>("out"))));
     in.require_output_checked(ctx, "out");
@@ -112,12 +113,13 @@ TEST_CASE("Generate linear timing") {
     auto ctx = context::create();
 
     SECTION("Count of 0") {
-        auto in = feed_input<type_list<trigger_event>>(generate<trigger_event>(
-            linear_timing_generator<output_event>(arg_delay{delay},
-                                                  arg_interval{interval},
-                                                  arg_count<std::size_t>{0}),
-            capture_output<out_events>(
-                ctx->tracker<capture_output_access>("out"))));
+        auto in = feed_input<type_list<trigger_event>>(
+            generate<trigger_event, output_event>(
+                linear_timing_generator(arg_delay{delay},
+                                        arg_interval{interval},
+                                        arg_count<std::size_t>{0}),
+                capture_output<out_events>(
+                    ctx->tracker<capture_output_access>("out"))));
         in.require_output_checked(ctx, "out");
         auto out = capture_output_checker<out_events>(
             ctx->access<capture_output_access>("out"));
@@ -132,10 +134,10 @@ TEST_CASE("Generate linear timing") {
 
     SECTION("Count of 1") {
         auto in = feed_input<type_list<trigger_event, misc_event>>(
-            generate<trigger_event>(
-                linear_timing_generator<output_event>(
-                    arg_delay{delay}, arg_interval{interval},
-                    arg_count<std::size_t>{1}),
+            generate<trigger_event, output_event>(
+                linear_timing_generator(arg_delay{delay},
+                                        arg_interval{interval},
+                                        arg_count<std::size_t>{1}),
                 capture_output<out_events>(
                     ctx->tracker<capture_output_access>("out"))));
         in.require_output_checked(ctx, "out");
@@ -167,10 +169,10 @@ TEST_CASE("Generate linear timing") {
 
     SECTION("Count of 2") {
         auto in = feed_input<type_list<trigger_event, misc_event>>(
-            generate<trigger_event>(
-                linear_timing_generator<output_event>(
-                    arg_delay{delay}, arg_interval{interval},
-                    arg_count<std::size_t>{2}),
+            generate<trigger_event, output_event>(
+                linear_timing_generator(arg_delay{delay},
+                                        arg_interval{interval},
+                                        arg_count<std::size_t>{2}),
                 capture_output<out_events>(
                     ctx->tracker<capture_output_access>("out"))));
         in.require_output_checked(ctx, "out");
@@ -198,7 +200,7 @@ TEST_CASE("Generate linear timing") {
 
 TEST_CASE("dynamic one-shot timing generator",
           "[dynamic_one_shot_timing_generator]") {
-    auto tg = dynamic_one_shot_timing_generator<output_event>();
+    auto tg = dynamic_one_shot_timing_generator();
     CHECK_FALSE(tg.peek().has_value());
     struct trig_evt {
         std::int64_t abstime;
@@ -208,15 +210,14 @@ TEST_CASE("dynamic one-shot timing generator",
     CHECK(tg.peek().has_value());
     auto const t0 =
         tg.peek().value(); // NOLINT(bugprone-unchecked-optional-access)
-    auto const e0 = tg.pop();
-    CHECK(t0 == e0.abstime);
     CHECK(t0 == 45);
+    tg.pop();
     CHECK_FALSE(tg.peek().has_value());
 }
 
 TEST_CASE("dynamic linear timing generator",
           "[dynamic_linear_timing_generator]") {
-    auto tg = dynamic_linear_timing_generator<output_event>();
+    auto tg = dynamic_linear_timing_generator();
     CHECK_FALSE(tg.peek().has_value());
     struct trig_evt {
         std::int64_t abstime;
@@ -228,15 +229,13 @@ TEST_CASE("dynamic linear timing generator",
     CHECK(tg.peek().has_value());
     auto const t0 =
         tg.peek().value(); // NOLINT(bugprone-unchecked-optional-access)
-    auto const e0 = tg.pop();
-    CHECK(t0 == e0.abstime);
     CHECK(t0 == 45);
+    tg.pop();
     CHECK(tg.peek().has_value());
     auto const t1 =
         tg.peek().value(); // NOLINT(bugprone-unchecked-optional-access)
-    auto const e1 = tg.pop();
-    CHECK(t1 == e1.abstime);
     CHECK(t1 == 50);
+    tg.pop();
     CHECK_FALSE(tg.peek().has_value());
 }
 

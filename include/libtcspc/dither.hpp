@@ -7,6 +7,7 @@
 #pragma once
 
 #include "arg_wrappers.hpp"
+#include "common.hpp"
 
 #include <cassert>
 #include <cmath>
@@ -101,34 +102,26 @@ template <typename T> class dithering_quantizer {
 } // namespace internal
 
 /**
- * \brief Timing generator that generates a single, delayed output event whose
+ * \brief Timing generator that generates a single, delayed timing whose
  * abstime is dithered.
  *
  * \ingroup timing-generators-dither
  *
- * \tparam Event output event type
+ * \tparam DataTypes data type set specifying `abstime_type`
  */
-template <typename Event> class dithered_one_shot_timing_generator {
-  public:
-    /** \brief Implements timing generator requirement. */
-    using abstime_type = decltype(std::declval<Event>().abstime);
-
-    /** \brief Implements timing generator requirement. */
-    using output_event_type = Event;
-
-  private:
-    bool pending = false;
-    abstime_type next{};
+template <typename DataTypes = default_data_types>
+class dithered_one_shot_timing_generator {
+    std::optional<typename DataTypes::abstime_type> next;
     double dly;
 
-    internal::dithering_quantizer<abstime_type> dithq;
+    internal::dithering_quantizer<typename DataTypes::abstime_type> dithq;
 
   public:
     /**
-     * \brief Construct with delay.
+     * \brief Construct an instance that generates a timing after \p delay
+     * relative to each trigger.
      *
-     * \param delay how much to delay the output event relative to the
-     * trigger (must not be negative)
+     * \p delay must not be negative.
      */
     explicit dithered_one_shot_timing_generator(double delay) : dly(delay) {
         if (delay < 0.0)
@@ -138,79 +131,56 @@ template <typename Event> class dithered_one_shot_timing_generator {
 
     /** \brief Implements timing generator requirement. */
     template <typename TriggerEvent> void trigger(TriggerEvent const &event) {
-        static_assert(std::is_same_v<decltype(event.abstime), abstime_type>);
-        pending = true;
+        static_assert(std::is_same_v<decltype(event.abstime),
+                                     typename DataTypes::abstime_type>);
         next = event.abstime + dithq(dly);
     }
 
     /** \brief Implements timing generator requirement. */
-    [[nodiscard]] auto peek() const -> std::optional<abstime_type> {
-        if (pending)
-            return next;
-        return std::nullopt;
+    [[nodiscard]] auto peek() const
+        -> std::optional<typename DataTypes::abstime_type> {
+        return next;
     }
 
     /** \brief Implements timing generator requirement. */
-    auto pop() -> Event {
-        Event event{};
-        event.abstime = next;
-        pending = false;
-        return event;
-    }
+    void pop() { next.reset(); }
 };
 
 /**
- * \brief Timing generator that generates a single, delayed output event whose
- * abstime is dithered, configured by the trigger event.
+ * \brief Timing generator that generates a single, delayed timing, configured
+ * by the trigger event, whose abstime is dithered.
  *
  * \ingroup timing-generators-dither
  *
  * The delay of the output event (relative to the trigger event) is obtained
- * from the `delay` data member (type `double`) of each trigger event.
+ * from the `delay` data member (type `double`) of each trigger event
+ * (typically `tcspc::real_one_shot_timing_event`).
  *
- * \tparam Event output event type
+ * \tparam DataTypes data type set specifying `abstime_type`
  */
-template <typename Event> class dynamic_dithered_one_shot_timing_generator {
-  public:
-    /** \brief Implements timing generator requirement. */
-    using abstime_type = decltype(std::declval<Event>().abstime);
+template <typename DataTypes = default_data_types>
+class dynamic_dithered_one_shot_timing_generator {
+    std::optional<typename DataTypes::abstime_type> next;
 
-    /** \brief Implements timing generator requirement. */
-    using output_event_type = Event;
-
-  private:
-    bool pending = false;
-    abstime_type next{};
-
-    internal::dithering_quantizer<abstime_type> dithq;
+    internal::dithering_quantizer<typename DataTypes::abstime_type> dithq;
 
   public:
-    /**
-     * \brief Construct.
-     */
-    explicit dynamic_dithered_one_shot_timing_generator() = default;
-
     /** \brief Implements timing generator requirement. */
     template <typename TriggerEvent> void trigger(TriggerEvent const &event) {
-        static_assert(std::is_same_v<decltype(event.abstime), abstime_type>);
-        pending = true;
+        static_assert(std::is_same_v<decltype(event.abstime),
+                                     typename DataTypes::abstime_type>);
+        static_assert(std::is_same_v<decltype(event.delay), double>);
         next = event.abstime + dithq(event.delay);
     }
 
     /** \brief Implements timing generator requirement. */
-    [[nodiscard]] auto peek() const -> std::optional<abstime_type> {
-        if (pending)
-            return next;
-        return std::nullopt;
+    [[nodiscard]] auto peek() const
+        -> std::optional<typename DataTypes::abstime_type> {
+        return next;
     }
 
     /** \brief Implements timing generator requirement. */
-    auto pop() -> Event {
-        Event event{};
-        event.abstime = next;
-        pending = false;
-        return event;
-    }
+    void pop() { next.reset(); }
 };
 
 namespace internal {
@@ -220,9 +190,9 @@ template <typename Abstime> class dithered_linear_timing_generator_impl {
     std::size_t remaining = 0;
     Abstime next{};
 
-    double dly;
-    double intv;
-    std::size_t ct;
+    double dly{};
+    double intv{1.0};
+    std::size_t ct{};
 
     dithering_quantizer<Abstime> dithq;
 
@@ -242,6 +212,8 @@ template <typename Abstime> class dithered_linear_timing_generator_impl {
     }
 
   public:
+    dithered_linear_timing_generator_impl() = default;
+
     explicit dithered_linear_timing_generator_impl(
         arg_delay<double> delay, arg_interval<double> interval,
         arg_count<std::size_t> count)
@@ -276,46 +248,34 @@ template <typename Abstime> class dithered_linear_timing_generator_impl {
         return std::nullopt;
     }
 
-    auto pop() -> Abstime {
-        auto const ret = next;
+    void pop() {
         --remaining;
         compute_next();
-        return ret;
     }
 };
 
 } // namespace internal
 
 /**
- * \brief Timing generator that generates a periodic series of output events,
- * with temporal dithering.
+ * \brief Timing generator that generates a periodic series of timings, with
+ * temporal dithering.
  *
  * \ingroup timing-generators-dither
  *
- * \tparam Event output event type
+ * \tparam DataTypes data type set specifying `abstime_type`
  */
-template <typename Event> class dithered_linear_timing_generator {
-  public:
-    /** \brief Implements timing generator requirement. */
-    using abstime_type = decltype(std::declval<Event>().abstime);
-
-    /** \brief Implements timing generator requirement. */
-    using output_event_type = Event;
-
-  private:
-    internal::dithered_linear_timing_generator_impl<abstime_type> impl;
+template <typename DataTypes = default_data_types>
+class dithered_linear_timing_generator {
+    internal::dithered_linear_timing_generator_impl<
+        typename DataTypes::abstime_type>
+        impl;
 
   public:
     /**
-     * \brief Construct with delay, interval, and count.
+     * \brief Construct an instance that generates \p count timings at \p
+     * interval after \p delay relative to each trigger.
      *
-     * \param delay how much to delay the first output event relative to the
-     * trigger (must be nonnegative)
-     *
-     * \param interval time interval between subsequent output events (must be
-     * positive)
-     *
-     * \param count number of output events to generate for each trigger
+     * \p delay must be nonnegative; \p interval must be positive.
      */
     explicit dithered_linear_timing_generator(arg_delay<double> delay,
                                               arg_interval<double> interval,
@@ -324,74 +284,57 @@ template <typename Event> class dithered_linear_timing_generator {
 
     /** \brief Implements timing generator requirement. */
     template <typename TriggerEvent> void trigger(TriggerEvent const &event) {
-        static_assert(std::is_same_v<decltype(event.abstime), abstime_type>);
+        static_assert(std::is_same_v<decltype(event.abstime),
+                                     typename DataTypes::abstime_type>);
         impl.trigger(arg_abstime{event.abstime});
     }
 
     /** \brief Implements timing generator requirement. */
-    [[nodiscard]] auto peek() const -> std::optional<abstime_type> {
+    [[nodiscard]] auto peek() const
+        -> std::optional<typename DataTypes::abstime_type> {
         return impl.peek();
     }
 
     /** \brief Implements timing generator requirement. */
-    auto pop() -> Event {
-        Event event{};
-        event.abstime = impl.pop();
-        return event;
-    }
+    void pop() { impl.pop(); }
 };
 
 /**
- * \brief Timing generator that generates a periodic series of output events,
- * with temporal dithering, configured by the trigger event.
+ * \brief Timing generator that generates a periodic series of timings,
+ * configured by the trigger event, with temporal dithering.
  *
  * \ingroup timing-generators-dither
  *
- * The delay, interval, and count of the output events are obtained from the
- * data members of each trigger event:
- * - `double delay`
- * - `double interval`
- * - `std::size_t count`
+ * The configuration of output timings is obtained from the `delay`,
+ * `interval`, and `count` data members of each trigger event (typically
+ * tcspc::real_linear_timing_event).
  *
- * \tparam Event output event type
+ * \tparam DataTypes data type set specifying `abstime_type`
  */
-template <typename Event> class dynamic_dithered_linear_timing_generator {
-  public:
-    /** \brief Implements timing generator requirement. */
-    using abstime_type = decltype(std::declval<Event>().abstime);
-
-    /** \brief Implements timing generator requirement. */
-    using output_event_type = Event;
-
-  private:
-    internal::dithered_linear_timing_generator_impl<abstime_type> impl;
+template <typename DataTypes = default_data_types>
+class dynamic_dithered_linear_timing_generator {
+    internal::dithered_linear_timing_generator_impl<
+        typename DataTypes::abstime_type>
+        impl;
 
   public:
-    /**
-     * \brief Construct.
-     */
-    explicit dynamic_dithered_linear_timing_generator()
-        : impl(arg_delay{0.0}, arg_interval{1.0}, arg_count<std::size_t>{0}) {}
-
     /** \brief Implements timing generator requirement. */
     template <typename TriggerEvent> void trigger(TriggerEvent const &event) {
-        static_assert(std::is_same_v<decltype(event.abstime), abstime_type>);
+        static_assert(std::is_same_v<decltype(event.abstime),
+                                     typename DataTypes::abstime_type>);
         impl.trigger_and_configure(
             arg_abstime{event.abstime}, arg_delay{event.delay},
             arg_interval{event.interval}, arg_count{event.count});
     }
 
     /** \brief Implements timing generator requirement. */
-    [[nodiscard]] auto peek() const -> std::optional<abstime_type> {
+    [[nodiscard]] auto peek() const
+        -> std::optional<typename DataTypes::abstime_type> {
         return impl.peek();
     }
 
     /** \brief Implements timing generator requirement. */
-    auto pop() -> Event {
-        Event event{};
-        event.abstime = impl.pop();
-        return event;
-    }
+    void pop() { impl.pop(); }
 };
 
 } // namespace tcspc
