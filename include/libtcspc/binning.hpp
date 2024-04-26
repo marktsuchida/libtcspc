@@ -279,14 +279,14 @@ struct power_of_2_bin_mapper {
         static_assert(NDataBits <= 8 * sizeof(datapoint_type));
         static_assert(NHistoBits <= 8 * sizeof(bin_index_type));
         static_assert(NDataBits >= NHistoBits);
-        constexpr int shift = NDataBits - NHistoBits;
+        static constexpr int shift = NDataBits - NHistoBits;
         auto bin = [&] {
             if constexpr (shift >= 8 * sizeof(datapoint_type))
                 return 0;
             else
                 return d >> shift;
         }();
-        constexpr datapoint_type max_bin_index = (1 << NHistoBits) - 1;
+        static constexpr datapoint_type max_bin_index = (1 << NHistoBits) - 1;
         if (bin > max_bin_index)
             return std::nullopt;
         if constexpr (Flip)

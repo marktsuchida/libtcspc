@@ -32,9 +32,9 @@ namespace internal {
 // 64 (correct for most (all?) x86_64 and many ARM processors) except in known
 // cases where a larger value is appropriate.
 #if defined(__APPLE__) && defined(__arm64__)
-constexpr std::size_t destructive_interference_size = 128;
+inline constexpr std::size_t destructive_interference_size = 128;
 #else
-constexpr std::size_t destructive_interference_size = 64;
+inline constexpr std::size_t destructive_interference_size = 64;
 #endif
 
 } // namespace internal

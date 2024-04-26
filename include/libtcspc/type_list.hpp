@@ -66,7 +66,8 @@ struct is_type_list<type_list<Ts...>> : std::true_type {};
 /**
  * \brief Helper variable template for `tcspc::is_type_list`.
  */
-template <typename T> constexpr bool is_type_list_v = is_type_list<T>::value;
+template <typename T>
+inline constexpr bool is_type_list_v = is_type_list<T>::value;
 
 /** @} <!-- group is-type-list --> */
 
@@ -101,7 +102,8 @@ struct type_list_size<type_list<Ts...>>
  * \brief Helper variable template for `tcspc::type_list_size`.
  */
 template <typename TypeList>
-constexpr std::size_t type_list_size_v = type_list_size<TypeList>::value;
+inline constexpr std::size_t type_list_size_v =
+    type_list_size<TypeList>::value;
 
 /** @} <!-- group type-list-size --> */
 
@@ -169,7 +171,7 @@ struct type_list_contains<type_list<Ts...>, Type>
  * \brief Helper variable template for `tcspc::type_list_contains`.
  */
 template <typename TypeList, typename Type>
-constexpr bool type_list_contains_v =
+inline constexpr bool type_list_contains_v =
     type_list_contains<TypeList, Type>::value;
 
 /** @} <!-- group type-list-contains --> */
@@ -204,7 +206,8 @@ struct type_list_is_subset<type_list<T0s...>, TL1>
  * \brief Helper variable template for `tcspc::type_list_is_subset`.
  */
 template <typename TL0, typename TL1>
-constexpr bool type_list_is_subset_v = type_list_is_subset<TL0, TL1>::value;
+inline constexpr bool type_list_is_subset_v =
+    type_list_is_subset<TL0, TL1>::value;
 
 /** @} <!-- group type-list-is-subset --> */
 
@@ -234,7 +237,7 @@ struct type_list_is_equal_set
  * \brief Helper variable template for `tcspc::type_list_is_equal_set`.
  */
 template <typename TL0, typename TL1>
-constexpr bool type_list_is_equal_set_v =
+inline constexpr bool type_list_is_equal_set_v =
     type_list_is_equal_set<TL0, TL1>::value;
 
 /** @} <!-- group type-list-is-equal-set --> */
