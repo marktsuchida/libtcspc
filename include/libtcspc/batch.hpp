@@ -43,9 +43,7 @@ template <typename Event, typename Downstream> class batch {
     }
 
     [[nodiscard]] auto introspect_graph() const -> processor_graph {
-        auto g = downstream.introspect_graph();
-        g.push_entry_point(this);
-        return g;
+        return downstream.introspect_graph().push_entry_point(this);
     }
 
     template <typename E,
@@ -86,9 +84,7 @@ template <typename Event, typename Downstream> class unbatch {
     }
 
     [[nodiscard]] auto introspect_graph() const -> processor_graph {
-        auto g = downstream.introspect_graph();
-        g.push_entry_point(this);
-        return g;
+        return downstream.introspect_graph().push_entry_point(this);
     }
 
     // Should we mark this LIBTCSPC_NOINLINE? It would be good to increase the

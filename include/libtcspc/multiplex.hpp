@@ -34,9 +34,7 @@ template <typename EventList, typename Downstream> class multiplex {
     }
 
     [[nodiscard]] auto introspect_graph() const -> processor_graph {
-        auto g = downstream.introspect_graph();
-        g.push_entry_point(this);
-        return g;
+        return downstream.introspect_graph().push_entry_point(this);
     }
 
     template <typename Event, typename = std::enable_if_t<
@@ -62,9 +60,7 @@ template <typename Downstream> class demultiplex {
     }
 
     [[nodiscard]] auto introspect_graph() const -> processor_graph {
-        auto g = downstream.introspect_graph();
-        g.push_entry_point(this);
-        return g;
+        return downstream.introspect_graph().push_entry_point(this);
     }
 
     template <typename EL> void handle(variant_event<EL> const &event) {

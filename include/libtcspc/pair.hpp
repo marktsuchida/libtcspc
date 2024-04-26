@@ -60,9 +60,7 @@ class pair_all {
     }
 
     [[nodiscard]] auto introspect_graph() const -> processor_graph {
-        auto g = downstream.introspect_graph();
-        g.push_entry_point(this);
-        return g;
+        return downstream.introspect_graph().push_entry_point(this);
     }
 
     template <typename DT> void handle(detection_event<DT> const &event) {
@@ -134,9 +132,7 @@ class pair_one {
     }
 
     [[nodiscard]] auto introspect_graph() const -> processor_graph {
-        auto g = downstream.introspect_graph();
-        g.push_entry_point(this);
-        return g;
+        return downstream.introspect_graph().push_entry_point(this);
     }
 
     template <typename DT> void handle(detection_event<DT> const &event) {
@@ -205,9 +201,7 @@ class pair_all_between {
     }
 
     [[nodiscard]] auto introspect_graph() const -> processor_graph {
-        auto g = downstream.introspect_graph();
-        g.push_entry_point(this);
-        return g;
+        return downstream.introspect_graph().push_entry_point(this);
     }
 
     template <typename DT> void handle(detection_event<DT> const &event) {
@@ -280,9 +274,7 @@ class pair_one_between {
     }
 
     [[nodiscard]] auto introspect_graph() const -> processor_graph {
-        auto g = downstream.introspect_graph();
-        g.push_entry_point(this);
-        return g;
+        return downstream.introspect_graph().push_entry_point(this);
     }
 
     template <typename DT> void handle(detection_event<DT> const &event) {

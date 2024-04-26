@@ -88,9 +88,7 @@ class merge_impl {
     }
 
     [[nodiscard]] auto introspect_graph() const -> processor_graph {
-        auto g = downstream.introspect_graph();
-        g.push_entry_point(this);
-        return g;
+        return downstream.introspect_graph().push_entry_point(this);
     }
 
     template <unsigned InputChannel, typename Event>
@@ -175,9 +173,7 @@ class merge_input {
     }
 
     [[nodiscard]] auto introspect_graph() const -> processor_graph {
-        auto g = impl->introspect_graph();
-        g.push_entry_point(this);
-        return g;
+        return impl->introspect_graph().push_entry_point(this);
     }
 
     template <typename Event, typename = std::enable_if_t<
@@ -347,9 +343,7 @@ template <std::size_t N, typename Downstream> class merge_unsorted_impl {
     }
 
     [[nodiscard]] auto introspect_graph() const -> processor_graph {
-        auto g = downstream.introspect_graph();
-        g.push_entry_point(this);
-        return g;
+        return downstream.introspect_graph().push_entry_point(this);
     }
 
     template <typename Event> void handle(Event const &event) {
@@ -398,9 +392,7 @@ template <std::size_t N, typename Downstream> class merge_unsorted_input {
     }
 
     [[nodiscard]] auto introspect_graph() const -> processor_graph {
-        auto g = impl->introspect_graph();
-        g.push_entry_point(this);
-        return g;
+        return impl->introspect_graph().push_entry_point(this);
     }
 
     template <typename Event> void handle(Event const &event) {

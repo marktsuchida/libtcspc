@@ -59,13 +59,11 @@ class route_homogeneous {
     }
 
     [[nodiscard]] auto introspect_graph() const -> processor_graph {
-        return std::transform_reduce(downstreams.begin(), downstreams.end(),
-                                     processor_graph(), merge_processor_graphs,
-                                     [this](auto const &d) {
-                                         auto g = d.introspect_graph();
-                                         g.push_entry_point(this);
-                                         return g;
-                                     });
+        return std::transform_reduce(
+            downstreams.begin(), downstreams.end(), processor_graph(),
+            merge_processor_graphs, [this](auto const &d) {
+                return d.introspect_graph().push_entry_point(this);
+            });
     }
 
     template <typename Event> void handle(Event const &event) {

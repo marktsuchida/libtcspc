@@ -689,9 +689,7 @@ template <typename Event, typename Downstream> class extract_bucket {
     }
 
     [[nodiscard]] auto introspect_graph() const -> processor_graph {
-        auto g = downstream.introspect_graph();
-        g.push_entry_point(this);
-        return g;
+        return downstream.introspect_graph().push_entry_point(this);
     }
 
     void handle(Event const &event) { downstream.handle(event.bucket); }

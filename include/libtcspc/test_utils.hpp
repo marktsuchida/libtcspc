@@ -426,9 +426,7 @@ template <typename EventList> class capture_output {
     }
 
     [[nodiscard]] auto introspect_graph() const -> processor_graph {
-        auto g = processor_graph();
-        g.push_entry_point(this);
-        return g;
+        return processor_graph().push_entry_point(this);
     }
 
     template <typename Event, typename = std::enable_if_t<
@@ -509,9 +507,7 @@ template <> class capture_output<type_list<>> {
     }
 
     [[nodiscard]] auto introspect_graph() const -> processor_graph {
-        auto g = processor_graph();
-        g.push_entry_point(this);
-        return g;
+        return processor_graph().push_entry_point(this);
     }
 
     void flush() {
@@ -564,9 +560,7 @@ template <typename EventList, typename Downstream> class feed_input {
     }
 
     [[nodiscard]] auto introspect_graph() const -> processor_graph {
-        auto g = downstream.introspect_graph();
-        g.push_entry_point(this);
-        return g;
+        return downstream.introspect_graph().push_entry_point(this);
     }
 
     void require_output_checked(std::shared_ptr<context> context,
@@ -669,9 +663,7 @@ template <typename EventList> class sink_events {
 
     /** \brief Implements processor requirement. */
     [[nodiscard]] auto introspect_graph() const -> processor_graph {
-        auto g = processor_graph();
-        g.push_entry_point(this);
-        return g;
+        return processor_graph().push_entry_point(this);
     }
 
     /** \brief Implements processor requirement. */

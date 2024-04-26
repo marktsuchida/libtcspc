@@ -38,9 +38,7 @@ class time_correlate_at_start_or_stop {
     }
 
     [[nodiscard]] auto introspect_graph() const -> processor_graph {
-        auto g = downstream.introspect_graph();
-        g.push_entry_point(this);
-        return g;
+        return downstream.introspect_graph().push_entry_point(this);
     }
 
     template <typename DT> void handle(detection_pair_event<DT> const &event) {
@@ -76,9 +74,7 @@ class time_correlate_at_midpoint {
     }
 
     [[nodiscard]] auto introspect_graph() const -> processor_graph {
-        auto g = downstream.introspect_graph();
-        g.push_entry_point(this);
-        return g;
+        return downstream.introspect_graph().push_entry_point(this);
     }
 
     template <typename DT> void handle(detection_pair_event<DT> const &event) {
@@ -116,9 +112,7 @@ class time_correlate_at_fraction {
     }
 
     [[nodiscard]] auto introspect_graph() const -> processor_graph {
-        auto g = downstream.introspect_graph();
-        g.push_entry_point(this);
-        return g;
+        return downstream.introspect_graph().push_entry_point(this);
     }
 
     template <typename DT> void handle(detection_pair_event<DT> const &event) {
@@ -335,9 +329,7 @@ template <typename Downstream> class negate_difftime {
     }
 
     [[nodiscard]] auto introspect_graph() const -> processor_graph {
-        auto g = downstream.introspect_graph();
-        g.push_entry_point(this);
-        return g;
+        return downstream.introspect_graph().push_entry_point(this);
     }
 
     template <typename DataTypes>
@@ -370,9 +362,7 @@ class remove_time_correlation {
     }
 
     [[nodiscard]] auto introspect_graph() const -> processor_graph {
-        auto g = downstream.introspect_graph();
-        g.push_entry_point(this);
-        return g;
+        return downstream.introspect_graph().push_entry_point(this);
     }
 
     template <typename DT>

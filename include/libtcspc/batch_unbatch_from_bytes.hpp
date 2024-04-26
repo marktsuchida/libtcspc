@@ -45,9 +45,7 @@ template <typename Event, typename Downstream> class batch_from_bytes {
     }
 
     [[nodiscard]] auto introspect_graph() const -> processor_graph {
-        auto g = downstream.introspect_graph();
-        g.push_entry_point(this);
-        return g;
+        return downstream.introspect_graph().push_entry_point(this);
     }
 
     template <typename ByteSpan> void handle(ByteSpan const &event) {
@@ -100,9 +98,7 @@ template <typename Event, typename Downstream> class unbatch_from_bytes {
     }
 
     [[nodiscard]] auto introspect_graph() const -> processor_graph {
-        auto g = downstream.introspect_graph();
-        g.push_entry_point(this);
-        return g;
+        return downstream.introspect_graph().push_entry_point(this);
     }
 
     template <typename ByteSpan> void handle(ByteSpan const &event) {

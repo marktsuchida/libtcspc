@@ -30,9 +30,7 @@ template <typename DataTypes, typename Downstream> class delay {
     }
 
     [[nodiscard]] auto introspect_graph() const -> processor_graph {
-        auto g = downstream.introspect_graph();
-        g.push_entry_point(this);
-        return g;
+        return downstream.introspect_graph().push_entry_point(this);
     }
 
     template <typename TimeTaggedEvent>
@@ -61,9 +59,7 @@ template <typename DataTypes, typename Downstream> class zero_base_abstime {
     }
 
     [[nodiscard]] auto introspect_graph() const -> processor_graph {
-        auto g = downstream.introspect_graph();
-        g.push_entry_point(this);
-        return g;
+        return downstream.introspect_graph().push_entry_point(this);
     }
 
     template <typename TimeTaggedEvent>

@@ -345,9 +345,7 @@ template <typename OutputStream> class write_binary_stream {
     }
 
     [[nodiscard]] auto introspect_graph() const -> processor_graph {
-        auto g = processor_graph();
-        g.push_entry_point(this);
-        return g;
+        return processor_graph().push_entry_point(this);
     }
 
     template <typename Span> void handle(Span const &event) {

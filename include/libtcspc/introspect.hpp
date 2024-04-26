@@ -238,9 +238,11 @@ class processor_graph {
      * \tparam Processor processor type (usually deduced)
      *
      * \param processor pointer to the processor
+     *
+     * \return a reference to this graph
      */
     template <typename Processor>
-    void push_entry_point(Processor const *processor) {
+    auto push_entry_point(Processor const *processor) -> processor_graph & {
         if (entrypts.size() > 1) {
             throw std::logic_error(
                 "processor_graph can only push entry point when it has at most one entry point");
@@ -265,6 +267,8 @@ class processor_graph {
             edgs.insert(edge_inspt, edge);
             entrypts[0] = id;
         }
+
+        return *this;
     }
 
     /**

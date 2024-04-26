@@ -72,9 +72,7 @@ class virtual_processor_impl<Interface, Proc, type_list<>> : public Interface {
     }
 
     [[nodiscard]] auto introspect_graph() const -> processor_graph final {
-        auto g = proc.introspect_graph();
-        g.push_entry_point(this);
-        return g;
+        return proc.introspect_graph().push_entry_point(this);
     }
 
     void flush() final { proc.flush(); }
@@ -161,9 +159,7 @@ template <typename EventList> class type_erased_processor {
 
     /** \brief Implements processor requirement. */
     [[nodiscard]] auto introspect_graph() const -> processor_graph {
-        auto g = proc->introspect_graph();
-        g.push_entry_point(this);
-        return g;
+        return proc->introspect_graph().push_entry_point(this);
     }
 
     /** \brief Implements processor requirement. */

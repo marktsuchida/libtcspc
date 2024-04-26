@@ -152,9 +152,7 @@ class null_sink {
 
     /** \brief Implements processor requirement. */
     [[nodiscard]] auto introspect_graph() const -> processor_graph {
-        auto g = processor_graph();
-        g.push_entry_point(this);
-        return g;
+        return processor_graph().push_entry_point(this);
     }
 
     /** \brief Implements processor requirement. */
@@ -176,9 +174,7 @@ template <typename Downstream> class null_source {
     }
 
     [[nodiscard]] auto introspect_graph() const -> processor_graph {
-        auto g = downstream.introspect_graph();
-        g.push_entry_point(this);
-        return g;
+        return downstream.introspect_graph().push_entry_point(this);
     }
 
     void flush() {

@@ -57,9 +57,7 @@ class regulate_time_reached {
     }
 
     [[nodiscard]] auto introspect_graph() const -> processor_graph {
-        auto g = downstream.introspect_graph();
-        g.push_entry_point(this);
-        return g;
+        return downstream.introspect_graph().push_entry_point(this);
     }
 
     template <typename DT> void handle(time_reached_event<DT> const &event) {
