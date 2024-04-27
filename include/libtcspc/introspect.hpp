@@ -331,7 +331,7 @@ class processor_graph {
         auto it = std::find_if(nds.begin(), nds.end(),
                                [id](auto const &n) { return n.id == id; });
         if (it == nds.end())
-            throw std::logic_error("no such node id in processor_graph");
+            throw std::out_of_range("no such node id in processor_graph");
         return std::size_t(std::distance(nds.begin(), it));
     }
 
@@ -347,7 +347,7 @@ class processor_graph {
         auto it = std::find_if(nds.begin(), nds.end(),
                                [id](auto const &n) { return n.id == id; });
         if (it == nds.end())
-            throw std::logic_error("no such node id in processor_graph");
+            throw std::out_of_range("no such node id in processor_graph");
         return it->info;
     }
 

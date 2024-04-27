@@ -67,10 +67,10 @@ class histogram_elementwise {
           mhist(hist_bucket, max_per_bin, num_bins, num_elements, true),
           downstream(std::move(downstream)) {
         if (num_elements.value == 0)
-            throw std::logic_error(
+            throw std::invalid_argument(
                 "histogram_elementsiwe must have at least 1 element");
         if (num_bins.value == 0)
-            throw std::logic_error(
+            throw std::invalid_argument(
                 "histogram_elementsiwe must have at least 1 bin per element");
     }
 
@@ -323,10 +323,10 @@ class histogram_elementwise_accumulate {
           mhista(hist_bucket, max_per_bin, num_bins, num_elements, true),
           downstream(std::move(downstream)) {
         if (num_elements.value == 0)
-            throw std::logic_error(
+            throw std::invalid_argument(
                 "histogram_elementsiwe_accumulate must have at least 1 element");
         if (num_bins.value == 0)
-            throw std::logic_error(
+            throw std::invalid_argument(
                 "histogram_elementsiwe_accumulate must have at least 1 bin per element");
     }
 

@@ -212,7 +212,7 @@ class buffer {
           downstream(std::move(downstream)), trk(std::move(tracker)) {
         // Limit to avoid integer overflow.
         if (max_latency > std::chrono::hours(24)) {
-            throw std::logic_error(
+            throw std::invalid_argument(
                 "buffer latency limit must not be greater than 24 h");
         }
 
