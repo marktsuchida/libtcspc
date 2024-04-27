@@ -16,7 +16,6 @@
 #include <chrono>
 #include <condition_variable>
 #include <cstddef>
-#include <exception>
 #include <functional>
 #include <mutex>
 #include <stdexcept>

@@ -8,13 +8,12 @@
 
 #include <cstddef>
 
-namespace tcspc {
-
 /**
+ * \namespace tcspc::arg
  * \brief Argument wrappers
  * \ingroup arg-wrappers
  */
-namespace arg {
+namespace tcspc::arg {
 
 // Function argument wrappers for strong typing (avoiding mistakes with
 // otherwise easily swappable parameters). Each has a constructor for two
@@ -392,6 +391,4 @@ template <typename T> struct truncate {
     explicit truncate(T arg) : value(arg) {}
 };
 
-} // namespace arg
-
-} // namespace tcspc
+} // namespace tcspc::arg

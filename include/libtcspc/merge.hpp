@@ -20,7 +20,6 @@
 #include <cstddef>
 #include <exception>
 #include <memory>
-#include <stdexcept>
 #include <tuple>
 #include <type_traits>
 #include <utility>

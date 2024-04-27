@@ -6,13 +6,13 @@
 
 #pragma once
 
+#include "arg_wrappers.hpp"
 #include "common.hpp"
 #include "errors.hpp"
 #include "introspect.hpp"
 #include "timing_misc.hpp"
 
 #include <algorithm>
-#include <array>
 #include <cassert>
 #include <cstddef>
 #include <cstdint>

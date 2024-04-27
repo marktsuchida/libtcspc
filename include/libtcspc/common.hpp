@@ -320,14 +320,16 @@ inline constexpr error_on_overflow_and_skip_concluding_event_t
 }
 
 /** \private */
-constexpr auto operator|(error_on_overflow_t const &,
-                         skip_concluding_event_t const &) noexcept {
+constexpr auto
+operator|([[maybe_unused]] error_on_overflow_t const &lhs,
+          [[maybe_unused]] skip_concluding_event_t const &rhs) noexcept {
     return internal::error_on_overflow_and_skip_concluding_event;
 }
 
 /** \private */
-constexpr auto operator|(skip_concluding_event_t const &,
-                         error_on_overflow_t const &) noexcept {
+constexpr auto
+operator|([[maybe_unused]] skip_concluding_event_t const &lhs,
+          [[maybe_unused]] error_on_overflow_t const &rhs) noexcept {
     return internal::error_on_overflow_and_skip_concluding_event;
 }
 

@@ -10,7 +10,6 @@
 #include "common.hpp"
 #include "histogram_events.hpp"
 #include "introspect.hpp"
-#include "time_tagged_events.hpp"
 
 #include <cstddef>
 #include <cstdint>

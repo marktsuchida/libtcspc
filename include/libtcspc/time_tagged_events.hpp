@@ -8,6 +8,7 @@
 
 #include "common.hpp"
 
+#include <array>
 #include <cstdint>
 #include <ostream>
 #include <type_traits>

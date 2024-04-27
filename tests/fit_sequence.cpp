@@ -6,6 +6,7 @@
 
 #include "libtcspc/fit_sequence.hpp"
 
+#include "libtcspc/arg_wrappers.hpp"
 #include "libtcspc/common.hpp"
 #include "libtcspc/context.hpp"
 #include "libtcspc/errors.hpp"
@@ -18,6 +19,7 @@
 #include <catch2/matchers/catch_matchers_floating_point.hpp>
 
 #include <cmath>
+#include <cstddef>
 #include <memory>
 #include <vector>
 

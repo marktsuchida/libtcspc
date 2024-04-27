@@ -10,6 +10,7 @@
 #include "libtcspc/common.hpp"
 #include "libtcspc/context.hpp"
 #include "libtcspc/errors.hpp"
+#include "libtcspc/int_types.hpp"
 #include "libtcspc/test_utils.hpp"
 #include "libtcspc/type_list.hpp"
 #include "test_checkers.hpp"
@@ -17,7 +18,6 @@
 #include <catch2/catch_test_macros.hpp>
 
 #include <memory>
-#include <stdexcept>
 
 namespace tcspc {
 

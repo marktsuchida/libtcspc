@@ -8,6 +8,7 @@
 
 #include "libtcspc/arg_wrappers.hpp"
 #include "libtcspc/bucket.hpp"
+#include "libtcspc/int_types.hpp"
 #include "libtcspc/span.hpp"
 
 #include <benchmark/benchmark.h>

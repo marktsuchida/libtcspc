@@ -8,8 +8,6 @@
 
 #include "introspect.hpp"
 
-#include <type_traits>
-
 namespace tcspc {
 
 namespace internal {

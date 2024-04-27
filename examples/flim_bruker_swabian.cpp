@@ -193,7 +193,7 @@ auto make_processor(settings const &settings,
         time_correlated_detection_event<>,
         pixel_start_event,
         pixel_stop_event>>(
-            arg::max_buffered<std::size_t>{1024 * 1024},
+            arg::max_buffered<std::size_t>{1 << 20},
     map_to_datapoints<time_correlated_detection_event<>>(
         difftime_data_mapper(),
     map_to_bins(
@@ -208,7 +208,7 @@ auto make_processor(settings const &settings,
 
     auto [sync_merge, cfd_merge] =
     merge<type_list<detection_event<>>>(
-        arg::max_buffered<std::size_t>{1024 * 1024},
+        arg::max_buffered<std::size_t>{1 << 20},
     pair_all_between(
         arg::start_channel{settings.sync_channel},
         std::array{settings.photon_trailing_channel},

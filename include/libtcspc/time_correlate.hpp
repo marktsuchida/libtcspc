@@ -11,6 +11,7 @@
 #include "introspect.hpp"
 #include "time_tagged_events.hpp"
 
+#include <array>
 #include <cmath>
 #include <type_traits>
 #include <utility>

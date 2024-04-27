@@ -10,6 +10,7 @@
 #include "bucket.hpp"
 #include "common.hpp"
 #include "errors.hpp"
+#include "int_types.hpp"
 #include "introspect.hpp"
 #include "span.hpp"
 

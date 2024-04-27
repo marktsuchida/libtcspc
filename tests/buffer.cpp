@@ -19,6 +19,7 @@
 #include <catch2/trompeloeil.hpp>
 
 #include <chrono>
+#include <cstddef>
 #include <memory>
 #include <stdexcept>
 #include <thread>
