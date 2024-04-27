@@ -50,13 +50,12 @@ class end_of_processing final : public std::exception {
  *
  * \ingroup exceptions
  *
- * This error (derived from `std::runtime_error`) is raised when the
- * `tcspc::error_on_overflow_t` policy was requested and there was an overflow.
- * It is also raised when `tcspc::reset_on_overflow_t` was requested but a
- * reset would result in an infinite loop: in the case of `tcspc::histogram()`
- * when maximum-per-bin set to 0, or
- * `tcspc::histogram_elementwise_accumulate()` when a single batch contains
- * enough increments to overflow a bin.
+ * This error is raised when the `tcspc::error_on_overflow_t` policy was
+ * requested and there was an overflow. It is also raised when
+ * `tcspc::reset_on_overflow_t` was requested but a reset would result in an
+ * infinite loop: in the case of `tcspc::histogram()` when maximum-per-bin set
+ * to 0, or `tcspc::histogram_elementwise_accumulate()` when a single batch
+ * contains enough increments to overflow a bin.
  */
 class histogram_overflow_error : public std::runtime_error {
   public:

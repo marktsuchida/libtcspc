@@ -49,6 +49,8 @@ template <typename... Ts> struct type_list {
  * \brief Metafunction to tell if a type is a type list.
  * specialization.
  *
+ * \hideinheritancegraph
+ *
  * Checks if \p T is a specialization of `tcspc::type_list` and provides the
  * result in the `bool` member `value`.
  *
@@ -222,6 +224,8 @@ inline constexpr bool type_list_is_subset_v =
  * \brief Metafunction to determine if a type list is set-equivalent to
  * another.
  *
+ * \hideinheritancegraph
+ *
  * Determines if the type arguments of the `tcspc::type_list` specializations
  * \p TL0 and \p TL1 match, disregarding ordering and duplication, and provides
  * the result in the `bool` member `value`.
@@ -268,6 +272,8 @@ struct unique_type_list_impl<type_list<Ds...>, type_list<T, Ts...>>
 
 /**
  * \brief Metafunction to remove duplicate types from a type list.
+ *
+ * \hideinheritancegraph
  *
  * Removes duplicate types from the `tcspc::type_list` specialization \p
  * TypeList and provides the result as member `type`.
@@ -327,6 +333,8 @@ struct type_list_union_impl<type_list<Ds...>, type_list<S0, S0s...>,
 /**
  * \brief Metafunction to obtain the union of two sets of types.
  *
+ * \hideinheritancegraph
+ *
  * Forms a `tcspc::type_list` specialization containing the set-union of the
  * types contained in the `tcspc::type_list` specializations \p TL0 and \p TL1
  * and provides the result as member `type`.
@@ -379,6 +387,8 @@ struct type_list_intersection_impl<type_list<Ds...>, type_list<S0, S0s...>,
 
 /**
  * \brief Metafunction to obtain the intersection of two sets of types.
+ *
+ * \hideinheritancegraph
  *
  * Forms a `tcspc::type_list` specialization containing the set-intersection of
  * the types contained in the `tcspc::type_list` specializations \p TL0 and \p
@@ -434,6 +444,8 @@ struct type_list_set_difference_impl<type_list<Ds...>, type_list<S0, S0s...>,
 
 /**
  * \brief Metafunction to obtain the set difference of two sets of types.
+ *
+ * \hideinheritancegraph
  *
  * Forms a `tcspc::type_list` specialization containing the set difference of
  * the types contained in the `tcspc::type_list` specializations \p TL0 and \p

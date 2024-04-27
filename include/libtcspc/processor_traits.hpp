@@ -22,6 +22,8 @@ namespace tcspc {
 /**
  * \brief Metafunction to check whether a processor handles flushing.
  *
+ * \hideinheritancegraph
+ *
  * Determines whether the processor \p Proc handles `flush()` (which all
  * processors should) and provides the result in the `bool` member `value`.
  *
@@ -55,6 +57,8 @@ inline constexpr bool handles_flush_v = handles_flush<Proc>::value;
 
 /**
  * \brief Metafunction to check whether a processor handles an event type.
+ *
+ * \hideinheritancegraph
  *
  * Determines whether the processor \p Proc handles the event type \p Event and
  * provides the result in the `bool` member `value`.

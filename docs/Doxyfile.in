@@ -21,7 +21,7 @@ RECURSIVE              = YES
 SHOW_HEADERFILE        = NO
 SORT_BRIEF_DOCS        = YES
 
-CLASS_GRAPH            = NO
+CLASS_GRAPH            = TEXT
 COLLABORATION_GRAPH    = NO
 GROUP_GRAPHS           = NO
 HAVE_DOT               = NO

@@ -43,6 +43,8 @@ inline constexpr std::size_t destructive_interference_size = 64;
 /**
  * \brief Exception type thrown to pumping thread when buffer source was
  * discontinued without reaching the point of flushing.
+ *
+ * \ingroup exceptions
  */
 class source_halted final : public std::exception {
   public:
