@@ -85,12 +85,11 @@ auto match_replace(Matcher &&matcher, Downstream &&downstream) {
  *
  * All events are passed through.
  *
- * Any event of type \p Event is tested by the given \p matcher. If it is a
- * match, an \p OutEvent is generated with the same `abstime` as the \p Event.
+ * Any event of type \p Event is tested by the given \p matcher (see \ref
+ * matchers). If it is a match, an \p OutEvent is generated with the same
+ * `abstime` as the \p Event.
  *
  * Both \p Event and \p OutEvent must have a `abstime` field.
- *
- * For matchers provided by libtcspc, see \ref matchers.
  *
  * \see `tcspc::match_replace()`
  *

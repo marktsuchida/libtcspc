@@ -308,7 +308,7 @@ template <bool IsNSyncOverflowAlwaysSingle> struct basic_pqt3_event {
     /**
      * \brief Make an event representing an nsync overflow.
      *
-     * This overload is only available in \ref pqt3_generic_event.
+     * This overload is only available in `tcspc::pqt3_generic_event`.
      *
      * \param count number of overflows; 1 to 1023 (0 is allowed but may not be
      * handled correctly by other readers)

@@ -325,7 +325,7 @@ struct basic_pqt2_event {
     /**
      * \brief Make an event representing an time tag overflow.
      *
-     * This overload is only available in \ref pqt2_generic_event.
+     * This overload is only available in `tcspc::pqt2_generic_event`.
      *
      * \param count number of overflows; 1 to 33,554,431 (0 is allowed but may
      * not be handled correctly by other readers)
