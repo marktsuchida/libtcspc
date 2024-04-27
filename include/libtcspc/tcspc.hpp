@@ -746,6 +746,22 @@ namespace tcspc {
  *
  * \brief Exception types.
  *
+ * In libtcspc, exceptions are used to signal the end of processing when a
+ * processor either detects an error (see \ref errors) or decides that the end
+ * of (the interesting part of) the input has been reached (see
+ * `tcspc::end_of_processing`).
+ *
+ * Usually, exceptions that indicate errors during processing are derived from
+ * `std::runtime_error`.  However, other exceptions may also be thrown, such as
+ * `std::bad_alloc`.
+ *
+ * Outside of processing, programming errors such as passing an invalid
+ * argument are reported by throwing an exception derived from
+ * `std::logic_error`. This choice was made (as opposed to, say, using
+ * `assert()`) to facilitate interoperation with environments like Python.
+ *
+ * \see `tcspc::warning_event`, `tcspc::stop_with_error`
+ *
  * @{
  */
 
