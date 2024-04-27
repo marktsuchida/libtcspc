@@ -520,6 +520,15 @@ namespace tcspc {
  *
  * \brief Routers for use with `tcspc::route()` and
  * `tcspc::route_homogeneous()`.
+ *
+ * Routers implement the function call operator `auto operator()(Event const &)
+ * const -> std::size_t` where the `Event` must be overloaded (or templated)
+ * for every event handled by the routing processor.
+ *
+ * The return value is the index of the downstream processor to which the event
+ * should be routed. If the index is out of range, the event is discarded.
+ * Routers can return `std::numeric_limits<std::size_t>::max()` when the event
+ * should be discarded.
  */
 
 /**

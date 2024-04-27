@@ -113,20 +113,12 @@ class route_homogeneous {
  * \ingroup processors-branching
  *
  * This processor forwards each event in \p RoutedEventList to a different
- * downstream according to the provided router.
+ * downstream according to the provided \p router (see \ref routers), which map
+ * events to downstream indices.
+ *
+ * Events mapped to indices out of range are discarded.
  *
  * All other events are broadcast to all downstreams.
- *
- * The router must implement the function call operator `auto operator()(Event
- * const &) const -> std::size_t`, for every \p Event in \p RoutedEventList,
- * mapping events to downstream index.
- *
- * If the router maps an event to an index beyond the available downstreams,
- * that event is discarded. (Routers can return
- * `std::numeric_limits<std::size_t>::max()` when the event should be
- * discarded.)
- *
- * For routers provided by libtcspc, see \ref routers.
  *
  * \see `tcspc::route()`
  * \see `tcspc::broadcast_homogeneous()`
@@ -165,8 +157,16 @@ auto route_homogeneous(Router &&router,
  *
  * \ingroup processors-branching
  *
- * This overload takes the downstreams as variadic arguments. See the overload
- * taking a `std::array` of downstreams for a detailed description.
+ * This processor forwards each event in \p RoutedEventList to a different
+ * downstream according to the provided \p router (see \ref routers), which map
+ * events to downstream indices.
+ *
+ * Events mapped to indices out of range are discarded.
+ *
+ * All other events are broadcast to all downstreams.
+ *
+ * \see `tcspc::route()`
+ * \see `tcspc::broadcast_homogeneous()`
  *
  * \tparam RoutedEventList event types to route
  *
@@ -200,21 +200,13 @@ auto route_homogeneous(Router &&router, Downstreams &&...downstreams) {
  * \ingroup processors-branching
  *
  * This processor forwards each event in \p RoutedEventList to a different
- * downstream according to the provided router.
+ * downstream according to the provided \p router (see \ref routers), which map
+ * events to downstream indices.
+ *
+ * Events mapped to indices out of range are discarded.
  *
  * All other events (which must be in \p BroadcastedEventList) are broadcast to
  * all downstreams.
- *
- * The router must implement the function call operator `auto operator()(Event
- * const &) const -> std::size_t`, for every \p Event in \p RoutedEventList,
- * mapping events to downstream index.
- *
- * If the router maps an event to an index beyond the available downstreams,
- * that event is discarded. (Routers can return
- * `std::numeric_limits<std::size_t>::max()` when the event should be
- * discarded.)
- *
- * For routers provided by libtcspc, see \ref routers.
  *
  * \see `tcspc::route_homogeneous()`
  * \see `tcspc::broadcast()`
@@ -268,7 +260,10 @@ auto route(Router &&router, Downstreams &&...downstreams) {
  */
 class null_router {
   public:
-    /** \brief Implements router requirement. */
+    /**
+     * \brief Implements router requirement; always returns
+     * `std::numeric_limits<std::size_t>::max()`.
+     */
     template <typename Event>
     auto operator()([[maybe_unused]] Event const &event) const -> std::size_t {
         return std::size_t(-1);
@@ -292,6 +287,9 @@ class channel_router {
   public:
     /**
      * \brief Construct with channels and corresponding downstream indices.
+     *
+     * \tparam ChannelIndexPair tuple-like type (`DataTypes::channel_type`,
+     * `std::size_t`) of \p channel_indices (usually deduced)
      *
      * \param channel_indices pairs of channels with downstream indices to
      * route to
@@ -367,6 +365,9 @@ auto broadcast_homogeneous(std::array<Downstream, N> downstreams) {
  * processors of the same type.
  *
  * \ingroup processors-branching
+ *
+ * \see `tcspc::broadcast()`
+ * \see `tcspc::route_homogeneous()`
  *
  * \tparam Downstreams downstream processor types (usually deduced; must be all
  * equal)
