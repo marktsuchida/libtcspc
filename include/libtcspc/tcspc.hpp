@@ -63,14 +63,14 @@
 /**
  * \mainpage libtcspc C++ API
  *
- * - See under [Topics](topics.html) for a full table of contents.
- * - See namespace \ref tcspc for a flat list of public symbols.
+ * - See [Topics](topics.html) for a full table of contents.
+ * - See namespace \ref tcspc for an almost-flat list of the public symbols.
  *
  * libtcspc requires C++17 or later.
  *
  * You should include `libtcspc/tcspc.hpp`, which includes all the other
- * headers (the contents of individual headers may change in future libtcspc
- * versions).
+ * headers. (Including individual headers is not recommended because their
+ * contents may be moved around in future versions.)
  */
 
 /**
