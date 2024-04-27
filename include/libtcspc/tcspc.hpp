@@ -310,10 +310,10 @@ namespace tcspc {
  *   finished processing) should be placed after the downstream member.
  * - Ordinary data-processing processors should follow the Rule of Zero. Avoid
  *   const or reference data members.
- * - When passing an lvalue (local or instance variable) event downstream, and
- *   the event needs to be reused afterwards, the event should be passed using
- *   `std::as_const()`. Conversely, if the local event will not be reused, it
- *   may be passed using `std::move()`.
+ * - When passing an lvalue (local variable or data member) event downstream,
+ *   and the event value needs to be reused afterwards, the event should be
+ *   passed using `std::as_const()`. Conversely, if the local event will not be
+ *   reused, it may be passed using `std::move()`.
  * - The `handle()` member function is often overloaded for multiple event
  *   types, some of which may be template parameters, possibly with SFINAE
  *   (`std::enable_if_t`). Choose carefully between `std::enable_if_t` and
