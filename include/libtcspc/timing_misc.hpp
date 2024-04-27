@@ -8,6 +8,7 @@
 
 #include "arg_wrappers.hpp"
 #include "common.hpp"
+#include "errors.hpp"
 #include "introspect.hpp"
 
 #include <cmath>
@@ -203,7 +204,7 @@ class retime_periodic_sequences {
 
         auto delta = std::floor(event.delay) - 1.0;
         if (std::abs(delta) > static_cast<double>(max_shift))
-            throw std::runtime_error(
+            throw data_validation_error(
                 "retime periodic sequence: abstime would shift more than max time shift");
 
         abstime_type abstime{};
@@ -211,7 +212,7 @@ class retime_periodic_sequences {
             if (delta < 0.0) {
                 auto ndelta = static_cast<abstime_type>(-delta);
                 if (ndelta > event.abstime)
-                    throw std::runtime_error(
+                    throw data_validation_error(
                         "retime periodic sequence: abstime would be negative but abstime_type is unsigned");
                 abstime = event.abstime - ndelta;
             } else {
@@ -274,8 +275,9 @@ class retime_periodic_sequences {
  *
  * \par Events handled
  * - `tcspc::periodic_sequence_model_event<DT>`: emit with normalized `abstime`
- * and `delay` as `tcspc::periodic_sequence_model_event<DataTypes>`; throw
- *   `std::runime_error` if the time shift or result range criteria are not met
+ *   and `delay` as `tcspc::periodic_sequence_model_event<DataTypes>`; throw
+ *   `tcspc::data_validation_error` if the time shift or result range criteria
+ *   are not met
  * - Flush: pass through with no action
  */
 template <typename DataTypes = default_data_types, typename Downstream>

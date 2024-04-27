@@ -9,6 +9,7 @@
 #include "libtcspc/arg_wrappers.hpp"
 #include "libtcspc/common.hpp"
 #include "libtcspc/context.hpp"
+#include "libtcspc/errors.hpp"
 #include "libtcspc/test_utils.hpp"
 #include "libtcspc/type_list.hpp"
 #include "test_checkers.hpp"
@@ -65,12 +66,12 @@ TEST_CASE("retime periodic sequence events") {
     }
 
     SECTION("fail above max time shift") {
-        REQUIRE_THROWS_WITH(
+        REQUIRE_THROWS_AS(
             in.feed(periodic_sequence_model_event<>{4, -9.01, 1.5}),
-            Catch::Matchers::ContainsSubstring("shift"));
-        REQUIRE_THROWS_WITH(
+            data_validation_error);
+        REQUIRE_THROWS_AS(
             in.feed(periodic_sequence_model_event<>{4, 12.0, 1.5}),
-            Catch::Matchers::ContainsSubstring("shift"));
+            data_validation_error);
     }
 }
 
@@ -98,9 +99,9 @@ TEST_CASE("retime periodic sequence events unsigned",
     }
 
     SECTION("unsigned underflow") {
-        REQUIRE_THROWS_WITH(
+        REQUIRE_THROWS_AS(
             in.feed(periodic_sequence_model_event<types>{4, -3.01, 1.5}),
-            Catch::Matchers::ContainsSubstring("unsigned"));
+            data_validation_error);
     }
 }
 

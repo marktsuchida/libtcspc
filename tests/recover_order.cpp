@@ -9,6 +9,7 @@
 #include "libtcspc/arg_wrappers.hpp"
 #include "libtcspc/common.hpp"
 #include "libtcspc/context.hpp"
+#include "libtcspc/errors.hpp"
 #include "libtcspc/test_utils.hpp"
 #include "libtcspc/type_list.hpp"
 #include "test_checkers.hpp"
@@ -130,7 +131,7 @@ TEST_CASE("recover order, empty time window") {
         in.feed(e0{42});
         in.feed(e0{43});
         REQUIRE(out.check(e0{42}));
-        REQUIRE_THROWS_AS(in.feed(e0{41}), std::runtime_error);
+        REQUIRE_THROWS_AS(in.feed(e0{41}), data_validation_error);
     }
 }
 

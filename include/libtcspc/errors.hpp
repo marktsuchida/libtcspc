@@ -62,18 +62,82 @@ class source_halted final : public std::exception {
 };
 
 /**
- * \brief Error raised when a histogram bin overflows.
+ * \brief Error thrown when buffer capacity has been exhausted.
+ *
+ * \ingroup errors
+ */
+class buffer_overflow_error : public std::runtime_error {
+  public:
+    using std::runtime_error::runtime_error;
+};
+
+/**
+ * \brief Error thrown when the data being processed does not meet
+ * expectations.
+ *
+ * \ingroup errors
+ */
+class data_validation_error : public std::runtime_error {
+  public:
+    using std::runtime_error::runtime_error;
+};
+
+/**
+ * \brief Error thrown when a histogram bin overflows.
  *
  * \ingroup errors
  *
- * This error is raised when the `tcspc::error_on_overflow_t` policy was
- * requested and there was an overflow. It is also raised when
+ * This error is thrown when the `tcspc::error_on_overflow_t` policy was
+ * requested and there was an overflow. It is also thrown when
  * `tcspc::reset_on_overflow_t` was requested but a reset would result in an
  * infinite loop: in the case of `tcspc::histogram()` when maximum-per-bin set
  * to 0, or `tcspc::histogram_elementwise_accumulate()` when a single batch
  * contains enough increments to overflow a bin.
  */
 class histogram_overflow_error : public std::runtime_error {
+  public:
+    using std::runtime_error::runtime_error;
+};
+
+/**
+ * \brief Error thrown when a file or stream could not be accessed.
+ *
+ * \ingroup errors
+ *
+ * This error strictly represents input/output errors, usually coming from the
+ * operating system, such as inaibility to open a file or inability to read or
+ * write bytes.
+ *
+ * It is not used for errors in the data contained in a file or stream.
+ *
+ * \note Some file/stream errors are reported as `std::system_error` when the
+ * error code is available.
+ */
+class input_output_error : public std::runtime_error {
+  public:
+    using std::runtime_error::runtime_error;
+};
+
+/**
+ * \brief Error thrown when a fit to a model did not meet the desired criteria.
+ *
+ * \ingroup errors
+ *
+ * \see `tcspc::fit_periodic_sequences`
+ */
+class model_fit_error : public data_validation_error {
+  public:
+    using data_validation_error::data_validation_error;
+};
+
+/**
+ * \brief Error thrown when requested to do so for testing purposes.
+ *
+ * \ingroup errors
+ *
+ * \see `tcspc::capture_output`, `tcspc::capture_output_checker`
+ */
+class test_error : public std::runtime_error {
   public:
     using std::runtime_error::runtime_error;
 };

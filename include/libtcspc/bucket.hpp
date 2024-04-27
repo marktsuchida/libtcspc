@@ -6,6 +6,7 @@
 
 #pragma once
 
+#include "errors.hpp"
 #include "introspect.hpp"
 #include "move_only_any.hpp"
 #include "span.hpp"
@@ -645,8 +646,8 @@ class recycling_bucket_source final
      * count has been reached. It will then unblock when an outstanding bucket
      * is destroyed.
      *
-     * \throw std::runtime_error if \p Blocking is false and the maximum bucket
-     * count has been reached.
+     * \throw tcspc::buffer_overflow_error if \p Blocking is false and the
+     * maximum bucket count has been reached.
      */
     auto bucket_of_size(std::size_t size) -> bucket<T> override {
         std::unique_ptr<std::vector<T>> p;
@@ -659,7 +660,7 @@ class recycling_bucket_source final
                     not_empty_condition.wait(
                         lock, [&] { return not recyclable.empty(); });
                 } else if (recyclable.empty()) {
-                    throw std::runtime_error(
+                    throw buffer_overflow_error(
                         "recycling bucket source exhausted");
                 }
                 p = std::move(recyclable.back());

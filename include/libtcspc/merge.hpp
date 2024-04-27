@@ -8,6 +8,7 @@
 
 #include "arg_wrappers.hpp"
 #include "common.hpp"
+#include "errors.hpp"
 #include "introspect.hpp"
 #include "type_list.hpp"
 #include "variant_event.hpp"
@@ -128,7 +129,7 @@ class merge_impl {
                 return downstream.handle(event);
             }
             if (pending.size() == max_buffered)
-                throw std::runtime_error("merge buffer capacity exceeded");
+                throw buffer_overflow_error("merge buffer capacity exceeded");
             pending.push(event);
         } catch (std::exception const &) {
             ended_with_exception = true;
@@ -218,8 +219,7 @@ class merge_input {
  *
  * \tparam Downstream downstream processor type (usually deduced)
  *
- * \param max_buffered maximum capacity for buffered events (beyond which an
- * error is thrown)
+ * \param max_buffered maximum capacity for buffered events
  *
  * \param downstream downstream processor
  *
@@ -227,7 +227,7 @@ class merge_input {
  *
  * \par Events handled
  * - Types in `EventList`: pass through with buffering to ensure non-decreasing
- *   abstime order
+ *   abstime order; throw `tcspc::buffer_overflow_error` if capacity exhausted
  * - Flush: pass through a single flush after both inputs flushed, after
  *   emitting any buffered events.
  */
@@ -279,7 +279,7 @@ auto merge(arg::max_buffered<std::size_t> max_buffered,
  * \tparam Downstream downstream processor type
  *
  * \param max_buffered maximum capacity for buffered events in each pairwise
- * merge (beyond which an error is thrown)
+ * merge
  *
  * \param downstream downstream processor
  *
@@ -287,7 +287,7 @@ auto merge(arg::max_buffered<std::size_t> max_buffered,
  *
  * \par Events handled
  * - Types in `EventList`: pass through with buffering to ensure non-decreasing
- *   abstime order
+ *   abstime order; throw `tcspc::buffer_overflow_error` if capacity exhausted
  * - Flush: pass through a single flush after all inputs flushed, after
  *   emitting any buffered events.
  */

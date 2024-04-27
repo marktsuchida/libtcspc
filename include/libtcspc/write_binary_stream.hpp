@@ -8,6 +8,7 @@
 
 #include "arg_wrappers.hpp"
 #include "bucket.hpp"
+#include "errors.hpp"
 #include "introspect.hpp"
 #include "span.hpp"
 
@@ -149,7 +150,7 @@ unbuffered_binary_ofstream_output_stream(std::string const &filename,
                     (truncate.value ? std::ios::trunc : std::ios::openmode{}) |
                     (append.value ? std::ios::ate : std::ios::openmode{}));
     if (stream.fail())
-        throw std::runtime_error("failed to open output file: " + filename);
+        throw input_output_error("failed to open output file: " + filename);
     return internal::ostream_output_stream(std::move(stream));
 }
 
@@ -163,7 +164,7 @@ inline auto binary_ofstream_output_stream(std::string const &filename,
                     (truncate.value ? std::ios::trunc : std::ios::openmode{}) |
                     (append.value ? std::ios::ate : std::ios::openmode{}));
     if (stream.fail())
-        throw std::runtime_error("failed to open output file: " + filename);
+        throw input_output_error("failed to open output file: " + filename);
     return internal::ostream_output_stream(std::move(stream));
 }
 
@@ -182,10 +183,10 @@ inline auto unbuffered_binary_cfile_output_stream(std::string const &filename,
     if (fp == nullptr) {
         if (errno != 0)
             throw std::system_error(errno, std::generic_category());
-        throw std::runtime_error("failed to open output file: " + filename);
+        throw input_output_error("failed to open output file: " + filename);
     }
     if (std::setvbuf(fp, nullptr, _IONBF, 0) != 0)
-        throw std::runtime_error(
+        throw input_output_error(
             "failed to disable buffering for output file: " + filename);
     return internal::cfile_output_stream(fp, true);
 }
@@ -206,7 +207,7 @@ inline auto binary_cfile_output_stream(std::string const &filename,
     if (fp == nullptr) {
         if (errno != 0)
             throw std::system_error(errno, std::generic_category());
-        throw std::runtime_error("failed to open output file: " + filename);
+        throw input_output_error("failed to open output file: " + filename);
     }
     return internal::cfile_output_stream(fp, true);
 }
@@ -361,7 +362,7 @@ template <typename OutputStream> class write_binary_stream {
             strm.write(span(buffer).first(bytes_buffered));
             buffer = {};
             if (strm.is_error())
-                throw std::runtime_error("failed to write output");
+                throw input_output_error("failed to write output");
         }
     }
 
@@ -395,7 +396,7 @@ template <typename OutputStream> class write_binary_stream {
                 buffer = {};
                 bytes_buffered = 0;
                 if (strm.is_error())
-                    throw std::runtime_error("failed to write output");
+                    throw input_output_error("failed to write output");
                 total_bytes_written += bytes_available;
             } else {
                 bytes_buffered = bytes_available;
@@ -408,7 +409,7 @@ template <typename OutputStream> class write_binary_stream {
         if (direct_write_size > 0) {
             strm.write(event_span.first(direct_write_size));
             if (strm.is_error())
-                throw std::runtime_error("failed to write output");
+                throw input_output_error("failed to write output");
             total_bytes_written += direct_write_size;
             event_span = event_span.subspan(direct_write_size);
         }
@@ -471,9 +472,9 @@ template <typename OutputStream> class write_binary_stream {
  * \par Events handled
  * - `tcspc::bucket<std::byte>`, `tcspc::bucket<std::byte const>` or other
  *   contiguous container or span of `std::byte const`: write to the output
- *   stream; throw `std::runtime_error` on stream write error
- * - Flush: write any buffered bytes to the stream; throw `std::runtime_error`
- *   on stream write error
+ *   stream; throw `tcspc::input_output_error` on stream write error
+ * - Flush: write any buffered bytes to the stream; throw
+ *   `tcspc::input_output_error` on stream write error
  */
 template <typename OutputStream>
 auto write_binary_stream(

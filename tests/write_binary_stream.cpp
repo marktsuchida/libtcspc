@@ -8,6 +8,7 @@
 
 #include "libtcspc/arg_wrappers.hpp"
 #include "libtcspc/bucket.hpp"
+#include "libtcspc/errors.hpp"
 #include "libtcspc/span.hpp"
 #include "libtcspc/view_as_bytes.hpp"
 #include "test_checkers.hpp"
@@ -100,8 +101,7 @@ TEST_CASE("write binary stream") {
         proc.handle(data);
         proc.handle(data);
         REQUIRE_CALL(stream, write(_)).TIMES(1).WITH(_1.size() == granularity);
-        REQUIRE_THROWS_WITH(proc.handle(data),
-                            Catch::Matchers::ContainsSubstring("write"));
+        REQUIRE_THROWS_AS(proc.handle(data), input_output_error);
     }
 
     SECTION("tell() failure is ignored") {
@@ -137,7 +137,8 @@ TEST_CASE("write binary stream") {
 
             SECTION("write fails") {
                 ALLOW_CALL(stream, is_error()).RETURN(true);
-                REQUIRE_THROWS(proc.handle(data_bytes.subspan(6, 2)));
+                REQUIRE_THROWS_AS(proc.handle(data_bytes.subspan(6, 2)),
+                                  input_output_error);
             }
 
             SECTION("clean end") {
@@ -170,7 +171,8 @@ TEST_CASE("write binary stream") {
 
             SECTION("write fails") {
                 ALLOW_CALL(stream, is_error()).RETURN(true);
-                REQUIRE_THROWS(proc.handle(data_bytes.subspan(15, 3)));
+                REQUIRE_THROWS_AS(proc.handle(data_bytes.subspan(15, 3)),
+                                  input_output_error);
             }
 
             SECTION("clean end") {
@@ -196,7 +198,8 @@ TEST_CASE("write binary stream") {
 
             SECTION("write fails") {
                 ALLOW_CALL(stream, is_error()).RETURN(true);
-                REQUIRE_THROWS(proc.handle(data_bytes.subspan(4, 4)));
+                REQUIRE_THROWS_AS(proc.handle(data_bytes.subspan(4, 4)),
+                                  input_output_error);
             }
         }
 
@@ -216,7 +219,8 @@ TEST_CASE("write binary stream") {
                 .TIMES(1)
                 .WITH(equal_span(_1, data_bytes.subspan(8, 4)));
             ALLOW_CALL(stream, is_error()).RETURN(true);
-            REQUIRE_THROWS(proc.handle(data_bytes.subspan(10, 5)));
+            REQUIRE_THROWS_AS(proc.handle(data_bytes.subspan(10, 5)),
+                              input_output_error);
         }
 
         SECTION("event size 9") {
@@ -233,7 +237,8 @@ TEST_CASE("write binary stream") {
 
             SECTION("write fails") {
                 ALLOW_CALL(stream, is_error()).RETURN(true);
-                REQUIRE_THROWS(proc.handle(data_bytes.subspan(9, 9)));
+                REQUIRE_THROWS_AS(proc.handle(data_bytes.subspan(9, 9)),
+                                  input_output_error);
             }
 
             SECTION("clean end") {
@@ -264,7 +269,8 @@ TEST_CASE("write binary stream") {
 
             SECTION("write fails") {
                 ALLOW_CALL(stream, is_error()).RETURN(true);
-                REQUIRE_THROWS(proc.handle(data_bytes.first(3)));
+                REQUIRE_THROWS_AS(proc.handle(data_bytes.first(3)),
+                                  input_output_error);
             }
 
             SECTION("clean end") {
@@ -281,7 +287,8 @@ TEST_CASE("write binary stream") {
 
                 SECTION("write fails") {
                     ALLOW_CALL(stream, is_error()).RETURN(true);
-                    REQUIRE_THROWS(proc.handle(data_bytes.subspan(6, 3)));
+                    REQUIRE_THROWS_AS(proc.handle(data_bytes.subspan(6, 3)),
+                                      input_output_error);
                 }
 
                 SECTION("clean end") {
@@ -304,7 +311,8 @@ TEST_CASE("write binary stream") {
 
             SECTION("write fails") {
                 ALLOW_CALL(stream, is_error()).RETURN(true);
-                REQUIRE_THROWS(proc.handle(data_bytes.first(4)));
+                REQUIRE_THROWS_AS(proc.handle(data_bytes.first(4)),
+                                  input_output_error);
             }
 
             SECTION("clean end") {

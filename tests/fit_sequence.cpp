@@ -8,6 +8,7 @@
 
 #include "libtcspc/common.hpp"
 #include "libtcspc/context.hpp"
+#include "libtcspc/errors.hpp"
 #include "libtcspc/test_utils.hpp"
 #include "libtcspc/timing_misc.hpp"
 #include "libtcspc/type_list.hpp"
@@ -90,7 +91,7 @@ TEST_CASE("fit periodic sequences") {
         in.feed(e0{100});
         in.feed(e0{5});
         in.feed(e0{7});
-        REQUIRE_THROWS(in.feed(e0{10}));
+        REQUIRE_THROWS_AS(in.feed(e0{10}), model_fit_error);
         REQUIRE(out.check_not_flushed());
     }
 }

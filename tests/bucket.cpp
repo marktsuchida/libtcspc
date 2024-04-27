@@ -7,6 +7,7 @@
 #include "libtcspc/bucket.hpp"
 
 #include "libtcspc/common.hpp"
+#include "libtcspc/errors.hpp"
 #include "libtcspc/span.hpp"
 #include "test_checkers.hpp"
 #include "test_thread_utils.hpp"
@@ -124,10 +125,10 @@ TEST_CASE("recycling_bucket_source provides buckets up to max_count") {
     auto b0 = source->bucket_of_size(3);
     {
         auto b1 = source->bucket_of_size(5);
-        CHECK_THROWS(source->bucket_of_size(7));
+        CHECK_THROWS_AS(source->bucket_of_size(7), buffer_overflow_error);
     }
     auto b1 = source->bucket_of_size(5);
-    CHECK_THROWS(source->bucket_of_size(7));
+    CHECK_THROWS_AS(source->bucket_of_size(7), buffer_overflow_error);
 }
 
 TEST_CASE("recycling_bucket_source clears recycled buckets iff requested") {

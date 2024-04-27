@@ -9,6 +9,7 @@
 #include "arg_wrappers.hpp"
 #include "bucket.hpp"
 #include "common.hpp"
+#include "errors.hpp"
 #include "introspect.hpp"
 #include "span.hpp"
 
@@ -209,7 +210,7 @@ unbuffered_binary_ifstream_input_stream(std::string const &filename,
 
     stream.open(filename, std::ios::binary);
     if (stream.fail())
-        throw std::runtime_error("failed to open input file: " + filename);
+        throw input_output_error("failed to open input file: " + filename);
     auto ret = internal::istream_input_stream(std::move(stream));
     skip_stream_bytes(ret, start_offset.value);
     return ret;
@@ -221,7 +222,7 @@ inline auto binary_ifstream_input_stream(std::string const &filename,
     std::ifstream stream;
     stream.open(filename, std::ios::binary);
     if (stream.fail())
-        throw std::runtime_error("failed to open input file: " + filename);
+        throw input_output_error("failed to open input file: " + filename);
     auto ret = internal::istream_input_stream(std::move(stream));
     skip_stream_bytes(ret, start_offset.value);
     return ret;
@@ -241,10 +242,10 @@ inline auto unbuffered_binary_cfile_input_stream(
     if (fp == nullptr) {
         if (errno != 0)
             throw std::system_error(errno, std::generic_category());
-        throw std::runtime_error("failed to open input file: " + filename);
+        throw input_output_error("failed to open input file: " + filename);
     }
     if (std::setvbuf(fp, nullptr, _IONBF, 0) != 0)
-        throw std::runtime_error(
+        throw input_output_error(
             "failed to disable buffering for input file: " + filename);
     auto ret = internal::cfile_input_stream(fp, true);
     skip_stream_bytes(ret, start_offset.value);
@@ -265,7 +266,7 @@ inline auto binary_cfile_input_stream(std::string const &filename,
     if (fp == nullptr) {
         if (errno != 0)
             throw std::system_error(errno, std::generic_category());
-        throw std::runtime_error("failed to open input file: " + filename);
+        throw input_output_error("failed to open input file: " + filename);
     }
     auto ret = internal::cfile_input_stream(fp, true);
     skip_stream_bytes(ret, start_offset.value);
@@ -513,7 +514,7 @@ class read_binary_stream {
         }
 
         if (stream.is_error())
-            throw std::runtime_error("failed to read input");
+            throw input_output_error("failed to read input");
         if (remainder_nbytes > 0) {
             downstream.handle(warning_event{
                 "bytes fewer than record size remain at end of input"});
@@ -579,9 +580,9 @@ class read_binary_stream {
  *
  * \par Events handled
  * - Flush: read the stream and emit `tcspc::bucket<Event>` instances; throw
- *   `std::runtime_error` on stream read error; emit `tcspc::warning_event` at
- *   the end of the stream if there are fewer than `sizeof(Event)` bytes left
- *   over
+ *   `tcspc::input_output_error` on stream read error; emit
+ *   `tcspc::warning_event` at the end of the stream if there are fewer than
+ *   `sizeof(Event)` bytes left over
  */
 template <typename Event, typename InputStream, typename Downstream>
 auto read_binary_stream(InputStream &&stream,

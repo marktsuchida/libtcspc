@@ -7,6 +7,7 @@
 #pragma once
 
 #include "common.hpp"
+#include "errors.hpp"
 #include "introspect.hpp"
 #include "timing_misc.hpp"
 
@@ -122,11 +123,11 @@ class fit_periodic_sequences {
     LIBTCSPC_NOINLINE void fit_and_emit(abstime_type last_tick_time) {
         auto const result = fitter.fit(relative_ticks);
         if (result.mse > mse_cutoff)
-            throw std::runtime_error(
+            throw model_fit_error(
                 "fit periodic sequences: mean squared error exceeded cutoff");
         if (result.slope < min_interval_cutoff ||
             result.slope > max_interval_cutoff)
-            throw std::runtime_error(
+            throw model_fit_error(
                 "fit periodic sequences: estimated time interval was not in expected range");
 
         // Convert intercept (relative to first_tick_time + tick_offset) to
@@ -246,7 +247,7 @@ class fit_periodic_sequences {
  * \par Events handled
  * - `Event`: buffer every \p length events, fit to model, then emit
  *   `tcspc::periodic_sequence_model_event<DataTypes>` with the fit results;
- *   throw `std::runtime_error` if fit criteria were not met
+ *   throw `tcspc::model_fit_error` if fit criteria were not met
  * - All other types: pass through with no action
  * - Flush: pass through with no action
  */

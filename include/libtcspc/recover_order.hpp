@@ -8,6 +8,7 @@
 
 #include "arg_wrappers.hpp"
 #include "common.hpp"
+#include "errors.hpp"
 #include "introspect.hpp"
 #include "type_list.hpp"
 #include "variant_event.hpp"
@@ -59,7 +60,7 @@ class recover_order {
         static_assert(type_list_contains_v<EventList, Event>);
         static_assert(std::is_same_v<decltype(event.abstime), abstime_type>);
         if (event.abstime < last_emitted_time) {
-            throw std::runtime_error(
+            throw data_validation_error(
                 "recover_order encountered event outside of time window");
         }
 
@@ -137,8 +138,8 @@ class recover_order {
  *
  * \par Events handled
  * - `Event` (with `abstime` field): buffer and forward in `abstime` order once
- *   \p time_window has elapsed; throw `std::runtime_error` if order could not
- *   be maintained
+ *   \p time_window has elapsed; throw `data_validation_error` if order could
+ *   not be maintained due to event outside of time window
  * - Flush: emit any buffered `Event`s in `abstime` order; pass through
  */
 template <typename EventList, typename DataTypes = default_data_types,
