@@ -18,19 +18,28 @@ assert root.tag == "doxygenlayout"
 # detaileddescription (navindex).
 
 for section in root:
-    had_dd = False
-    for dd in section.findall("detaileddescription"):
-        had_dd = True
-        section.remove(dd)
-    if not had_dd:
-        continue
-    had_bd = False
-    for bd in section.findall("briefdescription"):
-        had_bd = True
-        section.remove(bd)
-    assert had_bd
-    section.insert(
-        0, ET.Element("detaileddescription", {"title": "Description"})
-    )
+    if section.tag == "navindex":
+        for ns_tab in section.findall("./tab[@type='namespaces']"):
+            for ns_memb_tab in ns_tab.findall(
+                "./tab[@type='namespacemembers']"
+            ):
+                ns_tab.remove(ns_memb_tab)
+        for classes_tab in section.findall("./tab[@type='classes']"):
+            section.remove(classes_tab)
+    else:
+        had_dd = False
+        for dd in section.findall("detaileddescription"):
+            had_dd = True
+            section.remove(dd)
+        if not had_dd:
+            continue
+        had_bd = False
+        for bd in section.findall("briefdescription"):
+            had_bd = True
+            section.remove(bd)
+        assert had_bd
+        section.insert(
+            0, ET.Element("detaileddescription", {"title": "Description"})
+        )
 
 tree.write(outfile)
