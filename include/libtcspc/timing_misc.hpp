@@ -6,6 +6,7 @@
 
 #pragma once
 
+#include "arg_wrappers.hpp"
 #include "common.hpp"
 #include "introspect.hpp"
 
@@ -180,8 +181,9 @@ class retime_periodic_sequences {
 
   public:
     explicit retime_periodic_sequences(
-        typename DataTypes::abstime_type max_time_shift, Downstream downstream)
-        : max_shift(max_time_shift), downstream(std::move(downstream)) {
+        arg::max_time_shift<typename DataTypes::abstime_type> max_time_shift,
+        Downstream downstream)
+        : max_shift(max_time_shift.value), downstream(std::move(downstream)) {
         if (max_shift < 0)
             throw std::invalid_argument(
                 "retime_periodic_sequences max_time_shift must not be negative");
@@ -277,8 +279,9 @@ class retime_periodic_sequences {
  * - Flush: pass through with no action
  */
 template <typename DataTypes = default_data_types, typename Downstream>
-auto retime_periodic_sequences(typename DataTypes::abstime_type max_time_shift,
-                               Downstream &&downstream) {
+auto retime_periodic_sequences(
+    arg::max_time_shift<typename DataTypes::abstime_type> max_time_shift,
+    Downstream &&downstream) {
     return internal::retime_periodic_sequences<DataTypes, Downstream>(
         max_time_shift, std::forward<Downstream>(downstream));
 }
@@ -291,9 +294,9 @@ class extrapolate_periodic_sequences {
     Downstream downstream;
 
   public:
-    explicit extrapolate_periodic_sequences(std::size_t tick_index,
-                                            Downstream downstream)
-        : m(static_cast<double>(tick_index)),
+    explicit extrapolate_periodic_sequences(
+        arg::tick_index<std::size_t> tick_index, Downstream downstream)
+        : m(static_cast<double>(tick_index.value)),
           downstream(std::move(downstream)) {}
 
     [[nodiscard]] auto introspect_node() const -> processor_info {
@@ -353,7 +356,7 @@ class extrapolate_periodic_sequences {
  *   but the `delay` offset by `interval` times `tick_index`
  */
 template <typename DataTypes = default_data_types, typename Downstream>
-auto extrapolate_periodic_sequences(std::size_t tick_index,
+auto extrapolate_periodic_sequences(arg::tick_index<std::size_t> tick_index,
                                     Downstream &&downstream) {
     return internal::extrapolate_periodic_sequences<DataTypes, Downstream>(
         tick_index, std::forward<Downstream>(downstream));
@@ -367,9 +370,9 @@ class add_count_to_periodic_sequences {
     Downstream downstream;
 
   public:
-    explicit add_count_to_periodic_sequences(std::size_t count,
+    explicit add_count_to_periodic_sequences(arg::count<std::size_t> count,
                                              Downstream downstream)
-        : ct(count), downstream(std::move(downstream)) {}
+        : ct(count.value), downstream(std::move(downstream)) {}
 
     [[nodiscard]] auto introspect_node() const -> processor_info {
         return processor_info(this, "add_count_to_periodic_sequences");
@@ -429,7 +432,7 @@ class add_count_to_periodic_sequences {
  * - Flush: pass through with no action
  */
 template <typename DataTypes = default_data_types, typename Downstream>
-auto add_count_to_periodic_sequences(std::size_t count,
+auto add_count_to_periodic_sequences(arg::count<std::size_t> count,
                                      Downstream &&downstream) {
     return internal::add_count_to_periodic_sequences<DataTypes, Downstream>(
         count, std::forward<Downstream>(downstream));
@@ -451,9 +454,9 @@ class convert_sequences_to_start_stop {
     Downstream downstream;
 
   public:
-    explicit convert_sequences_to_start_stop(std::size_t count,
+    explicit convert_sequences_to_start_stop(arg::count<std::size_t> count,
                                              Downstream downstream)
-        : input_len(count + 1), downstream(std::move(downstream)) {}
+        : input_len(count.value + 1), downstream(std::move(downstream)) {}
 
     [[nodiscard]] auto introspect_node() const -> processor_info {
         return processor_info(this, "convert_sequences_to_start_stop");
@@ -532,7 +535,7 @@ class convert_sequences_to_start_stop {
  */
 template <typename TickEvent, typename StartEvent, typename StopEvent,
           typename Downstream>
-auto convert_sequences_to_start_stop(std::size_t count,
+auto convert_sequences_to_start_stop(arg::count<std::size_t> count,
                                      Downstream &&downstream) {
     return internal::convert_sequences_to_start_stop<TickEvent, StartEvent,
                                                      StopEvent, Downstream>(

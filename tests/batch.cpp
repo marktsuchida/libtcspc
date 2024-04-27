@@ -6,6 +6,7 @@
 
 #include "libtcspc/batch.hpp"
 
+#include "libtcspc/arg_wrappers.hpp"
 #include "libtcspc/bucket.hpp"
 #include "libtcspc/common.hpp"
 #include "libtcspc/context.hpp"
@@ -37,14 +38,16 @@ auto tmp_bucket(std::initializer_list<U> il) {
 
 TEST_CASE("introspect batch, unbatch", "[introspect]") {
     check_introspect_simple_processor(
-        batch<int>(new_delete_bucket_source<int>::create(), 1, null_sink()));
+        batch<int>(new_delete_bucket_source<int>::create(),
+                   arg::batch_size<std::size_t>{1}, null_sink()));
     check_introspect_simple_processor(unbatch<int>(null_sink()));
 }
 
 TEST_CASE("batch") {
     auto ctx = context::create();
     auto in = feed_input<type_list<int>>(
-        batch<int>(new_delete_bucket_source<int>::create(), 3,
+        batch<int>(new_delete_bucket_source<int>::create(),
+                   arg::batch_size<std::size_t>{3},
                    capture_output<type_list<bucket<int>>>(
                        ctx->tracker<capture_output_access>("out"))));
     in.require_output_checked(ctx, "out");
@@ -134,8 +137,9 @@ TEST_CASE("unbatch") {
 TEST_CASE("process_in_batches") {
     auto ctx = context::create();
     auto in = feed_input<type_list<int>>(process_in_batches<int>(
-        3, capture_output<type_list<int>>(
-               ctx->tracker<capture_output_access>("out"))));
+        arg::batch_size<std::size_t>{3},
+        capture_output<type_list<int>>(
+            ctx->tracker<capture_output_access>("out"))));
     in.require_output_checked(ctx, "out");
     auto out = capture_output_checker<type_list<int>>(
         ctx->access<capture_output_access>("out"));

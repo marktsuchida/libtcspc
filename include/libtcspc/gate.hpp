@@ -6,6 +6,7 @@
 
 #pragma once
 
+#include "arg_wrappers.hpp"
 #include "introspect.hpp"
 #include "type_list.hpp"
 
@@ -23,8 +24,9 @@ class gate {
     Downstream downstream;
 
   public:
-    explicit gate(bool initially_open, Downstream downstream)
-        : open(initially_open), downstream(std::move(downstream)) {}
+    explicit gate(arg::initially_open<bool> initially_open,
+                  Downstream downstream)
+        : open(initially_open.value), downstream(std::move(downstream)) {}
 
     [[nodiscard]] auto introspect_node() const -> processor_info {
         return processor_info(this, "gate");
@@ -98,7 +100,7 @@ class gate {
  */
 template <typename GatedEventList, typename OpenEvent, typename CloseEvent,
           typename Downstream>
-auto gate(bool initially_open, Downstream &&downstream) {
+auto gate(arg::initially_open<bool> initially_open, Downstream &&downstream) {
     return internal::gate<GatedEventList, OpenEvent, CloseEvent, Downstream>(
         initially_open, std::forward<Downstream>(downstream));
 }

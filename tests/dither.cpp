@@ -68,7 +68,7 @@ TEST_CASE("dithering quantizer") {
 
 TEST_CASE("dithered one-shot timing generator",
           "[dithered_one_shot_timing_generator]") {
-    auto tg = dithered_one_shot_timing_generator(0.5);
+    auto tg = dithered_one_shot_timing_generator(arg::delay{0.5});
     CHECK_FALSE(tg.peek().has_value());
     tg.trigger(trigger_event{42});
     CHECK(tg.peek().has_value());

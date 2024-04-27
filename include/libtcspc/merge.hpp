@@ -6,6 +6,7 @@
 
 #pragma once
 
+#include "arg_wrappers.hpp"
 #include "common.hpp"
 #include "introspect.hpp"
 #include "type_list.hpp"
@@ -74,8 +75,10 @@ class merge_impl {
     }
 
   public:
-    explicit merge_impl(std::size_t max_buffered, Downstream downstream)
-        : max_buffered(max_buffered), downstream(std::move(downstream)) {}
+    explicit merge_impl(arg::max_buffered<std::size_t> max_buffered,
+                        Downstream downstream)
+        : max_buffered(max_buffered.value), downstream(std::move(downstream)) {
+    }
 
     merge_impl(merge_impl const &) = delete;
     auto operator=(merge_impl const &) = delete;
@@ -230,7 +233,8 @@ class merge_input {
  */
 template <typename EventList, typename DataTypes = default_data_types,
           typename Downstream>
-auto merge(std::size_t max_buffered, Downstream &&downstream) {
+auto merge(arg::max_buffered<std::size_t> max_buffered,
+           Downstream &&downstream) {
     auto p = std::make_shared<
         internal::merge_impl<EventList, DataTypes, Downstream>>(
         max_buffered, std::forward<Downstream>(downstream));
@@ -289,7 +293,8 @@ auto merge(std::size_t max_buffered, Downstream &&downstream) {
  */
 template <std::size_t N, typename EventList,
           typename DataTypes = default_data_types, typename Downstream>
-auto merge_n(std::size_t max_buffered, Downstream &&downstream) {
+auto merge_n(arg::max_buffered<std::size_t> max_buffered,
+             Downstream &&downstream) {
     if constexpr (N == 0) {
         return std::tuple{};
     } else if constexpr (N == 1) {

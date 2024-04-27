@@ -6,6 +6,7 @@
 
 #pragma once
 
+#include "arg_wrappers.hpp"
 #include "common.hpp"
 #include "introspect.hpp"
 #include "time_tagged_events.hpp"
@@ -105,8 +106,9 @@ class time_correlate_at_fraction {
     Downstream downstream;
 
   public:
-    explicit time_correlate_at_fraction(double fraction, Downstream downstream)
-        : fraction(fraction), downstream(std::move(downstream)) {}
+    explicit time_correlate_at_fraction(arg::fraction<double> fraction,
+                                        Downstream downstream)
+        : fraction(fraction.value), downstream(std::move(downstream)) {}
 
     [[nodiscard]] auto introspect_node() const -> processor_info {
         return processor_info(this, "time_correlate_at_fraction");
@@ -311,7 +313,8 @@ auto time_correlate_at_midpoint(Downstream &&downstream) {
  */
 template <typename DataTypes = default_data_types,
           bool UseStartChannel = false, typename Downstream>
-auto time_correlate_at_fraction(double fraction, Downstream &&downstream) {
+auto time_correlate_at_fraction(arg::fraction<double> fraction,
+                                Downstream &&downstream) {
     return internal::time_correlate_at_fraction<DataTypes, UseStartChannel,
                                                 Downstream>(
         fraction, std::forward<Downstream>(downstream));

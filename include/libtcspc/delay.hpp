@@ -6,6 +6,7 @@
 
 #pragma once
 
+#include "arg_wrappers.hpp"
 #include "common.hpp"
 #include "introspect.hpp"
 
@@ -21,9 +22,9 @@ template <typename DataTypes, typename Downstream> class delay {
     Downstream downstream;
 
   public:
-    explicit delay(typename DataTypes::abstime_type delta,
+    explicit delay(arg::delta<typename DataTypes::abstime_type> delta,
                    Downstream downstream)
-        : delta(delta), downstream(std::move(downstream)) {}
+        : delta(delta.value), downstream(std::move(downstream)) {}
 
     [[nodiscard]] auto introspect_node() const -> processor_info {
         return processor_info(this, "delay");
@@ -107,7 +108,8 @@ template <typename DataTypes, typename Downstream> class zero_base_abstime {
  * - Flush: pass through with no action
  */
 template <typename DataTypes = default_data_types, typename Downstream>
-auto delay(typename DataTypes::abstime_type delta, Downstream &&downstream) {
+auto delay(arg::delta<typename DataTypes::abstime_type> delta,
+           Downstream &&downstream) {
     return internal::delay<DataTypes, Downstream>(
         delta, std::forward<Downstream>(downstream));
 }

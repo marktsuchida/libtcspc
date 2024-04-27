@@ -6,6 +6,7 @@
 
 #include "libtcspc/regulate_time_reached.hpp"
 
+#include "libtcspc/arg_wrappers.hpp"
 #include "libtcspc/common.hpp"
 #include "libtcspc/context.hpp"
 #include "libtcspc/test_utils.hpp"
@@ -30,14 +31,16 @@ using events = type_list<other_event, time_reached_event<>>;
 } // namespace
 
 TEST_CASE("introspect regulate_time_reached", "[introspect]") {
-    check_introspect_simple_processor(
-        regulate_time_reached(1, 1, null_sink()));
+    check_introspect_simple_processor(regulate_time_reached(
+        arg::interval_threshold<i64>{1}, arg::count_threshold<std::size_t>{1},
+        null_sink()));
 }
 
 TEST_CASE("regulate time reached by abstime") {
     auto ctx = context::create();
     auto in = feed_input<events>(regulate_time_reached(
-        10, std::numeric_limits<std::size_t>::max(),
+        arg::interval_threshold<i64>{10},
+        arg::count_threshold{std::numeric_limits<std::size_t>::max()},
         capture_output<events>(ctx->tracker<capture_output_access>("out"))));
     in.require_output_checked(ctx, "out");
     auto out = capture_output_checker<events>(
@@ -105,7 +108,8 @@ TEST_CASE("regulate time reached by abstime") {
 TEST_CASE("regulate time reached by count") {
     auto ctx = context::create();
     auto in = feed_input<events>(regulate_time_reached(
-        std::numeric_limits<abstime_type>::max(), 2,
+        arg::interval_threshold{std::numeric_limits<abstime_type>::max()},
+        arg::count_threshold<std::size_t>{2},
         capture_output<events>(ctx->tracker<capture_output_access>("out"))));
     in.require_output_checked(ctx, "out");
     auto out = capture_output_checker<events>(
@@ -172,7 +176,8 @@ TEST_CASE("regulate time reached, zero count threshold",
           "[regulate_time_reached]") {
     auto ctx = context::create();
     auto in = feed_input<events>(regulate_time_reached(
-        std::numeric_limits<abstime_type>::max(), 0,
+        arg::interval_threshold{std::numeric_limits<abstime_type>::max()},
+        arg::count_threshold<std::size_t>{0},
         capture_output<events>(ctx->tracker<capture_output_access>("out"))));
     in.require_output_checked(ctx, "out");
     auto out = capture_output_checker<events>(

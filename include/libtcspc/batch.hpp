@@ -6,6 +6,7 @@
 
 #pragma once
 
+#include "arg_wrappers.hpp"
 #include "bucket.hpp"
 #include "introspect.hpp"
 
@@ -21,7 +22,7 @@ namespace internal {
 
 template <typename Event, typename Downstream> class batch {
     std::shared_ptr<bucket_source<Event>> bsource;
-    std::size_t batch_size;
+    std::size_t bsize;
 
     bucket<Event> cur_bucket;
     std::size_t n_filled = 0;
@@ -30,10 +31,11 @@ template <typename Event, typename Downstream> class batch {
 
   public:
     explicit batch(std::shared_ptr<bucket_source<Event>> buffer_provider,
-                   std::size_t batch_size, Downstream downstream)
-        : bsource(std::move(buffer_provider)), batch_size(batch_size),
+                   arg::batch_size<std::size_t> batch_size,
+                   Downstream downstream)
+        : bsource(std::move(buffer_provider)), bsize(batch_size.value),
           downstream(std::move(downstream)) {
-        if (batch_size == 0)
+        if (bsize == 0)
             throw std::invalid_argument(
                 "batch processor batch_size must not be zero");
     }
@@ -49,14 +51,13 @@ template <typename Event, typename Downstream> class batch {
     template <typename E,
               typename = std::enable_if_t<std::is_convertible_v<E, Event>>>
     void handle(E &&event) {
-        if (cur_bucket.empty()) {
-            cur_bucket = bsource->bucket_of_size(batch_size);
-        }
+        if (cur_bucket.empty())
+            cur_bucket = bsource->bucket_of_size(bsize);
 
         cur_bucket[n_filled] = std::forward<E>(event);
         ++n_filled;
 
-        if (n_filled == batch_size) {
+        if (n_filled == bsize) {
             downstream.handle(std::move(cur_bucket));
             cur_bucket = {};
             n_filled = 0;
@@ -156,7 +157,7 @@ template <typename Event, typename Downstream> class unbatch {
  */
 template <typename Event, typename Downstream>
 auto batch(std::shared_ptr<bucket_source<Event>> buffer_provider,
-           std::size_t batch_size, Downstream &&downstream) {
+           arg::batch_size<std::size_t> batch_size, Downstream &&downstream) {
     return internal::batch<Event, Downstream>(
         std::move(buffer_provider), batch_size,
         std::forward<Downstream>(downstream));
@@ -217,7 +218,8 @@ auto unbatch(Downstream &&downstream) {
  * - Flush: emit any buffered events; pass through
  */
 template <typename Event, typename Downstream>
-auto process_in_batches(std::size_t batch_size, Downstream &&downstream) {
+auto process_in_batches(arg::batch_size<std::size_t> batch_size,
+                        Downstream &&downstream) {
     return batch<Event>(recycling_bucket_source<Event>::create(1), batch_size,
                         unbatch<Event>(std::forward<Downstream>(downstream)));
 }

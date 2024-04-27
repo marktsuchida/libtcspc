@@ -6,6 +6,7 @@
 
 #include "libtcspc/gate.hpp"
 
+#include "libtcspc/arg_wrappers.hpp"
 #include "libtcspc/common.hpp"
 #include "libtcspc/context.hpp"
 #include "libtcspc/test_utils.hpp"
@@ -31,7 +32,8 @@ using out_events = type_list<open_event, close_event, gated_event, misc_event>;
 
 TEST_CASE("introspect gate", "[introspect]") {
     check_introspect_simple_processor(
-        gate<gated_event, open_event, close_event>(false, null_sink()));
+        gate<gated_event, open_event, close_event>(arg::initially_open{false},
+                                                   null_sink()));
 }
 
 TEST_CASE("Gate events") {
@@ -40,8 +42,9 @@ TEST_CASE("Gate events") {
     auto in = feed_input<
         type_list<open_event, close_event, gated_event, misc_event>>(
         gate<type_list<gated_event>, open_event, close_event>(
-            initially_open, capture_output<out_events>(
-                                ctx->tracker<capture_output_access>("out"))));
+            arg::initially_open{initially_open},
+            capture_output<out_events>(
+                ctx->tracker<capture_output_access>("out"))));
     in.require_output_checked(ctx, "out");
     auto out = capture_output_checker<out_events>(
         ctx->access<capture_output_access>("out"));

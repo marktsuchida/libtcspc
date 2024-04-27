@@ -6,6 +6,7 @@
 
 #include "libtcspc/recover_order.hpp"
 
+#include "libtcspc/arg_wrappers.hpp"
 #include "libtcspc/common.hpp"
 #include "libtcspc/context.hpp"
 #include "libtcspc/test_utils.hpp"
@@ -28,14 +29,15 @@ using e1 = time_tagged_test_event<1>;
 
 TEST_CASE("introspect recover_order", "[introspect]") {
     check_introspect_simple_processor(
-        recover_order<type_list<e0>>(1, null_sink()));
+        recover_order<type_list<e0>>(arg::time_window<i64>{1}, null_sink()));
 }
 
 TEST_CASE("recover order") {
     auto ctx = context::create();
     auto in = feed_input<type_list<e0>>(recover_order<type_list<e0>>(
-        3, capture_output<type_list<e0>>(
-               ctx->tracker<capture_output_access>("out"))));
+        arg::time_window<i64>{3},
+        capture_output<type_list<e0>>(
+            ctx->tracker<capture_output_access>("out"))));
     in.require_output_checked(ctx, "out");
     auto out = capture_output_checker<type_list<e0>>(
         ctx->access<capture_output_access>("out"));
@@ -81,8 +83,9 @@ TEST_CASE("recover order") {
 TEST_CASE("recover order, empty time window") {
     auto ctx = context::create();
     auto in = feed_input<type_list<e0>>(recover_order<type_list<e0>>(
-        0, capture_output<type_list<e0>>(
-               ctx->tracker<capture_output_access>("out"))));
+        arg::time_window<i64>{0},
+        capture_output<type_list<e0>>(
+            ctx->tracker<capture_output_access>("out"))));
     in.require_output_checked(ctx, "out");
     auto out = capture_output_checker<type_list<e0>>(
         ctx->access<capture_output_access>("out"));
@@ -134,8 +137,9 @@ TEST_CASE("recover order, empty time window") {
 TEST_CASE("recover order, multiple event types") {
     auto ctx = context::create();
     auto in = feed_input<type_list<e0, e1>>(recover_order<type_list<e0, e1>>(
-        3, capture_output<type_list<e0, e1>>(
-               ctx->tracker<capture_output_access>("out"))));
+        arg::time_window<i64>{3},
+        capture_output<type_list<e0, e1>>(
+            ctx->tracker<capture_output_access>("out"))));
     in.require_output_checked(ctx, "out");
     auto out = capture_output_checker<type_list<e0, e1>>(
         ctx->access<capture_output_access>("out"));

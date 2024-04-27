@@ -6,6 +6,7 @@
 
 #include "libtcspc/time_correlate.hpp"
 
+#include "libtcspc/arg_wrappers.hpp"
 #include "libtcspc/common.hpp"
 #include "libtcspc/context.hpp"
 #include "libtcspc/test_utils.hpp"
@@ -31,7 +32,7 @@ TEST_CASE("introspect time_correlate", "[introspect]") {
     check_introspect_simple_processor(time_correlate_at_stop(null_sink()));
     check_introspect_simple_processor(time_correlate_at_midpoint(null_sink()));
     check_introspect_simple_processor(
-        time_correlate_at_fraction(0.3, null_sink()));
+        time_correlate_at_fraction(arg::fraction{0.3}, null_sink()));
     check_introspect_simple_processor(negate_difftime(null_sink()));
     check_introspect_simple_processor(remove_time_correlation(null_sink()));
 }
@@ -105,8 +106,9 @@ TEST_CASE("time correlate at fraction") {
     SECTION("use stop channel") {
         auto in = feed_input<type_list<std::array<detection_event<>, 2>>>(
             time_correlate_at_fraction<>(
-                1.0 / 3.0, capture_output<tc_out_events>(
-                               ctx->tracker<capture_output_access>("out"))));
+                arg::fraction{1.0 / 3.0},
+                capture_output<tc_out_events>(
+                    ctx->tracker<capture_output_access>("out"))));
         in.require_output_checked(ctx, "out");
         auto out = capture_output_checker<tc_out_events>(
             ctx->access<capture_output_access>("out"));
@@ -120,8 +122,9 @@ TEST_CASE("time correlate at fraction") {
     SECTION("use start channel") {
         auto in = feed_input<type_list<std::array<detection_event<>, 2>>>(
             time_correlate_at_fraction<default_data_types, true>(
-                1.0 / 3.0, capture_output<tc_out_events>(
-                               ctx->tracker<capture_output_access>("out"))));
+                arg::fraction{1.0 / 3.0},
+                capture_output<tc_out_events>(
+                    ctx->tracker<capture_output_access>("out"))));
         in.require_output_checked(ctx, "out");
         auto out = capture_output_checker<tc_out_events>(
             ctx->access<capture_output_access>("out"));

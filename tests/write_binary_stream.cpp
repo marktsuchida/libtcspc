@@ -6,6 +6,7 @@
 
 #include "libtcspc/write_binary_stream.hpp"
 
+#include "libtcspc/arg_wrappers.hpp"
 #include "libtcspc/bucket.hpp"
 #include "libtcspc/span.hpp"
 #include "libtcspc/view_as_bytes.hpp"
@@ -27,9 +28,9 @@
 namespace tcspc {
 
 TEST_CASE("introspect write_binary_stream", "[introspect]") {
-    check_introspect_simple_sink(
-        write_binary_stream(null_output_stream(),
-                            new_delete_bucket_source<std::byte>::create(), 1));
+    check_introspect_simple_sink(write_binary_stream(
+        null_output_stream(), new_delete_bucket_source<std::byte>::create(),
+        arg::granularity<std::size_t>{1}));
 }
 
 namespace {
@@ -66,11 +67,12 @@ template <typename OutputStream> class ref_output_stream {
 TEST_CASE("write binary stream") {
     // We use a fixed writing granularity but vary event size and start offset
     // to test different cases.
-    static constexpr auto granularity = 4;
+    static constexpr std::size_t granularity = 4;
     auto stream = mock_output_stream();
-    auto proc = write_binary_stream<>(
-        ref_output_stream(stream),
-        recycling_bucket_source<std::byte>::create(1), granularity);
+    auto proc =
+        write_binary_stream<>(ref_output_stream(stream),
+                              recycling_bucket_source<std::byte>::create(1),
+                              arg::granularity{granularity});
 
     using trompeloeil::_;
 
@@ -318,9 +320,10 @@ TEST_CASE("write binary stream") {
 
 TEST_CASE("write binary file with view as bytes") {
     auto stream = mock_output_stream();
-    auto proc = view_as_bytes(write_binary_stream(
-        ref_output_stream(stream),
-        recycling_bucket_source<std::byte>::create(1), 2 * sizeof(int)));
+    auto proc = view_as_bytes(
+        write_binary_stream(ref_output_stream(stream),
+                            recycling_bucket_source<std::byte>::create(1),
+                            arg::granularity{2 * sizeof(int)}));
 
     ALLOW_CALL(stream, is_error()).RETURN(false);
     ALLOW_CALL(stream, tell()).RETURN(0);

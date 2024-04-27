@@ -78,10 +78,11 @@ auto summarize(std::string const &filename) -> bool {
     // clang-format off
     auto proc =
     read_binary_stream<bh_spc_event>(
-        binary_file_input_stream(filename, 4), // Assume 4-byte .spc header.
-        std::numeric_limits<std::uint64_t>::max(),
+        // Assume 4-byte .spc header:
+        binary_file_input_stream(filename, arg::start_offset<u64>{4}),
+        arg::max_length{std::numeric_limits<std::uint64_t>::max()},
         recycling_bucket_source<bh_spc_event>::create(),
-        65536,
+        arg::granularity<std::size_t>{65536},
     stop<type_list<warning_event>>("error reading input",
     unbatch<bh_spc_event>( // Get individual device events.
     count<bh_spc_event>(ctx->tracker<count_access>("counter"), // Count.

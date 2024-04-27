@@ -6,6 +6,7 @@
 
 #pragma once
 
+#include "arg_wrappers.hpp"
 #include "common.hpp"
 #include "introspect.hpp"
 #include "time_tagged_events.hpp"
@@ -46,10 +47,12 @@ class regulate_time_reached {
     }
 
   public:
-    explicit regulate_time_reached(abstime_type interval_threshold,
-                                   std::size_t count_threshold,
-                                   Downstream downstream)
-        : interval_thresh(interval_threshold), count_thresh(count_threshold),
+    explicit regulate_time_reached(
+        arg::interval_threshold<abstime_type> interval_threshold,
+        arg::count_threshold<std::size_t> count_threshold,
+        Downstream downstream)
+        : interval_thresh(interval_threshold.value),
+          count_thresh(count_threshold.value),
           downstream(std::move(downstream)) {}
 
     [[nodiscard]] auto introspect_node() const -> processor_info {
@@ -146,9 +149,10 @@ class regulate_time_reached {
  *   passed event; pass through
  */
 template <typename DataTypes = default_data_types, typename Downstream>
-auto regulate_time_reached(typename DataTypes::abstime_type interval_threshold,
-                           std::size_t count_threshold,
-                           Downstream downstream) {
+auto regulate_time_reached(
+    arg::interval_threshold<typename DataTypes::abstime_type>
+        interval_threshold,
+    arg::count_threshold<std::size_t> count_threshold, Downstream downstream) {
     return internal::regulate_time_reached<DataTypes, Downstream>(
         interval_threshold, count_threshold,
         std::forward<Downstream>(downstream));

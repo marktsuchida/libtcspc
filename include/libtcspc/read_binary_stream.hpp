@@ -6,6 +6,7 @@
 
 #pragma once
 
+#include "arg_wrappers.hpp"
 #include "bucket.hpp"
 #include "common.hpp"
 #include "introspect.hpp"
@@ -198,7 +199,7 @@ inline void skip_stream_bytes(InputStream &stream, std::uint64_t bytes) {
 // For benchmarking only
 inline auto
 unbuffered_binary_ifstream_input_stream(std::string const &filename,
-                                        std::uint64_t start = 0) {
+                                        arg::start_offset<u64> start_offset) {
     std::ifstream stream;
 
     // The standard says that the following makes the stream "unbuffered", but
@@ -210,24 +211,25 @@ unbuffered_binary_ifstream_input_stream(std::string const &filename,
     if (stream.fail())
         throw std::runtime_error("failed to open input file: " + filename);
     auto ret = internal::istream_input_stream(std::move(stream));
-    skip_stream_bytes(ret, start);
+    skip_stream_bytes(ret, start_offset.value);
     return ret;
 }
 
 // For benchmarking only
 inline auto binary_ifstream_input_stream(std::string const &filename,
-                                         std::uint64_t start = 0) {
+                                         arg::start_offset<u64> start_offset) {
     std::ifstream stream;
     stream.open(filename, std::ios::binary);
     if (stream.fail())
         throw std::runtime_error("failed to open input file: " + filename);
     auto ret = internal::istream_input_stream(std::move(stream));
-    skip_stream_bytes(ret, start);
+    skip_stream_bytes(ret, start_offset.value);
     return ret;
 }
 
-inline auto unbuffered_binary_cfile_input_stream(std::string const &filename,
-                                                 std::uint64_t start = 0) {
+inline auto unbuffered_binary_cfile_input_stream(
+    std::string const &filename,
+    arg::start_offset<std::uint64_t> start_offset) {
 #ifdef _WIN32 // Avoid requiring _CRT_SECURE_NO_WARNINGS.
     std::FILE *fp{};
     (void)fopen_s(&fp, filename.c_str(), "rb");
@@ -245,13 +247,13 @@ inline auto unbuffered_binary_cfile_input_stream(std::string const &filename,
         throw std::runtime_error(
             "failed to disable buffering for input file: " + filename);
     auto ret = internal::cfile_input_stream(fp, true);
-    skip_stream_bytes(ret, start);
+    skip_stream_bytes(ret, start_offset.value);
     return ret;
 }
 
 // For benchmarking only
 inline auto binary_cfile_input_stream(std::string const &filename,
-                                      std::uint64_t start = 0) {
+                                      arg::start_offset<u64> start_offset) {
 #ifdef _WIN32 // Avoid requiring _CRT_SECURE_NO_WARNINGS.
     std::FILE *fp{};
     (void)fopen_s(&fp, filename.c_str(), "rb");
@@ -266,7 +268,7 @@ inline auto binary_cfile_input_stream(std::string const &filename,
         throw std::runtime_error("failed to open input file: " + filename);
     }
     auto ret = internal::cfile_input_stream(fp, true);
-    skip_stream_bytes(ret, start);
+    skip_stream_bytes(ret, start_offset.value);
     return ret;
 }
 
@@ -291,15 +293,17 @@ inline auto null_input_stream() { return internal::null_input_stream(); }
  *
  * \param filename the filename
  *
- * \param start offset within the file to start reading from
+ * \param start_offset offset within the file to start reading from
  *
  * \return input stream
  */
-inline auto binary_file_input_stream(std::string const &filename,
-                                     std::uint64_t start = 0) {
+inline auto binary_file_input_stream(
+    std::string const &filename,
+    arg::start_offset<u64> start_offset = arg::start_offset{u64(0)}) {
     // Prefer cfile over ifstream for performance; for cfile, unbuffered
     // performs better (given our own buffering). See benchmark.
-    return internal::unbuffered_binary_cfile_input_stream(filename, start);
+    return internal::unbuffered_binary_cfile_input_stream(filename,
+                                                          start_offset);
 }
 
 /**
@@ -425,11 +429,11 @@ class read_binary_stream {
 
   public:
     explicit read_binary_stream(
-        InputStream stream, std::uint64_t max_length,
+        InputStream stream, arg::max_length<std::uint64_t> max_length,
         std::shared_ptr<bucket_source<Event>> buffer_provider,
-        std::size_t read_granularity_bytes, Downstream downstream)
-        : stream(std::move(stream)), length(max_length),
-          read_granularity(read_granularity_bytes),
+        arg::granularity<std::size_t> granularity, Downstream downstream)
+        : stream(std::move(stream)), length(max_length.value),
+          read_granularity(granularity.value),
           bsource(std::move(buffer_provider)),
           downstream(std::move(downstream)) {
         if (not bsource)
@@ -437,7 +441,7 @@ class read_binary_stream {
                 "read_binary_stream buffer_provider must not be null");
         if (read_granularity <= 0)
             throw std::invalid_argument(
-                "read_binary_stream read_granularity_bytes must be positive");
+                "read_binary_stream granularity must be positive");
     }
 
     [[nodiscard]] auto introspect_node() const -> processor_info {
@@ -537,17 +541,17 @@ class read_binary_stream {
  *
  * Each time the stream is read, events that have been completely read are sent
  * downstream in a bucket. The size of each read is controlled by \p
- * read_granularity_bytes and the size of \p Event. When the former is not
+ * granularity (bytes) and the size of \p Event. When the former is not
  * smaller, it is used as the read size. When the size of \p Event is larger,
- * multiples of \p read_granularity_bytes may be read at once. The first read
- * may be adjusted to a smaller size to align subsequent read offsets to the
- * read granularity. The last read may be adjusted to a smaller size to avoid
+ * multiples of \p granularity may be read at once. The first read may be
+ * adjusted to a smaller size to align subsequent read offsets to the read
+ * granularity. The last read may be adjusted to a smaller size to avoid
  * reading past \p max_length.
  *
- * The \p read_granularity_bytes can be tuned for best performance. If too
- * small, reads may incur more overhead per byte read; if too large, CPU caches
- * may be polluted. Small batch sizes may also pessimize downstream processing.
- * It is best to try different powers of 2 and measure.
+ * The \p granularity can be tuned for best performance. If too small, reads
+ * may incur more overhead per byte read; if too large, CPU caches may be
+ * polluted. Small batch sizes may also pessimize downstream processing. It is
+ * best to try different powers of 2 and measure.
  *
  * \see `tcspc::write_binary_stream()`
  *
@@ -566,8 +570,8 @@ class read_binary_stream {
  * \param buffer_provider bucket source providing event buffers; must be able
  * to circulate at least 2 buckets without blocking
  *
- * \param read_granularity_bytes minimum size, in bytes, to read in each
- * iteration; a multiple of this value may be used if \p Event is larger
+ * \param granularity minimum size, in bytes, to read in each iteration; a
+ * multiple of this value may be used if \p Event is larger
  *
  * \param downstream downstream processor
  *
@@ -580,9 +584,10 @@ class read_binary_stream {
  *   over
  */
 template <typename Event, typename InputStream, typename Downstream>
-auto read_binary_stream(InputStream &&stream, std::uint64_t max_length,
+auto read_binary_stream(InputStream &&stream,
+                        arg::max_length<std::uint64_t> max_length,
                         std::shared_ptr<bucket_source<Event>> buffer_provider,
-                        std::size_t read_granularity_bytes,
+                        arg::granularity<std::size_t> granularity,
                         Downstream &&downstream) {
     // Support direct passing of C++ iostreams stream.
     if constexpr (std::is_base_of_v<std::istream, InputStream>) {
@@ -590,11 +595,11 @@ auto read_binary_stream(InputStream &&stream, std::uint64_t max_length,
         return internal::read_binary_stream<decltype(wrapped), Event,
                                             Downstream>(
             std::move(wrapped), max_length, std::move(buffer_provider),
-            read_granularity_bytes, std::forward<Downstream>(downstream));
+            granularity, std::forward<Downstream>(downstream));
     } else {
         return internal::read_binary_stream<InputStream, Event, Downstream>(
             std::forward<InputStream>(stream), max_length,
-            std::move(buffer_provider), read_granularity_bytes,
+            std::move(buffer_provider), granularity,
             std::forward<Downstream>(downstream));
     }
 }

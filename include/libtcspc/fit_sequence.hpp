@@ -141,15 +141,17 @@ class fit_periodic_sequences {
     }
 
   public:
-    explicit fit_periodic_sequences(std::size_t length,
-                                    std::array<double, 2> min_max_interval,
-                                    double max_mse, Downstream downstream)
-        : len(length),
-          tick_offset(static_cast<abstime_type>(min_max_interval[1]) + 10),
-          fitter(length), min_interval_cutoff(min_max_interval[0]),
-          max_interval_cutoff(min_max_interval[1]), mse_cutoff(max_mse),
+    explicit fit_periodic_sequences(arg::length<std::size_t> length,
+                                    arg::min_interval<double> min_interval,
+                                    arg::max_interval<double> max_interval,
+                                    arg::max_mse<double> max_mse,
+                                    Downstream downstream)
+        : len(length.value),
+          tick_offset(static_cast<abstime_type>(max_interval.value) + 10),
+          fitter(length.value), min_interval_cutoff(min_interval.value),
+          max_interval_cutoff(max_interval.value), mse_cutoff(max_mse.value),
           downstream(std::move(downstream)) {
-        if (length < 3)
+        if (len < 3)
             throw std::invalid_argument(
                 "fit_periodic_sequences length must be at least 3");
         if (min_interval_cutoff > max_interval_cutoff)
@@ -158,7 +160,7 @@ class fit_periodic_sequences {
         if (max_interval_cutoff <= 0)
             throw std::invalid_argument(
                 "fit_periodic_sequences max interval cutoff must be positive");
-        relative_ticks.reserve(length);
+        relative_ticks.reserve(len);
     }
 
     [[nodiscard]] auto introspect_node() const -> processor_info {
@@ -228,8 +230,11 @@ class fit_periodic_sequences {
  *
  * \param length number of \p Event events in each sequence to fit
  *
- * \param min_max_interval allowed range of estimated event interval for the
- * fit to be considered successful
+ * \param min_interval minimum estimated event interval for the fit to be
+ * considered successful
+ *
+ * \param max_interval maximum estimated event interval for the fit to be
+ * considered successful
  *
  * \param max_mse allowed maximum mean squared error for the fit to be
  * considered successful
@@ -247,11 +252,13 @@ class fit_periodic_sequences {
  */
 template <typename Event, typename DataTypes = default_data_types,
           typename Downstream>
-auto fit_periodic_sequences(std::size_t length,
-                            std::array<double, 2> min_max_interval,
-                            double max_mse, Downstream &&downstream) {
+auto fit_periodic_sequences(arg::length<std::size_t> length,
+                            arg::min_interval<double> min_interval,
+                            arg::max_interval<double> max_interval,
+                            arg::max_mse<double> max_mse,
+                            Downstream &&downstream) {
     return internal::fit_periodic_sequences<Event, DataTypes, Downstream>(
-        length, min_max_interval, max_mse,
+        length, min_interval, max_interval, max_mse,
         std::forward<Downstream>(downstream));
 }
 

@@ -23,6 +23,16 @@ namespace arg {
 // Ordered alphabetically.
 
 /**
+ * \brief Function argument wrapper for append parameter.
+ */
+template <typename T> struct append {
+    /** \brief The argument value. */
+    T value;
+    /** \brief Construct by wrapping a value. */
+    explicit append(T arg) : value(arg) {}
+};
+
+/**
  * \brief Function argument wrapper for abstime parameter.
  */
 template <typename T> struct abstime {
@@ -30,6 +40,16 @@ template <typename T> struct abstime {
     T value;
     /** \brief Construct by wrapping a value. */
     explicit abstime(T arg) : value(arg) {}
+};
+
+/**
+ * \brief Function argument wrapper for batch size parameter.
+ */
+template <typename T> struct batch_size {
+    /** \brief The argument value. */
+    T value;
+    /** \brief Construct by wrapping a value. */
+    explicit batch_size(T arg) : value(arg) {}
 };
 
 /**
@@ -43,6 +63,16 @@ template <typename T> struct bin_width {
 };
 
 /**
+ * \brief Function argument wrapper for channel parameter.
+ */
+template <typename T> struct channel {
+    /** \brief The argument value. */
+    T value;
+    /** \brief Construct by wrapping a value. */
+    explicit channel(T arg) : value(arg) {}
+};
+
+/**
  * \brief Function argument wrapper for count parameter.
  */
 template <typename T> struct count {
@@ -53,6 +83,16 @@ template <typename T> struct count {
 };
 
 /**
+ * \brief Function argument wrapper for count threshold parameter.
+ */
+template <typename T> struct count_threshold {
+    /** \brief The argument value. */
+    T value;
+    /** \brief Construct by wrapping a value. */
+    explicit count_threshold(T arg) : value(arg) {}
+};
+
+/**
  * \brief Function argument wrapper for delay parameter.
  */
 template <typename T> struct delay {
@@ -60,6 +100,46 @@ template <typename T> struct delay {
     T value;
     /** \brief Construct by wrapping a value. */
     explicit delay(T arg) : value(arg) {}
+};
+
+/**
+ * \brief Function argument wrapper for delta parameter.
+ */
+template <typename T> struct delta {
+    /** \brief The argument value. */
+    T value;
+    /** \brief Construct by wrapping a value. */
+    explicit delta(T arg) : value(arg) {}
+};
+
+/**
+ * \brief Function argument wrapper for fraction parameter.
+ */
+template <typename T> struct fraction {
+    /** \brief The argument value. */
+    T value;
+    /** \brief Construct by wrapping a value. */
+    explicit fraction(T arg) : value(arg) {}
+};
+
+/**
+ * \brief Function argument wrapper for granularity parameter.
+ */
+template <typename T> struct granularity {
+    /** \brief The argument value. */
+    T value;
+    /** \brief Construct by wrapping a value. */
+    explicit granularity(T arg) : value(arg) {}
+};
+
+/**
+ * \brief Function argument wrapper for initially open parameter.
+ */
+template <typename T> struct initially_open {
+    /** \brief The argument value. */
+    T value;
+    /** \brief Construct by wrapping a value. */
+    explicit initially_open(T arg) : value(arg) {}
 };
 
 /**
@@ -83,6 +163,26 @@ template <typename T> struct interval {
 };
 
 /**
+ * \brief Function argument wrapper for interval threshold parameter.
+ */
+template <typename T> struct interval_threshold {
+    /** \brief The argument value. */
+    T value;
+    /** \brief Construct by wrapping a value. */
+    explicit interval_threshold(T arg) : value(arg) {}
+};
+
+/**
+ * \brief Function argument wrapper for length parameter.
+ */
+template <typename T> struct length {
+    /** \brief The argument value. */
+    T value;
+    /** \brief Construct by wrapping a value. */
+    explicit length(T arg) : value(arg) {}
+};
+
+/**
  * \brief Function argument wrapper for limit parameter.
  */
 template <typename T> struct limit {
@@ -103,6 +203,56 @@ template <typename T> struct max_bin_index {
 };
 
 /**
+ * \brief Function argument wrapper for maximum buffered parameter.
+ */
+template <typename T> struct max_buffered {
+    /** \brief The argument value. */
+    T value;
+    /** \brief Construct by wrapping a value. */
+    explicit max_buffered(T arg) : value(arg) {}
+};
+
+/**
+ * \brief Function argument wrapper for maximum count parameter.
+ */
+template <typename T> struct max_count {
+    /** \brief The argument value. */
+    T value;
+    /** \brief Construct by wrapping a value. */
+    explicit max_count(T arg) : value(arg) {}
+};
+
+/**
+ * \brief Function argument wrapper for maximum interval parameter.
+ */
+template <typename T> struct max_interval {
+    /** \brief The argument value. */
+    T value;
+    /** \brief Construct by wrapping a value. */
+    explicit max_interval(T arg) : value(arg) {}
+};
+
+/**
+ * \brief Function argument wrapper for maximum length parameter.
+ */
+template <typename T> struct max_length {
+    /** \brief The argument value. */
+    T value;
+    /** \brief Construct by wrapping a value. */
+    explicit max_length(T arg) : value(arg) {}
+};
+
+/**
+ * \brief Function argument wrapper for maximum MSE parameter.
+ */
+template <typename T> struct max_mse {
+    /** \brief The argument value. */
+    T value;
+    /** \brief Construct by wrapping a value. */
+    explicit max_mse(T arg) : value(arg) {}
+};
+
+/**
  * \brief Function argument wrapper for maximum bin value.
  */
 template <typename T> struct max_per_bin {
@@ -110,6 +260,26 @@ template <typename T> struct max_per_bin {
     T value;
     /** \brief Construct by wrapping a value. */
     explicit max_per_bin(T arg) : value(arg) {}
+};
+
+/**
+ * \brief Function argument wrapper for maximum time shift parameter.
+ */
+template <typename T> struct max_time_shift {
+    /** \brief The argument value. */
+    T value;
+    /** \brief Construct by wrapping a value. */
+    explicit max_time_shift(T arg) : value(arg) {}
+};
+
+/**
+ * \brief Function argument wrapper for minimum interval parameter.
+ */
+template <typename T> struct min_interval {
+    /** \brief The argument value. */
+    T value;
+    /** \brief Construct by wrapping a value. */
+    explicit min_interval(T arg) : value(arg) {}
 };
 
 /**
@@ -153,6 +323,26 @@ template <typename T> struct start {
 };
 
 /**
+ * \brief Function argument wrapper for start channel parameter.
+ */
+template <typename T> struct start_channel {
+    /** \brief The argument value. */
+    T value;
+    /** \brief Construct by wrapping a value. */
+    explicit start_channel(T arg) : value(arg) {}
+};
+
+/**
+ * \brief Function argument wrapper for start offset parameter.
+ */
+template <typename T> struct start_offset {
+    /** \brief The argument value. */
+    T value;
+    /** \brief Construct by wrapping a value. */
+    explicit start_offset(T arg) : value(arg) {}
+};
+
+/**
  * \brief Function argument wrapper for stop parameter.
  */
 template <typename T> struct stop {
@@ -170,6 +360,36 @@ template <typename T> struct threshold {
     T value;
     /** \brief Construct by wrapping a value. */
     explicit threshold(T arg) : value(arg) {}
+};
+
+/**
+ * \brief Function argument wrapper for tick index parameter.
+ */
+template <typename T> struct tick_index {
+    /** \brief The argument value. */
+    T value;
+    /** \brief Construct by wrapping a value. */
+    explicit tick_index(T arg) : value(arg) {}
+};
+
+/**
+ * \brief Function argument wrapper for time window parameter.
+ */
+template <typename T> struct time_window {
+    /** \brief The argument value. */
+    T value;
+    /** \brief Construct by wrapping a value. */
+    explicit time_window(T arg) : value(arg) {}
+};
+
+/**
+ * \brief Function argument wrapper for truncate parameter.
+ */
+template <typename T> struct truncate {
+    /** \brief The argument value. */
+    T value;
+    /** \brief Construct by wrapping a value. */
+    explicit truncate(T arg) : value(arg) {}
 };
 
 } // namespace arg

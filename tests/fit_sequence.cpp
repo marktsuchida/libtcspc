@@ -23,8 +23,9 @@
 namespace tcspc {
 
 TEST_CASE("introspect fit_sequence") {
-    check_introspect_simple_processor(
-        fit_periodic_sequences<int>(3, {0.0, 1.0}, 0.5, null_sink()));
+    check_introspect_simple_processor(fit_periodic_sequences<int>(
+        arg::length<std::size_t>{3}, arg::min_interval{0.0},
+        arg::max_interval{1.0}, arg::max_mse{0.5}, null_sink()));
 }
 
 namespace internal {
@@ -62,7 +63,8 @@ TEST_CASE("fit periodic sequences") {
     using e0 = time_tagged_test_event<0>;
     auto ctx = context::create();
     auto in = feed_input<type_list<e0>>(fit_periodic_sequences<e0>(
-        4, {1.0, 2.0}, 2.5,
+        arg::length<std::size_t>{4}, arg::min_interval{1.0},
+        arg::max_interval{2.0}, arg::max_mse{2.5},
         capture_output<type_list<periodic_sequence_model_event<>>>(
             ctx->tracker<capture_output_access>("out"))));
     in.require_output_checked(ctx, "out");

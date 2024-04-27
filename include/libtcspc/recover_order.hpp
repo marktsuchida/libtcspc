@@ -6,6 +6,7 @@
 
 #pragma once
 
+#include "arg_wrappers.hpp"
 #include "common.hpp"
 #include "introspect.hpp"
 #include "type_list.hpp"
@@ -38,8 +39,9 @@ class recover_order {
     Downstream downstream;
 
   public:
-    explicit recover_order(abstime_type time_window, Downstream downstream)
-        : window_size(time_window), downstream(std::move(downstream)) {
+    explicit recover_order(arg::time_window<abstime_type> time_window,
+                           Downstream downstream)
+        : window_size(time_window.value), downstream(std::move(downstream)) {
         if (window_size < 0)
             throw std::invalid_argument(
                 "recover_order time_window must not be negative");
@@ -141,8 +143,9 @@ class recover_order {
  */
 template <typename EventList, typename DataTypes = default_data_types,
           typename Downstream>
-auto recover_order(typename DataTypes::abstime_type time_window,
-                   Downstream &&downstream) {
+auto recover_order(
+    arg::time_window<typename DataTypes::abstime_type> time_window,
+    Downstream &&downstream) {
     static_assert(type_list_size_v<EventList> > 0,
                   "recover_order requires non-empty event list");
     return internal::recover_order<EventList, DataTypes, Downstream>(

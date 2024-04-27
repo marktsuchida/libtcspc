@@ -61,7 +61,7 @@ TEST_CASE("Generate one-shot timing",
     auto ctx = context::create();
     auto in = feed_input<type_list<trigger_event, misc_event>>(
         generate<trigger_event, output_event>(
-            one_shot_timing_generator(delay),
+            one_shot_timing_generator(arg::delay{delay}),
             capture_output<out_events>(
                 ctx->tracker<capture_output_access>("out"))));
     in.require_output_checked(ctx, "out");

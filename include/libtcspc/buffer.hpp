@@ -6,6 +6,7 @@
 
 #pragma once
 
+#include "arg_wrappers.hpp"
 #include "context.hpp"
 #include "errors.hpp"
 #include "introspect.hpp"
@@ -200,11 +201,12 @@ class buffer {
     }
 
   public:
-    template <typename Duration>
-    explicit buffer(std::size_t threshold, Duration latency_limit,
+    template <typename Rep, typename Period>
+    explicit buffer(arg::threshold<std::size_t> threshold,
+                    std::chrono::duration<Rep, Period> latency_limit,
                     access_tracker<buffer_access> &&tracker,
                     Downstream downstream)
-        : threshold(threshold >= 0 ? threshold : 1),
+        : threshold(threshold.value >= 0 ? threshold.value : 1),
           max_latency(
               std::chrono::duration_cast<clock_type::duration>(latency_limit)),
           downstream(std::move(downstream)), trk(std::move(tracker)) {
@@ -222,7 +224,7 @@ class buffer {
     }
 
     // NOLINTBEGIN(cppcoreguidelines-pro-type-member-init)
-    explicit buffer(std::size_t threshold,
+    explicit buffer(arg::threshold<std::size_t> threshold,
                     access_tracker<buffer_access> &&tracker,
                     Downstream downstream)
         : buffer(threshold, std::chrono::hours(24), std::move(tracker),
@@ -302,7 +304,7 @@ class buffer {
  *
  * \tparam Event the event type
  *
- * \tparam Downstream downstream processor type
+ * \tparam Downstream downstream processor type (usually deduced)
  *
  * \param threshold number of events to buffer before start sending to
  * downstream
@@ -322,8 +324,8 @@ class buffer {
  *   error)
  */
 template <typename Event, typename Downstream>
-auto buffer(std::size_t threshold, access_tracker<buffer_access> &&tracker,
-            Downstream &&downstream) {
+auto buffer(arg::threshold<std::size_t> threshold,
+            access_tracker<buffer_access> &&tracker, Downstream &&downstream) {
     return internal::buffer<Event, false, Downstream>(
         threshold, std::move(tracker), std::forward<Downstream>(downstream));
 }
@@ -356,14 +358,19 @@ auto buffer(std::size_t threshold, access_tracker<buffer_access> &&tracker,
  *
  * \tparam Event the event type
  *
- * \tparam Downstream downstream processor type
+ * \tparam Rep tick count type of duration type of \p latency_limit (usually
+ * deduced)
+ *
+ * \tparam Period period of duration type of \p latency_limit (usually deduced)
+ *
+ * \tparam Downstream downstream processor type (usually deduced)
  *
  * \param threshold number of events to buffer before start sending to
  * downstream
  *
- * \param latency_limit a `std::chrono::duration` specifying the maximum time
- * an event can remain in the buffer before sending to downstream is started
- * even if there are fewer events than threshold. Must not exceed 24 hours.
+ * \param latency_limit the maximum time an event can remain in the buffer
+ * before sending to downstream is started even if there are fewer events than
+ * threshold. Must not exceed 24 hours.
  *
  * \param tracker access tracker for later access
  *
@@ -379,8 +386,9 @@ auto buffer(std::size_t threshold, access_tracker<buffer_access> &&tracker,
  *   `tcspc::end_of_processing` if pumping thread has exited (normally or with
  *   error)
  */
-template <typename Event, typename Duration, typename Downstream>
-auto real_time_buffer(std::size_t threshold, Duration latency_limit,
+template <typename Event, typename Rep, typename Period, typename Downstream>
+auto real_time_buffer(arg::threshold<std::size_t> threshold,
+                      std::chrono::duration<Rep, Period> latency_limit,
                       access_tracker<buffer_access> &&tracker,
                       Downstream &&downstream) {
     return internal::buffer<Event, true, Downstream>(

@@ -6,6 +6,7 @@
 
 #pragma once
 
+#include "arg_wrappers.hpp"
 #include "bucket.hpp"
 #include "introspect.hpp"
 #include "span.hpp"
@@ -134,8 +135,10 @@ class cfile_output_stream {
 };
 
 // For benchmarking only
-inline auto unbuffered_binary_ofstream_output_stream(
-    std::string const &filename, bool truncate = false, bool append = false) {
+inline auto
+unbuffered_binary_ofstream_output_stream(std::string const &filename,
+                                         arg::truncate<bool> truncate,
+                                         arg::append<bool> append) {
     std::ofstream stream;
 
     // Set to unbuffered.
@@ -143,8 +146,8 @@ inline auto unbuffered_binary_ofstream_output_stream(
 
     stream.open(filename,
                 std::ios::binary |
-                    (truncate ? std::ios::trunc : std::ios::openmode{}) |
-                    (append ? std::ios::ate : std::ios::openmode{}));
+                    (truncate.value ? std::ios::trunc : std::ios::openmode{}) |
+                    (append.value ? std::ios::ate : std::ios::openmode{}));
     if (stream.fail())
         throw std::runtime_error("failed to open output file: " + filename);
     return internal::ostream_output_stream(std::move(stream));
@@ -152,22 +155,22 @@ inline auto unbuffered_binary_ofstream_output_stream(
 
 // For benchmarking only
 inline auto binary_ofstream_output_stream(std::string const &filename,
-                                          bool truncate = false,
-                                          bool append = false) {
+                                          arg::truncate<bool> truncate,
+                                          arg::append<bool> append) {
     std::ofstream stream;
     stream.open(filename,
                 std::ios::binary |
-                    (truncate ? std::ios::trunc : std::ios::openmode{}) |
-                    (append ? std::ios::ate : std::ios::openmode{}));
+                    (truncate.value ? std::ios::trunc : std::ios::openmode{}) |
+                    (append.value ? std::ios::ate : std::ios::openmode{}));
     if (stream.fail())
         throw std::runtime_error("failed to open output file: " + filename);
     return internal::ostream_output_stream(std::move(stream));
 }
 
 inline auto unbuffered_binary_cfile_output_stream(std::string const &filename,
-                                                  bool truncate = false,
-                                                  bool append = false) {
-    char const *mode = truncate ? "wb" : (append ? "ab" : "wbx");
+                                                  arg::truncate<bool> truncate,
+                                                  arg::append<bool> append) {
+    char const *mode = truncate.value ? "wb" : (append.value ? "ab" : "wbx");
 #ifdef _WIN32 // Avoid requiring _CRT_SECURE_NO_WARNINGS.
     std::FILE *fp{};
     (void)fopen_s(&fp, filename.c_str(), mode);
@@ -189,9 +192,9 @@ inline auto unbuffered_binary_cfile_output_stream(std::string const &filename,
 
 // For benchmarking only
 inline auto binary_cfile_output_stream(std::string const &filename,
-                                       bool truncate = false,
-                                       bool append = false) {
-    char const *mode = truncate ? "wb" : (append ? "ab" : "wbx");
+                                       arg::truncate<bool> truncate,
+                                       arg::append<bool> append) {
+    char const *mode = truncate.value ? "wb" : (append.value ? "ab" : "wbx");
 #ifdef _WIN32 // Avoid requiring _CRT_SECURE_NO_WARNINGS.
     std::FILE *fp{};
     (void)fopen_s(&fp, filename.c_str(), mode);
@@ -237,9 +240,10 @@ inline auto null_output_stream() { return internal::null_output_stream(); }
  *
  * \return output stream
  */
-inline auto binary_file_output_stream(std::string const &filename,
-                                      bool truncate = false,
-                                      bool append = false) {
+inline auto
+binary_file_output_stream(std::string const &filename,
+                          arg::truncate<bool> truncate = arg::truncate{false},
+                          arg::append<bool> append = arg::append{false}) {
     return internal::unbuffered_binary_cfile_output_stream(filename, truncate,
                                                            append);
 }
@@ -329,15 +333,15 @@ template <typename OutputStream> class write_binary_stream {
     explicit write_binary_stream(
         OutputStream stream,
         std::shared_ptr<bucket_source<std::byte>> buffer_provider,
-        std::size_t write_granularity_bytes)
+        arg::granularity<std::size_t> granularity)
         : strm(std::move(stream)), bsource(std::move(buffer_provider)),
-          write_granularity(write_granularity_bytes) {
+          write_granularity(granularity.value) {
         if (not bsource)
             throw std::invalid_argument(
                 "write_binary_stream buffer_provider must not be null");
         if (write_granularity <= 0)
             throw std::invalid_argument(
-                "write_binary_stream write_granularity_bytes must be positive");
+                "write_binary_stream granularity must be positive");
     }
 
     [[nodiscard]] auto introspect_node() const -> processor_info {
@@ -435,14 +439,12 @@ template <typename OutputStream> class write_binary_stream {
  * and contiguously to the stream.
  *
  * For efficiency, data is written in batches whose size is a multiple of \p
- * write_granularity_bytes (except possibly at the beginning and end of the
- * stream).
+ * granularity (except possibly at the beginning and end of the stream).
  *
- * The \p write_granularity_bytes can be tuned for best performance. If too
- * small, writes may incur more overhead per byte written; if too large, CPU
- * caches may be polluted (if the event size and write granularity is such that
- * buffering is necessary). It is best to try different powers of 2 and
- * measure.
+ * The \p granularity can be tuned for best performance. If too small, writes
+ * may incur more overhead per byte written; if too large, CPU caches may be
+ * polluted (if the event size and write granularity is such that buffering is
+ * necessary). It is best to try different powers of 2 and measure.
  *
  * If there is an error (either in this processor or upstream), an incomplete
  * file may be left (if the output stream was a regular file). Application
@@ -460,9 +462,9 @@ template <typename OutputStream> class write_binary_stream {
  * to circulate at least 1 bucket without blocking; may not be used if all
  * events can be written directly
  *
- * \param write_granularity_bytes minimum size, in bytes, to write; all writes
- * (except possible the first and last ones, for alignment) will be a multiple
- * of this value
+ * \param granularity minimum size, in bytes, to write; all writes (except
+ * possible the first and last ones, for alignment) will be a multiple of this
+ * value
  *
  * \return processor
  *
@@ -477,18 +479,17 @@ template <typename OutputStream>
 auto write_binary_stream(
     OutputStream &&stream,
     std::shared_ptr<bucket_source<std::byte>> buffer_provider,
-    std::size_t write_granularity_bytes) {
+    arg::granularity<std::size_t> granularity) {
     // Support direct passing of C++ iostreams stream.
     if constexpr (std::is_base_of_v<std::ostream, OutputStream>) {
         auto wrapped =
             ostream_output_stream(std::forward<OutputStream>(stream));
         return internal::write_binary_stream<decltype(wrapped)>(
-            std::move(wrapped), std::move(buffer_provider),
-            write_granularity_bytes);
+            std::move(wrapped), std::move(buffer_provider), granularity);
     } else {
         return internal::write_binary_stream<OutputStream>(
             std::forward<OutputStream>(stream), std::move(buffer_provider),
-            write_granularity_bytes);
+            granularity);
     }
 }
 

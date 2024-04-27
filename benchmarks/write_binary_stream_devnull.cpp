@@ -6,6 +6,7 @@
 
 #include "libtcspc/write_binary_stream.hpp"
 
+#include "libtcspc/arg_wrappers.hpp"
 #include "libtcspc/bucket.hpp"
 #include "libtcspc/span.hpp"
 
@@ -58,59 +59,59 @@ constexpr std::size_t total_bytes = 1 << 20;
 
 void ofstream_unbuf(benchmark::State &state) {
     auto stream = internal::unbuffered_binary_ofstream_output_stream(
-        "/dev/null", false, true);
+        "/dev/null", arg::truncate{false}, arg::append{true});
     auto const write_size = static_cast<std::size_t>(state.range(0));
     auto const num_writes = total_bytes / write_size;
     std::vector<std::byte> const data(write_size);
     auto bsrc = recycling_bucket_source<std::byte>::create();
     for ([[maybe_unused]] auto _ : state) {
-        auto proc =
-            write_binary_stream(ref_output_stream(stream), bsrc, write_size);
+        auto proc = write_binary_stream(ref_output_stream(stream), bsrc,
+                                        arg::granularity{write_size});
         for (auto n = num_writes; n > 0; --n)
             proc.handle(data);
     }
 }
 
 void ofstream(benchmark::State &state) {
-    auto stream =
-        internal::binary_ofstream_output_stream("/dev/null", false, true);
+    auto stream = internal::binary_ofstream_output_stream(
+        "/dev/null", arg::truncate{false}, arg::append{true});
     auto const write_size = static_cast<std::size_t>(state.range(0));
     auto const num_writes = total_bytes / write_size;
     std::vector<std::byte> const data(write_size);
     auto bsrc = recycling_bucket_source<std::byte>::create();
     for ([[maybe_unused]] auto _ : state) {
-        auto proc =
-            write_binary_stream(ref_output_stream(stream), bsrc, write_size);
+        auto proc = write_binary_stream(ref_output_stream(stream), bsrc,
+                                        arg::granularity{write_size});
         for (auto n = num_writes; n > 0; --n)
             proc.handle(data);
     }
 }
 
 void cfile_unbuf(benchmark::State &state) {
-    auto stream = internal::unbuffered_binary_cfile_output_stream("/dev/null",
-                                                                  false, true);
+    auto stream = internal::unbuffered_binary_cfile_output_stream(
+        "/dev/null", arg::truncate{false}, arg::append{true});
     auto const write_size = static_cast<std::size_t>(state.range(0));
     auto const num_writes = total_bytes / write_size;
     std::vector<std::byte> const data(write_size);
     auto bsrc = recycling_bucket_source<std::byte>::create();
     for ([[maybe_unused]] auto _ : state) {
-        auto proc =
-            write_binary_stream(ref_output_stream(stream), bsrc, write_size);
+        auto proc = write_binary_stream(ref_output_stream(stream), bsrc,
+                                        arg::granularity{write_size});
         for (auto n = num_writes; n > 0; --n)
             proc.handle(data);
     }
 }
 
 void cfile(benchmark::State &state) {
-    auto stream =
-        internal::binary_cfile_output_stream("/dev/null", false, true);
+    auto stream = internal::binary_cfile_output_stream(
+        "/dev/null", arg::truncate{false}, arg::append{true});
     auto const write_size = static_cast<std::size_t>(state.range(0));
     auto const num_writes = total_bytes / write_size;
     std::vector<std::byte> const data(write_size);
     auto bsrc = recycling_bucket_source<std::byte>::create();
     for ([[maybe_unused]] auto _ : state) {
-        auto proc =
-            write_binary_stream(ref_output_stream(stream), bsrc, write_size);
+        auto proc = write_binary_stream(ref_output_stream(stream), bsrc,
+                                        arg::granularity{write_size});
         for (auto n = num_writes; n > 0; --n)
             proc.handle(data);
     }

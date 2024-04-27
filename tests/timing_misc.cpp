@@ -6,6 +6,7 @@
 
 #include "libtcspc/timing_misc.hpp"
 
+#include "libtcspc/arg_wrappers.hpp"
 #include "libtcspc/common.hpp"
 #include "libtcspc/context.hpp"
 #include "libtcspc/test_utils.hpp"
@@ -22,16 +23,17 @@ namespace tcspc {
 
 TEST_CASE("introspect timing_misc", "[introspect]") {
     check_introspect_simple_processor(
-        retime_periodic_sequences(1, null_sink()));
-    check_introspect_simple_processor(
-        extrapolate_periodic_sequences(1, null_sink()));
-    check_introspect_simple_processor(
-        add_count_to_periodic_sequences(1, null_sink()));
+        retime_periodic_sequences(arg::max_time_shift<i64>{1}, null_sink()));
+    check_introspect_simple_processor(extrapolate_periodic_sequences(
+        arg::tick_index<std::size_t>{1}, null_sink()));
+    check_introspect_simple_processor(add_count_to_periodic_sequences(
+        arg::count<std::size_t>{1}, null_sink()));
     using etick = time_tagged_test_event<0>;
     using estart = time_tagged_test_event<1>;
     using estop = time_tagged_test_event<2>;
     check_introspect_simple_processor(
-        convert_sequences_to_start_stop<etick, estart, estop>(1, null_sink()));
+        convert_sequences_to_start_stop<etick, estart, estop>(
+            arg::count<std::size_t>{1}, null_sink()));
 }
 
 TEST_CASE("retime periodic sequence events") {
@@ -39,8 +41,9 @@ TEST_CASE("retime periodic sequence events") {
     auto ctx = context::create();
     auto in = feed_input<type_list<periodic_sequence_model_event<>>>(
         retime_periodic_sequences<>(
-            10, capture_output<out_events>(
-                    ctx->tracker<capture_output_access>("out"))));
+            arg::max_time_shift<i64>{10},
+            capture_output<out_events>(
+                ctx->tracker<capture_output_access>("out"))));
     in.require_output_checked(ctx, "out");
     auto out = capture_output_checker<out_events>(
         ctx->access<capture_output_access>("out"));
@@ -80,8 +83,9 @@ TEST_CASE("retime periodic sequence events unsigned",
     auto ctx = context::create();
     auto in = feed_input<type_list<periodic_sequence_model_event<types>>>(
         retime_periodic_sequences<types>(
-            10, capture_output<out_events>(
-                    ctx->tracker<capture_output_access>("out"))));
+            arg::max_time_shift<u64>{10},
+            capture_output<out_events>(
+                ctx->tracker<capture_output_access>("out"))));
     in.require_output_checked(ctx, "out");
     auto out = capture_output_checker<out_events>(
         ctx->access<capture_output_access>("out"));
@@ -106,8 +110,9 @@ TEST_CASE("extrapolate periodic sequences",
     auto ctx = context::create();
     auto in = feed_input<type_list<periodic_sequence_model_event<>>>(
         extrapolate_periodic_sequences(
-            2, capture_output<out_events>(
-                   ctx->tracker<capture_output_access>("out"))));
+            arg::tick_index<std::size_t>{2},
+            capture_output<out_events>(
+                ctx->tracker<capture_output_access>("out"))));
     in.require_output_checked(ctx, "out");
     auto out = capture_output_checker<out_events>(
         ctx->access<capture_output_access>("out"));
@@ -124,8 +129,9 @@ TEST_CASE("add count to periodic sequences",
     auto ctx = context::create();
     auto in = feed_input<type_list<periodic_sequence_model_event<>>>(
         add_count_to_periodic_sequences(
-            3, capture_output<out_events>(
-                   ctx->tracker<capture_output_access>("out"))));
+            arg::count<std::size_t>{3},
+            capture_output<out_events>(
+                ctx->tracker<capture_output_access>("out"))));
     in.require_output_checked(ctx, "out");
     auto out = capture_output_checker<out_events>(
         ctx->access<capture_output_access>("out"));
@@ -148,8 +154,9 @@ TEST_CASE("convert sequences to start-stop",
     SECTION("zero length") {
         auto in = feed_input<type_list<inevt, otherevt>>(
             convert_sequences_to_start_stop<inevt, startevt, stopevt>(
-                0, capture_output<out_events>(
-                       ctx->tracker<capture_output_access>("out"))));
+                arg::count<std::size_t>{0},
+                capture_output<out_events>(
+                    ctx->tracker<capture_output_access>("out"))));
         in.require_output_checked(ctx, "out");
         auto out = capture_output_checker<out_events>(
             ctx->access<capture_output_access>("out"));
@@ -166,8 +173,9 @@ TEST_CASE("convert sequences to start-stop",
     SECTION("length 1") {
         auto in = feed_input<type_list<inevt, otherevt>>(
             convert_sequences_to_start_stop<inevt, startevt, stopevt>(
-                1, capture_output<out_events>(
-                       ctx->tracker<capture_output_access>("out"))));
+                arg::count<std::size_t>{1},
+                capture_output<out_events>(
+                    ctx->tracker<capture_output_access>("out"))));
         in.require_output_checked(ctx, "out");
         auto out = capture_output_checker<out_events>(
             ctx->access<capture_output_access>("out"));
@@ -187,8 +195,9 @@ TEST_CASE("convert sequences to start-stop",
     SECTION("length 2") {
         auto in = feed_input<type_list<inevt, otherevt>>(
             convert_sequences_to_start_stop<inevt, startevt, stopevt>(
-                2, capture_output<out_events>(
-                       ctx->tracker<capture_output_access>("out"))));
+                arg::count<std::size_t>{2},
+                capture_output<out_events>(
+                    ctx->tracker<capture_output_access>("out"))));
         in.require_output_checked(ctx, "out");
         auto out = capture_output_checker<out_events>(
             ctx->access<capture_output_access>("out"));

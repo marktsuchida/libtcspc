@@ -6,6 +6,7 @@
 
 #include "libtcspc/delay.hpp"
 
+#include "libtcspc/arg_wrappers.hpp"
 #include "libtcspc/common.hpp"
 #include "libtcspc/context.hpp"
 #include "libtcspc/test_utils.hpp"
@@ -20,7 +21,7 @@
 namespace tcspc {
 
 TEST_CASE("introspect delay", "[introspect]") {
-    check_introspect_simple_processor(delay(0, null_sink()));
+    check_introspect_simple_processor(delay(arg::delta<i64>{0}, null_sink()));
     check_introspect_simple_processor(zero_base_abstime(null_sink()));
 }
 
@@ -37,8 +38,9 @@ TEST_CASE("Delay") {
 
     SECTION("Zero delay is noop") {
         auto in = feed_input<type_list<e0>>(
-            delay(0, capture_output<out_events>(
-                         ctx->tracker<capture_output_access>("out"))));
+            delay(arg::delta<i64>{0},
+                  capture_output<out_events>(
+                      ctx->tracker<capture_output_access>("out"))));
         in.require_output_checked(ctx, "out");
         auto out = capture_output_checker<out_events>(
             ctx->access<capture_output_access>("out"));
@@ -51,8 +53,9 @@ TEST_CASE("Delay") {
 
     SECTION("Delay +1") {
         auto in = feed_input<type_list<e0, e1>>(
-            delay(1, capture_output<out_events>(
-                         ctx->tracker<capture_output_access>("out"))));
+            delay(arg::delta<i64>{1},
+                  capture_output<out_events>(
+                      ctx->tracker<capture_output_access>("out"))));
         in.require_output_checked(ctx, "out");
         auto out = capture_output_checker<out_events>(
             ctx->access<capture_output_access>("out"));
@@ -67,8 +70,9 @@ TEST_CASE("Delay") {
 
     SECTION("Delay -1") {
         auto in = feed_input<type_list<e0, e1>>(
-            delay(-1, capture_output<out_events>(
-                          ctx->tracker<capture_output_access>("out"))));
+            delay(arg::delta<i64>{-1},
+                  capture_output<out_events>(
+                      ctx->tracker<capture_output_access>("out"))));
         in.require_output_checked(ctx, "out");
         auto out = capture_output_checker<out_events>(
             ctx->access<capture_output_access>("out"));

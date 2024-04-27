@@ -6,6 +6,7 @@
 
 #include "libtcspc/read_binary_stream.hpp"
 
+#include "libtcspc/arg_wrappers.hpp"
 #include "libtcspc/bucket.hpp"
 #include "libtcspc/span.hpp"
 
@@ -73,50 +74,53 @@ constexpr std::size_t total_bytes = 1 << 20;
 } // namespace
 
 void ifstream_unbuf(benchmark::State &state) {
-    auto stream =
-        internal::unbuffered_binary_ifstream_input_stream("/dev/zero");
+    auto stream = internal::unbuffered_binary_ifstream_input_stream(
+        "/dev/zero", arg::start_offset<u64>{0});
     auto const read_size = static_cast<std::size_t>(state.range(0));
     auto bsrc = recycling_bucket_source<int>::create();
     for ([[maybe_unused]] auto _ : state) {
-        auto src =
-            read_binary_stream<int>(ref_input_stream(stream), total_bytes,
-                                    bsrc, read_size, unoptimized_null_sink());
+        auto src = read_binary_stream<int>(
+            ref_input_stream(stream), arg::max_length<u64>{total_bytes}, bsrc,
+            arg::granularity{read_size}, unoptimized_null_sink());
         src.flush();
     }
 }
 
 void ifstream(benchmark::State &state) {
-    auto stream = internal::binary_ifstream_input_stream("/dev/zero");
+    auto stream = internal::binary_ifstream_input_stream(
+        "/dev/zero", arg::start_offset<u64>{0});
     auto const read_size = static_cast<std::size_t>(state.range(0));
     auto bsrc = recycling_bucket_source<int>::create();
     for ([[maybe_unused]] auto _ : state) {
-        auto src =
-            read_binary_stream<int>(ref_input_stream(stream), total_bytes,
-                                    bsrc, read_size, unoptimized_null_sink());
+        auto src = read_binary_stream<int>(
+            ref_input_stream(stream), arg::max_length<u64>{total_bytes}, bsrc,
+            arg::granularity{read_size}, unoptimized_null_sink());
         src.flush();
     }
 }
 
 void cfile_unbuf(benchmark::State &state) {
-    auto stream = internal::unbuffered_binary_cfile_input_stream("/dev/zero");
+    auto stream = internal::unbuffered_binary_cfile_input_stream(
+        "/dev/zero", arg::start_offset<u64>{0});
     auto const read_size = static_cast<std::size_t>(state.range(0));
     auto bsrc = recycling_bucket_source<int>::create();
     for ([[maybe_unused]] auto _ : state) {
-        auto src =
-            read_binary_stream<int>(ref_input_stream(stream), total_bytes,
-                                    bsrc, read_size, unoptimized_null_sink());
+        auto src = read_binary_stream<int>(
+            ref_input_stream(stream), arg::max_length<u64>{total_bytes}, bsrc,
+            arg::granularity{read_size}, unoptimized_null_sink());
         src.flush();
     }
 }
 
 void cfile(benchmark::State &state) {
-    auto stream = internal::binary_cfile_input_stream("/dev/zero");
+    auto stream = internal::binary_cfile_input_stream(
+        "/dev/zero", arg::start_offset<u64>{0});
     auto const read_size = static_cast<std::size_t>(state.range(0));
     auto bsrc = recycling_bucket_source<int>::create();
     for ([[maybe_unused]] auto _ : state) {
-        auto src =
-            read_binary_stream<int>(ref_input_stream(stream), total_bytes,
-                                    bsrc, read_size, unoptimized_null_sink());
+        auto src = read_binary_stream<int>(
+            ref_input_stream(stream), arg::max_length<u64>{total_bytes}, bsrc,
+            arg::granularity{read_size}, unoptimized_null_sink());
         src.flush();
     }
 }

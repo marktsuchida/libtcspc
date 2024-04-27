@@ -123,8 +123,9 @@ class dithered_one_shot_timing_generator {
      *
      * \p delay must not be negative.
      */
-    explicit dithered_one_shot_timing_generator(double delay) : dly(delay) {
-        if (delay < 0.0)
+    explicit dithered_one_shot_timing_generator(arg::delay<double> delay)
+        : dly(delay.value) {
+        if (dly < 0.0)
             throw std::invalid_argument(
                 "dithered one-shot timing generator delay must be non-negative");
     }

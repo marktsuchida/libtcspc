@@ -6,6 +6,7 @@
 
 #include "libtcspc/match.hpp"
 
+#include "libtcspc/arg_wrappers.hpp"
 #include "libtcspc/common.hpp"
 #include "libtcspc/context.hpp"
 #include "libtcspc/test_utils.hpp"
@@ -38,7 +39,7 @@ TEST_CASE("Match and replace") {
     auto ctx = context::create();
     auto in = feed_input<type_list<marker_event<>, misc_event>>(
         match_replace<marker_event<>, output_event>(
-            channel_matcher(0),
+            channel_matcher(arg::channel{0}),
             capture_output<out_events>(
                 ctx->tracker<capture_output_access>("out"))));
     in.require_output_checked(ctx, "out");
@@ -59,7 +60,7 @@ TEST_CASE("Match") {
     auto ctx = context::create();
     auto in = feed_input<type_list<marker_event<>, misc_event>>(
         match<marker_event<>, output_event>(
-            channel_matcher(0),
+            channel_matcher(arg::channel{0}),
             capture_output<out_events>(
                 ctx->tracker<capture_output_access>("out"))));
     in.require_output_checked(ctx, "out");

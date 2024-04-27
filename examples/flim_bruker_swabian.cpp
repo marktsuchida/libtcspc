@@ -147,8 +147,10 @@ auto make_histo_proc(settings const &settings,
     using namespace tcspc;
     auto bsource = recycling_bucket_source<std::uint16_t>::create();
     auto writer = write_binary_stream(
-        binary_file_output_stream(settings.output_filename, settings.truncate),
-        recycling_bucket_source<std::byte>::create(), 65536);
+        binary_file_output_stream(settings.output_filename,
+                                  arg::truncate{settings.truncate}),
+        recycling_bucket_source<std::byte>::create(),
+        arg::granularity<std::size_t>{65536});
     struct reset_event {};
     if constexpr (Cumulative) {
         return append(
@@ -191,7 +193,7 @@ auto make_processor(settings const &settings,
         time_correlated_detection_event<>,
         pixel_start_event,
         pixel_stop_event>>(
-            1024 * 1024,
+            arg::max_buffered<std::size_t>{1024 * 1024},
     map_to_datapoints<time_correlated_detection_event<>>(
         difftime_data_mapper(),
     map_to_bins(
@@ -205,36 +207,37 @@ auto make_processor(settings const &settings,
     make_histo_proc<Cumulative>(settings, ctx))))));
 
     auto [sync_merge, cfd_merge] =
-    merge<type_list<detection_event<>>>(1024 * 1024,
+    merge<type_list<detection_event<>>>(
+        arg::max_buffered<std::size_t>{1024 * 1024},
     pair_all_between(
-        settings.sync_channel,
+        arg::start_channel{settings.sync_channel},
         std::array{settings.photon_trailing_channel},
-        settings.max_diff_time,
+        arg::time_window<i64>{settings.max_diff_time},
     select<type_list<std::array<detection_event<>, 2>>>(
     time_correlate_at_stop(
     std::move(tc_merge)))));
 
     auto sync_processor =
-    delay(settings.sync_delay,
+    delay(arg::delta{settings.sync_delay},
     std::move(sync_merge));
 
     auto photon_processor =
     pair_one_between(
-        settings.photon_leading_channel,
+        arg::start_channel{settings.photon_leading_channel},
         std::array{settings.photon_trailing_channel},
-        settings.max_photon_pulse_width,
+        arg::time_window{settings.max_photon_pulse_width},
     select<type_list<std::array<detection_event<>, 2>>>(
     time_correlate_at_midpoint(
     remove_time_correlation(
     recover_order<type_list<detection_event<>>>(
-        std::abs(settings.max_photon_pulse_width),
+        arg::time_window{std::abs(settings.max_photon_pulse_width)},
     std::move(cfd_merge))))));
 
     auto pixel_marker_processor =
     match<detection_event<>, pixel_start_event>(always_matcher(),
     select<type_list<pixel_start_event>>(
     generate<pixel_start_event, pixel_stop_event>(
-        one_shot_timing_generator(settings.pixel_time),
+        one_shot_timing_generator(arg::delay{settings.pixel_time}),
     check_alternating<pixel_start_event, pixel_stop_event>(
     stop_with_error<type_list<warning_event>>(
         "pixel time is such that pixel stop occurs after next pixel start",
@@ -243,9 +246,9 @@ auto make_processor(settings const &settings,
     return
     read_binary_stream<swabian_tag_event>(
         binary_file_input_stream(settings.input_filename),
-        std::numeric_limits<std::uint64_t>::max(),
+        arg::max_length{std::numeric_limits<std::uint64_t>::max()},
         recycling_bucket_source<swabian_tag_event>::create(),
-        65536,
+        arg::granularity<std::size_t>{65536},
     stop_with_error<type_list<warning_event>>("error reading input",
     unbatch<swabian_tag_event>(
     count<swabian_tag_event>(ctx->tracker<count_access>("record_counter"),

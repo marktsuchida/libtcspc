@@ -95,8 +95,10 @@ auto make_histo_proc(settings const &settings,
     using namespace tcspc;
     auto bsource = recycling_bucket_source<std::uint16_t>::create();
     auto writer = write_binary_stream(
-        binary_file_output_stream(settings.output_filename, settings.truncate),
-        recycling_bucket_source<std::byte>::create(), 65536);
+        binary_file_output_stream(settings.output_filename,
+                                  arg::truncate{settings.truncate}),
+        recycling_bucket_source<std::byte>::create(),
+        arg::granularity<std::size_t>{65536});
     struct reset_event {};
     if constexpr (Cumulative) {
         return append(
@@ -136,10 +138,10 @@ auto make_processor(settings const &settings,
     return
     read_binary_stream<bh_spc_event>(
         binary_file_input_stream(settings.input_filename,
-                                 4), // Skip 4-byte header.
-        std::numeric_limits<std::uint64_t>::max(),
+                                 arg::start_offset<u64>{4}), // 4-byte header.
+        arg::max_length{std::numeric_limits<std::uint64_t>::max()},
         recycling_bucket_source<bh_spc_event>::create(),
-        65536,
+        arg::granularity<std::size_t>{65536},
     stop_with_error<type_list<warning_event>>("error reading input",
     unbatch<bh_spc_event>(
     count<bh_spc_event>(ctx->tracker<count_access>("record_counter"),
@@ -148,11 +150,11 @@ auto make_processor(settings const &settings,
     stop_with_error<type_list<warning_event, data_lost_event<>>>(
         "error in input data",
     match<marker_event<>, pixel_start_event>(
-        channel_matcher(0), // Extract pixel clock.
+        channel_matcher(arg::channel{0}), // Extract pixel clock.
     select_not<type_list<marker_event<>>>(
     generate<pixel_start_event, pixel_stop_event>(
         // Generate pixel stop events.
-        one_shot_timing_generator(settings.pixel_time),
+        one_shot_timing_generator(arg::delay{settings.pixel_time}),
     select_not<type_list<time_reached_event<>>>(
     check_alternating<pixel_start_event, pixel_stop_event>(
     stop_with_error<type_list<warning_event, data_lost_event<>>>(

@@ -179,7 +179,7 @@ class null_timing_generator {
 template <typename DataTypes = default_data_types>
 class one_shot_timing_generator {
     std::optional<typename DataTypes::abstime_type> next;
-    typename DataTypes::abstime_type delay;
+    typename DataTypes::abstime_type dly;
 
   public:
     /**
@@ -188,9 +188,10 @@ class one_shot_timing_generator {
      *
      * \p delay must be nonnegative.
      */
-    explicit one_shot_timing_generator(typename DataTypes::abstime_type delay)
-        : delay(delay) {
-        if (delay < 0)
+    explicit one_shot_timing_generator(
+        arg::delay<typename DataTypes::abstime_type> delay)
+        : dly(delay.value) {
+        if (dly < 0)
             throw std::invalid_argument(
                 "one_shot_timing_generator delay must not be negative");
     }
@@ -199,7 +200,7 @@ class one_shot_timing_generator {
     template <typename TriggerEvent> void trigger(TriggerEvent const &event) {
         static_assert(std::is_same_v<decltype(event.abstime),
                                      typename DataTypes::abstime_type>);
-        next = event.abstime + delay;
+        next = event.abstime + dly;
     }
 
     /** \brief Implements timing generator requirement. */

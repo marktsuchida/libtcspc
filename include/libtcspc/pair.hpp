@@ -6,6 +6,7 @@
 
 #pragma once
 
+#include "arg_wrappers.hpp"
 #include "common.hpp"
 #include "introspect.hpp"
 #include "time_tagged_events.hpp"
@@ -44,12 +45,13 @@ class pair_all {
 
   public:
     explicit pair_all(
-        typename DataTypes::channel_type start_channel,
+        arg::start_channel<typename DataTypes::channel_type> start_channel,
         std::array<typename DataTypes::channel_type, NStopChannels>
             stop_channels,
-        typename DataTypes::abstime_type time_window, Downstream downstream)
-        : start_chan(start_channel), stop_chans(stop_channels),
-          window_size(time_window), downstream(std::move(downstream)) {
+        arg::time_window<typename DataTypes::abstime_type> time_window,
+        Downstream downstream)
+        : start_chan(start_channel.value), stop_chans(stop_channels),
+          window_size(time_window.value), downstream(std::move(downstream)) {
         if (window_size < 0)
             throw std::invalid_argument(
                 "pair_all time_window must not be negative");
@@ -116,12 +118,13 @@ class pair_one {
 
   public:
     explicit pair_one(
-        typename DataTypes::channel_type start_channel,
+        arg::start_channel<typename DataTypes::channel_type> start_channel,
         std::array<typename DataTypes::channel_type, NStopChannels>
             stop_channels,
-        typename DataTypes::abstime_type time_window, Downstream downstream)
-        : start_chan(start_channel), stop_chans(stop_channels),
-          window_size(time_window), downstream(std::move(downstream)) {
+        arg::time_window<typename DataTypes::abstime_type> time_window,
+        Downstream downstream)
+        : start_chan(start_channel.value), stop_chans(stop_channels),
+          window_size(time_window.value), downstream(std::move(downstream)) {
         if (window_size < 0)
             throw std::invalid_argument(
                 "pair_one time_window must not be negative");
@@ -186,12 +189,13 @@ class pair_all_between {
 
   public:
     explicit pair_all_between(
-        typename DataTypes::channel_type start_channel,
+        arg::start_channel<typename DataTypes::channel_type> start_channel,
         std::array<typename DataTypes::channel_type, NStopChannels>
             stop_channels,
-        typename DataTypes::abstime_type time_window, Downstream downstream)
-        : start_chan(start_channel), stop_chans(stop_channels),
-          window_size(time_window), downstream(std::move(downstream)) {
+        arg::time_window<typename DataTypes::abstime_type> time_window,
+        Downstream downstream)
+        : start_chan(start_channel.value), stop_chans(stop_channels),
+          window_size(time_window.value), downstream(std::move(downstream)) {
         if (window_size < 0)
             throw std::invalid_argument(
                 "pair_all_between time_window must not be negative");
@@ -259,12 +263,13 @@ class pair_one_between {
 
   public:
     explicit pair_one_between(
-        typename DataTypes::channel_type start_channel,
+        arg::start_channel<typename DataTypes::channel_type> start_channel,
         std::array<typename DataTypes::channel_type, NStopChannels>
             stop_channels,
-        typename DataTypes::abstime_type time_window, Downstream downstream)
-        : start_chan(start_channel), stop_chans(stop_channels),
-          window_size(time_window), downstream(std::move(downstream)) {
+        arg::time_window<typename DataTypes::abstime_type> time_window,
+        Downstream downstream)
+        : start_chan(start_channel.value), stop_chans(stop_channels),
+          window_size(time_window.value), downstream(std::move(downstream)) {
         if (window_size < 0)
             throw std::invalid_argument(
                 "pair_one_between time_window must not be negative");
@@ -351,9 +356,10 @@ class pair_one_between {
 template <std::size_t NStopChannels, typename DataTypes = default_data_types,
           typename Downstream>
 auto pair_all(
-    typename DataTypes::channel_type start_channel,
+    arg::start_channel<typename DataTypes::channel_type> start_channel,
     std::array<typename DataTypes::channel_type, NStopChannels> stop_channels,
-    typename DataTypes::abstime_type time_window, Downstream &&downstream) {
+    arg::time_window<typename DataTypes::abstime_type> time_window,
+    Downstream &&downstream) {
     return internal::pair_all<NStopChannels, DataTypes, Downstream>(
         start_channel, stop_channels, time_window,
         std::forward<Downstream>(downstream));
@@ -402,9 +408,10 @@ auto pair_all(
 template <std::size_t NStopChannels, typename DataTypes = default_data_types,
           typename Downstream>
 auto pair_one(
-    typename DataTypes::channel_type start_channel,
+    arg::start_channel<typename DataTypes::channel_type> start_channel,
     std::array<typename DataTypes::channel_type, NStopChannels> stop_channels,
-    typename DataTypes::abstime_type time_window, Downstream &&downstream) {
+    arg::time_window<typename DataTypes::abstime_type> time_window,
+    Downstream &&downstream) {
     return internal::pair_one<NStopChannels, DataTypes, Downstream>(
         start_channel, stop_channels, time_window,
         std::forward<Downstream>(downstream));
@@ -452,9 +459,10 @@ auto pair_one(
 template <std::size_t NStopChannels, typename DataTypes = default_data_types,
           typename Downstream>
 auto pair_all_between(
-    typename DataTypes::channel_type start_channel,
+    arg::start_channel<typename DataTypes::channel_type> start_channel,
     std::array<typename DataTypes::channel_type, NStopChannels> stop_channels,
-    typename DataTypes::abstime_type time_window, Downstream &&downstream) {
+    arg::time_window<typename DataTypes::abstime_type> time_window,
+    Downstream &&downstream) {
     return internal::pair_all_between<NStopChannels, DataTypes, Downstream>(
         start_channel, stop_channels, time_window,
         std::forward<Downstream>(downstream));
@@ -503,9 +511,10 @@ auto pair_all_between(
 template <std::size_t NStopChannels, typename DataTypes = default_data_types,
           typename Downstream>
 auto pair_one_between(
-    typename DataTypes::channel_type start_channel,
+    arg::start_channel<typename DataTypes::channel_type> start_channel,
     std::array<typename DataTypes::channel_type, NStopChannels> stop_channels,
-    typename DataTypes::abstime_type time_window, Downstream &&downstream) {
+    arg::time_window<typename DataTypes::abstime_type> time_window,
+    Downstream &&downstream) {
     return internal::pair_one_between<NStopChannels, DataTypes, Downstream>(
         start_channel, stop_channels, time_window,
         std::forward<Downstream>(downstream));

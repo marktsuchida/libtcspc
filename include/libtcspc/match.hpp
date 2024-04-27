@@ -6,6 +6,7 @@
 
 #pragma once
 
+#include "arg_wrappers.hpp"
 #include "common.hpp"
 #include "introspect.hpp"
 
@@ -163,8 +164,9 @@ template <typename DataTypes = default_data_types> class channel_matcher {
     /**
      * \brief Construct with the given \p channel to match.
      */
-    explicit channel_matcher(typename DataTypes::channel_type channel)
-        : channel(channel) {}
+    explicit channel_matcher(
+        arg::channel<typename DataTypes::channel_type> channel)
+        : channel(channel.value) {}
 
     /** \brief Implements matcher requirement. */
     template <typename Event>

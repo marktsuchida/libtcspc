@@ -6,6 +6,7 @@
 
 #include "libtcspc/read_binary_stream.hpp"
 
+#include "libtcspc/arg_wrappers.hpp"
 #include "libtcspc/bucket.hpp"
 #include "libtcspc/common.hpp"
 #include "libtcspc/context.hpp"
@@ -33,8 +34,9 @@ namespace tcspc {
 
 TEST_CASE("introspect read_binary_stream", "[introspect]") {
     check_introspect_simple_processor(read_binary_stream<int>(
-        null_input_stream(), 0, new_delete_bucket_source<int>::create(), 1,
-        null_sink()));
+        null_input_stream(), arg::max_length<u64>{0},
+        new_delete_bucket_source<int>::create(),
+        arg::granularity<std::size_t>{1}, null_sink()));
 }
 
 namespace {
@@ -79,8 +81,10 @@ TEST_CASE("read file") {
 
     SECTION("whole events") {
         auto src = read_binary_stream<std::uint64_t>(
-            binary_file_input_stream(path.string(), 8), 40,
-            new_delete_bucket_source<std::uint64_t>::create(), 16,
+            binary_file_input_stream(path.string(), arg::start_offset<u64>{8}),
+            arg::max_length<u64>{40},
+            new_delete_bucket_source<std::uint64_t>::create(),
+            arg::granularity<std::size_t>{16},
             stop_with_error<type_list<warning_event>>(
                 "read error",
                 capture_output<type_list<bucket<std::uint64_t>>>(
@@ -97,8 +101,10 @@ TEST_CASE("read file") {
 
     SECTION("whole events, partial batch at end") {
         auto src = read_binary_stream<std::uint64_t>(
-            binary_file_input_stream(path.string(), 8), 48,
-            new_delete_bucket_source<std::uint64_t>::create(), 16,
+            binary_file_input_stream(path.string(), arg::start_offset<u64>{8}),
+            arg::max_length<u64>{48},
+            new_delete_bucket_source<std::uint64_t>::create(),
+            arg::granularity<std::size_t>{16},
             stop_with_error<type_list<warning_event>>(
                 "read error",
                 capture_output<type_list<bucket<std::uint64_t>>>(
@@ -115,9 +121,10 @@ TEST_CASE("read file") {
 
     SECTION("extra bytes at end") {
         auto src = read_binary_stream<std::uint64_t>(
-            binary_file_input_stream(path.string(), 8),
-            44, // 4 remainder bytes
-            new_delete_bucket_source<std::uint64_t>::create(), 16,
+            binary_file_input_stream(path.string(), arg::start_offset<u64>{8}),
+            arg::max_length<u64>{44}, // 4 remainder bytes
+            new_delete_bucket_source<std::uint64_t>::create(),
+            arg::granularity<std::size_t>{16},
             stop_with_error<type_list<warning_event>>(
                 "read error",
                 capture_output<type_list<bucket<std::uint64_t>>>(
@@ -134,8 +141,10 @@ TEST_CASE("read file") {
 
     SECTION("read size smaller than event size") {
         auto src = read_binary_stream<std::uint64_t>(
-            binary_file_input_stream(path.string(), 8), 40,
-            new_delete_bucket_source<std::uint64_t>::create(), 3,
+            binary_file_input_stream(path.string(), arg::start_offset<u64>{8}),
+            arg::max_length<u64>{40},
+            new_delete_bucket_source<std::uint64_t>::create(),
+            arg::granularity<std::size_t>{3},
             stop_with_error<type_list<warning_event>>(
                 "read error",
                 capture_output<type_list<bucket<std::uint64_t>>>(
@@ -162,8 +171,9 @@ TEST_CASE("read existing istream, known length") {
 
     auto ctx = context::create();
     auto src = read_binary_stream<std::uint64_t>(
-        std::move(stream), 40,
-        new_delete_bucket_source<std::uint64_t>::create(), 16,
+        std::move(stream), arg::max_length<u64>{40},
+        new_delete_bucket_source<std::uint64_t>::create(),
+        arg::granularity<std::size_t>{16},
         stop_with_error<type_list<warning_event>>(
             "read error", capture_output<type_list<bucket<std::uint64_t>>>(
                               ctx->tracker<capture_output_access>("out"))));
@@ -186,8 +196,10 @@ TEST_CASE("read existing istream, to end") {
 
     auto ctx = context::create();
     auto src = read_binary_stream<std::uint64_t>(
-        std::move(stream), std::numeric_limits<std::uint64_t>::max(),
-        new_delete_bucket_source<std::uint64_t>::create(), 16,
+        std::move(stream),
+        arg::max_length{std::numeric_limits<std::uint64_t>::max()},
+        new_delete_bucket_source<std::uint64_t>::create(),
+        arg::granularity<std::size_t>{16},
         stop_with_error<type_list<warning_event>>(
             "read error", capture_output<type_list<bucket<std::uint64_t>>>(
                               ctx->tracker<capture_output_access>("out"))));
@@ -207,8 +219,10 @@ TEST_CASE("read existing istream, empty") {
 
     auto ctx = context::create();
     auto src = read_binary_stream<std::uint64_t>(
-        std::move(stream), std::numeric_limits<std::uint64_t>::max(),
-        new_delete_bucket_source<std::uint64_t>::create(), 16,
+        std::move(stream),
+        arg::max_length{std::numeric_limits<std::uint64_t>::max()},
+        new_delete_bucket_source<std::uint64_t>::create(),
+        arg::granularity<std::size_t>{16},
         stop_with_error<type_list<warning_event>>(
             "read error", capture_output<type_list<bucket<std::uint64_t>>>(
                               ctx->tracker<capture_output_access>("out"))));
