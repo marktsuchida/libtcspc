@@ -41,20 +41,6 @@ inline constexpr std::size_t destructive_interference_size = 64;
 } // namespace internal
 
 /**
- * \brief Exception type thrown to pumping thread when buffer source was
- * discontinued without reaching the point of flushing.
- *
- * \ingroup exceptions
- */
-class source_halted final : public std::exception {
-  public:
-    /** \brief Implements std::exception interface. */
-    [[nodiscard]] auto what() const noexcept -> char const * override {
-        return "source halted without flushing";
-    }
-};
-
-/**
  * \brief Access for `tcspc::buffer()` and `tcspc::real_time_buffer()`
  * processors.
  *
@@ -73,13 +59,24 @@ class buffer_access {
     /**
      * \brief Halt pumping of the buffer.
      *
-     * The call to `pump()` will return without flushing the downstream.
+     * The call to `pump()` will return (if it hasn't yet) without flushing the
+     * downstream.
      *
-     * This function must always be called when the upstream processor will no
-     * longer send events (or a flush) to the buffer. This includes when
-     * upstream processing terminated by an exception (including during an
-     * explicit flush), because such an exception may have been thrown upstream
-     * of the buffer without its knowledge.
+     * This function must be called when:
+     *
+     * - Processing is being canceled at the source before flushing the
+     *   processors upstream of the buffer.
+     * - An error (an exception other than `tcspc::end_of_processing`) was
+     *   received at the source while sending an event to, or flushing, the
+     *   processors upstream of the buffer.
+     *
+     * These are two cases in which the buffer would otherwise have no
+     * knowledge that the processing ended.
+     *
+     * It is also safe to call this function after `tcspc::end_of_processing`
+     * was received at the source, or after the source successfully flushed the
+     * processors upstream of the buffer. In these cases, the call has no
+     * effect.
      */
     void halt() noexcept { halt_fn(); } // NOLINT(bugprone-exception-escape)
 
@@ -87,21 +84,24 @@ class buffer_access {
      * \brief Pump buffered events downstream.
      *
      * This function should be called on a thread other than the one on which
-     * upstream events are sent. Events will be emitted downstream on the
-     * calling thread.
+     * upstream events are sent to the buffer. Events will be emitted to the
+     * buffer's downstream on the calling thread.
      *
-     * This function exits normally when a flush has been propagated from
-     * upstream to downstream without an exception being thrown. If an
-     * exception is thrown by a downstream processor (including
-     * `tcspc::end_of_processing`), it is propagated out of this function. If
-     * `halt()` is called when events are still being pumped, this function
-     * throws `tcspc::source_halted`.
+     * Depending on how the processing ends, this function exits in different
+     * ways:
+     *
+     * - If a flush is propagated from upstream of the buffer to its
+     *   downstream, this function returns.
+     * - If an exception (either `tcspc::end_of_processing` or an error) is
+     *   thrown downstream of the buffer, this function throws that exception.
+     * - If `halt()` is called before the buffer receives a flush from its
+     *   upstream, this function throws `tcspc::source_halted`.
      *
      * Applications should generally report errors for exceptions other than
      * `tcspc::end_of_processing` and `tcspc::source_halted`. Note that such
-     * exceptions are not propagated to upstream processors (this is because
-     * there may not be the opportunity to do so if the upstream never calls
-     * the buffer again).
+     * exceptions are _not_ propagated to upstream processors (because there
+     * may not be the opportunity to do so if the upstream never calls the
+     * buffer again).
      */
     void pump() { pump_fn(); }
 };

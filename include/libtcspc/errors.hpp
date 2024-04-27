@@ -46,9 +46,25 @@ class end_of_processing final : public std::exception {
 };
 
 /**
- * \brief Error raised when a histogram bin overflows.
+ * \brief Exception type thrown to pumping thread when buffer source was
+ * discontinued without reaching the point of flushing.
  *
  * \ingroup exceptions
+ *
+ * \see `tcspc::buffer_access::pump()`
+ */
+class source_halted final : public std::exception {
+  public:
+    /** \brief Implements std::exception interface. */
+    [[nodiscard]] auto what() const noexcept -> char const * override {
+        return "source halted without flushing";
+    }
+};
+
+/**
+ * \brief Error raised when a histogram bin overflows.
+ *
+ * \ingroup errors
  *
  * This error is raised when the `tcspc::error_on_overflow_t` policy was
  * requested and there was an overflow. It is also raised when
