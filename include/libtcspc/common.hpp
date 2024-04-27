@@ -450,6 +450,13 @@ template <typename T> struct type_identity {
     using type = T;
 };
 
+// C++20 std::remove_cvref[_t]
+template <typename T> struct remove_cvref {
+    using type = std::remove_cv_t<std::remove_reference_t<T>>;
+};
+
+template <typename T> using remove_cvref_t = typename remove_cvref<T>::type;
+
 // Overloaded idiom for std::visit
 template <typename... Ts> struct overloaded : Ts... {
     using Ts::operator()...;

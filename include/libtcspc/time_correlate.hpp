@@ -56,8 +56,14 @@ class time_correlate_at_start_or_stop {
             static_cast<typename DataTypes::difftime_type>(difftime)});
     }
 
-    template <typename OtherEvent> void handle(OtherEvent const &event) {
-        downstream.handle(event);
+    template <typename DT>
+    // NOLINTNEXTLINE(cppcoreguidelines-rvalue-reference-param-not-moved)
+    void handle(std::array<detection_event<DT>, 2> &&event) {
+        handle<DT>(event);
+    }
+
+    template <typename OtherEvent> void handle(OtherEvent &&event) {
+        downstream.handle(std::forward<OtherEvent>(event));
     }
 
     void flush() { downstream.flush(); }
@@ -94,8 +100,14 @@ class time_correlate_at_midpoint {
             static_cast<typename DataTypes::difftime_type>(difftime)});
     }
 
-    template <typename OtherEvent> void handle(OtherEvent const &event) {
-        downstream.handle(event);
+    template <typename DT>
+    // NOLINTNEXTLINE(cppcoreguidelines-rvalue-reference-param-not-moved)
+    void handle(std::array<detection_event<DT>, 2> &&event) {
+        handle<DT>(event);
+    }
+
+    template <typename OtherEvent> void handle(OtherEvent &&event) {
+        downstream.handle(std::forward<OtherEvent>(event));
     }
 
     void flush() { downstream.flush(); }
@@ -137,8 +149,14 @@ class time_correlate_at_fraction {
             static_cast<typename DataTypes::difftime_type>(difftime)});
     }
 
-    template <typename OtherEvent> void handle(OtherEvent const &event) {
-        downstream.handle(event);
+    template <typename DT>
+    // NOLINTNEXTLINE(cppcoreguidelines-rvalue-reference-param-not-moved)
+    void handle(std::array<detection_event<DT>, 2> &&event) {
+        handle<DT>(event);
+    }
+
+    template <typename OtherEvent> void handle(OtherEvent &&event) {
+        downstream.handle(std::forward<OtherEvent>(event));
     }
 
     void flush() { downstream.flush(); }
@@ -338,18 +356,24 @@ template <typename Downstream> class negate_difftime {
         return downstream.introspect_graph().push_entry_point(this);
     }
 
-    template <typename DataTypes>
-    void handle(time_correlated_detection_event<DataTypes> const &event) {
+    template <typename DT>
+    void handle(time_correlated_detection_event<DT> const &event) {
         static_assert(
-            std::is_signed_v<typename DataTypes::difftime_type>,
+            std::is_signed_v<typename DT::difftime_type>,
             "difftime_type of time_correlated_detection_event used with negate_difftime must be a signed integer type");
-        time_correlated_detection_event<DataTypes> copy(event);
+        time_correlated_detection_event<DT> copy(event);
         copy.difftime = -event.difftime;
         downstream.handle(copy);
     }
 
-    template <typename OtherEvent> void handle(OtherEvent const &event) {
-        downstream.handle(event);
+    template <typename DT>
+    // NOLINTNEXTLINE(cppcoreguidelines-rvalue-reference-param-not-moved)
+    void handle(time_correlated_detection_event<DT> &&event) {
+        handle<DT>(event);
+    }
+
+    template <typename OtherEvent> void handle(OtherEvent &&event) {
+        downstream.handle(std::forward<OtherEvent>(event));
     }
 
     void flush() { downstream.flush(); }
@@ -382,8 +406,14 @@ class remove_time_correlation {
             detection_event<DataTypes>{event.abstime, event.channel});
     }
 
-    template <typename OtherEvent> void handle(OtherEvent const &event) {
-        downstream.handle(event);
+    template <typename DT>
+    // NOLINTNEXTLINE(cppcoreguidelines-rvalue-reference-param-not-moved)
+    void handle(time_correlated_detection_event<DT> &&event) {
+        handle<DT>(event);
+    }
+
+    template <typename OtherEvent> void handle(OtherEvent &&event) {
+        downstream.handle(std::forward<OtherEvent>(event));
     }
 
     void flush() { downstream.flush(); }

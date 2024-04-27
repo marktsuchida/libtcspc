@@ -50,8 +50,11 @@ class map_to_datapoints {
             datapoint_event<DataTypes>{std::invoke(mapper, event)});
     }
 
-    template <typename OtherEvent> void handle(OtherEvent const &event) {
-        downstream.handle(event);
+    // NOLINTNEXTLINE(cppcoreguidelines-rvalue-reference-param-not-moved)
+    void handle(Event &&event) { handle(event); }
+
+    template <typename OtherEvent> void handle(OtherEvent &&event) {
+        downstream.handle(std::forward<OtherEvent>(event));
     }
 
     void flush() { downstream.flush(); }
@@ -174,8 +177,13 @@ class map_to_bins {
             downstream.handle(bin_increment_event<DataTypes>{bin.value()});
     }
 
-    template <typename OtherEvent> void handle(OtherEvent const &event) {
-        downstream.handle(event);
+    // NOLINTNEXTLINE(cppcoreguidelines-rvalue-reference-param-not-moved)
+    template <typename DT> void handle(datapoint_event<DT> &&event) {
+        handle<DT>(event);
+    }
+
+    template <typename OtherEvent> void handle(OtherEvent &&event) {
+        downstream.handle(std::forward<OtherEvent>(event));
     }
 
     void flush() { downstream.flush(); }
@@ -405,8 +413,19 @@ class batch_bin_increments {
         }
     }
 
-    template <typename OtherEvent> void handle(OtherEvent const &event) {
-        downstream.handle(event);
+    // NOLINTNEXTLINE(cppcoreguidelines-rvalue-reference-param-not-moved)
+    template <typename DT> void handle(bin_increment_event<DT> &&event) {
+        handle<DT>(event);
+    }
+
+    // NOLINTNEXTLINE(cppcoreguidelines-rvalue-reference-param-not-moved)
+    void handle(StartEvent &&event) { handle(event); }
+
+    // NOLINTNEXTLINE(cppcoreguidelines-rvalue-reference-param-not-moved)
+    void handle(StopEvent &&event) { handle(event); }
+
+    template <typename OtherEvent> void handle(OtherEvent &&event) {
+        downstream.handle(std::forward<OtherEvent>(event));
     }
 
     void flush() { downstream.flush(); }

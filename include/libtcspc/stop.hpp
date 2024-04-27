@@ -52,11 +52,12 @@ class stop {
         return downstream.introspect_graph().push_entry_point(this);
     }
 
-    template <typename Event> void handle(Event const &event) {
-        if constexpr (type_list_contains_v<EventList, Event>)
+    template <typename Event> void handle(Event &&event) {
+        if constexpr (type_list_contains_v<EventList,
+                                           internal::remove_cvref_t<Event>>)
             handle_stop(event);
         else
-            downstream.handle(event);
+            downstream.handle(std::forward<Event>(event));
     }
 
     void flush() { downstream.flush(); }

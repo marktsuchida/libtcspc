@@ -121,8 +121,13 @@ class histogram_elementwise {
         }
     }
 
-    template <typename Event> void handle(Event const &event) {
-        downstream.handle(event);
+    // NOLINTNEXTLINE(cppcoreguidelines-rvalue-reference-param-not-moved)
+    template <typename DT> void handle(bin_increment_batch_event<DT> &&event) {
+        handle<DT>(event);
+    }
+
+    template <typename OtherEvent> void handle(OtherEvent &&event) {
+        downstream.handle(std::forward<OtherEvent>(event));
     }
 
     void flush() { downstream.flush(); }
@@ -384,8 +389,16 @@ class histogram_elementwise_accumulate {
         journal.clear();
     }
 
-    template <typename Event> void handle(Event const &event) {
-        downstream.handle(event);
+    // NOLINTNEXTLINE(cppcoreguidelines-rvalue-reference-param-not-moved)
+    template <typename DT> void handle(bin_increment_batch_event<DT> &&event) {
+        handle<DT>(event);
+    }
+
+    // NOLINTNEXTLINE(cppcoreguidelines-rvalue-reference-param-not-moved)
+    void handle(ResetEvent &&event) { handle(event); }
+
+    template <typename OtherEvent> void handle(OtherEvent &&event) {
+        downstream.handle(std::forward<OtherEvent>(event));
     }
 
     void flush() { downstream.flush(); }

@@ -35,20 +35,18 @@ class match {
         return downstream.introspect_graph().push_entry_point(this);
     }
 
-    void handle(Event const &event) {
-        bool matched = matcher(event);
-        if constexpr (PassMatched) {
-            downstream.handle(event);
+    template <typename E> void handle(E &&event) {
+        if constexpr (std::is_convertible_v<internal::remove_cvref_t<E>,
+                                            Event>) {
+            auto const abstime = event.abstime;
+            bool const matched = matcher(event);
+            if (PassMatched || not matched)
+                downstream.handle(std::forward<E>(event));
+            if (matched)
+                downstream.handle(OutEvent{abstime});
         } else {
-            if (not matched)
-                downstream.handle(event);
+            downstream.handle(std::forward<E>(event));
         }
-        if (matched)
-            downstream.handle(OutEvent{event.abstime});
-    }
-
-    template <typename OtherEvent> void handle(OtherEvent const &event) {
-        downstream.handle(event);
     }
 
     void flush() { downstream.flush(); }

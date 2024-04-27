@@ -66,13 +66,14 @@ class route_homogeneous {
             });
     }
 
-    template <typename Event> void handle(Event const &event) {
-        if constexpr (type_list_contains_v<RoutedEventList, Event>) {
-            std::size_t index = router(event);
+    template <typename Event> void handle(Event &&event) {
+        if constexpr (type_list_contains_v<RoutedEventList,
+                                           internal::remove_cvref_t<Event>>) {
+            std::size_t index = router(std::as_const(event));
             if (index >= N)
                 return;
             try {
-                downstreams[index].handle(event);
+                downstreams[index].handle(std::forward<Event>(event));
             } catch (end_of_processing const &) {
                 flush_all_but(downstreams[index]);
                 throw;
@@ -80,7 +81,7 @@ class route_homogeneous {
         } else { // Broadcast
             for (auto &d : downstreams) {
                 try {
-                    d.handle(event);
+                    d.handle(std::as_const(event));
                 } catch (end_of_processing const &) {
                     flush_all_but(d);
                     throw;

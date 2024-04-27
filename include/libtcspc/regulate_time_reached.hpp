@@ -68,11 +68,17 @@ class regulate_time_reached {
         handle_time_reached(event.abstime);
     }
 
-    template <typename OtherEvent> void handle(OtherEvent const &event) {
+    // NOLINTNEXTLINE(cppcoreguidelines-rvalue-reference-param-not-moved)
+    template <typename DT> void handle(time_reached_event<DT> &&event) {
+        handle<DT>(event);
+    }
+
+    template <typename OtherEvent> void handle(OtherEvent &&event) {
         static_assert(std::is_same_v<decltype(event.abstime), abstime_type>);
-        downstream.handle(event);
+        auto const abstime = event.abstime;
+        downstream.handle(std::forward<OtherEvent>(event));
         ++emitted_since_prev_time_reached;
-        handle_time_reached(event.abstime);
+        handle_time_reached(abstime);
     }
 
     void flush() {

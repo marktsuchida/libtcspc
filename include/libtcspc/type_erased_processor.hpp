@@ -39,6 +39,7 @@ class abstract_processor<type_list<Event0>>
     : public abstract_processor<type_list<>> {
   public:
     virtual void handle(Event0 const &) = 0;
+    virtual void handle(Event0 &&) = 0;
 };
 
 template <typename Event0, typename... Events>
@@ -49,6 +50,7 @@ class abstract_processor<type_list<Event0, Events...>>
   public:
     using base_type::handle; // Import overload set
     virtual void handle(Event0 const &) = 0;
+    virtual void handle(Event0 &&) = 0;
 };
 
 template <typename Interface, typename Proc, typename EventList>
@@ -93,6 +95,7 @@ class virtual_processor_impl<Interface, Proc, type_list<Event0, Events...>>
 
     using base_type::handle; // Import overload set
     void handle(Event0 const &event) final { proc.handle(event); }
+    void handle(Event0 &&event) final { proc.handle(std::move(event)); }
 };
 
 template <typename Proc, typename EventList>
@@ -138,10 +141,10 @@ template <typename EventList> class type_erased_processor {
      *
      * \param downstream downstream processor
      */
-    template <typename Downstream,
-              typename = std::enable_if_t<not std::is_same_v<
-                  std::remove_cv_t<std::remove_reference_t<Downstream>>,
-                  type_erased_processor>>>
+    template <
+        typename Downstream,
+        typename = std::enable_if_t<not std::is_same_v<
+            internal::remove_cvref_t<Downstream>, type_erased_processor>>>
     explicit type_erased_processor(Downstream &&downstream)
         : proc(std::make_unique<virtual_processor<Downstream>>(
               std::forward<Downstream>(downstream))) {
@@ -163,10 +166,11 @@ template <typename EventList> class type_erased_processor {
     }
 
     /** \brief Implements processor requirement. */
-    template <typename Event, typename = std::enable_if_t<
-                                  type_list_contains_v<event_list, Event>>>
-    void handle(Event const &event) {
-        proc->handle(event);
+    template <typename Event,
+              typename = std::enable_if_t<type_list_contains_v<
+                  event_list, internal::remove_cvref_t<Event>>>>
+    void handle(Event &&event) {
+        proc->handle(std::forward<Event>(event));
     }
 
     /** \brief Implements processor requirement. */

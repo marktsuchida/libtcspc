@@ -6,6 +6,7 @@
 
 #pragma once
 
+#include "common.hpp"
 #include "introspect.hpp"
 #include "type_list.hpp"
 
@@ -31,9 +32,11 @@ class select {
         return downstream.introspect_graph().push_entry_point(this);
     }
 
-    template <typename AnyEvent> void handle(AnyEvent const &event) {
-        if constexpr (type_list_contains_v<EventList, AnyEvent> != Inverted)
-            downstream.handle(event);
+    template <typename AnyEvent> void handle(AnyEvent &&event) {
+        if constexpr (type_list_contains_v<
+                          EventList, internal::remove_cvref_t<AnyEvent>> !=
+                      Inverted)
+            downstream.handle(std::forward<AnyEvent>(event));
     }
 
     void flush() { downstream.flush(); }

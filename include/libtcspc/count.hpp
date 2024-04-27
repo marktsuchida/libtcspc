@@ -7,6 +7,7 @@
 #pragma once
 
 #include "arg_wrappers.hpp"
+#include "common.hpp"
 #include "context.hpp"
 #include "introspect.hpp"
 
@@ -28,6 +29,25 @@ class count_up_to {
     std::uint64_t lmt;
 
     Downstream downstream;
+
+    template <typename Abstime> void pre_tick(Abstime abstime) {
+        if constexpr (!FireAfterTick) {
+            if (count == thresh)
+                downstream.handle(FireEvent{abstime});
+        }
+    }
+
+    template <typename Abstime> void post_tick(Abstime abstime) {
+        ++count;
+
+        if constexpr (FireAfterTick) {
+            if (count == thresh)
+                downstream.handle(FireEvent{abstime});
+        }
+
+        if (count == lmt)
+            count = init;
+    }
 
   public:
     explicit count_up_to(arg::threshold<std::uint64_t> threshold,
@@ -51,21 +71,16 @@ class count_up_to {
     }
 
     void handle(TickEvent const &event) {
-        if constexpr (!FireAfterTick) {
-            if (count == thresh)
-                downstream.handle(FireEvent{event.abstime});
-        }
-
+        pre_tick(event.abstime);
         downstream.handle(event);
-        ++count;
+        post_tick(event.abstime);
+    }
 
-        if constexpr (FireAfterTick) {
-            if (count == thresh)
-                downstream.handle(FireEvent{event.abstime});
-        }
-
-        if (count == lmt)
-            count = init;
+    void handle(TickEvent &&event) {
+        auto const abstime = event.abstime;
+        pre_tick(abstime);
+        downstream.handle(std::move(event));
+        post_tick(abstime);
     }
 
     void handle(ResetEvent const &event) {
@@ -73,8 +88,13 @@ class count_up_to {
         downstream.handle(event);
     }
 
-    template <typename OtherEvent> void handle(OtherEvent const &event) {
-        downstream.handle(event);
+    void handle(ResetEvent &&event) {
+        count = init;
+        downstream.handle(std::move(event));
+    }
+
+    template <typename E> void handle(E &&event) {
+        downstream.handle(std::forward<E>(event));
     }
 
     void flush() { downstream.flush(); }
@@ -248,13 +268,11 @@ template <typename Event, typename Downstream> class count {
         return downstream.introspect_graph().push_entry_point(this);
     }
 
-    void handle(Event const &event) {
-        ++ct;
-        downstream.handle(event);
-    }
-
-    template <typename OtherEvent> void handle(OtherEvent const &event) {
-        downstream.handle(event);
+    template <typename E> void handle(E &&event) {
+        if constexpr (std::is_convertible_v<internal::remove_cvref_t<E>,
+                                            Event>)
+            ++ct;
+        downstream.handle(std::forward<E>(event));
     }
 
     void flush() { downstream.flush(); }

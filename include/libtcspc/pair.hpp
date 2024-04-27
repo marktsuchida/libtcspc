@@ -86,8 +86,13 @@ class pair_all {
         downstream.handle(event);
     }
 
-    template <typename OtherEvent> void handle(OtherEvent const &event) {
-        downstream.handle(event);
+    // NOLINTNEXTLINE(cppcoreguidelines-rvalue-reference-param-not-moved)
+    template <typename DT> void handle(detection_event<DT> &&event) {
+        handle<DT>(event);
+    }
+
+    template <typename OtherEvent> void handle(OtherEvent &&event) {
+        downstream.handle(std::forward<OtherEvent>(event));
     }
 
     void flush() { downstream.flush(); }
@@ -163,8 +168,13 @@ class pair_one {
         downstream.handle(event);
     }
 
-    template <typename OtherEvent> void handle(OtherEvent const &event) {
-        downstream.handle(event);
+    // NOLINTNEXTLINE(cppcoreguidelines-rvalue-reference-param-not-moved)
+    template <typename DT> void handle(detection_event<DT> &&event) {
+        handle<DT>(event);
+    }
+
+    template <typename OtherEvent> void handle(OtherEvent &&event) {
+        downstream.handle(std::forward<OtherEvent>(event));
     }
 
     void flush() { downstream.flush(); }
@@ -231,8 +241,13 @@ class pair_all_between {
         downstream.handle(event);
     }
 
-    template <typename OtherEvent> void handle(OtherEvent const &event) {
-        downstream.handle(event);
+    // NOLINTNEXTLINE(cppcoreguidelines-rvalue-reference-param-not-moved)
+    template <typename DT> void handle(detection_event<DT> &&event) {
+        handle<DT>(event);
+    }
+
+    template <typename OtherEvent> void handle(OtherEvent &&event) {
+        downstream.handle(std::forward<OtherEvent>(event));
     }
 
     void flush() { downstream.flush(); }
@@ -306,8 +321,13 @@ class pair_one_between {
         downstream.handle(event);
     }
 
-    template <typename OtherEvent> void handle(OtherEvent const &event) {
-        downstream.handle(event);
+    // NOLINTNEXTLINE(cppcoreguidelines-rvalue-reference-param-not-moved)
+    template <typename DT> void handle(detection_event<DT> &&event) {
+        handle<DT>(event);
+    }
+
+    template <typename OtherEvent> void handle(OtherEvent &&event) {
+        downstream.handle(std::forward<OtherEvent>(event));
     }
 
     void flush() { downstream.flush(); }

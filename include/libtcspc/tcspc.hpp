@@ -260,7 +260,7 @@ namespace tcspc {
  *   by updating the processor's internal state and emitting events downstream
  *   by calling the downstream processor's `handle()` function.
  * - `void handle(E &&event)`. This is optional and not necessary when `event`
- *   is never forwarded downstream.
+ *   is never forwarded downstream or is known to be of trivial type.
  * - `void flush()`, which conveys the end of stream. The processor emits any
  *   remaining events (due, for example, to buffered state), and flushes its
  *   downstream.
@@ -324,6 +324,9 @@ namespace tcspc {
  *   Requirements specified by `static_assert`, if not satisfied, will cause a
  *   compile error _after_ the overload has been selected. There are use cases
  *   for both.
+ * - When implementing `handle()` for both const lvalue and rvalue references,
+ *   make sure that a generic forwarding reference handler does not shadow a
+ *   specific const lvalue handler.
  *
  * @{
  */

@@ -429,13 +429,13 @@ template <typename EventList> class capture_output {
         return processor_graph().push_entry_point(this);
     }
 
-    template <typename Event, typename = std::enable_if_t<
-                                  type_list_contains_v<EventList, Event>>>
-    void handle(Event const &event) {
+    template <typename Event, typename = std::enable_if_t<type_list_contains_v<
+                                  EventList, internal::remove_cvref_t<Event>>>>
+    void handle(Event &&event) {
         assert(not flushed);
         if (error_in == 0)
             throw test_error("test error upon event");
-        output.push(event);
+        output.push(std::forward<Event>(event));
         if (end_in == 0)
             throw end_of_processing("test end-of-stream upon event");
         --error_in;

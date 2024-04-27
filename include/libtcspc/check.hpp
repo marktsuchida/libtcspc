@@ -47,7 +47,7 @@ class check_monotonic {
         return downstream.introspect_graph().push_entry_point(this);
     }
 
-    template <typename Event> void handle(Event const &event) {
+    template <typename Event> void handle(Event &&event) {
         static_assert(std::is_same_v<decltype(event.abstime),
                                      typename DataTypes::abstime_type>);
         bool const monotonic = RequireStrictlyIncreasing
@@ -56,10 +56,12 @@ class check_monotonic {
         if (not monotonic)
             issue_warning(event.abstime);
         last_seen = event.abstime;
-        downstream.handle(event);
+        downstream.handle(std::forward<Event>(event));
     }
 
     void handle(warning_event const &event) { downstream.handle(event); }
+
+    void handle(warning_event &&event) { downstream.handle(std::move(event)); }
 
     void flush() { downstream.flush(); }
 };
@@ -95,9 +97,9 @@ class check_monotonic {
  * \return processor
  *
  * \par Events handled
- * - `Event`: check monotonicity and emit `tcspc::warning_event` on violation;
- *   pass through
- * - All other types: pass through with no action
+ * - All types with `abstime` field: check monotonicity and emit
+ *   `tcspc::warning_event` on violation; pass through
+ * - `tcspc::warning_event`: pass through with no action
  * - Flush: pass through with no action
  */
 template <typename DataTypes = default_data_types,
@@ -131,22 +133,19 @@ class check_alternating {
         return downstream.introspect_graph().push_entry_point(this);
     }
 
-    void handle(Event0 const &event) {
-        if (last_saw_0)
-            issue_warning();
-        last_saw_0 = true;
-        downstream.handle(event);
-    }
-
-    void handle(Event1 const &event) {
-        if (not last_saw_0)
-            issue_warning();
-        last_saw_0 = false;
-        downstream.handle(event);
-    }
-
-    template <typename OtherEvent> void handle(OtherEvent const &event) {
-        downstream.handle(event);
+    template <typename E> void handle(E &&event) {
+        if constexpr (std::is_convertible_v<internal::remove_cvref_t<E>,
+                                            Event0>) {
+            if (last_saw_0)
+                issue_warning();
+            last_saw_0 = true;
+        } else if constexpr (std::is_convertible_v<internal::remove_cvref_t<E>,
+                                                   Event1>) {
+            if (not last_saw_0)
+                issue_warning();
+            last_saw_0 = false;
+        }
+        downstream.handle(std::forward<E>(event));
     }
 
     void flush() { downstream.flush(); }

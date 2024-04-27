@@ -179,12 +179,12 @@ class merge_input {
         return impl->introspect_graph().push_entry_point(this);
     }
 
-    template <typename Event, typename = std::enable_if_t<
-                                  type_list_contains_v<EventList, Event>>>
-    void handle(Event const &event) {
+    template <typename Event, typename = std::enable_if_t<type_list_contains_v<
+                                  EventList, internal::remove_cvref_t<Event>>>>
+    void handle(Event &&event) {
         static_assert(std::is_same_v<decltype(event.abstime),
                                      typename DataTypes::abstime_type>);
-        impl->template handle<InputChannel>(event);
+        impl->template handle<InputChannel>(std::forward<Event>(event));
     }
 
     void flush() { impl->template flush<InputChannel>(); }
@@ -350,11 +350,11 @@ template <std::size_t N, typename Downstream> class merge_unsorted_impl {
         return downstream.introspect_graph().push_entry_point(this);
     }
 
-    template <typename Event> void handle(Event const &event) {
+    template <typename Event> void handle(Event &&event) {
         if (ended_with_exception)
             return;
         try {
-            downstream.handle(event);
+            downstream.handle(std::forward<Event>(event));
         } catch (std::exception const &) {
             ended_with_exception = true;
             throw;
@@ -399,8 +399,8 @@ template <std::size_t N, typename Downstream> class merge_unsorted_input {
         return impl->introspect_graph().push_entry_point(this);
     }
 
-    template <typename Event> void handle(Event const &event) {
-        impl->handle(event);
+    template <typename Event> void handle(Event &&event) {
+        impl->handle(std::forward<Event>(event));
     }
 
     void flush() { impl->flush(chan); }

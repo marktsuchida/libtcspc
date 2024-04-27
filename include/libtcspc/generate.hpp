@@ -59,16 +59,15 @@ class generate {
         return downstream.introspect_graph().push_entry_point(this);
     }
 
-    void handle(TriggerEvent const &event) {
-        emit([now = event.abstime](auto t) { return t < now; });
-        generator.trigger(event);
-        downstream.handle(event);
-    }
-
-    template <typename OtherTimeTaggedEvent>
-    void handle(OtherTimeTaggedEvent const &event) {
-        emit([now = event.abstime](auto t) { return t <= now; });
-        downstream.handle(event);
+    template <typename E> void handle(E &&event) {
+        if constexpr (std::is_convertible_v<internal::remove_cvref_t<E>,
+                                            TriggerEvent>) {
+            emit([now = event.abstime](auto t) { return t < now; });
+            generator.trigger(event);
+        } else {
+            emit([now = event.abstime](auto t) { return t <= now; });
+        }
+        downstream.handle(std::forward<E>(event));
     }
 
     void flush() {

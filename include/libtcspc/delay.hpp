@@ -34,13 +34,19 @@ template <typename DataTypes, typename Downstream> class delay {
         return downstream.introspect_graph().push_entry_point(this);
     }
 
+    // Note: We could support rvalue events and edit the abstime in place. But
+    // in practice events are expected to be small (so copy overhead is
+    // probably minor) and may originate from a buffer (in which case we do not
+    // want to rely on the compiler to optimize out the write to the event in a
+    // heap buffer). Also only handling lvalues is simpler.
+
     template <typename TimeTaggedEvent>
     void handle(TimeTaggedEvent const &event) {
         static_assert(std::is_same_v<decltype(event.abstime),
                                      typename DataTypes::abstime_type>);
         TimeTaggedEvent copy(event);
         copy.abstime += delta;
-        downstream.handle(copy);
+        downstream.handle(std::move(copy));
     }
 
     void flush() { downstream.flush(); }
@@ -63,6 +69,8 @@ template <typename DataTypes, typename Downstream> class zero_base_abstime {
         return downstream.introspect_graph().push_entry_point(this);
     }
 
+    // Handle only const lvalue (see note on delay::handle()).
+
     template <typename TimeTaggedEvent>
     void handle(TimeTaggedEvent const &event) {
         static_assert(std::is_same_v<decltype(event.abstime),
@@ -75,7 +83,7 @@ template <typename DataTypes, typename Downstream> class zero_base_abstime {
         // Support integer wrap-around by using unsigned type for subtraction.
         copy.abstime = static_cast<decltype(copy.abstime)>(
             as_unsigned(event.abstime) - as_unsigned(minus_delta));
-        downstream.handle(copy);
+        downstream.handle(std::move(copy));
     }
 
     void flush() { downstream.flush(); }

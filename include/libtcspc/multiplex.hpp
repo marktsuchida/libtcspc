@@ -6,6 +6,7 @@
 
 #pragma once
 
+#include "common.hpp"
 #include "introspect.hpp"
 #include "processor_traits.hpp"
 #include "type_list.hpp"
@@ -37,10 +38,11 @@ template <typename EventList, typename Downstream> class multiplex {
         return downstream.introspect_graph().push_entry_point(this);
     }
 
-    template <typename Event, typename = std::enable_if_t<
-                                  type_list_contains_v<EventList, Event>>>
-    void handle(Event const &event) {
-        downstream.handle(variant_event<EventList>(event));
+    template <typename Event, typename = std::enable_if_t<type_list_contains_v<
+                                  EventList, internal::remove_cvref_t<Event>>>>
+    void handle(Event &&event) {
+        downstream.handle(
+            variant_event<EventList>(std::forward<Event>(event)));
     }
 
     void flush() { downstream.flush(); }
@@ -68,6 +70,14 @@ template <typename Downstream> class demultiplex {
             handles_events_v<Downstream, EL>,
             "demultiplex only accepts variant_event whose event list is a subset of the events handled by the downstream");
         std::visit([&](auto const &e) { downstream.handle(e); }, event);
+    }
+
+    // NOLINTNEXTLINE(cppcoreguidelines-rvalue-reference-param-not-moved)
+    template <typename EL> void handle(variant_event<EL> &&event) {
+        // In theory we should be able to move the event out of the variant.
+        // In practice I cannot figure out how to do this in C++17 (without
+        // C++20's explicit lambda template parameters).
+        handle<EL>(event);
     }
 
     void flush() { downstream.flush(); }

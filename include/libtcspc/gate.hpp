@@ -7,6 +7,7 @@
 #pragma once
 
 #include "arg_wrappers.hpp"
+#include "common.hpp"
 #include "introspect.hpp"
 #include "type_list.hpp"
 
@@ -36,22 +37,22 @@ class gate {
         return downstream.introspect_graph().push_entry_point(this);
     }
 
-    void handle(OpenEvent const &event) {
-        open = true;
-        downstream.handle(event);
-    }
-
-    void handle(CloseEvent const &event) {
-        open = false;
-        downstream.handle(event);
-    }
-
-    template <typename OtherEvent> void handle(OtherEvent const &event) {
-        if constexpr (type_list_contains_v<GatedEventList, OtherEvent>) {
+    template <typename E> void handle(E &&event) {
+        if constexpr (std::is_convertible_v<internal::remove_cvref_t<E>,
+                                            OpenEvent>) {
+            open = true;
+            downstream.handle(std::forward<E>(event));
+        } else if constexpr (std::is_convertible_v<internal::remove_cvref_t<E>,
+                                                   CloseEvent>) {
+            open = false;
+            downstream.handle(std::forward<E>(event));
+        } else if constexpr (type_list_contains_v<
+                                 GatedEventList,
+                                 internal::remove_cvref_t<E>>) {
             if (open)
-                downstream.handle(event);
+                downstream.handle(std::forward<E>(event));
         } else {
-            downstream.handle(event);
+            downstream.handle(std::forward<E>(event));
         }
     }
 
