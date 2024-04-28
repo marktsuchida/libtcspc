@@ -143,17 +143,15 @@ template <typename EventList> class type_erased_processor {
      */
     template <
         typename Downstream,
-        typename = std::enable_if_t<not std::is_same_v<
-            internal::remove_cvref_t<Downstream>, type_erased_processor>>>
+        typename = std::enable_if_t<
+            not std::is_convertible_v<internal::remove_cvref_t<Downstream>,
+                                      type_erased_processor> &&
+            handles_events_v<internal::remove_cvref_t<Downstream>,
+                             event_list> &&
+            handles_flush_v<internal::remove_cvref_t<Downstream>>>>
     explicit type_erased_processor(Downstream &&downstream)
         : proc(std::make_unique<virtual_processor<Downstream>>(
-              std::forward<Downstream>(downstream))) {
-        static_assert(
-            handles_events_v<Downstream, event_list>,
-            "downstream of type_erased_processor must handle all specified events");
-        static_assert(handles_flush_v<Downstream>,
-                      "downstream of type_erased_processor must handle flush");
-    }
+              std::forward<Downstream>(downstream))) {}
 
     /** \brief Implements processor requirement. */
     [[nodiscard]] auto introspect_node() const -> processor_info {

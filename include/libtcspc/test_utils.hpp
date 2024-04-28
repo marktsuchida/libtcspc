@@ -653,6 +653,14 @@ auto feed_input(Downstream &&downstream) {
  * This can be used to check at compile time that output of the upstream
  * processor does not contain unexpected events.
  *
+ * \note The use of \p RvalueOnlyEventList is _not_ appropriate for testing
+ * that an upstream processor emits an event by rvalue reference, because said
+ * upstream processor may not compile if `tcspc::handles_event` returns false
+ * for this sink. It is rather intended for testing metafunctions such as
+ * `tcspc::handles_rvalue_event` and `tcspc::handles_const_event`. Testing that
+ * a processor handles certain events with move semantics is best done at
+ * run-time.
+ *
  * \tparam EventList event types to accept (as either rvalue or const lvalue
  * reference, unless the event is also in \p RvalueOnlyEventList)
  *
