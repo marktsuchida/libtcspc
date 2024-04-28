@@ -8,6 +8,7 @@
 
 #include "libtcspc/common.hpp"
 #include "libtcspc/context.hpp"
+#include "libtcspc/processor_traits.hpp"
 #include "libtcspc/type_list.hpp"
 #include "test_checkers.hpp"
 
@@ -92,6 +93,27 @@ TEST_CASE("Short-circuited with event set") {
         in.feed(e1{42});
         CHECK_THROWS_AS(out.check(e1{0}), std::logic_error);
     }
+}
+
+TEST_CASE("sink_events") {
+    static_assert(handles_flush_v<sink_events<type_list<>>>);
+
+    static_assert(not handles_rvalue_event_v<sink_events<type_list<>>, int>);
+    static_assert(handles_rvalue_event_v<sink_events<type_list<int>>, int>);
+    static_assert(
+        handles_rvalue_event_v<sink_events<type_list<int>, type_list<int>>,
+                               int>);
+    static_assert(
+        handles_rvalue_event_v<sink_events<type_list<>, type_list<int>>, int>);
+
+    static_assert(not handles_const_event_v<sink_events<type_list<>>, int>);
+    static_assert(handles_const_event_v<sink_events<type_list<int>>, int>);
+    static_assert(
+        not handles_const_event_v<sink_events<type_list<int>, type_list<int>>,
+                                  int>);
+    static_assert(
+        not handles_const_event_v<sink_events<type_list<>, type_list<int>>,
+                                  int>);
 }
 
 } // namespace tcspc

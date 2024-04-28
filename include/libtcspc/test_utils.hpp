@@ -652,9 +652,13 @@ auto feed_input(Downstream &&downstream) {
  * This can be used to check at compile time that output of the upstream
  * processor does not contain unexpected events.
  *
- * \tparam EventList event types to allow
+ * \tparam EventList event types to accept (as either rvalue or const lvalue
+ * reference, unless the event is also in \p RvalueOnlyEventList)
+ *
+ * \tparam RvalueOnlyEventList event types to accept only as rvalue reference
  */
-template <typename EventList> class sink_events {
+template <typename EventList, typename RvalueOnlyEventList = type_list<>>
+class sink_events {
   public:
     /** \brief Implements processor requirement. */
     [[nodiscard]] auto introspect_node() const -> processor_info {
@@ -667,9 +671,19 @@ template <typename EventList> class sink_events {
     }
 
     /** \brief Implements processor requirement. */
-    template <typename Event, typename = std::enable_if_t<
-                                  type_list_contains_v<EventList, Event>>>
-    void handle([[maybe_unused]] Event const &event) {}
+    template <
+        typename E,
+        typename = std::enable_if_t<
+            (type_list_contains_v<RvalueOnlyEventList,
+                                  internal::remove_cvref_t<E>> &&
+             not std::is_lvalue_reference_v<E> && not std::is_const_v<E>) ||
+            (not type_list_contains_v<RvalueOnlyEventList,
+                                      internal::remove_cvref_t<E>> &&
+             type_list_contains_v<EventList, internal::remove_cvref_t<E>>)>>
+    void handle(E &&event) {
+        [[maybe_unused]] std::remove_reference_t<E> const e =
+            std::forward<E>(event);
+    }
 
     /** \brief Implements processor requirement. */
     void flush() {}

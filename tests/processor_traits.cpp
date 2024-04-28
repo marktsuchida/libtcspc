@@ -6,72 +6,105 @@
 
 #include "libtcspc/processor_traits.hpp"
 
+#include "libtcspc/common.hpp"
 #include "libtcspc/type_list.hpp"
 
 #include <catch2/catch_test_macros.hpp>
 
+#include <type_traits>
+
 namespace tcspc {
 
 TEST_CASE("handles_flush") {
-    struct No1 {};
-    struct No2 {
-        auto flush() -> int;
-    };
-    struct No3 {
-        void flush(int);
-    };
-    struct Yes {
+    struct p {
         void flush();
     };
-    static_assert(not handles_flush_v<No1>);
-    static_assert(not handles_flush_v<No2>);
-    static_assert(not handles_flush_v<No3>);
-    static_assert(handles_flush_v<Yes>);
+    struct q {};
+    struct r {
+        void flush(int);
+    };
+    static_assert(handles_flush_v<p>);
+    static_assert(not handles_flush_v<q>);
+    static_assert(not handles_flush_v<r>);
+}
+
+namespace {
+
+struct e_rvalue {};
+struct e_const_lvalue {};
+struct e_both {};
+struct e_by_value {};
+struct e_forwarding_ref {};
+struct e_not_handled {};
+
+struct p {
+    void handle(e_rvalue &&event);
+    void handle(e_const_lvalue const &event);
+    void handle(e_both &&event);
+    void handle(e_both const &event);
+    void handle(e_by_value event);
+
+    template <typename E, typename = std::enable_if_t<std::is_convertible_v<
+                              internal::remove_cvref_t<E>, e_forwarding_ref>>>
+    void handle(E &&event);
+};
+
+struct q {
+    // NOLINTNEXTLINE(cppcoreguidelines-missing-std-forward)
+    template <typename E> void handle([[maybe_unused]] E &&event) {
+        static_assert(std::is_convertible_v<internal::remove_cvref_t<E>,
+                                            e_forwarding_ref>);
+    }
+};
+
+} // namespace
+
+TEST_CASE("handles_rvalue_event") {
+    static_assert(handles_rvalue_event_v<p, e_rvalue>);
+    static_assert(handles_rvalue_event_v<p, e_const_lvalue>);
+    static_assert(handles_rvalue_event_v<p, e_both>);
+    static_assert(handles_rvalue_event_v<p, e_by_value>);
+    static_assert(handles_rvalue_event_v<p, e_forwarding_ref>);
+    static_assert(not handles_rvalue_event_v<p, e_not_handled>);
+
+    static_assert(handles_rvalue_event_v<q, e_forwarding_ref>);
+    // Cannot "see" static_assert failure (no ODR-use)
+    static_assert(handles_rvalue_event_v<q, e_not_handled>);
+}
+
+TEST_CASE("handles_const_event") {
+    static_assert(not handles_const_event_v<p, e_rvalue>);
+    static_assert(handles_const_event_v<p, e_const_lvalue>);
+    static_assert(handles_const_event_v<p, e_both>);
+    static_assert(handles_const_event_v<p, e_by_value>);
+    static_assert(handles_const_event_v<p, e_forwarding_ref>);
+    static_assert(not handles_const_event_v<p, e_not_handled>);
+
+    static_assert(handles_const_event_v<q, e_forwarding_ref>);
+    // Cannot "see" static_assert failure (no ODR-use)
+    static_assert(handles_const_event_v<q, e_not_handled>);
 }
 
 TEST_CASE("handles_event") {
-    struct Something {};
-    struct No1 {};
-    struct No2 {
-        auto handle(int) -> int;
-    };
-    struct No3 {
-        void handle(Something const &);
-    };
-    struct Yes {
-        void handle(int);
-    };
-    static_assert(not handles_event_v<No1, int>);
-    static_assert(not handles_event_v<No2, int>);
-    static_assert(not handles_event_v<No3, int>);
-    static_assert(handles_event_v<Yes, int>);
+    static_assert(not handles_event_v<p, e_rvalue>);
+    static_assert(handles_event_v<p, e_const_lvalue>);
+    static_assert(handles_event_v<p, e_both>);
+    static_assert(handles_event_v<p, e_by_value>);
+    static_assert(handles_event_v<p, e_forwarding_ref>);
+    static_assert(not handles_event_v<p, e_not_handled>);
+
+    static_assert(handles_event_v<q, e_forwarding_ref>);
+    // Cannot "see" static_assert failure (no ODR-use)
+    static_assert(handles_event_v<q, e_not_handled>);
 }
 
 TEST_CASE("handles_events") {
-    struct E0 {};
-    struct E1 {};
-    struct E2 {};
-    struct No1 {};
-    struct No2 {
-        void handle(E2 const &);
-    };
-    struct No3 {
-        void handle(E0 const &);
-    };
-    struct Yes0 {
-        void handle(E0 const &);
-        void handle(E1 const &);
-    };
-    struct Yes1 {
-        void handle(E0 const &);
-        void handle(E1 const &);
-        void handle(E2 const &);
-    };
-    static_assert(not handles_events_v<No1, type_list<E0, E1>>);
-    static_assert(not handles_events_v<No2, type_list<E0, E1>>);
-    static_assert(not handles_events_v<No3, type_list<E0, E1>>);
-    static_assert(handles_events_v<Yes0, type_list<E0, E1>>);
-    static_assert(handles_events_v<Yes1, type_list<E0, E1>>);
+    static_assert(
+        handles_events_v<p, type_list<e_const_lvalue, e_both, e_by_value>>);
+    static_assert(
+        not handles_events_v<p, type_list<e_rvalue, e_both, e_by_value>>);
+    static_assert(not handles_events_v<
+                  p, type_list<e_const_lvalue, e_both, e_not_handled>>);
 }
 
 } // namespace tcspc
