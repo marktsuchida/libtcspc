@@ -9,8 +9,10 @@
 #include "libtcspc/common.hpp"
 #include "libtcspc/context.hpp"
 #include "libtcspc/errors.hpp"
+#include "libtcspc/processor_traits.hpp"
 #include "libtcspc/test_utils.hpp"
 #include "libtcspc/time_tagged_events.hpp"
+#include "libtcspc/type_erased_processor.hpp"
 #include "libtcspc/type_list.hpp"
 #include "test_checkers.hpp"
 
@@ -20,6 +22,7 @@
 #include <cstddef>
 #include <memory>
 #include <stdexcept>
+#include <type_traits>
 #include <utility>
 
 namespace tcspc {
@@ -31,6 +34,58 @@ using e0 = empty_test_event<0>;
 using e1 = empty_test_event<1>;
 
 } // namespace
+
+TEST_CASE("route_homogeneous constructed two ways have same type") {
+    STATIC_CHECK(std::is_same_v<decltype(route_homogeneous<type_list<>>(
+                                    null_router(), null_sink(), null_sink())),
+                                decltype(route_homogeneous<type_list<>>(
+                                    null_router(),
+                                    std::array{null_sink(), null_sink()}))>);
+    // So we need not further test the std::array case.
+}
+
+TEST_CASE("route and broadcast construct correct type") {
+    STATIC_CHECK(std::is_same_v<
+                 decltype(broadcast_homogeneous(null_sink(), null_sink())),
+                 decltype(route_homogeneous<type_list<>>(
+                     null_router(), null_sink(), null_sink()))>);
+
+    STATIC_CHECK(std::is_same_v<
+                 decltype(route<type_list<e0>, type_list<e1>>(
+                     null_router(), null_sink(), null_sink())),
+                 decltype(route_homogeneous<type_list<e0>>(
+                     null_router(),
+                     type_erased_processor<type_list<e0, e1>>(null_sink()),
+                     type_erased_processor<type_list<e0, e1>>(null_sink())))>);
+
+    STATIC_CHECK(std::is_same_v<
+                 decltype(broadcast<type_list<e0>>(null_sink(), null_sink())),
+                 decltype(route_homogeneous<type_list<>>(
+                     null_router(),
+                     type_erased_processor<type_list<e0>>(null_sink()),
+                     type_erased_processor<type_list<e0>>(null_sink())))>);
+    // So we only need to further test route_homogeneous.
+}
+
+TEST_CASE("route_homogeneous event types") {
+    SECTION("handles flush") {
+        STATIC_CHECK(handles_flush_v<decltype(route_homogeneous<type_list<>>(
+                         null_router(), sink_events<type_list<>>()))>);
+    }
+
+    // We cannot distinguish between routed and broadcast events in SFINAE
+    // context.
+    SECTION("handles any event handled by downstream") {
+        STATIC_CHECK(
+            handles_event_v<decltype(route_homogeneous<type_list<>>(
+                                null_router(), sink_events<type_list<e0>>())),
+                            e0>);
+        STATIC_CHECK(
+            handles_event_v<decltype(route_homogeneous<type_list<e0>>(
+                                null_router(), sink_events<type_list<e0>>())),
+                            e0>);
+    }
+}
 
 TEST_CASE("introspect route", "[introspect]") {
     auto const rh2 = route_homogeneous<type_list<>>(null_router(), null_sink(),
@@ -47,14 +102,6 @@ TEST_CASE("introspect route", "[introspect]") {
     CHECK(edges[1].first == node);
     CHECK(g.node_info(edges[0].second).name() == "null_sink");
     CHECK(g.node_info(edges[1].second).name() == "null_sink");
-
-    // route() is just route_homogeneous + type_erased_processor; no separate
-    // test needed. broadcast_homogeneous() and broadcast() are also thin
-    // wrappers. Just check instantiation here.
-    (void)route<type_list<>>(null_router(), null_sink(),
-                             sink_events<type_list<>>());
-    (void)broadcast_homogeneous(null_sink(), null_sink());
-    (void)broadcast<type_list<>>(null_sink(), sink_events<type_list<>>());
 }
 
 TEST_CASE("Route") {
