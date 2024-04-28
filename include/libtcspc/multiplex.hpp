@@ -65,19 +65,15 @@ template <typename Downstream> class demultiplex {
         return downstream.introspect_graph().push_entry_point(this);
     }
 
+    // In theory we should be able to support rvalues and move the event out of
+    // the variant. In practice I cannot figure out how to do this in C++17
+    // (without C++20's explicit lambda template parameters).
+
     template <typename EL> void handle(variant_event<EL> const &event) {
         static_assert(
             handles_events_v<Downstream, EL>,
             "demultiplex only accepts variant_event whose event list is a subset of the events handled by the downstream");
         std::visit([&](auto const &e) { downstream.handle(e); }, event);
-    }
-
-    // NOLINTNEXTLINE(cppcoreguidelines-rvalue-reference-param-not-moved)
-    template <typename EL> void handle(variant_event<EL> &&event) {
-        // In theory we should be able to move the event out of the variant.
-        // In practice I cannot figure out how to do this in C++17 (without
-        // C++20's explicit lambda template parameters).
-        handle<EL>(event);
     }
 
     void flush() { downstream.flush(); }

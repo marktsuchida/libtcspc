@@ -320,7 +320,7 @@ class extrapolate_periodic_sequences {
     template <typename DT>
     // NOLINTNEXTLINE(cppcoreguidelines-rvalue-reference-param-not-moved)
     void handle(periodic_sequence_model_event<DT> &&event) {
-        handle<DT>(event);
+        handle(static_cast<periodic_sequence_model_event<DT> const &>(event));
     }
 
     template <typename OtherEvent> void handle(OtherEvent &&event) {
@@ -401,7 +401,7 @@ class add_count_to_periodic_sequences {
     template <typename DT>
     // NOLINTNEXTLINE(cppcoreguidelines-rvalue-reference-param-not-moved)
     void handle(periodic_sequence_model_event<DT> &&event) {
-        handle<DT>(event);
+        handle(static_cast<periodic_sequence_model_event<DT> const &>(event));
     }
 
     template <typename OtherEvent> void handle(OtherEvent &&event) {
@@ -497,7 +497,9 @@ class convert_sequences_to_start_stop {
     }
 
     // NOLINTNEXTLINE(cppcoreguidelines-rvalue-reference-param-not-moved)
-    void handle(TickEvent &&event) { handle(event); }
+    void handle(TickEvent &&event) {
+        handle(static_cast<TickEvent const &>(event));
+    }
 
     template <typename OtherEvent> void handle(OtherEvent &&event) {
         downstream.handle(std::forward<OtherEvent>(event));

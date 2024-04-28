@@ -70,7 +70,7 @@ class regulate_time_reached {
 
     // NOLINTNEXTLINE(cppcoreguidelines-rvalue-reference-param-not-moved)
     template <typename DT> void handle(time_reached_event<DT> &&event) {
-        handle<DT>(event);
+        handle(static_cast<time_reached_event<DT> const &>(event));
     }
 
     template <typename OtherEvent> void handle(OtherEvent &&event) {

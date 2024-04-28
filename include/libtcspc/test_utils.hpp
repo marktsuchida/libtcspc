@@ -569,10 +569,11 @@ template <typename EventList, typename Downstream> class feed_input {
         outputs_to_check.emplace_back(std::move(context), std::move(name));
     }
 
-    template <typename Event> void feed(Event const &event) {
-        static_assert(type_list_contains_v<EventList, Event>);
+    template <typename Event> void feed(Event &&event) {
+        static_assert(
+            type_list_contains_v<EventList, internal::remove_cvref_t<Event>>);
         check_outputs_ready();
-        downstream.handle(event);
+        downstream.handle(std::forward<Event>(event));
     }
 
     void flush() {

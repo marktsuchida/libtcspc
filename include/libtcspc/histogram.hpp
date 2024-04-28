@@ -148,11 +148,13 @@ class histogram {
 
     // NOLINTNEXTLINE(cppcoreguidelines-rvalue-reference-param-not-moved)
     template <typename DT> void handle(bin_increment_event<DT> &&event) {
-        handle<DT>(event);
+        handle(static_cast<bin_increment_event<DT> const &>(event));
     }
 
     // NOLINTNEXTLINE(cppcoreguidelines-rvalue-reference-param-not-moved)
-    void handle(ResetEvent &&event) { handle(event); }
+    void handle(ResetEvent &&event) {
+        handle(static_cast<ResetEvent const &>(event));
+    }
 
     template <typename OtherEvent> void handle(OtherEvent &&event) {
         downstream.handle(std::forward<OtherEvent>(event));

@@ -88,7 +88,7 @@ class pair_all {
 
     // NOLINTNEXTLINE(cppcoreguidelines-rvalue-reference-param-not-moved)
     template <typename DT> void handle(detection_event<DT> &&event) {
-        handle<DT>(event);
+        handle(static_cast<detection_event<DT> const &>(event));
     }
 
     template <typename OtherEvent> void handle(OtherEvent &&event) {
@@ -170,7 +170,7 @@ class pair_one {
 
     // NOLINTNEXTLINE(cppcoreguidelines-rvalue-reference-param-not-moved)
     template <typename DT> void handle(detection_event<DT> &&event) {
-        handle<DT>(event);
+        handle(static_cast<detection_event<DT> const &>(event));
     }
 
     template <typename OtherEvent> void handle(OtherEvent &&event) {
@@ -243,7 +243,7 @@ class pair_all_between {
 
     // NOLINTNEXTLINE(cppcoreguidelines-rvalue-reference-param-not-moved)
     template <typename DT> void handle(detection_event<DT> &&event) {
-        handle<DT>(event);
+        handle(static_cast<detection_event<DT> const &>(event));
     }
 
     template <typename OtherEvent> void handle(OtherEvent &&event) {
@@ -323,7 +323,7 @@ class pair_one_between {
 
     // NOLINTNEXTLINE(cppcoreguidelines-rvalue-reference-param-not-moved)
     template <typename DT> void handle(detection_event<DT> &&event) {
-        handle<DT>(event);
+        handle(static_cast<detection_event<DT> const &>(event));
     }
 
     template <typename OtherEvent> void handle(OtherEvent &&event) {

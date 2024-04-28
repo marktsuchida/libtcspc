@@ -59,7 +59,7 @@ class time_correlate_at_start_or_stop {
     template <typename DT>
     // NOLINTNEXTLINE(cppcoreguidelines-rvalue-reference-param-not-moved)
     void handle(std::array<detection_event<DT>, 2> &&event) {
-        handle<DT>(event);
+        handle(static_cast<std::array<detection_event<DT>, 2> const &>(event));
     }
 
     template <typename OtherEvent> void handle(OtherEvent &&event) {
@@ -103,7 +103,7 @@ class time_correlate_at_midpoint {
     template <typename DT>
     // NOLINTNEXTLINE(cppcoreguidelines-rvalue-reference-param-not-moved)
     void handle(std::array<detection_event<DT>, 2> &&event) {
-        handle<DT>(event);
+        handle(static_cast<std::array<detection_event<DT>, 2> const &>(event));
     }
 
     template <typename OtherEvent> void handle(OtherEvent &&event) {
@@ -152,7 +152,7 @@ class time_correlate_at_fraction {
     template <typename DT>
     // NOLINTNEXTLINE(cppcoreguidelines-rvalue-reference-param-not-moved)
     void handle(std::array<detection_event<DT>, 2> &&event) {
-        handle<DT>(event);
+        handle(static_cast<std::array<detection_event<DT>, 2> const &>(event));
     }
 
     template <typename OtherEvent> void handle(OtherEvent &&event) {
@@ -369,7 +369,8 @@ template <typename Downstream> class negate_difftime {
     template <typename DT>
     // NOLINTNEXTLINE(cppcoreguidelines-rvalue-reference-param-not-moved)
     void handle(time_correlated_detection_event<DT> &&event) {
-        handle<DT>(event);
+        handle(
+            static_cast<time_correlated_detection_event<DT> const &>(event));
     }
 
     template <typename OtherEvent> void handle(OtherEvent &&event) {
@@ -409,7 +410,8 @@ class remove_time_correlation {
     template <typename DT>
     // NOLINTNEXTLINE(cppcoreguidelines-rvalue-reference-param-not-moved)
     void handle(time_correlated_detection_event<DT> &&event) {
-        handle<DT>(event);
+        handle(
+            static_cast<time_correlated_detection_event<DT> const &>(event));
     }
 
     template <typename OtherEvent> void handle(OtherEvent &&event) {
