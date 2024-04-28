@@ -206,7 +206,7 @@ auto route_homogeneous(Router &&router, Downstreams &&...downstreams) {
  *
  * Events mapped to indices out of range are discarded.
  *
- * All other events (which must be in \p BroadcastedEventList) are broadcast to
+ * All other events (which must be in \p BroadcastEventList) are broadcast to
  * all downstreams.
  *
  * \see `tcspc::route_homogeneous()`
@@ -214,7 +214,7 @@ auto route_homogeneous(Router &&router, Downstreams &&...downstreams) {
  *
  * \tparam RoutedEventList event types to route
  *
- * \tparam BroadcastedEventList event types to broadcast
+ * \tparam BroadcastEventList event types to broadcast
  *
  * \tparam Router type of router (usually deduced)
  *
@@ -229,21 +229,20 @@ auto route_homogeneous(Router &&router, Downstreams &&...downstreams) {
  * \par Events handled
  * - Types in `RoutedEventList`: invoke router; pass to downstream at the
  *   resulting index, or ignore if out of range
- * - Types not in `RoutedEventList` but in `BroadcastedEventList`: broadcast to
+ * - Types not in `RoutedEventList` but in `BroadcastEventList`: broadcast to
  *   every downstream
  * - Flush: broadcast to every downstream
  */
-template <typename RoutedEventList,
-          typename BroadcastedEventList = type_list<>, typename Router,
-          typename... Downstreams>
+template <typename RoutedEventList, typename BroadcastEventList = type_list<>,
+          typename Router, typename... Downstreams>
 auto route(Router &&router, Downstreams &&...downstreams) {
     static_assert(
         type_list_size_v<
-            type_list_intersection_t<RoutedEventList, BroadcastedEventList>> ==
+            type_list_intersection_t<RoutedEventList, BroadcastEventList>> ==
             0,
-        "routed event list and broadcasted event list must not overlap");
+        "routed event list and broadcast event list must not overlap");
     using type_erased_downstream = type_erased_processor<
-        type_list_union_t<RoutedEventList, BroadcastedEventList>>;
+        type_list_union_t<RoutedEventList, BroadcastEventList>>;
     return route_homogeneous<RoutedEventList, Router, sizeof...(Downstreams),
                              type_erased_downstream>(
         std::forward<Router>(router),
@@ -396,7 +395,7 @@ auto broadcast_homogeneous(Downstreams &&...downstreams) {
  * \see `tcspc::broadcast_homogeneous()`
  * \see `tcspc::route()`
  *
- * \tparam BroadcastedEventList event types to handle
+ * \tparam BroadcastEventList event types to handle
  *
  * \tparam Downstreams downstream processor classes (usually deduced)
  *
@@ -405,14 +404,13 @@ auto broadcast_homogeneous(Downstreams &&...downstreams) {
  * \return processor
  *
  * \par Events handled
- * - Types in `BroadcastedEventList`: broadcast to every downstream
+ * - Types in `BroadcastEventList`: broadcast to every downstream
  * - Flush: broadcast to every downstream
  */
-template <typename BroadcastedEventList, typename... Downstreams>
+template <typename BroadcastEventList, typename... Downstreams>
 auto broadcast(Downstreams &&...downstreams) {
-    return route<type_list<>, BroadcastedEventList, null_router,
-                 Downstreams...>(null_router(),
-                                 std::forward<Downstreams>(downstreams)...);
+    return route<type_list<>, BroadcastEventList, null_router, Downstreams...>(
+        null_router(), std::forward<Downstreams>(downstreams)...);
 }
 
 } // namespace tcspc
