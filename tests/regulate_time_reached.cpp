@@ -65,7 +65,7 @@ TEST_CASE("regulate time reached by abstime") {
 
     SECTION("single other event") {
         in.feed(other_event{42});
-        REQUIRE(out.check(other_event{42}));
+        REQUIRE(out.check(emitted_as::same_as_fed, other_event{42}));
         REQUIRE(out.check(time_reached_event<>{42}));
         in.flush();
         REQUIRE(out.check_flushed());
@@ -73,10 +73,10 @@ TEST_CASE("regulate time reached by abstime") {
 
     SECTION("exact time reached emitted") {
         in.feed(other_event{42});
-        REQUIRE(out.check(other_event{42}));
+        REQUIRE(out.check(emitted_as::same_as_fed, other_event{42}));
         REQUIRE(out.check(time_reached_event<>{42}));
         in.feed(other_event{43});
-        REQUIRE(out.check(other_event{43}));
+        REQUIRE(out.check(emitted_as::same_as_fed, other_event{43}));
         in.flush();
         REQUIRE(out.check(time_reached_event<>{43}));
         REQUIRE(out.check_flushed());
@@ -84,14 +84,14 @@ TEST_CASE("regulate time reached by abstime") {
 
     SECTION("time reached emitted after threshold") {
         in.feed(other_event{42});
-        REQUIRE(out.check(other_event{42}));
+        REQUIRE(out.check(emitted_as::same_as_fed, other_event{42}));
         REQUIRE(out.check(time_reached_event<>{42}));
         in.feed(other_event{43});
-        REQUIRE(out.check(other_event{43}));
+        REQUIRE(out.check(emitted_as::same_as_fed, other_event{43}));
         in.feed(other_event{51});
-        REQUIRE(out.check(other_event{51}));
+        REQUIRE(out.check(emitted_as::same_as_fed, other_event{51}));
         in.feed(other_event{52});
-        REQUIRE(out.check(other_event{52}));
+        REQUIRE(out.check(emitted_as::same_as_fed, other_event{52}));
         REQUIRE(out.check(time_reached_event<>{52}));
         in.flush();
         REQUIRE(out.check_flushed());
@@ -137,7 +137,7 @@ TEST_CASE("regulate time reached by count") {
 
     SECTION("single other event") {
         in.feed(other_event{42});
-        REQUIRE(out.check(other_event{42}));
+        REQUIRE(out.check(emitted_as::same_as_fed, other_event{42}));
         REQUIRE(out.check(time_reached_event<>{42}));
         in.flush();
         REQUIRE(out.check_flushed());
@@ -145,10 +145,10 @@ TEST_CASE("regulate time reached by count") {
 
     SECTION("exact time reached emitted") {
         in.feed(other_event{42});
-        REQUIRE(out.check(other_event{42}));
+        REQUIRE(out.check(emitted_as::same_as_fed, other_event{42}));
         REQUIRE(out.check(time_reached_event<>{42}));
         in.feed(other_event{43});
-        REQUIRE(out.check(other_event{43}));
+        REQUIRE(out.check(emitted_as::same_as_fed, other_event{43}));
         in.flush();
         REQUIRE(out.check(time_reached_event<>{43}));
         REQUIRE(out.check_flushed());
@@ -156,12 +156,12 @@ TEST_CASE("regulate time reached by count") {
 
     SECTION("time reached emitted after threshold") {
         in.feed(other_event{42});
-        REQUIRE(out.check(other_event{42}));
+        REQUIRE(out.check(emitted_as::same_as_fed, other_event{42}));
         REQUIRE(out.check(time_reached_event<>{42}));
         in.feed(other_event{43});
-        REQUIRE(out.check(other_event{43}));
+        REQUIRE(out.check(emitted_as::same_as_fed, other_event{43}));
         in.feed(other_event{44});
-        REQUIRE(out.check(other_event{44}));
+        REQUIRE(out.check(emitted_as::same_as_fed, other_event{44}));
         REQUIRE(out.check(time_reached_event<>{44}));
         in.flush();
         REQUIRE(out.check_flushed());
@@ -201,10 +201,10 @@ TEST_CASE("regulate time reached, zero count threshold",
 
     SECTION("time reached emitted after every event") {
         in.feed(other_event{42});
-        REQUIRE(out.check(other_event{42}));
+        REQUIRE(out.check(emitted_as::same_as_fed, other_event{42}));
         REQUIRE(out.check(time_reached_event<>{42}));
         in.feed(other_event{43});
-        REQUIRE(out.check(other_event{43}));
+        REQUIRE(out.check(emitted_as::same_as_fed, other_event{43}));
         REQUIRE(out.check(time_reached_event<>{43}));
         in.flush();
         REQUIRE(out.check_flushed());

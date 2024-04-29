@@ -38,15 +38,15 @@ TEST_CASE("check monotonic") {
     auto out = capture_output_checker<out_events>(valcat, ctx, "out");
 
     in.feed(e0{-10});
-    REQUIRE(out.check(e0{-10}));
+    REQUIRE(out.check(emitted_as::same_as_fed, e0{-10}));
     in.feed(warning_event{"test"});
     REQUIRE(out.check(warning_event{"test"}));
     in.feed(e0{-10});
-    REQUIRE(out.check(e0{-10}));
+    REQUIRE(out.check(emitted_as::same_as_fed, e0{-10}));
     in.feed(e0{-11});
     auto const out_event = out.pop<warning_event>();
     CHECK(out_event.message.find("monotonic") != std::string::npos);
-    REQUIRE(out.check(e0{-11}));
+    REQUIRE(out.check(emitted_as::same_as_fed, e0{-11}));
     in.flush();
     REQUIRE(out.check_flushed());
 }
@@ -66,17 +66,17 @@ TEST_CASE("check alternating") {
 
     SECTION("correct") {
         in.feed(e0{42});
-        REQUIRE(out.check(e0{42}));
+        REQUIRE(out.check(emitted_as::same_as_fed, e0{42}));
         in.feed(e1{43});
-        REQUIRE(out.check(e1{43}));
+        REQUIRE(out.check(emitted_as::same_as_fed, e1{43}));
         in.feed(e0{44});
-        REQUIRE(out.check(e0{44}));
+        REQUIRE(out.check(emitted_as::same_as_fed, e0{44}));
         in.feed(e1{45});
-        REQUIRE(out.check(e1{45}));
+        REQUIRE(out.check(emitted_as::same_as_fed, e1{45}));
         in.feed(e0{46});
-        REQUIRE(out.check(e0{46}));
+        REQUIRE(out.check(emitted_as::same_as_fed, e0{46}));
         in.feed(e2{47});
-        REQUIRE(out.check(e2{47}));
+        REQUIRE(out.check(emitted_as::same_as_fed, e2{47}));
         in.flush();
         REQUIRE(out.check_flushed());
     }
@@ -85,29 +85,29 @@ TEST_CASE("check alternating") {
         in.feed(e1{42});
         auto const out_event = out.pop<warning_event>();
         CHECK(out_event.message.find("alternat") != std::string::npos);
-        REQUIRE(out.check(e1{42}));
+        REQUIRE(out.check(emitted_as::same_as_fed, e1{42}));
         in.flush();
         REQUIRE(out.check_flushed());
     }
 
     SECTION("consecutive Event0") {
         in.feed(e0{42});
-        REQUIRE(out.check(e0{42}));
+        REQUIRE(out.check(emitted_as::same_as_fed, e0{42}));
         in.feed(e0{43});
         auto const out_event = out.pop<warning_event>();
         CHECK(out_event.message.find("alternat") != std::string::npos);
-        REQUIRE(out.check(e0{43}));
+        REQUIRE(out.check(emitted_as::same_as_fed, e0{43}));
     }
 
     SECTION("consecutive Event1") {
         in.feed(e0{42});
-        REQUIRE(out.check(e0{42}));
+        REQUIRE(out.check(emitted_as::same_as_fed, e0{42}));
         in.feed(e1{43});
-        REQUIRE(out.check(e1{43}));
+        REQUIRE(out.check(emitted_as::same_as_fed, e1{43}));
         in.feed(e1{44});
         auto const out_event = out.pop<warning_event>();
         CHECK(out_event.message.find("alternat") != std::string::npos);
-        REQUIRE(out.check(e1{44}));
+        REQUIRE(out.check(emitted_as::same_as_fed, e1{44}));
     }
 }
 

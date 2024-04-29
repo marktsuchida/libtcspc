@@ -14,6 +14,7 @@
 #include "test_checkers.hpp"
 
 #include <catch2/catch_test_macros.hpp>
+#include <catch2/generators/catch_generators.hpp>
 
 namespace tcspc {
 
@@ -145,6 +146,22 @@ TEST_CASE("type_erased_processor move assignment") {
     };
 
     tep = decltype(tep)(myproc());
+}
+
+TEST_CASE("type_erased_processor preserves value category") {
+    auto const valcat = GENERATE(feed_as::const_lvalue, feed_as::rvalue);
+    auto ctx = context::create();
+    auto in = feed_input(
+        valcat,
+        type_erased_processor<type_list<e0>>(capture_output<type_list<e0>>(
+            ctx->tracker<capture_output_access>("out"))));
+    in.require_output_checked(ctx, "out");
+    auto out = capture_output_checker<type_list<e0>>(valcat, ctx, "out");
+
+    in.feed(e0{});
+    CHECK(out.check(emitted_as::same_as_fed, e0{}));
+    in.flush();
+    CHECK(out.check_flushed());
 }
 
 } // namespace tcspc

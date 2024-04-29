@@ -96,9 +96,12 @@ TEST_CASE("read file") {
             ignore_value_category, ctx, "out");
         src.flush();
         // First read is 8 bytes to recover 16-byte aligned reads.
-        REQUIRE(out.check(tmp_bucket<std::uint64_t>({43})));
-        REQUIRE(out.check(tmp_bucket<std::uint64_t>({44, 45})));
-        REQUIRE(out.check(tmp_bucket<std::uint64_t>({46, 47})));
+        REQUIRE(out.check(emitted_as::always_rvalue,
+                          tmp_bucket<std::uint64_t>({43})));
+        REQUIRE(out.check(emitted_as::always_rvalue,
+                          tmp_bucket<std::uint64_t>({44, 45})));
+        REQUIRE(out.check(emitted_as::always_rvalue,
+                          tmp_bucket<std::uint64_t>({46, 47})));
         REQUIRE(out.check_flushed());
     }
 
@@ -115,10 +118,14 @@ TEST_CASE("read file") {
         auto out = capture_output_checker<type_list<bucket<std::uint64_t>>>(
             ignore_value_category, ctx, "out");
         src.flush();
-        REQUIRE(out.check(tmp_bucket<std::uint64_t>({43})));
-        REQUIRE(out.check(tmp_bucket<std::uint64_t>({44, 45})));
-        REQUIRE(out.check(tmp_bucket<std::uint64_t>({46, 47})));
-        REQUIRE(out.check(tmp_bucket<std::uint64_t>({48})));
+        REQUIRE(out.check(emitted_as::always_rvalue,
+                          tmp_bucket<std::uint64_t>({43})));
+        REQUIRE(out.check(emitted_as::always_rvalue,
+                          tmp_bucket<std::uint64_t>({44, 45})));
+        REQUIRE(out.check(emitted_as::always_rvalue,
+                          tmp_bucket<std::uint64_t>({46, 47})));
+        REQUIRE(out.check(emitted_as::always_rvalue,
+                          tmp_bucket<std::uint64_t>({48})));
         REQUIRE(out.check_flushed());
     }
 
@@ -136,9 +143,12 @@ TEST_CASE("read file") {
             ignore_value_category, ctx, "out");
         REQUIRE_THROWS_WITH(src.flush(),
                             Catch::Matchers::ContainsSubstring("remain"));
-        REQUIRE(out.check(tmp_bucket<std::uint64_t>({43})));
-        REQUIRE(out.check(tmp_bucket<std::uint64_t>({44, 45})));
-        REQUIRE(out.check(tmp_bucket<std::uint64_t>({46, 47})));
+        REQUIRE(out.check(emitted_as::always_rvalue,
+                          tmp_bucket<std::uint64_t>({43})));
+        REQUIRE(out.check(emitted_as::always_rvalue,
+                          tmp_bucket<std::uint64_t>({44, 45})));
+        REQUIRE(out.check(emitted_as::always_rvalue,
+                          tmp_bucket<std::uint64_t>({46, 47})));
         REQUIRE(out.check_not_flushed());
     }
 
@@ -155,11 +165,16 @@ TEST_CASE("read file") {
         auto out = capture_output_checker<type_list<bucket<std::uint64_t>>>(
             ignore_value_category, ctx, "out");
         src.flush();
-        REQUIRE(out.check(tmp_bucket<std::uint64_t>({43})));
-        REQUIRE(out.check(tmp_bucket<std::uint64_t>({44})));
-        REQUIRE(out.check(tmp_bucket<std::uint64_t>({45})));
-        REQUIRE(out.check(tmp_bucket<std::uint64_t>({46})));
-        REQUIRE(out.check(tmp_bucket<std::uint64_t>({47})));
+        REQUIRE(out.check(emitted_as::always_rvalue,
+                          tmp_bucket<std::uint64_t>({43})));
+        REQUIRE(out.check(emitted_as::always_rvalue,
+                          tmp_bucket<std::uint64_t>({44})));
+        REQUIRE(out.check(emitted_as::always_rvalue,
+                          tmp_bucket<std::uint64_t>({45})));
+        REQUIRE(out.check(emitted_as::always_rvalue,
+                          tmp_bucket<std::uint64_t>({46})));
+        REQUIRE(out.check(emitted_as::always_rvalue,
+                          tmp_bucket<std::uint64_t>({47})));
         REQUIRE(out.check_flushed());
     }
 }
@@ -183,9 +198,12 @@ TEST_CASE("read existing istream, known length") {
     auto out = capture_output_checker<type_list<bucket<std::uint64_t>>>(
         ignore_value_category, ctx, "out");
     src.flush();
-    REQUIRE(out.check(tmp_bucket<std::uint64_t>({42, 43})));
-    REQUIRE(out.check(tmp_bucket<std::uint64_t>({44, 45})));
-    REQUIRE(out.check(tmp_bucket<std::uint64_t>({46})));
+    REQUIRE(out.check(emitted_as::always_rvalue,
+                      tmp_bucket<std::uint64_t>({42, 43})));
+    REQUIRE(out.check(emitted_as::always_rvalue,
+                      tmp_bucket<std::uint64_t>({44, 45})));
+    REQUIRE(
+        out.check(emitted_as::always_rvalue, tmp_bucket<std::uint64_t>({46})));
     REQUIRE(out.check_flushed());
 }
 
@@ -209,10 +227,14 @@ TEST_CASE("read existing istream, to end") {
     auto out = capture_output_checker<type_list<bucket<std::uint64_t>>>(
         ignore_value_category, ctx, "out");
     src.flush();
-    REQUIRE(out.check(tmp_bucket<std::uint64_t>({42, 43})));
-    REQUIRE(out.check(tmp_bucket<std::uint64_t>({44, 45})));
-    REQUIRE(out.check(tmp_bucket<std::uint64_t>({46, 47})));
-    REQUIRE(out.check(tmp_bucket<std::uint64_t>({48})));
+    REQUIRE(out.check(emitted_as::always_rvalue,
+                      tmp_bucket<std::uint64_t>({42, 43})));
+    REQUIRE(out.check(emitted_as::always_rvalue,
+                      tmp_bucket<std::uint64_t>({44, 45})));
+    REQUIRE(out.check(emitted_as::always_rvalue,
+                      tmp_bucket<std::uint64_t>({46, 47})));
+    REQUIRE(
+        out.check(emitted_as::always_rvalue, tmp_bucket<std::uint64_t>({48})));
     REQUIRE(out.check_flushed());
 }
 

@@ -48,11 +48,11 @@ TEST_CASE("Match and replace") {
     auto out = capture_output_checker<out_events>(valcat, ctx, "out");
 
     in.feed(marker_event<>{100, 0});
-    REQUIRE(out.check(output_event{100}));
+    REQUIRE(out.check(emitted_as::always_rvalue, output_event{100}));
     in.feed(marker_event<>{200, 1});
-    REQUIRE(out.check(marker_event<>{200, 1}));
+    REQUIRE(out.check(emitted_as::same_as_fed, marker_event<>{200, 1}));
     in.feed(misc_event{300});
-    REQUIRE(out.check(misc_event{300}));
+    REQUIRE(out.check(emitted_as::same_as_fed, misc_event{300}));
     in.flush();
     REQUIRE(out.check_flushed());
 }
@@ -69,12 +69,13 @@ TEST_CASE("Match") {
     auto out = capture_output_checker<out_events>(valcat, ctx, "out");
 
     in.feed(marker_event<>{100, 0});
-    REQUIRE(out.check(marker_event<>{100, 0})); // Preserved
-    REQUIRE(out.check(output_event{100}));
+    REQUIRE(out.check(emitted_as::same_as_fed,
+                      marker_event<>{100, 0})); // Preserved
+    REQUIRE(out.check(emitted_as::always_rvalue, output_event{100}));
     in.feed(marker_event<>{200, 1});
-    REQUIRE(out.check(marker_event<>{200, 1}));
+    REQUIRE(out.check(emitted_as::same_as_fed, marker_event<>{200, 1}));
     in.feed(misc_event{300});
-    REQUIRE(out.check(misc_event{300}));
+    REQUIRE(out.check(emitted_as::same_as_fed, misc_event{300}));
     in.flush();
     REQUIRE(out.check_flushed());
 }

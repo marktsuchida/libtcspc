@@ -167,7 +167,7 @@ TEST_CASE("convert sequences to start-stop",
         in.feed(inevt{42}); // No output.
         in.feed(inevt{42}); // No output.
         in.feed(otherevt{43});
-        REQUIRE(out.check(otherevt{43}));
+        REQUIRE(out.check(emitted_as::same_as_fed, otherevt{43}));
         in.feed(inevt{42}); // No output.
         in.flush();
         REQUIRE(out.check_flushed());

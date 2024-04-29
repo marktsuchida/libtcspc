@@ -67,7 +67,8 @@ TEST_CASE("batch_from_bytes") {
     SECTION("input with whole elements is emitted exactly") {
         std::vector<int> data{1, 2, 3};
         in.feed(as_bytes(span(data)));
-        REQUIRE(out.check(tmp_bucket<int>({1, 2, 3})));
+        REQUIRE(
+            out.check(emitted_as::always_rvalue, tmp_bucket<int>({1, 2, 3})));
         in.flush();
         REQUIRE(out.check_flushed());
     }
@@ -75,9 +76,9 @@ TEST_CASE("batch_from_bytes") {
     SECTION("split elements are emitted in next batch") {
         std::vector<int> data{1, 2, 3};
         in.feed(as_bytes(span(data)).first(5));
-        REQUIRE(out.check(tmp_bucket<int>({1})));
+        REQUIRE(out.check(emitted_as::always_rvalue, tmp_bucket<int>({1})));
         in.feed(as_bytes(span(data)).subspan(5));
-        REQUIRE(out.check(tmp_bucket<int>({2, 3})));
+        REQUIRE(out.check(emitted_as::always_rvalue, tmp_bucket<int>({2, 3})));
         in.flush();
         REQUIRE(out.check_flushed());
     }
@@ -88,7 +89,7 @@ TEST_CASE("batch_from_bytes") {
         in.feed(as_bytes(span(data)).subspan(1, 1));
         in.feed(as_bytes(span(data)).subspan(2, 0));
         in.feed(as_bytes(span(data)).subspan(2));
-        REQUIRE(out.check(tmp_bucket<int>({42})));
+        REQUIRE(out.check(emitted_as::always_rvalue, tmp_bucket<int>({42})));
         in.flush();
         REQUIRE(out.check_flushed());
     }
@@ -119,9 +120,9 @@ TEST_CASE("unbatch_from_bytes") {
     SECTION("aligned input with whole elements emits exactly") {
         std::vector<int> data{1, 2, 3};
         in.feed(as_bytes(span(data)));
-        REQUIRE(out.check(1));
-        REQUIRE(out.check(2));
-        REQUIRE(out.check(3));
+        REQUIRE(out.check(emitted_as::always_lvalue, 1));
+        REQUIRE(out.check(emitted_as::always_lvalue, 2));
+        REQUIRE(out.check(emitted_as::always_lvalue, 3));
         in.flush();
         REQUIRE(out.check_flushed());
     }
@@ -132,9 +133,9 @@ TEST_CASE("unbatch_from_bytes") {
         std::memcpy(as_writable_bytes(span(buf)).subspan(2).data(),
                     span(data).data(), sizeof(int) * data.size());
         in.feed(as_bytes(span(buf)).subspan(2, sizeof(int) * data.size()));
-        REQUIRE(out.check(1));
-        REQUIRE(out.check(2));
-        REQUIRE(out.check(3));
+        REQUIRE(out.check(emitted_as::always_lvalue, 1));
+        REQUIRE(out.check(emitted_as::always_lvalue, 2));
+        REQUIRE(out.check(emitted_as::always_lvalue, 3));
         in.flush();
         REQUIRE(out.check_flushed());
     }
@@ -142,10 +143,10 @@ TEST_CASE("unbatch_from_bytes") {
     SECTION("split elements are emitted upon next input") {
         std::vector<int> data{1, 2, 3};
         in.feed(as_bytes(span(data)).first(5));
-        REQUIRE(out.check(1));
+        REQUIRE(out.check(emitted_as::always_lvalue, 1));
         in.feed(as_bytes(span(data)).subspan(5));
-        REQUIRE(out.check(2));
-        REQUIRE(out.check(3));
+        REQUIRE(out.check(emitted_as::always_lvalue, 2));
+        REQUIRE(out.check(emitted_as::always_lvalue, 3));
         in.flush();
         REQUIRE(out.check_flushed());
     }
@@ -156,7 +157,7 @@ TEST_CASE("unbatch_from_bytes") {
         in.feed(as_bytes(span(data)).subspan(1, 1));
         in.feed(as_bytes(span(data)).subspan(2, 0));
         in.feed(as_bytes(span(data)).subspan(2));
-        REQUIRE(out.check(42));
+        REQUIRE(out.check(emitted_as::always_lvalue, 42));
         in.flush();
         REQUIRE(out.check_flushed());
     }

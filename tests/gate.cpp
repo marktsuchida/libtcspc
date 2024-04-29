@@ -51,14 +51,14 @@ TEST_CASE("Gate events") {
     SECTION("Initial state") {
         in.feed(gated_event{});
         if (initially_open)
-            REQUIRE(out.check(gated_event{}));
+            REQUIRE(out.check(emitted_as::same_as_fed, gated_event{}));
         in.flush();
         REQUIRE(out.check_flushed());
     }
 
     SECTION("Pass through unrelated events") {
         in.feed(misc_event{});
-        REQUIRE(out.check(misc_event{}));
+        REQUIRE(out.check(emitted_as::same_as_fed, misc_event{}));
         in.flush();
         REQUIRE(out.check_flushed());
     }
@@ -84,7 +84,7 @@ TEST_CASE("Gate events") {
         in.feed(open_event{});
         REQUIRE(out.check(open_event{}));
         in.feed(gated_event{});
-        REQUIRE(out.check(gated_event{}));
+        REQUIRE(out.check(emitted_as::same_as_fed, gated_event{}));
         in.flush();
         REQUIRE(out.check_flushed());
     }

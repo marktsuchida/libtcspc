@@ -28,13 +28,13 @@
 
 namespace tcspc {
 
+namespace {
+
 using e0 = time_tagged_test_event<0>;
 using e1 = time_tagged_test_event<1>;
 using e2 = time_tagged_test_event<2>;
 using e3 = time_tagged_test_event<3>;
 using all_events = type_list<e0, e1, e2, e3>;
-
-namespace {
 
 // Like check_introspect_simple_processor, but for merge input.
 template <typename MI>
@@ -346,12 +346,12 @@ TEST_CASE("merge unsorted") {
 
     SECTION("no buffering, independent flushing") {
         in0.feed(e0{});
-        REQUIRE(out.check(e0{}));
+        REQUIRE(out.check(emitted_as::same_as_fed, e0{}));
         in1.feed(e1{});
-        REQUIRE(out.check(e1{}));
+        REQUIRE(out.check(emitted_as::same_as_fed, e1{}));
         in1.flush();
         in0.feed(e2{});
-        REQUIRE(out.check(e2{}));
+        REQUIRE(out.check(emitted_as::same_as_fed, e2{}));
         in0.flush();
         REQUIRE(out.check_flushed());
     }

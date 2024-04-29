@@ -50,7 +50,8 @@ TEST_CASE("view as bytes") {
 
     int const i = 42;
     in.feed(i);
-    REQUIRE(out.check(tmp_bucket(as_bytes(span(&i, 1)))));
+    REQUIRE(out.check(emitted_as::always_lvalue,
+                      tmp_bucket(as_bytes(span(&i, 1)))));
     in.flush();
     REQUIRE(out.check_flushed());
 }
@@ -66,7 +67,8 @@ TEST_CASE("view as bytes, bucket input") {
 
     std::vector const data{42, 43};
     in.feed(tmp_bucket(data));
-    REQUIRE(out.check(tmp_bucket(as_bytes(span(data)))));
+    REQUIRE(out.check(emitted_as::always_lvalue,
+                      tmp_bucket(as_bytes(span(data)))));
     in.flush();
     REQUIRE(out.check_flushed());
 }

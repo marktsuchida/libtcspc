@@ -63,17 +63,17 @@ TEST_CASE("Count up to") {
 
             in.feed(tick_event{42});
             REQUIRE(out.check(fire_event{42}));
-            REQUIRE(out.check(tick_event{42}));
+            REQUIRE(out.check(emitted_as::same_as_fed, tick_event{42}));
             in.feed(tick_event{43});
             REQUIRE(out.check(fire_event{43}));
-            REQUIRE(out.check(tick_event{43}));
+            REQUIRE(out.check(emitted_as::same_as_fed, tick_event{43}));
             in.feed(reset_event{44});
-            REQUIRE(out.check(reset_event{44}));
+            REQUIRE(out.check(emitted_as::same_as_fed, reset_event{44}));
             in.feed(tick_event{45});
             REQUIRE(out.check(fire_event{45}));
-            REQUIRE(out.check(tick_event{45}));
+            REQUIRE(out.check(emitted_as::same_as_fed, tick_event{45}));
             in.feed(misc_event{46});
-            REQUIRE(out.check(misc_event{46}));
+            REQUIRE(out.check(emitted_as::same_as_fed, misc_event{46}));
             in.flush();
             REQUIRE(out.check_flushed());
         }
@@ -89,9 +89,9 @@ TEST_CASE("Count up to") {
             auto out = capture_output_checker<out_events>(valcat, ctx, "out");
 
             in.feed(tick_event{42});
-            REQUIRE(out.check(tick_event{42}));
+            REQUIRE(out.check(emitted_as::same_as_fed, tick_event{42}));
             in.feed(tick_event{42});
-            REQUIRE(out.check(tick_event{42}));
+            REQUIRE(out.check(emitted_as::same_as_fed, tick_event{42}));
             in.flush();
             REQUIRE(out.check_flushed());
         }
@@ -110,9 +110,9 @@ TEST_CASE("Count up to") {
             auto out = capture_output_checker<out_events>(valcat, ctx, "out");
 
             in.feed(tick_event{42});
-            REQUIRE(out.check(tick_event{42}));
+            REQUIRE(out.check(emitted_as::same_as_fed, tick_event{42}));
             in.feed(tick_event{42});
-            REQUIRE(out.check(tick_event{42}));
+            REQUIRE(out.check(emitted_as::same_as_fed, tick_event{42}));
             in.flush();
             REQUIRE(out.check_flushed());
         }
@@ -128,10 +128,10 @@ TEST_CASE("Count up to") {
             auto out = capture_output_checker<out_events>(valcat, ctx, "out");
 
             in.feed(tick_event{42});
-            REQUIRE(out.check(tick_event{42}));
+            REQUIRE(out.check(emitted_as::same_as_fed, tick_event{42}));
             REQUIRE(out.check(fire_event{42}));
             in.feed(tick_event{42});
-            REQUIRE(out.check(tick_event{42}));
+            REQUIRE(out.check(emitted_as::same_as_fed, tick_event{42}));
             REQUIRE(out.check(fire_event{42}));
             in.flush();
             REQUIRE(out.check_flushed());
@@ -151,19 +151,19 @@ TEST_CASE("Count up to") {
             auto out = capture_output_checker<out_events>(valcat, ctx, "out");
 
             in.feed(tick_event{42});
-            REQUIRE(out.check(tick_event{42}));
+            REQUIRE(out.check(emitted_as::same_as_fed, tick_event{42}));
             in.feed(tick_event{43});
             REQUIRE(out.check(fire_event{43}));
-            REQUIRE(out.check(tick_event{43}));
+            REQUIRE(out.check(emitted_as::same_as_fed, tick_event{43}));
             in.feed(tick_event{44});
-            REQUIRE(out.check(tick_event{44}));
+            REQUIRE(out.check(emitted_as::same_as_fed, tick_event{44}));
             in.feed(reset_event{});
-            REQUIRE(out.check(reset_event{}));
+            REQUIRE(out.check(emitted_as::same_as_fed, reset_event{}));
             in.feed(tick_event{45});
-            REQUIRE(out.check(tick_event{45}));
+            REQUIRE(out.check(emitted_as::same_as_fed, tick_event{45}));
             in.feed(tick_event{46});
             REQUIRE(out.check(fire_event{46}));
-            REQUIRE(out.check(tick_event{46}));
+            REQUIRE(out.check(emitted_as::same_as_fed, tick_event{46}));
             in.flush();
             REQUIRE(out.check_flushed());
         }
@@ -179,20 +179,20 @@ TEST_CASE("Count up to") {
             auto out = capture_output_checker<out_events>(valcat, ctx, "out");
 
             in.feed(tick_event{42});
-            REQUIRE(out.check(tick_event{42}));
+            REQUIRE(out.check(emitted_as::same_as_fed, tick_event{42}));
             REQUIRE(out.check(fire_event{42}));
             in.feed(tick_event{43});
-            REQUIRE(out.check(tick_event{43}));
+            REQUIRE(out.check(emitted_as::same_as_fed, tick_event{43}));
             in.feed(tick_event{44});
-            REQUIRE(out.check(tick_event{44}));
+            REQUIRE(out.check(emitted_as::same_as_fed, tick_event{44}));
             REQUIRE(out.check(fire_event{44}));
             in.feed(reset_event{});
-            REQUIRE(out.check(reset_event{}));
+            REQUIRE(out.check(emitted_as::same_as_fed, reset_event{}));
             in.feed(tick_event{45});
-            REQUIRE(out.check(tick_event{45}));
+            REQUIRE(out.check(emitted_as::same_as_fed, tick_event{45}));
             REQUIRE(out.check(fire_event{45}));
             in.feed(tick_event{46});
-            REQUIRE(out.check(tick_event{46}));
+            REQUIRE(out.check(emitted_as::same_as_fed, tick_event{46}));
             in.flush();
             REQUIRE(out.check_flushed());
         }
@@ -212,15 +212,15 @@ TEST_CASE("Count down to") {
     auto out = capture_output_checker<out_events>(valcat, ctx, "out");
 
     in.feed(tick_event{42});
-    REQUIRE(out.check(tick_event{42}));
+    REQUIRE(out.check(emitted_as::same_as_fed, tick_event{42}));
     in.feed(tick_event{43});
     REQUIRE(out.check(fire_event{43}));
-    REQUIRE(out.check(tick_event{43}));
+    REQUIRE(out.check(emitted_as::same_as_fed, tick_event{43}));
     in.feed(tick_event{44});
-    REQUIRE(out.check(tick_event{44}));
+    REQUIRE(out.check(emitted_as::same_as_fed, tick_event{44}));
     in.feed(tick_event{45});
     REQUIRE(out.check(fire_event{45}));
-    REQUIRE(out.check(tick_event{45}));
+    REQUIRE(out.check(emitted_as::same_as_fed, tick_event{45}));
     in.flush();
     REQUIRE(out.check_flushed());
 }
@@ -239,10 +239,10 @@ TEST_CASE("event counter") {
 
     CHECK(counter.count() == 0);
     in.feed(tick_event{});
-    REQUIRE(out.check(tick_event{}));
+    REQUIRE(out.check(emitted_as::same_as_fed, tick_event{}));
     CHECK(counter.count() == 1);
     in.feed(misc_event{});
-    REQUIRE(out.check(misc_event{}));
+    REQUIRE(out.check(emitted_as::same_as_fed, misc_event{}));
     CHECK(counter.count() == 1);
     in.flush();
     REQUIRE(out.check_flushed());

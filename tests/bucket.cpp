@@ -7,15 +7,19 @@
 #include "libtcspc/bucket.hpp"
 
 #include "libtcspc/common.hpp"
+#include "libtcspc/context.hpp"
 #include "libtcspc/errors.hpp"
 #include "libtcspc/span.hpp"
+#include "libtcspc/test_utils.hpp"
 #include "test_checkers.hpp"
 #include "test_thread_utils.hpp"
 
 #include <catch2/catch_test_macros.hpp>
+#include <catch2/generators/catch_generators.hpp>
 
 #include <array>
 #include <memory>
+#include <ostream>
 #include <sstream>
 #include <thread>
 #include <typeinfo>
@@ -169,11 +173,33 @@ TEST_CASE(
     auto bb = source->bucket_of_size(9);
 }
 
+namespace {
+
+struct evt_with_bucket {
+    bucket<int> bucket;
+};
+
+} // namespace
+
 TEST_CASE("introspect extract_bucket", "[introspect]") {
-    struct evt {
-        bucket<int> bucket;
-    };
-    check_introspect_simple_processor(extract_bucket<evt>(null_sink()));
+    check_introspect_simple_processor(
+        extract_bucket<evt_with_bucket>(null_sink()));
+}
+
+TEST_CASE("extract_bucket preserves value category") {
+    auto const valcat = GENERATE(feed_as::const_lvalue, feed_as::rvalue);
+    auto ctx = context::create();
+    auto in = feed_input(
+        valcat,
+        extract_bucket<evt_with_bucket>(capture_output<type_list<bucket<int>>>(
+            ctx->tracker<capture_output_access>("out"))));
+    in.require_output_checked(ctx, "out");
+    auto out =
+        capture_output_checker<type_list<bucket<int>>>(valcat, ctx, "out");
+
+    std::array arr{42, 43};
+    in.feed(evt_with_bucket{bucket<int>{span(arr), nullptr}});
+    CHECK(out.check(emitted_as::same_as_fed, bucket<int>{span(arr), nullptr}));
 }
 
 } // namespace tcspc

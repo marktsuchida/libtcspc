@@ -46,7 +46,7 @@ TEST_CASE("stop with error") {
     auto out = capture_output_checker<type_list<e1>>(valcat, ctx, "out");
 
     in.feed(e1{});
-    REQUIRE(out.check(e1{}));
+    REQUIRE(out.check(emitted_as::same_as_fed, e1{}));
     REQUIRE_THROWS_WITH(
         in.feed(e0{}),
         Catch::Matchers::ContainsSubstring("myerror") &&
@@ -66,7 +66,7 @@ TEST_CASE("stop with no error") {
     auto out = capture_output_checker<type_list<e1>>(valcat, ctx, "out");
 
     in.feed(e1{});
-    REQUIRE(out.check(e1{}));
+    REQUIRE(out.check(emitted_as::same_as_fed, e1{}));
     REQUIRE_THROWS_AS(in.feed(e0{}), end_of_processing);
     REQUIRE(out.check_flushed());
 }

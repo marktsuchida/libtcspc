@@ -44,7 +44,7 @@ TEST_CASE("select") {
     auto out = capture_output_checker<out_events>(valcat, ctx, "out");
 
     in.feed(e0{});
-    REQUIRE(out.check(e0{}));
+    REQUIRE(out.check(emitted_as::same_as_fed, e0{}));
     in.feed(e1{});
     in.flush();
     REQUIRE(out.check_flushed());
@@ -61,7 +61,7 @@ TEST_CASE("select_not") {
 
     in.feed(e0{});
     in.feed(e1{});
-    REQUIRE(out.check(e1{}));
+    REQUIRE(out.check(emitted_as::same_as_fed, e1{}));
     in.flush();
     REQUIRE(out.check_flushed());
 }
@@ -91,9 +91,9 @@ TEST_CASE("select_all") {
     auto out = capture_output_checker<out_events>(valcat, ctx, "out");
 
     in.feed(e0{});
-    REQUIRE(out.check(e0{}));
+    REQUIRE(out.check(emitted_as::same_as_fed, e0{}));
     in.feed(e1{});
-    REQUIRE(out.check(e1{}));
+    REQUIRE(out.check(emitted_as::same_as_fed, e1{}));
     in.flush();
     REQUIRE(out.check_flushed());
 }

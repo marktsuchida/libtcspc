@@ -131,14 +131,14 @@ TEST_CASE("Route") {
 
     SECTION("Route and broadcast by event type") {
         in.feed(tc_event{100, 5, 123});
-        REQUIRE(out0.check(tc_event{100, 5, 123}));
+        REQUIRE(out0.check(emitted_as::same_as_fed, tc_event{100, 5, 123}));
         in.feed(tc_event{101, -3, 123});
-        REQUIRE(out1.check(tc_event{101, -3, 123}));
+        REQUIRE(out1.check(emitted_as::same_as_fed, tc_event{101, -3, 123}));
         in.feed(tc_event{102, 0, 124});
         in.feed(marker_event<>{103, 0});
-        REQUIRE(out0.check(marker_event<>{103, 0}));
-        REQUIRE(out1.check(marker_event<>{103, 0}));
-        REQUIRE(out2.check(marker_event<>{103, 0}));
+        REQUIRE(out0.check(emitted_as::any_allowed, marker_event<>{103, 0}));
+        REQUIRE(out1.check(emitted_as::any_allowed, marker_event<>{103, 0}));
+        REQUIRE(out2.check(emitted_as::any_allowed, marker_event<>{103, 0}));
         in.flush();
         REQUIRE(out0.check_flushed());
         REQUIRE(out1.check_flushed());
@@ -193,7 +193,7 @@ TEST_CASE("Route with heterogeneous downstreams") {
     auto out0 = capture_output_checker<type_list<e0>>(valcat, ctx, "out0");
 
     in.feed(e0{});
-    REQUIRE(out0.check(e0{}));
+    REQUIRE(out0.check(emitted_as::same_as_fed, e0{}));
     in.flush();
     REQUIRE(out0.check_flushed());
 }
@@ -225,9 +225,9 @@ TEST_CASE("Broadcast") {
 
     SECTION("Events are broadcast") {
         in.feed(e0{});
-        REQUIRE(out0.check(e0{}));
-        REQUIRE(out1.check(e0{}));
-        REQUIRE(out2.check(e0{}));
+        REQUIRE(out0.check(emitted_as::any_allowed, e0{}));
+        REQUIRE(out1.check(emitted_as::any_allowed, e0{}));
+        REQUIRE(out2.check(emitted_as::any_allowed, e0{}));
         in.flush();
         REQUIRE(out0.check_flushed());
         REQUIRE(out1.check_flushed());
