@@ -25,6 +25,7 @@
 #include <functional>
 #include <limits>
 #include <memory>
+#include <optional>
 #include <ostream>
 #include <sstream>
 #include <stdexcept>
@@ -49,6 +50,119 @@ enum class feed_as {
     rvalue,
 };
 
+/** \private */
+inline auto operator<<(std::ostream &stream, feed_as cat) -> std::ostream & {
+    switch (cat) {
+    case feed_as::const_lvalue:
+        return stream << "feed_as::const_lvalue";
+    case feed_as::rvalue:
+        return stream << "feed_as::rvalue";
+    }
+}
+
+/**
+ * \brief Value category to check emitted events against.
+ *
+ * \ingroup misc
+ *
+ * \see `tcspc::capture_output_checker`
+ */
+enum class emitted_as {
+    /** \brief Require const lvalue or rvalue, or non-const rvalue. */
+    any_allowed,
+    /** \brief Require the same category as the events being fed. */
+    same_as_fed,
+    /** \brief Require const lvalue. */
+    always_lvalue,
+    /** \brief Require non-const rvalue. */
+    always_rvalue,
+};
+
+/** \private */
+inline auto operator<<(std::ostream &stream, emitted_as cat)
+    -> std::ostream & {
+    switch (cat) {
+    case emitted_as::any_allowed:
+        return stream << "emitted_as::any_allowed";
+    case emitted_as::same_as_fed:
+        return stream << "emitted_as::same_as_fed";
+    case emitted_as::always_lvalue:
+        return stream << "emitted_as::always_lvalue";
+    case emitted_as::always_rvalue:
+        return stream << "emitted_as::always_rvalue";
+    }
+}
+
+namespace internal {
+
+// Value category observed by capture_output.
+enum class emitted_value_category {
+    const_lvalue,
+    nonconst_lvalue,
+    const_rvalue,
+    nonconst_rvalue,
+};
+
+inline void check_value_category(feed_as feed_cat, emitted_as expected,
+                                 emitted_value_category actual) {
+    // TODO Deferred because requires updating processors.
+    // if (actual == emitted_value_category::nonconst_lvalue)
+    //     throw std::logic_error("non-const lvalue event not allowed");
+
+    if (expected == emitted_as::same_as_fed) {
+        switch (feed_cat) {
+        case feed_as::const_lvalue:
+            expected = emitted_as::always_lvalue;
+            break;
+        case feed_as::rvalue:
+            expected = emitted_as::always_rvalue;
+            break;
+        }
+    }
+
+    switch (expected) {
+    case emitted_as::any_allowed:
+        break;
+    case emitted_as::same_as_fed:
+        unreachable();
+    case emitted_as::always_lvalue:
+        if (actual == emitted_value_category::nonconst_rvalue)
+            throw std::logic_error("expected lvalue event, found rvalue");
+        break;
+    case emitted_as::always_rvalue:
+        if (actual != emitted_value_category::nonconst_rvalue)
+            throw std::logic_error("expected rvalue event, found lvalue");
+        break;
+    }
+}
+
+inline auto operator<<(std::ostream &stream, emitted_value_category cat)
+    -> std::ostream & {
+    switch (cat) {
+        using e = emitted_value_category;
+    case e::const_lvalue:
+        return stream << "const &";
+    case e::nonconst_lvalue:
+        return stream << "&";
+    case e::const_rvalue:
+        return stream << "const &&";
+    case e::nonconst_rvalue:
+        return stream << "&&";
+    }
+}
+
+template <typename EventList>
+using recorded_event =
+    std::pair<emitted_value_category, variant_event<EventList>>;
+
+template <typename EventList>
+auto operator<<(std::ostream &stream, recorded_event<EventList> const &pair)
+    -> std::ostream & {
+    return stream << pair.second << ' ' << pair.first;
+}
+
+} // namespace internal
+
 /**
  * \brief Access for `tcspc::capture_output()` processors.
  *
@@ -59,7 +173,7 @@ enum class feed_as {
  * \ingroup context-access
  */
 class capture_output_access {
-    std::any peek_events_func; // () -> std::vector<variant_event<EventList>>
+    std::any peek_events_func; // () -> std::vector<recorded_event<EventList>>
     std::function<void()> pop_event_func;
     std::function<bool()> is_empty_func;
     std::function<bool()> is_flushed_func;
@@ -67,9 +181,10 @@ class capture_output_access {
     std::function<std::string()> events_as_string_func;
 
     template <typename EventList>
-    auto peek_events() const -> std::vector<variant_event<EventList>> {
+    auto peek_events() const
+        -> std::vector<internal::recorded_event<EventList>> {
         return std::any_cast<
-            std::function<std::vector<variant_event<EventList>>()>>(
+            std::function<std::vector<internal::recorded_event<EventList>>()>>(
             peek_events_func)();
     }
 
@@ -80,7 +195,8 @@ class capture_output_access {
     /** \private */
     template <typename EventList>
     explicit capture_output_access(
-        std::function<std::vector<variant_event<EventList>>()> peek_events,
+        std::function<std::vector<internal::recorded_event<EventList>>()>
+            peek_events,
         std::function<void()> pop_event, std::function<bool()> is_empty,
         std::function<bool()> is_flushed,
         std::function<void(std::size_t, bool)> set_up_to_throw,
@@ -108,8 +224,8 @@ class capture_output_access {
      */
     template <typename EventList> void check_event_list() const {
         if constexpr (type_list_size_v<EventList> > 0) {
-            (void)std::any_cast<
-                std::function<std::vector<variant_event<EventList>>()>>(
+            (void)std::any_cast<std::function<
+                std::vector<internal::recorded_event<EventList>>()>>(
                 peek_events_func);
         }
     }
@@ -141,27 +257,45 @@ class capture_output_access {
      * \tparam EventList the event set accepted by the
      * `tcspc::capture_output()` processor
      *
+     * \param feeder_value_category value category of events fed to the
+     * processor under test
+     *
+     * \param value_category expected value category of emitted event being
+     * popped
+     *
      * \return the event
      */
-    template <typename Event, typename EventList> auto pop() -> Event {
+    template <typename Event, typename EventList>
+    auto pop(feed_as feeder_value_category, emitted_as value_category)
+        -> Event {
         static_assert(type_list_contains_v<EventList, Event>);
-        auto events = peek_events<EventList>();
-        if (events.empty()) {
-            throw std::logic_error(
-                "tried to retrieve recorded output event of type " +
-                std::string(typeid(Event).name()) + " but found no events");
-        }
-        auto const *event = std::get_if<Event>(&events.front());
-        if (event == nullptr) {
+        auto const events = peek_events<EventList>();
+        try {
+            if (events.empty())
+                throw std::logic_error("missing event");
+            check_value_category(feeder_value_category, value_category,
+                                 events.front().first);
+            auto const *event = std::get_if<Event>(&events.front().second);
+            if (event == nullptr)
+                throw std::logic_error("type mismatch");
+            pop_event_func();
+            return *event;
+        } catch (std::logic_error const &exc) {
             std::ostringstream stream;
-            stream << "tried to retrieve recorded output event of type "
-                   << std::string(typeid(Event).name()) << " but found:";
-            for (auto const &event : events)
-                stream << '\n' << event;
+            stream << "event pop failed: " << exc.what() << '\n';
+            stream << "expected recorded output event of type "
+                   << std::string(typeid(Event).name()) << " ("
+                   << feeder_value_category << ", " << value_category
+                   << ") but found";
+            if (events.empty()) {
+                stream << " no events";
+            } else {
+                stream << ':';
+                for (auto const &e : events)
+                    stream << '\n' << e;
+            }
             throw std::logic_error(stream.str());
         }
-        pop_event_func();
-        return *event;
     }
 
     /**
@@ -178,31 +312,48 @@ class capture_output_access {
      * \tparam EventList the event set accepted by the
      * `tcspc::capture_output()` processor
      *
+     * \param feeder_value_category value category of events fed to the
+     * processor under test
+     *
+     * \param value_category expected value category of emitted event being
+     * checked
+     *
      * \param expected_event the expected event
      *
      * \return true if the check was successful
      */
     template <typename Event, typename EventList>
-    auto check(Event const &expected_event) -> bool {
+    auto check(feed_as feeder_value_category, emitted_as value_category,
+               Event const &expected_event) -> bool {
         static_assert(type_list_contains_v<EventList, Event>);
         auto events = peek_events<EventList>();
-        if (events.empty()) {
+        try {
+            if (events.empty())
+                throw std::logic_error("missing event");
+            check_value_category(feeder_value_category, value_category,
+                                 events.front().first);
+            auto const *event = std::get_if<Event>(&events.front().second);
+            if (event == nullptr)
+                throw std::logic_error("type mismatch");
+            if (*event != expected_event)
+                throw std::logic_error("value mismatch");
+            pop_event_func();
+            return true;
+        } catch (std::logic_error const &exc) {
             std::ostringstream stream;
+            stream << "event check failed: " << exc.what() << '\n';
             stream << "expected recorded output event " << expected_event
-                   << " but found no events";
+                   << " (" << feeder_value_category << ", " << value_category
+                   << ") but found";
+            if (events.empty()) {
+                stream << " no events";
+            } else {
+                stream << ':';
+                for (auto const &e : events)
+                    stream << '\n' << e;
+            }
             throw std::logic_error(stream.str());
         }
-        auto const *event = std::get_if<Event>(&events.front());
-        if (event == nullptr || *event != expected_event) {
-            std::ostringstream stream;
-            stream << "expected recorded output event " << expected_event
-                   << " but found:";
-            for (auto const &event : events)
-                stream << '\n' << event;
-            throw std::logic_error(stream.str());
-        }
-        pop_event_func();
-        return true;
     }
 
     /**
@@ -300,6 +451,9 @@ class capture_output_access {
 template <typename EventList> class capture_output_checker {
     capture_output_access acc;
 
+    // TODO Make mandatory and drop std::optional.
+    std::optional<feed_as> feeder_valcat;
+
   public:
     /**
      * \brief Construct from a `tcspc::capture_output_access`.
@@ -310,7 +464,28 @@ template <typename EventList> class capture_output_checker {
     }
 
     /**
-     * \brief Retrieve the next recorded output event.
+     * \brief Construct from a `tcspc::capture_output_access`, with the
+     * feeder's value category.
+     */
+    explicit capture_output_checker(feed_as feeder_value_category,
+                                    capture_output_access access)
+        : acc(std::move(access)), feeder_valcat(feeder_value_category) {
+        acc.check_event_list<EventList>(); // Fail early.
+    }
+
+    /**
+     * \brief Retrieve the next recorded output event, disregarding value
+     * category.
+     *
+     * Equivalent to `pop(tcspc::emitted_as::any_allowed)`.
+     */
+    template <typename Event> auto pop() -> Event {
+        return pop<Event>(emitted_as::any_allowed);
+    }
+
+    /**
+     * \brief Retrieve the next recorded output event, checking its value
+     * category.
      *
      * This can be used when `check()` is not convenient (for example, because
      * the exactly matching event is not known).
@@ -319,14 +494,32 @@ template <typename EventList> class capture_output_checker {
      *
      * \return the event
      */
-    template <typename Event> auto pop() -> Event {
+    template <typename Event> auto pop(emitted_as value_category) -> Event {
         static_assert(type_list_contains_v<EventList, Event>);
-        return acc.pop<Event, EventList>();
+        auto const feeder_cat = [&] {
+            if (feeder_valcat.has_value())
+                return *feeder_valcat;
+            if (value_category == emitted_as::same_as_fed)
+                throw std::logic_error(
+                    "cannot check for emitted_as::same_as_fed; feeder_value_category not set");
+            return feed_as::const_lvalue; // Pick a value, doesn't matter.
+        }();
+        return acc.pop<Event, EventList>(feeder_cat, value_category);
     }
 
     /**
      * \brief Check that the next recorded output event matches with the given
-     * one.
+     * event, disregarding value category.
+     *
+     * Equivalent to `check(tcspc::emitted_as::any_allowed, expected_event)`.
+     */
+    template <typename Event> auto check(Event const &expected_event) -> bool {
+        return check(emitted_as::any_allowed, expected_event);
+    }
+
+    /**
+     * \brief Check that the next recorded output event matches with the given
+     * event and value category.
      *
      * This function never returns false; a `std::logic_error` is thrown if the
      * check is unsuccessful. It returns true for convenient use with testing
@@ -335,13 +528,28 @@ template <typename EventList> class capture_output_checker {
      *
      * \tparam Event the expected event type
      *
+     * \param value_category the expected value category of the emitted event;
+     * `tcspc::emitted_as::same_as_fed` is only allowed if the feeder value
+     * category was set upon construction
+     *
      * \param expected_event the expected event
      *
      * \return true if the check was successful
      */
-    template <typename Event> auto check(Event const &expected_event) -> bool {
+    template <typename Event>
+    auto check(emitted_as value_category, Event const &expected_event)
+        -> bool {
         static_assert(type_list_contains_v<EventList, Event>);
-        return acc.check<Event, EventList>(expected_event);
+        auto const feeder_cat = [&] {
+            if (feeder_valcat.has_value())
+                return *feeder_valcat;
+            if (value_category == emitted_as::same_as_fed)
+                throw std::logic_error(
+                    "cannot check for emitted_as::same_as_fed; feeder_value_category not set");
+            return feed_as::const_lvalue; // Pick a value, doesn't matter.
+        }();
+        return acc.check<Event, EventList>(feeder_cat, value_category,
+                                           expected_event);
     }
 
     /**
@@ -406,7 +614,7 @@ template <typename EventList> class capture_output_checker {
 namespace internal {
 
 template <typename EventList> class capture_output {
-    vector_queue<variant_event<EventList>> output;
+    vector_queue<recorded_event<EventList>> output;
     bool flushed = false;
     std::size_t error_in = std::numeric_limits<std::size_t>::max();
     std::size_t end_in = std::numeric_limits<std::size_t>::max();
@@ -444,10 +652,23 @@ template <typename EventList> class capture_output {
     template <typename Event, typename = std::enable_if_t<type_list_contains_v<
                                   EventList, internal::remove_cvref_t<Event>>>>
     void handle(Event &&event) {
+        static constexpr auto valcat = [] {
+            if constexpr (std::is_lvalue_reference_v<Event>) {
+                if constexpr (std::is_const_v<std::remove_reference_t<Event>>)
+                    return emitted_value_category::const_lvalue;
+                else
+                    return emitted_value_category::nonconst_lvalue;
+            } else {
+                if constexpr (std::is_const_v<Event>)
+                    return emitted_value_category::const_rvalue;
+                else
+                    return emitted_value_category::nonconst_rvalue;
+            }
+        }();
         assert(not flushed);
         if (error_in == 0)
             throw test_error("test error upon event");
-        output.push(std::forward<Event>(event));
+        output.push(std::pair{valcat, std::forward<Event>(event)});
         if (end_in == 0)
             throw end_of_processing("test end-of-stream upon event");
         --error_in;
@@ -465,9 +686,11 @@ template <typename EventList> class capture_output {
     }
 
   private:
-    auto peek() const -> std::vector<variant_event<EventList>> {
-        std::vector<variant_event<EventList>> ret;
-        output.for_each([&ret](auto const &event) { ret.push_back(event); });
+    auto peek() const {
+        std::vector<recorded_event<EventList>> ret;
+        ret.reserve(output.size());
+        // Cannot use std::copy because vector_queue lacks iterators.
+        output.for_each([&ret](auto const &pair) { ret.push_back(pair); });
         return ret;
     }
 

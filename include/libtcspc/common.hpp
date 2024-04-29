@@ -336,7 +336,8 @@ operator|([[maybe_unused]] skip_concluding_event_t const &lhs,
 namespace internal {
 
 [[noreturn]] inline void unreachable() {
-    // C++23: std::unreachable()
+    // C++23: std::unreachable(), but safe in debug build.
+    assert(false);
 #if defined(__GNUC__)
     __builtin_unreachable();
 #elif defined(_MSC_VER)

@@ -64,15 +64,15 @@ TEST_CASE("Short-circuited with event set") {
                                ctx->tracker<capture_output_access>("out")));
     in.require_output_checked(ctx, "out");
     auto out = capture_output_checker<type_list<e0, e1>>(
-        ctx->access<capture_output_access>("out"));
-
-    in.feed(e0{});
-    CHECK(out.check(e0{}));
-
-    in.feed(e1{42});
-    CHECK(out.check(e1{42}));
+        valcat, ctx->access<capture_output_access>("out"));
 
     SECTION("End successfully") {
+        in.feed(e0{});
+        CHECK(out.check(e0{}));
+
+        in.feed(e1{42});
+        CHECK(out.check(emitted_as::same_as_fed, e1{42}));
+
         in.flush();
         CHECK(out.check_flushed());
     }
@@ -99,7 +99,20 @@ TEST_CASE("Short-circuited with event set") {
         CHECK_THROWS_AS(out.check_not_flushed(), std::logic_error);
     }
 
-    SECTION("Expect the wrong event") {
+    SECTION("Expect the wrong value category") {
+        auto const wrong = valcat == feed_as::const_lvalue
+                               ? emitted_as::always_rvalue
+                               : emitted_as::always_lvalue;
+        in.feed(e0{});
+        CHECK_THROWS_AS(out.check(wrong, e0{}), std::logic_error);
+    }
+
+    SECTION("Expect the wrong event type") {
+        in.feed(e0{});
+        CHECK_THROWS_AS(out.check(e1{0}), std::logic_error);
+    }
+
+    SECTION("Expect the wrong event value") {
         in.feed(e1{42});
         CHECK_THROWS_AS(out.check(e1{0}), std::logic_error);
     }
