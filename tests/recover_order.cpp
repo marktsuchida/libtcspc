@@ -51,13 +51,13 @@ TEST_CASE("recover order") {
     }
 
     SECTION("in-order events are delayed") {
-        in.feed(e0{0});
-        in.feed(e0{2});
-        in.feed(e0{3});
-        in.feed(e0{4});
+        in.handle(e0{0});
+        in.handle(e0{2});
+        in.handle(e0{3});
+        in.handle(e0{4});
         REQUIRE(out.check(e0{0}));
-        in.feed(e0{5});
-        in.feed(e0{6});
+        in.handle(e0{5});
+        in.handle(e0{6});
         REQUIRE(out.check(e0{2}));
         in.flush();
         REQUIRE(out.check(e0{3}));
@@ -68,12 +68,12 @@ TEST_CASE("recover order") {
     }
 
     SECTION("out-of-order events are sorted") {
-        in.feed(e0{3});
-        in.feed(e0{0});
-        in.feed(e0{5});
+        in.handle(e0{3});
+        in.handle(e0{0});
+        in.handle(e0{5});
         REQUIRE(out.check(e0{0}));
-        in.feed(e0{2});
-        in.feed(e0{7});
+        in.handle(e0{2});
+        in.handle(e0{7});
         REQUIRE(out.check(e0{2}));
         REQUIRE(out.check(e0{3}));
         in.flush();
@@ -95,18 +95,18 @@ TEST_CASE("recover order, empty time window") {
     auto out = capture_output_checker<type_list<e0>>(valcat, ctx, "out");
 
     SECTION("in-order events are delayed") {
-        in.feed(e0{0});
-        in.feed(e0{0});
-        in.feed(e0{2});
+        in.handle(e0{0});
+        in.handle(e0{0});
+        in.handle(e0{2});
         REQUIRE(out.check(e0{0}));
         REQUIRE(out.check(e0{0}));
-        in.feed(e0{3});
+        in.handle(e0{3});
         REQUIRE(out.check(e0{2}));
-        in.feed(e0{4});
+        in.handle(e0{4});
         REQUIRE(out.check(e0{3}));
-        in.feed(e0{5});
+        in.handle(e0{5});
         REQUIRE(out.check(e0{4}));
-        in.feed(e0{6});
+        in.handle(e0{6});
         REQUIRE(out.check(e0{5}));
         in.flush();
         REQUIRE(out.check(e0{6}));
@@ -114,15 +114,15 @@ TEST_CASE("recover order, empty time window") {
     }
 
     SECTION("out-of-order event does not throw if recoverable") {
-        in.feed(e0{42});
-        in.feed(e0{41});
-        in.feed(e0{42});
+        in.handle(e0{42});
+        in.handle(e0{41});
+        in.handle(e0{42});
         REQUIRE(out.check(e0{41}));
-        in.feed(e0{43});
+        in.handle(e0{43});
         REQUIRE(out.check(e0{42}));
         REQUIRE(out.check(e0{42}));
-        in.feed(e0{42});
-        in.feed(e0{43});
+        in.handle(e0{42});
+        in.handle(e0{43});
         REQUIRE(out.check(e0{42}));
         in.flush();
         REQUIRE(out.check(e0{43}));
@@ -131,10 +131,10 @@ TEST_CASE("recover order, empty time window") {
     }
 
     SECTION("out-of-order event throws if too late") {
-        in.feed(e0{42});
-        in.feed(e0{43});
+        in.handle(e0{42});
+        in.handle(e0{43});
         REQUIRE(out.check(e0{42}));
-        REQUIRE_THROWS_AS(in.feed(e0{41}), data_validation_error);
+        REQUIRE_THROWS_AS(in.handle(e0{41}), data_validation_error);
     }
 }
 
@@ -149,12 +149,12 @@ TEST_CASE("recover order, multiple event types") {
     in.require_output_checked(ctx, "out");
     auto out = capture_output_checker<type_list<e0, e1>>(valcat, ctx, "out");
 
-    in.feed(e0{3});
-    in.feed(e1{0});
-    in.feed(e0{5});
+    in.handle(e0{3});
+    in.handle(e1{0});
+    in.handle(e0{5});
     REQUIRE(out.check(e1{0}));
-    in.feed(e1{2});
-    in.feed(e0{7});
+    in.handle(e1{2});
+    in.handle(e0{7});
     REQUIRE(out.check(e1{2}));
     REQUIRE(out.check(e0{3}));
     in.flush();

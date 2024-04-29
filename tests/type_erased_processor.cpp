@@ -158,7 +158,7 @@ TEST_CASE("type_erased_processor preserves value category") {
     in.require_output_checked(ctx, "out");
     auto out = capture_output_checker<type_list<e0>>(valcat, ctx, "out");
 
-    in.feed(e0{});
+    in.handle(e0{});
     CHECK(out.check(emitted_as::same_as_fed, e0{}));
     in.flush();
     CHECK(out.check_flushed());

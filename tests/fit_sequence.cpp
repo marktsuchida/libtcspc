@@ -79,10 +79,10 @@ TEST_CASE("fit periodic sequences") {
             valcat, ctx, "out");
 
     SECTION("fit succeeds") {
-        in.feed(e0{6});
-        in.feed(e0{5});
-        in.feed(e0{7});
-        in.feed(e0{10});
+        in.handle(e0{6});
+        in.handle(e0{5});
+        in.handle(e0{7});
+        in.handle(e0{10});
         auto const out_event = out.pop<periodic_sequence_model_event<>>();
         CHECK(out_event.abstime == 10);
         CHECK_THAT(static_cast<double>(out_event.abstime) + out_event.delay,
@@ -93,10 +93,10 @@ TEST_CASE("fit periodic sequences") {
     }
 
     SECTION("fit fails") {
-        in.feed(e0{100});
-        in.feed(e0{5});
-        in.feed(e0{7});
-        REQUIRE_THROWS_AS(in.feed(e0{10}), model_fit_error);
+        in.handle(e0{100});
+        in.handle(e0{5});
+        in.handle(e0{7});
+        REQUIRE_THROWS_AS(in.handle(e0{10}), model_fit_error);
         REQUIRE(out.check_not_flushed());
     }
 }

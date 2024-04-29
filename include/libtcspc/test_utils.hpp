@@ -789,7 +789,7 @@ template <typename Downstream> class feed_input {
     template <typename Event,
               typename = std::enable_if_t<handles_event_v<
                   Downstream, internal::remove_cvref_t<Event>>>>
-    void feed(Event &&event) {
+    void handle(Event &&event) {
         check_outputs_ready();
 
         if (refmode == feed_as::const_lvalue) {
@@ -828,8 +828,9 @@ template <typename Downstream> class feed_input {
  *
  * \par Events handled
  * - Types in `EventList`: throw `tcspc::test_error` if error simulation
- *   requested; record the event; throw `tcspc::end_of_processing` if stop
- *   simulation requested; otherwise record for later analysis
+ *   requested; record the event and its value category; throw
+ *   `tcspc::end_of_processing` if stop simulation requested; otherwise record
+ *   for later analysis
  * - Flush: throw `tcspc::test_error` if error simulation requested; record
  *   the flush; throw `tcspc::end_of_processing` if stop simulation requested;
  *   otherwise record for later analysis
@@ -844,20 +845,21 @@ auto capture_output(access_tracker<capture_output_access> &&tracker) {
  *
  * \ingroup processors-testing
  *
- * In addition to `flush()` and introspection, the processor has these member
- * functions:
+ * In addition to `handle()`, `flush()`, and introspection, the processor has
+ * this member function:
+ *
  * - `void require_output_checked(std::shared_ptr<tcspc::context>
  *   context, std::string name)`: register a `tcspc::capture_output` processor
- *   whose recorded output should be fully checked or popped before events (and
+ *   whose recorded output should be fully checked or popped before events (or
  *   flush) are fed.
- * - `template <typename Event> void feed(Event &&event)`: feed an event into
- *   the processor under test after checking that all events recorded by the
- *   registered outputs have been checked or popped.
  *
- * Events are fed according to \p value_category, making a copy of \p event if
- * necessary (when \p event is an lvalue and `tcspc::feed_as::rvalue` is
- * requested). Thus, the type of reference used to pass \p event to `feed()`
- * does not affect how it is fed to the processor under test.
+ * At least one output must be registered with this function before feeding
+ * input events (via `handle()`), or else `std::logic_error` is thrown.
+ *
+ * Events are fed according to \p value_category, making a copy if necessary
+ * (when the event is an lvalue and `tcspc::feed_as::rvalue` is requested).
+ * Thus, the value category of the event passed to `handle()` does not affect
+ * how it is fed to the processor under test.
  *
  * \tparam Downstream downstream processor type (usually deduced)
  *
@@ -868,6 +870,8 @@ auto capture_output(access_tracker<capture_output_access> &&tracker) {
  * \return processor
  *
  * \par Events handled
+ * - Any type handled by `Downstream`: check that registered outputs have no
+ *   unchecked recorded events pending; pass through as `value_category`
  * - Flush: check that the registered outputs have been checked; pass through
  */
 template <typename Downstream>

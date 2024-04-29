@@ -45,10 +45,10 @@ TEST_CASE("stop with error") {
     in.require_output_checked(ctx, "out");
     auto out = capture_output_checker<type_list<e1>>(valcat, ctx, "out");
 
-    in.feed(e1{});
+    in.handle(e1{});
     REQUIRE(out.check(emitted_as::same_as_fed, e1{}));
     REQUIRE_THROWS_WITH(
-        in.feed(e0{}),
+        in.handle(e0{}),
         Catch::Matchers::ContainsSubstring("myerror") &&
             Catch::Matchers::ContainsSubstring("empty_test_event<0>"));
     REQUIRE(out.check_not_flushed());
@@ -65,9 +65,9 @@ TEST_CASE("stop with no error") {
     in.require_output_checked(ctx, "out");
     auto out = capture_output_checker<type_list<e1>>(valcat, ctx, "out");
 
-    in.feed(e1{});
+    in.handle(e1{});
     REQUIRE(out.check(emitted_as::same_as_fed, e1{}));
-    REQUIRE_THROWS_AS(in.feed(e0{}), end_of_processing);
+    REQUIRE_THROWS_AS(in.handle(e0{}), end_of_processing);
     REQUIRE(out.check_flushed());
 }
 

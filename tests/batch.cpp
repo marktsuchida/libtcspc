@@ -58,21 +58,21 @@ TEST_CASE("batch") {
         capture_output_checker<type_list<bucket<int>>>(valcat, ctx, "out");
 
     SECTION("ending mid-batch") {
-        in.feed(42);
-        in.feed(43);
-        in.feed(44);
+        in.handle(42);
+        in.handle(43);
+        in.handle(44);
         REQUIRE(out.check(emitted_as::always_rvalue,
                           tmp_bucket<int>({42, 43, 44})));
-        in.feed(45);
+        in.handle(45);
         in.flush();
         REQUIRE(out.check(emitted_as::always_rvalue, tmp_bucket<int>({45})));
         REQUIRE(out.check_flushed());
     }
 
     SECTION("ending in full batch") {
-        in.feed(42);
-        in.feed(43);
-        in.feed(44);
+        in.handle(42);
+        in.handle(43);
+        in.handle(44);
         REQUIRE(out.check(emitted_as::always_rvalue,
                           tmp_bucket<int>({42, 43, 44})));
         in.flush();
@@ -127,13 +127,13 @@ TEST_CASE("unbatch") {
     in.require_output_checked(ctx, "out");
     auto out = capture_output_checker<type_list<int>>(valcat, ctx, "out");
 
-    in.feed(std::vector<int>{42, 43, 44});
+    in.handle(std::vector<int>{42, 43, 44});
     REQUIRE(out.check(emitted_as::same_as_fed, 42));
     REQUIRE(out.check(emitted_as::same_as_fed, 43));
     REQUIRE(out.check(emitted_as::same_as_fed, 44));
-    in.feed(std::vector<int>{});
-    in.feed(std::vector<int>{});
-    in.feed(std::vector<int>{45});
+    in.handle(std::vector<int>{});
+    in.handle(std::vector<int>{});
+    in.handle(std::vector<int>{45});
     REQUIRE(out.check(emitted_as::same_as_fed, 45));
     in.flush();
     REQUIRE(out.check_flushed());
@@ -150,13 +150,13 @@ TEST_CASE("process_in_batches") {
     in.require_output_checked(ctx, "out");
     auto out = capture_output_checker<type_list<int>>(valcat, ctx, "out");
 
-    in.feed(42);
-    in.feed(43);
-    in.feed(44);
+    in.handle(42);
+    in.handle(43);
+    in.handle(44);
     REQUIRE(out.check(emitted_as::always_rvalue, 42));
     REQUIRE(out.check(emitted_as::always_rvalue, 43));
     REQUIRE(out.check(emitted_as::always_rvalue, 44));
-    in.feed(45);
+    in.handle(45);
     in.flush();
     REQUIRE(out.check(emitted_as::always_rvalue, 45));
     REQUIRE(out.check_flushed());

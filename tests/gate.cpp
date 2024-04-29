@@ -49,7 +49,7 @@ TEST_CASE("Gate events") {
     auto out = capture_output_checker<out_events>(valcat, ctx, "out");
 
     SECTION("Initial state") {
-        in.feed(gated_event{});
+        in.handle(gated_event{});
         if (initially_open)
             REQUIRE(out.check(emitted_as::same_as_fed, gated_event{}));
         in.flush();
@@ -57,33 +57,33 @@ TEST_CASE("Gate events") {
     }
 
     SECTION("Pass through unrelated events") {
-        in.feed(misc_event{});
+        in.handle(misc_event{});
         REQUIRE(out.check(emitted_as::same_as_fed, misc_event{}));
         in.flush();
         REQUIRE(out.check_flushed());
     }
 
     SECTION("Pass through open/close") {
-        in.feed(open_event{});
+        in.handle(open_event{});
         REQUIRE(out.check(open_event{}));
-        in.feed(close_event{});
+        in.handle(close_event{});
         REQUIRE(out.check(close_event{}));
         in.flush();
         REQUIRE(out.check_flushed());
     }
 
     SECTION("Gate closed") {
-        in.feed(close_event{});
+        in.handle(close_event{});
         REQUIRE(out.check(close_event{}));
-        in.feed(gated_event{});
+        in.handle(gated_event{});
         in.flush();
         REQUIRE(out.check_flushed());
     }
 
     SECTION("Gate open") {
-        in.feed(open_event{});
+        in.handle(open_event{});
         REQUIRE(out.check(open_event{}));
-        in.feed(gated_event{});
+        in.handle(gated_event{});
         REQUIRE(out.check(emitted_as::same_as_fed, gated_event{}));
         in.flush();
         REQUIRE(out.check_flushed());

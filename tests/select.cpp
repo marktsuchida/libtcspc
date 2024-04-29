@@ -43,9 +43,9 @@ TEST_CASE("select") {
     in.require_output_checked(ctx, "out");
     auto out = capture_output_checker<out_events>(valcat, ctx, "out");
 
-    in.feed(e0{});
+    in.handle(e0{});
     REQUIRE(out.check(emitted_as::same_as_fed, e0{}));
-    in.feed(e1{});
+    in.handle(e1{});
     in.flush();
     REQUIRE(out.check_flushed());
 }
@@ -59,8 +59,8 @@ TEST_CASE("select_not") {
     in.require_output_checked(ctx, "out");
     auto out = capture_output_checker<out_events>(valcat, ctx, "out");
 
-    in.feed(e0{});
-    in.feed(e1{});
+    in.handle(e0{});
+    in.handle(e1{});
     REQUIRE(out.check(emitted_as::same_as_fed, e1{}));
     in.flush();
     REQUIRE(out.check_flushed());
@@ -75,8 +75,8 @@ TEST_CASE("select_none") {
     in.require_output_checked(ctx, "out");
     auto out = capture_output_checker<out_events>(valcat, ctx, "out");
 
-    in.feed(e0{});
-    in.feed(e1{});
+    in.handle(e0{});
+    in.handle(e1{});
     in.flush();
     REQUIRE(out.check_flushed());
 }
@@ -90,9 +90,9 @@ TEST_CASE("select_all") {
     in.require_output_checked(ctx, "out");
     auto out = capture_output_checker<out_events>(valcat, ctx, "out");
 
-    in.feed(e0{});
+    in.handle(e0{});
     REQUIRE(out.check(emitted_as::same_as_fed, e0{}));
-    in.feed(e1{});
+    in.handle(e1{});
     REQUIRE(out.check(emitted_as::same_as_fed, e1{}));
     in.flush();
     REQUIRE(out.check_flushed());

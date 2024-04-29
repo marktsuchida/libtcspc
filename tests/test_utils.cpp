@@ -65,10 +65,10 @@ TEST_CASE("Short-circuited with event set") {
     auto out = capture_output_checker<type_list<e0, e1>>(valcat, ctx, "out");
 
     SECTION("End successfully") {
-        in.feed(e0{});
+        in.handle(e0{});
         CHECK(out.check(e0{}));
 
-        in.feed(e1{42});
+        in.handle(e1{42});
         CHECK(out.check(emitted_as::same_as_fed, e1{42}));
 
         in.flush();
@@ -78,22 +78,22 @@ TEST_CASE("Short-circuited with event set") {
     SECTION("Unflushed end") { CHECK(out.check_not_flushed()); }
 
     SECTION("Forget to check output before feeding event") {
-        in.feed(e0{});
-        CHECK_THROWS_AS(in.feed(e0{}), std::logic_error);
+        in.handle(e0{});
+        CHECK_THROWS_AS(in.handle(e0{}), std::logic_error);
     }
 
     SECTION("Forget to check output before flushing") {
-        in.feed(e0{});
+        in.handle(e0{});
         CHECK_THROWS_AS(in.flush(), std::logic_error);
     }
 
     SECTION("Forget to check output before asserting successful end") {
-        in.feed(e0{});
+        in.handle(e0{});
         CHECK_THROWS_AS(out.check_flushed(), std::logic_error);
     }
 
     SECTION("Forget to check output before asserting unflushed end") {
-        in.feed(e0{});
+        in.handle(e0{});
         CHECK_THROWS_AS(out.check_not_flushed(), std::logic_error);
     }
 
@@ -101,17 +101,17 @@ TEST_CASE("Short-circuited with event set") {
         auto const wrong = valcat == feed_as::const_lvalue
                                ? emitted_as::always_rvalue
                                : emitted_as::always_lvalue;
-        in.feed(e0{});
+        in.handle(e0{});
         CHECK_THROWS_AS(out.check(wrong, e0{}), std::logic_error);
     }
 
     SECTION("Expect the wrong event type") {
-        in.feed(e0{});
+        in.handle(e0{});
         CHECK_THROWS_AS(out.check(e1{0}), std::logic_error);
     }
 
     SECTION("Expect the wrong event value") {
-        in.feed(e1{42});
+        in.handle(e1{42});
         CHECK_THROWS_AS(out.check(e1{0}), std::logic_error);
     }
 }

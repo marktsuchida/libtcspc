@@ -164,29 +164,29 @@ TEST_CASE("decode swabian tags") {
     auto out = capture_output_checker<out_events>(valcat, ctx, "out");
 
     SECTION("time tag") {
-        in.feed(swabian_tag_event::make_time_tag(42_i64np, 5_i32np));
+        in.handle(swabian_tag_event::make_time_tag(42_i64np, 5_i32np));
         REQUIRE(out.check(detection_event<>{42, 5}));
     }
 
     SECTION("error") {
-        in.feed(swabian_tag_event::make_error(42_i64np));
+        in.handle(swabian_tag_event::make_error(42_i64np));
         auto const e = out.pop<warning_event>();
         REQUIRE_THAT(e.message, Catch::Matchers::ContainsSubstring("error"));
     }
 
     SECTION("overflow begin") {
-        in.feed(swabian_tag_event::make_overflow_begin(42_i64np));
+        in.handle(swabian_tag_event::make_overflow_begin(42_i64np));
         REQUIRE(out.check(begin_lost_interval_event<>{42}));
     }
 
     SECTION("overflow end") {
-        in.feed(swabian_tag_event::make_overflow_end(42_i64np));
+        in.handle(swabian_tag_event::make_overflow_end(42_i64np));
         REQUIRE(out.check(end_lost_interval_event<>{42}));
     }
 
     SECTION("missed events") {
-        in.feed(swabian_tag_event::make_missed_events(42_i64np, 5_i32np,
-                                                      123_u16np));
+        in.handle(swabian_tag_event::make_missed_events(42_i64np, 5_i32np,
+                                                        123_u16np));
         REQUIRE(out.check(lost_counts_event<>{42, 5, 123}));
     }
 

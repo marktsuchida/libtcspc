@@ -130,12 +130,12 @@ TEST_CASE("Route") {
     auto out2 = capture_output_checker<out_events>(valcat, ctx, "out2");
 
     SECTION("Route and broadcast by event type") {
-        in.feed(tc_event{100, 5, 123});
+        in.handle(tc_event{100, 5, 123});
         REQUIRE(out0.check(emitted_as::same_as_fed, tc_event{100, 5, 123}));
-        in.feed(tc_event{101, -3, 123});
+        in.handle(tc_event{101, -3, 123});
         REQUIRE(out1.check(emitted_as::same_as_fed, tc_event{101, -3, 123}));
-        in.feed(tc_event{102, 0, 124});
-        in.feed(marker_event<>{103, 0});
+        in.handle(tc_event{102, 0, 124});
+        in.handle(marker_event<>{103, 0});
         REQUIRE(out0.check(emitted_as::any_allowed, marker_event<>{103, 0}));
         REQUIRE(out1.check(emitted_as::any_allowed, marker_event<>{103, 0}));
         REQUIRE(out2.check(emitted_as::any_allowed, marker_event<>{103, 0}));
@@ -147,7 +147,7 @@ TEST_CASE("Route") {
 
     SECTION("Error on routed propagates without flushing others") {
         out1.throw_error_on_next();
-        REQUIRE_THROWS(in.feed(tc_event{101, -3, 123}));
+        REQUIRE_THROWS(in.handle(tc_event{101, -3, 123}));
         REQUIRE(out0.check_not_flushed());
         REQUIRE(out2.check_not_flushed());
     }
@@ -155,7 +155,7 @@ TEST_CASE("Route") {
     SECTION("End on routed propagates, flushing others") {
         SECTION("Others not throwing") {
             out1.throw_end_processing_on_next();
-            REQUIRE_THROWS_AS(in.feed(tc_event{101, -3, 123}),
+            REQUIRE_THROWS_AS(in.handle(tc_event{101, -3, 123}),
                               end_of_processing);
             REQUIRE(out0.check_flushed());
             REQUIRE(out2.check_flushed());
@@ -164,7 +164,7 @@ TEST_CASE("Route") {
         SECTION("Other throwing error") {
             out1.throw_end_processing_on_next();
             out2.throw_error_on_flush();
-            REQUIRE_THROWS_AS(in.feed(tc_event{101, -3, 123}),
+            REQUIRE_THROWS_AS(in.handle(tc_event{101, -3, 123}),
                               std::runtime_error);
             REQUIRE(out0.check_flushed());
         }
@@ -172,7 +172,7 @@ TEST_CASE("Route") {
         SECTION("Other throwing end") {
             out1.throw_end_processing_on_next();
             out2.throw_end_processing_on_flush();
-            REQUIRE_THROWS_AS(in.feed(tc_event{101, -3, 123}),
+            REQUIRE_THROWS_AS(in.handle(tc_event{101, -3, 123}),
                               end_of_processing);
             REQUIRE(out0.check_flushed());
         }
@@ -192,7 +192,7 @@ TEST_CASE("Route with heterogeneous downstreams") {
     in.require_output_checked(ctx, "out0");
     auto out0 = capture_output_checker<type_list<e0>>(valcat, ctx, "out0");
 
-    in.feed(e0{});
+    in.handle(e0{});
     REQUIRE(out0.check(emitted_as::same_as_fed, e0{}));
     in.flush();
     REQUIRE(out0.check_flushed());
@@ -224,7 +224,7 @@ TEST_CASE("Broadcast") {
     }
 
     SECTION("Events are broadcast") {
-        in.feed(e0{});
+        in.handle(e0{});
         REQUIRE(out0.check(emitted_as::any_allowed, e0{}));
         REQUIRE(out1.check(emitted_as::any_allowed, e0{}));
         REQUIRE(out2.check(emitted_as::any_allowed, e0{}));
@@ -236,7 +236,7 @@ TEST_CASE("Broadcast") {
 
     SECTION("Error on output propagates without flushing others") {
         out1.throw_error_on_next();
-        REQUIRE_THROWS(in.feed(e0{}));
+        REQUIRE_THROWS(in.handle(e0{}));
         REQUIRE(out0.check(e0{})); // Received before out1 threw
         REQUIRE(out0.check_not_flushed());
         REQUIRE(out2.check_not_flushed());
@@ -245,7 +245,7 @@ TEST_CASE("Broadcast") {
     SECTION("End on output propagates, flushing others") {
         SECTION("Others not throwing") {
             out1.throw_end_processing_on_next();
-            REQUIRE_THROWS_AS(in.feed(e0{}), end_of_processing);
+            REQUIRE_THROWS_AS(in.handle(e0{}), end_of_processing);
             REQUIRE(out0.check(e0{})); // Received before out1 threw
             REQUIRE(out0.check_flushed());
             REQUIRE(out2.check_flushed());
@@ -254,7 +254,7 @@ TEST_CASE("Broadcast") {
         SECTION("Other throwing error") {
             out1.throw_end_processing_on_next();
             out2.throw_error_on_flush();
-            REQUIRE_THROWS_AS(in.feed(e0{}), std::runtime_error);
+            REQUIRE_THROWS_AS(in.handle(e0{}), std::runtime_error);
             REQUIRE(out0.check(e0{})); // Received before out1 threw
             REQUIRE(out0.check_flushed());
         }
@@ -262,7 +262,7 @@ TEST_CASE("Broadcast") {
         SECTION("Other throwing end") {
             out1.throw_end_processing_on_next();
             out2.throw_end_processing_on_flush();
-            REQUIRE_THROWS_AS(in.feed(e0{}), end_of_processing);
+            REQUIRE_THROWS_AS(in.handle(e0{}), end_of_processing);
             REQUIRE(out0.check(e0{})); // Received before out1 threw
             REQUIRE(out0.check_flushed());
             REQUIRE(out2.check_flushed());

@@ -42,7 +42,7 @@ TEST_CASE("multiplex") {
     in.require_output_checked(ctx, "out");
     auto out = capture_output_checker<out_events>(valcat, ctx, "out");
 
-    in.feed(e0{});
+    in.handle(e0{});
     REQUIRE(out.check(variant_event<type_list<e0, e1>>(e0{})));
     in.flush();
     REQUIRE(out.check_flushed());
@@ -69,7 +69,7 @@ TEST_CASE("demultiplex") {
     in.require_output_checked(ctx, "out");
     auto out = capture_output_checker<out_events>(valcat, ctx, "out");
 
-    in.feed(variant_event<type_list<e0, e1>>(e1{}));
+    in.handle(variant_event<type_list<e0, e1>>(e1{}));
     REQUIRE(out.check(e1{}));
     in.flush();
     REQUIRE(out.check_flushed());

@@ -49,7 +49,7 @@ TEST_CASE("view as bytes") {
     auto out = capture_output_checker<out_events>(valcat, ctx, "out");
 
     int const i = 42;
-    in.feed(i);
+    in.handle(i);
     REQUIRE(out.check(emitted_as::always_lvalue,
                       tmp_bucket(as_bytes(span(&i, 1)))));
     in.flush();
@@ -66,7 +66,7 @@ TEST_CASE("view as bytes, bucket input") {
     auto out = capture_output_checker<out_events>(valcat, ctx, "out");
 
     std::vector const data{42, 43};
-    in.feed(tmp_bucket(data));
+    in.handle(tmp_bucket(data));
     REQUIRE(out.check(emitted_as::always_lvalue,
                       tmp_bucket(as_bytes(span(data)))));
     in.flush();

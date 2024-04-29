@@ -47,9 +47,9 @@ TEST_CASE("Generate null timing") {
     in.require_output_checked(ctx, "out");
     auto out = capture_output_checker<out_events>(valcat, ctx, "out");
 
-    in.feed(trigger_event{42});
+    in.handle(trigger_event{42});
     REQUIRE(out.check(emitted_as::same_as_fed, trigger_event{42}));
-    in.feed(trigger_event{43});
+    in.handle(trigger_event{43});
     REQUIRE(out.check(emitted_as::same_as_fed, trigger_event{43}));
     in.flush();
     REQUIRE(out.check_flushed());
@@ -71,7 +71,7 @@ TEST_CASE("Generate one-shot timing",
     SECTION("No trigger, no output") {
         SECTION("No events") {}
         SECTION("Pass through others") {
-            in.feed(misc_event{42});
+            in.handle(misc_event{42});
             REQUIRE(out.check(emitted_as::same_as_fed, misc_event{42}));
         }
         in.flush();
@@ -79,28 +79,28 @@ TEST_CASE("Generate one-shot timing",
     }
 
     SECTION("Delayed output") {
-        in.feed(trigger_event{42});
+        in.handle(trigger_event{42});
         REQUIRE(out.check(emitted_as::same_as_fed, trigger_event{42}));
         SECTION("Nothing more") {}
         SECTION("Output generated") {
             if (delay > 0) {
-                in.feed(misc_event{42 + delay - 1});
+                in.handle(misc_event{42 + delay - 1});
                 REQUIRE(out.check(emitted_as::same_as_fed,
                                   misc_event{42 + delay - 1}));
             }
-            in.feed(misc_event{42 + delay});
+            in.handle(misc_event{42 + delay});
             REQUIRE(out.check(emitted_as::always_rvalue,
                               output_event{42 + delay}));
             REQUIRE(
                 out.check(emitted_as::same_as_fed, misc_event{42 + delay}));
         }
         SECTION("Output not generated when overlapping with next trigger") {
-            in.feed(trigger_event{42 + delay});
+            in.handle(trigger_event{42 + delay});
             REQUIRE(
                 out.check(emitted_as::same_as_fed, trigger_event{42 + delay}));
             SECTION("Nothing more") {}
             SECTION("Retrigger produces output") {
-                in.feed(misc_event{42 + delay + delay});
+                in.handle(misc_event{42 + delay + delay});
                 REQUIRE(out.check(emitted_as::always_rvalue,
                                   output_event{42 + delay + delay}));
                 REQUIRE(out.check(emitted_as::same_as_fed,
@@ -130,9 +130,9 @@ TEST_CASE("Generate linear timing") {
         in.require_output_checked(ctx, "out");
         auto out = capture_output_checker<out_events>(valcat, ctx, "out");
 
-        in.feed(trigger_event{42});
+        in.handle(trigger_event{42});
         REQUIRE(out.check(emitted_as::same_as_fed, trigger_event{42}));
-        in.feed(trigger_event{43 + delay});
+        in.handle(trigger_event{43 + delay});
         REQUIRE(out.check(emitted_as::same_as_fed, trigger_event{43 + delay}));
         in.flush();
         REQUIRE(out.check_flushed());
@@ -150,23 +150,23 @@ TEST_CASE("Generate linear timing") {
         auto out = capture_output_checker<out_events>(valcat, ctx, "out");
 
         SECTION("Delayed output") {
-            in.feed(trigger_event{42});
+            in.handle(trigger_event{42});
             REQUIRE(out.check(emitted_as::same_as_fed, trigger_event{42}));
             SECTION("Nothing more") {}
             SECTION("Output generated") {
                 if (delay > 0) {
-                    in.feed(misc_event{42 + delay - 1});
+                    in.handle(misc_event{42 + delay - 1});
                     REQUIRE(out.check(emitted_as::same_as_fed,
                                       misc_event{42 + delay - 1}));
                 }
-                in.feed(misc_event{42 + delay});
+                in.handle(misc_event{42 + delay});
                 REQUIRE(out.check(emitted_as::always_rvalue,
                                   output_event{42 + delay}));
                 REQUIRE(out.check(emitted_as::same_as_fed,
                                   misc_event{42 + delay}));
                 SECTION("Nothing more") {}
                 SECTION("No second output") {
-                    in.feed(misc_event{42 + delay + interval + 1});
+                    in.handle(misc_event{42 + delay + interval + 1});
                     REQUIRE(out.check(emitted_as::same_as_fed,
                                       misc_event{42 + delay + interval + 1}));
                 }
@@ -187,21 +187,21 @@ TEST_CASE("Generate linear timing") {
         in.require_output_checked(ctx, "out");
         auto out = capture_output_checker<out_events>(valcat, ctx, "out");
 
-        in.feed(trigger_event{42});
+        in.handle(trigger_event{42});
         REQUIRE(out.check(emitted_as::same_as_fed, trigger_event{42}));
         if (delay > 0) {
-            in.feed(misc_event{42 + delay - 1});
+            in.handle(misc_event{42 + delay - 1});
             REQUIRE(out.check(emitted_as::same_as_fed,
                               misc_event{42 + delay - 1}));
         }
-        in.feed(misc_event{42 + delay});
+        in.handle(misc_event{42 + delay});
         REQUIRE(
             out.check(emitted_as::always_rvalue, output_event{42 + delay}));
         REQUIRE(out.check(emitted_as::same_as_fed, misc_event{42 + delay}));
-        in.feed(misc_event{42 + delay + interval - 1});
+        in.handle(misc_event{42 + delay + interval - 1});
         REQUIRE(out.check(emitted_as::same_as_fed,
                           misc_event{42 + delay + interval - 1}));
-        in.feed(misc_event{42 + delay + interval});
+        in.handle(misc_event{42 + delay + interval});
         REQUIRE(out.check(emitted_as::always_rvalue,
                           output_event{42 + delay + interval}));
         REQUIRE(out.check(emitted_as::same_as_fed,

@@ -198,7 +198,7 @@ TEST_CASE("extract_bucket preserves value category") {
         capture_output_checker<type_list<bucket<int>>>(valcat, ctx, "out");
 
     std::array arr{42, 43};
-    in.feed(evt_with_bucket{bucket<int>{span(arr), nullptr}});
+    in.handle(evt_with_bucket{bucket<int>{span(arr), nullptr}});
     CHECK(out.check(emitted_as::same_as_fed, bucket<int>{span(arr), nullptr}));
 }
 

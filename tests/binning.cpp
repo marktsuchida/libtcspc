@@ -64,9 +64,9 @@ TEST_CASE("Map to datapoints") {
     in.require_output_checked(ctx, "out");
     auto out = capture_output_checker<out_events>(valcat, ctx, "out");
 
-    in.feed(misc_event{42});
+    in.handle(misc_event{42});
     REQUIRE(out.check(misc_event{42}));
-    in.feed(time_correlated_detection_event<>{123, 0, 42});
+    in.handle(time_correlated_detection_event<>{123, 0, 42});
     REQUIRE(out.check(datapoint_event<data_types>{42}));
     in.flush();
     REQUIRE(out.check_flushed());
@@ -100,9 +100,9 @@ TEST_CASE("Map to bins") {
         in.require_output_checked(ctx, "out");
         auto out = capture_output_checker<out_events>(valcat, ctx, "out");
 
-        in.feed(misc_event{42});
+        in.handle(misc_event{42});
         REQUIRE(out.check(misc_event{42}));
-        in.feed(datapoint_event<data_types>{123});
+        in.handle(datapoint_event<data_types>{123});
         in.flush();
         REQUIRE(out.check_flushed());
     }
@@ -124,7 +124,7 @@ TEST_CASE("Map to bins") {
         in.require_output_checked(ctx, "out");
         auto out = capture_output_checker<out_events>(valcat, ctx, "out");
 
-        in.feed(datapoint_event<data_types>{10});
+        in.handle(datapoint_event<data_types>{10});
         REQUIRE(out.check(bin_increment_event<data_types>{52}));
         in.flush();
         REQUIRE(out.check_flushed());
@@ -450,34 +450,34 @@ TEST_CASE("Batch bin increments") {
     auto out = capture_output_checker<out_events>(valcat, ctx, "out");
 
     SECTION("Pass through unrelated") {
-        in.feed(misc_event{42});
+        in.handle(misc_event{42});
         REQUIRE(out.check(misc_event{42}));
         in.flush();
         REQUIRE(out.check_flushed());
     }
 
     SECTION("Stop before first start ignored") {
-        in.feed(stop_event{42});
+        in.handle(stop_event{42});
         in.flush();
         REQUIRE(out.check_flushed());
     }
 
     SECTION("Start with no stop ignored") {
-        in.feed(start_event{42});
-        in.feed(bin_increment_event<data_types>{123});
+        in.handle(start_event{42});
+        in.handle(bin_increment_event<data_types>{123});
         in.flush();
         REQUIRE(out.check_flushed());
     }
 
     SECTION("Events passed only between start and stop") {
-        in.feed(start_event{42});
-        in.feed(bin_increment_event<data_types>{123});
-        in.feed(stop_event{44});
+        in.handle(start_event{42});
+        in.handle(bin_increment_event<data_types>{123});
+        in.handle(stop_event{44});
         REQUIRE(out.check(bin_increment_batch_event<data_types>{{123}}));
-        in.feed(start_event{45});
-        in.feed(bin_increment_event<data_types>{124});
-        in.feed(bin_increment_event<data_types>{125});
-        in.feed(stop_event{48});
+        in.handle(start_event{45});
+        in.handle(bin_increment_event<data_types>{124});
+        in.handle(bin_increment_event<data_types>{125});
+        in.handle(stop_event{48});
         REQUIRE(out.check(bin_increment_batch_event<data_types>{{124, 125}}));
         in.flush();
         REQUIRE(out.check_flushed());

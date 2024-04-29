@@ -118,11 +118,11 @@ TEST_CASE("Merge") {
         auto out = capture_output_checker<all_events>(valcat, ctx, "out");
 
         SECTION("events from input 0 emitted before those from input 1") {
-            in1.feed(e1{42});
-            in0.feed(e0{42});
+            in1.handle(e1{42});
+            in0.handle(e0{42});
             REQUIRE(out.check(e0{42}));
-            in1.feed(e3{42});
-            in0.feed(e2{42});
+            in1.handle(e3{42});
+            in0.handle(e2{42});
             REQUIRE(out.check(e2{42}));
 
             SECTION("end input 0 first") {
@@ -171,10 +171,10 @@ TEST_CASE("Merge") {
         }
 
         SECTION("events in abstime order") {
-            in_x.feed(e0{1});
-            in_y.feed(e1{2});
+            in_x.handle(e0{1});
+            in_y.handle(e1{2});
             REQUIRE(out.check(e0{1}));
-            in_x.feed(e0{3});
+            in_x.handle(e0{3});
             REQUIRE(out.check(e1{2}));
 
             SECTION("end in_x first") {
@@ -187,7 +187,7 @@ TEST_CASE("Merge") {
 
             SECTION("end in_x, additional y input") {
                 in_x.flush();
-                in_y.feed(e1{4});
+                in_y.handle(e1{4});
                 REQUIRE(out.check(e0{3}));
                 REQUIRE(out.check(e1{4}));
                 in_y.flush();
@@ -205,7 +205,7 @@ TEST_CASE("Merge") {
             SECTION("end in_y, additional x input") {
                 in_y.flush();
                 REQUIRE(out.check(e0{3}));
-                in_x.feed(e0{4});
+                in_x.handle(e0{4});
                 REQUIRE(out.check(e0{4}));
                 in_x.flush();
                 REQUIRE(out.check_flushed());
@@ -213,11 +213,11 @@ TEST_CASE("Merge") {
         }
 
         SECTION("delayed on in_x") {
-            in_x.feed(e0{2});
-            in_y.feed(e1{1});
+            in_x.handle(e0{2});
+            in_y.handle(e1{1});
             REQUIRE(out.check(e1{1}));
-            in_x.feed(e0{4});
-            in_y.feed(e1{3});
+            in_x.handle(e0{4});
+            in_y.handle(e1{3});
             REQUIRE(out.check(e0{2}));
             REQUIRE(out.check(e1{3}));
 
@@ -256,14 +256,14 @@ TEST_CASE("merge single event type") {
     // The only non-common code for the single-event-type case is in
     // emit_pending, so lightly test that.
 
-    in0.feed(e0{42});
-    in1.feed(e0{41});
+    in0.handle(e0{42});
+    in1.handle(e0{41});
     REQUIRE(out.check(e0{41}));
-    in1.feed(e0{43});
+    in1.handle(e0{43});
     REQUIRE(out.check(e0{42}));
-    in1.feed(e0{44});
-    in1.feed(e0{45});
-    in0.feed(e0{46});
+    in1.handle(e0{44});
+    in1.handle(e0{45});
+    in0.handle(e0{46});
     REQUIRE(out.check(e0{43}));
     REQUIRE(out.check(e0{44}));
     REQUIRE(out.check(e0{45}));
@@ -300,7 +300,7 @@ TEST_CASE("merge N streams") {
         in.require_output_checked(ctx, "out");
         auto out = capture_output_checker<all_events>(valcat, ctx, "out");
 
-        in.feed(e0{0});
+        in.handle(e0{0});
         REQUIRE(out.check(e0{0}));
         in.flush();
         REQUIRE(out.check_flushed());
@@ -345,12 +345,12 @@ TEST_CASE("merge unsorted") {
     }
 
     SECTION("no buffering, independent flushing") {
-        in0.feed(e0{});
+        in0.handle(e0{});
         REQUIRE(out.check(emitted_as::same_as_fed, e0{}));
-        in1.feed(e1{});
+        in1.handle(e1{});
         REQUIRE(out.check(emitted_as::same_as_fed, e1{}));
         in1.flush();
-        in0.feed(e2{});
+        in0.handle(e2{});
         REQUIRE(out.check(emitted_as::same_as_fed, e2{}));
         in0.flush();
         REQUIRE(out.check_flushed());

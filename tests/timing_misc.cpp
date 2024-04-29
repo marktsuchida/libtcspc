@@ -52,27 +52,27 @@ TEST_CASE("retime periodic sequence events") {
     auto out = capture_output_checker<out_events>(valcat, ctx, "out");
 
     SECTION("normal operation") {
-        in.feed(periodic_sequence_model_event<>{4, -8.0, 1.5});
+        in.handle(periodic_sequence_model_event<>{4, -8.0, 1.5});
         REQUIRE(out.check(periodic_sequence_model_event<>{-5, 1.0, 1.5}));
-        in.feed(periodic_sequence_model_event<>{4, -8.5, 1.5});
+        in.handle(periodic_sequence_model_event<>{4, -8.5, 1.5});
         REQUIRE(out.check(periodic_sequence_model_event<>{-6, 1.5, 1.5}));
-        in.feed(periodic_sequence_model_event<>{4, 10.0, 1.5});
+        in.handle(periodic_sequence_model_event<>{4, 10.0, 1.5});
         REQUIRE(out.check(periodic_sequence_model_event<>{13, 1.0, 1.5}));
     }
 
     SECTION("max time shift") {
-        in.feed(periodic_sequence_model_event<>{4, -9.0, 1.5});
+        in.handle(periodic_sequence_model_event<>{4, -9.0, 1.5});
         REQUIRE(out.check(periodic_sequence_model_event<>{-6, 1.0, 1.5}));
-        in.feed(periodic_sequence_model_event<>{4, 11.75, 1.5});
+        in.handle(periodic_sequence_model_event<>{4, 11.75, 1.5});
         REQUIRE(out.check(periodic_sequence_model_event<>{14, 1.75, 1.5}));
     }
 
     SECTION("fail above max time shift") {
         REQUIRE_THROWS_AS(
-            in.feed(periodic_sequence_model_event<>{4, -9.01, 1.5}),
+            in.handle(periodic_sequence_model_event<>{4, -9.01, 1.5}),
             data_validation_error);
         REQUIRE_THROWS_AS(
-            in.feed(periodic_sequence_model_event<>{4, 12.0, 1.5}),
+            in.handle(periodic_sequence_model_event<>{4, 12.0, 1.5}),
             data_validation_error);
     }
 }
@@ -94,15 +94,15 @@ TEST_CASE("retime periodic sequence events unsigned",
     auto out = capture_output_checker<out_events>(valcat, ctx, "out");
 
     SECTION("normal operation") {
-        in.feed(periodic_sequence_model_event<types>{4, -1.5, 1.5});
+        in.handle(periodic_sequence_model_event<types>{4, -1.5, 1.5});
         REQUIRE(out.check(periodic_sequence_model_event<types>{1, 1.5, 1.5}));
-        in.feed(periodic_sequence_model_event<types>{4, -3.0, 1.5});
+        in.handle(periodic_sequence_model_event<types>{4, -3.0, 1.5});
         REQUIRE(out.check(periodic_sequence_model_event<types>{0, 1.0, 1.5}));
     }
 
     SECTION("unsigned underflow") {
         REQUIRE_THROWS_AS(
-            in.feed(periodic_sequence_model_event<types>{4, -3.01, 1.5}),
+            in.handle(periodic_sequence_model_event<types>{4, -3.01, 1.5}),
             data_validation_error);
     }
 }
@@ -120,7 +120,7 @@ TEST_CASE("extrapolate periodic sequences",
     in.require_output_checked(ctx, "out");
     auto out = capture_output_checker<out_events>(valcat, ctx, "out");
 
-    in.feed(periodic_sequence_model_event<>{42, 0.5, 1.75});
+    in.handle(periodic_sequence_model_event<>{42, 0.5, 1.75});
     REQUIRE(out.check(real_one_shot_timing_event<>{42, 4.0}));
     in.flush();
     REQUIRE(out.check_flushed());
@@ -139,7 +139,7 @@ TEST_CASE("add count to periodic sequences",
     in.require_output_checked(ctx, "out");
     auto out = capture_output_checker<out_events>(valcat, ctx, "out");
 
-    in.feed(periodic_sequence_model_event<>{42, 0.5, 1.75});
+    in.handle(periodic_sequence_model_event<>{42, 0.5, 1.75});
     REQUIRE(out.check(real_linear_timing_event<>{42, 0.5, 1.75, 3}));
     in.flush();
     REQUIRE(out.check_flushed());
@@ -164,11 +164,11 @@ TEST_CASE("convert sequences to start-stop",
         in.require_output_checked(ctx, "out");
         auto out = capture_output_checker<out_events>(valcat, ctx, "out");
 
-        in.feed(inevt{42}); // No output.
-        in.feed(inevt{42}); // No output.
-        in.feed(otherevt{43});
+        in.handle(inevt{42}); // No output.
+        in.handle(inevt{42}); // No output.
+        in.handle(otherevt{43});
         REQUIRE(out.check(emitted_as::same_as_fed, otherevt{43}));
-        in.feed(inevt{42}); // No output.
+        in.handle(inevt{42}); // No output.
         in.flush();
         REQUIRE(out.check_flushed());
     }
@@ -182,13 +182,13 @@ TEST_CASE("convert sequences to start-stop",
         in.require_output_checked(ctx, "out");
         auto out = capture_output_checker<out_events>(valcat, ctx, "out");
 
-        in.feed(inevt{42});
+        in.handle(inevt{42});
         REQUIRE(out.check(startevt{42}));
-        in.feed(inevt{43});
+        in.handle(inevt{43});
         REQUIRE(out.check(stopevt{43}));
-        in.feed(inevt{44});
+        in.handle(inevt{44});
         REQUIRE(out.check(startevt{44}));
-        in.feed(inevt{45});
+        in.handle(inevt{45});
         REQUIRE(out.check(stopevt{45}));
         in.flush();
         REQUIRE(out.check_flushed());
@@ -203,20 +203,20 @@ TEST_CASE("convert sequences to start-stop",
         in.require_output_checked(ctx, "out");
         auto out = capture_output_checker<out_events>(valcat, ctx, "out");
 
-        in.feed(inevt{42});
+        in.handle(inevt{42});
         REQUIRE(out.check(startevt{42}));
-        in.feed(inevt{43});
+        in.handle(inevt{43});
         REQUIRE(out.check(stopevt{43}));
         REQUIRE(out.check(startevt{43}));
-        in.feed(inevt{44});
+        in.handle(inevt{44});
         REQUIRE(out.check(stopevt{44}));
 
-        in.feed(inevt{46});
+        in.handle(inevt{46});
         REQUIRE(out.check(startevt{46}));
-        in.feed(inevt{47});
+        in.handle(inevt{47});
         REQUIRE(out.check(stopevt{47}));
         REQUIRE(out.check(startevt{47}));
-        in.feed(inevt{48});
+        in.handle(inevt{48});
         REQUIRE(out.check(stopevt{48}));
 
         in.flush();

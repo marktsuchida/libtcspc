@@ -420,23 +420,23 @@ TEST_CASE("decode pqt2 picoharp300") {
     auto out = capture_output_checker<out_events>(valcat, ctx, "out");
 
     SECTION("non-special") {
-        in.feed(pqt2_picoharp300_event::make_nonspecial(42_u32np, 5_u8np));
+        in.handle(pqt2_picoharp300_event::make_nonspecial(42_u32np, 5_u8np));
         REQUIRE(out.check(detection_event<>{42, 5}));
     }
 
     SECTION("external marker") {
         // Low 4 bits of timetag are erased: 42 = 32 + 10 -> 32.
-        in.feed(
+        in.handle(
             pqt2_picoharp300_event::make_external_marker(42_u32np, 5_u8np));
         REQUIRE(out.check(marker_event<>{32, 0}));
         REQUIRE(out.check(marker_event<>{32, 2}));
     }
 
     SECTION("timetag overflow") {
-        in.feed(pqt2_picoharp300_event::make_timetag_overflow());
+        in.handle(pqt2_picoharp300_event::make_timetag_overflow());
         REQUIRE(out.check(time_reached_event<>{210'698'240}));
 
-        in.feed(pqt2_picoharp300_event::make_nonspecial(42_u32np, 5_u8np));
+        in.handle(pqt2_picoharp300_event::make_nonspecial(42_u32np, 5_u8np));
         REQUIRE(out.check(detection_event<>{210'698'240 + 42, 5}));
     }
 
@@ -454,27 +454,27 @@ TEST_CASE("decode pqt2 hydraharpv1") {
     auto out = capture_output_checker<out_events>(valcat, ctx, "out");
 
     SECTION("non-special") {
-        in.feed(pqt2_hydraharpv1_event::make_nonspecial(42_u32np, 5_u8np));
+        in.handle(pqt2_hydraharpv1_event::make_nonspecial(42_u32np, 5_u8np));
         REQUIRE(out.check(detection_event<>{42, 5}));
     }
 
     SECTION("external marker") {
-        in.feed(
+        in.handle(
             pqt2_hydraharpv1_event::make_external_marker(42_u32np, 5_u8np));
         REQUIRE(out.check(marker_event<>{42, 0}));
         REQUIRE(out.check(marker_event<>{42, 2}));
     }
 
     SECTION("sync") {
-        in.feed(pqt2_hydraharpv1_event::make_sync(42_u32np));
+        in.handle(pqt2_hydraharpv1_event::make_sync(42_u32np));
         REQUIRE(out.check(detection_event<>{42, -1}));
     }
 
     SECTION("timetag overflow") {
-        in.feed(pqt2_hydraharpv1_event::make_timetag_overflow());
+        in.handle(pqt2_hydraharpv1_event::make_timetag_overflow());
         REQUIRE(out.check(time_reached_event<>{33'552'000}));
 
-        in.feed(pqt2_hydraharpv1_event::make_nonspecial(42_u32np, 5_u8np));
+        in.handle(pqt2_hydraharpv1_event::make_nonspecial(42_u32np, 5_u8np));
         REQUIRE(out.check(detection_event<>{33'552'000 + 42, 5}));
     }
 
@@ -492,26 +492,26 @@ TEST_CASE("decode pqt2 generic") {
     auto out = capture_output_checker<out_events>(valcat, ctx, "out");
 
     SECTION("non-special") {
-        in.feed(pqt2_generic_event::make_nonspecial(42_u32np, 5_u8np));
+        in.handle(pqt2_generic_event::make_nonspecial(42_u32np, 5_u8np));
         REQUIRE(out.check(detection_event<>{42, 5}));
     }
 
     SECTION("external marker") {
-        in.feed(pqt2_generic_event::make_external_marker(42_u32np, 5_u8np));
+        in.handle(pqt2_generic_event::make_external_marker(42_u32np, 5_u8np));
         REQUIRE(out.check(marker_event<>{42, 0}));
         REQUIRE(out.check(marker_event<>{42, 2}));
     }
 
     SECTION("sync") {
-        in.feed(pqt2_generic_event::make_sync(42_u32np));
+        in.handle(pqt2_generic_event::make_sync(42_u32np));
         REQUIRE(out.check(detection_event<>{42, -1}));
     }
 
     SECTION("timetag overflow") {
-        in.feed(pqt2_generic_event::make_timetag_overflow(3_u32np));
+        in.handle(pqt2_generic_event::make_timetag_overflow(3_u32np));
         REQUIRE(out.check(time_reached_event<>{i64(33'554'432) * 3}));
 
-        in.feed(pqt2_generic_event::make_nonspecial(42_u32np, 5_u8np));
+        in.handle(pqt2_generic_event::make_nonspecial(42_u32np, 5_u8np));
         REQUIRE(out.check(detection_event<>{i64(33'554'432) * 3 + 42, 5}));
     }
 

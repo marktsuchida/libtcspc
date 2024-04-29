@@ -33,10 +33,10 @@ TEST_CASE("prepend") {
     auto out =
         capture_output_checker<type_list<int, double>>(valcat, ctx, "out");
 
-    in.feed(12.5);
+    in.handle(12.5);
     REQUIRE(out.check(emitted_as::always_rvalue, 42));
     REQUIRE(out.check(emitted_as::same_as_fed, 12.5));
-    in.feed(25.0);
+    in.handle(25.0);
     REQUIRE(out.check(emitted_as::same_as_fed, 25.0));
     in.flush();
     REQUIRE(out.check_flushed());
@@ -53,9 +53,9 @@ TEST_CASE("append") {
     auto out =
         capture_output_checker<type_list<int, double>>(valcat, ctx, "out");
 
-    in.feed(12.5);
+    in.handle(12.5);
     REQUIRE(out.check(emitted_as::same_as_fed, 12.5));
-    in.feed(25.0);
+    in.handle(25.0);
     REQUIRE(out.check(emitted_as::same_as_fed, 25.0));
     in.flush();
     REQUIRE(out.check(emitted_as::always_rvalue, 42));

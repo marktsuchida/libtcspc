@@ -47,7 +47,7 @@ TEST_CASE("Delay") {
         in.require_output_checked(ctx, "out");
         auto out = capture_output_checker<out_events>(valcat, ctx, "out");
 
-        in.feed(e0{0});
+        in.handle(e0{0});
         REQUIRE(out.check(e0{0}));
         in.flush();
         REQUIRE(out.check_flushed());
@@ -61,9 +61,9 @@ TEST_CASE("Delay") {
         in.require_output_checked(ctx, "out");
         auto out = capture_output_checker<out_events>(valcat, ctx, "out");
 
-        in.feed(e0{0});
+        in.handle(e0{0});
         REQUIRE(out.check(e0{1}));
-        in.feed(e1{1});
+        in.handle(e1{1});
         REQUIRE(out.check(e1{2}));
         in.flush();
         REQUIRE(out.check_flushed());
@@ -77,9 +77,9 @@ TEST_CASE("Delay") {
         in.require_output_checked(ctx, "out");
         auto out = capture_output_checker<out_events>(valcat, ctx, "out");
 
-        in.feed(e0{0});
+        in.handle(e0{0});
         REQUIRE(out.check(e0{-1}));
-        in.feed(e1{1});
+        in.handle(e1{1});
         REQUIRE(out.check(e1{0}));
         in.flush();
         REQUIRE(out.check_flushed());
@@ -96,11 +96,11 @@ TEST_CASE("zero-base abstime") {
     auto out = capture_output_checker<out_events>(valcat, ctx, "out");
 
     SECTION("Positive") {
-        in.feed(e0{123});
+        in.handle(e0{123});
         REQUIRE(out.check(e0{0}));
-        in.feed(e1{125});
+        in.handle(e1{125});
         REQUIRE(out.check(e1{2}));
-        in.feed(
+        in.handle(
             e0{std::numeric_limits<default_data_types::abstime_type>::min()});
         REQUIRE(out.check(
             e0{std::numeric_limits<default_data_types::abstime_type>::max() -
@@ -110,11 +110,11 @@ TEST_CASE("zero-base abstime") {
     }
 
     SECTION("Negative") {
-        in.feed(e0{-123});
+        in.handle(e0{-123});
         REQUIRE(out.check(e0{0}));
-        in.feed(e1{-121});
+        in.handle(e1{-121});
         REQUIRE(out.check(e1{2}));
-        in.feed(
+        in.handle(
             e0{std::numeric_limits<default_data_types::abstime_type>::max()});
         REQUIRE(out.check(
             e0{std::numeric_limits<default_data_types::abstime_type>::min() +

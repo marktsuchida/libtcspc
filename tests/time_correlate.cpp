@@ -48,7 +48,7 @@ TEST_CASE("time correlate at start") {
     in.require_output_checked(ctx, "out");
     auto out = capture_output_checker<tc_out_events>(valcat, ctx, "out");
 
-    in.feed(std::array<detection_event<>, 2>{{{3, 0}, {5, 1}}});
+    in.handle(std::array<detection_event<>, 2>{{{3, 0}, {5, 1}}});
     REQUIRE(out.check(time_correlated_detection_event<>{3, 0, 2}));
     in.flush();
     REQUIRE(out.check_flushed());
@@ -63,7 +63,7 @@ TEST_CASE("time correlate at stop") {
     in.require_output_checked(ctx, "out");
     auto out = capture_output_checker<tc_out_events>(valcat, ctx, "out");
 
-    in.feed(std::array<detection_event<>, 2>{{{3, 0}, {5, 1}}});
+    in.handle(std::array<detection_event<>, 2>{{{3, 0}, {5, 1}}});
     REQUIRE(out.check(time_correlated_detection_event<>{5, 1, 2}));
     in.flush();
     REQUIRE(out.check_flushed());
@@ -80,7 +80,7 @@ TEST_CASE("time correlate at midpoint") {
         in.require_output_checked(ctx, "out");
         auto out = capture_output_checker<tc_out_events>(valcat, ctx, "out");
 
-        in.feed(std::array<detection_event<>, 2>{{{3, 0}, {5, 1}}});
+        in.handle(std::array<detection_event<>, 2>{{{3, 0}, {5, 1}}});
         REQUIRE(out.check(time_correlated_detection_event<>{4, 1, 2}));
         in.flush();
         REQUIRE(out.check_flushed());
@@ -94,7 +94,7 @@ TEST_CASE("time correlate at midpoint") {
         in.require_output_checked(ctx, "out");
         auto out = capture_output_checker<tc_out_events>(valcat, ctx, "out");
 
-        in.feed(std::array<detection_event<>, 2>{{{3, 0}, {5, 1}}});
+        in.handle(std::array<detection_event<>, 2>{{{3, 0}, {5, 1}}});
         REQUIRE(out.check(time_correlated_detection_event<>{4, 0, 2}));
         in.flush();
         REQUIRE(out.check_flushed());
@@ -114,7 +114,7 @@ TEST_CASE("time correlate at fraction") {
         in.require_output_checked(ctx, "out");
         auto out = capture_output_checker<tc_out_events>(valcat, ctx, "out");
 
-        in.feed(std::array<detection_event<>, 2>{{{3000, 0}, {6000, 1}}});
+        in.handle(std::array<detection_event<>, 2>{{{3000, 0}, {6000, 1}}});
         REQUIRE(out.check(time_correlated_detection_event<>{4000, 1, 3000}));
         in.flush();
         REQUIRE(out.check_flushed());
@@ -129,7 +129,7 @@ TEST_CASE("time correlate at fraction") {
         in.require_output_checked(ctx, "out");
         auto out = capture_output_checker<tc_out_events>(valcat, ctx, "out");
 
-        in.feed(std::array<detection_event<>, 2>{{{3000, 0}, {6000, 1}}});
+        in.handle(std::array<detection_event<>, 2>{{{3000, 0}, {6000, 1}}});
         REQUIRE(out.check(time_correlated_detection_event<>{4000, 0, 3000}));
         in.flush();
         REQUIRE(out.check_flushed());
@@ -151,9 +151,9 @@ TEST_CASE("negate difftime") {
     auto out = capture_output_checker<
         type_list<time_correlated_detection_event<types>>>(valcat, ctx, "out");
 
-    in.feed(time_correlated_detection_event<types>{3, 1, 2});
+    in.handle(time_correlated_detection_event<types>{3, 1, 2});
     REQUIRE(out.check(time_correlated_detection_event<types>{3, 1, -2}));
-    in.feed(time_correlated_detection_event<types>{5, 1, -7});
+    in.handle(time_correlated_detection_event<types>{5, 1, -7});
     REQUIRE(out.check(time_correlated_detection_event<types>{5, 1, 7}));
     in.flush();
     REQUIRE(out.check_flushed());
@@ -170,7 +170,7 @@ TEST_CASE("remove time correlation") {
     auto out = capture_output_checker<type_list<detection_event<>>>(
         valcat, ctx, "out");
 
-    in.feed(time_correlated_detection_event<>{3, 1, 2});
+    in.handle(time_correlated_detection_event<>{3, 1, 2});
     REQUIRE(out.check(detection_event<>{3, 1}));
     in.flush();
     REQUIRE(out.check_flushed());
