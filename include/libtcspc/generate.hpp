@@ -43,7 +43,7 @@ class generate {
             OutputEvent event;
             event.abstime = *t;
             generator.pop();
-            downstream.handle(event);
+            downstream.handle(std::move(event));
         }
     }
 

@@ -104,9 +104,8 @@ enum class emitted_value_category {
 
 inline void check_value_category(feed_as feed_cat, emitted_as expected,
                                  emitted_value_category actual) {
-    // TODO Deferred because requires updating processors.
-    // if (actual == emitted_value_category::nonconst_lvalue)
-    //     throw std::logic_error("non-const lvalue event not allowed");
+    if (actual == emitted_value_category::nonconst_lvalue)
+        throw std::logic_error("non-const lvalue event not allowed");
 
     if (expected == emitted_as::same_as_fed) {
         switch (feed_cat) {

@@ -484,13 +484,13 @@ class convert_sequences_to_start_stop {
         if (seen > 0) {
             StopEvent e{};
             e.abstime = event.abstime;
-            downstream.handle(e);
+            downstream.handle(std::move(e));
         }
         ++seen;
         if (seen < input_len) {
             StartEvent e{};
             e.abstime = event.abstime;
-            downstream.handle(e);
+            downstream.handle(std::move(e));
         } else {
             seen = 0;
         }

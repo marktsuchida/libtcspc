@@ -117,7 +117,7 @@ template <typename Event, typename Downstream> class unbatch_from_bytes {
             std::copy_n(buf.begin(), bytes_buffered, output_bytes.begin());
             std::copy_n(input_span.begin(), bytes_to_fill,
                         output_bytes.subspan(bytes_buffered).begin());
-            downstream.handle(e);
+            downstream.handle(std::as_const(e));
             input_span = input_span.subspan(bytes_to_fill);
         }
 
@@ -139,7 +139,7 @@ template <typename Event, typename Downstream> class unbatch_from_bytes {
                 std::copy_n(whole_event_bytes.subspan(i).begin(),
                             sizeof(Event),
                             as_writable_bytes(span(&e, 1)).begin());
-                downstream.handle(e);
+                downstream.handle(std::as_const(e));
             }
         }
 
