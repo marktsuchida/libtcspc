@@ -30,6 +30,11 @@ namespace tcspc {
  * If the `flush()` exists but has a return type other than `void`, compilation
  * fails.
  *
+ * \note A true result indicates that \p Proc handles `flush()` _provided that
+ * `Proc` and `Proc::flush()` can be instantiated_ (if \p Proc is a template
+ * class). It is possible that instantiation will fail (due to `static_assert`
+ * failures or other issues) even if the result of this metafunction is true.
+ *
  * \see `tcspc::handles_flush_v`
  */
 template <typename Proc, typename = void>
@@ -71,17 +76,22 @@ inline constexpr bool handles_flush_v = handles_flush<Proc>::value;
  * passed as rvalue reference and provides the result in the `bool` member
  * `value`.
  *
+ * This rvalue-specific check is mostly useful when debugging SFINAE-based
+ * constraints on the `handle()` overloads of a processor.
+ *
  * Note that the result is true even if \p Proc only implements `handle(Event
- * const &)`, because rvalues can bind to const lvalue reference. This check is
- * still useful in case the processor has different overloads for rvalue and
+ * const &)`, because rvalues can bind to a const lvalue reference. This check
+ * is still useful in case the processor has different overloads for rvalue and
  * const lvalue references.
  *
  * If the event handler exists but has a return type other than `void`,
  * compilation fails.
  *
- * \note Even if this metafunction is true, it is possible for a processor to
- * fail (at compile time) to handle the event due to `static_assert` or other
- * implicit requirements.
+ * \note A true result indicates that \p Proc handles `Event &&` _provided that
+ * `Proc` and the relevant `Proc::handle()` overload can be instantiated_ (if
+ * \p Proc is a template class). It is possible that instantiation will fail
+ * (due to `static_assert` failures or other issues) even if the result of this
+ * metafunction is true.
  *
  * \see `tcspc::handles_rvalue_event_v`
  */
@@ -127,12 +137,17 @@ inline constexpr bool handles_rvalue_event_v =
  * passed as const lvalue reference and provides the result in the `bool`
  * member `value`.
  *
+ * This const-specific check is mostly useful when debugging SFINAE-based
+ * constraints on the `handle()` overloads of a processor.
+ *
  * If the event handler exists but has a return type other than `void`,
  * compilation fails.
  *
- * \note Even if this metafunction is true, it is possible for a processor to
- * fail (at compile time) to handle the event due to `static_assert` or other
- * implicit requirements.
+ * \note A true result indicates that \p Proc handles `Event const &` _provided
+ * that `Proc` and the relevant `Proc::handle()` overload can be instantiated_
+ * (if \p Proc is a template class). It is possible that instantiation will
+ * fail (due to `static_assert` failures or other issues) even if the result of
+ * this metafunction is true.
  *
  * \see `tcspc::handles_const_event_v`
  */
@@ -183,9 +198,11 @@ inline constexpr bool handles_const_event_v =
  * If the event handler(s) exist but have a return type other than `void`,
  * compilation fails.
  *
- * \note Even if this metafunction is true, it is possible for a processor to
- * fail (at compile time) to handle the event due to `static_assert` or other
- * implicit requirements.
+ * \note A true result indicates that \p Proc handles `Event` _provided that
+ * `Proc` and the relevant `Proc::handle()` overload(s) can be instantiated_
+ * (if \p Proc is a template class). It is possible that instantiation will
+ * fail (due to `static_assert` failures or other issues) even if the result of
+ * this metafunction is true.
  *
  * \see `tcspc::handles_event_v`
  */
@@ -216,12 +233,14 @@ inline constexpr bool handles_event_v = handles_event<Proc, Event>::value;
  * the `tcspc::type_list` specialization \p EventList and provides the result
  * in the `bool` member `value`.
  *
- * If the event handler(s) exist but have a return type other than `void`,
- * compilation fails.
+ * If the event handler(s) exist but any of them has a return type other than
+ * `void`, compilation fails.
  *
- * \note Even if this metafunction is true, it is possible for a processor to
- * fail (at compile time) to handle the events due to `static_assert` or other
- * implicit requirements.
+ * \note A true result indicates that \p Proc handles the events in `EventList`
+ * _provided that `Proc` and the relevant `Proc::handle()` overloads can be
+ * instantiated_ (if \p Proc is a template class). It is possible that
+ * instantiation will fail (due to `static_assert` failures or other issues)
+ * even if the result of this metafunction is true.
  *
  * \see `tcspc::handles_events_v`
  */
