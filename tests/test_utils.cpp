@@ -28,7 +28,7 @@ TEST_CASE("introspect test_utils", "[introspect]") {
         ctx->tracker<capture_output_access>("out1")));
     check_introspect_simple_processor(
         feed_input(feed_as::const_lvalue, null_sink()));
-    check_introspect_simple_sink(sink_events<type_list<>>());
+    check_introspect_simple_sink(sink_events<>());
 }
 
 namespace {
@@ -117,13 +117,13 @@ TEST_CASE("Short-circuited with event set") {
 }
 
 TEST_CASE("sink_events") {
-    STATIC_CHECK(handles_flush_v<sink_events<type_list<>>>);
+    STATIC_CHECK(handles_flush_v<decltype(sink_events<>())>);
 
-    STATIC_CHECK_FALSE(handles_rvalue_event_v<sink_events<type_list<>>, e0>);
-    STATIC_CHECK(handles_rvalue_event_v<sink_events<type_list<e0>>, e0>);
+    STATIC_CHECK_FALSE(handles_rvalue_event_v<decltype(sink_events<>()), e0>);
+    STATIC_CHECK(handles_rvalue_event_v<decltype(sink_events<e0>()), e0>);
 
-    STATIC_CHECK_FALSE(handles_const_event_v<sink_events<type_list<>>, e0>);
-    STATIC_CHECK(handles_const_event_v<sink_events<type_list<e0>>, e0>);
+    STATIC_CHECK_FALSE(handles_const_event_v<decltype(sink_events<>()), e0>);
+    STATIC_CHECK(handles_const_event_v<decltype(sink_events<e0>()), e0>);
 }
 
 } // namespace tcspc

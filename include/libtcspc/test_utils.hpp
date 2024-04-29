@@ -37,6 +37,58 @@
 
 namespace tcspc {
 
+namespace internal {
+
+template <typename EventList> class sink_events {
+  public:
+    [[nodiscard]] auto introspect_node() const -> processor_info {
+        return processor_info(this, "sink_events");
+    }
+
+    [[nodiscard]] auto introspect_graph() const -> processor_graph {
+        return processor_graph().push_entry_point(this);
+    }
+
+    template <typename E, typename = std::enable_if_t<type_list_contains_v<
+                              EventList, internal::remove_cvref_t<E>>>>
+    void handle(E &&event) {
+        [[maybe_unused]] std::remove_reference_t<E> const e =
+            std::forward<E>(event);
+    }
+
+    void flush() {}
+};
+
+} // namespace internal
+
+/**
+ * \brief Create a processor that ignores only specific event types.
+ *
+ * \ingroup processors-testing
+ *
+ * This can be used for compile-time checks of the output event types of a
+ * processor.
+ *
+ * \tparam Events event types to accept
+ */
+template <typename... Event> auto sink_events() {
+    return internal::sink_events<type_list<Event...>>();
+}
+
+/**
+ * \brief Create a processor that ignores only specific event types.
+ *
+ * \ingroup processors-testing
+ *
+ * This can be used for compile-time checks of the output event types of a
+ * processor.
+ *
+ * \tparam EventList event types to accept
+ */
+template <typename EventList> auto sink_event_list() {
+    return internal::sink_events<EventList>();
+}
+
 /**
  * \brief Value category used to feed an event via `tcspc::feed_input`.
  *
@@ -879,40 +931,6 @@ auto feed_input(feed_as value_category, Downstream &&downstream) {
     return internal::feed_input<Downstream>(
         value_category, std::forward<Downstream>(downstream));
 }
-
-/**
- * \brief Processors that sinks only specific events.
- *
- * \ingroup processors-testing
- *
- * This can be used to check at compile time that output of the upstream
- * processor does not contain unexpected events.
- *
- * \tparam EventList event types to accept
- */
-template <typename EventList> class sink_events {
-  public:
-    /** \brief Implements processor requirement. */
-    [[nodiscard]] auto introspect_node() const -> processor_info {
-        return processor_info(this, "sink_events");
-    }
-
-    /** \brief Implements processor requirement. */
-    [[nodiscard]] auto introspect_graph() const -> processor_graph {
-        return processor_graph().push_entry_point(this);
-    }
-
-    /** \brief Implements processor requirement. */
-    template <typename E, typename = std::enable_if_t<type_list_contains_v<
-                              EventList, internal::remove_cvref_t<E>>>>
-    void handle(E &&event) {
-        [[maybe_unused]] std::remove_reference_t<E> const e =
-            std::forward<E>(event);
-    }
-
-    /** \brief Implements processor requirement. */
-    void flush() {}
-};
 
 /**
  * \brief Empty event for testing.

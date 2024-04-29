@@ -71,20 +71,18 @@ TEST_CASE("route and broadcast construct correct type") {
 TEST_CASE("route_homogeneous event types") {
     SECTION("handles flush") {
         STATIC_CHECK(handles_flush_v<decltype(route_homogeneous<type_list<>>(
-                         null_router(), sink_events<type_list<>>()))>);
+                         null_router(), sink_events<>()))>);
     }
 
     // We cannot distinguish between routed and broadcast events in SFINAE
     // context.
     SECTION("handles any event handled by downstream") {
-        STATIC_CHECK(
-            handles_event_v<decltype(route_homogeneous<type_list<>>(
-                                null_router(), sink_events<type_list<e0>>())),
-                            e0>);
-        STATIC_CHECK(
-            handles_event_v<decltype(route_homogeneous<type_list<e0>>(
-                                null_router(), sink_events<type_list<e0>>())),
-                            e0>);
+        STATIC_CHECK(handles_event_v<decltype(route_homogeneous<type_list<>>(
+                                         null_router(), sink_events<e0>())),
+                                     e0>);
+        STATIC_CHECK(handles_event_v<decltype(route_homogeneous<type_list<e0>>(
+                                         null_router(), sink_events<e0>())),
+                                     e0>);
     }
 }
 

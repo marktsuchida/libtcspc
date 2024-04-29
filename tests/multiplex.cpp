@@ -49,13 +49,12 @@ TEST_CASE("multiplex") {
 }
 
 TEST_CASE("demultiplex handled event types") {
-    demultiplex(sink_events<type_list<e0>>())
+    demultiplex(sink_events<e0>()).handle(variant_event<type_list<e0>>{e0{}});
+    demultiplex(sink_events<e0, e1>())
         .handle(variant_event<type_list<e0>>{e0{}});
-    demultiplex(sink_events<type_list<e0, e1>>())
-        .handle(variant_event<type_list<e0>>{e0{}});
-    demultiplex(sink_events<type_list<e0, e1>>())
+    demultiplex(sink_events<e0, e1>())
         .handle(variant_event<type_list<e1>>{e1{}});
-    demultiplex(sink_events<type_list<e0, e1>>())
+    demultiplex(sink_events<e0, e1>())
         .handle(variant_event<type_list<e1, e0>>{e1{}});
 }
 
