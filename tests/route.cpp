@@ -17,6 +17,7 @@
 #include "test_checkers.hpp"
 
 #include <catch2/catch_test_macros.hpp>
+#include <catch2/generators/catch_generators.hpp>
 
 #include <array>
 #include <cstddef>
@@ -106,20 +107,21 @@ TEST_CASE("introspect route", "[introspect]") {
 
 TEST_CASE("Route") {
     using out_events = type_list<tc_event, marker_event<>>;
+    auto const valcat = GENERATE(feed_as::const_lvalue, feed_as::rvalue);
     auto ctx = context::create();
-    auto in = feed_input<type_list<tc_event, marker_event<>>>(
-        route<type_list<tc_event>, type_list<marker_event<>>>(
-            channel_router(std::array{
-                std::pair{5, 0},
-                std::pair{-3, 1},
-                std::pair{-32768, 2},
-            }),
-            capture_output<out_events>(
-                ctx->tracker<capture_output_access>("out0")),
-            capture_output<out_events>(
-                ctx->tracker<capture_output_access>("out1")),
-            capture_output<out_events>(
-                ctx->tracker<capture_output_access>("out2"))));
+    auto in = feed_input(
+        valcat, route<type_list<tc_event>, type_list<marker_event<>>>(
+                    channel_router(std::array{
+                        std::pair{5, 0},
+                        std::pair{-3, 1},
+                        std::pair{-32768, 2},
+                    }),
+                    capture_output<out_events>(
+                        ctx->tracker<capture_output_access>("out0")),
+                    capture_output<out_events>(
+                        ctx->tracker<capture_output_access>("out1")),
+                    capture_output<out_events>(
+                        ctx->tracker<capture_output_access>("out2"))));
     in.require_output_checked(ctx, "out0");
     in.require_output_checked(ctx, "out1");
     in.require_output_checked(ctx, "out2");
@@ -181,12 +183,15 @@ TEST_CASE("Route") {
 }
 
 TEST_CASE("Route with heterogeneous downstreams") {
+    auto const valcat = GENERATE(feed_as::const_lvalue, feed_as::rvalue);
     auto ctx = context::create();
-    auto in = feed_input<type_list<e0>>(route<type_list<e0>, type_list<>>(
-        []([[maybe_unused]] e0 const &event) { return std::size_t(0); },
-        capture_output<type_list<e0>>(
-            ctx->tracker<capture_output_access>("out0")),
-        null_sink()));
+    auto in = feed_input(
+        valcat,
+        route<type_list<e0>, type_list<>>(
+            []([[maybe_unused]] e0 const &event) { return std::size_t(0); },
+            capture_output<type_list<e0>>(
+                ctx->tracker<capture_output_access>("out0")),
+            null_sink()));
     in.require_output_checked(ctx, "out0");
     auto out0 = capture_output_checker<type_list<e0>>(
         ctx->access<capture_output_access>("out0"));
@@ -198,14 +203,16 @@ TEST_CASE("Route with heterogeneous downstreams") {
 }
 
 TEST_CASE("Broadcast") {
+    auto const valcat = GENERATE(feed_as::const_lvalue, feed_as::rvalue);
     auto ctx = context::create();
-    auto in = feed_input<type_list<e0>>(broadcast<type_list<e0>>(
-        capture_output<type_list<e0>>(
-            ctx->tracker<capture_output_access>("out0")),
-        capture_output<type_list<e0>>(
-            ctx->tracker<capture_output_access>("out1")),
-        capture_output<type_list<e0>>(
-            ctx->tracker<capture_output_access>("out2"))));
+    auto in = feed_input(
+        valcat, broadcast<type_list<e0>>(
+                    capture_output<type_list<e0>>(
+                        ctx->tracker<capture_output_access>("out0")),
+                    capture_output<type_list<e0>>(
+                        ctx->tracker<capture_output_access>("out1")),
+                    capture_output<type_list<e0>>(
+                        ctx->tracker<capture_output_access>("out2"))));
     in.require_output_checked(ctx, "out0");
     in.require_output_checked(ctx, "out1");
     in.require_output_checked(ctx, "out2");

@@ -15,6 +15,7 @@
 #include "test_checkers.hpp"
 
 #include <catch2/catch_test_macros.hpp>
+#include <catch2/generators/catch_generators.hpp>
 
 #include <array>
 #include <cstddef>
@@ -46,12 +47,13 @@ TEST_CASE("introspect batch_from_bytes, unbatch_from_bytes", "[introspect]") {
 }
 
 TEST_CASE("batch_from_bytes") {
+    auto const valcat = GENERATE(feed_as::const_lvalue, feed_as::rvalue);
     auto ctx = context::create();
-    auto in =
-        feed_input<type_list<span<std::byte const>>>(batch_from_bytes<int>(
-            new_delete_bucket_source<int>::create(),
-            capture_output<type_list<bucket<int>>>(
-                ctx->tracker<capture_output_access>("out"))));
+    auto in = feed_input(valcat,
+                         batch_from_bytes<int>(
+                             new_delete_bucket_source<int>::create(),
+                             capture_output<type_list<bucket<int>>>(
+                                 ctx->tracker<capture_output_access>("out"))));
     in.require_output_checked(ctx, "out");
     auto out = capture_output_checker<type_list<bucket<int>>>(
         ctx->access<capture_output_access>("out"));
@@ -100,10 +102,11 @@ TEST_CASE("batch_from_bytes") {
 }
 
 TEST_CASE("unbatch_from_bytes") {
+    auto const valcat = GENERATE(feed_as::const_lvalue, feed_as::rvalue);
     auto ctx = context::create();
-    auto in = feed_input<type_list<span<std::byte const>>>(
-        unbatch_from_bytes<int>(capture_output<type_list<int>>(
-            ctx->tracker<capture_output_access>("out"))));
+    auto in = feed_input(
+        valcat, unbatch_from_bytes<int>(capture_output<type_list<int>>(
+                    ctx->tracker<capture_output_access>("out"))));
     in.require_output_checked(ctx, "out");
     auto out = capture_output_checker<type_list<int>>(
         ctx->access<capture_output_access>("out"));

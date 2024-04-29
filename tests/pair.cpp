@@ -16,6 +16,7 @@
 #include "test_checkers.hpp"
 
 #include <catch2/catch_test_macros.hpp>
+#include <catch2/generators/catch_generators.hpp>
 
 #include <array>
 #include <memory>
@@ -41,13 +42,14 @@ TEST_CASE("introspect pair", "[introspect]") {
 }
 
 TEST_CASE("pair all") {
+    auto const valcat = GENERATE(feed_as::const_lvalue, feed_as::rvalue);
     auto ctx = context::create();
-    auto in = feed_input<type_list<detection_event<>>>(
-        pair_all(arg::start_channel{0},
-                 std::array<default_data_types::channel_type, 1>{1},
-                 arg::time_window<i64>{2},
-                 capture_output<out_events>(
-                     ctx->tracker<capture_output_access>("out"))));
+    auto in = feed_input(
+        valcat, pair_all(arg::start_channel{0},
+                         std::array<default_data_types::channel_type, 1>{1},
+                         arg::time_window<i64>{2},
+                         capture_output<out_events>(
+                             ctx->tracker<capture_output_access>("out"))));
     in.require_output_checked(ctx, "out");
     auto out = capture_output_checker<out_events>(
         ctx->access<capture_output_access>("out"));
@@ -116,13 +118,14 @@ TEST_CASE("pair all") {
 }
 
 TEST_CASE("pair all with self") {
+    auto const valcat = GENERATE(feed_as::const_lvalue, feed_as::rvalue);
     auto ctx = context::create();
-    auto in = feed_input<type_list<detection_event<>>>(
-        pair_all(arg::start_channel{0},
-                 std::array<default_data_types::channel_type, 1>{0},
-                 arg::time_window<i64>{2},
-                 capture_output<out_events>(
-                     ctx->tracker<capture_output_access>("out"))));
+    auto in = feed_input(
+        valcat, pair_all(arg::start_channel{0},
+                         std::array<default_data_types::channel_type, 1>{0},
+                         arg::time_window<i64>{2},
+                         capture_output<out_events>(
+                             ctx->tracker<capture_output_access>("out"))));
     in.require_output_checked(ctx, "out");
     auto out = capture_output_checker<out_events>(
         ctx->access<capture_output_access>("out"));
@@ -149,13 +152,14 @@ TEST_CASE("pair all with self") {
 }
 
 TEST_CASE("pair one") {
+    auto const valcat = GENERATE(feed_as::const_lvalue, feed_as::rvalue);
     auto ctx = context::create();
-    auto in = feed_input<type_list<detection_event<>>>(
-        pair_one(arg::start_channel{0},
-                 std::array<default_data_types::channel_type, 1>{1},
-                 arg::time_window<i64>{2},
-                 capture_output<out_events>(
-                     ctx->tracker<capture_output_access>("out"))));
+    auto in = feed_input(
+        valcat, pair_one(arg::start_channel{0},
+                         std::array<default_data_types::channel_type, 1>{1},
+                         arg::time_window<i64>{2},
+                         capture_output<out_events>(
+                             ctx->tracker<capture_output_access>("out"))));
     in.require_output_checked(ctx, "out");
     auto out = capture_output_checker<out_events>(
         ctx->access<capture_output_access>("out"));
@@ -218,13 +222,14 @@ TEST_CASE("pair one") {
 }
 
 TEST_CASE("pair one with self") {
+    auto const valcat = GENERATE(feed_as::const_lvalue, feed_as::rvalue);
     auto ctx = context::create();
-    auto in = feed_input<type_list<detection_event<>>>(
-        pair_one(arg::start_channel{0},
-                 std::array<default_data_types::channel_type, 1>{0},
-                 arg::time_window<i64>{2},
-                 capture_output<out_events>(
-                     ctx->tracker<capture_output_access>("out"))));
+    auto in = feed_input(
+        valcat, pair_one(arg::start_channel{0},
+                         std::array<default_data_types::channel_type, 1>{0},
+                         arg::time_window<i64>{2},
+                         capture_output<out_events>(
+                             ctx->tracker<capture_output_access>("out"))));
     in.require_output_checked(ctx, "out");
     auto out = capture_output_checker<out_events>(
         ctx->access<capture_output_access>("out"));
@@ -249,8 +254,10 @@ TEST_CASE("pair one with self") {
 }
 
 TEST_CASE("pair all between") {
+    auto const valcat = GENERATE(feed_as::const_lvalue, feed_as::rvalue);
     auto ctx = context::create();
-    auto in = feed_input<type_list<detection_event<>>>(
+    auto in = feed_input(
+        valcat,
         pair_all_between(arg::start_channel{0},
                          std::array<default_data_types::channel_type, 1>{1},
                          arg::time_window<i64>{2},
@@ -320,8 +327,10 @@ TEST_CASE("pair all between") {
 }
 
 TEST_CASE("pair all between with self") {
+    auto const valcat = GENERATE(feed_as::const_lvalue, feed_as::rvalue);
     auto ctx = context::create();
-    auto in = feed_input<type_list<detection_event<>>>(
+    auto in = feed_input(
+        valcat,
         pair_all_between(arg::start_channel{0},
                          std::array<default_data_types::channel_type, 1>{0},
                          arg::time_window<i64>{2},
@@ -351,8 +360,10 @@ TEST_CASE("pair all between with self") {
 }
 
 TEST_CASE("pair one between") {
+    auto const valcat = GENERATE(feed_as::const_lvalue, feed_as::rvalue);
     auto ctx = context::create();
-    auto in = feed_input<type_list<detection_event<>>>(
+    auto in = feed_input(
+        valcat,
         pair_one_between(arg::start_channel{0},
                          std::array<default_data_types::channel_type, 1>{1},
                          arg::time_window<i64>{2},
@@ -420,8 +431,10 @@ TEST_CASE("pair one between") {
 }
 
 TEST_CASE("pair one between with self") {
+    auto const valcat = GENERATE(feed_as::const_lvalue, feed_as::rvalue);
     auto ctx = context::create();
-    auto in = feed_input<type_list<detection_event<>>>(
+    auto in = feed_input(
+        valcat,
         pair_one_between(arg::start_channel{0},
                          std::array<default_data_types::channel_type, 1>{0},
                          arg::time_window<i64>{2},

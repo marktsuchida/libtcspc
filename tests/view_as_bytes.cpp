@@ -15,6 +15,7 @@
 #include "test_checkers.hpp"
 
 #include <catch2/catch_test_macros.hpp>
+#include <catch2/generators/catch_generators.hpp>
 
 #include <cstddef>
 #include <memory>
@@ -39,10 +40,11 @@ TEST_CASE("introspect view_as_bytes", "[introspect]") {
 }
 
 TEST_CASE("view as bytes") {
+    auto const valcat = GENERATE(feed_as::const_lvalue, feed_as::rvalue);
     auto ctx = context::create();
     auto in =
-        feed_input<type_list<int>>(view_as_bytes(capture_output<out_events>(
-            ctx->tracker<capture_output_access>("out"))));
+        feed_input(valcat, view_as_bytes(capture_output<out_events>(
+                               ctx->tracker<capture_output_access>("out"))));
     in.require_output_checked(ctx, "out");
     auto out = capture_output_checker<out_events>(
         ctx->access<capture_output_access>("out"));
@@ -55,10 +57,11 @@ TEST_CASE("view as bytes") {
 }
 
 TEST_CASE("view as bytes, bucket input") {
+    auto const valcat = GENERATE(feed_as::const_lvalue, feed_as::rvalue);
     auto ctx = context::create();
-    auto in = feed_input<type_list<bucket<int const>>>(
-        view_as_bytes(capture_output<out_events>(
-            ctx->tracker<capture_output_access>("out"))));
+    auto in =
+        feed_input(valcat, view_as_bytes(capture_output<out_events>(
+                               ctx->tracker<capture_output_access>("out"))));
     in.require_output_checked(ctx, "out");
     auto out = capture_output_checker<out_events>(
         ctx->access<capture_output_access>("out"));

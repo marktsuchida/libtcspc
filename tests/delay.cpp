@@ -15,6 +15,7 @@
 #include "test_checkers.hpp"
 
 #include <catch2/catch_test_macros.hpp>
+#include <catch2/generators/catch_generators.hpp>
 
 #include <limits>
 #include <memory>
@@ -35,13 +36,14 @@ using out_events = type_list<e0, e1>;
 } // namespace
 
 TEST_CASE("Delay") {
+    auto const valcat = GENERATE(feed_as::const_lvalue, feed_as::rvalue);
     auto ctx = context::create();
 
     SECTION("Zero delay is noop") {
-        auto in = feed_input<type_list<e0>>(
-            delay(arg::delta<i64>{0},
-                  capture_output<out_events>(
-                      ctx->tracker<capture_output_access>("out"))));
+        auto in = feed_input(
+            valcat, delay(arg::delta<i64>{0},
+                          capture_output<out_events>(
+                              ctx->tracker<capture_output_access>("out"))));
         in.require_output_checked(ctx, "out");
         auto out = capture_output_checker<out_events>(
             ctx->access<capture_output_access>("out"));
@@ -53,10 +55,10 @@ TEST_CASE("Delay") {
     }
 
     SECTION("Delay +1") {
-        auto in = feed_input<type_list<e0, e1>>(
-            delay(arg::delta<i64>{1},
-                  capture_output<out_events>(
-                      ctx->tracker<capture_output_access>("out"))));
+        auto in = feed_input(
+            valcat, delay(arg::delta<i64>{1},
+                          capture_output<out_events>(
+                              ctx->tracker<capture_output_access>("out"))));
         in.require_output_checked(ctx, "out");
         auto out = capture_output_checker<out_events>(
             ctx->access<capture_output_access>("out"));
@@ -70,10 +72,10 @@ TEST_CASE("Delay") {
     }
 
     SECTION("Delay -1") {
-        auto in = feed_input<type_list<e0, e1>>(
-            delay(arg::delta<i64>{-1},
-                  capture_output<out_events>(
-                      ctx->tracker<capture_output_access>("out"))));
+        auto in = feed_input(
+            valcat, delay(arg::delta<i64>{-1},
+                          capture_output<out_events>(
+                              ctx->tracker<capture_output_access>("out"))));
         in.require_output_checked(ctx, "out");
         auto out = capture_output_checker<out_events>(
             ctx->access<capture_output_access>("out"));
@@ -88,10 +90,11 @@ TEST_CASE("Delay") {
 }
 
 TEST_CASE("zero-base abstime") {
+    auto const valcat = GENERATE(feed_as::const_lvalue, feed_as::rvalue);
     auto ctx = context::create();
-    auto in = feed_input<type_list<e0, e1>>(
-        zero_base_abstime(capture_output<out_events>(
-            ctx->tracker<capture_output_access>("out"))));
+    auto in =
+        feed_input(valcat, zero_base_abstime(capture_output<out_events>(
+                               ctx->tracker<capture_output_access>("out"))));
     in.require_output_checked(ctx, "out");
     auto out = capture_output_checker<out_events>(
         ctx->access<capture_output_access>("out"));

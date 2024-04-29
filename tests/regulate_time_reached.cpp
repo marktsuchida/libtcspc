@@ -16,6 +16,7 @@
 #include "test_checkers.hpp"
 
 #include <catch2/catch_test_macros.hpp>
+#include <catch2/generators/catch_generators.hpp>
 
 #include <cstddef>
 #include <limits>
@@ -38,11 +39,15 @@ TEST_CASE("introspect regulate_time_reached", "[introspect]") {
 }
 
 TEST_CASE("regulate time reached by abstime") {
+    auto const valcat = GENERATE(feed_as::const_lvalue, feed_as::rvalue);
     auto ctx = context::create();
-    auto in = feed_input<events>(regulate_time_reached(
-        arg::interval_threshold<i64>{10},
-        arg::count_threshold{std::numeric_limits<std::size_t>::max()},
-        capture_output<events>(ctx->tracker<capture_output_access>("out"))));
+    auto in = feed_input(
+        valcat,
+        regulate_time_reached(
+            arg::interval_threshold<i64>{10},
+            arg::count_threshold{std::numeric_limits<std::size_t>::max()},
+            capture_output<events>(
+                ctx->tracker<capture_output_access>("out"))));
     in.require_output_checked(ctx, "out");
     auto out = capture_output_checker<events>(
         ctx->access<capture_output_access>("out"));
@@ -107,11 +112,15 @@ TEST_CASE("regulate time reached by abstime") {
 }
 
 TEST_CASE("regulate time reached by count") {
+    auto const valcat = GENERATE(feed_as::const_lvalue, feed_as::rvalue);
     auto ctx = context::create();
-    auto in = feed_input<events>(regulate_time_reached(
-        arg::interval_threshold{std::numeric_limits<abstime_type>::max()},
-        arg::count_threshold<std::size_t>{2},
-        capture_output<events>(ctx->tracker<capture_output_access>("out"))));
+    auto in = feed_input(
+        valcat,
+        regulate_time_reached(
+            arg::interval_threshold{std::numeric_limits<abstime_type>::max()},
+            arg::count_threshold<std::size_t>{2},
+            capture_output<events>(
+                ctx->tracker<capture_output_access>("out"))));
     in.require_output_checked(ctx, "out");
     auto out = capture_output_checker<events>(
         ctx->access<capture_output_access>("out"));
@@ -175,11 +184,15 @@ TEST_CASE("regulate time reached by count") {
 
 TEST_CASE("regulate time reached, zero count threshold",
           "[regulate_time_reached]") {
+    auto const valcat = GENERATE(feed_as::const_lvalue, feed_as::rvalue);
     auto ctx = context::create();
-    auto in = feed_input<events>(regulate_time_reached(
-        arg::interval_threshold{std::numeric_limits<abstime_type>::max()},
-        arg::count_threshold<std::size_t>{0},
-        capture_output<events>(ctx->tracker<capture_output_access>("out"))));
+    auto in = feed_input(
+        valcat,
+        regulate_time_reached(
+            arg::interval_threshold{std::numeric_limits<abstime_type>::max()},
+            arg::count_threshold<std::size_t>{0},
+            capture_output<events>(
+                ctx->tracker<capture_output_access>("out"))));
     in.require_output_checked(ctx, "out");
     auto out = capture_output_checker<events>(
         ctx->access<capture_output_access>("out"));

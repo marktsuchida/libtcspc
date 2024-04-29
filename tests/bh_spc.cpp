@@ -668,10 +668,11 @@ TEST_CASE("introspect bh_spc", "[introspect]") {
 }
 
 TEST_CASE("decode bh spc") {
+    auto const valcat = GENERATE(feed_as::const_lvalue, feed_as::rvalue);
     auto ctx = context::create();
-    auto in = feed_input<type_list<bh_spc_event>>(
-        decode_bh_spc(capture_output<out_events>(
-            ctx->tracker<capture_output_access>("out"))));
+    auto in =
+        feed_input(valcat, decode_bh_spc(capture_output<out_events>(
+                               ctx->tracker<capture_output_access>("out"))));
     in.require_output_checked(ctx, "out");
     auto out = capture_output_checker<out_events>(
         ctx->access<capture_output_access>("out"));
@@ -782,11 +783,12 @@ TEST_CASE("decode bh spc") {
 
 TEST_CASE("decode bh spc with fast intensity counter",
           "[decode_bh_spc_with_intensity_counter]") {
+    auto const valcat = GENERATE(feed_as::const_lvalue, feed_as::rvalue);
     auto ctx = context::create();
-    auto in = feed_input<type_list<bh_spc_event>>(
-        decode_bh_spc_with_intensity_counter(
-            capture_output<out_events_with_counter>(
-                ctx->tracker<capture_output_access>("out"))));
+    auto in = feed_input(valcat,
+                         decode_bh_spc_with_intensity_counter(
+                             capture_output<out_events_with_counter>(
+                                 ctx->tracker<capture_output_access>("out"))));
     in.require_output_checked(ctx, "out");
     auto out = capture_output_checker<out_events_with_counter>(
         ctx->access<capture_output_access>("out"));
@@ -836,10 +838,11 @@ TEST_CASE("decode bh spc with fast intensity counter",
 }
 
 TEST_CASE("decode bh spc600 256ch") {
+    auto const valcat = GENERATE(feed_as::const_lvalue, feed_as::rvalue);
     auto ctx = context::create();
-    auto in = feed_input<type_list<bh_spc600_256ch_event>>(
-        decode_bh_spc600_256ch(capture_output<out_events>(
-            ctx->tracker<capture_output_access>("out"))));
+    auto in =
+        feed_input(valcat, decode_bh_spc600_256ch(capture_output<out_events>(
+                               ctx->tracker<capture_output_access>("out"))));
     in.require_output_checked(ctx, "out");
     auto out = capture_output_checker<out_events>(
         ctx->access<capture_output_access>("out"));
@@ -916,10 +919,11 @@ TEST_CASE("decode bh spc600 256ch") {
 }
 
 TEST_CASE("decode bh spc600 4096ch") {
+    auto const valcat = GENERATE(feed_as::const_lvalue, feed_as::rvalue);
     auto ctx = context::create();
-    auto in = feed_input<type_list<bh_spc600_4096ch_event>>(
-        decode_bh_spc600_4096ch(capture_output<out_events>(
-            ctx->tracker<capture_output_access>("out"))));
+    auto in =
+        feed_input(valcat, decode_bh_spc600_4096ch(capture_output<out_events>(
+                               ctx->tracker<capture_output_access>("out"))));
     in.require_output_checked(ctx, "out");
     auto out = capture_output_checker<out_events>(
         ctx->access<capture_output_access>("out"));

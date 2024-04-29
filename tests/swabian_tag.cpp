@@ -17,6 +17,7 @@
 #include "test_checkers.hpp"
 
 #include <catch2/catch_test_macros.hpp>
+#include <catch2/generators/catch_generators.hpp>
 #include <catch2/matchers/catch_matchers_string.hpp>
 
 #include <algorithm>
@@ -154,10 +155,11 @@ TEST_CASE("decode swabian tags") {
         type_list<detection_event<>, begin_lost_interval_event<>,
                   end_lost_interval_event<>, lost_counts_event<>,
                   warning_event>;
+    auto const valcat = GENERATE(feed_as::const_lvalue, feed_as::rvalue);
     auto ctx = context::create();
-    auto in = feed_input<type_list<swabian_tag_event>>(
-        decode_swabian_tags(capture_output<out_events>(
-            ctx->tracker<capture_output_access>("out"))));
+    auto in =
+        feed_input(valcat, decode_swabian_tags(capture_output<out_events>(
+                               ctx->tracker<capture_output_access>("out"))));
     in.require_output_checked(ctx, "out");
     auto out = capture_output_checker<out_events>(
         ctx->access<capture_output_access>("out"));

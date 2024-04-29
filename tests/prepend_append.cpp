@@ -13,6 +13,7 @@
 #include "test_checkers.hpp"
 
 #include <catch2/catch_test_macros.hpp>
+#include <catch2/generators/catch_generators.hpp>
 
 namespace tcspc {
 
@@ -22,8 +23,10 @@ TEST_CASE("introspect prepend/append", "[introspect]") {
 }
 
 TEST_CASE("prepend") {
+    auto const valcat = GENERATE(feed_as::const_lvalue, feed_as::rvalue);
     auto ctx = context::create();
-    auto in = feed_input<type_list<double>>(
+    auto in = feed_input(
+        valcat,
         prepend<int>(42, capture_output<type_list<int, double>>(
                              ctx->tracker<capture_output_access>("out"))));
     in.require_output_checked(ctx, "out");
@@ -40,8 +43,10 @@ TEST_CASE("prepend") {
 }
 
 TEST_CASE("append") {
+    auto const valcat = GENERATE(feed_as::const_lvalue, feed_as::rvalue);
     auto ctx = context::create();
-    auto in = feed_input<type_list<double>>(
+    auto in = feed_input(
+        valcat,
         append<int>(42, capture_output<type_list<int, double>>(
                             ctx->tracker<capture_output_access>("out"))));
     in.require_output_checked(ctx, "out");

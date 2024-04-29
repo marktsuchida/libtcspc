@@ -15,6 +15,7 @@
 #include "test_checkers.hpp"
 
 #include <catch2/catch_test_macros.hpp>
+#include <catch2/generators/catch_generators.hpp>
 
 #include <memory>
 
@@ -36,12 +37,13 @@ TEST_CASE("introspect match", "[introspect]") {
 }
 
 TEST_CASE("Match and replace") {
+    auto const valcat = GENERATE(feed_as::const_lvalue, feed_as::rvalue);
     auto ctx = context::create();
-    auto in = feed_input<type_list<marker_event<>, misc_event>>(
-        match_replace<marker_event<>, output_event>(
-            channel_matcher(arg::channel{0}),
-            capture_output<out_events>(
-                ctx->tracker<capture_output_access>("out"))));
+    auto in = feed_input(valcat,
+                         match_replace<marker_event<>, output_event>(
+                             channel_matcher(arg::channel{0}),
+                             capture_output<out_events>(
+                                 ctx->tracker<capture_output_access>("out"))));
     in.require_output_checked(ctx, "out");
     auto out = capture_output_checker<out_events>(
         ctx->access<capture_output_access>("out"));
@@ -57,12 +59,13 @@ TEST_CASE("Match and replace") {
 }
 
 TEST_CASE("Match") {
+    auto const valcat = GENERATE(feed_as::const_lvalue, feed_as::rvalue);
     auto ctx = context::create();
-    auto in = feed_input<type_list<marker_event<>, misc_event>>(
-        match<marker_event<>, output_event>(
-            channel_matcher(arg::channel{0}),
-            capture_output<out_events>(
-                ctx->tracker<capture_output_access>("out"))));
+    auto in = feed_input(valcat,
+                         match<marker_event<>, output_event>(
+                             channel_matcher(arg::channel{0}),
+                             capture_output<out_events>(
+                                 ctx->tracker<capture_output_access>("out"))));
     in.require_output_checked(ctx, "out");
     auto out = capture_output_checker<out_events>(
         ctx->access<capture_output_access>("out"));

@@ -26,7 +26,8 @@ TEST_CASE("introspect test_utils", "[introspect]") {
         ctx->tracker<capture_output_access>("out0")));
     check_introspect_simple_sink(capture_output<type_list<int>>(
         ctx->tracker<capture_output_access>("out1")));
-    check_introspect_simple_processor(feed_input<type_list<>>(null_sink()));
+    check_introspect_simple_processor(
+        feed_input(feed_as::const_lvalue, null_sink()));
     check_introspect_simple_sink(sink_events<type_list<>>());
 }
 
@@ -38,10 +39,11 @@ using e1 = time_tagged_test_event<1>;
 } // namespace
 
 TEST_CASE("Short-circuited with no events") {
+    auto const valcat = GENERATE(feed_as::const_lvalue, feed_as::rvalue);
     auto ctx = context::create();
-    auto in = feed_input(feed_as::const_lvalue,
-                         capture_output<type_list<>>(
-                             ctx->tracker<capture_output_access>("out")));
+    auto in =
+        feed_input(valcat, capture_output<type_list<>>(
+                               ctx->tracker<capture_output_access>("out")));
     in.require_output_checked(ctx, "out");
     auto out = capture_output_checker<type_list<>>(
         ctx->access<capture_output_access>("out"));
@@ -55,10 +57,11 @@ TEST_CASE("Short-circuited with no events") {
 }
 
 TEST_CASE("Short-circuited with event set") {
+    auto const valcat = GENERATE(feed_as::const_lvalue, feed_as::rvalue);
     auto ctx = context::create();
-    auto in = feed_input(GENERATE(feed_as::const_lvalue, feed_as::rvalue),
-                         capture_output<type_list<e0, e1>>(
-                             ctx->tracker<capture_output_access>("out")));
+    auto in =
+        feed_input(valcat, capture_output<type_list<e0, e1>>(
+                               ctx->tracker<capture_output_access>("out")));
     in.require_output_checked(ctx, "out");
     auto out = capture_output_checker<type_list<e0, e1>>(
         ctx->access<capture_output_access>("out"));

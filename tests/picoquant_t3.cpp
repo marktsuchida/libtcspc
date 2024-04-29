@@ -17,6 +17,7 @@
 
 #include <catch2/catch_template_test_macros.hpp>
 #include <catch2/catch_test_macros.hpp>
+#include <catch2/generators/catch_generators.hpp>
 
 #include <array>
 #include <memory>
@@ -388,10 +389,11 @@ TEST_CASE("introspect picoquant_t3", "[introspect]") {
 }
 
 TEST_CASE("decode pqt3 picoharp300") {
+    auto const valcat = GENERATE(feed_as::const_lvalue, feed_as::rvalue);
     auto ctx = context::create();
-    auto in = feed_input<type_list<pqt3_picoharp300_event>>(
-        decode_pqt3_picoharp300(capture_output<out_events>(
-            ctx->tracker<capture_output_access>("out"))));
+    auto in =
+        feed_input(valcat, decode_pqt3_picoharp300(capture_output<out_events>(
+                               ctx->tracker<capture_output_access>("out"))));
     in.require_output_checked(ctx, "out");
     auto out = capture_output_checker<out_events>(
         ctx->access<capture_output_access>("out"));
@@ -424,10 +426,11 @@ TEST_CASE("decode pqt3 picoharp300") {
 }
 
 TEST_CASE("decode pqt3 hydraharpv1") {
+    auto const valcat = GENERATE(feed_as::const_lvalue, feed_as::rvalue);
     auto ctx = context::create();
-    auto in = feed_input<type_list<pqt3_hydraharpv1_event>>(
-        decode_pqt3_hydraharpv1(capture_output<out_events>(
-            ctx->tracker<capture_output_access>("out"))));
+    auto in =
+        feed_input(valcat, decode_pqt3_hydraharpv1(capture_output<out_events>(
+                               ctx->tracker<capture_output_access>("out"))));
     in.require_output_checked(ctx, "out");
     auto out = capture_output_checker<out_events>(
         ctx->access<capture_output_access>("out"));
@@ -460,10 +463,11 @@ TEST_CASE("decode pqt3 hydraharpv1") {
 }
 
 TEST_CASE("decode pqt3 generic") {
+    auto const valcat = GENERATE(feed_as::const_lvalue, feed_as::rvalue);
     auto ctx = context::create();
-    auto in = feed_input<type_list<pqt3_generic_event>>(
-        decode_pqt3_generic(capture_output<out_events>(
-            ctx->tracker<capture_output_access>("out"))));
+    auto in =
+        feed_input(valcat, decode_pqt3_generic(capture_output<out_events>(
+                               ctx->tracker<capture_output_access>("out"))));
     in.require_output_checked(ctx, "out");
     auto out = capture_output_checker<out_events>(
         ctx->access<capture_output_access>("out"));

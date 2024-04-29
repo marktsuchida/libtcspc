@@ -37,12 +37,13 @@ TEST_CASE("introspect generate", "[introspect]") {
 }
 
 TEST_CASE("Generate null timing") {
+    auto const valcat = GENERATE(feed_as::const_lvalue, feed_as::rvalue);
     auto ctx = context::create();
-    auto in = feed_input<type_list<trigger_event>>(
-        generate<trigger_event, output_event>(
-            null_timing_generator(),
-            capture_output<out_events>(
-                ctx->tracker<capture_output_access>("out"))));
+    auto in = feed_input(valcat,
+                         generate<trigger_event, output_event>(
+                             null_timing_generator(),
+                             capture_output<out_events>(
+                                 ctx->tracker<capture_output_access>("out"))));
     in.require_output_checked(ctx, "out");
     auto out = capture_output_checker<out_events>(
         ctx->access<capture_output_access>("out"));
@@ -57,13 +58,14 @@ TEST_CASE("Generate null timing") {
 
 TEST_CASE("Generate one-shot timing",
           "[generate][one_shot_timing_generator]") {
+    auto const valcat = GENERATE(feed_as::const_lvalue, feed_as::rvalue);
     default_data_types::abstime_type const delay = GENERATE(0, 1, 2);
     auto ctx = context::create();
-    auto in = feed_input<type_list<trigger_event, misc_event>>(
-        generate<trigger_event, output_event>(
-            one_shot_timing_generator(arg::delay{delay}),
-            capture_output<out_events>(
-                ctx->tracker<capture_output_access>("out"))));
+    auto in = feed_input(valcat,
+                         generate<trigger_event, output_event>(
+                             one_shot_timing_generator(arg::delay{delay}),
+                             capture_output<out_events>(
+                                 ctx->tracker<capture_output_access>("out"))));
     in.require_output_checked(ctx, "out");
     auto out = capture_output_checker<out_events>(
         ctx->access<capture_output_access>("out"));
@@ -110,16 +112,17 @@ TEST_CASE("Generate linear timing") {
     default_data_types::abstime_type const delay = GENERATE(0, 1, 2);
     default_data_types::abstime_type const interval = GENERATE(1, 2);
 
+    auto const valcat = GENERATE(feed_as::const_lvalue, feed_as::rvalue);
     auto ctx = context::create();
 
     SECTION("Count of 0") {
-        auto in = feed_input<type_list<trigger_event>>(
-            generate<trigger_event, output_event>(
-                linear_timing_generator(arg::delay{delay},
-                                        arg::interval{interval},
-                                        arg::count<std::size_t>{0}),
-                capture_output<out_events>(
-                    ctx->tracker<capture_output_access>("out"))));
+        auto in = feed_input(
+            valcat, generate<trigger_event, output_event>(
+                        linear_timing_generator(arg::delay{delay},
+                                                arg::interval{interval},
+                                                arg::count<std::size_t>{0}),
+                        capture_output<out_events>(
+                            ctx->tracker<capture_output_access>("out"))));
         in.require_output_checked(ctx, "out");
         auto out = capture_output_checker<out_events>(
             ctx->access<capture_output_access>("out"));
@@ -133,13 +136,13 @@ TEST_CASE("Generate linear timing") {
     }
 
     SECTION("Count of 1") {
-        auto in = feed_input<type_list<trigger_event, misc_event>>(
-            generate<trigger_event, output_event>(
-                linear_timing_generator(arg::delay{delay},
-                                        arg::interval{interval},
-                                        arg::count<std::size_t>{1}),
-                capture_output<out_events>(
-                    ctx->tracker<capture_output_access>("out"))));
+        auto in = feed_input(
+            valcat, generate<trigger_event, output_event>(
+                        linear_timing_generator(arg::delay{delay},
+                                                arg::interval{interval},
+                                                arg::count<std::size_t>{1}),
+                        capture_output<out_events>(
+                            ctx->tracker<capture_output_access>("out"))));
         in.require_output_checked(ctx, "out");
         auto out = capture_output_checker<out_events>(
             ctx->access<capture_output_access>("out"));
@@ -168,13 +171,13 @@ TEST_CASE("Generate linear timing") {
     }
 
     SECTION("Count of 2") {
-        auto in = feed_input<type_list<trigger_event, misc_event>>(
-            generate<trigger_event, output_event>(
-                linear_timing_generator(arg::delay{delay},
-                                        arg::interval{interval},
-                                        arg::count<std::size_t>{2}),
-                capture_output<out_events>(
-                    ctx->tracker<capture_output_access>("out"))));
+        auto in = feed_input(
+            valcat, generate<trigger_event, output_event>(
+                        linear_timing_generator(arg::delay{delay},
+                                                arg::interval{interval},
+                                                arg::count<std::size_t>{2}),
+                        capture_output<out_events>(
+                            ctx->tracker<capture_output_access>("out"))));
         in.require_output_checked(ctx, "out");
         auto out = capture_output_checker<out_events>(
             ctx->access<capture_output_access>("out"));

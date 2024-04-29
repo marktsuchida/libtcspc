@@ -16,6 +16,7 @@
 #include "test_checkers.hpp"
 
 #include <catch2/catch_test_macros.hpp>
+#include <catch2/generators/catch_generators.hpp>
 #include <catch2/matchers/catch_matchers_floating_point.hpp>
 
 #include <cmath>
@@ -64,12 +65,14 @@ TEST_CASE("periodic fitter") {
 
 TEST_CASE("fit periodic sequences") {
     using e0 = time_tagged_test_event<0>;
+    auto const valcat = GENERATE(feed_as::const_lvalue, feed_as::rvalue);
     auto ctx = context::create();
-    auto in = feed_input<type_list<e0>>(fit_periodic_sequences<e0>(
-        arg::length<std::size_t>{4}, arg::min_interval{1.0},
-        arg::max_interval{2.0}, arg::max_mse{2.5},
-        capture_output<type_list<periodic_sequence_model_event<>>>(
-            ctx->tracker<capture_output_access>("out"))));
+    auto in = feed_input(
+        valcat, fit_periodic_sequences<e0>(
+                    arg::length<std::size_t>{4}, arg::min_interval{1.0},
+                    arg::max_interval{2.0}, arg::max_mse{2.5},
+                    capture_output<type_list<periodic_sequence_model_event<>>>(
+                        ctx->tracker<capture_output_access>("out"))));
     in.require_output_checked(ctx, "out");
     auto out =
         capture_output_checker<type_list<periodic_sequence_model_event<>>>(

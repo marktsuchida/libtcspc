@@ -13,6 +13,7 @@
 #include "test_checkers.hpp"
 
 #include <catch2/catch_test_macros.hpp>
+#include <catch2/generators/catch_generators.hpp>
 
 #include <memory>
 #include <string>
@@ -28,10 +29,11 @@ TEST_CASE("introspect check", "[introspect]") {
 TEST_CASE("check monotonic") {
     using e0 = time_tagged_test_event<0>;
     using out_events = type_list<e0, warning_event>;
+    auto const valcat = GENERATE(feed_as::const_lvalue, feed_as::rvalue);
     auto ctx = context::create();
-    auto in = feed_input<type_list<e0, warning_event>>(
-        check_monotonic(capture_output<out_events>(
-            ctx->tracker<capture_output_access>("out"))));
+    auto in =
+        feed_input(valcat, check_monotonic(capture_output<out_events>(
+                               ctx->tracker<capture_output_access>("out"))));
     in.require_output_checked(ctx, "out");
     auto out = capture_output_checker<out_events>(
         ctx->access<capture_output_access>("out"));
@@ -55,10 +57,11 @@ TEST_CASE("check alternating") {
     using e1 = time_tagged_test_event<1>;
     using e2 = time_tagged_test_event<2>;
     using out_events = type_list<e0, e1, e2, warning_event>;
+    auto const valcat = GENERATE(feed_as::const_lvalue, feed_as::rvalue);
     auto ctx = context::create();
-    auto in = feed_input<type_list<e0, e1, e2>>(
-        check_alternating<e0, e1>(capture_output<out_events>(
-            ctx->tracker<capture_output_access>("out"))));
+    auto in = feed_input(valcat,
+                         check_alternating<e0, e1>(capture_output<out_events>(
+                             ctx->tracker<capture_output_access>("out"))));
     in.require_output_checked(ctx, "out");
     auto out = capture_output_checker<out_events>(
         ctx->access<capture_output_access>("out"));

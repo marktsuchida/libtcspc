@@ -15,6 +15,7 @@
 #include "test_checkers.hpp"
 
 #include <catch2/catch_test_macros.hpp>
+#include <catch2/generators/catch_generators.hpp>
 
 #include <array>
 #include <cstdint>
@@ -39,10 +40,11 @@ TEST_CASE("introspect time_correlate", "[introspect]") {
 }
 
 TEST_CASE("time correlate at start") {
+    auto const valcat = GENERATE(feed_as::const_lvalue, feed_as::rvalue);
     auto ctx = context::create();
-    auto in = feed_input<type_list<std::array<detection_event<>, 2>>>(
-        time_correlate_at_start<>(capture_output<tc_out_events>(
-            ctx->tracker<capture_output_access>("out"))));
+    auto in = feed_input(
+        valcat, time_correlate_at_start<>(capture_output<tc_out_events>(
+                    ctx->tracker<capture_output_access>("out"))));
     in.require_output_checked(ctx, "out");
     auto out = capture_output_checker<tc_out_events>(
         ctx->access<capture_output_access>("out"));
@@ -54,10 +56,11 @@ TEST_CASE("time correlate at start") {
 }
 
 TEST_CASE("time correlate at stop") {
+    auto const valcat = GENERATE(feed_as::const_lvalue, feed_as::rvalue);
     auto ctx = context::create();
-    auto in = feed_input<type_list<std::array<detection_event<>, 2>>>(
-        time_correlate_at_stop<>(capture_output<tc_out_events>(
-            ctx->tracker<capture_output_access>("out"))));
+    auto in = feed_input(
+        valcat, time_correlate_at_stop<>(capture_output<tc_out_events>(
+                    ctx->tracker<capture_output_access>("out"))));
     in.require_output_checked(ctx, "out");
     auto out = capture_output_checker<tc_out_events>(
         ctx->access<capture_output_access>("out"));
@@ -69,12 +72,13 @@ TEST_CASE("time correlate at stop") {
 }
 
 TEST_CASE("time correlate at midpoint") {
+    auto const valcat = GENERATE(feed_as::const_lvalue, feed_as::rvalue);
     auto ctx = context::create();
 
     SECTION("use stop channel") {
-        auto in = feed_input<type_list<std::array<detection_event<>, 2>>>(
-            time_correlate_at_midpoint<>(capture_output<tc_out_events>(
-                ctx->tracker<capture_output_access>("out"))));
+        auto in = feed_input(
+            valcat, time_correlate_at_midpoint<>(capture_output<tc_out_events>(
+                        ctx->tracker<capture_output_access>("out"))));
         in.require_output_checked(ctx, "out");
         auto out = capture_output_checker<tc_out_events>(
             ctx->access<capture_output_access>("out"));
@@ -86,10 +90,10 @@ TEST_CASE("time correlate at midpoint") {
     }
 
     SECTION("use start channel") {
-        auto in = feed_input<type_list<std::array<detection_event<>, 2>>>(
-            time_correlate_at_midpoint<default_data_types, true>(
-                capture_output<tc_out_events>(
-                    ctx->tracker<capture_output_access>("out"))));
+        auto in = feed_input(
+            valcat, time_correlate_at_midpoint<default_data_types, true>(
+                        capture_output<tc_out_events>(
+                            ctx->tracker<capture_output_access>("out"))));
         in.require_output_checked(ctx, "out");
         auto out = capture_output_checker<tc_out_events>(
             ctx->access<capture_output_access>("out"));
@@ -102,14 +106,15 @@ TEST_CASE("time correlate at midpoint") {
 }
 
 TEST_CASE("time correlate at fraction") {
+    auto const valcat = GENERATE(feed_as::const_lvalue, feed_as::rvalue);
     auto ctx = context::create();
 
     SECTION("use stop channel") {
-        auto in = feed_input<type_list<std::array<detection_event<>, 2>>>(
-            time_correlate_at_fraction<>(
-                arg::fraction{1.0 / 3.0},
-                capture_output<tc_out_events>(
-                    ctx->tracker<capture_output_access>("out"))));
+        auto in = feed_input(
+            valcat, time_correlate_at_fraction<>(
+                        arg::fraction{1.0 / 3.0},
+                        capture_output<tc_out_events>(
+                            ctx->tracker<capture_output_access>("out"))));
         in.require_output_checked(ctx, "out");
         auto out = capture_output_checker<tc_out_events>(
             ctx->access<capture_output_access>("out"));
@@ -121,11 +126,11 @@ TEST_CASE("time correlate at fraction") {
     }
 
     SECTION("use start channel") {
-        auto in = feed_input<type_list<std::array<detection_event<>, 2>>>(
-            time_correlate_at_fraction<default_data_types, true>(
-                arg::fraction{1.0 / 3.0},
-                capture_output<tc_out_events>(
-                    ctx->tracker<capture_output_access>("out"))));
+        auto in = feed_input(
+            valcat, time_correlate_at_fraction<default_data_types, true>(
+                        arg::fraction{1.0 / 3.0},
+                        capture_output<tc_out_events>(
+                            ctx->tracker<capture_output_access>("out"))));
         in.require_output_checked(ctx, "out");
         auto out = capture_output_checker<tc_out_events>(
             ctx->access<capture_output_access>("out"));
@@ -141,8 +146,10 @@ TEST_CASE("negate difftime") {
     struct types : default_data_types {
         using difftime_type = std::int16_t;
     };
+    auto const valcat = GENERATE(feed_as::const_lvalue, feed_as::rvalue);
     auto ctx = context::create();
-    auto in = feed_input<type_list<time_correlated_detection_event<types>>>(
+    auto in = feed_input(
+        valcat,
         negate_difftime(
             capture_output<type_list<time_correlated_detection_event<types>>>(
                 ctx->tracker<capture_output_access>("out"))));
@@ -160,8 +167,10 @@ TEST_CASE("negate difftime") {
 }
 
 TEST_CASE("remove time correlation") {
+    auto const valcat = GENERATE(feed_as::const_lvalue, feed_as::rvalue);
     auto ctx = context::create();
-    auto in = feed_input<type_list<time_correlated_detection_event<>>>(
+    auto in = feed_input(
+        valcat,
         remove_time_correlation<>(capture_output<type_list<detection_event<>>>(
             ctx->tracker<capture_output_access>("out"))));
     in.require_output_checked(ctx, "out");

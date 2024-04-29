@@ -53,13 +53,14 @@ TEST_CASE("Map to datapoints") {
         using datapoint_type = difftime_type;
     };
     using out_events = type_list<datapoint_event<data_types>, misc_event>;
+    auto const valcat = GENERATE(feed_as::const_lvalue, feed_as::rvalue);
     auto ctx = context::create();
-    auto in =
-        feed_input<type_list<time_correlated_detection_event<>, misc_event>>(
-            map_to_datapoints<time_correlated_detection_event<>, data_types>(
-                difftime_data_mapper<data_types>(),
-                capture_output<out_events>(
-                    ctx->tracker<capture_output_access>("out"))));
+    auto in = feed_input(
+        valcat,
+        map_to_datapoints<time_correlated_detection_event<>, data_types>(
+            difftime_data_mapper<data_types>(),
+            capture_output<out_events>(
+                ctx->tracker<capture_output_access>("out"))));
     in.require_output_checked(ctx, "out");
     auto out = capture_output_checker<out_events>(
         ctx->access<capture_output_access>("out"));
@@ -78,6 +79,7 @@ TEST_CASE("Map to bins") {
         using bin_index_type = u32;
     };
 
+    auto const valcat = GENERATE(feed_as::const_lvalue, feed_as::rvalue);
     auto ctx = context::create();
 
     SECTION("Out of range") {
@@ -91,12 +93,11 @@ TEST_CASE("Map to bins") {
         };
         using out_events =
             type_list<bin_increment_event<data_types>, misc_event>;
-        auto in =
-            feed_input<type_list<datapoint_event<data_types>, misc_event>>(
-                map_to_bins<data_types>(
-                    null_bin_mapper(),
-                    capture_output<out_events>(
-                        ctx->tracker<capture_output_access>("out"))));
+        auto in = feed_input(
+            valcat, map_to_bins<data_types>(
+                        null_bin_mapper(),
+                        capture_output<out_events>(
+                            ctx->tracker<capture_output_access>("out"))));
         in.require_output_checked(ctx, "out");
         auto out = capture_output_checker<out_events>(
             ctx->access<capture_output_access>("out"));
@@ -117,11 +118,11 @@ TEST_CASE("Map to bins") {
             }
         };
         using out_events = type_list<bin_increment_event<data_types>>;
-        auto in = feed_input<type_list<datapoint_event<data_types>>>(
-            map_to_bins<data_types>(
-                add_42_bin_mapper(),
-                capture_output<out_events>(
-                    ctx->tracker<capture_output_access>("out"))));
+        auto in = feed_input(
+            valcat, map_to_bins<data_types>(
+                        add_42_bin_mapper(),
+                        capture_output<out_events>(
+                            ctx->tracker<capture_output_access>("out"))));
         in.require_output_checked(ctx, "out");
         auto out = capture_output_checker<out_events>(
             ctx->access<capture_output_access>("out"));
@@ -442,12 +443,12 @@ TEST_CASE("Batch bin increments") {
     };
     using out_events =
         type_list<bin_increment_batch_event<data_types>, misc_event>;
+    auto const valcat = GENERATE(feed_as::const_lvalue, feed_as::rvalue);
     auto ctx = context::create();
-    auto in = feed_input<type_list<bin_increment_event<data_types>,
-                                   start_event, stop_event, misc_event>>(
-        batch_bin_increments<start_event, stop_event, data_types>(
-            capture_output<out_events>(
-                ctx->tracker<capture_output_access>("out"))));
+    auto in = feed_input(
+        valcat, batch_bin_increments<start_event, stop_event, data_types>(
+                    capture_output<out_events>(
+                        ctx->tracker<capture_output_access>("out"))));
     in.require_output_checked(ctx, "out");
     auto out = capture_output_checker<out_events>(
         ctx->access<capture_output_access>("out"));

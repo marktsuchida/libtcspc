@@ -16,7 +16,7 @@
 #include "test_checkers.hpp"
 
 #include <catch2/catch_test_macros.hpp>
-#include <catch2/matchers/catch_matchers_string.hpp>
+#include <catch2/generators/catch_generators.hpp>
 
 #include <cstddef>
 #include <cstdint>
@@ -41,12 +41,13 @@ TEST_CASE("introspect timing_misc", "[introspect]") {
 
 TEST_CASE("retime periodic sequence events") {
     using out_events = type_list<periodic_sequence_model_event<>>;
+    auto const valcat = GENERATE(feed_as::const_lvalue, feed_as::rvalue);
     auto ctx = context::create();
-    auto in = feed_input<type_list<periodic_sequence_model_event<>>>(
-        retime_periodic_sequences<>(
-            arg::max_time_shift<i64>{10},
-            capture_output<out_events>(
-                ctx->tracker<capture_output_access>("out"))));
+    auto in = feed_input(valcat,
+                         retime_periodic_sequences<>(
+                             arg::max_time_shift<i64>{10},
+                             capture_output<out_events>(
+                                 ctx->tracker<capture_output_access>("out"))));
     in.require_output_checked(ctx, "out");
     auto out = capture_output_checker<out_events>(
         ctx->access<capture_output_access>("out"));
@@ -83,12 +84,13 @@ TEST_CASE("retime periodic sequence events unsigned",
         using abstime_type = std::uint64_t;
     };
     using out_events = type_list<periodic_sequence_model_event<types>>;
+    auto const valcat = GENERATE(feed_as::const_lvalue, feed_as::rvalue);
     auto ctx = context::create();
-    auto in = feed_input<type_list<periodic_sequence_model_event<types>>>(
-        retime_periodic_sequences<types>(
-            arg::max_time_shift<u64>{10},
-            capture_output<out_events>(
-                ctx->tracker<capture_output_access>("out"))));
+    auto in = feed_input(valcat,
+                         retime_periodic_sequences<types>(
+                             arg::max_time_shift<u64>{10},
+                             capture_output<out_events>(
+                                 ctx->tracker<capture_output_access>("out"))));
     in.require_output_checked(ctx, "out");
     auto out = capture_output_checker<out_events>(
         ctx->access<capture_output_access>("out"));
@@ -110,12 +112,13 @@ TEST_CASE("retime periodic sequence events unsigned",
 TEST_CASE("extrapolate periodic sequences",
           "[extrapolate_periodic_sequences]") {
     using out_events = type_list<real_one_shot_timing_event<>>;
+    auto const valcat = GENERATE(feed_as::const_lvalue, feed_as::rvalue);
     auto ctx = context::create();
-    auto in = feed_input<type_list<periodic_sequence_model_event<>>>(
-        extrapolate_periodic_sequences(
-            arg::tick_index<std::size_t>{2},
-            capture_output<out_events>(
-                ctx->tracker<capture_output_access>("out"))));
+    auto in = feed_input(valcat,
+                         extrapolate_periodic_sequences(
+                             arg::tick_index<std::size_t>{2},
+                             capture_output<out_events>(
+                                 ctx->tracker<capture_output_access>("out"))));
     in.require_output_checked(ctx, "out");
     auto out = capture_output_checker<out_events>(
         ctx->access<capture_output_access>("out"));
@@ -129,12 +132,13 @@ TEST_CASE("extrapolate periodic sequences",
 TEST_CASE("add count to periodic sequences",
           "[add_count_to_periodic_sequences]") {
     using out_events = type_list<real_linear_timing_event<>>;
+    auto const valcat = GENERATE(feed_as::const_lvalue, feed_as::rvalue);
     auto ctx = context::create();
-    auto in = feed_input<type_list<periodic_sequence_model_event<>>>(
-        add_count_to_periodic_sequences(
-            arg::count<std::size_t>{3},
-            capture_output<out_events>(
-                ctx->tracker<capture_output_access>("out"))));
+    auto in = feed_input(valcat,
+                         add_count_to_periodic_sequences(
+                             arg::count<std::size_t>{3},
+                             capture_output<out_events>(
+                                 ctx->tracker<capture_output_access>("out"))));
     in.require_output_checked(ctx, "out");
     auto out = capture_output_checker<out_events>(
         ctx->access<capture_output_access>("out"));
@@ -152,14 +156,15 @@ TEST_CASE("convert sequences to start-stop",
     using stopevt = time_tagged_test_event<2>;
     using otherevt = time_tagged_test_event<3>;
     using out_events = type_list<startevt, stopevt, otherevt>;
+    auto const valcat = GENERATE(feed_as::const_lvalue, feed_as::rvalue);
     auto ctx = context::create();
 
     SECTION("zero length") {
-        auto in = feed_input<type_list<inevt, otherevt>>(
-            convert_sequences_to_start_stop<inevt, startevt, stopevt>(
-                arg::count<std::size_t>{0},
-                capture_output<out_events>(
-                    ctx->tracker<capture_output_access>("out"))));
+        auto in = feed_input(
+            valcat, convert_sequences_to_start_stop<inevt, startevt, stopevt>(
+                        arg::count<std::size_t>{0},
+                        capture_output<out_events>(
+                            ctx->tracker<capture_output_access>("out"))));
         in.require_output_checked(ctx, "out");
         auto out = capture_output_checker<out_events>(
             ctx->access<capture_output_access>("out"));
@@ -174,11 +179,11 @@ TEST_CASE("convert sequences to start-stop",
     }
 
     SECTION("length 1") {
-        auto in = feed_input<type_list<inevt, otherevt>>(
-            convert_sequences_to_start_stop<inevt, startevt, stopevt>(
-                arg::count<std::size_t>{1},
-                capture_output<out_events>(
-                    ctx->tracker<capture_output_access>("out"))));
+        auto in = feed_input(
+            valcat, convert_sequences_to_start_stop<inevt, startevt, stopevt>(
+                        arg::count<std::size_t>{1},
+                        capture_output<out_events>(
+                            ctx->tracker<capture_output_access>("out"))));
         in.require_output_checked(ctx, "out");
         auto out = capture_output_checker<out_events>(
             ctx->access<capture_output_access>("out"));
@@ -196,11 +201,11 @@ TEST_CASE("convert sequences to start-stop",
     }
 
     SECTION("length 2") {
-        auto in = feed_input<type_list<inevt, otherevt>>(
-            convert_sequences_to_start_stop<inevt, startevt, stopevt>(
-                arg::count<std::size_t>{2},
-                capture_output<out_events>(
-                    ctx->tracker<capture_output_access>("out"))));
+        auto in = feed_input(
+            valcat, convert_sequences_to_start_stop<inevt, startevt, stopevt>(
+                        arg::count<std::size_t>{2},
+                        capture_output<out_events>(
+                            ctx->tracker<capture_output_access>("out"))));
         in.require_output_checked(ctx, "out");
         auto out = capture_output_checker<out_events>(
             ctx->access<capture_output_access>("out"));

@@ -14,6 +14,7 @@
 #include "test_checkers.hpp"
 
 #include <catch2/catch_test_macros.hpp>
+#include <catch2/generators/catch_generators.hpp>
 
 #include <memory>
 
@@ -33,10 +34,11 @@ TEST_CASE("introspect multiplex", "[introspect]") {
 
 TEST_CASE("multiplex") {
     using out_events = type_list<variant_event<type_list<e0, e1>>>;
+    auto const valcat = GENERATE(feed_as::const_lvalue, feed_as::rvalue);
     auto ctx = context::create();
-    auto in = feed_input<type_list<e0, e1>>(
-        multiplex<type_list<e0, e1>>(capture_output<out_events>(
-            ctx->tracker<capture_output_access>("out"))));
+    auto in = feed_input(
+        valcat, multiplex<type_list<e0, e1>>(capture_output<out_events>(
+                    ctx->tracker<capture_output_access>("out"))));
     in.require_output_checked(ctx, "out");
     auto out = capture_output_checker<out_events>(
         ctx->access<capture_output_access>("out"));
@@ -60,10 +62,11 @@ TEST_CASE("demultiplex handled event types") {
 
 TEST_CASE("demultiplex") {
     using out_events = type_list<e0, e1>;
+    auto const valcat = GENERATE(feed_as::const_lvalue, feed_as::rvalue);
     auto ctx = context::create();
-    auto in = feed_input<type_list<variant_event<type_list<e0, e1>>>>(
-        demultiplex(capture_output<out_events>(
-            ctx->tracker<capture_output_access>("out"))));
+    auto in =
+        feed_input(valcat, demultiplex(capture_output<out_events>(
+                               ctx->tracker<capture_output_access>("out"))));
     in.require_output_checked(ctx, "out");
     auto out = capture_output_checker<out_events>(
         ctx->access<capture_output_access>("out"));

@@ -14,6 +14,7 @@
 #include "test_checkers.hpp"
 
 #include <catch2/catch_test_macros.hpp>
+#include <catch2/generators/catch_generators.hpp>
 #include <catch2/matchers/catch_matchers_string.hpp>
 
 #include <memory>
@@ -34,11 +35,13 @@ TEST_CASE("introspect stop", "[introspect]") {
 }
 
 TEST_CASE("stop with error") {
+    auto const valcat = GENERATE(feed_as::const_lvalue, feed_as::rvalue);
     auto ctx = context::create();
-
-    auto in = feed_input<type_list<e0, e1>>(stop_with_error<type_list<e0>>(
-        "myerror", capture_output<type_list<e1>>(
-                       ctx->tracker<capture_output_access>("out"))));
+    auto in = feed_input(
+        valcat,
+        stop_with_error<type_list<e0>>(
+            "myerror", capture_output<type_list<e1>>(
+                           ctx->tracker<capture_output_access>("out"))));
     in.require_output_checked(ctx, "out");
     auto out = capture_output_checker<type_list<e1>>(
         ctx->access<capture_output_access>("out"));
@@ -53,10 +56,13 @@ TEST_CASE("stop with error") {
 }
 
 TEST_CASE("stop with no error") {
+    auto const valcat = GENERATE(feed_as::const_lvalue, feed_as::rvalue);
     auto ctx = context::create();
-    auto in = feed_input<type_list<e0, e1>>(stop<type_list<e0>>(
-        "end of stream", capture_output<type_list<e1>>(
-                             ctx->tracker<capture_output_access>("out"))));
+    auto in = feed_input(
+        valcat,
+        stop<type_list<e0>>("end of stream",
+                            capture_output<type_list<e1>>(
+                                ctx->tracker<capture_output_access>("out"))));
     in.require_output_checked(ctx, "out");
     auto out = capture_output_checker<type_list<e1>>(
         ctx->access<capture_output_access>("out"));

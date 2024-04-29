@@ -13,6 +13,7 @@
 #include "test_checkers.hpp"
 
 #include <catch2/catch_test_macros.hpp>
+#include <catch2/generators/catch_generators.hpp>
 
 #include <memory>
 
@@ -34,10 +35,11 @@ TEST_CASE("introspect select", "[introspect]") {
 }
 
 TEST_CASE("select") {
+    auto const valcat = GENERATE(feed_as::const_lvalue, feed_as::rvalue);
     auto ctx = context::create();
-    auto in = feed_input<type_list<e0, e1>>(
-        select<type_list<e0>>(capture_output<out_events>(
-            ctx->tracker<capture_output_access>("out"))));
+    auto in =
+        feed_input(valcat, select<type_list<e0>>(capture_output<out_events>(
+                               ctx->tracker<capture_output_access>("out"))));
     in.require_output_checked(ctx, "out");
     auto out = capture_output_checker<out_events>(
         ctx->access<capture_output_access>("out"));
@@ -50,10 +52,11 @@ TEST_CASE("select") {
 }
 
 TEST_CASE("select_not") {
+    auto const valcat = GENERATE(feed_as::const_lvalue, feed_as::rvalue);
     auto ctx = context::create();
-    auto in = feed_input<type_list<e0, e1>>(
-        select_not<type_list<e0>>(capture_output<out_events>(
-            ctx->tracker<capture_output_access>("out"))));
+    auto in = feed_input(valcat,
+                         select_not<type_list<e0>>(capture_output<out_events>(
+                             ctx->tracker<capture_output_access>("out"))));
     in.require_output_checked(ctx, "out");
     auto out = capture_output_checker<out_events>(
         ctx->access<capture_output_access>("out"));
@@ -66,10 +69,11 @@ TEST_CASE("select_not") {
 }
 
 TEST_CASE("select_none") {
+    auto const valcat = GENERATE(feed_as::const_lvalue, feed_as::rvalue);
     auto ctx = context::create();
     auto in =
-        feed_input<type_list<e0, e1>>(select_none(capture_output<out_events>(
-            ctx->tracker<capture_output_access>("out"))));
+        feed_input(valcat, select_none(capture_output<out_events>(
+                               ctx->tracker<capture_output_access>("out"))));
     in.require_output_checked(ctx, "out");
     auto out = capture_output_checker<out_events>(
         ctx->access<capture_output_access>("out"));
@@ -81,10 +85,11 @@ TEST_CASE("select_none") {
 }
 
 TEST_CASE("select_all") {
+    auto const valcat = GENERATE(feed_as::const_lvalue, feed_as::rvalue);
     auto ctx = context::create();
     auto in =
-        feed_input<type_list<e0, e1>>(select_all(capture_output<out_events>(
-            ctx->tracker<capture_output_access>("out"))));
+        feed_input(valcat, select_all(capture_output<out_events>(
+                               ctx->tracker<capture_output_access>("out"))));
     in.require_output_checked(ctx, "out");
     auto out = capture_output_checker<out_events>(
         ctx->access<capture_output_access>("out"));

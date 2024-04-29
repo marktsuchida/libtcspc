@@ -103,6 +103,7 @@ TEST_CASE("introspect merge", "[introspect]") {
 }
 
 TEST_CASE("Merge") {
+    auto const valcat = GENERATE(feed_as::const_lvalue, feed_as::rvalue);
     auto ctx = context::create();
 
     SECTION("asymmetric tests") {
@@ -110,9 +111,9 @@ TEST_CASE("Merge") {
             merge<all_events>(arg::max_buffered<std::size_t>{1024},
                               capture_output<all_events>(
                                   ctx->tracker<capture_output_access>("out")));
-        auto in0 = feed_input<all_events>(std::move(mi0));
+        auto in0 = feed_input(valcat, std::move(mi0));
         in0.require_output_checked(ctx, "out");
-        auto in1 = feed_input<all_events>(std::move(mi1));
+        auto in1 = feed_input(valcat, std::move(mi1));
         in1.require_output_checked(ctx, "out");
         auto out = capture_output_checker<all_events>(
             ctx->access<capture_output_access>("out"));
@@ -157,8 +158,8 @@ TEST_CASE("Merge") {
             using std::swap;
             swap(temi0, temi1);
         }
-        auto in_x = feed_input<all_events>(std::move(temi0));
-        auto in_y = feed_input<all_events>(std::move(temi1));
+        auto in_x = feed_input(valcat, std::move(temi0));
+        auto in_y = feed_input(valcat, std::move(temi1));
         in_x.require_output_checked(ctx, "out");
         in_y.require_output_checked(ctx, "out");
         auto out = capture_output_checker<all_events>(
@@ -242,14 +243,15 @@ TEST_CASE("Merge") {
 }
 
 TEST_CASE("merge single event type") {
+    auto const valcat = GENERATE(feed_as::const_lvalue, feed_as::rvalue);
     using one_event = type_list<e0>;
     auto ctx = context::create();
     auto [min0, min1] = merge<one_event>(
         arg::max_buffered<std::size_t>{1024},
         capture_output<one_event>(ctx->tracker<capture_output_access>("out")));
-    auto in0 = feed_input<one_event>(std::move(min0));
+    auto in0 = feed_input(valcat, std::move(min0));
     in0.require_output_checked(ctx, "out");
-    auto in1 = feed_input<one_event>(std::move(min1));
+    auto in1 = feed_input(valcat, std::move(min1));
     in1.require_output_checked(ctx, "out");
     auto out = capture_output_checker<one_event>(
         ctx->access<capture_output_access>("out"));
@@ -288,6 +290,7 @@ TEST_CASE("merge N streams") {
     }
 
     SECTION("Single-stream merge_n returns downstream in tuple") {
+        auto const valcat = GENERATE(feed_as::const_lvalue, feed_as::rvalue);
         auto [m0] = merge_n<1, all_events>(
             arg::max_buffered<std::size_t>{1024},
             capture_output<all_events>(
@@ -296,7 +299,7 @@ TEST_CASE("merge N streams") {
             std::is_same_v<decltype(m0),
                            decltype(capture_output<all_events>(
                                ctx->tracker<capture_output_access>("out")))>);
-        auto in = feed_input<all_events>(std::move(m0));
+        auto in = feed_input(valcat, std::move(m0));
         in.require_output_checked(ctx, "out");
         auto out = capture_output_checker<all_events>(
             ctx->access<capture_output_access>("out"));
@@ -328,11 +331,12 @@ TEST_CASE("merge N streams") {
 }
 
 TEST_CASE("merge unsorted") {
+    auto const valcat = GENERATE(feed_as::const_lvalue, feed_as::rvalue);
     auto ctx = context::create();
     auto [min0, min1] = merge_n_unsorted(capture_output<all_events>(
         ctx->tracker<capture_output_access>("out")));
-    auto in0 = feed_input<all_events>(std::move(min0));
-    auto in1 = feed_input<all_events>(std::move(min1));
+    auto in0 = feed_input(valcat, std::move(min0));
+    auto in1 = feed_input(valcat, std::move(min1));
     in0.require_output_checked(ctx, "out");
     in1.require_output_checked(ctx, "out");
     auto out = capture_output_checker<all_events>(
