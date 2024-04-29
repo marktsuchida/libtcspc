@@ -39,8 +39,8 @@ TEST_CASE("abstract_processor event types") {
         STATIC_CHECK(handles_event_v<abstract_processor<type_list<e0>>, e0>);
         STATIC_CHECK_FALSE(
             handles_event_v<abstract_processor<type_list<e0>>, e1>);
-        STATIC_CHECK(handles_events_v<abstract_processor<type_list<e0, e1>>,
-                                      type_list<e0, e1>>);
+        STATIC_CHECK(
+            handles_events_v<abstract_processor<type_list<e0, e1>>, e0, e1>);
     }
 }
 
@@ -70,7 +70,7 @@ TEST_CASE("virtual_processor event types") {
         STATIC_CHECK(
             handles_events_v<virtual_processor<sink_events<type_list<e0, e1>>,
                                                type_list<e0, e1>>,
-                             type_list<e0, e1>>);
+                             e0, e1>);
     }
 }
 
@@ -102,7 +102,7 @@ TEST_CASE("type_erased_processor event types") {
         STATIC_CHECK(
             handles_events_v<decltype(type_erased_processor<type_list<e0, e1>>(
                                  sink_events<type_list<e0, e1>>())),
-                             type_list<e0, e1>>);
+                             e0, e1>);
     }
 }
 

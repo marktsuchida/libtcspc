@@ -23,9 +23,9 @@ TEST_CASE("handles_flush") {
     struct r {
         void flush(int);
     };
-    static_assert(handles_flush_v<p>);
-    static_assert(not handles_flush_v<q>);
-    static_assert(not handles_flush_v<r>);
+    STATIC_CHECK(handles_flush_v<p>);
+    STATIC_CHECK_FALSE(handles_flush_v<q>);
+    STATIC_CHECK_FALSE(handles_flush_v<r>);
 }
 
 namespace {
@@ -57,54 +57,85 @@ struct q {
     }
 };
 
+struct r {
+    void handle(e_both &&event);
+    void handle(e_both const &event);
+    void flush();
+};
+
 } // namespace
 
 TEST_CASE("handles_rvalue_event") {
-    static_assert(handles_rvalue_event_v<p, e_rvalue>);
-    static_assert(handles_rvalue_event_v<p, e_const_lvalue>);
-    static_assert(handles_rvalue_event_v<p, e_both>);
-    static_assert(handles_rvalue_event_v<p, e_by_value>);
-    static_assert(handles_rvalue_event_v<p, e_forwarding_ref>);
-    static_assert(not handles_rvalue_event_v<p, e_not_handled>);
+    STATIC_CHECK(handles_rvalue_event_v<p, e_rvalue>);
+    STATIC_CHECK(handles_rvalue_event_v<p, e_const_lvalue>);
+    STATIC_CHECK(handles_rvalue_event_v<p, e_both>);
+    STATIC_CHECK(handles_rvalue_event_v<p, e_by_value>);
+    STATIC_CHECK(handles_rvalue_event_v<p, e_forwarding_ref>);
+    STATIC_CHECK_FALSE(handles_rvalue_event_v<p, e_not_handled>);
 
-    static_assert(handles_rvalue_event_v<q, e_forwarding_ref>);
+    STATIC_CHECK(handles_rvalue_event_v<q, e_forwarding_ref>);
     // Cannot "see" static_assert failure (no ODR-use)
-    static_assert(handles_rvalue_event_v<q, e_not_handled>);
+    STATIC_CHECK(handles_rvalue_event_v<q, e_not_handled>);
 }
 
 TEST_CASE("handles_const_event") {
-    static_assert(not handles_const_event_v<p, e_rvalue>);
-    static_assert(handles_const_event_v<p, e_const_lvalue>);
-    static_assert(handles_const_event_v<p, e_both>);
-    static_assert(handles_const_event_v<p, e_by_value>);
-    static_assert(handles_const_event_v<p, e_forwarding_ref>);
-    static_assert(not handles_const_event_v<p, e_not_handled>);
+    STATIC_CHECK_FALSE(handles_const_event_v<p, e_rvalue>);
+    STATIC_CHECK(handles_const_event_v<p, e_const_lvalue>);
+    STATIC_CHECK(handles_const_event_v<p, e_both>);
+    STATIC_CHECK(handles_const_event_v<p, e_by_value>);
+    STATIC_CHECK(handles_const_event_v<p, e_forwarding_ref>);
+    STATIC_CHECK_FALSE(handles_const_event_v<p, e_not_handled>);
 
-    static_assert(handles_const_event_v<q, e_forwarding_ref>);
+    STATIC_CHECK(handles_const_event_v<q, e_forwarding_ref>);
     // Cannot "see" static_assert failure (no ODR-use)
-    static_assert(handles_const_event_v<q, e_not_handled>);
+    STATIC_CHECK(handles_const_event_v<q, e_not_handled>);
 }
 
 TEST_CASE("handles_event") {
-    static_assert(not handles_event_v<p, e_rvalue>);
-    static_assert(handles_event_v<p, e_const_lvalue>);
-    static_assert(handles_event_v<p, e_both>);
-    static_assert(handles_event_v<p, e_by_value>);
-    static_assert(handles_event_v<p, e_forwarding_ref>);
-    static_assert(not handles_event_v<p, e_not_handled>);
+    STATIC_CHECK_FALSE(handles_event_v<p, e_rvalue>);
+    STATIC_CHECK(handles_event_v<p, e_const_lvalue>);
+    STATIC_CHECK(handles_event_v<p, e_both>);
+    STATIC_CHECK(handles_event_v<p, e_by_value>);
+    STATIC_CHECK(handles_event_v<p, e_forwarding_ref>);
+    STATIC_CHECK_FALSE(handles_event_v<p, e_not_handled>);
 
-    static_assert(handles_event_v<q, e_forwarding_ref>);
+    STATIC_CHECK(handles_event_v<q, e_forwarding_ref>);
     // Cannot "see" static_assert failure (no ODR-use)
-    static_assert(handles_event_v<q, e_not_handled>);
+    STATIC_CHECK(handles_event_v<q, e_not_handled>);
 }
 
 TEST_CASE("handles_events") {
-    static_assert(
-        handles_events_v<p, type_list<e_const_lvalue, e_both, e_by_value>>);
-    static_assert(
-        not handles_events_v<p, type_list<e_rvalue, e_both, e_by_value>>);
-    static_assert(not handles_events_v<
-                  p, type_list<e_const_lvalue, e_both, e_not_handled>>);
+    STATIC_CHECK(handles_events_v<p, e_const_lvalue, e_both, e_by_value>);
+    STATIC_CHECK_FALSE(handles_events_v<p, e_rvalue, e_both, e_by_value>);
+    STATIC_CHECK(
+        not handles_events_v<p, e_const_lvalue, e_both, e_not_handled>);
+}
+
+TEST_CASE("handles_event_list") {
+    STATIC_CHECK(
+        handles_event_list_v<p,
+                             type_list<e_const_lvalue, e_both, e_by_value>>);
+    STATIC_CHECK_FALSE(
+        handles_event_list_v<p, type_list<e_rvalue, e_both, e_by_value>>);
+    STATIC_CHECK_FALSE(handles_event_list_v<
+                       p, type_list<e_const_lvalue, e_both, e_not_handled>>);
+}
+
+TEST_CASE("is_processor") {
+    STATIC_CHECK_FALSE(is_processor_v<p>);
+    STATIC_CHECK_FALSE(is_processor_v<p, e_both>);
+    STATIC_CHECK(is_processor_v<r>);
+    STATIC_CHECK(is_processor_v<r, e_both>);
+    STATIC_CHECK_FALSE(is_processor_v<r, e_both, e_const_lvalue>);
+}
+
+TEST_CASE("is_processor_of_list") {
+    STATIC_CHECK_FALSE(is_processor_of_list_v<p, type_list<>>);
+    STATIC_CHECK_FALSE(is_processor_of_list_v<p, type_list<e_both>>);
+    STATIC_CHECK(is_processor_of_list_v<r, type_list<>>);
+    STATIC_CHECK(is_processor_of_list_v<r, type_list<e_both>>);
+    STATIC_CHECK_FALSE(
+        is_processor_of_list_v<r, type_list<e_both, e_const_lvalue>>);
 }
 
 } // namespace tcspc

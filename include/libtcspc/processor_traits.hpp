@@ -226,7 +226,46 @@ inline constexpr bool handles_event_v = handles_event<Proc, Event>::value;
  */
 
 /**
- * \brief Metafunction to check whether a processor handles a set of event
+ * \brief Metafunction to check whether a processor handles the given event
+ * types.
+ *
+ * \hideinheritancegraph
+ *
+ * Determines whether the processor \p Proc handles all of the event types \p
+ * Events and provides the result in the `bool` member `value`.
+ *
+ * If the event handler(s) exist but any of them has a return type other than
+ * `void`, compilation fails.
+ *
+ * \note A true result indicates that \p Proc handles the `Events` _provided
+ * that `Proc` and the relevant `Proc::handle()` overloads can be instantiated_
+ * (if \p Proc is a template class). It is possible that instantiation will
+ * fail (due to `static_assert` failures or other issues) even if the result of
+ * this metafunction is true.
+ *
+ * \see `tcspc::handles_events_v`
+ */
+template <typename Proc, typename... Events>
+struct handles_events : std::conjunction<handles_event<Proc, Events>...> {};
+
+/**
+ * \brief Helper variable template for `tcspc::handles_events`.
+ */
+template <typename Proc, typename... Events>
+inline constexpr bool handles_events_v =
+    handles_events<Proc, Events...>::value;
+
+/** @} <!-- group handles-events --> */
+
+/**
+ * \defgroup handles-event-list Metafunction handles_event_list
+ * \ingroup processor-traits
+ * \copydoc handles_event_list
+ * @{
+ */
+
+/**
+ * \brief Metafunction to check whether a processor handles a list of event
  * types.
  *
  * Determines whether the processor \p Proc handles all of the event types in
@@ -242,25 +281,114 @@ inline constexpr bool handles_event_v = handles_event<Proc, Event>::value;
  * instantiation will fail (due to `static_assert` failures or other issues)
  * even if the result of this metafunction is true.
  *
- * \see `tcspc::handles_events_v`
+ * \see `tcspc::handles_event_list_v`
  */
-template <typename Proc, typename EventList> struct handles_events;
+template <typename Proc, typename Events> struct handles_event_list;
 
 /** \cond implementation-detail */
 
 template <typename Proc, typename... Events>
-struct handles_events<Proc, type_list<Events...>>
+struct handles_event_list<Proc, type_list<Events...>>
     : std::conjunction<handles_event<Proc, Events>...> {};
 
 /** \endcond */
 
 /**
- * \brief Helper variable template for `tcspc::handles_events`.
+ * \brief Helper variable template for `tcspc::handles_event_list`.
  */
 template <typename Proc, typename EventList>
-inline constexpr bool handles_events_v =
-    handles_events<Proc, EventList>::value;
+inline constexpr bool handles_event_list_v =
+    handles_event_list<Proc, EventList>::value;
 
-/** @} <!-- group handles-events --> */
+/** @} <!-- group handles-event-list --> */
+
+/**
+ * \defgroup is-processor Metafunction is_processor
+ * \ingroup processor-traits
+ * \copydoc is_processor
+ * @{
+ */
+
+/**
+ * \brief Metafunction to check whether a processor handles the given event
+ * types and flush.
+ *
+ * \hideinheritancegraph
+ *
+ * Determines whether the processor \p Proc handles all of the event types \p
+ * Events as well as `flush()` and provides the result in the `bool` member
+ * `value`.
+ *
+ * This is equivalent to the logical AND of `tcspc::handles_events<Proc,
+ * Events...>` and `tcspc::handles_flush<Proc>`.
+ *
+ * If the event handler(s) and/or `flush()` exist but any of them has a return
+ * type other than `void`, compilation fails.
+ *
+ * \note A true result indicates that \p Proc handles flush and the `Events`
+ * _provided that `Proc`, `Proc::flush()`, and the relevant `Proc::handle()`
+ * overloads can be instantiated_ (if \p Proc is a template class). It is
+ * possible that instantiation will fail (due to `static_assert` failures or
+ * other issues) even if the result of this metafunction is true.
+ *
+ * \see `tcspc::is_processor_v`
+ */
+template <typename Proc, typename... Events>
+struct is_processor
+    : std::conjunction<handles_flush<Proc>, handles_events<Proc, Events...>> {
+};
+
+/**
+ * \brief Helper variable template for `tcspc::is_processor`.
+ */
+template <typename Proc, typename... Events>
+inline constexpr bool is_processor_v = is_processor<Proc, Events...>::value;
+
+/** @} <!-- group is-processor --> */
+
+/**
+ * \defgroup is-processor-of-list Metafunction is_processor_of_list
+ * \ingroup processor-traits
+ * \copydoc is_processor_of_list
+ * @{
+ */
+
+/**
+ * \brief Metafunction to check whether a processor handles a list of event
+ * types and flush.
+ *
+ * \hideinheritancegraph
+ *
+ * Determines whether the processor \p Proc handles all of the event types in
+ * the `tcspc::type_list` specialization \p EventList as well as `flush()` and
+ * provides the result in the `bool` member `value`.
+ *
+ * This is equivalent to the logical AND of `tcspc::handles_event_list<Proc,
+ * EventList>` and `tcspc::handles_flush<Proc>`.
+ *
+ * If the event handler(s) and/or `flush()` exist but any of them has a return
+ * type other than `void`, compilation fails.
+ *
+ * \note A true result indicates that \p Proc handles flush and the events in
+ * `EventList` _provided that `Proc`, `Proc::flush()`, and the relevant
+ * `Proc::handle()` overloads can be instantiated_ (if \p Proc is a template
+ * class). It is possible that instantiation will fail (due to `static_assert`
+ * failures or other issues) even if the result of this metafunction is true.
+ *
+ * \see `tcspc::is_processor_of_list_v`
+ */
+template <typename Proc, typename EventList>
+struct is_processor_of_list
+    : std::conjunction<handles_flush<Proc>,
+                       handles_event_list<Proc, EventList>> {};
+
+/**
+ * \brief Helper variable template for `tcspc::is_processor_of_list`.
+ */
+template <typename Proc, typename EventList>
+inline constexpr bool is_processor_of_list_v =
+    is_processor_of_list<Proc, EventList>::value;
+
+/** @} <!-- group is-processor-of-list --> */
 
 } // namespace tcspc

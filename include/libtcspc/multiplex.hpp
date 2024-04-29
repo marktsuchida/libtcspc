@@ -71,7 +71,7 @@ template <typename Downstream> class demultiplex {
 
     template <typename EL> void handle(variant_event<EL> const &event) {
         static_assert(
-            handles_events_v<Downstream, EL>,
+            handles_event_list_v<Downstream, EL>,
             "demultiplex only accepts variant_event whose event list is a subset of the events handled by the downstream");
         std::visit([&](auto const &e) { downstream.handle(e); }, event);
     }
