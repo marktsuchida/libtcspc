@@ -55,8 +55,8 @@ TEST_CASE("batch_from_bytes") {
                              capture_output<type_list<bucket<int>>>(
                                  ctx->tracker<capture_output_access>("out"))));
     in.require_output_checked(ctx, "out");
-    auto out = capture_output_checker<type_list<bucket<int>>>(
-        ctx->access<capture_output_access>("out"));
+    auto out =
+        capture_output_checker<type_list<bucket<int>>>(valcat, ctx, "out");
 
     SECTION("empty input does not emitted batch") {
         in.feed(span<std::byte const>());
@@ -108,8 +108,7 @@ TEST_CASE("unbatch_from_bytes") {
         valcat, unbatch_from_bytes<int>(capture_output<type_list<int>>(
                     ctx->tracker<capture_output_access>("out"))));
     in.require_output_checked(ctx, "out");
-    auto out = capture_output_checker<type_list<int>>(
-        ctx->access<capture_output_access>("out"));
+    auto out = capture_output_checker<type_list<int>>(valcat, ctx, "out");
 
     SECTION("empty input does not emit events") {
         in.feed(span<std::byte const>());

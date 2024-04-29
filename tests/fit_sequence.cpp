@@ -76,7 +76,7 @@ TEST_CASE("fit periodic sequences") {
     in.require_output_checked(ctx, "out");
     auto out =
         capture_output_checker<type_list<periodic_sequence_model_event<>>>(
-            ctx->access<capture_output_access>("out"));
+            valcat, ctx, "out");
 
     SECTION("fit succeeds") {
         in.feed(e0{6});

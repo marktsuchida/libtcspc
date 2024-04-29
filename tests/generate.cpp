@@ -45,8 +45,7 @@ TEST_CASE("Generate null timing") {
                              capture_output<out_events>(
                                  ctx->tracker<capture_output_access>("out"))));
     in.require_output_checked(ctx, "out");
-    auto out = capture_output_checker<out_events>(
-        ctx->access<capture_output_access>("out"));
+    auto out = capture_output_checker<out_events>(valcat, ctx, "out");
 
     in.feed(trigger_event{42});
     REQUIRE(out.check(trigger_event{42}));
@@ -67,8 +66,7 @@ TEST_CASE("Generate one-shot timing",
                              capture_output<out_events>(
                                  ctx->tracker<capture_output_access>("out"))));
     in.require_output_checked(ctx, "out");
-    auto out = capture_output_checker<out_events>(
-        ctx->access<capture_output_access>("out"));
+    auto out = capture_output_checker<out_events>(valcat, ctx, "out");
 
     SECTION("No trigger, no output") {
         SECTION("No events") {}
@@ -124,8 +122,7 @@ TEST_CASE("Generate linear timing") {
                         capture_output<out_events>(
                             ctx->tracker<capture_output_access>("out"))));
         in.require_output_checked(ctx, "out");
-        auto out = capture_output_checker<out_events>(
-            ctx->access<capture_output_access>("out"));
+        auto out = capture_output_checker<out_events>(valcat, ctx, "out");
 
         in.feed(trigger_event{42});
         REQUIRE(out.check(trigger_event{42}));
@@ -144,8 +141,7 @@ TEST_CASE("Generate linear timing") {
                         capture_output<out_events>(
                             ctx->tracker<capture_output_access>("out"))));
         in.require_output_checked(ctx, "out");
-        auto out = capture_output_checker<out_events>(
-            ctx->access<capture_output_access>("out"));
+        auto out = capture_output_checker<out_events>(valcat, ctx, "out");
 
         SECTION("Delayed output") {
             in.feed(trigger_event{42});
@@ -179,8 +175,7 @@ TEST_CASE("Generate linear timing") {
                         capture_output<out_events>(
                             ctx->tracker<capture_output_access>("out"))));
         in.require_output_checked(ctx, "out");
-        auto out = capture_output_checker<out_events>(
-            ctx->access<capture_output_access>("out"));
+        auto out = capture_output_checker<out_events>(valcat, ctx, "out");
 
         in.feed(trigger_event{42});
         REQUIRE(out.check(trigger_event{42}));

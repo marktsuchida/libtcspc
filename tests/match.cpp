@@ -45,8 +45,7 @@ TEST_CASE("Match and replace") {
                              capture_output<out_events>(
                                  ctx->tracker<capture_output_access>("out"))));
     in.require_output_checked(ctx, "out");
-    auto out = capture_output_checker<out_events>(
-        ctx->access<capture_output_access>("out"));
+    auto out = capture_output_checker<out_events>(valcat, ctx, "out");
 
     in.feed(marker_event<>{100, 0});
     REQUIRE(out.check(output_event{100}));
@@ -67,8 +66,7 @@ TEST_CASE("Match") {
                              capture_output<out_events>(
                                  ctx->tracker<capture_output_access>("out"))));
     in.require_output_checked(ctx, "out");
-    auto out = capture_output_checker<out_events>(
-        ctx->access<capture_output_access>("out"));
+    auto out = capture_output_checker<out_events>(valcat, ctx, "out");
 
     in.feed(marker_event<>{100, 0});
     REQUIRE(out.check(marker_event<>{100, 0})); // Preserved

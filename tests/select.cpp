@@ -41,8 +41,7 @@ TEST_CASE("select") {
         feed_input(valcat, select<type_list<e0>>(capture_output<out_events>(
                                ctx->tracker<capture_output_access>("out"))));
     in.require_output_checked(ctx, "out");
-    auto out = capture_output_checker<out_events>(
-        ctx->access<capture_output_access>("out"));
+    auto out = capture_output_checker<out_events>(valcat, ctx, "out");
 
     in.feed(e0{});
     REQUIRE(out.check(e0{}));
@@ -58,8 +57,7 @@ TEST_CASE("select_not") {
                          select_not<type_list<e0>>(capture_output<out_events>(
                              ctx->tracker<capture_output_access>("out"))));
     in.require_output_checked(ctx, "out");
-    auto out = capture_output_checker<out_events>(
-        ctx->access<capture_output_access>("out"));
+    auto out = capture_output_checker<out_events>(valcat, ctx, "out");
 
     in.feed(e0{});
     in.feed(e1{});
@@ -75,8 +73,7 @@ TEST_CASE("select_none") {
         feed_input(valcat, select_none(capture_output<out_events>(
                                ctx->tracker<capture_output_access>("out"))));
     in.require_output_checked(ctx, "out");
-    auto out = capture_output_checker<out_events>(
-        ctx->access<capture_output_access>("out"));
+    auto out = capture_output_checker<out_events>(valcat, ctx, "out");
 
     in.feed(e0{});
     in.feed(e1{});
@@ -91,8 +88,7 @@ TEST_CASE("select_all") {
         feed_input(valcat, select_all(capture_output<out_events>(
                                ctx->tracker<capture_output_access>("out"))));
     in.require_output_checked(ctx, "out");
-    auto out = capture_output_checker<out_events>(
-        ctx->access<capture_output_access>("out"));
+    auto out = capture_output_checker<out_events>(valcat, ctx, "out");
 
     in.feed(e0{});
     REQUIRE(out.check(e0{}));

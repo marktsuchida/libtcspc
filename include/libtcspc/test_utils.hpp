@@ -25,7 +25,6 @@
 #include <functional>
 #include <limits>
 #include <memory>
-#include <optional>
 #include <ostream>
 #include <sstream>
 #include <stdexcept>
@@ -451,18 +450,9 @@ class capture_output_access {
 template <typename EventList> class capture_output_checker {
     capture_output_access acc;
 
-    // TODO Make mandatory and drop std::optional.
-    std::optional<feed_as> feeder_valcat;
+    feed_as feeder_valcat;
 
   public:
-    /**
-     * \brief Construct from a `tcspc::capture_output_access`.
-     */
-    explicit capture_output_checker(capture_output_access access)
-        : acc(std::move(access)) {
-        acc.check_event_list<EventList>(); // Fail early.
-    }
-
     /**
      * \brief Construct from a `tcspc::capture_output_access`, with the
      * feeder's value category.
@@ -507,15 +497,7 @@ template <typename EventList> class capture_output_checker {
      */
     template <typename Event> auto pop(emitted_as value_category) -> Event {
         static_assert(type_list_contains_v<EventList, Event>);
-        auto const feeder_cat = [&] {
-            if (feeder_valcat.has_value())
-                return *feeder_valcat;
-            if (value_category == emitted_as::same_as_fed)
-                throw std::logic_error(
-                    "cannot check for emitted_as::same_as_fed; feeder_value_category not set");
-            return feed_as::const_lvalue; // Pick a value, doesn't matter.
-        }();
-        return acc.pop<Event, EventList>(feeder_cat, value_category);
+        return acc.pop<Event, EventList>(feeder_valcat, value_category);
     }
 
     /**
@@ -551,15 +533,7 @@ template <typename EventList> class capture_output_checker {
     auto check(emitted_as value_category, Event const &expected_event)
         -> bool {
         static_assert(type_list_contains_v<EventList, Event>);
-        auto const feeder_cat = [&] {
-            if (feeder_valcat.has_value())
-                return *feeder_valcat;
-            if (value_category == emitted_as::same_as_fed)
-                throw std::logic_error(
-                    "cannot check for emitted_as::same_as_fed; feeder_value_category not set");
-            return feed_as::const_lvalue; // Pick a value, doesn't matter.
-        }();
-        return acc.check<Event, EventList>(feeder_cat, value_category,
+        return acc.check<Event, EventList>(feeder_valcat, value_category,
                                            expected_event);
     }
 

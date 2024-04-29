@@ -43,8 +43,7 @@ TEST_CASE("recover order") {
                              capture_output<type_list<e0>>(
                                  ctx->tracker<capture_output_access>("out"))));
     in.require_output_checked(ctx, "out");
-    auto out = capture_output_checker<type_list<e0>>(
-        ctx->access<capture_output_access>("out"));
+    auto out = capture_output_checker<type_list<e0>>(valcat, ctx, "out");
 
     SECTION("empty stream") {
         in.flush();
@@ -93,8 +92,7 @@ TEST_CASE("recover order, empty time window") {
                              capture_output<type_list<e0>>(
                                  ctx->tracker<capture_output_access>("out"))));
     in.require_output_checked(ctx, "out");
-    auto out = capture_output_checker<type_list<e0>>(
-        ctx->access<capture_output_access>("out"));
+    auto out = capture_output_checker<type_list<e0>>(valcat, ctx, "out");
 
     SECTION("in-order events are delayed") {
         in.feed(e0{0});
@@ -149,8 +147,7 @@ TEST_CASE("recover order, multiple event types") {
                              capture_output<type_list<e0, e1>>(
                                  ctx->tracker<capture_output_access>("out"))));
     in.require_output_checked(ctx, "out");
-    auto out = capture_output_checker<type_list<e0, e1>>(
-        ctx->access<capture_output_access>("out"));
+    auto out = capture_output_checker<type_list<e0, e1>>(valcat, ctx, "out");
 
     in.feed(e0{3});
     in.feed(e1{0});

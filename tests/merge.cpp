@@ -115,8 +115,7 @@ TEST_CASE("Merge") {
         in0.require_output_checked(ctx, "out");
         auto in1 = feed_input(valcat, std::move(mi1));
         in1.require_output_checked(ctx, "out");
-        auto out = capture_output_checker<all_events>(
-            ctx->access<capture_output_access>("out"));
+        auto out = capture_output_checker<all_events>(valcat, ctx, "out");
 
         SECTION("events from input 0 emitted before those from input 1") {
             in1.feed(e1{42});
@@ -162,8 +161,7 @@ TEST_CASE("Merge") {
         auto in_y = feed_input(valcat, std::move(temi1));
         in_x.require_output_checked(ctx, "out");
         in_y.require_output_checked(ctx, "out");
-        auto out = capture_output_checker<all_events>(
-            ctx->access<capture_output_access>("out"));
+        auto out = capture_output_checker<all_events>(valcat, ctx, "out");
 
         SECTION("empty yields empty") {
             in_x.flush();
@@ -253,8 +251,7 @@ TEST_CASE("merge single event type") {
     in0.require_output_checked(ctx, "out");
     auto in1 = feed_input(valcat, std::move(min1));
     in1.require_output_checked(ctx, "out");
-    auto out = capture_output_checker<one_event>(
-        ctx->access<capture_output_access>("out"));
+    auto out = capture_output_checker<one_event>(valcat, ctx, "out");
 
     // The only non-common code for the single-event-type case is in
     // emit_pending, so lightly test that.
@@ -301,8 +298,7 @@ TEST_CASE("merge N streams") {
                                ctx->tracker<capture_output_access>("out")))>);
         auto in = feed_input(valcat, std::move(m0));
         in.require_output_checked(ctx, "out");
-        auto out = capture_output_checker<all_events>(
-            ctx->access<capture_output_access>("out"));
+        auto out = capture_output_checker<all_events>(valcat, ctx, "out");
 
         in.feed(e0{0});
         REQUIRE(out.check(e0{0}));
@@ -339,8 +335,7 @@ TEST_CASE("merge unsorted") {
     auto in1 = feed_input(valcat, std::move(min1));
     in0.require_output_checked(ctx, "out");
     in1.require_output_checked(ctx, "out");
-    auto out = capture_output_checker<all_events>(
-        ctx->access<capture_output_access>("out"));
+    auto out = capture_output_checker<all_events>(valcat, ctx, "out");
 
     SECTION("empty yields empty") {
         in0.flush();

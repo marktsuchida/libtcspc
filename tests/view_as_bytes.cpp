@@ -46,8 +46,7 @@ TEST_CASE("view as bytes") {
         feed_input(valcat, view_as_bytes(capture_output<out_events>(
                                ctx->tracker<capture_output_access>("out"))));
     in.require_output_checked(ctx, "out");
-    auto out = capture_output_checker<out_events>(
-        ctx->access<capture_output_access>("out"));
+    auto out = capture_output_checker<out_events>(valcat, ctx, "out");
 
     int const i = 42;
     in.feed(i);
@@ -63,8 +62,7 @@ TEST_CASE("view as bytes, bucket input") {
         feed_input(valcat, view_as_bytes(capture_output<out_events>(
                                ctx->tracker<capture_output_access>("out"))));
     in.require_output_checked(ctx, "out");
-    auto out = capture_output_checker<out_events>(
-        ctx->access<capture_output_access>("out"));
+    auto out = capture_output_checker<out_events>(valcat, ctx, "out");
 
     std::vector const data{42, 43};
     in.feed(tmp_bucket(data));

@@ -46,8 +46,7 @@ TEST_CASE("time correlate at start") {
         valcat, time_correlate_at_start<>(capture_output<tc_out_events>(
                     ctx->tracker<capture_output_access>("out"))));
     in.require_output_checked(ctx, "out");
-    auto out = capture_output_checker<tc_out_events>(
-        ctx->access<capture_output_access>("out"));
+    auto out = capture_output_checker<tc_out_events>(valcat, ctx, "out");
 
     in.feed(std::array<detection_event<>, 2>{{{3, 0}, {5, 1}}});
     REQUIRE(out.check(time_correlated_detection_event<>{3, 0, 2}));
@@ -62,8 +61,7 @@ TEST_CASE("time correlate at stop") {
         valcat, time_correlate_at_stop<>(capture_output<tc_out_events>(
                     ctx->tracker<capture_output_access>("out"))));
     in.require_output_checked(ctx, "out");
-    auto out = capture_output_checker<tc_out_events>(
-        ctx->access<capture_output_access>("out"));
+    auto out = capture_output_checker<tc_out_events>(valcat, ctx, "out");
 
     in.feed(std::array<detection_event<>, 2>{{{3, 0}, {5, 1}}});
     REQUIRE(out.check(time_correlated_detection_event<>{5, 1, 2}));
@@ -80,8 +78,7 @@ TEST_CASE("time correlate at midpoint") {
             valcat, time_correlate_at_midpoint<>(capture_output<tc_out_events>(
                         ctx->tracker<capture_output_access>("out"))));
         in.require_output_checked(ctx, "out");
-        auto out = capture_output_checker<tc_out_events>(
-            ctx->access<capture_output_access>("out"));
+        auto out = capture_output_checker<tc_out_events>(valcat, ctx, "out");
 
         in.feed(std::array<detection_event<>, 2>{{{3, 0}, {5, 1}}});
         REQUIRE(out.check(time_correlated_detection_event<>{4, 1, 2}));
@@ -95,8 +92,7 @@ TEST_CASE("time correlate at midpoint") {
                         capture_output<tc_out_events>(
                             ctx->tracker<capture_output_access>("out"))));
         in.require_output_checked(ctx, "out");
-        auto out = capture_output_checker<tc_out_events>(
-            ctx->access<capture_output_access>("out"));
+        auto out = capture_output_checker<tc_out_events>(valcat, ctx, "out");
 
         in.feed(std::array<detection_event<>, 2>{{{3, 0}, {5, 1}}});
         REQUIRE(out.check(time_correlated_detection_event<>{4, 0, 2}));
@@ -116,8 +112,7 @@ TEST_CASE("time correlate at fraction") {
                         capture_output<tc_out_events>(
                             ctx->tracker<capture_output_access>("out"))));
         in.require_output_checked(ctx, "out");
-        auto out = capture_output_checker<tc_out_events>(
-            ctx->access<capture_output_access>("out"));
+        auto out = capture_output_checker<tc_out_events>(valcat, ctx, "out");
 
         in.feed(std::array<detection_event<>, 2>{{{3000, 0}, {6000, 1}}});
         REQUIRE(out.check(time_correlated_detection_event<>{4000, 1, 3000}));
@@ -132,8 +127,7 @@ TEST_CASE("time correlate at fraction") {
                         capture_output<tc_out_events>(
                             ctx->tracker<capture_output_access>("out"))));
         in.require_output_checked(ctx, "out");
-        auto out = capture_output_checker<tc_out_events>(
-            ctx->access<capture_output_access>("out"));
+        auto out = capture_output_checker<tc_out_events>(valcat, ctx, "out");
 
         in.feed(std::array<detection_event<>, 2>{{{3000, 0}, {6000, 1}}});
         REQUIRE(out.check(time_correlated_detection_event<>{4000, 0, 3000}));
@@ -155,8 +149,7 @@ TEST_CASE("negate difftime") {
                 ctx->tracker<capture_output_access>("out"))));
     in.require_output_checked(ctx, "out");
     auto out = capture_output_checker<
-        type_list<time_correlated_detection_event<types>>>(
-        ctx->access<capture_output_access>("out"));
+        type_list<time_correlated_detection_event<types>>>(valcat, ctx, "out");
 
     in.feed(time_correlated_detection_event<types>{3, 1, 2});
     REQUIRE(out.check(time_correlated_detection_event<types>{3, 1, -2}));
@@ -175,7 +168,7 @@ TEST_CASE("remove time correlation") {
             ctx->tracker<capture_output_access>("out"))));
     in.require_output_checked(ctx, "out");
     auto out = capture_output_checker<type_list<detection_event<>>>(
-        ctx->access<capture_output_access>("out"));
+        valcat, ctx, "out");
 
     in.feed(time_correlated_detection_event<>{3, 1, 2});
     REQUIRE(out.check(detection_event<>{3, 1}));

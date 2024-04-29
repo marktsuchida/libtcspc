@@ -42,6 +42,8 @@ TEST_CASE("introspect read_binary_stream", "[introspect]") {
 
 namespace {
 
+constexpr auto ignore_value_category = feed_as::const_lvalue;
+
 class autodelete {
     std::filesystem::path path;
 
@@ -91,7 +93,7 @@ TEST_CASE("read file") {
                 capture_output<type_list<bucket<std::uint64_t>>>(
                     ctx->tracker<capture_output_access>("out"))));
         auto out = capture_output_checker<type_list<bucket<std::uint64_t>>>(
-            ctx->access<capture_output_access>("out"));
+            ignore_value_category, ctx, "out");
         src.flush();
         // First read is 8 bytes to recover 16-byte aligned reads.
         REQUIRE(out.check(tmp_bucket<std::uint64_t>({43})));
@@ -111,7 +113,7 @@ TEST_CASE("read file") {
                 capture_output<type_list<bucket<std::uint64_t>>>(
                     ctx->tracker<capture_output_access>("out"))));
         auto out = capture_output_checker<type_list<bucket<std::uint64_t>>>(
-            ctx->access<capture_output_access>("out"));
+            ignore_value_category, ctx, "out");
         src.flush();
         REQUIRE(out.check(tmp_bucket<std::uint64_t>({43})));
         REQUIRE(out.check(tmp_bucket<std::uint64_t>({44, 45})));
@@ -131,7 +133,7 @@ TEST_CASE("read file") {
                 capture_output<type_list<bucket<std::uint64_t>>>(
                     ctx->tracker<capture_output_access>("out"))));
         auto out = capture_output_checker<type_list<bucket<std::uint64_t>>>(
-            ctx->access<capture_output_access>("out"));
+            ignore_value_category, ctx, "out");
         REQUIRE_THROWS_WITH(src.flush(),
                             Catch::Matchers::ContainsSubstring("remain"));
         REQUIRE(out.check(tmp_bucket<std::uint64_t>({43})));
@@ -151,7 +153,7 @@ TEST_CASE("read file") {
                 capture_output<type_list<bucket<std::uint64_t>>>(
                     ctx->tracker<capture_output_access>("out"))));
         auto out = capture_output_checker<type_list<bucket<std::uint64_t>>>(
-            ctx->access<capture_output_access>("out"));
+            ignore_value_category, ctx, "out");
         src.flush();
         REQUIRE(out.check(tmp_bucket<std::uint64_t>({43})));
         REQUIRE(out.check(tmp_bucket<std::uint64_t>({44})));
@@ -179,7 +181,7 @@ TEST_CASE("read existing istream, known length") {
             "read error", capture_output<type_list<bucket<std::uint64_t>>>(
                               ctx->tracker<capture_output_access>("out"))));
     auto out = capture_output_checker<type_list<bucket<std::uint64_t>>>(
-        ctx->access<capture_output_access>("out"));
+        ignore_value_category, ctx, "out");
     src.flush();
     REQUIRE(out.check(tmp_bucket<std::uint64_t>({42, 43})));
     REQUIRE(out.check(tmp_bucket<std::uint64_t>({44, 45})));
@@ -205,7 +207,7 @@ TEST_CASE("read existing istream, to end") {
             "read error", capture_output<type_list<bucket<std::uint64_t>>>(
                               ctx->tracker<capture_output_access>("out"))));
     auto out = capture_output_checker<type_list<bucket<std::uint64_t>>>(
-        ctx->access<capture_output_access>("out"));
+        ignore_value_category, ctx, "out");
     src.flush();
     REQUIRE(out.check(tmp_bucket<std::uint64_t>({42, 43})));
     REQUIRE(out.check(tmp_bucket<std::uint64_t>({44, 45})));
@@ -228,7 +230,7 @@ TEST_CASE("read existing istream, empty") {
             "read error", capture_output<type_list<bucket<std::uint64_t>>>(
                               ctx->tracker<capture_output_access>("out"))));
     auto out = capture_output_checker<type_list<bucket<std::uint64_t>>>(
-        ctx->access<capture_output_access>("out"));
+        ignore_value_category, ctx, "out");
     src.flush();
     REQUIRE(out.check_flushed());
 }

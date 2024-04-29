@@ -46,8 +46,7 @@ TEST_CASE("Gate events") {
                              capture_output<out_events>(
                                  ctx->tracker<capture_output_access>("out"))));
     in.require_output_checked(ctx, "out");
-    auto out = capture_output_checker<out_events>(
-        ctx->access<capture_output_access>("out"));
+    auto out = capture_output_checker<out_events>(valcat, ctx, "out");
 
     SECTION("Initial state") {
         in.feed(gated_event{});

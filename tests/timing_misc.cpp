@@ -49,8 +49,7 @@ TEST_CASE("retime periodic sequence events") {
                              capture_output<out_events>(
                                  ctx->tracker<capture_output_access>("out"))));
     in.require_output_checked(ctx, "out");
-    auto out = capture_output_checker<out_events>(
-        ctx->access<capture_output_access>("out"));
+    auto out = capture_output_checker<out_events>(valcat, ctx, "out");
 
     SECTION("normal operation") {
         in.feed(periodic_sequence_model_event<>{4, -8.0, 1.5});
@@ -92,8 +91,7 @@ TEST_CASE("retime periodic sequence events unsigned",
                              capture_output<out_events>(
                                  ctx->tracker<capture_output_access>("out"))));
     in.require_output_checked(ctx, "out");
-    auto out = capture_output_checker<out_events>(
-        ctx->access<capture_output_access>("out"));
+    auto out = capture_output_checker<out_events>(valcat, ctx, "out");
 
     SECTION("normal operation") {
         in.feed(periodic_sequence_model_event<types>{4, -1.5, 1.5});
@@ -120,8 +118,7 @@ TEST_CASE("extrapolate periodic sequences",
                              capture_output<out_events>(
                                  ctx->tracker<capture_output_access>("out"))));
     in.require_output_checked(ctx, "out");
-    auto out = capture_output_checker<out_events>(
-        ctx->access<capture_output_access>("out"));
+    auto out = capture_output_checker<out_events>(valcat, ctx, "out");
 
     in.feed(periodic_sequence_model_event<>{42, 0.5, 1.75});
     REQUIRE(out.check(real_one_shot_timing_event<>{42, 4.0}));
@@ -140,8 +137,7 @@ TEST_CASE("add count to periodic sequences",
                              capture_output<out_events>(
                                  ctx->tracker<capture_output_access>("out"))));
     in.require_output_checked(ctx, "out");
-    auto out = capture_output_checker<out_events>(
-        ctx->access<capture_output_access>("out"));
+    auto out = capture_output_checker<out_events>(valcat, ctx, "out");
 
     in.feed(periodic_sequence_model_event<>{42, 0.5, 1.75});
     REQUIRE(out.check(real_linear_timing_event<>{42, 0.5, 1.75, 3}));
@@ -166,8 +162,7 @@ TEST_CASE("convert sequences to start-stop",
                         capture_output<out_events>(
                             ctx->tracker<capture_output_access>("out"))));
         in.require_output_checked(ctx, "out");
-        auto out = capture_output_checker<out_events>(
-            ctx->access<capture_output_access>("out"));
+        auto out = capture_output_checker<out_events>(valcat, ctx, "out");
 
         in.feed(inevt{42}); // No output.
         in.feed(inevt{42}); // No output.
@@ -185,8 +180,7 @@ TEST_CASE("convert sequences to start-stop",
                         capture_output<out_events>(
                             ctx->tracker<capture_output_access>("out"))));
         in.require_output_checked(ctx, "out");
-        auto out = capture_output_checker<out_events>(
-            ctx->access<capture_output_access>("out"));
+        auto out = capture_output_checker<out_events>(valcat, ctx, "out");
 
         in.feed(inevt{42});
         REQUIRE(out.check(startevt{42}));
@@ -207,8 +201,7 @@ TEST_CASE("convert sequences to start-stop",
                         capture_output<out_events>(
                             ctx->tracker<capture_output_access>("out"))));
         in.require_output_checked(ctx, "out");
-        auto out = capture_output_checker<out_events>(
-            ctx->access<capture_output_access>("out"));
+        auto out = capture_output_checker<out_events>(valcat, ctx, "out");
 
         in.feed(inevt{42});
         REQUIRE(out.check(startevt{42}));

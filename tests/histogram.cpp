@@ -67,8 +67,7 @@ TEMPLATE_TEST_CASE("Histogram, no overflow", "", saturate_on_overflow_t,
                              capture_output<out_events>(
                                  ctx->tracker<capture_output_access>("out"))));
     in.require_output_checked(ctx, "out");
-    auto out = capture_output_checker<out_events>(
-        ctx->access<capture_output_access>("out"));
+    auto out = capture_output_checker<out_events>(valcat, ctx, "out");
 
     std::vector<u16> hist;
     in.feed(bin_increment_event<data_types>{0});
@@ -108,8 +107,7 @@ TEST_CASE("Histogram, saturate on overflow") {
                         capture_output<out_events>(
                             ctx->tracker<capture_output_access>("out"))));
         in.require_output_checked(ctx, "out");
-        auto out = capture_output_checker<out_events>(
-            ctx->access<capture_output_access>("out"));
+        auto out = capture_output_checker<out_events>(valcat, ctx, "out");
 
         std::vector<u16> hist;
         in.feed(bin_increment_event<data_types>{0}); // Overflow
@@ -133,8 +131,7 @@ TEST_CASE("Histogram, saturate on overflow") {
                         capture_output<out_events>(
                             ctx->tracker<capture_output_access>("out"))));
         in.require_output_checked(ctx, "out");
-        auto out = capture_output_checker<out_events>(
-            ctx->access<capture_output_access>("out"));
+        auto out = capture_output_checker<out_events>(valcat, ctx, "out");
 
         std::vector<u16> hist;
         in.feed(bin_increment_event<data_types>{0});
@@ -175,8 +172,7 @@ TEST_CASE("Histogram, reset on overflow") {
                         capture_output<out_events>(
                             ctx->tracker<capture_output_access>("out"))));
         in.require_output_checked(ctx, "out");
-        auto out = capture_output_checker<out_events>(
-            ctx->access<capture_output_access>("out"));
+        auto out = capture_output_checker<out_events>(valcat, ctx, "out");
 
         REQUIRE_THROWS_AS(in.feed(bin_increment_event<data_types>{0}),
                           histogram_overflow_error);
@@ -192,8 +188,7 @@ TEST_CASE("Histogram, reset on overflow") {
                         capture_output<out_events>(
                             ctx->tracker<capture_output_access>("out"))));
         in.require_output_checked(ctx, "out");
-        auto out = capture_output_checker<out_events>(
-            ctx->access<capture_output_access>("out"));
+        auto out = capture_output_checker<out_events>(valcat, ctx, "out");
 
         std::vector<u16> hist;
         in.feed(bin_increment_event<data_types>{0});
@@ -230,8 +225,7 @@ TEST_CASE("Histogram, stop on overflow") {
                         capture_output<out_events>(
                             ctx->tracker<capture_output_access>("out"))));
         in.require_output_checked(ctx, "out");
-        auto out = capture_output_checker<out_events>(
-            ctx->access<capture_output_access>("out"));
+        auto out = capture_output_checker<out_events>(valcat, ctx, "out");
 
         REQUIRE_THROWS_AS(in.feed(bin_increment_event<data_types>{0}),
                           end_of_processing); // Overflow
@@ -250,8 +244,7 @@ TEST_CASE("Histogram, stop on overflow") {
                         capture_output<out_events>(
                             ctx->tracker<capture_output_access>("out"))));
         in.require_output_checked(ctx, "out");
-        auto out = capture_output_checker<out_events>(
-            ctx->access<capture_output_access>("out"));
+        auto out = capture_output_checker<out_events>(valcat, ctx, "out");
 
         in.feed(bin_increment_event<data_types>{0});
         hist = {1};
@@ -280,8 +273,7 @@ TEST_CASE("Histogram, error on overflow") {
                         capture_output<out_events>(
                             ctx->tracker<capture_output_access>("out"))));
         in.require_output_checked(ctx, "out");
-        auto out = capture_output_checker<out_events>(
-            ctx->access<capture_output_access>("out"));
+        auto out = capture_output_checker<out_events>(valcat, ctx, "out");
 
         REQUIRE_THROWS_AS(in.feed(bin_increment_event<data_types>{0}),
                           histogram_overflow_error);
@@ -297,8 +289,7 @@ TEST_CASE("Histogram, error on overflow") {
                         capture_output<out_events>(
                             ctx->tracker<capture_output_access>("out"))));
         in.require_output_checked(ctx, "out");
-        auto out = capture_output_checker<out_events>(
-            ctx->access<capture_output_access>("out"));
+        auto out = capture_output_checker<out_events>(valcat, ctx, "out");
 
         std::vector<u16> hist;
         in.feed(bin_increment_event<data_types>{0});

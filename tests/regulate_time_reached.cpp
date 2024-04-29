@@ -49,8 +49,7 @@ TEST_CASE("regulate time reached by abstime") {
             capture_output<events>(
                 ctx->tracker<capture_output_access>("out"))));
     in.require_output_checked(ctx, "out");
-    auto out = capture_output_checker<events>(
-        ctx->access<capture_output_access>("out"));
+    auto out = capture_output_checker<events>(valcat, ctx, "out");
 
     SECTION("empty stream yields empty stream") {
         in.flush();
@@ -122,8 +121,7 @@ TEST_CASE("regulate time reached by count") {
             capture_output<events>(
                 ctx->tracker<capture_output_access>("out"))));
     in.require_output_checked(ctx, "out");
-    auto out = capture_output_checker<events>(
-        ctx->access<capture_output_access>("out"));
+    auto out = capture_output_checker<events>(valcat, ctx, "out");
 
     SECTION("empty stream yields empty stream") {
         in.flush();
@@ -194,8 +192,7 @@ TEST_CASE("regulate time reached, zero count threshold",
             capture_output<events>(
                 ctx->tracker<capture_output_access>("out"))));
     in.require_output_checked(ctx, "out");
-    auto out = capture_output_checker<events>(
-        ctx->access<capture_output_access>("out"));
+    auto out = capture_output_checker<events>(valcat, ctx, "out");
 
     SECTION("empty stream yields empty stream") {
         in.flush();

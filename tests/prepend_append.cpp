@@ -30,8 +30,8 @@ TEST_CASE("prepend") {
         prepend<int>(42, capture_output<type_list<int, double>>(
                              ctx->tracker<capture_output_access>("out"))));
     in.require_output_checked(ctx, "out");
-    auto out = capture_output_checker<type_list<int, double>>(
-        ctx->access<capture_output_access>("out"));
+    auto out =
+        capture_output_checker<type_list<int, double>>(valcat, ctx, "out");
 
     in.feed(12.5);
     REQUIRE(out.check(42));
@@ -50,8 +50,8 @@ TEST_CASE("append") {
         append<int>(42, capture_output<type_list<int, double>>(
                             ctx->tracker<capture_output_access>("out"))));
     in.require_output_checked(ctx, "out");
-    auto out = capture_output_checker<type_list<int, double>>(
-        ctx->access<capture_output_access>("out"));
+    auto out =
+        capture_output_checker<type_list<int, double>>(valcat, ctx, "out");
 
     in.feed(12.5);
     REQUIRE(out.check(12.5));

@@ -125,12 +125,9 @@ TEST_CASE("Route") {
     in.require_output_checked(ctx, "out0");
     in.require_output_checked(ctx, "out1");
     in.require_output_checked(ctx, "out2");
-    auto out0 = capture_output_checker<out_events>(
-        ctx->access<capture_output_access>("out0"));
-    auto out1 = capture_output_checker<out_events>(
-        ctx->access<capture_output_access>("out1"));
-    auto out2 = capture_output_checker<out_events>(
-        ctx->access<capture_output_access>("out2"));
+    auto out0 = capture_output_checker<out_events>(valcat, ctx, "out0");
+    auto out1 = capture_output_checker<out_events>(valcat, ctx, "out1");
+    auto out2 = capture_output_checker<out_events>(valcat, ctx, "out2");
 
     SECTION("Route and broadcast by event type") {
         in.feed(tc_event{100, 5, 123});
@@ -193,8 +190,7 @@ TEST_CASE("Route with heterogeneous downstreams") {
                 ctx->tracker<capture_output_access>("out0")),
             null_sink()));
     in.require_output_checked(ctx, "out0");
-    auto out0 = capture_output_checker<type_list<e0>>(
-        ctx->access<capture_output_access>("out0"));
+    auto out0 = capture_output_checker<type_list<e0>>(valcat, ctx, "out0");
 
     in.feed(e0{});
     REQUIRE(out0.check(e0{}));
@@ -216,12 +212,9 @@ TEST_CASE("Broadcast") {
     in.require_output_checked(ctx, "out0");
     in.require_output_checked(ctx, "out1");
     in.require_output_checked(ctx, "out2");
-    auto out0 = capture_output_checker<type_list<e0>>(
-        ctx->access<capture_output_access>("out0"));
-    auto out1 = capture_output_checker<type_list<e0>>(
-        ctx->access<capture_output_access>("out1"));
-    auto out2 = capture_output_checker<type_list<e0>>(
-        ctx->access<capture_output_access>("out2"));
+    auto out0 = capture_output_checker<type_list<e0>>(valcat, ctx, "out0");
+    auto out1 = capture_output_checker<type_list<e0>>(valcat, ctx, "out1");
+    auto out2 = capture_output_checker<type_list<e0>>(valcat, ctx, "out2");
 
     SECTION("Empty stream") {
         in.flush();

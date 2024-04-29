@@ -35,8 +35,7 @@ TEST_CASE("check monotonic") {
         feed_input(valcat, check_monotonic(capture_output<out_events>(
                                ctx->tracker<capture_output_access>("out"))));
     in.require_output_checked(ctx, "out");
-    auto out = capture_output_checker<out_events>(
-        ctx->access<capture_output_access>("out"));
+    auto out = capture_output_checker<out_events>(valcat, ctx, "out");
 
     in.feed(e0{-10});
     REQUIRE(out.check(e0{-10}));
@@ -63,8 +62,7 @@ TEST_CASE("check alternating") {
                          check_alternating<e0, e1>(capture_output<out_events>(
                              ctx->tracker<capture_output_access>("out"))));
     in.require_output_checked(ctx, "out");
-    auto out = capture_output_checker<out_events>(
-        ctx->access<capture_output_access>("out"));
+    auto out = capture_output_checker<out_events>(valcat, ctx, "out");
 
     SECTION("correct") {
         in.feed(e0{42});

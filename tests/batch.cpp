@@ -54,8 +54,8 @@ TEST_CASE("batch") {
                            capture_output<type_list<bucket<int>>>(
                                ctx->tracker<capture_output_access>("out"))));
     in.require_output_checked(ctx, "out");
-    auto out = capture_output_checker<type_list<bucket<int>>>(
-        ctx->access<capture_output_access>("out"));
+    auto out =
+        capture_output_checker<type_list<bucket<int>>>(valcat, ctx, "out");
 
     SECTION("ending mid-batch") {
         in.feed(42);
@@ -123,8 +123,7 @@ TEST_CASE("unbatch") {
         feed_input(valcat, unbatch<int>(capture_output<type_list<int>>(
                                ctx->tracker<capture_output_access>("out"))));
     in.require_output_checked(ctx, "out");
-    auto out = capture_output_checker<type_list<int>>(
-        ctx->access<capture_output_access>("out"));
+    auto out = capture_output_checker<type_list<int>>(valcat, ctx, "out");
 
     in.feed(std::vector<int>{42, 43, 44});
     REQUIRE(out.check(42));
@@ -147,8 +146,7 @@ TEST_CASE("process_in_batches") {
                              capture_output<type_list<int>>(
                                  ctx->tracker<capture_output_access>("out"))));
     in.require_output_checked(ctx, "out");
-    auto out = capture_output_checker<type_list<int>>(
-        ctx->access<capture_output_access>("out"));
+    auto out = capture_output_checker<type_list<int>>(valcat, ctx, "out");
 
     in.feed(42);
     in.feed(43);

@@ -62,8 +62,7 @@ TEST_CASE("Map to datapoints") {
             capture_output<out_events>(
                 ctx->tracker<capture_output_access>("out"))));
     in.require_output_checked(ctx, "out");
-    auto out = capture_output_checker<out_events>(
-        ctx->access<capture_output_access>("out"));
+    auto out = capture_output_checker<out_events>(valcat, ctx, "out");
 
     in.feed(misc_event{42});
     REQUIRE(out.check(misc_event{42}));
@@ -99,8 +98,7 @@ TEST_CASE("Map to bins") {
                         capture_output<out_events>(
                             ctx->tracker<capture_output_access>("out"))));
         in.require_output_checked(ctx, "out");
-        auto out = capture_output_checker<out_events>(
-            ctx->access<capture_output_access>("out"));
+        auto out = capture_output_checker<out_events>(valcat, ctx, "out");
 
         in.feed(misc_event{42});
         REQUIRE(out.check(misc_event{42}));
@@ -124,8 +122,7 @@ TEST_CASE("Map to bins") {
                         capture_output<out_events>(
                             ctx->tracker<capture_output_access>("out"))));
         in.require_output_checked(ctx, "out");
-        auto out = capture_output_checker<out_events>(
-            ctx->access<capture_output_access>("out"));
+        auto out = capture_output_checker<out_events>(valcat, ctx, "out");
 
         in.feed(datapoint_event<data_types>{10});
         REQUIRE(out.check(bin_increment_event<data_types>{52}));
@@ -450,8 +447,7 @@ TEST_CASE("Batch bin increments") {
                     capture_output<out_events>(
                         ctx->tracker<capture_output_access>("out"))));
     in.require_output_checked(ctx, "out");
-    auto out = capture_output_checker<out_events>(
-        ctx->access<capture_output_access>("out"));
+    auto out = capture_output_checker<out_events>(valcat, ctx, "out");
 
     SECTION("Pass through unrelated") {
         in.feed(misc_event{42});

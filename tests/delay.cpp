@@ -45,8 +45,7 @@ TEST_CASE("Delay") {
                           capture_output<out_events>(
                               ctx->tracker<capture_output_access>("out"))));
         in.require_output_checked(ctx, "out");
-        auto out = capture_output_checker<out_events>(
-            ctx->access<capture_output_access>("out"));
+        auto out = capture_output_checker<out_events>(valcat, ctx, "out");
 
         in.feed(e0{0});
         REQUIRE(out.check(e0{0}));
@@ -60,8 +59,7 @@ TEST_CASE("Delay") {
                           capture_output<out_events>(
                               ctx->tracker<capture_output_access>("out"))));
         in.require_output_checked(ctx, "out");
-        auto out = capture_output_checker<out_events>(
-            ctx->access<capture_output_access>("out"));
+        auto out = capture_output_checker<out_events>(valcat, ctx, "out");
 
         in.feed(e0{0});
         REQUIRE(out.check(e0{1}));
@@ -77,8 +75,7 @@ TEST_CASE("Delay") {
                           capture_output<out_events>(
                               ctx->tracker<capture_output_access>("out"))));
         in.require_output_checked(ctx, "out");
-        auto out = capture_output_checker<out_events>(
-            ctx->access<capture_output_access>("out"));
+        auto out = capture_output_checker<out_events>(valcat, ctx, "out");
 
         in.feed(e0{0});
         REQUIRE(out.check(e0{-1}));
@@ -96,8 +93,7 @@ TEST_CASE("zero-base abstime") {
         feed_input(valcat, zero_base_abstime(capture_output<out_events>(
                                ctx->tracker<capture_output_access>("out"))));
     in.require_output_checked(ctx, "out");
-    auto out = capture_output_checker<out_events>(
-        ctx->access<capture_output_access>("out"));
+    auto out = capture_output_checker<out_events>(valcat, ctx, "out");
 
     SECTION("Positive") {
         in.feed(e0{123});

@@ -43,8 +43,7 @@ TEST_CASE("stop with error") {
             "myerror", capture_output<type_list<e1>>(
                            ctx->tracker<capture_output_access>("out"))));
     in.require_output_checked(ctx, "out");
-    auto out = capture_output_checker<type_list<e1>>(
-        ctx->access<capture_output_access>("out"));
+    auto out = capture_output_checker<type_list<e1>>(valcat, ctx, "out");
 
     in.feed(e1{});
     REQUIRE(out.check(e1{}));
@@ -64,8 +63,7 @@ TEST_CASE("stop with no error") {
                             capture_output<type_list<e1>>(
                                 ctx->tracker<capture_output_access>("out"))));
     in.require_output_checked(ctx, "out");
-    auto out = capture_output_checker<type_list<e1>>(
-        ctx->access<capture_output_access>("out"));
+    auto out = capture_output_checker<type_list<e1>>(valcat, ctx, "out");
 
     in.feed(e1{});
     REQUIRE(out.check(e1{}));

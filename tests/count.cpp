@@ -59,8 +59,7 @@ TEST_CASE("Count up to") {
                     capture_output<out_events>(
                         ctx->tracker<capture_output_access>("out"))));
             in.require_output_checked(ctx, "out");
-            auto out = capture_output_checker<out_events>(
-                ctx->access<capture_output_access>("out"));
+            auto out = capture_output_checker<out_events>(valcat, ctx, "out");
 
             in.feed(tick_event{42});
             REQUIRE(out.check(fire_event{42}));
@@ -87,8 +86,7 @@ TEST_CASE("Count up to") {
                             capture_output<out_events>(
                                 ctx->tracker<capture_output_access>("out"))));
             in.require_output_checked(ctx, "out");
-            auto out = capture_output_checker<out_events>(
-                ctx->access<capture_output_access>("out"));
+            auto out = capture_output_checker<out_events>(valcat, ctx, "out");
 
             in.feed(tick_event{42});
             REQUIRE(out.check(tick_event{42}));
@@ -109,8 +107,7 @@ TEST_CASE("Count up to") {
                     capture_output<out_events>(
                         ctx->tracker<capture_output_access>("out"))));
             in.require_output_checked(ctx, "out");
-            auto out = capture_output_checker<out_events>(
-                ctx->access<capture_output_access>("out"));
+            auto out = capture_output_checker<out_events>(valcat, ctx, "out");
 
             in.feed(tick_event{42});
             REQUIRE(out.check(tick_event{42}));
@@ -128,8 +125,7 @@ TEST_CASE("Count up to") {
                             capture_output<out_events>(
                                 ctx->tracker<capture_output_access>("out"))));
             in.require_output_checked(ctx, "out");
-            auto out = capture_output_checker<out_events>(
-                ctx->access<capture_output_access>("out"));
+            auto out = capture_output_checker<out_events>(valcat, ctx, "out");
 
             in.feed(tick_event{42});
             REQUIRE(out.check(tick_event{42}));
@@ -152,8 +148,7 @@ TEST_CASE("Count up to") {
                     capture_output<out_events>(
                         ctx->tracker<capture_output_access>("out"))));
             in.require_output_checked(ctx, "out");
-            auto out = capture_output_checker<out_events>(
-                ctx->access<capture_output_access>("out"));
+            auto out = capture_output_checker<out_events>(valcat, ctx, "out");
 
             in.feed(tick_event{42});
             REQUIRE(out.check(tick_event{42}));
@@ -181,8 +176,7 @@ TEST_CASE("Count up to") {
                             capture_output<out_events>(
                                 ctx->tracker<capture_output_access>("out"))));
             in.require_output_checked(ctx, "out");
-            auto out = capture_output_checker<out_events>(
-                ctx->access<capture_output_access>("out"));
+            auto out = capture_output_checker<out_events>(valcat, ctx, "out");
 
             in.feed(tick_event{42});
             REQUIRE(out.check(tick_event{42}));
@@ -215,8 +209,7 @@ TEST_CASE("Count down to") {
                     capture_output<out_events>(
                         ctx->tracker<capture_output_access>("out"))));
     in.require_output_checked(ctx, "out");
-    auto out = capture_output_checker<out_events>(
-        ctx->access<capture_output_access>("out"));
+    auto out = capture_output_checker<out_events>(valcat, ctx, "out");
 
     in.feed(tick_event{42});
     REQUIRE(out.check(tick_event{42}));
@@ -241,8 +234,7 @@ TEST_CASE("event counter") {
                           capture_output<out_events>(
                               ctx->tracker<capture_output_access>("out"))));
     in.require_output_checked(ctx, "out");
-    auto out = capture_output_checker<out_events>(
-        ctx->access<capture_output_access>("out"));
+    auto out = capture_output_checker<out_events>(valcat, ctx, "out");
     auto counter = ctx->access<count_access>("counter");
 
     CHECK(counter.count() == 0);
