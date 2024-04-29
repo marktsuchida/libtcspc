@@ -63,8 +63,7 @@ TEST_CASE("Short-circuited with event set") {
         feed_input(valcat, capture_output<type_list<e0, e1>>(
                                ctx->tracker<capture_output_access>("out")));
     in.require_output_checked(ctx, "out");
-    auto out = capture_output_checker<type_list<e0, e1>>(
-        valcat, ctx->access<capture_output_access>("out"));
+    auto out = capture_output_checker<type_list<e0, e1>>(valcat, ctx, "out");
 
     SECTION("End successfully") {
         in.feed(e0{});
