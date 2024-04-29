@@ -38,6 +38,18 @@
 namespace tcspc {
 
 /**
+ * \brief Value category used to feed an event via `tcspc::feed_input`.
+ *
+ * \ingroup misc
+ */
+enum class feed_as {
+    /** \brief Feed as const lvalue. */
+    const_lvalue,
+    /** \brief Feed as non-const rvalue. */
+    rvalue,
+};
+
+/**
  * \brief Access for `tcspc::capture_output()` processors.
  *
  * \note It is recommended to wrap this object in
@@ -531,16 +543,11 @@ template <> class capture_output<type_list<>> {
     }
 };
 
-template <typename EventList, typename Downstream> class feed_input {
+template <typename Downstream> class feed_input {
     std::vector<std::pair<std::shared_ptr<context>, std::string>>
         outputs_to_check; // (context, name)
+    feed_as refmode = feed_as::const_lvalue;
     Downstream downstream;
-
-    static_assert(
-        handles_events_v<Downstream, EventList>,
-        "processor under test must handle the specified input events");
-    static_assert(handles_flush_v<Downstream>,
-                  "processor under test must handle flushing");
 
     void check_outputs_ready() {
         if (outputs_to_check.empty())
@@ -554,6 +561,9 @@ template <typename EventList, typename Downstream> class feed_input {
   public:
     explicit feed_input(Downstream downstream)
         : downstream(std::move(downstream)) {}
+
+    explicit feed_input(feed_as mode, Downstream downstream)
+        : refmode(mode), downstream(std::move(downstream)) {}
 
     [[nodiscard]] auto introspect_node() const -> processor_info {
         return processor_info(this, "feed_input");
@@ -569,11 +579,20 @@ template <typename EventList, typename Downstream> class feed_input {
         outputs_to_check.emplace_back(std::move(context), std::move(name));
     }
 
-    template <typename Event> void feed(Event &&event) {
-        static_assert(
-            type_list_contains_v<EventList, internal::remove_cvref_t<Event>>);
+    template <typename Event,
+              typename = std::enable_if_t<handles_event_v<
+                  Downstream, internal::remove_cvref_t<Event>>>>
+    void feed(Event &&event) {
         check_outputs_ready();
-        downstream.handle(std::forward<Event>(event));
+
+        if (refmode == feed_as::const_lvalue) {
+            downstream.handle(static_cast<Event const &>(event));
+        } else if constexpr (std::is_lvalue_reference_v<Event>) {
+            internal::remove_cvref_t<Event> copy(event);
+            downstream.handle(std::move(copy));
+        } else {
+            downstream.handle(std::forward<Event>(event));
+        }
     }
 
     void flush() {
@@ -618,31 +637,53 @@ auto capture_output(access_tracker<capture_output_access> &&tracker) {
  *
  * \ingroup processors-testing
  *
+ * Equivalent to `tcspc::feed_input(tcspc::feed_as::const_lvalue, downstream)`.
+ *
+ * \tparam LegacyEventList ignored (kept for compatibility)
+ *
+ * \deprecated Use the overload with `value_category` parameter.
+ */
+template <typename LegacyEventList, typename Downstream>
+auto feed_input(Downstream &&downstream) {
+    return internal::feed_input<Downstream>(
+        std::forward<Downstream>(downstream));
+}
+
+/**
+ * \brief Create a source for feeding test input to a processor under test.
+ *
+ * \ingroup processors-testing
+ *
  * In addition to `flush()` and introspection, the processor has these member
  * functions:
  * - `void require_output_checked(std::shared_ptr<tcspc::context>
  *   context, std::string name)`: register a `tcspc::capture_output` processor
- *   whose recorded output should be fully checked before events (and flush)
- *   are fed
- * - `template <typename Event> void feed(Event const &event)`: feed an event
- *   into \p downstream after checking that registered outputs have been
- *   checked
+ *   whose recorded output should be fully checked or popped before events (and
+ *   flush) are fed.
+ * - `template <typename Event> void feed(Event &&event)`: feed an event into
+ *   the processor under test after checking that all events recorded by the
+ *   registered outputs have been checked or popped.
  *
- * \tparam EventList input event set
+ * Events are fed according to \p value_category, making a copy of \p event if
+ * necessary (when \p event is an lvalue and `tcspc::feed_as::rvalue` is
+ * requested). Thus, the type of reference used to pass \p event to `feed()`
+ * does not affect how it is fed to the processor under test.
  *
  * \tparam Downstream downstream processor type (usually deduced)
  *
- * \param downstream downstream processor
+ * \param value_category value category (kind of reference) used to feed event
+ *
+ * \param downstream downstream processor (processor under test)
  *
  * \return processor
  *
  * \par Events handled
  * - Flush: check that the registered outputs have been checked; pass through
  */
-template <typename EventList, typename Downstream>
-auto feed_input(Downstream &&downstream) {
-    return internal::feed_input<EventList, Downstream>(
-        std::forward<Downstream>(downstream));
+template <typename Downstream>
+auto feed_input(feed_as value_category, Downstream &&downstream) {
+    return internal::feed_input<Downstream>(
+        value_category, std::forward<Downstream>(downstream));
 }
 
 /**
