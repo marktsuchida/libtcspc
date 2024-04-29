@@ -888,21 +888,9 @@ auto feed_input(feed_as value_category, Downstream &&downstream) {
  * This can be used to check at compile time that output of the upstream
  * processor does not contain unexpected events.
  *
- * \note The use of \p RvalueOnlyEventList is _not_ appropriate for testing
- * that an upstream processor emits an event by rvalue reference, because said
- * upstream processor may not compile if `tcspc::handles_event` returns false
- * for this sink. It is rather intended for testing metafunctions such as
- * `tcspc::handles_rvalue_event` and `tcspc::handles_const_event`. Testing that
- * a processor handles certain events with move semantics is best done at
- * run-time.
- *
- * \tparam EventList event types to accept (as either rvalue or const lvalue
- * reference, unless the event is also in \p RvalueOnlyEventList)
- *
- * \tparam RvalueOnlyEventList event types to accept only as rvalue reference
+ * \tparam EventList event types to accept
  */
-template <typename EventList, typename RvalueOnlyEventList = type_list<>>
-class sink_events {
+template <typename EventList> class sink_events {
   public:
     /** \brief Implements processor requirement. */
     [[nodiscard]] auto introspect_node() const -> processor_info {
@@ -915,15 +903,8 @@ class sink_events {
     }
 
     /** \brief Implements processor requirement. */
-    template <
-        typename E,
-        typename = std::enable_if_t<
-            (type_list_contains_v<RvalueOnlyEventList,
-                                  internal::remove_cvref_t<E>> &&
-             not std::is_lvalue_reference_v<E> && not std::is_const_v<E>) ||
-            (not type_list_contains_v<RvalueOnlyEventList,
-                                      internal::remove_cvref_t<E>> &&
-             type_list_contains_v<EventList, internal::remove_cvref_t<E>>)>>
+    template <typename E, typename = std::enable_if_t<type_list_contains_v<
+                              EventList, internal::remove_cvref_t<E>>>>
     void handle(E &&event) {
         [[maybe_unused]] std::remove_reference_t<E> const e =
             std::forward<E>(event);

@@ -117,24 +117,13 @@ TEST_CASE("Short-circuited with event set") {
 }
 
 TEST_CASE("sink_events") {
-    static_assert(handles_flush_v<sink_events<type_list<>>>);
+    STATIC_CHECK(handles_flush_v<sink_events<type_list<>>>);
 
-    static_assert(not handles_rvalue_event_v<sink_events<type_list<>>, int>);
-    static_assert(handles_rvalue_event_v<sink_events<type_list<int>>, int>);
-    static_assert(
-        handles_rvalue_event_v<sink_events<type_list<int>, type_list<int>>,
-                               int>);
-    static_assert(
-        handles_rvalue_event_v<sink_events<type_list<>, type_list<int>>, int>);
+    STATIC_CHECK_FALSE(handles_rvalue_event_v<sink_events<type_list<>>, e0>);
+    STATIC_CHECK(handles_rvalue_event_v<sink_events<type_list<e0>>, e0>);
 
-    static_assert(not handles_const_event_v<sink_events<type_list<>>, int>);
-    static_assert(handles_const_event_v<sink_events<type_list<int>>, int>);
-    static_assert(
-        not handles_const_event_v<sink_events<type_list<int>, type_list<int>>,
-                                  int>);
-    static_assert(
-        not handles_const_event_v<sink_events<type_list<>, type_list<int>>,
-                                  int>);
+    STATIC_CHECK_FALSE(handles_const_event_v<sink_events<type_list<>>, e0>);
+    STATIC_CHECK(handles_const_event_v<sink_events<type_list<e0>>, e0>);
 }
 
 } // namespace tcspc
