@@ -637,23 +637,6 @@ auto capture_output(access_tracker<capture_output_access> &&tracker) {
  *
  * \ingroup processors-testing
  *
- * Equivalent to `tcspc::feed_input(tcspc::feed_as::const_lvalue, downstream)`.
- *
- * \tparam LegacyEventList ignored (kept for compatibility)
- *
- * \deprecated Use the overload with `value_category` parameter.
- */
-template <typename LegacyEventList, typename Downstream>
-auto feed_input(Downstream &&downstream) {
-    return internal::feed_input<Downstream>(
-        std::forward<Downstream>(downstream));
-}
-
-/**
- * \brief Create a source for feeding test input to a processor under test.
- *
- * \ingroup processors-testing
- *
  * In addition to `flush()` and introspection, the processor has these member
  * functions:
  * - `void require_output_checked(std::shared_ptr<tcspc::context>
