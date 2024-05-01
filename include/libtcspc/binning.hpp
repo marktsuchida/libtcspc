@@ -152,19 +152,18 @@ template <typename DataTypes, typename BinMapper, typename Downstream>
 class map_to_bins {
     static_assert(is_processor_v<Downstream, bin_increment_event<DataTypes>>);
 
+    static_assert(
+        std::is_same_v<std::invoke_result_t<
+                           BinMapper, typename DataTypes::datapoint_type>,
+                       std::optional<typename DataTypes::bin_index_type>>);
+
     BinMapper bin_mapper;
     Downstream downstream;
 
-    static_assert(
-        std::is_unsigned_v<typename BinMapper::bin_index_type>,
-        "The bin mapper's bin_index_type must be an unsigned integer type");
+    static_assert(std::is_unsigned_v<typename DataTypes::bin_index_type>,
+                  "The bin_index_type must be an unsigned integer type");
 
   public:
-    using datapoint_type = typename BinMapper::datapoint_type;
-    using bin_index_type = typename BinMapper::bin_index_type;
-    static_assert(
-        std::is_same_v<bin_index_type, typename DataTypes::bin_index_type>);
-
     explicit map_to_bins(BinMapper bin_mapper, Downstream downstream)
         : bin_mapper(std::move(bin_mapper)),
           downstream(std::move(downstream)) {}
@@ -178,8 +177,8 @@ class map_to_bins {
     }
 
     template <typename DT> void handle(datapoint_event<DT> const &event) {
-        static_assert(
-            std::is_same_v<typename DT::datapoint_type, datapoint_type>);
+        static_assert(std::is_same_v<typename DT::datapoint_type,
+                                     typename DataTypes::datapoint_type>);
         auto bin = std::invoke(bin_mapper, event.value);
         if (bin)
             downstream.handle(bin_increment_event<DataTypes>{bin.value()});
@@ -269,24 +268,15 @@ template <unsigned NDataBits, unsigned NHistoBits, bool Flip = false,
           typename DataTypes = default_data_types>
 struct power_of_2_bin_mapper {
     /** \brief Implements bin mapper requirement. */
-    using datapoint_type = typename DataTypes::datapoint_type;
-    static_assert((std::is_unsigned_v<datapoint_type> &&
-                   NDataBits <= 8 * sizeof(datapoint_type)) ||
-                  NDataBits <= 8 * sizeof(datapoint_type) - 1);
-
-    /** \brief Implements bin mapper requirement. */
-    using bin_index_type = typename DataTypes::bin_index_type;
-    static_assert((std::is_unsigned_v<bin_index_type> &&
-                   NHistoBits <= 8 * sizeof(bin_index_type)) ||
-                  NHistoBits <= 8 * sizeof(bin_index_type) - 1);
-
-    /** \brief Implements bin mapper requirement. */
     [[nodiscard]] auto n_bins() const -> std::size_t {
         return std::size_t{1} << NHistoBits;
     }
 
     /** \brief Implements bin mapper requirement. */
-    auto operator()(datapoint_type d) const -> std::optional<bin_index_type> {
+    auto operator()(typename DataTypes::datapoint_type d) const
+        -> std::optional<typename DataTypes::bin_index_type> {
+        using datapoint_type = typename DataTypes::datapoint_type;
+        using bin_index_type = typename DataTypes::bin_index_type;
         static_assert(sizeof(datapoint_type) >= sizeof(bin_index_type));
         static_assert(NDataBits <= 8 * sizeof(datapoint_type));
         static_assert(NHistoBits <= 8 * sizeof(bin_index_type));
@@ -327,11 +317,6 @@ template <typename DataTypes = default_data_types> class linear_bin_mapper {
                   "bin_index_type must be an unsigned integer type");
 
   public:
-    /** \brief Implements bin mapper requirement. */
-    using datapoint_type = typename DataTypes::datapoint_type;
-    /** \brief Implements bin mapper requirement. */
-    using bin_index_type = typename DataTypes::bin_index_type;
-
     /**
      * \brief Construct with parameters.
      *
@@ -351,9 +336,10 @@ template <typename DataTypes = default_data_types> class linear_bin_mapper {
      * the first and last bins
      */
     explicit linear_bin_mapper(
-        arg::offset<datapoint_type> offset,
-        arg::bin_width<datapoint_type> bin_width,
-        arg::max_bin_index<bin_index_type> max_bin_index, bool clamp = false)
+        arg::offset<typename DataTypes::datapoint_type> offset,
+        arg::bin_width<typename DataTypes::datapoint_type> bin_width,
+        arg::max_bin_index<typename DataTypes::bin_index_type> max_bin_index,
+        bool clamp = false)
         : off(offset.value), bwidth(bin_width.value),
           max_index(max_bin_index.value), clamp(clamp) {
         if (bwidth == 0)
@@ -370,7 +356,9 @@ template <typename DataTypes = default_data_types> class linear_bin_mapper {
     }
 
     /** \brief Implements bin mapper requirement. */
-    auto operator()(datapoint_type d) const -> std::optional<bin_index_type> {
+    auto operator()(typename DataTypes::datapoint_type d) const
+        -> std::optional<typename DataTypes::bin_index_type> {
+        using bin_index_type = typename DataTypes::bin_index_type;
         d -= off;
         // Check sign before dividing to avoid rounding to zero in division.
         if ((d < 0 && bwidth > 0) || (d > 0 && bwidth < 0))

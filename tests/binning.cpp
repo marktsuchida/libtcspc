@@ -121,21 +121,14 @@ TEST_CASE("Map to bins") {
     auto ctx = context::create();
 
     SECTION("Out of range") {
-        struct null_bin_mapper {
-            using datapoint_type = i32;
-            using bin_index_type = u32;
-            auto operator()([[maybe_unused]] int d) const
-                -> std::optional<unsigned> {
-                return std::nullopt;
-            }
-        };
         using out_events =
             type_list<bin_increment_event<data_types>, misc_event>;
         auto in = feed_input(
-            valcat, map_to_bins<data_types>(
-                        null_bin_mapper(),
-                        capture_output<out_events>(
-                            ctx->tracker<capture_output_access>("out"))));
+            valcat,
+            map_to_bins<data_types>(
+                []([[maybe_unused]] i32 d) { return std::optional<u32>(); },
+                capture_output<out_events>(
+                    ctx->tracker<capture_output_access>("out"))));
         in.require_output_checked(ctx, "out");
         auto out = capture_output_checker<out_events>(valcat, ctx, "out");
 
@@ -148,10 +141,8 @@ TEST_CASE("Map to bins") {
 
     SECTION("Simple mapping") {
         struct add_42_bin_mapper {
-            using datapoint_type = i32;
-            using bin_index_type = u32;
-            auto operator()(int d) const -> std::optional<unsigned> {
-                return unsigned(d) + 42u;
+            auto operator()(i32 d) const -> std::optional<u32> {
+                return u32(d) + 42u;
             }
         };
         using out_events = type_list<bin_increment_event<data_types>>;
