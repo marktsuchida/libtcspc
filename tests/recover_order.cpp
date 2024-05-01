@@ -11,6 +11,7 @@
 #include "libtcspc/context.hpp"
 #include "libtcspc/errors.hpp"
 #include "libtcspc/int_types.hpp"
+#include "libtcspc/processor_traits.hpp"
 #include "libtcspc/test_utils.hpp"
 #include "libtcspc/type_list.hpp"
 #include "test_checkers.hpp"
@@ -28,6 +29,13 @@ using e0 = time_tagged_test_event<0>;
 using e1 = time_tagged_test_event<1>;
 
 } // namespace
+
+TEST_CASE("recover_order event type constraints") {
+    using proc_type = decltype(recover_order<type_list<e0, e1>>(
+        arg::time_window<i64>{100}, sink_events<e0, e1>()));
+    STATIC_CHECK(is_processor_v<proc_type, e0, e1>);
+    STATIC_CHECK_FALSE(handles_event_v<proc_type, int>);
+}
 
 TEST_CASE("introspect recover_order", "[introspect]") {
     check_introspect_simple_processor(
@@ -55,15 +63,15 @@ TEST_CASE("recover order") {
         in.handle(e0{2});
         in.handle(e0{3});
         in.handle(e0{4});
-        REQUIRE(out.check(e0{0}));
+        REQUIRE(out.check(emitted_as::always_rvalue, e0{0}));
         in.handle(e0{5});
         in.handle(e0{6});
-        REQUIRE(out.check(e0{2}));
+        REQUIRE(out.check(emitted_as::always_rvalue, e0{2}));
         in.flush();
-        REQUIRE(out.check(e0{3}));
-        REQUIRE(out.check(e0{4}));
-        REQUIRE(out.check(e0{5}));
-        REQUIRE(out.check(e0{6}));
+        REQUIRE(out.check(emitted_as::always_rvalue, e0{3}));
+        REQUIRE(out.check(emitted_as::always_rvalue, e0{4}));
+        REQUIRE(out.check(emitted_as::always_rvalue, e0{5}));
+        REQUIRE(out.check(emitted_as::always_rvalue, e0{6}));
         REQUIRE(out.check_flushed());
     }
 
@@ -71,14 +79,14 @@ TEST_CASE("recover order") {
         in.handle(e0{3});
         in.handle(e0{0});
         in.handle(e0{5});
-        REQUIRE(out.check(e0{0}));
+        REQUIRE(out.check(emitted_as::always_rvalue, e0{0}));
         in.handle(e0{2});
         in.handle(e0{7});
-        REQUIRE(out.check(e0{2}));
-        REQUIRE(out.check(e0{3}));
+        REQUIRE(out.check(emitted_as::always_rvalue, e0{2}));
+        REQUIRE(out.check(emitted_as::always_rvalue, e0{3}));
         in.flush();
-        REQUIRE(out.check(e0{5}));
-        REQUIRE(out.check(e0{7}));
+        REQUIRE(out.check(emitted_as::always_rvalue, e0{5}));
+        REQUIRE(out.check(emitted_as::always_rvalue, e0{7}));
         REQUIRE(out.check_flushed());
     }
 }
@@ -98,18 +106,18 @@ TEST_CASE("recover order, empty time window") {
         in.handle(e0{0});
         in.handle(e0{0});
         in.handle(e0{2});
-        REQUIRE(out.check(e0{0}));
-        REQUIRE(out.check(e0{0}));
+        REQUIRE(out.check(emitted_as::always_rvalue, e0{0}));
+        REQUIRE(out.check(emitted_as::always_rvalue, e0{0}));
         in.handle(e0{3});
-        REQUIRE(out.check(e0{2}));
+        REQUIRE(out.check(emitted_as::always_rvalue, e0{2}));
         in.handle(e0{4});
-        REQUIRE(out.check(e0{3}));
+        REQUIRE(out.check(emitted_as::always_rvalue, e0{3}));
         in.handle(e0{5});
-        REQUIRE(out.check(e0{4}));
+        REQUIRE(out.check(emitted_as::always_rvalue, e0{4}));
         in.handle(e0{6});
-        REQUIRE(out.check(e0{5}));
+        REQUIRE(out.check(emitted_as::always_rvalue, e0{5}));
         in.flush();
-        REQUIRE(out.check(e0{6}));
+        REQUIRE(out.check(emitted_as::always_rvalue, e0{6}));
         REQUIRE(out.check_flushed());
     }
 
@@ -117,23 +125,23 @@ TEST_CASE("recover order, empty time window") {
         in.handle(e0{42});
         in.handle(e0{41});
         in.handle(e0{42});
-        REQUIRE(out.check(e0{41}));
+        REQUIRE(out.check(emitted_as::always_rvalue, e0{41}));
         in.handle(e0{43});
-        REQUIRE(out.check(e0{42}));
-        REQUIRE(out.check(e0{42}));
+        REQUIRE(out.check(emitted_as::always_rvalue, e0{42}));
+        REQUIRE(out.check(emitted_as::always_rvalue, e0{42}));
         in.handle(e0{42});
         in.handle(e0{43});
-        REQUIRE(out.check(e0{42}));
+        REQUIRE(out.check(emitted_as::always_rvalue, e0{42}));
         in.flush();
-        REQUIRE(out.check(e0{43}));
-        REQUIRE(out.check(e0{43}));
+        REQUIRE(out.check(emitted_as::always_rvalue, e0{43}));
+        REQUIRE(out.check(emitted_as::always_rvalue, e0{43}));
         REQUIRE(out.check_flushed());
     }
 
     SECTION("out-of-order event throws if too late") {
         in.handle(e0{42});
         in.handle(e0{43});
-        REQUIRE(out.check(e0{42}));
+        REQUIRE(out.check(emitted_as::always_rvalue, e0{42}));
         REQUIRE_THROWS_AS(in.handle(e0{41}), data_validation_error);
     }
 }
@@ -152,14 +160,14 @@ TEST_CASE("recover order, multiple event types") {
     in.handle(e0{3});
     in.handle(e1{0});
     in.handle(e0{5});
-    REQUIRE(out.check(e1{0}));
+    REQUIRE(out.check(emitted_as::always_rvalue, e1{0}));
     in.handle(e1{2});
     in.handle(e0{7});
-    REQUIRE(out.check(e1{2}));
-    REQUIRE(out.check(e0{3}));
+    REQUIRE(out.check(emitted_as::always_rvalue, e1{2}));
+    REQUIRE(out.check(emitted_as::always_rvalue, e0{3}));
     in.flush();
-    REQUIRE(out.check(e0{5}));
-    REQUIRE(out.check(e0{7}));
+    REQUIRE(out.check(emitted_as::always_rvalue, e0{5}));
+    REQUIRE(out.check(emitted_as::always_rvalue, e0{7}));
     REQUIRE(out.check_flushed());
 }
 

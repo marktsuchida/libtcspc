@@ -7,12 +7,15 @@
 #pragma once
 
 #include "introspect.hpp"
+#include "processor_traits.hpp"
 
 namespace tcspc {
 
 namespace internal {
 
 template <typename Event, typename Downstream> class prepend {
+    static_assert(is_processor_v<Downstream, Event>);
+
     bool prepended = false;
     Downstream downstream;
 
@@ -31,7 +34,9 @@ template <typename Event, typename Downstream> class prepend {
         return downstream.introspect_graph().push_entry_point(this);
     }
 
-    template <typename AnyEvent> void handle(AnyEvent &&event) {
+    template <typename AnyEvent, typename = std::enable_if_t<handles_event_v<
+                                     Downstream, remove_cvref_t<AnyEvent>>>>
+    void handle(AnyEvent &&event) {
         if (not prepended) {
             downstream.handle(std::move(evt));
             prepended = true;
@@ -43,6 +48,8 @@ template <typename Event, typename Downstream> class prepend {
 };
 
 template <typename Event, typename Downstream> class append {
+    static_assert(is_processor_v<Downstream, Event>);
+
     Downstream downstream;
 
     // Cold data after downstream:
@@ -60,7 +67,9 @@ template <typename Event, typename Downstream> class append {
         return downstream.introspect_graph().push_entry_point(this);
     }
 
-    template <typename AnyEvent> void handle(AnyEvent &&event) {
+    template <typename AnyEvent, typename = std::enable_if_t<handles_event_v<
+                                     Downstream, remove_cvref_t<AnyEvent>>>>
+    void handle(AnyEvent &&event) {
         downstream.handle(std::forward<AnyEvent>(event));
     }
 

@@ -8,6 +8,7 @@
 
 #include "common.hpp"
 #include "introspect.hpp"
+#include "processor_traits.hpp"
 
 #include <limits>
 #include <ostream>
@@ -22,6 +23,8 @@ namespace internal {
 template <typename DataTypes, bool RequireStrictlyIncreasing,
           typename Downstream>
 class check_monotonic {
+    static_assert(is_processor_v<Downstream, warning_event>);
+
     typename DataTypes::abstime_type last_seen =
         std::numeric_limits<typename DataTypes::abstime_type>::min();
 
@@ -47,7 +50,9 @@ class check_monotonic {
         return downstream.introspect_graph().push_entry_point(this);
     }
 
-    template <typename Event> void handle(Event &&event) {
+    template <typename Event, typename = std::enable_if_t<handles_event_v<
+                                  Downstream, remove_cvref_t<Event>>>>
+    void handle(Event &&event) {
         static_assert(std::is_same_v<decltype(event.abstime),
                                      typename DataTypes::abstime_type>);
         bool const monotonic = RequireStrictlyIncreasing
@@ -114,6 +119,8 @@ namespace internal {
 
 template <typename Event0, typename Event1, typename Downstream>
 class check_alternating {
+    static_assert(is_processor_v<Downstream, Event0, Event1, warning_event>);
+
     bool last_saw_0 = false;
     Downstream downstream;
 
@@ -133,13 +140,14 @@ class check_alternating {
         return downstream.introspect_graph().push_entry_point(this);
     }
 
-    template <typename E> void handle(E &&event) {
-        if constexpr (std::is_convertible_v<internal::remove_cvref_t<E>,
-                                            Event0>) {
+    template <typename E, typename = std::enable_if_t<
+                              handles_event_v<Downstream, remove_cvref_t<E>>>>
+    void handle(E &&event) {
+        if constexpr (std::is_convertible_v<remove_cvref_t<E>, Event0>) {
             if (last_saw_0)
                 issue_warning();
             last_saw_0 = true;
-        } else if constexpr (std::is_convertible_v<internal::remove_cvref_t<E>,
+        } else if constexpr (std::is_convertible_v<remove_cvref_t<E>,
                                                    Event1>) {
             if (not last_saw_0)
                 issue_warning();

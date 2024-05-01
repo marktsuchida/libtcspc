@@ -10,6 +10,7 @@
 #include "common.hpp"
 #include "histogram_events.hpp"
 #include "introspect.hpp"
+#include "processor_traits.hpp"
 
 #include <cstddef>
 #include <cstdint>
@@ -28,6 +29,8 @@ template <typename Event, typename DataTypes, typename DataMapper,
 class map_to_datapoints {
     static_assert(std::is_same_v<std::invoke_result_t<DataMapper, Event>,
                                  typename DataTypes::datapoint_type>);
+
+    static_assert(is_processor_v<Downstream, datapoint_event<DataTypes>>);
 
     DataMapper mapper;
 
@@ -53,7 +56,10 @@ class map_to_datapoints {
     // NOLINTNEXTLINE(cppcoreguidelines-rvalue-reference-param-not-moved)
     void handle(Event &&event) { handle(static_cast<Event const &>(event)); }
 
-    template <typename OtherEvent> void handle(OtherEvent &&event) {
+    template <typename OtherEvent,
+              typename = std::enable_if_t<
+                  handles_event_v<Downstream, remove_cvref_t<OtherEvent>>>>
+    void handle(OtherEvent &&event) {
         downstream.handle(std::forward<OtherEvent>(event));
     }
 
@@ -144,6 +150,8 @@ namespace internal {
 
 template <typename DataTypes, typename BinMapper, typename Downstream>
 class map_to_bins {
+    static_assert(is_processor_v<Downstream, bin_increment_event<DataTypes>>);
+
     BinMapper bin_mapper;
     Downstream downstream;
 
@@ -182,7 +190,10 @@ class map_to_bins {
         handle(static_cast<datapoint_event<DT> const &>(event));
     }
 
-    template <typename OtherEvent> void handle(OtherEvent &&event) {
+    template <typename OtherEvent,
+              typename = std::enable_if_t<
+                  handles_event_v<Downstream, remove_cvref_t<OtherEvent>>>>
+    void handle(OtherEvent &&event) {
         downstream.handle(std::forward<OtherEvent>(event));
     }
 
@@ -377,6 +388,9 @@ namespace internal {
 template <typename StartEvent, typename StopEvent, typename DataTypes,
           typename Downstream>
 class batch_bin_increments {
+    static_assert(
+        is_processor_v<Downstream, bin_increment_batch_event<DataTypes>>);
+
     bool in_batch = false;
     bin_increment_batch_event<DataTypes> batch;
 
@@ -428,7 +442,10 @@ class batch_bin_increments {
         handle(static_cast<StopEvent const &>(event));
     }
 
-    template <typename OtherEvent> void handle(OtherEvent &&event) {
+    template <typename OtherEvent,
+              typename = std::enable_if_t<
+                  handles_event_v<Downstream, remove_cvref_t<OtherEvent>>>>
+    void handle(OtherEvent &&event) {
         downstream.handle(std::forward<OtherEvent>(event));
     }
 

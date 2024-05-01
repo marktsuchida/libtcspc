@@ -9,6 +9,7 @@
 #include "arg_wrappers.hpp"
 #include "common.hpp"
 #include "introspect.hpp"
+#include "processor_traits.hpp"
 
 #include <cstddef>
 #include <optional>
@@ -23,6 +24,8 @@ namespace internal {
 template <typename TriggerEvent, typename OutputEvent,
           typename TimingGenerator, typename Downstream>
 class generate {
+    static_assert(is_processor_v<Downstream, TriggerEvent, OutputEvent>);
+
     using abstime_type = decltype(std::declval<TriggerEvent>().abstime);
     static_assert(
         std::is_same_v<std::remove_reference_t<
@@ -59,9 +62,10 @@ class generate {
         return downstream.introspect_graph().push_entry_point(this);
     }
 
-    template <typename E> void handle(E &&event) {
-        if constexpr (std::is_convertible_v<internal::remove_cvref_t<E>,
-                                            TriggerEvent>) {
+    template <typename E, typename = std::enable_if_t<
+                              handles_event_v<Downstream, remove_cvref_t<E>>>>
+    void handle(E &&event) {
+        if constexpr (std::is_convertible_v<remove_cvref_t<E>, TriggerEvent>) {
             emit([now = event.abstime](auto t) { return t < now; });
             generator.trigger(event);
         } else {

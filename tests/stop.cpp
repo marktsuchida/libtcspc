@@ -9,6 +9,7 @@
 #include "libtcspc/common.hpp"
 #include "libtcspc/context.hpp"
 #include "libtcspc/errors.hpp"
+#include "libtcspc/processor_traits.hpp"
 #include "libtcspc/test_utils.hpp"
 #include "libtcspc/type_list.hpp"
 #include "test_checkers.hpp"
@@ -27,6 +28,15 @@ using e0 = empty_test_event<0>;
 using e1 = empty_test_event<1>;
 
 } // namespace
+
+TEST_CASE("stop event type constraints") {
+    STATIC_CHECK(
+        is_processor_v<decltype(stop<type_list<e0>>("", sink_events<e1>())),
+                       e0, e1>);
+    STATIC_CHECK_FALSE(
+        handles_event_v<decltype(stop<type_list<e0>>("", sink_events<e1>())),
+                        int>);
+}
 
 TEST_CASE("introspect stop", "[introspect]") {
     check_introspect_simple_processor(

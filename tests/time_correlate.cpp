@@ -9,6 +9,7 @@
 #include "libtcspc/arg_wrappers.hpp"
 #include "libtcspc/common.hpp"
 #include "libtcspc/context.hpp"
+#include "libtcspc/processor_traits.hpp"
 #include "libtcspc/test_utils.hpp"
 #include "libtcspc/time_tagged_events.hpp"
 #include "libtcspc/type_list.hpp"
@@ -23,10 +24,45 @@
 
 namespace tcspc {
 
-namespace {
+TEST_CASE("time_correlate_at_start event type constraints") {
+    using proc_type = decltype(time_correlate_at_start(
+        sink_events<time_correlated_detection_event<>, int>()));
+    STATIC_CHECK(
+        is_processor_v<proc_type, std::array<detection_event<>, 2>, int>);
+    STATIC_CHECK_FALSE(handles_event_v<proc_type, double>);
+}
 
-using tc_out_events = type_list<time_correlated_detection_event<>>;
+TEST_CASE("time_correlate_at_midpoint event type constraints") {
+    using proc_type = decltype(time_correlate_at_midpoint(
+        sink_events<time_correlated_detection_event<>, int>()));
+    STATIC_CHECK(
+        is_processor_v<proc_type, std::array<detection_event<>, 2>, int>);
+    STATIC_CHECK_FALSE(handles_event_v<proc_type, double>);
+}
 
+TEST_CASE("time_correlate_at_fraction event type constraints") {
+    using proc_type = decltype(time_correlate_at_fraction(
+        arg::fraction{0.333},
+        sink_events<time_correlated_detection_event<>, int>()));
+    STATIC_CHECK(
+        is_processor_v<proc_type, std::array<detection_event<>, 2>, int>);
+    STATIC_CHECK_FALSE(handles_event_v<proc_type, double>);
+}
+
+TEST_CASE("negate_difftime event type constraints") {
+    using proc_type = decltype(negate_difftime(
+        sink_events<time_correlated_detection_event<>, int>()));
+    STATIC_CHECK(
+        is_processor_v<proc_type, time_correlated_detection_event<>, int>);
+    STATIC_CHECK_FALSE(handles_event_v<proc_type, double>);
+}
+
+TEST_CASE("remove_time_correlation event type constraints") {
+    using proc_type = decltype(remove_time_correlation(
+        sink_events<detection_event<>, int>()));
+    STATIC_CHECK(
+        is_processor_v<proc_type, time_correlated_detection_event<>, int>);
+    STATIC_CHECK_FALSE(handles_event_v<proc_type, double>);
 }
 
 TEST_CASE("introspect time_correlate", "[introspect]") {
@@ -38,6 +74,12 @@ TEST_CASE("introspect time_correlate", "[introspect]") {
     check_introspect_simple_processor(negate_difftime(null_sink()));
     check_introspect_simple_processor(remove_time_correlation(null_sink()));
 }
+
+namespace {
+
+using tc_out_events = type_list<time_correlated_detection_event<>>;
+
+} // namespace
 
 TEST_CASE("time correlate at start") {
     auto const valcat = GENERATE(feed_as::const_lvalue, feed_as::rvalue);
@@ -144,7 +186,7 @@ TEST_CASE("negate difftime") {
     auto ctx = context::create();
     auto in = feed_input(
         valcat,
-        negate_difftime(
+        negate_difftime<types>(
             capture_output<type_list<time_correlated_detection_event<types>>>(
                 ctx->tracker<capture_output_access>("out"))));
     in.require_output_checked(ctx, "out");

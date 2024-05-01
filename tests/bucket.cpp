@@ -9,6 +9,7 @@
 #include "libtcspc/common.hpp"
 #include "libtcspc/context.hpp"
 #include "libtcspc/errors.hpp"
+#include "libtcspc/processor_traits.hpp"
 #include "libtcspc/span.hpp"
 #include "libtcspc/test_utils.hpp"
 #include "test_checkers.hpp"
@@ -175,30 +176,39 @@ TEST_CASE(
 
 namespace {
 
-struct evt_with_bucket {
-    bucket<int> bucket;
+template <typename T> struct evt_with_bucket {
+    bucket<T> bucket;
 };
 
 } // namespace
 
+TEST_CASE("extract_bucket event type constraints") {
+    using proc_type = decltype(extract_bucket<evt_with_bucket<int>>(
+        sink_events<bucket<int>>()));
+    STATIC_CHECK(is_processor_v<proc_type, evt_with_bucket<int>>);
+    STATIC_CHECK_FALSE(handles_event_v<proc_type, evt_with_bucket<double>>);
+    STATIC_CHECK_FALSE(handles_event_v<proc_type, bucket<int>>);
+    STATIC_CHECK_FALSE(handles_event_v<proc_type, int>);
+}
+
 TEST_CASE("introspect extract_bucket", "[introspect]") {
     check_introspect_simple_processor(
-        extract_bucket<evt_with_bucket>(null_sink()));
+        extract_bucket<evt_with_bucket<int>>(null_sink()));
 }
 
 TEST_CASE("extract_bucket preserves value category") {
     auto const valcat = GENERATE(feed_as::const_lvalue, feed_as::rvalue);
     auto ctx = context::create();
-    auto in = feed_input(
-        valcat,
-        extract_bucket<evt_with_bucket>(capture_output<type_list<bucket<int>>>(
-            ctx->tracker<capture_output_access>("out"))));
+    auto in = feed_input(valcat,
+                         extract_bucket<evt_with_bucket<int>>(
+                             capture_output<type_list<bucket<int>>>(
+                                 ctx->tracker<capture_output_access>("out"))));
     in.require_output_checked(ctx, "out");
     auto out =
         capture_output_checker<type_list<bucket<int>>>(valcat, ctx, "out");
 
     std::array arr{42, 43};
-    in.handle(evt_with_bucket{bucket<int>{span(arr), nullptr}});
+    in.handle(evt_with_bucket<int>{bucket<int>{span(arr), nullptr}});
     CHECK(out.check(emitted_as::same_as_fed, bucket<int>{span(arr), nullptr}));
 }
 

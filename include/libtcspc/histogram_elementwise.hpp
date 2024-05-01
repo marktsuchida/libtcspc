@@ -13,6 +13,7 @@
 #include "histogram_events.hpp"
 #include "histogramming.hpp"
 #include "introspect.hpp"
+#include "processor_traits.hpp"
 
 #include <cassert>
 #include <cstddef>
@@ -27,11 +28,16 @@ namespace internal {
 
 template <typename OverflowPolicy, typename DataTypes, typename Downstream>
 class histogram_elementwise {
+    static_assert(is_any_of_v<OverflowPolicy, saturate_on_overflow_t,
+                              error_on_overflow_t>);
+    static_assert(is_processor_v<Downstream, histogram_event<DataTypes>,
+                                 histogram_array_event<DataTypes>>);
+    static_assert(not std::is_same_v<OverflowPolicy, saturate_on_overflow_t> ||
+                  handles_event_v<Downstream, warning_event>);
+
   public:
     using bin_index_type = typename DataTypes::bin_index_type;
     using bin_type = typename DataTypes::bin_type;
-    static_assert(is_any_of_v<OverflowPolicy, saturate_on_overflow_t,
-                              error_on_overflow_t>);
 
   private:
     using internal_overflow_policy = std::conditional_t<
@@ -126,7 +132,10 @@ class histogram_elementwise {
         handle(static_cast<bin_increment_batch_event<DT> const &>(event));
     }
 
-    template <typename OtherEvent> void handle(OtherEvent &&event) {
+    template <typename OtherEvent,
+              typename = std::enable_if_t<
+                  handles_event_v<Downstream, remove_cvref_t<OtherEvent>>>>
+    void handle(OtherEvent &&event) {
         downstream.handle(std::forward<OtherEvent>(event));
     }
 
@@ -216,21 +225,32 @@ namespace internal {
 template <typename ResetEvent, typename Policy, typename DataTypes,
           typename Downstream>
 class histogram_elementwise_accumulate {
-  public:
-    using bin_index_type = typename DataTypes::bin_index_type;
-    using bin_type = typename DataTypes::bin_type;
-
-  private:
     static_assert(
         is_any_of_v<Policy, saturate_on_overflow_t, reset_on_overflow_t,
                     stop_on_overflow_t, error_on_overflow_t,
                     internal::error_on_overflow_and_skip_concluding_event_t>);
-
     using overflow_policy = std::conditional_t<
         std::is_same_v<
             Policy, internal::error_on_overflow_and_skip_concluding_event_t>,
         error_on_overflow_t, Policy>;
 
+    // Do not require handling of concluding_histogram_array_event unless
+    // reset_on_overflow.
+    static_assert(is_processor_v<Downstream, histogram_event<DataTypes>,
+                                 histogram_array_event<DataTypes>>);
+    static_assert(
+        not std::is_same_v<overflow_policy, saturate_on_overflow_t> ||
+        handles_event_v<Downstream, warning_event>);
+    static_assert(
+        not std::is_same_v<overflow_policy, reset_on_overflow_t> ||
+        handles_event_v<Downstream,
+                        concluding_histogram_array_event<DataTypes>>);
+
+  public:
+    using bin_index_type = typename DataTypes::bin_index_type;
+    using bin_type = typename DataTypes::bin_type;
+
+  private:
     // Concluding event is not supported for saturate-on-overflow (no way to
     // roll back current cycle). It is required for reset/stop-on-overflow
     // because it doesn't make much sense to use those policies without a
@@ -375,32 +395,35 @@ class histogram_elementwise_accumulate {
         }
     }
 
-    void handle([[maybe_unused]] ResetEvent const &event) {
-        if constexpr (need_concluding) {
-            lazy_start();
-            mhista.roll_back_current_cycle(journal);
-            emit_concluding();
-        }
-        hist_bucket = {};
-        if constexpr (std::is_same_v<overflow_policy,
-                                     saturate_on_overflow_t>) {
-            saturated = false;
-        }
-        journal.clear();
-    }
-
     // NOLINTNEXTLINE(cppcoreguidelines-rvalue-reference-param-not-moved)
     template <typename DT> void handle(bin_increment_batch_event<DT> &&event) {
         handle(static_cast<bin_increment_batch_event<DT> const &>(event));
     }
 
-    // NOLINTNEXTLINE(cppcoreguidelines-rvalue-reference-param-not-moved)
-    void handle(ResetEvent &&event) {
-        handle(static_cast<ResetEvent const &>(event));
-    }
-
-    template <typename OtherEvent> void handle(OtherEvent &&event) {
-        downstream.handle(std::forward<OtherEvent>(event));
+    template <
+        typename E,
+        typename = std::enable_if_t<
+            (std::is_convertible_v<remove_cvref_t<E>, ResetEvent> &&
+             handles_event_v<Downstream,
+                             concluding_histogram_array_event<DataTypes>>) ||
+            (not std::is_convertible_v<remove_cvref_t<E>, ResetEvent> &&
+             handles_event_v<Downstream, remove_cvref_t<E>>)>>
+    void handle(E &&event) {
+        if constexpr (std::is_convertible_v<remove_cvref_t<E>, ResetEvent>) {
+            if constexpr (need_concluding) {
+                lazy_start();
+                mhista.roll_back_current_cycle(journal);
+                emit_concluding();
+            }
+            hist_bucket = {};
+            if constexpr (std::is_same_v<overflow_policy,
+                                         saturate_on_overflow_t>) {
+                saturated = false;
+            }
+            journal.clear();
+        } else {
+            downstream.handle(std::forward<E>(event));
+        }
     }
 
     void flush() { downstream.flush(); }

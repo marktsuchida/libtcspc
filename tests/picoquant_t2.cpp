@@ -10,6 +10,7 @@
 #include "libtcspc/context.hpp"
 #include "libtcspc/int_types.hpp"
 #include "libtcspc/npint.hpp"
+#include "libtcspc/processor_traits.hpp"
 #include "libtcspc/test_utils.hpp"
 #include "libtcspc/time_tagged_events.hpp"
 #include "libtcspc/type_list.hpp"
@@ -397,11 +398,31 @@ TEMPLATE_TEST_CASE("pqt2 assign", "", pqt2_hydraharpv1_event,
               {0b1001'1111, 0b1111'1111, 0b1111'1111, 0b1111'1111}));
 }
 
-namespace {
+TEST_CASE("decode_pqt2_picoharp300 event type constraints") {
+    using proc_type = decltype(decode_pqt2_picoharp300(
+        sink_events<time_reached_event<>, detection_event<>, marker_event<>,
+                    warning_event>()));
 
-using out_events = type_list<detection_event<>, marker_event<>,
-                             time_reached_event<>, warning_event>;
+    STATIC_CHECK(is_processor_v<proc_type, pqt2_picoharp300_event>);
+    STATIC_CHECK_FALSE(handles_event_v<proc_type, pqt2_generic_event>);
+}
 
+TEST_CASE("decode_pqt2_hydraharpv1 event type constraints") {
+    using proc_type = decltype(decode_pqt2_hydraharpv1(
+        sink_events<time_reached_event<>, detection_event<>, marker_event<>,
+                    warning_event>()));
+
+    STATIC_CHECK(is_processor_v<proc_type, pqt2_hydraharpv1_event>);
+    STATIC_CHECK_FALSE(handles_event_v<proc_type, pqt2_generic_event>);
+}
+
+TEST_CASE("decode_pqt2_generic event type constraints") {
+    using proc_type = decltype(decode_pqt2_generic(
+        sink_events<time_reached_event<>, detection_event<>, marker_event<>,
+                    warning_event>()));
+
+    STATIC_CHECK(is_processor_v<proc_type, pqt2_generic_event>);
+    STATIC_CHECK_FALSE(handles_event_v<proc_type, pqt2_picoharp300_event>);
 }
 
 TEST_CASE("introspect picoquant_t2", "[introspect]") {
@@ -409,6 +430,13 @@ TEST_CASE("introspect picoquant_t2", "[introspect]") {
     check_introspect_simple_processor(decode_pqt2_hydraharpv1(null_sink()));
     check_introspect_simple_processor(decode_pqt2_generic(null_sink()));
 }
+
+namespace {
+
+using out_events = type_list<detection_event<>, marker_event<>,
+                             time_reached_event<>, warning_event>;
+
+} // namespace
 
 TEST_CASE("decode pqt2 picoharp300") {
     auto const valcat = GENERATE(feed_as::const_lvalue, feed_as::rvalue);

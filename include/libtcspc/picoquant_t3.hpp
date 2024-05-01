@@ -10,6 +10,7 @@
 #include "int_types.hpp"
 #include "introspect.hpp"
 #include "npint.hpp"
+#include "processor_traits.hpp"
 #include "read_integers.hpp"
 #include "span.hpp"
 #include "time_tagged_events.hpp"
@@ -409,6 +410,10 @@ namespace internal {
 // PQT3Event is the binary record event class.
 template <typename DataTypes, typename PQT3Event, typename Downstream>
 class decode_pqt3 {
+    static_assert(is_processor_v<Downstream, time_reached_event<DataTypes>,
+                                 time_correlated_detection_event<DataTypes>,
+                                 marker_event<DataTypes>, warning_event>);
+
     using abstime_type = typename DataTypes::abstime_type;
 
     abstime_type nsync_base = 0;

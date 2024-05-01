@@ -11,6 +11,7 @@
 #include "libtcspc/common.hpp"
 #include "libtcspc/context.hpp"
 #include "libtcspc/int_types.hpp"
+#include "libtcspc/processor_traits.hpp"
 #include "libtcspc/stop.hpp"
 #include "libtcspc/test_utils.hpp"
 #include "libtcspc/type_list.hpp"
@@ -32,6 +33,16 @@
 #include <utility>
 
 namespace tcspc {
+
+TEST_CASE("read_binary_stream event type constraints") {
+    using proc_type = decltype(read_binary_stream<int>(
+        null_input_stream(), arg::max_length<u64>{0},
+        new_delete_bucket_source<int>::create(),
+        arg::granularity<std::size_t>{16},
+        sink_events<bucket<int>, warning_event>()));
+    STATIC_CHECK(is_processor_v<proc_type>);
+    STATIC_CHECK_FALSE(handles_event_v<proc_type, int>);
+}
 
 TEST_CASE("introspect read_binary_stream", "[introspect]") {
     check_introspect_simple_processor(read_binary_stream<int>(

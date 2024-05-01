@@ -8,6 +8,7 @@
 
 #include "libtcspc/common.hpp"
 #include "libtcspc/context.hpp"
+#include "libtcspc/processor_traits.hpp"
 #include "libtcspc/test_utils.hpp"
 #include "libtcspc/type_list.hpp"
 #include "test_checkers.hpp"
@@ -19,6 +20,24 @@
 #include <string>
 
 namespace tcspc {
+
+TEST_CASE("check_monotonic event type constraints") {
+    using e0 = time_tagged_test_event<0>;
+    using proc_type =
+        decltype(check_monotonic(sink_events<e0, warning_event>()));
+    STATIC_CHECK(is_processor_v<proc_type, e0, warning_event>);
+    STATIC_CHECK_FALSE(handles_event_v<proc_type, int>);
+}
+
+TEST_CASE("check_alternating event type constraints") {
+    using e0 = empty_test_event<0>;
+    using e1 = empty_test_event<1>;
+    using e2 = empty_test_event<2>;
+    using proc_type = decltype(check_alternating<e0, e1>(
+        sink_events<e0, e1, e2, warning_event>()));
+    STATIC_CHECK(is_processor_v<proc_type, e0, e1, e2, warning_event>);
+    STATIC_CHECK_FALSE(handles_event_v<proc_type, int>);
+}
 
 TEST_CASE("introspect check", "[introspect]") {
     check_introspect_simple_processor(check_monotonic(null_sink()));

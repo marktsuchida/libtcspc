@@ -10,6 +10,7 @@
 #include "libtcspc/common.hpp"
 #include "libtcspc/context.hpp"
 #include "libtcspc/int_types.hpp"
+#include "libtcspc/processor_traits.hpp"
 #include "libtcspc/test_utils.hpp"
 #include "libtcspc/type_list.hpp"
 #include "test_checkers.hpp"
@@ -22,11 +23,6 @@
 
 namespace tcspc {
 
-TEST_CASE("introspect delay", "[introspect]") {
-    check_introspect_simple_processor(delay(arg::delta<i64>{0}, null_sink()));
-    check_introspect_simple_processor(zero_base_abstime(null_sink()));
-}
-
 namespace {
 
 using e0 = time_tagged_test_event<0>;
@@ -34,6 +30,24 @@ using e1 = time_tagged_test_event<1>;
 using out_events = type_list<e0, e1>;
 
 } // namespace
+
+TEST_CASE("delay event type constraints") {
+    using proc_type = decltype(delay(
+        arg::delta<default_data_types::abstime_type>{10}, sink_events<e0>()));
+    STATIC_CHECK(is_processor_v<proc_type, e0>);
+    STATIC_CHECK_FALSE(handles_event_v<proc_type, e1>);
+}
+
+TEST_CASE("zero_base_abstime event type constraints") {
+    using proc_type = decltype(zero_base_abstime(sink_events<e0>()));
+    STATIC_CHECK(is_processor_v<proc_type, e0>);
+    STATIC_CHECK_FALSE(handles_event_v<proc_type, e1>);
+}
+
+TEST_CASE("introspect delay", "[introspect]") {
+    check_introspect_simple_processor(delay(arg::delta<i64>{0}, null_sink()));
+    check_introspect_simple_processor(zero_base_abstime(null_sink()));
+}
 
 TEST_CASE("Delay") {
     auto const valcat = GENERATE(feed_as::const_lvalue, feed_as::rvalue);

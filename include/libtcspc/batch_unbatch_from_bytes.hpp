@@ -9,6 +9,7 @@
 #include "bucket.hpp"
 #include "common.hpp"
 #include "introspect.hpp"
+#include "processor_traits.hpp"
 #include "span.hpp"
 
 #include <algorithm>
@@ -25,6 +26,7 @@ namespace internal {
 
 template <typename Event, typename Downstream> class batch_from_bytes {
     static_assert(std::is_trivial_v<Event>);
+    static_assert(is_processor_v<Downstream, bucket<Event>>);
 
     std::shared_ptr<bucket_source<Event>> bsource;
 
@@ -48,7 +50,10 @@ template <typename Event, typename Downstream> class batch_from_bytes {
         return downstream.introspect_graph().push_entry_point(this);
     }
 
-    template <typename ByteSpan> void handle(ByteSpan const &event) {
+    template <typename ByteSpan,
+              typename = std::void_t<
+                  decltype(span<std::byte const>(std::declval<ByteSpan>()))>>
+    void handle(ByteSpan const &event) {
         auto input_span = span<std::byte const>(event);
         auto const bytes_available = bytes_buffered + input_span.size();
         if (bytes_available < sizeof(Event)) {
@@ -83,6 +88,7 @@ template <typename Event, typename Downstream> class batch_from_bytes {
 
 template <typename Event, typename Downstream> class unbatch_from_bytes {
     static_assert(std::is_trivial_v<Event>);
+    static_assert(is_processor_v<Downstream, Event>);
 
     std::size_t bytes_buffered = 0; // < sizeof(buf)
     std::array<std::byte, sizeof(Event)> buf;
@@ -101,7 +107,10 @@ template <typename Event, typename Downstream> class unbatch_from_bytes {
         return downstream.introspect_graph().push_entry_point(this);
     }
 
-    template <typename ByteSpan> void handle(ByteSpan const &event) {
+    template <typename ByteSpan,
+              typename = std::void_t<
+                  decltype(span<std::byte const>(std::declval<ByteSpan>()))>>
+    void handle(ByteSpan const &event) {
         auto input_span = span<std::byte const>(event);
         if (bytes_buffered > 0) {
             auto const available_bytes = bytes_buffered + input_span.size();

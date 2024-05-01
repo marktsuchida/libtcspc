@@ -9,6 +9,7 @@
 #include "common.hpp"
 #include "errors.hpp"
 #include "introspect.hpp"
+#include "processor_traits.hpp"
 #include "type_list.hpp"
 
 #include <sstream>
@@ -23,6 +24,9 @@ namespace internal {
 
 template <typename EventList, typename Exception, typename Downstream>
 class stop {
+    static_assert(is_type_list_v<EventList>);
+    static_assert(is_processor_v<Downstream>);
+
     Downstream downstream;
 
     // Cold data after downstream.
@@ -52,9 +56,12 @@ class stop {
         return downstream.introspect_graph().push_entry_point(this);
     }
 
-    template <typename Event> void handle(Event &&event) {
-        if constexpr (type_list_contains_v<EventList,
-                                           internal::remove_cvref_t<Event>>)
+    template <typename Event,
+              typename = std::enable_if_t<
+                  type_list_contains_v<EventList, remove_cvref_t<Event>> ||
+                  handles_event_v<Downstream, remove_cvref_t<Event>>>>
+    void handle(Event &&event) {
+        if constexpr (type_list_contains_v<EventList, remove_cvref_t<Event>>)
             handle_stop(event);
         else
             downstream.handle(std::forward<Event>(event));

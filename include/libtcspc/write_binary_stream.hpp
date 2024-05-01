@@ -353,7 +353,10 @@ template <typename OutputStream> class write_binary_stream {
         return processor_graph().push_entry_point(this);
     }
 
-    template <typename Span> void handle(Span const &event) {
+    template <typename Span,
+              typename = std::void_t<
+                  decltype(span<std::byte const>(std::declval<Span>()))>>
+    void handle(Span const &event) {
         handle_span(span<std::byte const>(event));
     }
 

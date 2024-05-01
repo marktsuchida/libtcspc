@@ -10,6 +10,7 @@
 #include "common.hpp"
 #include "errors.hpp"
 #include "introspect.hpp"
+#include "processor_traits.hpp"
 
 #include <cmath>
 #include <cstddef>
@@ -174,6 +175,9 @@ namespace internal {
 
 template <typename DataTypes, typename Downstream>
 class retime_periodic_sequences {
+    static_assert(
+        is_processor_v<Downstream, periodic_sequence_model_event<DataTypes>>);
+
     using abstime_type = typename DataTypes::abstime_type;
 
     abstime_type max_shift;
@@ -292,6 +296,9 @@ namespace internal {
 
 template <typename DataTypes, typename Downstream>
 class extrapolate_periodic_sequences {
+    static_assert(
+        is_processor_v<Downstream, real_one_shot_timing_event<DataTypes>>);
+
     double m;
     Downstream downstream;
 
@@ -323,7 +330,10 @@ class extrapolate_periodic_sequences {
         handle(static_cast<periodic_sequence_model_event<DT> const &>(event));
     }
 
-    template <typename OtherEvent> void handle(OtherEvent &&event) {
+    template <typename OtherEvent,
+              typename = std::enable_if_t<
+                  handles_event_v<Downstream, remove_cvref_t<OtherEvent>>>>
+    void handle(OtherEvent &&event) {
         downstream.handle(std::forward<OtherEvent>(event));
     }
 
@@ -362,6 +372,8 @@ class extrapolate_periodic_sequences {
  * - `tcspc::periodic_sequence_model_event<DT>`: emit
  *   `tcspc::real_one_shot_timing_event<DataTypes>` with the same `abstime`
  *   but the `delay` offset by `interval` times `tick_index`
+ * - All other types: pass through with no action
+ * - Flush: pass through with no action
  */
 template <typename DataTypes = default_data_types, typename Downstream>
 auto extrapolate_periodic_sequences(arg::tick_index<std::size_t> tick_index,
@@ -374,6 +386,9 @@ namespace internal {
 
 template <typename DataTypes, typename Downstream>
 class add_count_to_periodic_sequences {
+    static_assert(
+        is_processor_v<Downstream, real_linear_timing_event<DataTypes>>);
+
     std::size_t ct;
     Downstream downstream;
 
@@ -404,7 +419,10 @@ class add_count_to_periodic_sequences {
         handle(static_cast<periodic_sequence_model_event<DT> const &>(event));
     }
 
-    template <typename OtherEvent> void handle(OtherEvent &&event) {
+    template <typename OtherEvent,
+              typename = std::enable_if_t<
+                  handles_event_v<Downstream, remove_cvref_t<OtherEvent>>>>
+    void handle(OtherEvent &&event) {
         downstream.handle(std::forward<OtherEvent>(event));
     }
 
@@ -457,6 +475,8 @@ namespace internal {
 template <typename TickEvent, typename StartEvent, typename StopEvent,
           typename Downstream>
 class convert_sequences_to_start_stop {
+    static_assert(is_processor_v<Downstream, StartEvent, StopEvent>);
+
     static_assert(
         std::is_same_v<decltype(std::declval<TickEvent>().abstime),
                        decltype(std::declval<StartEvent>().abstime)>);
@@ -501,7 +521,10 @@ class convert_sequences_to_start_stop {
         handle(static_cast<TickEvent const &>(event));
     }
 
-    template <typename OtherEvent> void handle(OtherEvent &&event) {
+    template <typename OtherEvent,
+              typename = std::enable_if_t<
+                  handles_event_v<Downstream, remove_cvref_t<OtherEvent>>>>
+    void handle(OtherEvent &&event) {
         downstream.handle(std::forward<OtherEvent>(event));
     }
 

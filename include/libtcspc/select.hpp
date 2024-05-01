@@ -8,6 +8,7 @@
 
 #include "common.hpp"
 #include "introspect.hpp"
+#include "processor_traits.hpp"
 #include "type_list.hpp"
 
 #include <utility>
@@ -18,6 +19,8 @@ namespace internal {
 
 template <typename EventList, bool Inverted, typename Downstream>
 class select {
+    static_assert(is_processor_v<Downstream>);
+
     Downstream downstream;
 
   public:
@@ -32,9 +35,14 @@ class select {
         return downstream.introspect_graph().push_entry_point(this);
     }
 
-    template <typename AnyEvent> void handle(AnyEvent &&event) {
-        if constexpr (type_list_contains_v<
-                          EventList, internal::remove_cvref_t<AnyEvent>> !=
+    template <typename AnyEvent,
+              typename = std::enable_if_t<
+                  type_list_contains_v<EventList, remove_cvref_t<AnyEvent>> ==
+                      Inverted ||
+                  handles_event_v<Downstream, remove_cvref_t<AnyEvent>>>>
+    void handle(AnyEvent &&event) {
+        if constexpr (type_list_contains_v<EventList,
+                                           remove_cvref_t<AnyEvent>> !=
                       Inverted)
             downstream.handle(std::forward<AnyEvent>(event));
     }

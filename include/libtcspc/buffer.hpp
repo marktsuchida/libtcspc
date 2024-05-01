@@ -10,6 +10,7 @@
 #include "context.hpp"
 #include "errors.hpp"
 #include "introspect.hpp"
+#include "processor_traits.hpp"
 #include "vector_queue.hpp"
 
 #include <algorithm>
@@ -109,6 +110,8 @@ namespace internal {
 
 template <typename Event, bool LatencyLimited, typename Downstream>
 class buffer {
+    static_assert(is_processor_v<Downstream, Event>);
+
     using clock_type = std::chrono::steady_clock;
     using queue_type = vector_queue<Event>;
 
@@ -240,8 +243,8 @@ class buffer {
         return downstream.introspect_graph().push_entry_point(this);
     }
 
-    template <typename E,
-              typename = std::enable_if_t<std::is_convertible_v<E, Event>>>
+    template <typename E, typename = std::enable_if_t<
+                              std::is_convertible_v<remove_cvref_t<E>, Event>>>
     void handle(E &&event) {
         bool should_notify{};
         {

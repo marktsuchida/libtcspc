@@ -13,6 +13,7 @@
 #include "histogram_events.hpp"
 #include "histogramming.hpp"
 #include "introspect.hpp"
+#include "processor_traits.hpp"
 
 #include <algorithm>
 #include <cstddef>
@@ -28,12 +29,21 @@ namespace internal {
 template <typename ResetEvent, typename OverflowPolicy, typename DataTypes,
           typename Downstream>
 class histogram {
-  public:
-    using bin_index_type = typename DataTypes::bin_index_type;
-    using bin_type = typename DataTypes::bin_type;
     static_assert(is_any_of_v<OverflowPolicy, saturate_on_overflow_t,
                               reset_on_overflow_t, stop_on_overflow_t,
                               error_on_overflow_t>);
+    // Do not require handling of concluding_histogram_event unless
+    // reset_on_overflow.
+    static_assert(is_processor_v<Downstream, histogram_event<DataTypes>>);
+    static_assert(not std::is_same_v<OverflowPolicy, saturate_on_overflow_t> ||
+                  handles_event_v<Downstream, warning_event>);
+    static_assert(
+        not std::is_same_v<OverflowPolicy, reset_on_overflow_t> ||
+        handles_event_v<Downstream, concluding_histogram_event<DataTypes>>);
+
+  public:
+    using bin_index_type = typename DataTypes::bin_index_type;
+    using bin_type = typename DataTypes::bin_type;
 
   private:
     using internal_overflow_policy = std::conditional_t<
@@ -140,24 +150,26 @@ class histogram {
         downstream.handle(hist_event);
     }
 
-    void handle([[maybe_unused]] ResetEvent const &event) {
-        lazy_start();
-        emit_concluding();
-        reset();
-    }
-
     // NOLINTNEXTLINE(cppcoreguidelines-rvalue-reference-param-not-moved)
     template <typename DT> void handle(bin_increment_event<DT> &&event) {
         handle(static_cast<bin_increment_event<DT> const &>(event));
     }
 
-    // NOLINTNEXTLINE(cppcoreguidelines-rvalue-reference-param-not-moved)
-    void handle(ResetEvent &&event) {
-        handle(static_cast<ResetEvent const &>(event));
-    }
-
-    template <typename OtherEvent> void handle(OtherEvent &&event) {
-        downstream.handle(std::forward<OtherEvent>(event));
+    template <typename E,
+              typename = std::enable_if_t<
+                  (std::is_convertible_v<remove_cvref_t<E>, ResetEvent> &&
+                   handles_event_v<Downstream,
+                                   concluding_histogram_event<DataTypes>>) ||
+                  (not std::is_convertible_v<remove_cvref_t<E>, ResetEvent> &&
+                   handles_event_v<Downstream, remove_cvref_t<E>>)>>
+    void handle(E &&event) {
+        if constexpr (std::is_convertible_v<remove_cvref_t<E>, ResetEvent>) {
+            lazy_start();
+            emit_concluding();
+            reset();
+        } else {
+            downstream.handle(std::forward<E>(event));
+        }
     }
 
     void flush() { downstream.flush(); }

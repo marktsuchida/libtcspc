@@ -10,6 +10,7 @@
 #include "libtcspc/bucket.hpp"
 #include "libtcspc/common.hpp"
 #include "libtcspc/context.hpp"
+#include "libtcspc/processor_traits.hpp"
 #include "libtcspc/span.hpp"
 #include "libtcspc/test_utils.hpp"
 #include "libtcspc/type_list.hpp"
@@ -37,6 +38,35 @@ auto tmp_bucket(std::initializer_list<U> il) {
 }
 
 } // namespace
+
+TEST_CASE("batch event type constraints") {
+    struct e0 {};
+    struct e1 {};
+    using proc_type = decltype(batch<e0>(
+        new_delete_bucket_source<e0>::create(),
+        arg::batch_size<std::size_t>{100}, sink_events<bucket<e0>>()));
+    STATIC_CHECK(is_processor_v<proc_type, e0>);
+    STATIC_CHECK_FALSE(is_processor_v<proc_type, e1>);
+    STATIC_CHECK_FALSE(handles_event_v<proc_type, bucket<e0>>);
+}
+
+TEST_CASE("unbatch event type constraints") {
+    struct e0 {};
+    struct e1 {};
+    using proc_type = decltype(unbatch<e0>(sink_events<e0>()));
+    STATIC_CHECK(is_processor_v<proc_type, bucket<e0>>);
+    STATIC_CHECK(is_processor_v<proc_type, bucket<e0 const>>);
+    STATIC_CHECK_FALSE(is_processor_v<proc_type, bucket<e1>>);
+    STATIC_CHECK_FALSE(handles_event_v<proc_type, e0>);
+}
+
+TEST_CASE("process_in_batches event type constraints") {
+    struct e0 {};
+    using proc_type = decltype(process_in_batches<e0>(
+        arg::batch_size<std::size_t>{1}, sink_events<e0>()));
+    STATIC_CHECK(is_processor_v<proc_type, e0>);
+    STATIC_CHECK_FALSE(handles_event_v<proc_type, int>);
+}
 
 TEST_CASE("introspect batch, unbatch", "[introspect]") {
     check_introspect_simple_processor(
@@ -80,6 +110,8 @@ TEST_CASE("batch") {
     }
 }
 
+namespace {
+
 struct move_out_sink {
     template <typename T> void handle(T &&t) {
         [[maybe_unused]] T u = std::forward<T>(t);
@@ -87,8 +119,9 @@ struct move_out_sink {
     void flush() {}
 };
 
+} // namespace
+
 TEST_CASE("unbatch lvalue and rvalue correctly") {
-    auto ctx = context::create();
     auto proc = unbatch<std::unique_ptr<int>>(move_out_sink());
     std::vector<std::unique_ptr<int>> v;
     v.push_back(std::make_unique<int>(42));

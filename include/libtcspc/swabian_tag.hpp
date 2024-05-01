@@ -9,6 +9,7 @@
 #include "common.hpp"
 #include "introspect.hpp"
 #include "npint.hpp"
+#include "processor_traits.hpp"
 #include "read_integers.hpp"
 #include "span.hpp"
 #include "time_tagged_events.hpp"
@@ -207,6 +208,11 @@ struct swabian_tag_event {
 namespace internal {
 
 template <typename DataTypes, typename Downstream> class decode_swabian_tags {
+    static_assert(is_processor_v<Downstream, detection_event<DataTypes>,
+                                 begin_lost_interval_event<DataTypes>,
+                                 end_lost_interval_event<DataTypes>,
+                                 lost_counts_event<DataTypes>, warning_event>);
+
     Downstream downstream;
 
     LIBTCSPC_NOINLINE

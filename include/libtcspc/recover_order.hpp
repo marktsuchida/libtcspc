@@ -10,6 +10,7 @@
 #include "common.hpp"
 #include "errors.hpp"
 #include "introspect.hpp"
+#include "processor_traits.hpp"
 #include "type_list.hpp"
 #include "variant_event.hpp"
 
@@ -26,6 +27,8 @@ namespace internal {
 
 template <typename EventList, typename DataTypes, typename Downstream>
 class recover_order {
+    static_assert(is_processor_of_list_v<Downstream, EventList>);
+
     using abstime_type = typename DataTypes::abstime_type;
     abstime_type window_size;
 
@@ -56,8 +59,9 @@ class recover_order {
         return downstream.introspect_graph().push_entry_point(this);
     }
 
-    template <typename Event> void handle(Event const &event) {
-        static_assert(type_list_contains_v<EventList, Event>);
+    template <typename Event, typename = std::enable_if_t<type_list_contains_v<
+                                  EventList, remove_cvref_t<Event>>>>
+    void handle(Event &&event) {
         static_assert(std::is_same_v<decltype(event.abstime), abstime_type>);
         if (event.abstime < last_emitted_time) {
             throw data_validation_error(
@@ -81,13 +85,14 @@ class recover_order {
                     [&](auto const &e) { return e.abstime < cutoff; }, v);
             });
 
-        std::for_each(buf.begin(), keep_it, [&](auto const &v) {
+        std::for_each(buf.begin(), keep_it, [&](auto &&v) {
             visit_variant_or_single_event(
-                [&](auto const &e) {
-                    downstream.handle(e);
+                [&](auto &&e) {
                     last_emitted_time = e.abstime;
+                    // NOLINTNEXTLINE(bugprone-move-forwarding-reference)
+                    downstream.handle(std::move(e));
                 },
-                v);
+                std::move(v)); // NOLINT(bugprone-move-forwarding-reference)
         });
         buf.erase(buf.begin(), keep_it);
 
@@ -98,17 +103,19 @@ class recover_order {
                     v);
             });
         if (ins_it == buf.rend())
-            buf.insert(buf.begin(), event);
+            buf.insert(buf.begin(), std::forward<Event>(event));
         else
-            buf.insert(ins_it.base(), event);
+            buf.insert(ins_it.base(), std::forward<Event>(event));
     }
 
     // Do not allow other events.
 
     void flush() {
-        std::for_each(buf.begin(), buf.end(), [&](auto const &v) {
+        std::for_each(buf.begin(), buf.end(), [&](auto &&v) {
             visit_variant_or_single_event(
-                [&](auto const &e) { downstream.handle(e); }, v);
+                // NOLINTNEXTLINE(bugprone-move-forwarding-reference)
+                [&](auto &&e) { downstream.handle(std::move(e)); },
+                std::move(v)); // NOLINT(bugprone-move-forwarding-reference)
         });
         buf.clear();
         downstream.flush();

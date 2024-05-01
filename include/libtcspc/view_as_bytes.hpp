@@ -8,6 +8,7 @@
 
 #include "bucket.hpp"
 #include "introspect.hpp"
+#include "processor_traits.hpp"
 #include "span.hpp"
 
 #include <cstddef>
@@ -19,6 +20,8 @@ namespace tcspc {
 namespace internal {
 
 template <typename Downstream> class view_as_bytes {
+    static_assert(is_processor_v<Downstream, bucket<std::byte const>>);
+
     Downstream downstream;
 
   public:
@@ -42,6 +45,7 @@ template <typename Downstream> class view_as_bytes {
     }
 
     template <typename T> void handle(bucket<T> const &event) {
+        static_assert(std::is_trivial_v<T>);
         if constexpr (std::is_same_v<std::remove_cv_t<T>, std::byte>) {
             downstream.handle(event);
         } else {

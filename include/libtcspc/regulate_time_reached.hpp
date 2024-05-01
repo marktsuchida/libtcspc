@@ -9,6 +9,7 @@
 #include "arg_wrappers.hpp"
 #include "common.hpp"
 #include "introspect.hpp"
+#include "processor_traits.hpp"
 #include "time_tagged_events.hpp"
 
 #include <cstddef>
@@ -21,6 +22,8 @@ namespace internal {
 
 template <typename DataTypes, typename Downstream>
 class regulate_time_reached {
+    static_assert(is_processor_v<Downstream, time_reached_event<DataTypes>>);
+
     using abstime_type = typename DataTypes::abstime_type;
 
     abstime_type interval_thresh;
@@ -73,7 +76,10 @@ class regulate_time_reached {
         handle(static_cast<time_reached_event<DT> const &>(event));
     }
 
-    template <typename OtherEvent> void handle(OtherEvent &&event) {
+    template <typename OtherEvent,
+              typename = std::enable_if_t<
+                  handles_event_v<Downstream, remove_cvref_t<OtherEvent>>>>
+    void handle(OtherEvent &&event) {
         static_assert(std::is_same_v<decltype(event.abstime), abstime_type>);
         auto const abstime = event.abstime;
         downstream.handle(std::forward<OtherEvent>(event));

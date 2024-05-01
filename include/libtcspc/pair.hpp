@@ -9,6 +9,7 @@
 #include "arg_wrappers.hpp"
 #include "common.hpp"
 #include "introspect.hpp"
+#include "processor_traits.hpp"
 #include "time_tagged_events.hpp"
 #include "vector_queue.hpp"
 
@@ -28,6 +29,9 @@ namespace internal {
 
 template <std::size_t NStopChannels, typename DataTypes, typename Downstream>
 class pair_all {
+    static_assert(
+        is_processor_v<Downstream, std::array<detection_event<DataTypes>, 2>>);
+
     typename DataTypes::channel_type start_chan;
     std::array<typename DataTypes::channel_type, NStopChannels> stop_chans;
     typename DataTypes::abstime_type window_size;
@@ -91,7 +95,10 @@ class pair_all {
         handle(static_cast<detection_event<DT> const &>(event));
     }
 
-    template <typename OtherEvent> void handle(OtherEvent &&event) {
+    template <typename OtherEvent,
+              typename = std::enable_if_t<
+                  handles_event_v<Downstream, remove_cvref_t<OtherEvent>>>>
+    void handle(OtherEvent &&event) {
         downstream.handle(std::forward<OtherEvent>(event));
     }
 
@@ -100,6 +107,9 @@ class pair_all {
 
 template <std::size_t NStopChannels, typename DataTypes, typename Downstream>
 class pair_one {
+    static_assert(
+        is_processor_v<Downstream, std::array<detection_event<DataTypes>, 2>>);
+
     typename DataTypes::channel_type start_chan;
     std::array<typename DataTypes::channel_type, NStopChannels> stop_chans;
     typename DataTypes::abstime_type window_size;
@@ -173,7 +183,10 @@ class pair_one {
         handle(static_cast<detection_event<DT> const &>(event));
     }
 
-    template <typename OtherEvent> void handle(OtherEvent &&event) {
+    template <typename OtherEvent,
+              typename = std::enable_if_t<
+                  handles_event_v<Downstream, remove_cvref_t<OtherEvent>>>>
+    void handle(OtherEvent &&event) {
         downstream.handle(std::forward<OtherEvent>(event));
     }
 
@@ -182,6 +195,9 @@ class pair_one {
 
 template <std::size_t NStopChannels, typename DataTypes, typename Downstream>
 class pair_all_between {
+    static_assert(
+        is_processor_v<Downstream, std::array<detection_event<DataTypes>, 2>>);
+
     typename DataTypes::channel_type start_chan;
     std::array<typename DataTypes::channel_type, NStopChannels> stop_chans;
     typename DataTypes::abstime_type window_size;
@@ -246,7 +262,10 @@ class pair_all_between {
         handle(static_cast<detection_event<DT> const &>(event));
     }
 
-    template <typename OtherEvent> void handle(OtherEvent &&event) {
+    template <typename OtherEvent,
+              typename = std::enable_if_t<
+                  handles_event_v<Downstream, remove_cvref_t<OtherEvent>>>>
+    void handle(OtherEvent &&event) {
         downstream.handle(std::forward<OtherEvent>(event));
     }
 
@@ -255,6 +274,9 @@ class pair_all_between {
 
 template <std::size_t NStopChannels, typename DataTypes, typename Downstream>
 class pair_one_between {
+    static_assert(
+        is_processor_v<Downstream, std::array<detection_event<DataTypes>, 2>>);
+
     typename DataTypes::channel_type start_chan;
     std::array<typename DataTypes::channel_type, NStopChannels> stop_chans;
     typename DataTypes::abstime_type window_size;
@@ -326,7 +348,10 @@ class pair_one_between {
         handle(static_cast<detection_event<DT> const &>(event));
     }
 
-    template <typename OtherEvent> void handle(OtherEvent &&event) {
+    template <typename OtherEvent,
+              typename = std::enable_if_t<
+                  handles_event_v<Downstream, remove_cvref_t<OtherEvent>>>>
+    void handle(OtherEvent &&event) {
         downstream.handle(std::forward<OtherEvent>(event));
     }
 

@@ -11,6 +11,7 @@
 #include "libtcspc/context.hpp"
 #include "libtcspc/errors.hpp"
 #include "libtcspc/int_types.hpp"
+#include "libtcspc/processor_traits.hpp"
 #include "libtcspc/test_utils.hpp"
 #include "libtcspc/type_list.hpp"
 #include "test_checkers.hpp"
@@ -23,6 +24,50 @@
 #include <memory>
 
 namespace tcspc {
+
+TEST_CASE("retime_periodic_sequences event type constraints") {
+    using proc_type = decltype(retime_periodic_sequences(
+        arg::max_time_shift<i64>{42},
+        sink_events<periodic_sequence_model_event<>, int>()));
+    STATIC_CHECK(is_processor_v<proc_type, periodic_sequence_model_event<>>);
+    STATIC_CHECK_FALSE(handles_event_v<proc_type, int>);
+}
+
+TEST_CASE("extrapolate_periodic_sequences event type constraints") {
+    using proc_type = decltype(extrapolate_periodic_sequences(
+        arg::tick_index<std::size_t>{42},
+        sink_events<real_one_shot_timing_event<>, int>()));
+    STATIC_CHECK(
+        is_processor_v<proc_type, periodic_sequence_model_event<>, int>);
+    STATIC_CHECK_FALSE(handles_event_v<proc_type, double>);
+}
+
+TEST_CASE("add_count_to_periodic_sequences event type constraints") {
+    using proc_type = decltype(add_count_to_periodic_sequences(
+        arg::count<std::size_t>{42},
+        sink_events<real_linear_timing_event<>, int>()));
+    STATIC_CHECK(
+        is_processor_v<proc_type, periodic_sequence_model_event<>, int>);
+    STATIC_CHECK_FALSE(handles_event_v<proc_type, double>);
+}
+
+TEST_CASE("convert_sequences_to_start_stop event type constraints") {
+    struct tick {
+        i64 abstime;
+    };
+    struct start {
+        i64 abstime;
+    };
+    struct stop {
+        i64 abstime;
+    };
+    using proc_type =
+        decltype(convert_sequences_to_start_stop<tick, start, stop>(
+            arg::count<std::size_t>{42}, sink_events<start, stop, int>()));
+    STATIC_CHECK(is_processor_v<proc_type, tick, int>);
+    STATIC_CHECK(handles_events_v<proc_type, start, stop>);
+    STATIC_CHECK_FALSE(handles_event_v<proc_type, double>);
+}
 
 TEST_CASE("introspect timing_misc", "[introspect]") {
     check_introspect_simple_processor(

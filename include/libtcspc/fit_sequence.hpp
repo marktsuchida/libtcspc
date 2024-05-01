@@ -10,6 +10,7 @@
 #include "common.hpp"
 #include "errors.hpp"
 #include "introspect.hpp"
+#include "processor_traits.hpp"
 #include "timing_misc.hpp"
 
 #include <algorithm>
@@ -101,6 +102,9 @@ class periodic_fitter {
 
 template <typename Event, typename DataTypes, typename Downstream>
 class fit_periodic_sequences {
+    static_assert(
+        is_processor_v<Downstream, periodic_sequence_model_event<DataTypes>>);
+
     using abstime_type = typename DataTypes::abstime_type;
 
     std::size_t len; // At least 3
@@ -190,7 +194,10 @@ class fit_periodic_sequences {
     // NOLINTNEXTLINE(cppcoreguidelines-rvalue-reference-param-not-moved)
     void handle(Event &&event) { handle(static_cast<Event const &>(event)); }
 
-    template <typename OtherEvent> void handle(OtherEvent &&event) {
+    template <typename OtherEvent,
+              typename = std::enable_if_t<
+                  handles_event_v<Downstream, remove_cvref_t<OtherEvent>>>>
+    void handle(OtherEvent &&event) {
         downstream.handle(std::forward<OtherEvent>(event));
     }
 

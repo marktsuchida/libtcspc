@@ -8,6 +8,7 @@
 
 #include "libtcspc/common.hpp"
 #include "libtcspc/context.hpp"
+#include "libtcspc/processor_traits.hpp"
 #include "libtcspc/test_utils.hpp"
 #include "libtcspc/type_list.hpp"
 #include "test_checkers.hpp"
@@ -16,6 +17,20 @@
 #include <catch2/generators/catch_generators.hpp>
 
 namespace tcspc {
+
+TEST_CASE("prepend event type constraints") {
+    struct e0 {};
+    struct e1 {};
+    STATIC_CHECK(is_processor_v<decltype(prepend(e0{}, sink_events<e0, e1>())),
+                                e0, e1>);
+}
+
+TEST_CASE("append event type constraints") {
+    struct e0 {};
+    struct e1 {};
+    STATIC_CHECK(
+        is_processor_v<decltype(append(e0{}, sink_events<e0, e1>())), e0, e1>);
+}
 
 TEST_CASE("introspect prepend/append", "[introspect]") {
     check_introspect_simple_processor(prepend<int>(42, null_sink()));

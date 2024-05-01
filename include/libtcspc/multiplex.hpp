@@ -21,8 +21,7 @@ namespace tcspc {
 namespace internal {
 
 template <typename EventList, typename Downstream> class multiplex {
-    static_assert(handles_event_v<Downstream, variant_event<EventList>>);
-    static_assert(handles_flush_v<Downstream>);
+    static_assert(is_processor_v<Downstream, variant_event<EventList>>);
 
     Downstream downstream;
 
@@ -39,7 +38,7 @@ template <typename EventList, typename Downstream> class multiplex {
     }
 
     template <typename Event, typename = std::enable_if_t<type_list_contains_v<
-                                  EventList, internal::remove_cvref_t<Event>>>>
+                                  EventList, remove_cvref_t<Event>>>>
     void handle(Event &&event) {
         downstream.handle(
             variant_event<EventList>(std::forward<Event>(event)));
@@ -65,15 +64,20 @@ template <typename Downstream> class demultiplex {
         return downstream.introspect_graph().push_entry_point(this);
     }
 
-    // In theory we should be able to support rvalues and move the event out of
-    // the variant. In practice I cannot figure out how to do this in C++17
-    // (without C++20's explicit lambda template parameters).
-
-    template <typename EL> void handle(variant_event<EL> const &event) {
-        static_assert(
-            handles_event_list_v<Downstream, EL>,
-            "demultiplex only accepts variant_event whose event list is a subset of the events handled by the downstream");
+    template <typename EL, typename = std::enable_if_t<
+                               handles_event_list_v<Downstream, EL>>>
+    void handle(variant_event<EL> const &event) {
         std::visit([&](auto const &e) { downstream.handle(e); }, event);
+    }
+
+    template <typename EL, typename = std::enable_if_t<
+                               handles_event_list_v<Downstream, EL>>>
+    void handle(variant_event<EL> &&event) {
+        // With C++20 explicit lambda template parameters we can use
+        // std::forward. With C++17 we need to suppress warning.
+        // NOLINTNEXTLINE(bugprone-move-forwarding-reference)
+        std::visit([&](auto &&e) { downstream.handle(std::move(e)); },
+                   std::move(event));
     }
 
     void flush() { downstream.flush(); }

@@ -9,6 +9,7 @@
 #include "libtcspc/bucket.hpp"
 #include "libtcspc/common.hpp"
 #include "libtcspc/context.hpp"
+#include "libtcspc/processor_traits.hpp"
 #include "libtcspc/span.hpp"
 #include "libtcspc/test_utils.hpp"
 #include "libtcspc/type_list.hpp"
@@ -34,6 +35,12 @@ auto tmp_bucket(T &&v) { // NOLINT(cppcoreguidelines-missing-std-forward)
 }
 
 } // namespace
+
+TEST_CASE("view_as_bytes event type constraints") {
+    using proc_type =
+        decltype(view_as_bytes(sink_events<bucket<std::byte const>>()));
+    STATIC_CHECK(is_processor_v<proc_type, int, double>);
+}
 
 TEST_CASE("introspect view_as_bytes", "[introspect]") {
     check_introspect_simple_processor(view_as_bytes(null_sink()));

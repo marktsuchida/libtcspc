@@ -68,7 +68,7 @@ TEST_CASE("route and broadcast construct correct type") {
     // So we only need to further test route_homogeneous.
 }
 
-TEST_CASE("route_homogeneous event types") {
+TEST_CASE("route_homogeneous event type constraints") {
     SECTION("handles flush") {
         STATIC_CHECK(handles_flush_v<decltype(route_homogeneous<type_list<>>(
                          null_router(), sink_events<>()))>);

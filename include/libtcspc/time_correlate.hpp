@@ -9,6 +9,7 @@
 #include "arg_wrappers.hpp"
 #include "common.hpp"
 #include "introspect.hpp"
+#include "processor_traits.hpp"
 #include "time_tagged_events.hpp"
 
 #include <array>
@@ -29,6 +30,9 @@ namespace internal {
 
 template <typename DataTypes, bool UseStartTimeAndChannel, typename Downstream>
 class time_correlate_at_start_or_stop {
+    static_assert(is_processor_v<Downstream,
+                                 time_correlated_detection_event<DataTypes>>);
+
     Downstream downstream;
 
   public:
@@ -62,7 +66,10 @@ class time_correlate_at_start_or_stop {
         handle(static_cast<std::array<detection_event<DT>, 2> const &>(event));
     }
 
-    template <typename OtherEvent> void handle(OtherEvent &&event) {
+    template <typename OtherEvent,
+              typename = std::enable_if_t<
+                  handles_event_v<Downstream, remove_cvref_t<OtherEvent>>>>
+    void handle(OtherEvent &&event) {
         downstream.handle(std::forward<OtherEvent>(event));
     }
 
@@ -71,6 +78,9 @@ class time_correlate_at_start_or_stop {
 
 template <typename DataTypes, bool UseStartChannel, typename Downstream>
 class time_correlate_at_midpoint {
+    static_assert(is_processor_v<Downstream,
+                                 time_correlated_detection_event<DataTypes>>);
+
     Downstream downstream;
 
   public:
@@ -106,7 +116,10 @@ class time_correlate_at_midpoint {
         handle(static_cast<std::array<detection_event<DT>, 2> const &>(event));
     }
 
-    template <typename OtherEvent> void handle(OtherEvent &&event) {
+    template <typename OtherEvent,
+              typename = std::enable_if_t<
+                  handles_event_v<Downstream, remove_cvref_t<OtherEvent>>>>
+    void handle(OtherEvent &&event) {
         downstream.handle(std::forward<OtherEvent>(event));
     }
 
@@ -115,6 +128,9 @@ class time_correlate_at_midpoint {
 
 template <typename DataTypes, bool UseStartChannel, typename Downstream>
 class time_correlate_at_fraction {
+    static_assert(is_processor_v<Downstream,
+                                 time_correlated_detection_event<DataTypes>>);
+
     double fraction; // 0.0-1.0 for internal division of start-stop
     Downstream downstream;
 
@@ -155,7 +171,10 @@ class time_correlate_at_fraction {
         handle(static_cast<std::array<detection_event<DT>, 2> const &>(event));
     }
 
-    template <typename OtherEvent> void handle(OtherEvent &&event) {
+    template <typename OtherEvent,
+              typename = std::enable_if_t<
+                  handles_event_v<Downstream, remove_cvref_t<OtherEvent>>>>
+    void handle(OtherEvent &&event) {
         downstream.handle(std::forward<OtherEvent>(event));
     }
 
@@ -341,7 +360,10 @@ auto time_correlate_at_fraction(arg::fraction<double> fraction,
 
 namespace internal {
 
-template <typename Downstream> class negate_difftime {
+template <typename DataTypes, typename Downstream> class negate_difftime {
+    static_assert(is_processor_v<Downstream,
+                                 time_correlated_detection_event<DataTypes>>);
+
     Downstream downstream;
 
   public:
@@ -358,6 +380,8 @@ template <typename Downstream> class negate_difftime {
 
     template <typename DT>
     void handle(time_correlated_detection_event<DT> const &event) {
+        static_assert(std::is_same_v<typename DT::difftime_type,
+                                     typename DataTypes::difftime_type>);
         static_assert(
             std::is_signed_v<typename DT::difftime_type>,
             "difftime_type of time_correlated_detection_event used with negate_difftime must be a signed integer type");
@@ -373,7 +397,10 @@ template <typename Downstream> class negate_difftime {
             static_cast<time_correlated_detection_event<DT> const &>(event));
     }
 
-    template <typename OtherEvent> void handle(OtherEvent &&event) {
+    template <typename OtherEvent,
+              typename = std::enable_if_t<
+                  handles_event_v<Downstream, remove_cvref_t<OtherEvent>>>>
+    void handle(OtherEvent &&event) {
         downstream.handle(std::forward<OtherEvent>(event));
     }
 
@@ -382,6 +409,8 @@ template <typename Downstream> class negate_difftime {
 
 template <typename DataTypes, typename Downstream>
 class remove_time_correlation {
+    static_assert(is_processor_v<Downstream, detection_event<DataTypes>>);
+
     Downstream downstream;
 
   public:
@@ -414,7 +443,10 @@ class remove_time_correlation {
             static_cast<time_correlated_detection_event<DT> const &>(event));
     }
 
-    template <typename OtherEvent> void handle(OtherEvent &&event) {
+    template <typename OtherEvent,
+              typename = std::enable_if_t<
+                  handles_event_v<Downstream, remove_cvref_t<OtherEvent>>>>
+    void handle(OtherEvent &&event) {
         downstream.handle(std::forward<OtherEvent>(event));
     }
 
@@ -429,6 +461,8 @@ class remove_time_correlation {
  *
  * \ingroup processors-time-corr
  *
+ * \tparam DataTypes data type set specifying `difftime_type` and output events
+ *
  * \tparam Downstream downstream processor type (usually deduced)
  *
  * \param downstream downstream processor
@@ -436,13 +470,15 @@ class remove_time_correlation {
  * \return processor
  *
  * \par Events handled
- * - `tcspc::time_correlated_detection_event<DT>`: pass through a copy where
- *   the `difftime` has been negated
+ * - `tcspc::time_correlated_detection_event<DT>`: pass through a copy (as
+ *   `tcspc::time_correlated_detection_event<DataTypes>`) where the `difftime`
+ *   has been negated
  * - All other types: pass through with no action
  * - Flush: pass through with no action
  */
-template <typename Downstream> auto negate_difftime(Downstream &&downstream) {
-    return internal::negate_difftime<Downstream>(
+template <typename DataTypes = default_data_types, typename Downstream>
+auto negate_difftime(Downstream &&downstream) {
+    return internal::negate_difftime<DataTypes, Downstream>(
         std::forward<Downstream>(downstream));
 }
 

@@ -9,6 +9,7 @@
 #include "errors.hpp"
 #include "introspect.hpp"
 #include "move_only_any.hpp"
+#include "processor_traits.hpp"
 #include "span.hpp"
 
 #include <algorithm>
@@ -679,6 +680,9 @@ class recycling_bucket_source final
 namespace internal {
 
 template <typename Event, typename Downstream> class extract_bucket {
+    static_assert(
+        is_processor_v<Downstream, decltype(std::declval<Event>().bucket)>);
+
     Downstream downstream;
 
   public:

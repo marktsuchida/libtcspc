@@ -34,6 +34,10 @@ namespace internal {
 template <typename RoutedEventList, typename Router, std::size_t N,
           typename Downstream>
 class route_homogeneous {
+    static_assert(is_type_list_v<RoutedEventList>);
+    // We do not require Downstream to handle all of RoutedEventList.
+    static_assert(is_processor_v<Downstream>);
+
     Router router;
     std::array<Downstream, N> downstreams;
 
@@ -66,9 +70,11 @@ class route_homogeneous {
             });
     }
 
-    template <typename Event> void handle(Event &&event) {
+    template <typename Event, typename = std::enable_if_t<handles_event_v<
+                                  Downstream, remove_cvref_t<Event>>>>
+    void handle(Event &&event) {
         if constexpr (type_list_contains_v<RoutedEventList,
-                                           internal::remove_cvref_t<Event>>) {
+                                           remove_cvref_t<Event>>) {
             std::size_t index = router(std::as_const(event));
             if (index >= N)
                 return;
@@ -236,6 +242,8 @@ auto route_homogeneous(Router &&router, Downstreams &&...downstreams) {
 template <typename RoutedEventList, typename BroadcastEventList = type_list<>,
           typename Router, typename... Downstreams>
 auto route(Router &&router, Downstreams &&...downstreams) {
+    static_assert(is_type_list_v<RoutedEventList>);
+    static_assert(is_type_list_v<BroadcastEventList>);
     static_assert(
         type_list_size_v<
             type_list_intersection_t<RoutedEventList, BroadcastEventList>> ==

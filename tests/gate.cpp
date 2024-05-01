@@ -9,6 +9,7 @@
 #include "libtcspc/arg_wrappers.hpp"
 #include "libtcspc/common.hpp"
 #include "libtcspc/context.hpp"
+#include "libtcspc/processor_traits.hpp"
 #include "libtcspc/test_utils.hpp"
 #include "libtcspc/type_list.hpp"
 #include "test_checkers.hpp"
@@ -30,10 +31,20 @@ using out_events = type_list<open_event, close_event, gated_event, misc_event>;
 
 } // namespace
 
+TEST_CASE("gate event type constraints") {
+    using proc_type =
+        decltype(gate<type_list<gated_event>, open_event, close_event>(
+            arg::initially_open{false},
+            sink_events<open_event, close_event, gated_event, misc_event>()));
+    STATIC_CHECK(is_processor_v<proc_type, open_event, close_event,
+                                gated_event, misc_event>);
+    STATIC_CHECK_FALSE(handles_event_v<proc_type, int>);
+}
+
 TEST_CASE("introspect gate", "[introspect]") {
     check_introspect_simple_processor(
-        gate<gated_event, open_event, close_event>(arg::initially_open{false},
-                                                   null_sink()));
+        gate<type_list<gated_event>, open_event, close_event>(
+            arg::initially_open{false}, null_sink()));
 }
 
 TEST_CASE("Gate events") {

@@ -10,6 +10,8 @@
 #include "libtcspc/common.hpp"
 #include "libtcspc/context.hpp"
 #include "libtcspc/errors.hpp"
+#include "libtcspc/processor_traits.hpp"
+#include "libtcspc/test_utils.hpp"
 #include "test_checkers.hpp"
 #include "test_thread_utils.hpp"
 
@@ -26,6 +28,26 @@
 #include <utility>
 
 namespace tcspc {
+
+TEST_CASE("buffer event type constraints") {
+    struct e0 {};
+    auto ctx = context::create();
+    using proc_type = decltype(buffer<e0>(arg::threshold<std::size_t>{1},
+                                          ctx->tracker<buffer_access>("buf"),
+                                          sink_events<e0>()));
+    STATIC_CHECK(is_processor_v<proc_type, e0>);
+    STATIC_CHECK_FALSE(handles_event_v<proc_type, int>);
+}
+
+TEST_CASE("real_time_buffer event type constraints") {
+    struct e0 {};
+    auto ctx = context::create();
+    using proc_type = decltype(real_time_buffer<e0>(
+        arg::threshold<std::size_t>{1}, std::chrono::milliseconds(10),
+        ctx->tracker<buffer_access>("buf"), sink_events<e0>()));
+    STATIC_CHECK(is_processor_v<proc_type, e0>);
+    STATIC_CHECK_FALSE(handles_event_v<proc_type, int>);
+}
 
 TEST_CASE("introspect buffer", "[introspect]") {
     auto ctx = context::create();

@@ -10,6 +10,7 @@
 #include "libtcspc/common.hpp"
 #include "libtcspc/context.hpp"
 #include "libtcspc/introspect.hpp"
+#include "libtcspc/processor_traits.hpp"
 #include "libtcspc/test_utils.hpp"
 #include "libtcspc/type_erased_processor.hpp"
 #include "libtcspc/type_list.hpp"
@@ -35,6 +36,25 @@ using e1 = time_tagged_test_event<1>;
 using e2 = time_tagged_test_event<2>;
 using e3 = time_tagged_test_event<3>;
 using all_events = type_list<e0, e1, e2, e3>;
+
+} // namespace
+
+TEST_CASE("merge event type constraints") {
+    using input_proc_type = decltype(std::get<0>(merge<type_list<e0, e1>>(
+        arg::max_buffered{std::numeric_limits<std::size_t>::max()},
+        sink_events<e0, e1, e2>())));
+    STATIC_CHECK(is_processor_v<input_proc_type, e0, e1>);
+    STATIC_CHECK_FALSE(handles_event_v<input_proc_type, e2>);
+}
+
+TEST_CASE("merge_n_unsorted event type constraints") {
+    using input_proc_type =
+        decltype(std::get<0>(merge_n_unsorted<2>(sink_events<e0, e1>())));
+    STATIC_CHECK(is_processor_v<input_proc_type, e0, e1>);
+    STATIC_CHECK_FALSE(handles_event_v<input_proc_type, e2>);
+}
+
+namespace {
 
 // Like check_introspect_simple_processor, but for merge input.
 template <typename MI>

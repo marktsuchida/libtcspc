@@ -686,7 +686,7 @@ template <typename EventList> class capture_output {
     }
 
     template <typename Event, typename = std::enable_if_t<type_list_contains_v<
-                                  EventList, internal::remove_cvref_t<Event>>>>
+                                  EventList, remove_cvref_t<Event>>>>
     void handle(Event &&event) {
         static constexpr auto valcat = [] {
             if constexpr (std::is_lvalue_reference_v<Event>) {
@@ -803,6 +803,8 @@ template <> class capture_output<type_list<>> {
 };
 
 template <typename Downstream> class feed_input {
+    static_assert(is_processor_v<Downstream>);
+
     std::vector<std::pair<std::shared_ptr<context>, std::string>>
         outputs_to_check; // (context, name)
     feed_as refmode = feed_as::const_lvalue;
@@ -838,16 +840,15 @@ template <typename Downstream> class feed_input {
         outputs_to_check.emplace_back(std::move(context), std::move(name));
     }
 
-    template <typename Event,
-              typename = std::enable_if_t<handles_event_v<
-                  Downstream, internal::remove_cvref_t<Event>>>>
+    template <typename Event, typename = std::enable_if_t<handles_event_v<
+                                  Downstream, remove_cvref_t<Event>>>>
     void handle(Event &&event) {
         check_outputs_ready();
 
         if (refmode == feed_as::const_lvalue) {
             downstream.handle(static_cast<Event const &>(event));
         } else if constexpr (std::is_lvalue_reference_v<Event>) {
-            internal::remove_cvref_t<Event> copy(event);
+            remove_cvref_t<Event> copy(event);
             downstream.handle(std::move(copy));
         } else {
             downstream.handle(std::forward<Event>(event));

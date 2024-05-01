@@ -10,6 +10,7 @@
 #include "libtcspc/common.hpp"
 #include "libtcspc/context.hpp"
 #include "libtcspc/int_types.hpp"
+#include "libtcspc/processor_traits.hpp"
 #include "libtcspc/test_utils.hpp"
 #include "libtcspc/type_list.hpp"
 #include "test_checkers.hpp"
@@ -30,6 +31,33 @@ using misc_event = time_tagged_test_event<3>;
 using out_events = type_list<tick_event, fire_event, reset_event, misc_event>;
 
 } // namespace
+
+TEST_CASE("count_up_to event type constraints") {
+    using proc_noreset =
+        decltype(count_up_to<tick_event, fire_event, reset_event, false>(
+            arg::threshold<u64>{100}, arg::limit<u64>{100},
+            arg::initial_count<u64>{0},
+            sink_events<tick_event, fire_event, misc_event>()));
+    using proc_reset =
+        decltype(count_up_to<tick_event, fire_event, reset_event, false>(
+            arg::threshold<u64>{100}, arg::limit<u64>{100},
+            arg::initial_count<u64>{0},
+            sink_events<tick_event, fire_event, reset_event, misc_event>()));
+    STATIC_CHECK(is_processor_v<proc_noreset, tick_event, misc_event>);
+    STATIC_CHECK_FALSE(handles_event_v<proc_noreset, reset_event>);
+    STATIC_CHECK_FALSE(handles_event_v<proc_noreset, int>);
+    STATIC_CHECK(
+        is_processor_v<proc_reset, tick_event, reset_event, misc_event>);
+    STATIC_CHECK_FALSE(handles_event_v<proc_reset, int>);
+}
+
+TEST_CASE("count event type constraints") {
+    using proc_type = decltype(count<tick_event>(
+        context::create()->tracker<count_access>("c"),
+        sink_events<tick_event, misc_event>()));
+    STATIC_CHECK(is_processor_v<proc_type, tick_event, misc_event>);
+    STATIC_CHECK_FALSE(is_processor_v<proc_type, int>);
+}
 
 TEST_CASE("introspect count", "[introspect]") {
     check_introspect_simple_processor(

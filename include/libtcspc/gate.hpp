@@ -9,6 +9,7 @@
 #include "arg_wrappers.hpp"
 #include "common.hpp"
 #include "introspect.hpp"
+#include "processor_traits.hpp"
 #include "type_list.hpp"
 
 #include <utility>
@@ -20,6 +21,10 @@ namespace internal {
 template <typename GatedEventList, typename OpenEvent, typename CloseEvent,
           typename Downstream>
 class gate {
+    static_assert(is_type_list_v<GatedEventList>);
+    // We do not require Downstream to handle all of GatedEventList.
+    static_assert(handles_events_v<Downstream, OpenEvent, CloseEvent>);
+
     bool open;
 
     Downstream downstream;
@@ -37,18 +42,18 @@ class gate {
         return downstream.introspect_graph().push_entry_point(this);
     }
 
-    template <typename E> void handle(E &&event) {
-        if constexpr (std::is_convertible_v<internal::remove_cvref_t<E>,
-                                            OpenEvent>) {
+    template <typename E, typename = std::enable_if_t<
+                              handles_event_v<Downstream, remove_cvref_t<E>>>>
+    void handle(E &&event) {
+        if constexpr (std::is_convertible_v<remove_cvref_t<E>, OpenEvent>) {
             open = true;
             downstream.handle(std::forward<E>(event));
-        } else if constexpr (std::is_convertible_v<internal::remove_cvref_t<E>,
+        } else if constexpr (std::is_convertible_v<remove_cvref_t<E>,
                                                    CloseEvent>) {
             open = false;
             downstream.handle(std::forward<E>(event));
-        } else if constexpr (type_list_contains_v<
-                                 GatedEventList,
-                                 internal::remove_cvref_t<E>>) {
+        } else if constexpr (type_list_contains_v<GatedEventList,
+                                                  remove_cvref_t<E>>) {
             if (open)
                 downstream.handle(std::forward<E>(event));
         } else {

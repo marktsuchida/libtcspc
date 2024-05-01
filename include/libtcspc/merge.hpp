@@ -10,6 +10,7 @@
 #include "common.hpp"
 #include "errors.hpp"
 #include "introspect.hpp"
+#include "processor_traits.hpp"
 #include "type_list.hpp"
 #include "variant_event.hpp"
 #include "vector_queue.hpp"
@@ -32,6 +33,9 @@ namespace internal {
 // two input processors via shared_ptr.
 template <typename EventList, typename DataTypes, typename Downstream>
 class merge_impl {
+    static_assert(is_type_list_v<EventList>);
+    static_assert(is_processor_of_list_v<Downstream, EventList>);
+
     // When events have equal abstime, those originating from input 0 are
     // emitted before those originating from input1. Within the same input, the
     // order is preserved.
@@ -326,6 +330,8 @@ namespace internal {
 // Internal implementation of N-way unsorted merge processor. This processor is
 // owned by the N input processors via shared_ptr.
 template <std::size_t N, typename Downstream> class merge_unsorted_impl {
+    static_assert(is_processor_v<Downstream>);
+
     Downstream downstream;
 
     // Cold data.
@@ -351,6 +357,7 @@ template <std::size_t N, typename Downstream> class merge_unsorted_impl {
     }
 
     template <typename Event> void handle(Event &&event) {
+        static_assert(handles_event_v<Downstream, remove_cvref_t<Event>>);
         if (ended_with_exception)
             return;
         try {
@@ -399,7 +406,9 @@ template <std::size_t N, typename Downstream> class merge_unsorted_input {
         return impl->introspect_graph().push_entry_point(this);
     }
 
-    template <typename Event> void handle(Event &&event) {
+    template <typename Event, typename = std::enable_if_t<handles_event_v<
+                                  Downstream, remove_cvref_t<Event>>>>
+    void handle(Event &&event) {
         impl->handle(std::forward<Event>(event));
     }
 

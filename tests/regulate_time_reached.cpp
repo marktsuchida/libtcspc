@@ -10,6 +10,7 @@
 #include "libtcspc/common.hpp"
 #include "libtcspc/context.hpp"
 #include "libtcspc/int_types.hpp"
+#include "libtcspc/processor_traits.hpp"
 #include "libtcspc/test_utils.hpp"
 #include "libtcspc/time_tagged_events.hpp"
 #include "libtcspc/type_list.hpp"
@@ -31,6 +32,14 @@ using other_event = time_tagged_test_event<0>;
 using events = type_list<other_event, time_reached_event<>>;
 
 } // namespace
+
+TEST_CASE("regulate_time_reached event type constraints") {
+    using proc_type = decltype(regulate_time_reached(
+        arg::interval_threshold<i64>{1}, arg::count_threshold<std::size_t>{1},
+        sink_events<time_reached_event<>, other_event>()));
+    STATIC_CHECK(is_processor_v<proc_type, time_reached_event<>, other_event>);
+    STATIC_CHECK_FALSE(handles_event_v<proc_type, int>);
+}
 
 TEST_CASE("introspect regulate_time_reached", "[introspect]") {
     check_introspect_simple_processor(regulate_time_reached(

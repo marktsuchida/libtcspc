@@ -9,6 +9,7 @@
 #include "libtcspc/arg_wrappers.hpp"
 #include "libtcspc/bucket.hpp"
 #include "libtcspc/errors.hpp"
+#include "libtcspc/processor_traits.hpp"
 #include "libtcspc/span.hpp"
 #include "libtcspc/view_as_bytes.hpp"
 #include "test_checkers.hpp"
@@ -27,6 +28,19 @@
 #include <vector>
 
 namespace tcspc {
+
+TEST_CASE("write_binary_stream event type constraints") {
+    using proc_type = decltype(write_binary_stream(
+        null_output_stream(), new_delete_bucket_source<std::byte>::create(),
+        arg::granularity<std::size_t>{16}));
+    STATIC_CHECK(is_processor_v<proc_type, bucket<std::byte>>);
+    STATIC_CHECK(is_processor_v<proc_type, bucket<std::byte const>>);
+    STATIC_CHECK(is_processor_v<proc_type, std::array<std::byte, 8>>);
+    STATIC_CHECK(is_processor_v<proc_type, std::vector<std::byte>>);
+    STATIC_CHECK_FALSE(handles_event_v<proc_type, std::byte>);
+    STATIC_CHECK_FALSE(handles_event_v<proc_type, bucket<int>>);
+    STATIC_CHECK_FALSE(handles_event_v<proc_type, int>);
+}
 
 TEST_CASE("introspect write_binary_stream", "[introspect]") {
     check_introspect_simple_sink(write_binary_stream(

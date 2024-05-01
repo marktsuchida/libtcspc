@@ -283,7 +283,9 @@ inline constexpr bool handles_events_v =
  *
  * \see `tcspc::handles_event_list_v`
  */
-template <typename Proc, typename Events> struct handles_event_list;
+template <typename Proc, typename EventList> struct handles_event_list {
+    static_assert(is_type_list_v<EventList>);
+};
 
 /** \cond implementation-detail */
 
@@ -380,7 +382,9 @@ inline constexpr bool is_processor_v = is_processor<Proc, Events...>::value;
 template <typename Proc, typename EventList>
 struct is_processor_of_list
     : std::conjunction<handles_flush<Proc>,
-                       handles_event_list<Proc, EventList>> {};
+                       handles_event_list<Proc, EventList>> {
+    static_assert(is_type_list_v<EventList>);
+};
 
 /**
  * \brief Helper variable template for `tcspc::is_processor_of_list`.

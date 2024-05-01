@@ -12,6 +12,7 @@
 #include "errors.hpp"
 #include "int_types.hpp"
 #include "introspect.hpp"
+#include "processor_traits.hpp"
 #include "span.hpp"
 
 #include <algorithm>
@@ -386,6 +387,7 @@ class read_binary_stream {
     static_assert(
         std::is_trivial_v<Event>,
         "Event type must be trivial to work with read_binary_stream");
+    static_assert(is_processor_v<Downstream, bucket<Event>, warning_event>);
 
     InputStream stream;
     std::uint64_t length;

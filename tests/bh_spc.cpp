@@ -10,6 +10,7 @@
 #include "libtcspc/context.hpp"
 #include "libtcspc/int_types.hpp"
 #include "libtcspc/npint.hpp"
+#include "libtcspc/processor_traits.hpp"
 #include "libtcspc/test_utils.hpp"
 #include "libtcspc/time_tagged_events.hpp"
 #include "libtcspc/type_list.hpp"
@@ -651,23 +652,72 @@ TEST_CASE("bh spc600 4096ch assign") {
                                      0b1111'1111, 0b1011'1111, 0b1111'1111}));
 }
 
-using out_events =
-    type_list<time_correlated_detection_event<>, marker_event<>,
-              time_reached_event<>, data_lost_event<>, warning_event>;
-using out_events_with_counter =
-    type_list<time_correlated_detection_event<>, marker_event<>,
-              time_reached_event<>, data_lost_event<>, bulk_counts_event<>,
-              warning_event>;
+namespace {
+
+struct bh_data_types : default_data_types {
+    using channel_type = u8;
+    using difftime_type = u16;
+};
+
+} // namespace
+
+TEST_CASE("decode_bh_spc event type constraints") {
+    using proc_type = decltype(decode_bh_spc<bh_data_types>(
+        sink_events<time_reached_event<bh_data_types>,
+                    time_correlated_detection_event<bh_data_types>,
+                    marker_event<bh_data_types>,
+                    data_lost_event<bh_data_types>, warning_event>()));
+
+    STATIC_CHECK(is_processor_v<proc_type, bh_spc_event>);
+    STATIC_CHECK_FALSE(handles_event_v<proc_type, bh_spc600_256ch_event>);
+}
+
+TEST_CASE("decode_bh_spc_with_intensity_counter event type constraints") {
+    using proc_type =
+        decltype(decode_bh_spc_with_intensity_counter<bh_data_types>(
+            sink_events<time_reached_event<bh_data_types>,
+                        time_correlated_detection_event<bh_data_types>,
+                        marker_event<bh_data_types>,
+                        bulk_counts_event<bh_data_types>,
+                        data_lost_event<bh_data_types>, warning_event>()));
+
+    STATIC_CHECK(is_processor_v<proc_type, bh_spc_event>);
+    STATIC_CHECK_FALSE(handles_event_v<proc_type, bh_spc600_256ch_event>);
+}
+
+TEST_CASE("decode_bh_spc600_256ch event type constraints") {
+    using proc_type = decltype(decode_bh_spc600_256ch<bh_data_types>(
+        sink_events<time_reached_event<bh_data_types>,
+                    time_correlated_detection_event<bh_data_types>,
+                    data_lost_event<bh_data_types>, warning_event>()));
+
+    STATIC_CHECK(is_processor_v<proc_type, bh_spc600_256ch_event>);
+    STATIC_CHECK_FALSE(handles_event_v<proc_type, bh_spc600_4096ch_event>);
+}
+
+TEST_CASE("decode_bh_spc600_4096ch event type constraints") {
+    using proc_type = decltype(decode_bh_spc600_4096ch<bh_data_types>(
+        sink_events<time_reached_event<bh_data_types>,
+                    time_correlated_detection_event<bh_data_types>,
+                    data_lost_event<bh_data_types>, warning_event>()));
+
+    STATIC_CHECK(is_processor_v<proc_type, bh_spc600_4096ch_event>);
+    STATIC_CHECK_FALSE(handles_event_v<proc_type, bh_spc600_256ch_event>);
+}
 
 TEST_CASE("introspect bh_spc", "[introspect]") {
     check_introspect_simple_processor(decode_bh_spc(null_sink()));
     check_introspect_simple_processor(
         decode_bh_spc_with_intensity_counter(null_sink()));
-    check_introspect_simple_processor(decode_bh_spc600_4096ch(null_sink()));
     check_introspect_simple_processor(decode_bh_spc600_256ch(null_sink()));
+    check_introspect_simple_processor(decode_bh_spc600_4096ch(null_sink()));
 }
 
 TEST_CASE("decode bh spc") {
+    using out_events =
+        type_list<time_correlated_detection_event<>, marker_event<>,
+                  time_reached_event<>, data_lost_event<>, warning_event>;
+
     auto const valcat = GENERATE(feed_as::const_lvalue, feed_as::rvalue);
     auto ctx = context::create();
     auto in =
@@ -782,15 +832,19 @@ TEST_CASE("decode bh spc") {
 
 TEST_CASE("decode bh spc with fast intensity counter",
           "[decode_bh_spc_with_intensity_counter]") {
+    using out_events =
+        type_list<time_correlated_detection_event<>, marker_event<>,
+                  bulk_counts_event<>, time_reached_event<>, data_lost_event<>,
+                  warning_event>;
+
     auto const valcat = GENERATE(feed_as::const_lvalue, feed_as::rvalue);
     auto ctx = context::create();
-    auto in = feed_input(valcat,
-                         decode_bh_spc_with_intensity_counter(
-                             capture_output<out_events_with_counter>(
-                                 ctx->tracker<capture_output_access>("out"))));
+    auto in = feed_input(
+        valcat,
+        decode_bh_spc_with_intensity_counter(capture_output<out_events>(
+            ctx->tracker<capture_output_access>("out"))));
     in.require_output_checked(ctx, "out");
-    auto out =
-        capture_output_checker<out_events_with_counter>(valcat, ctx, "out");
+    auto out = capture_output_checker<out_events>(valcat, ctx, "out");
 
     bool const gap = GENERATE(false, true);
 
@@ -837,6 +891,10 @@ TEST_CASE("decode bh spc with fast intensity counter",
 }
 
 TEST_CASE("decode bh spc600 256ch") {
+    using out_events =
+        type_list<time_correlated_detection_event<>, time_reached_event<>,
+                  data_lost_event<>, warning_event>;
+
     auto const valcat = GENERATE(feed_as::const_lvalue, feed_as::rvalue);
     auto ctx = context::create();
     auto in =
@@ -918,6 +976,10 @@ TEST_CASE("decode bh spc600 256ch") {
 }
 
 TEST_CASE("decode bh spc600 4096ch") {
+    using out_events =
+        type_list<time_correlated_detection_event<>, time_reached_event<>,
+                  data_lost_event<>, warning_event>;
+
     auto const valcat = GENERATE(feed_as::const_lvalue, feed_as::rvalue);
     auto ctx = context::create();
     auto in =

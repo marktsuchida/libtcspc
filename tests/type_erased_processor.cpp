@@ -27,7 +27,7 @@ using e1 = empty_test_event<1>;
 
 namespace internal {
 
-TEST_CASE("abstract_processor event types") {
+TEST_CASE("abstract_processor event type constraints") {
     SECTION("handles flush") {
         STATIC_CHECK(handles_flush_v<abstract_processor<type_list<>>>);
         STATIC_CHECK(handles_flush_v<abstract_processor<type_list<e0>>>);
@@ -44,7 +44,7 @@ TEST_CASE("abstract_processor event types") {
     }
 }
 
-TEST_CASE("virtual_processor event types") {
+TEST_CASE("virtual_processor event type constraints") {
     using ::tcspc::sink_events;
 
     SECTION("handles flush") {
@@ -78,7 +78,7 @@ TEST_CASE("virtual_processor event types") {
 
 } // namespace internal
 
-TEST_CASE("type_erased_processor event types") {
+TEST_CASE("type_erased_processor event type constraints") {
     SECTION("handles flush") {
         STATIC_CHECK(
             handles_flush_v<decltype(type_erased_processor<type_list<>>(

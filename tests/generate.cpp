@@ -9,6 +9,7 @@
 #include "libtcspc/arg_wrappers.hpp"
 #include "libtcspc/common.hpp"
 #include "libtcspc/context.hpp"
+#include "libtcspc/processor_traits.hpp"
 #include "libtcspc/test_utils.hpp"
 #include "libtcspc/type_list.hpp"
 #include "test_checkers.hpp"
@@ -30,6 +31,14 @@ using misc_event = time_tagged_test_event<2>;
 using out_events = type_list<trigger_event, output_event, misc_event>;
 
 } // namespace
+
+TEST_CASE("generate event type constraints") {
+    using proc_type = decltype(generate<trigger_event, output_event>(
+        null_timing_generator(),
+        sink_events<trigger_event, output_event, misc_event>()));
+    STATIC_CHECK(is_processor_v<proc_type, trigger_event, misc_event>);
+    STATIC_CHECK_FALSE(handles_event_v<proc_type, int>);
+}
 
 TEST_CASE("introspect generate", "[introspect]") {
     check_introspect_simple_processor(generate<trigger_event, output_event>(

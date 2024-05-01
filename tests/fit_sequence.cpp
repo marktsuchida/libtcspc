@@ -10,6 +10,7 @@
 #include "libtcspc/common.hpp"
 #include "libtcspc/context.hpp"
 #include "libtcspc/errors.hpp"
+#include "libtcspc/processor_traits.hpp"
 #include "libtcspc/test_utils.hpp"
 #include "libtcspc/timing_misc.hpp"
 #include "libtcspc/type_list.hpp"
@@ -25,6 +26,19 @@
 #include <vector>
 
 namespace tcspc {
+
+TEST_CASE("fit_periodic_sequences event type constraints") {
+    struct tick {
+        i64 abstime;
+    };
+    using proc_type = decltype(fit_periodic_sequences<tick>(
+        arg::length<std::size_t>{42}, arg::min_interval{10.0},
+        arg::max_interval{20.0}, arg::max_mse{1.0},
+        sink_events<periodic_sequence_model_event<>, int>()));
+
+    STATIC_CHECK(is_processor_v<proc_type, tick, int>);
+    STATIC_CHECK_FALSE(handles_event_v<proc_type, double>);
+}
 
 TEST_CASE("introspect fit_sequence") {
     check_introspect_simple_processor(fit_periodic_sequences<int>(

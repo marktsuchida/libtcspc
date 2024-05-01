@@ -9,8 +9,10 @@
 #include "arg_wrappers.hpp"
 #include "bucket.hpp"
 #include "introspect.hpp"
+#include "processor_traits.hpp"
 
 #include <cstddef>
+#include <iterator>
 #include <memory>
 #include <stdexcept>
 #include <type_traits>
@@ -21,6 +23,8 @@ namespace tcspc {
 namespace internal {
 
 template <typename Event, typename Downstream> class batch {
+    static_assert(is_processor_v<Downstream, bucket<Event>>);
+
     std::shared_ptr<bucket_source<Event>> bsource;
     std::size_t bsize;
 
@@ -48,8 +52,8 @@ template <typename Event, typename Downstream> class batch {
         return downstream.introspect_graph().push_entry_point(this);
     }
 
-    template <typename E,
-              typename = std::enable_if_t<std::is_convertible_v<E, Event>>>
+    template <typename E, typename = std::enable_if_t<
+                              std::is_convertible_v<remove_cvref_t<E>, Event>>>
     void handle(E &&event) {
         if (cur_bucket.empty())
             cur_bucket = bsource->bucket_of_size(bsize);
@@ -74,6 +78,8 @@ template <typename Event, typename Downstream> class batch {
 };
 
 template <typename Event, typename Downstream> class unbatch {
+    static_assert(is_processor_v<Downstream, Event>);
+
     Downstream downstream;
 
   public:
@@ -96,7 +102,12 @@ template <typename Event, typename Downstream> class unbatch {
     // inlined even if this function is marked noinline. There may be
     // borderline cases where this doesn't hold, but it is probably best to
     // leave it to the compiler.
-    template <typename EventContainer>
+    template <
+        typename EventContainer,
+        typename = std::enable_if_t<std::is_convertible_v<
+            typename std::iterator_traits<
+                decltype(std::declval<EventContainer>().end())>::reference,
+            Event const &>>>
     void handle(EventContainer const &events) {
         for (auto const &event : events)
             downstream.handle(event);
@@ -108,10 +119,13 @@ template <typename Event, typename Downstream> class unbatch {
     // Note that we do not do a move if the container is not passed by rvalue
     // ref, even if its elements are non-const (e.g., a const span to
     // non-const), because that would lead to surprises.
-    template <typename EC, typename = std::enable_if_t<
-                               not std::is_lvalue_reference_v<EC> &&
-                               not std::is_const_v<std::remove_reference_t<
-                                   decltype(*std::declval<EC>().begin())>>>>
+    template <typename EC,
+              typename = std::enable_if_t<
+                  not std::is_lvalue_reference_v<EC> &&
+                  std::is_convertible_v<
+                      typename std::iterator_traits<
+                          decltype(std::declval<EC>().end())>::reference,
+                      Event &>>>
     void handle(EC &&events) { // NOLINT(cppcoreguidelines-missing-std-forward)
         for (auto &event : events)
             downstream.handle(std::move(event));

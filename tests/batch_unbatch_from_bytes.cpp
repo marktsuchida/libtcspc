@@ -9,6 +9,7 @@
 #include "libtcspc/bucket.hpp"
 #include "libtcspc/common.hpp"
 #include "libtcspc/context.hpp"
+#include "libtcspc/processor_traits.hpp"
 #include "libtcspc/span.hpp"
 #include "libtcspc/test_utils.hpp"
 #include "libtcspc/type_list.hpp"
@@ -39,6 +40,23 @@ auto tmp_bucket(std::initializer_list<U> il) {
 }
 
 } // namespace
+
+TEST_CASE("batch_from_bytes event type constraints") {
+    using proc_type = decltype(batch_from_bytes<int>(
+        new_delete_bucket_source<int>::create(), sink_events<bucket<int>>()));
+    STATIC_CHECK(is_processor_v<proc_type, span<std::byte>>);
+    STATIC_CHECK(is_processor_v<proc_type, span<std::byte const>>);
+    STATIC_CHECK(is_processor_v<proc_type, std::array<std::byte const, 3>>);
+    STATIC_CHECK_FALSE(is_processor_v<proc_type, span<short const>>);
+}
+
+TEST_CASE("unbatch_from_bytes event type constraints") {
+    using proc_type = decltype(unbatch_from_bytes<int>(sink_events<int>()));
+    STATIC_CHECK(is_processor_v<proc_type, span<std::byte>>);
+    STATIC_CHECK(is_processor_v<proc_type, span<std::byte const>>);
+    STATIC_CHECK(is_processor_v<proc_type, std::array<std::byte const, 3>>);
+    STATIC_CHECK_FALSE(is_processor_v<proc_type, span<short const>>);
+}
 
 TEST_CASE("introspect batch_from_bytes, unbatch_from_bytes", "[introspect]") {
     check_introspect_simple_processor(batch_from_bytes<int>(

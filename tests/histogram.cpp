@@ -13,6 +13,7 @@
 #include "libtcspc/errors.hpp"
 #include "libtcspc/histogram_events.hpp"
 #include "libtcspc/int_types.hpp"
+#include "libtcspc/processor_traits.hpp"
 #include "libtcspc/span.hpp"
 #include "libtcspc/test_utils.hpp"
 #include "libtcspc/type_list.hpp"
@@ -31,6 +32,7 @@ namespace tcspc {
 namespace {
 
 using reset_event = empty_test_event<0>;
+using misc_event = empty_test_event<1>;
 
 struct data_types : default_data_types {
     using bin_index_type = u32;
@@ -43,6 +45,95 @@ template <typename T> auto tmp_bucket(T &v) {
 }
 
 } // namespace
+
+TEST_CASE("histogram event type constraints") {
+    SECTION("saturate on overflow") {
+        SECTION("no reset") {
+            using proc_type = decltype(histogram<reset_event>(
+                saturate_on_overflow, arg::num_bins<std::size_t>{1},
+                arg::max_per_bin<u16>{255},
+                new_delete_bucket_source<u16>::create(),
+                sink_events<histogram_event<>, warning_event, misc_event>()));
+            STATIC_CHECK(
+                is_processor_v<proc_type, bin_increment_event<>, misc_event>);
+            STATIC_CHECK_FALSE(handles_event_v<proc_type, reset_event>);
+            STATIC_CHECK_FALSE(handles_event_v<proc_type, int>);
+        }
+        SECTION("with reset") {
+            using proc_type = decltype(histogram<reset_event>(
+                saturate_on_overflow, arg::num_bins<std::size_t>{1},
+                arg::max_per_bin<u16>{255},
+                new_delete_bucket_source<u16>::create(),
+                sink_events<histogram_event<>, concluding_histogram_event<>,
+                            warning_event, misc_event>()));
+            STATIC_CHECK(is_processor_v<proc_type, bin_increment_event<>,
+                                        reset_event, misc_event>);
+            STATIC_CHECK_FALSE(handles_event_v<proc_type, int>);
+        }
+    }
+
+    SECTION("reset on overflow") {
+        using proc_type = decltype(histogram<reset_event>(
+            reset_on_overflow, arg::num_bins<std::size_t>{1},
+            arg::max_per_bin<u16>{255},
+            new_delete_bucket_source<u16>::create(),
+            sink_events<histogram_event<>, concluding_histogram_event<>,
+                        misc_event>()));
+        STATIC_CHECK(is_processor_v<proc_type, bin_increment_event<>,
+                                    reset_event, misc_event>);
+        STATIC_CHECK_FALSE(handles_event_v<proc_type, int>);
+    }
+
+    SECTION("stop on overflow") {
+        SECTION("no reset") {
+            using proc_type = decltype(histogram<reset_event>(
+                stop_on_overflow, arg::num_bins<std::size_t>{1},
+                arg::max_per_bin<u16>{255},
+                new_delete_bucket_source<u16>::create(),
+                sink_events<histogram_event<>, misc_event>()));
+            STATIC_CHECK(
+                is_processor_v<proc_type, bin_increment_event<>, misc_event>);
+            STATIC_CHECK_FALSE(handles_event_v<proc_type, reset_event>);
+            STATIC_CHECK_FALSE(handles_event_v<proc_type, int>);
+        }
+        SECTION("with reset") {
+            using proc_type = decltype(histogram<reset_event>(
+                stop_on_overflow, arg::num_bins<std::size_t>{1},
+                arg::max_per_bin<u16>{255},
+                new_delete_bucket_source<u16>::create(),
+                sink_events<histogram_event<>, concluding_histogram_event<>,
+                            misc_event>()));
+            STATIC_CHECK(is_processor_v<proc_type, bin_increment_event<>,
+                                        reset_event, misc_event>);
+            STATIC_CHECK_FALSE(handles_event_v<proc_type, int>);
+        }
+    }
+
+    SECTION("error on overflow") {
+        SECTION("no reset") {
+            using proc_type = decltype(histogram<reset_event>(
+                error_on_overflow, arg::num_bins<std::size_t>{1},
+                arg::max_per_bin<u16>{255},
+                new_delete_bucket_source<u16>::create(),
+                sink_events<histogram_event<>, misc_event>()));
+            STATIC_CHECK(
+                is_processor_v<proc_type, bin_increment_event<>, misc_event>);
+            STATIC_CHECK_FALSE(handles_event_v<proc_type, reset_event>);
+            STATIC_CHECK_FALSE(handles_event_v<proc_type, int>);
+        }
+        SECTION("with reset") {
+            using proc_type = decltype(histogram<reset_event>(
+                error_on_overflow, arg::num_bins<std::size_t>{1},
+                arg::max_per_bin<u16>{255},
+                new_delete_bucket_source<u16>::create(),
+                sink_events<histogram_event<>, concluding_histogram_event<>,
+                            misc_event>()));
+            STATIC_CHECK(is_processor_v<proc_type, bin_increment_event<>,
+                                        reset_event, misc_event>);
+            STATIC_CHECK_FALSE(handles_event_v<proc_type, int>);
+        }
+    }
+}
 
 TEST_CASE("introspect histogram", "[introspect]") {
     check_introspect_simple_processor(histogram<reset_event>(

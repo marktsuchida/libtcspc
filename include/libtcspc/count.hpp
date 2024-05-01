@@ -10,6 +10,7 @@
 #include "common.hpp"
 #include "context.hpp"
 #include "introspect.hpp"
+#include "processor_traits.hpp"
 
 #include <cstdint>
 #include <functional>
@@ -23,6 +24,9 @@ namespace internal {
 template <typename TickEvent, typename FireEvent, typename ResetEvent,
           bool FireAfterTick, typename Downstream>
 class count_up_to {
+    // Do not require handling of ResetEvent, as it may not be used at all.
+    static_assert(is_processor_v<Downstream, TickEvent, FireEvent>);
+
     std::uint64_t count;
     std::uint64_t init;
     std::uint64_t thresh;
@@ -83,17 +87,12 @@ class count_up_to {
         post_tick(abstime);
     }
 
-    void handle(ResetEvent const &event) {
-        count = init;
-        downstream.handle(event);
-    }
-
-    void handle(ResetEvent &&event) {
-        count = init;
-        downstream.handle(std::move(event));
-    }
-
-    template <typename E> void handle(E &&event) {
+    template <typename E, typename = std::enable_if_t<
+                              handles_event_v<Downstream, remove_cvref_t<E>>>>
+    void handle(E &&event) {
+        if constexpr (std::is_convertible_v<remove_cvref_t<E>, ResetEvent>) {
+            count = init;
+        }
         downstream.handle(std::forward<E>(event));
     }
 
@@ -243,6 +242,8 @@ class count_access {
 namespace internal {
 
 template <typename Event, typename Downstream> class count {
+    static_assert(is_processor_v<Downstream, Event>);
+
     std::uint64_t ct = 0;
 
     Downstream downstream;
@@ -268,9 +269,10 @@ template <typename Event, typename Downstream> class count {
         return downstream.introspect_graph().push_entry_point(this);
     }
 
-    template <typename E> void handle(E &&event) {
-        if constexpr (std::is_convertible_v<internal::remove_cvref_t<E>,
-                                            Event>)
+    template <typename E, typename = std::enable_if_t<
+                              handles_event_v<Downstream, remove_cvref_t<E>>>>
+    void handle(E &&event) {
+        if constexpr (std::is_convertible_v<remove_cvref_t<E>, Event>)
             ++ct;
         downstream.handle(std::forward<E>(event));
     }

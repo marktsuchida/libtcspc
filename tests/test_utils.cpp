@@ -20,6 +20,36 @@
 
 namespace tcspc {
 
+TEST_CASE("capture_output event type constraints") {
+    using e0 = empty_test_event<0>;
+    using e1 = empty_test_event<1>;
+    using proc_type = decltype(capture_output<type_list<e0, e1>>(
+        context::create()->tracker<capture_output_access>("out")));
+    STATIC_CHECK(is_processor_v<proc_type, e0, e1>);
+    STATIC_CHECK_FALSE(handles_event_v<proc_type, int>);
+}
+
+TEST_CASE("feed_input event type constraints") {
+    using e0 = empty_test_event<0>;
+    using e1 = empty_test_event<1>;
+    using proc_type =
+        decltype(feed_input(feed_as::const_lvalue, sink_events<e0, e1>()));
+    STATIC_CHECK(is_processor_v<proc_type, e0, e1>);
+    STATIC_CHECK_FALSE(handles_event_v<proc_type, int>);
+}
+
+TEST_CASE("sink_events event type constraints") {
+    using e0 = empty_test_event<0>;
+
+    STATIC_CHECK(handles_flush_v<decltype(sink_events<>())>);
+
+    STATIC_CHECK_FALSE(handles_rvalue_event_v<decltype(sink_events<>()), e0>);
+    STATIC_CHECK(handles_rvalue_event_v<decltype(sink_events<e0>()), e0>);
+
+    STATIC_CHECK_FALSE(handles_const_event_v<decltype(sink_events<>()), e0>);
+    STATIC_CHECK(handles_const_event_v<decltype(sink_events<e0>()), e0>);
+}
+
 TEST_CASE("introspect test_utils", "[introspect]") {
     auto ctx = context::create();
     check_introspect_simple_sink(capture_output<type_list<>>(
@@ -114,16 +144,6 @@ TEST_CASE("Short-circuited with event set") {
         in.handle(e1{42});
         CHECK_THROWS_AS(out.check(e1{0}), std::logic_error);
     }
-}
-
-TEST_CASE("sink_events") {
-    STATIC_CHECK(handles_flush_v<decltype(sink_events<>())>);
-
-    STATIC_CHECK_FALSE(handles_rvalue_event_v<decltype(sink_events<>()), e0>);
-    STATIC_CHECK(handles_rvalue_event_v<decltype(sink_events<e0>()), e0>);
-
-    STATIC_CHECK_FALSE(handles_const_event_v<decltype(sink_events<>()), e0>);
-    STATIC_CHECK(handles_const_event_v<decltype(sink_events<e0>()), e0>);
 }
 
 } // namespace tcspc

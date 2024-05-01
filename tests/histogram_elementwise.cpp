@@ -13,6 +13,7 @@
 #include "libtcspc/errors.hpp"
 #include "libtcspc/histogram_events.hpp"
 #include "libtcspc/int_types.hpp"
+#include "libtcspc/processor_traits.hpp"
 #include "libtcspc/span.hpp"
 #include "libtcspc/test_utils.hpp"
 #include "libtcspc/type_list.hpp"
@@ -59,6 +60,141 @@ auto make_bin_increment_batch(
 }
 
 } // namespace
+
+TEST_CASE("histogram_elementwise event type constraints") {
+    SECTION("saturate on overflow") {
+        using proc_type = decltype(histogram_elementwise(
+            saturate_on_overflow, arg::num_elements<std::size_t>{256},
+            arg::num_bins<std::size_t>{256}, arg::max_per_bin<u16>{255},
+            new_delete_bucket_source<u16>::create(),
+            sink_events<histogram_event<>, histogram_array_event<>,
+                        warning_event, misc_event>()));
+        STATIC_CHECK(is_processor_v<proc_type, bin_increment_batch_event<>,
+                                    misc_event>);
+        STATIC_CHECK_FALSE(handles_event_v<proc_type, int>);
+    }
+
+    SECTION("error on overflow") {
+        using proc_type = decltype(histogram_elementwise(
+            error_on_overflow, arg::num_elements<std::size_t>{256},
+            arg::num_bins<std::size_t>{256}, arg::max_per_bin<u16>{255},
+            new_delete_bucket_source<u16>::create(),
+            sink_events<histogram_event<>, histogram_array_event<>,
+                        misc_event>()));
+        STATIC_CHECK(is_processor_v<proc_type, bin_increment_batch_event<>,
+                                    misc_event>);
+        STATIC_CHECK_FALSE(handles_event_v<proc_type, int>);
+    }
+}
+
+TEST_CASE("histogram_elementwise_accumulate event type constraints") {
+    SECTION("saturate on overflow") {
+        SECTION("no reset") {
+            using proc_type =
+                decltype(histogram_elementwise_accumulate<reset_event>(
+                    saturate_on_overflow, arg::num_elements<std::size_t>{256},
+                    arg::num_bins<std::size_t>{256},
+                    arg::max_per_bin<u16>{255},
+                    new_delete_bucket_source<u16>::create(),
+                    sink_events<histogram_event<>, histogram_array_event<>,
+                                warning_event, misc_event>()));
+            STATIC_CHECK(is_processor_v<proc_type, bin_increment_batch_event<>,
+                                        misc_event>);
+            STATIC_CHECK_FALSE(handles_event_v<proc_type, reset_event>);
+            STATIC_CHECK_FALSE(handles_event_v<proc_type, int>);
+        }
+        SECTION("with reset") {
+            using proc_type =
+                decltype(histogram_elementwise_accumulate<reset_event>(
+                    saturate_on_overflow, arg::num_elements<std::size_t>{256},
+                    arg::num_bins<std::size_t>{256},
+                    arg::max_per_bin<u16>{255},
+                    new_delete_bucket_source<u16>::create(),
+                    sink_events<histogram_event<>, histogram_array_event<>,
+                                concluding_histogram_array_event<>,
+                                warning_event, misc_event>()));
+            STATIC_CHECK(is_processor_v<proc_type, bin_increment_batch_event<>,
+                                        reset_event, misc_event>);
+            STATIC_CHECK_FALSE(handles_event_v<proc_type, int>);
+        }
+    }
+
+    SECTION("reset on overflow") {
+        using proc_type =
+            decltype(histogram_elementwise_accumulate<reset_event>(
+                reset_on_overflow, arg::num_elements<std::size_t>{256},
+                arg::num_bins<std::size_t>{256}, arg::max_per_bin<u16>{255},
+                new_delete_bucket_source<u16>::create(),
+                sink_events<histogram_event<>, histogram_array_event<>,
+                            concluding_histogram_array_event<>,
+                            misc_event>()));
+        STATIC_CHECK(is_processor_v<proc_type, bin_increment_batch_event<>,
+                                    reset_event, misc_event>);
+        STATIC_CHECK_FALSE(handles_event_v<proc_type, int>);
+    }
+
+    SECTION("stop on overflow") {
+        SECTION("no reset") {
+            using proc_type =
+                decltype(histogram_elementwise_accumulate<reset_event>(
+                    stop_on_overflow, arg::num_elements<std::size_t>{256},
+                    arg::num_bins<std::size_t>{256},
+                    arg::max_per_bin<u16>{255},
+                    new_delete_bucket_source<u16>::create(),
+                    sink_events<histogram_event<>, histogram_array_event<>,
+                                misc_event>()));
+            STATIC_CHECK(is_processor_v<proc_type, bin_increment_batch_event<>,
+                                        misc_event>);
+            STATIC_CHECK_FALSE(handles_event_v<proc_type, reset_event>);
+            STATIC_CHECK_FALSE(handles_event_v<proc_type, int>);
+        }
+        SECTION("with reset") {
+            using proc_type =
+                decltype(histogram_elementwise_accumulate<reset_event>(
+                    stop_on_overflow, arg::num_elements<std::size_t>{256},
+                    arg::num_bins<std::size_t>{256},
+                    arg::max_per_bin<u16>{255},
+                    new_delete_bucket_source<u16>::create(),
+                    sink_events<histogram_event<>, histogram_array_event<>,
+                                concluding_histogram_array_event<>,
+                                misc_event>()));
+            STATIC_CHECK(is_processor_v<proc_type, bin_increment_batch_event<>,
+                                        reset_event, misc_event>);
+            STATIC_CHECK_FALSE(handles_event_v<proc_type, int>);
+        }
+    }
+
+    SECTION("error on overflow") {
+        SECTION("no reset") {
+            using proc_type =
+                decltype(histogram_elementwise_accumulate<reset_event>(
+                    error_on_overflow, arg::num_elements<std::size_t>{256},
+                    arg::num_bins<std::size_t>{256},
+                    arg::max_per_bin<u16>{255},
+                    new_delete_bucket_source<u16>::create(),
+                    sink_events<histogram_event<>, histogram_array_event<>,
+                                misc_event>()));
+            STATIC_CHECK(is_processor_v<proc_type, bin_increment_batch_event<>,
+                                        misc_event>);
+            STATIC_CHECK_FALSE(handles_event_v<proc_type, reset_event>);
+            STATIC_CHECK_FALSE(handles_event_v<proc_type, int>);
+        }
+        SECTION("with reset") {
+            using proc_type =
+                decltype(histogram_elementwise_accumulate<reset_event>(
+                    error_on_overflow, arg::num_elements<std::size_t>{256},
+                    arg::num_bins<std::size_t>{256},
+                    arg::max_per_bin<u16>{255},
+                    new_delete_bucket_source<u16>::create(),
+                    sink_events<histogram_event<>, histogram_array_event<>,
+                                concluding_histogram_array_event<>,
+                                misc_event>()));
+            STATIC_CHECK(is_processor_v<proc_type, bin_increment_batch_event<>,
+                                        reset_event, misc_event>);
+            STATIC_CHECK_FALSE(handles_event_v<proc_type, int>);
+        }
+    }
+}
 
 TEST_CASE("introspect histogram_elementwise", "[introspect]") {
     check_introspect_simple_processor(histogram_elementwise(
@@ -221,7 +357,8 @@ namespace {
 
 using hea_output_events =
     type_list<histogram_event<dt88>, histogram_array_event<dt88>,
-              concluding_histogram_array_event<dt88>, misc_event>;
+              concluding_histogram_array_event<dt88>, warning_event,
+              misc_event>;
 
 using hea_output_events_no_concluding =
     type_list<histogram_event<dt88>, histogram_array_event<dt88>,
@@ -529,11 +666,10 @@ TEST_CASE("histogram_elementwise_accumulate with saturate-on-overflow",
                     saturate_on_overflow, arg::num_elements<std::size_t>{2},
                     arg::num_bins<std::size_t>{3}, arg::max_per_bin<u8>{4},
                     new_delete_bucket_source<u8>::create(),
-                    capture_output<hea_output_events_no_concluding>(
+                    capture_output<hea_output_events>(
                         ctx->tracker<capture_output_access>("out"))));
     in.require_output_checked(ctx, "out");
-    auto out = capture_output_checker<hea_output_events_no_concluding>(
-        valcat, ctx, "out");
+    auto out = capture_output_checker<hea_output_events>(valcat, ctx, "out");
 
     std::vector<u8> elem_hist;
 

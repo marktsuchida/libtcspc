@@ -9,6 +9,7 @@
 #include "arg_wrappers.hpp"
 #include "common.hpp"
 #include "introspect.hpp"
+#include "processor_traits.hpp"
 
 #include <type_traits>
 #include <utility>
@@ -20,6 +21,8 @@ namespace internal {
 template <typename Event, typename OutEvent, typename Matcher,
           bool PassMatched, typename Downstream>
 class match {
+    static_assert(is_processor_v<Downstream, Event, OutEvent>);
+
     Matcher matcher;
     Downstream downstream;
 
@@ -35,9 +38,10 @@ class match {
         return downstream.introspect_graph().push_entry_point(this);
     }
 
-    template <typename E> void handle(E &&event) {
-        if constexpr (std::is_convertible_v<internal::remove_cvref_t<E>,
-                                            Event>) {
+    template <typename E, typename = std::enable_if_t<
+                              handles_event_v<Downstream, remove_cvref_t<E>>>>
+    void handle(E &&event) {
+        if constexpr (std::is_convertible_v<remove_cvref_t<E>, Event>) {
             auto const abstime = event.abstime;
             bool const matched = matcher(event);
             if (PassMatched || not matched)

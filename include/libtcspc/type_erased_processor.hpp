@@ -146,9 +146,8 @@ template <typename EventList> class type_erased_processor {
         typename = std::enable_if_t<
             not std::is_convertible_v<internal::remove_cvref_t<Downstream>,
                                       type_erased_processor> &&
-            handles_event_list_v<internal::remove_cvref_t<Downstream>,
-                                 event_list> &&
-            handles_flush_v<internal::remove_cvref_t<Downstream>>>>
+            is_processor_of_list_v<internal::remove_cvref_t<Downstream>,
+                                   event_list>>>
     explicit type_erased_processor(Downstream &&downstream)
         : proc(std::make_unique<virtual_processor<Downstream>>(
               std::forward<Downstream>(downstream))) {}

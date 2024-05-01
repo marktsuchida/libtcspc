@@ -10,6 +10,7 @@
 #include "int_types.hpp"
 #include "introspect.hpp"
 #include "npint.hpp"
+#include "processor_traits.hpp"
 #include "read_integers.hpp"
 #include "span.hpp"
 #include "time_tagged_events.hpp"
@@ -438,6 +439,10 @@ namespace internal {
 // PQT2Event is the binary record event class.
 template <typename DataTypes, typename PQT2Event, typename Downstream>
 class decode_pqt2 {
+    static_assert(is_processor_v<Downstream, time_reached_event<DataTypes>,
+                                 detection_event<DataTypes>,
+                                 marker_event<DataTypes>, warning_event>);
+
     using abstime_type = typename DataTypes::abstime_type;
 
     abstime_type timetag_base = 0;

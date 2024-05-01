@@ -10,6 +10,7 @@
 #include "libtcspc/common.hpp"
 #include "libtcspc/context.hpp"
 #include "libtcspc/int_types.hpp"
+#include "libtcspc/processor_traits.hpp"
 #include "libtcspc/test_utils.hpp"
 #include "libtcspc/time_tagged_events.hpp"
 #include "libtcspc/type_list.hpp"
@@ -23,11 +24,36 @@
 
 namespace tcspc {
 
-namespace {
+TEST_CASE("pair_all event type constraints") {
+    using proc_type = decltype(pair_all(
+        arg::start_channel{0}, std::array{1, 2}, arg::time_window<i64>{100},
+        sink_events<std::array<detection_event<>, 2>, int>()));
+    STATIC_CHECK(is_processor_v<proc_type, detection_event<>, int>);
+    STATIC_CHECK_FALSE(handles_event_v<proc_type, double>);
+}
 
-using out_events =
-    type_list<detection_event<>, std::array<detection_event<>, 2>>;
+TEST_CASE("pair_one event type constraints") {
+    using proc_type = decltype(pair_one(
+        arg::start_channel{0}, std::array{1, 2}, arg::time_window<i64>{100},
+        sink_events<std::array<detection_event<>, 2>, int>()));
+    STATIC_CHECK(is_processor_v<proc_type, detection_event<>, int>);
+    STATIC_CHECK_FALSE(handles_event_v<proc_type, double>);
+}
 
+TEST_CASE("pair_all_between event type constraints") {
+    using proc_type = decltype(pair_all_between(
+        arg::start_channel{0}, std::array{1, 2}, arg::time_window<i64>{100},
+        sink_events<std::array<detection_event<>, 2>, int>()));
+    STATIC_CHECK(is_processor_v<proc_type, detection_event<>, int>);
+    STATIC_CHECK_FALSE(handles_event_v<proc_type, double>);
+}
+
+TEST_CASE("pair_one_between event type constraints") {
+    using proc_type = decltype(pair_one_between(
+        arg::start_channel{0}, std::array{1, 2}, arg::time_window<i64>{100},
+        sink_events<std::array<detection_event<>, 2>, int>()));
+    STATIC_CHECK(is_processor_v<proc_type, detection_event<>, int>);
+    STATIC_CHECK_FALSE(handles_event_v<proc_type, double>);
 }
 
 TEST_CASE("introspect pair", "[introspect]") {
@@ -40,6 +66,13 @@ TEST_CASE("introspect pair", "[introspect]") {
     check_introspect_simple_processor(pair_one_between<1>(
         arg::start_channel{0}, {1}, arg::time_window<i64>{1}, null_sink()));
 }
+
+namespace {
+
+using out_events =
+    type_list<detection_event<>, std::array<detection_event<>, 2>>;
+
+} // namespace
 
 TEST_CASE("pair all") {
     auto const valcat = GENERATE(feed_as::const_lvalue, feed_as::rvalue);

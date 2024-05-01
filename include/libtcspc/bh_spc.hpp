@@ -10,6 +10,7 @@
 #include "int_types.hpp"
 #include "introspect.hpp"
 #include "npint.hpp"
+#include "processor_traits.hpp"
 #include "read_integers.hpp"
 #include "span.hpp"
 #include "time_tagged_events.hpp"
@@ -44,6 +45,11 @@ struct bh_spc_event {
      * \brief The macrotime overflow period of this event type.
      */
     static constexpr std::uint32_t macrotime_overflow_period = 1 << 12;
+
+    /**
+     * \brief Whether this event type can represent marker events.
+     */
+    static constexpr bool has_markers = true;
 
     /**
      * \brief Read the ADC value (i.e., difference time) if this event
@@ -305,6 +311,11 @@ struct bh_spc600_4096ch_event {
     static constexpr std::uint32_t macrotime_overflow_period = 1 << 24;
 
     /**
+     * \brief Whether this event type can represent marker events.
+     */
+    static constexpr bool has_markers = false;
+
+    /**
      * \brief Read the ADC value (i.e., difference time) if this event
      * represents a photon.
      */
@@ -496,6 +507,11 @@ struct bh_spc600_256ch_event {
      * \brief The macrotime overflow period of this event type.
      */
     static constexpr std::uint32_t macrotime_overflow_period = 1 << 17;
+
+    /**
+     * \brief Whether this event type can represent marker events.
+     */
+    static constexpr bool has_markers = false;
 
     /**
      * \brief Read the ADC value (i.e., difference time) if this event
@@ -698,6 +714,17 @@ namespace internal {
 template <typename DataTypes, typename BHSPCEvent, bool HasIntensityCounter,
           typename Downstream>
 class decode_bh_spc {
+    static_assert(is_any_of_v<BHSPCEvent, bh_spc_event, bh_spc600_256ch_event,
+                              bh_spc600_4096ch_event>);
+
+    static_assert(is_processor_v<Downstream, time_reached_event<DataTypes>,
+                                 time_correlated_detection_event<DataTypes>,
+                                 data_lost_event<DataTypes>, warning_event>);
+    static_assert(handles_event_v<Downstream, bulk_counts_event<DataTypes>> ||
+                  not HasIntensityCounter);
+    static_assert(handles_event_v<Downstream, marker_event<DataTypes>> ||
+                  not BHSPCEvent::has_markers);
+
     using abstime_type = typename DataTypes::abstime_type;
 
     abstime_type abstime_base = 0; // Time of last overflow
@@ -754,11 +781,13 @@ class decode_bh_spc {
                         downstream.handle(bulk_counts_event<DataTypes>{
                             abstime, -1, event.adc_value().value()});
                 }
-                for_each_set_bit(bits, [&](int b) {
-                    downstream.handle(marker_event<DataTypes>{
-                        abstime,
-                        static_cast<typename DataTypes::channel_type>(b)});
-                });
+                if constexpr (BHSPCEvent::has_markers) {
+                    for_each_set_bit(bits, [&](int b) {
+                        downstream.handle(marker_event<DataTypes>{
+                            abstime,
+                            static_cast<typename DataTypes::channel_type>(b)});
+                    });
+                }
             } else {
                 // Although not clearly documented, the combination of
                 // INV=0, MARK=1 is not currently used.

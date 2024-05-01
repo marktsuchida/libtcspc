@@ -9,6 +9,7 @@
 #include "libtcspc/context.hpp"
 #include "libtcspc/int_types.hpp"
 #include "libtcspc/npint.hpp"
+#include "libtcspc/processor_traits.hpp"
 #include "libtcspc/test_utils.hpp"
 #include "libtcspc/type_list.hpp"
 #include "test_checkers.hpp"
@@ -20,6 +21,15 @@
 #include <string>
 
 namespace tcspc {
+
+TEST_CASE("null_sink event type constraints") {
+    struct e0 {};
+    STATIC_CHECK(is_processor_v<null_sink, e0>);
+}
+
+TEST_CASE("null_source event type constraints") {
+    STATIC_CHECK(is_processor_v<decltype(null_source(sink_events<>()))>);
+}
 
 TEST_CASE("introspect common", "[introspect]") {
     check_introspect_simple_sink(null_sink());

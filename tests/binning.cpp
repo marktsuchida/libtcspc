@@ -11,6 +11,7 @@
 #include "libtcspc/context.hpp"
 #include "libtcspc/histogram_events.hpp"
 #include "libtcspc/int_types.hpp"
+#include "libtcspc/processor_traits.hpp"
 #include "libtcspc/test_utils.hpp"
 #include "libtcspc/time_tagged_events.hpp"
 #include "libtcspc/type_list.hpp"
@@ -33,13 +34,51 @@ using misc_event = time_tagged_test_event<2>;
 
 } // namespace
 
+TEST_CASE("map_to_datapoints event type constraints") {
+    struct data_types : default_data_types {
+        using datapoint_type = u32;
+    };
+    using proc_type =
+        decltype(map_to_datapoints<bulk_counts_event<>, data_types>(
+            count_data_mapper<data_types>(),
+            sink_events<datapoint_event<data_types>, int>()));
+    STATIC_CHECK(is_processor_v<proc_type, bulk_counts_event<>>);
+    STATIC_CHECK(handles_event_v<proc_type, int>);
+    STATIC_CHECK_FALSE(handles_event_v<proc_type, double>);
+}
+
+TEST_CASE("map_to_bins event type constraints") {
+    struct data_types : default_data_types {
+        using bin_index_type = u8;
+    };
+    using proc_type = decltype(map_to_bins<data_types>(
+        power_of_2_bin_mapper<16, 8, false, data_types>(),
+        sink_events<bin_increment_event<data_types>, int>()));
+    STATIC_CHECK(is_processor_v<proc_type, datapoint_event<>>);
+    STATIC_CHECK(handles_event_v<proc_type, int>);
+    STATIC_CHECK_FALSE(handles_event_v<proc_type, double>);
+}
+
+TEST_CASE("batch_bin_increments event type constraints") {
+    struct data_types : default_data_types {
+        using bin_index_type = u8;
+    };
+    using proc_type =
+        decltype(batch_bin_increments<start_event, stop_event, data_types>(
+            sink_events<bin_increment_batch_event<data_types>, int>()));
+    STATIC_CHECK(is_processor_v<proc_type, start_event, stop_event,
+                                bin_increment_event<>>);
+    STATIC_CHECK(handles_event_v<proc_type, int>);
+    STATIC_CHECK_FALSE(handles_event_v<proc_type, double>);
+}
+
 TEST_CASE("introspect binning", "[introspect]") {
-    struct count_types : default_data_types {
+    struct data_types : default_data_types {
         using datapoint_type = u32;
     };
     check_introspect_simple_processor(
-        map_to_datapoints<bulk_counts_event<count_types>, count_types>(
-            count_data_mapper<count_types>(), null_sink()));
+        map_to_datapoints<bulk_counts_event<data_types>, data_types>(
+            count_data_mapper<data_types>(), null_sink()));
     check_introspect_simple_processor(
         map_to_bins(linear_bin_mapper(arg::offset{0}, arg::bin_width{1},
                                       arg::max_bin_index<u16>{10}),
@@ -65,7 +104,7 @@ TEST_CASE("Map to datapoints") {
     auto out = capture_output_checker<out_events>(valcat, ctx, "out");
 
     in.handle(misc_event{42});
-    REQUIRE(out.check(misc_event{42}));
+    REQUIRE(out.check(emitted_as::same_as_fed, misc_event{42}));
     in.handle(time_correlated_detection_event<>{123, 0, 42});
     REQUIRE(out.check(datapoint_event<data_types>{42}));
     in.flush();
@@ -101,7 +140,7 @@ TEST_CASE("Map to bins") {
         auto out = capture_output_checker<out_events>(valcat, ctx, "out");
 
         in.handle(misc_event{42});
-        REQUIRE(out.check(misc_event{42}));
+        REQUIRE(out.check(emitted_as::same_as_fed, misc_event{42}));
         in.handle(datapoint_event<data_types>{123});
         in.flush();
         REQUIRE(out.check_flushed());
@@ -451,7 +490,7 @@ TEST_CASE("Batch bin increments") {
 
     SECTION("Pass through unrelated") {
         in.handle(misc_event{42});
-        REQUIRE(out.check(misc_event{42}));
+        REQUIRE(out.check(emitted_as::same_as_fed, misc_event{42}));
         in.flush();
         REQUIRE(out.check_flushed());
     }

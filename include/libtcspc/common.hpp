@@ -142,10 +142,6 @@ struct never_event {
 class null_sink {
   public:
     /** \brief Implements processor requirement. */
-    template <typename Event>
-    void handle([[maybe_unused]] Event const &event) {}
-
-    /** \brief Implements processor requirement. */
     [[nodiscard]] auto introspect_node() const -> processor_info {
         return processor_info(this, "null_sink");
     }
@@ -154,6 +150,10 @@ class null_sink {
     [[nodiscard]] auto introspect_graph() const -> processor_graph {
         return processor_graph().push_entry_point(this);
     }
+
+    /** \brief Implements processor requirement. */
+    template <typename Event>
+    void handle([[maybe_unused]] Event const &event) {}
 
     /** \brief Implements processor requirement. */
     void flush() {}

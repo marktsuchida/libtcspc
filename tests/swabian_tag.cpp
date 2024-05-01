@@ -10,6 +10,7 @@
 #include "libtcspc/context.hpp"
 #include "libtcspc/int_types.hpp"
 #include "libtcspc/npint.hpp"
+#include "libtcspc/processor_traits.hpp"
 #include "libtcspc/span.hpp"
 #include "libtcspc/test_utils.hpp"
 #include "libtcspc/time_tagged_events.hpp"
@@ -146,7 +147,16 @@ TEST_CASE("swabian tag assign") {
         std::equal(event.bytes.begin(), event.bytes.end(), byte_span.begin()));
 }
 
-TEST_CASE("introspect swabian_tag", "[introspect]") {
+TEST_CASE("decode_swabian_tags event type constraints") {
+    using proc_type = decltype(decode_swabian_tags(
+        sink_events<detection_event<>, begin_lost_interval_event<>,
+                    end_lost_interval_event<>, lost_counts_event<>,
+                    warning_event>()));
+    STATIC_CHECK(is_processor_v<proc_type, swabian_tag_event>);
+    STATIC_CHECK_FALSE(handles_event_v<proc_type, detection_event<>>);
+}
+
+TEST_CASE("introspect decode_swabian_tags", "[introspect]") {
     check_introspect_simple_processor(decode_swabian_tags(null_sink()));
 }
 

@@ -9,6 +9,7 @@
 #include "libtcspc/arg_wrappers.hpp"
 #include "libtcspc/common.hpp"
 #include "libtcspc/context.hpp"
+#include "libtcspc/processor_traits.hpp"
 #include "libtcspc/test_utils.hpp"
 #include "libtcspc/time_tagged_events.hpp"
 #include "libtcspc/type_list.hpp"
@@ -23,11 +24,28 @@ namespace tcspc {
 
 namespace {
 
-using output_event = time_tagged_test_event<0>;
-using misc_event = time_tagged_test_event<1>;
+using some_event = time_tagged_test_event<0>;
+using output_event = time_tagged_test_event<1>;
+using misc_event = time_tagged_test_event<2>;
 using out_events = type_list<marker_event<>, output_event, misc_event>;
 
 } // namespace
+
+TEST_CASE("match event type constraints") {
+    using proc_type = decltype(match<some_event, output_event>(
+        always_matcher(),
+        sink_events<some_event, output_event, misc_event>()));
+    STATIC_CHECK(is_processor_v<proc_type, some_event, misc_event>);
+    STATIC_CHECK_FALSE(handles_event_v<proc_type, int>);
+}
+
+TEST_CASE("match_replace event type constraints") {
+    using proc_type = decltype(match_replace<some_event, output_event>(
+        always_matcher(),
+        sink_events<some_event, output_event, misc_event>()));
+    STATIC_CHECK(is_processor_v<proc_type, some_event, misc_event>);
+    STATIC_CHECK_FALSE(handles_event_v<proc_type, int>);
+}
 
 TEST_CASE("introspect match", "[introspect]") {
     check_introspect_simple_processor(
