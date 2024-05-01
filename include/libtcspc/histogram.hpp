@@ -41,14 +41,12 @@ class histogram {
         not std::is_same_v<OverflowPolicy, reset_on_overflow_t> ||
         handles_event_v<Downstream, concluding_histogram_event<DataTypes>>);
 
-  public:
-    using bin_index_type = typename DataTypes::bin_index_type;
-    using bin_type = typename DataTypes::bin_type;
-
-  private:
     using internal_overflow_policy = std::conditional_t<
         std::is_same_v<OverflowPolicy, saturate_on_overflow_t>,
         saturate_on_internal_overflow, stop_on_internal_overflow>;
+
+    using bin_index_type = typename DataTypes::bin_index_type;
+    using bin_type = typename DataTypes::bin_type;
 
     std::shared_ptr<bucket_source<bin_type>> bsource;
     bucket<bin_type> hist_bucket;

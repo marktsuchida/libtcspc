@@ -35,14 +35,12 @@ class histogram_elementwise {
     static_assert(not std::is_same_v<OverflowPolicy, saturate_on_overflow_t> ||
                   handles_event_v<Downstream, warning_event>);
 
-  public:
-    using bin_index_type = typename DataTypes::bin_index_type;
-    using bin_type = typename DataTypes::bin_type;
-
-  private:
     using internal_overflow_policy = std::conditional_t<
         std::is_same_v<OverflowPolicy, saturate_on_overflow_t>,
         saturate_on_internal_overflow, stop_on_internal_overflow>;
+
+    using bin_index_type = typename DataTypes::bin_index_type;
+    using bin_type = typename DataTypes::bin_type;
 
     std::shared_ptr<bucket_source<bin_type>> bsource;
     bucket<bin_type> hist_bucket;
@@ -66,8 +64,9 @@ class histogram_elementwise {
     explicit histogram_elementwise(
         arg::num_elements<std::size_t> num_elements,
         arg::num_bins<std::size_t> num_bins,
-        arg::max_per_bin<bin_type> max_per_bin,
-        std::shared_ptr<bucket_source<bin_type>> buffer_provider,
+        arg::max_per_bin<typename DataTypes::bin_type> max_per_bin,
+        std::shared_ptr<bucket_source<typename DataTypes::bin_type>>
+            buffer_provider,
         Downstream downstream)
         : bsource(std::move(buffer_provider)),
           mhist(hist_bucket, max_per_bin, num_bins, num_elements, true),
@@ -246,11 +245,6 @@ class histogram_elementwise_accumulate {
         handles_event_v<Downstream,
                         concluding_histogram_array_event<DataTypes>>);
 
-  public:
-    using bin_index_type = typename DataTypes::bin_index_type;
-    using bin_type = typename DataTypes::bin_type;
-
-  private:
     // Concluding event is not supported for saturate-on-overflow (no way to
     // roll back current cycle). It is required for reset/stop-on-overflow
     // because it doesn't make much sense to use those policies without a
@@ -264,6 +258,9 @@ class histogram_elementwise_accumulate {
     using internal_overflow_policy = std::conditional_t<
         std::is_same_v<overflow_policy, saturate_on_overflow_t>,
         saturate_on_internal_overflow, stop_on_internal_overflow>;
+
+    using bin_index_type = typename DataTypes::bin_index_type;
+    using bin_type = typename DataTypes::bin_type;
 
     using journal_type =
         std::conditional_t<need_concluding,
@@ -341,8 +338,9 @@ class histogram_elementwise_accumulate {
     explicit histogram_elementwise_accumulate(
         arg::num_elements<std::size_t> num_elements,
         arg::num_bins<std::size_t> num_bins,
-        arg::max_per_bin<bin_type> max_per_bin,
-        std::shared_ptr<bucket_source<bin_type>> buffer_provider,
+        arg::max_per_bin<typename DataTypes::bin_type> max_per_bin,
+        std::shared_ptr<bucket_source<typename DataTypes::bin_type>>
+            buffer_provider,
         Downstream downstream)
         : bsource(std::move(buffer_provider)),
           mhista(hist_bucket, max_per_bin, num_bins, num_elements, true),
