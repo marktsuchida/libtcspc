@@ -49,7 +49,7 @@ template <typename DataTypes, typename Downstream> class delay {
         static_assert(std::is_same_v<decltype(event.abstime),
                                      typename DataTypes::abstime_type>);
         TimeTaggedEvent copy(event);
-        copy.abstime += delta;
+        copy.abstime = add_with_wrap(copy.abstime, delta);
         downstream.handle(std::move(copy));
     }
 
@@ -86,9 +86,7 @@ template <typename DataTypes, typename Downstream> class zero_base_abstime {
             initialized = true;
         }
         TimeTaggedEvent copy(event);
-        // Support integer wrap-around by using unsigned type for subtraction.
-        copy.abstime = static_cast<decltype(copy.abstime)>(
-            as_unsigned(event.abstime) - as_unsigned(minus_delta));
+        copy.abstime = subtract_with_wrap(event.abstime, minus_delta);
         downstream.handle(std::move(copy));
     }
 
@@ -104,7 +102,8 @@ template <typename DataTypes, typename Downstream> class zero_base_abstime {
  *
  * All events processed must have an `abstime` field, and no other fields
  * derived from the abstime (because only the `abstime` field will be
- * adjusted).
+ * adjusted). Even if the `abstime_type` is a signed integer type, wrap-around
+ * is handled correctly.
  *
  * \tparam DataTypes data type set specifying `abstime_type`
  *

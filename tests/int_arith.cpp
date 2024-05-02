@@ -103,4 +103,12 @@ TEST_CASE("add_sat") {
     CHECK(add_sat(u8(100), u8(156)) == u8(255));
 }
 
+TEST_CASE("add_with_wrap") {
+    STATIC_CHECK(add_with_wrap(i8(127), i8(1)) == i8(-128));
+}
+
+TEST_CASE("subtract_with_wrap") {
+    STATIC_CHECK(subtract_with_wrap(i8(-128), i8(1)) == i8(127));
+}
+
 } // namespace tcspc::internal

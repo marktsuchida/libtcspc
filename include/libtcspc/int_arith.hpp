@@ -132,6 +132,16 @@ constexpr auto add_sat(T a, T b) noexcept -> T {
     return limits::max();
 }
 
+template <typename T, typename = std::enable_if_t<std::is_integral_v<T>>>
+constexpr auto add_with_wrap(T a, T b) noexcept -> T {
+    return static_cast<T>(as_unsigned(a) + as_unsigned(b));
+}
+
+template <typename T, typename = std::enable_if_t<std::is_integral_v<T>>>
+constexpr auto subtract_with_wrap(T a, T b) noexcept -> T {
+    return static_cast<T>(as_unsigned(a) - as_unsigned(b));
+}
+
 // window_size must be non-negative
 template <typename T>
 constexpr auto pairing_cutoff(T stop_time, T window_size) noexcept {
