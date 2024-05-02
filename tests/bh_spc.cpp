@@ -661,7 +661,7 @@ struct bh_data_types : default_data_types {
 
 } // namespace
 
-TEST_CASE("decode_bh_spc event type constraints") {
+TEST_CASE("type constraints: decode_bh_spc") {
     using proc_type = decltype(decode_bh_spc<bh_data_types>(
         sink_events<time_reached_event<bh_data_types>,
                     time_correlated_detection_event<bh_data_types>,
@@ -672,7 +672,7 @@ TEST_CASE("decode_bh_spc event type constraints") {
     STATIC_CHECK_FALSE(handles_event_v<proc_type, bh_spc600_256ch_event>);
 }
 
-TEST_CASE("decode_bh_spc_with_intensity_counter event type constraints") {
+TEST_CASE("type constraints: decode_bh_spc_with_intensity_counter") {
     using proc_type =
         decltype(decode_bh_spc_with_intensity_counter<bh_data_types>(
             sink_events<time_reached_event<bh_data_types>,
@@ -685,7 +685,7 @@ TEST_CASE("decode_bh_spc_with_intensity_counter event type constraints") {
     STATIC_CHECK_FALSE(handles_event_v<proc_type, bh_spc600_256ch_event>);
 }
 
-TEST_CASE("decode_bh_spc600_256ch event type constraints") {
+TEST_CASE("type constraints: decode_bh_spc600_256ch") {
     using proc_type = decltype(decode_bh_spc600_256ch<bh_data_types>(
         sink_events<time_reached_event<bh_data_types>,
                     time_correlated_detection_event<bh_data_types>,
@@ -695,7 +695,7 @@ TEST_CASE("decode_bh_spc600_256ch event type constraints") {
     STATIC_CHECK_FALSE(handles_event_v<proc_type, bh_spc600_4096ch_event>);
 }
 
-TEST_CASE("decode_bh_spc600_4096ch event type constraints") {
+TEST_CASE("type constraints: decode_bh_spc600_4096ch") {
     using proc_type = decltype(decode_bh_spc600_4096ch<bh_data_types>(
         sink_events<time_reached_event<bh_data_types>,
                     time_correlated_detection_event<bh_data_types>,
@@ -705,7 +705,7 @@ TEST_CASE("decode_bh_spc600_4096ch event type constraints") {
     STATIC_CHECK_FALSE(handles_event_v<proc_type, bh_spc600_256ch_event>);
 }
 
-TEST_CASE("introspect bh_spc", "[introspect]") {
+TEST_CASE("introspect: bh_spc") {
     check_introspect_simple_processor(decode_bh_spc(null_sink()));
     check_introspect_simple_processor(
         decode_bh_spc_with_intensity_counter(null_sink()));

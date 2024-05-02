@@ -31,7 +31,7 @@ using out_events = type_list<marker_event<>, output_event, misc_event>;
 
 } // namespace
 
-TEST_CASE("match event type constraints") {
+TEST_CASE("type constraints: match") {
     using proc_type = decltype(match<some_event, output_event>(
         always_matcher(),
         sink_events<some_event, output_event, misc_event>()));
@@ -39,7 +39,7 @@ TEST_CASE("match event type constraints") {
     STATIC_CHECK_FALSE(handles_event_v<proc_type, int>);
 }
 
-TEST_CASE("match_replace event type constraints") {
+TEST_CASE("type constraints: match_replace") {
     using proc_type = decltype(match_replace<some_event, output_event>(
         always_matcher(),
         sink_events<some_event, output_event, misc_event>()));
@@ -47,7 +47,7 @@ TEST_CASE("match_replace event type constraints") {
     STATIC_CHECK_FALSE(handles_event_v<proc_type, int>);
 }
 
-TEST_CASE("introspect match", "[introspect]") {
+TEST_CASE("introspect: match") {
     check_introspect_simple_processor(
         match_replace<int, long>(never_matcher(), null_sink()));
     check_introspect_simple_processor(

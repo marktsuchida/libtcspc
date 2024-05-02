@@ -39,7 +39,7 @@ using all_events = type_list<e0, e1, e2, e3>;
 
 } // namespace
 
-TEST_CASE("merge event type constraints") {
+TEST_CASE("type constraints: merge") {
     using input_proc_type = decltype(std::get<0>(merge<type_list<e0, e1>>(
         arg::max_buffered{std::numeric_limits<std::size_t>::max()},
         sink_events<e0, e1, e2>())));
@@ -47,7 +47,7 @@ TEST_CASE("merge event type constraints") {
     STATIC_CHECK_FALSE(handles_event_v<input_proc_type, e2>);
 }
 
-TEST_CASE("merge_n_unsorted event type constraints") {
+TEST_CASE("type constraints: merge_n_unsorted") {
     using input_proc_type =
         decltype(std::get<0>(merge_n_unsorted<2>(sink_events<e0, e1>())));
     STATIC_CHECK(is_processor_v<input_proc_type, e0, e1>);
@@ -89,7 +89,7 @@ auto check_introspect_merge_input(MI const &input,
 
 } // namespace
 
-TEST_CASE("introspect merge", "[introspect]") {
+TEST_CASE("introspect: merge") {
     auto const [m0, m1] =
         merge<all_events>(arg::max_buffered<std::size_t>{1}, null_sink());
     check_introspect_merge_input(m0, "merge_impl");

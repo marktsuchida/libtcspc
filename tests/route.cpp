@@ -68,7 +68,7 @@ TEST_CASE("route and broadcast construct correct type") {
     // So we only need to further test route_homogeneous.
 }
 
-TEST_CASE("route_homogeneous event type constraints") {
+TEST_CASE("type constraints: route_homogeneous") {
     SECTION("handles flush") {
         STATIC_CHECK(handles_flush_v<decltype(route_homogeneous<type_list<>>(
                          null_router(), sink_events<>()))>);
@@ -86,7 +86,7 @@ TEST_CASE("route_homogeneous event type constraints") {
     }
 }
 
-TEST_CASE("introspect route", "[introspect]") {
+TEST_CASE("introspect: route") {
     auto const rh2 = route_homogeneous<type_list<>>(null_router(), null_sink(),
                                                     null_sink());
     auto const info = check_introspect_node_info(rh2);

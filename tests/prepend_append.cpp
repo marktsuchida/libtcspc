@@ -18,21 +18,21 @@
 
 namespace tcspc {
 
-TEST_CASE("prepend event type constraints") {
+TEST_CASE("type constraints: prepend") {
     struct e0 {};
     struct e1 {};
     STATIC_CHECK(is_processor_v<decltype(prepend(e0{}, sink_events<e0, e1>())),
                                 e0, e1>);
 }
 
-TEST_CASE("append event type constraints") {
+TEST_CASE("type constraints: append") {
     struct e0 {};
     struct e1 {};
     STATIC_CHECK(
         is_processor_v<decltype(append(e0{}, sink_events<e0, e1>())), e0, e1>);
 }
 
-TEST_CASE("introspect prepend/append", "[introspect]") {
+TEST_CASE("introspect: prepend/append") {
     check_introspect_simple_processor(prepend<int>(42, null_sink()));
     check_introspect_simple_processor(append<int>(42, null_sink()));
 }

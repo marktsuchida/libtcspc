@@ -29,7 +29,7 @@
 
 namespace tcspc {
 
-TEST_CASE("buffer event type constraints") {
+TEST_CASE("type constraints: buffer") {
     struct e0 {};
     auto ctx = context::create();
     using proc_type = decltype(buffer<e0>(arg::threshold<std::size_t>{1},
@@ -39,7 +39,7 @@ TEST_CASE("buffer event type constraints") {
     STATIC_CHECK_FALSE(handles_event_v<proc_type, int>);
 }
 
-TEST_CASE("real_time_buffer event type constraints") {
+TEST_CASE("type constraints: real_time_buffer") {
     struct e0 {};
     auto ctx = context::create();
     using proc_type = decltype(real_time_buffer<e0>(
@@ -49,7 +49,7 @@ TEST_CASE("real_time_buffer event type constraints") {
     STATIC_CHECK_FALSE(handles_event_v<proc_type, int>);
 }
 
-TEST_CASE("introspect buffer", "[introspect]") {
+TEST_CASE("introspect: buffer") {
     auto ctx = context::create();
     check_introspect_simple_processor(
         buffer<int>(arg::threshold<std::size_t>{1},

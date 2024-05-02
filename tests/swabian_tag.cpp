@@ -147,7 +147,7 @@ TEST_CASE("swabian tag assign") {
         std::equal(event.bytes.begin(), event.bytes.end(), byte_span.begin()));
 }
 
-TEST_CASE("decode_swabian_tags event type constraints") {
+TEST_CASE("type constraints: decode_swabian_tags") {
     using proc_type = decltype(decode_swabian_tags(
         sink_events<detection_event<>, begin_lost_interval_event<>,
                     end_lost_interval_event<>, lost_counts_event<>,
@@ -156,7 +156,7 @@ TEST_CASE("decode_swabian_tags event type constraints") {
     STATIC_CHECK_FALSE(handles_event_v<proc_type, detection_event<>>);
 }
 
-TEST_CASE("introspect decode_swabian_tags", "[introspect]") {
+TEST_CASE("introspect: decode_swabian_tags") {
     check_introspect_simple_processor(decode_swabian_tags(null_sink()));
 }
 

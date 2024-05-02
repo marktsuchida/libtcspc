@@ -46,7 +46,7 @@ template <typename T> auto tmp_bucket(T &v) {
 
 } // namespace
 
-TEST_CASE("histogram event type constraints") {
+TEST_CASE("type constraints: histogram") {
     SECTION("saturate on overflow") {
         SECTION("no reset") {
             using proc_type = decltype(histogram<reset_event>(
@@ -135,7 +135,7 @@ TEST_CASE("histogram event type constraints") {
     }
 }
 
-TEST_CASE("introspect histogram", "[introspect]") {
+TEST_CASE("introspect: histogram") {
     check_introspect_simple_processor(histogram<reset_event>(
         saturate_on_overflow, arg::num_bins<std::size_t>{1},
         arg::max_per_bin<u16>{255}, new_delete_bucket_source<u16>::create(),

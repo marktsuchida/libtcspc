@@ -27,7 +27,7 @@ using e1 = empty_test_event<1>;
 
 namespace internal {
 
-TEST_CASE("abstract_processor event type constraints") {
+TEST_CASE("type constraints: abstract_processor") {
     SECTION("handles flush") {
         STATIC_CHECK(handles_flush_v<abstract_processor<type_list<>>>);
         STATIC_CHECK(handles_flush_v<abstract_processor<type_list<e0>>>);
@@ -44,7 +44,7 @@ TEST_CASE("abstract_processor event type constraints") {
     }
 }
 
-TEST_CASE("virtual_processor event type constraints") {
+TEST_CASE("type constraints: virtual_processor") {
     using ::tcspc::sink_events;
 
     SECTION("handles flush") {
@@ -78,7 +78,7 @@ TEST_CASE("virtual_processor event type constraints") {
 
 } // namespace internal
 
-TEST_CASE("type_erased_processor event type constraints") {
+TEST_CASE("type constraints: type_erased_processor") {
     SECTION("handles flush") {
         STATIC_CHECK(
             handles_flush_v<decltype(type_erased_processor<type_list<>>(
@@ -108,7 +108,7 @@ TEST_CASE("type_erased_processor event type constraints") {
     }
 }
 
-TEST_CASE("introspect type_erased_processor", "[introspect]") {
+TEST_CASE("introspect: type_erased_processor") {
     auto const tep = type_erased_processor<type_list<>>(null_sink());
     auto const info = check_introspect_node_info(tep);
     auto const g = tep.introspect_graph();

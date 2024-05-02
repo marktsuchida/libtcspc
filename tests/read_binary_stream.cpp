@@ -34,7 +34,7 @@
 
 namespace tcspc {
 
-TEST_CASE("read_binary_stream event type constraints") {
+TEST_CASE("type constraints: read_binary_stream") {
     using proc_type = decltype(read_binary_stream<int>(
         null_input_stream(), arg::max_length<u64>{0},
         new_delete_bucket_source<int>::create(),
@@ -44,7 +44,7 @@ TEST_CASE("read_binary_stream event type constraints") {
     STATIC_CHECK_FALSE(handles_event_v<proc_type, int>);
 }
 
-TEST_CASE("introspect read_binary_stream", "[introspect]") {
+TEST_CASE("introspect: read_binary_stream") {
     check_introspect_simple_processor(read_binary_stream<int>(
         null_input_stream(), arg::max_length<u64>{0},
         new_delete_bucket_source<int>::create(),

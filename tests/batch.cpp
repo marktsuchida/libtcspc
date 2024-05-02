@@ -39,7 +39,7 @@ auto tmp_bucket(std::initializer_list<U> il) {
 
 } // namespace
 
-TEST_CASE("batch event type constraints") {
+TEST_CASE("type constraints: batch") {
     struct e0 {};
     struct e1 {};
     using proc_type = decltype(batch<e0>(
@@ -50,7 +50,7 @@ TEST_CASE("batch event type constraints") {
     STATIC_CHECK_FALSE(handles_event_v<proc_type, bucket<e0>>);
 }
 
-TEST_CASE("unbatch event type constraints") {
+TEST_CASE("type constraints: unbatch") {
     struct e0 {};
     struct e1 {};
     using proc_type = decltype(unbatch<e0>(sink_events<e0>()));
@@ -60,7 +60,7 @@ TEST_CASE("unbatch event type constraints") {
     STATIC_CHECK_FALSE(handles_event_v<proc_type, e0>);
 }
 
-TEST_CASE("process_in_batches event type constraints") {
+TEST_CASE("type constraints: process_in_batches") {
     struct e0 {};
     using proc_type = decltype(process_in_batches<e0>(
         arg::batch_size<std::size_t>{1}, sink_events<e0>()));
@@ -68,7 +68,7 @@ TEST_CASE("process_in_batches event type constraints") {
     STATIC_CHECK_FALSE(handles_event_v<proc_type, int>);
 }
 
-TEST_CASE("introspect batch, unbatch", "[introspect]") {
+TEST_CASE("introspect: batch, unbatch") {
     check_introspect_simple_processor(
         batch<int>(new_delete_bucket_source<int>::create(),
                    arg::batch_size<std::size_t>{1}, null_sink()));

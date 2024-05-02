@@ -31,7 +31,7 @@ using out_events = type_list<open_event, close_event, gated_event, misc_event>;
 
 } // namespace
 
-TEST_CASE("gate event type constraints") {
+TEST_CASE("type constraints: gate") {
     using proc_type =
         decltype(gate<type_list<gated_event>, open_event, close_event>(
             arg::initially_open{false},
@@ -41,7 +41,7 @@ TEST_CASE("gate event type constraints") {
     STATIC_CHECK_FALSE(handles_event_v<proc_type, int>);
 }
 
-TEST_CASE("introspect gate", "[introspect]") {
+TEST_CASE("introspect: gate") {
     check_introspect_simple_processor(
         gate<type_list<gated_event>, open_event, close_event>(
             arg::initially_open{false}, null_sink()));

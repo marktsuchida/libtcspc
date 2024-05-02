@@ -34,7 +34,7 @@ using misc_event = time_tagged_test_event<2>;
 
 } // namespace
 
-TEST_CASE("map_to_datapoints event type constraints") {
+TEST_CASE("type constraints: map_to_datapoints") {
     struct data_types : default_data_types {
         using datapoint_type = u32;
     };
@@ -47,7 +47,7 @@ TEST_CASE("map_to_datapoints event type constraints") {
     STATIC_CHECK_FALSE(handles_event_v<proc_type, double>);
 }
 
-TEST_CASE("map_to_bins event type constraints") {
+TEST_CASE("type constraints: map_to_bins") {
     struct data_types : default_data_types {
         using bin_index_type = u8;
     };
@@ -59,7 +59,7 @@ TEST_CASE("map_to_bins event type constraints") {
     STATIC_CHECK_FALSE(handles_event_v<proc_type, double>);
 }
 
-TEST_CASE("batch_bin_increments event type constraints") {
+TEST_CASE("type constraints: batch_bin_increments") {
     struct data_types : default_data_types {
         using bin_index_type = u8;
     };
@@ -72,7 +72,7 @@ TEST_CASE("batch_bin_increments event type constraints") {
     STATIC_CHECK_FALSE(handles_event_v<proc_type, double>);
 }
 
-TEST_CASE("introspect binning", "[introspect]") {
+TEST_CASE("introspect: binning") {
     struct data_types : default_data_types {
         using datapoint_type = u32;
     };

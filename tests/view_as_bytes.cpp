@@ -36,13 +36,13 @@ auto tmp_bucket(T &&v) { // NOLINT(cppcoreguidelines-missing-std-forward)
 
 } // namespace
 
-TEST_CASE("view_as_bytes event type constraints") {
+TEST_CASE("type constraints: view_as_bytes") {
     using proc_type =
         decltype(view_as_bytes(sink_events<bucket<std::byte const>>()));
     STATIC_CHECK(is_processor_v<proc_type, int, double>);
 }
 
-TEST_CASE("introspect view_as_bytes", "[introspect]") {
+TEST_CASE("introspect: view_as_bytes") {
     check_introspect_simple_processor(view_as_bytes(null_sink()));
 }
 

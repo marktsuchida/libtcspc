@@ -27,7 +27,7 @@
 
 namespace tcspc {
 
-TEST_CASE("fit_periodic_sequences event type constraints") {
+TEST_CASE("type constraints: fit_periodic_sequences") {
     struct tick {
         i64 abstime;
     };
@@ -40,7 +40,7 @@ TEST_CASE("fit_periodic_sequences event type constraints") {
     STATIC_CHECK_FALSE(handles_event_v<proc_type, double>);
 }
 
-TEST_CASE("introspect fit_sequence") {
+TEST_CASE("introspect: fit_sequence") {
     check_introspect_simple_processor(fit_periodic_sequences<int>(
         arg::length<std::size_t>{3}, arg::min_interval{0.0},
         arg::max_interval{1.0}, arg::max_mse{0.5}, null_sink()));

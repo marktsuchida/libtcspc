@@ -182,7 +182,7 @@ template <typename T> struct evt_with_bucket {
 
 } // namespace
 
-TEST_CASE("extract_bucket event type constraints") {
+TEST_CASE("type constraints: extract_bucket") {
     using proc_type = decltype(extract_bucket<evt_with_bucket<int>>(
         sink_events<bucket<int>>()));
     STATIC_CHECK(is_processor_v<proc_type, evt_with_bucket<int>>);
@@ -191,7 +191,7 @@ TEST_CASE("extract_bucket event type constraints") {
     STATIC_CHECK_FALSE(handles_event_v<proc_type, int>);
 }
 
-TEST_CASE("introspect extract_bucket", "[introspect]") {
+TEST_CASE("introspect: extract_bucket") {
     check_introspect_simple_processor(
         extract_bucket<evt_with_bucket<int>>(null_sink()));
 }

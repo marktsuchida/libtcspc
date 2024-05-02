@@ -22,16 +22,16 @@
 
 namespace tcspc {
 
-TEST_CASE("null_sink event type constraints") {
+TEST_CASE("type constraints: null_sink") {
     struct e0 {};
     STATIC_CHECK(is_processor_v<null_sink, e0>);
 }
 
-TEST_CASE("null_source event type constraints") {
+TEST_CASE("type constraints: null_source") {
     STATIC_CHECK(is_processor_v<decltype(null_source(sink_events<>()))>);
 }
 
-TEST_CASE("introspect common", "[introspect]") {
+TEST_CASE("introspect: common") {
     check_introspect_simple_sink(null_sink());
     check_introspect_simple_processor(null_source(null_sink()));
 }

@@ -29,7 +29,7 @@
 
 namespace tcspc {
 
-TEST_CASE("write_binary_stream event type constraints") {
+TEST_CASE("type constraints: write_binary_stream") {
     using proc_type = decltype(write_binary_stream(
         null_output_stream(), new_delete_bucket_source<std::byte>::create(),
         arg::granularity<std::size_t>{16}));
@@ -42,7 +42,7 @@ TEST_CASE("write_binary_stream event type constraints") {
     STATIC_CHECK_FALSE(handles_event_v<proc_type, int>);
 }
 
-TEST_CASE("introspect write_binary_stream", "[introspect]") {
+TEST_CASE("introspect: write_binary_stream") {
     check_introspect_simple_sink(write_binary_stream(
         null_output_stream(), new_delete_bucket_source<std::byte>::create(),
         arg::granularity<std::size_t>{1}));

@@ -25,7 +25,7 @@
 
 namespace tcspc {
 
-TEST_CASE("retime_periodic_sequences event type constraints") {
+TEST_CASE("type constraints: retime_periodic_sequences") {
     using proc_type = decltype(retime_periodic_sequences(
         arg::max_time_shift<i64>{42},
         sink_events<periodic_sequence_model_event<>, int>()));
@@ -33,7 +33,7 @@ TEST_CASE("retime_periodic_sequences event type constraints") {
     STATIC_CHECK_FALSE(handles_event_v<proc_type, int>);
 }
 
-TEST_CASE("extrapolate_periodic_sequences event type constraints") {
+TEST_CASE("type constraints: extrapolate_periodic_sequences") {
     using proc_type = decltype(extrapolate_periodic_sequences(
         arg::tick_index<std::size_t>{42},
         sink_events<real_one_shot_timing_event<>, int>()));
@@ -42,7 +42,7 @@ TEST_CASE("extrapolate_periodic_sequences event type constraints") {
     STATIC_CHECK_FALSE(handles_event_v<proc_type, double>);
 }
 
-TEST_CASE("add_count_to_periodic_sequences event type constraints") {
+TEST_CASE("type constraints: add_count_to_periodic_sequences") {
     using proc_type = decltype(add_count_to_periodic_sequences(
         arg::count<std::size_t>{42},
         sink_events<real_linear_timing_event<>, int>()));
@@ -51,7 +51,7 @@ TEST_CASE("add_count_to_periodic_sequences event type constraints") {
     STATIC_CHECK_FALSE(handles_event_v<proc_type, double>);
 }
 
-TEST_CASE("convert_sequences_to_start_stop event type constraints") {
+TEST_CASE("type constraints: convert_sequences_to_start_stop") {
     struct tick {
         i64 abstime;
     };
@@ -69,7 +69,7 @@ TEST_CASE("convert_sequences_to_start_stop event type constraints") {
     STATIC_CHECK_FALSE(handles_event_v<proc_type, double>);
 }
 
-TEST_CASE("introspect timing_misc", "[introspect]") {
+TEST_CASE("introspect: timing_misc") {
     check_introspect_simple_processor(
         retime_periodic_sequences(arg::max_time_shift<i64>{1}, null_sink()));
     check_introspect_simple_processor(extrapolate_periodic_sequences(

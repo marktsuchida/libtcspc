@@ -30,14 +30,14 @@ using e1 = time_tagged_test_event<1>;
 
 } // namespace
 
-TEST_CASE("recover_order event type constraints") {
+TEST_CASE("type constraints: recover_order") {
     using proc_type = decltype(recover_order<type_list<e0, e1>>(
         arg::time_window<i64>{100}, sink_events<e0, e1>()));
     STATIC_CHECK(is_processor_v<proc_type, e0, e1>);
     STATIC_CHECK_FALSE(handles_event_v<proc_type, int>);
 }
 
-TEST_CASE("introspect recover_order", "[introspect]") {
+TEST_CASE("introspect: recover_order") {
     check_introspect_simple_processor(
         recover_order<type_list<e0>>(arg::time_window<i64>{1}, null_sink()));
 }

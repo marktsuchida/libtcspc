@@ -28,7 +28,7 @@ using e1 = empty_test_event<1>;
 
 } // namespace
 
-TEST_CASE("multiplex event type constraints") {
+TEST_CASE("type constraints: multiplex") {
     STATIC_CHECK(
         is_processor_v<decltype(multiplex<type_list<e0, e1>>(
                            sink_events<variant_event<type_list<e0, e1>>>())),
@@ -40,7 +40,7 @@ TEST_CASE("multiplex event type constraints") {
             int>);
 }
 
-TEST_CASE("demultiplex event type constraints") {
+TEST_CASE("type constraints: demultiplex") {
     STATIC_CHECK(is_processor_v<decltype(demultiplex(sink_events<e0, e1>())),
                                 variant_event<type_list<e0, e1>>>);
     STATIC_CHECK(handles_event_v<decltype(demultiplex(sink_events<e0, e1>())),
@@ -53,7 +53,7 @@ TEST_CASE("demultiplex event type constraints") {
                         int>);
 }
 
-TEST_CASE("introspect multiplex", "[introspect]") {
+TEST_CASE("introspect: multiplex") {
     check_introspect_simple_processor(multiplex<type_list<e0>>(null_sink()));
     check_introspect_simple_processor(demultiplex(null_sink()));
 }

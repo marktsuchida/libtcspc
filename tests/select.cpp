@@ -28,7 +28,7 @@ using out_events = type_list<e0, e1>;
 
 } // namespace
 
-TEST_CASE("select event type constraints") {
+TEST_CASE("type constraints: select") {
     STATIC_CHECK(
         is_processor_v<decltype(select<type_list<e1>>(sink_events<e1>())), e0,
                        e1>);
@@ -41,7 +41,7 @@ TEST_CASE("select event type constraints") {
         is_processor_v<decltype(select_all(sink_events<e0, e1>())), e0, e1>);
 }
 
-TEST_CASE("introspect select", "[introspect]") {
+TEST_CASE("introspect: select") {
     check_introspect_simple_processor(select<type_list<>>(null_sink()));
     check_introspect_simple_processor(select_none(null_sink()));
     check_introspect_simple_processor(select_not<type_list<>>(null_sink()));

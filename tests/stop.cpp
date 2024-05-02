@@ -29,7 +29,7 @@ using e1 = empty_test_event<1>;
 
 } // namespace
 
-TEST_CASE("stop event type constraints") {
+TEST_CASE("type constraints: stop") {
     STATIC_CHECK(
         is_processor_v<decltype(stop<type_list<e0>>("", sink_events<e1>())),
                        e0, e1>);
@@ -38,7 +38,7 @@ TEST_CASE("stop event type constraints") {
                         int>);
 }
 
-TEST_CASE("introspect stop", "[introspect]") {
+TEST_CASE("introspect: stop") {
     check_introspect_simple_processor(
         stop_with_error<type_list<>>("", null_sink()));
     check_introspect_simple_processor(stop<type_list<>>("", null_sink()));

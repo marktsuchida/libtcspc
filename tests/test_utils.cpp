@@ -20,7 +20,7 @@
 
 namespace tcspc {
 
-TEST_CASE("capture_output event type constraints") {
+TEST_CASE("type constraints: capture_output") {
     using e0 = empty_test_event<0>;
     using e1 = empty_test_event<1>;
     using proc_type = decltype(capture_output<type_list<e0, e1>>(
@@ -29,7 +29,7 @@ TEST_CASE("capture_output event type constraints") {
     STATIC_CHECK_FALSE(handles_event_v<proc_type, int>);
 }
 
-TEST_CASE("feed_input event type constraints") {
+TEST_CASE("type constraints: feed_input") {
     using e0 = empty_test_event<0>;
     using e1 = empty_test_event<1>;
     using proc_type =
@@ -38,7 +38,7 @@ TEST_CASE("feed_input event type constraints") {
     STATIC_CHECK_FALSE(handles_event_v<proc_type, int>);
 }
 
-TEST_CASE("sink_events event type constraints") {
+TEST_CASE("type constraints: sink_events") {
     using e0 = empty_test_event<0>;
 
     STATIC_CHECK(handles_flush_v<decltype(sink_events<>())>);
@@ -50,7 +50,7 @@ TEST_CASE("sink_events event type constraints") {
     STATIC_CHECK(handles_const_event_v<decltype(sink_events<e0>()), e0>);
 }
 
-TEST_CASE("introspect test_utils", "[introspect]") {
+TEST_CASE("introspect: test_utils") {
     auto ctx = context::create();
     check_introspect_simple_sink(capture_output<type_list<>>(
         ctx->tracker<capture_output_access>("out0")));

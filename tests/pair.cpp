@@ -24,7 +24,7 @@
 
 namespace tcspc {
 
-TEST_CASE("pair_all event type constraints") {
+TEST_CASE("type constraints: pair_all") {
     using proc_type = decltype(pair_all(
         arg::start_channel{0}, std::array{1, 2}, arg::time_window<i64>{100},
         sink_events<std::array<detection_event<>, 2>, int>()));
@@ -32,7 +32,7 @@ TEST_CASE("pair_all event type constraints") {
     STATIC_CHECK_FALSE(handles_event_v<proc_type, double>);
 }
 
-TEST_CASE("pair_one event type constraints") {
+TEST_CASE("type constraints: pair_one") {
     using proc_type = decltype(pair_one(
         arg::start_channel{0}, std::array{1, 2}, arg::time_window<i64>{100},
         sink_events<std::array<detection_event<>, 2>, int>()));
@@ -40,7 +40,7 @@ TEST_CASE("pair_one event type constraints") {
     STATIC_CHECK_FALSE(handles_event_v<proc_type, double>);
 }
 
-TEST_CASE("pair_all_between event type constraints") {
+TEST_CASE("type constraints: pair_all_between") {
     using proc_type = decltype(pair_all_between(
         arg::start_channel{0}, std::array{1, 2}, arg::time_window<i64>{100},
         sink_events<std::array<detection_event<>, 2>, int>()));
@@ -48,7 +48,7 @@ TEST_CASE("pair_all_between event type constraints") {
     STATIC_CHECK_FALSE(handles_event_v<proc_type, double>);
 }
 
-TEST_CASE("pair_one_between event type constraints") {
+TEST_CASE("type constraints: pair_one_between") {
     using proc_type = decltype(pair_one_between(
         arg::start_channel{0}, std::array{1, 2}, arg::time_window<i64>{100},
         sink_events<std::array<detection_event<>, 2>, int>()));
@@ -56,7 +56,7 @@ TEST_CASE("pair_one_between event type constraints") {
     STATIC_CHECK_FALSE(handles_event_v<proc_type, double>);
 }
 
-TEST_CASE("introspect pair", "[introspect]") {
+TEST_CASE("introspect: pair") {
     check_introspect_simple_processor(pair_all<1>(
         arg::start_channel{0}, {1}, arg::time_window<i64>{1}, null_sink()));
     check_introspect_simple_processor(pair_one<1>(

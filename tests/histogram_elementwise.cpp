@@ -61,7 +61,7 @@ auto make_bin_increment_batch(
 
 } // namespace
 
-TEST_CASE("histogram_elementwise event type constraints") {
+TEST_CASE("type constraints: histogram_elementwise") {
     SECTION("saturate on overflow") {
         using proc_type = decltype(histogram_elementwise(
             saturate_on_overflow, arg::num_elements<std::size_t>{256},
@@ -87,7 +87,7 @@ TEST_CASE("histogram_elementwise event type constraints") {
     }
 }
 
-TEST_CASE("histogram_elementwise_accumulate event type constraints") {
+TEST_CASE("type constraints: histogram_elementwise_accumulate") {
     SECTION("saturate on overflow") {
         SECTION("no reset") {
             using proc_type =
@@ -196,7 +196,7 @@ TEST_CASE("histogram_elementwise_accumulate event type constraints") {
     }
 }
 
-TEST_CASE("introspect histogram_elementwise", "[introspect]") {
+TEST_CASE("introspect: histogram_elementwise") {
     check_introspect_simple_processor(histogram_elementwise(
         saturate_on_overflow, arg::num_elements<std::size_t>{1},
         arg::num_bins<std::size_t>{1}, arg::max_per_bin<u16>{255},

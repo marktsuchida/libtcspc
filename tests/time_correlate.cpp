@@ -24,7 +24,7 @@
 
 namespace tcspc {
 
-TEST_CASE("time_correlate_at_start event type constraints") {
+TEST_CASE("type constraints: time_correlate_at_start") {
     using proc_type = decltype(time_correlate_at_start(
         sink_events<time_correlated_detection_event<>, int>()));
     STATIC_CHECK(
@@ -32,7 +32,7 @@ TEST_CASE("time_correlate_at_start event type constraints") {
     STATIC_CHECK_FALSE(handles_event_v<proc_type, double>);
 }
 
-TEST_CASE("time_correlate_at_midpoint event type constraints") {
+TEST_CASE("type constraints: time_correlate_at_midpoint") {
     using proc_type = decltype(time_correlate_at_midpoint(
         sink_events<time_correlated_detection_event<>, int>()));
     STATIC_CHECK(
@@ -40,7 +40,7 @@ TEST_CASE("time_correlate_at_midpoint event type constraints") {
     STATIC_CHECK_FALSE(handles_event_v<proc_type, double>);
 }
 
-TEST_CASE("time_correlate_at_fraction event type constraints") {
+TEST_CASE("type constraints: time_correlate_at_fraction") {
     using proc_type = decltype(time_correlate_at_fraction(
         arg::fraction{0.333},
         sink_events<time_correlated_detection_event<>, int>()));
@@ -49,7 +49,7 @@ TEST_CASE("time_correlate_at_fraction event type constraints") {
     STATIC_CHECK_FALSE(handles_event_v<proc_type, double>);
 }
 
-TEST_CASE("negate_difftime event type constraints") {
+TEST_CASE("type constraints: negate_difftime") {
     using proc_type = decltype(negate_difftime(
         sink_events<time_correlated_detection_event<>, int>()));
     STATIC_CHECK(
@@ -57,7 +57,7 @@ TEST_CASE("negate_difftime event type constraints") {
     STATIC_CHECK_FALSE(handles_event_v<proc_type, double>);
 }
 
-TEST_CASE("remove_time_correlation event type constraints") {
+TEST_CASE("type constraints: remove_time_correlation") {
     using proc_type = decltype(remove_time_correlation(
         sink_events<detection_event<>, int>()));
     STATIC_CHECK(
@@ -65,7 +65,7 @@ TEST_CASE("remove_time_correlation event type constraints") {
     STATIC_CHECK_FALSE(handles_event_v<proc_type, double>);
 }
 
-TEST_CASE("introspect time_correlate", "[introspect]") {
+TEST_CASE("introspect: time_correlate") {
     check_introspect_simple_processor(time_correlate_at_start(null_sink()));
     check_introspect_simple_processor(time_correlate_at_stop(null_sink()));
     check_introspect_simple_processor(time_correlate_at_midpoint(null_sink()));

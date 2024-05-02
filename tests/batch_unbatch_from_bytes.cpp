@@ -41,7 +41,7 @@ auto tmp_bucket(std::initializer_list<U> il) {
 
 } // namespace
 
-TEST_CASE("batch_from_bytes event type constraints") {
+TEST_CASE("type constraints: batch_from_bytes") {
     using proc_type = decltype(batch_from_bytes<int>(
         new_delete_bucket_source<int>::create(), sink_events<bucket<int>>()));
     STATIC_CHECK(is_processor_v<proc_type, span<std::byte>>);
@@ -50,7 +50,7 @@ TEST_CASE("batch_from_bytes event type constraints") {
     STATIC_CHECK_FALSE(is_processor_v<proc_type, span<short const>>);
 }
 
-TEST_CASE("unbatch_from_bytes event type constraints") {
+TEST_CASE("type constraints: unbatch_from_bytes") {
     using proc_type = decltype(unbatch_from_bytes<int>(sink_events<int>()));
     STATIC_CHECK(is_processor_v<proc_type, span<std::byte>>);
     STATIC_CHECK(is_processor_v<proc_type, span<std::byte const>>);
@@ -58,7 +58,7 @@ TEST_CASE("unbatch_from_bytes event type constraints") {
     STATIC_CHECK_FALSE(is_processor_v<proc_type, span<short const>>);
 }
 
-TEST_CASE("introspect batch_from_bytes, unbatch_from_bytes", "[introspect]") {
+TEST_CASE("introspect: batch_from_bytes, unbatch_from_bytes") {
     check_introspect_simple_processor(batch_from_bytes<int>(
         new_delete_bucket_source<int>::create(), null_sink()));
     check_introspect_simple_processor(unbatch_from_bytes<int>(null_sink()));
