@@ -334,8 +334,12 @@ template <typename DataTypes = default_data_types> class linear_bin_mapper {
 
     static_assert(std::is_integral_v<typename DataTypes::datapoint_type>,
                   "datapoint_type must be an integer type");
-    static_assert(std::is_unsigned_v<typename DataTypes::bin_index_type>,
-                  "bin_index_type must be an unsigned integer type");
+    static_assert(std::is_integral_v<typename DataTypes::bin_index_type>,
+                  "bin_index_type must be an integer type");
+
+    // Assumptions used by implementation.
+    static_assert(sizeof(typename DataTypes::datapoint_type) <= sizeof(u64));
+    static_assert(sizeof(typename DataTypes::bin_index_type) <= sizeof(u64));
 
   public:
     /**
@@ -377,18 +381,20 @@ template <typename DataTypes = default_data_types> class linear_bin_mapper {
     }
 
     /** \brief Implements bin mapper requirement. */
-    auto operator()(typename DataTypes::datapoint_type d) const
+    auto operator()(typename DataTypes::datapoint_type datapoint) const
         -> std::optional<typename DataTypes::bin_index_type> {
         using bin_index_type = typename DataTypes::bin_index_type;
-        d -= off;
-        // Check sign before dividing to avoid rounding to zero in division.
-        if ((d < 0 && bwidth > 0) || (d > 0 && bwidth < 0))
+
+        if (bwidth < 0 ? datapoint > off : datapoint < off)
             return clamp ? std::make_optional(bin_index_type{0})
                          : std::nullopt;
-        d /= bwidth;
-        if (std::uint64_t(d) > max_index)
+        // Note we always divide non-negative by positive or non-positive by
+        // negative, to avoid being affected by truncation toward zero.
+        auto const scaled = (datapoint - off) / bwidth;
+        assert(scaled >= 0);
+        if (u64(scaled) > u64(max_index))
             return clamp ? std::make_optional(max_index) : std::nullopt;
-        return bin_index_type(d);
+        return static_cast<bin_index_type>(scaled);
     }
 };
 
