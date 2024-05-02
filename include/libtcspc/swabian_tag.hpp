@@ -7,6 +7,7 @@
 #pragma once
 
 #include "common.hpp"
+#include "int_arith.hpp"
 #include "introspect.hpp"
 #include "npint.hpp"
 #include "processor_traits.hpp"
@@ -212,6 +213,9 @@ template <typename DataTypes, typename Downstream> class decode_swabian_tags {
                                  begin_lost_interval_event<DataTypes>,
                                  end_lost_interval_event<DataTypes>,
                                  lost_counts_event<DataTypes>, warning_event>);
+
+    static_assert(is_type_in_range<typename DataTypes::abstime_type>(i64{0}));
+    static_assert(is_type_in_range<typename DataTypes::channel_type>(i32{0}));
 
     Downstream downstream;
 

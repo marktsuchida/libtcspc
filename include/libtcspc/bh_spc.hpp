@@ -7,6 +7,7 @@
 #pragma once
 
 #include "common.hpp"
+#include "int_arith.hpp"
 #include "int_types.hpp"
 #include "introspect.hpp"
 #include "npint.hpp"
@@ -724,6 +725,17 @@ class decode_bh_spc {
                   not HasIntensityCounter);
     static_assert(handles_event_v<Downstream, marker_event<DataTypes>> ||
                   not BHSPCEvent::has_markers);
+
+    // 32-bit abstime can work for a few seconds, though 64-bit is recommended.
+    static_assert(sizeof(typename DataTypes::abstime_type) >= 4);
+
+    static_assert(in_range<typename DataTypes::channel_type>(255) ||
+                  (not std::is_same_v<BHSPCEvent, bh_spc600_4096ch_event> &&
+                   in_range<typename DataTypes::channel_type>(15)));
+
+    static_assert(in_range<typename DataTypes::difftime_type>(4095) ||
+                  (std::is_same_v<BHSPCEvent, bh_spc600_256ch_event> &&
+                   in_range<typename DataTypes::difftime_type>(255)));
 
     using abstime_type = typename DataTypes::abstime_type;
 

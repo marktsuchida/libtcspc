@@ -7,6 +7,7 @@
 #pragma once
 
 #include "common.hpp"
+#include "int_arith.hpp"
 #include "int_types.hpp"
 #include "introspect.hpp"
 #include "npint.hpp"
@@ -413,6 +414,12 @@ class decode_pqt3 {
     static_assert(is_processor_v<Downstream, time_reached_event<DataTypes>,
                                  time_correlated_detection_event<DataTypes>,
                                  marker_event<DataTypes>, warning_event>);
+
+    // 16-bit abstime would overflow so fast that we just prohibit. 32-bit can
+    // work for a few seconds, though 64-bit is recommended.
+    static_assert(sizeof(typename DataTypes::abstime_type) >= 4);
+    static_assert(in_range<typename DataTypes::channel_type>(63));
+    static_assert(in_range<typename DataTypes::difftime_type>(32767));
 
     using abstime_type = typename DataTypes::abstime_type;
 
