@@ -92,10 +92,6 @@ TEST_CASE("as signed or unsigned") {
     static_assert(as_unsigned(std::int16_t(-1)) == std::uint16_t(65535));
 }
 
-TEST_CASE("narrow integer") {
-    CHECK(narrow<std::uint8_t>(std::uint64_t(100)) == std::uint8_t(100));
-}
-
 } // namespace internal
 
 } // namespace tcspc

@@ -425,18 +425,6 @@ inline constexpr auto as_unsigned(T i) -> std::make_unsigned_t<T> {
     return static_cast<std::make_unsigned_t<T>>(i);
 }
 
-template <typename T, typename U> inline auto narrow(U i) -> T {
-    static_assert(std::is_integral_v<T>);
-    static_assert(std::is_integral_v<U>);
-    static_assert(std::is_signed_v<T> == std::is_signed_v<U>);
-    static_assert(sizeof(T) < sizeof(U));
-    assert(i <= std::numeric_limits<T>::max());
-    if constexpr (std::is_signed_v<T>) {
-        assert(i >= std::numeric_limits<T>::min());
-    }
-    return T(i);
-}
-
 // window_size must be non-negative
 template <typename T>
 constexpr auto pairing_cutoff(T stop_time, T window_size) noexcept {
