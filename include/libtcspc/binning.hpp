@@ -9,6 +9,7 @@
 #include "arg_wrappers.hpp"
 #include "common.hpp"
 #include "histogram_events.hpp"
+#include "int_arith.hpp"
 #include "introspect.hpp"
 #include "processor_traits.hpp"
 
@@ -123,6 +124,10 @@ template <typename DataTypes = default_data_types> class difftime_data_mapper {
     template <typename Event>
     auto operator()(Event const &event) const ->
         typename DataTypes::datapoint_type {
+        static_assert(
+            internal::is_type_in_range<typename DataTypes::datapoint_type>(
+                decltype(event.difftime){0}),
+            "difftime_data_mapper does not allow narrowing conversion");
         return event.difftime;
     }
 };
@@ -142,6 +147,10 @@ template <typename DataTypes = default_data_types> class count_data_mapper {
     template <typename Event>
     auto operator()(Event const &event) const ->
         typename DataTypes::datapoint_type {
+        static_assert(
+            internal::is_type_in_range<typename DataTypes::datapoint_type>(
+                decltype(event.count){0}),
+            "count_data_mapper does not allow narrowing conversion");
         return event.count;
     }
 };
