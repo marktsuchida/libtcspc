@@ -295,6 +295,24 @@ TEST_CASE("Power-of-2 bin mapping") {
     // NOLINTEND(bugprone-unchecked-optional-access)
 }
 
+TEST_CASE("power_of_2_bin_mapper with signed datapoint_type") {
+    // NOLINTBEGIN(bugprone-unchecked-optional-access)
+
+    struct data_types {
+        using datapoint_type = i32;
+        using bin_index_type = u8;
+    };
+    power_of_2_bin_mapper<16, 8, false, data_types> const m;
+    CHECK(m(0).value() == 0);
+    CHECK(m(65535).value() == 255);
+    CHECK_FALSE(m(65536).has_value());
+    CHECK_FALSE(m(-1).has_value());
+    CHECK_FALSE(m(std::numeric_limits<i32>::max()).has_value());
+    CHECK_FALSE(m(std::numeric_limits<i32>::min()).has_value());
+
+    // NOLINTEND(bugprone-unchecked-optional-access)
+}
+
 TEST_CASE("Linear bin mapping") {
     // NOLINTBEGIN(bugprone-unchecked-optional-access)
 

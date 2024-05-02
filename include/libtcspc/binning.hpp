@@ -276,33 +276,45 @@ auto map_to_bins(BinMapper &&bin_mapper, Downstream &&downstream) {
 template <unsigned NDataBits, unsigned NHistoBits, bool Flip = false,
           typename DataTypes = default_data_types>
 struct power_of_2_bin_mapper {
+    static_assert(NHistoBits <= 64); // Assumption made below.
+    static_assert(NDataBits >= NHistoBits);
+    static_assert(NDataBits <= 8 * sizeof(typename DataTypes::datapoint_type));
+    static_assert(NHistoBits <=
+                  8 * sizeof(typename DataTypes::bin_index_type));
+    // Bin indices are always non-negative.
+    static_assert(std::is_unsigned_v<typename DataTypes::bin_index_type> ||
+                  NHistoBits < 8 * sizeof(typename DataTypes::bin_index_type));
+
     /** \brief Implements bin mapper requirement. */
     [[nodiscard]] auto n_bins() const -> std::size_t {
         return std::size_t{1} << NHistoBits;
     }
 
     /** \brief Implements bin mapper requirement. */
-    auto operator()(typename DataTypes::datapoint_type d) const
+    auto operator()(typename DataTypes::datapoint_type datapoint) const
         -> std::optional<typename DataTypes::bin_index_type> {
         using datapoint_type = typename DataTypes::datapoint_type;
         using bin_index_type = typename DataTypes::bin_index_type;
-        static_assert(sizeof(datapoint_type) >= sizeof(bin_index_type));
-        static_assert(NDataBits <= 8 * sizeof(datapoint_type));
-        static_assert(NHistoBits <= 8 * sizeof(bin_index_type));
-        static_assert(NDataBits >= NHistoBits);
+
         static constexpr int shift = NDataBits - NHistoBits;
-        auto bin = [&] {
-            if constexpr (shift >= 8 * sizeof(datapoint_type))
-                return 0;
-            else
-                return d >> shift;
-        }();
-        static constexpr datapoint_type max_bin_index = (1 << NHistoBits) - 1;
-        if (bin > max_bin_index)
+        static_assert(shift <= 8 * sizeof(datapoint_type)); // Ensured above.
+        if constexpr (shift == 8 * sizeof(datapoint_type))
+            return bin_index_type{0}; // Shift would be UB.
+
+        // Convert to unsigned (if necessary) _after_ the shift so that
+        // negative datapoints are mapped to indices above max.
+        auto const shifted = internal::ensure_unsigned(datapoint >> shift);
+        static constexpr auto max_bin_index = static_cast<bin_index_type>(
+            NHistoBits == 64 ? std::numeric_limits<u64>::max()
+                             : (u64(1) << NHistoBits) - 1);
+        if (shifted > max_bin_index)
             return std::nullopt;
+
+        auto const bin_index = static_cast<bin_index_type>(shifted);
         if constexpr (Flip)
-            bin = max_bin_index - bin;
-        return bin_index_type(bin);
+            return max_bin_index - bin_index;
+        else
+            return bin_index;
     }
 };
 

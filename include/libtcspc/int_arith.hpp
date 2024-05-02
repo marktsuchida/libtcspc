@@ -23,6 +23,16 @@ inline constexpr auto as_unsigned(T i) -> std::make_unsigned_t<T> {
     return static_cast<std::make_unsigned_t<T>>(i);
 }
 
+template <typename T, typename = std::enable_if_t<std::is_integral_v<T>>>
+inline constexpr auto ensure_signed(T i) -> std::make_signed_t<T> {
+    return static_cast<std::make_signed_t<T>>(i);
+}
+
+template <typename T, typename = std::enable_if_t<std::is_integral_v<T>>>
+inline constexpr auto ensure_unsigned(T i) -> std::make_unsigned_t<T> {
+    return static_cast<std::make_unsigned_t<T>>(i);
+}
+
 // Cf. C++20 std::cmp_less(), etc.
 template <typename T, typename U>
 [[nodiscard]] constexpr auto cmp_less(T t, U u) noexcept -> bool {
