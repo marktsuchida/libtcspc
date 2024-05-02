@@ -6,6 +6,8 @@
 
 #pragma once
 
+#include "errors.hpp"
+
 #include <limits>
 #include <type_traits>
 
@@ -19,6 +21,95 @@ inline constexpr auto as_signed(T i) -> std::make_signed_t<T> {
 template <typename T, typename = std::enable_if_t<std::is_signed_v<T>>>
 inline constexpr auto as_unsigned(T i) -> std::make_unsigned_t<T> {
     return static_cast<std::make_unsigned_t<T>>(i);
+}
+
+// Cf. C++20 std::cmp_less(), etc.
+template <typename T, typename U>
+[[nodiscard]] constexpr auto cmp_less(T t, U u) noexcept -> bool {
+    static_assert(std::is_integral_v<T>);
+    static_assert(std::is_integral_v<U>);
+    if constexpr (std::is_unsigned_v<T> == std::is_unsigned_v<U>)
+        return t < u;
+    else if constexpr (std::is_signed_v<T>)
+        return t < 0 || as_unsigned(t) < u;
+    else // U is signed:
+        return u >= 0 && t < as_unsigned(u);
+}
+
+template <typename T, typename U>
+[[nodiscard]] constexpr auto cmp_greater(T t, U u) noexcept -> bool {
+    return cmp_less(u, t);
+}
+
+template <typename T, typename U>
+[[nodiscard]] constexpr auto cmp_less_equal(T t, U u) noexcept -> bool {
+    return not cmp_less(u, t);
+}
+
+template <typename T, typename U>
+[[nodiscard]] constexpr auto cmp_greater_equal(T t, U u) noexcept -> bool {
+    return not cmp_less(t, u);
+}
+
+// Statically check for non-narrowing conversion.
+template <typename R, typename T>
+[[nodiscard]] constexpr auto is_type_in_range([[maybe_unused]] T i) noexcept
+    -> bool {
+    return cmp_greater_equal(std::numeric_limits<T>::min(),
+                             std::numeric_limits<R>::min()) &&
+           cmp_less_equal(std::numeric_limits<T>::max(),
+                          std::numeric_limits<R>::max());
+}
+
+// Cf. C++20 std::in_range()
+template <typename R, typename T>
+[[nodiscard]] constexpr auto in_range(T i) noexcept -> bool {
+    if constexpr (is_type_in_range<R>(T{0}))
+        return true;
+    return cmp_greater_equal(i, std::numeric_limits<R>::min()) &&
+           cmp_less_equal(i, std::numeric_limits<R>::max());
+}
+
+template <typename R, typename T,
+          typename = std::enable_if_t<std::is_integral_v<T>>>
+constexpr auto convert_with_check(T v) -> R {
+    if (not in_range<R>(v))
+        throw arithmetic_overflow_error();
+    return static_cast<R>(v);
+}
+
+template <typename T, typename = std::enable_if_t<std::is_integral_v<T>>>
+auto add_with_check(T a, T b) -> T {
+#ifdef __GNUC__
+    T c{};
+    if (not __builtin_add_overflow(a, b, &c))
+        return c;
+#else
+    using limits = std::numeric_limits<T>;
+    bool const safe_to_add = std::is_signed_v<T> && b < 0
+                                 ? a >= limits::min() - b
+                                 : a <= limits::max() - b;
+    if (safe_to_add)
+        return a + b;
+#endif
+    throw arithmetic_overflow_error();
+}
+
+template <typename T, typename = std::enable_if_t<std::is_integral_v<T>>>
+auto subtract_with_check(T a, T b) -> T {
+#ifdef __GNUC__
+    T c{};
+    if (not __builtin_sub_overflow(a, b, &c))
+        return c;
+#else
+    using limits = std::numeric_limits<T>;
+    bool const safe_to_subtract = std::is_signed_v<T> && b < 0
+                                      ? a <= limits::max() + b
+                                      : a >= limits::min() + b;
+    if (safe_to_subtract)
+        return a - b;
+#endif
+    throw arithmetic_overflow_error();
 }
 
 // Cf. C++26 std::add_sat()

@@ -8,6 +8,8 @@
 
 #include "arg_wrappers.hpp"
 #include "common.hpp"
+#include "errors.hpp"
+#include "int_arith.hpp"
 #include "introspect.hpp"
 #include "processor_traits.hpp"
 #include "time_tagged_events.hpp"
@@ -53,11 +55,12 @@ class time_correlate_at_start_or_stop {
                                      typename DataTypes::abstime_type>);
         static_assert(std::is_same_v<typename DT::channel_type,
                                      typename DataTypes::channel_type>);
-        auto const difftime = event[1].abstime - event[0].abstime;
         auto const &anchor = UseStartTimeAndChannel ? event[0] : event[1];
+        auto const difftime =
+            convert_with_check<typename DataTypes::difftime_type>(
+                subtract_with_check(event[1].abstime, event[0].abstime));
         downstream.handle(time_correlated_detection_event<DataTypes>{
-            anchor.abstime, anchor.channel,
-            static_cast<typename DataTypes::difftime_type>(difftime)});
+            anchor.abstime, anchor.channel, difftime});
     }
 
     template <typename DT>
@@ -101,13 +104,14 @@ class time_correlate_at_midpoint {
                                      typename DataTypes::abstime_type>);
         static_assert(std::is_same_v<typename DT::channel_type,
                                      typename DataTypes::channel_type>);
-        auto const difftime = event[1].abstime - event[0].abstime;
+        auto const difftime =
+            subtract_with_check(event[1].abstime, event[0].abstime);
         auto const abstime = event[0].abstime + difftime / 2;
         auto const channel =
             UseStartChannel ? event[0].channel : event[1].channel;
         downstream.handle(time_correlated_detection_event<DataTypes>{
             abstime, channel,
-            static_cast<typename DataTypes::difftime_type>(difftime)});
+            convert_with_check<typename DataTypes::difftime_type>(difftime)});
     }
 
     template <typename DT>
@@ -131,13 +135,17 @@ class time_correlate_at_fraction {
     static_assert(is_processor_v<Downstream,
                                  time_correlated_detection_event<DataTypes>>);
 
-    double fraction; // 0.0-1.0 for internal division of start-stop
+    double frac; // 0.0-1.0 for internal division of start-stop
     Downstream downstream;
 
   public:
     explicit time_correlate_at_fraction(arg::fraction<double> fraction,
                                         Downstream downstream)
-        : fraction(fraction.value), downstream(std::move(downstream)) {}
+        : frac(fraction.value), downstream(std::move(downstream)) {
+        if (frac < 0.0 || frac > 1.0)
+            throw std::invalid_argument(
+                "time_correlate_at_fraction fraction must be in range [0.0, 1.0]");
+    }
 
     [[nodiscard]] auto introspect_node() const -> processor_info {
         return processor_info(this, "time_correlate_at_fraction");
@@ -153,16 +161,17 @@ class time_correlate_at_fraction {
                                      typename DataTypes::abstime_type>);
         static_assert(std::is_same_v<typename DT::channel_type,
                                      typename DataTypes::channel_type>);
-        auto const difftime = event[1].abstime - event[0].abstime;
+        auto const difftime =
+            subtract_with_check(event[1].abstime, event[0].abstime);
         auto const abstime =
             event[0].abstime +
             static_cast<typename DataTypes::abstime_type>(
-                std::llround(static_cast<double>(difftime) * fraction));
+                std::llround(static_cast<double>(difftime) * frac));
         auto const channel =
             UseStartChannel ? event[0].channel : event[1].channel;
         downstream.handle(time_correlated_detection_event<DataTypes>{
             abstime, channel,
-            static_cast<typename DataTypes::difftime_type>(difftime)});
+            convert_with_check<typename DataTypes::difftime_type>(difftime)});
     }
 
     template <typename DT>
