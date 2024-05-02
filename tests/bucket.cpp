@@ -12,6 +12,7 @@
 #include "libtcspc/processor_traits.hpp"
 #include "libtcspc/span.hpp"
 #include "libtcspc/test_utils.hpp"
+#include "libtcspc/type_list.hpp"
 #include "test_checkers.hpp"
 #include "test_thread_utils.hpp"
 
@@ -20,7 +21,6 @@
 
 #include <array>
 #include <memory>
-#include <ostream>
 #include <sstream>
 #include <thread>
 #include <typeinfo>

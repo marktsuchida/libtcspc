@@ -12,6 +12,7 @@
 #include "processor_traits.hpp"
 #include "type_list.hpp"
 
+#include <type_traits>
 #include <utility>
 
 namespace tcspc {

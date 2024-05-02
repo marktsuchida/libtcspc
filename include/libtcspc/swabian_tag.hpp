@@ -8,6 +8,7 @@
 
 #include "common.hpp"
 #include "int_arith.hpp"
+#include "int_types.hpp"
 #include "introspect.hpp"
 #include "npint.hpp"
 #include "processor_traits.hpp"

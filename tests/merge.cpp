@@ -20,6 +20,7 @@
 #include <catch2/generators/catch_generators.hpp>
 
 #include <cstddef>
+#include <limits>
 #include <memory>
 #include <set>
 #include <string_view>

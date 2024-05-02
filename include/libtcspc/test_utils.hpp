@@ -518,6 +518,7 @@ template <typename EventList> class capture_output_checker {
      * \brief Construct from a context, tracker name of
      * `tcspc::capture_output` processor, and feeder's value category.
      */
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
     explicit capture_output_checker(feed_as feeder_value_category,
                                     std::shared_ptr<context> context,
                                     std::string const &name)

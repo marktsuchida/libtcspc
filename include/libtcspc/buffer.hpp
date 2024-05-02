@@ -7,6 +7,7 @@
 #pragma once
 
 #include "arg_wrappers.hpp"
+#include "common.hpp"
 #include "context.hpp"
 #include "errors.hpp"
 #include "introspect.hpp"

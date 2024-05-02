@@ -10,12 +10,14 @@
 #include "common.hpp"
 #include "histogram_events.hpp"
 #include "int_arith.hpp"
+#include "int_types.hpp"
 #include "introspect.hpp"
 #include "processor_traits.hpp"
 
+#include <cassert>
 #include <cstddef>
-#include <cstdint>
 #include <functional>
+#include <limits>
 #include <optional>
 #include <stdexcept>
 #include <type_traits>

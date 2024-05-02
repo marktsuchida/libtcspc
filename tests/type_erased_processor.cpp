@@ -7,6 +7,7 @@
 #include "libtcspc/type_erased_processor.hpp"
 
 #include "libtcspc/common.hpp"
+#include "libtcspc/context.hpp"
 #include "libtcspc/introspect.hpp"
 #include "libtcspc/processor_traits.hpp"
 #include "libtcspc/test_utils.hpp"

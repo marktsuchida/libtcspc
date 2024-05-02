@@ -8,6 +8,7 @@
 
 #include "arg_wrappers.hpp"
 #include "bucket.hpp"
+#include "common.hpp"
 #include "introspect.hpp"
 #include "processor_traits.hpp"
 

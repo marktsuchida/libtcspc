@@ -6,8 +6,11 @@
 
 #pragma once
 
+#include "common.hpp"
 #include "introspect.hpp"
 #include "processor_traits.hpp"
+
+#include <type_traits>
 
 namespace tcspc {
 

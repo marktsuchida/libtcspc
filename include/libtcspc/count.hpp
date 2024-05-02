@@ -15,6 +15,7 @@
 #include <cstdint>
 #include <functional>
 #include <stdexcept>
+#include <type_traits>
 #include <utility>
 
 namespace tcspc {
