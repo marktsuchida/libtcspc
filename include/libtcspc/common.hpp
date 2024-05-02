@@ -11,7 +11,6 @@
 
 #include <cassert>
 #include <cstdint>
-#include <limits>
 #include <ostream>
 #include <stdexcept>
 #include <string>
@@ -349,26 +348,6 @@ namespace internal {
 // constexpr-if branches (by pretending that it may not always be false).
 template <typename T> struct false_for_type : std::false_type {};
 
-// Cf. C++26 std::add_sat()
-template <typename T, typename = std::enable_if_t<std::is_integral_v<T>>>
-constexpr auto add_sat(T a, T b) noexcept -> T {
-    using limits = std::numeric_limits<T>;
-#ifdef __GNUC__
-    T c{};
-    if (not __builtin_add_overflow(a, b, &c))
-        return c;
-#else
-    bool const safe_to_add = std::is_signed_v<T> && b < 0
-                                 ? a >= limits::min() - b
-                                 : a <= limits::max() - b;
-    if (safe_to_add)
-        return a + b;
-#endif
-    if (std::is_signed_v<T> && a < 0)
-        return limits::min();
-    return limits::max();
-}
-
 constexpr auto count_trailing_zeros_32_nonintrinsic(u32np x) noexcept -> int {
     int r = 0;
     while ((x & 1_u32np) == 0_u32np) {
@@ -414,25 +393,6 @@ template <typename T, typename... U> struct is_any_of {
 
 template <typename T, typename... U>
 inline constexpr bool is_any_of_v = is_any_of<T, U...>::value;
-
-template <typename T, typename = std::enable_if_t<std::is_unsigned_v<T>>>
-inline constexpr auto as_signed(T i) -> std::make_signed_t<T> {
-    return static_cast<std::make_signed_t<T>>(i);
-}
-
-template <typename T, typename = std::enable_if_t<std::is_signed_v<T>>>
-inline constexpr auto as_unsigned(T i) -> std::make_unsigned_t<T> {
-    return static_cast<std::make_unsigned_t<T>>(i);
-}
-
-// window_size must be non-negative
-template <typename T>
-constexpr auto pairing_cutoff(T stop_time, T window_size) noexcept {
-    // Guard against underflow (window_size is non-negative).
-    if (stop_time < std::numeric_limits<T>::min() + window_size)
-        return std::numeric_limits<T>::min();
-    return stop_time - window_size;
-}
 
 // C++20 std::type_identity
 template <typename T> struct type_identity {

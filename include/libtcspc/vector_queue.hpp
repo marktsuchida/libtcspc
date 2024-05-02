@@ -6,7 +6,7 @@
 
 #pragma once
 
-#include "common.hpp"
+#include "int_arith.hpp"
 
 #include <algorithm>
 #include <cassert>

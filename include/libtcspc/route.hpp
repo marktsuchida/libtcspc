@@ -8,6 +8,7 @@
 
 #include "common.hpp"
 #include "errors.hpp"
+#include "int_arith.hpp"
 #include "introspect.hpp"
 #include "type_erased_processor.hpp"
 #include "type_list.hpp"

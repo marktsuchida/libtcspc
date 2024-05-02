@@ -8,6 +8,7 @@
 
 #include "arg_wrappers.hpp"
 #include "common.hpp"
+#include "int_arith.hpp"
 #include "span.hpp"
 
 #include <algorithm>

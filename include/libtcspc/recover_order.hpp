@@ -9,6 +9,7 @@
 #include "arg_wrappers.hpp"
 #include "common.hpp"
 #include "errors.hpp"
+#include "int_arith.hpp"
 #include "introspect.hpp"
 #include "processor_traits.hpp"
 #include "type_list.hpp"

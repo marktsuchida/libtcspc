@@ -8,6 +8,7 @@
 
 #include "arg_wrappers.hpp"
 #include "common.hpp"
+#include "int_arith.hpp"
 #include "introspect.hpp"
 #include "processor_traits.hpp"
 #include "time_tagged_events.hpp"
