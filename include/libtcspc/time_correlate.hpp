@@ -202,9 +202,9 @@ class time_correlate_at_fraction {
  * time in order and start time within a known time window of the stop time,
  * then the output events are time-bound out-of-order with that window size.
  *
- * The difference between the abstime of the start and stop event in each pair
- * must be representable by both `abstime_type` and `difftime_type` without
- * overflowing.
+ * \attention The difference between the abstime of the start and stop event in
+ * each pair must be representable by both `abstime_type` and `difftime_type`
+ * without overflowing.
  *
  * \tparam DataTypes data type set specifying `abstime_type`, `channel_type`,
  * and `difftime_type`
@@ -241,9 +241,9 @@ auto time_correlate_at_start(Downstream &&downstream) {
  * No reordering of events takes place. The output events are in order if the
  * stop times of the incoming pairs are in order.
  *
- * The difference between the abstime of the start and stop event in each pair
- * must be representable by both `abstime_type` and `difftime_type` without
- * overflowing.
+ * \attention The difference between the abstime of the start and stop event in
+ * each pair must be representable by both `abstime_type` and `difftime_type`
+ * without overflowing.
  *
  * \tparam DataTypes data type set specifying `abstime_type`, `channel_type`,
  * and `difftime_type`
@@ -283,9 +283,9 @@ auto time_correlate_at_stop(Downstream &&downstream) {
  * then the output events are time-bound out-of-order with half of that window
  * size.
  *
- * The difference between the abstime of the start and stop event in each pair
- * must be representable by both `abstime_type` and `difftime_type` without
- * overflowing.
+ * \attention The difference between the abstime of the start and stop event in
+ * each pair must be representable by both `abstime_type` and `difftime_type`
+ * without overflowing.
  *
  * \tparam DataTypes data type set specifying `abstime_type`, `channel_type`,
  * and `difftime_type`
@@ -329,9 +329,9 @@ auto time_correlate_at_midpoint(Downstream &&downstream) {
  * then the output events are time-bound out-of-order with `1 - fraction` times
  * that window size.
  *
- * The difference between the abstime of the start and stop event in each pair
- * must be representable by `abstime_type`, `difftime_type`, and `double`
- * without overflowing.
+ * \attention The difference between the abstime of the start and stop event in
+ * each pair must be representable by `abstime_type`, `difftime_type`, and
+ * `double` without overflowing.
  *
  * \tparam DataTypes data type set specifying `abstime_type`, `channel_type`,
  * and `difftime_type`

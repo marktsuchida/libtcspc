@@ -233,6 +233,9 @@ class fit_periodic_sequences {
  * This processor does not pass through \p Event, but passes through any other
  * event.
  *
+ * \attention The `abstime` of incoming events must be monotonically
+ * non-decreasing and must not wrap around.
+ *
  * \tparam Event event whose timing is to be fit
  *
  * \tparam DataTypes data type set specifying data types for emitted event

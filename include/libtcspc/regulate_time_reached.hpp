@@ -138,6 +138,9 @@ class regulate_time_reached {
  * reasonable limit even when \p interval_threshold is used as the main
  * criterion.
  *
+ * \attention The `abstime` of incoming events must be monotonically
+ * non-decreasing and must not wrap around.
+ *
  * \tparam DataTypes data type set specifying `abstime_type`
  *
  * \tparam Downstream downstream processor type

@@ -265,6 +265,10 @@ class retime_periodic_sequences {
  * No other events are handled (because this processor would cause their
  * abstimes to be out of order).
  *
+ * \attention The `abstime` of incoming events must be monotonically
+ * non-decreasing and must not wrap around. The `abstime` of the result must
+ * not overflow or underflow.
+ *
  * \see `tcspc::fit_periodic_sequences()`
  *
  * \tparam DataTypes data type set specifying `abstime_type` and emitted events
@@ -357,6 +361,10 @@ class extrapolate_periodic_sequences {
  *
  * \remark This is one way to synthesize an extra tick needed for use with
  * `tcspc::convert_sequences_to_start_stop()`.
+ *
+ * \attention The `abstime` of incoming events must be monotonically
+ * non-decreasing and must not wrap around. The `abstime` of the result must
+ * not overflow or underflow.
  *
  * \tparam DataTypes data type set specifying `abstime_type` and emitted events
  *

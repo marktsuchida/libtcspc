@@ -112,6 +112,9 @@ class generate {
  * expected that the next trigger is not received until a later abstime after
  * all the timing events in the previous series have been generated.
  *
+ * \attention The `abstime` of incoming events must be monotonically
+ * non-decreasing and must not wrap around.
+ *
  * \tparam TriggerEvent event type that triggers a new round of timing
  * generation by resetting the timing generator
  *
