@@ -27,9 +27,9 @@
 namespace tcspc {
 
 TEST_CASE("pqt2 event basic properties") {
-    STATIC_CHECK(std::is_pod_v<pqt2_picoharp300_event>);
-    STATIC_CHECK(std::is_pod_v<pqt2_hydraharpv1_event>);
-    STATIC_CHECK(std::is_pod_v<pqt2_generic_event>);
+    STATIC_CHECK(std::is_trivial_v<pqt2_picoharp300_event>);
+    STATIC_CHECK(std::is_trivial_v<pqt2_hydraharpv1_event>);
+    STATIC_CHECK(std::is_trivial_v<pqt2_generic_event>);
 
     STATIC_CHECK(sizeof(pqt2_picoharp300_event) == 4);
     STATIC_CHECK(sizeof(pqt2_hydraharpv1_event) == 4);

@@ -30,7 +30,7 @@
 namespace tcspc {
 
 TEST_CASE("swabian tag event basic properties") {
-    STATIC_CHECK(std::is_pod_v<swabian_tag_event>);
+    STATIC_CHECK(std::is_trivial_v<swabian_tag_event>);
 
     STATIC_CHECK(sizeof(swabian_tag_event) == 16);
 }

@@ -27,9 +27,9 @@
 namespace tcspc {
 
 TEST_CASE("bh spc event basic properties") {
-    STATIC_CHECK(std::is_pod_v<bh_spc_event>);
-    STATIC_CHECK(std::is_pod_v<bh_spc600_256ch_event>);
-    STATIC_CHECK(std::is_pod_v<bh_spc600_4096ch_event>);
+    STATIC_CHECK(std::is_trivial_v<bh_spc_event>);
+    STATIC_CHECK(std::is_trivial_v<bh_spc600_256ch_event>);
+    STATIC_CHECK(std::is_trivial_v<bh_spc600_4096ch_event>);
 
     STATIC_CHECK(sizeof(bh_spc_event) == 4);
     STATIC_CHECK(sizeof(bh_spc600_256ch_event) == 4);
