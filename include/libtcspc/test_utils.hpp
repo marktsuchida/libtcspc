@@ -50,8 +50,9 @@ template <typename EventList> class sink_events {
         return processor_graph().push_entry_point(this);
     }
 
-    template <typename E, typename = std::enable_if_t<type_list_contains_v<
-                              EventList, internal::remove_cvref_t<E>>>>
+    template <typename E,
+              typename = std::enable_if_t<is_convertible_to_type_list_member_v<
+                  internal::remove_cvref_t<E>, EventList>>>
     void handle(E &&event) {
         [[maybe_unused]] std::remove_reference_t<E> const e =
             std::forward<E>(event);

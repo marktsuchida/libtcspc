@@ -101,7 +101,7 @@ class merge_impl {
 
     template <unsigned InputChannel, typename Event>
     void handle(Event const &event) {
-        static_assert(type_list_contains_v<EventList, Event>);
+        static_assert(is_convertible_to_type_list_member_v<Event, EventList>);
         static_assert(std::is_same_v<decltype(event.abstime),
                                      typename DataTypes::abstime_type>);
         if (ended_with_exception)
@@ -184,8 +184,9 @@ class merge_input {
         return impl->introspect_graph().push_entry_point(this);
     }
 
-    template <typename Event, typename = std::enable_if_t<type_list_contains_v<
-                                  EventList, internal::remove_cvref_t<Event>>>>
+    template <typename Event,
+              typename = std::enable_if_t<is_convertible_to_type_list_member_v<
+                  internal::remove_cvref_t<Event>, EventList>>>
     void handle(Event &&event) {
         static_assert(std::is_same_v<decltype(event.abstime),
                                      typename DataTypes::abstime_type>);

@@ -45,7 +45,8 @@ TEST_CASE("type constraints: map_to_datapoints") {
             sink_events<datapoint_event<data_types>, int>()));
     STATIC_CHECK(is_processor_v<proc_type, bulk_counts_event<>>);
     STATIC_CHECK(handles_event_v<proc_type, int>);
-    STATIC_CHECK_FALSE(handles_event_v<proc_type, double>);
+    struct some_type {};
+    STATIC_CHECK_FALSE(handles_event_v<proc_type, some_type>);
 }
 
 TEST_CASE("type constraints: map_to_bins") {
@@ -57,7 +58,8 @@ TEST_CASE("type constraints: map_to_bins") {
         sink_events<bin_increment_event<data_types>, int>()));
     STATIC_CHECK(is_processor_v<proc_type, datapoint_event<>>);
     STATIC_CHECK(handles_event_v<proc_type, int>);
-    STATIC_CHECK_FALSE(handles_event_v<proc_type, double>);
+    struct some_type {};
+    STATIC_CHECK_FALSE(handles_event_v<proc_type, some_type>);
 }
 
 TEST_CASE("type constraints: batch_bin_increments") {
@@ -70,7 +72,8 @@ TEST_CASE("type constraints: batch_bin_increments") {
     STATIC_CHECK(is_processor_v<proc_type, start_event, stop_event,
                                 bin_increment_event<>>);
     STATIC_CHECK(handles_event_v<proc_type, int>);
-    STATIC_CHECK_FALSE(handles_event_v<proc_type, double>);
+    struct some_type {};
+    STATIC_CHECK_FALSE(handles_event_v<proc_type, some_type>);
 }
 
 TEST_CASE("introspect: binning") {

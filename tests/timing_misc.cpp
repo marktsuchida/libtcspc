@@ -39,7 +39,8 @@ TEST_CASE("type constraints: extrapolate_periodic_sequences") {
         sink_events<real_one_shot_timing_event<>, int>()));
     STATIC_CHECK(
         is_processor_v<proc_type, periodic_sequence_model_event<>, int>);
-    STATIC_CHECK_FALSE(handles_event_v<proc_type, double>);
+    struct some_type {};
+    STATIC_CHECK_FALSE(handles_event_v<proc_type, some_type>);
 }
 
 TEST_CASE("type constraints: add_count_to_periodic_sequences") {
@@ -48,7 +49,8 @@ TEST_CASE("type constraints: add_count_to_periodic_sequences") {
         sink_events<real_linear_timing_event<>, int>()));
     STATIC_CHECK(
         is_processor_v<proc_type, periodic_sequence_model_event<>, int>);
-    STATIC_CHECK_FALSE(handles_event_v<proc_type, double>);
+    struct some_type {};
+    STATIC_CHECK_FALSE(handles_event_v<proc_type, some_type>);
 }
 
 TEST_CASE("type constraints: convert_sequences_to_start_stop") {
@@ -66,7 +68,8 @@ TEST_CASE("type constraints: convert_sequences_to_start_stop") {
             arg::count<std::size_t>{42}, sink_events<start, stop, int>()));
     STATIC_CHECK(is_processor_v<proc_type, tick, int>);
     STATIC_CHECK(handles_events_v<proc_type, start, stop>);
-    STATIC_CHECK_FALSE(handles_event_v<proc_type, double>);
+    struct some_type {};
+    STATIC_CHECK_FALSE(handles_event_v<proc_type, some_type>);
 }
 
 TEST_CASE("introspect: timing_misc") {

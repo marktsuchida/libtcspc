@@ -38,7 +38,8 @@ TEST_CASE("type constraints: fit_periodic_sequences") {
         sink_events<periodic_sequence_model_event<>, int>()));
 
     STATIC_CHECK(is_processor_v<proc_type, tick, int>);
-    STATIC_CHECK_FALSE(handles_event_v<proc_type, double>);
+    struct some_type {};
+    STATIC_CHECK_FALSE(handles_event_v<proc_type, some_type>);
 }
 
 TEST_CASE("introspect: fit_sequence") {

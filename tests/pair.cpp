@@ -30,7 +30,8 @@ TEST_CASE("type constraints: pair_all") {
         arg::start_channel{0}, std::array{1, 2}, arg::time_window<i64>{100},
         sink_events<std::array<detection_event<>, 2>, int>()));
     STATIC_CHECK(is_processor_v<proc_type, detection_event<>, int>);
-    STATIC_CHECK_FALSE(handles_event_v<proc_type, double>);
+    struct some_type {};
+    STATIC_CHECK_FALSE(handles_event_v<proc_type, some_type>);
 }
 
 TEST_CASE("type constraints: pair_one") {
@@ -38,7 +39,8 @@ TEST_CASE("type constraints: pair_one") {
         arg::start_channel{0}, std::array{1, 2}, arg::time_window<i64>{100},
         sink_events<std::array<detection_event<>, 2>, int>()));
     STATIC_CHECK(is_processor_v<proc_type, detection_event<>, int>);
-    STATIC_CHECK_FALSE(handles_event_v<proc_type, double>);
+    struct some_type {};
+    STATIC_CHECK_FALSE(handles_event_v<proc_type, some_type>);
 }
 
 TEST_CASE("type constraints: pair_all_between") {
@@ -46,7 +48,8 @@ TEST_CASE("type constraints: pair_all_between") {
         arg::start_channel{0}, std::array{1, 2}, arg::time_window<i64>{100},
         sink_events<std::array<detection_event<>, 2>, int>()));
     STATIC_CHECK(is_processor_v<proc_type, detection_event<>, int>);
-    STATIC_CHECK_FALSE(handles_event_v<proc_type, double>);
+    struct some_type {};
+    STATIC_CHECK_FALSE(handles_event_v<proc_type, some_type>);
 }
 
 TEST_CASE("type constraints: pair_one_between") {
@@ -54,7 +57,8 @@ TEST_CASE("type constraints: pair_one_between") {
         arg::start_channel{0}, std::array{1, 2}, arg::time_window<i64>{100},
         sink_events<std::array<detection_event<>, 2>, int>()));
     STATIC_CHECK(is_processor_v<proc_type, detection_event<>, int>);
-    STATIC_CHECK_FALSE(handles_event_v<proc_type, double>);
+    struct some_type {};
+    STATIC_CHECK_FALSE(handles_event_v<proc_type, some_type>);
 }
 
 TEST_CASE("introspect: pair") {

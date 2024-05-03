@@ -37,8 +37,9 @@ template <typename EventList, typename Downstream> class multiplex {
         return downstream.introspect_graph().push_entry_point(this);
     }
 
-    template <typename Event, typename = std::enable_if_t<type_list_contains_v<
-                                  EventList, remove_cvref_t<Event>>>>
+    template <typename Event,
+              typename = std::enable_if_t<is_convertible_to_type_list_member_v<
+                  remove_cvref_t<Event>, EventList>>>
     void handle(Event &&event) {
         downstream.handle(
             variant_event<EventList>(std::forward<Event>(event)));

@@ -53,8 +53,8 @@ class gate {
                                                    CloseEvent>) {
             open = false;
             downstream.handle(std::forward<E>(event));
-        } else if constexpr (type_list_contains_v<GatedEventList,
-                                                  remove_cvref_t<E>>) {
+        } else if constexpr (is_convertible_to_type_list_member_v<
+                                 remove_cvref_t<E>, GatedEventList>) {
             if (open)
                 downstream.handle(std::forward<E>(event));
         } else {

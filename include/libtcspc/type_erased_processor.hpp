@@ -165,8 +165,8 @@ template <typename EventList> class type_erased_processor {
 
     /** \brief Implements processor requirement. */
     template <typename Event,
-              typename = std::enable_if_t<type_list_contains_v<
-                  event_list, internal::remove_cvref_t<Event>>>>
+              typename = std::enable_if_t<is_convertible_to_type_list_member_v<
+                  internal::remove_cvref_t<Event>, event_list>>>
     void handle(Event &&event) {
         proc->handle(std::forward<Event>(event));
     }

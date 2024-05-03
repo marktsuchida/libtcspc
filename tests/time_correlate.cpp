@@ -30,7 +30,8 @@ TEST_CASE("type constraints: time_correlate_at_start") {
         sink_events<time_correlated_detection_event<>, int>()));
     STATIC_CHECK(
         is_processor_v<proc_type, std::array<detection_event<>, 2>, int>);
-    STATIC_CHECK_FALSE(handles_event_v<proc_type, double>);
+    struct some_type {};
+    STATIC_CHECK_FALSE(handles_event_v<proc_type, some_type>);
 }
 
 TEST_CASE("type constraints: time_correlate_at_midpoint") {
@@ -38,7 +39,8 @@ TEST_CASE("type constraints: time_correlate_at_midpoint") {
         sink_events<time_correlated_detection_event<>, int>()));
     STATIC_CHECK(
         is_processor_v<proc_type, std::array<detection_event<>, 2>, int>);
-    STATIC_CHECK_FALSE(handles_event_v<proc_type, double>);
+    struct some_type {};
+    STATIC_CHECK_FALSE(handles_event_v<proc_type, some_type>);
 }
 
 TEST_CASE("type constraints: time_correlate_at_fraction") {
@@ -47,7 +49,8 @@ TEST_CASE("type constraints: time_correlate_at_fraction") {
         sink_events<time_correlated_detection_event<>, int>()));
     STATIC_CHECK(
         is_processor_v<proc_type, std::array<detection_event<>, 2>, int>);
-    STATIC_CHECK_FALSE(handles_event_v<proc_type, double>);
+    struct some_type {};
+    STATIC_CHECK_FALSE(handles_event_v<proc_type, some_type>);
 }
 
 TEST_CASE("type constraints: negate_difftime") {
@@ -55,7 +58,8 @@ TEST_CASE("type constraints: negate_difftime") {
         sink_events<time_correlated_detection_event<>, int>()));
     STATIC_CHECK(
         is_processor_v<proc_type, time_correlated_detection_event<>, int>);
-    STATIC_CHECK_FALSE(handles_event_v<proc_type, double>);
+    struct some_type {};
+    STATIC_CHECK_FALSE(handles_event_v<proc_type, some_type>);
 }
 
 TEST_CASE("type constraints: remove_time_correlation") {
@@ -63,7 +67,8 @@ TEST_CASE("type constraints: remove_time_correlation") {
         sink_events<detection_event<>, int>()));
     STATIC_CHECK(
         is_processor_v<proc_type, time_correlated_detection_event<>, int>);
-    STATIC_CHECK_FALSE(handles_event_v<proc_type, double>);
+    struct some_type {};
+    STATIC_CHECK_FALSE(handles_event_v<proc_type, some_type>);
 }
 
 TEST_CASE("introspect: time_correlate") {

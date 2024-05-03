@@ -178,6 +178,47 @@ inline constexpr bool type_list_contains_v =
 
 /** @} <!-- group type-list-contains --> */
 
+// clang-format off
+/**
+ * \defgroup is-convertible-to-type-list-member Metafunction is_convertible_to_type_list_member
+ *
+ * \ingroup type-list
+ * \copydoc is_convertible_to_type_list_member
+ * @{
+ */
+// clang-format on
+
+/**
+ * \brief Metafunction to determine if a type is convertible to at least one of
+ * the members of a type list.
+ *
+ * Checks if \p Type is `std::is_convertible` to any of the template arguments
+ * of the `tcspc::type_list` specialization \p TypeList and provides the result
+ * in the `bool` member `value`.
+ *
+ * \see `tcspc::is_convertible_to_type_list_member_v`
+ */
+template <typename Type, typename TypeList>
+struct is_convertible_to_type_list_member;
+
+/** \cond implementation-detail */
+
+template <typename Type, typename... Ts>
+struct is_convertible_to_type_list_member<Type, type_list<Ts...>>
+    : std::disjunction<std::is_convertible<Type, Ts>...> {};
+
+/** \endcond */
+
+/**
+ * \brief Helper variable template for
+ * `tcspc::is_convertible_to_type_list_member_v`.
+ */
+template <typename Type, typename TypeList>
+inline constexpr bool is_convertible_to_type_list_member_v =
+    is_convertible_to_type_list_member<Type, TypeList>::value;
+
+/** @} <!-- group is-convertible-to-type-list-member --> */
+
 /**
  * \defgroup type-list-is-subset Metafunction type_list_is_subset
  * \ingroup type-list
