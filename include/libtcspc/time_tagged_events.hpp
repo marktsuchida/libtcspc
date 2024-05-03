@@ -206,7 +206,8 @@ template <typename DataTypes = default_data_types> struct lost_counts_event {
     /**
      * \brief Number of counts that were detected but could not be time-tagged.
      */
-    std::uint32_t count;
+    typename DataTypes::count_type count;
+    static_assert(std::is_integral_v<decltype(count)>);
 
     /** \brief Equality comparison operator. */
     friend auto operator==(lost_counts_event const &lhs,
@@ -249,10 +250,9 @@ template <typename DataTypes = default_data_types> struct bulk_counts_event {
     typename DataTypes::channel_type channel;
     static_assert(std::is_integral_v<decltype(channel)>);
 
-    /**
-     * \brief Number of non-time-tagged counts detected.
-     */
-    std::uint32_t count;
+    /** \brief Number of non-time-tagged counts detected. */
+    typename DataTypes::count_type count;
+    static_assert(std::is_integral_v<decltype(count)>);
 
     /** \brief Equality comparison operator. */
     friend auto operator==(bulk_counts_event const &lhs,

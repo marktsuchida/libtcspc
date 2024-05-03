@@ -44,6 +44,13 @@ struct default_data_types {
     using difftime_type = i32;
 
     /**
+     * \brief Count type.
+     *
+     * This is used in events carrying a count of detections.
+     */
+    using count_type = u32;
+
+    /**
      * \brief Type of datapoint for histogramming.
      */
     using datapoint_type = i32;

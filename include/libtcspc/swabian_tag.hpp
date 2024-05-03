@@ -219,6 +219,7 @@ template <typename DataTypes, typename Downstream> class decode_swabian_tags {
 
     static_assert(is_type_in_range<typename DataTypes::abstime_type>(i64{0}));
     static_assert(is_type_in_range<typename DataTypes::channel_type>(i32{0}));
+    static_assert(is_type_in_range<typename DataTypes::count_type>(u16{0}));
 
     Downstream downstream;
 

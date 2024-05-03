@@ -740,6 +740,9 @@ class decode_bh_spc {
                   (std::is_same_v<BHSPCEvent, bh_spc600_256ch_event> &&
                    in_range<typename DataTypes::difftime_type>(255)));
 
+    static_assert(in_range<typename DataTypes::count_type>(4095) ||
+                  not HasIntensityCounter);
+
     using abstime_type = typename DataTypes::abstime_type;
 
     abstime_type abstime_base = 0; // Time of last overflow
