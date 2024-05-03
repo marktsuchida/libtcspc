@@ -8,6 +8,7 @@
 
 #include "arg_wrappers.hpp"
 #include "common.hpp"
+#include "data_types.hpp"
 #include "histogram_events.hpp"
 #include "int_arith.hpp"
 #include "int_types.hpp"

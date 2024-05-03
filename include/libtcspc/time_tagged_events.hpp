@@ -6,7 +6,7 @@
 
 #pragma once
 
-#include "common.hpp"
+#include "data_types.hpp"
 
 #include <array>
 #include <cstdint>

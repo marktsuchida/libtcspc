@@ -6,8 +6,8 @@
 
 #include "libtcspc/bucket.hpp"
 
-#include "libtcspc/common.hpp"
 #include "libtcspc/context.hpp"
+#include "libtcspc/core.hpp"
 #include "libtcspc/errors.hpp"
 #include "libtcspc/processor_traits.hpp"
 #include "libtcspc/span.hpp"

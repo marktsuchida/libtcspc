@@ -7,10 +7,13 @@
 #pragma once
 
 #include "common.hpp"
+#include "core.hpp"
+#include "data_types.hpp"
 #include "int_arith.hpp"
 #include "int_types.hpp"
 #include "introspect.hpp"
 #include "npint.hpp"
+#include "npint_ops.hpp"
 #include "processor_traits.hpp"
 #include "read_integers.hpp"
 #include "span.hpp"

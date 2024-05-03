@@ -8,6 +8,7 @@
 
 #include "common.hpp"
 #include "context.hpp"
+#include "data_types.hpp"
 #include "errors.hpp"
 #include "introspect.hpp"
 #include "processor_traits.hpp"

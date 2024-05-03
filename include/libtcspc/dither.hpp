@@ -7,7 +7,7 @@
 #pragma once
 
 #include "arg_wrappers.hpp"
-#include "common.hpp"
+#include "data_types.hpp"
 
 #include <cassert>
 #include <cmath>

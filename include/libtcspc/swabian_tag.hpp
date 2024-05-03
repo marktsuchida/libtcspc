@@ -7,6 +7,8 @@
 #pragma once
 
 #include "common.hpp"
+#include "core.hpp"
+#include "data_types.hpp"
 #include "int_arith.hpp"
 #include "int_types.hpp"
 #include "introspect.hpp"

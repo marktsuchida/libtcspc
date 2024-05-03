@@ -6,8 +6,8 @@
 
 #include "libtcspc/picoquant_t2.hpp"
 
-#include "libtcspc/common.hpp"
 #include "libtcspc/context.hpp"
+#include "libtcspc/core.hpp"
 #include "libtcspc/int_types.hpp"
 #include "libtcspc/npint.hpp"
 #include "libtcspc/processor_traits.hpp"

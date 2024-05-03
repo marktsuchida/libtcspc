@@ -8,6 +8,7 @@
 
 #include "arg_wrappers.hpp"
 #include "common.hpp"
+#include "data_types.hpp"
 #include "errors.hpp"
 #include "int_arith.hpp"
 #include "introspect.hpp"

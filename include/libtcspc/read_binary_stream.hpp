@@ -9,6 +9,7 @@
 #include "arg_wrappers.hpp"
 #include "bucket.hpp"
 #include "common.hpp"
+#include "core.hpp"
 #include "errors.hpp"
 #include "int_types.hpp"
 #include "introspect.hpp"

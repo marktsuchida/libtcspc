@@ -7,8 +7,8 @@
 #include "libtcspc/count.hpp"
 
 #include "libtcspc/arg_wrappers.hpp"
-#include "libtcspc/common.hpp"
 #include "libtcspc/context.hpp"
+#include "libtcspc/core.hpp"
 #include "libtcspc/int_types.hpp"
 #include "libtcspc/processor_traits.hpp"
 #include "libtcspc/test_utils.hpp"

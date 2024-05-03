@@ -6,8 +6,9 @@
 
 #include "libtcspc/bh_spc.hpp"
 
-#include "libtcspc/common.hpp"
 #include "libtcspc/context.hpp"
+#include "libtcspc/core.hpp"
+#include "libtcspc/data_types.hpp"
 #include "libtcspc/int_types.hpp"
 #include "libtcspc/npint.hpp"
 #include "libtcspc/processor_traits.hpp"

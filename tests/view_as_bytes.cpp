@@ -7,8 +7,8 @@
 #include "libtcspc/view_as_bytes.hpp"
 
 #include "libtcspc/bucket.hpp"
-#include "libtcspc/common.hpp"
 #include "libtcspc/context.hpp"
+#include "libtcspc/core.hpp"
 #include "libtcspc/processor_traits.hpp"
 #include "libtcspc/span.hpp"
 #include "libtcspc/test_utils.hpp"
