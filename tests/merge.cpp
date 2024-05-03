@@ -303,7 +303,7 @@ TEST_CASE("merge N streams") {
             arg::max_buffered<std::size_t>{1024},
             capture_output<all_events>(
                 ctx->tracker<capture_output_access>("out")));
-        static_assert(std::tuple_size_v<decltype(tup)> == 0);
+        STATIC_CHECK(std::tuple_size_v<decltype(tup)> == 0);
         // NOLINTEND(clang-analyzer-deadcode.DeadStores)
     }
 
@@ -313,7 +313,7 @@ TEST_CASE("merge N streams") {
             arg::max_buffered<std::size_t>{1024},
             capture_output<all_events>(
                 ctx->tracker<capture_output_access>("out")));
-        static_assert(
+        STATIC_CHECK(
             std::is_same_v<decltype(m0),
                            decltype(capture_output<all_events>(
                                ctx->tracker<capture_output_access>("out")))>);

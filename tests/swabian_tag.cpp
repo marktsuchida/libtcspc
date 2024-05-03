@@ -29,9 +29,11 @@
 
 namespace tcspc {
 
-static_assert(std::is_pod_v<swabian_tag_event>);
+TEST_CASE("swabian tag event basic properties") {
+    STATIC_CHECK(std::is_pod_v<swabian_tag_event>);
 
-static_assert(sizeof(swabian_tag_event) == 16);
+    STATIC_CHECK(sizeof(swabian_tag_event) == 16);
+}
 
 TEST_CASE("swabian tag equality and inequality") {
     auto const ptrn =

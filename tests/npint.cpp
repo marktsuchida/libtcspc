@@ -14,12 +14,14 @@
 
 namespace tcspc {
 
-static_assert(std::is_trivial_v<u8np>);
+TEST_CASE("npint static properties") {
+    STATIC_CHECK(std::is_trivial_v<u8np>);
 
-static_assert(sizeof(u8np) == sizeof(std::uint8_t));
+    STATIC_CHECK(sizeof(u8np) == sizeof(std::uint8_t));
 
-static_assert(std::numeric_limits<i8np>::min() == i8np(-128));
-static_assert(std::numeric_limits<i8np>::digits == 7);
+    STATIC_CHECK(std::numeric_limits<i8np>::min() == i8np(-128));
+    STATIC_CHECK(std::numeric_limits<i8np>::digits == 7);
+}
 
 TEST_CASE("integer construct and convert") {
     static constexpr u8np ue{};

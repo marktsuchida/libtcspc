@@ -26,13 +26,15 @@
 
 namespace tcspc {
 
-static_assert(std::is_pod_v<bh_spc_event>);
-static_assert(std::is_pod_v<bh_spc600_256ch_event>);
-static_assert(std::is_pod_v<bh_spc600_4096ch_event>);
+TEST_CASE("bh spc event basic properties") {
+    STATIC_CHECK(std::is_pod_v<bh_spc_event>);
+    STATIC_CHECK(std::is_pod_v<bh_spc600_256ch_event>);
+    STATIC_CHECK(std::is_pod_v<bh_spc600_4096ch_event>);
 
-static_assert(sizeof(bh_spc_event) == 4);
-static_assert(sizeof(bh_spc600_256ch_event) == 4);
-static_assert(sizeof(bh_spc600_4096ch_event) == 6);
+    STATIC_CHECK(sizeof(bh_spc_event) == 4);
+    STATIC_CHECK(sizeof(bh_spc600_256ch_event) == 4);
+    STATIC_CHECK(sizeof(bh_spc600_4096ch_event) == 6);
+}
 
 TEST_CASE("bh spc equality and inequality") {
     CHECK(from_reversed_bytes<bh_spc_event>({1, 2, 3, 4}) ==

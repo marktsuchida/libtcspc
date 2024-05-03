@@ -26,13 +26,15 @@
 
 namespace tcspc {
 
-static_assert(std::is_pod_v<pqt3_picoharp300_event>);
-static_assert(std::is_pod_v<pqt3_hydraharpv1_event>);
-static_assert(std::is_pod_v<pqt3_generic_event>);
+TEST_CASE("pqt3 event basic properties") {
+    STATIC_CHECK(std::is_pod_v<pqt3_picoharp300_event>);
+    STATIC_CHECK(std::is_pod_v<pqt3_hydraharpv1_event>);
+    STATIC_CHECK(std::is_pod_v<pqt3_generic_event>);
 
-static_assert(sizeof(pqt3_picoharp300_event) == 4);
-static_assert(sizeof(pqt3_hydraharpv1_event) == 4);
-static_assert(sizeof(pqt3_generic_event) == 4);
+    STATIC_CHECK(sizeof(pqt3_picoharp300_event) == 4);
+    STATIC_CHECK(sizeof(pqt3_hydraharpv1_event) == 4);
+    STATIC_CHECK(sizeof(pqt3_generic_event) == 4);
+}
 
 TEMPLATE_TEST_CASE("pqt3 equality and inequality", "", pqt3_picoharp300_event,
                    pqt3_hydraharpv1_event, pqt3_generic_event) {

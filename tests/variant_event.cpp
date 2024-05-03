@@ -18,8 +18,8 @@
 namespace tcspc {
 
 TEST_CASE("variant_event base class") {
-    static_assert(std::is_base_of_v<std::variant<int, long>,
-                                    variant_event<type_list<int, long>>>);
+    STATIC_CHECK(std::is_base_of_v<std::variant<int, long>,
+                                   variant_event<type_list<int, long>>>);
 }
 
 TEST_CASE("variant_event stream insertion") {
@@ -44,13 +44,12 @@ TEST_CASE("variant_event equality") {
 }
 
 TEST_CASE("variant_or_single_event") {
-    static_assert(
-        std::is_same_v<variant_or_single_event<type_list<int>>, int>);
-    static_assert(
+    STATIC_CHECK(std::is_same_v<variant_or_single_event<type_list<int>>, int>);
+    STATIC_CHECK(
         std::is_same_v<variant_or_single_event<type_list<int, int>>, int>);
-    static_assert(std::is_same_v<variant_or_single_event<type_list<int, long>>,
-                                 variant_event<type_list<int, long>>>);
-    static_assert(
+    STATIC_CHECK(std::is_same_v<variant_or_single_event<type_list<int, long>>,
+                                variant_event<type_list<int, long>>>);
+    STATIC_CHECK(
         std::is_same_v<variant_or_single_event<type_list<int, long, int>>,
                        variant_event<type_list<int, long>>>);
 
