@@ -62,17 +62,6 @@ class source_halted final : public std::exception {
 };
 
 /**
- * \brief Error thrown upon an arithmetic overflow or underflow.
- *
- * \ingroup exceptions
- */
-class arithmetic_overflow_error : public std::runtime_error {
-  public:
-    using std::runtime_error::runtime_error;
-    arithmetic_overflow_error() : std::runtime_error("arithmetic overflow") {}
-};
-
-/**
  * \brief Error thrown when buffer capacity has been exhausted.
  *
  * \ingroup errors

@@ -9,6 +9,7 @@
 #include "errors.hpp"
 
 #include <limits>
+#include <stdexcept>
 #include <type_traits>
 
 namespace tcspc::internal {
@@ -84,7 +85,7 @@ template <typename R, typename T,
           typename = std::enable_if_t<std::is_integral_v<T>>>
 constexpr auto convert_with_check(T v) -> R {
     if (not in_range<R>(v))
-        throw arithmetic_overflow_error();
+        throw std::range_error("value out of range of integer type");
     return static_cast<R>(v);
 }
 
@@ -102,7 +103,7 @@ auto add_with_check(T a, T b) -> T {
     if (safe_to_add)
         return a + b;
 #endif
-    throw arithmetic_overflow_error();
+    throw std::overflow_error("integer overflow on addition");
 }
 
 template <typename T, typename = std::enable_if_t<std::is_integral_v<T>>>
@@ -119,7 +120,7 @@ auto subtract_with_check(T a, T b) -> T {
     if (safe_to_subtract)
         return a - b;
 #endif
-    throw arithmetic_overflow_error();
+    throw std::overflow_error("integer overflow on subtraction");
 }
 
 // Cf. C++26 std::add_sat()
