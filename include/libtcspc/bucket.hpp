@@ -699,8 +699,7 @@ template <typename Event, typename Downstream> class extract_bucket {
 
     void handle(Event const &event) { downstream.handle(event.bucket); }
 
-    // NOLINTNEXTLINE(cppcoreguidelines-rvalue-reference-param-not-moved)
-    void handle(Event &&event) { downstream.handle(std::move(event.bucket)); }
+    void handle(Event &&event) { downstream.handle(std::move(event).bucket); }
 
     void flush() { downstream.flush(); }
 };
