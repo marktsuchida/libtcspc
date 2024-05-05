@@ -513,8 +513,8 @@ TEMPLATE_TEST_CASE(
     CHECK(mhista.apply_increment_batch(std::array<u8, 3>{0, 1, 3}, journal));
     CHECK(mhista.apply_increment_batch({}, journal));
     CHECK(mhista.apply_increment_batch(std::array<u8, 1>{1}, journal));
-    CHECK(mhista.is_cycle_complete());
-    mhista.new_cycle(journal);
+    CHECK(mhista.is_scan_complete());
+    mhista.new_scan(journal);
     CHECK(mhista.apply_increment_batch(std::array<u8, 1>{2}, journal));
     CHECK(mhista.apply_increment_batch(std::array<u8, 1>{1}, journal));
     CHECK(mhista.apply_increment_batch(std::array<u8, 1>{3}, journal));
@@ -523,7 +523,7 @@ TEMPLATE_TEST_CASE(
 }
 
 TEMPLATE_TEST_CASE(
-    "multi_histogram_accumulation: skipping preserves previous cycle",
+    "multi_histogram_accumulation: skipping preserves previous scan",
     "[multi_histogram_accumulation]", saturate_on_internal_overflow,
     stop_on_internal_overflow) {
     null_journal<u8> journal;
@@ -534,14 +534,14 @@ TEMPLATE_TEST_CASE(
     CHECK(mhista.apply_increment_batch(std::array<u8, 3>{0, 1, 3}, journal));
     CHECK(mhista.apply_increment_batch({}, journal));
     CHECK(mhista.apply_increment_batch(std::array<u8, 1>{1}, journal));
-    mhista.new_cycle(journal);
+    mhista.new_scan(journal);
     CHECK(mhista.apply_increment_batch(std::array<u8, 1>{2}, journal));
-    mhista.skip_remainder_of_current_cycle();
-    CHECK(mhista.is_cycle_complete());
+    mhista.skip_remainder_of_current_scan();
+    CHECK(mhista.is_scan_complete());
     CHECK(data == std::vector<u8>{1, 1, 1, 1, 0, 0, 0, 0, 0, 1, 0, 0});
 }
 
-TEST_CASE("multi_histogram_accumulation: rolling back restores previous cycle",
+TEST_CASE("multi_histogram_accumulation: rolling back restores previous scan",
           "[multi_histogram_accumulation]") {
     bin_increment_batch_journal<u8> journal;
     std::vector<u8> data(12, u8(123));
@@ -551,9 +551,9 @@ TEST_CASE("multi_histogram_accumulation: rolling back restores previous cycle",
     CHECK(mhista.apply_increment_batch(std::array<u8, 3>{0, 1, 3}, journal));
     CHECK(mhista.apply_increment_batch({}, journal));
     CHECK(mhista.apply_increment_batch(std::array<u8, 1>{1}, journal));
-    mhista.new_cycle(journal);
+    mhista.new_scan(journal);
     CHECK(mhista.apply_increment_batch(std::array<u8, 1>{2}, journal));
-    mhista.roll_back_current_cycle(journal);
+    mhista.roll_back_current_scan(journal);
     CHECK(mhista.is_consistent());
     CHECK(data == std::vector<u8>{1, 1, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0});
 }
@@ -568,11 +568,11 @@ TEST_CASE("multi_histogram_accumulation: replay reproduces rolled-back delta",
     CHECK(mhista.apply_increment_batch(std::array<u8, 3>{0, 1, 3}, journal));
     CHECK(mhista.apply_increment_batch({}, journal));
     CHECK(mhista.apply_increment_batch(std::array<u8, 1>{1}, journal));
-    mhista.new_cycle(journal);
+    mhista.new_scan(journal);
     CHECK(mhista.apply_increment_batch(std::array<u8, 1>{2}, journal));
     mhista.reset(true);
     mhista.replay(journal);
-    mhista.skip_remainder_of_current_cycle();
+    mhista.skip_remainder_of_current_scan();
     CHECK(data == std::vector<u8>{0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0});
 }
 

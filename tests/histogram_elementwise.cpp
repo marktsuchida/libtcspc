@@ -420,23 +420,23 @@ TEMPLATE_TEST_CASE(
     std::vector<u8> elem_hist;
     std::vector<u8> hist_arr;
 
-    SECTION("end before cycle 0") {
+    SECTION("end before scan 0") {
         in.flush();
         REQUIRE(out.check_flushed());
     }
 
-    SECTION("feed cycle 0, element 0") {
+    SECTION("feed scan 0, element 0") {
         in.handle(bin_increment_batch_event<dt88>{{0}});
         elem_hist = {1, 0, 0};
         REQUIRE(out.check(emitted_as::always_lvalue,
                           histogram_event<dt88>{tmp_bucket(elem_hist)}));
 
-        SECTION("end mid cycle 0") {
+        SECTION("end mid scan 0") {
             in.flush();
             REQUIRE(out.check_flushed());
         }
 
-        SECTION("feed cycle 0, element 1") {
+        SECTION("feed scan 0, element 1") {
             in.handle(bin_increment_batch_event<dt88>{{1}});
             elem_hist = {0, 1, 0};
             REQUIRE(out.check(emitted_as::always_lvalue,
@@ -446,19 +446,19 @@ TEMPLATE_TEST_CASE(
                 out.check(emitted_as::always_lvalue,
                           histogram_array_event<dt88>{tmp_bucket(hist_arr)}));
 
-            SECTION("end after cycle 0") {
+            SECTION("end after scan 0") {
                 in.flush();
                 REQUIRE(out.check_flushed());
             }
 
-            SECTION("feed cycle 1, element 0") {
+            SECTION("feed scan 1, element 0") {
                 in.handle(bin_increment_batch_event<dt88>{{2}});
                 elem_hist = {1, 0, 1};
                 REQUIRE(
                     out.check(emitted_as::always_lvalue,
                               histogram_event<dt88>{tmp_bucket(elem_hist)}));
 
-                SECTION("end mid cycle 1") {
+                SECTION("end mid scan 1") {
                     in.flush();
                     REQUIRE(out.check_flushed());
                 }
@@ -486,7 +486,7 @@ TEMPLATE_TEST_CASE(
     std::vector<u8> elem_hist;
     std::vector<u8> hist_arr;
 
-    SECTION("end before cycle 0") {
+    SECTION("end before scan 0") {
         in.handle(reset_event{});
         hist_arr = {0, 0, 0, 0, 0, 0};
         REQUIRE(out.check(
@@ -496,13 +496,13 @@ TEMPLATE_TEST_CASE(
         REQUIRE(out.check_flushed());
     }
 
-    SECTION("feed cycle 0, element 0") {
+    SECTION("feed scan 0, element 0") {
         in.handle(bin_increment_batch_event<dt88>{{0}});
         elem_hist = {1, 0, 0};
         REQUIRE(out.check(emitted_as::always_lvalue,
                           histogram_event<dt88>{tmp_bucket(elem_hist)}));
 
-        SECTION("end mid cycle 0") {
+        SECTION("end mid scan 0") {
             in.handle(reset_event{});
             hist_arr = {0, 0, 0, 0, 0, 0};
             REQUIRE(out.check(
@@ -512,7 +512,7 @@ TEMPLATE_TEST_CASE(
             REQUIRE(out.check_flushed());
         }
 
-        SECTION("feed cycle 0, element 1") {
+        SECTION("feed scan 0, element 1") {
             in.handle(bin_increment_batch_event<dt88>{{1}});
             elem_hist = {0, 1, 0};
             REQUIRE(out.check(emitted_as::always_lvalue,
@@ -522,7 +522,7 @@ TEMPLATE_TEST_CASE(
                 out.check(emitted_as::always_lvalue,
                           histogram_array_event<dt88>{tmp_bucket(hist_arr)}));
 
-            SECTION("end after cycle 0") {
+            SECTION("end after scan 0") {
                 in.handle(reset_event{});
                 hist_arr = {1, 0, 0, 0, 1, 0};
                 REQUIRE(out.check(emitted_as::always_rvalue,
@@ -532,14 +532,14 @@ TEMPLATE_TEST_CASE(
                 REQUIRE(out.check_flushed());
             }
 
-            SECTION("feed cycle 1, element 0") {
+            SECTION("feed scan 1, element 0") {
                 in.handle(bin_increment_batch_event<dt88>{{2}});
                 elem_hist = {1, 0, 1};
                 REQUIRE(
                     out.check(emitted_as::always_lvalue,
                               histogram_event<dt88>{tmp_bucket(elem_hist)}));
 
-                SECTION("end mid cycle 1") {
+                SECTION("end mid scan 1") {
                     in.handle(reset_event{});
                     hist_arr = {1, 0, 0, 0, 1, 0}; // Rolled back
                     REQUIRE(out.check(emitted_as::always_rvalue,
@@ -572,7 +572,7 @@ TEMPLATE_TEST_CASE(
     std::vector<u8> elem_hist;
     std::vector<u8> hist_arr;
 
-    SECTION("reset before cycle 0") {
+    SECTION("reset before scan 0") {
         in.handle(reset_event{});
         hist_arr = {0, 0, 0, 0, 0, 0};
         REQUIRE(out.check(
@@ -587,13 +587,13 @@ TEMPLATE_TEST_CASE(
         REQUIRE(out.check_flushed());
     }
 
-    SECTION("feed cycle 0, element 0") {
+    SECTION("feed scan 0, element 0") {
         in.handle(bin_increment_batch_event<dt88>{{0}});
         elem_hist = {1, 0, 0};
         REQUIRE(out.check(emitted_as::always_lvalue,
                           histogram_event<dt88>{tmp_bucket(elem_hist)}));
 
-        SECTION("reset mid cycle 0") {
+        SECTION("reset mid scan 0") {
             in.handle(reset_event{});
             hist_arr = {0, 0, 0, 0, 0, 0};
             REQUIRE(out.check(
@@ -608,7 +608,7 @@ TEMPLATE_TEST_CASE(
             REQUIRE(out.check_flushed());
         }
 
-        SECTION("feed cycle 0, element 1") {
+        SECTION("feed scan 0, element 1") {
             in.handle(bin_increment_batch_event<dt88>{{1}});
             elem_hist = {0, 1, 0};
             REQUIRE(out.check(emitted_as::always_lvalue,
@@ -618,7 +618,7 @@ TEMPLATE_TEST_CASE(
                 out.check(emitted_as::always_lvalue,
                           histogram_array_event<dt88>{tmp_bucket(hist_arr)}));
 
-            SECTION("reset after cycle 0") {
+            SECTION("reset after scan 0") {
                 in.handle(reset_event{});
                 hist_arr = {1, 0, 0, 0, 1, 0};
                 REQUIRE(out.check(emitted_as::always_rvalue,
@@ -633,14 +633,14 @@ TEMPLATE_TEST_CASE(
                 REQUIRE(out.check_flushed());
             }
 
-            SECTION("feed cycle 1, element 0") {
+            SECTION("feed scan 1, element 0") {
                 in.handle(bin_increment_batch_event<dt88>{{2}});
                 elem_hist = {1, 0, 1};
                 REQUIRE(
                     out.check(emitted_as::always_lvalue,
                               histogram_event<dt88>{tmp_bucket(elem_hist)}));
 
-                SECTION("reset mid cycle 1") {
+                SECTION("reset mid scan 1") {
                     in.handle(reset_event{});
                     hist_arr = {1, 0, 0, 0, 1, 0}; // Rolled back
                     REQUIRE(out.check(emitted_as::always_rvalue,
@@ -675,7 +675,7 @@ TEST_CASE("histogram_elementwise_accumulate with saturate-on-overflow",
 
     std::vector<u8> elem_hist;
 
-    SECTION("overflow during cycle 0, element 0") {
+    SECTION("overflow during scan 0, element 0") {
         in.handle(bin_increment_batch_event<dt88>{{0, 0, 0, 0, 0, 0}});
         REQUIRE(out.check(warning_event{"histogram array saturated"}));
         elem_hist = {4, 0, 0};
@@ -721,27 +721,27 @@ TEST_CASE("histogram_elementwise_accumulate with reset-on-overflow",
     std::vector<u8> elem_hist;
     std::vector<u8> hist_arr;
 
-    SECTION("single-batch overflow during cycle 0, element 0") {
+    SECTION("single-batch overflow during scan 0, element 0") {
         REQUIRE_THROWS_AS(
             in.handle(bin_increment_batch_event<dt88>{{0, 0, 0, 0, 0, 0}}),
             histogram_overflow_error);
         REQUIRE(out.check_not_flushed());
     }
 
-    SECTION("no overflow during cycle 0, element 0") {
+    SECTION("no overflow during scan 0, element 0") {
         in.handle(bin_increment_batch_event<dt88>{{0, 0}});
         elem_hist = {2, 0, 0};
         REQUIRE(out.check(emitted_as::always_lvalue,
                           histogram_event<dt88>{tmp_bucket(elem_hist)}));
 
-        SECTION("single-batch overflow during cycle 0, element 1") {
+        SECTION("single-batch overflow during scan 0, element 1") {
             REQUIRE_THROWS_AS(
                 in.handle(bin_increment_batch_event<dt88>{{1, 1, 1, 1, 1, 1}}),
                 histogram_overflow_error);
             REQUIRE(out.check_not_flushed());
         }
 
-        SECTION("no overflow during cycle 0, element 1") {
+        SECTION("no overflow during scan 0, element 1") {
             in.handle(bin_increment_batch_event<dt88>{{1, 1}});
             elem_hist = {0, 2, 0};
             REQUIRE(out.check(emitted_as::always_lvalue,
@@ -751,7 +751,7 @@ TEST_CASE("histogram_elementwise_accumulate with reset-on-overflow",
                 out.check(emitted_as::always_lvalue,
                           histogram_array_event<dt88>{tmp_bucket(hist_arr)}));
 
-            SECTION("overflow during cycle 1, element 0") {
+            SECTION("overflow during scan 1, element 0") {
                 in.handle(bin_increment_batch_event<dt88>{{0, 0, 0}});
                 hist_arr = {2, 0, 0, 0, 2, 0};
                 REQUIRE(out.check(emitted_as::always_rvalue,
@@ -769,7 +769,7 @@ TEST_CASE("histogram_elementwise_accumulate with reset-on-overflow",
                                       tmp_bucket(hist_arr)}));
             }
 
-            SECTION("single-batch overflow during cycle 1, element 0") {
+            SECTION("single-batch overflow during scan 1, element 0") {
                 REQUIRE_THROWS_AS(in.handle(bin_increment_batch_event<dt88>{
                                       {0, 0, 0, 0, 0, 0}}),
                                   histogram_overflow_error);
@@ -780,14 +780,14 @@ TEST_CASE("histogram_elementwise_accumulate with reset-on-overflow",
                 REQUIRE(out.check_not_flushed());
             }
 
-            SECTION("no overflow during cycle 1, element 0") {
+            SECTION("no overflow during scan 1, element 0") {
                 in.handle(bin_increment_batch_event<dt88>{{0}});
                 elem_hist = {3, 0, 0};
                 REQUIRE(
                     out.check(emitted_as::always_lvalue,
                               histogram_event<dt88>{tmp_bucket(elem_hist)}));
 
-                SECTION("overflow during cycle 1, element 1") {
+                SECTION("overflow during scan 1, element 1") {
                     in.handle(bin_increment_batch_event<dt88>{{1, 1, 1}});
                     hist_arr = {2, 0, 0, 0, 2, 0}; // Rolled back
                     REQUIRE(out.check(emitted_as::always_rvalue,
@@ -809,7 +809,7 @@ TEST_CASE("histogram_elementwise_accumulate with reset-on-overflow",
                                           tmp_bucket(hist_arr)}));
                 }
 
-                SECTION("single-batch overflow during cycle 1, element 1") {
+                SECTION("single-batch overflow during scan 1, element 1") {
                     REQUIRE_THROWS_AS(
                         in.handle(bin_increment_batch_event<dt88>{
                             {1, 1, 1, 1, 1, 1}}),
@@ -842,7 +842,7 @@ TEST_CASE("histogram_elementwise_accumulate with stop-on-overflow",
     std::vector<u8> elem_hist;
     std::vector<u8> hist_arr;
 
-    SECTION("overflow during cycle 0, element 0") {
+    SECTION("overflow during scan 0, element 0") {
         REQUIRE_THROWS_AS(
             in.handle(bin_increment_batch_event<dt88>{{0, 0, 0, 0, 0}}),
             end_of_processing);
@@ -853,13 +853,13 @@ TEST_CASE("histogram_elementwise_accumulate with stop-on-overflow",
         REQUIRE(out.check_flushed());
     }
 
-    SECTION("no overflow during cycle 0, element 0") {
+    SECTION("no overflow during scan 0, element 0") {
         in.handle(bin_increment_batch_event<dt88>{{0, 0}});
         elem_hist = {2, 0, 0};
         REQUIRE(out.check(emitted_as::always_lvalue,
                           histogram_event<dt88>{tmp_bucket(elem_hist)}));
 
-        SECTION("overflow during cycle 0, element 1") {
+        SECTION("overflow during scan 0, element 1") {
             REQUIRE_THROWS_AS(
                 in.handle(bin_increment_batch_event<dt88>{{1, 1, 1, 1, 1, 1}}),
                 end_of_processing);
@@ -870,7 +870,7 @@ TEST_CASE("histogram_elementwise_accumulate with stop-on-overflow",
             REQUIRE(out.check_flushed());
         }
 
-        SECTION("no overflow during cycle 0, element 1") {
+        SECTION("no overflow during scan 0, element 1") {
             in.handle(bin_increment_batch_event<dt88>{{1, 1}});
             elem_hist = {0, 2, 0};
             REQUIRE(out.check(emitted_as::always_lvalue,
@@ -880,7 +880,7 @@ TEST_CASE("histogram_elementwise_accumulate with stop-on-overflow",
                 out.check(emitted_as::always_lvalue,
                           histogram_array_event<dt88>{tmp_bucket(hist_arr)}));
 
-            SECTION("overflow during cycle 1, element 0") {
+            SECTION("overflow during scan 1, element 0") {
                 REQUIRE_THROWS_AS(
                     in.handle(bin_increment_batch_event<dt88>{{0, 0, 0}}),
                     end_of_processing);
@@ -891,14 +891,14 @@ TEST_CASE("histogram_elementwise_accumulate with stop-on-overflow",
                 REQUIRE(out.check_flushed());
             }
 
-            SECTION("no overflow during cycle 1, element 0") {
+            SECTION("no overflow during scan 1, element 0") {
                 in.handle(bin_increment_batch_event<dt88>{{0}});
                 elem_hist = {3, 0, 0};
                 REQUIRE(
                     out.check(emitted_as::always_lvalue,
                               histogram_event<dt88>{tmp_bucket(elem_hist)}));
 
-                SECTION("overflow during cycle 1, element 1") {
+                SECTION("overflow during scan 1, element 1") {
                     REQUIRE_THROWS_AS(
                         in.handle(bin_increment_batch_event<dt88>{{1, 1, 1}}),
                         end_of_processing);
@@ -931,27 +931,27 @@ TEST_CASE(
     std::vector<u8> elem_hist;
     std::vector<u8> hist_arr;
 
-    SECTION("overflow during cycle 0, element 0") {
+    SECTION("overflow during scan 0, element 0") {
         REQUIRE_THROWS_AS(
             in.handle(bin_increment_batch_event<dt88>{{0, 0, 0, 0, 0}}),
             histogram_overflow_error);
         REQUIRE(out.check_not_flushed());
     }
 
-    SECTION("no overflow during cycle 0, element 0") {
+    SECTION("no overflow during scan 0, element 0") {
         in.handle(bin_increment_batch_event<dt88>{{0, 0}});
         elem_hist = {2, 0, 0};
         REQUIRE(out.check(emitted_as::always_lvalue,
                           histogram_event<dt88>{tmp_bucket(elem_hist)}));
 
-        SECTION("overflow during cycle 0, element 1") {
+        SECTION("overflow during scan 0, element 1") {
             REQUIRE_THROWS_AS(
                 in.handle(bin_increment_batch_event<dt88>{{1, 1, 1, 1, 1, 1}}),
                 histogram_overflow_error);
             REQUIRE(out.check_not_flushed());
         }
 
-        SECTION("no overflow during cycle 0, element 1") {
+        SECTION("no overflow during scan 0, element 1") {
             in.handle(bin_increment_batch_event<dt88>{{1, 1}});
             elem_hist = {0, 2, 0};
             REQUIRE(out.check(emitted_as::always_lvalue,
@@ -961,21 +961,21 @@ TEST_CASE(
                 out.check(emitted_as::always_lvalue,
                           histogram_array_event<dt88>{tmp_bucket(hist_arr)}));
 
-            SECTION("overflow during cycle 1, element 0") {
+            SECTION("overflow during scan 1, element 0") {
                 REQUIRE_THROWS_AS(
                     in.handle(bin_increment_batch_event<dt88>{{0, 0, 0}}),
                     histogram_overflow_error);
                 REQUIRE(out.check_not_flushed());
             }
 
-            SECTION("no overflow during cycle 1, element 0") {
+            SECTION("no overflow during scan 1, element 0") {
                 in.handle(bin_increment_batch_event<dt88>{{0}});
                 elem_hist = {3, 0, 0};
                 REQUIRE(
                     out.check(emitted_as::always_lvalue,
                               histogram_event<dt88>{tmp_bucket(elem_hist)}));
 
-                SECTION("overflow during cycle 1, element 1") {
+                SECTION("overflow during scan 1, element 1") {
                     REQUIRE_THROWS_AS(
                         in.handle(bin_increment_batch_event<dt88>{{1, 1, 1}}),
                         histogram_overflow_error);
@@ -1006,27 +1006,27 @@ TEST_CASE(
     std::vector<u8> elem_hist;
     std::vector<u8> hist_arr;
 
-    SECTION("overflow during cycle 0, element 0") {
+    SECTION("overflow during scan 0, element 0") {
         REQUIRE_THROWS_AS(
             in.handle(bin_increment_batch_event<dt88>{{0, 0, 0, 0, 0}}),
             histogram_overflow_error);
         REQUIRE(out.check_not_flushed());
     }
 
-    SECTION("no overflow during cycle 0, element 0") {
+    SECTION("no overflow during scan 0, element 0") {
         in.handle(bin_increment_batch_event<dt88>{{0, 0}});
         elem_hist = {2, 0, 0};
         REQUIRE(out.check(emitted_as::always_lvalue,
                           histogram_event<dt88>{tmp_bucket(elem_hist)}));
 
-        SECTION("overflow during cycle 0, element 1") {
+        SECTION("overflow during scan 0, element 1") {
             REQUIRE_THROWS_AS(
                 in.handle(bin_increment_batch_event<dt88>{{1, 1, 1, 1, 1, 1}}),
                 histogram_overflow_error);
             REQUIRE(out.check_not_flushed());
         }
 
-        SECTION("no overflow during cycle 0, element 1") {
+        SECTION("no overflow during scan 0, element 1") {
             in.handle(bin_increment_batch_event<dt88>{{1, 1}});
             elem_hist = {0, 2, 0};
             REQUIRE(out.check(emitted_as::always_lvalue,
@@ -1036,21 +1036,21 @@ TEST_CASE(
                 out.check(emitted_as::always_lvalue,
                           histogram_array_event<dt88>{tmp_bucket(hist_arr)}));
 
-            SECTION("overflow during cycle 1, element 0") {
+            SECTION("overflow during scan 1, element 0") {
                 REQUIRE_THROWS_AS(
                     in.handle(bin_increment_batch_event<dt88>{{0, 0, 0}}),
                     histogram_overflow_error);
                 REQUIRE(out.check_not_flushed());
             }
 
-            SECTION("no overflow during cycle 1, element 0") {
+            SECTION("no overflow during scan 1, element 0") {
                 in.handle(bin_increment_batch_event<dt88>{{0}});
                 elem_hist = {3, 0, 0};
                 REQUIRE(
                     out.check(emitted_as::always_lvalue,
                               histogram_event<dt88>{tmp_bucket(elem_hist)}));
 
-                SECTION("overflow during cycle 1, element 1") {
+                SECTION("overflow during scan 1, element 1") {
                     REQUIRE_THROWS_AS(
                         in.handle(bin_increment_batch_event<dt88>{{1, 1, 1}}),
                         histogram_overflow_error);

@@ -154,15 +154,16 @@ class histogram_elementwise {
  * The processor builds an array of histograms sequentially, computing each
  * element histogram from an incoming `tcspc::bin_increment_batch_event`. When
  * it has finished filling the histogram array, it starts over with a new
- * array.
+ * array. Each cycle of filling the histogram array is termed a _scan_. Each
+ * scan consists of \p num_elements `tcspc::bin_increment_batch_event`s.
  *
  * The histogram array is stored in a `tcspc::bucket<DataTypes::bin_type>` of
- * size `num_elements * num_bins`. Each cycle (of `num_elements` bin increment
- * batches) uses (sequentially) a new bucket from the \p buffer_provider.
+ * size `num_elements * num_bins`. Each scan uses, sequentially, a new bucket
+ * from the \p buffer_provider.
  *
  * On every bin increment batch received a `tcspc::histogram_event` is
  * emitted containing the corresponding subview of the histogram array bucket
- * (whose storage is observable but not extractable). At the end of each cycle,
+ * (whose storage is observable but not extractable). At the end of each scan,
  * a `tcspc::histogram_array_event` is emitted, carrying the histogram array
  * bucket (storage can be extracted).
  *
@@ -201,7 +202,7 @@ class histogram_elementwise {
  *   `tcspc::histogram_array_event<DataTypes>`; if a bin overflowed, behavior
  *   (taken before emitting the above events) depends on `OverflowPolicy`:
  *   - If `tcspc::saturate_on_overflow_t`, ignore the increment, emitting
- *     `tcspc::warning_event` only on the first overflow of the cycle
+ *     `tcspc::warning_event` only on the first overflow of the scan
  *   - If `tcspc::error_on_overflow_t`, throw `tcspc::histogram_overflow_error`
  * - All other types: pass through with no action
  * - Flush: pass through with no action
@@ -249,7 +250,7 @@ class histogram_elementwise_accumulate {
                         concluding_histogram_array_event<DataTypes>>);
 
     // Concluding event is not supported for saturate-on-overflow (no way to
-    // roll back current cycle). It is required for reset/stop-on-overflow
+    // roll back current scan). It is required for reset/stop-on-overflow
     // because it doesn't make much sense to use those policies without a
     // concluding event and I don't want to write unit tests for combinations
     // that are unlikely to be used.
@@ -310,11 +311,11 @@ class histogram_elementwise_accumulate {
             downstream.handle(warning_event{"histogram array saturated"});
         } else if constexpr (std::is_same_v<overflow_policy,
                                             reset_on_overflow_t>) {
-            if (mhista.cycle_index() == 0) {
+            if (mhista.scan_index() == 0) {
                 overflow_error(
                     "histogram array bin overflowed on a single batch");
             }
-            mhista.roll_back_current_cycle(journal);
+            mhista.roll_back_current_scan(journal);
             if constexpr (need_concluding)
                 emit_concluding();
             hist_bucket = bsource->bucket_of_size(mhista.num_elements() *
@@ -325,7 +326,7 @@ class histogram_elementwise_accumulate {
         } else if constexpr (std::is_same_v<overflow_policy,
                                             stop_on_overflow_t>) {
             if constexpr (need_concluding) {
-                mhista.roll_back_current_cycle(journal);
+                mhista.roll_back_current_scan(journal);
                 emit_concluding();
             }
             stop();
@@ -369,7 +370,7 @@ class histogram_elementwise_accumulate {
         static_assert(std::is_same_v<typename DT::bin_index_type,
                                      typename DataTypes::bin_index_type>);
         lazy_start();
-        assert(not mhista.is_cycle_complete());
+        assert(not mhista.is_scan_complete());
         auto element_index = mhista.next_element_index();
         if (not mhista.apply_increment_batch(event.bin_indices, journal)) {
             if constexpr (std::is_same_v<overflow_policy,
@@ -388,8 +389,8 @@ class histogram_elementwise_accumulate {
                 element_index * mhista.num_bins(), mhista.num_bins())};
         downstream.handle(elem_event);
 
-        if (mhista.is_cycle_complete()) {
-            mhista.new_cycle(journal);
+        if (mhista.is_scan_complete()) {
+            mhista.new_scan(journal);
             auto const array_event =
                 histogram_array_event<DataTypes>{hist_bucket.subbucket(0)};
             downstream.handle(array_event);
@@ -413,7 +414,7 @@ class histogram_elementwise_accumulate {
         if constexpr (std::is_convertible_v<remove_cvref_t<E>, ResetEvent>) {
             if constexpr (need_concluding) {
                 lazy_start();
-                mhista.roll_back_current_cycle(journal);
+                mhista.roll_back_current_scan(journal);
                 emit_concluding();
             }
             hist_bucket = {};
@@ -433,18 +434,18 @@ class histogram_elementwise_accumulate {
 } // namespace internal
 
 /**
- * \brief Create a processor that collects time-divided arrays of histograms
- * accumulated over multiple cycles.
+ * \brief Create a processor that collects time-divided arrays of histograms,
+ * accumulated over multiple scans.
  *
  * \ingroup processors-histogramming
  *
  * The processor builds an array of histograms sequentially, incrementing bins
  * in each element histogram based on incoming
  * `tcspc::bin_increment_batch_event`s. When it has finished updating all
- * elements of the histogram array, it returns to the beginning of the array
- * and continues to accumulate counts. A round of accumulation is ended when a
- * \p ResetEvent is received, upon which accumulation is restarted with an
- * empty histogram array.
+ * elements of the histogram array (a _scan_), it returns to the beginning of
+ * the array and continues to accumulate counts. A round of accumulation
+ * (consisting of 0 or more scans) is ended when a \p ResetEvent is received,
+ * upon which accumulation is restarted with an empty histogram array.
  *
  * The histogram array is stored in a `tcspc::bucket<DataTypes::bin_type>` of
  * size `num_elements * num_bins`. Each round of accumulation uses
@@ -452,13 +453,13 @@ class histogram_elementwise_accumulate {
  *
  * On every bin increment batch received a `tcspc::histogram_event` is
  * emitted containing the corresponding subview of the histogram array bucket
- * (whose storage is observable but not extractable). At the end of each cycle
+ * (whose storage is observable but not extractable). At the end of each scan
  * through the array, a `tcspc::histogram_array_event` is emitted, containing a
  * view of the whole histogram array bucket (again, with observable but
  * non-extractable storage).
  *
- * At the end of each round of accumulation (i.e., upon a reset), any
- * incomplete cycle through the array is rolled back and a
+ * At the end of each round of accumulation (i.e., upon a reset), increments
+ * from any incomplete scan are rolled back and a
  * `tcspc::concluding_histogram_array_event` is emitted, carrying the histogram
  * array bucket (storage can be extracted).
  *
@@ -505,7 +506,7 @@ class histogram_elementwise_accumulate {
  *     `tcspc::warning_event` only on the first overflow of the current round
  *     of accumulation
  *   - If `tcspc::reset_on_overflow`, behave as if a `ResetEvent` was received
- *     just prior to the current event; then replay any partial cycle that was
+ *     just prior to the current event; then replay any partial scan that was
  *     rolled back during the reset and reapply the current event (but throw
  *     `tcspc::histogram_overflow_error` if this causes an overflow by itself)
  *   - If `tcspc::stop_on_overflow`, behave as if a `ResetEvent` was received
@@ -515,7 +516,7 @@ class histogram_elementwise_accumulate {
  * - `ResetEvent`: unless the policy is `tcspc::saturate_on_overflow` or
  *   includes `tcspc::skip_concluding_event`, emit (rvalue)
  *   `tcspc::concluding_histogram_array_event<DataTypes>` with the current
- *   histogram array (after rolling back any partial cycle); then clear the
+ *   histogram array (after rolling back any partial scan); then clear the
  *   array and other state
  * - All other types: pass through with no action
  * - Flush: pass through with no action

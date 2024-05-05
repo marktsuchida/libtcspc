@@ -253,7 +253,7 @@ struct histogram_array_event {
  * This event is emitted by the `tcspc::histogram_elementwise_accumulate()`
  * processor once per accumulation (that is, before each reset or end of
  * stream) to provide the accumulated result. The contained histogram array
- * covers only whole cycles; counts from any partial cycle are not included.
+ * includes only whole scans; counts from any partial scan are not included.
  *
  * \tparam DataTypes data type set specifying `bin_type`
  */

@@ -380,8 +380,8 @@ class single_histogram {
     }
 };
 
-// One cycle (frame, repeat unit) of an array of histograms.
-// Adapter which can attach to a span.
+// One scan (frame, cycle, or repeat unit) of an array of histograms. Adapter
+// which can attach to a span.
 template <typename BinIndex, typename Bin, typename OverflowPolicy>
 class multi_histogram {
   public:
@@ -435,8 +435,7 @@ class multi_histogram {
         return element_index > 0;
     }
 
-    // True if cycle is completed (applying further increment batches is
-    // incorrect).
+    // True if scan is completed (no further increment batches may be applied).
     [[nodiscard]] auto is_complete() const noexcept -> bool {
         return element_index >= n_elements;
     }
@@ -560,15 +559,15 @@ class multi_histogram {
         element_index = journal.num_batches();
     }
 
-    // Reset this instance for reuse on another cycle through the array.
+    // Reset this instance for reuse on another scan through the array.
     void reset(bool clear) noexcept {
         element_index = 0;
         need_to_clear = clear;
     }
 };
 
-// An accumulation (over multiple cycles) of an array of histograms.
-// Adapter which can attach to a span.
+// An accumulation, over multiple scans, of an array of histograms. Adapter
+// which can attach to a span.
 template <typename BinIndex, typename Bin, typename OverflowPolicy>
 class multi_histogram_accumulation {
   public:
@@ -578,16 +577,16 @@ class multi_histogram_accumulation {
                               stop_on_internal_overflow>);
 
   private:
-    std::size_t cycle_idx = 0;
-    multi_histogram<bin_index_type, bin_type, OverflowPolicy> cur_cycle;
+    std::size_t scan_idx = 0;
+    multi_histogram<bin_index_type, bin_type, OverflowPolicy> cur_scan;
 
   public:
     explicit multi_histogram_accumulation(
         span<bin_type> hist_array, arg::max_per_bin<bin_type> max_per_bin,
         arg::num_bins<std::size_t> num_bins,
         arg::num_elements<std::size_t> num_elements, bool clear_first) noexcept
-        : cur_cycle(hist_array, max_per_bin, num_bins, num_elements,
-                    clear_first) {}
+        : cur_scan(hist_array, max_per_bin, num_bins, num_elements,
+                   clear_first) {}
 
     // Reconstruct with new span.
     explicit multi_histogram_accumulation(
@@ -599,71 +598,70 @@ class multi_histogram_accumulation {
               arg::num_elements{params.num_elements()}, clear_first) {}
 
     [[nodiscard]] auto max_per_bin() const noexcept -> bin_type {
-        return cur_cycle.max_per_bin();
+        return cur_scan.max_per_bin();
     }
 
     [[nodiscard]] auto num_bins() const noexcept -> std::size_t {
-        return cur_cycle.num_bins();
+        return cur_scan.num_bins();
     }
 
     [[nodiscard]] auto num_elements() const noexcept -> std::size_t {
-        return cur_cycle.num_elements();
+        return cur_scan.num_elements();
     }
 
-    [[nodiscard]] auto is_cycle_started() const noexcept -> bool {
-        return cur_cycle.is_started();
+    [[nodiscard]] auto is_scan_started() const noexcept -> bool {
+        return cur_scan.is_started();
     }
 
-    [[nodiscard]] auto is_cycle_complete() const noexcept -> bool {
-        return cur_cycle.is_complete();
+    [[nodiscard]] auto is_scan_complete() const noexcept -> bool {
+        return cur_scan.is_complete();
     }
 
     [[nodiscard]] auto is_consistent() const noexcept -> bool {
-        return cur_cycle.is_consistent();
+        return cur_scan.is_consistent();
     }
 
     [[nodiscard]] auto next_element_index() const noexcept -> std::size_t {
-        return cur_cycle.next_element_index();
+        return cur_scan.next_element_index();
     }
 
-    [[nodiscard]] auto cycle_index() const noexcept -> std::size_t {
-        return cycle_idx;
+    [[nodiscard]] auto scan_index() const noexcept -> std::size_t {
+        return scan_idx;
     }
 
-    // Finish the current cycle and start a new one. Must call once after
-    // each cycle of element increment batches. Passing 'journal' (which is
-    // cleared) is required here to avoid forgetting to clear the journal for a
-    // new cycle.
-    template <typename Journal> void new_cycle(Journal &journal) {
-        assert(is_cycle_complete());
-        ++cycle_idx;
-        cur_cycle.reset(false);
+    // Finish the current scan and start a new one. Must call once after each
+    // scan. Passing 'journal' (which is cleared) is required here to avoid
+    // forgetting to clear the journal for a new scan.
+    template <typename Journal> void new_scan(Journal &journal) {
+        assert(is_scan_complete());
+        ++scan_idx;
+        cur_scan.reset(false);
         journal.clear();
     }
 
     template <typename Journal>
     auto apply_increment_batch(span<bin_index_type const> batch,
                                Journal &journal) -> bool {
-        assert(not is_cycle_complete());
-        return cur_cycle.apply_increment_batch(batch, journal);
+        assert(not is_scan_complete());
+        return cur_scan.apply_increment_batch(batch, journal);
     }
 
-    void skip_remainder_of_current_cycle() { cur_cycle.skip_remaining(); }
+    void skip_remainder_of_current_scan() { cur_scan.skip_remaining(); }
 
-    // Restores histograms to state just after previous new_cycle() call.
+    // Restores histograms to state just after previous new_scan() call.
     // Behavior undefined in saturate mode.
     template <typename Journal>
-    void roll_back_current_cycle(Journal const &journal) {
-        cur_cycle.roll_back(journal);
+    void roll_back_current_scan(Journal const &journal) {
+        cur_scan.roll_back(journal);
     }
 
     void reset(bool clear_first = true) noexcept {
-        cycle_idx = 0;
-        cur_cycle.reset(clear_first);
+        scan_idx = 0;
+        cur_scan.reset(clear_first);
     }
 
     template <typename Journal> void replay(Journal const &journal) {
-        cur_cycle.replay(journal);
+        cur_scan.replay(journal);
     }
 };
 
