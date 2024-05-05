@@ -41,11 +41,6 @@ struct data_types : default_data_types {
     using bin_type = u16;
 };
 
-template <typename T> auto tmp_bucket(T &v) {
-    struct ignore_storage {};
-    return bucket(span(v), ignore_storage{});
-}
-
 } // namespace
 
 TEST_CASE("type constraints: histogram") {
@@ -162,29 +157,23 @@ TEMPLATE_TEST_CASE("Histogram, no overflow", "", saturate_on_overflow_t,
     in.require_output_checked(ctx, "out");
     auto out = capture_output_checker<out_events>(valcat, ctx, "out");
 
-    std::vector<u16> hist;
     in.handle(bin_increment_event<data_types>{0});
-    hist = {1, 0};
     REQUIRE(out.check(emitted_as::always_lvalue,
-                      histogram_event<data_types>{tmp_bucket(hist)}));
+                      histogram_event<data_types>{test_bucket<u16>({1, 0})}));
     in.handle(bin_increment_event<data_types>{1});
-    hist = {1, 1};
     REQUIRE(out.check(emitted_as::always_lvalue,
-                      histogram_event<data_types>{tmp_bucket(hist)}));
+                      histogram_event<data_types>{test_bucket<u16>({1, 1})}));
     in.handle(reset_event{});
-    hist = {1, 1};
-    REQUIRE(
-        out.check(emitted_as::always_rvalue,
-                  concluding_histogram_event<data_types>{tmp_bucket(hist)}));
+    REQUIRE(out.check(
+        emitted_as::always_rvalue,
+        concluding_histogram_event<data_types>{test_bucket<u16>({1, 1})}));
     in.handle(bin_increment_event<data_types>{0});
-    hist = {1, 0};
     REQUIRE(out.check(emitted_as::always_lvalue,
-                      histogram_event<data_types>{tmp_bucket(hist)}));
+                      histogram_event<data_types>{test_bucket<u16>({1, 0})}));
     in.handle(reset_event{});
-    hist = {1, 0};
-    REQUIRE(
-        out.check(emitted_as::always_rvalue,
-                  concluding_histogram_event<data_types>{tmp_bucket(hist)}));
+    REQUIRE(out.check(
+        emitted_as::always_rvalue,
+        concluding_histogram_event<data_types>{test_bucket<u16>({1, 0})}));
     in.flush();
     REQUIRE(out.check_flushed());
 }
@@ -207,17 +196,14 @@ TEST_CASE("Histogram, saturate on overflow") {
         in.require_output_checked(ctx, "out");
         auto out = capture_output_checker<out_events>(valcat, ctx, "out");
 
-        std::vector<u16> hist;
         in.handle(bin_increment_event<data_types>{0}); // Overflow
         REQUIRE(out.check(warning_event{"histogram saturated"}));
-        hist = {0};
         REQUIRE(out.check(emitted_as::always_lvalue,
-                          histogram_event<data_types>{tmp_bucket(hist)}));
+                          histogram_event<data_types>{test_bucket<u16>({0})}));
         in.handle(reset_event{});
-        hist = {0};
         REQUIRE(out.check(
             emitted_as::always_rvalue,
-            concluding_histogram_event<data_types>{tmp_bucket(hist)}));
+            concluding_histogram_event<data_types>{test_bucket<u16>({0})}));
         in.flush();
         REQUIRE(out.check_flushed());
     }
@@ -233,30 +219,24 @@ TEST_CASE("Histogram, saturate on overflow") {
         in.require_output_checked(ctx, "out");
         auto out = capture_output_checker<out_events>(valcat, ctx, "out");
 
-        std::vector<u16> hist;
         in.handle(bin_increment_event<data_types>{0});
-        hist = {1};
         REQUIRE(out.check(emitted_as::always_lvalue,
-                          histogram_event<data_types>{tmp_bucket(hist)}));
+                          histogram_event<data_types>{test_bucket<u16>({1})}));
         in.handle(bin_increment_event<data_types>{0}); // Overflow
         REQUIRE(out.check(warning_event{"histogram saturated"}));
-        hist = {1};
         REQUIRE(out.check(emitted_as::always_lvalue,
-                          histogram_event<data_types>{tmp_bucket(hist)}));
+                          histogram_event<data_types>{test_bucket<u16>({1})}));
         in.handle(reset_event{});
-        hist = {1};
         REQUIRE(out.check(
             emitted_as::always_rvalue,
-            concluding_histogram_event<data_types>{tmp_bucket(hist)}));
+            concluding_histogram_event<data_types>{test_bucket<u16>({1})}));
         in.handle(bin_increment_event<data_types>{0});
-        hist = {1};
         REQUIRE(out.check(emitted_as::always_lvalue,
-                          histogram_event<data_types>{tmp_bucket(hist)}));
+                          histogram_event<data_types>{test_bucket<u16>({1})}));
         in.handle(reset_event{});
-        hist = {1};
         REQUIRE(out.check(
             emitted_as::always_rvalue,
-            concluding_histogram_event<data_types>{tmp_bucket(hist)}));
+            concluding_histogram_event<data_types>{test_bucket<u16>({1})}));
         in.flush();
         REQUIRE(out.check_flushed());
     }
@@ -295,24 +275,19 @@ TEST_CASE("Histogram, reset on overflow") {
         in.require_output_checked(ctx, "out");
         auto out = capture_output_checker<out_events>(valcat, ctx, "out");
 
-        std::vector<u16> hist;
         in.handle(bin_increment_event<data_types>{0});
-        hist = {1};
         REQUIRE(out.check(emitted_as::always_lvalue,
-                          histogram_event<data_types>{tmp_bucket(hist)}));
+                          histogram_event<data_types>{test_bucket<u16>({1})}));
         in.handle(bin_increment_event<data_types>{0}); // Overflow
-        hist = {1};
         REQUIRE(out.check(
             emitted_as::always_rvalue,
-            concluding_histogram_event<data_types>{tmp_bucket(hist)}));
-        hist = {1};
+            concluding_histogram_event<data_types>{test_bucket<u16>({1})}));
         REQUIRE(out.check(emitted_as::always_lvalue,
-                          histogram_event<data_types>{tmp_bucket(hist)}));
+                          histogram_event<data_types>{test_bucket<u16>({1})}));
         in.handle(reset_event{});
-        hist = {1};
         REQUIRE(out.check(
             emitted_as::always_rvalue,
-            concluding_histogram_event<data_types>{tmp_bucket(hist)}));
+            concluding_histogram_event<data_types>{test_bucket<u16>({1})}));
         in.flush();
         REQUIRE(out.check_flushed());
     }
@@ -323,7 +298,6 @@ TEST_CASE("Histogram, stop on overflow") {
                                  concluding_histogram_event<data_types>>;
     auto const valcat = GENERATE(feed_as::const_lvalue, feed_as::rvalue);
     auto ctx = context::create();
-    std::vector<u16> hist;
 
     SECTION("Max per bin = 0") {
         auto in = feed_input(
@@ -338,10 +312,9 @@ TEST_CASE("Histogram, stop on overflow") {
 
         REQUIRE_THROWS_AS(in.handle(bin_increment_event<data_types>{0}),
                           end_of_processing); // Overflow
-        hist = {0};
         REQUIRE(out.check(
             emitted_as::always_rvalue,
-            concluding_histogram_event<data_types>{tmp_bucket(hist)}));
+            concluding_histogram_event<data_types>{test_bucket<u16>({0})}));
         REQUIRE(out.check_flushed());
     }
 
@@ -357,15 +330,13 @@ TEST_CASE("Histogram, stop on overflow") {
         auto out = capture_output_checker<out_events>(valcat, ctx, "out");
 
         in.handle(bin_increment_event<data_types>{0});
-        hist = {1};
         REQUIRE(out.check(emitted_as::always_lvalue,
-                          histogram_event<data_types>{tmp_bucket(hist)}));
+                          histogram_event<data_types>{test_bucket<u16>({1})}));
         REQUIRE_THROWS_AS(in.handle(bin_increment_event<data_types>{0}),
                           end_of_processing); // Overflow
-        hist = {1};
         REQUIRE(out.check(
             emitted_as::always_rvalue,
-            concluding_histogram_event<data_types>{tmp_bucket(hist)}));
+            concluding_histogram_event<data_types>{test_bucket<u16>({1})}));
         REQUIRE(out.check_flushed());
     }
 }
@@ -403,11 +374,9 @@ TEST_CASE("Histogram, error on overflow") {
         in.require_output_checked(ctx, "out");
         auto out = capture_output_checker<out_events>(valcat, ctx, "out");
 
-        std::vector<u16> hist;
         in.handle(bin_increment_event<data_types>{0});
-        hist = {1};
         REQUIRE(out.check(emitted_as::always_lvalue,
-                          histogram_event<data_types>{tmp_bucket(hist)}));
+                          histogram_event<data_types>{test_bucket<u16>({1})}));
         REQUIRE_THROWS_AS(in.handle(bin_increment_event<data_types>{0}),
                           histogram_overflow_error);
         REQUIRE(out.check_not_flushed());

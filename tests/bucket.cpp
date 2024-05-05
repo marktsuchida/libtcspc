@@ -207,9 +207,8 @@ TEST_CASE("extract_bucket preserves value category") {
     auto out =
         capture_output_checker<type_list<bucket<int>>>(valcat, ctx, "out");
 
-    std::array arr{42, 43};
-    in.handle(evt_with_bucket<int>{bucket<int>{span(arr), nullptr}});
-    CHECK(out.check(emitted_as::same_as_fed, bucket<int>{span(arr), nullptr}));
+    in.handle(evt_with_bucket<int>{test_bucket({42, 43})});
+    CHECK(out.check(emitted_as::same_as_fed, test_bucket({42, 43})));
 }
 
 } // namespace tcspc

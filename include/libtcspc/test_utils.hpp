@@ -6,6 +6,7 @@
 
 #pragma once
 
+#include "bucket.hpp"
 #include "common.hpp"
 #include "context.hpp"
 #include "data_types.hpp"
@@ -24,6 +25,7 @@
 #include <cstdint>
 #include <cstdio>
 #include <functional>
+#include <initializer_list>
 #include <limits>
 #include <memory>
 #include <ostream>
@@ -1001,6 +1003,38 @@ struct time_tagged_test_event {
                     << "}";
     }
 };
+
+/**
+ * \brief Create an ad-hoc `tcspc::bucket<T>` for testing, from a list of
+ * values.
+ *
+ * \ingroup misc
+ *
+ * The returned bucket does not support storage extraction.
+ */
+template <typename T>
+auto test_bucket(std::initializer_list<T> il) -> bucket<T> {
+    struct test_storage {
+        std::vector<T> v;
+    };
+    auto storage = test_storage{{il}};
+    return bucket<T>(span(storage.v), std::move(storage));
+}
+
+/**
+ * \brief Create an ad-hoc `tcspc::bucket<T>` for testing, from a span.
+ *
+ * \ingroup misc
+ *
+ * The returned bucket does not support storage extraction.
+ */
+template <typename T> auto test_bucket(span<T> s) -> bucket<T> {
+    struct test_storage {
+        std::vector<T> v;
+    };
+    auto storage = test_storage{std::vector<T>(s.begin(), s.end())};
+    return bucket<T>(span(storage.v), std::move(storage));
+}
 
 /**
  * \brief Bit-cast an array of bytes to an event after reversing the order.

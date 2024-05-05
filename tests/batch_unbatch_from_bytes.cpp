@@ -29,18 +29,6 @@
 
 namespace tcspc {
 
-namespace {
-
-template <typename T, typename U>
-auto tmp_bucket(std::initializer_list<U> il) {
-    static auto src = new_delete_bucket_source<T>::create();
-    auto b = src->bucket_of_size(il.size());
-    std::copy(il.begin(), il.end(), b.begin());
-    return b;
-}
-
-} // namespace
-
 TEST_CASE("type constraints: batch_from_bytes") {
     using proc_type = decltype(batch_from_bytes<int>(
         new_delete_bucket_source<int>::create(), sink_events<bucket<int>>()));
@@ -85,8 +73,7 @@ TEST_CASE("batch_from_bytes") {
     SECTION("input with whole elements is emitted exactly") {
         std::vector<int> data{1, 2, 3};
         in.handle(as_bytes(span(data)));
-        REQUIRE(
-            out.check(emitted_as::always_rvalue, tmp_bucket<int>({1, 2, 3})));
+        REQUIRE(out.check(emitted_as::always_rvalue, test_bucket({1, 2, 3})));
         in.flush();
         REQUIRE(out.check_flushed());
     }
@@ -94,9 +81,9 @@ TEST_CASE("batch_from_bytes") {
     SECTION("split elements are emitted in next batch") {
         std::vector<int> data{1, 2, 3};
         in.handle(as_bytes(span(data)).first(5));
-        REQUIRE(out.check(emitted_as::always_rvalue, tmp_bucket<int>({1})));
+        REQUIRE(out.check(emitted_as::always_rvalue, test_bucket({1})));
         in.handle(as_bytes(span(data)).subspan(5));
-        REQUIRE(out.check(emitted_as::always_rvalue, tmp_bucket<int>({2, 3})));
+        REQUIRE(out.check(emitted_as::always_rvalue, test_bucket({2, 3})));
         in.flush();
         REQUIRE(out.check_flushed());
     }
@@ -107,7 +94,7 @@ TEST_CASE("batch_from_bytes") {
         in.handle(as_bytes(span(data)).subspan(1, 1));
         in.handle(as_bytes(span(data)).subspan(2, 0));
         in.handle(as_bytes(span(data)).subspan(2));
-        REQUIRE(out.check(emitted_as::always_rvalue, tmp_bucket<int>({42})));
+        REQUIRE(out.check(emitted_as::always_rvalue, test_bucket({42})));
         in.flush();
         REQUIRE(out.check_flushed());
     }

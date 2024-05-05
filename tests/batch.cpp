@@ -27,18 +27,6 @@
 
 namespace tcspc {
 
-namespace {
-
-template <typename T, typename U>
-auto tmp_bucket(std::initializer_list<U> il) {
-    static auto src = new_delete_bucket_source<T>::create();
-    auto b = src->bucket_of_size(il.size());
-    std::copy(il.begin(), il.end(), b.begin());
-    return b;
-}
-
-} // namespace
-
 TEST_CASE("type constraints: batch") {
     struct e0 {};
     struct e1 {};
@@ -91,11 +79,11 @@ TEST_CASE("batch") {
         in.handle(42);
         in.handle(43);
         in.handle(44);
-        REQUIRE(out.check(emitted_as::always_rvalue,
-                          tmp_bucket<int>({42, 43, 44})));
+        REQUIRE(
+            out.check(emitted_as::always_rvalue, test_bucket({42, 43, 44})));
         in.handle(45);
         in.flush();
-        REQUIRE(out.check(emitted_as::always_rvalue, tmp_bucket<int>({45})));
+        REQUIRE(out.check(emitted_as::always_rvalue, test_bucket({45})));
         REQUIRE(out.check_flushed());
     }
 
@@ -103,8 +91,8 @@ TEST_CASE("batch") {
         in.handle(42);
         in.handle(43);
         in.handle(44);
-        REQUIRE(out.check(emitted_as::always_rvalue,
-                          tmp_bucket<int>({42, 43, 44})));
+        REQUIRE(
+            out.check(emitted_as::always_rvalue, test_bucket({42, 43, 44})));
         in.flush();
         REQUIRE(out.check_flushed());
     }

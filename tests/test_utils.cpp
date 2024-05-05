@@ -146,4 +146,12 @@ TEST_CASE("Short-circuited with event set") {
     }
 }
 
+TEST_CASE("test_bucket has expected contents") {
+    auto b = test_bucket<int>({42, 43, 44});
+    CHECK_FALSE(b.empty());
+    CHECK(b.size() == 3);
+    CHECK(b[0] == 42);
+    CHECK(b[2] == 44);
+}
+
 } // namespace tcspc
