@@ -509,9 +509,21 @@ namespace tcspc {
 /** @} <!-- group processors --> */
 
 /**
- * \defgroup auxiliary Auxiliary objects
+ * \defgroup data-types Data type sets
  *
- * \brief Auxiliary objects that define processor behavior.
+ * \brief Bundle of numeric types used by events and processors.
+ *
+ * Many events and processors in libtcspc deal with multiple integer types, so
+ * specifying them individually would be cumbersome. We therefore usually
+ * specify them as a single unit called the _data type set_ (usually template
+ * parameter `DataTypes`), which is a type containing several type aliases to
+ * be used across a processing graph (or part of a processing graph).
+ */
+
+/**
+ * \defgroup auxiliary Auxiliary types and objects
+ *
+ * \brief Auxiliary types and objects that define processor behavior.
  *
  * @{
  */

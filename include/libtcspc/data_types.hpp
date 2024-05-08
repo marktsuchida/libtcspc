@@ -11,16 +11,15 @@
 namespace tcspc {
 
 /**
- * \brief Default set of integer data types.
+ * \brief The default data type set.
  *
- * Many events and processors in libtcspc deal with multiple integer types, so
- * specifying them individually would be cumbersome. We therefore usually
- * specify them as a single unit called the _data type set_ (usually template
- * parameter `DataTypes`), which is a type containing several type aliases to
- * be used across a processing graph (or part of a processing graph). This is
- * the default data type set.
+ * This data type set is the default for the `DataTypes` template parameter in
+ * most events, processors, and auxiliary objects that require a data type set.
  *
- * \ingroup misc
+ * Custom data types sets may (but need not) derive from this type and override
+ * some or all of the member type aliases.
+ *
+ * \ingroup data-types
  */
 struct default_data_types {
     /**
