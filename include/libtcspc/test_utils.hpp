@@ -1046,11 +1046,14 @@ template <typename T> auto test_bucket(span<T> s) -> bucket<T> {
  * This bucket source delegates bucket creation to a backing source. It fills
  * each new bucket with the specified value before returning.
  *
+ * In addition, the number of buckets created can be queried.
+ *
  * \tparam T the bucket data element type
  */
 template <typename T> class test_bucket_source : public bucket_source<T> {
     std::shared_ptr<bucket_source<T>> src;
     T value;
+    std::size_t count = 0;
 
     explicit test_bucket_source(
         std::shared_ptr<bucket_source<T>> backing_source, T fill_value)
@@ -1059,8 +1062,9 @@ template <typename T> class test_bucket_source : public bucket_source<T> {
   public:
     /** \brief Create an instance. */
     static auto create(std::shared_ptr<bucket_source<T>> backing_source,
-                       T fill_value) -> std::shared_ptr<bucket_source<T>> {
-        return std::shared_ptr<bucket_source<T>>(new test_bucket_source(
+                       T fill_value)
+        -> std::shared_ptr<test_bucket_source<T>> {
+        return std::shared_ptr<test_bucket_source<T>>(new test_bucket_source(
             std::move(backing_source), std::move(fill_value)));
     }
 
@@ -1068,7 +1072,13 @@ template <typename T> class test_bucket_source : public bucket_source<T> {
     auto bucket_of_size(std::size_t size) -> bucket<T> override {
         auto b = src->bucket_of_size(size);
         std::fill(b.begin(), b.end(), value);
+        ++count;
         return b;
+    }
+
+    /** \brief Return the number of buckets created so far. */
+    [[nodiscard]] auto bucket_count() const noexcept -> std::size_t {
+        return count;
     }
 };
 

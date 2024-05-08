@@ -115,6 +115,8 @@ TEMPLATE_TEST_CASE_SIG(
     in.handle(misc_event{});
     REQUIRE(out.check(emitted_as::same_as_fed, misc_event{}));
 
+    CHECK(bsource->bucket_count() == 0);
+
     SECTION("end before scan 0") {}
 
     SECTION("feed scan 0, element 0") {
@@ -122,6 +124,7 @@ TEMPLATE_TEST_CASE_SIG(
         REQUIRE(out.check(emitted_as::always_lvalue,
                           histogram_array_progress_event<>{
                               2, test_bucket<u16>({3, 1, 0, 0})}));
+        CHECK(bsource->bucket_count() == 1);
 
         SECTION("end") {}
 
@@ -152,6 +155,7 @@ TEMPLATE_TEST_CASE_SIG(
                     REQUIRE(out.check(emitted_as::always_lvalue,
                                       histogram_array_event<>{
                                           test_bucket<u16>({5, 3, 4, 3})}));
+                    CHECK(bsource->bucket_count() == 1);
                 }
             }
         }
@@ -240,12 +244,14 @@ TEMPLATE_TEST_CASE_SIG(
                           concluding_histogram_array_event<>{
                               test_bucket<u16>({3, 1, 1, 2})}));
     }
+    CHECK(bsource->bucket_count() == 1);
 
     // Scan 1
     in.handle(bin_increment_batch_event<>{{0, 1, 0, 1}});
     REQUIRE(out.check(
         emitted_as::always_lvalue,
         histogram_array_progress_event<>{2, test_bucket<u16>({2, 2, 0, 0})}));
+    CHECK(bsource->bucket_count() == 2);
 
     in.handle(bin_increment_batch_event<>{{0, 0, 0, 1}});
     REQUIRE(out.check(
@@ -259,6 +265,7 @@ TEMPLATE_TEST_CASE_SIG(
                           concluding_histogram_array_event<>{
                               test_bucket<u16>({2, 2, 3, 1})}));
     }
+    CHECK(bsource->bucket_count() == 2);
 
     in.flush();
     REQUIRE(out.check_flushed());
@@ -311,6 +318,7 @@ TEMPLATE_TEST_CASE_SIG(
     REQUIRE(
         out.check(emitted_as::always_lvalue,
                   histogram_array_event<>{test_bucket<u16>({2, 2, 3, 1})}));
+    CHECK(bsource->bucket_count() == 1);
 
     in.flush();
     REQUIRE(out.check_flushed());
@@ -398,11 +406,13 @@ TEMPLATE_TEST_CASE_SIG(
                               concluding_histogram_array_event<>{
                                   test_bucket<u16>({0, 0, 0, 0})}));
         }
+        CHECK(bsource->bucket_count() == 1);
 
         in.handle(bin_increment_batch_event<>{{0, 1, 0, 0}});
         REQUIRE(out.check(emitted_as::always_lvalue,
                           histogram_array_progress_event<>{
                               2, test_bucket<u16>({3, 1, 0, 0})}));
+        CHECK(bsource->bucket_count() == 2);
     }
 
     SECTION("feed scan 0, element 0") {
@@ -410,6 +420,7 @@ TEMPLATE_TEST_CASE_SIG(
         REQUIRE(out.check(emitted_as::always_lvalue,
                           histogram_array_progress_event<>{
                               2, test_bucket<u16>({3, 1, 0, 0})}));
+        CHECK(bsource->bucket_count() == 1);
 
         SECTION("reset") {
             in.handle(reset_event{});
@@ -418,11 +429,13 @@ TEMPLATE_TEST_CASE_SIG(
                                   concluding_histogram_array_event<>{
                                       test_bucket<u16>({0, 0, 0, 0})}));
             }
+            CHECK(bsource->bucket_count() == 1);
 
             in.handle(bin_increment_batch_event<>{{0, 1, 0, 0}});
             REQUIRE(out.check(emitted_as::always_lvalue,
                               histogram_array_progress_event<>{
                                   2, test_bucket<u16>({3, 1, 0, 0})}));
+            CHECK(bsource->bucket_count() == 2);
         }
 
         SECTION("feed scan 0, element 1 (last element)") {
@@ -441,11 +454,13 @@ TEMPLATE_TEST_CASE_SIG(
                                       concluding_histogram_array_event<>{
                                           test_bucket<u16>({3, 1, 1, 2})}));
                 }
+                CHECK(bsource->bucket_count() == 1);
 
                 in.handle(bin_increment_batch_event<>{{1, 1, 0}});
                 REQUIRE(out.check(emitted_as::always_lvalue,
                                   histogram_array_progress_event<>{
                                       2, test_bucket<u16>({1, 2, 0, 0})}));
+                CHECK(bsource->bucket_count() == 2);
             }
 
             SECTION("feed scan 1, element 0") {
@@ -462,11 +477,13 @@ TEMPLATE_TEST_CASE_SIG(
                                       concluding_histogram_array_event<>{
                                           test_bucket<u16>({3, 1, 1, 2})}));
                     }
+                    CHECK(bsource->bucket_count() == 1);
 
                     in.handle(bin_increment_batch_event<>{{1, 1, 0}});
                     REQUIRE(out.check(emitted_as::always_lvalue,
                                       histogram_array_progress_event<>{
                                           2, test_bucket<u16>({1, 2, 0, 0})}));
+                    CHECK(bsource->bucket_count() == 2);
                 }
 
                 SECTION("feed scan 1, element 1 (last element)") {
@@ -478,12 +495,15 @@ TEMPLATE_TEST_CASE_SIG(
                                       histogram_array_event<>{
                                           test_bucket<u16>({5, 3, 4, 3})}));
 
-                    in.handle(reset_event{});
-                    if constexpr (emit_concluding) {
-                        REQUIRE(
-                            out.check(emitted_as::always_rvalue,
-                                      concluding_histogram_array_event<>{
-                                          test_bucket<u16>({5, 3, 4, 3})}));
+                    SECTION("reset") {
+                        in.handle(reset_event{});
+                        if constexpr (emit_concluding) {
+                            REQUIRE(out.check(
+                                emitted_as::always_rvalue,
+                                concluding_histogram_array_event<>{
+                                    test_bucket<u16>({5, 3, 4, 3})}));
+                        }
+                        CHECK(bsource->bucket_count() == 1);
                     }
                 }
             }
@@ -557,6 +577,7 @@ TEMPLATE_TEST_CASE_SIG("histogram_scans stop_on_overflow", "", ((hp P), P),
                               concluding_histogram_array_event<>{
                                   test_bucket<u16>({0, 0, 0, 0})}));
         }
+        CHECK(bsource->bucket_count() == 1);
         CHECK(out.check_flushed());
     }
 
@@ -581,6 +602,7 @@ TEMPLATE_TEST_CASE_SIG("histogram_scans stop_on_overflow", "", ((hp P), P),
                               concluding_histogram_array_event<>{
                                   test_bucket<u16>({1, 1, 1, 1})}));
         }
+        CHECK(bsource->bucket_count() == 1);
         CHECK(out.check_flushed());
     }
 }
@@ -695,6 +717,7 @@ TEMPLATE_TEST_CASE_SIG("histogram_scans reset_on_overflow", "", ((hp P), P),
         REQUIRE(out.check(
             emitted_as::always_lvalue,
             histogram_array_event<>{test_bucket<u16>({3, 0, 3, 0})}));
+        CHECK(bsource->bucket_count() == 1);
 
         SECTION("end") {}
 
@@ -708,6 +731,7 @@ TEMPLATE_TEST_CASE_SIG("histogram_scans reset_on_overflow", "", ((hp P), P),
             REQUIRE(out.check(emitted_as::always_lvalue,
                               histogram_array_progress_event<>{
                                   2, test_bucket<u16>({3, 2, 0, 0})}));
+            CHECK(bsource->bucket_count() == 2);
         }
 
         SECTION("single-batch overflow in scan 1, element 0") {
@@ -719,6 +743,7 @@ TEMPLATE_TEST_CASE_SIG("histogram_scans reset_on_overflow", "", ((hp P), P),
                                   concluding_histogram_array_event<>{
                                       test_bucket<u16>({3, 0, 3, 0})}));
             }
+            CHECK(bsource->bucket_count() == 2);
         }
 
         SECTION("overflow in scan 1, element 1") {
@@ -726,6 +751,7 @@ TEMPLATE_TEST_CASE_SIG("histogram_scans reset_on_overflow", "", ((hp P), P),
             REQUIRE(out.check(emitted_as::always_lvalue,
                               histogram_array_progress_event<>{
                                   2, test_bucket<u16>({3, 2, 3, 0})}));
+            CHECK(bsource->bucket_count() == 1);
 
             in.handle(bin_increment_batch_event<>{{0, 1, 1}});
             if constexpr (emit_concluding) {
@@ -739,6 +765,7 @@ TEMPLATE_TEST_CASE_SIG("histogram_scans reset_on_overflow", "", ((hp P), P),
             REQUIRE(out.check(
                 emitted_as::always_lvalue,
                 histogram_array_event<>{test_bucket<u16>({0, 2, 1, 2})}));
+            CHECK(bsource->bucket_count() == 2);
         }
     }
 
