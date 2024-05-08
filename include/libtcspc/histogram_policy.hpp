@@ -11,9 +11,9 @@
 namespace tcspc {
 
 /**
- * \brief Histogramming policies specifying behavor.
+ * \brief Histogramming policy specifying behavor.
  *
- * \ingroup histogram-policies
+ * \ingroup histogram-policy
  *
  * This is a bit-flag enum type. Operators `|`, `&`, `~`, `|=`, and `&=` (not
  * shown here) are defined on values of this type.

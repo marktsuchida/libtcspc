@@ -28,7 +28,7 @@
 #include "generate.hpp"
 #include "histogram.hpp"
 #include "histogram_events.hpp"
-#include "histogram_policies.hpp"
+#include "histogram_policy.hpp"
 #include "histogram_scans.hpp"
 #include "int_arith.hpp"
 #include "int_types.hpp"
@@ -696,13 +696,13 @@ namespace tcspc {
  */
 
 /**
- * \defgroup histogram-policies Histogram policies
+ * \defgroup histogram-policy Histogram policy
  *
- * \brief Tag types and values for specifying how to handle histogram bin
+ * \brief Compile-time flags for specifying how to handle histogram bin
  * overflow and other behavior.
  *
- * The histogram processors take the policy tag value as the first argument,
- * from which the tag type is usually deduced.
+ * Used by `tcspc::histogram()` and `tcspc::histogram_scans()` as non-type
+ * template parameter.
  */
 
 /** @} <!-- group auxiliary --> */

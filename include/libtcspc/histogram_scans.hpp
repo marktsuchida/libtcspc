@@ -10,7 +10,7 @@
 #include "bucket.hpp"
 #include "core.hpp"
 #include "histogram_events.hpp"
-#include "histogram_policies.hpp"
+#include "histogram_policy.hpp"
 #include "histogramming.hpp"
 #include "introspect.hpp"
 #include "processor_traits.hpp"

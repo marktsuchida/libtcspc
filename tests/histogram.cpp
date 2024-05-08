@@ -13,7 +13,7 @@
 #include "libtcspc/data_types.hpp"
 #include "libtcspc/errors.hpp"
 #include "libtcspc/histogram_events.hpp"
-#include "libtcspc/histogram_policies.hpp"
+#include "libtcspc/histogram_policy.hpp"
 #include "libtcspc/int_types.hpp"
 #include "libtcspc/processor_traits.hpp"
 #include "libtcspc/span.hpp"

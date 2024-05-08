@@ -10,7 +10,7 @@
 #include "libtcspc/bucket.hpp"
 #include "libtcspc/core.hpp"
 #include "libtcspc/histogram_events.hpp"
-#include "libtcspc/histogram_policies.hpp"
+#include "libtcspc/histogram_policy.hpp"
 #include "libtcspc/int_types.hpp"
 #include "libtcspc/processor_traits.hpp"
 #include "libtcspc/test_utils.hpp"
