@@ -29,23 +29,25 @@ namespace tcspc {
 
 namespace internal {
 
-template <typename ResetEvent, typename OverflowPolicy, typename DataTypes,
+template <histogram_policy Policy, typename ResetEvent, typename DataTypes,
           typename Downstream>
 class histogram {
-    static_assert(is_any_of_v<OverflowPolicy, saturate_on_overflow_t,
-                              reset_on_overflow_t, stop_on_overflow_t,
-                              error_on_overflow_t>);
-    // Do not require handling of concluding_histogram_event unless
-    // reset_on_overflow.
+    static constexpr histogram_policy overflow_policy =
+        Policy & histogram_policy::overflow_mask;
+    static constexpr bool emit_concluding =
+        (Policy & histogram_policy::emit_concluding_events) !=
+        histogram_policy::default_policy;
+
     static_assert(is_processor_v<Downstream, histogram_event<DataTypes>>);
-    static_assert(not std::is_same_v<OverflowPolicy, saturate_on_overflow_t> ||
+    static_assert(overflow_policy != histogram_policy::saturate_on_overflow ||
                   handles_event_v<Downstream, warning_event>);
     static_assert(
-        not std::is_same_v<OverflowPolicy, reset_on_overflow_t> ||
+        (Policy & histogram_policy::emit_concluding_events) ==
+            histogram_policy::default_policy ||
         handles_event_v<Downstream, concluding_histogram_event<DataTypes>>);
 
     using internal_overflow_policy = std::conditional_t<
-        std::is_same_v<OverflowPolicy, saturate_on_overflow_t>,
+        overflow_policy == histogram_policy::saturate_on_overflow,
         saturate_on_internal_overflow, stop_on_internal_overflow>;
 
     using bin_index_type = typename DataTypes::bin_index_type;
@@ -54,60 +56,53 @@ class histogram {
     std::shared_ptr<bucket_source<bin_type>> bsource;
     bucket<bin_type> hist_bucket;
     single_histogram<bin_index_type, bin_type, internal_overflow_policy> shist;
-    bool saturated = false;
+    bool saturate_warning_issued = false;
+
     Downstream downstream;
 
-    void lazy_start() {
-        if (hist_bucket.empty()) { // First time, or after reset.
-            hist_bucket = bsource->bucket_of_size(shist.num_bins());
-            shist = decltype(shist){hist_bucket, shist};
-            shist.clear();
-        }
-    }
-
-    void emit_concluding() {
-        downstream.handle(
-            concluding_histogram_event<DataTypes>{std::move(hist_bucket)});
-        hist_bucket = {};
+    LIBTCSPC_NOINLINE void start_new_round() {
+        hist_bucket = bsource->bucket_of_size(shist.num_bins());
+        shist = decltype(shist){hist_bucket, shist};
+        shist.clear();
     }
 
     void reset() {
-        hist_bucket = {};
-        if constexpr (std::is_same_v<OverflowPolicy, saturate_on_overflow_t>) {
-            saturated = false;
+        if (hist_bucket.empty())
+            start_new_round();
+        if constexpr (emit_concluding) {
+            downstream.handle(
+                concluding_histogram_event<DataTypes>{std::move(hist_bucket)});
         }
+        hist_bucket = {};
+        if constexpr (overflow_policy ==
+                      histogram_policy::saturate_on_overflow)
+            saturate_warning_issued = false;
     }
 
-    [[noreturn]] void stop() {
+    LIBTCSPC_NOINLINE [[noreturn]] void overflow_error() {
+        throw histogram_overflow_error("histogram bin overflowed");
+    }
+
+    LIBTCSPC_NOINLINE [[noreturn]] void overflow_stop() {
+        reset();
         downstream.flush();
         throw end_of_processing("histogram bin overflowed");
     }
 
-    [[noreturn]] void overflow_error() {
-        throw histogram_overflow_error("histogram bin overflowed");
+    LIBTCSPC_NOINLINE void saturated_warning() {
+        downstream.handle(warning_event{"histogram bin saturated"});
+        saturate_warning_issued = true;
     }
 
+    template <typename DT>
     LIBTCSPC_NOINLINE void
-    handle_overflow(bin_increment_event<DataTypes> const &event) {
-        if constexpr (std::is_same_v<OverflowPolicy, saturate_on_overflow_t>) {
-            downstream.handle(warning_event{"histogram saturated"});
-        } else if constexpr (std::is_same_v<OverflowPolicy,
-                                            reset_on_overflow_t>) {
-            if (shist.max_per_bin() == 0)
-                overflow_error();
-            emit_concluding();
-            reset();
-            handle(event); // Recurse max once
-        } else if constexpr (std::is_same_v<OverflowPolicy,
-                                            stop_on_overflow_t>) {
-            emit_concluding();
-            stop();
-        } else if constexpr (std::is_same_v<OverflowPolicy,
-                                            error_on_overflow_t>) {
+    overflow_reset(bin_increment_event<DT> const &event) {
+        if (shist.max_per_bin() == 0)
             overflow_error();
-        } else {
-            static_assert(false_for_type<OverflowPolicy>::value);
-        }
+        reset();
+        // Recurse at most once, because overflow on single increment (when
+        // max_per_bin == 0) is error.
+        return handle(event);
     }
 
   public:
@@ -121,6 +116,9 @@ class histogram {
           downstream(std::move(downstream)) {
         if (num_bins.value == 0)
             throw std::invalid_argument("histogram must have at least 1 bin");
+        if (max_per_bin.value < 0)
+            throw std::invalid_argument(
+                "histogram max_per_bin must not be negative");
     }
 
     [[nodiscard]] auto introspect_node() const -> processor_info {
@@ -134,18 +132,25 @@ class histogram {
     template <typename DT> void handle(bin_increment_event<DT> const &event) {
         static_assert(std::is_same_v<typename DT::bin_index_type,
                                      typename DataTypes::bin_index_type>);
-        lazy_start();
+        if (hist_bucket.empty())
+            start_new_round();
         if (not shist.apply_increments({&event.bin_index, 1})) {
-            if constexpr (std::is_same_v<OverflowPolicy,
-                                         saturate_on_overflow_t>) {
-                if (not saturated) {
-                    saturated = true;
-                    handle_overflow(event);
-                }
-            } else {
-                return handle_overflow(event);
+            if constexpr (overflow_policy ==
+                          histogram_policy::error_on_overflow) {
+                overflow_error(); // noreturn
+            } else if constexpr (overflow_policy ==
+                                 histogram_policy::stop_on_overflow) {
+                overflow_stop(); // noreturn
+            } else if constexpr (overflow_policy ==
+                                 histogram_policy::saturate_on_overflow) {
+                if (not saturate_warning_issued)
+                    saturated_warning();
+            } else if constexpr (overflow_policy ==
+                                 histogram_policy::reset_on_overflow) {
+                return overflow_reset(event);
             }
         }
+
         auto const hist_event =
             histogram_event<DataTypes>{hist_bucket.subbucket(0)};
         downstream.handle(hist_event);
@@ -158,19 +163,14 @@ class histogram {
 
     template <typename E,
               typename = std::enable_if_t<
-                  (std::is_convertible_v<remove_cvref_t<E>, ResetEvent> &&
-                   handles_event_v<Downstream,
-                                   concluding_histogram_event<DataTypes>>) ||
+                  std::is_convertible_v<remove_cvref_t<E>, ResetEvent> ||
                   (not std::is_convertible_v<remove_cvref_t<E>, ResetEvent> &&
                    handles_event_v<Downstream, remove_cvref_t<E>>)>>
     void handle(E &&event) {
-        if constexpr (std::is_convertible_v<remove_cvref_t<E>, ResetEvent>) {
-            lazy_start();
-            emit_concluding();
+        if constexpr (std::is_convertible_v<remove_cvref_t<E>, ResetEvent>)
             reset();
-        } else {
+        else
             downstream.handle(std::forward<E>(event));
-        }
     }
 
     void flush() { downstream.flush(); }
@@ -183,36 +183,38 @@ class histogram {
  *
  * \ingroup processors-histogramming
  *
- * The processor builds histograms out of incoming
- * `tcspc::bin_increment_event`s by incrementing the bin at the `bin_index`
- * given by the event. A round of accumulation is ended when a \p ResetEvent is
- * received, upon which accumulation is restarted with an empty histogram.
+ * The processor fills a histogram (held in a
+ * `tcspc::bucket<DataTypes::bin_type>` provided by \p buffer_provider) by
+ * incrementing the bin given by each incoming `tcspc::bin_increment_event`.
  *
- * The histogram is stored in a `tcspc::bucket<DataTypes::bin_type>`. Each
- * round of accumulation uses (sequentially) a new bucket from the \p
- * buffer_provider.
+ * A _round_ of accumulation is ended by resetting, for example by receiving a
+ * \p ResetEvent. After a reset, the histogram is replaced with a new bucket
+ * and a new round is started.
  *
- * On every update a `tcspc::histogram_event` is emitted containing a view of
- * the histogram bucket (whose storage is observable but not extractable). At
- * the end of each round of accumulation (i.e., upon a reset), a
- * `tcspc::concluding_histogram_event` is emitted, carrying the histogram
- * bucket (storage can be extracted).
+ * The value of \p Policy can modify behavior and specify what happens when a
+ * histogram bin overflows; see `tcspc::histogram_policy` for details.
+ *
+ * The result is emitted in 2 ways:
+ *
+ * - A `tcspc::histogram_event<DataTypes>` is emitted on each bin increment,
+ *   carrying a view of the histogram.
+ *
+ * - If requested (i.e., \p Policy contains
+ *   `tcspc::histogram_policy::emit_concluding_events`), a
+ *   `tcspc::concluding_histogram_event<DataTypes>` is emitted upon each reset.
+ *   This event carries a bucket with extractable storage.
  *
  * \attention Behavior is undefined if an incoming `tcspc::bin_increment_event`
  * contains a bin index beyond the size of the histogram. The bin mapper should
  * be chosen so that this does not occur.
  *
- * \tparam ResetEvent event type causing histogram to reset
+ * \tparam Policy policy specifying behavior of the processor
+ *
+ * \tparam ResetEvent type of event causing a new round to start
  *
  * \tparam DataTypes data type set specifying `bin_index_type` and `bin_type`
  *
- * \tparam OverflowPolicy policy tag type (usually deduced)
- *
  * \tparam Downstream downstream processor type (usually deduced)
- *
- * \param policy policy tag instance to select how to handle bin overflows
- * (`tcspc::saturate_on_overflow`, `tcspc::reset_on_overflow`,
- * `tcspc::stop_on_overflow`, or `tcspc::error_on_overflow`)
  *
  * \param num_bins number of bins in the histogram (must match the bin mapper
  * used upstream)
@@ -227,36 +229,43 @@ class histogram {
  * \return processor
  *
  * \par Events handled
- * - `tcspc::bin_increment_event<DT>`: apply the increment to the histogram and
- *   emit (const) `tcspc::histogram_event<DataTypes>`; if a bin overflowed,
- *   behavior (taken before emitting the histogram) depends on
- *   `OverflowPolicy`:
- *   - If `tcspc::saturate_on_overflow_t`, ignore the event, emitting
- *     `tcspc::warning_event` only on the first overflow since the start or
- *     last reset
- *   - If `tcspc::reset_on_overflow_t`, behave as if a `ResetEvent` was
- *     received just prior to the current event; then reapply the current event
- *     (but throw `tcspc::histogram_overflow_error` if `max_per_bin` equals 0)
- *   - If `tcspc::stop_on_overflow_t`, behave as if a `ResetEvent` was received
- *     instead of the current event; then flush the downstream and throw
- *     `tcspc::end_of_processing`
- *   - If `tcspc::error_on_overflow_t`, throw `tcspc::histogram_overflow_error`
- * - `ResetEvent`: emit (rvalue)
+ *
+ * - `tcspc::bin_increment_event<DT>`: apply the increment to the histogram
+ * and, if there is no bin overflow, emit (const)
+ *   `tcspc::histogram_event<DataTypes>`. If a bin overflowed,
+ *   behavior depends on the value of `Policy &
+ *   tcspc::histogram_policy::overflow_mask`:
+ *   - If `tcspc::histogram_policy::error_on_overflow` (the default), throw
+ *     `tcspc::histogram_overflow_error`
+ *   - If `tcspc::histogram_policy::stop_on_overflow`, emit
+ *     `tcspc::concluding_histogram_event<DataTypes>` if `Policy` has
+ *     `tcspc::histogram_policy::emit_concluding_events` set, then flush the
+ *     downstream and throw `tcspc::end_of_processing`
+ *   - If `tcspc::histogram_policy::saturate_on_overflow`, emit a
+ *     `tcspc::warning_event` (but only if this is the first overflow in the
+ *     current round); then ignore the increment but do proceed to emit
+ *     `tcspc::histogram_event<DataTypes>`
+ *   - If `tcspc::histogram_policy::reset_on_overflow`, perform a reset, as if
+ *     a `ResetEvent` was received just prior to the current event; then, in
+ *     the fresh histogram, reapply the current event (but throw
+ *     `tcspc::histogram_overflow_error` if `max_per_bin` equals 0)
+ * - `ResetEvent`: if `Policy` has
+ *   `tcspc::histogram_policy::emit_concluding_events` set, emit (rvalue)
  *   `tcspc::concluding_histogram_event<DataTypes>` with the current
- *   histogram; then clear the histogram and other state
+ *   histogram; then start a new round by arranging to switch to a new bucket
+ *   for the histogram on the next `tcspc::bin_increment_event`
  * - All other types: pass through with no action
  * - Flush: pass through with no action
  */
-template <typename ResetEvent, typename DataTypes = default_data_types,
-          typename OverflowPolicy, typename Downstream>
-auto histogram([[maybe_unused]] OverflowPolicy const &policy,
-               arg::num_bins<std::size_t> num_bins,
+template <histogram_policy Policy = histogram_policy::default_policy,
+          typename ResetEvent = never_event,
+          typename DataTypes = default_data_types, typename Downstream>
+auto histogram(arg::num_bins<std::size_t> num_bins,
                arg::max_per_bin<typename DataTypes::bin_type> max_per_bin,
                std::shared_ptr<bucket_source<typename DataTypes::bin_type>>
                    buffer_provider,
                Downstream &&downstream) {
-    return internal::histogram<ResetEvent, OverflowPolicy, DataTypes,
-                               Downstream>(
+    return internal::histogram<Policy, ResetEvent, DataTypes, Downstream>(
         num_bins, max_per_bin, std::move(buffer_provider),
         std ::forward<Downstream>(downstream));
 }
