@@ -30,6 +30,7 @@
 #include "histogram_elementwise.hpp"
 #include "histogram_events.hpp"
 #include "histogram_policies.hpp"
+#include "histogram_scans.hpp"
 #include "int_arith.hpp"
 #include "int_types.hpp"
 #include "introspect.hpp"

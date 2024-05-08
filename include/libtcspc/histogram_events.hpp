@@ -9,6 +9,7 @@
 #include "bucket.hpp"
 #include "data_types.hpp"
 
+#include <cstddef>
 #include <ostream>
 #include <vector>
 
@@ -221,7 +222,7 @@ struct concluding_histogram_event {
 template <typename DataTypes = default_data_types>
 struct histogram_array_event {
     /**
-     * \brief View of the histogram array.
+     * \brief Histogram array, or view thereof.
      */
     bucket<typename DataTypes::bin_type> bucket;
 
@@ -241,6 +242,55 @@ struct histogram_array_event {
     friend auto operator<<(std::ostream &s, histogram_array_event const &e)
         -> std::ostream & {
         return s << "histogram_array(" << e.bucket << ')';
+    }
+};
+
+/**
+ * \brief Event representing a progress update of a histogram array.
+ *
+ * \ingroup events-histogram
+ *
+ * This event is used to report updates to each element of a histogram array.
+ * A view of the entire histogram array is included.
+ *
+ * \tparam DataTypes data type set specifying `bin_type`
+ */
+template <typename DataTypes = default_data_types>
+struct histogram_array_progress_event {
+    /**
+     * \brief Size of the udpated part of the histogram array.
+     */
+    std::size_t valid_size;
+
+    /**
+     * \brief View of the histogram array.
+     *
+     * Indices 0 through `valid_size` contain data updated in the current scan.
+     * The remaining indices may contain invalid data unless otherwise
+     * specified.
+     */
+    bucket<typename DataTypes::bin_type> bucket;
+
+    /** \brief Equality comparison operator. */
+    friend auto operator==(histogram_array_progress_event const &lhs,
+                           histogram_array_progress_event const &rhs) noexcept
+        -> bool {
+        return lhs.valid_size == rhs.valid_size && lhs.bucket == rhs.bucket;
+    }
+
+    /** \brief Inequality comparison operator. */
+    friend auto operator!=(histogram_array_progress_event const &lhs,
+                           histogram_array_progress_event const &rhs) noexcept
+        -> bool {
+        return not(lhs == rhs);
+    }
+
+    /** \brief Stream insertion operator. */
+    friend auto operator<<(std::ostream &s,
+                           histogram_array_progress_event const &e)
+        -> std::ostream & {
+        return s << "histogram_array_progress(" << e.valid_size << ", "
+                 << e.bucket << ')';
     }
 };
 

@@ -288,15 +288,16 @@ class capture_output_access {
      * \brief Check if ready for input; normally used internally by
      * `tcspc::feed_input()`.
      */
-    void check_ready_for_input() const {
+    void check_ready_for_input(std::string const &input) const {
         if (not is_empty_func()) {
             throw std::logic_error(
-                "cannot accept input: recorded output events remain unchecked:" +
+                "cannot accept input (" + input +
+                "): recorded output events remain unchecked:" +
                 events_as_string_func());
         }
         if (is_flushed_func()) {
-            throw std::logic_error(
-                "cannot accept input: output has been flushed");
+            throw std::logic_error("cannot accept input (" + input +
+                                   "): output has been flushed");
         }
     }
 
@@ -815,13 +816,13 @@ template <typename Downstream> class feed_input {
     feed_as refmode = feed_as::const_lvalue;
     Downstream downstream;
 
-    void check_outputs_ready() {
+    void check_outputs_ready(std::string const &input) {
         if (outputs_to_check.empty())
             throw std::logic_error(
                 "feed_input has no registered capture_output to check");
         for (auto &[context, name] : outputs_to_check)
             context->template access<capture_output_access>(name)
-                .check_ready_for_input();
+                .check_ready_for_input(input);
     }
 
   public:
@@ -848,7 +849,8 @@ template <typename Downstream> class feed_input {
     template <typename Event, typename = std::enable_if_t<handles_event_v<
                                   Downstream, remove_cvref_t<Event>>>>
     void handle(Event &&event) {
-        check_outputs_ready();
+        check_outputs_ready("event of type " +
+                            std::string(typeid(event).name()));
 
         if (refmode == feed_as::const_lvalue) {
             downstream.handle(static_cast<Event const &>(event));
@@ -861,7 +863,7 @@ template <typename Downstream> class feed_input {
     }
 
     void flush() {
-        check_outputs_ready();
+        check_outputs_ready("flush");
         downstream.flush();
     }
 };
@@ -1035,6 +1037,41 @@ template <typename T> auto test_bucket(span<T> s) -> bucket<T> {
     auto storage = test_storage{std::vector<T>(s.begin(), s.end())};
     return bucket<T>(span(storage.v), std::move(storage));
 }
+
+/**
+ * \brief Bucket source that pre-fills buckets with a value.
+ *
+ * \ingroup bucket-sources
+ *
+ * Intended for unit testing, this bucket source delegates bucket creation to a
+ * backing source. It fills each new bucket with the specified value before
+ * returning.
+ *
+ * \tparam T the bucket data element type
+ */
+template <typename T> class filled_bucket_source : public bucket_source<T> {
+    std::shared_ptr<bucket_source<T>> src;
+    T value;
+
+    explicit filled_bucket_source(
+        std::shared_ptr<bucket_source<T>> backing_source, T fill_value)
+        : src(std::move(backing_source)), value(std::move(fill_value)) {}
+
+  public:
+    /** \brief Create an instance. */
+    static auto create(std::shared_ptr<bucket_source<T>> backing_source,
+                       T fill_value) -> std::shared_ptr<bucket_source<T>> {
+        return std::shared_ptr<bucket_source<T>>(new filled_bucket_source(
+            std::move(backing_source), std::move(fill_value)));
+    }
+
+    /** \brief Implements bucket source requirement. */
+    auto bucket_of_size(std::size_t size) -> bucket<T> override {
+        auto b = src->bucket_of_size(size);
+        std::fill(b.begin(), b.end(), value);
+        return b;
+    }
+};
 
 /**
  * \brief Bit-cast an array of bytes to an event after reversing the order.

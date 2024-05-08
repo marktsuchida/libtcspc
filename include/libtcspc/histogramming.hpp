@@ -632,10 +632,11 @@ class multi_histogram_accumulation {
     // Finish the current scan and start a new one. Must call once after each
     // scan. Passing 'journal' (which is cleared) is required here to avoid
     // forgetting to clear the journal for a new scan.
-    template <typename Journal> void new_scan(Journal &journal) {
+    template <typename Journal>
+    void new_scan(Journal &journal, bool clear = false) {
         assert(is_scan_complete());
         ++scan_idx;
-        cur_scan.reset(false);
+        cur_scan.reset(clear);
         journal.clear();
     }
 
