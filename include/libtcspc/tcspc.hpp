@@ -27,7 +27,6 @@
 #include "gate.hpp"
 #include "generate.hpp"
 #include "histogram.hpp"
-#include "histogram_elementwise.hpp"
 #include "histogram_events.hpp"
 #include "histogram_policies.hpp"
 #include "histogram_scans.hpp"

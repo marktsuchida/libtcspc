@@ -212,11 +212,6 @@ struct concluding_histogram_event {
  *
  * \ingroup events-histogram
  *
- * This event is used both for a series of independent arrays of histograms (as
- * with the output of the `tcspc::histogram_elementwise()` processor) and for a
- * series of updates to the same histogram array (as with the output of
- * `tcspc::histogram_elementwise_accumulate()` processor).
- *
  * \tparam DataTypes data type set specifying `bin_type`
  */
 template <typename DataTypes = default_data_types>
@@ -300,10 +295,10 @@ struct histogram_array_progress_event {
  *
  * \ingroup events-histogram
  *
- * This event is emitted by the `tcspc::histogram_elementwise_accumulate()`
- * processor once per accumulation (that is, before each reset or end of
- * stream) to provide the accumulated result. The contained histogram array
- * includes only whole scans; counts from any partial scan are not included.
+ * This event is emitted by the `tcspc::histogram_scans()` processor once per
+ * round (that is, before each reset) to provide the accumulated result. The
+ * contained histogram array includes only whole scans; counts from any partial
+ * scan are not included.
  *
  * \tparam DataTypes data type set specifying `bin_type`
  */

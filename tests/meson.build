@@ -23,7 +23,6 @@ test_libtcspc_srcs = [
     'gate.cpp',
     'generate.cpp',
     'histogram.cpp',
-    'histogram_elementwise.cpp',
     'histogram_events.cpp',
     'histogram_policies.cpp',
     'histogram_scans.cpp',

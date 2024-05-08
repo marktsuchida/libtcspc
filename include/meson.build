@@ -23,7 +23,6 @@ public_cpp_headers = files(
     'libtcspc/gate.hpp',
     'libtcspc/generate.hpp',
     'libtcspc/histogram.hpp',
-    'libtcspc/histogram_elementwise.hpp',
     'libtcspc/histogram_events.hpp',
     'libtcspc/histogram_policies.hpp',
     'libtcspc/histogram_scans.hpp',
