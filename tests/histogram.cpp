@@ -107,7 +107,7 @@ TEMPLATE_TEST_CASE_SIG(
     hp::reset_on_overflow | hp::emit_concluding_events) {
     auto const valcat = GENERATE(feed_as::const_lvalue, feed_as::rvalue);
     auto ctx = context::create();
-    auto bsource = filled_bucket_source<u16>::create(
+    auto bsource = test_bucket_source<u16>::create(
         new_delete_bucket_source<u16>::create(), 42);
     auto in = feed_input(valcat,
                          histogram<P, reset_event>(
@@ -152,7 +152,7 @@ TEMPLATE_TEST_CASE_SIG("histogram reset by event", "", ((hp P), P),
         (P & hp::emit_concluding_events) != hp::default_policy;
     auto const valcat = GENERATE(feed_as::const_lvalue, feed_as::rvalue);
     auto ctx = context::create();
-    auto bsource = filled_bucket_source<u16>::create(
+    auto bsource = test_bucket_source<u16>::create(
         new_delete_bucket_source<u16>::create(), 42);
     auto in = feed_input(valcat,
                          histogram<P, reset_event>(
@@ -212,7 +212,7 @@ TEMPLATE_TEST_CASE_SIG("histogram error_on_overflow", "", ((hp P), P),
                        hp::error_on_overflow | hp::emit_concluding_events) {
     auto const valcat = GENERATE(feed_as::const_lvalue, feed_as::rvalue);
     auto ctx = context::create();
-    auto bsource = filled_bucket_source<u16>::create(
+    auto bsource = test_bucket_source<u16>::create(
         new_delete_bucket_source<u16>::create(), 42);
     auto in = feed_input(valcat,
                          histogram<P, reset_event>(
@@ -246,7 +246,7 @@ TEMPLATE_TEST_CASE_SIG("histogram stop_on_overflow", "", ((hp P), P),
         (P & hp::emit_concluding_events) != hp::default_policy;
     auto const valcat = GENERATE(feed_as::const_lvalue, feed_as::rvalue);
     auto ctx = context::create();
-    auto bsource = filled_bucket_source<u16>::create(
+    auto bsource = test_bucket_source<u16>::create(
         new_delete_bucket_source<u16>::create(), 42);
     auto in = feed_input(valcat,
                          histogram<P, reset_event>(
@@ -284,7 +284,7 @@ TEMPLATE_TEST_CASE_SIG("histogram saturate_on_overflow", "", ((hp P), P),
         (P & hp::emit_concluding_events) != hp::default_policy;
     auto const valcat = GENERATE(feed_as::const_lvalue, feed_as::rvalue);
     auto ctx = context::create();
-    auto bsource = filled_bucket_source<u16>::create(
+    auto bsource = test_bucket_source<u16>::create(
         new_delete_bucket_source<u16>::create(), 42);
     auto in = feed_input(valcat,
                          histogram<P, reset_event>(
@@ -361,7 +361,7 @@ TEMPLATE_TEST_CASE_SIG("histogram reset_on_overflow", "", ((hp P), P),
         (P & hp::emit_concluding_events) != hp::default_policy;
     auto const valcat = GENERATE(feed_as::const_lvalue, feed_as::rvalue);
     auto ctx = context::create();
-    auto bsource = filled_bucket_source<u16>::create(
+    auto bsource = test_bucket_source<u16>::create(
         new_delete_bucket_source<u16>::create(), 42);
     auto in = feed_input(valcat,
                          histogram<P, reset_event>(
@@ -404,7 +404,7 @@ TEMPLATE_TEST_CASE_SIG("histogram reset_on_overflow with max_per_bin = 0", "",
                        hp::reset_on_overflow | hp::emit_concluding_events) {
     auto const valcat = GENERATE(feed_as::const_lvalue, feed_as::rvalue);
     auto ctx = context::create();
-    auto bsource = filled_bucket_source<u16>::create(
+    auto bsource = test_bucket_source<u16>::create(
         new_delete_bucket_source<u16>::create(), 42);
     auto in = feed_input(valcat,
                          histogram<P, reset_event>(

@@ -1039,21 +1039,20 @@ template <typename T> auto test_bucket(span<T> s) -> bucket<T> {
 }
 
 /**
- * \brief Bucket source that pre-fills buckets with a value.
+ * \brief Bucket source wrapper for unit testing.
  *
  * \ingroup bucket-sources
  *
- * Intended for unit testing, this bucket source delegates bucket creation to a
- * backing source. It fills each new bucket with the specified value before
- * returning.
+ * This bucket source delegates bucket creation to a backing source. It fills
+ * each new bucket with the specified value before returning.
  *
  * \tparam T the bucket data element type
  */
-template <typename T> class filled_bucket_source : public bucket_source<T> {
+template <typename T> class test_bucket_source : public bucket_source<T> {
     std::shared_ptr<bucket_source<T>> src;
     T value;
 
-    explicit filled_bucket_source(
+    explicit test_bucket_source(
         std::shared_ptr<bucket_source<T>> backing_source, T fill_value)
         : src(std::move(backing_source)), value(std::move(fill_value)) {}
 
@@ -1061,7 +1060,7 @@ template <typename T> class filled_bucket_source : public bucket_source<T> {
     /** \brief Create an instance. */
     static auto create(std::shared_ptr<bucket_source<T>> backing_source,
                        T fill_value) -> std::shared_ptr<bucket_source<T>> {
-        return std::shared_ptr<bucket_source<T>>(new filled_bucket_source(
+        return std::shared_ptr<bucket_source<T>>(new test_bucket_source(
             std::move(backing_source), std::move(fill_value)));
     }
 

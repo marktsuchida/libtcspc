@@ -155,8 +155,8 @@ TEST_CASE("test_bucket has expected contents") {
     CHECK(b[2] == 44);
 }
 
-TEST_CASE("filled_bucket_source returns buckets filled with the given value") {
-    auto bsource = filled_bucket_source<int>::create(
+TEST_CASE("test_bucket_source returns buckets filled with the given value") {
+    auto bsource = test_bucket_source<int>::create(
         new_delete_bucket_source<int>::create(), 42);
     auto const bkt = bsource->bucket_of_size(3);
     CHECK(bkt == test_bucket<int>({42, 42, 42}));
