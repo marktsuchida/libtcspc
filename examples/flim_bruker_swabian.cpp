@@ -155,8 +155,8 @@ auto make_histo_proc(settings const &settings,
     if constexpr (Cumulative) {
         return append(
             reset_event{}, // Reset before flush to get concluding array.
-            histogram_elementwise_accumulate<reset_event>(
-                error_on_overflow,
+            histogram_scans<histogram_policy::emit_concluding_events,
+                            reset_event>(
                 arg::num_elements{settings.pixels_per_line *
                                   settings.lines_per_frame},
                 arg::num_bins{std::size_t(settings.max_bin_index) + 1},
@@ -167,15 +167,14 @@ auto make_histo_proc(settings const &settings,
                         extract_bucket<concluding_histogram_array_event<>>(
                             view_as_bytes(std::move(writer)))))));
     } else {
-        return histogram_elementwise(
-            error_on_overflow,
+        return histogram_scans<histogram_policy::clear_every_scan>(
             arg::num_elements{settings.pixels_per_line *
                               settings.lines_per_frame},
             arg::num_bins{std::size_t(settings.max_bin_index) + 1},
             arg::max_per_bin<u16>{65535}, bsource,
-            count<histogram_array_event<>>(
-                ctx->tracker<count_access>("frame_counter"),
-                select<type_list<histogram_array_event<>>>(
+            select<type_list<histogram_array_event<>>>(
+                count<histogram_array_event<>>(
+                    ctx->tracker<count_access>("frame_counter"),
                     extract_bucket<histogram_array_event<>>(
                         view_as_bytes(std::move(writer))))));
     }
