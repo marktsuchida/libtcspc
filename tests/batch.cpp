@@ -20,7 +20,6 @@
 #include <catch2/generators/catch_generators.hpp>
 
 #include <cstddef>
-#include <initializer_list>
 #include <memory>
 #include <utility>
 #include <vector>

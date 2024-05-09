@@ -8,7 +8,10 @@
 
 #include "arg_wrappers.hpp"
 #include "bucket.hpp"
+#include "common.hpp"
 #include "core.hpp"
+#include "data_types.hpp"
+#include "errors.hpp"
 #include "histogram_events.hpp"
 #include "histogram_policy.hpp"
 #include "histogramming.hpp"
@@ -18,6 +21,7 @@
 #include <algorithm>
 #include <cstddef>
 #include <memory>
+#include <stdexcept>
 #include <type_traits>
 #include <utility>
 

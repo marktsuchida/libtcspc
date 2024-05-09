@@ -6,7 +6,6 @@
 
 #include "libtcspc/int_arith.hpp"
 
-#include "libtcspc/errors.hpp"
 #include "libtcspc/int_types.hpp"
 
 #include <catch2/catch_test_macros.hpp>

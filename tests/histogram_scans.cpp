@@ -8,7 +8,9 @@
 
 #include "libtcspc/arg_wrappers.hpp"
 #include "libtcspc/bucket.hpp"
+#include "libtcspc/context.hpp"
 #include "libtcspc/core.hpp"
+#include "libtcspc/errors.hpp"
 #include "libtcspc/histogram_events.hpp"
 #include "libtcspc/histogram_policy.hpp"
 #include "libtcspc/int_types.hpp"

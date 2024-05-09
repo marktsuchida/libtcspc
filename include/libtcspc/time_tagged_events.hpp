@@ -9,7 +9,6 @@
 #include "data_types.hpp"
 
 #include <array>
-#include <cstdint>
 #include <ostream>
 #include <type_traits>
 

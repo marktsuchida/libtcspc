@@ -16,7 +16,6 @@
 #include "libtcspc/histogram_policy.hpp"
 #include "libtcspc/int_types.hpp"
 #include "libtcspc/processor_traits.hpp"
-#include "libtcspc/span.hpp"
 #include "libtcspc/test_utils.hpp"
 #include "libtcspc/type_list.hpp"
 #include "test_checkers.hpp"
@@ -28,7 +27,6 @@
 #include <cstddef>
 #include <memory>
 #include <type_traits>
-#include <vector>
 
 namespace tcspc {
 

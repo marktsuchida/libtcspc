@@ -6,8 +6,6 @@
 
 #pragma once
 
-#include "errors.hpp"
-
 #include <limits>
 #include <stdexcept>
 #include <type_traits>
