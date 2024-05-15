@@ -63,8 +63,8 @@ template <typename InputStream> class ref_input_stream {
 
 class unoptimized_null_sink {
   public:
-    template <typename Event> void handle(Event const &event) {
-        benchmark::DoNotOptimize(event);
+    template <typename Event> void handle(Event &&event) {
+        benchmark::DoNotOptimize(std::forward<Event>(event));
     }
 
     static void flush(int x = 0) { benchmark::DoNotOptimize(x); }
