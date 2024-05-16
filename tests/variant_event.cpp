@@ -34,9 +34,9 @@ TEST_CASE("variant_event equality") {
     // Demonstrate that variant_event inherits members and operators from
     // std::variant.
     using ve = variant_event<type_list<int, double>>;
-    ve const i0(int(42));
-    ve const i1(int(42));
-    ve const id(double(3.14));
+    ve const i0(42);
+    ve const i1(42);
+    ve const id(3.14);
     CHECK(i0 == i1);
     CHECK_FALSE(i0 != i1);
     CHECK_FALSE(i0 == id);

@@ -204,9 +204,10 @@ template <typename Abstime> class dithered_linear_timing_generator_impl {
             auto const relmin =
                 next - trigger_time + static_cast<Abstime>(std::floor(intv));
             auto const relmax = relmin + 1;
-            relnext = relnext < relmin   ? relmin
-                      : relnext > relmax ? relmax
-                                         : relnext;
+            if (relnext < relmin)
+                relnext = relmin;
+            else if (relnext > relmax)
+                relnext = relmax;
         }
         next = trigger_time + relnext;
     }

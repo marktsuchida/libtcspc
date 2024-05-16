@@ -171,7 +171,13 @@ inline auto binary_ofstream_output_stream(std::string const &filename,
 inline auto unbuffered_binary_cfile_output_stream(std::string const &filename,
                                                   arg::truncate<bool> truncate,
                                                   arg::append<bool> append) {
-    char const *mode = truncate.value ? "wb" : (append.value ? "ab" : "wbx");
+    char const *mode = [&] {
+        if (truncate.value)
+            return "wb";
+        if (append.value)
+            return "ab";
+        return "wbx";
+    }();
 #ifdef _WIN32 // Avoid requiring _CRT_SECURE_NO_WARNINGS.
     std::FILE *fp{};
     (void)fopen_s(&fp, filename.c_str(), mode);
@@ -195,7 +201,13 @@ inline auto unbuffered_binary_cfile_output_stream(std::string const &filename,
 inline auto binary_cfile_output_stream(std::string const &filename,
                                        arg::truncate<bool> truncate,
                                        arg::append<bool> append) {
-    char const *mode = truncate.value ? "wb" : (append.value ? "ab" : "wbx");
+    char const *mode = [&] {
+        if (truncate.value)
+            return "wb";
+        if (append.value)
+            return "ab";
+        return "wbx";
+    }();
 #ifdef _WIN32 // Avoid requiring _CRT_SECURE_NO_WARNINGS.
     std::FILE *fp{};
     (void)fopen_s(&fp, filename.c_str(), mode);

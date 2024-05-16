@@ -159,8 +159,7 @@ enum class histogram_policy {
 };
 
 /** \private */
-inline constexpr auto operator|(histogram_policy lhs,
-                                histogram_policy rhs) noexcept
+constexpr auto operator|(histogram_policy lhs, histogram_policy rhs) noexcept
     -> histogram_policy {
     using U = std::underlying_type_t<histogram_policy>;
     return static_cast<histogram_policy>(static_cast<U>(lhs) |
@@ -168,8 +167,7 @@ inline constexpr auto operator|(histogram_policy lhs,
 }
 
 /** \private */
-inline constexpr auto operator&(histogram_policy lhs,
-                                histogram_policy rhs) noexcept
+constexpr auto operator&(histogram_policy lhs, histogram_policy rhs) noexcept
     -> histogram_policy {
     using U = std::underlying_type_t<histogram_policy>;
     return static_cast<histogram_policy>(static_cast<U>(lhs) &
@@ -177,22 +175,19 @@ inline constexpr auto operator&(histogram_policy lhs,
 }
 
 /** \private */
-inline constexpr auto operator~(histogram_policy hp) noexcept
-    -> histogram_policy {
+constexpr auto operator~(histogram_policy hp) noexcept -> histogram_policy {
     using U = std::underlying_type_t<histogram_policy>;
     return static_cast<histogram_policy>(~static_cast<U>(hp));
 }
 
 /** \private */
-inline constexpr auto operator|=(histogram_policy &lhs,
-                                 histogram_policy rhs) noexcept
+constexpr auto operator|=(histogram_policy &lhs, histogram_policy rhs) noexcept
     -> histogram_policy & {
     return lhs = lhs | rhs;
 }
 
 /** \private */
-inline constexpr auto operator&=(histogram_policy &lhs,
-                                 histogram_policy rhs) noexcept
+constexpr auto operator&=(histogram_policy &lhs, histogram_policy rhs) noexcept
     -> histogram_policy & {
     return lhs = lhs & rhs;
 }

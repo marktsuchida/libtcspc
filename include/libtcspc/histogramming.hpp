@@ -189,10 +189,14 @@ template <typename BinIndex> class bin_increment_batch_journal {
                 ++encoded_indices_iter;
             }
 
-            std::size_t batch_size = encoded_indices_iter->second;
-            while (++encoded_indices_iter != encoded_indices_end &&
-                   encoded_indices_iter->first == 0)
+            std::size_t batch_size = 0;
+            for (;;) {
                 batch_size += encoded_indices_iter->second;
+                ++encoded_indices_iter;
+                if (encoded_indices_iter == encoded_indices_end ||
+                    encoded_indices_iter->first != 0)
+                    break;
+            }
 
             std::advance(bin_indices_iter, as_signed(batch_size));
 
@@ -219,9 +223,13 @@ template <typename BinIndex> class bin_increment_batch_journal {
                 ++tmp_iter;
             }
 
-            std::size_t batch_size = tmp_iter->second;
-            while (++tmp_iter != encoded_indices_end && tmp_iter->first == 0)
+            std::size_t batch_size = 0;
+            for (;;) {
                 batch_size += tmp_iter->second;
+                ++tmp_iter;
+                if (tmp_iter == encoded_indices_end || tmp_iter->first != 0)
+                    break;
+            }
 
             return {batch_index, span(&*bin_indices_iter, batch_size)};
         }

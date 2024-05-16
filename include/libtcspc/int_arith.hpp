@@ -13,22 +13,22 @@
 namespace tcspc::internal {
 
 template <typename T, typename = std::enable_if_t<std::is_unsigned_v<T>>>
-inline constexpr auto as_signed(T i) -> std::make_signed_t<T> {
+constexpr auto as_signed(T i) -> std::make_signed_t<T> {
     return static_cast<std::make_signed_t<T>>(i);
 }
 
 template <typename T, typename = std::enable_if_t<std::is_signed_v<T>>>
-inline constexpr auto as_unsigned(T i) -> std::make_unsigned_t<T> {
+constexpr auto as_unsigned(T i) -> std::make_unsigned_t<T> {
     return static_cast<std::make_unsigned_t<T>>(i);
 }
 
 template <typename T, typename = std::enable_if_t<std::is_integral_v<T>>>
-inline constexpr auto ensure_signed(T i) -> std::make_signed_t<T> {
+constexpr auto ensure_signed(T i) -> std::make_signed_t<T> {
     return static_cast<std::make_signed_t<T>>(i);
 }
 
 template <typename T, typename = std::enable_if_t<std::is_integral_v<T>>>
-inline constexpr auto ensure_unsigned(T i) -> std::make_unsigned_t<T> {
+constexpr auto ensure_unsigned(T i) -> std::make_unsigned_t<T> {
     return static_cast<std::make_unsigned_t<T>>(i);
 }
 

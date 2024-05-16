@@ -57,8 +57,10 @@ class latch {
             std::unique_lock lock(mut);
             ct -= n;
             should_notify = ct == 0;
-            if (not should_notify)
-                return cv.wait(lock, [&] { return ct == 0; });
+            if (not should_notify) {
+                cv.wait(lock, [&] { return ct == 0; });
+                return;
+            }
         }
         if (should_notify)
             cv.notify_all();

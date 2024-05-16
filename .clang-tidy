@@ -17,18 +17,24 @@ Checks: >-
     portability-*,
     readability-*,
     -cert-msc32-c,-cert-msc51-cpp,
+    -clang-analyzer-optin.core.EnumCastOutOfRange,
     -cppcoreguidelines-avoid-magic-numbers,-readability-magic-numbers,
     -misc-use-anonymous-namespace,
+    -performance-enum-size,
     -readability-identifier-length,
 
 # Reasons for disabled checks:
 # [cert-msc32-c,cert-msc51-cpp] "properly seed PRNG"
 #   Not relevant to this library; in fact we want reproducible random numbers.
+# [clang-analyzer-optin.core.EnumCastOutOfRange]
+#   False positives for bit-field enums.
 # [cppcoreguidelines-avoid-magic-numbers,readability-magic-numbers]
 #   Too many false positives from bit manipulation code where defining
 #   constants would be merely circuitous; and tests.
 # [misc-use-anonymous-namespace]
 #   Too much noise from Catch2 and no way to selectively disable.
+# [performance-enum-size]
+#   Currently no performance benefit expected given our enum usage.
 # [readability-identifier-length]
 #   TBD
 
