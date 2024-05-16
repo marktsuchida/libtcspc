@@ -15,10 +15,11 @@
 #include "test_checkers.hpp"
 #include "test_thread_utils.hpp"
 
-// Trompeloeil requires catch2 to be included first, but does not define which
-// subset of Catch2 3.x is required. So include catch_all.hpp.
-#include <catch2/catch_all.hpp>
+// Trompeloeil requires catch2 to be included first.
+#include <catch2/catch_template_test_macros.hpp>
+#include <catch2/catch_test_macros.hpp>
 #include <catch2/trompeloeil.hpp>
+#include <trompeloeil/mock.hpp>
 
 #include <chrono>
 #include <cstddef>
