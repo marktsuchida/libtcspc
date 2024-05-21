@@ -152,7 +152,7 @@ class histogram {
         }
 
         auto const hist_event =
-            histogram_event<DataTypes>{hist_bucket.subbucket(0)};
+            histogram_event<DataTypes>{ad_hoc_bucket(span(hist_bucket))};
         downstream.handle(hist_event);
     }
 

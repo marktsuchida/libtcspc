@@ -41,8 +41,6 @@ TEST_CASE("default-constructed bucket is empty and regular") {
     CHECK(b.size() == 0); // NOLINT(readability-container-size-empty)
     CHECK(b.size_bytes() == 0);
     CHECK(b.empty());
-
-    CHECK(b.subbucket(0, 0).empty());
 }
 
 TEST_CASE("non-empty bucket has expected contents") {
@@ -87,15 +85,6 @@ TEST_CASE("copy constructed or assigned bucket has its own storage") {
     CHECK(bb[1] == 43);
     auto const vv = b.extract_storage<std::vector<int>>();
     CHECK(vv[1] == 43);
-}
-
-TEST_CASE("subbucket shares observable storage") {
-    std::vector<int> v{42, 43, 44};
-    auto b = bucket<int>(span(v), std::move(v));
-    auto bb = b.subbucket(1, 1);
-    CHECK(bb.size() == 1);
-    CHECK(bb[0] == 43);
-    CHECK(&bb.storage<std::vector<int>>() == &b.storage<std::vector<int>>());
 }
 
 TEST_CASE("unrelated buckets compare equal if data equal") {

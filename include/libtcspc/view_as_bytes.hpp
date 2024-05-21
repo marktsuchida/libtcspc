@@ -38,9 +38,7 @@ template <typename Downstream> class view_as_bytes {
 
     template <typename Event> void handle(Event const &event) {
         static_assert(std::is_trivial_v<Event>);
-        struct private_storage {};
-        auto const b = bucket<Event const>(span(&event, 1), private_storage{})
-                           .byte_bucket();
+        auto const b = ad_hoc_bucket(as_bytes(span(&event, 1)));
         downstream.handle(b);
     }
 
@@ -49,7 +47,7 @@ template <typename Downstream> class view_as_bytes {
         if constexpr (std::is_same_v<std::remove_cv_t<T>, std::byte>) {
             downstream.handle(event);
         } else {
-            auto const b = event.const_bucket().byte_bucket();
+            auto const b = ad_hoc_bucket(as_bytes(span(event)));
             downstream.handle(b);
         }
     }

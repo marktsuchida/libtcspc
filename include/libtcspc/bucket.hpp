@@ -385,72 +385,6 @@ template <typename T> class bucket {
         s = s.subspan(start, count);
     }
 
-    /**
-     * \brief Obtain a sub-bucket referring to the given range of elements.
-     *
-     * The returned bucket is a view object that shares (without owning) the
-     * underlying storage with this bucket (it does not support storage
-     * extraction), but whose data is restricted to the given range.
-     *
-     * Sub-buckets can be used to emit "preview" events of part of a data array
-     * that is in the process of being filled. Downstream processors can
-     * observe the underlying storage.
-     *
-     * \attention The caller is responsible for ensuring that the original
-     * bucket outlives the sub-bucket. Usually this means that the sub-bucket
-     * should only be published (e.g., by emitting to downstream) via const
-     * reference.
-     */
-    [[nodiscard]] auto subbucket(std::size_t start,
-                                 std::size_t count = dynamic_extent)
-        -> bucket {
-        return bucket(s.subspan(start, count), view_storage{this});
-    }
-
-    /**
-     * \brief Obtain a view of this bucket as bytes.
-     *
-     * The returned bucket is a view object that shares (without owning) the
-     * underlying storage with this bucket (it does not support storage
-     * extraction).
-     *
-     * \attention The caller is responsible for ensuring that the original
-     * bucket outlives the byte bucket. Usually this means that the byte bucket
-     * should only be published (e.g., by emitting to downstream) via const
-     * reference.
-     *
-     * \return `tcspc::bucket<std::byte const>` if \p T is const; otherwise
-     * `tcspc::bucket<std::byte>`.
-     */
-    [[nodiscard]] auto byte_bucket() {
-        static_assert(std::is_trivial_v<T>);
-        if constexpr (std::is_const_v<T>) {
-            return bucket<std::byte const>(as_bytes(s), view_storage{this});
-        } else {
-            return bucket<std::byte>(as_writable_bytes(s), view_storage{this});
-        }
-    }
-
-    /**
-     * \brief Obtain a const view of this bucket.
-     *
-     * The returned bucket is a view object that shares (without owning) the
-     * underlying storage with this bucket (it does not support storage
-     * extraction).
-     *
-     * This function can be used to obtain a non-const `tcspc::bucket<T const>`
-     * from a `tcspc::bucket<T> const`. This allows further creating
-     * sub-buckets or byte buckets that refer to the same data.
-     *
-     * \attention The caller is responsible for ensuring that the original
-     * bucket outlives the const bucket. Usually this means that the const
-     * bucket should only be published (e.g., by emitting to downstream) via
-     * const reference.
-     */
-    [[nodiscard]] auto const_bucket() const -> bucket<T const> {
-        return bucket<T const>(span<T const>(s), view_storage{this});
-    }
-
     // In contrast to span, bucket equality is deep equality.
 
     /**
@@ -496,6 +430,30 @@ template <typename T> class bucket {
         return stream << ')';
     }
 };
+
+/**
+ * \brief Create a `tcspc::bucket` referencing a span.
+ *
+ * \ingroup misc
+ *
+ * This can be used when a bucket is needed but is only used to view existing
+ * data and its storage is not important. The storage of the returned bucket
+ * cannot be observed or extracted.
+ *
+ * \attention The caller is responsible for ensuring that the data in the span
+ * outlives the returned bucket. Usually this means that the returned bucket
+ * should only be published (e.g., by emitting to downstream) via const
+ * reference and should never be returned or stored by the caller.
+ *
+ * \tparam T the bucket data element type
+ *
+ * \param s the span to wrap as an ad-hoc bucket
+ */
+template <typename T>
+[[nodiscard]] auto ad_hoc_bucket(span<T> s) -> bucket<T> {
+    struct ad_hoc_storage {};
+    return bucket<T>(s, ad_hoc_storage{});
+}
 
 /**
  * \brief Abstract base class for polymorphic bucket sources.
@@ -544,10 +502,8 @@ template <typename T> struct bucket_source {
      * `std::logic_error`.
      *
      * When supported, this function creates a second bucket that shares
-     * ownership of the underlying storage of the given \p bkt. Unlike
-     * non-owning view buckets created by `tcspc::bucket` member functions, a
-     * shared view remains valid even if the original bucket is destroyed
-     * first.
+     * ownership of the underlying storage of the given \p bkt. A shared view
+     * remains valid even if the original bucket is destroyed first.
      *
      * For this reason, it is safe to pass a shared view bucket by non-const
      * (rvalue) reference to other code, such as a downstream processor. This
@@ -560,6 +516,9 @@ template <typename T> struct bucket_source {
      * Depending on the bucket source, storage extraction from a shared view
      * bucket may or may not be supported (even if the original buckets support
      * it).
+     *
+     * Sharability is an optional feature of bucket sources because managing
+     * shared storage may have overhead.
      *
      * \param bkt the original bucket, which must have been returned by
      * `bucket_of_size()` of this bucket source (and not by a previous call to

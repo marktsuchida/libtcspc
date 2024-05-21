@@ -114,7 +114,7 @@ class histogram_scans {
     void end_of_scan() {
         mhista.new_scan(journal, clear_every_scan);
         auto const array_event =
-            histogram_array_event<DataTypes>{hist_bucket.subbucket(0)};
+            histogram_array_event<DataTypes>{ad_hoc_bucket(span(hist_bucket))};
         downstream.handle(array_event);
         if constexpr (reset_after_scan)
             reset_without_replay();
@@ -210,7 +210,8 @@ class histogram_scans {
         }
 
         auto const progress = histogram_array_progress_event<DataTypes>{
-            (element_index + 1) * mhista.num_bins(), hist_bucket.subbucket(0)};
+            (element_index + 1) * mhista.num_bins(),
+            ad_hoc_bucket(span(hist_bucket))};
         downstream.handle(progress);
 
         if (mhista.is_scan_complete())
