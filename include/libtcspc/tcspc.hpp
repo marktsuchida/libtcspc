@@ -7,6 +7,7 @@
 #pragma once
 
 // IWYU pragma: begin_exports
+#include "acquire.hpp"
 #include "arg_wrappers.hpp"
 #include "batch.hpp"
 #include "batch_unbatch_from_bytes.hpp"
@@ -393,7 +394,7 @@ namespace tcspc {
 /**
  * \defgroup processors-io Input and output processors
  *
- * \brief Processors for reading and writing data.
+ * \brief Processors for reading and writing data from/to file-like streams.
  *
  * @{
  */
@@ -405,6 +406,12 @@ namespace tcspc {
  */
 
 /** @} <!-- group processors-io --> */
+
+/**
+ * \defgroup processors-acquisition Acquisition processors
+ *
+ * \brief Processors for acquiring data from hardware devices.
+ */
 
 /**
  * \defgroup processors-decoding Decoding processors
@@ -595,6 +602,19 @@ namespace tcspc {
  *   `std::nullopt`.
  * - `void write(tcspc::span<std::byte const> buffer) noexcept`:
  *   Write the given bytes to the stream.
+ */
+
+/**
+ * \defgroup acquisition-readers Readers for acquisition
+ *
+ * \brief Readers that wrap pull-style device acquisition APIs.
+ *
+ * A reader is a movable object that defines the function call operator:
+ * `auto operator()(span<T> buffer) -> std::optional<std::size_t>`, in which
+ * `buffer` is the span into which data should be placed. The return value is
+ * `std::nullopt` if the end of the acquired data has been reached; otherwise
+ * it is the number of `T` elements actually read; this may be zero. If there
+ * was an error, an exception should be thrown.
  */
 
 /**

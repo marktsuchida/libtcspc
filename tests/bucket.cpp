@@ -19,6 +19,7 @@
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/generators/catch_generators.hpp>
 
+#include <algorithm>
 #include <array>
 #include <memory>
 #include <sstream>
@@ -115,6 +116,7 @@ TEST_CASE("bucket can be inserted into stream") {
 
 TEST_CASE("new_delete_bucket_source provides buckets") {
     auto source = new_delete_bucket_source<int>::create();
+    CHECK_FALSE(source->supports_shared_views());
     auto b = source->bucket_of_size(3);
     CHECK(b.size() == 3);
     b[0] = 42;
@@ -125,8 +127,46 @@ TEST_CASE("new_delete_bucket_source provides buckets") {
     CHECK(e[2] == 44);
 }
 
+TEST_CASE("sharable_new_delete_bucket_source provides sharable buckets") {
+    auto source = sharable_new_delete_bucket_source<int>::create();
+    CHECK(source->supports_shared_views());
+    auto b = source->bucket_of_size(3);
+    CHECK(b.size() == 3);
+    std::fill(b.begin(), b.end(), 0);
+    b[0] = 42;
+
+    SECTION("extracts as shared_ptr") {
+        // NOLINTNEXTLINE(cppcoreguidelines-avoid-c-arrays,modernize-avoid-c-arrays)
+        auto e = b.extract_storage<std::shared_ptr<int[]>>();
+        CHECK(e[0] == 42);
+    }
+
+    SECTION("create view, destroy view, original survives") {
+        {
+            auto v = source->shared_view_of(b);
+            static_assert(std::is_same_v<decltype(v), bucket<int const>>);
+            CHECK(v.size() == 3);
+            CHECK(v[0] == 42);
+            CHECK(v == test_bucket<int const>({42, 0, 0}));
+            CHECK(v.data() == b.data());
+
+            // Mutation of original is observable:
+            b[1] = 123;
+            CHECK(v[1] == 123);
+        }
+        CHECK(b == test_bucket<int>({42, 123, 0}));
+    }
+
+    SECTION("create view, destroy original first, view survives") {
+        auto v = source->shared_view_of(b);
+        b = {};
+        CHECK(v == test_bucket<int const>({42, 0, 0}));
+    }
+}
+
 TEST_CASE("recycling_bucket_source provides buckets up to max_count") {
     auto source = recycling_bucket_source<int>::create(2);
+    CHECK_FALSE(source->supports_shared_views());
     auto b0 = source->bucket_of_size(3);
     {
         auto b1 = source->bucket_of_size(5);

@@ -16,7 +16,11 @@
 
 namespace tcspc::internal {
 
-struct bad_move_only_any_cast : std::bad_cast {};
+struct bad_move_only_any_cast : std::bad_cast {
+    auto what() const noexcept -> char const * override {
+        return "bad_move_only_any_cast";
+    }
+};
 
 // Like std::any, but move-only. Does not support types that throw during move
 // (will call std::terminate).

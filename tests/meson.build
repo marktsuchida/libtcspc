@@ -3,6 +3,7 @@
 # SPDX-License-Identifier: MIT
 
 test_libtcspc_srcs = [
+    'acquire.cpp',
     'arg_wrappers.cpp',
     'batch.cpp',
     'batch_unbatch_from_bytes.cpp',

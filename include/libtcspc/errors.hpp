@@ -62,6 +62,21 @@ class source_halted final : public std::exception {
 };
 
 /**
+ * \brief Exception thrown when acquisition was halted.
+ *
+ * \ingroup exceptions
+ *
+ * \see `tcspc::acquire_access::halt()`
+ */
+class acquisition_halted final : public std::exception {
+  public:
+    /** \brief Implements std::exception interface. */
+    [[nodiscard]] auto what() const noexcept -> char const * override {
+        return "acquisition halted";
+    }
+};
+
+/**
  * \brief Error thrown when buffer capacity has been exhausted.
  *
  * \ingroup errors

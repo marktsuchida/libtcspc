@@ -388,17 +388,18 @@ template <typename T> class bucket {
     /**
      * \brief Obtain a sub-bucket referring to the given range of elements.
      *
-     * The returned bucket is a view object that shares the underlying storage
-     * with this bucket (it does not support storage extraction), but whose
-     * data is restricted to the given range.
-     *
-     * The caller is responsible for ensuring that the original bucket outlives
-     * the sub-bucket. Usually this means that the sub-bucket should only be
-     * published (e.g., by emitting to downstream) via const reference.
+     * The returned bucket is a view object that shares (without owning) the
+     * underlying storage with this bucket (it does not support storage
+     * extraction), but whose data is restricted to the given range.
      *
      * Sub-buckets can be used to emit "preview" events of part of a data array
      * that is in the process of being filled. Downstream processors can
      * observe the underlying storage.
+     *
+     * \attention The caller is responsible for ensuring that the original
+     * bucket outlives the sub-bucket. Usually this means that the sub-bucket
+     * should only be published (e.g., by emitting to downstream) via const
+     * reference.
      */
     [[nodiscard]] auto subbucket(std::size_t start,
                                  std::size_t count = dynamic_extent)
@@ -409,11 +410,14 @@ template <typename T> class bucket {
     /**
      * \brief Obtain a view of this bucket as bytes.
      *
-     * The returned bucket is a view object that shares the underlying storage
-     * with this bucket (it does not support storage extraction). The caller is
-     * responsible for ensuring that the original bucket outlives the byte
-     * bucket. Usually this means that the byte bucket should only be published
-     * (e.g., by emitting to downstream) via const reference.
+     * The returned bucket is a view object that shares (without owning) the
+     * underlying storage with this bucket (it does not support storage
+     * extraction).
+     *
+     * \attention The caller is responsible for ensuring that the original
+     * bucket outlives the byte bucket. Usually this means that the byte bucket
+     * should only be published (e.g., by emitting to downstream) via const
+     * reference.
      *
      * \return `tcspc::bucket<std::byte const>` if \p T is const; otherwise
      * `tcspc::bucket<std::byte>`.
@@ -430,18 +434,18 @@ template <typename T> class bucket {
     /**
      * \brief Obtain a const view of this bucket.
      *
-     * The returned bucket is a view object that shares the underlying storage
-     * with this bucket (it does not support storage extraction).
+     * The returned bucket is a view object that shares (without owning) the
+     * underlying storage with this bucket (it does not support storage
+     * extraction).
      *
-     * The caller is responsible for ensuring that the original bucket outlives
-     * the const bucket. Usually this means that the const bucket should only
-     * be published (e.g., by emitting to downstream) via const reference.
+     * This function can be used to obtain a non-const `tcspc::bucket<T const>`
+     * from a `tcspc::bucket<T> const`. This allows further creating
+     * sub-buckets or byte buckets that refer to the same data.
      *
-     * Const buckets can be used to obtain a nominally mutable bucket from a
-     * const one. This allows further creating sub-buckets or byte buckets that
-     * refer to the same data. Buckets of const element type are useful when
-     * buckets are used as a `tcspc::span` alternative (but with the properties
-     * of a regular type), such that storage extraction is not relevant.
+     * \attention The caller is responsible for ensuring that the original
+     * bucket outlives the const bucket. Usually this means that the const
+     * bucket should only be published (e.g., by emitting to downstream) via
+     * const reference.
      */
     [[nodiscard]] auto const_bucket() const -> bucket<T const> {
         return bucket<T const>(span<T const>(s), view_storage{this});
@@ -517,6 +521,57 @@ template <typename T> struct bucket_source {
      * has been built.
      */
     virtual auto bucket_of_size(std::size_t size) -> bucket<T> = 0;
+
+    /**
+     * \brief Return whether this bucket source is a sharable bucket source.
+     *
+     * A sharable bucket source supports the creation of shared views of
+     * buckets via `shared_view_of()`.
+     *
+     * \note This function is overridden to return `true` for sharable bucket
+     * sources. The default implementation returns `false`.
+     */
+    [[nodiscard]] virtual auto supports_shared_views() const noexcept -> bool {
+        return false;
+    }
+
+    /**
+     * \brief Create a shared view bucket that is a read-only view of the given
+     * bucket but may outlive the original bucket.
+     *
+     * \note This function is only available for sharable bucket sources (see
+     * `supports_shared_views()`). The default implementation throws
+     * `std::logic_error`.
+     *
+     * When supported, this function creates a second bucket that shares
+     * ownership of the underlying storage of the given \p bkt. Unlike
+     * non-owning view buckets created by `tcspc::bucket` member functions, a
+     * shared view remains valid even if the original bucket is destroyed
+     * first.
+     *
+     * For this reason, it is safe to pass a shared view bucket by non-const
+     * (rvalue) reference to other code, such as a downstream processor. This
+     * allows move-semantic transmission of the shared view bucket, allowing
+     * for, e.g., buffering without copying of the data.
+     *
+     * Shared views may only be created from original non-view buckets; they
+     * cannot be created from existing shared views.
+     *
+     * Depending on the bucket source, storage extraction from a shared view
+     * bucket may or may not be supported (even if the original buckets support
+     * it).
+     *
+     * \param bkt the original bucket, which must have been returned by
+     * `bucket_of_size()` of this bucket source (and not by a previous call to
+     * `shared_view_of()`).
+     *
+     * \return A shared view bucket.
+     */
+    [[nodiscard]] virtual auto
+    shared_view_of([[maybe_unused]] bucket<T> const &bkt) -> bucket<T const> {
+        throw std::logic_error(
+            "this bucket source does not support shared views");
+    }
 };
 
 /**
@@ -551,6 +606,56 @@ class new_delete_bucket_source final : public bucket_source<T> {
         // NOLINTNEXTLINE(cppcoreguidelines-avoid-c-arrays,modernize-avoid-c-arrays)
         std::unique_ptr<T[]> p(new T[size]);
         return bucket<T>{span(p.get(), size), std::move(p)};
+    }
+};
+
+/**
+ * \brief Sharable bucket source using regular memory allocation.
+ *
+ * \ingroup bucket-sources
+ *
+ * This bucket source provides buckets whose underlying memory is allocated via
+ * `new[]`. Extraction of the storage is supported and results in a
+ * `std::shared_ptr<T[]>`.
+ *
+ * This bucket source supports the creation of shared view buckets. Extraction
+ * of storage from shared views is also supported.
+ *
+ * This bucket source is thread-safe: buckets (or their storage) may be created
+ * and destroyed on multiple threads simultaneously. (Access to an individual
+ * bucket is not thread-safe.)
+ */
+template <typename T>
+class sharable_new_delete_bucket_source final : public bucket_source<T> {
+    sharable_new_delete_bucket_source() = default;
+
+  public:
+    /** \brief Create an instance. */
+    static auto create() -> std::shared_ptr<bucket_source<T>> {
+        static std::shared_ptr<bucket_source<T>> instance(
+            new sharable_new_delete_bucket_source());
+        return instance;
+    }
+
+    /** \brief Implements bucket source requirement. */
+    auto bucket_of_size(std::size_t size) -> bucket<T> override {
+        // NOLINTNEXTLINE(cppcoreguidelines-avoid-c-arrays,modernize-avoid-c-arrays)
+        std::shared_ptr<T[]> p(new T[size]);
+        return bucket<T>{span(p.get(), size), std::move(p)};
+    }
+
+    /** \brief Implements sharable bucket source requirement. */
+    [[nodiscard]] auto supports_shared_views() const noexcept
+        -> bool override {
+        return true;
+    }
+
+    /** \brief Implements sharable bucket source requirement. */
+    [[nodiscard]] auto shared_view_of(bucket<T> const &bkt)
+        -> bucket<T const> override {
+        // NOLINTNEXTLINE(cppcoreguidelines-avoid-c-arrays,modernize-avoid-c-arrays)
+        auto storage = bkt.template storage<std::shared_ptr<T[]>>();
+        return bucket<T const>{span<T const>(bkt), std::move(storage)};
     }
 };
 
