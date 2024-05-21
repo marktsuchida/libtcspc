@@ -31,12 +31,7 @@ namespace tcspc {
  * \brief Value-semantic container for array data allowing use of custom
  * storage.
  *
- * \ingroup events-core
- *
- * Bucket objects are used where a single event carries a large quantity of
- * data, such that it is beneficial to avoid copying the data, including to its
- * ultimate destination. Correct use of buckets enables zero-copy writing of
- * processing results to externally-provided destination memory.
+ * \ingroup buckets
  *
  * A bucket may be used as an event type (as in the output of `tcspc::batch` or
  * `tcspc::read_binary_stream`), or as a field in another event (as in the
@@ -85,9 +80,6 @@ namespace tcspc {
  * construct views of const data, in contexts where the ability to extract
  * storage is not relevant. In this case the bucket is used as a read-only data
  * handle similar to `tcspc::span`, but with the convenience of a regular type.
- *
- * \see \link bucket-sources Bucket sources \endlink
- * \see tcspc::extract_bucket
  *
  * \tparam T element type of the data array carried by the bucket
  */
@@ -434,7 +426,7 @@ template <typename T> class bucket {
 /**
  * \brief Create a `tcspc::bucket` referencing a span.
  *
- * \ingroup misc
+ * \ingroup buckets
  *
  * This can be used when a bucket is needed but is only used to view existing
  * data and its storage is not important. The storage of the returned bucket

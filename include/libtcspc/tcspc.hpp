@@ -119,6 +119,9 @@ namespace tcspc {
  * \defgroup events-core Core event types
  *
  * \brief General-purpose events.
+ *
+ * In addition to the events listed here, `tcspc::bucket` is also used as an
+ * event type, carrying a whole batch of elementary events, values, or bytes.
  */
 
 /**
@@ -528,9 +531,18 @@ namespace tcspc {
  */
 
 /**
- * \defgroup auxiliary Auxiliary types and objects
+ * \defgroup buckets Buckets and bucket sources
  *
- * \brief Auxiliary types and objects that define processor behavior.
+ * \brief Handling of large data buffers
+ *
+ * Buckets (`tcspc::bucket` instances) are used where a single event carries a
+ * large quantity of data, such that it is beneficial to avoid copying the
+ * data, including to its ultimate destination. Correct use of buckets enables
+ * zero-copy writing of processing results to externally-provided destination
+ * memory.
+ *
+ * \link bucket-sources Bucket sources \endlink provide bucket instances using
+ * different backing storage and management thereof.
  *
  * @{
  */
@@ -540,6 +552,16 @@ namespace tcspc {
  *
  * \brief Objects producing a series of `tcspc::bucket` instances to carry
  * data.
+ */
+
+/** @} <!-- group buckets --> */
+
+/**
+ * \defgroup auxiliary Auxiliary types and objects
+ *
+ * \brief Auxiliary types and objects that define processor behavior.
+ *
+ * @{
  */
 
 /**
