@@ -610,7 +610,6 @@ class sharable_new_delete_bucket_source final : public bucket_source<T> {
     }
 };
 
-// Extraction of storage is not supported. Thread-safe.
 /**
  * \brief Bucket source that reuses storage.
  *
@@ -730,6 +729,108 @@ class recycling_bucket_source final
         auto const spn = span(p->data(), p->size());
         return bucket<T>{
             spn, bucket_storage{this->shared_from_this(), std::move(p)}};
+    }
+};
+
+/**
+ * \brief Sharable bucket source that reuses storage.
+ *
+ * \ingroup bucket-sources
+ *
+ * This bucket source behaves identically to `tcspc::recycling_bucket_source`,
+ * except that creation of shared view buckets is supported.
+ *
+ * Bucket storage is reused after all shared views are destroyed.
+ */
+template <typename T, bool Blocking = false, bool ClearRecycled = false>
+class sharable_recycling_bucket_source final
+    : public bucket_source<T>,
+      public std::enable_shared_from_this<
+          sharable_recycling_bucket_source<T, Blocking, ClearRecycled>> {
+    std::mutex mutex;
+    std::condition_variable not_empty_condition;
+    std::size_t max_buckets;
+    std::size_t bucket_count = 0;
+    std::vector<std::unique_ptr<std::vector<T>>> recyclable;
+
+    // Wrap storage in private type to forbid observation/extraction.
+    struct bucket_storage {
+        std::shared_ptr<std::vector<T>> storage; // With custom deleter.
+    };
+
+    explicit sharable_recycling_bucket_source(std::size_t max_bucket_count)
+        : max_buckets(max_bucket_count) {}
+
+  public:
+    /**
+     * \brief Create an instance.
+     *
+     * \copydetails tcspc::recycling_bucket_source::create()
+     */
+    static auto create(
+        std::size_t max_bucket_count = std::numeric_limits<std::size_t>::max())
+        -> std::shared_ptr<bucket_source<T>> {
+        return std::shared_ptr<sharable_recycling_bucket_source>(
+            new sharable_recycling_bucket_source(max_bucket_count));
+    }
+
+    /**
+     * \brief Implements bucket source requirement.
+     *
+     * \copydetails tcspc::recycling_bucket_source::bucket_of_size()
+     */
+    auto bucket_of_size(std::size_t size) -> bucket<T> override {
+        std::unique_ptr<std::vector<T>> p;
+        {
+            std::unique_lock lock(mutex);
+            if (recyclable.empty() && bucket_count < max_buckets) {
+                ++bucket_count;
+            } else {
+                if constexpr (Blocking) {
+                    not_empty_condition.wait(
+                        lock, [&] { return not recyclable.empty(); });
+                } else if (recyclable.empty()) {
+                    throw buffer_overflow_error(
+                        "sharable recycling bucket source exhausted");
+                }
+                p = std::move(recyclable.back());
+                recyclable.pop_back();
+            }
+        }
+        if (not p)
+            p = std::make_unique<std::vector<T>>();
+        p->resize(size);
+        auto const spn = span(*p);
+        std::shared_ptr<std::vector<T>> shptr{
+            p.release(),
+            [self = this->shared_from_this()](std::vector<T> *pv) {
+                if (not pv)
+                    return;
+                if constexpr (ClearRecycled)
+                    pv->clear();
+                {
+                    std::scoped_lock lock(self->mutex);
+                    self->recyclable.emplace_back(pv);
+                }
+                if constexpr (Blocking)
+                    self->not_empty_condition.notify_one();
+            }
+
+        };
+        return bucket<T>{spn, bucket_storage{shptr}};
+    }
+
+    /** \brief Implements sharable bucket source requirement. */
+    [[nodiscard]] auto supports_shared_views() const noexcept
+        -> bool override {
+        return true;
+    }
+
+    /** \brief Implements sharable bucket source requirement. */
+    [[nodiscard]] auto shared_view_of(bucket<T> const &bkt)
+        -> bucket<T const> override {
+        auto storage = bkt.template storage<bucket_storage>();
+        return bucket<T const>{span<T const>(bkt), std::move(storage)};
     }
 };
 

@@ -197,10 +197,112 @@ TEST_CASE(
     });
     thread_start_latch.wait();
     wait_a_little(); // For thread to block waiting for bucket.
-    { auto const discard = std::move(b1); }
+    b1 = {};
     third_bucket_obtained_latch.wait();
     t.join();
     auto bb = source->bucket_of_size(9);
+}
+
+TEST_CASE(
+    "sharable_recycling_bucket_source provides buckets up to max_count") {
+    auto source = sharable_recycling_bucket_source<int>::create(2);
+    CHECK(source->supports_shared_views());
+    auto b0 = source->bucket_of_size(3);
+    {
+        auto b1 = source->bucket_of_size(5);
+        CHECK_THROWS_AS(source->bucket_of_size(7), buffer_overflow_error);
+    }
+    auto b1 = source->bucket_of_size(5);
+    CHECK_THROWS_AS(source->bucket_of_size(7), buffer_overflow_error);
+}
+
+TEST_CASE(
+    "sharable_recycling_bucket_source clears recycled buckets iff requested") {
+    auto non_clearing_source =
+        sharable_recycling_bucket_source<int, false, false>::create(2);
+    auto clearing_source =
+        sharable_recycling_bucket_source<int, false, true>::create(2);
+
+    {
+        auto b0 = non_clearing_source->bucket_of_size(1);
+        auto b1 = clearing_source->bucket_of_size(1);
+        b0[0] = 42;
+        b1[0] = 42;
+    }
+    auto b0 = non_clearing_source->bucket_of_size(1);
+    auto b1 = clearing_source->bucket_of_size(1);
+    CHECK(b0[0] == 42);
+    CHECK(b1[0] == 0);
+}
+
+TEST_CASE(
+    "blocking sharable_recycling_bucket_source provides buckets up to max_count") {
+    auto source = sharable_recycling_bucket_source<int, true>::create(2);
+    auto b0 = source->bucket_of_size(3);
+    auto b1 = source->bucket_of_size(5);
+    latch thread_start_latch(1);
+    latch third_bucket_obtained_latch(1);
+    std::thread t([&, source] {
+        thread_start_latch.count_down();
+        auto b = source->bucket_of_size(7);
+        third_bucket_obtained_latch.count_down();
+    });
+    thread_start_latch.wait();
+    wait_a_little(); // For thread to block waiting for bucket.
+    b1 = {};
+    third_bucket_obtained_latch.wait();
+    t.join();
+    auto bb = source->bucket_of_size(9);
+}
+
+TEST_CASE("sharable_recycling_bucket_source provides sharable buckets") {
+    auto source = sharable_recycling_bucket_source<int>::create();
+    CHECK(source->supports_shared_views());
+    auto b = source->bucket_of_size(3);
+    CHECK(b.size() == 3);
+    std::fill(b.begin(), b.end(), 0);
+    b[0] = 42;
+
+    SECTION("create view, destroy view, original survives") {
+        {
+            auto v = source->shared_view_of(b);
+            static_assert(std::is_same_v<decltype(v), bucket<int const>>);
+            CHECK(v.size() == 3);
+            CHECK(v[0] == 42);
+            CHECK(v == test_bucket<int const>({42, 0, 0}));
+            CHECK(v.data() == b.data());
+
+            // Mutation of original is observable:
+            b[1] = 123;
+            CHECK(v[1] == 123);
+        }
+        CHECK(b == test_bucket<int>({42, 123, 0}));
+    }
+
+    SECTION("create view, destroy original first, view survives") {
+        auto v = source->shared_view_of(b);
+        b = {};
+        CHECK(v == test_bucket<int const>({42, 0, 0}));
+    }
+}
+
+TEST_CASE(
+    "sharable_recycling_bucket_source storage is recycled after all views discarded") {
+    auto source = sharable_recycling_bucket_source<int>::create(2);
+    CHECK(source->supports_shared_views());
+    auto b0 = source->bucket_of_size(3);
+    {
+        auto b1 = source->bucket_of_size(5);
+        auto v1 = source->shared_view_of(b1);
+        b1 = {};
+        CHECK_THROWS_AS(source->bucket_of_size(7), buffer_overflow_error);
+    }
+    auto b1 = source->bucket_of_size(5);
+    auto v0 = source->shared_view_of(b0);
+    b0 = {};
+    CHECK_THROWS_AS(source->bucket_of_size(7), buffer_overflow_error);
+    v0 = {};
+    auto b2 = source->bucket_of_size(7);
 }
 
 namespace {
