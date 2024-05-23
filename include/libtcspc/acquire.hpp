@@ -24,7 +24,6 @@
 #include <mutex>
 #include <optional>
 #include <stdexcept>
-#include <thread>
 #include <utility>
 
 namespace tcspc {
@@ -183,6 +182,47 @@ class acquire_full_buckets {
         halt_cv.notify_one();
     }
 
+    // Mutates 'b' only when throwing.
+    void emit_live(bucket<T> &b, std::size_t start, std::size_t count) {
+        if (count > 0) {
+            try {
+                auto v = bsource->shared_view_of(b);
+                v.shrink(start, count);
+                live_downstream.handle(std::move(v));
+            } catch (end_of_processing const &) {
+                b.shrink(0, start + count);
+                batch_downstream.handle(std::move(b));
+                batch_downstream.flush();
+                throw;
+            }
+        }
+    }
+
+    void emit_batch(bucket<T> &&b) {
+        try {
+            batch_downstream.handle(std::move(b));
+        } catch (end_of_processing const &) {
+            live_downstream.flush();
+            throw;
+        }
+    }
+
+    void flush_downstreams(bucket<T> &&b, std::size_t filled) {
+        std::exception_ptr end;
+        try {
+            live_downstream.flush();
+        } catch (end_of_processing const &) {
+            end = std::current_exception();
+        }
+        if (not b.empty() && filled > 0) {
+            b.shrink(0, filled);
+            batch_downstream.handle(std::move(b));
+        }
+        batch_downstream.flush();
+        if (end)
+            std::rethrow_exception(end);
+    }
+
   public:
     explicit acquire_full_buckets(
         Reader &&reader, std::shared_ptr<bucket_source<T>> buffer_provider,
@@ -225,7 +265,6 @@ class acquire_full_buckets {
     void flush() {
         bucket<T> b;
         std::size_t filled = 0;
-        bool reached_end = false;
         {
             std::unique_lock lock(halt_mutex);
             while (not halted) {
@@ -237,32 +276,13 @@ class acquire_full_buckets {
                 }
                 auto const unfilled = span(b).subspan(filled);
                 std::optional<std::size_t> const read = reader(unfilled);
-                if (not read) {
-                    reached_end = true;
-                    break;
-                }
-                if constexpr (not std::is_same_v<LiveDownstream, null_sink>) {
-                    if (*read > 0) {
-                        try {
-                            auto v = bsource->shared_view_of(b);
-                            v.shrink(filled, *read);
-                            live_downstream.handle(std::move(v));
-                        } catch (end_of_processing const &) {
-                            b.shrink(0, filled + *read);
-                            batch_downstream.handle(std::move(b));
-                            batch_downstream.flush();
-                            throw;
-                        }
-                    }
-                }
+                if (not read)
+                    return flush_downstreams(std::move(b), filled);
+                if constexpr (not std::is_same_v<LiveDownstream, null_sink>)
+                    emit_live(b, filled, *read);
                 filled += *read;
                 if (filled == bsize) {
-                    try {
-                        batch_downstream.handle(std::move(b));
-                    } catch (end_of_processing const &) {
-                        live_downstream.flush();
-                        throw;
-                    }
+                    emit_batch(std::move(b));
                     b = {};
                 }
                 lock.lock();
@@ -272,24 +292,7 @@ class acquire_full_buckets {
                 }
             }
         }
-
-        if (reached_end) {
-            std::exception_ptr end;
-            try {
-                live_downstream.flush();
-            } catch (end_of_processing const &) {
-                end = std::current_exception();
-            }
-            if (not b.empty() && filled > 0) {
-                b.shrink(0, filled);
-                batch_downstream.handle(std::move(b));
-            }
-            batch_downstream.flush();
-            if (end)
-                std::rethrow_exception(end);
-        } else {
-            throw acquisition_halted();
-        }
+        throw acquisition_halted();
     }
 };
 

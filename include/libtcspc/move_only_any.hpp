@@ -17,7 +17,7 @@
 namespace tcspc::internal {
 
 struct bad_move_only_any_cast : std::bad_cast {
-    auto what() const noexcept -> char const * override {
+    [[nodiscard]] auto what() const noexcept -> char const * override {
         return "bad_move_only_any_cast";
     }
 };

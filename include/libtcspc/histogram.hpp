@@ -17,6 +17,7 @@
 #include "histogramming.hpp"
 #include "introspect.hpp"
 #include "processor_traits.hpp"
+#include "span.hpp"
 
 #include <algorithm>
 #include <cstddef>
