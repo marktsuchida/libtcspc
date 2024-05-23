@@ -18,6 +18,7 @@
 #include "check.hpp"
 #include "common.hpp"
 #include "context.hpp"
+#include "copy_to_buckets.hpp"
 #include "core.hpp"
 #include "count.hpp"
 #include "data_types.hpp"

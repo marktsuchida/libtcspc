@@ -14,6 +14,7 @@ public_cpp_headers = files(
     'libtcspc/check.hpp',
     'libtcspc/common.hpp',
     'libtcspc/context.hpp',
+    'libtcspc/copy_to_buckets.hpp',
     'libtcspc/core.hpp',
     'libtcspc/count.hpp',
     'libtcspc/data_types.hpp',

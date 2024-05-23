@@ -14,6 +14,7 @@ test_libtcspc_srcs = [
     'check.cpp',
     'common.cpp',
     'context.cpp',
+    'copy_to_buckets.cpp',
     'core.cpp',
     'count.cpp',
     'data_types.cpp',

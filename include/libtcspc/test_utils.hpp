@@ -1080,6 +1080,18 @@ template <typename T> class test_bucket_source : public bucket_source<T> {
     [[nodiscard]] auto bucket_count() const noexcept -> std::size_t {
         return count;
     }
+
+    /** \brief Implements sharable bucket source requirement. */
+    [[nodiscard]] auto supports_shared_views() const noexcept
+        -> bool override {
+        return src->supports_shared_views();
+    }
+
+    /** \brief Implements sharable bucket source requirement. */
+    [[nodiscard]] auto shared_view_of(bucket<T> const &bkt)
+        -> bucket<T const> override {
+        return src->shared_view_of(bkt);
+    }
 };
 
 /**

@@ -312,7 +312,7 @@ class acquire_full_buckets {
  * the bucket is passed downstream. In general, therefore, the buckets are
  * partially filled.
  *
- * \tparam T the element type of the acquired data (usually a byte or  integer
+ * \tparam T the element type of the acquired data (usually a byte or integer
  * type)
  *
  * \tparam Reader type of reader (usually deduced)
@@ -321,8 +321,7 @@ class acquire_full_buckets {
  *
  * \param reader reader
  *
- * \param buffer_provider bucket source providing event buffers (must support
- * shared views)
+ * \param buffer_provider bucket source providing event buffers
  *
  * \param batch_size number of elements (`T`) to collect in each bucket
  *
@@ -349,8 +348,8 @@ auto acquire(Reader &&reader,
 
 /**
  * \brief Create a processor that acquires data into buckets, ensuring that
- * each bucket is filled but also providing views of partial buckets in real
- * time.
+ * each bucket is filled to a fixed size but also providing views of partial
+ * buckets in real time.
  *
  * \ingroup processors-acquisition
  *
@@ -367,8 +366,7 @@ auto acquire(Reader &&reader,
  * up to the given \p batch_size (except for the last batch, which may be
  * smaller). This is typically used for saving the raw data to disk.
  *
- * The two streams share the underlying bucket storage, and storage extraction
- * is only supported from the buckets passed to the \p batch_downstream.
+ * The two streams share the underlying bucket storage.
  *
  * \tparam T the element type of the acquired data (usually a byte or  integer
  * type)
@@ -384,7 +382,7 @@ auto acquire(Reader &&reader,
  * \param reader reader
  *
  * \param buffer_provider bucket source providing event buffers (must support
- * shared views)
+ * shared views unless \p LiveDownstream is `tcspc::null_sink`)
  *
  * \param batch_size number of elements (`T`) to collect in each bucket
  *
@@ -393,8 +391,7 @@ auto acquire(Reader &&reader,
  * \param live_downstream downstream processor receiving read-only views of
  * data per each read
  *
- * \param batch_downstream downstream processor receiving full buckets with
- * extractable storage
+ * \param batch_downstream downstream processor receiving full buckets
  *
  * \return processor
  *
