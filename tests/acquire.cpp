@@ -87,7 +87,7 @@ namespace {
 struct mock_int_reader {
     using ret_type = std::optional<std::size_t>;
     // NOLINTNEXTLINE(modernize-use-trailing-return-type)
-    MAKE_MOCK1(read, ret_type(span<int>));
+    MAKE_MOCK1(read, auto(span<int>)->ret_type);
     auto operator()(span<int> s) -> ret_type { return read(s); }
 };
 
