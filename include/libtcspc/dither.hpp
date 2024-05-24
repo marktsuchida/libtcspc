@@ -8,6 +8,7 @@
 
 #include "arg_wrappers.hpp"
 #include "data_types.hpp"
+#include "errors.hpp"
 
 #include <cassert>
 #include <cmath>
@@ -24,11 +25,12 @@ namespace tcspc {
 
 namespace internal {
 
-// TODO Dithering should add triangular-distributed noise (width 2), not
-// uniformly distributed. Otherwise the effective distribution is
-// sample-dependent. The distribution can be produced by adding two random
-// samples from uniformly distributed [0, 1) (and subtracting 0.5 before taking
-// floor).
+// Our dithering is done by adding a triangularly-distributed noise (width 2.0)
+// before rounding to the nearest integer. This is the simplest way to keep the
+// noise distribution independent of the sample value. (For example, adding a
+// uniformly-distributed noise (width 1.0) would not have this property because
+// samples closer to integer values would receive noise with a narrower
+// distribution after quantization.)
 
 // Design note: We do not use std::uniform_real_distribution or
 // std::generate_canonical, because they may have issues (may return the upper
@@ -36,39 +38,32 @@ namespace internal {
 // sequence across library implementations.) Instead, we use our own method to
 // produce random doubles in [0.0, 1.0).
 
+// We prefer std::minstd_rand() over std::mt19937[_64] because of its compact
+// state (the two have similar performance in a tight loop, but mt19937 has > 2
+// KiB of state, which can become a nontrivial fraction of the L1D if multiple
+// instances are in use). The "poor" quality of the MINSTD PRNG is likely not a
+// significant issue for dithering purposes.
+
+// The random integers from std::minstd_rand are in [1, 2147483646].
+static_assert(decltype(std::minstd_rand())::min() == 1);
+static_assert(decltype(std::minstd_rand())::max() == 2'147'483'646);
+// Do we care that 0 and 2^31-1 are not included in the range? Probably not for
+// dithering purposes.
+
 // Formality: Check our assumption that 'double' is IEEE 754 double precision.
 static_assert(std::numeric_limits<double>::is_iec559);
 static_assert(std::numeric_limits<double>::radix == 2);
 static_assert(std::numeric_limits<double>::digits == 53);
 
 // Make a uniformly-distributed random double value in [0.0, 1.0), given a
-// uniformly-distributed 64-bit random integer r (e.g. from std::mt19937_64).
-[[nodiscard]] inline auto uniform_double_0_1(std::uint64_t r) -> double {
-    // Keep the random bits in the 52-bit fraction field, but set the sign to
-    // positive and exponent to 0 (giving a value in [1.0, 2.0)).
-    r &= (1uLL << 52) - 1; // Keep only fraction
-    r |= 1023uLL << 52;    // Exponent = 0
-    double d{};
-    std::memcpy(&d, &r, sizeof(d));
-    return d - 1.0; // Will not produce subnormal values.
-}
-
-// Make a uniformly-distributed random double value in [0.0, 1.0), given a
 // uniformly-distributed 32-bit random integer r from std::minstd_rand.
 [[nodiscard]] inline auto uniform_double_0_1_minstd(std::uint32_t r)
     -> double {
-    // Since r comes from std::minstd_rand, it is in [1, 2147483646].
-    using minstd_type = decltype(std::minstd_rand0());
-    static_assert(minstd_type::min() == 1);
-    static_assert(minstd_type::max() == 2'147'483'646);
-    // Do we care that 0 and 2^31-1 are not included in the range? Probably not
-    // for dithering.
-    assert(r < 2'147'483'648); // Do allow 0 and 2147483647 in tests.
+    assert(r < 2'147'483'648u); // Do allow 0 and 2147483647 in tests.
 
-    // 31 random bits should be plenty for our 1-dimensional dithering
-    // purposes. Put the 31 random bits in the most significant part of the
-    // 52-bit fraction field; leave the sign positive and exponent to 0 (giving
-    // a value in [1.0, 2.0)).
+    // Put the 31 random bits in the most significant part of the 52-bit
+    // fraction field; leave the sign positive and exponent to 0 (giving a
+    // value in [1.0, 2.0)).
     auto bits = std::uint64_t(r) << (52 - 31);
     bits |= 1023uLL << 52; // Exponent = 0
     double d{};
@@ -76,25 +71,36 @@ static_assert(std::numeric_limits<double>::digits == 53);
     return d - 1.0; // Will not produce subnormal values.
 }
 
+// Make a triangularly-distributed random double value in (0.0, 2.0), centered
+// at 1.0, given two uniformly-distributed 32-bit random integers r0, r1 from
+// std::minstd_rand.
+[[nodiscard]] inline auto triangular_double_0_2_minstd(std::uint32_t r0,
+                                                       std::uint32_t r1)
+    -> double {
+    auto const d0 = uniform_double_0_1_minstd(r0);
+    auto const d1 = uniform_double_0_1_minstd(r1);
+    return d0 + (1.0 - d1);
+}
+
+// Given noise in [0, 2) (from triangular distribution), return dithered value.
+// The return value is in (v - 1.5, v + 1.5).
 template <typename T>
-[[nodiscard]] inline auto dither(double value, double dither_noise) -> T {
-    assert(dither_noise >= 0.0);
-    assert(dither_noise < 1.0);
-    return static_cast<T>(std::floor(value + dither_noise));
+[[nodiscard]] inline auto apply_dither(double value, double dither_noise_0_2)
+    -> T {
+    assert(dither_noise_0_2 >= 0.0);
+    assert(dither_noise_0_2 < 2.0);
+    return static_cast<T>(std::floor(value + dither_noise_0_2 - 0.5));
 }
 
 template <typename T> class dithering_quantizer {
-    // Prefer std::minstd_rand() over std::mt19937[_64] because of its compact
-    // state (the two have similar performance in a tight loop, but mt19937 has
-    // > 2 KiB of state, which can become a nontrivial fraction of the L1D if
-    // multiple instances are in use). The "poor" quality of the MINSTD PRNG is
-    // likely not a significant issue for dithering purposes.
-    // TODO Check if it actually makes any difference.
-    std::minstd_rand prng;
+    std::minstd_rand prng; // Uses default seed (= 1) for reproducibility.
 
   public:
     [[nodiscard]] auto operator()(double value) -> T {
-        return dither<T>(value, uniform_double_0_1_minstd(prng()));
+        // Ensure r0, r1 are computed in order (for reproducibility).
+        auto const r0 = prng();
+        auto const r1 = prng();
+        return apply_dither<T>(value, triangular_double_0_2_minstd(r0, r1));
     }
 };
 
@@ -118,15 +124,16 @@ class dithered_one_shot_timing_generator {
   public:
     /**
      * \brief Construct an instance that generates a timing after \p delay
-     * relative to each trigger.
+     * (plus dither) relative to each trigger.
      *
-     * \p delay must not be negative.
+     * \p delay must be at least 1.5 (so that a negative delay does not result
+     * from the dithering).
      */
     explicit dithered_one_shot_timing_generator(arg::delay<double> delay)
         : dly(delay.value) {
-        if (dly < 0.0)
+        if (dly < 1.5)
             throw std::invalid_argument(
-                "dithered one-shot timing generator delay must be non-negative");
+                "dithered timing generator delay must be at least 1.5");
     }
 
     /** \brief Implements timing generator requirement. */
@@ -154,7 +161,8 @@ class dithered_one_shot_timing_generator {
  *
  * The delay of the output event (relative to the trigger event) is obtained
  * from the `delay` data member (type `double`) of each trigger event
- * (typically `tcspc::real_one_shot_timing_event`).
+ * (typically `tcspc::real_one_shot_timing_event`). It must be at least 1.5 (so
+ * that a negative delay does not result from the dithering).
  *
  * \tparam DataTypes data type set specifying `abstime_type`
  */
@@ -170,6 +178,9 @@ class dynamic_dithered_one_shot_timing_generator {
         static_assert(std::is_same_v<decltype(event.abstime),
                                      typename DataTypes::abstime_type>);
         static_assert(std::is_same_v<decltype(event.delay), double>);
+        if (event.delay < 1.5)
+            throw data_validation_error(
+                "dithered timing generator delay must be at least 1.5");
         next = event.abstime + dithq(event.delay);
     }
 
@@ -191,7 +202,7 @@ template <typename Abstime> class dithered_linear_timing_generator_impl {
     Abstime next{};
 
     double dly{};
-    double intv{1.0};
+    double intv{3.0};
     std::size_t ct{};
 
     dithering_quantizer<Abstime> dithq;
@@ -199,17 +210,8 @@ template <typename Abstime> class dithered_linear_timing_generator_impl {
     void compute_next() {
         if (remaining == 0)
             return;
-        auto relnext = dithq(dly + intv * static_cast<double>(ct - remaining));
-        if (remaining < ct) { // Clamp to interval floor-ceil.
-            auto const relmin =
-                next - trigger_time + static_cast<Abstime>(std::floor(intv));
-            auto const relmax = relmin + 1;
-            if (relnext < relmin)
-                relnext = relmin;
-            else if (relnext > relmax)
-                relnext = relmax;
-        }
-        next = trigger_time + relnext;
+        auto const index = ct - remaining;
+        next = trigger_time + dithq(dly + intv * static_cast<double>(index));
     }
 
   public:
@@ -219,12 +221,12 @@ template <typename Abstime> class dithered_linear_timing_generator_impl {
         arg::delay<double> delay, arg::interval<double> interval,
         arg::count<std::size_t> count)
         : dly(delay.value), intv(interval.value), ct(count.value) {
-        if (dly < 0.0)
+        if (dly < 1.5)
             throw std::invalid_argument(
-                "dithered timing generator delay must be non-negative");
-        if (intv <= 0.0)
+                "dithered timing generator delay must be at least 1.5");
+        if (intv < 3.0)
             throw std::invalid_argument(
-                "dithered timing generator interval must be positive");
+                "dithered timing generator interval must be at least 3.0");
     }
 
     void trigger(arg::abstime<Abstime> abstime) {
@@ -240,13 +242,17 @@ template <typename Abstime> class dithered_linear_timing_generator_impl {
         dly = delay.value;
         intv = interval.value;
         ct = count.value;
+        if (dly < 1.5)
+            throw data_validation_error(
+                "dithered timing generator delay must be at least 1.5");
+        if (intv < 3.0)
+            throw data_validation_error(
+                "dithered timing generator interval must be at least 3.0");
         trigger(abstime);
     }
 
     [[nodiscard]] auto peek() const -> std::optional<Abstime> {
-        if (remaining > 0)
-            return next;
-        return std::nullopt;
+        return remaining > 0 ? next : std::optional<Abstime>{};
     }
 
     void pop() {
@@ -276,7 +282,8 @@ class dithered_linear_timing_generator {
      * \brief Construct an instance that generates \p count timings at \p
      * interval after \p delay relative to each trigger.
      *
-     * \p delay must be nonnegative; \p interval must be positive.
+     * \p delay must be at least 1.5; \p interval must be at least 3.0 (so that
+     * a negative delay or interval does not result from the dithering).
      */
     explicit dithered_linear_timing_generator(arg::delay<double> delay,
                                               arg::interval<double> interval,
@@ -308,7 +315,9 @@ class dithered_linear_timing_generator {
  *
  * The configuration of output timings is obtained from the `delay`,
  * `interval`, and `count` data members of each trigger event (typically
- * tcspc::real_linear_timing_event).
+ * tcspc::real_linear_timing_event). The delay must be at least 1.5 and the
+ * interval must be at least 3.0 (so that a negative delay or interval does not
+ * result from the dithering).
  *
  * \tparam DataTypes data type set specifying `abstime_type`
  */
