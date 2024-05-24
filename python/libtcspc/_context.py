@@ -5,6 +5,7 @@
 import copy
 import functools
 import itertools
+from collections.abc import Callable
 from typing import Any
 
 import cppyy
@@ -81,7 +82,7 @@ class Context:
         ctx_var = "ctx"
         code = graph.generate_cpp("", ctx_var)
         self._proc = _instantiator(code, ctx_var)(self._ctx)
-        self._flushable = True
+        self._spent: str | None = None  # Set to reason of expiration.
 
     def access(self, node_name: str) -> Any:
         """
@@ -106,8 +107,38 @@ class Context:
             raise TypeError(f"Node {node_name} has no access type")
         return access_type(self._ctx, f"/{node_name}", ref=self._proc)
 
-    # TODO handle(self, event) (with appropriate arrangement for input event
-    # types from Python)
+    def _check_ready(self) -> None:
+        if self._spent:
+            raise RuntimeError(f"processor already {self._spent}")
+
+    def _translate_exceptions(self, func: Callable[..., None]):
+        try:
+            func()
+        except cppyy.gbl.tcspc.end_of_processing as e:
+            self._spent = "finished by detecting end of stream"
+            raise EndOfProcessing(e.what()) from e
+        except:
+            self._spent = "finished with error"
+            raise
+
+    def handle(self, event: Any) -> None:
+        """
+        Send an event to the processor input.
+
+        Parameters
+        ----------
+        event
+            The event, which is translated to a C++ type by cppyy.
+
+        Raises
+        ------
+        EndOfProcessing
+            If the processor detected the end of the stream (of interest).
+        cppyy.gbl.std.exception
+            If there was an error during processing.
+        """
+        self._check_ready()
+        self._translate_exceptions(lambda: self._proc.handle(event))
 
     def flush(self) -> None:
         """
@@ -116,15 +147,10 @@ class Context:
         Raises
         ------
         EndOfProcessing
-            If processing finished without error, but for a reason other than
-            the end of the input being reached.
+            If the processor detected the end of the stream (of interest).
         cppyy.gbl.std.exception
             If there was an error during processing.
         """
-        if not self._flushable:
-            raise RuntimeError("already flushed")
-        self._flushable = False
-        try:
-            self._proc.flush()
-        except cppyy.gbl.tcspc.end_of_processing as e:
-            raise EndOfProcessing(e.what()) from e
+        self._check_ready()
+        self._translate_exceptions(lambda: self._proc.flush())
+        self._spent = "flushed"

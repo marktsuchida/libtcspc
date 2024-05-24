@@ -34,8 +34,21 @@ def test_context_graph_with_single_input_allowed():
     g = Graph()
     g.add_node("a", NullSink())
     c = Context(g)
+    c.handle(123)
     c.flush()
 
     g.add_node("c", Count(EventType("int")), downstream="a")
     c = Context(g)
+    c.handle(123)
     c.flush()
+
+
+def test_context_rejects_events_and_flush_when_expired():
+    g = Graph()
+    g.add_node("a", NullSink())
+    c = Context(g)
+    c.flush()
+    with pytest.raises(RuntimeError):
+        c.handle(123)
+    with pytest.raises(RuntimeError):
+        c.flush()
