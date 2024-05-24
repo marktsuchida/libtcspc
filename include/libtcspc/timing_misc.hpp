@@ -51,24 +51,24 @@ struct periodic_sequence_model_event {
     double interval;
 
     /** \brief Equality comparison operator. */
-    friend auto operator==(periodic_sequence_model_event const &lhs,
-                           periodic_sequence_model_event const &rhs) noexcept
-        -> bool {
+    friend auto
+    operator==(periodic_sequence_model_event const &lhs,
+               periodic_sequence_model_event const &rhs) noexcept -> bool {
         return lhs.abstime == rhs.abstime && lhs.delay == rhs.delay &&
                lhs.interval == rhs.interval;
     }
 
     /** \brief Inequality comparison operator. */
-    friend auto operator!=(periodic_sequence_model_event const &lhs,
-                           periodic_sequence_model_event const &rhs) noexcept
-        -> bool {
+    friend auto
+    operator!=(periodic_sequence_model_event const &lhs,
+               periodic_sequence_model_event const &rhs) noexcept -> bool {
         return not(lhs == rhs);
     }
 
     /** \brief Stream insertion operator. */
-    friend auto operator<<(std::ostream &stream,
-                           periodic_sequence_model_event const &event)
-        -> std::ostream & {
+    friend auto
+    operator<<(std::ostream &stream,
+               periodic_sequence_model_event const &event) -> std::ostream & {
         return stream << "offset_and_interval(" << event.abstime << " + "
                       << event.delay << ", " << event.interval << ')';
     }
@@ -95,23 +95,23 @@ struct real_one_shot_timing_event {
     double delay;
 
     /** \brief Equality comparison operator. */
-    friend auto operator==(real_one_shot_timing_event const &lhs,
-                           real_one_shot_timing_event const &rhs) noexcept
-        -> bool {
+    friend auto
+    operator==(real_one_shot_timing_event const &lhs,
+               real_one_shot_timing_event const &rhs) noexcept -> bool {
         return lhs.abstime == rhs.abstime && lhs.delay == rhs.delay;
     }
 
     /** \brief Inequality comparison operator. */
-    friend auto operator!=(real_one_shot_timing_event const &lhs,
-                           real_one_shot_timing_event const &rhs) noexcept
-        -> bool {
+    friend auto
+    operator!=(real_one_shot_timing_event const &lhs,
+               real_one_shot_timing_event const &rhs) noexcept -> bool {
         return not(lhs == rhs);
     }
 
     /** \brief Stream insertion operator. */
-    friend auto operator<<(std::ostream &stream,
-                           real_one_shot_timing_event const &event)
-        -> std::ostream & {
+    friend auto
+    operator<<(std::ostream &stream,
+               real_one_shot_timing_event const &event) -> std::ostream & {
         return stream << "real_one_shot_timing(" << event.abstime << " + "
                       << event.delay << ')';
     }
@@ -148,24 +148,24 @@ struct real_linear_timing_event {
     std::size_t count;
 
     /** \brief Equality comparison operator. */
-    friend auto operator==(real_linear_timing_event const &lhs,
-                           real_linear_timing_event const &rhs) noexcept
-        -> bool {
+    friend auto
+    operator==(real_linear_timing_event const &lhs,
+               real_linear_timing_event const &rhs) noexcept -> bool {
         return lhs.abstime == rhs.abstime && lhs.delay == rhs.delay &&
                lhs.interval == rhs.interval && lhs.count == rhs.count;
     }
 
     /** \brief Inequality comparison operator. */
-    friend auto operator!=(real_linear_timing_event const &lhs,
-                           real_linear_timing_event const &rhs) noexcept
-        -> bool {
+    friend auto
+    operator!=(real_linear_timing_event const &lhs,
+               real_linear_timing_event const &rhs) noexcept -> bool {
         return not(lhs == rhs);
     }
 
     /** \brief Stream insertion operator. */
-    friend auto operator<<(std::ostream &stream,
-                           real_linear_timing_event const &event)
-        -> std::ostream & {
+    friend auto
+    operator<<(std::ostream &stream,
+               real_linear_timing_event const &event) -> std::ostream & {
         return stream << "real_linear_timing(" << event.abstime << " + "
                       << event.delay << ", " << event.interval << ", "
                       << event.count << ')';

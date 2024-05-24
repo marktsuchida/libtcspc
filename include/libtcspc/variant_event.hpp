@@ -66,8 +66,8 @@ class variant_event<type_list<Events...>> : public std::variant<Events...> {
     using base_type = std::variant<Events...>;
     using base_type::base_type;
 
-    friend auto operator<<(std::ostream &stream, variant_event const &event)
-        -> std::ostream & {
+    friend auto operator<<(std::ostream &stream,
+                           variant_event const &event) -> std::ostream & {
         return std::visit(
             [&](auto const &e) -> std::ostream & { return stream << e; },
             event);

@@ -167,8 +167,8 @@ class null_timing_generator {
     }
 
     /** \brief Implements timing generator requirement. */
-    [[nodiscard]] auto peek() const
-        -> std::optional<typename DataTypes::abstime_type> {
+    [[nodiscard]] auto
+    peek() const -> std::optional<typename DataTypes::abstime_type> {
         return std::nullopt;
     }
 
@@ -211,8 +211,8 @@ class one_shot_timing_generator {
     }
 
     /** \brief Implements timing generator requirement. */
-    [[nodiscard]] auto peek() const
-        -> std::optional<typename DataTypes::abstime_type> {
+    [[nodiscard]] auto
+    peek() const -> std::optional<typename DataTypes::abstime_type> {
         return next;
     }
 
@@ -246,8 +246,8 @@ class dynamic_one_shot_timing_generator {
     }
 
     /** \brief Implements timing generator requirement. */
-    [[nodiscard]] auto peek() const
-        -> std::optional<typename DataTypes::abstime_type> {
+    [[nodiscard]] auto
+    peek() const -> std::optional<typename DataTypes::abstime_type> {
         return next;
     }
 
@@ -300,8 +300,8 @@ class linear_timing_generator {
     }
 
     /** \brief Implements timing generator requirement. */
-    [[nodiscard]] auto peek() const
-        -> std::optional<typename DataTypes::abstime_type> {
+    [[nodiscard]] auto
+    peek() const -> std::optional<typename DataTypes::abstime_type> {
         if (remaining > 0)
             return next;
         return std::nullopt;
@@ -342,8 +342,8 @@ class dynamic_linear_timing_generator {
     }
 
     /** \brief Implements timing generator requirement. */
-    [[nodiscard]] auto peek() const
-        -> std::optional<typename DataTypes::abstime_type> {
+    [[nodiscard]] auto
+    peek() const -> std::optional<typename DataTypes::abstime_type> {
         if (remaining > 0)
             return next;
         return std::nullopt;

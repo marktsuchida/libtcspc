@@ -28,12 +28,12 @@ class move_only_any {
     struct polymorphic {
         virtual ~polymorphic() = default;
         virtual void move_construct_at(std::byte *storage) noexcept = 0;
-        [[nodiscard]] virtual auto const_ptr() const noexcept
-            -> void const * = 0;
+        [[nodiscard]] virtual auto
+        const_ptr() const noexcept -> void const * = 0;
         [[nodiscard]] virtual auto ptr() noexcept -> void * = 0;
         [[nodiscard]] virtual auto has_value() const noexcept -> bool = 0;
-        [[nodiscard]] virtual auto type() const noexcept
-            -> std::type_info const & = 0;
+        [[nodiscard]] virtual auto
+        type() const noexcept -> std::type_info const & = 0;
     };
 
     struct polymorphic_no_value : public polymorphic {
@@ -41,8 +41,8 @@ class move_only_any {
             new (storage) polymorphic_no_value();
         }
 
-        [[nodiscard]] auto const_ptr() const noexcept
-            -> void const * override {
+        [[nodiscard]] auto
+        const_ptr() const noexcept -> void const * override {
             return nullptr;
         }
 
@@ -54,8 +54,8 @@ class move_only_any {
             return false;
         }
 
-        [[nodiscard]] auto type() const noexcept
-            -> std::type_info const & override {
+        [[nodiscard]] auto
+        type() const noexcept -> std::type_info const & override {
             return typeid(void);
         }
     };
@@ -71,8 +71,8 @@ class move_only_any {
             new (storage) polymorphic_on_heap(std::move(value));
         }
 
-        [[nodiscard]] auto const_ptr() const noexcept
-            -> void const * override {
+        [[nodiscard]] auto
+        const_ptr() const noexcept -> void const * override {
             return value.get();
         }
 
@@ -84,8 +84,8 @@ class move_only_any {
             return true;
         }
 
-        [[nodiscard]] auto type() const noexcept
-            -> std::type_info const & override {
+        [[nodiscard]] auto
+        type() const noexcept -> std::type_info const & override {
             return typeid(V);
         }
     };
@@ -102,8 +102,8 @@ class move_only_any {
             new (storage) polymorphic_sbo(std::move(value));
         }
 
-        [[nodiscard]] auto const_ptr() const noexcept
-            -> void const * override {
+        [[nodiscard]] auto
+        const_ptr() const noexcept -> void const * override {
             return &value;
         }
 
@@ -113,8 +113,8 @@ class move_only_any {
             return true;
         }
 
-        [[nodiscard]] auto type() const noexcept
-            -> std::type_info const & override {
+        [[nodiscard]] auto
+        type() const noexcept -> std::type_info const & override {
             return typeid(V);
         }
     };
@@ -156,8 +156,8 @@ class move_only_any {
     friend auto move_only_any_cast(move_only_any &&operand) -> U;
 
     template <typename V>
-    friend auto move_only_any_cast(move_only_any const *operand) noexcept
-        -> V const *;
+    friend auto
+    move_only_any_cast(move_only_any const *operand) noexcept -> V const *;
 
     template <typename V>
     friend auto move_only_any_cast(move_only_any *operand) noexcept -> V *;
@@ -253,8 +253,8 @@ class move_only_any {
     }
 
     template <typename V, typename T, typename... Args>
-    auto emplace(std::initializer_list<T> il, Args &&...args)
-        -> std::decay_t<V> & {
+    auto emplace(std::initializer_list<T> il,
+                 Args &&...args) -> std::decay_t<V> & {
         using U = std::decay_t<V>;
         poly()->~polymorphic();
         if constexpr (uses_sbo<U>()) {
@@ -348,8 +348,8 @@ auto make_move_only_any(Args &&...args) -> move_only_any {
 }
 
 template <typename V, typename T, typename... Args>
-auto make_move_only_any(std::initializer_list<T> il, Args &&...args)
-    -> move_only_any {
+auto make_move_only_any(std::initializer_list<T> il,
+                        Args &&...args) -> move_only_any {
     static_assert(not std::is_void_v<V>);
     return move_only_any(std::in_place_type<V>, il,
                          std::forward<Args>(args)...);

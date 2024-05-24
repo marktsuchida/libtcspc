@@ -57,8 +57,8 @@ static_assert(std::numeric_limits<double>::digits == 53);
 
 // Make a uniformly-distributed random double value in [0.0, 1.0), given a
 // uniformly-distributed 32-bit random integer r from std::minstd_rand.
-[[nodiscard]] inline auto uniform_double_0_1_minstd(std::uint32_t r)
-    -> double {
+[[nodiscard]] inline auto
+uniform_double_0_1_minstd(std::uint32_t r) -> double {
     assert(r < 2'147'483'648u); // Do allow 0 and 2147483647 in tests.
 
     // Put the 31 random bits in the most significant part of the 52-bit
@@ -74,9 +74,8 @@ static_assert(std::numeric_limits<double>::digits == 53);
 // Make a triangularly-distributed random double value in (0.0, 2.0), centered
 // at 1.0, given two uniformly-distributed 32-bit random integers r0, r1 from
 // std::minstd_rand.
-[[nodiscard]] inline auto triangular_double_0_2_minstd(std::uint32_t r0,
-                                                       std::uint32_t r1)
-    -> double {
+[[nodiscard]] inline auto
+triangular_double_0_2_minstd(std::uint32_t r0, std::uint32_t r1) -> double {
     auto const d0 = uniform_double_0_1_minstd(r0);
     auto const d1 = uniform_double_0_1_minstd(r1);
     return d0 + (1.0 - d1);
@@ -85,8 +84,8 @@ static_assert(std::numeric_limits<double>::digits == 53);
 // Given noise in [0, 2) (from triangular distribution), return dithered value.
 // The return value is in (v - 1.5, v + 1.5).
 template <typename T>
-[[nodiscard]] inline auto apply_dither(double value, double dither_noise_0_2)
-    -> T {
+[[nodiscard]] inline auto apply_dither(double value,
+                                       double dither_noise_0_2) -> T {
     assert(dither_noise_0_2 >= 0.0);
     assert(dither_noise_0_2 < 2.0);
     return static_cast<T>(std::floor(value + dither_noise_0_2 - 0.5));
@@ -144,8 +143,8 @@ class dithered_one_shot_timing_generator {
     }
 
     /** \brief Implements timing generator requirement. */
-    [[nodiscard]] auto peek() const
-        -> std::optional<typename DataTypes::abstime_type> {
+    [[nodiscard]] auto
+    peek() const -> std::optional<typename DataTypes::abstime_type> {
         return next;
     }
 
@@ -185,8 +184,8 @@ class dynamic_dithered_one_shot_timing_generator {
     }
 
     /** \brief Implements timing generator requirement. */
-    [[nodiscard]] auto peek() const
-        -> std::optional<typename DataTypes::abstime_type> {
+    [[nodiscard]] auto
+    peek() const -> std::optional<typename DataTypes::abstime_type> {
         return next;
     }
 
@@ -298,8 +297,8 @@ class dithered_linear_timing_generator {
     }
 
     /** \brief Implements timing generator requirement. */
-    [[nodiscard]] auto peek() const
-        -> std::optional<typename DataTypes::abstime_type> {
+    [[nodiscard]] auto
+    peek() const -> std::optional<typename DataTypes::abstime_type> {
         return impl.peek();
     }
 
@@ -338,8 +337,8 @@ class dynamic_dithered_linear_timing_generator {
     }
 
     /** \brief Implements timing generator requirement. */
-    [[nodiscard]] auto peek() const
-        -> std::optional<typename DataTypes::abstime_type> {
+    [[nodiscard]] auto
+    peek() const -> std::optional<typename DataTypes::abstime_type> {
         return impl.peek();
     }
 

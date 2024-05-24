@@ -45,8 +45,8 @@ struct warning_event {
     }
 
     /** \brief Stream insertion operator. */
-    friend auto operator<<(std::ostream &stream, warning_event const &event)
-        -> std::ostream & {
+    friend auto operator<<(std::ostream &stream,
+                           warning_event const &event) -> std::ostream & {
         return stream << event.message;
     }
 };

@@ -134,8 +134,8 @@ enum class emitted_as {
 };
 
 /** \private */
-inline auto operator<<(std::ostream &stream, emitted_as cat)
-    -> std::ostream & {
+inline auto operator<<(std::ostream &stream,
+                       emitted_as cat) -> std::ostream & {
     switch (cat) {
     case emitted_as::any_allowed:
         return stream << "emitted_as::any_allowed";
@@ -190,8 +190,8 @@ inline void check_value_category(feed_as feed_cat, emitted_as expected,
     }
 }
 
-inline auto operator<<(std::ostream &stream, emitted_value_category cat)
-    -> std::ostream & {
+inline auto operator<<(std::ostream &stream,
+                       emitted_value_category cat) -> std::ostream & {
     switch (cat) {
         using e = emitted_value_category;
     case e::const_lvalue:
@@ -210,8 +210,8 @@ using recorded_event =
     std::pair<emitted_value_category, variant_event<EventList>>;
 
 template <typename EventList>
-auto operator<<(std::ostream &stream, recorded_event<EventList> const &pair)
-    -> std::ostream & {
+auto operator<<(std::ostream &stream,
+                recorded_event<EventList> const &pair) -> std::ostream & {
     return stream << pair.second << ' ' << pair.first;
 }
 
@@ -235,8 +235,8 @@ class capture_output_access {
     std::function<std::string()> events_as_string_func;
 
     template <typename EventList>
-    auto peek_events() const
-        -> std::vector<internal::recorded_event<EventList>> {
+    auto
+    peek_events() const -> std::vector<internal::recorded_event<EventList>> {
         return std::any_cast<
             std::function<std::vector<internal::recorded_event<EventList>>()>>(
             peek_events_func)();
@@ -321,8 +321,8 @@ class capture_output_access {
      * \return the event
      */
     template <typename Event, typename EventList>
-    auto pop(feed_as feeder_value_category, emitted_as value_category)
-        -> Event {
+    auto pop(feed_as feeder_value_category,
+             emitted_as value_category) -> Event {
         static_assert(type_list_contains_v<EventList, Event>);
         auto const events = peek_events<EventList>();
         try {
@@ -587,8 +587,8 @@ template <typename EventList> class capture_output_checker {
      * \return true if the check was successful
      */
     template <typename Event>
-    auto check(emitted_as value_category, Event const &expected_event)
-        -> bool {
+    auto check(emitted_as value_category,
+               Event const &expected_event) -> bool {
         static_assert(type_list_contains_v<EventList, Event>);
         return acc.check<Event, EventList>(feeder_valcat, value_category,
                                            expected_event);
@@ -949,10 +949,9 @@ auto feed_input(feed_as value_category, Downstream &&downstream) {
  */
 template <int N> struct empty_test_event {
     /** \brief Equality comparison operator. */
-    friend auto
-    operator==([[maybe_unused]] empty_test_event<N> const &lhs,
-               [[maybe_unused]] empty_test_event<N> const &rhs) noexcept
-        -> bool {
+    friend auto operator==(
+        [[maybe_unused]] empty_test_event<N> const &lhs,
+        [[maybe_unused]] empty_test_event<N> const &rhs) noexcept -> bool {
         return true;
     }
 
@@ -985,22 +984,22 @@ struct time_tagged_test_event {
     typename DataTypes::abstime_type abstime;
 
     /** \brief Equality comparison operator. */
-    friend auto operator==(time_tagged_test_event const &lhs,
-                           time_tagged_test_event const &rhs) noexcept
-        -> bool {
+    friend auto
+    operator==(time_tagged_test_event const &lhs,
+               time_tagged_test_event const &rhs) noexcept -> bool {
         return lhs.abstime == rhs.abstime;
     }
 
     /** \brief Inequality comparison operator. */
-    friend auto operator!=(time_tagged_test_event const &lhs,
-                           time_tagged_test_event const &rhs) noexcept
-        -> bool {
+    friend auto
+    operator!=(time_tagged_test_event const &lhs,
+               time_tagged_test_event const &rhs) noexcept -> bool {
         return not(lhs == rhs);
     }
 
     /** \brief Stream insertion operator. */
-    friend auto operator<<(std::ostream &strm, time_tagged_test_event const &e)
-        -> std::ostream & {
+    friend auto operator<<(std::ostream &strm,
+                           time_tagged_test_event const &e) -> std::ostream & {
         return strm << "time_tagged_test_event<" << N << ">{" << e.abstime
                     << "}";
     }
@@ -1061,9 +1060,9 @@ template <typename T> class test_bucket_source : public bucket_source<T> {
 
   public:
     /** \brief Create an instance. */
-    static auto create(std::shared_ptr<bucket_source<T>> backing_source,
-                       T fill_value)
-        -> std::shared_ptr<test_bucket_source<T>> {
+    static auto
+    create(std::shared_ptr<bucket_source<T>> backing_source,
+           T fill_value) -> std::shared_ptr<test_bucket_source<T>> {
         return std::shared_ptr<test_bucket_source<T>>(new test_bucket_source(
             std::move(backing_source), std::move(fill_value)));
     }
@@ -1082,14 +1081,14 @@ template <typename T> class test_bucket_source : public bucket_source<T> {
     }
 
     /** \brief Implements sharable bucket source requirement. */
-    [[nodiscard]] auto supports_shared_views() const noexcept
-        -> bool override {
+    [[nodiscard]] auto
+    supports_shared_views() const noexcept -> bool override {
         return src->supports_shared_views();
     }
 
     /** \brief Implements sharable bucket source requirement. */
-    [[nodiscard]] auto shared_view_of(bucket<T> const &bkt)
-        -> bucket<T const> override {
+    [[nodiscard]] auto
+    shared_view_of(bucket<T> const &bkt) -> bucket<T const> override {
         return src->shared_view_of(bkt);
     }
 };
