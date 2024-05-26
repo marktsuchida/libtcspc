@@ -34,6 +34,8 @@ TEST_CASE("type constraints: view_as_bytes") {
     using proc_type =
         decltype(view_as_bytes(sink_events<bucket<std::byte const>>()));
     STATIC_CHECK(is_processor_v<proc_type, int, double>);
+    STATIC_CHECK_FALSE(handles_event_v<proc_type, std::vector<int>>);
+    STATIC_CHECK_FALSE(handles_event_v<proc_type, bucket<std::vector<int>>>);
 }
 
 TEST_CASE("introspect: view_as_bytes") {

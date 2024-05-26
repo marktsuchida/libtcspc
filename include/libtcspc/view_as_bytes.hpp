@@ -36,14 +36,15 @@ template <typename Downstream> class view_as_bytes {
         return downstream.introspect_graph().push_entry_point(this);
     }
 
-    template <typename Event> void handle(Event const &event) {
-        static_assert(std::is_trivial_v<Event>);
+    template <typename Event,
+              typename = std::enable_if_t<std::is_trivial_v<Event>>>
+    void handle(Event const &event) {
         auto const b = ad_hoc_bucket(as_bytes(span(&event, 1)));
         downstream.handle(b);
     }
 
-    template <typename T> void handle(bucket<T> const &event) {
-        static_assert(std::is_trivial_v<T>);
+    template <typename T, typename = std::enable_if_t<std::is_trivial_v<T>>>
+    void handle(bucket<T> const &event) {
         auto const b = ad_hoc_bucket(as_bytes(span(event)));
         downstream.handle(b);
     }
