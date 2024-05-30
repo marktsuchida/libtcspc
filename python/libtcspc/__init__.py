@@ -16,12 +16,21 @@ from ._version import __version__ as __version__
 # extension modules (including cppyy's backend), so nothing is really lost.
 # This does work with meson-python's editable install.
 
+# libtcspc headers.
 with importlib.resources.as_file(
     importlib.resources.files("libtcspc").joinpath(
         "include/libtcspc/tcspc.hpp"
     )
 ) as main_header:
     cppyy.add_include_path(str(main_header.parent.parent))
+
+# Additional headers used by Python bindings.
+with importlib.resources.as_file(
+    importlib.resources.files("libtcspc").joinpath(
+        "include/libtcspc_py/handle_span.hpp"
+    )
+) as py_header:
+    cppyy.add_include_path(str(py_header.parent.parent))
 
 cppyy.include("libtcspc/tcspc.hpp")
 

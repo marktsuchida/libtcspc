@@ -5,12 +5,14 @@
 import copy
 import functools
 import itertools
-from collections.abc import Callable
+from contextlib import contextmanager
 from typing import Any
 
 import cppyy
 
 from ._graph import Graph
+
+cppyy.include("libtcspc_py/handle_span.hpp")
 
 cppyy.include("libtcspc/tcspc.hpp")
 
@@ -82,7 +84,7 @@ class Context:
         ctx_var = "ctx"
         code = graph.generate_cpp("", ctx_var)
         self._proc = _instantiator(code, ctx_var)(self._ctx)
-        self._spent: str | None = None  # Set to reason of expiration.
+        self._end_of_life_reason: str | None = None
 
     def access(self, node_name: str) -> Any:
         """
@@ -107,18 +109,17 @@ class Context:
             raise TypeError(f"Node {node_name} has no access type")
         return access_type(self._ctx, f"/{node_name}", ref=self._proc)
 
-    def _check_ready(self) -> None:
-        if self._spent:
-            raise RuntimeError(f"processor already {self._spent}")
-
-    def _translate_exceptions(self, func: Callable[..., None]):
+    @contextmanager
+    def _manage_processor_end_of_life(self):
+        if self._end_of_life_reason:
+            raise RuntimeError(f"processor already {self._end_of_life_reason}")
         try:
-            func()
+            yield
         except cppyy.gbl.tcspc.end_of_processing as e:
-            self._spent = "finished by detecting end of stream"
+            self._end_of_life_reason = "finished by detecting end of stream"
             raise EndOfProcessing(e.what()) from e
         except:
-            self._spent = "finished with error"
+            self._end_of_life_reason = "finished with error"
             raise
 
     def handle(self, event: Any) -> None:
@@ -128,7 +129,9 @@ class Context:
         Parameters
         ----------
         event
-            The event, which is translated to a C++ type by cppyy.
+            The event, which is translated to a C++ type by cppyy. As a special
+            case, if the event implements the buffer protocol, it is translated
+            to the corresponding span.
 
         Raises
         ------
@@ -137,8 +140,15 @@ class Context:
         cppyy.gbl.std.exception
             If there was an error during processing.
         """
-        self._check_ready()
-        self._translate_exceptions(lambda: self._proc.handle(event))
+        with self._manage_processor_end_of_life():
+            if cppyy.gbl.tcspc.py.is_buffer(event):
+                # Explicit template argument for Proc is necessary here (cppyy
+                # 3.1.2).
+                cppyy.gbl.tcspc.py.handle_buffer[type(self._proc)](
+                    self._proc, event
+                )
+            else:
+                self._proc.handle(event)
 
     def flush(self) -> None:
         """
@@ -151,6 +161,6 @@ class Context:
         cppyy.gbl.std.exception
             If there was an error during processing.
         """
-        self._check_ready()
-        self._translate_exceptions(lambda: self._proc.flush())
-        self._spent = "flushed"
+        with self._manage_processor_end_of_life():
+            self._proc.flush()
+        self._end_of_life_reason = "flushed"

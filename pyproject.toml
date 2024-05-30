@@ -20,6 +20,7 @@ build-backend = "mesonpy"
 
 [project.optional-dependencies]
 testing = [
+    "numpy",
     "pytest >= 8.0",
     "pytest-mock >= 3.0",
 ]

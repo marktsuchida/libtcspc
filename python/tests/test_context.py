@@ -2,6 +2,8 @@
 # Copyright 2019-2024 Board of Regents of the University of Wisconsin System
 # SPDX-License-Identifier: MIT
 
+import array
+
 import pytest
 from libtcspc._context import Context
 from libtcspc._events import EventType
@@ -52,3 +54,15 @@ def test_context_rejects_events_and_flush_when_expired():
         c.handle(123)
     with pytest.raises(RuntimeError):
         c.flush()
+
+
+def test_context_handles_buffer_events():
+    g = Graph()
+    g.add_node("a", NullSink())
+    c = Context(g)
+    c.handle(b"")
+    c.handle(b"abc")
+    c.handle(memoryview(b""))
+    c.handle(array.array("h", []))
+    c.handle(array.array("h", [1, 2, 3]))
+    c.flush()

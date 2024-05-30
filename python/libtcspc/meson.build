@@ -29,6 +29,10 @@ py_sources = files(
     'py.typed',
 )
 
+py_cpp_headers = files(
+    'include/libtcspc_py/handle_span.hpp',
+)
+
 python.install_sources(
     py_sources,
     subdir: py_package_name,
@@ -40,4 +44,9 @@ python.install_sources(
     public_cpp_headers,
     preserve_path: true,
     subdir: py_package_name / 'include',
+)
+
+python.install_sources(
+    py_cpp_headers,
+    subdir: py_package_name / 'include/libtcspc_py',
 )
