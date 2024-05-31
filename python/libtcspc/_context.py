@@ -21,20 +21,20 @@ cppyy.include("memory")
 cppyy.include("type_traits")
 
 
-_cppyy_context_counter = itertools.count()
+_cpp_name_counter = itertools.count()
 
 
 @functools.cache
 def _instantiator(graph_code: str, context_varname: str) -> Any:
-    fname = f"instantiate_graph_{next(_cppyy_context_counter)}"
+    fname = f"instantiate_graph_{next(_cpp_name_counter)}"
     cppyy.cppdef(f"""\
-        namespace tcspc::cppyy_context {{
+        namespace tcspc::py::context {{
             auto {fname}(std::shared_ptr<tcspc::context>
                          {context_varname}) {{
                 return {graph_code};
             }}
         }}""")
-    return getattr(cppyy.gbl.tcspc.cppyy_context, fname)
+    return getattr(cppyy.gbl.tcspc.py.context, fname)
 
 
 class EndOfProcessing(Exception):

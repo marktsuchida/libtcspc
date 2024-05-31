@@ -7,15 +7,15 @@ from textwrap import dedent
 
 import cppyy
 
-_cpp_ns_counter = itertools.count()
+_cpp_name_counter = itertools.count()
 
 
 def isolated_cppdef(code: str):
     # Run C++ code in a unique namespace and return the cppyy namespace object.
-    ns = f"cppyy_test_{next(_cpp_ns_counter)}"
+    ns = f"ns{next(_cpp_name_counter)}"
     code = dedent(f"""\
-        namespace tcspc::{ns} {{
+        namespace tcspc::py::isolated::{ns} {{
             {code}
         }}""")
     cppyy.cppdef(code)
-    return getattr(cppyy.gbl.tcspc, ns)
+    return getattr(cppyy.gbl.tcspc.py.isolated, ns)

@@ -11,19 +11,19 @@ import cppyy
 
 cppyy.include("type_traits")
 
-_cppyy_check_counter = itertools.count()
+_cpp_name_counter = itertools.count()
 
 
 @functools.cache
 def _is_same_type_impl(t0: str, t1: str) -> bool:
-    result_name = f"is_same_type_impl_{next(_cppyy_check_counter)}"
+    result_name = f"is_same_type_impl_{next(_cpp_name_counter)}"
     cppyy.cppdef(
         dedent(f"""\
-            namespace tcspc::cppyy_cpp_utils {{
+            namespace tcspc::py::cpp_utils {{
                 constexpr bool {result_name} = std::is_same_v<{t0}, {t1}>;
             }}""")
     )
-    return getattr(cppyy.gbl.tcspc.cppyy_cpp_utils, result_name)
+    return getattr(cppyy.gbl.tcspc.py.cpp_utils, result_name)
 
 
 def is_same_type(t0: str, t1: str) -> bool:

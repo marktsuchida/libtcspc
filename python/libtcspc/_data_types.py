@@ -10,7 +10,7 @@ from typing import TypedDict, Unpack
 import cppyy
 from typeguard import typechecked
 
-_cppyy_data_types_counter = itertools.count()
+_cpp_name_counter = itertools.count()
 
 
 class _DataTypes(TypedDict, total=False):
@@ -29,17 +29,17 @@ def _data_types_class(**kwargs: Unpack[_DataTypes]) -> str:
     if not len(types):
         return "tcspc::default_data_types"
 
-    class_name = f"data_types_{next(_cppyy_data_types_counter)}"
+    class_name = f"data_types_{next(_cpp_name_counter)}"
     typedefs = ("\n" + "    " * 5).join(types)
     cppyy.cppdef(
         dedent(f"""\
-            namespace tcspc::cppyy_data_types {{
+            namespace tcspc::py::data_types {{
                 class {class_name} : public default_data_types {{
                     {typedefs}
                 }};
             }}""")
     )
-    return f"tcspc::cppyy_data_types::{class_name}"
+    return f"tcspc::py::data_types::{class_name}"
 
 
 class DataTypes:
