@@ -5,7 +5,7 @@
 import copy
 import functools
 import itertools
-from collections.abc import Collection
+from collections.abc import Iterable
 from contextlib import contextmanager
 from typing import Any
 
@@ -105,6 +105,9 @@ class Context:
     graph : Graph
         The graph from which to instantiate the processor. There must be
         exactly one input port and no output ports.
+    event_cpptypes : iterable of str
+        The C++ type names accepted as events (via `handle()`) from Python.
+        As a special case, `span<T>` is treated the same as `span<T const>`.
 
     Raises
     ------
@@ -114,7 +117,7 @@ class Context:
     """
 
     def __init__(
-        self, graph: Graph, event_cpptypes: Collection[str] = ()
+        self, graph: Graph, event_cpptypes: Iterable[str] = ()
     ) -> None:
         n_in, n_out = len(graph.inputs()), len(graph.outputs())
         if n_in != 1:
@@ -129,13 +132,14 @@ class Context:
         self._ctx = cppyy.gbl.tcspc.context.create()
         ctx_var = "ctx"
         code = graph.generate_cpp("", ctx_var)
-        instantiator = _instantiator(code, ctx_var, tuple(event_cpptypes))
+        evt_types = tuple(event_cpptypes)
+        instantiator = _instantiator(code, ctx_var, evt_types)
         self._proc = instantiator(self._ctx)
         self._end_of_life_reason: str | None = None
 
         # handle() and flush() are wrapped by the instantiator so that they are
         # overload sets, not template proxies.
-        if len(event_cpptypes):
+        if len(evt_types):
             self._proc.handle.__release_gil__ = True
         self._proc.flush.__release_gil__ = True
 
