@@ -59,7 +59,7 @@ def test_context_rejects_events_and_flush_when_expired():
 def test_context_handles_buffer_events():
     g = Graph()
     g.add_node("a", NullSink())
-    c = Context(g, ["span<u8 const>", "span<i16 const>"])
+    c = Context(g, ["span<u8 const>", "span<i16>"])  # 'const' not required
     c.handle(b"")
     c.handle(b"abc")
     c.handle(memoryview(b""))

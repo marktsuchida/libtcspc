@@ -23,6 +23,22 @@ cppyy.include("type_traits")
 cppyy.include("utility")
 
 
+cppyy.cppdef("""\
+    namespace tcspc::py::context {
+        template <typename T> struct make_event_arg {
+            using type = std::remove_cv_t<std::remove_reference_t<T>> const &;
+        };
+
+        template <typename E> struct make_event_arg<span<E>> {
+            // No need for 'const &', pass 'span' by value.
+            using type = span<std::remove_cv_t<E> const>;
+        };
+
+        template <typename T>
+        using make_event_arg_t = typename make_event_arg<T>::type;
+    }""")
+
+
 _cpp_name_counter = itertools.count()
 
 
@@ -39,7 +55,7 @@ def _instantiator(
     fname = f"instantiate_graph_{ctr}"
     handlers = "\n\n".join(
         f"""\
-                void handle(std::remove_reference_t<{event_type}> const &event) {{
+                void handle(make_event_arg_t<{event_type}> event) {{
                     downstream.handle(event);
                 }}"""
         for event_type in event_types
