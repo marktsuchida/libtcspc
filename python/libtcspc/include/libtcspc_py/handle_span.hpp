@@ -28,6 +28,10 @@ namespace tcspc::py {
 namespace internal {
 
 // Raise TypeError, preserving information from any already-raised error.
+// It should be noted that cppyy may catch and handle TypeError, potentially
+// trying other overloads depending on the situation. This is currently not an
+// issue for us, because we raise TypeError only before actually calling into
+// libtcspc C++ code.
 auto raise_type_error(std::string msg) -> PyObject * {
     // Ideally we would set the TypeError's __cause__ to the currently raised
     // exception. But cppyy appears to erase the cause, so instead we just
