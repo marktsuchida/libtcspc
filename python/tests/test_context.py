@@ -35,12 +35,12 @@ def test_context_graph_with_output_rejected():
 def test_context_graph_with_single_input_allowed():
     g = Graph()
     g.add_node("a", NullSink())
-    c = Context(g)
+    c = Context(g, ("int",))
     c.handle(123)
     c.flush()
 
     g.add_node("c", Count(EventType("int")), downstream="a")
-    c = Context(g)
+    c = Context(g, ("int",))
     c.handle(123)
     c.flush()
 
@@ -48,7 +48,7 @@ def test_context_graph_with_single_input_allowed():
 def test_context_rejects_events_and_flush_when_expired():
     g = Graph()
     g.add_node("a", NullSink())
-    c = Context(g)
+    c = Context(g, ("int",))
     c.flush()
     with pytest.raises(RuntimeError):
         c.handle(123)
@@ -59,10 +59,11 @@ def test_context_rejects_events_and_flush_when_expired():
 def test_context_handles_buffer_events():
     g = Graph()
     g.add_node("a", NullSink())
-    c = Context(g)
+    c = Context(g, ["span<u8 const>", "span<i16 const>"])
     c.handle(b"")
     c.handle(b"abc")
     c.handle(memoryview(b""))
     c.handle(array.array("h", []))
     c.handle(array.array("h", [1, 2, 3]))
-    c.flush()
+    with pytest.raises(TypeError):
+        c.handle(array.array("I", [1, 2, 3]))

@@ -5,6 +5,7 @@
 import copy
 import functools
 import itertools
+from collections.abc import Collection
 from contextlib import contextmanager
 from typing import Any
 
@@ -19,19 +20,46 @@ cppyy.include("libtcspc/tcspc.hpp")
 cppyy.include("exception")
 cppyy.include("memory")
 cppyy.include("type_traits")
+cppyy.include("utility")
 
 
 _cpp_name_counter = itertools.count()
 
 
+# Define the function to create a processor instance for the give graph. Wrap
+# the input processor so that it handles exactly the requested set of event
+# types. The wrapping also ensures that handle() is a non-template overload
+# set. Return typename of the processor and the instantiator function.
 @functools.cache
-def _instantiator(graph_code: str, context_varname: str) -> Any:
-    fname = f"instantiate_graph_{next(_cpp_name_counter)}"
+def _instantiator(
+    graph_code: str, context_varname: str, event_types: tuple[str, ...]
+) -> Any:
+    ctr = next(_cpp_name_counter)
+    input_proc = f"input_processor_{ctr}"
+    fname = f"instantiate_graph_{ctr}"
+    handlers = "\n\n".join(
+        f"""\
+                void handle(std::remove_reference_t<{event_type}> const &event) {{
+                    downstream.handle(event);
+                }}"""
+        for event_type in event_types
+    )
     cppyy.cppdef(f"""\
         namespace tcspc::py::context {{
-            auto {fname}(std::shared_ptr<tcspc::context>
-                         {context_varname}) {{
-                return {graph_code};
+            template <typename Downstream> class {input_proc} {{
+                Downstream downstream;
+
+            public:
+                explicit {input_proc}(Downstream &&downstream)
+                : downstream(std::move(downstream)) {{}}
+
+                {handlers}
+
+                void flush() {{ downstream.flush(); }}
+            }};
+
+            auto {fname}(std::shared_ptr<tcspc::context> {context_varname}) {{
+                return {input_proc}({graph_code});
             }}
         }}""")
     return getattr(cppyy.gbl.tcspc.py.context, fname)
@@ -69,7 +97,9 @@ class Context:
         graph.
     """
 
-    def __init__(self, graph: Graph) -> None:
+    def __init__(
+        self, graph: Graph, event_cpptypes: Collection[str] = ()
+    ) -> None:
         n_in, n_out = len(graph.inputs()), len(graph.outputs())
         if n_in != 1:
             raise ValueError(
@@ -83,8 +113,15 @@ class Context:
         self._ctx = cppyy.gbl.tcspc.context.create()
         ctx_var = "ctx"
         code = graph.generate_cpp("", ctx_var)
-        self._proc = _instantiator(code, ctx_var)(self._ctx)
+        instantiator = _instantiator(code, ctx_var, tuple(event_cpptypes))
+        self._proc = instantiator(self._ctx)
         self._end_of_life_reason: str | None = None
+
+        # handle() and flush() are wrapped by the instantiator so that they are
+        # overload sets, not template proxies.
+        if len(event_cpptypes):
+            self._proc.handle.__release_gil__ = True
+        self._proc.flush.__release_gil__ = True
 
     def access(self, node_name: str) -> Any:
         """
