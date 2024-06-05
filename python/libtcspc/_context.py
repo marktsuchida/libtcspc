@@ -7,6 +7,7 @@ import functools
 import itertools
 from collections.abc import Iterable
 from contextlib import contextmanager
+from textwrap import dedent, indent
 from typing import Any
 
 import cppyy
@@ -23,7 +24,8 @@ cppyy.include("type_traits")
 cppyy.include("utility")
 
 
-cppyy.cppdef("""\
+cppyy.cppdef(
+    dedent("""\
     namespace tcspc::py::context {
         template <typename T> struct make_event_arg {
             using type = std::remove_cv_t<std::remove_reference_t<T>> const &;
@@ -37,6 +39,7 @@ cppyy.cppdef("""\
         template <typename T>
         using make_event_arg_t = typename make_event_arg<T>::type;
     }""")
+)
 
 
 _cpp_name_counter = itertools.count()
@@ -53,14 +56,18 @@ def _instantiator(
     ctr = next(_cpp_name_counter)
     input_proc = f"input_processor_{ctr}"
     fname = f"instantiate_graph_{ctr}"
-    handlers = "\n\n".join(
-        f"""\
+    handlers = indent(
+        "\n\n".join(
+            dedent(f"""\
                 void handle(make_event_arg_t<{event_type}> event) {{
                     downstream.handle(event);
-                }}"""
-        for event_type in event_types
+                }}""")
+            for event_type in event_types
+        ),
+        "    " * 2,
     )
-    cppyy.cppdef(f"""\
+    cppyy.cppdef(
+        dedent(f"""\
         namespace tcspc::py::context {{
             template <typename Downstream> class {input_proc} {{
                 Downstream downstream;
@@ -78,6 +85,7 @@ def _instantiator(
                 return {input_proc}({graph_code});
             }}
         }}""")
+    )
     return getattr(cppyy.gbl.tcspc.py.context, fname)
 
 
