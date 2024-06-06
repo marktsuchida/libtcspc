@@ -231,6 +231,33 @@ class ReadBinaryStream(OneToOneNode):
 
 
 @final
+class SinkEvents(Node):
+    def __init__(self, *event_types) -> None:
+        super().__init__(output=())
+        self._event_types = tuple(event_types)
+
+    @override
+    def map_event_sets(
+        self, input_event_sets: Sequence[Collection[EventType]]
+    ) -> tuple[tuple[EventType, ...], ...]:
+        if len(input_event_sets) != 1:
+            raise ValueError(
+                f"wrong number of inputs (1 expected, {len(input_event_sets)} found)"
+            )
+        _check_events_subset_of(
+            input_event_sets[0], self._event_types, self.__class__.__name__
+        )
+        return ()
+
+    @override
+    def generate_cpp(
+        self, node_name: str, context: str, downstreams: Sequence[str]
+    ) -> str:
+        evts = ", ".join(t.cpp_type for t in self._event_types)
+        return f"tcspc::sink_events<{evts}>()"
+
+
+@final
 class Stop(OneToOneNode):
     def __init__(
         self, event_types: Iterable[EventType], message_prefix: str

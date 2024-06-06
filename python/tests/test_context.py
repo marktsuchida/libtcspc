@@ -4,11 +4,14 @@
 
 import array
 
+import cppyy
 import pytest
 from libtcspc._context import Context
 from libtcspc._events import EventType
 from libtcspc._graph import Graph
-from libtcspc._processors import Count, NullSink
+from libtcspc._processors import Count, NullSink, SinkEvents
+
+cppyy.include("string")
 
 
 def test_context_empty_graph_rejected():
@@ -67,3 +70,18 @@ def test_context_handles_buffer_events():
     c.handle(array.array("h", [1, 2, 3]))
     with pytest.raises(TypeError):
         c.handle(array.array("I", [1, 2, 3]))
+
+
+@pytest.mark.xfail(reason="https://github.com/wlav/cppyy/issues/243")
+def test_context_fails_for_unhandle_events():
+    g = Graph()
+    g.add_node("s", SinkEvents(EventType("u32")))
+    c = Context(g, ["u32"])
+    c.handle(42)
+
+    # When type is not handled by the actual processor, the error is detected
+    # on first calling handle(), not when the (uninstantiated) template code is
+    # compiled.
+    c2 = Context(g, ["std::string"])
+    with pytest.raises(SyntaxError):
+        c2.handle("abc")
