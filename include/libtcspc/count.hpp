@@ -230,7 +230,7 @@ class count_access {
     std::function<std::uint64_t()> count_fn;
 
   public:
-    /** \private. */
+    /** \private */
     template <typename Func>
     explicit count_access(Func count_func) : count_fn(count_func) {}
 
