@@ -45,9 +45,8 @@ class match {
         if constexpr (std::is_convertible_v<remove_cvref_t<E>, Event>) {
             auto const abstime = event.abstime;
             bool const matched = matcher(event);
-            if constexpr (PassMatched)
-                downstream.handle(std::forward<E>(event));
-            else if (not matched)
+            bool const pass = PassMatched ? true : not matched;
+            if (pass)
                 downstream.handle(std::forward<E>(event));
             if (matched)
                 downstream.handle(OutEvent{abstime});
