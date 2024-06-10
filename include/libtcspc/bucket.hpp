@@ -121,7 +121,8 @@ template <typename T> class bucket {
         : store([&s = other.s] {
               using TMut = std::remove_cv_t<T>;
               // NOLINTNEXTLINE(cppcoreguidelines-avoid-c-arrays,modernize-avoid-c-arrays)
-              std::unique_ptr<TMut[]> r(new TMut[s.size()]);
+              std::unique_ptr<TMut[]> r(s.empty() ? nullptr
+                                                  : new TMut[s.size()]);
               std::copy(s.begin(), s.end(), r.get());
               return internal::move_only_any(
                   std::in_place_type<owning_storage>, std::move(r));
