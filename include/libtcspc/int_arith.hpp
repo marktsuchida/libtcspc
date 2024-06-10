@@ -136,8 +136,10 @@ constexpr auto add_sat(T a, T b) noexcept -> T {
     if (safe_to_add)
         return a + b;
 #endif
-    if (std::is_signed_v<T> && a < 0)
-        return limits::min();
+    if constexpr (std::is_signed_v<T>) {
+        if (a < 0)
+            return limits::min();
+    }
     return limits::max();
 }
 

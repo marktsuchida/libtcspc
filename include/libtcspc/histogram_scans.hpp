@@ -121,11 +121,11 @@ class histogram_scans {
             reset_without_replay();
     }
 
-    LIBTCSPC_NOINLINE [[noreturn]] void overflow_error() {
+    [[noreturn]] LIBTCSPC_NOINLINE void overflow_error() {
         throw histogram_overflow_error("histogram array bin overflowed");
     }
 
-    LIBTCSPC_NOINLINE [[noreturn]] void overflow_stop() {
+    [[noreturn]] LIBTCSPC_NOINLINE void overflow_stop() {
         if constexpr (emit_concluding) {
             mhista.roll_back_current_scan(journal);
             downstream.handle(concluding_histogram_array_event<DataTypes>{

@@ -12,6 +12,8 @@
 
 namespace tcspc::internal {
 
+// Disable inlining; Must be placed _after_ standard attributes such as
+// [[noreturn]], for MSVC.
 #if defined(__GNUC__)
 #define LIBTCSPC_NOINLINE [[gnu::noinline]]
 #elif defined(_MSC_VER)

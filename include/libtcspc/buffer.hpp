@@ -127,6 +127,11 @@ class buffer {
     bool upstream_halted = false;
     bool downstream_threw = false;
 
+#ifdef _MSC_VER
+#pragma warning(push)
+#pragma warning(disable : 4324) // Structure padded due to alignment specifier
+#endif
+
     // To reduce lock contention on the shared_queue, we use a second queue
     // that is accessed only by the emitting thread and is not protected by the
     // mutex. Events in the shared_queue are transferred in bulk to the
@@ -138,6 +143,10 @@ class buffer {
     // Furthermore, we ensure that the emit_queue and downstream do not share a
     // CPU cache line with the shared_queue, to prevent false sharing.
     alignas(destructive_interference_size) queue_type emit_queue;
+
+#ifdef _MSC_VER
+#pragma warning(pop)
+#endif
 
     Downstream downstream;
 

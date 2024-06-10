@@ -34,6 +34,8 @@ void std_queue_push_read_pop(benchmark::State &state) {
     push_read_pop<std::queue<std::int64_t>>(state);
 }
 
+namespace benchmark {
+
 // NOLINTBEGIN
 
 constexpr auto start = 1;
@@ -44,6 +46,8 @@ BENCHMARK(vector_queue_push_read_pop)->RangeMultiplier(4)->Range(start, stop);
 BENCHMARK(std_queue_push_read_pop)->RangeMultiplier(4)->Range(start, stop);
 
 // NOLINTEND
+
+} // namespace benchmark
 
 } // namespace tcspc::internal
 

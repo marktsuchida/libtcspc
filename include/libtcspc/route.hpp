@@ -198,9 +198,9 @@ auto route_homogeneous(Router &&router,
  */
 template <typename RoutedEventList, typename Router, typename... Downstreams>
 auto route_homogeneous(Router &&router, Downstreams &&...downstreams) {
-    auto arr = std::array{std::forward<Downstreams>(downstreams)...};
     return route_homogeneous<RoutedEventList, Router>(
-        std::forward<Router>(router), std::move(arr));
+        std::forward<Router>(router),
+        std::array{std::forward<Downstreams>(downstreams)...});
 }
 
 /**

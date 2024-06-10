@@ -19,10 +19,12 @@ namespace tcspc {
 namespace internal {
 
 // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
-inline void check_type_name(std::string const &type_name,
-                            std::string const &name) {
+inline void check_type_name([[maybe_unused]] std::string const &type_name,
+                            [[maybe_unused]] std::string const &name) {
     // With unknown compiler/platform, there is no guarantee about type_name.
-#if defined(__GNUC__) || defined(_MSC_VER)
+    // MSVC produces "human-readable" names but not exactly what we match here,
+    // so skip the check.
+#if defined(__GNUC__)
     // Type name should begin with tcspc::[internal::] followed by name,
     // followed by either '<' or end of string.
     std::array const res = {

@@ -80,11 +80,11 @@ class histogram {
             saturate_warning_issued = false;
     }
 
-    LIBTCSPC_NOINLINE [[noreturn]] void overflow_error() {
+    [[noreturn]] LIBTCSPC_NOINLINE void overflow_error() {
         throw histogram_overflow_error("histogram bin overflowed");
     }
 
-    LIBTCSPC_NOINLINE [[noreturn]] void overflow_stop() {
+    [[noreturn]] LIBTCSPC_NOINLINE void overflow_stop() {
         reset();
         downstream.flush();
         throw end_of_processing("histogram bin overflowed");

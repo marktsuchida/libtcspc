@@ -119,9 +119,14 @@ class move_only_any {
         }
     };
 
-    static constexpr std::size_t storage_size = std::max(
+    struct object_with_sbo_size {
         // NOLINTNEXTLINE(cppcoreguidelines-avoid-c-arrays,modernize-avoid-c-arrays)
-        sizeof(polymorphic_on_heap<int>), sizeof(polymorphic_sbo<void *[3]>));
+        void *p[3];
+    };
+
+    static constexpr std::size_t storage_size =
+        std::max(sizeof(polymorphic_on_heap<int>),
+                 sizeof(polymorphic_sbo<object_with_sbo_size>));
 
     static constexpr std::size_t storage_align =
         alignof(polymorphic_on_heap<int>);

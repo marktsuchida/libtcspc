@@ -315,7 +315,7 @@ struct power_of_2_bin_mapper {
 
         auto const bin_index = static_cast<bin_index_type>(shifted);
         if constexpr (Flip)
-            return max_bin_index - bin_index;
+            return static_cast<bin_index_type>(max_bin_index - bin_index);
         else
             return bin_index;
     }

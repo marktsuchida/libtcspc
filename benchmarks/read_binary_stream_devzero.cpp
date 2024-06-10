@@ -126,6 +126,8 @@ void cfile(benchmark::State &state) {
     }
 }
 
+namespace benchmark {
+
 // NOLINTBEGIN
 
 constexpr auto start = 4 << 10;
@@ -140,6 +142,8 @@ BENCHMARK(cfile_unbuf)->RangeMultiplier(2)->Range(start, stop);
 BENCHMARK(cfile)->RangeMultiplier(2)->Range(start, stop);
 
 // NOLINTEND
+
+} // namespace benchmark
 
 } // namespace tcspc
 
