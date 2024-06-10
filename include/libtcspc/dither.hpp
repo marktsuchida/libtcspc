@@ -50,6 +50,10 @@ static_assert(decltype(std::minstd_rand())::max() == 2'147'483'646);
 // Do we care that 0 and 2^31-1 are not included in the range? Probably not for
 // dithering purposes.
 
+// Note that std::minstd_rand::result_type is either u32 or u64, depending on
+// standard library implementation. It is therefore used below explicitly, to
+// avoid unnecessary integer conversion.
+
 // Formality: Check our assumption that 'double' is IEEE 754 double precision.
 static_assert(std::numeric_limits<double>::is_iec559);
 static_assert(std::numeric_limits<double>::radix == 2);
@@ -58,7 +62,7 @@ static_assert(std::numeric_limits<double>::digits == 53);
 // Make a uniformly-distributed random double value in [0.0, 1.0), given a
 // uniformly-distributed 32-bit random integer r from std::minstd_rand.
 [[nodiscard]] inline auto
-uniform_double_0_1_minstd(std::uint32_t r) -> double {
+uniform_double_0_1_minstd(std::minstd_rand::result_type r) -> double {
     assert(r < 2'147'483'648u); // Do allow 0 and 2147483647 in tests.
 
     // Put the 31 random bits in the most significant part of the 52-bit
@@ -75,7 +79,8 @@ uniform_double_0_1_minstd(std::uint32_t r) -> double {
 // at 1.0, given two uniformly-distributed 32-bit random integers r0, r1 from
 // std::minstd_rand.
 [[nodiscard]] inline auto
-triangular_double_0_2_minstd(std::uint32_t r0, std::uint32_t r1) -> double {
+triangular_double_0_2_minstd(std::minstd_rand::result_type r0,
+                             std::minstd_rand::result_type r1) -> double {
     auto const d0 = uniform_double_0_1_minstd(r0);
     auto const d1 = uniform_double_0_1_minstd(r1);
     return d0 + (1.0 - d1);
