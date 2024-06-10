@@ -218,6 +218,18 @@ template <typename Access> access_tracker<Access>::~access_tracker() {
 
 // NOLINTBEGIN
 
+// Silence GCC "‘offsetof’ within non-standard-layout type" warning. Semicolons
+// used only to assist clang-format.
+#if defined(__GNUC__)
+#define LIBTCSPC_INTERNAL_DISABLE_OFFSETOF_WARNING                            \
+    _Pragma("GCC diagnostic push");                                           \
+    _Pragma("GCC diagnostic ignored \"-Winvalid-offsetof\"")
+#define LIBTCSPC_INTERNAL_POP_OFFSETOF_WARNING _Pragma("GCC diagnostic pop")
+#else
+#define LIBTCSPC_INTERNAL_DISABLE_OFFSETOF_WARNING
+#define LIBTCSPC_INTERNAL_POP_OFFSETOF_WARNING
+#endif
+
 /**
  * \brief Recover the object address from a `tcspc::access_tracker` embedded in
  * the object.
@@ -239,9 +251,13 @@ template <typename Access> access_tracker<Access>::~access_tracker() {
  * \return pointer to the object
  */
 #define LIBTCSPC_OBJECT_FROM_TRACKER(obj_type, tracker_field_name, tracker)   \
-    reinterpret_cast<std::add_pointer_t<obj_type>>(                           \
-        reinterpret_cast<std::byte *>(&(tracker)) -                           \
-        offsetof(obj_type, tracker_field_name))
+    [&tracker]() {                                                            \
+        LIBTCSPC_INTERNAL_DISABLE_OFFSETOF_WARNING;                           \
+        return reinterpret_cast<std::add_pointer_t<obj_type>>(                \
+            reinterpret_cast<std::byte *>(&(tracker)) -                       \
+            offsetof(obj_type, tracker_field_name));                          \
+        LIBTCSPC_INTERNAL_POP_OFFSETOF_WARNING;                               \
+    }()
 
 // Note: offsetof() on non-standard-layout types is "conditionally-supported"
 // as of C++17 for non-standard-layout types. I expect this not to be a problem
