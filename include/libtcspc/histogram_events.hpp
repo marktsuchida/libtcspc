@@ -143,13 +143,13 @@ template <typename DataTypes = default_data_types> struct histogram_event {
     /**
      * \brief The histogram.
      */
-    bucket<typename DataTypes::bin_type> bucket;
+    bucket<typename DataTypes::bin_type> data_bucket;
 
     /** \brief Equality comparison operator. */
     friend constexpr auto
     operator==(histogram_event const &lhs,
                histogram_event const &rhs) noexcept -> bool {
-        return lhs.bucket == rhs.bucket;
+        return lhs.data_bucket == rhs.data_bucket;
     }
 
     /** \brief Inequality comparison operator. */
@@ -162,7 +162,7 @@ template <typename DataTypes = default_data_types> struct histogram_event {
     /** \brief Stream insertion operator. */
     friend auto operator<<(std::ostream &s,
                            histogram_event const &e) -> std::ostream & {
-        return s << "histogram(" << e.bucket << ')';
+        return s << "histogram(" << e.data_bucket << ')';
     }
 };
 
@@ -183,13 +183,13 @@ struct concluding_histogram_event {
     /**
      * \brief The accumulated histogram.
      */
-    bucket<typename DataTypes::bin_type> bucket;
+    bucket<typename DataTypes::bin_type> data_bucket;
 
     /** \brief Equality comparison operator. */
     friend constexpr auto
     operator==(concluding_histogram_event const &lhs,
                concluding_histogram_event const &rhs) noexcept -> bool {
-        return lhs.bucket == rhs.bucket;
+        return lhs.data_bucket == rhs.data_bucket;
     }
 
     /** \brief Inequality comparison operator. */
@@ -203,7 +203,7 @@ struct concluding_histogram_event {
     friend auto
     operator<<(std::ostream &s,
                concluding_histogram_event const &e) -> std::ostream & {
-        return s << "concluding_histogram(" << e.bucket << ')';
+        return s << "concluding_histogram(" << e.data_bucket << ')';
     }
 };
 
@@ -219,12 +219,12 @@ struct histogram_array_event {
     /**
      * \brief Histogram array, or view thereof.
      */
-    bucket<typename DataTypes::bin_type> bucket;
+    bucket<typename DataTypes::bin_type> data_bucket;
 
     /** \brief Equality comparison operator. */
     friend auto operator==(histogram_array_event const &lhs,
                            histogram_array_event const &rhs) noexcept -> bool {
-        return lhs.bucket == rhs.bucket;
+        return lhs.data_bucket == rhs.data_bucket;
     }
 
     /** \brief Inequality comparison operator. */
@@ -236,7 +236,7 @@ struct histogram_array_event {
     /** \brief Stream insertion operator. */
     friend auto operator<<(std::ostream &s,
                            histogram_array_event const &e) -> std::ostream & {
-        return s << "histogram_array(" << e.bucket << ')';
+        return s << "histogram_array(" << e.data_bucket << ')';
     }
 };
 
@@ -264,13 +264,14 @@ struct histogram_array_progress_event {
      * The remaining indices may contain invalid data unless otherwise
      * specified.
      */
-    bucket<typename DataTypes::bin_type> bucket;
+    bucket<typename DataTypes::bin_type> data_bucket;
 
     /** \brief Equality comparison operator. */
     friend auto
     operator==(histogram_array_progress_event const &lhs,
                histogram_array_progress_event const &rhs) noexcept -> bool {
-        return lhs.valid_size == rhs.valid_size && lhs.bucket == rhs.bucket;
+        return lhs.valid_size == rhs.valid_size &&
+               lhs.data_bucket == rhs.data_bucket;
     }
 
     /** \brief Inequality comparison operator. */
@@ -285,7 +286,7 @@ struct histogram_array_progress_event {
     operator<<(std::ostream &s,
                histogram_array_progress_event const &e) -> std::ostream & {
         return s << "histogram_array_progress(" << e.valid_size << ", "
-                 << e.bucket << ')';
+                 << e.data_bucket << ')';
     }
 };
 
@@ -307,13 +308,13 @@ struct concluding_histogram_array_event {
     /**
      * \brief View of the histogram array.
      */
-    bucket<typename DataTypes::bin_type> bucket;
+    bucket<typename DataTypes::bin_type> data_bucket;
 
     /** \brief Equality comparison operator. */
     friend auto
     operator==(concluding_histogram_array_event const &lhs,
                concluding_histogram_array_event const &rhs) noexcept -> bool {
-        return lhs.bucket == rhs.bucket;
+        return lhs.data_bucket == rhs.data_bucket;
     }
 
     /** \brief Inequality comparison operator. */
@@ -327,7 +328,7 @@ struct concluding_histogram_array_event {
     friend auto
     operator<<(std::ostream &s,
                concluding_histogram_array_event const &e) -> std::ostream & {
-        return s << "concluding_histogram_array(" << e.bucket << ')';
+        return s << "concluding_histogram_array(" << e.data_bucket << ')';
     }
 };
 

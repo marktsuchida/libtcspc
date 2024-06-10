@@ -837,8 +837,8 @@ class sharable_recycling_bucket_source final
 namespace internal {
 
 template <typename Event, typename Downstream> class extract_bucket {
-    static_assert(
-        is_processor_v<Downstream, decltype(std::declval<Event>().bucket)>);
+    static_assert(is_processor_v<Downstream,
+                                 decltype(std::declval<Event>().data_bucket)>);
 
     Downstream downstream;
 
@@ -854,9 +854,11 @@ template <typename Event, typename Downstream> class extract_bucket {
         return downstream.introspect_graph().push_entry_point(this);
     }
 
-    void handle(Event const &event) { downstream.handle(event.bucket); }
+    void handle(Event const &event) { downstream.handle(event.data_bucket); }
 
-    void handle(Event &&event) { downstream.handle(std::move(event).bucket); }
+    void handle(Event &&event) {
+        downstream.handle(std::move(event).data_bucket);
+    }
 
     void flush() { downstream.flush(); }
 };

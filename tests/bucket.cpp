@@ -309,7 +309,7 @@ TEST_CASE(
 namespace {
 
 template <typename T> struct evt_with_bucket {
-    bucket<T> bucket;
+    bucket<T> data_bucket;
 };
 
 } // namespace
