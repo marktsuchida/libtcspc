@@ -1018,10 +1018,11 @@ struct time_tagged_test_event {
  */
 template <typename T>
 auto test_bucket(std::initializer_list<T> il) -> bucket<T> {
+    using U = std::remove_cv_t<T>;
     struct test_storage {
-        std::vector<T> v;
+        std::vector<U> v;
     };
-    auto storage = test_storage{{il}};
+    auto storage = test_storage{std::vector<U>(il.begin(), il.end())};
     return bucket<T>(span(storage.v), std::move(storage));
 }
 
@@ -1033,10 +1034,11 @@ auto test_bucket(std::initializer_list<T> il) -> bucket<T> {
  * The returned bucket does not support storage extraction.
  */
 template <typename T> auto test_bucket(span<T> s) -> bucket<T> {
+    using U = std::remove_cv_t<T>;
     struct test_storage {
-        std::vector<T> v;
+        std::vector<U> v;
     };
-    auto storage = test_storage{std::vector<T>(s.begin(), s.end())};
+    auto storage = test_storage{std::vector<U>(s.begin(), s.end())};
     return bucket<T>(span(storage.v), std::move(storage));
 }
 
