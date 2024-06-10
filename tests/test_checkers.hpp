@@ -22,16 +22,13 @@ namespace internal {
 inline void check_type_name([[maybe_unused]] std::string const &type_name,
                             [[maybe_unused]] std::string const &name) {
     // With unknown compiler/platform, there is no guarantee about type_name.
-    // MSVC produces "human-readable" names but not exactly what we match here,
-    // so skip the check.
-#if defined(__GNUC__)
+#if defined(__GNUC__) || defined(_MSC_VER)
     // Type name should begin with tcspc::[internal::] followed by name,
-    // followed by either '<' or end of string.
+    // followed by either '<' or end of string. MSVC adds "class" or "struct"
+    // before the type name.
     std::array const res = {
-        std::regex("^tcspc::internal::" + name + "<"),
-        std::regex("^tcspc::internal::" + name + "$"),
-        std::regex("^tcspc::" + name + "<"),
-        std::regex("^tcspc::" + name + "$"),
+        std::regex("^(|class |struct )tcspc::(|internal::)" + name + "<"),
+        std::regex("^(|class |struct )tcspc::(|internal::)" + name + "$"),
     };
     CHECK(std::any_of(res.begin(), res.end(), [&](auto const &re) {
         return std::regex_search(type_name, re);
