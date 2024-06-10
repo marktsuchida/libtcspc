@@ -113,6 +113,7 @@ inline auto operator<<(std::ostream &stream, feed_as cat) -> std::ostream & {
     case feed_as::rvalue:
         return stream << "feed_as::rvalue";
     }
+    internal::unreachable();
 }
 
 /**
@@ -146,6 +147,7 @@ inline auto operator<<(std::ostream &stream,
     case emitted_as::always_rvalue:
         return stream << "emitted_as::always_rvalue";
     }
+    internal::unreachable();
 }
 
 namespace internal {
@@ -203,6 +205,7 @@ inline auto operator<<(std::ostream &stream,
     case e::nonconst_rvalue:
         return stream << "&&";
     }
+    unreachable();
 }
 
 template <typename EventList>
