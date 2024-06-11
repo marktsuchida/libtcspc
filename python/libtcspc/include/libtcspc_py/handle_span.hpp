@@ -18,6 +18,9 @@
 #include <type_traits>
 #include <utility>
 
+// Disable IWYU to avoid false positives for Python symbols.
+// NOLINTBEGIN(misc-include-cleaner)
+
 // cppyy can translate pyobj to T* if pyobj implements the buffer protocol
 // appropriately. But there are some caveats, including that empty buffers
 // don't work (as of cppyy 3.1.2). So it's simpler to directly do the
@@ -32,7 +35,7 @@ namespace internal {
 // trying other overloads depending on the situation. This is currently not an
 // issue for us, because we raise TypeError only before actually calling into
 // libtcspc C++ code.
-auto raise_type_error(std::string msg) -> PyObject * {
+inline auto raise_type_error(std::string msg) -> PyObject * {
     // Ideally we would set the TypeError's __cause__ to the currently raised
     // exception. But cppyy appears to erase the cause, so instead we just
     // include the original message (which is good enough for our current
@@ -40,7 +43,9 @@ auto raise_type_error(std::string msg) -> PyObject * {
 #if PY_VERSION_HEX < 0x03120000
     // PyErr_Fetch() and PyErr_NormalizeException() are deprecated since Python
     // 3.12.
-    PyObject *cause_type, *cause_value, *cause_tb;
+    PyObject *cause_type{};
+    PyObject *cause_value{};
+    PyObject *cause_tb{};
     PyErr_Fetch(&cause_type, &cause_value, &cause_tb);
     PyErr_NormalizeException(&cause_type, &cause_value, &cause_tb);
     Py_XDECREF(cause_type);
@@ -113,21 +118,19 @@ auto handle_buffer(Proc &proc, void const *buf,
         else
             return handle_span<u16>(proc, buf, len_bytes, "uint16");
     } else if constexpr (sizeof(CType) == sizeof(i8)) {
-        if constexpr (std::is_signed_v<CType>) {
+        // Exception: unsigned 8-bit could map to u8 or std::byte. We
+        // support processors that handle either, and assume that
+        // processors that handle both will handle them the same way.
+        // Let's try std::byte first.
+        if constexpr (std::is_signed_v<CType>)
             return handle_span<i8>(proc, buf, len_bytes, "int8");
-        } else {
-            // Exception: unsigned 8-bit could map to u8 or std::byte. We
-            // support processors that handle either, and assume that
-            // processors that handle both will handle them the same way.
-            // Let's try std::byte first.
-            if constexpr (handles_event_v<Proc, span<std::byte const>>)
-                return handle_span<std::byte>(proc, buf, len_bytes, "byte");
-            else if constexpr (handles_event_v<Proc, span<u8 const>>)
-                return handle_span<u8>(proc, buf, len_bytes, "uint8");
-            else
-                return raise_type_error(
-                    "processor does not handle span of byte or uint8");
-        }
+        else if constexpr (handles_event_v<Proc, span<std::byte const>>)
+            return handle_span<std::byte>(proc, buf, len_bytes, "byte");
+        else if constexpr (handles_event_v<Proc, span<u8 const>>)
+            return handle_span<u8>(proc, buf, len_bytes, "uint8");
+        else
+            return raise_type_error(
+                "processor does not handle span of byte or uint8");
     }
 }
 
@@ -150,7 +153,7 @@ template <typename Func> class scope_exit {
 
 // Separate this check from handle_buffer() so that the latter does not need to
 // be instantiated unnecessarily.
-auto is_buffer(PyObject *pyobj) -> bool {
+inline auto is_buffer(PyObject *pyobj) -> bool {
     return PyObject_CheckBuffer(pyobj) == 1;
 }
 
@@ -218,3 +221,5 @@ auto handle_buffer(Proc &proc, PyObject *pyobj) -> PyObject * {
 }
 
 } // namespace tcspc::py
+
+// NOLINTEND(misc-include-cleaner)

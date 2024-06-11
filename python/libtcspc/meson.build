@@ -29,6 +29,8 @@ py_sources = files(
     'py.typed',
 )
 
+libtcspc_py_include_dir = include_directories('include')
+
 py_cpp_headers = files(
     'include/libtcspc_py/handle_span.hpp',
 )
