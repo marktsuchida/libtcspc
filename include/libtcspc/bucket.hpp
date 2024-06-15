@@ -671,6 +671,11 @@ class recycling_bucket_source final
             }
         }
 
+        explicit bucket_storage(
+            std::shared_ptr<recycling_bucket_source> source,
+            std::unique_ptr<std::vector<T>> &&storage)
+            : source(std::move(source)), storage(std::move(storage)) {}
+
         bucket_storage(bucket_storage const &) = delete;
         auto operator=(bucket_storage const &) = delete;
 
@@ -729,7 +734,7 @@ class recycling_bucket_source final
         p->resize(size);
         auto const spn = span(p->data(), p->size());
         return bucket<T>{
-            spn, bucket_storage{this->shared_from_this(), std::move(p)}};
+            spn, bucket_storage(this->shared_from_this(), std::move(p))};
     }
 };
 
