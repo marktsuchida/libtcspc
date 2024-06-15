@@ -218,9 +218,9 @@ template <typename Access> access_tracker<Access>::~access_tracker() {
 
 // NOLINTBEGIN
 
-// Silence GCC "‘offsetof’ within non-standard-layout type" warning. Semicolons
-// used only to assist clang-format.
-#if defined(__GNUC__)
+// Locally silence GCC/Clang warnings for using offsetof() on
+// non-standard-layout types. Semicolons used only to assist clang-format.
+#if defined(__GNUC__) || defined(__clang__)
 #define LIBTCSPC_INTERNAL_DISABLE_OFFSETOF_WARNING                            \
     _Pragma("GCC diagnostic push");                                           \
     _Pragma("GCC diagnostic ignored \"-Winvalid-offsetof\"")
