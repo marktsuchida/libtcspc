@@ -1,0 +1,194 @@
+# This file is part of libtcspc
+# Copyright 2019-2024 Board of Regents of the University of Wisconsin System
+# SPDX-License-Identifier: MIT
+
+name: CI
+
+on:
+  push: # All branches during early development.
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: 'pip'
+      - uses: pre-commit/action@v3.0.1
+
+  cpp-test:
+    strategy:
+      fail-fast: false
+      matrix:
+        runner:
+          - ubuntu-24.04
+          - windows-2022
+          - macos-13  # x86_64
+          - macos-14  # arm64
+        compiler:
+          - platform
+          - clang
+        exclude:
+          - runner: macos-13
+            compiler: clang  # Redundant with platform
+          - runner: macos-14
+            compiler: clang  # Redundant with platform
+        include:
+          - runner: ubuntu-24.04
+            compiler: platform
+            cxx: g++
+          - runner: ubuntu-24.04
+            compiler: clang
+            cxx: clang++
+          - runner: windows-2022
+            compiler: platform
+            cxx: cl
+            opts: -Dcatch2:werror=false
+          - runner: windows-2022
+            compiler: clang
+            cxx: clang-cl
+            opts: -Dcatch2:werror=false -Dgoogle-benchmark:werror=false
+          - runner: windows-2022
+            debug_opts: -Dtests_python=disabled  # No python3x_d.dll
+          - runner: macos-13
+            cxx: clang++
+          - runner: macos-14
+            cxx: clang++
+    name: cpp-test-${{ matrix.runner }}-${{ matrix.cxx }}
+    runs-on: ${{ matrix.runner }}
+    env:
+      CXX: ${{ matrix.cxx }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+          cache: 'pip'
+      - name: install tools
+        run: python -m pip install --upgrade pip meson ninja
+      - uses: ilammy/msvc-dev-cmd@v1
+
+      - name: configure release build
+        run: >
+          meson setup build-release --buildtype=release ${{ matrix.opts }}
+          -Dgoogle-benchmark:tests=disabled -Dcatch2:tests=false
+      - name: test release build
+        run: meson test -C build-release -v
+
+      - name: configure with ASan
+        if: matrix.cxx != 'clang-cl'
+        # With MSVC, vector/string annotations for ASan fail due to mismatch
+        # between Catch2 and libtcspc. Disable these for now.
+        run: >
+          meson setup build-asan --buildtype=debug ${{ matrix.opts }}
+          ${{ matrix.debug_opts }} -Dbenchmarks=disabled -Dcatch2:tests=false
+          -Db_lundef=false -Db_sanitize=address
+          -Dcpp_args='-D_DISABLE_VECTOR_ANNOTATION -D_DISABLE_STRING_ANNOTATION'
+      - name: test with ASan
+        if: matrix.cxx != 'clang-cl'
+        run: meson test -C build-asan -v
+
+      - name: configure with UBSan
+        if: ${{ ! startsWith(matrix.runner, 'windows-') }}
+        run: >
+          meson setup build-ubsan --buildtype=debug ${{ matrix.opts }}
+          ${{ matrix.debug_opts }} -Dbenchmarks=disabled -Dcatch2:tests=false
+          -Db_lundef=false -Db_sanitize=undefined
+      - name: test with UBSan
+        if: ${{ ! startsWith(matrix.runner, 'windows-') }}
+        run: meson test -C build-ubsan -v
+
+      - name: configure with LSan
+        if: startsWith(matrix.runner, 'ubuntu-')
+        run: >
+          meson setup build-lsan --buildtype=debug ${{ matrix.opts }}
+          ${{ matrix.debug_opts }} -Dbenchmarks=disabled -Dcatch2:tests=false
+          -Db_lundef=false -Db_sanitize=leak
+      - name: test with LSan
+        if: startsWith(matrix.runner, 'ubuntu-')
+        run: meson test -C build-lsan -v
+
+      - name: configure with TSan
+        if: ${{ ! startsWith(matrix.runner, 'windows-') }}
+        run: >
+          meson setup build-tsan --buildtype=debug ${{ matrix.opts }}
+          ${{ matrix.debug_opts }} -Dbenchmarks=disabled -Dcatch2:tests=false
+          -Db_lundef=false -Db_sanitize=thread
+      - name: test with TSan
+        if: ${{ ! startsWith(matrix.runner, 'windows-') }}
+        run: meson test -C build-tsan -v
+
+      # Note: Memory Sanitizer has false positives unless libc++ is
+      # instrumented; skip for now.
+
+      - name: configure debug build
+        run: meson setup build-debug --buildtype=debug ${{ matrix.opts }} ${{ matrix.debug_opts }} -Dbenchmarks=disabled -Dcatch2:tests=false
+      - name: test debug build
+        run: meson test -C build-debug -v
+
+      - name: configure C++20 build
+        run: meson setup build-cpp20 --buildtype=release ${{ matrix.opts }} -Dcpp_std=c++20 -Dgoogle-benchmark:tests=disabled -Dcatch2:tests=false
+      - name: test C++20 build
+        run: meson test -C build-cpp20 -v
+
+      - name: exercise benchmarks
+        # Currently some of the benchmarks are not supported on Windows.
+        if: ${{ ! startsWith(matrix.runner, 'windows-') }}
+        run: ninja -C build-release benchmark
+
+  cpp-analyze:
+    runs-on: ubuntu-24.04
+    env:
+      CXX: clang++
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+          cache: 'pip'
+      - name: install tools
+        run: python -m pip install --upgrade pip meson ninja
+
+      - run: clang-tidy --version
+
+      - name: configure build
+        run: meson setup builddir --buildtype=release
+
+      - name: clang-tidy
+        run: ninja -C builddir clang-tidy
+
+  py-test:
+    strategy:
+      fail-fast: false
+      matrix:
+        runner:
+          - ubuntu-latest
+          - windows-latest
+          - macos-13  # x86_64 only
+        cpp_std:
+          - '20'
+        # https://github.com/wlav/cppyy/issues/208#issuecomment-1928461467
+        exclude:
+          - runner: windows-latest
+            cpp_std: '20'
+        include:
+          - runner: windows-latest
+            cpp_std: '17'
+    name: py-test-${{ matrix.runner }}
+    runs-on: ${{ matrix.runner }}
+    env:
+      STDCXX: ${{ matrix.cpp_std }}
+    steps:
+      - run: uname -m
+        if: ${{ ! startsWith(matrix.runner, 'windows-') }}
+
+      - uses: actions/checkout@v4
+      - uses: fjwillemsen/setup-nox2@v3.0.0
+      - uses: ilammy/msvc-dev-cmd@v1
+
+      - run: nox -s 'test-3.10(numpy2=False)'
+      - run: nox -s 'test-3.10(numpy2=True)'
+      - run: nox -s 'test-3.11(numpy2=True)'
+      - run: nox -s 'test-3.12(numpy2=True)'
