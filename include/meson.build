@@ -28,6 +28,7 @@ public_cpp_headers = files(
     'libtcspc/histogram_events.hpp',
     'libtcspc/histogram_policy.hpp',
     'libtcspc/histogram_scans.hpp',
+    'libtcspc/histogramming.hpp',
     'libtcspc/int_arith.hpp',
     'libtcspc/int_types.hpp',
     'libtcspc/introspect.hpp',
