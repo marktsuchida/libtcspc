@@ -55,6 +55,7 @@ subdir('tests')
 subdir('benchmarks')
 subdir('examples')
 subdir('python/libtcspc')
-if not get_option('tests_python').disabled()
+if (not get_option('tests').disabled() and
+    not get_option('tests_python').disabled())
     subdir('python/tests/libtcspc_py')
 endif
