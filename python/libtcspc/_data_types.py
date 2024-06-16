@@ -5,10 +5,11 @@
 import functools
 import itertools
 from textwrap import dedent
-from typing import TypedDict, Unpack
+from typing import TypedDict
 
 import cppyy
 from typeguard import typechecked
+from typing_extensions import Unpack
 
 _cpp_name_counter = itertools.count()
 
