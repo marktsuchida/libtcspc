@@ -25,7 +25,6 @@
 #include <catch2/generators/catch_generators.hpp>
 
 #include <cstddef>
-#include <memory>
 #include <type_traits>
 
 namespace tcspc {

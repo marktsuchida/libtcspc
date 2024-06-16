@@ -13,7 +13,6 @@
 #include <exception>
 #include <iterator>
 #include <limits>
-#include <memory>
 #include <sstream>
 #include <string>
 #include <utility>
