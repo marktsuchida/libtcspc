@@ -159,27 +159,27 @@ class npint {
 
     /** \brief Bitwise right shift assignment operator. */
     template <typename U> constexpr auto operator>>=(npint<U> rhs) -> npint & {
-        v >>= rhs.value();
+        v = static_cast<T>(v >> rhs.value());
         return *this;
     }
 
     /** \brief Bitwise left shift assignment operator. */
     template <typename U> constexpr auto operator<<=(npint<U> rhs) -> npint & {
-        v <<= rhs.value();
+        v = static_cast<T>(v << rhs.value());
         return *this;
     }
 
     /** \brief Bitwise right shift assignment operator. */
     template <typename U, typename = std::enable_if_t<std::is_integral_v<U>>>
     constexpr auto operator>>=(U rhs) -> npint & {
-        v >>= rhs;
+        v = static_cast<T>(v >> rhs);
         return *this;
     }
 
     /** \brief Bitwise left shift assignment operator. */
     template <typename U, typename = std::enable_if_t<std::is_integral_v<U>>>
     constexpr auto operator<<=(U rhs) -> npint & {
-        v <<= rhs;
+        v = static_cast<T>(v << rhs);
         return *this;
     }
 
