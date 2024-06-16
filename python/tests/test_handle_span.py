@@ -7,6 +7,7 @@ import array
 import cppyy
 import numpy as np
 import pytest
+from numpy.lib import NumpyVersion
 
 cppyy.include("libtcspc_py/handle_span.hpp")
 
@@ -122,6 +123,18 @@ _cpp_fixed_width_for_ulong = "tcspc::u" + str(
     8 * cppyy.sizeof("unsigned long")
 )
 
+_cpp_fixed_width_for_np_int_ = (
+    _cpp_fixed_width_for_long
+    if NumpyVersion(np.__version__) < "2.0.0"
+    else "tcspc::i" + str(8 * cppyy.sizeof("std::size_t"))
+)
+
+_cpp_fixed_width_for_np_uint = (
+    _cpp_fixed_width_for_ulong
+    if NumpyVersion(np.__version__) < "2.0.0"
+    else "tcspc::u" + str(8 * cppyy.sizeof("std::size_t"))
+)
+
 
 @pytest.mark.parametrize(
     "typecode, elemtype",
@@ -159,11 +172,13 @@ def test_handle_buffer_array_array(typecode, elemtype):
 # - np.byte, np.ubyte: signed char and unsigned char
 # - np.short, np.ushort: short and unsigned short
 # - np.intc, np.uintc: int and unsigned
-# - np.int_, np.uint: long and unsigned long (!)
+# - np.int_, np.uint: long and unsigned long (!) for numpy<2; [s]size_t for
+#                     numpy>=2 (changed on Windows x64)
 # - np.longlong, np.ulonglong: long long and unsigned long long
 # - np.single, np.double: float and double
 # - (Complex and long double types omitted for now.)
 # - All the fixed-width aliases (such as np.int32): cstdint fixed-width types
+#
 # (Note, however, that there is no guarantee that any of these produce the
 # buffer protocol type code matching the exact C type; only bit compatibility is
 # guaranteed.)
@@ -201,8 +216,8 @@ def test_handle_buffer_array_array(typecode, elemtype):
         (np.ushort, "tcspc::u16"),
         (np.intc, "tcspc::i32"),
         (np.uintc, "tcspc::u32"),
-        (np.int_, _cpp_fixed_width_for_long),
-        (np.uint, _cpp_fixed_width_for_ulong),
+        (np.int_, _cpp_fixed_width_for_np_int_),
+        (np.uint, _cpp_fixed_width_for_np_uint),
         (np.longlong, "tcspc::i64"),
         (np.ulonglong, "tcspc::u64"),
         (np.single, "float"),
