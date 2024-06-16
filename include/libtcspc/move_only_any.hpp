@@ -7,6 +7,7 @@
 #pragma once
 
 #include <algorithm>
+#include <array>
 #include <cstddef>
 #include <initializer_list>
 #include <memory>
@@ -21,6 +22,9 @@ struct bad_move_only_any_cast : std::bad_cast {
         return "bad_move_only_any_cast";
     }
 };
+
+// Define this outside the class so that assertions can be made.
+constexpr std::size_t move_only_any_sbo_size = 3 * sizeof(void *);
 
 // Like std::any, but move-only. Does not support types that throw during move
 // (will call std::terminate).
@@ -119,14 +123,10 @@ class move_only_any {
         }
     };
 
-    struct object_with_sbo_size {
-        // NOLINTNEXTLINE(cppcoreguidelines-avoid-c-arrays,modernize-avoid-c-arrays)
-        void *p[3];
-    };
-
-    static constexpr std::size_t storage_size =
-        std::max(sizeof(polymorphic_on_heap<int>),
-                 sizeof(polymorphic_sbo<object_with_sbo_size>));
+    static constexpr std::size_t storage_size = std::max(
+        sizeof(polymorphic_on_heap<int>),
+        sizeof(
+            polymorphic_sbo<std::array<std::byte, move_only_any_sbo_size>>));
 
     static constexpr std::size_t storage_align =
         alignof(polymorphic_on_heap<int>);

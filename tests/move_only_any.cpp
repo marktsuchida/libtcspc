@@ -10,9 +10,11 @@
 
 #include <array>
 #include <cstddef>
+#include <cstdlib>
 #include <initializer_list>
+#include <limits>
 #include <memory>
-#include <memory_resource>
+#include <new>
 #include <typeinfo>
 #include <utility>
 #include <vector>
@@ -134,16 +136,91 @@ TEST_CASE(
     }
 }
 
+namespace {
+
 // Example type for testing functions taking std::initializer_list and variadic
-// args in non-sbo (heap) mode.
+// args in non-sbo (heap) mode. We use the std::vector constructor taking an
+// allocator as an example. (std::pmr::vector would have been a good example
+// but Apple did not support it until Xcode 15 and macOS 14.)
+
+// std::vector<V, my_allocator<V>> fits in sbo.
+template <typename T> struct my_allocator {
+    using value_type = T;
+
+    ~my_allocator() = default;
+
+    my_allocator() = default;
+
+    // For testing arg passing via std::vector constructor.
+    my_allocator([[maybe_unused]] int i) {}
+
+    template <class U>
+    my_allocator([[maybe_unused]] my_allocator<U> const &other) {}
+
+    template <class U>
+    auto
+    operator=([[maybe_unused]] my_allocator<U> const &rhs) -> my_allocator & {
+        return *this;
+    }
+
+    template <class U>
+    my_allocator([[maybe_unused]] my_allocator<U> &&other) {}
+
+    template <class U>
+    auto operator=([[maybe_unused]] my_allocator<U> &&rhs) -> my_allocator & {
+        return *this;
+    }
+
+    // NOLINTBEGIN(cppcoreguidelines-owning-memory,cppcoreguidelines-no-malloc)
+
+    auto allocate(std::size_t n) -> T * {
+        if (n <= std::numeric_limits<std::size_t>::max() / sizeof(T)) {
+            if (void *ptr = std::malloc(n * sizeof(T)))
+                return static_cast<T *>(ptr);
+        }
+        throw std::bad_alloc();
+    }
+
+    void deallocate(T *ptr, [[maybe_unused]] std::size_t n) { std::free(ptr); }
+
+    // NOLINTEND(cppcoreguidelines-owning-memory,cppcoreguidelines-no-malloc)
+
+    template <typename U>
+    friend auto
+    operator==([[maybe_unused]] my_allocator<T> const &lhs,
+               [[maybe_unused]] my_allocator<U> const &rhs) -> bool {
+        return true;
+    }
+
+    template <typename U>
+    friend auto operator!=(my_allocator<T> const &lhs,
+                           my_allocator<U> const &rhs) -> bool {
+        return !(lhs == rhs);
+    }
+};
+
+#ifndef _MSC_VER
+// MSVC STL std::vector is 4x sizeof(void *) when a custom allocator is used,
+// even if empty/trivial. So we skip testing the SBO case, but the tests still
+// work using the heap.
+
+static_assert(sizeof(std::vector<int, my_allocator<int>>) <=
+                  move_only_any_sbo_size,
+              "must fit in sbo");
+
+#endif
+
+// large_value does not fit in sbo.
 template <typename V> struct large_value {
-    std::pmr::vector<V> v;
+    std::vector<V, my_allocator<V>> v;
     std::array<int, 100> a{}; // Don't fit in sbo.
 
     template <typename T, typename... Args>
     explicit large_value(std::initializer_list<T> il, Args &&...args)
         : v(il, std::forward<Args>(args)...) {}
 };
+
+} // namespace
 
 TEST_CASE("move_only_any in-place construct") {
     SECTION("variadic args") {
@@ -163,21 +240,14 @@ TEST_CASE("move_only_any in-place construct") {
 
     SECTION("initializer_list and args") {
         SECTION("sbo") {
-            // Use as example the std::pmr::vector<T> constructor taking
-            // (std::initializer_list<T>, std::pmr::polymorphic_allocator<T>
-            // const&). Note that std::pmr::polymorphic_allocator<T> is
-            // implicitly constructed from std::pmr::memory_resource *.
-            std::pmr::monotonic_buffer_resource pool(128);
-            move_only_any a(std::in_place_type<std::pmr::vector<int>>,
-                            {42, 43, 44}, &pool);
-            CHECK(
-                move_only_any_cast<std::pmr::vector<int> const &>(a).size() ==
-                3);
+            using myvec = std::vector<int, my_allocator<int>>;
+            move_only_any a(std::in_place_type<myvec>, {42, 43, 44}, 128);
+            CHECK(move_only_any_cast<myvec const &>(a).size() == 3);
         }
 
         SECTION("heap") {
-            move_only_any a(std::in_place_type<large_value<int>>,
-                            {42, 43, 44});
+            move_only_any a(std::in_place_type<large_value<int>>, {42, 43, 44},
+                            128);
             CHECK(move_only_any_cast<large_value<int> const &>(a).v.size() ==
                   3);
         }
@@ -203,23 +273,15 @@ TEST_CASE("move_only_any emplace") {
 
     SECTION("initializer_list and args") {
         SECTION("sbo") {
-            // Use as example the std::pmr::vector<T> constructor taking
-            // (std::initializer_list<T>, std::pmr::polymorphic_allocator<T>
-            // const&). Note that std::pmr::polymorphic_allocator<T> is
-            // implicitly constructed from std::pmr::memory_resource *.
-            std::array<std::byte, 128> buffer{};
-            std::pmr::monotonic_buffer_resource pool(buffer.data(),
-                                                     buffer.size());
             move_only_any a;
-            a.emplace<std::pmr::vector<int>>({42, 43, 44}, &pool);
-            CHECK(
-                move_only_any_cast<std::pmr::vector<int> const &>(a).size() ==
-                3);
+            using myvec = std::vector<int, my_allocator<int>>;
+            a.emplace<myvec>({42, 43, 44}, 128);
+            CHECK(move_only_any_cast<myvec const &>(a).size() == 3);
         }
 
         SECTION("heap") {
             move_only_any a;
-            a.emplace<large_value<int>>({42, 43, 44});
+            a.emplace<large_value<int>>({42, 43, 44}, 128);
             CHECK(move_only_any_cast<large_value<int> const &>(a).v.size() ==
                   3);
         }
