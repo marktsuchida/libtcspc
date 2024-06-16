@@ -458,6 +458,7 @@ using namespace literals;
 
 namespace std {
 
+// NOLINTNEXTLINE(cert-dcl58-cpp)
 template <typename T> struct numeric_limits<tcspc::npint<T>> {
     static constexpr bool is_specialized = true;
 
