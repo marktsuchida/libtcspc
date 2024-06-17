@@ -14,6 +14,9 @@ option('tests_python', type: 'feature', value: 'enabled',
 option('benchmarks', type: 'feature', value: 'auto',
     description: 'Build benchmarks',
 )
+option('abridge_benchmarks', type: 'boolean', value: false,
+    description: 'Run only a single range of each benchmark (e.g., for CI)',
+)
 option('examples', type: 'feature', value: 'enabled',
     description: 'Build example programs',
 )

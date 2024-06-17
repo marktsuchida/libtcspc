@@ -39,11 +39,16 @@ namespace benchmark {
 // NOLINTBEGIN
 
 constexpr auto start = 1;
-constexpr auto stop = 512;
+constexpr auto limit =
+#ifdef LIBTCSPC_ABRIDGE_BENCHMARKS
+    start;
+#else
+    512;
+#endif
 
-BENCHMARK(vector_queue_push_read_pop)->RangeMultiplier(4)->Range(start, stop);
+BENCHMARK(vector_queue_push_read_pop)->RangeMultiplier(4)->Range(start, limit);
 
-BENCHMARK(std_queue_push_read_pop)->RangeMultiplier(4)->Range(start, stop);
+BENCHMARK(std_queue_push_read_pop)->RangeMultiplier(4)->Range(start, limit);
 
 // NOLINTEND
 

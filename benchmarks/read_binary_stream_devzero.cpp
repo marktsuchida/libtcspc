@@ -136,15 +136,20 @@ namespace benchmark {
 // NOLINTBEGIN
 
 constexpr auto start = 4 << 10;
-constexpr auto stop = 256 << 10;
+constexpr auto limit =
+#ifdef LIBTCSPC_ABRIDGE_BENCHMARKS
+    start;
+#else
+    256 << 10;
+#endif
 
-BENCHMARK(ifstream_unbuf)->RangeMultiplier(2)->Range(start, stop);
+BENCHMARK(ifstream_unbuf)->RangeMultiplier(2)->Range(start, limit);
 
-BENCHMARK(ifstream)->RangeMultiplier(2)->Range(start, stop);
+BENCHMARK(ifstream)->RangeMultiplier(2)->Range(start, limit);
 
-BENCHMARK(cfile_unbuf)->RangeMultiplier(2)->Range(start, stop);
+BENCHMARK(cfile_unbuf)->RangeMultiplier(2)->Range(start, limit);
 
-BENCHMARK(cfile)->RangeMultiplier(2)->Range(start, stop);
+BENCHMARK(cfile)->RangeMultiplier(2)->Range(start, limit);
 
 // NOLINTEND
 

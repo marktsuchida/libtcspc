@@ -129,6 +129,7 @@ jobs:
         run: >
           meson setup build-release --buildtype=release ${{ matrix.opts }}
           -Dgoogle-benchmark:tests=disabled -Dcatch2:tests=false
+          -Dabridge_benchmarks=true
       - name: test release build
         run: meson test -C build-release -v
 

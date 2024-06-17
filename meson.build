@@ -49,6 +49,10 @@ libtcspc_dep = declare_dependency(
     include_directories: include_directories('include'),
 )
 
+if get_option('abridge_benchmarks')
+    add_project_arguments('-DLIBTCSPC_ABRIDGE_BENCHMARKS', language: 'cpp')
+endif
+
 subdir('include')
 subdir('docs')
 subdir('tests')
