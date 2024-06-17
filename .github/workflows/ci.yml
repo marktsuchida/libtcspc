@@ -39,15 +39,19 @@ jobs:
           - runner: ubuntu-24.04
             compiler: platform
             cxx: g++
+            # I seem to get strage errors if ASan and UBSan are used together.
+            sanitizers: address,undefined,thread
             asan_opts: detect_leaks=1
           - runner: ubuntu-24.04
             compiler: clang
             cxx: clang++
+            sanitizers: a+ub,thread
             asan_opts: detect_leaks=1
           - runner: windows-2022
             compiler: platform
             cxx: cl
             opts: -Dcatch2:werror=false
+            sanitizers: address
           - runner: windows-2022
             compiler: clang
             cxx: clang-cl
@@ -56,8 +60,10 @@ jobs:
             debug_opts: -Dtests_python=disabled  # No python3x_d.dll
           - runner: macos-13
             cxx: clang++
+            sanitizers: a+ub,thread
           - runner: macos-14
             cxx: clang++
+            sanitizers: a+ub,thread
     name: cpp-test-${{ matrix.runner }}-${{ matrix.cxx }}
     runs-on: ${{ matrix.runner }}
     env:
@@ -80,8 +86,18 @@ jobs:
       - name: test release build
         run: meson test -C build-release -v
 
+      - name: configure with ASan+UBSan
+        if: contains(matrix.sanitizers, 'a+ub')
+        run: >
+          meson setup build-asan-ubsan --buildtype=debug ${{ matrix.opts }}
+          ${{ matrix.debug_opts }} -Dbenchmarks=disabled -Dcatch2:tests=false
+          -Db_lundef=false -Db_sanitize=address,undefined
+      - name: test with ASan+UBSan
+        if: contains(matrix.sanitizers, 'a+ub')
+        run: meson test -C build-asan-ubsan -v
+
       - name: configure with ASan
-        if: matrix.cxx != 'clang-cl'
+        if: contains(matrix.sanitizers, 'address')
         # With MSVC, vector/string annotations for ASan fail due to mismatch
         # between Catch2 and libtcspc. Disable these for now.
         run: >
@@ -90,27 +106,27 @@ jobs:
           -Db_lundef=false -Db_sanitize=address
           -Dcpp_args='-D_DISABLE_VECTOR_ANNOTATION -D_DISABLE_STRING_ANNOTATION'
       - name: test with ASan
-        if: matrix.cxx != 'clang-cl'
+        if: contains(matrix.sanitizers, 'address')
         run: meson test -C build-asan -v
 
       - name: configure with UBSan
-        if: ${{ ! startsWith(matrix.runner, 'windows-') }}
+        if: contains(matrix.sanitizers, 'undefined')
         run: >
           meson setup build-ubsan --buildtype=debug ${{ matrix.opts }}
           ${{ matrix.debug_opts }} -Dbenchmarks=disabled -Dcatch2:tests=false
           -Db_lundef=false -Db_sanitize=undefined
       - name: test with UBSan
-        if: ${{ ! startsWith(matrix.runner, 'windows-') }}
+        if: contains(matrix.sanitizers, 'undefined')
         run: meson test -C build-ubsan -v
 
       - name: configure with TSan
-        if: ${{ ! startsWith(matrix.runner, 'windows-') }}
+        if: contains(matrix.sanitizers, 'thread')
         run: >
           meson setup build-tsan --buildtype=debug ${{ matrix.opts }}
           ${{ matrix.debug_opts }} -Dbenchmarks=disabled -Dcatch2:tests=false
           -Db_lundef=false -Db_sanitize=thread
       - name: test with TSan
-        if: ${{ ! startsWith(matrix.runner, 'windows-') }}
+        if: contains(matrix.sanitizers, 'thread')
         run: meson test -C build-tsan -v
 
       # Note: Memory Sanitizer has false positives unless libc++ is
