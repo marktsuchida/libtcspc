@@ -23,6 +23,7 @@ jobs:
       fail-fast: false
       matrix:
         runner:
+          - ubuntu-22.04
           - ubuntu-24.04
           - windows-2022
           - macos-13  # x86_64
@@ -36,6 +37,17 @@ jobs:
           - runner: macos-14
             compiler: clang  # Redundant with platform
         include:
+          - runner: ubuntu-22.04
+            compiler: platform
+            cxx: g++
+            # TSan appears to have false positives in this configuration.
+            sanitizers: address,undefined
+            asan_opts: detect_leaks=1
+          - runner: ubuntu-22.04
+            compiler: clang
+            cxx: clang++
+            sanitizers: a+ub,thread
+            asan_opts: detect_leaks=1
           - runner: ubuntu-24.04
             compiler: platform
             cxx: g++
