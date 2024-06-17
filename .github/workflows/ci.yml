@@ -124,12 +124,17 @@ jobs:
       # instrumented; skip for now.
 
       - name: configure debug build
-        run: meson setup build-debug --buildtype=debug ${{ matrix.opts }} ${{ matrix.debug_opts }} -Dbenchmarks=disabled -Dcatch2:tests=false
+        run: >
+          meson setup build-debug --buildtype=debug ${{ matrix.opts }}
+          ${{ matrix.debug_opts }} -Dbenchmarks=disabled -Dcatch2:tests=false
       - name: test debug build
         run: meson test -C build-debug -v
 
       - name: configure C++20 build
-        run: meson setup build-cpp20 --buildtype=release ${{ matrix.opts }} -Dcpp_std=c++20 -Dgoogle-benchmark:tests=disabled -Dcatch2:tests=false
+        run: >
+          meson setup build-cpp20 --buildtype=release ${{ matrix.opts }}
+          -Dcpp_std=c++20
+          -Dgoogle-benchmark:tests=disabled -Dcatch2:tests=false
       - name: test C++20 build
         run: meson test -C build-cpp20 -v
 
