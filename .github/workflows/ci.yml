@@ -39,9 +39,11 @@ jobs:
           - runner: ubuntu-24.04
             compiler: platform
             cxx: g++
+            asan_opts: detect_leaks=1
           - runner: ubuntu-24.04
             compiler: clang
             cxx: clang++
+            asan_opts: detect_leaks=1
           - runner: windows-2022
             compiler: platform
             cxx: cl
@@ -60,6 +62,7 @@ jobs:
     runs-on: ${{ matrix.runner }}
     env:
       CXX: ${{ matrix.cxx }}
+      ASAN_OPTIONS: ${{ matrix.asan_opts }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -99,16 +102,6 @@ jobs:
       - name: test with UBSan
         if: ${{ ! startsWith(matrix.runner, 'windows-') }}
         run: meson test -C build-ubsan -v
-
-      - name: configure with LSan
-        if: startsWith(matrix.runner, 'ubuntu-')
-        run: >
-          meson setup build-lsan --buildtype=debug ${{ matrix.opts }}
-          ${{ matrix.debug_opts }} -Dbenchmarks=disabled -Dcatch2:tests=false
-          -Db_lundef=false -Db_sanitize=leak
-      - name: test with LSan
-        if: startsWith(matrix.runner, 'ubuntu-')
-        run: meson test -C build-lsan -v
 
       - name: configure with TSan
         if: ${{ ! startsWith(matrix.runner, 'windows-') }}
