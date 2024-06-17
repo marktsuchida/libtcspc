@@ -84,7 +84,11 @@ jobs:
       - name: cache ccache cache
         uses: actions/cache@v4
         with:
-          key: cpp-test-ccache-${{ matrix.runner }}-${{ matrix.cxx }}
+          # Currently there is no way to update the cache when hit
+          # (https://github.com/actions/toolkit/issues/505). Instead, use
+          # unique keys and restore from most recent.
+          key: ccache-${{ matrix.runner }}-${{ matrix.cxx }}-${{ github.sha }}
+          restore-keys: ccache-${{ matrix.runner }}-${{ matrix.cxx }}-
           path: ${{ github.workspace }}/.ccache-cache
       - name: install ccache (Ubuntu)
         if: startsWith(matrix.runner, 'ubuntu-')
