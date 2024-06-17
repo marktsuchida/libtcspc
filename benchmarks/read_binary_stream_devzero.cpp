@@ -70,13 +70,15 @@ class unoptimized_null_sink {
     static void flush(int x = 0) { benchmark::DoNotOptimize(x); }
 };
 
+constexpr auto zero_device = "/dev/zero";
+
 constexpr std::size_t total_bytes = 1 << 20;
 
 } // namespace
 
 void ifstream_unbuf(benchmark::State &state) {
     auto stream = internal::unbuffered_binary_ifstream_input_stream(
-        "/dev/zero", arg::start_offset<u64>{0});
+        zero_device, arg::start_offset<u64>{0});
     auto const read_size = static_cast<std::size_t>(state.range(0));
     auto bsrc = recycling_bucket_source<int>::create();
     for ([[maybe_unused]] auto _ : state) {
@@ -89,7 +91,7 @@ void ifstream_unbuf(benchmark::State &state) {
 
 void ifstream(benchmark::State &state) {
     auto stream = internal::binary_ifstream_input_stream(
-        "/dev/zero", arg::start_offset<u64>{0});
+        zero_device, arg::start_offset<u64>{0});
     auto const read_size = static_cast<std::size_t>(state.range(0));
     auto bsrc = recycling_bucket_source<int>::create();
     for ([[maybe_unused]] auto _ : state) {
@@ -102,7 +104,7 @@ void ifstream(benchmark::State &state) {
 
 void cfile_unbuf(benchmark::State &state) {
     auto stream = internal::unbuffered_binary_cfile_input_stream(
-        "/dev/zero", arg::start_offset<u64>{0});
+        zero_device, arg::start_offset<u64>{0});
     auto const read_size = static_cast<std::size_t>(state.range(0));
     auto bsrc = recycling_bucket_source<int>::create();
     for ([[maybe_unused]] auto _ : state) {
@@ -115,7 +117,7 @@ void cfile_unbuf(benchmark::State &state) {
 
 void cfile(benchmark::State &state) {
     auto stream = internal::binary_cfile_input_stream(
-        "/dev/zero", arg::start_offset<u64>{0});
+        zero_device, arg::start_offset<u64>{0});
     auto const read_size = static_cast<std::size_t>(state.range(0));
     auto bsrc = recycling_bucket_source<int>::create();
     for ([[maybe_unused]] auto _ : state) {
@@ -125,6 +127,9 @@ void cfile(benchmark::State &state) {
         src.flush();
     }
 }
+
+// There is no /dev/zero equivalent on Windows.
+#ifndef _WIN32
 
 namespace benchmark {
 
@@ -144,6 +149,8 @@ BENCHMARK(cfile)->RangeMultiplier(2)->Range(start, stop);
 // NOLINTEND
 
 } // namespace benchmark
+
+#endif // _WIN32
 
 } // namespace tcspc
 

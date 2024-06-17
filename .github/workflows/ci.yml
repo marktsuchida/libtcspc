@@ -194,8 +194,6 @@ jobs:
         run: meson test -C build-cpp20 -v
 
       - name: exercise benchmarks
-        # Currently some of the benchmarks are not supported on Windows.
-        if: ${{ ! startsWith(matrix.runner, 'windows-') }}
         run: ninja -C build-release benchmark
 
       - name: ccache cleanup and stats

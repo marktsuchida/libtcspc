@@ -53,13 +53,20 @@ template <typename OutputStream> class ref_output_stream {
 };
 // NOLINTEND(bugprone-exception-escape)
 
+constexpr auto null_device =
+#ifdef _WIN32
+    "NUL:";
+#else
+    "/dev/null";
+#endif
+
 constexpr std::size_t total_bytes = 1 << 20;
 
 } // namespace
 
 void ofstream_unbuf(benchmark::State &state) {
     auto stream = internal::unbuffered_binary_ofstream_output_stream(
-        "/dev/null", arg::truncate{false}, arg::append{true});
+        null_device, arg::truncate{false}, arg::append{true});
     auto const write_size = static_cast<std::size_t>(state.range(0));
     auto const num_writes = total_bytes / write_size;
     std::vector<std::byte> const data(write_size);
@@ -74,7 +81,7 @@ void ofstream_unbuf(benchmark::State &state) {
 
 void ofstream(benchmark::State &state) {
     auto stream = internal::binary_ofstream_output_stream(
-        "/dev/null", arg::truncate{false}, arg::append{true});
+        null_device, arg::truncate{false}, arg::append{true});
     auto const write_size = static_cast<std::size_t>(state.range(0));
     auto const num_writes = total_bytes / write_size;
     std::vector<std::byte> const data(write_size);
@@ -89,7 +96,7 @@ void ofstream(benchmark::State &state) {
 
 void cfile_unbuf(benchmark::State &state) {
     auto stream = internal::unbuffered_binary_cfile_output_stream(
-        "/dev/null", arg::truncate{false}, arg::append{true});
+        null_device, arg::truncate{false}, arg::append{true});
     auto const write_size = static_cast<std::size_t>(state.range(0));
     auto const num_writes = total_bytes / write_size;
     std::vector<std::byte> const data(write_size);
@@ -104,7 +111,7 @@ void cfile_unbuf(benchmark::State &state) {
 
 void cfile(benchmark::State &state) {
     auto stream = internal::binary_cfile_output_stream(
-        "/dev/null", arg::truncate{false}, arg::append{true});
+        null_device, arg::truncate{false}, arg::append{true});
     auto const write_size = static_cast<std::size_t>(state.range(0));
     auto const num_writes = total_bytes / write_size;
     std::vector<std::byte> const data(write_size);
