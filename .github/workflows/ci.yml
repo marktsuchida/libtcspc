@@ -69,6 +69,7 @@ jobs:
     env:
       CXX: ${{ matrix.cxx }}
       ASAN_OPTIONS: ${{ matrix.asan_opts }}
+      CCACHE_DIR: ${{ github.workspace }}/.ccache-cache
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -78,6 +79,46 @@ jobs:
       - name: install tools
         run: python -m pip install --upgrade pip meson ninja
       - uses: ilammy/msvc-dev-cmd@v1
+
+      - name: cache ccache cache
+        uses: actions/cache@v4
+        with:
+          key: cpp-test-ccache-${{ matrix.runner }}-${{ matrix.cxx }}
+          path: ${{ github.workspace }}/.ccache-cache
+      - name: install ccache (Ubuntu)
+        if: startsWith(matrix.runner, 'ubuntu-')
+        run: |
+          sudo apt-get install ccache
+          ccache -z
+          echo "CXX=ccache $CXX" >$GITHUB_ENV
+      - name: install ccache (macOS)
+        if: startsWith(matrix.runner, 'macos-')
+        run: |
+          brew install ccache
+          ccache -z
+          echo "CXX=ccache $CXX" >$GITHUB_ENV
+      - name: install ccache (Windows)
+        if: startsWith(matrix.runner, 'windows-')
+        # Install ccache under the name cl.exe or clang-cl.exe and point to it
+        # via CXX (see ccache MSVC instructions).
+        run: |
+          $version = "4.10"
+          $url = "https://github.com/ccache/ccache/releases/download/v$version/ccache-$version-windows-x86_64.zip"
+          $tempdir = Join-Path $([System.IO.Path]::GetTempPath()) $(New-Guid)
+          $zip = Join-Path $tempdir ccache.zip
+          $dist = Join-Path $tempdir ccache
+          $exe = Join-Path $dist "ccache-$version-windows-x86_64\ccache.exe"
+          New-Item -Type Directory -Path $tempdir | Out-Null
+          Invoke-WebRequest -Uri $url -OutFile $zip
+          Expand-Archive -Path $zip -DestinationPath $dist
+          New-Item -ItemType Directory -Name ccache | Out-Null
+          Copy-Item $exe -Destination ".\ccache\"
+          Copy-Item $exe -Destination ".\ccache\$Env:CXX.exe"
+          "CXX=$PWD\ccache\$Env:CXX" | Out-File -FilePath $Env:GITHUB_ENV
+          .\ccache\ccache -z
+      - name: record start time
+        shell: bash
+        run: date +%s >.start-time
 
       - name: configure release build
         run: >
@@ -151,6 +192,14 @@ jobs:
         # Currently some of the benchmarks are not supported on Windows.
         if: ${{ ! startsWith(matrix.runner, 'windows-') }}
         run: ninja -C build-release benchmark
+
+      - name: ccache cleanup and stats
+        shell: bash
+        run: |
+          PATH="$PWD/ccache:$PATH"
+          elapsed=$(($(date +%s) - $(<.start-time) + 10))s
+          ccache --evict-older-than $elapsed
+          ccache -sv
 
   cpp-analyze:
     runs-on: ubuntu-24.04
