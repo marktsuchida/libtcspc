@@ -125,13 +125,13 @@ _cpp_fixed_width_for_ulong = "tcspc::u" + str(
 
 _cpp_fixed_width_for_np_int_ = (
     _cpp_fixed_width_for_long
-    if NumpyVersion(np.__version__) < "2.0.0"
+    if NumpyVersion(np.__version__) < "2.0.0b1"
     else "tcspc::i" + str(8 * cppyy.sizeof("std::size_t"))
 )
 
 _cpp_fixed_width_for_np_uint = (
     _cpp_fixed_width_for_ulong
-    if NumpyVersion(np.__version__) < "2.0.0"
+    if NumpyVersion(np.__version__) < "2.0.0b1"
     else "tcspc::u" + str(8 * cppyy.sizeof("std::size_t"))
 )
 
