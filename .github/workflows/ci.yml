@@ -291,7 +291,7 @@ jobs:
       - name: configure
         run: >
           meson setup builddir -Dtests=disabled -Dexamples=disabled
-          -Dbenchmarks=disabled -Ddocs=enabled
+          -Dbenchmarks=disabled -Ddocs=enabled -Ddocs_werror=true
       - name: build
         run: ninja -C builddir docs/apidoc
 

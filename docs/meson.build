@@ -26,6 +26,8 @@ doxygen_css = files(
     'doxygen-awesome-css/custom.css',
 )
 
+doxygen_werror = get_option('docs_werror') ? 'FAIL_ON_WARNINGS' : 'NO'
+
 doxyfile = configure_file(
     configuration: {
         'DOXYGEN_INPUT': meson.current_source_dir() / '../include',
@@ -33,6 +35,7 @@ doxyfile = configure_file(
         'DOXYGEN_OUTPUT': meson.current_build_dir() / 'apidoc',
         'DOXYGEN_LAYOUT': meson.current_build_dir() / 'DoxygenLayout.xml',
         'DOXYGEN_CSS': meson.current_source_dir() / 'doxygen-awesome-css',
+        'DOXYGEN_WERROR': doxygen_werror,
     },
     input: 'Doxyfile.in',
     output: 'Doxyfile',

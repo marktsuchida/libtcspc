@@ -5,6 +5,9 @@
 option('docs', type: 'feature', value: 'auto',
     description: 'Build documentation (requires Doxygen)',
 )
+option('docs_werror', type: 'boolean', value: false,
+    description: 'Fail build on documentation generation warning',
+)
 option('tests', type: 'feature', value: 'enabled',
     description: 'Build unit tests',
 )
