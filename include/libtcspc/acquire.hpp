@@ -449,8 +449,8 @@ template <typename T> struct stuck_reader {
  * \ingroup context-access
  */
 template <typename T> class late_bound_reader_access {
-    using set_func_type =
-        std::function<auto(span<T>)->std::optional<std::size_t>>;
+    using raw_set_func_type = auto(span<T>) -> std::optional<std::size_t>;
+    using set_func_type = std::function<raw_set_func_type>;
     std::function<void(set_func_type)> set_read_func_func;
 
   public:
@@ -476,11 +476,11 @@ template <typename T> class late_bound_reader_access {
  * \ingroup acquisition-readers
  */
 template <typename T> class late_bound_reader {
-    std::function<auto(span<T>)->std::optional<std::size_t>> read_func;
+    using raw_set_func_type = auto(span<T>) -> std::optional<std::size_t>;
+    std::function<raw_set_func_type> read_func;
     access_tracker<late_bound_reader_access<T>> trk;
 
-    void set_read_func(
-        std::function<auto(span<T>)->std::optional<std::size_t>> func) {
+    void set_read_func(std::function<raw_set_func_type> func) {
         read_func = func;
     }
 
