@@ -125,7 +125,7 @@ jobs:
           $zip = Join-Path $tempdir ccache.zip
           $dist = Join-Path $tempdir ccache
           $exe = Join-Path $dist "ccache-$version-windows-x86_64\ccache.exe"
-          New-Item -Type Directory -Path $tempdir | Out-Null
+          New-Item -ItemType Directory -Path $tempdir | Out-Null
           Invoke-WebRequest -Uri $url -OutFile $zip
           Expand-Archive -Path $zip -DestinationPath $dist
           New-Item -ItemType Directory -Name ccache | Out-Null
