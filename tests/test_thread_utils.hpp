@@ -33,7 +33,7 @@ class latch {
     void count_down(std::ptrdiff_t n = 1) {
         bool should_notify{};
         {
-            std::scoped_lock const lock(mut);
+            auto const lock = std::lock_guard(mut);
             ct -= n;
             should_notify = ct == 0;
         }
@@ -42,19 +42,19 @@ class latch {
     }
 
     auto try_wait() const noexcept -> bool {
-        std::scoped_lock const lock(mut);
+        auto const lock = std::lock_guard(mut);
         return ct == 0;
     }
 
     void wait() const {
-        std::unique_lock lock(mut);
+        auto lock = std::unique_lock(mut);
         cv.wait(lock, [&] { return ct == 0; });
     }
 
     void arrive_and_wait(std::ptrdiff_t n = 1) {
         bool should_notify{};
         {
-            std::unique_lock lock(mut);
+            auto lock = std::unique_lock(mut);
             ct -= n;
             should_notify = ct == 0;
             if (not should_notify) {

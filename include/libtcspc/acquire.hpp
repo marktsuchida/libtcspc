@@ -85,7 +85,7 @@ template <typename T, typename Reader, typename Downstream> class acquire {
 
     void halt() {
         {
-            std::scoped_lock lock(halt_mutex);
+            auto const lock = std::lock_guard(halt_mutex);
             halted = true;
         }
         halt_cv.notify_one();
@@ -124,7 +124,7 @@ template <typename T, typename Reader, typename Downstream> class acquire {
         bucket<T> b;
         bool reached_end = false;
         {
-            std::unique_lock lock(halt_mutex);
+            auto lock = std::unique_lock(halt_mutex);
             while (not halted) {
                 lock.unlock();
                 auto const start_time = std::chrono::steady_clock::now();
@@ -176,7 +176,7 @@ class acquire_full_buckets {
 
     void halt() {
         {
-            std::scoped_lock lock(halt_mutex);
+            auto const lock = std::lock_guard(halt_mutex);
             halted = true;
         }
         halt_cv.notify_one();
@@ -266,7 +266,7 @@ class acquire_full_buckets {
         bucket<T> b;
         std::size_t filled = 0;
         {
-            std::unique_lock lock(halt_mutex);
+            auto lock = std::unique_lock(halt_mutex);
             while (not halted) {
                 lock.unlock();
                 auto const start_time = std::chrono::steady_clock::now();

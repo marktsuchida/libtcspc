@@ -659,7 +659,7 @@ class recycling_bucket_source final
                 storage->clear();
 
             {
-                std::scoped_lock lock(source->mutex);
+                auto const lock = std::lock_guard(source->mutex);
                 source->recyclable.push_back(std::move(storage));
             }
 
@@ -714,7 +714,7 @@ class recycling_bucket_source final
     auto bucket_of_size(std::size_t size) -> bucket<T> override {
         std::unique_ptr<std::vector<T>> p;
         {
-            std::unique_lock lock(mutex);
+            auto lock = std::unique_lock(mutex);
             if (recyclable.empty() && bucket_count < max_buckets) {
                 ++bucket_count;
             } else {
@@ -788,7 +788,7 @@ class sharable_recycling_bucket_source final
     auto bucket_of_size(std::size_t size) -> bucket<T> override {
         std::unique_ptr<std::vector<T>> p;
         {
-            std::unique_lock lock(mutex);
+            auto lock = std::unique_lock(mutex);
             if (recyclable.empty() && bucket_count < max_buckets) {
                 ++bucket_count;
             } else {
@@ -815,7 +815,7 @@ class sharable_recycling_bucket_source final
                 if constexpr (ClearRecycled)
                     pv->clear();
                 {
-                    std::scoped_lock lock(self->mutex);
+                    auto const lock = std::lock_guard(self->mutex);
                     self->recyclable.emplace_back(pv);
                 }
                 if constexpr (Blocking)

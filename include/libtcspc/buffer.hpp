@@ -156,7 +156,7 @@ class buffer {
 
     void halt() noexcept {
         {
-            std::scoped_lock lock(mutex);
+            auto const lock = std::lock_guard(mutex);
             upstream_halted = true;
         }
         has_data_condition.notify_one();
@@ -164,7 +164,7 @@ class buffer {
 
     void pump() {
         try {
-            std::unique_lock lock(mutex);
+            auto lock = std::unique_lock(mutex);
             if (pumped) {
                 throw std::logic_error(
                     "buffer may not be pumped a second time");
@@ -208,7 +208,7 @@ class buffer {
         } catch (source_halted const &) {
             throw;
         } catch (...) {
-            std::scoped_lock lock(mutex);
+            auto const lock = std::lock_guard(mutex);
             downstream_threw = true;
             throw;
         }
@@ -258,7 +258,7 @@ class buffer {
     void handle(E &&event) {
         bool should_notify{};
         {
-            std::scoped_lock lock(mutex);
+            auto const lock = std::lock_guard(mutex);
             if (downstream_threw)
                 throw end_of_processing(
                     "ending upstream of buffer upon end of downstream processing");
@@ -278,7 +278,7 @@ class buffer {
 
     void flush() {
         {
-            std::scoped_lock lock(mutex);
+            auto const lock = std::lock_guard(mutex);
             if (downstream_threw)
                 throw end_of_processing(
                     "ending upstream of buffer upon end of downstream processing");
