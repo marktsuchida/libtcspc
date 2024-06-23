@@ -18,23 +18,38 @@ Checks: >-
     performance-*,
     portability-*,
     readability-*,
+    -cert-dcl16-c,
+    -cert-dcl37-c,-cert-dcl51-cpp,
+    -cert-fio38-c,
     -cert-msc32-c,-cert-msc51-cpp,
     -clang-analyzer-optin.core.EnumCastOutOfRange,
+    -cppcoreguidelines-avoid-c-arrays,
     -cppcoreguidelines-avoid-magic-numbers,-readability-magic-numbers,
     -misc-use-anonymous-namespace,
+    -modernize-deprecated-ios-base-aliases,
     -performance-enum-size,
     -readability-identifier-length,
 
 # Reasons for disabled checks:
+# [cert-dcl16-c]
+#   Alias of readability-uppercase-literal-suffix and slow.
+# [cert-dcl37-c,cert-dcl51-cpp]
+#   Aliases of bugprone-reserved-identifier and slow.
+# [cert-fio38-c]
+#   Alias of misc-non-copyable-objects and slow.
 # [cert-msc32-c,cert-msc51-cpp] "properly seed PRNG"
 #   Not relevant to this library; in fact we want reproducible random numbers.
 # [clang-analyzer-optin.core.EnumCastOutOfRange]
 #   False positives for bit-field enums.
+# [cppcoreguidelines-avoid-c-arrays]
+#   Alias of modernize-avoid-c-arrays and slow.
 # [cppcoreguidelines-avoid-magic-numbers,readability-magic-numbers]
 #   Too many false positives from bit manipulation code where defining
 #   constants would be merely circuitous; and tests.
 # [misc-use-anonymous-namespace]
 #   Too much noise from Catch2 and no way to selectively disable.
+# [modernize-replace-auto-ptr]
+#   Slow, and compiler should detect in C++17.
 # [performance-enum-size]
 #   Currently no performance benefit expected given our enum usage.
 # [readability-identifier-length]
