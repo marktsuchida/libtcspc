@@ -89,11 +89,11 @@ jobs:
         with:
           python-version: '3.10'
           cache: pip
-      - name: install tools
+      - name: Install tools
         run: python -m pip install --upgrade pip meson ninja
       - uses: ilammy/msvc-dev-cmd@v1
 
-      - name: cache ccache cache
+      - name: Cache ccache cache
         uses: actions/cache@v4
         with:
           # Currently there is no way to update the cache when hit
@@ -102,19 +102,19 @@ jobs:
           key: ccache-${{ matrix.runner }}-${{ matrix.cxx }}-${{ github.sha }}
           restore-keys: ccache-${{ matrix.runner }}-${{ matrix.cxx }}-
           path: ${{ github.workspace }}/.ccache-cache
-      - name: install ccache (Ubuntu)
+      - name: Install ccache (Ubuntu)
         if: startsWith(matrix.runner, 'ubuntu-')
         run: |
           sudo apt-get install ccache
           ccache -z
           echo "CXX=ccache $CXX" >$GITHUB_ENV
-      - name: install ccache (macOS)
+      - name: Install ccache (macOS)
         if: startsWith(matrix.runner, 'macos-')
         run: |
           brew install ccache
           ccache -z
           echo "CXX=ccache $CXX" >$GITHUB_ENV
-      - name: install ccache (Windows)
+      - name: Install ccache (Windows)
         if: startsWith(matrix.runner, 'windows-')
         # Install ccache under the name cl.exe or clang-cl.exe and point to it
         # via CXX (see ccache MSVC instructions).
@@ -133,29 +133,29 @@ jobs:
           Copy-Item $exe -Destination ".\ccache\$Env:CXX.exe"
           "CXX=$PWD\ccache\$Env:CXX" | Out-File -FilePath $Env:GITHUB_ENV
           .\ccache\ccache -z
-      - name: record start time
+      - name: Record start time
         shell: bash
         run: date +%s >.start-time
 
-      - name: configure release build
+      - name: Configure release build
         run: >
           meson setup build-release --buildtype=release ${{ matrix.opts }}
           -Dgoogle-benchmark:tests=disabled -Dcatch2:tests=false
           -Dabridge_benchmarks=true
-      - name: test release build
+      - name: Test release build
         run: meson test -C build-release -v
 
-      - name: configure with ASan+UBSan
+      - name: Configure with ASan+UBSan
         if: contains(matrix.sanitizers, 'a+ub')
         run: >
           meson setup build-asan-ubsan --buildtype=debug ${{ matrix.opts }}
           ${{ matrix.debug_opts }} -Dbenchmarks=disabled -Dcatch2:tests=false
           -Db_lundef=false -Db_sanitize=address,undefined
-      - name: test with ASan+UBSan
+      - name: Test with ASan+UBSan
         if: contains(matrix.sanitizers, 'a+ub')
         run: meson test -C build-asan-ubsan -v
 
-      - name: configure with ASan
+      - name: Configure with ASan
         if: contains(matrix.sanitizers, 'address')
         # With MSVC, vector/string annotations for ASan fail due to mismatch
         # between Catch2 and libtcspc. Disable these for now.
@@ -164,52 +164,52 @@ jobs:
           ${{ matrix.debug_opts }} -Dbenchmarks=disabled -Dcatch2:tests=false
           -Db_lundef=false -Db_sanitize=address
           -Dcpp_args='-D_DISABLE_VECTOR_ANNOTATION -D_DISABLE_STRING_ANNOTATION'
-      - name: test with ASan
+      - name: Test with ASan
         if: contains(matrix.sanitizers, 'address')
         run: meson test -C build-asan -v
 
-      - name: configure with UBSan
+      - name: Configure with UBSan
         if: contains(matrix.sanitizers, 'undefined')
         run: >
           meson setup build-ubsan --buildtype=debug ${{ matrix.opts }}
           ${{ matrix.debug_opts }} -Dbenchmarks=disabled -Dcatch2:tests=false
           -Db_lundef=false -Db_sanitize=undefined
-      - name: test with UBSan
+      - name: Test with UBSan
         if: contains(matrix.sanitizers, 'undefined')
         run: meson test -C build-ubsan -v
 
-      - name: configure with TSan
+      - name: Configure with TSan
         if: contains(matrix.sanitizers, 'thread')
         run: >
           meson setup build-tsan --buildtype=debug ${{ matrix.opts }}
           ${{ matrix.debug_opts }} -Dbenchmarks=disabled -Dcatch2:tests=false
           -Db_lundef=false -Db_sanitize=thread
-      - name: test with TSan
+      - name: Test with TSan
         if: contains(matrix.sanitizers, 'thread')
         run: meson test -C build-tsan -v
 
       # Note: Memory Sanitizer has false positives unless libc++ is
       # instrumented; skip for now.
 
-      - name: configure debug build
+      - name: Configure debug build
         run: >
           meson setup build-debug --buildtype=debug ${{ matrix.opts }}
           ${{ matrix.debug_opts }} -Dbenchmarks=disabled -Dcatch2:tests=false
-      - name: test debug build
+      - name: Test debug build
         run: meson test -C build-debug -v
 
-      - name: configure C++20 build
+      - name: Configure C++20 build
         run: >
           meson setup build-cpp20 --buildtype=release ${{ matrix.opts }}
           -Dcpp_std=c++20
           -Dgoogle-benchmark:tests=disabled -Dcatch2:tests=false
-      - name: test C++20 build
+      - name: Test C++20 build
         run: meson test -C build-cpp20 -v
 
-      - name: exercise benchmarks
+      - name: Exercise benchmarks
         run: ninja -C build-release benchmark
 
-      - name: ccache cleanup and stats
+      - name: Clean up ccache cache
         shell: bash
         run: |
           PATH="$PWD/ccache:$PATH"
@@ -229,12 +229,12 @@ jobs:
         with:
           python-version: '3.10'
           cache: pip
-      - name: install tools
+      - name: Install tools
         run: python -m pip install --upgrade pip meson ninja
 
       - run: clang-tidy --version
 
-      - name: install ctcache
+      - name: Install ctcache
         uses: actions/checkout@v4
         with:
           repository: matus-chochlik/ctcache
@@ -242,7 +242,7 @@ jobs:
           ref: 'debfea68152c5221d8f409cbef85dc5d0f98071d'  # Apr 30 2024
           path: ctcache
 
-      - name: set up ctcache
+      - name: Set up ctcache
         run: |
           clang-tidy --version >clang-tidy-conf
           # Importantly, ctcache does not currently add the clang-tidy config
@@ -267,7 +267,7 @@ jobs:
           # the unwrapped clang-tidy.
           echo ${{ github.workspace }}/ctcache >>$GITHUB_PATH
 
-      - name: cache ctcache cache
+      - name: Cache ctcache cache
         uses: actions/cache@v4
         with:
           # Currently there is no way to update the cache when hit
@@ -279,11 +279,11 @@ jobs:
           restore-keys: ctcache-${{ hashFiles('clang-tidy-conf') }}-
           path: ${{ github.workspace }}/.cache/ctcache
 
-      - name: configure build
+      - name: Configure build
         working-directory: libtcspc
         run: meson setup builddir --buildtype=release
 
-      - name: clang-tidy
+      - name: Run clang-tidy
         working-directory: libtcspc
         env:
           CTCACHE_DIR: ${{ github.workspace }}/.cache/ctcache
@@ -331,19 +331,19 @@ jobs:
         with:
           python-version: '3.10'
           cache: pip
-      - name: install tools
+      - name: Install tools
         run: python -m pip install --upgrade pip meson ninja
-      - name: install Doxygen 1.11
+      - name: Install Doxygen 1.11
         run: |
           curl -LO https://www.doxygen.nl/files/doxygen-1.11.0.linux.bin.tar.gz
           tar xf doxygen-1.11.0.linux.bin.tar.gz
           echo $PWD/doxygen-1.11.0/bin >>$GITHUB_PATH
 
-      - name: configure
+      - name: Configure
         run: >
           meson setup builddir -Dtests=disabled -Dexamples=disabled
           -Dbenchmarks=disabled -Ddocs=enabled -Ddocs_werror=true
-      - name: build
+      - name: Build
         run: ninja -C builddir docs/apidoc
 
       # TODO Publish, but we first need to decide how to combine C++ API docs
