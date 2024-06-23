@@ -26,7 +26,7 @@ namespace tcspc {
  * one via the `|` operator results in an unexpected value. All other flags
  * (and `default_policy`) may be combined in any way.
  */
-enum class histogram_policy {
+enum class histogram_policy : unsigned {
     /**
      * \brief Default policy with no bit set: equal to `error_on_overflow`.
      */

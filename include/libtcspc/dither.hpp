@@ -68,7 +68,7 @@ uniform_double_0_1_minstd(std::minstd_rand::result_type r) -> double {
     // Put the 31 random bits in the most significant part of the 52-bit
     // fraction field; leave the sign positive and exponent to 0 (giving a
     // value in [1.0, 2.0)).
-    auto bits = std::uint64_t(r) << (52 - 31);
+    auto bits = std::uint64_t(r) << (52u - 31u);
     bits |= 1023uLL << 52; // Exponent = 0
     double d{};
     std::memcpy(&d, &bits, sizeof(d));
