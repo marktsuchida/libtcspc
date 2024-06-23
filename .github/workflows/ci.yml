@@ -223,6 +223,8 @@ jobs:
       CXX: clang++
     steps:
       - uses: actions/checkout@v4
+        with:
+          path: libtcspc
       - uses: actions/setup-python@v5
         with:
           python-version: "3.10"
@@ -232,10 +234,59 @@ jobs:
 
       - run: clang-tidy --version
 
+      - name: install ctcache
+        uses: actions/checkout@v4
+        with:
+          repository: matus-chochlik/ctcache
+          # Significant bugs have been fixed since the last release (1.1.0).
+          ref: 'debfea68152c5221d8f409cbef85dc5d0f98071d'  # Apr 30 2024
+          path: ctcache
+
+      - name: set up ctcache
+        run: |
+          clang-tidy --version >clang-tidy-conf
+          # Importantly, ctcache does not currently add the clang-tidy config
+          # to the hash, so we need to invalidate the cache if there are
+          # changes.
+          # Ideally we would use clang-tidy --dump-config, but that depends on
+          # the input file. Since this is for bulk cache validity checking,
+          # instead simply aggregate all the .clang-tidy files in the tree.
+          find . -name .clang-tidy -exec sh \
+              -c 'echo "{}" >>clang-tidy-conf; cat "{}" >>clang-tidy-conf' \;
+
+          cfgdir=$HOME/.config/ctcache
+          cfg=$cfgdir/ctcache.conf
+          mkdir -p $cfgdir
+          echo "CTCACHE_CLANG_TIDY=$(command -v clang-tidy)" >$cfg
+          echo 'CTCACHE_CLANG_TIDY_OPTS=(--quiet --use-color)' >>$cfg
+          # Warning: only the above 2 variables work when set in ctcache.conf;
+          # they are settings for the wrapper script 'clang-tidy'. Settings for
+          # 'clang-tidy-cache' itself require 'export' if set in ctcache.conf.
+
+          # Put the wrapper script on PATH, now that we are done with querying
+          # the unwrapped clang-tidy.
+          echo ${{ github.workspace }}/ctcache >>$GITHUB_PATH
+
+      - name: cache ctcache cache
+        uses: actions/cache@v4
+        with:
+          # Currently there is no way to update the cache when hit
+          # (https://github.com/actions/toolkit/issues/505). Instead, use
+          # unique keys and restore from most recent. Never match if the
+          # clang-tidy version or config has changed. We do not bother to prune
+          # the cache after running, because clang-tidy output is small.
+          key: ctcache-${{ hashFiles('clang-tidy-conf') }}-${{ github.sha }}
+          restore-keys: ctcache-${{ hashFiles('clang-tidy-conf') }}-
+          path: ${{ github.workspace }}/.cache/ctcache
+
       - name: configure build
+        working-directory: libtcspc
         run: meson setup builddir --buildtype=release
 
       - name: clang-tidy
+        working-directory: libtcspc
+        env:
+          CTCACHE_DIR: ${{ github.workspace }}/.cache/ctcache
         run: ninja -C builddir clang-tidy
 
   py-test:
