@@ -147,9 +147,9 @@ namespace {
 template <typename T> struct my_allocator {
     using value_type = T;
 
-    ~my_allocator() = default;
-
     my_allocator() = default;
+
+    // NOLINTBEGIN(google-explicit-constructor)
 
     // For testing arg passing via std::vector constructor.
     my_allocator([[maybe_unused]] int i) {}
@@ -170,6 +170,8 @@ template <typename T> struct my_allocator {
     auto operator=([[maybe_unused]] my_allocator<U> &&rhs) -> my_allocator & {
         return *this;
     }
+
+    // NOLINTEND(google-explicit-constructor)
 
     // NOLINTBEGIN(cppcoreguidelines-owning-memory,cppcoreguidelines-no-malloc)
 
@@ -216,7 +218,7 @@ template <typename V> struct large_value {
     std::array<int, 100> a{}; // Don't fit in sbo.
 
     template <typename T, typename... Args>
-    explicit large_value(std::initializer_list<T> il, Args &&...args)
+    large_value(std::initializer_list<T> il, Args &&...args)
         : v(il, std::forward<Args>(args)...) {}
 };
 

@@ -191,7 +191,7 @@ class move_only_any {
 
     template <typename V, typename = std::enable_if_t<not std::is_same_v<
                               std::remove_reference_t<V>, move_only_any>>>
-    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init,google-explicit-constructor)
     move_only_any(V &&value) {
         using U = std::decay_t<V>;
         if constexpr (uses_sbo<U>()) {
