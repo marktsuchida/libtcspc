@@ -40,4 +40,13 @@ executable(
     ],
 )
 
+executable(
+    'resonant_flim_swabian',
+    'resonant_flim_swabian.cpp',
+    dependencies: [
+        libtcspc_dep,
+        thread_dep,
+    ],
+)
+
 endif
