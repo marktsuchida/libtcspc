@@ -740,11 +740,10 @@ namespace tcspc {
  * Bin mappers define the following members:
  * - `[[nodiscard]] auto n_bins() const -> std::size_t`, which returns the
  *   number of bins to which datapoints are mapped, and
- * - `auto operator()(datapoint_type d) const ->
- *   std::optional<bin_index_type>`, where `datapoint_type` and
- *   `bin_index_type` must match the `tcspc::map_to_bins()` processor's
- *   `DataTypes`. This function call operator mapps the datapoint `d` to a bin
- *   index.
+ * - `auto operator()(datapoint_type d) -> std::optional<bin_index_type>`,
+ *   where `datapoint_type` and `bin_index_type` must match the
+ *   `tcspc::map_to_bins()` processor's `DataTypes`. This function call
+ *   operator mapps the datapoint `d` to a bin index.
  *
  * (`n_bins()` is provided for convenience and is not used by
  * `tcspc::map_to_bins`. Thus, any invokable, such as a lambda, can be used as

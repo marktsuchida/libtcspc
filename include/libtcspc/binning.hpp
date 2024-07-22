@@ -8,6 +8,7 @@
 
 #include "arg_wrappers.hpp"
 #include "common.hpp"
+#include "context.hpp"
 #include "data_types.hpp"
 #include "histogram_events.hpp"
 #include "int_arith.hpp"
@@ -15,14 +16,17 @@
 #include "introspect.hpp"
 #include "processor_traits.hpp"
 
+#include <algorithm>
 #include <cassert>
 #include <cstddef>
 #include <functional>
+#include <iterator>
 #include <limits>
 #include <optional>
 #include <stdexcept>
 #include <type_traits>
 #include <utility>
+#include <vector>
 
 namespace tcspc {
 
@@ -155,6 +159,29 @@ template <typename DataTypes = default_data_types> class count_data_mapper {
                 decltype(event.count){0}),
             "count_data_mapper does not allow narrowing conversion");
         return event.count;
+    }
+};
+
+/**
+ * \brief Data mapper mapping channel to the data value.
+ *
+ * \ingroup data-mappers
+ *
+ * The event being mapped must have a `channel` field.
+ *
+ * \tparam DataTypes data type set specifying `datapoint_type`
+ */
+template <typename DataTypes = default_data_types> class channel_data_mapper {
+  public:
+    /** \brief Implements data mapper requirement */
+    template <typename Event>
+    auto operator()(Event const &event) const ->
+        typename DataTypes::datapoint_type {
+        static_assert(
+            internal::is_type_in_range<typename DataTypes::datapoint_type>(
+                decltype(event.channel){0}),
+            "channel_data_mapper does not allow narrowing conversion");
+        return event.channel;
     }
 };
 
@@ -398,6 +425,95 @@ template <typename DataTypes = default_data_types> class linear_bin_mapper {
         if (u64(scaled) > u64(max_index))
             return clamp ? std::make_optional(max_index) : std::nullopt;
         return static_cast<bin_index_type>(scaled);
+    }
+};
+
+/**
+ * \brief Access for `tcspc::unique_bin_mapper` data.
+ *
+ * \ingroup context-access
+ */
+template <typename T> class unique_bin_mapper_access {
+    std::function<std::vector<T>()> values_fn;
+
+  public:
+    /** \private */
+    template <typename Func>
+    explicit unique_bin_mapper_access(Func values_func)
+        : values_fn(values_func) {}
+
+    /**
+     * \brief Return the datapoint values assigned to bin indices.
+     */
+    auto values() -> std::vector<T> { return values_fn(); }
+};
+
+/**
+ * \brief Bin mapper that maps unique datapoints to consecutive bin indices.
+ *
+ * \ingroup bin-mappers
+ *
+ * This is intended for use with datapoints that only have a small number of
+ * unique values (for example, those from `tcspc::channel_data_mapper`).
+ *
+ * Each datapoint value is mapped to a bin index starting from 0, assigned in
+ * the order in which the value is encountered.
+ *
+ * The datapoint values for each bin index can later be retrieved via the
+ * context.
+ *
+ * \tparam DataTypes data type set specifying `datapoint_type` and
+ * `bin_index_type`.
+ */
+template <typename DataTypes = default_data_types> class unique_bin_mapper {
+    using datapoint_type = typename DataTypes::datapoint_type;
+    using bin_index_type = typename DataTypes::bin_index_type;
+    bin_index_type max_index;
+    std::vector<datapoint_type> values;
+    access_tracker<unique_bin_mapper_access<datapoint_type>> trk;
+
+  public:
+    /**
+     * \brief Construct with context and parameter.
+     *
+     * \param tracker access tracker for later access of the datapoint values
+     *
+     * \param max_bin_index number of bins minus one (must not be negative)
+     */
+    explicit unique_bin_mapper(
+        access_tracker<
+            unique_bin_mapper_access<typename DataTypes::datapoint_type>>
+            &&tracker,
+        arg::max_bin_index<typename DataTypes::bin_index_type> max_bin_index)
+        : max_index(max_bin_index.value), trk(std::move(tracker)) {
+        if (max_index < 0)
+            throw std::invalid_argument(
+                "unique_bin_mapper max_bin_index must not be negative");
+        trk.register_access_factory([](auto &tracker) {
+            auto *self =
+                LIBTCSPC_OBJECT_FROM_TRACKER(unique_bin_mapper, trk, tracker);
+            return unique_bin_mapper_access<datapoint_type>(
+                [self] { return self->values; });
+        });
+    }
+
+    /** \brief Implements bin mapper requirement. */
+    [[nodiscard]] auto n_bins() const -> std::size_t {
+        return std::size_t(max_index) + 1;
+    }
+
+    /** \brief Implements bin mapper requirement. */
+    auto operator()(typename DataTypes::datapoint_type datapoint)
+        -> std::optional<typename DataTypes::bin_index_type> {
+        auto it = std::find(values.begin(), values.end(), datapoint);
+        if (it == values.end()) {
+            values.push_back(datapoint);
+            it = std::prev(values.end());
+        }
+        auto idx = std::distance(values.begin(), it);
+        return u64(idx) <= u64(max_index)
+                   ? std::make_optional(bin_index_type(idx))
+                   : std::nullopt;
     }
 };
 

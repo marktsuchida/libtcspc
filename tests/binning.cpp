@@ -24,6 +24,7 @@
 #include <limits>
 #include <memory>
 #include <optional>
+#include <vector>
 
 namespace tcspc {
 
@@ -484,6 +485,32 @@ TEST_CASE("Linear bin mapping") {
     REQUIRE(check_clamped(flipped(65535), 0));
 
     // NOLINTEND(bugprone-unchecked-optional-access)
+}
+
+TEST_CASE("unique_bin_mapper") {
+    using datapoint_type = default_data_types::datapoint_type;
+    using bin_index_type = default_data_types::bin_index_type;
+    auto ctx = context::create();
+    unique_bin_mapper<> m1(
+        ctx->tracker<unique_bin_mapper_access<datapoint_type>>("m1"),
+        arg::max_bin_index<bin_index_type>{3});
+    CHECK(m1.n_bins() == 4);
+    auto access = ctx->access<unique_bin_mapper_access<datapoint_type>>("m1");
+    // NOLINTBEGIN(bugprone-unchecked-optional-access)
+    CHECK(access.values().empty());
+    CHECK(m1(42).value() == 0);
+    CHECK(access.values() == std::vector<datapoint_type>{42});
+    CHECK(m1(43).value() == 1);
+    CHECK(access.values() == std::vector<datapoint_type>{42, 43});
+    CHECK(m1(42).value() == 0);
+    CHECK(access.values() == std::vector<datapoint_type>{42, 43});
+    CHECK(m1(40).value() == 2);
+    CHECK(access.values() == std::vector<datapoint_type>{42, 43, 40});
+    CHECK(m1(45).value() == 3);
+    CHECK(access.values() == std::vector<datapoint_type>{42, 43, 40, 45});
+    CHECK_FALSE(m1(44).has_value());
+    // NOLINTEND(bugprone-unchecked-optional-access)
+    CHECK(access.values() == std::vector<datapoint_type>{42, 43, 40, 45, 44});
 }
 
 TEST_CASE("Batch bin increments") {

@@ -23,6 +23,15 @@ executable(
 )
 
 executable(
+    'swabian2vcd',
+    'swabian2vcd.cpp',
+    dependencies: [
+        libtcspc_dep,
+        thread_dep,
+    ],
+)
+
+executable(
     'flim_bruker_bh_spc',
     'flim_bruker_bh_spc.cpp',
     dependencies: [
