@@ -774,9 +774,9 @@ namespace tcspc {
  * -# Build the processing graph. Some processors (and auxiliary objects)
  *    require a `tcspc::access_tracker`; obtain trackers from the context
  *    (specifying a uniquely identifying name).
- * -# The processors and other objects, having been moved (or copied) into the
- *    graph, are not directly accessible. However, corresponding _access_
- *    objects can be obtained from the context by name.
+ * -# The processors and other objects, having been moved into the graph, are
+ *    not directly accessible. However, corresponding _access_ objects can be
+ *    obtained from the context by name.
  *
  * From the viewpoint of the object that provides access through the context,
  * this works as follows:
