@@ -92,12 +92,12 @@ auto check_introspect_merge_input(MI const &input,
 
 TEST_CASE("introspect: merge") {
     auto const [m0, m1] =
-        merge<all_events>(arg::max_buffered<std::size_t>{1}, null_sink());
+        merge<all_events>(arg::max_buffered<>{1}, null_sink());
     check_introspect_merge_input(m0, "merge_impl");
     check_introspect_merge_input(m1, "merge_impl");
 
     auto const [n0, n1, n2, n3, n4] =
-        merge_n<5, all_events>(arg::max_buffered<std::size_t>{1}, null_sink());
+        merge_n<5, all_events>(arg::max_buffered<>{1}, null_sink());
     std::set<processor_node_id> unique_nodes;
     std::set<std::pair<processor_node_id, processor_node_id>> unique_edges;
     auto add_to_sets = [&](auto const &n) {
@@ -129,7 +129,7 @@ TEST_CASE("Merge") {
 
     SECTION("asymmetric tests") {
         auto [mi0, mi1] =
-            merge<all_events>(arg::max_buffered<std::size_t>{1024},
+            merge<all_events>(arg::max_buffered<>{1024},
                               capture_output<all_events>(
                                   ctx->tracker<capture_output_access>("out")));
         auto in0 = feed_input(valcat, std::move(mi0));
@@ -168,7 +168,7 @@ TEST_CASE("Merge") {
 
     SECTION("symmetric tests") {
         auto [mi0, mi1] =
-            merge<all_events>(arg::max_buffered<std::size_t>{1024},
+            merge<all_events>(arg::max_buffered<>{1024},
                               capture_output<all_events>(
                                   ctx->tracker<capture_output_access>("out")));
         auto temi0 = type_erased_processor<all_events>(std::move(mi0));
@@ -266,7 +266,7 @@ TEST_CASE("merge single event type") {
     using one_event = type_list<e0>;
     auto ctx = context::create();
     auto [min0, min1] = merge<one_event>(
-        arg::max_buffered<std::size_t>{1024},
+        arg::max_buffered<>{1024},
         capture_output<one_event>(ctx->tracker<capture_output_access>("out")));
     auto in0 = feed_input(valcat, std::move(min0));
     in0.require_output_checked(ctx, "out");
@@ -300,7 +300,7 @@ TEST_CASE("merge N streams") {
     SECTION("Zero-stream merge_n returns empty tuple") {
         // NOLINTBEGIN(clang-analyzer-deadcode.DeadStores)
         auto tup = merge_n<0, all_events>(
-            arg::max_buffered<std::size_t>{1024},
+            arg::max_buffered<>{1024},
             capture_output<all_events>(
                 ctx->tracker<capture_output_access>("out")));
         STATIC_CHECK(std::tuple_size_v<decltype(tup)> == 0);
@@ -310,7 +310,7 @@ TEST_CASE("merge N streams") {
     SECTION("Single-stream merge_n returns downstream in tuple") {
         auto const valcat = GENERATE(feed_as::const_lvalue, feed_as::rvalue);
         auto [m0] = merge_n<1, all_events>(
-            arg::max_buffered<std::size_t>{1024},
+            arg::max_buffered<>{1024},
             capture_output<all_events>(
                 ctx->tracker<capture_output_access>("out")));
         STATIC_CHECK(
@@ -329,19 +329,19 @@ TEST_CASE("merge N streams") {
 
     SECTION("Multi-stream merge_n can be instantiated") {
         auto [m0, m1] = merge_n<2, all_events>(
-            arg::max_buffered<std::size_t>{1024},
+            arg::max_buffered<>{1024},
             capture_output<all_events>(
                 ctx->tracker<capture_output_access>("out2")));
         auto [n0, n1, n2] = merge_n<3, all_events>(
-            arg::max_buffered<std::size_t>{1024},
+            arg::max_buffered<>{1024},
             capture_output<all_events>(
                 ctx->tracker<capture_output_access>("out3")));
         auto [o0, o1, o2, o3] = merge_n<4, all_events>(
-            arg::max_buffered<std::size_t>{1024},
+            arg::max_buffered<>{1024},
             capture_output<all_events>(
                 ctx->tracker<capture_output_access>("out4")));
         auto [p0, p1, p2, p3, p4] = merge_n<5, all_events>(
-            arg::max_buffered<std::size_t>{1024},
+            arg::max_buffered<>{1024},
             capture_output<all_events>(
                 ctx->tracker<capture_output_access>("out5")));
     }

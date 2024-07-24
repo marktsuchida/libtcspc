@@ -36,18 +36,17 @@ namespace tcspc {
 TEST_CASE("type constraints: read_binary_stream") {
     using proc_type = decltype(read_binary_stream<int>(
         null_input_stream(), arg::max_length<u64>{0},
-        new_delete_bucket_source<int>::create(),
-        arg::granularity<std::size_t>{16},
+        new_delete_bucket_source<int>::create(), arg::granularity<>{16},
         sink_events<bucket<int>, warning_event>()));
     STATIC_CHECK(is_processor_v<proc_type>);
     STATIC_CHECK_FALSE(handles_event_v<proc_type, int>);
 }
 
 TEST_CASE("introspect: read_binary_stream") {
-    check_introspect_simple_processor(read_binary_stream<int>(
-        null_input_stream(), arg::max_length<u64>{0},
-        new_delete_bucket_source<int>::create(),
-        arg::granularity<std::size_t>{1}, null_sink()));
+    check_introspect_simple_processor(
+        read_binary_stream<int>(null_input_stream(), arg::max_length<u64>{0},
+                                new_delete_bucket_source<int>::create(),
+                                arg::granularity<>{1}, null_sink()));
 }
 
 namespace {
@@ -89,7 +88,7 @@ TEST_CASE("read file") {
             binary_file_input_stream(path.string(), arg::start_offset<u64>{8}),
             arg::max_length<u64>{40},
             new_delete_bucket_source<std::uint64_t>::create(),
-            arg::granularity<std::size_t>{16},
+            arg::granularity<>{16},
             stop_with_error<type_list<warning_event>>(
                 "read error",
                 capture_output<type_list<bucket<std::uint64_t>>>(
@@ -111,7 +110,7 @@ TEST_CASE("read file") {
             binary_file_input_stream(path.string(), arg::start_offset<u64>{8}),
             arg::max_length<u64>{48},
             new_delete_bucket_source<std::uint64_t>::create(),
-            arg::granularity<std::size_t>{16},
+            arg::granularity<>{16},
             stop_with_error<type_list<warning_event>>(
                 "read error",
                 capture_output<type_list<bucket<std::uint64_t>>>(
@@ -133,7 +132,7 @@ TEST_CASE("read file") {
             binary_file_input_stream(path.string(), arg::start_offset<u64>{8}),
             arg::max_length<u64>{44}, // 4 remainder bytes
             new_delete_bucket_source<std::uint64_t>::create(),
-            arg::granularity<std::size_t>{16},
+            arg::granularity<>{16},
             stop_with_error<type_list<warning_event>>(
                 "read error",
                 capture_output<type_list<bucket<std::uint64_t>>>(
@@ -155,7 +154,7 @@ TEST_CASE("read file") {
             binary_file_input_stream(path.string(), arg::start_offset<u64>{8}),
             arg::max_length<u64>{40},
             new_delete_bucket_source<std::uint64_t>::create(),
-            arg::granularity<std::size_t>{3},
+            arg::granularity<>{3},
             stop_with_error<type_list<warning_event>>(
                 "read error",
                 capture_output<type_list<bucket<std::uint64_t>>>(
@@ -184,7 +183,7 @@ TEST_CASE("read existing istream, known length") {
     auto src = read_binary_stream<std::uint64_t>(
         std::move(stream), arg::max_length<u64>{40},
         new_delete_bucket_source<std::uint64_t>::create(),
-        arg::granularity<std::size_t>{16},
+        arg::granularity<>{16},
         stop_with_error<type_list<warning_event>>(
             "read error", capture_output<type_list<bucket<std::uint64_t>>>(
                               ctx->tracker<capture_output_access>("out"))));
@@ -210,7 +209,7 @@ TEST_CASE("read existing istream, to end") {
         std::move(stream),
         arg::max_length{std::numeric_limits<std::uint64_t>::max()},
         new_delete_bucket_source<std::uint64_t>::create(),
-        arg::granularity<std::size_t>{16},
+        arg::granularity<>{16},
         stop_with_error<type_list<warning_event>>(
             "read error", capture_output<type_list<bucket<std::uint64_t>>>(
                               ctx->tracker<capture_output_access>("out"))));
@@ -233,7 +232,7 @@ TEST_CASE("read existing istream, empty") {
         std::move(stream),
         arg::max_length{std::numeric_limits<std::uint64_t>::max()},
         new_delete_bucket_source<std::uint64_t>::create(),
-        arg::granularity<std::size_t>{16},
+        arg::granularity<>{16},
         stop_with_error<type_list<warning_event>>(
             "read error", capture_output<type_list<bucket<std::uint64_t>>>(
                               ctx->tracker<capture_output_access>("out"))));

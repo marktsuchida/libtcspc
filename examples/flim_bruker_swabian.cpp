@@ -150,7 +150,7 @@ auto make_histo_proc(settings const &settings,
         binary_file_output_stream(settings.output_filename,
                                   arg::truncate{settings.truncate}),
         recycling_bucket_source<std::byte>::create(),
-        arg::granularity<std::size_t>{65536});
+        arg::granularity<>{65536});
     struct reset_event {};
     if constexpr (Cumulative) {
         return append(
@@ -192,7 +192,7 @@ auto make_processor(settings const &settings,
         time_correlated_detection_event<>,
         pixel_start_event,
         pixel_stop_event>>(
-            arg::max_buffered<std::size_t>{1 << 20},
+            arg::max_buffered<>{1 << 20},
     map_to_datapoints<time_correlated_detection_event<>>(
         difftime_data_mapper(),
     map_to_bins(
@@ -207,7 +207,7 @@ auto make_processor(settings const &settings,
 
     auto [sync_merge, cfd_merge] =
     merge<type_list<detection_event<>>>(
-        arg::max_buffered<std::size_t>{1 << 20},
+        arg::max_buffered<>{1 << 20},
     pair_all_between(
         arg::start_channel{settings.sync_channel},
         std::array{settings.photon_trailing_channel},
@@ -247,7 +247,7 @@ auto make_processor(settings const &settings,
         binary_file_input_stream(settings.input_filename),
         arg::max_length{std::numeric_limits<std::uint64_t>::max()},
         recycling_bucket_source<swabian_tag_event>::create(),
-        arg::granularity<std::size_t>{65536},
+        arg::granularity<>{65536},
     stop_with_error<type_list<warning_event>>("error reading input",
     unbatch<swabian_tag_event>(
     count<swabian_tag_event>(ctx->tracker<count_access>("record_counter"),

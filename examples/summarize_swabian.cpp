@@ -94,7 +94,7 @@ auto summarize(std::string const &filename) -> bool {
         binary_file_input_stream(filename),
         arg::max_length{std::numeric_limits<std::uint64_t>::max()},
         recycling_bucket_source<swabian_tag_event>::create(),
-        arg::granularity<std::size_t>{65536},
+        arg::granularity<>{65536},
     stop<type_list<warning_event>>("error reading input",
     unbatch<swabian_tag_event>( // Get individual device events.
     count<swabian_tag_event>(ctx->tracker<count_access>("counter"), // Count.

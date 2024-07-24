@@ -98,7 +98,7 @@ auto make_histo_proc(settings const &settings,
         binary_file_output_stream(settings.output_filename,
                                   arg::truncate{settings.truncate}),
         recycling_bucket_source<std::byte>::create(),
-        arg::granularity<std::size_t>{65536});
+        arg::granularity<>{65536});
     struct reset_event {};
     if constexpr (Cumulative) {
         return append(
@@ -107,8 +107,7 @@ auto make_histo_proc(settings const &settings,
                             reset_event>(
                 arg::num_elements{settings.pixels_per_line *
                                   settings.lines_per_frame},
-                arg::num_bins<std::size_t>{256}, arg::max_per_bin<u16>{65535},
-                bsource,
+                arg::num_bins<>{256}, arg::max_per_bin<u16>{65535}, bsource,
                 count<histogram_array_event<>>(
                     ctx->tracker<count_access>("frame_counter"),
                     select<type_list<concluding_histogram_array_event<>>>(
@@ -118,8 +117,7 @@ auto make_histo_proc(settings const &settings,
         return histogram_scans<histogram_policy::clear_every_scan>(
             arg::num_elements{settings.pixels_per_line *
                               settings.lines_per_frame},
-            arg::num_bins<std::size_t>{256}, arg::max_per_bin<u16>{65535},
-            bsource,
+            arg::num_bins<>{256}, arg::max_per_bin<u16>{65535}, bsource,
             select<type_list<histogram_array_event<>>>(
                 count<histogram_array_event<>>(
                     ctx->tracker<count_access>("frame_counter"),
@@ -140,7 +138,7 @@ auto make_processor(settings const &settings,
                                  arg::start_offset<u64>{4}), // 4-byte header.
         arg::max_length{std::numeric_limits<std::uint64_t>::max()},
         recycling_bucket_source<bh_spc_event>::create(),
-        arg::granularity<std::size_t>{65536},
+        arg::granularity<>{65536},
     stop_with_error<type_list<warning_event>>("error reading input",
     unbatch<bh_spc_event>(
     count<bh_spc_event>(ctx->tracker<count_access>("record_counter"),

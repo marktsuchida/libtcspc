@@ -44,7 +44,7 @@ template <typename T> struct abstime {
 /**
  * \brief Function argument wrapper for batch size parameter.
  */
-template <typename T> struct batch_size {
+template <typename T = std::size_t> struct batch_size {
     /** \brief The argument value. */
     T value;
     /** \brief Construct by wrapping a value. */
@@ -134,7 +134,7 @@ template <typename T> struct fraction {
 /**
  * \brief Function argument wrapper for granularity parameter.
  */
-template <typename T> struct granularity {
+template <typename T = std::size_t> struct granularity {
     /** \brief The argument value. */
     T value;
     /** \brief Construct by wrapping a value. */
@@ -214,7 +214,7 @@ template <typename T> struct max_bin_index {
 /**
  * \brief Function argument wrapper for maximum buffered parameter.
  */
-template <typename T> struct max_buffered {
+template <typename T = std::size_t> struct max_buffered {
     /** \brief The argument value. */
     T value;
     /** \brief Construct by wrapping a value. */

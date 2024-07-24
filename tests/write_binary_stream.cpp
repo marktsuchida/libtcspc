@@ -33,7 +33,7 @@ namespace tcspc {
 TEST_CASE("type constraints: write_binary_stream") {
     using proc_type = decltype(write_binary_stream(
         null_output_stream(), new_delete_bucket_source<std::byte>::create(),
-        arg::granularity<std::size_t>{16}));
+        arg::granularity<>{16}));
     STATIC_CHECK(is_processor_v<proc_type, bucket<std::byte>>);
     STATIC_CHECK(is_processor_v<proc_type, bucket<std::byte const>>);
     STATIC_CHECK(is_processor_v<proc_type, std::array<std::byte, 8>>);
@@ -46,7 +46,7 @@ TEST_CASE("type constraints: write_binary_stream") {
 TEST_CASE("introspect: write_binary_stream") {
     check_introspect_simple_sink(write_binary_stream(
         null_output_stream(), new_delete_bucket_source<std::byte>::create(),
-        arg::granularity<std::size_t>{1}));
+        arg::granularity<>{1}));
 }
 
 namespace {

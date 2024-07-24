@@ -87,7 +87,7 @@ auto scan_for_channels(std::string const &input_filename)
         binary_file_input_stream(input_filename),
         arg::max_length<u64>{std::numeric_limits<u64>::max()},
         recycling_bucket_source<swabian_tag_event>::create(),
-        arg::granularity<std::size_t>{65535},
+        arg::granularity<>{65535},
     stop_with_error<type_list<warning_event>>("error reading input",
     unbatch<swabian_tag_event>(
     decode_swabian_tags(
@@ -197,7 +197,7 @@ template <bool UseStdout> auto vcd_processor(settings const &settings) {
         binary_file_input_stream(settings.input_filename),
         arg::max_length<u64>{std::numeric_limits<u64>::max()},
         recycling_bucket_source<swabian_tag_event>::create(),
-        arg::granularity<std::size_t>{65535},
+        arg::granularity<>{65535},
     stop_with_error<type_list<warning_event>>("error reading input",
     unbatch<swabian_tag_event>(
     decode_swabian_tags(
@@ -211,7 +211,7 @@ template <bool UseStdout> auto vcd_processor(settings const &settings) {
     write_binary_stream(
         write_stream<UseStdout>(settings),
         recycling_bucket_source<std::byte>::create(),
-        arg::granularity<std::size_t>{65535})))))))));
+        arg::granularity<>{65535})))))))));
     // clang-format on
 }
 

@@ -21,7 +21,6 @@
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/generators/catch_generators.hpp>
 
-#include <cstddef>
 #include <utility>
 #include <vector>
 
@@ -49,8 +48,7 @@ TEST_CASE("type constraints: copy_to_buckets") {
 TEST_CASE("type constraints: copy_to_full_buckets") {
     using proc_type = decltype(copy_to_full_buckets<int>(
         sharable_new_delete_bucket_source<int>::create(),
-        arg::batch_size<std::size_t>{64},
-        sink_events<bucket<int const>, misc_event>(),
+        arg::batch_size<>{64}, sink_events<bucket<int const>, misc_event>(),
         sink_events<bucket<int>>()));
     STATIC_CHECK(is_processor_v<proc_type, span<int const>, misc_event>);
     STATIC_CHECK_FALSE(handles_event_v<proc_type, int>);
@@ -69,7 +67,7 @@ TEST_CASE("introspect: copy_to_buckets") {
 TEST_CASE("introspect: copy_to_full_buckets") {
     auto const ctfb = copy_to_full_buckets<int>(
         sharable_new_delete_bucket_source<int>::create(),
-        arg::batch_size<std::size_t>{64}, null_sink(), null_sink());
+        arg::batch_size<>{64}, null_sink(), null_sink());
     auto const info = check_introspect_node_info(ctfb);
     auto const g = ctfb.introspect_graph();
     CHECK(g.nodes().size() == 3);
@@ -125,7 +123,7 @@ TEST_CASE("copy_to_full_buckets") {
         sharable_new_delete_bucket_source<int>::create(), 42);
     auto in = feed_input(
         valcat, copy_to_full_buckets<int>(
-                    bsource, arg::batch_size<std::size_t>{4},
+                    bsource, arg::batch_size<>{4},
                     capture_output<type_list<bucket<int const>, misc_event>>(
                         ctx->tracker<capture_output_access>("live")),
                     capture_output<type_list<bucket<int>>>(

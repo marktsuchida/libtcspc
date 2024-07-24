@@ -19,7 +19,6 @@
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/generators/catch_generators.hpp>
 
-#include <cstddef>
 #include <memory>
 #include <utility>
 #include <vector>
@@ -29,9 +28,9 @@ namespace tcspc {
 TEST_CASE("type constraints: batch") {
     struct e0 {};
     struct e1 {};
-    using proc_type = decltype(batch<e0>(
-        new_delete_bucket_source<e0>::create(),
-        arg::batch_size<std::size_t>{100}, sink_events<bucket<e0>>()));
+    using proc_type =
+        decltype(batch<e0>(new_delete_bucket_source<e0>::create(),
+                           arg::batch_size<>{100}, sink_events<bucket<e0>>()));
     STATIC_CHECK(is_processor_v<proc_type, e0>);
     STATIC_CHECK_FALSE(is_processor_v<proc_type, e1>);
     STATIC_CHECK_FALSE(handles_event_v<proc_type, bucket<e0>>);
@@ -49,8 +48,8 @@ TEST_CASE("type constraints: unbatch") {
 
 TEST_CASE("type constraints: process_in_batches") {
     struct e0 {};
-    using proc_type = decltype(process_in_batches<e0>(
-        arg::batch_size<std::size_t>{1}, sink_events<e0>()));
+    using proc_type = decltype(process_in_batches<e0>(arg::batch_size<>{1},
+                                                      sink_events<e0>()));
     STATIC_CHECK(is_processor_v<proc_type, e0>);
     STATIC_CHECK_FALSE(handles_event_v<proc_type, int>);
 }
@@ -58,7 +57,7 @@ TEST_CASE("type constraints: process_in_batches") {
 TEST_CASE("introspect: batch, unbatch") {
     check_introspect_simple_processor(
         batch<int>(new_delete_bucket_source<int>::create(),
-                   arg::batch_size<std::size_t>{1}, null_sink()));
+                   arg::batch_size<>{1}, null_sink()));
     check_introspect_simple_processor(unbatch<int>(null_sink()));
 }
 
@@ -67,7 +66,7 @@ TEST_CASE("batch") {
     auto ctx = context::create();
     auto in = feed_input(
         valcat, batch<int>(new_delete_bucket_source<int>::create(),
-                           arg::batch_size<std::size_t>{3},
+                           arg::batch_size<>{3},
                            capture_output<type_list<bucket<int>>>(
                                ctx->tracker<capture_output_access>("out"))));
     in.require_output_checked(ctx, "out");
@@ -164,7 +163,7 @@ TEST_CASE("process_in_batches") {
     auto ctx = context::create();
     auto in = feed_input(valcat,
                          process_in_batches<int>(
-                             arg::batch_size<std::size_t>{3},
+                             arg::batch_size<>{3},
                              capture_output<type_list<int>>(
                                  ctx->tracker<capture_output_access>("out"))));
     in.require_output_checked(ctx, "out");
