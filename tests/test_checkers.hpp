@@ -8,31 +8,47 @@
 
 #include <catch2/catch_test_macros.hpp>
 
-#include <algorithm>
-#include <array>
 #include <cstddef>
-#include <regex>
 #include <string>
+#include <string_view>
 
 namespace tcspc {
 
 namespace internal {
 
 // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
-inline void check_type_name([[maybe_unused]] std::string const &type_name,
+inline void check_type_name([[maybe_unused]] std::string type_name,
                             [[maybe_unused]] std::string const &name) {
     // With unknown compiler/platform, there is no guarantee about type_name.
-#if defined(__GNUC__) || defined(_MSC_VER)
+    // We only check for known compilers.
+
     // Type name should begin with tcspc::[internal::] followed by name,
     // followed by either '<' or end of string. MSVC adds "class" or "struct"
     // before the type name.
-    std::array const res = {
-        std::regex("^(|class |struct )tcspc::(|internal::)" + name + "<"),
-        std::regex("^(|class |struct )tcspc::(|internal::)" + name + "$"),
+
+#if defined(__GNUC__) || defined(_MSC_VER)
+    auto startswith = [](std::string_view str, std::string_view prefix) {
+        return str.rfind(prefix, 0) == 0;
     };
-    CHECK(std::any_of(res.begin(), res.end(), [&](auto const &re) {
-        return std::regex_search(type_name, re);
-    }));
+    auto remove_prefix = [&](std::string &str, std::string_view prefix) {
+        return str = str.substr(prefix.size());
+    };
+
+#if defined(_MSC_VER)
+    if (startswith(type_name, "class "))
+        remove_prefix(type_name, "class ");
+    else if (startswith(type_name, "struct "))
+        remove_prefix(type_name, "struct ");
+#endif
+
+    REQUIRE(startswith(type_name, "tcspc::"));
+    remove_prefix(type_name, "tcspc::");
+    if (startswith(type_name, "internal::"))
+        remove_prefix(type_name, "internal::");
+    REQUIRE(startswith(type_name, name));
+    remove_prefix(type_name, name);
+    if (not type_name.empty())
+        REQUIRE(startswith(type_name, "<"));
 #endif
 }
 
