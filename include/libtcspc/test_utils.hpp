@@ -24,7 +24,6 @@
 #include <cassert>
 #include <cstdint>
 #include <cstdio>
-#include <functional>
 #include <initializer_list>
 #include <limits>
 #include <memory>
@@ -218,6 +217,19 @@ auto operator<<(std::ostream &stream,
     return stream << pair.second << ' ' << pair.first;
 }
 
+// Polymorphic function set for type-erasing capture_output_access.
+class capture_output_access_impl_base {
+  public:
+    virtual ~capture_output_access_impl_base() = default;
+    // Returned std::any contains std::vector<recorded_event<EventList>>.
+    [[nodiscard]] virtual auto peek_events() const -> std::any = 0;
+    virtual void pop_event() = 0;
+    [[nodiscard]] virtual auto is_empty() const -> bool = 0;
+    [[nodiscard]] virtual auto is_flushed() const -> bool = 0;
+    virtual void set_up_to_throw(std::size_t count, bool use_error) = 0;
+    [[nodiscard]] virtual auto events_as_string() const -> std::string = 0;
+};
+
 } // namespace internal
 
 /**
@@ -230,75 +242,34 @@ auto operator<<(std::ostream &stream,
  * \ingroup context-access
  */
 class capture_output_access {
-    std::any peek_events_func; // () -> std::vector<recorded_event<EventList>>
-    std::function<void()> pop_event_func;
-    std::function<bool()> is_empty_func;
-    std::function<bool()> is_flushed_func;
-    std::function<void(std::size_t, bool)> set_up_to_throw_func;
-    std::function<std::string()> events_as_string_func;
+    std::unique_ptr<internal::capture_output_access_impl_base> impl;
 
     template <typename EventList>
     auto
     peek_events() const -> std::vector<internal::recorded_event<EventList>> {
-        return std::any_cast<
-            std::function<std::vector<internal::recorded_event<EventList>>()>>(
-            peek_events_func)();
+        return std::any_cast<std::vector<internal::recorded_event<EventList>>>(
+            impl->peek_events());
     }
 
   public:
     /** \private */
-    struct empty_event_list_tag {};
-
-    /** \private */
-    template <typename EventList>
     explicit capture_output_access(
-        std::function<std::vector<internal::recorded_event<EventList>>()>
-            peek_events,
-        std::function<void()> pop_event, std::function<bool()> is_empty,
-        std::function<bool()> is_flushed,
-        std::function<void(std::size_t, bool)> set_up_to_throw,
-        std::function<std::string()> events_as_string)
-        : peek_events_func(std::move(peek_events)),
-          pop_event_func(std::move(pop_event)),
-          is_empty_func(std::move(is_empty)),
-          is_flushed_func(std::move(is_flushed)),
-          set_up_to_throw_func(std::move(set_up_to_throw)),
-          events_as_string_func(std::move(events_as_string)) {}
-
-    /** \private */
-    explicit capture_output_access(
-        [[maybe_unused]] empty_event_list_tag tag,
-        std::function<bool()> is_flushed,
-        std::function<void(std::size_t, bool)> set_up_to_throw)
-        : is_empty_func([] { return true; }),
-          is_flushed_func(std::move(is_flushed)),
-          set_up_to_throw_func(std::move(set_up_to_throw)) {}
-
-    /**
-     * \brief Ensure that this access works with the given event set.
-     *
-     * \tparam EventList event set to check
-     */
-    template <typename EventList> void check_event_list() const {
-        if constexpr (type_list_size_v<EventList> > 0) {
-            (void)std::any_cast<std::function<
-                std::vector<internal::recorded_event<EventList>>()>>(
-                peek_events_func);
-        }
-    }
+        std::unique_ptr<internal::capture_output_access_impl_base>
+            implementation)
+        : impl(std::move(implementation)) {}
 
     /**
      * \brief Check if ready for input; normally used internally by
      * `tcspc::feed_input()`.
      */
     void check_ready_for_input(std::string const &input) const {
-        if (not is_empty_func()) {
+        if (not impl->is_empty()) {
             throw std::logic_error(
                 "cannot accept input (" + input +
                 "): recorded output events remain unchecked:" +
-                events_as_string_func());
+                impl->events_as_string());
         }
-        if (is_flushed_func()) {
+        if (impl->is_flushed()) {
             throw std::logic_error("cannot accept input (" + input +
                                    "): output has been flushed");
         }
@@ -336,7 +307,7 @@ class capture_output_access {
             auto const *event = std::get_if<Event>(&events.front().second);
             if (event == nullptr)
                 throw std::logic_error("type mismatch");
-            pop_event_func();
+            impl->pop_event();
             return *event;
         } catch (std::logic_error const &exc) {
             std::ostringstream stream;
@@ -395,7 +366,7 @@ class capture_output_access {
                 throw std::logic_error("type mismatch");
             if (*event != expected_event)
                 throw std::logic_error("value mismatch");
-            pop_event_func();
+            impl->pop_event();
             return true;
         } catch (std::logic_error const &exc) {
             std::ostringstream stream;
@@ -426,12 +397,12 @@ class capture_output_access {
      * \return true if the check was successful.
      */
     auto check_not_flushed() -> bool {
-        if (not is_empty_func()) {
+        if (not impl->is_empty()) {
             throw std::logic_error(
                 "expected no recorded output events but found:" +
-                events_as_string_func());
+                impl->events_as_string());
         }
-        if (is_flushed_func()) {
+        if (impl->is_flushed()) {
             throw std::logic_error(
                 "expected output unflushed but found flushed");
         }
@@ -450,12 +421,12 @@ class capture_output_access {
      * \return true if the check was successful.
      */
     auto check_flushed() -> bool {
-        if (not is_empty_func()) {
+        if (not impl->is_empty()) {
             throw std::logic_error(
                 "expected no recorded output events but found:" +
-                events_as_string_func());
+                impl->events_as_string());
         }
-        if (not is_flushed_func()) {
+        if (not impl->is_flushed()) {
             throw std::logic_error(
                 "expected output flushed but found unflushed");
         }
@@ -469,7 +440,7 @@ class capture_output_access {
      * \param count number of events to handle normally before throwing
      */
     void throw_error_on_next(std::size_t count = 0) {
-        set_up_to_throw_func(count, true);
+        impl->set_up_to_throw(count, true);
     }
 
     /**
@@ -479,21 +450,21 @@ class capture_output_access {
      * \param count number of events to handle normally before throwing
      */
     void throw_end_processing_on_next(std::size_t count = 0) {
-        set_up_to_throw_func(count, false);
+        impl->set_up_to_throw(count, false);
     }
 
     /**
      * \brief Arrange to throw `tcspc::test_error` on receiving a flush.
      */
     void throw_error_on_flush() {
-        set_up_to_throw_func(std::numeric_limits<std::size_t>::max(), true);
+        impl->set_up_to_throw(std::numeric_limits<std::size_t>::max(), true);
     }
 
     /**
      * \brief Arrange to throw `tcspc::end_of_processing` on receiving a flush.
      */
     void throw_end_processing_on_flush() {
-        set_up_to_throw_func(std::numeric_limits<std::size_t>::max(), false);
+        impl->set_up_to_throw(std::numeric_limits<std::size_t>::max(), false);
     }
 };
 
@@ -518,9 +489,7 @@ template <typename EventList> class capture_output_checker {
      */
     explicit capture_output_checker(feed_as feeder_value_category,
                                     capture_output_access access)
-        : acc(std::move(access)), feeder_valcat(feeder_value_category) {
-        acc.check_event_list<EventList>(); // Fail early.
-    }
+        : acc(std::move(access)), feeder_valcat(feeder_value_category) {}
 
     /**
      * \brief Construct from a context, tracker name of
@@ -668,21 +637,36 @@ template <typename EventList> class capture_output {
 
     access_tracker<capture_output_access> trk;
 
+    struct access_impl : capture_output_access_impl_base {
+        capture_output *self;
+
+        explicit access_impl(capture_output *self) : self(self) {}
+
+        [[nodiscard]] auto peek_events() const -> std::any final {
+            return self->peek();
+        }
+        void pop_event() final { self->output.pop(); }
+        [[nodiscard]] auto is_empty() const -> bool final {
+            return self->output.empty();
+        }
+        [[nodiscard]] auto is_flushed() const -> bool final {
+            return self->flushed;
+        }
+        void set_up_to_throw(std::size_t count, bool use_error) final {
+            self->set_up_to_throw(count, use_error);
+        }
+        [[nodiscard]] auto events_as_string() const -> std::string final {
+            return self->events_as_string();
+        }
+    };
+
   public:
     explicit capture_output(access_tracker<capture_output_access> &&tracker)
         : trk(std::move(tracker)) {
         trk.register_access_factory([](auto &tracker) {
             auto *self =
                 LIBTCSPC_OBJECT_FROM_TRACKER(capture_output, trk, tracker);
-            return capture_output_access(
-                std::function([self] { return self->peek(); }),
-                [self] { self->output.pop(); },
-                [self] { return self->output.empty(); },
-                [self] { return self->flushed; },
-                [self](std::size_t count, bool use_error) {
-                    self->set_up_to_throw(count, use_error);
-                },
-                [self] { return self->events_as_string(); });
+            return capture_output_access(std::make_unique<access_impl>(self));
         });
     }
 
@@ -767,18 +751,40 @@ template <> class capture_output<type_list<>> {
     bool end_on_flush = false;
     access_tracker<capture_output_access> trk;
 
+    struct access_impl : capture_output_access_impl_base {
+        capture_output *self;
+
+        explicit access_impl(capture_output *self) : self(self) {}
+
+        [[noreturn]] static void not_allowed() {
+            throw std::logic_error(
+                "operation not allowed on capture_output with empty event list");
+        }
+
+        [[nodiscard]] auto peek_events() const -> std::any final {
+            not_allowed();
+        }
+        void pop_event() final { not_allowed(); }
+        [[nodiscard]] auto is_empty() const -> bool final { return true; }
+        [[nodiscard]] auto is_flushed() const -> bool final {
+            return self->flushed;
+        }
+        void set_up_to_throw([[maybe_unused]] std::size_t count,
+                             [[maybe_unused]] bool use_error) final {
+            not_allowed();
+        }
+        [[nodiscard]] auto events_as_string() const -> std::string final {
+            not_allowed();
+        }
+    };
+
   public:
     explicit capture_output(access_tracker<capture_output_access> &&tracker)
         : trk(std::move(tracker)) {
         trk.register_access_factory([](auto &tracker) {
             auto *self =
                 LIBTCSPC_OBJECT_FROM_TRACKER(capture_output, trk, tracker);
-            return capture_output_access(
-                capture_output_access::empty_event_list_tag{},
-                [self] { return self->flushed; },
-                [self](std::size_t count, bool use_error) {
-                    self->set_up_to_throw(count, use_error);
-                });
+            return capture_output_access(std::make_unique<access_impl>(self));
         });
     }
 
