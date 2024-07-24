@@ -394,9 +394,9 @@ template <typename DataTypes = default_data_types> class linear_bin_mapper {
         arg::offset<typename DataTypes::datapoint_type> offset,
         arg::bin_width<typename DataTypes::datapoint_type> bin_width,
         arg::max_bin_index<typename DataTypes::bin_index_type> max_bin_index,
-        bool clamp = false)
+        arg::clamp<bool> clamp = arg::clamp{false})
         : off(offset.value), bwidth(bin_width.value),
-          max_index(max_bin_index.value), clamp(clamp) {
+          max_index(max_bin_index.value), clamp(clamp.value) {
         if (bwidth == 0)
             throw std::invalid_argument(
                 "linear_bin_mapper bin_width must not be zero");

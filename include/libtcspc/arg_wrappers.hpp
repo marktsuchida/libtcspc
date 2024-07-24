@@ -72,6 +72,16 @@ template <typename T> struct channel {
 };
 
 /**
+ * \brief Function argument wrapper for clamp parameter.
+ */
+template <typename T> struct clamp {
+    /** \brief The argument value. */
+    T value;
+    /** \brief Construct by wrapping a value. */
+    explicit clamp(T arg) : value(arg) {}
+};
+
+/**
  * \brief Function argument wrapper for count parameter.
  */
 template <typename T> struct count {
