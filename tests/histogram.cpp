@@ -45,7 +45,8 @@ struct data_types : default_data_types {
 TEMPLATE_TEST_CASE_SIG("type constraints: histogram", "", ((hp P), P),
                        hp::error_on_overflow, hp::stop_on_overflow,
                        hp::saturate_on_overflow, hp::reset_on_overflow) {
-    using base_output_events = type_list<histogram_event<>, misc_event>;
+    using base_output_events =
+        type_list<histogram_event<>, reset_event, misc_event>;
     using output_events = type_list_union_t<
         base_output_events,
         std::conditional_t<P == hp::saturate_on_overflow,
@@ -89,7 +90,7 @@ namespace {
 
 using all_output_events =
     type_list<histogram_event<>, concluding_histogram_event<>, warning_event,
-              misc_event>;
+              reset_event, misc_event>;
 
 }
 
@@ -169,6 +170,7 @@ TEMPLATE_TEST_CASE_SIG("histogram reset by event", "", ((hp P), P),
                 emitted_as::always_rvalue,
                 concluding_histogram_event<>{test_bucket<u16>({0, 0})}));
         }
+        REQUIRE(out.check(reset_event{}));
         CHECK(bsource->bucket_count() == 1);
 
         in.handle(bin_increment_event<>{1});
@@ -198,6 +200,7 @@ TEMPLATE_TEST_CASE_SIG("histogram reset by event", "", ((hp P), P),
                     emitted_as::always_rvalue,
                     concluding_histogram_event<>{test_bucket<u16>({1, 2})}));
             }
+            REQUIRE(out.check(reset_event{}));
             CHECK(bsource->bucket_count() == 1);
 
             in.handle(bin_increment_event<>{1});
@@ -330,6 +333,7 @@ TEMPLATE_TEST_CASE_SIG("histogram saturate_on_overflow", "", ((hp P), P),
                     REQUIRE(out.check(concluding_histogram_event<>{
                         test_bucket<u16>({3, 0})}));
                 }
+                REQUIRE(out.check(reset_event{}));
 
                 in.handle(bin_increment_event<>{0});
                 REQUIRE(

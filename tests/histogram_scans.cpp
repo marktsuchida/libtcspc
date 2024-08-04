@@ -39,8 +39,9 @@ using misc_event = empty_test_event<1>;
 TEMPLATE_TEST_CASE_SIG("type constraints: histogram_scans", "", ((hp P), P),
                        hp::error_on_overflow, hp::stop_on_overflow,
                        hp::saturate_on_overflow, hp::reset_on_overflow) {
-    using base_output_events = type_list<histogram_array_progress_event<>,
-                                         histogram_array_event<>, misc_event>;
+    using base_output_events =
+        type_list<histogram_array_progress_event<>, histogram_array_event<>,
+                  reset_event, misc_event>;
     using output_events = type_list_union_t<
         base_output_events,
         std::conditional_t<P == hp::saturate_on_overflow,
@@ -85,7 +86,8 @@ namespace {
 
 using all_output_events =
     type_list<histogram_array_progress_event<>, histogram_array_event<>,
-              concluding_histogram_array_event<>, warning_event, misc_event>;
+              concluding_histogram_array_event<>, warning_event, reset_event,
+              misc_event>;
 
 }
 
@@ -399,6 +401,7 @@ TEMPLATE_TEST_CASE_SIG(
                               concluding_histogram_array_event<>{
                                   test_bucket<u16>({0, 0, 0, 0})}));
         }
+        REQUIRE(out.check(reset_event{}));
         CHECK(bsource->bucket_count() == 1);
 
         in.handle(bin_increment_batch_event<>{{0, 1, 0, 0}});
@@ -422,6 +425,7 @@ TEMPLATE_TEST_CASE_SIG(
                                   concluding_histogram_array_event<>{
                                       test_bucket<u16>({0, 0, 0, 0})}));
             }
+            REQUIRE(out.check(reset_event{}));
             CHECK(bsource->bucket_count() == 1);
 
             in.handle(bin_increment_batch_event<>{{0, 1, 0, 0}});
@@ -447,6 +451,7 @@ TEMPLATE_TEST_CASE_SIG(
                                       concluding_histogram_array_event<>{
                                           test_bucket<u16>({3, 1, 1, 2})}));
                 }
+                REQUIRE(out.check(reset_event{}));
                 CHECK(bsource->bucket_count() == 1);
 
                 in.handle(bin_increment_batch_event<>{{1, 1, 0}});
@@ -470,6 +475,7 @@ TEMPLATE_TEST_CASE_SIG(
                                       concluding_histogram_array_event<>{
                                           test_bucket<u16>({3, 1, 1, 2})}));
                     }
+                    REQUIRE(out.check(reset_event{}));
                     CHECK(bsource->bucket_count() == 1);
 
                     in.handle(bin_increment_batch_event<>{{1, 1, 0}});
@@ -496,6 +502,7 @@ TEMPLATE_TEST_CASE_SIG(
                                 concluding_histogram_array_event<>{
                                     test_bucket<u16>({5, 3, 4, 3})}));
                         }
+                        REQUIRE(out.check(reset_event{}));
                         CHECK(bsource->bucket_count() == 1);
                     }
                 }
@@ -645,6 +652,7 @@ TEST_CASE("histogram_scans saturate_on_overflow") {
 
                 SECTION("saturating batch after reset") {
                     in.handle(reset_event{});
+                    REQUIRE(out.check(reset_event{}));
                     in.handle(bin_increment_batch_event<>{{0, 0, 1, 1, 1, 1}});
                     REQUIRE(out.check(
                         warning_event{"histogram array bin saturated"}));

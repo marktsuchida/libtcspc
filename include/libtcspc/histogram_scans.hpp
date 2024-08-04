@@ -51,6 +51,8 @@ class histogram_scans {
     static_assert(
         is_processor_v<Downstream, histogram_array_progress_event<DataTypes>,
                        histogram_array_event<DataTypes>>);
+    static_assert(std::is_same_v<ResetEvent, never_event> ||
+                  handles_event_v<Downstream, ResetEvent>);
     static_assert(overflow_policy != histogram_policy::saturate_on_overflow ||
                   handles_event_v<Downstream, warning_event>);
     static_assert(
@@ -224,15 +226,12 @@ class histogram_scans {
         handle(static_cast<bin_increment_batch_event<DT> const &>(event));
     }
 
-    template <typename E,
-              typename = std::enable_if_t<
-                  std::is_convertible_v<remove_cvref_t<E>, ResetEvent> ||
-                  handles_event_v<Downstream, remove_cvref_t<E>>>>
+    template <typename E, typename = std::enable_if_t<
+                              handles_event_v<Downstream, remove_cvref_t<E>>>>
     void handle(E &&event) {
         if constexpr (std::is_convertible_v<remove_cvref_t<E>, ResetEvent>)
             reset_without_replay();
-        else
-            downstream.handle(std::forward<E>(event));
+        downstream.handle(std::forward<E>(event));
     }
 
     void flush() { downstream.flush(); }
@@ -337,9 +336,9 @@ class histogram_scans {
  * - `ResetEvent`: if `Policy` has
  *   `tcspc::histogram_policy::emit_concluding_events` set, roll back any
  *   partial scan and emit (rvalue)
- *   `tcspc::concluding_histogram_array_event<DataTypes>`; then start a new
- *   round by arranging to switch to a new bucket for the histogram array on
- *   the next `tcspc::bin_increment_batch_event`
+ *   `tcspc::concluding_histogram_array_event<DataTypes>`; pass through; then
+ *   start a new round by arranging to switch to a new bucket for the histogram
+ *   array on the next `tcspc::bin_increment_batch_event`
  * - All other types: pass through with no action
  * - Flush: pass through with no action
  */
