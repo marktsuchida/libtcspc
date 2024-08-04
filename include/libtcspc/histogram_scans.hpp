@@ -227,8 +227,7 @@ class histogram_scans {
     template <typename E,
               typename = std::enable_if_t<
                   std::is_convertible_v<remove_cvref_t<E>, ResetEvent> ||
-                  (not std::is_convertible_v<remove_cvref_t<E>, ResetEvent> &&
-                   handles_event_v<Downstream, remove_cvref_t<E>>)>>
+                  handles_event_v<Downstream, remove_cvref_t<E>>>>
     void handle(E &&event) {
         if constexpr (std::is_convertible_v<remove_cvref_t<E>, ResetEvent>)
             reset_without_replay();
