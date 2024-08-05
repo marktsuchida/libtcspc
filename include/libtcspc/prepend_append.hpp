@@ -136,7 +136,7 @@ auto prepend(Event &&event, Downstream &&downstream) {
  * \return processor
  *
  * \par Events handled
- * - Any time: pass through with no action
+ * - Any type: pass through with no action
  * - Flush: emit \p event; pass through
  */
 template <typename Event, typename Downstream>
