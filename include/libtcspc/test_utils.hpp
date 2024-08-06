@@ -660,6 +660,34 @@ template <typename EventList> class capture_output {
         }
     };
 
+    auto peek() const {
+        std::vector<recorded_event<EventList>> ret;
+        ret.reserve(output.size());
+        // Cannot use std::copy because vector_queue lacks iterators.
+        output.for_each([&ret](auto const &pair) { ret.push_back(pair); });
+        return ret;
+    }
+
+    [[nodiscard]] auto events_as_string() const -> std::string {
+        std::ostringstream stream;
+        output.for_each([&](auto const &event) { stream << '\n' << event; });
+        return stream.str();
+    }
+
+    void set_up_to_throw(std::size_t count, bool use_error) {
+        if (count == std::numeric_limits<std::size_t>::max()) {
+            if (use_error)
+                error_on_flush = true;
+            else
+                end_on_flush = true;
+        } else {
+            if (use_error)
+                error_in = count;
+            else
+                end_in = count;
+        }
+    }
+
   public:
     explicit capture_output(access_tracker<capture_output_access> &&tracker)
         : trk(std::move(tracker)) {
@@ -713,35 +741,6 @@ template <typename EventList> class capture_output {
         if (end_on_flush)
             throw end_of_processing("test end-of-stream upon flush");
     }
-
-  private:
-    auto peek() const {
-        std::vector<recorded_event<EventList>> ret;
-        ret.reserve(output.size());
-        // Cannot use std::copy because vector_queue lacks iterators.
-        output.for_each([&ret](auto const &pair) { ret.push_back(pair); });
-        return ret;
-    }
-
-    [[nodiscard]] auto events_as_string() const -> std::string {
-        std::ostringstream stream;
-        output.for_each([&](auto const &event) { stream << '\n' << event; });
-        return stream.str();
-    }
-
-    void set_up_to_throw(std::size_t count, bool use_error) {
-        if (count == std::numeric_limits<std::size_t>::max()) {
-            if (use_error)
-                error_on_flush = true;
-            else
-                end_on_flush = true;
-        } else {
-            if (use_error)
-                error_in = count;
-            else
-                end_in = count;
-        }
-    }
 };
 
 // Specialization for empty event list.
@@ -778,6 +777,15 @@ template <> class capture_output<type_list<>> {
         }
     };
 
+    void set_up_to_throw(std::size_t count, bool use_error) {
+        if (count == std::numeric_limits<std::size_t>::max()) {
+            if (use_error)
+                error_on_flush = true;
+            else
+                end_on_flush = true;
+        }
+    }
+
   public:
     explicit capture_output(access_tracker<capture_output_access> &&tracker)
         : trk(std::move(tracker)) {
@@ -804,16 +812,6 @@ template <> class capture_output<type_list<>> {
         flushed = true;
         if (end_on_flush)
             throw end_of_processing("test end-of-stream upon flush");
-    }
-
-  private:
-    void set_up_to_throw(std::size_t count, bool use_error) {
-        if (count == std::numeric_limits<std::size_t>::max()) {
-            if (use_error)
-                error_on_flush = true;
-            else
-                end_on_flush = true;
-        }
     }
 };
 

@@ -342,46 +342,6 @@ template <typename OutputStream> class write_binary_stream {
     bucket<std::byte> buffer;
     std::size_t bytes_buffered = 0;
 
-  public:
-    explicit write_binary_stream(
-        OutputStream stream,
-        std::shared_ptr<bucket_source<std::byte>> buffer_provider,
-        arg::granularity<std::size_t> granularity)
-        : strm(std::move(stream)), bsource(std::move(buffer_provider)),
-          write_granularity(granularity.value) {
-        if (not bsource)
-            throw std::invalid_argument(
-                "write_binary_stream buffer_provider must not be null");
-        if (write_granularity <= 0)
-            throw std::invalid_argument(
-                "write_binary_stream granularity must be positive");
-    }
-
-    [[nodiscard]] auto introspect_node() const -> processor_info {
-        return processor_info(this, "write_binary_stream");
-    }
-
-    [[nodiscard]] auto introspect_graph() const -> processor_graph {
-        return processor_graph().push_entry_point(this);
-    }
-
-    template <typename Span,
-              typename = std::void_t<
-                  decltype(span<std::byte const>(std::declval<Span>()))>>
-    void handle(Span const &event) {
-        handle_span(span<std::byte const>(event));
-    }
-
-    void flush() {
-        if (bytes_buffered > 0) {
-            strm.write(span(buffer).first(bytes_buffered));
-            buffer = {};
-            if (strm.is_error())
-                throw input_output_error("failed to write output");
-        }
-    }
-
-  private:
     void handle_span(span<std::byte const> event_span) {
         auto first_block_size = write_granularity;
         if (total_bytes_written == 0) {
@@ -433,6 +393,45 @@ template <typename OutputStream> class write_binary_stream {
             buffer = bsource->bucket_of_size(write_granularity);
             bytes_buffered = event_span.size();
             std::copy(event_span.begin(), event_span.end(), buffer.begin());
+        }
+    }
+
+  public:
+    explicit write_binary_stream(
+        OutputStream stream,
+        std::shared_ptr<bucket_source<std::byte>> buffer_provider,
+        arg::granularity<std::size_t> granularity)
+        : strm(std::move(stream)), bsource(std::move(buffer_provider)),
+          write_granularity(granularity.value) {
+        if (not bsource)
+            throw std::invalid_argument(
+                "write_binary_stream buffer_provider must not be null");
+        if (write_granularity <= 0)
+            throw std::invalid_argument(
+                "write_binary_stream granularity must be positive");
+    }
+
+    [[nodiscard]] auto introspect_node() const -> processor_info {
+        return processor_info(this, "write_binary_stream");
+    }
+
+    [[nodiscard]] auto introspect_graph() const -> processor_graph {
+        return processor_graph().push_entry_point(this);
+    }
+
+    template <typename Span,
+              typename = std::void_t<
+                  decltype(span<std::byte const>(std::declval<Span>()))>>
+    void handle(Span const &event) {
+        handle_span(span<std::byte const>(event));
+    }
+
+    void flush() {
+        if (bytes_buffered > 0) {
+            strm.write(span(buffer).first(bytes_buffered));
+            buffer = {};
+            if (strm.is_error())
+                throw input_output_error("failed to write output");
         }
     }
 };
