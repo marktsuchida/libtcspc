@@ -37,8 +37,9 @@ void usage() {
 Usage: swabian2vcd [options] input_file [output_file]
 
 Convert a raw Swabian time tag dump (16 byte records) to VCD (Value Change
-Dump) format. Positive and negative channels are treated as the rising and
-falling edge of the same signal.
+Dump) format, which can be viewed with tools such as GTKWave. Positive and
+negative channels are treated as the rising and falling edge of the same
+signal.
 
 If output_file is not given, use stdout.
 
@@ -181,6 +182,9 @@ template <typename Downstream> class write_vcd {
 
 template <bool UseStdout> auto write_stream(settings const &settings) {
     using namespace tcspc;
+    // The IEEE spec says VCD files should use LF newlines (I am told), so it
+    // is appropriate that we use binary file streams (or stdout that has been
+    // reopened in binary mode).
     if constexpr (UseStdout) {
         return borrowed_cfile_output_stream(stdout);
     } else {
@@ -335,7 +339,8 @@ auto main(int argc, char *argv[]) -> int {
 
         if (settings.output_filename.empty()) {
             // In this program we never use stdout for anything other than VCD
-            // output, so it is safe to switch it to binary mode.
+            // output, so it is safe to switch it to binary mode (consistent
+            // with our regular file output streams).
             bool const reopen_error =
 #ifdef _WIN32
                 _setmode(_fileno(stdout), _O_BINARY) == -1;
