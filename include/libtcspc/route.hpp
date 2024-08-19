@@ -275,7 +275,7 @@ class null_router {
      * `std::numeric_limits<std::size_t>::max()`.
      */
     template <typename Event>
-    auto operator()([[maybe_unused]] Event const &event) const -> std::size_t {
+    auto operator()(Event const & /* event */) const -> std::size_t {
         return std::size_t(-1);
     }
 };

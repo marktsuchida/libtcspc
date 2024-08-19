@@ -768,8 +768,8 @@ template <> class capture_output<type_list<>> {
         [[nodiscard]] auto is_flushed() const -> bool final {
             return self->flushed;
         }
-        void set_up_to_throw([[maybe_unused]] std::size_t count,
-                             [[maybe_unused]] bool use_error) final {
+        void set_up_to_throw(std::size_t /* count */,
+                             bool /* use_error */) final {
             not_allowed();
         }
         [[nodiscard]] auto events_as_string() const -> std::string final {
@@ -956,9 +956,9 @@ auto feed_input(feed_as value_category, Downstream &&downstream) {
  */
 template <int N> struct empty_test_event {
     /** \brief Equality comparison operator. */
-    friend auto operator==(
-        [[maybe_unused]] empty_test_event<N> const &lhs,
-        [[maybe_unused]] empty_test_event<N> const &rhs) noexcept -> bool {
+    friend auto
+    operator==(empty_test_event<N> const & /* lhs */,
+               empty_test_event<N> const & /* rhs */) noexcept -> bool {
         return true;
     }
 
@@ -969,9 +969,9 @@ template <int N> struct empty_test_event {
     }
 
     /** \brief Stream insertion operator. */
-    friend auto operator<<(std::ostream &strm,
-                           [[maybe_unused]] empty_test_event<N> const &e)
-        -> std::ostream & {
+    friend auto
+    operator<<(std::ostream &strm,
+               empty_test_event<N> const & /* e */) -> std::ostream & {
         return strm << "empty_test_event<" << N << ">";
     }
 };

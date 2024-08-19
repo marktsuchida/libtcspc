@@ -62,8 +62,7 @@ template <typename T, typename U>
 
 // Statically check for non-narrowing conversion.
 template <typename R, typename T>
-[[nodiscard]] constexpr auto
-is_type_in_range([[maybe_unused]] T i) noexcept -> bool {
+[[nodiscard]] constexpr auto is_type_in_range(T /* i */) noexcept -> bool {
     return cmp_greater_equal(std::numeric_limits<T>::min(),
                              std::numeric_limits<R>::min()) &&
            cmp_less_equal(std::numeric_limits<T>::max(),

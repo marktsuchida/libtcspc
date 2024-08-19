@@ -181,12 +181,11 @@ TEST_CASE("Route with heterogeneous downstreams") {
     auto const valcat = GENERATE(feed_as::const_lvalue, feed_as::rvalue);
     auto ctx = context::create();
     auto in = feed_input(
-        valcat,
-        route<type_list<e0>, type_list<>>(
-            []([[maybe_unused]] e0 const &event) { return std::size_t(0); },
-            capture_output<type_list<e0>>(
-                ctx->tracker<capture_output_access>("out0")),
-            null_sink()));
+        valcat, route<type_list<e0>, type_list<>>(
+                    [](e0 const & /* event */) { return std::size_t(0); },
+                    capture_output<type_list<e0>>(
+                        ctx->tracker<capture_output_access>("out0")),
+                    null_sink()));
     in.require_output_checked(ctx, "out0");
     auto out0 = capture_output_checker<type_list<e0>>(valcat, ctx, "out0");
 

@@ -132,7 +132,7 @@ class always_matcher {
   public:
     /** \brief Implements matcher requirement; return true. */
     template <typename Event>
-    auto operator()([[maybe_unused]] Event const &event) const -> bool {
+    auto operator()(Event const & /* event */) const -> bool {
         return true;
     }
 };
@@ -146,7 +146,7 @@ class never_matcher {
   public:
     /** \brief Implements matcher requirement; return false. */
     template <typename Event>
-    auto operator()([[maybe_unused]] Event const &event) const -> bool {
+    auto operator()(Event const & /* event */) const -> bool {
         return false;
     }
 };

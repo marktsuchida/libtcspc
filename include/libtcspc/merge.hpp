@@ -149,12 +149,12 @@ class merge_impl {
             // Since the other input was flushed, events on this input have not
             // been buffered. But there may still be events pending on the
             // other input.
-            emit_pending([]([[maybe_unused]] auto t) { return true; });
+            emit_pending([](auto /* t */) { return true; });
             downstream.flush();
         } else if (is_pending_on_other<InputChannel>()) {
             // Since this input won't have any more events, no need to buffer
             // the other any more.
-            emit_pending([]([[maybe_unused]] auto t) { return true; });
+            emit_pending([](auto /* t */) { return true; });
         }
     }
 };
@@ -420,7 +420,7 @@ template <std::size_t N, typename Downstream> class merge_unsorted_input {
 template <std::size_t N, typename Downstream, std::size_t... Indices>
 auto make_merge_unsorted_inputs(
     std::shared_ptr<merge_unsorted_impl<N, Downstream>> impl,
-    [[maybe_unused]] std::index_sequence<Indices...> indices) {
+    std::index_sequence<Indices...> /* indices */) {
     using input_type = merge_unsorted_input<N, Downstream>;
     return std::array<input_type, N>{(input_type(impl, Indices))...};
 }

@@ -149,29 +149,26 @@ template <typename T> struct my_allocator {
 
     my_allocator() = default;
 
-    // NOLINTBEGIN(google-explicit-constructor)
+    // NOLINTBEGIN(google-explicit-constructor,cppcoreguidelines-rvalue-reference-param-not-moved)
 
     // For testing arg passing via std::vector constructor.
-    my_allocator([[maybe_unused]] int i) {}
+    my_allocator(int /* i */) {}
+
+    template <class U> my_allocator(my_allocator<U> const & /* other */) {}
 
     template <class U>
-    my_allocator([[maybe_unused]] my_allocator<U> const &other) {}
-
-    template <class U>
-    auto
-    operator=([[maybe_unused]] my_allocator<U> const &rhs) -> my_allocator & {
+    auto operator=(my_allocator<U> const & /* rhs */) -> my_allocator & {
         return *this;
     }
 
-    template <class U>
-    my_allocator([[maybe_unused]] my_allocator<U> &&other) {}
+    template <class U> my_allocator(my_allocator<U> && /* other */) {}
 
     template <class U>
-    auto operator=([[maybe_unused]] my_allocator<U> &&rhs) -> my_allocator & {
+    auto operator=(my_allocator<U> && /* rhs */) -> my_allocator & {
         return *this;
     }
 
-    // NOLINTEND(google-explicit-constructor)
+    // NOLINTEND(google-explicit-constructor,cppcoreguidelines-rvalue-reference-param-not-moved)
 
     // NOLINTBEGIN(cppcoreguidelines-owning-memory,cppcoreguidelines-no-malloc)
 
@@ -183,14 +180,13 @@ template <typename T> struct my_allocator {
         throw std::bad_alloc();
     }
 
-    void deallocate(T *ptr, [[maybe_unused]] std::size_t n) { std::free(ptr); }
+    void deallocate(T *ptr, std::size_t /* n */) { std::free(ptr); }
 
     // NOLINTEND(cppcoreguidelines-owning-memory,cppcoreguidelines-no-malloc)
 
     template <typename U>
-    friend auto
-    operator==([[maybe_unused]] my_allocator<T> const &lhs,
-               [[maybe_unused]] my_allocator<U> const &rhs) -> bool {
+    friend auto operator==(my_allocator<T> const & /* lhs */,
+                           my_allocator<U> const & /* rhs */) -> bool {
         return true;
     }
 

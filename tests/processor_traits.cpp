@@ -51,7 +51,7 @@ struct p {
 
 struct q {
     // NOLINTNEXTLINE(cppcoreguidelines-missing-std-forward)
-    template <typename E> void handle([[maybe_unused]] E &&event) {
+    template <typename E> void handle(E && /* event */) {
         static_assert(std::is_convertible_v<internal::remove_cvref_t<E>,
                                             e_forwarding_ref>);
     }

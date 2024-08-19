@@ -49,8 +49,7 @@ struct null_input_stream {
     static auto skip(std::uint64_t bytes) noexcept -> bool {
         return bytes == 0;
     }
-    static auto
-    read([[maybe_unused]] span<std::byte> buffer) noexcept -> std::uint64_t {
+    static auto read(span<std::byte> /* buffer */) noexcept -> std::uint64_t {
         return 0;
     }
 };

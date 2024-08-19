@@ -85,8 +85,7 @@ class null_sink {
     }
 
     /** \brief Implements processor requirement. */
-    template <typename Event>
-    void handle([[maybe_unused]] Event const &event) {}
+    template <typename Event> void handle(Event const & /* event */) {}
 
     /** \brief Implements processor requirement. */
     void flush() {}

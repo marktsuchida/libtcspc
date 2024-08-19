@@ -424,8 +424,7 @@ auto acquire_full_buckets(Reader &&reader,
  */
 template <typename T> struct null_reader {
     /** \brief Implements the acquisition reader requirement. */
-    auto
-    operator()([[maybe_unused]] span<T> buffer) -> std::optional<std::size_t> {
+    auto operator()(span<T> /* buffer */) -> std::optional<std::size_t> {
         return std::nullopt;
     }
 };
@@ -437,8 +436,7 @@ template <typename T> struct null_reader {
  */
 template <typename T> struct stuck_reader {
     /** \brief Implements the acquisition reader requirement. */
-    auto
-    operator()([[maybe_unused]] span<T> buffer) -> std::optional<std::size_t> {
+    auto operator()(span<T> /* buffer */) -> std::optional<std::size_t> {
         return 0;
     }
 };

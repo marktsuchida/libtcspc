@@ -11,8 +11,8 @@
 #include <Python.h>
 
 struct fake_processor {
-    void handle([[maybe_unused]] tcspc::span<unsigned short const> s) {}
-    void handle([[maybe_unused]] int const &i) {}
+    void handle(tcspc::span<unsigned short const> /* s */) {}
+    void handle(int const & /* i */) {}
     void flush() {}
 };
 

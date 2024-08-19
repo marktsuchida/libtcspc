@@ -129,11 +129,10 @@ TEST_CASE("Map to bins") {
         using out_events =
             type_list<bin_increment_event<data_types>, misc_event>;
         auto in = feed_input(
-            valcat,
-            map_to_bins<data_types>(
-                []([[maybe_unused]] i32 d) { return std::optional<u32>(); },
-                capture_output<out_events>(
-                    ctx->tracker<capture_output_access>("out"))));
+            valcat, map_to_bins<data_types>(
+                        [](i32 /* d */) { return std::optional<u32>(); },
+                        capture_output<out_events>(
+                            ctx->tracker<capture_output_access>("out"))));
         in.require_output_checked(ctx, "out");
         auto out = capture_output_checker<out_events>(valcat, ctx, "out");
 

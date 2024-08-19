@@ -216,8 +216,7 @@ class move_only_any {
 
     template <typename V, typename... Args>
     // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
-    explicit move_only_any([[maybe_unused]] std::in_place_type_t<V> tag,
-                           Args &&...args) {
+    explicit move_only_any(std::in_place_type_t<V> /* tag */, Args &&...args) {
         if constexpr (uses_sbo<V>()) {
             new (p_storage()) polymorphic_sbo<V>(std::forward<Args>(args)...);
         } else {
@@ -228,7 +227,7 @@ class move_only_any {
 
     template <typename V, typename T, typename... Args>
     // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
-    explicit move_only_any([[maybe_unused]] std::in_place_type_t<V> tag,
+    explicit move_only_any(std::in_place_type_t<V> /* tag */,
                            std::initializer_list<T> il, Args &&...args) {
         if constexpr (uses_sbo<V>()) {
             new (p_storage())

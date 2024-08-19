@@ -20,7 +20,7 @@ class latch {
     std::ptrdiff_t ct;
 
   public:
-    [[maybe_unused]] static constexpr std::ptrdiff_t max =
+    static constexpr std::ptrdiff_t max =
         std::numeric_limits<std::ptrdiff_t>::max();
 
     explicit latch(std::ptrdiff_t count) : ct(count) {}

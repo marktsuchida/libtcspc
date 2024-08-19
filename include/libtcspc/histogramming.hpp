@@ -306,7 +306,7 @@ template <typename BinIndex> class bin_increment_batch_journal {
 // Can be used to disable journaling.
 template <typename BinIndex> struct null_journal {
     using bin_index_type = BinIndex;
-    void append_batch([[maybe_unused]] span<bin_index_type const> batch) {}
+    void append_batch(span<bin_index_type const> /* batch */) {}
     void clear() noexcept {}
 };
 
