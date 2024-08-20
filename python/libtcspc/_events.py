@@ -28,14 +28,9 @@ class EventType:
         return self._cpp_type
 
 
-class SharedPtrEvent(EventType):
+class BucketEvent(EventType):
     def __init__(self, element_type: EventType) -> None:
-        super().__init__(f"std::shared_ptr<{element_type.cpp_type}>")
-
-
-class VectorEvent(EventType):
-    def __init__(self, element_type: EventType) -> None:
-        super().__init__(f"std::vector<{element_type.cpp_type}>")
+        super().__init__(f"tcspc::bucket<{element_type.cpp_type}>")
 
 
 # Note: C++ event wrappers are ordered alphabetically without regard to the C++

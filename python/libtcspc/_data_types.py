@@ -35,7 +35,7 @@ def _data_types_class(**kwargs: Unpack[_DataTypes]) -> str:
     cppyy.cppdef(
         dedent(f"""\
             namespace tcspc::py::data_types {{
-                class {class_name} : public default_data_types {{
+                struct {class_name} : public default_data_types {{
                     {typedefs}
                 }};
             }}""")

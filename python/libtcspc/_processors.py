@@ -208,7 +208,7 @@ class ReadBinaryStream(OneToOneNode):
         self, input_event_set: Collection[EventType]
     ) -> tuple[EventType, ...]:
         _check_events_subset_of(input_event_set, (), self.__class__.__name__)
-        return (_events.SharedPtrEvent(_events.VectorEvent(self._event_type)),)
+        return (_events.BucketEvent(self._event_type),)
 
     @override
     def generate_cpp_one_to_one(
@@ -218,14 +218,14 @@ class ReadBinaryStream(OneToOneNode):
         maxlen = (
             self._maxlen
             if self._maxlen >= 0
-            else "std::numeric_limits<std::uint64_t>::max()"
+            else "std::numeric_limits<tcspc::u64>::max()"
         )
         return dedent(f"""\
             tcspc::read_binary_stream<{event}>(
                 {self._stream.cpp},
-                {maxlen},
+                tcspc::arg::max_length<tcspc::u64>{{{maxlen}}},
                 {self._bucket_source.cpp},
-                {self._granularity},
+                tcspc::arg::granularity<std::size_t>{{{self._granularity}}},
                 {downstream}
             )""")
 
