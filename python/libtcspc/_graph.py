@@ -154,6 +154,7 @@ class OneToOneNode(Node):
     general multi-input, multi-output node interface.
     """
 
+    @override
     def __init__(self) -> None:
         """
         Initialize.
