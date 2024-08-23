@@ -12,6 +12,7 @@ from typing import Any
 import cppyy
 
 from ._access import Access, Accessible
+from ._events import EventType
 from ._graph import Graph
 
 cppyy.include("libtcspc/tcspc.hpp")
@@ -41,7 +42,7 @@ cppyy.cppdef(
 def _instantiate_func(
     graph_code: str,
     context_varname: str,
-    event_types: tuple[str, ...],
+    event_types: Iterable[str],
     ctr: int,
 ) -> tuple[str, str]:
     input_proc = f"input_processor_{ctr}"
@@ -83,7 +84,7 @@ _cpp_name_counter = itertools.count()
 # and returns the processor.
 @functools.cache
 def _compile_instantiator(
-    graph_code: str, context_varname: str, event_types: tuple[str, ...]
+    graph_code: str, context_varname: str, event_types: Iterable[str]
 ) -> Any:
     ctr = next(_cpp_name_counter)
     fname, code = _instantiate_func(
@@ -114,14 +115,12 @@ class CompiledGraph:
     graph: Graph
         The graph to compile. The graph must have exactly one input port and no
         output ports.
-    event_cpptypes: Iterable[str]
-        The C++ type names accepted as events (via `handle()`) from Python.
-        As a special case, `span<T>` is treated the same as `span<T const>`.
+    input_event_types: Iterable[EventType]
+        The (Python) event types accepted as input (via `handle()`).
     """
 
-    # TODO Event types should be Python types, which we transform to C++ types.
     def __init__(
-        self, graph: Graph, event_cpptypes: Iterable[str] = ()
+        self, graph: Graph, input_event_types: Iterable[EventType] = ()
     ) -> None:
         n_in, n_out = len(graph.inputs()), len(graph.outputs())
         if n_in != 1:
@@ -134,8 +133,9 @@ class CompiledGraph:
             )
         ctx_var = "ctx"
         code = graph.generate_cpp("", ctx_var)
-        evt_types = tuple(event_cpptypes)
-        self._instantiator = _compile_instantiator(code, ctx_var, evt_types)
+        self._instantiator = _compile_instantiator(
+            code, ctx_var, (e.cpp_type for e in input_event_types)
+        )
         self._access_types = _collect_access_tags(graph)
 
     def _instantiate(self, cpp_context) -> Any:

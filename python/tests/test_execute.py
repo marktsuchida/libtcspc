@@ -19,7 +19,7 @@ cppyy.include("string")
 def test_execute_graph_with_single_input():
     g = Graph()
     g.add_node("a", NullSink())
-    c = ExecutionContext(CompiledGraph(g, ("int",)))
+    c = ExecutionContext(CompiledGraph(g, (EventType("int"),)))
     c.handle(123)
     c.flush()
 
@@ -28,7 +28,7 @@ def test_execute_node_access():
     g = Graph()
     g.add_node("c", Count(EventType("int"), AccessTag("counter")))
     g.add_node("a", NullSink(), upstream="c")
-    c = ExecutionContext(CompiledGraph(g, ("int",)))
+    c = ExecutionContext(CompiledGraph(g, (EventType("int"),)))
     c.handle(123)
     c.flush()
     assert c.access("counter").count() == 1
@@ -37,7 +37,7 @@ def test_execute_node_access():
 def test_execute_rejects_events_and_flush_when_expired():
     g = Graph()
     g.add_node("a", NullSink())
-    c = ExecutionContext(CompiledGraph(g, ("int",)))
+    c = ExecutionContext(CompiledGraph(g, (EventType("int"),)))
     c.flush()
     with pytest.raises(RuntimeError):
         c.handle(123)
@@ -49,7 +49,9 @@ def test_execute_handles_buffer_events():
     g = Graph()
     g.add_node("a", NullSink())
     # 'const' not required for span
-    c = ExecutionContext(CompiledGraph(g, ["span<u8 const>", "span<i16>"]))
+    c = ExecutionContext(
+        CompiledGraph(g, [EventType("span<u8 const>"), EventType("span<i16>")])
+    )
     c.handle(b"")
     c.handle(b"abc")
     c.handle(memoryview(b""))
@@ -69,6 +71,6 @@ def test_execute_fails_for_unhandle_events():
     # When type is not handled by the actual processor, the error is detected
     # on first calling handle(), not when the (uninstantiated) template code is
     # compiled.
-    c2 = ExecutionContext(CompiledGraph(g, ["std::string"]))
+    c2 = ExecutionContext(CompiledGraph(g, [EventType("std::string")]))
     with pytest.raises(SyntaxError):
         c2.handle("abc")
