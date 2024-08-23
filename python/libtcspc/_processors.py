@@ -119,12 +119,15 @@ class CheckMonotonic(OneToOnePassThroughNode):
 
 @final
 class Count(OneToOnePassThroughNode):
-    def __init__(self, event_type: EventType) -> None:
+    def __init__(
+        self, event_type: EventType, access_tag: _access.AccessTag
+    ) -> None:
         self._event_type = event_type
+        self._access_tag = access_tag.tag
 
     @override
-    def access_type(self) -> type[_access.Access] | None:
-        return _access.CountAccess
+    def accesses(self) -> tuple[tuple[str, type[_access.Access]], ...]:
+        return ((self._access_tag, _access.CountAccess),)
 
     @override
     def generate_cpp_one_to_one(
@@ -132,7 +135,7 @@ class Count(OneToOnePassThroughNode):
     ) -> str:
         return dedent(f"""\
             tcspc::count<{self._event_type.cpp_type}>(
-                {context}->tracker<tcspc::count_access>("{node_name}"),
+                {context}->tracker<tcspc::count_access>("{self._access_tag}"),
                 {downstream}
             )""")
 

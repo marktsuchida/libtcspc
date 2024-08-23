@@ -6,52 +6,38 @@ import array
 
 import cppyy
 import pytest
-from libtcspc._context import Context
+from libtcspc._access import AccessTag
+from libtcspc._compile import CompiledGraph
 from libtcspc._events import EventType
+from libtcspc._execute import ExecutionContext
 from libtcspc._graph import Graph
 from libtcspc._processors import Count, NullSink, SinkEvents
 
 cppyy.include("string")
 
 
-def test_context_empty_graph_rejected():
-    g = Graph()
-    with pytest.raises(ValueError):
-        Context(g)
-
-
-def test_context_graph_with_two_inputs_rejected():
+def test_execute_graph_with_single_input():
     g = Graph()
     g.add_node("a", NullSink())
-    g.add_node("b", NullSink())
-    with pytest.raises(ValueError):
-        Context(g)
-
-
-def test_context_graph_with_output_rejected():
-    g = Graph()
-    g.add_node("a", Count(EventType("int")))
-    with pytest.raises(ValueError):
-        Context(g)
-
-
-def test_context_graph_with_single_input_allowed():
-    g = Graph()
-    g.add_node("a", NullSink())
-    c = Context(g, ("int",))
-    c.handle(123)
-    c.flush()
-
-    g.add_node("c", Count(EventType("int")), downstream="a")
-    c = Context(g, ("int",))
+    c = ExecutionContext(CompiledGraph(g, ("int",)))
     c.handle(123)
     c.flush()
 
 
-def test_context_rejects_events_and_flush_when_expired():
+def test_execute_node_access():
+    g = Graph()
+    g.add_node("c", Count(EventType("int"), AccessTag("counter")))
+    g.add_node("a", NullSink(), upstream="c")
+    c = ExecutionContext(CompiledGraph(g, ("int",)))
+    c.handle(123)
+    c.flush()
+    assert c.access("counter").count() == 1
+
+
+def test_execute_rejects_events_and_flush_when_expired():
     g = Graph()
     g.add_node("a", NullSink())
-    c = Context(g, ("int",))
+    c = ExecutionContext(CompiledGraph(g, ("int",)))
     c.flush()
     with pytest.raises(RuntimeError):
         c.handle(123)
@@ -59,10 +45,11 @@ def test_context_rejects_events_and_flush_when_expired():
         c.flush()
 
 
-def test_context_handles_buffer_events():
+def test_execute_handles_buffer_events():
     g = Graph()
     g.add_node("a", NullSink())
-    c = Context(g, ["span<u8 const>", "span<i16>"])  # 'const' not required
+    # 'const' not required for span
+    c = ExecutionContext(CompiledGraph(g, ["span<u8 const>", "span<i16>"]))
     c.handle(b"")
     c.handle(b"abc")
     c.handle(memoryview(b""))
@@ -73,15 +60,15 @@ def test_context_handles_buffer_events():
 
 
 @pytest.mark.xfail(reason="https://github.com/wlav/cppyy/issues/243")
-def test_context_fails_for_unhandle_events():
+def test_execute_fails_for_unhandle_events():
     g = Graph()
     g.add_node("s", SinkEvents(EventType("u32")))
-    c = Context(g, ["u32"])
+    c = ExecutionContext(CompiledGraph(g, ["u32"]))
     c.handle(42)
 
     # When type is not handled by the actual processor, the error is detected
     # on first calling handle(), not when the (uninstantiated) template code is
     # compiled.
-    c2 = Context(g, ["std::string"])
+    c2 = ExecutionContext(CompiledGraph(g, ["std::string"]))
     with pytest.raises(SyntaxError):
         c2.handle("abc")

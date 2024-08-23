@@ -23,27 +23,33 @@ def summarize(filename: str) -> int:
                 start_offset=4,
                 stop_normally_on_error=True,
             ),
-            ("count-records", tcspc.Count(tcspc.BHSPCEvent)),
+            tcspc.Count(tcspc.BHSPCEvent, tcspc.AccessTag("count-records")),
             tcspc.DecodeBHSPC(dtypes),
             tcspc.CheckMonotonic(dtypes),
             tcspc.Stop(
                 (tcspc.WarningEvent, tcspc.DataLostEvent(dtypes)),
                 "error in data",
             ),
-            (
-                "count-phot",
-                tcspc.Count(tcspc.TimeCorrelatedDetectionEvent(dtypes)),
+            tcspc.Count(
+                tcspc.TimeCorrelatedDetectionEvent(dtypes),
+                tcspc.AccessTag("count-phot"),
             ),
-            ("count-mark", tcspc.Count(tcspc.MarkerEvent(dtypes))),
+            (
+                "tail",
+                tcspc.Count(
+                    tcspc.MarkerEvent(dtypes), tcspc.AccessTag("count-mark")
+                ),
+            ),
             # Simplified for now compared to the C++ example (no per-channel
             # counts and time range).
         ]
     )
-    g.add_node(None, tcspc.NullSink(), upstream="count-mark")
+    g.add_node(None, tcspc.NullSink(), upstream="tail")
 
     ret = 0
     try:
-        ctx = tcspc.Context(g)
+        cg = tcspc.CompiledGraph(g)
+        ctx = tcspc.ExecutionContext(cg)
         ctx.flush()
     except tcspc.EndOfProcessing as e:
         print(f"Stopped because: {e}")

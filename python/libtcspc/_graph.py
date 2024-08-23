@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: MIT
 
 import itertools
-from collections.abc import Collection, Mapping, Sequence
+from collections.abc import Callable, Collection, Mapping, Sequence
 from copy import deepcopy
 from dataclasses import dataclass
 from textwrap import dedent
@@ -12,14 +12,14 @@ from typing import final
 import cppyy
 from typing_extensions import override
 
-from ._access import Access
+from ._access import Accessible
 from ._events import EventType
 
 cppyy.include("tuple")
 cppyy.include("utility")
 
 
-class Node:
+class Node(Accessible):
     """
     Base class for a processing graph node.
 
@@ -86,13 +86,6 @@ class Node:
         Returns the names of the node's output ports.
         """
         return self._outputs
-
-    def access_type(self) -> type[Access] | None:
-        """
-        Returns the wrapper type for run-time node access, or `None` if there
-        is no access.
-        """
-        pass
 
     def map_event_sets(
         self, input_event_sets: Sequence[Collection[EventType]]
@@ -511,6 +504,13 @@ class Graph:
                 raise LookupError(f"Node {split[0]} is not a sub-graph")
             return node.graph().node(split[1])
         return node
+
+    def visit_nodes(self, visitor: Callable[[str, Node], None]) -> None:
+        """
+        Call the given visitor callable on every node.
+        """
+        for name, node in self._nodes:
+            visitor(name, node)
 
     def _inputs(self) -> tuple[tuple[int, int], ...]:
         result: list[tuple[int, int]] = []

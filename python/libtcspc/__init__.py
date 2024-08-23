@@ -34,9 +34,11 @@ with importlib.resources.as_file(
 
 cppyy.include("libtcspc/tcspc.hpp")
 
+from ._access import *
 from ._bucket_sources import *
-from ._context import *
+from ._compile import *
 from ._events import *
+from ._execute import *
 from ._graph import *
 from ._processors import *
 from ._streams import *
