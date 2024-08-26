@@ -7,7 +7,7 @@ from typing import Any
 
 import cppyy
 
-from ._access import AccessTag
+from ._access import Access, AccessTag
 from ._compile import CompiledGraph
 
 cppyy.include("libtcspc_py/handle_span.hpp")
@@ -30,32 +30,19 @@ class ExecutionContext:
     """
     An execution context for a processing graph.
 
-    This encapsulates a single run of stream processing.
+    Use `create_execution_context()` to obtain an instance. Direct
+    instantiation from user code is not supported.
 
-    Parameters
-    ----------
-    compiled_graph : CompiledGraph
-        The compiled graph from which to instantiate the processor.
-
-    Raises
-    ------
-    cppyy.gbl.std.exception
-        If there was an error while initializing the instantiated processing
-        graph.
+    This encapsulates a single run of stream processing and cannot be reused.
     """
 
-    def __init__(self, compiled_graph: CompiledGraph) -> None:
-        self._ctx = cppyy.gbl.tcspc.context.create()
+    def __init__(
+        self, cpp_context, cpp_proc, access_types: dict[str, type[Access]]
+    ) -> None:
+        self._ctx = cpp_context
+        self._proc = cpp_proc
+        self._access_types = access_types
         self._end_of_life_reason: str | None = None
-
-        self._proc = compiled_graph._instantiate(self._ctx)
-        # handle() and flush() are wrapped by the CompiledGraph so that they
-        # are overload sets, not template proxies.
-        if hasattr(self._proc, "handle"):
-            self._proc.handle.__release_gil__ = True
-        self._proc.flush.__release_gil__ = True
-
-        self._access_types = compiled_graph.access_types()
 
     def access(self, tag: str | AccessTag) -> Any:
         """
@@ -132,3 +119,40 @@ class ExecutionContext:
         with self._manage_processor_end_of_life():
             self._proc.flush()
         self._end_of_life_reason = "flushed"
+
+
+def create_execution_context(
+    compiled_graph: CompiledGraph,
+) -> ExecutionContext:
+    """
+    Create an execution context for a compiled graph.
+
+    Parameters
+    ----------
+    compiled_graph : CompiledGraph
+        The compiled graph from which to instantiate the processor.
+
+    Returns
+    -------
+    ExecutionContext
+        The new execution context.
+
+    Raises
+    ------
+    cppyy.gbl.std.exception
+        If there was an error while initializing the instantiated processing
+        graph.
+    """
+
+    context = cppyy.gbl.tcspc.context.create()
+
+    processor = compiled_graph._instantiate(context)
+    # handle() and flush() are wrapped by the CompiledGraph so that they
+    # are overload sets, not template proxies.
+    if hasattr(processor, "handle"):
+        processor.handle.__release_gil__ = True
+    processor.flush.__release_gil__ = True
+
+    access_types = compiled_graph.access_types()
+
+    return ExecutionContext(context, processor, access_types)
