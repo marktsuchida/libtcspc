@@ -48,7 +48,7 @@ def summarize(filename: str) -> int:
 
     ret = 0
     try:
-        cg = tcspc.CompiledGraph(g)
+        cg = tcspc.compile_graph(g)
         ctx = tcspc.ExecutionContext(cg)
         ctx.flush()
     except tcspc.EndOfProcessing as e:
