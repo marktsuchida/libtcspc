@@ -48,7 +48,7 @@ class CompiledGraph:
 
 cppyy.cppdef(
     dedent("""\
-    namespace tcspc::py::context {
+    namespace tcspc::py::compile {
         template <typename T> struct make_event_arg {
             using type = std::remove_cv_t<std::remove_reference_t<T>> const &;
         };
@@ -78,9 +78,9 @@ def _instantiate_func(
                     downstream.handle(event);
                 }}"""
         for event_type in event_types
-    )
+    ).lstrip()
     return fname, dedent(f"""\
-        namespace tcspc::py::context {{
+        namespace tcspc::py::compile {{
             template <typename Downstream> class {input_proc} {{
                 Downstream downstream;
 
@@ -116,7 +116,7 @@ def _compile_instantiator(
         graph_code, context_varname, event_types, ctr
     )
     cppyy.cppdef(code)
-    return getattr(cppyy.gbl.tcspc.py.context, fname)
+    return getattr(cppyy.gbl.tcspc.py.compile, fname)
 
 
 def _collect_access_tags(graph: Graph) -> dict[str, type[Access]]:
