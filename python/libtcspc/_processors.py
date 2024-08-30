@@ -17,9 +17,9 @@ from ._graph import (
     CodeGenerationContext,
     Graph,
     Node,
-    OneToOneNode,
-    OneToOnePassThroughNode,
+    RelayNode,
     Subgraph,
+    TypePreservingRelayNode,
 )
 from ._param import Param
 
@@ -106,14 +106,14 @@ def read_events_from_binary_file(
 
 
 @final
-class CheckMonotonic(OneToOnePassThroughNode):
+class CheckMonotonic(TypePreservingRelayNode):
     def __init__(self, data_types: DataTypes | None = None) -> None:
         self._data_types = (
             data_types if data_types is not None else DataTypes()
         )
 
     @override
-    def generate_cpp_one_to_one(
+    def relay_generate_cpp(
         self,
         gencontext: CodeGenerationContext,
         downstream: str,
@@ -125,7 +125,7 @@ class CheckMonotonic(OneToOnePassThroughNode):
 
 
 @final
-class Count(OneToOnePassThroughNode):
+class Count(TypePreservingRelayNode):
     def __init__(
         self, event_type: EventType, access_tag: _access.AccessTag
     ) -> None:
@@ -137,7 +137,7 @@ class Count(OneToOnePassThroughNode):
         return ((self._access_tag, _access.CountAccess),)
 
     @override
-    def generate_cpp_one_to_one(
+    def relay_generate_cpp(
         self,
         gencontext: CodeGenerationContext,
         downstream: str,
@@ -151,14 +151,14 @@ class Count(OneToOnePassThroughNode):
 
 
 @final
-class DecodeBHSPC(OneToOneNode):
+class DecodeBHSPC(RelayNode):
     def __init__(self, data_types: DataTypes | None = None) -> None:
         self._data_types = (
             data_types if data_types is not None else DataTypes()
         )
 
     @override
-    def map_event_set(
+    def relay_map_event_set(
         self, input_event_set: Collection[EventType]
     ) -> tuple[EventType, ...]:
         _check_events_subset_of(
@@ -173,7 +173,7 @@ class DecodeBHSPC(OneToOneNode):
         )
 
     @override
-    def generate_cpp_one_to_one(
+    def relay_generate_cpp(
         self,
         gencontext: CodeGenerationContext,
         downstream: str,
@@ -205,7 +205,7 @@ class NullSink(Node):
 
 
 @final
-class ReadBinaryStream(OneToOneNode):
+class ReadBinaryStream(RelayNode):
     def __init__(
         self,
         event_type: EventType,
@@ -221,7 +221,7 @@ class ReadBinaryStream(OneToOneNode):
         self._granularity = read_granularity_bytes
 
     @override
-    def map_event_set(
+    def relay_map_event_set(
         self, input_event_set: Collection[EventType]
     ) -> tuple[EventType, ...]:
         _check_events_subset_of(input_event_set, (), self.__class__.__name__)
@@ -252,7 +252,7 @@ class ReadBinaryStream(OneToOneNode):
         return tuple(params)
 
     @override
-    def generate_cpp_one_to_one(
+    def relay_generate_cpp(
         self,
         gencontext: CodeGenerationContext,
         downstream: str,
@@ -317,7 +317,7 @@ class SinkEvents(Node):
 
 
 @final
-class Stop(OneToOneNode):
+class Stop(RelayNode):
     def __init__(
         self, event_types: Iterable[EventType], message_prefix: str
     ) -> None:
@@ -325,13 +325,13 @@ class Stop(OneToOneNode):
         self._msg_prefix = message_prefix
 
     @override
-    def map_event_set(
+    def relay_map_event_set(
         self, input_event_set: Collection[EventType]
     ) -> tuple[EventType, ...]:
         return _remove_events_from_set(input_event_set, self._event_types)
 
     @override
-    def generate_cpp_one_to_one(
+    def relay_generate_cpp(
         self,
         gencontext: CodeGenerationContext,
         downstream: str,
@@ -347,7 +347,7 @@ class Stop(OneToOneNode):
 
 
 @final
-class StopWithError(OneToOneNode):
+class StopWithError(RelayNode):
     def __init__(
         self,
         event_types: Iterable[EventType],
@@ -359,13 +359,13 @@ class StopWithError(OneToOneNode):
         self._msg_prefix = message_prefix
 
     @override
-    def map_event_set(
+    def relay_map_event_set(
         self, input_event_set: Collection[EventType]
     ) -> tuple[EventType, ...]:
         return _remove_events_from_set(input_event_set, self._event_types)
 
     @override
-    def generate_cpp_one_to_one(
+    def relay_generate_cpp(
         self,
         gencontext: CodeGenerationContext,
         downstream: str,
@@ -382,19 +382,19 @@ class StopWithError(OneToOneNode):
 
 
 @final
-class Unbatch(OneToOneNode):
+class Unbatch(RelayNode):
     def __init__(self, event_type: EventType) -> None:
         self._event_type = event_type
 
     @override
-    def map_event_set(
+    def relay_map_event_set(
         self, input_event_set: Collection[EventType]
     ) -> tuple[EventType, ...]:
         # TODO Check if input event set contains only iterables of event_type.
         return (self._event_type,)
 
     @override
-    def generate_cpp_one_to_one(
+    def relay_generate_cpp(
         self,
         gencontext: CodeGenerationContext,
         downstream: str,

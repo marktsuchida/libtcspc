@@ -14,14 +14,14 @@ from libtcspc._compile import (
 )
 from libtcspc._cpp_utils import CppIdentifier, CppTypeName
 from libtcspc._events import EventType
-from libtcspc._graph import Graph, OneToOneNode
+from libtcspc._graph import Graph, RelayNode
 from libtcspc._processors import CheckMonotonic, Count, NullSink
 
 IntEvent = EventType(CppTypeName("int"))
 
 
 def test_compile_collect_params_duplicate():
-    class ParamNode(OneToOneNode):
+    class ParamNode(RelayNode):
         def __init__(self, param_name: str) -> None:
             self._param_name = CppIdentifier(param_name)
 

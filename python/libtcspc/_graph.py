@@ -150,14 +150,17 @@ class Node(Accessible, Parameterized):
         raise NotImplementedError()
 
 
-class OneToOneNode(Node):
+class RelayNode(Node):
     """
     A node representing a single-upstream, single-downstream processor.
 
-    A common base class that simplifies implementation of the most common type
-    of node. Subclasses override simplified methods (`map_event_set`,
-    `generate_cpp_one_to_one`), avoiding boilerplate that deals with the more
-    general multi-input, multi-output node interface.
+    Most nodes are relay nodes.
+
+    This base class simplifies the implementation of relay nodes: subclasses
+    must override the simplified methods `relay_map_event_set()` and
+    `relay_generate_cpp()`, instead of the `Node` methods `map_event_sets()`
+    and `generate_cpp()`. Implementations of the latter methods is provided by
+    `RelayNode`.
     """
 
     @override
@@ -172,14 +175,17 @@ class OneToOneNode(Node):
     def map_event_sets(
         self, input_event_sets: Sequence[Collection[EventType]]
     ) -> tuple[tuple[EventType, ...], ...]:
+        """
+        Maps events sets based on `relay_map_event_set()`.
+        """
         n_upstreams = len(input_event_sets)
         if n_upstreams != 1:
             raise ValueError(
                 f"expected a single upstream; found {n_upstreams}"
             )
-        return (self.map_event_set(input_event_sets[0]),)
+        return (self.relay_map_event_set(input_event_sets[0]),)
 
-    def map_event_set(
+    def relay_map_event_set(
         self, input_event_set: Collection[EventType]
     ) -> tuple[EventType, ...]:
         """
@@ -187,7 +193,8 @@ class OneToOneNode(Node):
         events emitted on the output port.
 
         This is analogous to `map_event_sets` but for the single input and
-        output ports. Concrete subclasses must override this method.
+        output ports of the relay node. Concrete subclasses must override this
+        method.
 
         Parameters
         ----------
@@ -214,14 +221,17 @@ class OneToOneNode(Node):
         gencontext: CodeGenerationContext,
         downstreams: Sequence[str],
     ) -> str:
+        """
+        Generates C++ code based on `relay_generate_cpp()`.
+        """
         n_downstreams = len(downstreams)
         if n_downstreams != 1:
             raise ValueError(
                 f"expected a single downstream; found {n_downstreams}"
             )
-        return self.generate_cpp_one_to_one(gencontext, downstreams[0])
+        return self.relay_generate_cpp(gencontext, downstreams[0])
 
-    def generate_cpp_one_to_one(
+    def relay_generate_cpp(
         self,
         gencontext: CodeGenerationContext,
         downstream: str,
@@ -229,8 +239,8 @@ class OneToOneNode(Node):
         """
         Returns C++ code for this node and its downstream.
 
-        This is analogous to `generate_cpp` but for the single downstream.
-        Concrete subclasses must override this method.
+        This is analogous to `generate_cpp` but for the single downstream of
+        the relay node. Concrete subclasses must override this method.
 
         Parameters
         ----------
@@ -247,15 +257,15 @@ class OneToOneNode(Node):
         raise NotImplementedError()
 
 
-class OneToOnePassThroughNode(OneToOneNode):
+class TypePreservingRelayNode(RelayNode):
     """
-    A one-to-one node whose output event set matches its input event set.
+    A relay node whose output event set matches its input event set.
 
-    Subclasses need only override `generate_cpp_one_to_one`.
+    Subclasses need only override `relay_generate_cpp`.
     """
 
     @override
-    def map_event_set(
+    def relay_map_event_set(
         self, input_event_set: Collection[EventType]
     ) -> tuple[EventType, ...]:
         return tuple(input_event_set)
