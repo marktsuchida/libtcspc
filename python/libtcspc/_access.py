@@ -6,11 +6,13 @@ from dataclasses import dataclass
 
 import cppyy
 
+from ._cpp_utils import CppTypeName
+
 cppyy.include("stdexcept")
 
 
 class Access:
-    cpp_type: str | None = None
+    cpp_type: CppTypeName | None = None
 
     def __init__(self, cpp_ctx, name: str, ref: object) -> None:
         self._ref = ref  # Extend lifetime
@@ -59,7 +61,7 @@ class Accessible:
 
 
 class CountAccess(Access):
-    cpp_type = "tcspc::count_access"
+    cpp_type = CppTypeName("tcspc::count_access")
 
     def count(self) -> int:
         return self._access.count()

@@ -50,7 +50,7 @@ class CompiledGraph:
 
 
 def _param_struct(
-    param_types: Iterable[tuple[str, str]], ctr: int
+    param_types: Iterable[tuple[str, CppTypeName]], ctr: int
 ) -> tuple[str, str]:
     tname = f"params_{ctr}"
     fields = "\n".join(
@@ -87,7 +87,7 @@ cppyy.cppdef(
 def _instantiate_func(
     graph_code: str,
     gencontext: CodeGenerationContext,
-    event_types: Iterable[str],
+    event_types: Iterable[CppTypeName],
     ctr: int,
 ) -> tuple[str, str]:
     input_proc = f"input_processor_{ctr}"
@@ -132,8 +132,8 @@ _cpp_name_counter = itertools.count()
 def _compile_instantiator(
     graph_code: str,
     gencontext: CodeGenerationContext,
-    param_types: Iterable[tuple[str, str]],
-    event_types: Iterable[str],
+    param_types: Iterable[tuple[str, CppTypeName]],
+    event_types: Iterable[CppTypeName],
 ) -> tuple[str, Any]:
     ctr = next(_cpp_name_counter)
 

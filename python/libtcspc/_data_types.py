@@ -11,24 +11,26 @@ import cppyy
 from typeguard import typechecked
 from typing_extensions import Unpack
 
+from ._cpp_utils import CppTypeName
+
 _cpp_name_counter = itertools.count()
 
 
 class _DataTypes(TypedDict, total=False):
-    abstime_type: str
-    channel_type: str
-    difftime_type: str
-    datapoint_type: str
-    bin_index_type: str
-    bin_type: str
+    abstime_type: CppTypeName
+    channel_type: CppTypeName
+    difftime_type: CppTypeName
+    datapoint_type: CppTypeName
+    bin_index_type: CppTypeName
+    bin_type: CppTypeName
 
 
 @functools.cache
 @typechecked
-def _data_types_class(**kwargs: Unpack[_DataTypes]) -> str:
+def _data_types_class(**kwargs: Unpack[_DataTypes]) -> CppTypeName:
     types = [f"using {k} = {kwargs[k]};" for k in kwargs]  # type: ignore[literal-required]
     if not len(types):
-        return "tcspc::default_data_types"
+        return CppTypeName("tcspc::default_data_types")
 
     class_name = f"data_types_{next(_cpp_name_counter)}"
     typedefs = ("\n" + "    " * 5).join(types)
@@ -40,12 +42,12 @@ def _data_types_class(**kwargs: Unpack[_DataTypes]) -> str:
                 }};
             }}""")
     )
-    return f"tcspc::py::data_types::{class_name}"
+    return CppTypeName(f"tcspc::py::data_types::{class_name}")
 
 
 class DataTypes:
     def __init__(self, **kwargs: Unpack[_DataTypes]) -> None:
         self._type_set_class = _data_types_class(**kwargs)
 
-    def cpp(self) -> str:
+    def cpp(self) -> CppTypeName:
         return self._type_set_class

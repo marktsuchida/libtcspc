@@ -351,7 +351,7 @@ class StopWithError(OneToOneNode):
     def __init__(
         self,
         event_types: Iterable[EventType],
-        exception_type: str,
+        exception_type: CppTypeName,
         message_prefix: str,
     ) -> None:
         self._event_types = list(event_types)
