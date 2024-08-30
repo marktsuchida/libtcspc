@@ -13,7 +13,7 @@ import cppyy
 
 from ._access import Access, Accessible
 from ._events import EventType
-from ._graph import Graph
+from ._graph import CodeGenerationContext, Graph
 from ._param import Parameterized
 
 cppyy.include("libtcspc/tcspc.hpp")
@@ -206,11 +206,12 @@ def compile_graph(
         )
 
     params = _collect_params(graph)
-    param_exprs = dict((name, f"params.{name}") for name in params)
     param_types = ((name, type) for name, (type, default) in params.items())
     params_var = "params"
     ctx_var = "ctx"
-    code = graph.generate_cpp(ctx_var, params_var, param_exprs)
+    code = graph.generate_cpp(
+        CodeGenerationContext(ctx_var, params_var, tuple(params))
+    )
     param_struct, instantiator = _compile_instantiator(
         code,
         ctx_var,

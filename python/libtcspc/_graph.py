@@ -20,6 +20,16 @@ cppyy.include("tuple")
 cppyy.include("utility")
 
 
+@dataclass(frozen=True)
+class CodeGenerationContext:
+    context_varname: str
+    params_varname: str
+    parameters: tuple[str, ...] = ()
+
+    def parameter_expression(self, param: str) -> str:
+        return f"{self.params_varname}.{param}"
+
+
 class Node(Accessible, Parameterized):
     """
     Base class for a processing graph node.
@@ -119,9 +129,7 @@ class Node(Accessible, Parameterized):
 
     def generate_cpp(
         self,
-        context_varname: str,
-        params_varname: str,
-        parameters: Mapping[str, str],
+        gencontext: CodeGenerationContext,
         downstreams: Sequence[str],
     ) -> str:
         """
@@ -131,12 +139,8 @@ class Node(Accessible, Parameterized):
 
         Parameters
         ----------
-        context_varname
-            The context (C++ variable name).
-        params_varname
-            Parameterization data (C++ variable name)
-        parameters
-            The C++ expression for each named parameter.
+        gencontext
+            Contextual information required for generating code.
         downstreams
             For each output port, the C++ code representing an rvalue reference
             to the downstream.
@@ -210,9 +214,7 @@ class OneToOneNode(Node):
     @final
     def generate_cpp(
         self,
-        context_varname: str,
-        params_varname: str,
-        parameters: Mapping[str, str],
+        gencontext: CodeGenerationContext,
         downstreams: Sequence[str],
     ) -> str:
         n_downstreams = len(downstreams)
@@ -220,18 +222,11 @@ class OneToOneNode(Node):
             raise ValueError(
                 f"expected a single downstream; found {n_downstreams}"
             )
-        return self.generate_cpp_one_to_one(
-            context_varname,
-            params_varname,
-            parameters,
-            downstreams[0],
-        )
+        return self.generate_cpp_one_to_one(gencontext, downstreams[0])
 
     def generate_cpp_one_to_one(
         self,
-        context_varname: str,
-        params_varname: str,
-        parameters: Mapping[str, str],
+        gencontext: CodeGenerationContext,
         downstream: str,
     ) -> str:
         """
@@ -242,12 +237,8 @@ class OneToOneNode(Node):
 
         Parameters
         ----------
-        context_varname
-            The context (C++ variable name).
-        params_varname
-            Parameterization data (C++ variable name).
-        parameters
-            The C++ expression for each named parameter.
+        gencontext
+            Contextual information required for generating code.
         downstream
             The C++ code representing an rvalue reference ot the downstream.
 
@@ -606,9 +597,7 @@ class Graph:
 
     def generate_cpp(
         self,
-        context_varname: str,
-        params_varname: str,
-        parameters: Mapping[str, str] = {},
+        gencontext: CodeGenerationContext,
         downstreams: Sequence[str] | None = None,
     ) -> str:
         downstreams = downstreams if downstreams is not None else ()
@@ -645,12 +634,7 @@ class Graph:
                 internal_name_index[(node_id, i)] = input
                 inputs.append(input)
 
-            node_code = node.generate_cpp(
-                context_varname,
-                params_varname,
-                parameters,
-                outputs,
-            )
+            node_code = node.generate_cpp(gencontext, outputs)
             if len(inputs) > 1:
                 input_list = ", ".join(inputs)
                 node_defs.append(f"auto [{input_list}] = {node_code};")
@@ -671,8 +655,11 @@ class Graph:
         external_name_params = ", ".join(f"auto &&{d}" for d in external_names)
         downstream_args = ", ".join(downstreams)
         node_def_lines = "\n".join(node_defs)
+        captures = ", ".join(
+            (gencontext.context_varname, f"&{gencontext.params_varname}")
+        )
         return dedent(f"""\
-            [{context_varname}, &{params_varname}]({external_name_params}) {{
+            [{captures}]({external_name_params}) {{
                 {node_def_lines}
                 return {input_ref_maybe_tuple};
             }}({downstream_args})""")
@@ -732,11 +719,7 @@ class Subgraph(Node):
     @override
     def generate_cpp(
         self,
-        context_varname: str,
-        params_varname: str,
-        parameters: Mapping[str, str],
+        gencontext: CodeGenerationContext,
         downstreams: Sequence[str],
     ) -> str:
-        return self._graph.generate_cpp(
-            context_varname, params_varname, parameters, downstreams
-        )
+        return self._graph.generate_cpp(gencontext, downstreams)

@@ -7,7 +7,7 @@ import cppyy
 import pytest
 from cpp_utils import isolated_cppdef
 from libtcspc._events import EventType
-from libtcspc._graph import Graph, Node
+from libtcspc._graph import CodeGenerationContext, Graph, Node
 
 cppyy.include("memory")
 cppyy.include("tuple")
@@ -27,7 +27,7 @@ def test_empty_graph():
     with pytest.raises(ValueError):
         g.map_event_sets([EventType("int")])
 
-    code = g.generate_cpp("ctx", "params")
+    code = g.generate_cpp(CodeGenerationContext("ctx", "params"))
     # An empty graph has no inputs, so generates a lambda that returns an empty
     # tuple. Assignment should succeed.
     isolated_cppdef(f"""\
@@ -39,7 +39,7 @@ def test_empty_graph():
     """)
 
     with pytest.raises(ValueError):
-        g.generate_cpp("ctx", "params", {}, ["downstream"])
+        g.generate_cpp(CodeGenerationContext("ctx", "params"), ["downstream"])
 
 
 def test_single_node(mocker):
@@ -61,14 +61,16 @@ def test_single_node(mocker):
     node.map_event_sets.assert_called_with([(EventType("int"),)])
 
     with pytest.raises(ValueError):
-        g.generate_cpp("ctx", "params", {}, [])
+        g.generate_cpp(CodeGenerationContext("ctx", "params"))
 
-    def node_codegen(cvar, pvar, params, downstreams):
+    def node_codegen(gencontext, downstreams):
         assert len(downstreams) == 1
         return downstreams[0]
 
     node.generate_cpp = mocker.MagicMock(side_effect=node_codegen)
-    code = g.generate_cpp("ctx", "params", {}, ["std::move(dstream)"])
+    code = g.generate_cpp(
+        CodeGenerationContext("ctx", "params"), ["std::move(dstream)"]
+    )
     # The generated lambda should return a single-element tuple whose element
     # was moved from 'ds'.
     ns = isolated_cppdef(f"""\
@@ -109,18 +111,19 @@ def test_two_nodes_two_inputs_two_outputs(mocker):
     node0.map_event_sets.assert_called_with([(), ()])
     node1.map_event_sets.assert_called_with([(EventType("int"),)])
 
-    def node0_codegen(cvar, pvar, params, downstreams):
+    def node0_codegen(gencontext, downstreams):
         assert len(downstreams) == 1
         return f"std::tuple{{2 * {downstreams[0]}, 123}}"
 
-    def node1_codegen(cvar, pvar, params, downstreams):
+    def node1_codegen(gencontext, downstreams):
         assert len(downstreams) == 2
         return f"5 * ({downstreams[0]} + {downstreams[1]})"
 
     node0.generate_cpp = mocker.MagicMock(side_effect=node0_codegen)
     node1.generate_cpp = mocker.MagicMock(side_effect=node1_codegen)
     code = g.generate_cpp(
-        "ctx", "params", {}, ["std::move(ds0)", "std::move(ds1)"]
+        CodeGenerationContext("ctx", "params"),
+        ["std::move(ds0)", "std::move(ds1)"],
     )
     ns = isolated_cppdef(f"""\
         auto f() {{
@@ -170,17 +173,19 @@ def test_two_nodes_two_internal_edges(mocker):
         [(EventType("long"),), (EventType("short"),)]
     )
 
-    def node0_codegen(cvar, pvar, params, downstreams):
+    def node0_codegen(gencontext, downstreams):
         assert len(downstreams) == 2
         return f"{downstreams[0]} + {downstreams[1]}"
 
-    def node1_codegen(cvar, pvar, params, downstreams):
+    def node1_codegen(gencontext, downstreams):
         assert len(downstreams) == 1
         return f"std::tuple{{2 * {downstreams[0]}, 123}}"
 
     node0.generate_cpp = mocker.MagicMock(side_effect=node0_codegen)
     node1.generate_cpp = mocker.MagicMock(side_effect=node1_codegen)
-    code = g.generate_cpp("ctx", "params", {}, ["std::move(ds)"])
+    code = g.generate_cpp(
+        CodeGenerationContext("ctx", "params"), ["std::move(ds)"]
+    )
     ns = isolated_cppdef(f"""\
         auto f() {{
             auto ctx = tcspc::context::create();
@@ -196,7 +201,7 @@ def test_two_nodes_two_internal_edges(mocker):
 
 
 def make_simple_node(mocker):
-    def node_codegen(cvar, pvar, params, downstreams):
+    def node_codegen(gencontext, downstreams):
         assert len(downstreams) == 1
         return downstreams[0]
 
@@ -217,7 +222,9 @@ def test_add_sequence(mocker):
     g.add_sequence([node0, node1])
     g.add_sequence([node2, node3], upstream="Node-1")
     g.add_sequence([node4], downstream=("Node-0", "input"))
-    code = g.generate_cpp("ctx", "params", {}, ["std::move(ds)"])
+    code = g.generate_cpp(
+        CodeGenerationContext("ctx", "params"), ["std::move(ds)"]
+    )
     ns = isolated_cppdef(f"""\
         auto f() {{
             auto ctx = tcspc::context::create();

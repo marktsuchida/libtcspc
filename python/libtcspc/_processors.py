@@ -2,7 +2,7 @@
 # Copyright 2019-2024 Board of Regents of the University of Wisconsin System
 # SPDX-License-Identifier: MIT
 
-from collections.abc import Collection, Iterable, Mapping, Sequence
+from collections.abc import Collection, Iterable, Sequence
 from textwrap import dedent
 from typing import Any, final
 
@@ -13,6 +13,7 @@ from . import _access, _bucket_sources, _cpp_utils, _events, _streams
 from ._data_types import DataTypes
 from ._events import EventType
 from ._graph import (
+    CodeGenerationContext,
     Graph,
     Node,
     OneToOneNode,
@@ -111,9 +112,7 @@ class CheckMonotonic(OneToOnePassThroughNode):
     @override
     def generate_cpp_one_to_one(
         self,
-        context_varname: str,
-        params_varname: str,
-        parameters: Mapping[str, str],
+        gencontext: CodeGenerationContext,
         downstream: str,
     ) -> str:
         return dedent(f"""\
@@ -137,14 +136,13 @@ class Count(OneToOnePassThroughNode):
     @override
     def generate_cpp_one_to_one(
         self,
-        context_varname: str,
-        params_varname: str,
-        parameters: Mapping[str, str],
+        gencontext: CodeGenerationContext,
         downstream: str,
     ) -> str:
         return dedent(f"""\
             tcspc::count<{self._event_type.cpp_type}>(
-                {context_varname}->tracker<tcspc::count_access>("{self._access_tag}"),
+                {gencontext.context_varname}->tracker<tcspc::count_access>(
+                        "{self._access_tag}"),
                 {downstream}
             )""")
 
@@ -174,9 +172,7 @@ class DecodeBHSPC(OneToOneNode):
     @override
     def generate_cpp_one_to_one(
         self,
-        context_varname: str,
-        params_varname: str,
-        parameters: Mapping[str, str],
+        gencontext: CodeGenerationContext,
         downstream: str,
     ) -> str:
         return dedent(f"""\
@@ -199,9 +195,7 @@ class NullSink(Node):
     @override
     def generate_cpp(
         self,
-        context_varname: str,
-        params_varname: str,
-        parameters: Mapping[str, str],
+        gencontext: CodeGenerationContext,
         downstreams: Sequence[str],
     ) -> str:
         return "tcspc::null_sink()"
@@ -253,15 +247,13 @@ class ReadBinaryStream(OneToOneNode):
     @override
     def generate_cpp_one_to_one(
         self,
-        context_varname: str,
-        params_varname: str,
-        parameters: Mapping[str, str],
+        gencontext: CodeGenerationContext,
         downstream: str,
     ) -> str:
         event = self._event_type.cpp_type
 
         if isinstance(self._maxlen, Param):
-            maxlen = parameters[self._maxlen.name]
+            maxlen = gencontext.parameter_expression(self._maxlen.name)
         else:
             maxlen = (
                 f"{self._maxlen}uLL"
@@ -270,7 +262,9 @@ class ReadBinaryStream(OneToOneNode):
             )
 
         if isinstance(self._granularity, Param):
-            granularity = parameters[self._granularity.name]
+            granularity = gencontext.parameter_expression(
+                self._granularity.name
+            )
         else:
             granularity = f"{self._granularity}uLL"
 
@@ -308,9 +302,7 @@ class SinkEvents(Node):
     @override
     def generate_cpp(
         self,
-        context_varname: str,
-        params_varname: str,
-        parameters: Mapping[str, str],
+        gencontext: CodeGenerationContext,
         downstreams: Sequence[str],
     ) -> str:
         evts = ", ".join(t.cpp_type for t in self._event_types)
@@ -334,9 +326,7 @@ class Stop(OneToOneNode):
     @override
     def generate_cpp_one_to_one(
         self,
-        context_varname: str,
-        params_varname: str,
-        parameters: Mapping[str, str],
+        gencontext: CodeGenerationContext,
         downstream: str,
     ) -> str:
         prefix = _cpp_utils.quote_string(self._msg_prefix)
@@ -370,9 +360,7 @@ class StopWithError(OneToOneNode):
     @override
     def generate_cpp_one_to_one(
         self,
-        context_varname: str,
-        params_varname: str,
-        parameters: Mapping[str, str],
+        gencontext: CodeGenerationContext,
         downstream: str,
     ) -> str:
         prefix = _cpp_utils.quote_string(self._msg_prefix)
@@ -401,9 +389,7 @@ class Unbatch(OneToOneNode):
     @override
     def generate_cpp_one_to_one(
         self,
-        context_varname: str,
-        params_varname: str,
-        parameters: Mapping[str, str],
+        gencontext: CodeGenerationContext,
         downstream: str,
     ) -> str:
         return dedent(f"""\
