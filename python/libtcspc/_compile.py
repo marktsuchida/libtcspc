@@ -38,7 +38,7 @@ class CompiledGraph:
         instantiator: Any,
         access_types: dict[str, type[Access]],
         param_struct: Any,
-        params: dict[str, tuple[str, Any]],
+        params: list[tuple[str, str, Any]],
     ) -> None:
         self._instantiator = instantiator
         self._access_types = access_types
@@ -149,16 +149,14 @@ def _compile_instantiator(
     )
 
 
-def _collect_params(graph: Graph) -> dict[str, tuple[str, Any]]:
+def _collect_params(graph: Graph) -> list[tuple[str, str, Any]]:
     params: list[tuple[str, str, Any]] = []
 
     def visit(name: str, node: Parameterized):
         params.extend(node.parameters())
 
     graph.visit_nodes(visit)
-    return dict(
-        (name, (cpp_type, default)) for name, cpp_type, default in params
-    )
+    return params
 
 
 def _collect_access_tags(graph: Graph) -> dict[str, type[Access]]:
@@ -202,7 +200,7 @@ def compile_graph(
         )
 
     params = _collect_params(graph)
-    param_types = ((name, type) for name, (type, default) in params.items())
+    param_types = ((name, cpp_type) for name, cpp_type, default in params)
     genctx = CodeGenerationContext("ctx", "params")
     code = graph.generate_cpp(genctx)
     param_struct, instantiator = _compile_instantiator(

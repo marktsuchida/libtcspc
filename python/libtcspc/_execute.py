@@ -144,7 +144,7 @@ def create_execution_context(
         graph.
     """
     args = arguments.copy()
-    for name, (_, default) in compiled_graph._params.items():
+    for name, _, default in compiled_graph._params:
         if name not in args.copy():
             if default is None:
                 raise ValueError(
