@@ -5,7 +5,7 @@
 from dataclasses import dataclass
 from typing import Any, Generic, TypeVar
 
-from libtcspc._cpp_utils import CppTypeName
+from libtcspc._cpp_utils import CppIdentifier, CppTypeName
 
 T = TypeVar("T")
 
@@ -16,7 +16,7 @@ class Param(Generic[T]):
     Placeholder for a run-time parameter in a processing graph.
     """
 
-    name: str
+    name: CppIdentifier
     default_value: T | None
 
 
@@ -31,14 +31,14 @@ class Parameterized:
     when creating an execution context from a compiled graph.
     """
 
-    def parameters(self) -> tuple[tuple[str, CppTypeName, Any], ...]:
+    def parameters(self) -> tuple[tuple[CppIdentifier, CppTypeName, Any], ...]:
         """
         Return the names, C++ types, and default values of the parameters of
         this object and any sub-objects.
 
         Returns
         -------
-        tuple[tuple[str, CppTypeName, Any], ...]
+        tuple[tuple[CppIdentifier, CppTypeName, Any], ...]
             Parameter names, C++ types, and default values (or None where no
             default is provided)
         """

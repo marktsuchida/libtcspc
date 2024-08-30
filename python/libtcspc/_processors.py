@@ -10,7 +10,7 @@ import cppyy
 from typing_extensions import override
 
 from . import _access, _bucket_sources, _cpp_utils, _events, _streams
-from ._cpp_utils import CppTypeName
+from ._cpp_utils import CppIdentifier, CppTypeName
 from ._data_types import DataTypes
 from ._events import EventType
 from ._graph import (
@@ -228,8 +228,8 @@ class ReadBinaryStream(OneToOneNode):
         return (_events.BucketEvent(self._event_type),)
 
     @override
-    def parameters(self) -> tuple[tuple[str, CppTypeName, Any], ...]:
-        params: list[tuple[str, CppTypeName, Any]] = []
+    def parameters(self) -> tuple[tuple[CppIdentifier, CppTypeName, Any], ...]:
+        params: list[tuple[CppIdentifier, CppTypeName, Any]] = []
         if isinstance(self._maxlen, Param):
             params.append(
                 (

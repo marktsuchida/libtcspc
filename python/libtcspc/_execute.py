@@ -10,6 +10,7 @@ import cppyy
 
 from ._access import Access, AccessTag
 from ._compile import CompiledGraph
+from ._cpp_utils import CppIdentifier
 
 cppyy.include("libtcspc_py/handle_span.hpp")
 
@@ -126,7 +127,8 @@ class ExecutionContext:
 
 
 def create_execution_context(
-    compiled_graph: CompiledGraph, arguments: dict[str, Any] | None = None
+    compiled_graph: CompiledGraph,
+    arguments: dict[CppIdentifier, Any] | None = None,
 ) -> ExecutionContext:
     """
     Create an execution context for a compiled graph.
@@ -135,7 +137,7 @@ def create_execution_context(
     ----------
     compiled_graph : CompiledGraph
         The compiled graph from which to instantiate the processor.
-    arguments : dict[str, Any]
+    arguments : dict[CppIdentifier, Any]
         The values that parameters should bind to.
 
     Returns

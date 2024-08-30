@@ -38,7 +38,7 @@ class CompiledGraph:
         instantiator: Any,
         access_types: Iterable[tuple[str, type[Access]]],
         param_struct: Any,
-        params: list[tuple[str, CppTypeName, Any]],
+        params: list[tuple[CppIdentifier, CppTypeName, Any]],
     ) -> None:
         self._instantiator = instantiator
         self._access_types = tuple(access_types)
@@ -50,9 +50,9 @@ class CompiledGraph:
 
 
 def _param_struct(
-    param_types: Iterable[tuple[str, CppTypeName]], ctr: int
-) -> tuple[str, str]:
-    tname = f"params_{ctr}"
+    param_types: Iterable[tuple[CppIdentifier, CppTypeName]], ctr: int
+) -> tuple[CppIdentifier, str]:
+    tname = CppIdentifier(f"params_{ctr}")
     fields = "\n".join(
         f"""\
                 {typ} {name};"""
@@ -89,9 +89,9 @@ def _instantiate_func(
     gencontext: CodeGenerationContext,
     event_types: Iterable[CppTypeName],
     ctr: int,
-) -> tuple[str, str]:
-    input_proc = f"input_processor_{ctr}"
-    fname = f"instantiate_graph_{ctr}"
+) -> tuple[CppIdentifier, str]:
+    input_proc = CppIdentifier(f"input_processor_{ctr}")
+    fname = CppIdentifier(f"instantiate_graph_{ctr}")
     handlers = "\n\n".join(
         f"""\
                 void handle(make_event_arg_t<{event_type}> event) {{
@@ -132,9 +132,9 @@ _cpp_name_counter = itertools.count()
 def _compile_instantiator(
     graph_code: str,
     gencontext: CodeGenerationContext,
-    param_types: Iterable[tuple[str, CppTypeName]],
+    param_types: Iterable[tuple[CppIdentifier, CppTypeName]],
     event_types: Iterable[CppTypeName],
-) -> tuple[str, Any]:
+) -> tuple[Any, Any]:
     ctr = next(_cpp_name_counter)
 
     struct_name, struct_code = _param_struct(param_types, ctr)
@@ -149,8 +149,10 @@ def _compile_instantiator(
     )
 
 
-def _collect_params(graph: Graph) -> list[tuple[str, CppTypeName, Any]]:
-    params: list[tuple[str, CppTypeName, Any]] = []
+def _collect_params(
+    graph: Graph,
+) -> list[tuple[CppIdentifier, CppTypeName, Any]]:
+    params: list[tuple[CppIdentifier, CppTypeName, Any]] = []
 
     def visit(node_name: str, node: Parameterized):
         params.extend(node.parameters())
@@ -158,7 +160,7 @@ def _collect_params(graph: Graph) -> list[tuple[str, CppTypeName, Any]]:
     graph.visit_nodes(visit)
 
     if len(params) > len(set(p for p, _, _ in params)):
-        param_nodes: dict[str, list[str]] = {}
+        param_nodes: dict[CppIdentifier, list[str]] = {}
 
         def visit(node_name: str, node: Parameterized):
             for param, _, _ in node.parameters():

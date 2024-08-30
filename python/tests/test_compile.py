@@ -12,7 +12,7 @@ from libtcspc._compile import (
     _collect_params,
     compile_graph,
 )
-from libtcspc._cpp_utils import CppTypeName
+from libtcspc._cpp_utils import CppIdentifier, CppTypeName
 from libtcspc._events import EventType
 from libtcspc._graph import Graph, OneToOneNode
 from libtcspc._processors import CheckMonotonic, Count, NullSink
@@ -23,9 +23,11 @@ IntEvent = EventType(CppTypeName("int"))
 def test_compile_collect_params_duplicate():
     class ParamNode(OneToOneNode):
         def __init__(self, param_name: str) -> None:
-            self._param_name = param_name
+            self._param_name = CppIdentifier(param_name)
 
-        def parameters(self) -> tuple[tuple[str, CppTypeName, Any], ...]:
+        def parameters(
+            self,
+        ) -> tuple[tuple[CppIdentifier, CppTypeName, Any], ...]:
             return ((self._param_name, CppTypeName("int"), None),)
 
     g = Graph()
