@@ -6,7 +6,7 @@
 import cppyy
 import pytest
 from cpp_utils import isolated_cppdef
-from libtcspc._cpp_utils import CppTypeName, CppVarName
+from libtcspc._cpp_utils import CppIdentifier, CppTypeName
 from libtcspc._events import EventType
 from libtcspc._graph import CodeGenerationContext, Graph, Node
 
@@ -19,7 +19,9 @@ ShortEvent = EventType(CppTypeName("short"))
 IntEvent = EventType(CppTypeName("int"))
 LongEvent = EventType(CppTypeName("long"))
 
-gencontext = CodeGenerationContext(CppVarName("ctx"), CppVarName("params"))
+gencontext = CodeGenerationContext(
+    CppIdentifier("ctx"), CppIdentifier("params")
+)
 
 
 def test_empty_graph():

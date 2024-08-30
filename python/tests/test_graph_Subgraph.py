@@ -4,12 +4,14 @@
 
 import cppyy
 from cpp_utils import isolated_cppdef
-from libtcspc._cpp_utils import CppVarName
+from libtcspc._cpp_utils import CppIdentifier
 from libtcspc._graph import CodeGenerationContext, Graph, Node, Subgraph
 
 cppyy.include("tuple")
 
-gencontext = CodeGenerationContext(CppVarName("ctx"), CppVarName("params"))
+gencontext = CodeGenerationContext(
+    CppIdentifier("ctx"), CppIdentifier("params")
+)
 
 
 def test_empty_subgraph():

@@ -13,7 +13,7 @@ import cppyy
 cppyy.include("type_traits")
 
 CppTypeName = typing.NewType("CppTypeName", str)
-CppVarName = typing.NewType("CppVarName", str)
+CppIdentifier = typing.NewType("CppIdentifier", str)
 
 _cpp_name_counter = itertools.count()
 
