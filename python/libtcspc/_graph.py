@@ -127,7 +127,7 @@ class Node(Accessible, Parameterized):
     def generate_cpp(
         self,
         gencontext: CodeGenerationContext,
-        downstreams: Sequence[str],
+        downstreams: Sequence[CppExpression],
     ) -> CppExpression:
         """
         Returns C++ code for this node and its downstreams.
@@ -219,7 +219,7 @@ class RelayNode(Node):
     def generate_cpp(
         self,
         gencontext: CodeGenerationContext,
-        downstreams: Sequence[str],
+        downstreams: Sequence[CppExpression],
     ) -> CppExpression:
         """
         Generates C++ code based on `relay_generate_cpp()`.
@@ -234,7 +234,7 @@ class RelayNode(Node):
     def relay_generate_cpp(
         self,
         gencontext: CodeGenerationContext,
-        downstream: str,
+        downstream: CppExpression,
     ) -> CppExpression:
         """
         Returns C++ code for this node and its downstream.
@@ -605,23 +605,25 @@ class Graph:
     def generate_cpp(
         self,
         gencontext: CodeGenerationContext,
-        downstreams: Sequence[str] | None = None,
+        downstreams: Sequence[CppExpression] | None = None,
     ) -> CppExpression:
         downstreams = downstreams if downstreams is not None else ()
-        external_names = [f"d{i}" for i in range(len(downstreams))]
-        external_name_index = {
+        external_names = [
+            CppIdentifier(f"d{i}") for i in range(len(downstreams))
+        ]
+        external_name_index: dict[tuple[int, int], CppIdentifier] = {
             (n, p): name
             for (n, p), name in zip(
                 self._outputs(), external_names, strict=True
             )
         }
-        internal_name_index: dict[tuple[int, int], str] = {}
+        internal_name_index: dict[tuple[int, int], CppIdentifier] = {}
         name_ctr = itertools.count()
         node_defs: list[str] = []
         for node_id in reversed(self._topo_sorted_node_ids):
             _, node = self._nodes[node_id]
 
-            outputs: list[str] = []
+            outputs: list[CppExpression] = []
             for i in range(len(node.outputs())):
                 edge = self._output_edge_index[node_id][i]
                 if edge is None:  # External downstream.
@@ -633,11 +635,11 @@ class Graph:
                     output = internal_name_index[
                         (edge.consumer_id, consumer_input_idx)
                     ]
-                outputs.append(f"std::move({output})")
+                outputs.append(CppExpression(f"std::move({output})"))
 
-            inputs: list[str] = []
+            inputs: list[CppIdentifier] = []
             for i in range(len(node.inputs())):
-                input = f"proc_{next(name_ctr)}"
+                input = CppIdentifier(f"proc_{next(name_ctr)}")
                 internal_name_index[(node_id, i)] = input
                 inputs.append(input)
 
@@ -649,12 +651,12 @@ class Graph:
                 node_defs.append(f"auto {inputs[0]} = {node_code};")
 
         input_refs = [
-            f"std::move({internal_name_index[node_input]})"
+            CppExpression(f"std::move({internal_name_index[node_input]})")
             for node_input in self._inputs()
         ]
         input_ref_list = ", ".join(input_refs)
         input_ref_maybe_tuple = (
-            f"std::tuple{{{input_ref_list}}}"
+            CppExpression(f"std::tuple{{{input_ref_list}}}")
             if len(input_refs) != 1
             else input_ref_list
         )
@@ -729,6 +731,6 @@ class Subgraph(Node):
     def generate_cpp(
         self,
         gencontext: CodeGenerationContext,
-        downstreams: Sequence[str],
+        downstreams: Sequence[CppExpression],
     ) -> CppExpression:
         return self._graph.generate_cpp(gencontext, downstreams)

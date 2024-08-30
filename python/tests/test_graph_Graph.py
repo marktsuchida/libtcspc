@@ -6,7 +6,7 @@
 import cppyy
 import pytest
 from cpp_utils import isolated_cppdef
-from libtcspc._cpp_utils import CppIdentifier, CppTypeName
+from libtcspc._cpp_utils import CppExpression, CppIdentifier, CppTypeName
 from libtcspc._events import EventType
 from libtcspc._graph import CodeGenerationContext, Graph, Node
 
@@ -48,7 +48,7 @@ def test_empty_graph():
     """)
 
     with pytest.raises(ValueError):
-        g.generate_cpp(gencontext, ["downstream"])
+        g.generate_cpp(gencontext, [CppExpression("downstream")])
 
 
 def test_single_node(mocker):
@@ -75,7 +75,7 @@ def test_single_node(mocker):
         return downstreams[0]
 
     node.generate_cpp = mocker.MagicMock(side_effect=node_codegen)  # type: ignore
-    code = g.generate_cpp(gencontext, ["std::move(dstream)"])
+    code = g.generate_cpp(gencontext, [CppExpression("std::move(dstream)")])
     # The generated lambda should return a single-element tuple whose element
     # was moved from 'ds'.
     ns = isolated_cppdef(f"""\
@@ -126,7 +126,7 @@ def test_two_nodes_two_inputs_two_outputs(mocker):
     node1.generate_cpp = mocker.MagicMock(side_effect=node1_codegen)  # type: ignore
     code = g.generate_cpp(
         gencontext,
-        ["std::move(ds0)", "std::move(ds1)"],
+        [CppExpression("std::move(ds0)"), CppExpression("std::move(ds1)")],
     )
     ns = isolated_cppdef(f"""\
         auto f() {{
@@ -182,7 +182,7 @@ def test_two_nodes_two_internal_edges(mocker):
 
     node0.generate_cpp = mocker.MagicMock(side_effect=node0_codegen)  # type: ignore
     node1.generate_cpp = mocker.MagicMock(side_effect=node1_codegen)  # type: ignore
-    code = g.generate_cpp(gencontext, ["std::move(ds)"])
+    code = g.generate_cpp(gencontext, [CppExpression("std::move(ds)")])
     ns = isolated_cppdef(f"""\
         auto f() {{
             auto ctx = tcspc::context::create();
@@ -219,7 +219,7 @@ def test_add_sequence(mocker):
     g.add_sequence([node0, node1])
     g.add_sequence([node2, node3], upstream="Node-1")
     g.add_sequence([node4], downstream=("Node-0", "input"))
-    code = g.generate_cpp(gencontext, ["std::move(ds)"])
+    code = g.generate_cpp(gencontext, [CppExpression("std::move(ds)")])
     ns = isolated_cppdef(f"""\
         auto f() {{
             auto ctx = tcspc::context::create();

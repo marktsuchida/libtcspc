@@ -4,7 +4,7 @@
 
 import cppyy
 from cpp_utils import isolated_cppdef
-from libtcspc._cpp_utils import CppIdentifier
+from libtcspc._cpp_utils import CppExpression, CppIdentifier
 from libtcspc._graph import CodeGenerationContext, Graph, Node, Subgraph
 
 cppyy.include("tuple")
@@ -70,7 +70,7 @@ def test_nested_subgraph(mocker):
     g1.add_node("sg0", sg0)
     sg1 = Subgraph(g1)
 
-    code = sg1.generate_cpp(gencontext, ["std::move(dstream)"])
+    code = sg1.generate_cpp(gencontext, [CppExpression("std::move(dstream)")])
     ns = isolated_cppdef(f"""\
         auto f() {{
             auto ctx = tcspc::context::create();

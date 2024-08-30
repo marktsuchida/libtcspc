@@ -116,7 +116,7 @@ class CheckMonotonic(TypePreservingRelayNode):
     def relay_generate_cpp(
         self,
         gencontext: CodeGenerationContext,
-        downstream: str,
+        downstream: CppExpression,
     ) -> CppExpression:
         return CppExpression(
             dedent(f"""\
@@ -142,7 +142,7 @@ class Count(TypePreservingRelayNode):
     def relay_generate_cpp(
         self,
         gencontext: CodeGenerationContext,
-        downstream: str,
+        downstream: CppExpression,
     ) -> CppExpression:
         return CppExpression(
             dedent(f"""\
@@ -180,7 +180,7 @@ class DecodeBHSPC(RelayNode):
     def relay_generate_cpp(
         self,
         gencontext: CodeGenerationContext,
-        downstream: str,
+        downstream: CppExpression,
     ) -> CppExpression:
         return CppExpression(
             dedent(f"""\
@@ -205,7 +205,7 @@ class NullSink(Node):
     def generate_cpp(
         self,
         gencontext: CodeGenerationContext,
-        downstreams: Sequence[str],
+        downstreams: Sequence[CppExpression],
     ) -> CppExpression:
         return CppExpression("tcspc::null_sink()")
 
@@ -261,7 +261,7 @@ class ReadBinaryStream(RelayNode):
     def relay_generate_cpp(
         self,
         gencontext: CodeGenerationContext,
-        downstream: str,
+        downstream: CppExpression,
     ) -> CppExpression:
         event = self._event_type.cpp_type
 
@@ -318,7 +318,7 @@ class SinkEvents(Node):
     def generate_cpp(
         self,
         gencontext: CodeGenerationContext,
-        downstreams: Sequence[str],
+        downstreams: Sequence[CppExpression],
     ) -> CppExpression:
         evts = ", ".join(t.cpp_type for t in self._event_types)
         return CppExpression(f"tcspc::sink_events<{evts}>()")
@@ -342,7 +342,7 @@ class Stop(RelayNode):
     def relay_generate_cpp(
         self,
         gencontext: CodeGenerationContext,
-        downstream: str,
+        downstream: CppExpression,
     ) -> CppExpression:
         prefix = _cpp_utils.quote_string(self._msg_prefix)
         return CppExpression(
@@ -378,7 +378,7 @@ class StopWithError(RelayNode):
     def relay_generate_cpp(
         self,
         gencontext: CodeGenerationContext,
-        downstream: str,
+        downstream: CppExpression,
     ) -> CppExpression:
         prefix = _cpp_utils.quote_string(self._msg_prefix)
         return CppExpression(
@@ -409,7 +409,7 @@ class Unbatch(RelayNode):
     def relay_generate_cpp(
         self,
         gencontext: CodeGenerationContext,
-        downstream: str,
+        downstream: CppExpression,
     ) -> CppExpression:
         return CppExpression(
             dedent(f"""\
