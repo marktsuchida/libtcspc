@@ -23,6 +23,7 @@ testing = [
     "numpy",
     "pytest >= 8.0",
     "pytest-mock >= 3.0",
+    "pytest-mypy >= 0.4",
 ]
 
 [tool.meson-python.args]
@@ -44,6 +45,7 @@ ignore = [
 ]
 
 [tool.mypy]
+mypy_path = ["$MYPY_CONFIG_FILE_DIR/python"]
 check_untyped_defs = true
 
 [[tool.mypy.overrides]]
@@ -60,3 +62,4 @@ filterwarnings = [
     # This warning comes from cppyy (as of 3.1.2).
     "ignore:pkg_resources is deprecated as an API:DeprecationWarning",
 ]
+addopts = ["--mypy"]
