@@ -10,6 +10,7 @@ import cppyy
 from typing_extensions import override
 
 from . import _access, _bucket_sources, _cpp_utils, _events, _streams
+from ._cpp_utils import CppTypeName
 from ._data_types import DataTypes
 from ._events import EventType
 from ._graph import (
@@ -53,9 +54,11 @@ def _remove_events_from_set(
     )
 
 
-def _make_type_list(event_types: Iterable[EventType]) -> str:
-    return "tcspc::type_list<{}>".format(
-        ", ".join(t.cpp_type for t in event_types)
+def _make_type_list(event_types: Iterable[EventType]) -> CppTypeName:
+    return CppTypeName(
+        "tcspc::type_list<{}>".format(
+            ", ".join(t.cpp_type for t in event_types)
+        )
     )
 
 
@@ -225,17 +228,21 @@ class ReadBinaryStream(OneToOneNode):
         return (_events.BucketEvent(self._event_type),)
 
     @override
-    def parameters(self) -> tuple[tuple[str, str, Any], ...]:
-        params: list[tuple[str, str, Any]] = []
+    def parameters(self) -> tuple[tuple[str, CppTypeName, Any], ...]:
+        params: list[tuple[str, CppTypeName, Any]] = []
         if isinstance(self._maxlen, Param):
             params.append(
-                (self._maxlen.name, "tcspc::u64", self._maxlen.default_value)
+                (
+                    self._maxlen.name,
+                    CppTypeName("tcspc::u64"),
+                    self._maxlen.default_value,
+                )
             )
         if isinstance(self._granularity, Param):
             params.append(
                 (
                     self._granularity.name,
-                    "std::size_t",
+                    CppTypeName("std::size_t"),
                     self._granularity.default_value,
                 )
             )

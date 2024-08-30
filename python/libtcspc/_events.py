@@ -5,6 +5,7 @@
 import cppyy
 
 from . import _cpp_utils
+from ._cpp_utils import CppTypeName
 from ._data_types import DataTypes
 
 cppyy.include("memory")
@@ -12,7 +13,7 @@ cppyy.include("vector")
 
 
 class EventType:
-    def __init__(self, cpp_type: str) -> None:
+    def __init__(self, cpp_type: CppTypeName) -> None:
         self._cpp_type = cpp_type
 
     def __repr__(self) -> str:
@@ -24,32 +25,36 @@ class EventType:
         )
 
     @property
-    def cpp_type(self) -> str:
+    def cpp_type(self) -> CppTypeName:
         return self._cpp_type
 
 
 class BucketEvent(EventType):
     def __init__(self, element_type: EventType) -> None:
-        super().__init__(f"tcspc::bucket<{element_type.cpp_type}>")
+        super().__init__(
+            CppTypeName(f"tcspc::bucket<{element_type.cpp_type}>")
+        )
 
 
 # Note: C++ event wrappers are ordered alphabetically without regard to the C++
 # header in which they are defined.
 
 
-BHSPCEvent = EventType("tcspc::bh_spc_event")
+BHSPCEvent = EventType(CppTypeName("tcspc::bh_spc_event"))
 
 
 def DataLostEvent(data_types: DataTypes | None = None) -> EventType:
     if data_types is None:
         data_types = DataTypes()
-    return EventType(f"tcspc::data_lost_event<{data_types.cpp()}>")
+    return EventType(
+        CppTypeName(f"tcspc::data_lost_event<{data_types.cpp()}>")
+    )
 
 
 def MarkerEvent(data_types: DataTypes | None = None) -> EventType:
     if data_types is None:
         data_types = DataTypes()
-    return EventType(f"tcspc::marker_event<{data_types.cpp()}>")
+    return EventType(CppTypeName(f"tcspc::marker_event<{data_types.cpp()}>"))
 
 
 def TimeCorrelatedDetectionEvent(
@@ -58,14 +63,18 @@ def TimeCorrelatedDetectionEvent(
     if data_types is None:
         data_types = DataTypes()
     return EventType(
-        f"tcspc::time_correlated_detection_event<{data_types.cpp()}>"
+        CppTypeName(
+            f"tcspc::time_correlated_detection_event<{data_types.cpp()}>"
+        )
     )
 
 
 def TimeReachedEvent(data_types: DataTypes | None = None) -> EventType:
     if data_types is None:
         data_types = DataTypes()
-    return EventType(f"tcspc::time_reached_event<{data_types.cpp()}>")
+    return EventType(
+        CppTypeName(f"tcspc::time_reached_event<{data_types.cpp()}>")
+    )
 
 
-WarningEvent = EventType("tcspc::warning_event")
+WarningEvent = EventType(CppTypeName("tcspc::warning_event"))

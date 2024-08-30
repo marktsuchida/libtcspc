@@ -5,6 +5,8 @@
 from dataclasses import dataclass
 from typing import Any, Generic, TypeVar
 
+from libtcspc._cpp_utils import CppTypeName
+
 T = TypeVar("T")
 
 
@@ -29,14 +31,14 @@ class Parameterized:
     when creating an execution context from a compiled graph.
     """
 
-    def parameters(self) -> tuple[tuple[str, str, Any], ...]:
+    def parameters(self) -> tuple[tuple[str, CppTypeName, Any], ...]:
         """
         Return the names, C++ types, and default values of the parameters of
         this object and any sub-objects.
 
         Returns
         -------
-        tuple[tuple[str, str, Any], ...]
+        tuple[tuple[str, CppTypeName, Any], ...]
             Parameter names, C++ types, and default values (or None where no
             default is provided)
         """

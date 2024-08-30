@@ -4,6 +4,7 @@
 
 import functools
 import itertools
+import typing
 from collections.abc import Iterable
 from textwrap import dedent
 
@@ -11,11 +12,13 @@ import cppyy
 
 cppyy.include("type_traits")
 
+CppTypeName = typing.NewType("CppTypeName", str)
+
 _cpp_name_counter = itertools.count()
 
 
 @functools.cache
-def _is_same_type_impl(t0: str, t1: str) -> bool:
+def _is_same_type_impl(t0: CppTypeName, t1: CppTypeName) -> bool:
     result_name = f"is_same_type_impl_{next(_cpp_name_counter)}"
     cppyy.cppdef(
         dedent(f"""\
@@ -26,7 +29,7 @@ def _is_same_type_impl(t0: str, t1: str) -> bool:
     return getattr(cppyy.gbl.tcspc.py.cpp_utils, result_name)
 
 
-def is_same_type(t0: str, t1: str) -> bool:
+def is_same_type(t0: CppTypeName, t1: CppTypeName) -> bool:
     if t0 == t1:
         return True
     # Always use ascending lexicographical order to minimize duplicate checks.
@@ -35,7 +38,7 @@ def is_same_type(t0: str, t1: str) -> bool:
     return _is_same_type_impl(t0, t1)
 
 
-def contains_type(s: Iterable[str], t: str) -> bool:
+def contains_type(s: Iterable[CppTypeName], t: CppTypeName) -> bool:
     return any(is_same_type(t, t1) for t1 in s)
 
 

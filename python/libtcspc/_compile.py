@@ -11,6 +11,7 @@ from typing import Any
 import cppyy
 
 from ._access import Access, Accessible
+from ._cpp_utils import CppTypeName
 from ._events import EventType
 from ._graph import CodeGenerationContext, Graph
 from ._param import Parameterized
@@ -37,7 +38,7 @@ class CompiledGraph:
         instantiator: Any,
         access_types: Iterable[tuple[str, type[Access]]],
         param_struct: Any,
-        params: list[tuple[str, str, Any]],
+        params: list[tuple[str, CppTypeName, Any]],
     ) -> None:
         self._instantiator = instantiator
         self._access_types = tuple(access_types)
@@ -148,8 +149,8 @@ def _compile_instantiator(
     )
 
 
-def _collect_params(graph: Graph) -> list[tuple[str, str, Any]]:
-    params: list[tuple[str, str, Any]] = []
+def _collect_params(graph: Graph) -> list[tuple[str, CppTypeName, Any]]:
+    params: list[tuple[str, CppTypeName, Any]] = []
 
     def visit(node_name: str, node: Parameterized):
         params.extend(node.parameters())
