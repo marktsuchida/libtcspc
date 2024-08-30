@@ -119,7 +119,6 @@ class Node(Accessible, Parameterized):
 
     def generate_cpp(
         self,
-        node_name: str,
         context_varname: str,
         params_varname: str,
         parameters: Mapping[str, str],
@@ -132,9 +131,6 @@ class Node(Accessible, Parameterized):
 
         Parameters
         ----------
-        node_name
-            The unique name of this node, optionally used for access tracker
-            naming.
         context_varname
             The context (C++ variable name).
         params_varname
@@ -214,7 +210,6 @@ class OneToOneNode(Node):
     @final
     def generate_cpp(
         self,
-        node_name: str,
         context_varname: str,
         params_varname: str,
         parameters: Mapping[str, str],
@@ -226,7 +221,6 @@ class OneToOneNode(Node):
                 f"expected a single downstream; found {n_downstreams}"
             )
         return self.generate_cpp_one_to_one(
-            node_name,
             context_varname,
             params_varname,
             parameters,
@@ -235,7 +229,6 @@ class OneToOneNode(Node):
 
     def generate_cpp_one_to_one(
         self,
-        node_name: str,
         context_varname: str,
         params_varname: str,
         parameters: Mapping[str, str],
@@ -249,9 +242,6 @@ class OneToOneNode(Node):
 
         Parameters
         ----------
-        node_name
-            The unique name of this node, optionally used for access tracker
-            naming.
         context_varname
             The context (C++ variable name).
         params_varname
@@ -616,7 +606,6 @@ class Graph:
 
     def generate_cpp(
         self,
-        name_prefix: str,
         context_varname: str,
         params_varname: str,
         parameters: Mapping[str, str] = {},
@@ -634,7 +623,7 @@ class Graph:
         name_ctr = itertools.count()
         node_defs: list[str] = []
         for node_id in reversed(self._topo_sorted_node_ids):
-            node_name, node = self._nodes[node_id]
+            _, node = self._nodes[node_id]
 
             outputs: list[str] = []
             for i in range(len(node.outputs())):
@@ -657,7 +646,6 @@ class Graph:
                 inputs.append(input)
 
             node_code = node.generate_cpp(
-                f"{name_prefix}/{node_name}",
                 context_varname,
                 params_varname,
                 parameters,
@@ -744,12 +732,11 @@ class Subgraph(Node):
     @override
     def generate_cpp(
         self,
-        node_name: str,
         context_varname: str,
         params_varname: str,
         parameters: Mapping[str, str],
         downstreams: Sequence[str],
     ) -> str:
         return self._graph.generate_cpp(
-            node_name, context_varname, params_varname, parameters, downstreams
+            context_varname, params_varname, parameters, downstreams
         )

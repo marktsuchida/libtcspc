@@ -111,7 +111,6 @@ class CheckMonotonic(OneToOnePassThroughNode):
     @override
     def generate_cpp_one_to_one(
         self,
-        node_name: str,
         context_varname: str,
         params_varname: str,
         parameters: Mapping[str, str],
@@ -138,7 +137,6 @@ class Count(OneToOnePassThroughNode):
     @override
     def generate_cpp_one_to_one(
         self,
-        node_name: str,
         context_varname: str,
         params_varname: str,
         parameters: Mapping[str, str],
@@ -176,7 +174,6 @@ class DecodeBHSPC(OneToOneNode):
     @override
     def generate_cpp_one_to_one(
         self,
-        node_name: str,
         context_varname: str,
         params_varname: str,
         parameters: Mapping[str, str],
@@ -202,7 +199,6 @@ class NullSink(Node):
     @override
     def generate_cpp(
         self,
-        node_name: str,
         context_varname: str,
         params_varname: str,
         parameters: Mapping[str, str],
@@ -257,7 +253,6 @@ class ReadBinaryStream(OneToOneNode):
     @override
     def generate_cpp_one_to_one(
         self,
-        node_name: str,
         context_varname: str,
         params_varname: str,
         parameters: Mapping[str, str],
@@ -313,7 +308,6 @@ class SinkEvents(Node):
     @override
     def generate_cpp(
         self,
-        node_name: str,
         context_varname: str,
         params_varname: str,
         parameters: Mapping[str, str],
@@ -340,7 +334,6 @@ class Stop(OneToOneNode):
     @override
     def generate_cpp_one_to_one(
         self,
-        node_name: str,
         context_varname: str,
         params_varname: str,
         parameters: Mapping[str, str],
@@ -377,7 +370,6 @@ class StopWithError(OneToOneNode):
     @override
     def generate_cpp_one_to_one(
         self,
-        node_name: str,
         context_varname: str,
         params_varname: str,
         parameters: Mapping[str, str],
@@ -409,7 +401,6 @@ class Unbatch(OneToOneNode):
     @override
     def generate_cpp_one_to_one(
         self,
-        node_name: str,
         context_varname: str,
         params_varname: str,
         parameters: Mapping[str, str],

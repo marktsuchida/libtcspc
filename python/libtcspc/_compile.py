@@ -210,7 +210,7 @@ def compile_graph(
     param_types = ((name, type) for name, (type, default) in params.items())
     params_var = "params"
     ctx_var = "ctx"
-    code = graph.generate_cpp("", ctx_var, params_var, param_exprs)
+    code = graph.generate_cpp(ctx_var, params_var, param_exprs)
     param_struct, instantiator = _compile_instantiator(
         code,
         ctx_var,
