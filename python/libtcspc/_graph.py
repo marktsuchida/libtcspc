@@ -272,8 +272,8 @@ class _Edge:
 
 def _update_topological_order(
     tsorted_nodes: list[int],
-    input_edges: dict[int, list[_Edge | None]],
-    output_edges: dict[int, list[_Edge | None]],
+    input_edges: Mapping[int, Sequence[_Edge | None]],
+    output_edges: Mapping[int, Sequence[_Edge | None]],
     new_edge: _Edge,
 ) -> None:
     # - 'nodes' is updated in place. The other arguments are not modified.

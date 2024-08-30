@@ -43,6 +43,9 @@ ignore = [
     "E501", # Line too long
 ]
 
+[tool.mypy]
+check_untyped_defs = true
+
 [[tool.mypy.overrides]]
 module = "libtcspc._version"
 ignore_missing_imports = true

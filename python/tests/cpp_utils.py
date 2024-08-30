@@ -4,13 +4,14 @@
 
 import itertools
 from textwrap import dedent
+from typing import Any
 
 import cppyy
 
 _cpp_name_counter = itertools.count()
 
 
-def isolated_cppdef(code: str):
+def isolated_cppdef(code: str) -> Any:
     # Run C++ code in a unique namespace and return the cppyy namespace object.
     ns = f"ns{next(_cpp_name_counter)}"
     code = dedent(f"""\

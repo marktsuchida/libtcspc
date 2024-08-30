@@ -65,7 +65,7 @@ def summarize(filename: str) -> int:
     return ret
 
 
-def main():
+def main() -> int:
     if len(sys.argv) != 2:
         print("A single argument (the filename) is required", file=sys.stderr)
         return 1

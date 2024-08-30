@@ -126,7 +126,7 @@ class ExecutionContext:
 
 
 def create_execution_context(
-    compiled_graph: CompiledGraph, arguments: dict[str, Any]
+    compiled_graph: CompiledGraph, arguments: dict[str, Any] | None = None
 ) -> ExecutionContext:
     """
     Create an execution context for a compiled graph.
@@ -135,6 +135,8 @@ def create_execution_context(
     ----------
     compiled_graph : CompiledGraph
         The compiled graph from which to instantiate the processor.
+    arguments : dict[str, Any]
+        The values that parameters should bind to.
 
     Returns
     -------
@@ -147,7 +149,7 @@ def create_execution_context(
         If there was an error while initializing the instantiated processing
         graph.
     """
-    args = arguments.copy()
+    args = {} if arguments is None else arguments.copy()
     for name, _, default in compiled_graph._params:
         if name not in args.copy():
             if default is None:

@@ -117,11 +117,15 @@ def test_pearce_kelly_2007_example():
     edge_ya = _Edge(y, a, ())
     edge_ac = _Edge(a, c, ())
     edge_bx = _Edge(b, x, ())
-    input_edges = {i: (None,) for i in range(13)}
+    input_edges: dict[int, tuple[_Edge | None]] = {
+        i: (None,) for i in range(13)
+    }
     input_edges[a] = (edge_ya,)
     input_edges[c] = (edge_ac,)
     input_edges[x] = (edge_bx,)
-    output_edges = {i: (None,) for i in range(13)}
+    output_edges: dict[int, tuple[_Edge | None]] = {
+        i: (None,) for i in range(13)
+    }
     output_edges[y] = (edge_ya,)
     output_edges[a] = (edge_ac,)
     output_edges[b] = (edge_bx,)

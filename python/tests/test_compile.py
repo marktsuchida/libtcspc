@@ -17,6 +17,8 @@ from libtcspc._events import EventType
 from libtcspc._graph import Graph, OneToOneNode
 from libtcspc._processors import CheckMonotonic, Count, NullSink
 
+IntEvent = EventType(CppTypeName("int"))
+
 
 def test_compile_collect_params_duplicate():
     class ParamNode(OneToOneNode):
@@ -37,10 +39,10 @@ def test_compile_collect_params_duplicate():
 
 def test_compile_collect_access_tags_duplicate():
     g = Graph()
-    g.add_node("a", Count(EventType("int"), AccessTag("hello")))
-    g.add_node("b", Count(EventType("int"), AccessTag("world")))
+    g.add_node("a", Count(IntEvent, AccessTag("hello")))
+    g.add_node("b", Count(IntEvent, AccessTag("world")))
     assert len(_collect_access_tags(g)) == 2
-    g.add_node("c", Count(EventType("int"), AccessTag("hello")))
+    g.add_node("c", Count(IntEvent, AccessTag("hello")))
     with pytest.raises(ValueError, match="tag.*hello"):
         _collect_access_tags(g)
 
@@ -76,7 +78,7 @@ def test_compile_graph_with_single_input_allowed():
 
 def test_compile_node_access():
     g = Graph()
-    counter = Count(EventType("int"), AccessTag("counter"))
+    counter = Count(IntEvent, AccessTag("counter"))
     g.add_node("c", counter)
     g.add_node("s", NullSink(), upstream="c")
     cg = compile_graph(g)
