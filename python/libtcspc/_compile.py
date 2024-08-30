@@ -5,7 +5,6 @@
 import functools
 import itertools
 from collections.abc import Iterable
-from copy import deepcopy
 from textwrap import dedent
 from typing import Any
 
@@ -36,17 +35,17 @@ class CompiledGraph:
     def __init__(
         self,
         instantiator: Any,
-        access_types: dict[str, type[Access]],
+        access_types: Iterable[tuple[str, type[Access]]],
         param_struct: Any,
         params: list[tuple[str, str, Any]],
     ) -> None:
         self._instantiator = instantiator
-        self._access_types = access_types
+        self._access_types = tuple(access_types)
         self._param_struct = param_struct
         self._params = params
 
-    def access_types(self) -> dict[str, type[Access]]:
-        return deepcopy(self._access_types)
+    def access_types(self) -> tuple[tuple[str, type[Access]], ...]:
+        return self._access_types
 
 
 def _param_struct(
@@ -159,14 +158,14 @@ def _collect_params(graph: Graph) -> list[tuple[str, str, Any]]:
     return params
 
 
-def _collect_access_tags(graph: Graph) -> dict[str, type[Access]]:
+def _collect_access_tags(graph: Graph) -> list[tuple[str, type[Access]]]:
     accesses: list[tuple[str, type[Access]]] = []
 
     def visit(name: str, node: Accessible):
         accesses.extend(node.accesses())
 
     graph.visit_nodes(visit)
-    return dict(accesses)
+    return accesses
 
 
 def compile_graph(

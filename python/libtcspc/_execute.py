@@ -2,6 +2,7 @@
 # Copyright 2019-2024 Board of Regents of the University of Wisconsin System
 # SPDX-License-Identifier: MIT
 
+from collections.abc import Sequence
 from contextlib import contextmanager
 from typing import Any
 
@@ -37,11 +38,14 @@ class ExecutionContext:
     """
 
     def __init__(
-        self, cpp_context, cpp_proc, access_types: dict[str, type[Access]]
+        self,
+        cpp_context,
+        cpp_proc,
+        access_types: Sequence[tuple[str, type[Access]]],
     ) -> None:
         self._ctx = cpp_context
         self._proc = cpp_proc
-        self._access_types = access_types
+        self._access_types = dict(access_types)
         self._end_of_life_reason: str | None = None
 
     def access(self, tag: str | AccessTag) -> Any:
