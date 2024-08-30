@@ -122,7 +122,7 @@ class ExecutionContext:
 
 
 def create_execution_context(
-    compiled_graph: CompiledGraph,
+    compiled_graph: CompiledGraph, arguments: dict[str, Any]
 ) -> ExecutionContext:
     """
     Create an execution context for a compiled graph.
@@ -143,10 +143,22 @@ def create_execution_context(
         If there was an error while initializing the instantiated processing
         graph.
     """
+    args = arguments.copy()
+    for name, (_, default) in compiled_graph._params.items():
+        if name not in args.copy():
+            if default is None:
+                raise ValueError(
+                    f"No value given for required parameter {name}"
+                )
+            args[name] = default
+
+    arg_struct = compiled_graph._param_struct()
+    for name, value in args.items():
+        setattr(arg_struct, name, value)
 
     context = cppyy.gbl.tcspc.context.create()
+    processor = compiled_graph._instantiator(context, arg_struct)
 
-    processor = compiled_graph._instantiate(context)
     # handle() and flush() are wrapped by the CompiledGraph so that they
     # are overload sets, not template proxies.
     if hasattr(processor, "handle"):

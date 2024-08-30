@@ -14,6 +14,7 @@ import cppyy
 from ._access import Access, Accessible
 from ._events import EventType
 from ._graph import Graph
+from ._param import Parameterized
 
 cppyy.include("libtcspc/tcspc.hpp")
 
@@ -33,17 +34,36 @@ class CompiledGraph:
     """
 
     def __init__(
-        self, instantiator: Any, access_types: dict[str, type[Access]]
+        self,
+        instantiator: Any,
+        access_types: dict[str, type[Access]],
+        param_struct: Any,
+        params: dict[str, tuple[str, Any]],
     ) -> None:
         self._instantiator = instantiator
         self._access_types = access_types
-
-    def _instantiate(self, cpp_context) -> Any:
-        # TODO Not in API but called by ExecutionContext.
-        return self._instantiator(cpp_context)
+        self._param_struct = param_struct
+        self._params = params
 
     def access_types(self) -> dict[str, type[Access]]:
         return deepcopy(self._access_types)
+
+
+def _param_struct(
+    param_types: Iterable[tuple[str, str]], ctr: int
+) -> tuple[str, str]:
+    tname = f"params_{ctr}"
+    fields = "\n".join(
+        f"""\
+                {typ} {name};"""
+        for name, typ in param_types
+    ).lstrip()
+    return tname, dedent(f"""\
+        namespace tcspc::py::compile {{
+            struct {tname} {{
+                {fields}
+            }};
+        }}""")
 
 
 cppyy.cppdef(
@@ -67,6 +87,7 @@ cppyy.cppdef(
 def _instantiate_func(
     graph_code: str,
     context_varname: str,
+    params_varname: str,
     event_types: Iterable[str],
     ctr: int,
 ) -> tuple[str, str]:
@@ -93,7 +114,8 @@ def _instantiate_func(
                 void flush() {{ downstream.flush(); }}
             }};
 
-            auto {fname}(std::shared_ptr<tcspc::context> {context_varname}) {{
+            auto {fname}(std::shared_ptr<tcspc::context> {context_varname},
+                         params_{ctr} const &{params_varname}) {{
                 return {input_proc}({graph_code});
             }}
         }}""")
@@ -109,14 +131,38 @@ _cpp_name_counter = itertools.count()
 # and returns the processor.
 @functools.cache
 def _compile_instantiator(
-    graph_code: str, context_varname: str, event_types: Iterable[str]
-) -> Any:
+    graph_code: str,
+    context_varname: str,
+    params_varname: str,
+    param_types: Iterable[tuple[str, str]],
+    event_types: Iterable[str],
+) -> tuple[str, Any]:
     ctr = next(_cpp_name_counter)
+
+    struct_name, struct_code = _param_struct(param_types, ctr)
+    cppyy.cppdef(struct_code)
+
     fname, code = _instantiate_func(
-        graph_code, context_varname, event_types, ctr
+        graph_code, context_varname, params_varname, event_types, ctr
     )
     cppyy.cppdef(code)
-    return getattr(cppyy.gbl.tcspc.py.compile, fname)
+
+    return (
+        getattr(cppyy.gbl.tcspc.py.compile, struct_name),
+        getattr(cppyy.gbl.tcspc.py.compile, fname),
+    )
+
+
+def _collect_params(graph: Graph) -> dict[str, tuple[str, Any]]:
+    params: list[tuple[str, str, Any]] = []
+
+    def visit(name: str, node: Parameterized):
+        params.extend(node.parameters())
+
+    graph.visit_nodes(visit)
+    return dict(
+        (name, (cpp_type, default)) for name, cpp_type, default in params
+    )
 
 
 def _collect_access_tags(graph: Graph) -> dict[str, type[Access]]:
@@ -158,10 +204,19 @@ def compile_graph(
         raise ValueError(
             f"graph is not executable (must have no output ports; found {n_out})"
         )
+
+    params = _collect_params(graph)
+    param_exprs = dict((name, f"params.{name}") for name in params)
+    param_types = ((name, type) for name, (type, default) in params.items())
+    params_var = "params"
     ctx_var = "ctx"
-    code = graph.generate_cpp("", ctx_var)
-    instantiator = _compile_instantiator(
-        code, ctx_var, (e.cpp_type for e in input_event_types)
+    code = graph.generate_cpp("", ctx_var, params_var, param_exprs)
+    param_struct, instantiator = _compile_instantiator(
+        code,
+        ctx_var,
+        params_var,
+        param_types,
+        (e.cpp_type for e in input_event_types),
     )
     access_types = _collect_access_tags(graph)
-    return CompiledGraph(instantiator, access_types)
+    return CompiledGraph(instantiator, access_types, param_struct, params)

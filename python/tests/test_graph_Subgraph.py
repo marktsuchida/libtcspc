@@ -17,10 +17,13 @@ def test_empty_subgraph():
 
     assert sg.map_event_sets([]) == ()
 
-    code = sg.generate_cpp("empty_sg", "ctx", [])
+    code = sg.generate_cpp("empty_sg", "ctx", "params", {}, [])
     isolated_cppdef(f"""\
-        auto ctx = tcspc::context::create();
-        std::tuple<> t = {code};
+        void f() {{
+            auto ctx = tcspc::context::create();
+            auto params = 0;
+            std::tuple<> t = {code};
+        }}
     """)
 
 
@@ -45,7 +48,7 @@ def test_input_output_map():
 def test_nested_subgraph(mocker):
     node = Node()
 
-    def node_codegen(name, context, downstreams):
+    def node_codegen(name, cvar, pvar, params, downstreams):
         assert len(downstreams) == 1
         return downstreams[0]
 
@@ -62,11 +65,16 @@ def test_nested_subgraph(mocker):
     g1.add_node("sg0", sg0)
     sg1 = Subgraph(g1)
 
-    code = sg1.generate_cpp("sg1", "ctx", ["std::move(dstream)"])
+    code = sg1.generate_cpp("sg1", "ctx", "params", {}, ["std::move(dstream)"])
     ns = isolated_cppdef(f"""\
-        auto ctx = tcspc::context::create();
-        int dstream = 42;
-        auto proc = {code};
-        static_assert(std::is_same_v<decltype(proc), int>);
+        auto f() {{
+            auto ctx = tcspc::context::create();
+            auto params = 0;
+            int dstream = 42;
+            auto proc = {code};
+            static_assert(std::is_same_v<decltype(proc), int>);
+            return proc;
+        }}
+        auto proc = f();
     """)
     assert ns.proc == 42

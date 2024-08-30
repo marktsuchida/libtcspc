@@ -14,12 +14,13 @@ from typing_extensions import override
 
 from ._access import Accessible
 from ._events import EventType
+from ._param import Parameterized
 
 cppyy.include("tuple")
 cppyy.include("utility")
 
 
-class Node(Accessible):
+class Node(Accessible, Parameterized):
     """
     Base class for a processing graph node.
 
@@ -117,7 +118,12 @@ class Node(Accessible):
         raise NotImplementedError()
 
     def generate_cpp(
-        self, node_name: str, context: str, downstreams: Sequence[str]
+        self,
+        node_name: str,
+        context_varname: str,
+        params_varname: str,
+        parameters: Mapping[str, str],
+        downstreams: Sequence[str],
     ) -> str:
         """
         Returns C++ code for this node and its downstreams.
@@ -129,9 +135,12 @@ class Node(Accessible):
         node_name
             The unique name of this node, optionally used for access tracker
             naming.
-        context
-            The context (C++ lvalue reference to
-            ``std::shared_ptr<tcspc::context>``).
+        context_varname
+            The context (C++ variable name).
+        params_varname
+            Parameterization data (C++ variable name)
+        parameters
+            The C++ expression for each named parameter.
         downstreams
             For each output port, the C++ code representing an rvalue reference
             to the downstream.
@@ -204,17 +213,33 @@ class OneToOneNode(Node):
     @override
     @final
     def generate_cpp(
-        self, node_name: str, context: str, downstreams: Sequence[str]
+        self,
+        node_name: str,
+        context_varname: str,
+        params_varname: str,
+        parameters: Mapping[str, str],
+        downstreams: Sequence[str],
     ) -> str:
         n_downstreams = len(downstreams)
         if n_downstreams != 1:
             raise ValueError(
                 f"expected a single downstream; found {n_downstreams}"
             )
-        return self.generate_cpp_one_to_one(node_name, context, downstreams[0])
+        return self.generate_cpp_one_to_one(
+            node_name,
+            context_varname,
+            params_varname,
+            parameters,
+            downstreams[0],
+        )
 
     def generate_cpp_one_to_one(
-        self, node_name: str, context: str, downstream: str
+        self,
+        node_name: str,
+        context_varname: str,
+        params_varname: str,
+        parameters: Mapping[str, str],
+        downstream: str,
     ) -> str:
         """
         Returns C++ code for this node and its downstream.
@@ -227,9 +252,12 @@ class OneToOneNode(Node):
         node_name
             The unique name of this node, optionally used for access tracker
             naming.
-        context
-            The context (C++ lvalue reference to
-            ``std::shared_ptr<tcspc::context>``).
+        context_varname
+            The context (C++ variable name).
+        params_varname
+            Parameterization data (C++ variable name).
+        parameters
+            The C++ expression for each named parameter.
         downstream
             The C++ code representing an rvalue reference ot the downstream.
 
@@ -589,7 +617,9 @@ class Graph:
     def generate_cpp(
         self,
         name_prefix: str,
-        context: str,
+        context_varname: str,
+        params_varname: str,
+        parameters: Mapping[str, str] = {},
         downstreams: Sequence[str] | None = None,
     ) -> str:
         downstreams = downstreams if downstreams is not None else ()
@@ -627,7 +657,11 @@ class Graph:
                 inputs.append(input)
 
             node_code = node.generate_cpp(
-                f"{name_prefix}/{node_name}", "ctx", outputs
+                f"{name_prefix}/{node_name}",
+                context_varname,
+                params_varname,
+                parameters,
+                outputs,
             )
             if len(inputs) > 1:
                 input_list = ", ".join(inputs)
@@ -650,7 +684,7 @@ class Graph:
         downstream_args = ", ".join(downstreams)
         node_def_lines = "\n".join(node_defs)
         return dedent(f"""\
-            [ctx = {context}]({external_name_params}) {{
+            [{context_varname}, &{params_varname}]({external_name_params}) {{
                 {node_def_lines}
                 return {input_ref_maybe_tuple};
             }}({downstream_args})""")
@@ -709,6 +743,13 @@ class Subgraph(Node):
 
     @override
     def generate_cpp(
-        self, node_name: str, context: str, downstreams: Sequence[str]
+        self,
+        node_name: str,
+        context_varname: str,
+        params_varname: str,
+        parameters: Mapping[str, str],
+        downstreams: Sequence[str],
     ) -> str:
-        return self._graph.generate_cpp(node_name, context, downstreams)
+        return self._graph.generate_cpp(
+            node_name, context_varname, params_varname, parameters, downstreams
+        )

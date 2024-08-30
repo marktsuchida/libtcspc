@@ -19,7 +19,7 @@ cppyy.include("string")
 def test_execute_graph_with_single_input():
     g = Graph()
     g.add_node("a", NullSink())
-    c = create_execution_context(compile_graph(g, (EventType("int"),)))
+    c = create_execution_context(compile_graph(g, (EventType("int"),)), {})
     c.handle(123)
     c.flush()
 
@@ -28,7 +28,7 @@ def test_execute_node_access():
     g = Graph()
     g.add_node("c", Count(EventType("int"), AccessTag("counter")))
     g.add_node("a", NullSink(), upstream="c")
-    c = create_execution_context(compile_graph(g, (EventType("int"),)))
+    c = create_execution_context(compile_graph(g, (EventType("int"),)), {})
     c.handle(123)
     c.flush()
     assert c.access("counter").count() == 1
@@ -37,7 +37,7 @@ def test_execute_node_access():
 def test_execute_rejects_events_and_flush_when_expired():
     g = Graph()
     g.add_node("a", NullSink())
-    c = create_execution_context(compile_graph(g, (EventType("int"),)))
+    c = create_execution_context(compile_graph(g, (EventType("int"),)), {})
     c.flush()
     with pytest.raises(RuntimeError):
         c.handle(123)
@@ -50,7 +50,10 @@ def test_execute_handles_buffer_events():
     g.add_node("a", NullSink())
     # 'const' not required for span
     c = create_execution_context(
-        compile_graph(g, [EventType("span<u8 const>"), EventType("span<i16>")])
+        compile_graph(
+            g, [EventType("span<u8 const>"), EventType("span<i16>")]
+        ),
+        {},
     )
     c.handle(b"")
     c.handle(b"abc")

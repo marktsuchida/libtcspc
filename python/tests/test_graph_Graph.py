@@ -27,16 +27,19 @@ def test_empty_graph():
     with pytest.raises(ValueError):
         g.map_event_sets([EventType("int")])
 
-    code = g.generate_cpp("g", "ctx", [])
+    code = g.generate_cpp("g", "ctx", "params")
     # An empty graph has no inputs, so generates a lambda that returns an empty
     # tuple. Assignment should succeed.
     isolated_cppdef(f"""\
-        auto ctx = tcspc::context::create();
-        std::tuple<> t = {code};
+        void f() {{
+            auto ctx = tcspc::context::create();
+            auto params = 0;
+            std::tuple<> t = {code};
+        }}
     """)
 
     with pytest.raises(ValueError):
-        g.generate_cpp("g", "ctx", ["downstream"])
+        g.generate_cpp("g", "ctx", "params", {}, ["downstream"])
 
 
 def test_single_node(mocker):
@@ -58,21 +61,26 @@ def test_single_node(mocker):
     node.map_event_sets.assert_called_with([(EventType("int"),)])
 
     with pytest.raises(ValueError):
-        g.generate_cpp("g", "ctx", [])
+        g.generate_cpp("g", "ctx", "params", {}, [])
 
-    def node_codegen(name, context, downstreams):
+    def node_codegen(name, cvar, pvar, params, downstreams):
         assert len(downstreams) == 1
         return downstreams[0]
 
     node.generate_cpp = mocker.MagicMock(side_effect=node_codegen)
-    code = g.generate_cpp("g", "ctx", ["std::move(dstream)"])
+    code = g.generate_cpp("g", "ctx", "params", {}, ["std::move(dstream)"])
     # The generated lambda should return a single-element tuple whose element
     # was moved from 'ds'.
     ns = isolated_cppdef(f"""\
-        auto ctx = tcspc::context::create();
-        int dstream = 42; // Fake the downstream processor with int
-        auto proc = {code};
-        static_assert(std::is_same_v<decltype(proc), int>);
+        auto f() {{
+            auto ctx = tcspc::context::create();
+            auto params = 0;
+            int dstream = 42; // Fake the downstream processor with int
+            auto proc = {code};
+            static_assert(std::is_same_v<decltype(proc), int>);
+            return proc;
+        }}
+        auto proc = f();
     """)
     assert ns.proc == 42
 
@@ -101,26 +109,33 @@ def test_two_nodes_two_inputs_two_outputs(mocker):
     node0.map_event_sets.assert_called_with([(), ()])
     node1.map_event_sets.assert_called_with([(EventType("int"),)])
 
-    def node0_codegen(name, context, downstreams):
+    def node0_codegen(name, cvar, pvar, params, downstreams):
         assert len(downstreams) == 1
         return f"std::tuple{{2 * {downstreams[0]}, 123}}"
 
-    def node1_codegen(name, context, downstreams):
+    def node1_codegen(name, cvar, pvar, params, downstreams):
         assert len(downstreams) == 2
         return f"5 * ({downstreams[0]} + {downstreams[1]})"
 
     node0.generate_cpp = mocker.MagicMock(side_effect=node0_codegen)
     node1.generate_cpp = mocker.MagicMock(side_effect=node1_codegen)
-    code = g.generate_cpp("g", "ctx", ["std::move(ds0)", "std::move(ds1)"])
+    code = g.generate_cpp(
+        "g", "ctx", "params", {}, ["std::move(ds0)", "std::move(ds1)"]
+    )
     ns = isolated_cppdef(f"""\
-        auto ctx = tcspc::context::create();
-        int ds0 = 42, ds1 = 43;
-        auto [p0, p1] = {code};
-        static_assert(std::is_same_v<decltype(p0), int>);
-        static_assert(std::is_same_v<decltype(p1), int>);
-        // Work around structured binding limitations:
-        auto proc0 = p0;
-        auto proc1 = p1;
+        auto f() {{
+            auto ctx = tcspc::context::create();
+            auto params = 0;
+            int ds0 = 42, ds1 = 43;
+            auto [p0, p1] = {code};
+            static_assert(std::is_same_v<decltype(p0), int>);
+            static_assert(std::is_same_v<decltype(p1), int>);
+            // Work around structured binding limitations:
+            return std::tuple(p0, p1);
+        }}
+        auto procs = f();
+        auto proc0 = std::get<0>(procs);
+        auto proc1 = std::get<1>(procs);
     """)
     assert ns.proc0 == 2 * (5 * (42 + 43))
     assert ns.proc1 == 123
@@ -155,28 +170,33 @@ def test_two_nodes_two_internal_edges(mocker):
         [(EventType("long"),), (EventType("short"),)]
     )
 
-    def node0_codegen(name, context, downstreams):
+    def node0_codegen(name, cvar, pvar, params, downstreams):
         assert len(downstreams) == 2
         return f"{downstreams[0]} + {downstreams[1]}"
 
-    def node1_codegen(name, context, downstreams):
+    def node1_codegen(name, cvar, pvar, params, downstreams):
         assert len(downstreams) == 1
         return f"std::tuple{{2 * {downstreams[0]}, 123}}"
 
     node0.generate_cpp = mocker.MagicMock(side_effect=node0_codegen)
     node1.generate_cpp = mocker.MagicMock(side_effect=node1_codegen)
-    code = g.generate_cpp("g", "ctx", ["std::move(ds)"])
+    code = g.generate_cpp("g", "ctx", "params", {}, ["std::move(ds)"])
     ns = isolated_cppdef(f"""\
-        auto ctx = tcspc::context::create();
-        int ds = 42;
-        auto proc = {code};
-        static_assert(std::is_same_v<decltype(proc), int>);
+        auto f() {{
+            auto ctx = tcspc::context::create();
+            auto params = 0;
+            int ds = 42;
+            auto proc = {code};
+            static_assert(std::is_same_v<decltype(proc), int>);
+            return proc;
+        }}
+        auto proc = f();
     """)
     assert ns.proc == 2 * 42 + 123
 
 
 def make_simple_node(mocker):
-    def node_codegen(name, context, downstreams):
+    def node_codegen(name, cvar, pvar, params, downstreams):
         assert len(downstreams) == 1
         return downstreams[0]
 
@@ -197,12 +217,17 @@ def test_add_sequence(mocker):
     g.add_sequence([node0, node1])
     g.add_sequence([node2, node3], upstream="Node-1")
     g.add_sequence([node4], downstream=("Node-0", "input"))
-    code = g.generate_cpp("g", "ctx", ["std::move(ds)"])
+    code = g.generate_cpp("g", "ctx", "params", {}, ["std::move(ds)"])
     ns = isolated_cppdef(f"""\
-        auto ctx = tcspc::context::create();
-        int ds = 42;
-        auto proc = {code};
-        static_assert(std::is_same_v<decltype(proc), int>);
+        auto f() {{
+            auto ctx = tcspc::context::create();
+            auto params = 0;
+            int ds = 42;
+            auto proc = {code};
+            static_assert(std::is_same_v<decltype(proc), int>);
+            return proc;
+        }}
+        auto proc = f();
     """)
     assert ns.proc == 42
 

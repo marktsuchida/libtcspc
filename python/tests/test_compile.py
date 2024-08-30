@@ -36,7 +36,7 @@ def test_compile_graph_with_single_input_allowed():
     g = Graph()
     g.add_node("a", NullSink())
     cg = compile_graph(g)
-    p = cg._instantiate(cppyy.gbl.tcspc.context.create())
+    p = cg._instantiator(cppyy.gbl.tcspc.context.create(), cg._param_struct())
     p.flush()
 
 

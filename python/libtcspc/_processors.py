@@ -2,9 +2,9 @@
 # Copyright 2019-2024 Board of Regents of the University of Wisconsin System
 # SPDX-License-Identifier: MIT
 
-from collections.abc import Collection, Iterable, Sequence
+from collections.abc import Collection, Iterable, Mapping, Sequence
 from textwrap import dedent
-from typing import final
+from typing import Any, final
 
 import cppyy
 from typing_extensions import override
@@ -19,6 +19,7 @@ from ._graph import (
     OneToOnePassThroughNode,
     Subgraph,
 )
+from ._param import Param
 
 cppyy.include("libtcspc/tcspc.hpp")
 
@@ -109,7 +110,12 @@ class CheckMonotonic(OneToOnePassThroughNode):
 
     @override
     def generate_cpp_one_to_one(
-        self, node_name: str, context: str, downstream: str
+        self,
+        node_name: str,
+        context_varname: str,
+        params_varname: str,
+        parameters: Mapping[str, str],
+        downstream: str,
     ) -> str:
         return dedent(f"""\
             tcspc::check_monotonic<{self._data_types.cpp()}>(
@@ -131,11 +137,16 @@ class Count(OneToOnePassThroughNode):
 
     @override
     def generate_cpp_one_to_one(
-        self, node_name: str, context: str, downstream: str
+        self,
+        node_name: str,
+        context_varname: str,
+        params_varname: str,
+        parameters: Mapping[str, str],
+        downstream: str,
     ) -> str:
         return dedent(f"""\
             tcspc::count<{self._event_type.cpp_type}>(
-                {context}->tracker<tcspc::count_access>("{self._access_tag}"),
+                {context_varname}->tracker<tcspc::count_access>("{self._access_tag}"),
                 {downstream}
             )""")
 
@@ -164,7 +175,12 @@ class DecodeBHSPC(OneToOneNode):
 
     @override
     def generate_cpp_one_to_one(
-        self, node_name: str, context: str, downstream: str
+        self,
+        node_name: str,
+        context_varname: str,
+        params_varname: str,
+        parameters: Mapping[str, str],
+        downstream: str,
     ) -> str:
         return dedent(f"""\
             tcspc::decode_bh_spc<{self._data_types.cpp()}>(
@@ -185,7 +201,12 @@ class NullSink(Node):
 
     @override
     def generate_cpp(
-        self, node_name: str, context: str, downstreams: Sequence[str]
+        self,
+        node_name: str,
+        context_varname: str,
+        params_varname: str,
+        parameters: Mapping[str, str],
+        downstreams: Sequence[str],
     ) -> str:
         return "tcspc::null_sink()"
 
@@ -196,9 +217,9 @@ class ReadBinaryStream(OneToOneNode):
         self,
         event_type: EventType,
         stream: _streams.InputStream,
-        max_length: int,
+        max_length: int | Param[int],
         buffer_provider: _bucket_sources.BucketSource,
-        read_granularity_bytes: int,
+        read_granularity_bytes: int | Param[int],
     ):
         self._event_type = event_type
         self._stream = stream
@@ -214,21 +235,58 @@ class ReadBinaryStream(OneToOneNode):
         return (_events.BucketEvent(self._event_type),)
 
     @override
+    def parameters(self) -> tuple[tuple[str, str, Any], ...]:
+        params: list[tuple[str, str, Any]] = []
+        if isinstance(self._maxlen, Param):
+            params.append(
+                (self._maxlen.name, "tcspc::u64", self._maxlen.default_value)
+            )
+        if isinstance(self._granularity, Param):
+            params.append(
+                (
+                    self._granularity.name,
+                    "std::size_t",
+                    self._granularity.default_value,
+                )
+            )
+        # TODO
+        # params.extend(self._stream.parameters())
+        # params.extend(self._bucket_source.parameters())
+        return tuple(params)
+
+    @override
     def generate_cpp_one_to_one(
-        self, node_name: str, context: str, downstream: str
+        self,
+        node_name: str,
+        context_varname: str,
+        params_varname: str,
+        parameters: Mapping[str, str],
+        downstream: str,
     ) -> str:
         event = self._event_type.cpp_type
-        maxlen = (
-            self._maxlen
-            if self._maxlen >= 0
-            else "std::numeric_limits<tcspc::u64>::max()"
-        )
+
+        if isinstance(self._maxlen, Param):
+            maxlen = parameters[self._maxlen.name]
+        else:
+            maxlen = (
+                f"{self._maxlen}uLL"
+                if self._maxlen >= 0
+                else "std::numeric_limits<tcspc::u64>::max()"
+            )
+
+        if isinstance(self._granularity, Param):
+            granularity = parameters[self._granularity.name]
+        else:
+            granularity = f"{self._granularity}uLL"
+
+        # TODO: parameters need to be passed to stream and bucket source, too.
+
         return dedent(f"""\
             tcspc::read_binary_stream<{event}>(
                 {self._stream.cpp},
                 tcspc::arg::max_length<tcspc::u64>{{{maxlen}}},
                 {self._bucket_source.cpp},
-                tcspc::arg::granularity<std::size_t>{{{self._granularity}}},
+                tcspc::arg::granularity<std::size_t>{{{granularity}}},
                 {downstream}
             )""")
 
@@ -254,7 +312,12 @@ class SinkEvents(Node):
 
     @override
     def generate_cpp(
-        self, node_name: str, context: str, downstreams: Sequence[str]
+        self,
+        node_name: str,
+        context_varname: str,
+        params_varname: str,
+        parameters: Mapping[str, str],
+        downstreams: Sequence[str],
     ) -> str:
         evts = ", ".join(t.cpp_type for t in self._event_types)
         return f"tcspc::sink_events<{evts}>()"
@@ -276,7 +339,12 @@ class Stop(OneToOneNode):
 
     @override
     def generate_cpp_one_to_one(
-        self, node_name: str, context: str, downstream: str
+        self,
+        node_name: str,
+        context_varname: str,
+        params_varname: str,
+        parameters: Mapping[str, str],
+        downstream: str,
     ) -> str:
         prefix = _cpp_utils.quote_string(self._msg_prefix)
         return dedent(f"""\
@@ -308,7 +376,12 @@ class StopWithError(OneToOneNode):
 
     @override
     def generate_cpp_one_to_one(
-        self, node_name: str, context: str, downstream: str
+        self,
+        node_name: str,
+        context_varname: str,
+        params_varname: str,
+        parameters: Mapping[str, str],
+        downstream: str,
     ) -> str:
         prefix = _cpp_utils.quote_string(self._msg_prefix)
         return dedent(f"""\
@@ -335,7 +408,12 @@ class Unbatch(OneToOneNode):
 
     @override
     def generate_cpp_one_to_one(
-        self, node_name: str, context: str, downstream: str
+        self,
+        node_name: str,
+        context_varname: str,
+        params_varname: str,
+        parameters: Mapping[str, str],
+        downstream: str,
     ) -> str:
         return dedent(f"""\
             tcspc::unbatch<{self._event_type.cpp_type}>(
