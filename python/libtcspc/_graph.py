@@ -13,6 +13,7 @@ import cppyy
 from typing_extensions import override
 
 from ._access import Accessible
+from ._cpp_utils import CppVarName
 from ._events import EventType
 from ._param import Parameterized
 
@@ -22,8 +23,8 @@ cppyy.include("utility")
 
 @dataclass(frozen=True)
 class CodeGenerationContext:
-    context_varname: str
-    params_varname: str
+    context_varname: CppVarName
+    params_varname: CppVarName
 
 
 class Node(Accessible, Parameterized):

@@ -11,7 +11,7 @@ from typing import Any
 import cppyy
 
 from ._access import Access, Accessible
-from ._cpp_utils import CppTypeName
+from ._cpp_utils import CppTypeName, CppVarName
 from ._events import EventType
 from ._graph import CodeGenerationContext, Graph
 from ._param import Parameterized
@@ -237,7 +237,7 @@ def compile_graph(
 
     params = _collect_params(graph)
     param_types = ((name, cpp_type) for name, cpp_type, default in params)
-    genctx = CodeGenerationContext("ctx", "params")
+    genctx = CodeGenerationContext(CppVarName("ctx"), CppVarName("params"))
     code = graph.generate_cpp(genctx)
     param_struct, instantiator = _compile_instantiator(
         code, genctx, param_types, (e.cpp_type for e in input_event_types)
