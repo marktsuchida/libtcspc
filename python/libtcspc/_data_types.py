@@ -49,5 +49,5 @@ class DataTypes:
     def __init__(self, **kwargs: Unpack[_DataTypes]) -> None:
         self._type_set_class = _data_types_class(**kwargs)
 
-    def cpp(self) -> CppTypeName:
+    def cpp_type_name(self) -> CppTypeName:
         return self._type_set_class

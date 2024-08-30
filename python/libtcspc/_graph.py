@@ -124,7 +124,7 @@ class Node(Accessible, Parameterized):
         """
         raise NotImplementedError()
 
-    def generate_cpp(
+    def cpp_expression(
         self,
         gencontext: CodeGenerationContext,
         downstreams: Sequence[CppExpression],
@@ -158,9 +158,9 @@ class RelayNode(Node):
 
     This base class simplifies the implementation of relay nodes: subclasses
     must override the simplified methods `relay_map_event_set()` and
-    `relay_generate_cpp()`, instead of the `Node` methods `map_event_sets()`
-    and `generate_cpp()`. Implementations of the latter methods is provided by
-    `RelayNode`.
+    `relay_cpp_expression()`, instead of the `Node` methods `map_event_sets()`
+    and `cpp_expression()`. Implementations of the latter methods is provided
+    by `RelayNode`.
     """
 
     @override
@@ -216,22 +216,22 @@ class RelayNode(Node):
 
     @override
     @final
-    def generate_cpp(
+    def cpp_expression(
         self,
         gencontext: CodeGenerationContext,
         downstreams: Sequence[CppExpression],
     ) -> CppExpression:
         """
-        Generates C++ code based on `relay_generate_cpp()`.
+        Generates C++ code based on `relay_cpp_expression()`.
         """
         n_downstreams = len(downstreams)
         if n_downstreams != 1:
             raise ValueError(
                 f"expected a single downstream; found {n_downstreams}"
             )
-        return self.relay_generate_cpp(gencontext, downstreams[0])
+        return self.relay_cpp_expression(gencontext, downstreams[0])
 
-    def relay_generate_cpp(
+    def relay_cpp_expression(
         self,
         gencontext: CodeGenerationContext,
         downstream: CppExpression,
@@ -239,7 +239,7 @@ class RelayNode(Node):
         """
         Returns C++ code for this node and its downstream.
 
-        This is analogous to `generate_cpp` but for the single downstream of
+        This is analogous to `cpp_expression` but for the single downstream of
         the relay node. Concrete subclasses must override this method.
 
         Parameters
@@ -261,7 +261,7 @@ class TypePreservingRelayNode(RelayNode):
     """
     A relay node whose output event set matches its input event set.
 
-    Subclasses need only override `relay_generate_cpp`.
+    Subclasses need only override `relay_cpp_expression`.
     """
 
     @override
@@ -602,7 +602,7 @@ class Graph:
 
         return tuple(edge.event_set for edge in output_pseudo_edges)
 
-    def generate_cpp(
+    def cpp_expression(
         self,
         gencontext: CodeGenerationContext,
         downstreams: Sequence[CppExpression] | None = None,
@@ -643,7 +643,7 @@ class Graph:
                 internal_name_index[(node_id, i)] = input
                 inputs.append(input)
 
-            node_code = node.generate_cpp(gencontext, outputs)
+            node_code = node.cpp_expression(gencontext, outputs)
             if len(inputs) > 1:
                 input_list = ", ".join(inputs)
                 node_defs.append(f"auto [{input_list}] = {node_code};")
@@ -728,9 +728,9 @@ class Subgraph(Node):
         return self._graph.map_event_sets(input_event_sets)
 
     @override
-    def generate_cpp(
+    def cpp_expression(
         self,
         gencontext: CodeGenerationContext,
         downstreams: Sequence[CppExpression],
     ) -> CppExpression:
-        return self._graph.generate_cpp(gencontext, downstreams)
+        return self._graph.cpp_expression(gencontext, downstreams)

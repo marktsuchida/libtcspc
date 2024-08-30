@@ -37,7 +37,7 @@ def _check_events_subset_of(
 ) -> None:
     for t in input_events:
         if not _cpp_utils.contains_type(
-            (u.cpp_type for u in allowed_events), t.cpp_type
+            (u.cpp_type_name() for u in allowed_events), t.cpp_type_name()
         ):
             raise ValueError(f"input type {t} not accepted by {processor}")
 
@@ -49,7 +49,7 @@ def _remove_events_from_set(
         t
         for t in input_events
         if not _cpp_utils.contains_type(
-            (u.cpp_type for u in events_to_remove), t.cpp_type
+            (u.cpp_type_name() for u in events_to_remove), t.cpp_type_name()
         )
     )
 
@@ -57,7 +57,7 @@ def _remove_events_from_set(
 def _make_type_list(event_types: Iterable[EventType]) -> CppTypeName:
     return CppTypeName(
         "tcspc::type_list<{}>".format(
-            ", ".join(t.cpp_type for t in event_types)
+            ", ".join(t.cpp_type_name() for t in event_types)
         )
     )
 
@@ -113,14 +113,14 @@ class CheckMonotonic(TypePreservingRelayNode):
         )
 
     @override
-    def relay_generate_cpp(
+    def relay_cpp_expression(
         self,
         gencontext: CodeGenerationContext,
         downstream: CppExpression,
     ) -> CppExpression:
         return CppExpression(
             dedent(f"""\
-            tcspc::check_monotonic<{self._data_types.cpp()}>(
+            tcspc::check_monotonic<{self._data_types.cpp_type_name()}>(
                 {downstream}
             )""")
         )
@@ -139,14 +139,14 @@ class Count(TypePreservingRelayNode):
         return ((self._access_tag, _access.CountAccess),)
 
     @override
-    def relay_generate_cpp(
+    def relay_cpp_expression(
         self,
         gencontext: CodeGenerationContext,
         downstream: CppExpression,
     ) -> CppExpression:
         return CppExpression(
             dedent(f"""\
-            tcspc::count<{self._event_type.cpp_type}>(
+            tcspc::count<{self._event_type.cpp_type_name()}>(
                 {gencontext.context_varname}->tracker<tcspc::count_access>(
                         "{self._access_tag}"),
                 {downstream}
@@ -177,14 +177,14 @@ class DecodeBHSPC(RelayNode):
         )
 
     @override
-    def relay_generate_cpp(
+    def relay_cpp_expression(
         self,
         gencontext: CodeGenerationContext,
         downstream: CppExpression,
     ) -> CppExpression:
         return CppExpression(
             dedent(f"""\
-            tcspc::decode_bh_spc<{self._data_types.cpp()}>(
+            tcspc::decode_bh_spc<{self._data_types.cpp_type_name()}>(
                 {downstream}
             )""")
         )
@@ -202,7 +202,7 @@ class NullSink(Node):
         return ()
 
     @override
-    def generate_cpp(
+    def cpp_expression(
         self,
         gencontext: CodeGenerationContext,
         downstreams: Sequence[CppExpression],
@@ -258,13 +258,11 @@ class ReadBinaryStream(RelayNode):
         return tuple(params)
 
     @override
-    def relay_generate_cpp(
+    def relay_cpp_expression(
         self,
         gencontext: CodeGenerationContext,
         downstream: CppExpression,
     ) -> CppExpression:
-        event = self._event_type.cpp_type
-
         if isinstance(self._maxlen, Param):
             maxlen = f"{gencontext.params_varname}.{self._maxlen.name}"
         else:
@@ -285,10 +283,10 @@ class ReadBinaryStream(RelayNode):
 
         return CppExpression(
             dedent(f"""\
-            tcspc::read_binary_stream<{event}>(
-                {self._stream.cpp},
+            tcspc::read_binary_stream<{self._event_type.cpp_type_name()}>(
+                {self._stream.cpp_expression()},
                 tcspc::arg::max_length<tcspc::u64>{{{maxlen}}},
-                {self._bucket_source.cpp},
+                {self._bucket_source.cpp_expression()},
                 tcspc::arg::granularity<std::size_t>{{{granularity}}},
                 {downstream}
             )""")
@@ -297,7 +295,7 @@ class ReadBinaryStream(RelayNode):
 
 @final
 class SinkEvents(Node):
-    def __init__(self, *event_types) -> None:
+    def __init__(self, *event_types: EventType) -> None:
         super().__init__(output=())
         self._event_types = tuple(event_types)
 
@@ -315,12 +313,12 @@ class SinkEvents(Node):
         return ()
 
     @override
-    def generate_cpp(
+    def cpp_expression(
         self,
         gencontext: CodeGenerationContext,
         downstreams: Sequence[CppExpression],
     ) -> CppExpression:
-        evts = ", ".join(t.cpp_type for t in self._event_types)
+        evts = ", ".join(t.cpp_type_name() for t in self._event_types)
         return CppExpression(f"tcspc::sink_events<{evts}>()")
 
 
@@ -339,7 +337,7 @@ class Stop(RelayNode):
         return _remove_events_from_set(input_event_set, self._event_types)
 
     @override
-    def relay_generate_cpp(
+    def relay_cpp_expression(
         self,
         gencontext: CodeGenerationContext,
         downstream: CppExpression,
@@ -375,7 +373,7 @@ class StopWithError(RelayNode):
         return _remove_events_from_set(input_event_set, self._event_types)
 
     @override
-    def relay_generate_cpp(
+    def relay_cpp_expression(
         self,
         gencontext: CodeGenerationContext,
         downstream: CppExpression,
@@ -406,14 +404,14 @@ class Unbatch(RelayNode):
         return (self._event_type,)
 
     @override
-    def relay_generate_cpp(
+    def relay_cpp_expression(
         self,
         gencontext: CodeGenerationContext,
         downstream: CppExpression,
     ) -> CppExpression:
         return CppExpression(
             dedent(f"""\
-            tcspc::unbatch<{self._event_type.cpp_type}>(
+            tcspc::unbatch<{self._event_type.cpp_type_name()}>(
                 {downstream}
             )""")
         )

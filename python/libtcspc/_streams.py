@@ -12,8 +12,7 @@ from ._cpp_utils import CppExpression
 
 
 class InputStream:
-    @property
-    def cpp(self) -> CppExpression:
+    def cpp_expression(self) -> CppExpression:
         raise NotImplementedError()
 
 
@@ -24,8 +23,7 @@ class BinaryFileInputStream(InputStream):
         self._start = start
 
     @override
-    @property
-    def cpp(self) -> CppExpression:
+    def cpp_expression(self) -> CppExpression:
         fn = _cpp_utils.quote_string(self._filename)
         return CppExpression(
             dedent(f"""\

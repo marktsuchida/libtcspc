@@ -251,9 +251,12 @@ def compile_graph(
     genctx = CodeGenerationContext(
         CppIdentifier("ctx"), CppIdentifier("params")
     )
-    code = graph.generate_cpp(genctx)
+    code = graph.cpp_expression(genctx)
     param_struct, instantiator = _compile_instantiator(
-        code, genctx, param_types, (e.cpp_type for e in input_event_types)
+        code,
+        genctx,
+        param_types,
+        (e.cpp_type_name() for e in input_event_types),
     )
     access_types = _collect_access_tags(graph)
     return CompiledGraph(instantiator, access_types, param_struct, params)

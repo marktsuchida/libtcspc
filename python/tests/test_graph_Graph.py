@@ -36,7 +36,7 @@ def test_empty_graph():
     with pytest.raises(ValueError):
         g.map_event_sets([(IntEvent,)])
 
-    code = g.generate_cpp(gencontext)
+    code = g.cpp_expression(gencontext)
     # An empty graph has no inputs, so generates a lambda that returns an empty
     # tuple. Assignment should succeed.
     isolated_cppdef(f"""\
@@ -48,7 +48,7 @@ def test_empty_graph():
     """)
 
     with pytest.raises(ValueError):
-        g.generate_cpp(gencontext, [CppExpression("downstream")])
+        g.cpp_expression(gencontext, [CppExpression("downstream")])
 
 
 def test_single_node(mocker):
@@ -68,14 +68,14 @@ def test_single_node(mocker):
     node.map_event_sets.assert_called_with([(IntEvent,)])  # type: ignore
 
     with pytest.raises(ValueError):
-        g.generate_cpp(gencontext)
+        g.cpp_expression(gencontext)
 
     def node_codegen(gencontext, downstreams):
         assert len(downstreams) == 1
         return downstreams[0]
 
-    node.generate_cpp = mocker.MagicMock(side_effect=node_codegen)  # type: ignore
-    code = g.generate_cpp(gencontext, [CppExpression("std::move(dstream)")])
+    node.cpp_expression = mocker.MagicMock(side_effect=node_codegen)  # type: ignore
+    code = g.cpp_expression(gencontext, [CppExpression("std::move(dstream)")])
     # The generated lambda should return a single-element tuple whose element
     # was moved from 'ds'.
     ns = isolated_cppdef(f"""\
@@ -122,9 +122,9 @@ def test_two_nodes_two_inputs_two_outputs(mocker):
         assert len(downstreams) == 2
         return f"5 * ({downstreams[0]} + {downstreams[1]})"
 
-    node0.generate_cpp = mocker.MagicMock(side_effect=node0_codegen)  # type: ignore
-    node1.generate_cpp = mocker.MagicMock(side_effect=node1_codegen)  # type: ignore
-    code = g.generate_cpp(
+    node0.cpp_expression = mocker.MagicMock(side_effect=node0_codegen)  # type: ignore
+    node1.cpp_expression = mocker.MagicMock(side_effect=node1_codegen)  # type: ignore
+    code = g.cpp_expression(
         gencontext,
         [CppExpression("std::move(ds0)"), CppExpression("std::move(ds1)")],
     )
@@ -180,9 +180,9 @@ def test_two_nodes_two_internal_edges(mocker):
         assert len(downstreams) == 1
         return f"std::tuple{{2 * {downstreams[0]}, 123}}"
 
-    node0.generate_cpp = mocker.MagicMock(side_effect=node0_codegen)  # type: ignore
-    node1.generate_cpp = mocker.MagicMock(side_effect=node1_codegen)  # type: ignore
-    code = g.generate_cpp(gencontext, [CppExpression("std::move(ds)")])
+    node0.cpp_expression = mocker.MagicMock(side_effect=node0_codegen)  # type: ignore
+    node1.cpp_expression = mocker.MagicMock(side_effect=node1_codegen)  # type: ignore
+    code = g.cpp_expression(gencontext, [CppExpression("std::move(ds)")])
     ns = isolated_cppdef(f"""\
         auto f() {{
             auto ctx = tcspc::context::create();
@@ -204,7 +204,7 @@ def make_simple_node(mocker) -> Node:
 
     node = Node()
     node.map_event_sets = mocker.MagicMock(return_value=(IntEvent,))  # type: ignore
-    node.generate_cpp = mocker.MagicMock(side_effect=node_codegen)  # type: ignore
+    node.cpp_expression = mocker.MagicMock(side_effect=node_codegen)  # type: ignore
     return node
 
 
@@ -219,7 +219,7 @@ def test_add_sequence(mocker):
     g.add_sequence([node0, node1])
     g.add_sequence([node2, node3], upstream="Node-1")
     g.add_sequence([node4], downstream=("Node-0", "input"))
-    code = g.generate_cpp(gencontext, [CppExpression("std::move(ds)")])
+    code = g.cpp_expression(gencontext, [CppExpression("std::move(ds)")])
     ns = isolated_cppdef(f"""\
         auto f() {{
             auto ctx = tcspc::context::create();

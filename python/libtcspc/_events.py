@@ -17,22 +17,21 @@ class EventType:
         self._cpp_type = cpp_type
 
     def __repr__(self) -> str:
-        return f"<{self.__class__.__name__}({self.cpp_type})>"
+        return f"<{self.__class__.__name__}({self.cpp_type_name()})>"
 
     def __eq__(self, other) -> bool:
         return isinstance(other, EventType) and _cpp_utils.is_same_type(
-            self.cpp_type, other.cpp_type
+            self.cpp_type_name(), other.cpp_type_name()
         )
 
-    @property
-    def cpp_type(self) -> CppTypeName:
+    def cpp_type_name(self) -> CppTypeName:
         return self._cpp_type
 
 
 class BucketEvent(EventType):
     def __init__(self, element_type: EventType) -> None:
         super().__init__(
-            CppTypeName(f"tcspc::bucket<{element_type.cpp_type}>")
+            CppTypeName(f"tcspc::bucket<{element_type.cpp_type_name()}>")
         )
 
 
@@ -47,14 +46,16 @@ def DataLostEvent(data_types: DataTypes | None = None) -> EventType:
     if data_types is None:
         data_types = DataTypes()
     return EventType(
-        CppTypeName(f"tcspc::data_lost_event<{data_types.cpp()}>")
+        CppTypeName(f"tcspc::data_lost_event<{data_types.cpp_type_name()}>")
     )
 
 
 def MarkerEvent(data_types: DataTypes | None = None) -> EventType:
     if data_types is None:
         data_types = DataTypes()
-    return EventType(CppTypeName(f"tcspc::marker_event<{data_types.cpp()}>"))
+    return EventType(
+        CppTypeName(f"tcspc::marker_event<{data_types.cpp_type_name()}>")
+    )
 
 
 def TimeCorrelatedDetectionEvent(
@@ -64,7 +65,7 @@ def TimeCorrelatedDetectionEvent(
         data_types = DataTypes()
     return EventType(
         CppTypeName(
-            f"tcspc::time_correlated_detection_event<{data_types.cpp()}>"
+            f"tcspc::time_correlated_detection_event<{data_types.cpp_type_name()}>"
         )
     )
 
@@ -73,7 +74,7 @@ def TimeReachedEvent(data_types: DataTypes | None = None) -> EventType:
     if data_types is None:
         data_types = DataTypes()
     return EventType(
-        CppTypeName(f"tcspc::time_reached_event<{data_types.cpp()}>")
+        CppTypeName(f"tcspc::time_reached_event<{data_types.cpp_type_name()}>")
     )
 
 

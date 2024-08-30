@@ -2,13 +2,14 @@
 # Copyright 2019-2024 Board of Regents of the University of Wisconsin System
 # SPDX-License-Identifier: MIT
 
+from typing_extensions import override
+
 from ._cpp_utils import CppExpression
 from ._events import EventType
 
 
 class BucketSource:
-    @property
-    def cpp(self) -> CppExpression:
+    def cpp_expression(self) -> CppExpression:
         raise NotImplementedError()
 
 
@@ -16,9 +17,9 @@ class NewDeleteBucketSource(BucketSource):
     def __init__(self, object_type: EventType) -> None:
         self._object_type = object_type
 
-    @property
-    def cpp(self) -> CppExpression:
-        t = self._object_type.cpp_type
+    @override
+    def cpp_expression(self) -> CppExpression:
+        t = self._object_type.cpp_type_name()
         return CppExpression(f"tcspc::new_delete_bucket_source<{t}>::create()")
 
 
@@ -36,10 +37,10 @@ class RecyclingBucketSource(BucketSource):
         self._clear = clear_recycled
         self._max_count = max_bucket_count
 
-    @property
-    def cpp(self) -> CppExpression:
+    @override
+    def cpp_expression(self) -> CppExpression:
         t, b, c, m = (
-            self._object_type.cpp_type,
+            self._object_type.cpp_type_name(),
             "true" if self._blocking else "false",
             "true" if self._clear else "false",
             self._max_count,
