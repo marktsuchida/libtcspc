@@ -15,6 +15,7 @@ cppyy.include("type_traits")
 CppTypeName = typing.NewType("CppTypeName", str)
 CppIdentifier = typing.NewType("CppIdentifier", str)
 CppExpression = typing.NewType("CppExpression", str)
+CppNamespacedDefs = typing.NewType("CppNamespacedDefs", str)
 
 _cpp_name_counter = itertools.count()
 

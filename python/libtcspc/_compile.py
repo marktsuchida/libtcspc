@@ -11,7 +11,12 @@ from typing import Any
 import cppyy
 
 from ._access import Access, Accessible
-from ._cpp_utils import CppExpression, CppIdentifier, CppTypeName
+from ._cpp_utils import (
+    CppExpression,
+    CppIdentifier,
+    CppNamespacedDefs,
+    CppTypeName,
+)
 from ._events import EventType
 from ._graph import CodeGenerationContext, Graph
 from ._param import Parameterized
@@ -51,19 +56,21 @@ class CompiledGraph:
 
 def _param_struct(
     param_types: Iterable[tuple[CppIdentifier, CppTypeName]], ctr: int
-) -> tuple[CppIdentifier, str]:
+) -> tuple[CppIdentifier, CppNamespacedDefs]:
     tname = CppIdentifier(f"params_{ctr}")
     fields = "\n".join(
         f"""\
-                {typ} {name};"""
+                    {typ} {name};"""
         for name, typ in param_types
     ).lstrip()
-    return tname, dedent(f"""\
-        namespace tcspc::py::compile {{
-            struct {tname} {{
-                {fields}
-            }};
-        }}""")
+    return tname, CppNamespacedDefs(
+        dedent(f"""\
+            namespace tcspc::py::compile {{
+                struct {tname} {{
+                    {fields}
+                }};
+            }}""")
+    )
 
 
 cppyy.cppdef(
@@ -89,7 +96,7 @@ def _instantiate_func(
     gencontext: CodeGenerationContext,
     event_types: Iterable[CppTypeName],
     ctr: int,
-) -> tuple[CppIdentifier, str]:
+) -> tuple[CppIdentifier, CppNamespacedDefs]:
     input_proc = CppIdentifier(f"input_processor_{ctr}")
     fname = CppIdentifier(f"instantiate_graph_{ctr}")
     handlers = "\n\n".join(
@@ -99,25 +106,27 @@ def _instantiate_func(
                 }}"""
         for event_type in event_types
     ).lstrip()
-    return fname, dedent(f"""\
-        namespace tcspc::py::compile {{
-            template <typename Downstream> class {input_proc} {{
-                Downstream downstream;
+    return fname, CppNamespacedDefs(
+        dedent(f"""\
+            namespace tcspc::py::compile {{
+                template <typename Downstream> class {input_proc} {{
+                    Downstream downstream;
 
-            public:
-                explicit {input_proc}(Downstream &&downstream)
-                : downstream(std::move(downstream)) {{}}
+                public:
+                    explicit {input_proc}(Downstream &&downstream)
+                    : downstream(std::move(downstream)) {{}}
 
-                {handlers}
+                    {handlers}
 
-                void flush() {{ downstream.flush(); }}
-            }};
+                    void flush() {{ downstream.flush(); }}
+                }};
 
-            auto {fname}(std::shared_ptr<tcspc::context> {gencontext.context_varname},
-                         params_{ctr} const &{gencontext.params_varname}) {{
-                return {input_proc}({graph_code});
-            }}
-        }}""")
+                auto {fname}(std::shared_ptr<tcspc::context> {gencontext.context_varname},
+                             params_{ctr} const &{gencontext.params_varname}) {{
+                    return {input_proc}({graph_code});
+                }}
+            }}""")
+    )
 
 
 _cpp_name_counter = itertools.count()
