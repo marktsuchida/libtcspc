@@ -14,6 +14,7 @@ cppyy.include("type_traits")
 
 CppTypeName = typing.NewType("CppTypeName", str)
 CppIdentifier = typing.NewType("CppIdentifier", str)
+CppExpression = typing.NewType("CppExpression", str)
 
 _cpp_name_counter = itertools.count()
 
@@ -43,11 +44,13 @@ def contains_type(s: Iterable[CppTypeName], t: CppTypeName) -> bool:
     return any(is_same_type(t, t1) for t1 in s)
 
 
-def quote_string(s: str) -> str:
-    return '"{}"'.format(
-        s.replace("\\", "\\\\")
-        .replace("'", "\\'")
-        .replace('"', '\\"')
-        .replace("\n", "\\n")
-        .replace("\t", "\\t")
+def quote_string(s: str) -> CppExpression:
+    return CppExpression(
+        '"{}"'.format(
+            s.replace("\\", "\\\\")
+            .replace("'", "\\'")
+            .replace('"', '\\"')
+            .replace("\n", "\\n")
+            .replace("\t", "\\t")
+        )
     )

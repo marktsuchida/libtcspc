@@ -8,11 +8,12 @@ from typing import final
 from typing_extensions import override
 
 from . import _cpp_utils
+from ._cpp_utils import CppExpression
 
 
 class InputStream:
     @property
-    def cpp(self) -> str:
+    def cpp(self) -> CppExpression:
         raise NotImplementedError()
 
 
@@ -24,10 +25,12 @@ class BinaryFileInputStream(InputStream):
 
     @override
     @property
-    def cpp(self) -> str:
+    def cpp(self) -> CppExpression:
         fn = _cpp_utils.quote_string(self._filename)
-        return dedent(f"""\
-            tcspc::binary_file_input_stream(
-                {fn},
-                tcspc::arg::start_offset<tcspc::u64>{{{self._start}}}
-            )""")
+        return CppExpression(
+            dedent(f"""\
+                tcspc::binary_file_input_stream(
+                    {fn},
+                    tcspc::arg::start_offset<tcspc::u64>{{{self._start}}}
+                )""")
+        )

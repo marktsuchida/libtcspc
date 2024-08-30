@@ -11,7 +11,7 @@ from typing import Any
 import cppyy
 
 from ._access import Access, Accessible
-from ._cpp_utils import CppIdentifier, CppTypeName
+from ._cpp_utils import CppExpression, CppIdentifier, CppTypeName
 from ._events import EventType
 from ._graph import CodeGenerationContext, Graph
 from ._param import Parameterized
@@ -85,7 +85,7 @@ cppyy.cppdef(
 
 
 def _instantiate_func(
-    graph_code: str,
+    graph_code: CppExpression,
     gencontext: CodeGenerationContext,
     event_types: Iterable[CppTypeName],
     ctr: int,
@@ -130,7 +130,7 @@ _cpp_name_counter = itertools.count()
 # and returns the processor.
 @functools.cache
 def _compile_instantiator(
-    graph_code: str,
+    graph_code: CppExpression,
     gencontext: CodeGenerationContext,
     param_types: Iterable[tuple[CppIdentifier, CppTypeName]],
     event_types: Iterable[CppTypeName],

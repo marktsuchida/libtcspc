@@ -13,7 +13,7 @@ import cppyy
 from typing_extensions import override
 
 from ._access import Accessible
-from ._cpp_utils import CppIdentifier
+from ._cpp_utils import CppExpression, CppIdentifier
 from ._events import EventType
 from ._param import Parameterized
 
@@ -128,7 +128,7 @@ class Node(Accessible, Parameterized):
         self,
         gencontext: CodeGenerationContext,
         downstreams: Sequence[str],
-    ) -> str:
+    ) -> CppExpression:
         """
         Returns C++ code for this node and its downstreams.
 
@@ -144,7 +144,7 @@ class Node(Accessible, Parameterized):
 
         Returns
         -------
-        str
+        CppExpression
             C++ code for this node.
         """
         raise NotImplementedError()
@@ -220,7 +220,7 @@ class RelayNode(Node):
         self,
         gencontext: CodeGenerationContext,
         downstreams: Sequence[str],
-    ) -> str:
+    ) -> CppExpression:
         """
         Generates C++ code based on `relay_generate_cpp()`.
         """
@@ -235,7 +235,7 @@ class RelayNode(Node):
         self,
         gencontext: CodeGenerationContext,
         downstream: str,
-    ) -> str:
+    ) -> CppExpression:
         """
         Returns C++ code for this node and its downstream.
 
@@ -606,7 +606,7 @@ class Graph:
         self,
         gencontext: CodeGenerationContext,
         downstreams: Sequence[str] | None = None,
-    ) -> str:
+    ) -> CppExpression:
         downstreams = downstreams if downstreams is not None else ()
         external_names = [f"d{i}" for i in range(len(downstreams))]
         external_name_index = {
@@ -665,11 +665,13 @@ class Graph:
         captures = ", ".join(
             (gencontext.context_varname, f"&{gencontext.params_varname}")
         )
-        return dedent(f"""\
-            [{captures}]({external_name_params}) {{
-                {node_def_lines}
-                return {input_ref_maybe_tuple};
-            }}({downstream_args})""")
+        return CppExpression(
+            dedent(f"""\
+                [{captures}]({external_name_params}) {{
+                    {node_def_lines}
+                    return {input_ref_maybe_tuple};
+                }}({downstream_args})""")
+        )
 
 
 @final
@@ -728,5 +730,5 @@ class Subgraph(Node):
         self,
         gencontext: CodeGenerationContext,
         downstreams: Sequence[str],
-    ) -> str:
+    ) -> CppExpression:
         return self._graph.generate_cpp(gencontext, downstreams)

@@ -10,7 +10,7 @@ import cppyy
 from typing_extensions import override
 
 from . import _access, _bucket_sources, _cpp_utils, _events, _streams
-from ._cpp_utils import CppIdentifier, CppTypeName
+from ._cpp_utils import CppExpression, CppIdentifier, CppTypeName
 from ._data_types import DataTypes
 from ._events import EventType
 from ._graph import (
@@ -117,11 +117,13 @@ class CheckMonotonic(TypePreservingRelayNode):
         self,
         gencontext: CodeGenerationContext,
         downstream: str,
-    ) -> str:
-        return dedent(f"""\
+    ) -> CppExpression:
+        return CppExpression(
+            dedent(f"""\
             tcspc::check_monotonic<{self._data_types.cpp()}>(
                 {downstream}
             )""")
+        )
 
 
 @final
@@ -141,13 +143,15 @@ class Count(TypePreservingRelayNode):
         self,
         gencontext: CodeGenerationContext,
         downstream: str,
-    ) -> str:
-        return dedent(f"""\
+    ) -> CppExpression:
+        return CppExpression(
+            dedent(f"""\
             tcspc::count<{self._event_type.cpp_type}>(
                 {gencontext.context_varname}->tracker<tcspc::count_access>(
                         "{self._access_tag}"),
                 {downstream}
             )""")
+        )
 
 
 @final
@@ -177,11 +181,13 @@ class DecodeBHSPC(RelayNode):
         self,
         gencontext: CodeGenerationContext,
         downstream: str,
-    ) -> str:
-        return dedent(f"""\
+    ) -> CppExpression:
+        return CppExpression(
+            dedent(f"""\
             tcspc::decode_bh_spc<{self._data_types.cpp()}>(
                 {downstream}
             )""")
+        )
 
 
 @final
@@ -200,8 +206,8 @@ class NullSink(Node):
         self,
         gencontext: CodeGenerationContext,
         downstreams: Sequence[str],
-    ) -> str:
-        return "tcspc::null_sink()"
+    ) -> CppExpression:
+        return CppExpression("tcspc::null_sink()")
 
 
 @final
@@ -256,7 +262,7 @@ class ReadBinaryStream(RelayNode):
         self,
         gencontext: CodeGenerationContext,
         downstream: str,
-    ) -> str:
+    ) -> CppExpression:
         event = self._event_type.cpp_type
 
         if isinstance(self._maxlen, Param):
@@ -277,7 +283,8 @@ class ReadBinaryStream(RelayNode):
 
         # TODO: parameters need to be passed to stream and bucket source, too.
 
-        return dedent(f"""\
+        return CppExpression(
+            dedent(f"""\
             tcspc::read_binary_stream<{event}>(
                 {self._stream.cpp},
                 tcspc::arg::max_length<tcspc::u64>{{{maxlen}}},
@@ -285,6 +292,7 @@ class ReadBinaryStream(RelayNode):
                 tcspc::arg::granularity<std::size_t>{{{granularity}}},
                 {downstream}
             )""")
+        )
 
 
 @final
@@ -311,9 +319,9 @@ class SinkEvents(Node):
         self,
         gencontext: CodeGenerationContext,
         downstreams: Sequence[str],
-    ) -> str:
+    ) -> CppExpression:
         evts = ", ".join(t.cpp_type for t in self._event_types)
-        return f"tcspc::sink_events<{evts}>()"
+        return CppExpression(f"tcspc::sink_events<{evts}>()")
 
 
 @final
@@ -335,15 +343,17 @@ class Stop(RelayNode):
         self,
         gencontext: CodeGenerationContext,
         downstream: str,
-    ) -> str:
+    ) -> CppExpression:
         prefix = _cpp_utils.quote_string(self._msg_prefix)
-        return dedent(f"""\
+        return CppExpression(
+            dedent(f"""\
             tcspc::stop<
                 {_make_type_list(self._event_types)}
             >(
                 {prefix},
                 {downstream}
             )""")
+        )
 
 
 @final
@@ -369,9 +379,10 @@ class StopWithError(RelayNode):
         self,
         gencontext: CodeGenerationContext,
         downstream: str,
-    ) -> str:
+    ) -> CppExpression:
         prefix = _cpp_utils.quote_string(self._msg_prefix)
-        return dedent(f"""\
+        return CppExpression(
+            dedent(f"""\
             tcspc::stop_with_error<
                 {_make_type_list(self._event_types)}
                 {self._exception_type}
@@ -379,6 +390,7 @@ class StopWithError(RelayNode):
                 {prefix},
                 {downstream}
             )""")
+        )
 
 
 @final
@@ -398,8 +410,10 @@ class Unbatch(RelayNode):
         self,
         gencontext: CodeGenerationContext,
         downstream: str,
-    ) -> str:
-        return dedent(f"""\
+    ) -> CppExpression:
+        return CppExpression(
+            dedent(f"""\
             tcspc::unbatch<{self._event_type.cpp_type}>(
                 {downstream}
             )""")
+        )
