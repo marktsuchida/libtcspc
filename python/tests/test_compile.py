@@ -2,13 +2,46 @@
 # Copyright 2019-2024 Board of Regents of the University of Wisconsin System
 # SPDX-License-Identifier: MIT
 
+from typing import Any
+
 import cppyy
 import pytest
 from libtcspc._access import AccessTag
-from libtcspc._compile import compile_graph
+from libtcspc._compile import (
+    _collect_access_tags,
+    _collect_params,
+    compile_graph,
+)
 from libtcspc._events import EventType
-from libtcspc._graph import Graph
+from libtcspc._graph import Graph, OneToOneNode
 from libtcspc._processors import CheckMonotonic, Count, NullSink
+
+
+def test_compile_collect_params_duplicate():
+    class ParamNode(OneToOneNode):
+        def __init__(self, param_name: str) -> None:
+            self._param_name = param_name
+
+        def parameters(self) -> tuple[tuple[str, str, Any], ...]:
+            return ((self._param_name, "int", None),)
+
+    g = Graph()
+    g.add_node("a", ParamNode("hello"))
+    g.add_node("b", ParamNode("world"))
+    assert len(_collect_params(g)) == 2
+    g.add_node("c", ParamNode("hello"))
+    with pytest.raises(ValueError, match="param.*hello"):
+        _collect_params(g)
+
+
+def test_compile_collect_access_tags_duplicate():
+    g = Graph()
+    g.add_node("a", Count(EventType("int"), AccessTag("hello")))
+    g.add_node("b", Count(EventType("int"), AccessTag("world")))
+    assert len(_collect_access_tags(g)) == 2
+    g.add_node("c", Count(EventType("int"), AccessTag("hello")))
+    with pytest.raises(ValueError, match="tag.*hello"):
+        _collect_access_tags(g)
 
 
 def test_compile_empty_graph_rejected():

@@ -151,20 +151,56 @@ def _compile_instantiator(
 def _collect_params(graph: Graph) -> list[tuple[str, str, Any]]:
     params: list[tuple[str, str, Any]] = []
 
-    def visit(name: str, node: Parameterized):
+    def visit(node_name: str, node: Parameterized):
         params.extend(node.parameters())
 
     graph.visit_nodes(visit)
+
+    if len(params) > len(set(p for p, _, _ in params)):
+        param_nodes: dict[str, list[str]] = {}
+
+        def visit(node_name: str, node: Parameterized):
+            for param, _, _ in node.parameters():
+                param_nodes.setdefault(param, []).append(node_name)
+
+        graph.visit_nodes(visit)
+
+        for param, node_names in (
+            (p, ns) for p, ns in param_nodes.items() if len(ns) > 1
+        ):
+            strnames = ", ".join(node_names)
+            raise ValueError(
+                f"graph contains duplicate parameter {param} in nodes {strnames}"
+            )
+
     return params
 
 
 def _collect_access_tags(graph: Graph) -> list[tuple[str, type[Access]]]:
     accesses: list[tuple[str, type[Access]]] = []
 
-    def visit(name: str, node: Accessible):
+    def visit(node_name: str, node: Accessible):
         accesses.extend(node.accesses())
 
     graph.visit_nodes(visit)
+
+    if len(accesses) > len(set(t for t, _ in accesses)):
+        tag_nodes: dict[str, list[str]] = {}
+
+        def visit(node_name: str, node: Accessible):
+            for tag, _ in node.accesses():
+                tag_nodes.setdefault(tag, []).append(node_name)
+
+        graph.visit_nodes(visit)
+
+        for tag, node_names in (
+            (t, ns) for t, ns in tag_nodes.items() if len(ns) > 1
+        ):
+            strnames = ", ".join(node_names)
+            raise ValueError(
+                f"graph contains duplicate access tag {tag} in nodes {strnames}"
+            )
+
     return accesses
 
 
