@@ -24,10 +24,6 @@ cppyy.include("utility")
 class CodeGenerationContext:
     context_varname: str
     params_varname: str
-    parameters: tuple[str, ...] = ()
-
-    def parameter_expression(self, param: str) -> str:
-        return f"{self.params_varname}.{param}"
 
 
 class Node(Accessible, Parameterized):

@@ -253,7 +253,7 @@ class ReadBinaryStream(OneToOneNode):
         event = self._event_type.cpp_type
 
         if isinstance(self._maxlen, Param):
-            maxlen = gencontext.parameter_expression(self._maxlen.name)
+            maxlen = f"{gencontext.params_varname}.{self._maxlen.name}"
         else:
             maxlen = (
                 f"{self._maxlen}uLL"
@@ -262,8 +262,8 @@ class ReadBinaryStream(OneToOneNode):
             )
 
         if isinstance(self._granularity, Param):
-            granularity = gencontext.parameter_expression(
-                self._granularity.name
+            granularity = (
+                f"{gencontext.params_varname}.{self._granularity.name}"
             )
         else:
             granularity = f"{self._granularity}uLL"

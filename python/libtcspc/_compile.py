@@ -86,8 +86,7 @@ cppyy.cppdef(
 
 def _instantiate_func(
     graph_code: str,
-    context_varname: str,
-    params_varname: str,
+    gencontext: CodeGenerationContext,
     event_types: Iterable[str],
     ctr: int,
 ) -> tuple[str, str]:
@@ -114,8 +113,8 @@ def _instantiate_func(
                 void flush() {{ downstream.flush(); }}
             }};
 
-            auto {fname}(std::shared_ptr<tcspc::context> {context_varname},
-                         params_{ctr} const &{params_varname}) {{
+            auto {fname}(std::shared_ptr<tcspc::context> {gencontext.context_varname},
+                         params_{ctr} const &{gencontext.params_varname}) {{
                 return {input_proc}({graph_code});
             }}
         }}""")
@@ -132,8 +131,7 @@ _cpp_name_counter = itertools.count()
 @functools.cache
 def _compile_instantiator(
     graph_code: str,
-    context_varname: str,
-    params_varname: str,
+    gencontext: CodeGenerationContext,
     param_types: Iterable[tuple[str, str]],
     event_types: Iterable[str],
 ) -> tuple[str, Any]:
@@ -142,9 +140,7 @@ def _compile_instantiator(
     struct_name, struct_code = _param_struct(param_types, ctr)
     cppyy.cppdef(struct_code)
 
-    fname, code = _instantiate_func(
-        graph_code, context_varname, params_varname, event_types, ctr
-    )
+    fname, code = _instantiate_func(graph_code, gencontext, event_types, ctr)
     cppyy.cppdef(code)
 
     return (
@@ -207,17 +203,10 @@ def compile_graph(
 
     params = _collect_params(graph)
     param_types = ((name, type) for name, (type, default) in params.items())
-    params_var = "params"
-    ctx_var = "ctx"
-    code = graph.generate_cpp(
-        CodeGenerationContext(ctx_var, params_var, tuple(params))
-    )
+    genctx = CodeGenerationContext("ctx", "params")
+    code = graph.generate_cpp(genctx)
     param_struct, instantiator = _compile_instantiator(
-        code,
-        ctx_var,
-        params_var,
-        param_types,
-        (e.cpp_type for e in input_event_types),
+        code, genctx, param_types, (e.cpp_type for e in input_event_types)
     )
     access_types = _collect_access_tags(graph)
     return CompiledGraph(instantiator, access_types, param_struct, params)
