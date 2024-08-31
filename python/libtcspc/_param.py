@@ -2,8 +2,9 @@
 # Copyright 2019-2024 Board of Regents of the University of Wisconsin System
 # SPDX-License-Identifier: MIT
 
+from collections.abc import Sequence
 from dataclasses import dataclass
-from typing import Any, Generic, TypeVar
+from typing import Generic, TypeVar
 
 from libtcspc._cpp_utils import CppIdentifier, CppTypeName
 
@@ -31,15 +32,14 @@ class Parameterized:
     when creating an execution context from a compiled graph.
     """
 
-    def parameters(self) -> tuple[tuple[CppIdentifier, CppTypeName, Any], ...]:
+    def parameters(self) -> Sequence[tuple[Param, CppTypeName]]:
         """
         Return the names, C++ types, and default values of the parameters of
         this object and any sub-objects.
 
         Returns
         -------
-        tuple[tuple[CppIdentifier, CppTypeName, Any], ...]
-            Parameter names, C++ types, and default values (or None where no
-            default is provided)
+        Sequence[tuple[Param, CppTypeName]]
+            Parameters (name and optional default value) and their C++ types.
         """
         return ()

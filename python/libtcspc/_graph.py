@@ -7,7 +7,7 @@ from collections.abc import Callable, Collection, Mapping, Sequence
 from copy import deepcopy
 from dataclasses import dataclass
 from textwrap import dedent
-from typing import Any, final
+from typing import final
 
 import cppyy
 from typing_extensions import override
@@ -16,7 +16,7 @@ from ._access import Access, Accessible
 from ._cpp_utils import CppExpression, CppIdentifier, CppTypeName
 from ._events import EventType
 from ._node import CodeGenerationContext, Node
-from ._param import Parameterized
+from ._param import Param, Parameterized
 
 cppyy.include("tuple")
 cppyy.include("utility")
@@ -425,22 +425,20 @@ class Graph:
         )
 
 
-def _collect_params(
-    graph: Graph,
-) -> list[tuple[CppIdentifier, CppTypeName, Any]]:
-    params: list[tuple[CppIdentifier, CppTypeName, Any]] = []
+def _collect_params(graph: Graph) -> list[tuple[Param, CppTypeName]]:
+    params: list[tuple[Param, CppTypeName]] = []
 
     def visit(node_name: str, node: Parameterized):
         params.extend(node.parameters())
 
     graph.visit_nodes(visit)
 
-    if len(params) > len(set(p for p, _, _ in params)):
+    if len(params) > len(set(p.name for p, _ in params)):
         param_nodes: dict[CppIdentifier, list[str]] = {}
 
         def visit(node_name: str, node: Parameterized):
-            for param, _, _ in node.parameters():
-                param_nodes.setdefault(param, []).append(node_name)
+            for param, _ in node.parameters():
+                param_nodes.setdefault(param.name, []).append(node_name)
 
         graph.visit_nodes(visit)
 
@@ -535,8 +533,8 @@ class Subgraph(Node):
         return self._graph.map_event_sets(input_event_sets)
 
     @override
-    def parameters(self) -> tuple[tuple[CppIdentifier, CppTypeName, Any], ...]:
-        return tuple(_collect_params(self._graph))
+    def parameters(self) -> Sequence[tuple[Param, CppTypeName]]:
+        return _collect_params(self._graph)
 
     @override
     def accesses(self) -> tuple[tuple[str, type[Access]], ...]:

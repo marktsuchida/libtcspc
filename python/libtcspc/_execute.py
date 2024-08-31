@@ -152,13 +152,13 @@ def create_execution_context(
         graph.
     """
     args = {} if arguments is None else arguments.copy()
-    for name, _, default in compiled_graph._params:
-        if name not in args.copy():
-            if default is None:
+    for param, _ in compiled_graph._params:
+        if param.name not in args.copy():
+            if param.default_value is None:
                 raise ValueError(
-                    f"No value given for required parameter {name}"
+                    f"No value given for required parameter {param.name}"
                 )
-            args[name] = default
+            args[param.name] = param.default_value
 
     arg_struct = compiled_graph._param_struct()
     for name, value in args.items():

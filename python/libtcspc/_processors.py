@@ -4,13 +4,13 @@
 
 from collections.abc import Collection, Iterable, Sequence
 from textwrap import dedent
-from typing import Any, final
+from typing import final
 
 import cppyy
 from typing_extensions import override
 
 from . import _access, _bucket_sources, _cpp_utils, _events, _streams
-from ._cpp_utils import CppExpression, CppIdentifier, CppTypeName
+from ._cpp_utils import CppExpression, CppTypeName
 from ._data_types import DataTypes
 from ._events import EventType
 from ._graph import Graph, Subgraph
@@ -233,27 +233,15 @@ class ReadBinaryStream(RelayNode):
         return (_events.BucketEvent(self._event_type),)
 
     @override
-    def parameters(self) -> tuple[tuple[CppIdentifier, CppTypeName, Any], ...]:
-        params: list[tuple[CppIdentifier, CppTypeName, Any]] = []
+    def parameters(self) -> Sequence[tuple[Param, CppTypeName]]:
+        params: list[tuple[Param, CppTypeName]] = []
         if isinstance(self._maxlen, Param):
-            params.append(
-                (
-                    self._maxlen.name,
-                    CppTypeName("tcspc::u64"),
-                    self._maxlen.default_value,
-                )
-            )
+            params.append((self._maxlen, CppTypeName("tcspc::u64")))
         if isinstance(self._granularity, Param):
-            params.append(
-                (
-                    self._granularity.name,
-                    CppTypeName("std::size_t"),
-                    self._granularity.default_value,
-                )
-            )
+            params.append((self._granularity, CppTypeName("std::size_t")))
         params.extend(self._stream.parameters())
         params.extend(self._bucket_source.parameters())
-        return tuple(params)
+        return params
 
     @override
     def relay_cpp_expression(
@@ -334,15 +322,9 @@ class Stop(RelayNode):
         return _remove_events_from_set(input_event_set, self._event_types)
 
     @override
-    def parameters(self) -> tuple[tuple[CppIdentifier, CppTypeName, Any], ...]:
+    def parameters(self) -> Sequence[tuple[Param, CppTypeName]]:
         if isinstance(self._msg_prefix, Param):
-            return (
-                (
-                    self._msg_prefix.name,
-                    CppTypeName("std::string"),
-                    self._msg_prefix.default_value,
-                ),
-            )
+            return ((self._msg_prefix, CppTypeName("std::string")),)
         return ()
 
     @override
@@ -385,15 +367,9 @@ class StopWithError(RelayNode):
         return _remove_events_from_set(input_event_set, self._event_types)
 
     @override
-    def parameters(self) -> tuple[tuple[CppIdentifier, CppTypeName, Any], ...]:
+    def parameters(self) -> Sequence[tuple[Param, CppTypeName]]:
         if isinstance(self._msg_prefix, Param):
-            return (
-                (
-                    self._msg_prefix.name,
-                    CppTypeName("std::string"),
-                    self._msg_prefix.default_value,
-                ),
-            )
+            return ((self._msg_prefix, CppTypeName("std::string")),)
         return ()
 
     @override

@@ -2,11 +2,11 @@
 # Copyright 2019-2024 Board of Regents of the University of Wisconsin System
 # SPDX-License-Identifier: MIT
 
-from typing import Any
+from collections.abc import Sequence
 
 from typing_extensions import override
 
-from ._cpp_utils import CppExpression, CppIdentifier, CppTypeName
+from ._cpp_utils import CppExpression, CppTypeName
 from ._events import EventType
 from ._node import CodeGenerationContext
 from ._param import Param, Parameterized
@@ -46,15 +46,9 @@ class RecyclingBucketSource(BucketSource):
         self._max_count = max_bucket_count
 
     @override
-    def parameters(self) -> tuple[tuple[CppIdentifier, CppTypeName, Any], ...]:
+    def parameters(self) -> Sequence[tuple[Param, CppTypeName]]:
         if isinstance(self._max_count, Param):
-            return (
-                (
-                    self._max_count.name,
-                    CppTypeName("std::size_t"),
-                    self._max_count.default_value,
-                ),
-            )
+            return ((self._max_count, CppTypeName("std::size_t")),)
         return ()
 
     @override

@@ -2,13 +2,14 @@
 # Copyright 2019-2024 Board of Regents of the University of Wisconsin System
 # SPDX-License-Identifier: MIT
 
+from collections.abc import Sequence
 from textwrap import dedent
-from typing import Any, final
+from typing import final
 
 from typing_extensions import override
 
 from . import _cpp_utils
-from ._cpp_utils import CppExpression, CppIdentifier, CppTypeName
+from ._cpp_utils import CppExpression, CppTypeName
 from ._node import CodeGenerationContext
 from ._param import Param, Parameterized
 
@@ -29,25 +30,13 @@ class BinaryFileInputStream(InputStream):
         self._start = start
 
     @override
-    def parameters(self) -> tuple[tuple[CppIdentifier, CppTypeName, Any], ...]:
-        params: list[tuple[CppIdentifier, CppTypeName, Any]] = []
+    def parameters(self) -> Sequence[tuple[Param, CppTypeName]]:
+        params: list[tuple[Param, CppTypeName]] = []
         if isinstance(self._filename, Param):
-            params.append(
-                (
-                    self._filename.name,
-                    CppTypeName("std::string"),
-                    self._filename.default_value,
-                )
-            )
+            params.append((self._filename, CppTypeName("std::string")))
         if isinstance(self._start, Param):
-            params.append(
-                (
-                    self._start.name,
-                    CppTypeName("tcspc::u64"),
-                    self._start.default_value,
-                )
-            )
-        return tuple(params)
+            params.append((self._start, CppTypeName("tcspc::u64")))
+        return params
 
     @override
     def cpp_expression(

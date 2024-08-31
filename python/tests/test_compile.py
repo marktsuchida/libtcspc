@@ -2,7 +2,7 @@
 # Copyright 2019-2024 Board of Regents of the University of Wisconsin System
 # SPDX-License-Identifier: MIT
 
-from typing import Any
+from collections.abc import Sequence
 
 import cppyy
 import pytest
@@ -16,6 +16,7 @@ from libtcspc._cpp_utils import CppIdentifier, CppTypeName
 from libtcspc._events import EventType
 from libtcspc._graph import Graph
 from libtcspc._node import RelayNode
+from libtcspc._param import Param
 from libtcspc._processors import CheckMonotonic, Count, NullSink
 
 IntEvent = EventType(CppTypeName("int"))
@@ -24,12 +25,12 @@ IntEvent = EventType(CppTypeName("int"))
 def test_compile_collect_params_duplicate():
     class ParamNode(RelayNode):
         def __init__(self, param_name: str) -> None:
-            self._param_name = CppIdentifier(param_name)
+            self._param_name = param_name
 
-        def parameters(
-            self,
-        ) -> tuple[tuple[CppIdentifier, CppTypeName, Any], ...]:
-            return ((self._param_name, CppTypeName("int"), None),)
+        def parameters(self) -> Sequence[tuple[Param, CppTypeName]]:
+            return (
+                (Param(CppIdentifier(self._param_name)), CppTypeName("int")),
+            )
 
     g = Graph()
     g.add_node("a", ParamNode("hello"))

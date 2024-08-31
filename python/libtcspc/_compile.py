@@ -20,6 +20,7 @@ from ._cpp_utils import (
 from ._events import EventType
 from ._graph import Graph, _collect_access_tags, _collect_params
 from ._node import CodeGenerationContext
+from ._param import Param
 
 cppyy.include("libtcspc/tcspc.hpp")
 
@@ -43,12 +44,12 @@ class CompiledGraph:
         instantiator: Any,
         access_types: Iterable[tuple[str, type[Access]]],
         param_struct: Any,
-        params: list[tuple[CppIdentifier, CppTypeName, Any]],
+        params: Iterable[tuple[Param, CppTypeName]],
     ) -> None:
         self._instantiator = instantiator
         self._access_types = tuple(access_types)
         self._param_struct = param_struct
-        self._params = params
+        self._params = tuple(params)
 
     def access_types(self) -> tuple[tuple[str, type[Access]], ...]:
         return self._access_types
@@ -189,7 +190,7 @@ def compile_graph(
         )
 
     params = _collect_params(graph)
-    param_types = ((name, cpp_type) for name, cpp_type, default in params)
+    param_types = ((p.name, cpp_type) for p, cpp_type in params)
     genctx = CodeGenerationContext(
         CppIdentifier("ctx"), CppIdentifier("params")
     )
