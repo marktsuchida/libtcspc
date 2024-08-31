@@ -64,11 +64,11 @@ def _make_type_list(event_types: Iterable[EventType]) -> CppTypeName:
 
 def read_events_from_binary_file(
     event_type: EventType,
-    filename: str,
+    filename: str | Param[str],
     *,
-    start_offset: int = 0,
-    max_length: int = -1,
-    read_granularity_bytes: int = 65536,
+    start_offset: int | Param[int] = 0,
+    max_length: int | Param[int] = -1,
+    read_granularity_bytes: int | Param[int] = 65536,
     stop_normally_on_error: bool = False,
 ) -> Node:
     g = Graph()
@@ -277,7 +277,6 @@ class ReadBinaryStream(RelayNode):
             )
         else:
             granularity = f"{self._granularity}uLL"
-
         return CppExpression(
             dedent(f"""\
             tcspc::read_binary_stream<{self._event_type.cpp_type_name()}>(

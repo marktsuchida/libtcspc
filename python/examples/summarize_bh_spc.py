@@ -12,14 +12,14 @@ cppyy.include("cstdint")
 
 def summarize(filename: str) -> int:
     # BH SPC has no negative channel or marker numbers.
-    dtypes = tcspc.DataTypes(channel_type="std::uint32_t")
+    dtypes = tcspc.DataTypes(channel_type=tcspc.CppTypeName("std::uint32_t"))
 
     g = tcspc.Graph()
     g.add_sequence(
         [
             tcspc.read_events_from_binary_file(
                 tcspc.BHSPCEvent,
-                filename,
+                tcspc.Param(tcspc.CppIdentifier("filename")),
                 start_offset=4,
                 stop_normally_on_error=True,
             ),
@@ -49,7 +49,9 @@ def summarize(filename: str) -> int:
     ret = 0
     try:
         cg = tcspc.compile_graph(g)
-        ctx = tcspc.create_execution_context(cg, {})
+        ctx = tcspc.create_execution_context(
+            cg, {tcspc.CppIdentifier("filename"): filename}
+        )
         ctx.flush()
     except tcspc.EndOfProcessing as e:
         print(f"Stopped because: {e}")

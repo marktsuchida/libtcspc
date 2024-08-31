@@ -17,7 +17,7 @@ class Param(Generic[T]):
     """
 
     name: CppIdentifier
-    default_value: T | None
+    default_value: T | None = None
 
 
 class Parameterized:

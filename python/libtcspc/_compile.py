@@ -10,7 +10,7 @@ from typing import Any
 
 import cppyy
 
-from ._access import Access, Accessible
+from ._access import Access
 from ._cpp_utils import (
     CppExpression,
     CppIdentifier,
@@ -18,8 +18,12 @@ from ._cpp_utils import (
     CppTypeName,
 )
 from ._events import EventType
-from ._graph import CodeGenerationContext, Graph
-from ._param import Parameterized
+from ._graph import (
+    CodeGenerationContext,
+    Graph,
+    _collect_access_tags,
+    _collect_params,
+)
 
 cppyy.include("libtcspc/tcspc.hpp")
 
@@ -156,64 +160,6 @@ def _compile_instantiator(
         getattr(cppyy.gbl.tcspc.py.compile, struct_name),
         getattr(cppyy.gbl.tcspc.py.compile, fname),
     )
-
-
-def _collect_params(
-    graph: Graph,
-) -> list[tuple[CppIdentifier, CppTypeName, Any]]:
-    params: list[tuple[CppIdentifier, CppTypeName, Any]] = []
-
-    def visit(node_name: str, node: Parameterized):
-        params.extend(node.parameters())
-
-    graph.visit_nodes(visit)
-
-    if len(params) > len(set(p for p, _, _ in params)):
-        param_nodes: dict[CppIdentifier, list[str]] = {}
-
-        def visit(node_name: str, node: Parameterized):
-            for param, _, _ in node.parameters():
-                param_nodes.setdefault(param, []).append(node_name)
-
-        graph.visit_nodes(visit)
-
-        for param, node_names in (
-            (p, ns) for p, ns in param_nodes.items() if len(ns) > 1
-        ):
-            strnames = ", ".join(node_names)
-            raise ValueError(
-                f"graph contains duplicate parameter {param} in nodes {strnames}"
-            )
-
-    return params
-
-
-def _collect_access_tags(graph: Graph) -> list[tuple[str, type[Access]]]:
-    accesses: list[tuple[str, type[Access]]] = []
-
-    def visit(node_name: str, node: Accessible):
-        accesses.extend(node.accesses())
-
-    graph.visit_nodes(visit)
-
-    if len(accesses) > len(set(t for t, _ in accesses)):
-        tag_nodes: dict[str, list[str]] = {}
-
-        def visit(node_name: str, node: Accessible):
-            for tag, _ in node.accesses():
-                tag_nodes.setdefault(tag, []).append(node_name)
-
-        graph.visit_nodes(visit)
-
-        for tag, node_names in (
-            (t, ns) for t, ns in tag_nodes.items() if len(ns) > 1
-        ):
-            strnames = ", ".join(node_names)
-            raise ValueError(
-                f"graph contains duplicate access tag {tag} in nodes {strnames}"
-            )
-
-    return accesses
 
 
 def compile_graph(
