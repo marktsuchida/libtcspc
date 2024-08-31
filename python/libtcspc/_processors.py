@@ -75,7 +75,7 @@ def read_events_from_binary_file(
                 ReadBinaryStream(
                     event_type,
                     _streams.BinaryFileInputStream(
-                        filename, start=start_offset
+                        filename, start_offset=start_offset
                     ),
                     max_length,
                     _bucket_sources.RecyclingBucketSource(event_type),

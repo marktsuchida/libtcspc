@@ -23,29 +23,39 @@ class InputStream(Parameterized):
 @final
 class BinaryFileInputStream(InputStream):
     def __init__(
-        self, filename: str | Param[str], *, start: int | Param[int] = 0
+        self, filename: str | Param[str], *, start_offset: int | Param[int] = 0
     ) -> None:
+        if isinstance(start_offset, int) and start_offset < 0:
+            raise ValueError("start_offset must not be negative")
+        if (
+            isinstance(start_offset, Param)
+            and start_offset.default_value is not None
+            and start_offset.default_value < 0
+        ):
+            raise ValueError(
+                "default value for start_offset must not be negative"
+            )
         self._filename = filename
-        self._start = start
+        self._start_offset = start_offset
 
     @override
     def parameters(self) -> Sequence[tuple[Param, CppTypeName]]:
         params: list[tuple[Param, CppTypeName]] = []
         if isinstance(self._filename, Param):
             params.append((self._filename, CppTypeName("std::string")))
-        if isinstance(self._start, Param):
-            params.append((self._start, CppTypeName("tcspc::u64")))
+        if isinstance(self._start_offset, Param):
+            params.append((self._start_offset, CppTypeName("tcspc::u64")))
         return params
 
     @override
     def cpp_expression(
         self, gencontext: CodeGenerationContext
     ) -> CppExpression:
-        start = gencontext.u64_expression(self._start)
+        start_offset = gencontext.u64_expression(self._start_offset)
         return CppExpression(
             dedent(f"""\
                 tcspc::binary_file_input_stream(
                     {gencontext.string_expression(self._filename)},
-                    tcspc::arg::start_offset<tcspc::u64>{{{start}}}
+                    tcspc::arg::start_offset<tcspc::u64>{{{start_offset}}}
                 )""")
         )

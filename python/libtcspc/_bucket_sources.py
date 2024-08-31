@@ -40,6 +40,17 @@ class RecyclingBucketSource(BucketSource):
         clear_recycled: bool = False,
         max_bucket_count: int | Param[int] | None = None,
     ) -> None:
+        if isinstance(max_bucket_count, int) and max_bucket_count < 0:
+            raise ValueError("max_bucket_count must not be negative")
+        if (
+            isinstance(max_bucket_count, Param)
+            and max_bucket_count.default_value is not None
+            and max_bucket_count.default_value < 0
+        ):
+            raise ValueError(
+                "default value for max_bucket_count must not be negative"
+            )
+
         self._object_type = object_type
         self._blocking = blocking
         self._clear = clear_recycled
