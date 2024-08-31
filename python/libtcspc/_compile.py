@@ -18,7 +18,7 @@ from ._cpp_utils import (
     CppTypeName,
 )
 from ._events import EventType
-from ._graph import Graph, _collect_access_tags, _collect_params
+from ._graph import Graph
 from ._node import CodeGenerationContext
 from ._param import Param
 
@@ -189,7 +189,7 @@ def compile_graph(
             f"graph is not executable (must have no output ports; found {n_out})"
         )
 
-    params = _collect_params(graph)
+    params = graph.parameters()
     param_types = ((p.name, cpp_type) for p, cpp_type in params)
     genctx = CodeGenerationContext(
         CppIdentifier("ctx"), CppIdentifier("params")
@@ -201,5 +201,5 @@ def compile_graph(
         param_types,
         (e.cpp_type_name() for e in input_event_types),
     )
-    access_types = _collect_access_tags(graph)
+    access_types = graph.accesses()
     return CompiledGraph(instantiator, access_types, param_struct, params)
