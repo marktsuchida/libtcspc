@@ -4,7 +4,7 @@
 
 import functools
 import itertools
-from collections.abc import Iterable
+from collections.abc import Iterable, Sequence
 from textwrap import dedent
 from typing import Any
 
@@ -51,7 +51,10 @@ class CompiledGraph:
         self._param_struct = param_struct
         self._params = tuple(params)
 
-    def access_types(self) -> tuple[tuple[str, type[Access]], ...]:
+    def parameters(self) -> Sequence[tuple[Param, CppTypeName]]:
+        return self._params
+
+    def accesses(self) -> Sequence[tuple[str, type[Access]]]:
         return self._access_types
 
 

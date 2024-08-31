@@ -2,7 +2,7 @@
 # Copyright 2019-2024 Board of Regents of the University of Wisconsin System
 # SPDX-License-Identifier: MIT
 
-from collections.abc import Sequence
+from collections.abc import Iterable
 from contextlib import contextmanager
 from typing import Any
 
@@ -42,7 +42,7 @@ class ExecutionContext:
         self,
         cpp_context,
         cpp_proc,
-        access_types: Sequence[tuple[str, type[Access]]],
+        access_types: Iterable[tuple[str, type[Access]]],
     ) -> None:
         self._ctx = cpp_context
         self._proc = cpp_proc
@@ -152,7 +152,7 @@ def create_execution_context(
         graph.
     """
     args = {} if arguments is None else arguments.copy()
-    for param, _ in compiled_graph._params:
+    for param, _ in compiled_graph.parameters():
         if param.name not in args.copy():
             if param.default_value is None:
                 raise ValueError(
@@ -173,6 +173,6 @@ def create_execution_context(
         processor.handle.__release_gil__ = True
     processor.flush.__release_gil__ = True
 
-    access_types = compiled_graph.access_types()
+    access_types = compiled_graph.accesses()
 
     return ExecutionContext(context, processor, access_types)
