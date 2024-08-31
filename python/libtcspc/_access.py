@@ -2,6 +2,7 @@
 # Copyright 2019-2024 Board of Regents of the University of Wisconsin System
 # SPDX-License-Identifier: MIT
 
+from collections.abc import Sequence
 from dataclasses import dataclass
 
 import cppyy
@@ -49,14 +50,14 @@ class Accessible:
     (``Node``) or their auxiliary objects.
     """
 
-    def accesses(self) -> tuple[tuple[str, type[Access]], ...]:
+    def accesses(self) -> Sequence[tuple[str, type[Access]]]:
         """
         Return the names and types of accesses offered by this object and any
         sub-objects.
 
         Returns
         -------
-        tuple[tuple[str, type], ...]
+        Sequence[tuple[str, type]]
             Access tags and their (Python) types.
         """
         return ()

@@ -537,8 +537,8 @@ class Subgraph(Node):
         return _collect_params(self._graph)
 
     @override
-    def accesses(self) -> tuple[tuple[str, type[Access]], ...]:
-        return tuple(_collect_access_tags(self._graph))
+    def accesses(self) -> Sequence[tuple[str, type[Access]]]:
+        return _collect_access_tags(self._graph)
 
     @override
     def cpp_expression(

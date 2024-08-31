@@ -134,7 +134,7 @@ class Count(TypePreservingRelayNode):
         self._access_tag = access_tag.tag
 
     @override
-    def accesses(self) -> tuple[tuple[str, type[_access.Access]], ...]:
+    def accesses(self) -> Sequence[tuple[str, type[_access.Access]]]:
         return ((self._access_tag, _access.CountAccess),)
 
     @override
