@@ -6,9 +6,9 @@ from collections.abc import Sequence
 
 from typing_extensions import override
 
+from ._codegen import CodeGenerationContext
 from ._cpp_utils import CppExpression, CppTypeName
 from ._events import EventType
-from ._node import CodeGenerationContext
 from ._param import Param, Parameterized
 
 
@@ -38,7 +38,7 @@ class RecyclingBucketSource(BucketSource):
         *,
         blocking: bool = False,
         clear_recycled: bool = False,
-        max_bucket_count: int | Param[int] = -1,
+        max_bucket_count: int | Param[int] | None = None,
     ) -> None:
         self._object_type = object_type
         self._blocking = blocking
@@ -62,10 +62,11 @@ class RecyclingBucketSource(BucketSource):
                 "true" if self._clear else "false",
             )
         )
-        if isinstance(self._max_count, Param):
-            max_count = f"{gencontext.params_varname}.{self._max_count.name}"
-        else:
-            max_count = f"{self._max_count}uLL" if self._max_count >= 0 else ""
+        max_count = (
+            ""
+            if self._max_count is None
+            else gencontext.size_t_expression(self._max_count)
+        )
         return CppExpression(
             f"tcspc::recycling_bucket_source<{tmpl_args}>::create({max_count})"
         )

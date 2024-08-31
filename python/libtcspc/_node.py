@@ -3,21 +3,15 @@
 # SPDX-License-Identifier: MIT
 
 from collections.abc import Collection, Sequence
-from dataclasses import dataclass
 from typing import final
 
 from typing_extensions import override
 
 from ._access import Accessible
-from ._cpp_utils import CppExpression, CppIdentifier
+from ._codegen import CodeGenerationContext
+from ._cpp_utils import CppExpression
 from ._events import EventType
 from ._param import Parameterized
-
-
-@dataclass(frozen=True)
-class CodeGenerationContext:
-    context_varname: CppIdentifier
-    params_varname: CppIdentifier
 
 
 class Node(Accessible, Parameterized):

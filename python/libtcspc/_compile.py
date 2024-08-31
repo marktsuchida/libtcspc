@@ -11,6 +11,7 @@ from typing import Any
 import cppyy
 
 from ._access import Access
+from ._codegen import CodeGenerationContext
 from ._cpp_utils import (
     CppExpression,
     CppIdentifier,
@@ -19,7 +20,6 @@ from ._cpp_utils import (
 )
 from ._events import EventType
 from ._graph import Graph
-from ._node import CodeGenerationContext
 from ._param import Param
 
 cppyy.include("libtcspc/tcspc.hpp")

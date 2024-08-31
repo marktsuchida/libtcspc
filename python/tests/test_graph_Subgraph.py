@@ -4,8 +4,9 @@
 
 import cppyy
 from cpp_utils import isolated_cppdef
+from libtcspc._codegen import CodeGenerationContext
 from libtcspc._cpp_utils import CppExpression, CppIdentifier
-from libtcspc._graph import CodeGenerationContext, Graph, Node, Subgraph
+from libtcspc._graph import Graph, Node, Subgraph
 
 cppyy.include("tuple")
 

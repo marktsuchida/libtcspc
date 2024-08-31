@@ -36,6 +36,7 @@ cppyy.include("libtcspc/tcspc.hpp")
 
 from ._access import *
 from ._bucket_sources import *
+from ._codegen import *
 from ._compile import *
 from ._events import *
 from ._execute import *

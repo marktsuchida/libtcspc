@@ -13,9 +13,10 @@ import cppyy
 from typing_extensions import override
 
 from ._access import Access, Accessible
+from ._codegen import CodeGenerationContext
 from ._cpp_utils import CppExpression, CppIdentifier, CppTypeName
 from ._events import EventType
-from ._node import CodeGenerationContext, Node
+from ._node import Node
 from ._param import Param, Parameterized
 
 cppyy.include("tuple")

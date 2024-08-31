@@ -19,6 +19,7 @@ py_sources = files(
     '__init__.py',
     '_access.py',
     '_bucket_sources.py',
+    '_codegen.py',
     '_compile.py',
     '_cpp_utils.py',
     '_data_types.py',

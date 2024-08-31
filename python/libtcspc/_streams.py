@@ -8,9 +8,8 @@ from typing import final
 
 from typing_extensions import override
 
-from . import _cpp_utils
+from ._codegen import CodeGenerationContext
 from ._cpp_utils import CppExpression, CppTypeName
-from ._node import CodeGenerationContext
 from ._param import Param, Parameterized
 
 
@@ -42,18 +41,11 @@ class BinaryFileInputStream(InputStream):
     def cpp_expression(
         self, gencontext: CodeGenerationContext
     ) -> CppExpression:
-        if isinstance(self._filename, Param):
-            filename = f"{gencontext.params_varname}.{self._filename.name}"
-        else:
-            filename = _cpp_utils.quote_string(self._filename)
-        if isinstance(self._start, Param):
-            start = f"{gencontext.params_varname}.{self._start.name}"
-        else:
-            start = f"{self._start}uLL"
+        start = gencontext.u64_expression(self._start)
         return CppExpression(
             dedent(f"""\
                 tcspc::binary_file_input_stream(
-                    {filename},
+                    {gencontext.string_expression(self._filename)},
                     tcspc::arg::start_offset<tcspc::u64>{{{start}}}
                 )""")
         )

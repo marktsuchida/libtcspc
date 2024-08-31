@@ -6,9 +6,10 @@
 import cppyy
 import pytest
 from cpp_utils import isolated_cppdef
+from libtcspc._codegen import CodeGenerationContext
 from libtcspc._cpp_utils import CppExpression, CppIdentifier, CppTypeName
 from libtcspc._events import EventType
-from libtcspc._graph import CodeGenerationContext, Graph, Node
+from libtcspc._graph import Graph, Node
 
 cppyy.include("memory")
 cppyy.include("tuple")

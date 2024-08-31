@@ -10,16 +10,12 @@ import cppyy
 from typing_extensions import override
 
 from . import _access, _bucket_sources, _cpp_utils, _events, _streams
+from ._codegen import CodeGenerationContext
 from ._cpp_utils import CppExpression, CppTypeName
 from ._data_types import DataTypes
 from ._events import EventType
 from ._graph import Graph, Subgraph
-from ._node import (
-    CodeGenerationContext,
-    Node,
-    RelayNode,
-    TypePreservingRelayNode,
-)
+from ._node import Node, RelayNode, TypePreservingRelayNode
 from ._param import Param
 
 cppyy.include("libtcspc/tcspc.hpp")
@@ -66,7 +62,7 @@ def read_events_from_binary_file(
     filename: str | Param[str],
     *,
     start_offset: int | Param[int] = 0,
-    max_length: int | Param[int] = -1,
+    max_length: int | Param[int] | None = None,
     read_granularity_bytes: int | Param[int] = 65536,
     stop_normally_on_error: bool = False,
 ) -> Node:
@@ -215,14 +211,18 @@ class ReadBinaryStream(RelayNode):
         self,
         event_type: EventType,
         stream: _streams.InputStream,
-        max_length: int | Param[int],
-        buffer_provider: _bucket_sources.BucketSource,
-        read_granularity_bytes: int | Param[int],
+        max_length: int | Param[int] | None = None,
+        buffer_provider: _bucket_sources.BucketSource | None = None,
+        read_granularity_bytes: int | Param[int] = 65536,
     ):
         self._event_type = event_type
         self._stream = stream
         self._maxlen = max_length
-        self._bucket_source = buffer_provider
+        self._bucket_source = (
+            buffer_provider
+            if buffer_provider is not None
+            else _bucket_sources.RecyclingBucketSource(event_type)
+        )
         self._granularity = read_granularity_bytes
 
     @override
@@ -249,21 +249,12 @@ class ReadBinaryStream(RelayNode):
         gencontext: CodeGenerationContext,
         downstream: CppExpression,
     ) -> CppExpression:
-        if isinstance(self._maxlen, Param):
-            maxlen = f"{gencontext.params_varname}.{self._maxlen.name}"
-        else:
-            maxlen = (
-                f"{self._maxlen}uLL"
-                if self._maxlen >= 0
-                else "std::numeric_limits<tcspc::u64>::max()"
-            )
-
-        if isinstance(self._granularity, Param):
-            granularity = (
-                f"{gencontext.params_varname}.{self._granularity.name}"
-            )
-        else:
-            granularity = f"{self._granularity}uLL"
+        maxlen = (
+            "std::numeric_limits<tcspc::u64>::max()"
+            if self._maxlen is None
+            else gencontext.u64_expression(self._maxlen)
+        )
+        granularity = gencontext.size_t_expression(self._granularity)
         return CppExpression(
             dedent(f"""\
             tcspc::read_binary_stream<{self._event_type.cpp_type_name()}>(
@@ -333,16 +324,12 @@ class Stop(RelayNode):
         gencontext: CodeGenerationContext,
         downstream: CppExpression,
     ) -> CppExpression:
-        if isinstance(self._msg_prefix, Param):
-            prefix = f"{gencontext.params_varname}.{self._msg_prefix.name}"
-        else:
-            prefix = _cpp_utils.quote_string(self._msg_prefix)
         return CppExpression(
             dedent(f"""\
             tcspc::stop<
                 {_make_type_list(self._event_types)}
             >(
-                {prefix},
+                {gencontext.string_expression(self._msg_prefix)},
                 {downstream}
             )""")
         )
@@ -378,17 +365,13 @@ class StopWithError(RelayNode):
         gencontext: CodeGenerationContext,
         downstream: CppExpression,
     ) -> CppExpression:
-        if isinstance(self._msg_prefix, Param):
-            prefix = f"{gencontext.params_varname}.{self._msg_prefix.name}"
-        else:
-            prefix = _cpp_utils.quote_string(self._msg_prefix)
         return CppExpression(
             dedent(f"""\
             tcspc::stop_with_error<
                 {_make_type_list(self._event_types)}
                 {self._exception_type}
             >(
-                {prefix},
+                {gencontext.string_expression(self._msg_prefix)},
                 {downstream}
             )""")
         )
