@@ -321,7 +321,9 @@ class SinkEvents(Node):
 @final
 class Stop(RelayNode):
     def __init__(
-        self, event_types: Iterable[EventType], message_prefix: str
+        self,
+        event_types: Iterable[EventType],
+        message_prefix: str | Param[str],
     ) -> None:
         self._event_types = list(event_types)
         self._msg_prefix = message_prefix
@@ -333,12 +335,27 @@ class Stop(RelayNode):
         return _remove_events_from_set(input_event_set, self._event_types)
 
     @override
+    def parameters(self) -> tuple[tuple[CppIdentifier, CppTypeName, Any], ...]:
+        if isinstance(self._msg_prefix, Param):
+            return (
+                (
+                    self._msg_prefix.name,
+                    CppTypeName("std::string"),
+                    self._msg_prefix.default_value,
+                ),
+            )
+        return ()
+
+    @override
     def relay_cpp_expression(
         self,
         gencontext: CodeGenerationContext,
         downstream: CppExpression,
     ) -> CppExpression:
-        prefix = _cpp_utils.quote_string(self._msg_prefix)
+        if isinstance(self._msg_prefix, Param):
+            prefix = f"{gencontext.params_varname}.{self._msg_prefix.name}"
+        else:
+            prefix = _cpp_utils.quote_string(self._msg_prefix)
         return CppExpression(
             dedent(f"""\
             tcspc::stop<
@@ -356,7 +373,7 @@ class StopWithError(RelayNode):
         self,
         event_types: Iterable[EventType],
         exception_type: CppTypeName,
-        message_prefix: str,
+        message_prefix: str | Param[str],
     ) -> None:
         self._event_types = list(event_types)
         self._exception_type = exception_type
@@ -369,12 +386,27 @@ class StopWithError(RelayNode):
         return _remove_events_from_set(input_event_set, self._event_types)
 
     @override
+    def parameters(self) -> tuple[tuple[CppIdentifier, CppTypeName, Any], ...]:
+        if isinstance(self._msg_prefix, Param):
+            return (
+                (
+                    self._msg_prefix.name,
+                    CppTypeName("std::string"),
+                    self._msg_prefix.default_value,
+                ),
+            )
+        return ()
+
+    @override
     def relay_cpp_expression(
         self,
         gencontext: CodeGenerationContext,
         downstream: CppExpression,
     ) -> CppExpression:
-        prefix = _cpp_utils.quote_string(self._msg_prefix)
+        if isinstance(self._msg_prefix, Param):
+            prefix = f"{gencontext.params_varname}.{self._msg_prefix.name}"
+        else:
+            prefix = _cpp_utils.quote_string(self._msg_prefix)
         return CppExpression(
             dedent(f"""\
             tcspc::stop_with_error<
