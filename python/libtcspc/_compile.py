@@ -18,12 +18,8 @@ from ._cpp_utils import (
     CppTypeName,
 )
 from ._events import EventType
-from ._graph import (
-    CodeGenerationContext,
-    Graph,
-    _collect_access_tags,
-    _collect_params,
-)
+from ._graph import Graph, _collect_access_tags, _collect_params
+from ._node import CodeGenerationContext
 
 cppyy.include("libtcspc/tcspc.hpp")
 

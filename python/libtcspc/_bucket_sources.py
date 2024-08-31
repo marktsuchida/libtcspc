@@ -8,7 +8,7 @@ from typing_extensions import override
 
 from ._cpp_utils import CppExpression, CppIdentifier, CppTypeName
 from ._events import EventType
-from ._graph import CodeGenerationContext
+from ._node import CodeGenerationContext
 from ._param import Param, Parameterized
 
 

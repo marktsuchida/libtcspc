@@ -25,6 +25,7 @@ py_sources = files(
     '_events.py',
     '_execute.py',
     '_graph.py',
+    '_node.py',
     '_param.py',
     '_processors.py',
     '_streams.py',

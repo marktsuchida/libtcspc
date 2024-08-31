@@ -9,7 +9,7 @@ from typing_extensions import override
 
 from . import _cpp_utils
 from ._cpp_utils import CppExpression, CppIdentifier, CppTypeName
-from ._graph import CodeGenerationContext
+from ._node import CodeGenerationContext
 from ._param import Param, Parameterized
 
 

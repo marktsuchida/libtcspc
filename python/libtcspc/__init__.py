@@ -40,5 +40,6 @@ from ._compile import *
 from ._events import *
 from ._execute import *
 from ._graph import *
+from ._node import *
 from ._processors import *
 from ._streams import *

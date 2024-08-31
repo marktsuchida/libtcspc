@@ -14,7 +14,8 @@ from libtcspc._compile import (
 )
 from libtcspc._cpp_utils import CppIdentifier, CppTypeName
 from libtcspc._events import EventType
-from libtcspc._graph import Graph, RelayNode
+from libtcspc._graph import Graph
+from libtcspc._node import RelayNode
 from libtcspc._processors import CheckMonotonic, Count, NullSink
 
 IntEvent = EventType(CppTypeName("int"))

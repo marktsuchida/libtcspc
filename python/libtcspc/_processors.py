@@ -13,12 +13,11 @@ from . import _access, _bucket_sources, _cpp_utils, _events, _streams
 from ._cpp_utils import CppExpression, CppIdentifier, CppTypeName
 from ._data_types import DataTypes
 from ._events import EventType
-from ._graph import (
+from ._graph import Graph, Subgraph
+from ._node import (
     CodeGenerationContext,
-    Graph,
     Node,
     RelayNode,
-    Subgraph,
     TypePreservingRelayNode,
 )
 from ._param import Param
