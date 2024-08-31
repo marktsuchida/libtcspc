@@ -252,9 +252,8 @@ class ReadBinaryStream(RelayNode):
                     self._granularity.default_value,
                 )
             )
-        # TODO
-        # params.extend(self._stream.parameters())
-        # params.extend(self._bucket_source.parameters())
+        params.extend(self._stream.parameters())
+        params.extend(self._bucket_source.parameters())
         return tuple(params)
 
     @override
@@ -279,14 +278,12 @@ class ReadBinaryStream(RelayNode):
         else:
             granularity = f"{self._granularity}uLL"
 
-        # TODO: parameters need to be passed to stream and bucket source, too.
-
         return CppExpression(
             dedent(f"""\
             tcspc::read_binary_stream<{self._event_type.cpp_type_name()}>(
-                {self._stream.cpp_expression()},
+                {self._stream.cpp_expression(gencontext)},
                 tcspc::arg::max_length<tcspc::u64>{{{maxlen}}},
-                {self._bucket_source.cpp_expression()},
+                {self._bucket_source.cpp_expression(gencontext)},
                 tcspc::arg::granularity<std::size_t>{{{granularity}}},
                 {downstream}
             )""")
