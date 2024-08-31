@@ -650,17 +650,15 @@ class Graph:
             else:
                 node_defs.append(f"auto {inputs[0]} = {node_code};")
 
-        input_refs = [
-            CppExpression(f"std::move({internal_name_index[node_input]})")
-            for node_input in self._inputs()
+        input_names: list[CppIdentifier] = [
+            internal_name_index[node_input] for node_input in self._inputs()
         ]
-        input_ref_list = ", ".join(input_refs)
-        input_ref_maybe_tuple = (
-            CppExpression(f"std::tuple{{{input_ref_list}}}")
-            if len(input_refs) != 1
-            else input_ref_list
+        moved_input_names = ", ".join(f"std::move({n})" for n in input_names)
+        return_expr = (
+            CppExpression(input_names[0])  # No move needed due to NRVO.
+            if len(input_names) == 1
+            else (CppExpression(f"std::tuple{{{moved_input_names}}}"))
         )
-
         external_name_params = ", ".join(f"auto &&{d}" for d in external_names)
         downstream_args = ", ".join(downstreams)
         node_def_lines = "\n".join(node_defs)
@@ -671,7 +669,7 @@ class Graph:
             dedent(f"""\
                 [{captures}]({external_name_params}) {{
                     {node_def_lines}
-                    return {input_ref_maybe_tuple};
+                    return {return_expr};
                 }}({downstream_args})""")
         )
 
