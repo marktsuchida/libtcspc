@@ -46,8 +46,9 @@ template <typename BinIndex> class bin_increment_batch_journal {
     // Delta- and run-length-encoded batch indices of stored batches, storing
     // delta (index diff since last non-empty batch) and count (batch size). If
     // delta or count exceeds 255, use extra entries:
-    // E.g., delta = 300: (255, 0), (45, count)
-    // E.g., count = 300: (delta, 255), (0, 45)
+    // E.g., delta < 256, count < 256: (delta, count)
+    // E.g., delta = 300, count < 256: (255, 0), (45, count)
+    // E.g., delta < 256, count = 300: (delta, 255), (0, 45)
     // E.g., delta = 270, count = 500: (255, 0), (15, 255), (0, 245)
     std::vector<std::pair<std::uint8_t, std::uint8_t>> encoded_indices;
 
