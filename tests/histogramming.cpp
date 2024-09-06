@@ -22,177 +22,114 @@ namespace tcspc::internal {
 
 TEST_CASE("Journal basic operations") {
     bin_increment_batch_journal<u16> j;
-    REQUIRE(j.num_batches() == 0);
+    REQUIRE(j.empty());
     REQUIRE(j.begin() == j.end());
 
     j.append_batch(std::array<u16, 1>{42});
-    REQUIRE(j.num_batches() == 1);
+    REQUIRE(j.size() == 1);
 
+    using std::swap;
     bin_increment_batch_journal<u16> j2;
-    j.swap(j2);
-    REQUIRE(j.num_batches() == 0);
-    REQUIRE(j2.num_batches() == 1);
-    j2.swap(j);
-    REQUIRE(j.num_batches() == 1);
-    REQUIRE(j2.num_batches() == 0);
+    swap(j, j2);
+    REQUIRE(j.empty());
+    REQUIRE(j2.size() == 1);
+    swap(j2, j);
+    REQUIRE(j.size() == 1);
+    REQUIRE(j2.empty());
 
     bin_increment_batch_journal<u16> j3 = j;
-    REQUIRE(j3.num_batches() == 1);
+    REQUIRE(j3.size() == 1);
 
     j.clear();
-    REQUIRE(j.num_batches() == 0);
+    REQUIRE(j.empty());
     j3.clear();
-    REQUIRE(j3.num_batches() == 0);
+    REQUIRE(j3.empty());
 }
 
 TEST_CASE("Journal iterator") {
-    bin_increment_batch_journal<u16> j;
+    bin_increment_batch_journal<u8> j;
 
     SECTION("Empty") {
-        for ([[maybe_unused]] auto [index, bis] : j) {
+        for ([[maybe_unused]] auto batch : j) {
             REQUIRE(false);
         }
 
         j.append_batch({});
         j.append_batch({});
-        REQUIRE(j.num_batches() == 2);
-        REQUIRE(j.begin() == j.end());
+        REQUIRE(j.size() == 2);
     }
 
     SECTION("Start with non-empty batch") {
-        j.append_batch(std::array<u16, 1>{42});
+        j.append_batch(std::array<u8, 1>{42});
         {
             auto it = j.begin();
             REQUIRE(it != j.end());
-            auto [index, bis] = *it;
-            REQUIRE(index == 0);
-            REQUIRE(bis.size() == 1);
-            REQUIRE(bis[0] == 42);
+            auto batch = *it;
+            REQUIRE(batch.size() == 1);
+            REQUIRE(batch[0] == 42);
         }
 
-        j.append_batch(std::array<u16, 2>{43, 44});
+        j.append_batch(std::array<u8, 2>{43, 44});
         {
             auto it = j.begin();
             {
-                auto [index, bis] = *it;
-                REQUIRE(index == 0);
-                REQUIRE(bis.size() == 1);
-                REQUIRE(bis[0] == 42);
+                auto batch = *it;
+                REQUIRE(batch.size() == 1);
+                REQUIRE(batch[0] == 42);
             }
             ++it;
             REQUIRE(it != j.end());
             {
-                auto [index, bis] = *it;
-                REQUIRE(index == 1);
-                REQUIRE(bis.size() == 2);
-                REQUIRE(bis[0] == 43);
-                REQUIRE(bis[1] == 44);
+                auto batch = *it;
+                REQUIRE(batch.size() == 2);
+                REQUIRE(batch[0] == 43);
+                REQUIRE(batch[1] == 44);
             }
         }
     }
 
     SECTION("Start with empty batch") {
         j.append_batch({});
-        REQUIRE(j.num_batches() == 1);
-        REQUIRE(j.begin() == j.end());
-        j.append_batch(std::array<u16, 1>{42});
+        REQUIRE(j.size() == 1);
+        j.append_batch(std::array<u8, 1>{42});
         auto it = j.begin();
         REQUIRE(it != j.end());
-        auto [index, bis] = *it;
-        REQUIRE(index == 1);
-        REQUIRE(bis.size() == 1);
-        REQUIRE(bis[0] == 42);
+        auto batch = *it++;
+        REQUIRE(batch.empty());
+        batch = *it++;
+        REQUIRE(batch.size() == 1);
+        REQUIRE(batch[0] == 42);
+        REQUIRE(it == j.end());
     }
 
-    SECTION("Start with 2 empty batches") {
-        j.append_batch({});
-        REQUIRE(j.num_batches() == 1);
-        REQUIRE(j.begin() == j.end());
-        j.append_batch({});
-        REQUIRE(j.num_batches() == 2);
-        REQUIRE(j.begin() == j.end());
-        j.append_batch(std::array<u16, 1>{42});
-        auto it = j.begin();
-        REQUIRE(it != j.end());
-        auto [index, bis] = *it;
-        REQUIRE(index == 2);
-        REQUIRE(bis.size() == 1);
-        REQUIRE(bis[0] == 42);
-    }
-
-    SECTION("Start with 255 empty batches") {
-        for (int i = 0; i < 255; ++i)
-            j.append_batch({});
-        j.append_batch(std::array<u16, 1>{42});
-        REQUIRE(j.num_batches() == 256);
-        auto it = j.begin();
-        REQUIRE(it != j.end());
-        auto [index, bis] = *it;
-        REQUIRE(index == 255);
-        REQUIRE(bis.size() == 1);
-        REQUIRE(bis[0] == 42);
-    }
-
-    SECTION("Start with 256 empty batches") {
-        for (int i = 0; i < 256; ++i)
-            j.append_batch({});
-        j.append_batch(std::array<u16, 1>{42});
-        REQUIRE(j.num_batches() == 257);
-        auto it = j.begin();
-        REQUIRE(it != j.end());
-        auto [index, bis] = *it;
-        REQUIRE(index == 256);
-        REQUIRE(bis.size() == 1);
-        REQUIRE(bis[0] == 42);
+    SECTION("Start with batch of size 254") {
+        std::vector<u8> batch(254, 42);
+        j.append_batch(batch);
+        REQUIRE(j.size() == 1);
+        auto b = *(j.begin());
+        REQUIRE(b.size() == 254);
+        REQUIRE(b[0] == 42);
+        REQUIRE(b[253] == 42);
     }
 
     SECTION("Start with batch of size 255") {
-        std::vector<u16> batch(255, 42);
+        std::vector<u8> batch(255, 42);
         j.append_batch(batch);
-        REQUIRE(j.num_batches() == 1);
-        auto it = j.begin();
-        REQUIRE(it != j.end());
-        auto [index, bis] = *it;
-        REQUIRE(index == 0);
-        REQUIRE(bis.size() == 255);
-        REQUIRE(bis[0] == 42);
+        REQUIRE(j.size() == 1);
+        auto b = *(j.begin());
+        REQUIRE(b.size() == 255);
+        REQUIRE(b[0] == 42);
+        REQUIRE(b[254] == 42);
     }
 
     SECTION("Start with batch of size 256") {
-        std::vector<u16> batch(256, 42);
+        std::vector<u8> batch(256, 42);
         j.append_batch(batch);
-        REQUIRE(j.num_batches() == 1);
-        auto it = j.begin();
-        REQUIRE(it != j.end());
-        auto [index, bis] = *it;
-        REQUIRE(index == 0);
-        REQUIRE(bis.size() == 256);
-        REQUIRE(bis[0] == 42);
-    }
-
-    SECTION("Batch of size 256 following 255 empty batches") {
-        std::vector<u16> batch(256, 123);
-        j.append_batch(std::array<u16, 1>{42});
-        for (int i = 0; i < 255; ++i)
-            j.append_batch({});
-        j.append_batch(batch);
-        REQUIRE(j.num_batches() == 257);
-        auto it = j.begin();
-        REQUIRE(it != j.end());
-        {
-            auto [index, bis] = *it;
-            REQUIRE(index == 0);
-            REQUIRE(bis.size() == 1);
-            REQUIRE(bis[0] == 42);
-        }
-        ++it;
-        REQUIRE(it != j.end());
-        {
-            auto [index, bis] = *it;
-            REQUIRE(index == 256);
-            REQUIRE(bis.size() == 256);
-            REQUIRE(bis[0] == 123);
-        }
+        REQUIRE(j.size() == 1);
+        auto b = *(j.begin());
+        REQUIRE(b.size() == 256);
+        REQUIRE(b[0] == 42);
+        REQUIRE(b[255] == 42);
     }
 }
 

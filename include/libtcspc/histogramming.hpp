@@ -8,16 +8,14 @@
 
 #include "arg_wrappers.hpp"
 #include "common.hpp"
-#include "int_arith.hpp"
 #include "span.hpp"
 
 #include <algorithm>
 #include <cassert>
 #include <cstddef>
-#include <cstdint>
 #include <iterator>
+#include <limits>
 #include <ostream>
-#include <tuple>
 #include <type_traits>
 #include <utility>
 #include <vector>
@@ -37,270 +35,151 @@ template <typename BinIndex> class bin_increment_batch_journal {
     using bin_index_type = BinIndex;
 
   private:
-    std::size_t n_batches = 0; // Including empty batches.
+    using batch_size_type = std::make_unsigned_t<bin_index_type>;
+    static_assert(sizeof(batch_size_type) <= sizeof(std::size_t));
 
-    // Index of last non-empty batch. We use -1, not 0, as initial value so
-    // that the first entry in encoded_indices has a positive delta.
-    std::size_t last_stored_index = std::size_t(-1);
+    static constexpr auto batch_size_max =
+        std::numeric_limits<batch_size_type>::max();
 
-    // Delta- and run-length-encoded batch indices of stored batches, storing
-    // delta (index diff since last non-empty batch) and count (batch size). If
-    // delta or count exceeds 255, use extra entries:
-    // E.g., delta < 256, count < 256: (delta, count)
-    // E.g., delta = 300, count < 256: (255, 0), (45, count)
-    // E.g., delta < 256, count = 300: (delta, 255), (0, 45)
-    // E.g., delta = 270, count = 500: (255, 0), (15, 255), (0, 245)
-    std::vector<std::pair<std::uint8_t, std::uint8_t>> encoded_indices;
+    static constexpr auto large_batch_size_element_count =
+        sizeof(std::size_t) / sizeof(batch_size_type);
 
-    // The bin indices from all batches, concatenated.
-    std::vector<BinIndex> all_bin_indices;
+    static constexpr std::size_t batch_size_mask{batch_size_max};
+
+    // Size-prefixed batches. Before every batch (contiguous bin indices),
+    // including empty batches, the size of the batch is encoding in one or
+    // more elements (interpreted as batch_size_type). A single element is used
+    // if the batch size is less than batch_size_max. Otherwise a multi-element
+    // encoding is used, with the first element containing batch_size_max,
+    // followed by the split bits of the size in low-to-high order, spanning 8
+    // bytes worth of space (i.e., 1, 2, 4, or 8 elements depending on
+    // batch_size_type).
+    std::vector<bin_index_type> journ;
 
   public:
-    // Rule of zero
-
-    /**
-     * \brief Return the number of batches journaled.
-     *
-     * \return the number of batches stored
-     */
-    [[nodiscard]] auto num_batches() const noexcept -> std::size_t {
-        return n_batches;
+    // Slow, not for use in production. For use by tests.
+    [[nodiscard]] auto size() const noexcept -> std::size_t {
+        return std::size_t(std::distance(begin(), end()));
     }
 
-    /**
-     * \brief Clear this journal.
-     */
-    void clear() noexcept {
-        n_batches = 0;
-        last_stored_index = std::size_t(-1);
-        encoded_indices.clear();
-        all_bin_indices.clear();
-    }
+    [[nodiscard]] auto empty() const noexcept -> bool { return journ.empty(); }
 
-    [[nodiscard]] auto empty() const noexcept -> bool {
-        return n_batches == 0;
-    }
+    void clear() noexcept { journ.clear(); }
 
-    /**
-     * \brief Append a bin increment batch to this journal.
-     *
-     * \param batch the bin increment batch to append (bin indices)
-     */
     void append_batch(span<BinIndex const> batch) {
-        std::size_t const elem_index = n_batches;
-        if (std::size_t batch_size = batch.size(); batch_size > 0) {
-            std::size_t delta = elem_index - last_stored_index;
-            while (delta > 255) {
-                encoded_indices.emplace_back(std::uint8_t(255),
-                                             std::uint8_t(0));
-                delta -= 255;
+        std::size_t size = batch.size();
+        auto encode = [](std::size_t s) {
+            assert(s <= batch_size_max);
+            return static_cast<bin_index_type>(
+                static_cast<batch_size_type>(s));
+        };
+        if (size < batch_size_max) {
+            journ.push_back(encode(size));
+        } else {
+            journ.push_back(batch_size_max);
+            for (std::size_t i = 0; i < large_batch_size_element_count; ++i) {
+                journ.push_back(encode(size & batch_size_mask));
+                size >>= 8 * sizeof(batch_size_type);
             }
-            while (batch_size > 255) {
-                encoded_indices.emplace_back(std::uint8_t(delta),
-                                             std::uint8_t(255));
-                batch_size -= 255;
-                delta = 0;
-            }
-            encoded_indices.emplace_back(std::uint8_t(delta),
-                                         std::uint8_t(batch_size));
-            last_stored_index = elem_index;
-
-            all_bin_indices.insert(all_bin_indices.end(), batch.begin(),
-                                   batch.end());
         }
-        n_batches = elem_index + 1;
+        journ.insert(journ.end(), batch.begin(), batch.end());
     }
 
-    /**
-     * \brief Constant iterator for bin_increment_batch_journal.
-     *
-     * Satisfies the requirements for input iterator.
-     *
-     * The iterator, when dereferenced, yields the size-2 std::tuple
-     * (batch_index, bin_index_span), where batch_index is the index
-     * (std::size_t) of the batch (order appended to the journal), and
-     * bin_index_span is the span of bin indices (BinIndex) belonging to the
-     * batch.
-     *
-     * For efficiency reasons, empty batches are skipped over. If you need to
-     * take action for empty batches, you need to store the batch_index as you
-     * iterate and check if it is consecutive.
-     *
-     * There is no non-const iterator because iteration is read-only.
-     */
+    // Constant input iterator over the batches. There is no non-const
+    // iteration support. Dereferencing yields `span<bin_index_type>`
+    // (including for empty batches).
     class const_iterator {
-        // Constant iterator yielding tuples (batch_index, bin_index_begin,
-        // bin_index_end).
-        //
-        // Our iterator, when dereferenced, yields the value type (the above
-        // tuple) directly instead of a reference. For this reason in can only
-        // be an input iterator, not a forward iterator. (Forward iterators are
-        // required to return a reference when dereferenced.)
+        typename std::vector<bin_index_type>::const_iterator it;
 
-        using bin_index_vector_type = std::vector<BinIndex>;
-        using encoded_index_vector_type =
-            std::vector<std::pair<std::uint8_t, std::uint8_t>>;
+        auto increment_batch_range() const
+            -> std::pair<decltype(it), decltype(it)> {
+            auto start = it;
+            std::size_t const batch_size = [&start] {
+                if (*start == batch_size_max) {
+                    ++start;
+                    std::size_t s = 0;
+                    for (std::size_t i = 0; i < large_batch_size_element_count;
+                         ++i) {
+                        std::size_t const elem{
+                            static_cast<batch_size_type>(*start++)};
+                        s += elem << (8 * sizeof(batch_size_type) * i);
+                    }
+                    return s;
+                }
+                return std::size_t{*start++};
+            }();
+            auto const stop = std::next(start, std::ptrdiff_t(batch_size));
+            return {start, stop};
+        }
 
-        std::size_t prev_batch_index = std::size_t(-1);
-        typename encoded_index_vector_type::const_iterator
-            encoded_indices_iter;
-        typename encoded_index_vector_type::const_iterator encoded_indices_end;
-        typename bin_index_vector_type::const_iterator bin_indices_iter;
+        explicit const_iterator(decltype(it) iter) : it(iter) {}
 
         friend class bin_increment_batch_journal;
 
-        explicit const_iterator(
-            std::size_t prev_batch_index,
-            typename encoded_index_vector_type::const_iterator
-                encoded_indices_iter,
-            typename encoded_index_vector_type::const_iterator
-                encoded_indices_end,
-            typename bin_index_vector_type::const_iterator
-                bin_indices_iter) noexcept
-            : prev_batch_index(prev_batch_index),
-              encoded_indices_iter(encoded_indices_iter),
-              encoded_indices_end(encoded_indices_end),
-              bin_indices_iter(bin_indices_iter) {}
-
       public:
-        /** \brief Iterator value type. */
-        using value_type = std::tuple<std::size_t, span<bin_index_type const>>;
-
-        /** \brief Iterator difference type. */
+        using value_type = span<bin_index_type const>;
         using difference_type = std::ptrdiff_t;
-        /** \brief Iterator reference type. */
         using reference = value_type const &;
-        /** \brief Iterator pointer type. */
         using pointer = value_type const *;
-        /** \brief Iterator category tag. */
         using iterator_category = std::input_iterator_tag;
 
         const_iterator() = delete;
 
-        // Rule of zero
-
-        /** \brief Iterator pre-increment operator. */
         auto operator++() -> const_iterator & {
-            assert(encoded_indices_iter != encoded_indices_end);
-
-            for (;;) {
-                prev_batch_index += encoded_indices_iter->first;
-                if (encoded_indices_iter->second != 0)
-                    break;
-                ++encoded_indices_iter;
-            }
-
-            std::size_t batch_size = 0;
-            for (;;) {
-                batch_size += encoded_indices_iter->second;
-                ++encoded_indices_iter;
-                if (encoded_indices_iter == encoded_indices_end ||
-                    encoded_indices_iter->first != 0)
-                    break;
-            }
-
-            std::advance(bin_indices_iter, as_signed(batch_size));
-
+            auto const [start, stop] = increment_batch_range();
+            it = stop;
             return *this;
         }
 
-        /** \brief Iterator post-increment operator. */
         auto operator++(int) -> const_iterator {
-            const_iterator ret = *this;
+            auto const ret = *this;
             ++(*this);
             return ret;
         }
 
-        /** \brief Iterator dereference operator. */
         auto operator*() const -> value_type {
-            assert(encoded_indices_iter != encoded_indices_end);
-
-            std::size_t batch_index = prev_batch_index;
-            auto tmp_iter = encoded_indices_iter;
-            for (;;) {
-                batch_index += tmp_iter->first;
-                if (tmp_iter->second != 0)
-                    break;
-                ++tmp_iter;
-            }
-
-            std::size_t batch_size = 0;
-            for (;;) {
-                batch_size += tmp_iter->second;
-                ++tmp_iter;
-                if (tmp_iter == encoded_indices_end || tmp_iter->first != 0)
-                    break;
-            }
-
-            return {batch_index, span(&*bin_indices_iter, batch_size)};
+            auto const [start, stop] = increment_batch_range();
+            return span(&*start, &*stop);
         }
 
-        /** \brief Equality operator. */
-        auto operator==(const_iterator other) const noexcept -> bool {
-            return prev_batch_index == other.prev_batch_index &&
-                   encoded_indices_iter == other.encoded_indices_iter &&
-                   encoded_indices_end == other.encoded_indices_end &&
-                   bin_indices_iter == other.bin_indices_iter;
+        auto operator==(const_iterator rhs) const noexcept -> bool {
+            return it == rhs.it;
         }
 
-        /** \brief Inequality operator. */
-        auto operator!=(const_iterator other) const noexcept -> bool {
-            return !(*this == other);
+        auto operator!=(const_iterator rhs) const noexcept -> bool {
+            return not(*this == rhs);
         }
     };
 
-    /**
-     * \brief Return a constant iterator for the beginning of the journal.
-     *
-     * \return constant input iterator pointing to beginning
-     */
     auto begin() const noexcept -> const_iterator {
-        return const_iterator(std::size_t(-1), encoded_indices.cbegin(),
-                              encoded_indices.cend(),
-                              all_bin_indices.cbegin());
+        return const_iterator(journ.begin());
     }
 
-    /**
-     * \brief Return a constant iterator for the past-end of the journal.
-     *
-     * \return constant input iterator pointing to past-end
-     */
     auto end() const noexcept -> const_iterator {
-        return const_iterator(last_stored_index, encoded_indices.cend(),
-                              encoded_indices.cend(), all_bin_indices.cend());
+        return const_iterator(journ.end());
     }
 
-    /**
-     * \brief Swap the contents of this journal with another.
-     *
-     * \param other the ohter journal
-     */
-    void swap(bin_increment_batch_journal &other) noexcept {
-        using std::swap;
-        swap(*this, other);
+    auto
+    operator==(bin_increment_batch_journal const &rhs) const noexcept -> bool {
+        return journ == rhs.journ;
     }
 
-    /** \brief Equality operator. */
-    auto operator==(bin_increment_batch_journal const &other) const noexcept
-        -> bool {
-        return n_batches == other.n_batches &&
-               last_stored_index == other.last_stored_index &&
-               encoded_indices == other.encoded_indices &&
-               all_bin_indices == other.all_bin_indices;
+    auto
+    operator!=(bin_increment_batch_journal const &rhs) const noexcept -> bool {
+        return not(*this == rhs);
     }
 
-    /** \brief Stream insertion operator. */
     friend auto
     operator<<(std::ostream &s,
                bin_increment_batch_journal const &j) -> std::ostream & {
-
-        s << "journal(" << j.num_batches() << ", { ";
-        for (auto [index, begin, end] : j) {
-            s << '(' << index << ", {";
-            std::for_each(begin, end, [&](auto v) { s << v << ", "; });
-            s << "})";
+        s << "journal(";
+        for (auto const batch : j) {
+            s << '{';
+            for (auto const i : batch)
+                s << i << ", ";
+            s << "}, ";
         }
-        return s << "})";
+        return s << ')';
     }
 };
 
@@ -529,11 +408,13 @@ class multi_histogram {
         static_assert(
             std::is_same_v<OverflowPolicy, stop_on_internal_overflow>);
         assert(not hist_arr.empty());
-        for (auto [index, bin_index_span] : journal) {
+        std::size_t batch_index = 0;
+        for (auto const batch : journal) {
             single_histogram<bin_index_type, bin_type, OverflowPolicy>
-                single_hist(hist_arr.subspan(n_bins * index, n_bins),
+                single_hist(hist_arr.subspan(n_bins * batch_index, n_bins),
                             arg::max_per_bin{bin_max}, arg::num_bins{n_bins});
-            single_hist.undo_increments(bin_index_span);
+            single_hist.undo_increments(batch);
+            ++batch_index;
         }
         // Ensure the previously untouched tail of the span gets cleared, if
         // clearing was requested and has not happened yet.
@@ -552,20 +433,21 @@ class multi_histogram {
             std::is_same_v<OverflowPolicy, stop_on_internal_overflow>);
         assert(not hist_arr.empty());
         assert(not is_started());
-        for (auto [index, bin_index_span] : journal) {
+        std::size_t batch_index = 0;
+        for (auto const batch : journal) {
             single_histogram<bin_index_type, bin_type, OverflowPolicy>
-                single_hist(hist_arr.subspan(n_bins * index, n_bins),
+                single_hist(hist_arr.subspan(n_bins * batch_index, n_bins),
                             arg::max_per_bin{bin_max}, arg::num_bins{n_bins});
             if (need_to_clear)
                 single_hist.clear();
             [[maybe_unused]] auto n_applied =
-                single_hist.apply_increments(bin_index_span);
+                single_hist.apply_increments(batch);
             // Under correct usage, 'journal' only repeats previous success, so
             // cannot overflow.
-            assert(n_applied ==
-                   static_cast<std::size_t>(bin_index_span.size()));
+            assert(n_applied == static_cast<std::size_t>(batch.size()));
+            ++batch_index;
         }
-        element_index = journal.num_batches();
+        element_index = batch_index;
     }
 
     // Reset this instance for reuse on another scan through the array.
