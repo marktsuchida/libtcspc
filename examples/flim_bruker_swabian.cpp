@@ -200,7 +200,7 @@ auto make_processor(settings const &settings,
             arg::offset{0},
             arg::bin_width{settings.bin_width},
             arg::max_bin_index{settings.max_bin_index}),
-    batch_bin_increments<pixel_start_event, pixel_stop_event>(
+    cluster_bin_increments<pixel_start_event, pixel_stop_event>(
     count<bin_increment_cluster_event<>>(
         ctx->tracker<count_access>("pixel_counter"),
     make_histo_proc<Cumulative>(settings, ctx))))));

@@ -164,7 +164,7 @@ auto make_processor(settings const &settings,
     map_to_datapoints<time_correlated_detection_event<>>(
         difftime_data_mapper(),
     map_to_bins(power_of_2_bin_mapper<12, 8, true>(),
-    batch_bin_increments<pixel_start_event, pixel_stop_event>(
+    cluster_bin_increments<pixel_start_event, pixel_stop_event>(
     make_histo_proc<Cumulative>(settings, ctx)))))))))))))))))));
     // clang-format on
 }

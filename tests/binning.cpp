@@ -63,12 +63,12 @@ TEST_CASE("type constraints: map_to_bins") {
     STATIC_CHECK_FALSE(handles_event_v<proc_type, some_type>);
 }
 
-TEST_CASE("type constraints: batch_bin_increments") {
+TEST_CASE("type constraints: cluster_bin_increments") {
     struct data_types : default_data_types {
         using bin_index_type = u8;
     };
     using proc_type =
-        decltype(batch_bin_increments<start_event, stop_event, data_types>(
+        decltype(cluster_bin_increments<start_event, stop_event, data_types>(
             sink_events<bin_increment_cluster_event<data_types>, int>()));
     STATIC_CHECK(is_processor_v<proc_type, start_event, stop_event,
                                 bin_increment_event<>>);
@@ -89,7 +89,7 @@ TEST_CASE("introspect: binning") {
                                       arg::max_bin_index<u16>{10}),
                     null_sink()));
     check_introspect_simple_processor(
-        batch_bin_increments<start_event, stop_event>(null_sink()));
+        cluster_bin_increments<start_event, stop_event>(null_sink()));
 }
 
 TEST_CASE("Map to datapoints") {
@@ -534,7 +534,7 @@ TEST_CASE("Batch bin increments") {
     auto const valcat = GENERATE(feed_as::const_lvalue, feed_as::rvalue);
     auto ctx = context::create();
     auto in = feed_input(
-        valcat, batch_bin_increments<start_event, stop_event, data_types>(
+        valcat, cluster_bin_increments<start_event, stop_event, data_types>(
                     capture_output<out_events>(
                         ctx->tracker<capture_output_access>("out"))));
     in.require_output_checked(ctx, "out");

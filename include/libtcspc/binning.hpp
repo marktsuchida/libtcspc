@@ -521,7 +521,7 @@ namespace internal {
 
 template <typename StartEvent, typename StopEvent, typename DataTypes,
           typename Downstream>
-class batch_bin_increments {
+class cluster_bin_increments {
     static_assert(
         is_processor_v<Downstream, bin_increment_cluster_event<DataTypes>>);
 
@@ -531,11 +531,11 @@ class batch_bin_increments {
     Downstream downstream;
 
   public:
-    explicit batch_bin_increments(Downstream downstream)
+    explicit cluster_bin_increments(Downstream downstream)
         : downstream(std::move(downstream)) {}
 
     [[nodiscard]] auto introspect_node() const -> processor_info {
-        return processor_info(this, "batch_bin_increments");
+        return processor_info(this, "cluster_bin_increments");
     }
 
     [[nodiscard]] auto introspect_graph() const -> processor_graph {
@@ -616,9 +616,9 @@ class batch_bin_increments {
  */
 template <typename StartEvent, typename StopEvent,
           typename DataTypes = default_data_types, typename Downstream>
-auto batch_bin_increments(Downstream &&downstream) {
-    return internal::batch_bin_increments<StartEvent, StopEvent, DataTypes,
-                                          Downstream>(
+auto cluster_bin_increments(Downstream &&downstream) {
+    return internal::cluster_bin_increments<StartEvent, StopEvent, DataTypes,
+                                            Downstream>(
         std::forward<Downstream>(downstream));
 }
 
