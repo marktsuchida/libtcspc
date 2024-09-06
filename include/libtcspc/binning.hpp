@@ -525,8 +525,8 @@ class cluster_bin_increments {
     static_assert(
         is_processor_v<Downstream, bin_increment_cluster_event<DataTypes>>);
 
-    bool in_batch = false;
-    bin_increment_cluster_event<DataTypes> batch;
+    bool in_cluster = false;
+    bin_increment_cluster_event<DataTypes> cluster;
 
     Downstream downstream;
 
@@ -545,19 +545,19 @@ class cluster_bin_increments {
     template <typename DT> void handle(bin_increment_event<DT> const &event) {
         static_assert(std::is_same_v<typename DT::bin_index_type,
                                      typename DataTypes::bin_index_type>);
-        if (in_batch)
-            batch.bin_indices.push_back(event.bin_index);
+        if (in_cluster)
+            cluster.bin_indices.push_back(event.bin_index);
     }
 
     void handle(StartEvent const & /* event */) {
-        batch.bin_indices.clear();
-        in_batch = true;
+        cluster.bin_indices.clear();
+        in_cluster = true;
     }
 
     void handle(StopEvent const & /* event */) {
-        if (in_batch) {
-            downstream.handle(std::as_const(batch));
-            in_batch = false;
+        if (in_cluster) {
+            downstream.handle(std::as_const(cluster));
+            in_cluster = false;
         }
     }
 
@@ -589,13 +589,13 @@ class cluster_bin_increments {
 } // namespace internal
 
 /**
- * \brief Create a processor collecting binned data into batches.
+ * \brief Create a processor collecting binned data into clusters.
  *
  * \ingroup processors-binning
  *
- * \tparam StartEvent start-of-batch event type
+ * \tparam StartEvent start-of-cluster event type
  *
- * \tparam StopEvent end-of-batch event type
+ * \tparam StopEvent end-of-cluster event type
  *
  * \tparam DataTypes data type set specifying `bin_index_type` and emitted
  * events
@@ -607,10 +607,10 @@ class cluster_bin_increments {
  * \return processor
  *
  * \par Events handled
- * - `StartEvent`: discard any unfinished batch; start recording a batch
- * - `StopEvent`: ignore if not in batch; finish recording the current batch
- *   and emit as `tcspc::bin_increment_cluster_event<DataTypes>`
- * - `tcspc::bin_increment_event<DT>`: record if currently within a batch
+ * - `StartEvent`: discard any unfinished cluster; start recording a cluster
+ * - `StopEvent`: ignore if not in cluster; finish recording the current
+ *   cluster and emit as `tcspc::bin_increment_cluster_event<DataTypes>`
+ * - `tcspc::bin_increment_event<DT>`: record if currently within a cluster
  * - All other types: pass through with no action
  * - Flush: pass through with no action
  */

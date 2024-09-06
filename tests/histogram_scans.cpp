@@ -621,7 +621,7 @@ TEST_CASE("histogram_scans saturate_on_overflow") {
     auto out = capture_output_checker<all_output_events>(valcat, ctx, "out");
 
     SECTION("saturate during scan 0") {
-        // Make sure the rest of the batch is not lost after saturation.
+        // Make sure the rest of the cluster is not lost after saturation.
         in.handle(bin_increment_cluster_event<>{{0, 0, 0, 0, 0, 1, 1, 1, 1}});
         REQUIRE(out.check(warning_event{"histogram array bin saturated"}));
         REQUIRE(out.check(emitted_as::always_lvalue,
@@ -630,7 +630,7 @@ TEST_CASE("histogram_scans saturate_on_overflow") {
 
         SECTION("end") {}
 
-        SECTION("further saturating batch during scan") {
+        SECTION("further saturating cluster during scan") {
             in.handle(bin_increment_cluster_event<>{{0, 0, 1, 1, 1, 1}});
             // No more warning until reset
             REQUIRE(out.check(emitted_as::always_lvalue,
@@ -642,7 +642,7 @@ TEST_CASE("histogram_scans saturate_on_overflow") {
 
             SECTION("end") {}
 
-            SECTION("further saturating batch in new scan but same round") {
+            SECTION("further saturating cluster in new scan but same round") {
                 in.handle(bin_increment_cluster_event<>{{0}});
                 // No more warning until reset
                 REQUIRE(out.check(emitted_as::always_lvalue,
@@ -651,7 +651,7 @@ TEST_CASE("histogram_scans saturate_on_overflow") {
 
                 SECTION("end") {}
 
-                SECTION("saturating batch after reset") {
+                SECTION("saturating cluster after reset") {
                     in.handle(reset_event{});
                     REQUIRE(out.check(reset_event{}));
                     in.handle(
@@ -735,7 +735,7 @@ TEMPLATE_TEST_CASE_SIG("histogram_scans reset_on_overflow", "", ((hp P), P),
             CHECK(bsource->bucket_count() == 2);
         }
 
-        SECTION("single-batch overflow in scan 1, element 0") {
+        SECTION("single-cluster overflow in scan 1, element 0") {
             REQUIRE_THROWS_AS(
                 in.handle(bin_increment_cluster_event<>{{0, 0, 0, 0}}),
                 histogram_overflow_error);

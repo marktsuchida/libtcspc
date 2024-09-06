@@ -89,19 +89,19 @@ template <typename DataTypes = default_data_types> struct bin_increment_event {
 };
 
 /**
- * \brief Event representing a batch of data binned for histogramming.
+ * \brief Event representing a cluster of data points binned for histogramming.
  *
  * \ingroup events-binning
  *
- * Typically the batch represents some unit of data collection, such as a time
- * interval or pixel.
+ * Typically the cluster represents some unit of data collection, such as a
+ * time interval or pixel.
  *
  * \tparam DataTypes data type set specifying `bin_index_type`
  */
 template <typename DataTypes = default_data_types>
 struct bin_increment_cluster_event {
     /**
-     * \brief The bin indices for the datapoints in the batch.
+     * \brief The bin indices for the datapoints in the cluster.
      */
     std::vector<typename DataTypes::bin_index_type> bin_indices;
 
@@ -174,8 +174,8 @@ template <typename DataTypes = default_data_types> struct histogram_event {
  *
  * This event is emitted by the `tcspc::histogram()` processor once per
  * accumulation (that is, before each reset or end of stream) to provide the
- * accumulated result. The contained histogram covers only whole batches;
- * counts from any partial batch are not included.
+ * accumulated result. The contained histogram covers only whole clusters;
+ * counts from any partial cluster are not included.
  *
  * \tparam DataTypes data type set specifying `bin_type`
  */

@@ -35,25 +35,25 @@ template <typename BinIndex> class bin_increment_cluster_journal {
     using bin_index_type = BinIndex;
 
   private:
-    using batch_size_type = std::make_unsigned_t<bin_index_type>;
-    static_assert(sizeof(batch_size_type) <= sizeof(std::size_t));
+    using encoded_size_type = std::make_unsigned_t<bin_index_type>;
+    static_assert(sizeof(encoded_size_type) <= sizeof(std::size_t));
 
-    static constexpr auto batch_size_max =
-        std::numeric_limits<batch_size_type>::max();
+    static constexpr auto encoded_size_max =
+        std::numeric_limits<encoded_size_type>::max();
 
-    static constexpr auto large_batch_size_element_count =
-        sizeof(std::size_t) / sizeof(batch_size_type);
+    static constexpr auto large_size_element_count =
+        sizeof(std::size_t) / sizeof(encoded_size_type);
 
-    static constexpr std::size_t batch_size_mask{batch_size_max};
+    static constexpr std::size_t cluster_size_mask{encoded_size_max};
 
-    // Size-prefixed batches. Before every batch (contiguous bin indices),
-    // including empty batches, the size of the batch is encoding in one or
-    // more elements (interpreted as batch_size_type). A single element is used
-    // if the batch size is less than batch_size_max. Otherwise a multi-element
-    // encoding is used, with the first element containing batch_size_max,
-    // followed by the split bits of the size in low-to-high order, spanning 8
-    // bytes worth of space (i.e., 1, 2, 4, or 8 elements depending on
-    // batch_size_type).
+    // Size-prefixed clusters. Before every cluster (contiguous bin indices),
+    // including empty clusters, the size of the cluster is encoding in one or
+    // more elements (interpreted as encoded_size_type). A single element is
+    // used if the cluster size is less than encoded_size_max. Otherwise a
+    // multi-element encoding is used, with the first element containing
+    // encoded_size_max, followed by the split bits of the size in low-to-high
+    // order, spanning 8 bytes worth of space (i.e., 1, 2, 4, or 8 elements
+    // depending on encoded_size_type).
     std::vector<bin_index_type> journ;
 
   public:
@@ -66,49 +66,48 @@ template <typename BinIndex> class bin_increment_cluster_journal {
 
     void clear() noexcept { journ.clear(); }
 
-    void append_batch(span<BinIndex const> batch) {
-        std::size_t size = batch.size();
+    void append_cluster(span<BinIndex const> cluster) {
+        std::size_t size = cluster.size();
         auto encode = [](std::size_t s) {
-            assert(s <= batch_size_max);
+            assert(s <= encoded_size_max);
             return static_cast<bin_index_type>(
-                static_cast<batch_size_type>(s));
+                static_cast<encoded_size_type>(s));
         };
-        if (size < batch_size_max) {
+        if (size < encoded_size_max) {
             journ.push_back(encode(size));
         } else {
-            journ.push_back(batch_size_max);
-            for (std::size_t i = 0; i < large_batch_size_element_count; ++i) {
-                journ.push_back(encode(size & batch_size_mask));
-                size >>= 8 * sizeof(batch_size_type);
+            journ.push_back(encoded_size_max);
+            for (std::size_t i = 0; i < large_size_element_count; ++i) {
+                journ.push_back(encode(size & cluster_size_mask));
+                size >>= 8 * sizeof(encoded_size_type);
             }
         }
-        journ.insert(journ.end(), batch.begin(), batch.end());
+        journ.insert(journ.end(), cluster.begin(), cluster.end());
     }
 
-    // Constant input iterator over the batches. There is no non-const
+    // Constant input iterator over the clusters. There is no non-const
     // iteration support. Dereferencing yields `span<bin_index_type>`
-    // (including for empty batches).
+    // (including for empty clusters).
     class const_iterator {
         typename std::vector<bin_index_type>::const_iterator it;
 
-        auto increment_batch_range() const
-            -> std::pair<decltype(it), decltype(it)> {
+        auto cluster_range() const -> std::pair<decltype(it), decltype(it)> {
             auto start = it;
-            std::size_t const batch_size = [&start] {
-                if (*start == batch_size_max) {
+            std::size_t const cluster_size = [&start] {
+                if (*start == encoded_size_max) {
                     ++start;
                     std::size_t s = 0;
-                    for (std::size_t i = 0; i < large_batch_size_element_count;
+                    for (std::size_t i = 0; i < large_size_element_count;
                          ++i) {
                         std::size_t const elem{
-                            static_cast<batch_size_type>(*start++)};
-                        s += elem << (8 * sizeof(batch_size_type) * i);
+                            static_cast<encoded_size_type>(*start++)};
+                        s += elem << (8 * sizeof(encoded_size_type) * i);
                     }
                     return s;
                 }
                 return std::size_t{*start++};
             }();
-            auto const stop = std::next(start, std::ptrdiff_t(batch_size));
+            auto const stop = std::next(start, std::ptrdiff_t(cluster_size));
             return {start, stop};
         }
 
@@ -126,7 +125,7 @@ template <typename BinIndex> class bin_increment_cluster_journal {
         const_iterator() = delete;
 
         auto operator++() -> const_iterator & {
-            auto const [start, stop] = increment_batch_range();
+            auto const [start, stop] = cluster_range();
             it = stop;
             return *this;
         }
@@ -138,7 +137,7 @@ template <typename BinIndex> class bin_increment_cluster_journal {
         }
 
         auto operator*() const -> value_type {
-            auto const [start, stop] = increment_batch_range();
+            auto const [start, stop] = cluster_range();
             return span(&*start, &*stop);
         }
 
@@ -173,9 +172,9 @@ template <typename BinIndex> class bin_increment_cluster_journal {
     operator<<(std::ostream &s,
                bin_increment_cluster_journal const &j) -> std::ostream & {
         s << "journal(";
-        for (auto const batch : j) {
+        for (auto const cluster : j) {
             s << '{';
-            for (auto const i : batch)
+            for (auto const i : cluster)
                 s << i << ", ";
             s << "}, ";
         }
@@ -186,7 +185,7 @@ template <typename BinIndex> class bin_increment_cluster_journal {
 // Can be used to disable journaling.
 template <typename BinIndex> struct null_journal {
     using bin_index_type = BinIndex;
-    void append_batch(span<bin_index_type const> /* batch */) {}
+    void append_cluster(span<bin_index_type const> /* cluster */) {}
     void clear() noexcept {}
 };
 
@@ -318,12 +317,12 @@ class multi_histogram {
         return n_elements;
     }
 
-    // True if any increment batches have been applied (and not rolled back).
+    // True if any increment clusters have been applied (and not rolled back).
     [[nodiscard]] auto is_started() const noexcept -> bool {
         return element_index > 0;
     }
 
-    // True if scan is completed (no further increment batches may be applied).
+    // True if scan is complete (no further increment clusters may be applied).
     [[nodiscard]] auto is_complete() const noexcept -> bool {
         return element_index >= n_elements;
     }
@@ -334,7 +333,7 @@ class multi_histogram {
     // has been reached. When clearing is requested, the data is consistent
     // when:
     // - All elements have had increments applied,
-    // - apply_increment_batch() returned false,
+    // - apply_increment_cluster() returned false,
     // - skip_remaining() was called at least once, or
     // - roll_back() was called at least once.
     // When clearing is not requested, the data is also consistent when no
@@ -347,12 +346,12 @@ class multi_histogram {
         return element_index;
     }
 
-    // Apply 'batch' to the next element of the array of histograms. Return
-    // true if the entire batch could be applied (without saturation); false if
-    // there was saturation or we stopped and rolled back.
+    // Apply 'cluster' to the next element of the array of histograms. Return
+    // true if the entire cluster could be applied (without saturation); false
+    // if there was saturation or we stopped and rolled back.
     template <typename Journal>
-    auto apply_increment_batch(span<bin_index_type const> batch,
-                               Journal &journal) -> bool {
+    auto apply_increment_cluster(span<bin_index_type const> cluster,
+                                 Journal &journal) -> bool {
         static_assert(
             std::is_same_v<typename Journal::bin_index_type, bin_index_type>);
         assert(not hist_arr.empty());
@@ -363,22 +362,22 @@ class multi_histogram {
         if (need_to_clear)
             single_hist.clear();
 
-        auto n_applied = single_hist.apply_increments(batch);
+        auto n_applied = single_hist.apply_increments(cluster);
 
         if constexpr (std::is_same_v<OverflowPolicy,
                                      saturate_on_internal_overflow>) {
-            journal.append_batch(batch);
+            journal.append_cluster(cluster);
             ++element_index;
-            return n_applied == batch.size();
+            return n_applied == cluster.size();
         } else if constexpr (std::is_same_v<OverflowPolicy,
                                             stop_on_internal_overflow>) {
-            if (n_applied == batch.size()) {
-                journal.append_batch(batch);
+            if (n_applied == cluster.size()) {
+                journal.append_cluster(cluster);
                 ++element_index;
                 return true;
             }
-            // Always handle increment batches atomically.
-            single_hist.undo_increments(batch.first(n_applied));
+            // Always handle increment clusters atomically.
+            single_hist.undo_increments(cluster.first(n_applied));
             skip_remaining();
             return false;
         } else {
@@ -408,13 +407,13 @@ class multi_histogram {
         static_assert(
             std::is_same_v<OverflowPolicy, stop_on_internal_overflow>);
         assert(not hist_arr.empty());
-        std::size_t batch_index = 0;
-        for (auto const batch : journal) {
+        std::size_t cluster_index = 0;
+        for (auto const cluster : journal) {
             single_histogram<bin_index_type, bin_type, OverflowPolicy>
-                single_hist(hist_arr.subspan(n_bins * batch_index, n_bins),
+                single_hist(hist_arr.subspan(n_bins * cluster_index, n_bins),
                             arg::max_per_bin{bin_max}, arg::num_bins{n_bins});
-            single_hist.undo_increments(batch);
-            ++batch_index;
+            single_hist.undo_increments(cluster);
+            ++cluster_index;
         }
         // Ensure the previously untouched tail of the span gets cleared, if
         // clearing was requested and has not happened yet.
@@ -433,21 +432,21 @@ class multi_histogram {
             std::is_same_v<OverflowPolicy, stop_on_internal_overflow>);
         assert(not hist_arr.empty());
         assert(not is_started());
-        std::size_t batch_index = 0;
-        for (auto const batch : journal) {
+        std::size_t cluster_index = 0;
+        for (auto const cluster : journal) {
             single_histogram<bin_index_type, bin_type, OverflowPolicy>
-                single_hist(hist_arr.subspan(n_bins * batch_index, n_bins),
+                single_hist(hist_arr.subspan(n_bins * cluster_index, n_bins),
                             arg::max_per_bin{bin_max}, arg::num_bins{n_bins});
             if (need_to_clear)
                 single_hist.clear();
             [[maybe_unused]] auto n_applied =
-                single_hist.apply_increments(batch);
+                single_hist.apply_increments(cluster);
             // Under correct usage, 'journal' only repeats previous success, so
             // cannot overflow.
-            assert(n_applied == static_cast<std::size_t>(batch.size()));
-            ++batch_index;
+            assert(n_applied == static_cast<std::size_t>(cluster.size()));
+            ++cluster_index;
         }
-        element_index = batch_index;
+        element_index = cluster_index;
     }
 
     // Reset this instance for reuse on another scan through the array.
@@ -532,10 +531,10 @@ class multi_histogram_accumulation {
     }
 
     template <typename Journal>
-    auto apply_increment_batch(span<bin_index_type const> batch,
-                               Journal &journal) -> bool {
+    auto apply_increment_cluster(span<bin_index_type const> cluster,
+                                 Journal &journal) -> bool {
         assert(not is_scan_complete());
-        return cur_scan.apply_increment_batch(batch, journal);
+        return cur_scan.apply_increment_cluster(cluster, journal);
     }
 
     void skip_remainder_of_current_scan() { cur_scan.skip_remaining(); }

@@ -195,7 +195,7 @@ class histogram_scans {
         if (hist_bucket.empty())
             start_new_round();
         auto const element_index = mhista.next_element_index();
-        if (not mhista.apply_increment_batch(event.bin_indices, journal)) {
+        if (not mhista.apply_increment_cluster(event.bin_indices, journal)) {
             if constexpr (overflow_policy ==
                           histogram_policy::error_on_overflow) {
                 overflow_error(); // noreturn
@@ -221,11 +221,12 @@ class histogram_scans {
             end_of_scan();
     }
 
-    // NOLINTNEXTLINE(cppcoreguidelines-rvalue-reference-param-not-moved)
+    // NOLINTBEGIN(cppcoreguidelines-rvalue-reference-param-not-moved)
     template <typename DT>
     void handle(bin_increment_cluster_event<DT> &&event) {
         handle(static_cast<bin_increment_cluster_event<DT> const &>(event));
     }
+    // NOLINTEND(cppcoreguidelines-rvalue-reference-param-not-moved)
 
     template <typename E, typename = std::enable_if_t<
                               handles_event_v<Downstream, remove_cvref_t<E>>>>
@@ -257,7 +258,7 @@ class histogram_scans {
  * A _round_ consisting of multiple scans is ended by resetting, for example by
  * receiving a \p ResetEvent. After a reset, the histogram array is replaced
  * with a new bucket and a new round is started, in which handling of
- * subsequent bin increment batches begins at the first element of the array.
+ * subsequent bin increment clusters begins at the first element of the array.
  *
  * The value of \p Policy can modify behavior (including disabling
  * the accumulating behavior) and specify what happens when a histogram bin
@@ -266,7 +267,7 @@ class histogram_scans {
  * The result is emitted in 3 ways:
  *
  * - A `tcspc::histogram_array_progress_event<DataTypes>` is emitted on each
- *   bin increment batch. It carries a view of the whole array and indicates
+ *   bin increment cluster. It carries a view of the whole array and indicates
  *   how far the current scan has progressed.
  *
  * - A `tcspc::histogram_array_event<DataTypes>` is emitted as soon as each
@@ -311,7 +312,7 @@ class histogram_scans {
  *   if this is the first scan of a round or `Policy` has
  *   `tcspc::histogram_policy::clear_every_scan` set) and, if there is no bin
  *   overflow, emit (const) `tcspc::histogram_array_progress_event<DataTypes>`;
- *   if the batch was for the last element of the array (end of a scan), also
+ *   if the cluster was for the last element of the array (end of a scan), also
  *   emit (const) `tcspc::histogram_array_event<DataTypes>` and if, in
  *   addition, `Policy` has `tcspc::histogram_policy::reset_after_scan` set,
  *   perform a reset as if a `ResetEvent` was received. If a bin overflowed,
