@@ -10,6 +10,6 @@
 
 namespace tcspc::internal {
 
-TEST_CASE("false_for_type") { STATIC_CHECK_FALSE(false_for_type<int>::value); }
+TEST_CASE("always_false") { STATIC_CHECK_FALSE(always_false_v<int>); }
 
 } // namespace tcspc::internal

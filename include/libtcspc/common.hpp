@@ -43,7 +43,10 @@ inline auto is_aligned(void const *ptr) noexcept -> bool {
 
 // A "false" template metafunction that can be used with static_assert in
 // constexpr-if branches (by pretending that it may not always be false).
-template <typename T> struct false_for_type : std::false_type {};
+template <typename T> struct always_false : std::false_type {};
+
+template <typename T>
+inline constexpr bool always_false_v = always_false<T>::value;
 
 template <typename T, typename... U> struct is_any_of {
     static constexpr bool value = (std::is_same_v<T, U> || ...);

@@ -247,7 +247,7 @@ class single_histogram {
                                                 stop_on_internal_overflow>) {
                 return n_applied;
             } else {
-                static_assert(false_for_type<OverflowPolicy>::value);
+                static_assert(always_false_v<OverflowPolicy>);
             }
         }
         return n_applied;
@@ -381,7 +381,7 @@ class multi_histogram {
             skip_remaining();
             return false;
         } else {
-            static_assert(false_for_type<OverflowPolicy>::value);
+            static_assert(always_false_v<OverflowPolicy>);
         }
     }
 
