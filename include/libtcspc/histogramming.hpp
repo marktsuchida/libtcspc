@@ -30,7 +30,7 @@ struct stop_on_internal_overflow {
     explicit stop_on_internal_overflow() = default;
 };
 
-template <typename BinIndex> class bin_increment_batch_journal {
+template <typename BinIndex> class bin_increment_cluster_journal {
   public:
     using bin_index_type = BinIndex;
 
@@ -114,7 +114,7 @@ template <typename BinIndex> class bin_increment_batch_journal {
 
         explicit const_iterator(decltype(it) iter) : it(iter) {}
 
-        friend class bin_increment_batch_journal;
+        friend class bin_increment_cluster_journal;
 
       public:
         using value_type = span<bin_index_type const>;
@@ -159,19 +159,19 @@ template <typename BinIndex> class bin_increment_batch_journal {
         return const_iterator(journ.end());
     }
 
-    auto
-    operator==(bin_increment_batch_journal const &rhs) const noexcept -> bool {
+    auto operator==(bin_increment_cluster_journal const &rhs) const noexcept
+        -> bool {
         return journ == rhs.journ;
     }
 
-    auto
-    operator!=(bin_increment_batch_journal const &rhs) const noexcept -> bool {
+    auto operator!=(bin_increment_cluster_journal const &rhs) const noexcept
+        -> bool {
         return not(*this == rhs);
     }
 
     friend auto
     operator<<(std::ostream &s,
-               bin_increment_batch_journal const &j) -> std::ostream & {
+               bin_increment_cluster_journal const &j) -> std::ostream & {
         s << "journal(";
         for (auto const batch : j) {
             s << '{';

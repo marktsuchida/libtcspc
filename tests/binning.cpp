@@ -69,7 +69,7 @@ TEST_CASE("type constraints: batch_bin_increments") {
     };
     using proc_type =
         decltype(batch_bin_increments<start_event, stop_event, data_types>(
-            sink_events<bin_increment_batch_event<data_types>, int>()));
+            sink_events<bin_increment_cluster_event<data_types>, int>()));
     STATIC_CHECK(is_processor_v<proc_type, start_event, stop_event,
                                 bin_increment_event<>>);
     STATIC_CHECK(handles_event_v<proc_type, int>);
@@ -530,7 +530,7 @@ TEST_CASE("Batch bin increments") {
         using bin_index_type = u32;
     };
     using out_events =
-        type_list<bin_increment_batch_event<data_types>, misc_event>;
+        type_list<bin_increment_cluster_event<data_types>, misc_event>;
     auto const valcat = GENERATE(feed_as::const_lvalue, feed_as::rvalue);
     auto ctx = context::create();
     auto in = feed_input(
@@ -564,12 +564,13 @@ TEST_CASE("Batch bin increments") {
         in.handle(start_event{42});
         in.handle(bin_increment_event<data_types>{123});
         in.handle(stop_event{44});
-        REQUIRE(out.check(bin_increment_batch_event<data_types>{{123}}));
+        REQUIRE(out.check(bin_increment_cluster_event<data_types>{{123}}));
         in.handle(start_event{45});
         in.handle(bin_increment_event<data_types>{124});
         in.handle(bin_increment_event<data_types>{125});
         in.handle(stop_event{48});
-        REQUIRE(out.check(bin_increment_batch_event<data_types>{{124, 125}}));
+        REQUIRE(
+            out.check(bin_increment_cluster_event<data_types>{{124, 125}}));
         in.flush();
         REQUIRE(out.check_flushed());
     }

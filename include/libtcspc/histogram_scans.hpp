@@ -78,7 +78,7 @@ class histogram_scans {
         std::conditional_t<emit_concluding ||
                                overflow_policy ==
                                    histogram_policy::reset_on_overflow,
-                           bin_increment_batch_journal<bin_index_type>,
+                           bin_increment_cluster_journal<bin_index_type>,
                            null_journal<bin_index_type>>;
 
     std::shared_ptr<bucket_source<bin_type>> bsource;
@@ -144,7 +144,7 @@ class histogram_scans {
 
     template <typename DT>
     LIBTCSPC_NOINLINE void
-    overflow_reset(bin_increment_batch_event<DT> const &event) {
+    overflow_reset(bin_increment_cluster_event<DT> const &event) {
         if (mhista.scan_index() == 0)
             throw histogram_overflow_error(
                 "histogram array bin overflowed on first scan");
@@ -189,7 +189,7 @@ class histogram_scans {
     }
 
     template <typename DT>
-    void handle(bin_increment_batch_event<DT> const &event) {
+    void handle(bin_increment_cluster_event<DT> const &event) {
         static_assert(std::is_same_v<typename DT::bin_index_type,
                                      typename DataTypes::bin_index_type>);
         if (hist_bucket.empty())
@@ -222,8 +222,9 @@ class histogram_scans {
     }
 
     // NOLINTNEXTLINE(cppcoreguidelines-rvalue-reference-param-not-moved)
-    template <typename DT> void handle(bin_increment_batch_event<DT> &&event) {
-        handle(static_cast<bin_increment_batch_event<DT> const &>(event));
+    template <typename DT>
+    void handle(bin_increment_cluster_event<DT> &&event) {
+        handle(static_cast<bin_increment_cluster_event<DT> const &>(event));
     }
 
     template <typename E, typename = std::enable_if_t<
@@ -248,7 +249,7 @@ class histogram_scans {
  * The processor fills an array of histograms (held in a
  * `tcspc::bucket<DataTypes::bin_type>` provided by \p buffer_provider) by
  * sequentially visiting its elements (each a histogram) on each incoming
- * `tcspc::bin_increment_batch_event`. One such iteration of the array is
+ * `tcspc::bin_increment_cluster_event`. One such iteration of the array is
  * termed a _scan_. After a scan, the processor returns to the first element of
  * the array and continues to add increments (by default adding to the previous
  * scans).
@@ -279,7 +280,7 @@ class histogram_scans {
  *   event carries a bucket with extractable storage.
  *
  * \attention Behavior is undefined if an incoming
- * `tcspc::bin_increment_batch_event` contains a bin index beyond the size of
+ * `tcspc::bin_increment_cluster_event` contains a bin index beyond the size of
  * the histogram. The bin maper should be chosen so that this does not occur.
  *
  * \tparam Policy policy specifying behavior of the processor
@@ -305,7 +306,7 @@ class histogram_scans {
  * \return processor
  *
  * \par Events handled
- * - `tcspc::bin_increment_batch_event<DT>`: apply the
+ * - `tcspc::bin_increment_cluster_event<DT>`: apply the
  *   increments to the next element histogram of the array (after clearing it
  *   if this is the first scan of a round or `Policy` has
  *   `tcspc::histogram_policy::clear_every_scan` set) and, if there is no bin
@@ -338,7 +339,7 @@ class histogram_scans {
  *   partial scan and emit (rvalue)
  *   `tcspc::concluding_histogram_array_event<DataTypes>`; pass through; then
  *   start a new round by arranging to switch to a new bucket for the histogram
- *   array on the next `tcspc::bin_increment_batch_event`
+ *   array on the next `tcspc::bin_increment_cluster_event`
  * - All other types: pass through with no action
  * - Flush: pass through with no action
  */

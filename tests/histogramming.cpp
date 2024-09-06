@@ -21,7 +21,7 @@
 namespace tcspc::internal {
 
 TEST_CASE("Journal basic operations") {
-    bin_increment_batch_journal<u16> j;
+    bin_increment_cluster_journal<u16> j;
     REQUIRE(j.empty());
     REQUIRE(j.begin() == j.end());
 
@@ -29,7 +29,7 @@ TEST_CASE("Journal basic operations") {
     REQUIRE(j.size() == 1);
 
     using std::swap;
-    bin_increment_batch_journal<u16> j2;
+    bin_increment_cluster_journal<u16> j2;
     swap(j, j2);
     REQUIRE(j.empty());
     REQUIRE(j2.size() == 1);
@@ -37,7 +37,7 @@ TEST_CASE("Journal basic operations") {
     REQUIRE(j.size() == 1);
     REQUIRE(j2.empty());
 
-    bin_increment_batch_journal<u16> j3 = j;
+    bin_increment_cluster_journal<u16> j3 = j;
     REQUIRE(j3.size() == 1);
 
     j.clear();
@@ -47,7 +47,7 @@ TEST_CASE("Journal basic operations") {
 }
 
 TEST_CASE("Journal iterator") {
-    bin_increment_batch_journal<u8> j;
+    bin_increment_cluster_journal<u8> j;
 
     SECTION("Empty") {
         for ([[maybe_unused]] auto batch : j) {
@@ -338,7 +338,7 @@ TEMPLATE_TEST_CASE(
 
 TEST_CASE("multi_histogram: rolling back works and applies clearing",
           "[multi_histogram]") {
-    bin_increment_batch_journal<u8> journal;
+    bin_increment_cluster_journal<u8> journal;
     std::vector<u8> data(12, u8(123));
     multi_histogram<u8, u8, stop_on_internal_overflow> mhist(
         data, arg::max_per_bin<u8>{255}, arg::num_bins<>{4},
@@ -376,7 +376,7 @@ TEST_CASE("multi_histogram: rolling back works and applies clearing",
 
 TEST_CASE("multi_histogram: replay reproduces journaled data",
           "[multi_histogram]") {
-    bin_increment_batch_journal<u8> journal;
+    bin_increment_cluster_journal<u8> journal;
     std::vector<u8> data(12, u8(0));
     multi_histogram<u8, u8, stop_on_internal_overflow> mhist(
         data, arg::max_per_bin<u8>{255}, arg::num_bins<>{4},
@@ -404,7 +404,7 @@ TEST_CASE("multi_histogram: saturate on overflow") {
 }
 
 TEST_CASE("multi_histogram: stop on overflow") {
-    bin_increment_batch_journal<u8> journal;
+    bin_increment_cluster_journal<u8> journal;
     std::vector<u8> data(12, u8(123));
     multi_histogram<u8, u8, stop_on_internal_overflow> mhist(
         data, arg::max_per_bin<u8>{1}, arg::num_bins<>{4},
@@ -480,7 +480,7 @@ TEMPLATE_TEST_CASE(
 
 TEST_CASE("multi_histogram_accumulation: rolling back restores previous scan",
           "[multi_histogram_accumulation]") {
-    bin_increment_batch_journal<u8> journal;
+    bin_increment_cluster_journal<u8> journal;
     std::vector<u8> data(12, u8(123));
     multi_histogram_accumulation<u8, u8, stop_on_internal_overflow> mhista(
         data, arg::max_per_bin<u8>{255}, arg::num_bins<>{4},
@@ -497,7 +497,7 @@ TEST_CASE("multi_histogram_accumulation: rolling back restores previous scan",
 
 TEST_CASE("multi_histogram_accumulation: replay reproduces rolled-back delta",
           "[multi_histogram_accumulation]") {
-    bin_increment_batch_journal<u8> journal;
+    bin_increment_cluster_journal<u8> journal;
     std::vector<u8> data(12, u8(123));
     multi_histogram_accumulation<u8, u8, stop_on_internal_overflow> mhista(
         data, arg::max_per_bin<u8>{255}, arg::num_bins<>{4},

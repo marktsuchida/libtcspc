@@ -523,10 +523,10 @@ template <typename StartEvent, typename StopEvent, typename DataTypes,
           typename Downstream>
 class batch_bin_increments {
     static_assert(
-        is_processor_v<Downstream, bin_increment_batch_event<DataTypes>>);
+        is_processor_v<Downstream, bin_increment_cluster_event<DataTypes>>);
 
     bool in_batch = false;
-    bin_increment_batch_event<DataTypes> batch;
+    bin_increment_cluster_event<DataTypes> batch;
 
     Downstream downstream;
 
@@ -609,7 +609,7 @@ class batch_bin_increments {
  * \par Events handled
  * - `StartEvent`: discard any unfinished batch; start recording a batch
  * - `StopEvent`: ignore if not in batch; finish recording the current batch
- *   and emit as `tcspc::bin_increment_batch_event<DataTypes>`
+ *   and emit as `tcspc::bin_increment_cluster_event<DataTypes>`
  * - `tcspc::bin_increment_event<DT>`: record if currently within a batch
  * - All other types: pass through with no action
  * - Flush: pass through with no action

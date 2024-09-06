@@ -99,7 +99,7 @@ template <typename DataTypes = default_data_types> struct bin_increment_event {
  * \tparam DataTypes data type set specifying `bin_index_type`
  */
 template <typename DataTypes = default_data_types>
-struct bin_increment_batch_event {
+struct bin_increment_cluster_event {
     /**
      * \brief The bin indices for the datapoints in the batch.
      */
@@ -107,22 +107,23 @@ struct bin_increment_batch_event {
 
     /** \brief Equality comparison operator. */
     friend auto
-    operator==(bin_increment_batch_event const &lhs,
-               bin_increment_batch_event const &rhs) noexcept -> bool {
+    operator==(bin_increment_cluster_event const &lhs,
+               bin_increment_cluster_event const &rhs) noexcept -> bool {
         return lhs.bin_indices == rhs.bin_indices;
     }
 
     /** \brief Inequality comparison operator. */
     friend auto
-    operator!=(bin_increment_batch_event const &lhs,
-               bin_increment_batch_event const &rhs) noexcept -> bool {
+    operator!=(bin_increment_cluster_event const &lhs,
+               bin_increment_cluster_event const &rhs) noexcept -> bool {
         return not(lhs == rhs);
     }
 
-    /** \brief Stream insertion operator for bin_increment_batch_event. */
-    friend auto operator<<(std::ostream &s, bin_increment_batch_event const &e)
-        -> std::ostream & {
-        s << "bin_increment_batch(";
+    /** \brief Stream insertion operator for bin_increment_cluster_event. */
+    friend auto
+    operator<<(std::ostream &s,
+               bin_increment_cluster_event const &e) -> std::ostream & {
+        s << "bin_increment_cluster(";
         for (auto const ind : e.bin_indices)
             s << ind << ", ";
         return s << ')';
