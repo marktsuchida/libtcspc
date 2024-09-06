@@ -564,13 +564,14 @@ TEST_CASE("Batch bin increments") {
         in.handle(start_event{42});
         in.handle(bin_increment_event<data_types>{123});
         in.handle(stop_event{44});
-        REQUIRE(out.check(bin_increment_cluster_event<data_types>{{123}}));
+        REQUIRE(out.check(
+            bin_increment_cluster_event<data_types>{test_bucket<u32>({123})}));
         in.handle(start_event{45});
         in.handle(bin_increment_event<data_types>{124});
         in.handle(bin_increment_event<data_types>{125});
         in.handle(stop_event{48});
-        REQUIRE(
-            out.check(bin_increment_cluster_event<data_types>{{124, 125}}));
+        REQUIRE(out.check(bin_increment_cluster_event<data_types>{
+            test_bucket<u32>({124, 125})}));
         in.flush();
         REQUIRE(out.check_flushed());
     }

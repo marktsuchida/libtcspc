@@ -15,6 +15,7 @@
 #include "int_types.hpp"
 #include "introspect.hpp"
 #include "processor_traits.hpp"
+#include "span.hpp"
 
 #include <algorithm>
 #include <cassert>
@@ -526,7 +527,7 @@ class cluster_bin_increments {
         is_processor_v<Downstream, bin_increment_cluster_event<DataTypes>>);
 
     bool in_cluster = false;
-    bin_increment_cluster_event<DataTypes> cluster;
+    std::vector<typename DataTypes::bin_index_type> cur_cluster;
 
     Downstream downstream;
 
@@ -546,17 +547,18 @@ class cluster_bin_increments {
         static_assert(std::is_same_v<typename DT::bin_index_type,
                                      typename DataTypes::bin_index_type>);
         if (in_cluster)
-            cluster.bin_indices.push_back(event.bin_index);
+            cur_cluster.push_back(event.bin_index);
     }
 
     void handle(StartEvent const & /* event */) {
-        cluster.bin_indices.clear();
+        cur_cluster.clear();
         in_cluster = true;
     }
 
     void handle(StopEvent const & /* event */) {
         if (in_cluster) {
-            downstream.handle(std::as_const(cluster));
+            downstream.handle(bin_increment_cluster_event<DataTypes>{
+                ad_hoc_bucket(span(cur_cluster))});
             in_cluster = false;
         }
     }

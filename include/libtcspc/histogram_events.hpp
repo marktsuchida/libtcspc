@@ -11,7 +11,6 @@
 
 #include <cstddef>
 #include <ostream>
-#include <vector>
 
 namespace tcspc {
 
@@ -103,7 +102,7 @@ struct bin_increment_cluster_event {
     /**
      * \brief The bin indices for the datapoints in the cluster.
      */
-    std::vector<typename DataTypes::bin_index_type> bin_indices;
+    bucket<typename DataTypes::bin_index_type> bin_indices;
 
     /** \brief Equality comparison operator. */
     friend auto
@@ -123,10 +122,7 @@ struct bin_increment_cluster_event {
     friend auto
     operator<<(std::ostream &s,
                bin_increment_cluster_event const &e) -> std::ostream & {
-        s << "bin_increment_cluster(";
-        for (auto const ind : e.bin_indices)
-            s << ind << ", ";
-        return s << ')';
+        return s << "bin_increment_cluster(" << e.bin_indices << ')';
     }
 };
 
