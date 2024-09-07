@@ -13,6 +13,7 @@
 #include <algorithm>
 #include <cassert>
 #include <cstddef>
+#include <cstring>
 #include <iterator>
 #include <limits>
 #include <ostream>
@@ -77,10 +78,9 @@ template <typename BinIndex> class bin_increment_cluster_journal {
             journ.push_back(encode(size));
         } else {
             journ.push_back(encoded_size_max);
-            for (std::size_t i = 0; i < large_size_element_count; ++i) {
-                journ.push_back(encode(size & cluster_size_mask));
-                size >>= 8 * sizeof(encoded_size_type);
-            }
+            journ.resize(journ.size() + large_size_element_count);
+            std::memcpy(&*std::prev(journ.end(), large_size_element_count),
+                        &size, sizeof(size));
         }
         journ.insert(journ.end(), cluster.begin(), cluster.end());
     }
@@ -96,14 +96,10 @@ template <typename BinIndex> class bin_increment_cluster_journal {
             std::size_t const cluster_size = [&start] {
                 if (*start == encoded_size_max) {
                     ++start;
-                    std::size_t s = 0;
-                    for (std::size_t i = 0; i < large_size_element_count;
-                         ++i) {
-                        std::size_t const elem{
-                            static_cast<encoded_size_type>(*start++)};
-                        s += elem << (8 * sizeof(encoded_size_type) * i);
-                    }
-                    return s;
+                    std::size_t size{};
+                    std::memcpy(&size, &*start, sizeof(size));
+                    std::advance(start, large_size_element_count);
+                    return size;
                 }
                 return std::size_t{*start++};
             }();
