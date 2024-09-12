@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: MIT
  */
 
-#include "libtcspc/histogramming.hpp"
+#include "libtcspc/histogram_impl.hpp"
 
 #include "libtcspc/arg_wrappers.hpp"
 #include "libtcspc/int_types.hpp"
