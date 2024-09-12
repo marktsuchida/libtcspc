@@ -31,11 +31,12 @@ struct stop_on_internal_overflow {
 };
 
 // Helper for bin_increment_cluster_journal.
-template <typename BinIndex> class bin_increment_cluster_vector_storage {
+template <typename BinIndex>
+class bin_increment_cluster_journal_encoding_adapter {
     std::vector<BinIndex> *vec;
 
   public:
-    explicit bin_increment_cluster_vector_storage(
+    explicit bin_increment_cluster_journal_encoding_adapter(
         std::vector<BinIndex> &storage)
         : vec(&storage) {}
 
@@ -73,7 +74,7 @@ template <typename BinIndex> class bin_increment_cluster_journal {
 
     void append_cluster(span<bin_index_type const> cluster) {
         [[maybe_unused]] bool const ok = encode_bin_increment_cluster(
-            bin_increment_cluster_vector_storage(encoded), cluster);
+            bin_increment_cluster_journal_encoding_adapter(encoded), cluster);
         assert(ok); // Otherwise bad_alloc would have been thrown.
     }
 
