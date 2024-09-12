@@ -62,6 +62,16 @@ template <typename T> struct bin_width {
 };
 
 /**
+ * \brief Function argument wrapper for bucket size.
+ */
+template <typename T = std::size_t> struct bucket_size {
+    /** \brief The argument value. */
+    T value;
+    /** \brief Construct by wrapping a value. */
+    explicit bucket_size(T arg) : value(arg) {}
+};
+
+/**
  * \brief Function argument wrapper for channel parameter.
  */
 template <typename T> struct channel {

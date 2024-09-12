@@ -10,6 +10,7 @@
 #include "acquire.hpp"
 #include "arg_wrappers.hpp"
 #include "batch_unbatch.hpp"
+#include "batch_unbatch_bin_increment_clusters.hpp"
 #include "batch_unbatch_from_bytes.hpp"
 #include "bh_spc.hpp"
 #include "bin_increment_cluster_encoding.hpp"

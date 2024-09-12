@@ -557,8 +557,9 @@ class cluster_bin_increments {
 
     void handle(StopEvent const & /* event */) {
         if (in_cluster) {
-            downstream.handle(bin_increment_cluster_event<DataTypes>{
-                ad_hoc_bucket(span(cur_cluster))});
+            auto const e = bin_increment_cluster_event<DataTypes>{
+                ad_hoc_bucket(span(cur_cluster))};
+            downstream.handle(e);
             in_cluster = false;
         }
     }

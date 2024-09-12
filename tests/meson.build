@@ -6,6 +6,7 @@ test_libtcspc_srcs = [
     'acquire.cpp',
     'arg_wrappers.cpp',
     'batch_unbatch.cpp',
+    'batch_unbatch_bin_increment_clusters.cpp',
     'batch_unbatch_from_bytes.cpp',
     'bh_spc.cpp',
     'bin_increment_cluster_encoding.cpp',

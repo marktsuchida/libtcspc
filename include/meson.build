@@ -6,6 +6,7 @@ public_cpp_headers = files(
     'libtcspc/acquire.hpp',
     'libtcspc/arg_wrappers.hpp',
     'libtcspc/batch_unbatch.hpp',
+    'libtcspc/batch_unbatch_bin_increment_clusters.hpp',
     'libtcspc/batch_unbatch_from_bytes.hpp',
     'libtcspc/bh_spc.hpp',
     'libtcspc/bin_increment_cluster_encoding.hpp',
