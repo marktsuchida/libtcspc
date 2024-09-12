@@ -7,18 +7,17 @@
 #pragma once
 
 #include "arg_wrappers.hpp"
+#include "bin_increment_cluster_encoding.hpp"
 #include "common.hpp"
 #include "span.hpp"
 
 #include <algorithm>
 #include <cassert>
 #include <cstddef>
-#include <cstring>
 #include <iterator>
 #include <limits>
 #include <ostream>
 #include <type_traits>
-#include <utility>
 #include <vector>
 
 namespace tcspc::internal {
@@ -31,132 +30,70 @@ struct stop_on_internal_overflow {
     explicit stop_on_internal_overflow() = default;
 };
 
+// Helper for bin_increment_cluster_journal.
+template <typename BinIndex> class bin_increment_cluster_vector_storage {
+    std::vector<BinIndex> *vec;
+
+  public:
+    explicit bin_increment_cluster_vector_storage(
+        std::vector<BinIndex> &storage)
+        : vec(&storage) {}
+
+    [[nodiscard]] auto available_capacity() const -> std::size_t {
+        // Effectively limitless for 64-bit (short-circuit the check).
+        if constexpr (sizeof(std::size_t) >= 8)
+            return std::numeric_limits<std::size_t>::max();
+        return vec->max_size() - vec->size();
+    }
+
+    [[nodiscard]] auto make_space(std::size_t size) -> span<BinIndex> {
+        auto const old_size = vec->size();
+        vec->resize(old_size + size);
+        return span(*vec).subspan(old_size);
+    }
+};
+
 template <typename BinIndex> class bin_increment_cluster_journal {
+    std::vector<BinIndex> encoded;
+
   public:
     using bin_index_type = BinIndex;
 
-  private:
-    using encoded_size_type = std::make_unsigned_t<bin_index_type>;
-    static_assert(sizeof(encoded_size_type) <= sizeof(std::size_t));
-
-    static constexpr auto encoded_size_max =
-        std::numeric_limits<encoded_size_type>::max();
-
-    static constexpr auto large_size_element_count =
-        sizeof(std::size_t) / sizeof(encoded_size_type);
-
-    static constexpr std::size_t cluster_size_mask{encoded_size_max};
-
-    // Size-prefixed clusters. Before every cluster (contiguous bin indices),
-    // including empty clusters, the size of the cluster is encoding in one or
-    // more elements (interpreted as encoded_size_type). A single element is
-    // used if the cluster size is less than encoded_size_max. Otherwise a
-    // multi-element encoding is used, with the first element containing
-    // encoded_size_max, followed by the split bits of the size in low-to-high
-    // order, spanning 8 bytes worth of space (i.e., 1, 2, 4, or 8 elements
-    // depending on encoded_size_type).
-    std::vector<bin_index_type> journ;
-
-  public:
     // Slow, not for use in production. For use by tests.
     [[nodiscard]] auto size() const noexcept -> std::size_t {
-        return std::size_t(std::distance(begin(), end()));
+        auto const decoder = bin_increment_cluster_decoder(span(encoded));
+        return std::size_t(std::distance(decoder.begin(), decoder.end()));
     }
 
-    [[nodiscard]] auto empty() const noexcept -> bool { return journ.empty(); }
-
-    void clear() noexcept { journ.clear(); }
-
-    void append_cluster(span<BinIndex const> cluster) {
-        std::size_t size = cluster.size();
-        auto encode = [](std::size_t s) {
-            assert(s <= encoded_size_max);
-            return static_cast<bin_index_type>(
-                static_cast<encoded_size_type>(s));
-        };
-        if (size < encoded_size_max) {
-            journ.push_back(encode(size));
-        } else {
-            journ.push_back(encoded_size_max);
-            journ.resize(journ.size() + large_size_element_count);
-            std::memcpy(&*std::prev(journ.end(), large_size_element_count),
-                        &size, sizeof(size));
-        }
-        journ.insert(journ.end(), cluster.begin(), cluster.end());
+    [[nodiscard]] auto empty() const noexcept -> bool {
+        return encoded.empty();
     }
 
-    // Constant input iterator over the clusters. There is no non-const
-    // iteration support. Dereferencing yields `span<bin_index_type>`
-    // (including for empty clusters).
-    class const_iterator {
-        typename std::vector<bin_index_type>::const_iterator it;
+    void clear() noexcept { encoded.clear(); }
 
-        auto cluster_range() const -> std::pair<decltype(it), decltype(it)> {
-            auto start = it;
-            std::size_t const cluster_size = [&start] {
-                if (*start == encoded_size_max) {
-                    ++start;
-                    std::size_t size{};
-                    std::memcpy(&size, &*start, sizeof(size));
-                    std::advance(start, large_size_element_count);
-                    return size;
-                }
-                return std::size_t{*start++};
-            }();
-            auto const stop = std::next(start, std::ptrdiff_t(cluster_size));
-            return {start, stop};
-        }
-
-        explicit const_iterator(decltype(it) iter) : it(iter) {}
-
-        friend class bin_increment_cluster_journal;
-
-      public:
-        using value_type = span<bin_index_type const>;
-        using difference_type = std::ptrdiff_t;
-        using reference = value_type const &;
-        using pointer = value_type const *;
-        using iterator_category = std::input_iterator_tag;
-
-        const_iterator() = delete;
-
-        auto operator++() -> const_iterator & {
-            auto const [start, stop] = cluster_range();
-            it = stop;
-            return *this;
-        }
-
-        auto operator++(int) -> const_iterator {
-            auto const ret = *this;
-            ++(*this);
-            return ret;
-        }
-
-        auto operator*() const -> value_type {
-            auto const [start, stop] = cluster_range();
-            return span(&*start, &*stop);
-        }
-
-        auto operator==(const_iterator rhs) const noexcept -> bool {
-            return it == rhs.it;
-        }
-
-        auto operator!=(const_iterator rhs) const noexcept -> bool {
-            return not(*this == rhs);
-        }
-    };
-
-    auto begin() const noexcept -> const_iterator {
-        return const_iterator(journ.begin());
+    void append_cluster(span<bin_index_type const> cluster) {
+        [[maybe_unused]] bool const ok = encode_bin_increment_cluster(
+            bin_increment_cluster_vector_storage(encoded), cluster);
+        assert(ok); // Otherwise bad_alloc would have been thrown.
     }
 
-    auto end() const noexcept -> const_iterator {
-        return const_iterator(journ.end());
+    using const_iterator =
+        typename bin_increment_cluster_decoder<bin_index_type>::const_iterator;
+
+    [[nodiscard]] auto begin() const noexcept -> const_iterator {
+        auto const decoder =
+            bin_increment_cluster_decoder<bin_index_type>(encoded);
+        return const_iterator(decoder.begin());
+    }
+
+    [[nodiscard]] auto end() const noexcept -> const_iterator {
+        auto const decoder = bin_increment_cluster_decoder(span(encoded));
+        return const_iterator(decoder.end());
     }
 
     auto operator==(bin_increment_cluster_journal const &rhs) const noexcept
         -> bool {
-        return journ == rhs.journ;
+        return encoded == rhs.encoded;
     }
 
     auto operator!=(bin_increment_cluster_journal const &rhs) const noexcept

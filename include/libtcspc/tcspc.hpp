@@ -12,6 +12,7 @@
 #include "batch_unbatch.hpp"
 #include "batch_unbatch_from_bytes.hpp"
 #include "bh_spc.hpp"
+#include "bin_increment_cluster_encoding.hpp"
 #include "binning.hpp"
 #include "bucket.hpp"
 #include "buffer.hpp"

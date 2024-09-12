@@ -8,6 +8,7 @@ test_libtcspc_srcs = [
     'batch_unbatch.cpp',
     'batch_unbatch_from_bytes.cpp',
     'bh_spc.cpp',
+    'bin_increment_cluster_encoding.cpp',
     'binning.cpp',
     'bucket.cpp',
     'buffer.cpp',
