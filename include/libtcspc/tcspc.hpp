@@ -34,7 +34,6 @@
 #include "histogram_events.hpp"
 #include "histogram_impl.hpp"
 #include "histogram_policy.hpp"
-#include "histogram_scans.hpp"
 #include "int_arith.hpp"
 #include "int_types.hpp"
 #include "introspect.hpp"
@@ -54,6 +53,7 @@
 #include "recover_order.hpp"
 #include "regulate_time_reached.hpp"
 #include "route.hpp"
+#include "scan_histograms.hpp"
 #include "select.hpp"
 #include "span.hpp"
 #include "stop.hpp"
@@ -758,7 +758,7 @@ namespace tcspc {
  * \brief Compile-time flags for specifying how to handle histogram bin
  * overflow and other behavior.
  *
- * Used by `tcspc::histogram()` and `tcspc::histogram_scans()` as non-type
+ * Used by `tcspc::histogram()` and `tcspc::scan_histograms()` as non-type
  * template parameter.
  */
 

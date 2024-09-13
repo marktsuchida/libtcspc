@@ -32,7 +32,7 @@ namespace internal {
 
 template <histogram_policy Policy, typename ResetEvent, typename DataTypes,
           typename Downstream>
-class histogram_scans {
+class scan_histograms {
     static constexpr histogram_policy overflow_policy =
         Policy & histogram_policy::overflow_mask;
     static constexpr bool emit_concluding =
@@ -159,7 +159,7 @@ class histogram_scans {
     }
 
   public:
-    explicit histogram_scans(
+    explicit scan_histograms(
         arg::num_elements<std::size_t> num_elements,
         arg::num_bins<std::size_t> num_bins,
         arg::max_per_bin<typename DataTypes::bin_type> max_per_bin,
@@ -171,17 +171,17 @@ class histogram_scans {
           downstream(std::move(downstream)) {
         if (num_elements.value == 0)
             throw std::invalid_argument(
-                "histogram_scans must have at least 1 element");
+                "scan_histograms must have at least 1 element");
         if (num_bins.value == 0)
             throw std::invalid_argument(
-                "histogram_scans must have at least 1 bin per element");
+                "scan_histograms must have at least 1 bin per element");
         if (max_per_bin.value < 0)
             throw std::invalid_argument(
-                "histogram_scans max_per_bin must not be negative");
+                "scan_histograms max_per_bin must not be negative");
     }
 
     [[nodiscard]] auto introspect_node() const -> processor_info {
-        return processor_info(this, "histogram_scans");
+        return processor_info(this, "scan_histograms");
     }
 
     [[nodiscard]] auto introspect_graph() const -> processor_graph {
@@ -347,14 +347,14 @@ class histogram_scans {
 template <histogram_policy Policy = histogram_policy::default_policy,
           typename ResetEvent = never_event,
           typename DataTypes = default_data_types, typename Downstream>
-auto histogram_scans(
+auto scan_histograms(
     arg::num_elements<std::size_t> num_elements,
     arg::num_bins<std::size_t> num_bins,
     arg::max_per_bin<typename DataTypes::bin_type> max_per_bin,
     std::shared_ptr<bucket_source<typename DataTypes::bin_type>>
         buffer_provider,
     Downstream &&downstream) {
-    return internal::histogram_scans<Policy, ResetEvent, DataTypes,
+    return internal::scan_histograms<Policy, ResetEvent, DataTypes,
                                      Downstream>(
         num_elements, num_bins, max_per_bin, std::move(buffer_provider),
         std::forward<Downstream>(downstream));

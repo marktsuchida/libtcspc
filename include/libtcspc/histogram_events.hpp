@@ -293,7 +293,7 @@ struct histogram_array_progress_event {
  *
  * \ingroup events-histogram
  *
- * This event is emitted by the `tcspc::histogram_scans()` processor once per
+ * This event is emitted by the `tcspc::scan_histograms()` processor once per
  * round (that is, before each reset) to provide the accumulated result. The
  * contained histogram array includes only whole scans; counts from any partial
  * scan are not included.

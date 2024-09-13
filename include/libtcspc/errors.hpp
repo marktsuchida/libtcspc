@@ -106,7 +106,7 @@ class data_validation_error : public std::runtime_error {
  * requested and there was an overflow. It is also thrown when
  * `tcspc::reset_on_overflow_t` was requested but a reset would result in an
  * infinite loop: in the case of `tcspc::histogram()` when maximum-per-bin set
- * to 0, or `tcspc::histogram_scans()` when a single batch contains enough
+ * to 0, or `tcspc::scan_histograms()` when a single batch contains enough
  * increments to overflow a bin.
  */
 class histogram_overflow_error : public std::runtime_error {

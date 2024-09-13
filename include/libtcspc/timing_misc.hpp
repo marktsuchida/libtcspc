@@ -554,7 +554,7 @@ class convert_sequences_to_start_stop {
  * next interval are emitted with the same abstime.
  *
  * This can be used to synthesize the start and stop events for
- * `tcspc::histogram_scans()`, given a single sequence of timing markers.
+ * `tcspc::scan_histograms()`, given a single sequence of timing markers.
  * (Another method is to synthesize the stop events as a delayed copy of the
  * start events, using `tcspc::generate()` with
  * `tcspc::one_shot_timing_generator`.)

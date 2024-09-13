@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: MIT
  */
 
-#include "libtcspc/histogram_scans.hpp"
+#include "libtcspc/scan_histograms.hpp"
 
 #include "libtcspc/arg_wrappers.hpp"
 #include "libtcspc/bucket.hpp"
@@ -36,7 +36,7 @@ using misc_event = empty_test_event<1>;
 
 } // namespace
 
-TEMPLATE_TEST_CASE_SIG("type constraints: histogram_scans", "", ((hp P), P),
+TEMPLATE_TEST_CASE_SIG("type constraints: scan_histograms", "", ((hp P), P),
                        hp::error_on_overflow, hp::stop_on_overflow,
                        hp::saturate_on_overflow, hp::reset_on_overflow) {
     using base_output_events =
@@ -48,7 +48,7 @@ TEMPLATE_TEST_CASE_SIG("type constraints: histogram_scans", "", ((hp P), P),
                            type_list<warning_event>, type_list<>>>;
 
     SECTION("no concluding event") {
-        using proc_type = decltype(histogram_scans<P, reset_event>(
+        using proc_type = decltype(scan_histograms<P, reset_event>(
             arg::num_elements<>{256}, arg::num_bins<>{256},
             arg::max_per_bin<u16>{255},
             new_delete_bucket_source<u16>::create(),
@@ -63,7 +63,7 @@ TEMPLATE_TEST_CASE_SIG("type constraints: histogram_scans", "", ((hp P), P),
             using output_events_with_concluding = type_list_union_t<
                 output_events, type_list<concluding_histogram_array_event<>>>;
             using proc_type =
-                decltype(histogram_scans<P | hp::emit_concluding_events,
+                decltype(scan_histograms<P | hp::emit_concluding_events,
                                          reset_event>(
                     arg::num_elements<>{256}, arg::num_bins<>{256},
                     arg::max_per_bin<u16>{255},
@@ -77,8 +77,8 @@ TEMPLATE_TEST_CASE_SIG("type constraints: histogram_scans", "", ((hp P), P),
     }
 }
 
-TEST_CASE("introspect: histogram_scans") {
-    check_introspect_simple_processor(histogram_scans(
+TEST_CASE("introspect: scan_histograms") {
+    check_introspect_simple_processor(scan_histograms(
         arg::num_elements<>{1}, arg::num_bins<>{1}, arg::max_per_bin<u16>{255},
         new_delete_bucket_source<u16>::create(), null_sink()));
 }
@@ -93,7 +93,7 @@ using all_output_events =
 }
 
 TEMPLATE_TEST_CASE_SIG(
-    "histogram_scans normal operation without bin overflow or reset", "",
+    "scan_histograms normal operation without bin overflow or reset", "",
     ((hp P), P), hp::error_on_overflow, hp::stop_on_overflow,
     hp::saturate_on_overflow, hp::reset_on_overflow,
     hp::error_on_overflow | hp::emit_concluding_events,
@@ -105,7 +105,7 @@ TEMPLATE_TEST_CASE_SIG(
     auto bsource = test_bucket_source<u16>::create(
         new_delete_bucket_source<u16>::create(), 42);
     auto in = feed_input(valcat,
-                         histogram_scans<P, reset_event>(
+                         scan_histograms<P, reset_event>(
                              arg::num_elements<>{2}, arg::num_bins<>{2},
                              arg::max_per_bin<u16>{65535}, bsource,
                              capture_output<all_output_events>(
@@ -171,7 +171,7 @@ TEMPLATE_TEST_CASE_SIG(
 }
 
 TEMPLATE_TEST_CASE_SIG(
-    "histogram_scans single element, single bin edge case", "", ((hp P), P),
+    "scan_histograms single element, single bin edge case", "", ((hp P), P),
     hp::error_on_overflow, hp::stop_on_overflow, hp::saturate_on_overflow,
     hp::reset_on_overflow, hp::error_on_overflow | hp::emit_concluding_events,
     hp::stop_on_overflow | hp::emit_concluding_events,
@@ -182,7 +182,7 @@ TEMPLATE_TEST_CASE_SIG(
     auto bsource = test_bucket_source<u16>::create(
         new_delete_bucket_source<u16>::create(), 42);
     auto in = feed_input(valcat,
-                         histogram_scans<P, reset_event>(
+                         scan_histograms<P, reset_event>(
                              arg::num_elements<>{1}, arg::num_bins<>{1},
                              arg::max_per_bin<u16>{65535}, bsource,
                              capture_output<all_output_events>(
@@ -209,7 +209,7 @@ TEMPLATE_TEST_CASE_SIG(
 }
 
 TEMPLATE_TEST_CASE_SIG(
-    "histogram_scans reset_after_scan", "", ((hp P), P), hp::error_on_overflow,
+    "scan_histograms reset_after_scan", "", ((hp P), P), hp::error_on_overflow,
     hp::stop_on_overflow, hp::saturate_on_overflow, hp::reset_on_overflow,
     hp::error_on_overflow | hp::emit_concluding_events,
     hp::stop_on_overflow | hp::emit_concluding_events,
@@ -222,7 +222,7 @@ TEMPLATE_TEST_CASE_SIG(
     auto bsource = test_bucket_source<u16>::create(
         new_delete_bucket_source<u16>::create(), 42);
     auto in = feed_input(
-        valcat, histogram_scans<P | hp::reset_after_scan, reset_event>(
+        valcat, scan_histograms<P | hp::reset_after_scan, reset_event>(
                     arg::num_elements<>{2}, arg::num_bins<>{2},
                     arg::max_per_bin<u16>{65535}, bsource,
                     capture_output<all_output_events>(
@@ -275,7 +275,7 @@ TEMPLATE_TEST_CASE_SIG(
 }
 
 TEMPLATE_TEST_CASE_SIG(
-    "histogram_scans clear_every_scan", "", ((hp P), P), hp::error_on_overflow,
+    "scan_histograms clear_every_scan", "", ((hp P), P), hp::error_on_overflow,
     hp::stop_on_overflow, hp::saturate_on_overflow, hp::reset_on_overflow,
     hp::error_on_overflow | hp::emit_concluding_events,
     hp::stop_on_overflow | hp::emit_concluding_events,
@@ -286,7 +286,7 @@ TEMPLATE_TEST_CASE_SIG(
     auto bsource = test_bucket_source<u16>::create(
         new_delete_bucket_source<u16>::create(), 42);
     auto in = feed_input(
-        valcat, histogram_scans<P | hp::clear_every_scan, reset_event>(
+        valcat, scan_histograms<P | hp::clear_every_scan, reset_event>(
                     arg::num_elements<>{2}, arg::num_bins<>{2},
                     arg::max_per_bin<u16>{65535}, bsource,
                     capture_output<all_output_events>(
@@ -327,7 +327,7 @@ TEMPLATE_TEST_CASE_SIG(
 }
 
 TEMPLATE_TEST_CASE_SIG(
-    "histogram_scans no_clear_new_bucket", "", ((hp P), P),
+    "scan_histograms no_clear_new_bucket", "", ((hp P), P),
     hp::error_on_overflow, hp::stop_on_overflow, hp::saturate_on_overflow,
     hp::reset_on_overflow, hp::error_on_overflow | hp::emit_concluding_events,
     hp::stop_on_overflow | hp::emit_concluding_events,
@@ -338,7 +338,7 @@ TEMPLATE_TEST_CASE_SIG(
     auto bsource = test_bucket_source<u16>::create(
         new_delete_bucket_source<u16>::create(), 42);
     auto in = feed_input(
-        valcat, histogram_scans<P | hp::no_clear_new_bucket, reset_event>(
+        valcat, scan_histograms<P | hp::no_clear_new_bucket, reset_event>(
                     arg::num_elements<>{2}, arg::num_bins<>{2},
                     arg::max_per_bin<u16>{65535}, bsource,
                     capture_output<all_output_events>(
@@ -378,7 +378,7 @@ TEMPLATE_TEST_CASE_SIG(
 }
 
 TEMPLATE_TEST_CASE_SIG(
-    "histogram_scans reset by event", "", ((hp P), P), hp::error_on_overflow,
+    "scan_histograms reset by event", "", ((hp P), P), hp::error_on_overflow,
     hp::stop_on_overflow, hp::saturate_on_overflow, hp::reset_on_overflow,
     hp::error_on_overflow | hp::emit_concluding_events,
     hp::stop_on_overflow | hp::emit_concluding_events,
@@ -391,7 +391,7 @@ TEMPLATE_TEST_CASE_SIG(
     auto bsource = test_bucket_source<u16>::create(
         new_delete_bucket_source<u16>::create(), 42);
     auto in = feed_input(valcat,
-                         histogram_scans<P, reset_event>(
+                         scan_histograms<P, reset_event>(
                              arg::num_elements<>{2}, arg::num_bins<>{2},
                              arg::max_per_bin<u16>{65535}, bsource,
                              capture_output<all_output_events>(
@@ -527,7 +527,7 @@ TEMPLATE_TEST_CASE_SIG(
     REQUIRE(out.check_flushed());
 }
 
-TEMPLATE_TEST_CASE_SIG("histogram_scans error_on_overflow", "", ((hp P), P),
+TEMPLATE_TEST_CASE_SIG("scan_histograms error_on_overflow", "", ((hp P), P),
                        hp::error_on_overflow,
                        hp::error_on_overflow | hp::emit_concluding_events) {
     auto const valcat = GENERATE(feed_as::const_lvalue, feed_as::rvalue);
@@ -535,7 +535,7 @@ TEMPLATE_TEST_CASE_SIG("histogram_scans error_on_overflow", "", ((hp P), P),
     auto bsource = test_bucket_source<u16>::create(
         new_delete_bucket_source<u16>::create(), 42);
     auto in = feed_input(valcat,
-                         histogram_scans<P, reset_event>(
+                         scan_histograms<P, reset_event>(
                              arg::num_elements<>{2}, arg::num_bins<>{2},
                              arg::max_per_bin<u16>{3}, bsource,
                              capture_output<all_output_events>(
@@ -562,7 +562,7 @@ TEMPLATE_TEST_CASE_SIG("histogram_scans error_on_overflow", "", ((hp P), P),
     }
 }
 
-TEMPLATE_TEST_CASE_SIG("histogram_scans stop_on_overflow", "", ((hp P), P),
+TEMPLATE_TEST_CASE_SIG("scan_histograms stop_on_overflow", "", ((hp P), P),
                        hp::stop_on_overflow,
                        hp::stop_on_overflow | hp::emit_concluding_events) {
     static constexpr bool emit_concluding =
@@ -572,7 +572,7 @@ TEMPLATE_TEST_CASE_SIG("histogram_scans stop_on_overflow", "", ((hp P), P),
     auto bsource = test_bucket_source<u16>::create(
         new_delete_bucket_source<u16>::create(), 42);
     auto in = feed_input(valcat,
-                         histogram_scans<P, reset_event>(
+                         scan_histograms<P, reset_event>(
                              arg::num_elements<>{2}, arg::num_bins<>{2},
                              arg::max_per_bin<u16>{3}, bsource,
                              capture_output<all_output_events>(
@@ -619,13 +619,13 @@ TEMPLATE_TEST_CASE_SIG("histogram_scans stop_on_overflow", "", ((hp P), P),
     }
 }
 
-TEST_CASE("histogram_scans saturate_on_overflow") {
+TEST_CASE("scan_histograms saturate_on_overflow") {
     auto const valcat = GENERATE(feed_as::const_lvalue, feed_as::rvalue);
     auto ctx = context::create();
     auto bsource = test_bucket_source<u16>::create(
         new_delete_bucket_source<u16>::create(), 42);
     auto in = feed_input(
-        valcat, histogram_scans<hp::saturate_on_overflow, reset_event>(
+        valcat, scan_histograms<hp::saturate_on_overflow, reset_event>(
                     arg::num_elements<>{2}, arg::num_bins<>{2},
                     arg::max_per_bin<u16>{3}, bsource,
                     capture_output<all_output_events>(
@@ -686,7 +686,7 @@ TEST_CASE("histogram_scans saturate_on_overflow") {
     CHECK(out.check_flushed());
 }
 
-TEMPLATE_TEST_CASE_SIG("histogram_scans reset_on_overflow", "", ((hp P), P),
+TEMPLATE_TEST_CASE_SIG("scan_histograms reset_on_overflow", "", ((hp P), P),
                        hp::reset_on_overflow,
                        hp::reset_on_overflow | hp::emit_concluding_events) {
     static constexpr bool emit_concluding =
@@ -696,7 +696,7 @@ TEMPLATE_TEST_CASE_SIG("histogram_scans reset_on_overflow", "", ((hp P), P),
     auto bsource = test_bucket_source<u16>::create(
         new_delete_bucket_source<u16>::create(), 42);
     auto in = feed_input(valcat,
-                         histogram_scans<P, reset_event>(
+                         scan_histograms<P, reset_event>(
                              arg::num_elements<>{2}, arg::num_bins<>{2},
                              arg::max_per_bin<u16>{3}, bsource,
                              capture_output<all_output_events>(
@@ -793,7 +793,7 @@ TEMPLATE_TEST_CASE_SIG("histogram_scans reset_on_overflow", "", ((hp P), P),
 }
 
 TEMPLATE_TEST_CASE_SIG(
-    "histogram_scans reset_on_overflow with max_per_bin = 0", "", ((hp P), P),
+    "scan_histograms reset_on_overflow with max_per_bin = 0", "", ((hp P), P),
     hp::reset_on_overflow,
     hp::reset_on_overflow | hp::emit_concluding_events) {
     static constexpr bool emit_concluding =
@@ -803,7 +803,7 @@ TEMPLATE_TEST_CASE_SIG(
     auto bsource = test_bucket_source<u16>::create(
         new_delete_bucket_source<u16>::create(), 42);
     auto in = feed_input(valcat,
-                         histogram_scans<P, reset_event>(
+                         scan_histograms<P, reset_event>(
                              arg::num_elements<>{1}, arg::num_bins<>{1},
                              arg::max_per_bin<u16>{0}, bsource,
                              capture_output<all_output_events>(

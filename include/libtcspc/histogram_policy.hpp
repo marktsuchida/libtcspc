@@ -20,7 +20,7 @@ namespace tcspc {
  *
  * The policy consists of a choice of behavior on bin overflow, plus a number
  * of flags defining behavior, some of which only apply to
- * `tcspc::histogram_scans()` (and have no effect on `tcspc::histogram()`).
+ * `tcspc::scan_histograms()` (and have no effect on `tcspc::histogram()`).
  *
  * Only one overflow behavior value may be used at a time; combining more than
  * one via the `|` operator results in an unexpected value. All other flags
@@ -66,7 +66,7 @@ enum class histogram_policy : unsigned {
      * The increment that would have triggered the bin overflow is applied
      * after the reset.
      *
-     * In the case of `tcspc::histogram_scans()`, the partial scan that is
+     * In the case of `tcspc::scan_histograms()`, the partial scan that is
      * rolled back during the reset is reapplied after the reset, such that no
      * counts are lost.
      *
@@ -93,7 +93,7 @@ enum class histogram_policy : unsigned {
      * If set for `tcspc::histogram()`, emit
      * `tcspc::concluding_histogram_event` upon every reset.
      *
-     * If set for `tcspc::histogram_scans()`, emit
+     * If set for `tcspc::scan_histograms()`, emit
      * `tcspc::concluding_histogram_array_event` upon every reset. The
      * concluding event contains the accumulated histogram array with any
      * partial scan having been rolled back.
@@ -102,7 +102,7 @@ enum class histogram_policy : unsigned {
      * back partial scans can be avoided when the result is not used.
      *
      * This flag is not supported in combination with `saturate_on_overflow` in
-     * the case of `tcspc::histogram_scans()` (because there is no way to roll
+     * the case of `tcspc::scan_histograms()` (because there is no way to roll
      * back a partial scan under `saturate_on_overflow`).
      */
     emit_concluding_events = 1 << 2,
@@ -110,7 +110,7 @@ enum class histogram_policy : unsigned {
     /**
      * \brief Automatically reset when the end of a scan has been reached.
      *
-     * Applies to `tcspc::histogram_scans()`. If set, perform a reset after
+     * Applies to `tcspc::scan_histograms()`. If set, perform a reset after
      * each `tcspc::histogram_array_event` is emitted.
      *
      * This is one way to disable accumulation of multiple scans. Typically
@@ -126,7 +126,7 @@ enum class histogram_policy : unsigned {
      * \brief Clear element histograms before applying bin increment batches,
      * during every scan.
      *
-     * Applies to `tcspc::histogram_scans()`. If set, overwrite each element
+     * Applies to `tcspc::scan_histograms()`. If set, overwrite each element
      * histogram with the counts from the current scan.
      *
      * This is another way to disable accumulation of multiple scans. Typically
@@ -143,7 +143,7 @@ enum class histogram_policy : unsigned {
      * \brief Do not zero-fill the histogram array at the beginning of a round
      * of accumulation.
      *
-     * Applies to `tcspc::histogram_scans()`. If set, the unfilled portion of
+     * Applies to `tcspc::scan_histograms()`. If set, the unfilled portion of
      * the histogram array (observable via
      * `tcspc::histogram_array_progress_event`s during the first scan of each
      * round of accumulation) is left uninitialized. Even with this setting,
