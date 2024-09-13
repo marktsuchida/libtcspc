@@ -73,6 +73,10 @@ template <typename EventList> class sink_events {
  * processor.
  *
  * \tparam Events event types to accept
+ *
+ * \par Events handled
+ * - Events in `Event...`: consume with no action
+ * - Flush: consume with no action
  */
 template <typename... Event> auto sink_events() {
     return internal::sink_events<type_list<Event...>>();
@@ -87,6 +91,10 @@ template <typename... Event> auto sink_events() {
  * processor.
  *
  * \tparam EventList event types to accept
+ *
+ * \par Events handled
+ * - Events in `EventList`: consume with no action
+ * - Flush: consume with no action
  */
 template <typename EventList> auto sink_event_list() {
     return internal::sink_events<EventList>();
