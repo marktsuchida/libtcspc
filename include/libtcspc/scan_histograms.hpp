@@ -242,21 +242,21 @@ class scan_histograms {
 } // namespace internal
 
 /**
- * \brief Create a processor that collects time-divided arrays of histograms
- * over repeated scans.
+ * \brief Create a processor that scans over an array of histograms, updating
+ * each with the received bin increment clusters.
  *
  * \ingroup processors-histogramming
  *
  * The processor fills an array of histograms (held in a
  * `tcspc::bucket<DataTypes::bin_type>` provided by \p buffer_provider) by
  * sequentially visiting its elements (each a histogram) on each incoming
- * `tcspc::bin_increment_cluster_event`. One such iteration of the array is
+ * `tcspc::bin_increment_cluster_event`. One such iteration over the array is
  * termed a _scan_. After a scan, the processor returns to the first element of
  * the array and continues to add increments (by default adding to the previous
  * scans).
  *
- * A _round_ consisting of multiple scans is ended by resetting, for example by
- * receiving a \p ResetEvent. After a reset, the histogram array is replaced
+ * A _round_ consisting of multiple scans is ended by _resetting_, for example
+ * by receiving a \p ResetEvent. After a reset, the histogram array is replaced
  * with a new bucket and a new round is started, in which handling of
  * subsequent bin increment clusters begins at the first element of the array.
  *
