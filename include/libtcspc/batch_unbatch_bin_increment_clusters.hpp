@@ -9,12 +9,18 @@
 #include "arg_wrappers.hpp"
 #include "bin_increment_cluster_encoding.hpp"
 #include "bucket.hpp"
+#include "common.hpp"
+#include "data_types.hpp"
 #include "histogram_events.hpp"
+#include "introspect.hpp"
 #include "processor_traits.hpp"
+#include "span.hpp"
 
 #include <cassert>
 #include <cstddef>
+#include <iterator>
 #include <memory>
+#include <stdexcept>
 #include <type_traits>
 #include <utility>
 
