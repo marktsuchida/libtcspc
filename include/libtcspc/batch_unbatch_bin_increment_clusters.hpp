@@ -63,7 +63,7 @@ class batch_bin_increment_clusters {
     void emit_cur_batch() {
         if (cur_batch_size > 0) {
             cur_batch.shrink(0, bucket_used_size);
-            downstream.handle(std::as_const(cur_batch));
+            downstream.handle(std::move(cur_batch));
         }
         cur_batch = {};
         bucket_used_size = 0;

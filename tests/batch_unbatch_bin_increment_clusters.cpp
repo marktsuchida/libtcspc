@@ -59,7 +59,7 @@ TEST_CASE("batch_bin_increment_clusters") {
     in.handle(bin_increment_cluster_event<>{test_bucket<u16>({42, 43, 44})});
     in.handle(bin_increment_cluster_event<>{test_bucket<u16>({5, 6, 7})});
     in.flush();
-    REQUIRE(out.check(emitted_as::always_lvalue,
+    REQUIRE(out.check(emitted_as::always_rvalue,
                       test_bucket<u16>({3, 42, 43, 44, 3, 5, 6, 7})));
     REQUIRE(out.check_flushed());
 }
@@ -79,11 +79,11 @@ TEST_CASE("batch_bin_increment_clusters handles full bucket") {
 
     in.handle(bin_increment_cluster_event<>{test_bucket<u16>({42, 43, 44})});
     in.handle(bin_increment_cluster_event<>{test_bucket<u16>({5, 6, 7})});
-    REQUIRE(out.check(emitted_as::always_lvalue,
+    REQUIRE(out.check(emitted_as::always_rvalue,
                       test_bucket<u16>({3, 42, 43, 44})));
     in.flush();
     REQUIRE(
-        out.check(emitted_as::always_lvalue, test_bucket<u16>({3, 5, 6, 7})));
+        out.check(emitted_as::always_rvalue, test_bucket<u16>({3, 5, 6, 7})));
     REQUIRE(out.check_flushed());
 }
 
@@ -101,11 +101,11 @@ TEST_CASE("batch_bin_increment_clusters handles batch size") {
         capture_output_checker<type_list<bucket<u16>>>(valcat, ctx, "out");
 
     in.handle(bin_increment_cluster_event<>{test_bucket<u16>({42, 43, 44})});
-    REQUIRE(out.check(emitted_as::always_lvalue,
+    REQUIRE(out.check(emitted_as::always_rvalue,
                       test_bucket<u16>({3, 42, 43, 44})));
     in.handle(bin_increment_cluster_event<>{test_bucket<u16>({5, 6, 7})});
     REQUIRE(
-        out.check(emitted_as::always_lvalue, test_bucket<u16>({3, 5, 6, 7})));
+        out.check(emitted_as::always_rvalue, test_bucket<u16>({3, 5, 6, 7})));
     in.flush();
     REQUIRE(out.check_flushed());
 }
