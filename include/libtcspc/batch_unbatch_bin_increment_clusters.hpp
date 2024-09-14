@@ -153,12 +153,12 @@ class unbatch_bin_increment_clusters {
     }
 
     template <typename Event,
-              typename = std::enable_if_t<std::disjunction_v<
-                  std::is_convertible<
+              typename = std::enable_if_t<
+                  std::is_convertible_v<
                       typename std::iterator_traits<
                           decltype(std::declval<Event>().end())>::reference,
-                      typename DataTypes::bin_index_type const &>,
-                  handles_event<Downstream, remove_cvref_t<Event>>>>>
+                      typename DataTypes::bin_index_type const &> ||
+                  handles_event_v<Downstream, remove_cvref_t<Event>>>>
     void handle(Event &&event) {
         if constexpr (std::is_convertible_v<
                           typename std::iterator_traits<
