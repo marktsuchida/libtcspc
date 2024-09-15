@@ -161,16 +161,13 @@ class unbatch_bin_increment_clusters {
     template <typename Event,
               typename = std::enable_if_t<
                   std::is_convertible_v<
-                      typename std::iterator_traits<
-                          decltype(std::declval<Event>().end())>::reference,
-                      typename DataTypes::bin_index_type const &> ||
+                      remove_cvref_t<Event>,
+                      bucket<typename DataTypes::bin_index_type>> ||
                   handles_event_v<Downstream, remove_cvref_t<Event>>>>
     void handle(Event &&event) {
         if constexpr (std::is_convertible_v<
-                          typename std::iterator_traits<
-                              decltype(std::declval<Event>()
-                                           .end())>::reference,
-                          bin_index_type const &>) {
+                          remove_cvref_t<Event>,
+                          bucket<typename DataTypes::bin_index_type>>) {
             bin_increment_cluster_decoder<bin_index_type> const decoder(event);
             for (auto const cluster_span : decoder) {
                 // The cluster_span is a span<T const>, but we want bucket<T>,
@@ -263,9 +260,8 @@ auto batch_bin_increment_clusters(
  * \return processor
  *
  * \par Events handled
- * - Range (container, iterable; typically bucket) of
- *   `DataTypes::bin_index_type`: decode and emit each cluster as
- *   `bin_increment_cluster_event<DataTypes>`
+ * - `tcspc::bucket<typename DataTypes::bin_index_type>`: decode and emit each
+ *   cluster as `bin_increment_cluster_event<DataTypes>`
  * - All other types: pass through with no action
  * - Flush: pass through with no action
  */

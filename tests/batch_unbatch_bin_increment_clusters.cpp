@@ -33,11 +33,11 @@ TEST_CASE("type constraints: batch_bin_increment_clusters") {
 TEST_CASE("type constraints: unbatch_bin_increment_clusters") {
     struct e0 {};
     using proc_type = decltype(unbatch_bin_increment_clusters(
-        sink_events<bin_increment_cluster_event<>>()));
+        sink_events<bin_increment_cluster_event<>, e0>()));
     STATIC_CHECK(is_processor_v<proc_type, bucket<u16>>);
-    STATIC_CHECK(handles_event_v<proc_type, bucket<u16 const>>);
     STATIC_CHECK_FALSE(is_processor_v<proc_type, bucket<e0>>);
     STATIC_CHECK_FALSE(handles_event_v<proc_type, int>);
+    STATIC_CHECK(handles_event_v<proc_type, e0>);
 }
 
 TEST_CASE(
