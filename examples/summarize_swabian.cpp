@@ -96,7 +96,7 @@ auto summarize(std::string const &filename) -> bool {
         recycling_bucket_source<swabian_tag_event>::create(),
         arg::granularity<>{65536},
     stop<type_list<warning_event>>("error reading input",
-    unbatch<swabian_tag_event>( // Get individual device events.
+    unbatch<bucket<swabian_tag_event>>( // Get individual device events.
     count<swabian_tag_event>(ctx->tracker<count_access>("counter"), // Count.
     decode_swabian_tags(
         // Decode device events into generic TCSPC events.

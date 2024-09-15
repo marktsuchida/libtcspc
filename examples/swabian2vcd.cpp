@@ -90,7 +90,7 @@ auto scan_for_channels(std::string const &input_filename)
         recycling_bucket_source<swabian_tag_event>::create(),
         arg::granularity<>{65535},
     stop_with_error<type_list<warning_event>>("error reading input",
-    unbatch<swabian_tag_event>(
+    unbatch<bucket<swabian_tag_event>>(
     decode_swabian_tags(
     select<type_list<detection_event<>>>(
     map_to_datapoints<detection_event<>, data_types>(
@@ -203,7 +203,7 @@ template <bool UseStdout> auto vcd_processor(settings const &settings) {
         recycling_bucket_source<swabian_tag_event>::create(),
         arg::granularity<>{65535},
     stop_with_error<type_list<warning_event>>("error reading input",
-    unbatch<swabian_tag_event>(
+    unbatch<bucket<swabian_tag_event>>(
     decode_swabian_tags(
     stop_with_error<type_list<
         warning_event, begin_lost_interval_event<>,

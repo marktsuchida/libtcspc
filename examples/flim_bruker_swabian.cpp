@@ -249,7 +249,7 @@ auto make_processor(settings const &settings,
         recycling_bucket_source<swabian_tag_event>::create(),
         arg::granularity<>{65536},
     stop_with_error<type_list<warning_event>>("error reading input",
-    unbatch<swabian_tag_event>(
+    unbatch<bucket<swabian_tag_event>>(
     count<swabian_tag_event>(ctx->tracker<count_access>("record_counter"),
     decode_swabian_tags(
     stop_with_error<type_list<

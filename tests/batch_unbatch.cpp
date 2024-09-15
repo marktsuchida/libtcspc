@@ -11,7 +11,6 @@
 #include "libtcspc/context.hpp"
 #include "libtcspc/core.hpp"
 #include "libtcspc/processor_traits.hpp"
-#include "libtcspc/span.hpp"
 #include "libtcspc/test_utils.hpp"
 #include "libtcspc/type_list.hpp"
 #include "test_checkers.hpp"
@@ -38,11 +37,11 @@ TEST_CASE("type constraints: batch") {
 
 TEST_CASE("type constraints: unbatch") {
     struct e0 {};
-    struct e1 {};
-    using proc_type = decltype(unbatch<e0>(sink_events<e0>()));
-    STATIC_CHECK(is_processor_v<proc_type, bucket<e0>>);
-    STATIC_CHECK(is_processor_v<proc_type, bucket<e0 const>>);
-    STATIC_CHECK_FALSE(is_processor_v<proc_type, bucket<e1>>);
+    using proc_type = decltype(unbatch<bucket<int>>(sink_events<int>()));
+    STATIC_CHECK(is_processor_v<proc_type, bucket<int>>);
+    STATIC_CHECK_FALSE(handles_event_v<proc_type, bucket<int const>>);
+    STATIC_CHECK_FALSE(handles_event_v<proc_type, bucket<short>>);
+    STATIC_CHECK_FALSE(handles_event_v<proc_type, bucket<e0>>);
     STATIC_CHECK_FALSE(handles_event_v<proc_type, e0>);
 }
 
@@ -58,7 +57,7 @@ TEST_CASE("introspect: batch, unbatch") {
     check_introspect_simple_processor(
         batch<int>(new_delete_bucket_source<int>::create(),
                    arg::batch_size<>{1}, null_sink()));
-    check_introspect_simple_processor(unbatch<int>(null_sink()));
+    check_introspect_simple_processor(unbatch<bucket<int>>(null_sink()));
 }
 
 TEST_CASE("batch") {
@@ -107,42 +106,12 @@ struct move_out_sink {
 
 } // namespace
 
-TEST_CASE("unbatch lvalue and rvalue correctly") {
-    auto proc = unbatch<std::unique_ptr<int>>(move_out_sink());
-    std::vector<std::unique_ptr<int>> v;
-    v.push_back(std::make_unique<int>(42));
-
-    SECTION("container lvalue ref") {
-        proc.handle(v);
-        REQUIRE(v[0]);
-        REQUIRE(*v[0] == 42);
-    }
-
-    SECTION("container lvalue ref with mutable elements") {
-        auto s = span(v);
-        proc.handle(s);
-        REQUIRE(v[0]);
-        REQUIRE(*v[0] == 42);
-    }
-
-    SECTION("container rvalue ref with mutable elements") {
-        proc.handle(std::move(v));
-        REQUIRE_FALSE(v[0]); // NOLINT(bugprone-use-after-move)
-    }
-
-    SECTION("container rvalue ref with const elements") {
-        proc.handle(span(std::as_const(v)));
-        REQUIRE(v[0]);
-        REQUIRE(*v[0] == 42);
-    }
-}
-
 TEST_CASE("unbatch") {
     auto const valcat = GENERATE(feed_as::const_lvalue, feed_as::rvalue);
     auto ctx = context::create();
-    auto in =
-        feed_input(valcat, unbatch<int>(capture_output<type_list<int>>(
-                               ctx->tracker<capture_output_access>("out"))));
+    auto in = feed_input(
+        valcat, unbatch<std::vector<int>>(capture_output<type_list<int>>(
+                    ctx->tracker<capture_output_access>("out"))));
     in.require_output_checked(ctx, "out");
     auto out = capture_output_checker<type_list<int>>(valcat, ctx, "out");
 

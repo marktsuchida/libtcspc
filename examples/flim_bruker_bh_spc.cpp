@@ -140,7 +140,7 @@ auto make_processor(settings const &settings,
         recycling_bucket_source<bh_spc_event>::create(),
         arg::granularity<>{65536},
     stop_with_error<type_list<warning_event>>("error reading input",
-    unbatch<bh_spc_event>(
+    unbatch<bucket<bh_spc_event>>(
     count<bh_spc_event>(ctx->tracker<count_access>("record_counter"),
     decode_bh_spc(
     check_monotonic(

@@ -78,8 +78,17 @@ template <typename Event, typename Downstream> class batch {
     }
 };
 
-template <typename Event, typename Downstream> class unbatch {
-    static_assert(is_processor_v<Downstream, Event>);
+template <typename ContainerEvent, typename Downstream> class unbatch {
+    using element_type = typename std::iterator_traits<
+        decltype(std::declval<ContainerEvent>().end())>::value_type;
+    static_assert(
+        std::is_same_v<
+            typename std::iterator_traits<
+                decltype(std::declval<ContainerEvent>().begin())>::value_type,
+            element_type>,
+        "ContainerEvent begin() and end() must return compatible iterators");
+
+    static_assert(is_processor_v<Downstream, element_type>);
 
     Downstream downstream;
 
@@ -103,33 +112,16 @@ template <typename Event, typename Downstream> class unbatch {
     // inlined even if this function is marked noinline. There may be
     // borderline cases where this doesn't hold, but it is probably best to
     // leave it to the compiler.
-    template <
-        typename EventContainer,
-        typename = std::enable_if_t<std::is_convertible_v<
-            typename std::iterator_traits<
-                decltype(std::declval<EventContainer>().end())>::reference,
-            Event const &>>>
-    void handle(EventContainer const &events) {
-        for (auto const &event : events)
-            downstream.handle(event);
-    }
-
-    // If the container is passed by rvalue ref and its elements are not const,
-    // move out individually. (For what it's worth: it will not make a
-    // difference for trivial element types, which is the typical usage.)
-    // Note that we do not do a move if the container is not passed by rvalue
-    // ref, even if its elements are non-const (e.g., a const span to
-    // non-const), because that would lead to surprises.
-    template <typename EC,
-              typename = std::enable_if_t<
-                  not std::is_lvalue_reference_v<EC> &&
-                  std::is_convertible_v<
-                      typename std::iterator_traits<
-                          decltype(std::declval<EC>().end())>::reference,
-                      Event &>>>
-    void handle(EC &&events) { // NOLINT(cppcoreguidelines-missing-std-forward)
-        for (auto &event : events)
-            downstream.handle(std::move(event));
+    template <typename CE, typename = std::enable_if_t<std::is_convertible_v<
+                               remove_cvref_t<CE>, ContainerEvent>>>
+    void handle(CE &&event) {
+        if constexpr (std::is_lvalue_reference_v<CE>) {
+            for (auto const &e : event)
+                downstream.handle(e);
+        } else {
+            for (auto &e : event)
+                downstream.handle(std::move(e));
+        }
     }
 
     void flush() { downstream.flush(); }
@@ -184,11 +176,11 @@ auto batch(std::shared_ptr<bucket_source<Event>> buffer_provider,
  *
  * \ingroup processors-batching
  *
- * Events in (ordered) containers or spans are emitted one by one.
+ * Events in (ordered) containers or buckets are emitted one by one.
  *
  * \see `tcspc::batch()`
  *
- * \tparam Event the event type (must be a trivial type)
+ * \tparam ContainerEvent the type of the batch event to unbatch
  *
  * \tparam Downstream downstream processor type
  *
@@ -197,13 +189,12 @@ auto batch(std::shared_ptr<bucket_source<Event>> buffer_provider,
  * \return processor
  *
  * \par Events handled
- * - Range (container, iterable) of `Event`: each element event emitted in
- *   order
+ * - `ContainerEvent`: each element event emitted in order
  * - Flush: pass through with no action
  */
-template <typename Event, typename Downstream>
+template <typename ContainerEvent, typename Downstream>
 auto unbatch(Downstream &&downstream) {
-    return internal::unbatch<Event, Downstream>(
+    return internal::unbatch<ContainerEvent, Downstream>(
         std::forward<Downstream>(downstream));
 }
 
@@ -235,8 +226,9 @@ auto unbatch(Downstream &&downstream) {
 template <typename Event, typename Downstream>
 auto process_in_batches(arg::batch_size<std::size_t> batch_size,
                         Downstream &&downstream) {
-    return batch<Event>(recycling_bucket_source<Event>::create(1), batch_size,
-                        unbatch<Event>(std::forward<Downstream>(downstream)));
+    return batch<Event>(
+        recycling_bucket_source<Event>::create(1), batch_size,
+        unbatch<bucket<Event>>(std::forward<Downstream>(downstream)));
 }
 
 } // namespace tcspc

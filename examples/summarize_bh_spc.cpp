@@ -83,7 +83,7 @@ auto summarize(std::string const &filename) -> bool {
         recycling_bucket_source<bh_spc_event>::create(),
         arg::granularity<>{65536},
     stop<type_list<warning_event>>("error reading input",
-    unbatch<bh_spc_event>( // Get individual device events.
+    unbatch<bucket<bh_spc_event>>( // Get individual device events.
     count<bh_spc_event>(ctx->tracker<count_access>("counter"), // Count.
     decode_bh_spc<dtypes>( // Decode device events into generic TCSPC events.
     check_monotonic<dtypes>( // Ensure the abstime is non-decreasing.
