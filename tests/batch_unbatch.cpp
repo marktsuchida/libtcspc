@@ -37,12 +37,13 @@ TEST_CASE("type constraints: batch") {
 
 TEST_CASE("type constraints: unbatch") {
     struct e0 {};
-    using proc_type = decltype(unbatch<bucket<int>>(sink_events<int>()));
+    using proc_type = decltype(unbatch<bucket<int>>(sink_events<int, e0>()));
     STATIC_CHECK(is_processor_v<proc_type, bucket<int>>);
     STATIC_CHECK_FALSE(handles_event_v<proc_type, bucket<int const>>);
     STATIC_CHECK_FALSE(handles_event_v<proc_type, bucket<short>>);
     STATIC_CHECK_FALSE(handles_event_v<proc_type, bucket<e0>>);
-    STATIC_CHECK_FALSE(handles_event_v<proc_type, e0>);
+    STATIC_CHECK(handles_event_v<proc_type, int>);
+    STATIC_CHECK(handles_event_v<proc_type, e0>);
 }
 
 TEST_CASE("type constraints: process_in_batches") {

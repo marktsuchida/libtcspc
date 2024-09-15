@@ -112,15 +112,22 @@ template <typename ContainerEvent, typename Downstream> class unbatch {
     // inlined even if this function is marked noinline. There may be
     // borderline cases where this doesn't hold, but it is probably best to
     // leave it to the compiler.
-    template <typename CE, typename = std::enable_if_t<std::is_convertible_v<
-                               remove_cvref_t<CE>, ContainerEvent>>>
-    void handle(CE &&event) {
-        if constexpr (std::is_lvalue_reference_v<CE>) {
-            for (auto const &e : event)
-                downstream.handle(e);
+    template <typename E,
+              typename = std::enable_if_t<
+                  std::is_convertible_v<remove_cvref_t<E>, ContainerEvent> ||
+                  handles_event_v<Downstream, remove_cvref_t<E>>>>
+    void handle(E &&event) {
+        if constexpr (std::is_convertible_v<remove_cvref_t<E>,
+                                            ContainerEvent>) {
+            if constexpr (std::is_lvalue_reference_v<E>) {
+                for (auto const &e : event)
+                    downstream.handle(e);
+            } else {
+                for (auto &e : event)
+                    downstream.handle(std::move(e));
+            }
         } else {
-            for (auto &e : event)
-                downstream.handle(std::move(e));
+            downstream.handle(std::forward<E>(event));
         }
     }
 
@@ -190,6 +197,7 @@ auto batch(std::shared_ptr<bucket_source<Event>> buffer_provider,
  *
  * \par Events handled
  * - `ContainerEvent`: each element event emitted in order
+ * - All other types: pass through with no action
  * - Flush: pass through with no action
  */
 template <typename ContainerEvent, typename Downstream>
