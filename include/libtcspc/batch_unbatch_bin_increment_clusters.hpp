@@ -18,7 +18,6 @@
 
 #include <cassert>
 #include <cstddef>
-#include <iterator>
 #include <memory>
 #include <stdexcept>
 #include <type_traits>
@@ -163,11 +162,17 @@ class unbatch_bin_increment_clusters {
                   std::is_convertible_v<
                       remove_cvref_t<Event>,
                       bucket<typename DataTypes::bin_index_type>> ||
+                  std::is_convertible_v<
+                      remove_cvref_t<Event>,
+                      bucket<typename DataTypes::bin_index_type const>> ||
                   handles_event_v<Downstream, remove_cvref_t<Event>>>>
     void handle(Event &&event) {
         if constexpr (std::is_convertible_v<
                           remove_cvref_t<Event>,
-                          bucket<typename DataTypes::bin_index_type>>) {
+                          bucket<typename DataTypes::bin_index_type>> ||
+                      std::is_convertible_v<
+                          remove_cvref_t<Event>,
+                          bucket<typename DataTypes::bin_index_type const>>) {
             bin_increment_cluster_decoder<bin_index_type> const decoder(event);
             for (auto const cluster_span : decoder) {
                 // The cluster_span is a span<T const>, but we want bucket<T>,
@@ -177,9 +182,9 @@ class unbatch_bin_increment_clusters {
                 auto const mut_span = span<bin_index_type>(
                     const_cast<bin_index_type *>(cluster_span.data()),
                     cluster_span.size());
-                bin_increment_cluster_event<DataTypes> e{
+                bin_increment_cluster_event<DataTypes> const e{
                     ad_hoc_bucket(mut_span)};
-                downstream.handle(std::as_const(e));
+                downstream.handle(e);
             }
         } else {
             downstream.handle(std::forward<Event>(event));
@@ -260,8 +265,9 @@ auto batch_bin_increment_clusters(
  * \return processor
  *
  * \par Events handled
- * - `tcspc::bucket<typename DataTypes::bin_index_type>`: decode and emit each
- *   cluster as `bin_increment_cluster_event<DataTypes>`
+ * - `tcspc::bucket<typename DataTypes::bin_index_type>` or
+ *   `tcspc::bucket<typename DataTypes::bin_index_type const>`: decode and emit
+ *   each cluster as `bin_increment_cluster_event<DataTypes>`
  * - All other types: pass through with no action
  * - Flush: pass through with no action
  */

@@ -35,6 +35,7 @@ TEST_CASE("type constraints: unbatch_bin_increment_clusters") {
     using proc_type = decltype(unbatch_bin_increment_clusters(
         sink_events<bin_increment_cluster_event<>, e0>()));
     STATIC_CHECK(is_processor_v<proc_type, bucket<u16>>);
+    STATIC_CHECK(handles_event_v<proc_type, bucket<u16 const>>);
     STATIC_CHECK_FALSE(is_processor_v<proc_type, bucket<e0>>);
     STATIC_CHECK_FALSE(handles_event_v<proc_type, int>);
     STATIC_CHECK(handles_event_v<proc_type, e0>);
@@ -133,7 +134,7 @@ TEST_CASE("unbatch_bin_increment_clusters") {
                       bin_increment_cluster_event<>{test_bucket<u16>({})}));
     REQUIRE(out.check(emitted_as::always_lvalue,
                       bin_increment_cluster_event<>{test_bucket<u16>({})}));
-    in.handle(test_bucket<u16>({3, 42, 43, 44}));
+    in.handle(test_bucket<u16 const>({3, 42, 43, 44}));
     REQUIRE(out.check(
         emitted_as::always_lvalue,
         bin_increment_cluster_event<>{test_bucket<u16>({42, 43, 44})}));
