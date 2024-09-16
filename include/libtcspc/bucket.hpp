@@ -77,9 +77,30 @@ namespace tcspc {
  * in which they are emitted.
  *
  * Buckets of const elements (\p T is const-qualified) are sometimes used to
- * construct views of const data, in contexts where the ability to extract
- * storage is not relevant. In this case the bucket is used as a read-only data
- * handle similar to `tcspc::span`, but with the convenience of a regular type.
+ * construct views of const data. Aside from being read-only, these buckets
+ * behave the same way as bucket-of-non-const: they can be moved around
+ * preserving their storage and thus avoid copying their data.
+ *
+ * Note that `bucket<T>` does not implicitly convert to `bucket<T const>`,
+ * unlike with `tcspc::span`, because that would require copying or moving the
+ * storage.
+ *
+ * Ways to emit buckets (for `T` non-const):
+ * - As `bucket<T> const &`: read-only data with no transferrable storage
+ *   (ad-hoc buckets are always emitted this way).
+ * - As `bucket<T> &&`: read-write data with transferrable storage (also allows
+ *   moving out elements of the bucket).
+ * - As `bucket<T const> &&`: read-only data with transferrable storage (for
+ *   propagating read-only data without copying).
+ * - As `bucket<T const> const &`: we avoid this, preferring to emit `bucket<T>
+ *   const &`.
+ *
+ * Handlers accepting buckets (as with any other event type) should always
+ * accept `bucket<T> const &`. In addition, they should accept `bucket <T
+ * const> const &`. Optionally they may also accept `bucket<T> &&` and/or
+ * `bucket<T const> &&` if they benefit from being able to transfer the bucket
+ * storage or, in the case of `bucket<T> &&`, being able to move out the bucket
+ * elements.
  *
  * \tparam T element type of the data array carried by the bucket
  */
