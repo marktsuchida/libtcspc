@@ -31,9 +31,10 @@ namespace internal {
 // Avoid std::hardware_destructive_interference_size, because it suffers from
 // ABI compatibility requirements and therefore may not have the best value
 // (for example, it seems to be 256 on Linux/aarch64). Instead, just default to
-// 64 (correct for most (all?) x86_64 and many ARM processors) except in known
-// cases where a larger value is appropriate.
-#if defined(__APPLE__) && defined(__arm64__)
+// 64 (correct for most x86_64 and many ARM and RISC-V processors) except in
+// known cases where a larger value is appropriate.
+#if (defined(__APPLE__) && defined(__arm64__)) ||                             \
+    (defined(__powerpc64__) || defined(__ppc64__) || defined(__PPC64__))
 inline constexpr std::size_t destructive_interference_size = 128;
 #else
 inline constexpr std::size_t destructive_interference_size = 64;
