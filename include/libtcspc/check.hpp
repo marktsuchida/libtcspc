@@ -9,6 +9,7 @@
 #include "common.hpp"
 #include "core.hpp"
 #include "data_types.hpp"
+#include "event_traits.hpp"
 #include "introspect.hpp"
 #include "processor_traits.hpp"
 
@@ -55,20 +56,18 @@ class check_monotonic {
     template <typename Event, typename = std::enable_if_t<handles_event_v<
                                   Downstream, remove_cvref_t<Event>>>>
     void handle(Event &&event) {
-        static_assert(std::is_same_v<decltype(event.abstime),
-                                     typename DataTypes::abstime_type>);
-        bool const monotonic = RequireStrictlyIncreasing
-                                   ? event.abstime > last_seen
-                                   : event.abstime >= last_seen;
-        if (not monotonic)
-            issue_warning(event.abstime);
-        last_seen = event.abstime;
+        if constexpr (has_abstime_v<remove_cvref_t<Event>>) {
+            static_assert(std::is_same_v<decltype(event.abstime),
+                                         typename DataTypes::abstime_type>);
+            bool const monotonic = RequireStrictlyIncreasing
+                                       ? event.abstime > last_seen
+                                       : event.abstime >= last_seen;
+            if (not monotonic)
+                issue_warning(event.abstime);
+            last_seen = event.abstime;
+        }
         downstream.handle(std::forward<Event>(event));
     }
-
-    void handle(warning_event const &event) { downstream.handle(event); }
-
-    void handle(warning_event &&event) { downstream.handle(std::move(event)); }
 
     void flush() { downstream.flush(); }
 };
@@ -82,15 +81,14 @@ class check_monotonic {
  * \ingroup processors-validation
  *
  * The processor passes through time-tagged events and checks that their
- * `abstime` is monotonic (that is, increasing or non-decreasing). If a
- * violation is detected, a `tcspc::warning_event` is emitted just before the
- * offending event.
+ * `abstime` is monotonic (that is, increasing or non-decreasing). The event's
+ * `abstime` field type must match `DataTypes::abstime_type`. If a violation is
+ * detected, a `tcspc::warning_event` is emitted just before the offending
+ * event.
  *
  * Checking abstime monotonicity is often a good way to detect gross issues in
  * the data, such as reading data in an incorrect format or using text mode to
  * read binary data.
- *
- * Any received `tcspc::warning_event` instances are passed through.
  *
  * \tparam DataTypes data type set specifying `abstime_type`
  *
@@ -106,7 +104,7 @@ class check_monotonic {
  * \par Events handled
  * - All types with `abstime` field: check monotonicity and emit
  *   `tcspc::warning_event` on violation; pass through
- * - `tcspc::warning_event`: pass through with no action
+ * - All other types: pass through with no action
  * - Flush: pass through with no action
  */
 template <typename DataTypes = default_data_types,

@@ -27,6 +27,7 @@
 #include "delay.hpp"
 #include "dither.hpp"
 #include "errors.hpp"
+#include "event_traits.hpp"
 #include "fit_sequence.hpp"
 #include "gate.hpp"
 #include "generate.hpp"

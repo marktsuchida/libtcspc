@@ -23,6 +23,7 @@ public_cpp_headers = files(
     'libtcspc/delay.hpp',
     'libtcspc/dither.hpp',
     'libtcspc/errors.hpp',
+    'libtcspc/event_traits.hpp',
     'libtcspc/fit_sequence.hpp',
     'libtcspc/gate.hpp',
     'libtcspc/generate.hpp',
