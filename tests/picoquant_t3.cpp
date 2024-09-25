@@ -387,28 +387,25 @@ TEST_CASE("introspect: picoquant_t3") {
 TEST_CASE("type constraints: decode_pqt3_picoharp300") {
     using proc_type = decltype(decode_pqt3_picoharp300(
         sink_events<time_reached_event<>, time_correlated_detection_event<>,
-                    marker_event<>, warning_event>()));
+                    marker_event<>, warning_event, int>()));
 
-    STATIC_CHECK(is_processor_v<proc_type, pqt3_picoharp300_event>);
-    STATIC_CHECK_FALSE(handles_event_v<proc_type, pqt3_generic_event>);
+    STATIC_CHECK(is_processor_v<proc_type, pqt3_picoharp300_event, int>);
 }
 
 TEST_CASE("type constraints: decode_pqt3_hydraharpv1") {
     using proc_type = decltype(decode_pqt3_hydraharpv1(
         sink_events<time_reached_event<>, time_correlated_detection_event<>,
-                    marker_event<>, warning_event>()));
+                    marker_event<>, warning_event, int>()));
 
-    STATIC_CHECK(is_processor_v<proc_type, pqt3_hydraharpv1_event>);
-    STATIC_CHECK_FALSE(handles_event_v<proc_type, pqt3_generic_event>);
+    STATIC_CHECK(is_processor_v<proc_type, pqt3_hydraharpv1_event, int>);
 }
 
 TEST_CASE("type constraints: decode_pqt3_generic") {
     using proc_type = decltype(decode_pqt3_generic(
         sink_events<time_reached_event<>, time_correlated_detection_event<>,
-                    marker_event<>, warning_event>()));
+                    marker_event<>, warning_event, int>()));
 
-    STATIC_CHECK(is_processor_v<proc_type, pqt3_generic_event>);
-    STATIC_CHECK_FALSE(handles_event_v<proc_type, pqt3_picoharp300_event>);
+    STATIC_CHECK(is_processor_v<proc_type, pqt3_generic_event, int>);
 }
 
 namespace {

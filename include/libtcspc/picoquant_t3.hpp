@@ -24,6 +24,7 @@
 #include <cstdint>
 #include <ostream>
 #include <stdexcept>
+#include <type_traits>
 #include <utility>
 
 // When editing this file, maintain the partial symmetry with picoquant_t2.hpp.
@@ -446,25 +447,35 @@ class decode_pqt3 {
         return downstream.introspect_graph().push_entry_point(this);
     }
 
-    void handle(PQT3Event const &event) {
-        if (event.is_nsync_overflow()) {
-            nsync_base += abstime_type(PQT3Event::nsync_overflow_period) *
-                          event.nsync_overflow_count().value();
-            return downstream.handle(
-                time_reached_event<DataTypes>{nsync_base});
-        }
+    template <typename Event,
+              typename = std::enable_if_t<
+                  std::is_convertible_v<remove_cvref_t<Event>, PQT3Event> ||
+                  handles_event_v<Downstream, remove_cvref_t<Event>>>>
+    void handle(Event &&event) {
+        if constexpr (std::is_convertible_v<remove_cvref_t<Event>,
+                                            PQT3Event>) {
+            if (event.is_nsync_overflow()) {
+                nsync_base += abstime_type(PQT3Event::nsync_overflow_period) *
+                              event.nsync_overflow_count().value();
+                return downstream.handle(
+                    time_reached_event<DataTypes>{nsync_base});
+            }
 
-        abstime_type const nsync = nsync_base + event.nsync().value();
+            abstime_type const nsync = nsync_base + event.nsync().value();
 
-        if (not event.is_special()) {
-            downstream.handle(time_correlated_detection_event<DataTypes>{
-                nsync, event.channel().value(), event.dtime().value()});
-        } else if (event.is_external_marker()) {
-            for_each_set_bit(u32np(event.external_marker_bits()), [&](int b) {
-                downstream.handle(marker_event<DataTypes>{nsync, b});
-            });
+            if (not event.is_special()) {
+                downstream.handle(time_correlated_detection_event<DataTypes>{
+                    nsync, event.channel().value(), event.dtime().value()});
+            } else if (event.is_external_marker()) {
+                for_each_set_bit(
+                    u32np(event.external_marker_bits()), [&](int b) {
+                        downstream.handle(marker_event<DataTypes>{nsync, b});
+                    });
+            } else {
+                issue_warning("invalid special event encountered");
+            }
         } else {
-            issue_warning("invalid special event encountered");
+            downstream.handle(std::forward<Event>(event));
         }
     }
 
@@ -492,6 +503,7 @@ class decode_pqt3 {
  *   `tcspc::time_correlated_detection_event<DataTypes>`,
  *   `tcspc::marker_event<DataTypes>`, `tcspc::warning_event` (warning in the
  *   case of an invalid event)
+ * - All other types: pass through with no action
  * - Flush: pass through with no action
  */
 template <typename DataTypes = default_data_types, typename Downstream>
@@ -521,6 +533,7 @@ auto decode_pqt3_picoharp300(Downstream &&downstream) {
  *   `tcspc::time_correlated_detection_event<DataTypes>`,
  *   `tcspc::marker_event<DataTypes>`, `tcspc::warning_event` (warning in the
  *   case of an invalid event)
+ * - All other types: pass through with no action
  * - Flush: pass through with no action
  */
 template <typename DataTypes = default_data_types, typename Downstream>
@@ -551,6 +564,7 @@ auto decode_pqt3_hydraharpv1(Downstream &&downstream) {
  *   `tcspc::time_correlated_detection_event<DataTypes>`,
  *   `tcspc::marker_event<DataTypes>`, `tcspc::warning_event` (warning in the
  *   case of an invalid event)
+ * - All other types: pass through with no action
  * - Flush: pass through with no action
  */
 template <typename DataTypes = default_data_types, typename Downstream>

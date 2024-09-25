@@ -24,6 +24,7 @@
 #include <cstdint>
 #include <ostream>
 #include <stdexcept>
+#include <type_traits>
 #include <utility>
 
 // When editing this file, maintain the partial symmetry with picoquant_t3.hpp.
@@ -473,32 +474,43 @@ class decode_pqt2 {
         return downstream.introspect_graph().push_entry_point(this);
     }
 
-    void handle(PQT2Event const &event) {
-        if (event.is_timetag_overflow()) {
-            timetag_base += abstime_type(PQT2Event::overflow_period) *
-                            event.timetag_overflow_count().value();
-            return downstream.handle(
-                time_reached_event<DataTypes>{timetag_base});
-        }
+    template <typename Event,
+              typename = std::enable_if_t<
+                  std::is_convertible_v<remove_cvref_t<Event>, PQT2Event> ||
+                  handles_event_v<Downstream, remove_cvref_t<Event>>>>
+    void handle(Event &&event) {
+        if constexpr (std::is_convertible_v<remove_cvref_t<Event>,
+                                            PQT2Event>) {
+            if (event.is_timetag_overflow()) {
+                timetag_base += abstime_type(PQT2Event::overflow_period) *
+                                event.timetag_overflow_count().value();
+                return downstream.handle(
+                    time_reached_event<DataTypes>{timetag_base});
+            }
 
-        // In the case where the overflow period is smaller than one plus the
-        // maximum representable time tag (PicoHarp 300 and HydraHarp V1), any
-        // invalid time tags will be caught when (externally) checking for
-        // monotonicity. So we do not check here.
+            // In the case where the overflow period is smaller than one plus
+            // the maximum representable time tag (PicoHarp 300 and HydraHarp
+            // V1), any invalid time tags will be caught when (externally)
+            // checking for monotonicity. So we do not check here.
 
-        if (not event.is_special() || event.is_sync_event()) {
-            abstime_type const timetag =
-                timetag_base + event.timetag().value();
-            downstream.handle(detection_event<DataTypes>{
-                timetag, event.is_special() ? -1 : event.channel().value()});
-        } else if (event.is_external_marker()) {
-            abstime_type const timetag =
-                timetag_base + event.external_marker_timetag().value();
-            for_each_set_bit(u32np(event.external_marker_bits()), [&](int b) {
-                downstream.handle(marker_event<DataTypes>{timetag, b});
-            });
+            if (not event.is_special() || event.is_sync_event()) {
+                abstime_type const timetag =
+                    timetag_base + event.timetag().value();
+                downstream.handle(detection_event<DataTypes>{
+                    timetag,
+                    event.is_special() ? -1 : event.channel().value()});
+            } else if (event.is_external_marker()) {
+                abstime_type const timetag =
+                    timetag_base + event.external_marker_timetag().value();
+                for_each_set_bit(
+                    u32np(event.external_marker_bits()), [&](int b) {
+                        downstream.handle(marker_event<DataTypes>{timetag, b});
+                    });
+            } else {
+                issue_warning("invalid special event encountered");
+            }
         } else {
-            issue_warning("invalid special event encountered");
+            downstream.handle(std::forward<Event>(event));
         }
     }
 
@@ -526,6 +538,7 @@ class decode_pqt2 {
  *   `tcspc::time_reached_event<DataTypes>`,
  *   `tcspc::detection_event<DataTypes>`, `tcspc::marker_event<DataTypes>`,
  *   `tcspc::warning_event` (warning in the case of an invalid event)
+ * - All other types: pass through with no action
  * - Flush: pass through with no action
  */
 template <typename DataTypes = default_data_types, typename Downstream>
@@ -557,6 +570,7 @@ auto decode_pqt2_picoharp300(Downstream &&downstream) {
  *   `tcspc::time_reached_event<DataTypes>`,
  *   `tcspc::detection_event<DataTypes>`, `tcspc::marker_event<DataTypes>`,
  *   `tcspc::warning_event` (warning in the case of an invalid event)
+ * - All other types: pass through with no action
  * - Flush: pass through with no action
  */
 template <typename DataTypes = default_data_types, typename Downstream>
@@ -589,6 +603,7 @@ auto decode_pqt2_hydraharpv1(Downstream &&downstream) {
  *   `tcspc::time_reached_event<DataTypes>`,
  *   `tcspc::detection_event<DataTypes>`, `tcspc::marker_event<DataTypes>`,
  *   `tcspc::warning_event` (warning in the case of an invalid event)
+ * - All other types: pass through with no action
  * - Flush: pass through with no action
  */
 template <typename DataTypes = default_data_types, typename Downstream>

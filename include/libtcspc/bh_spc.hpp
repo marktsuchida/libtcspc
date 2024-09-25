@@ -24,6 +24,7 @@
 #include <cstdint>
 #include <ostream>
 #include <stdexcept>
+#include <type_traits>
 #include <utility>
 
 namespace tcspc {
@@ -753,19 +754,7 @@ class decode_bh_spc {
         downstream.handle(warning_event{message});
     }
 
-  public:
-    explicit decode_bh_spc(Downstream downstream)
-        : downstream(std::move(downstream)) {}
-
-    [[nodiscard]] auto introspect_node() const -> processor_info {
-        return processor_info(this, "decode_bh_spc");
-    }
-
-    [[nodiscard]] auto introspect_graph() const -> processor_graph {
-        return downstream.introspect_graph().push_entry_point(this);
-    }
-
-    void handle(BHSPCEvent const &event) {
+    void handle_bh(BHSPCEvent const &event) {
         if (event.is_multiple_macrotime_overflow()) {
             abstime_base +=
                 abstime_type(BHSPCEvent::macrotime_overflow_period) *
@@ -815,6 +804,29 @@ class decode_bh_spc {
         }
     }
 
+  public:
+    explicit decode_bh_spc(Downstream downstream)
+        : downstream(std::move(downstream)) {}
+
+    [[nodiscard]] auto introspect_node() const -> processor_info {
+        return processor_info(this, "decode_bh_spc");
+    }
+
+    [[nodiscard]] auto introspect_graph() const -> processor_graph {
+        return downstream.introspect_graph().push_entry_point(this);
+    }
+
+    template <typename Event,
+              typename = std::enable_if_t<
+                  std::is_convertible_v<remove_cvref_t<Event>, BHSPCEvent> ||
+                  handles_event_v<Downstream, remove_cvref_t<Event>>>>
+    void handle(Event &&event) {
+        if constexpr (std::is_convertible_v<remove_cvref_t<Event>, BHSPCEvent>)
+            handle_bh(event);
+        else
+            downstream.handle(std::forward<Event>(event));
+    }
+
     void flush() { downstream.flush(); }
 };
 
@@ -848,6 +860,7 @@ class decode_bh_spc {
  *   `tcspc::time_reached_event<DataTypes>`,
  *   `tcspc::time_correlated_detection_event<DataTypes>`,
  *   `tcspc::marker_event<DataTypes>`, `tcspc::data_lost_event<DataTypes>`
+ * - All other types: pass through with no action
  * - Flush: pass through with no action
  */
 template <typename DataTypes = default_data_types, typename Downstream>
@@ -880,6 +893,7 @@ auto decode_bh_spc(Downstream &&downstream) {
  *   `tcspc::time_correlated_detection_event<DataTypes>`,
  *   `tcspc::bulk_counts_event<DataTypes>`
  *   `tcspc::marker_event<DataTypes>`, `tcspc::data_lost_event<DataTypes>`
+ * - All other types: pass through with no action
  * - Flush: pass through with no action
  */
 template <typename DataTypes = default_data_types, typename Downstream>
@@ -908,6 +922,7 @@ auto decode_bh_spc_with_intensity_counter(Downstream &&downstream) {
  *   `tcspc::time_reached_event<DataTypes>`,
  *   `tcspc::time_correlated_detection_event<DataTypes>`,
  *   `tcspc::data_lost_event<DataTypes>`
+ * - All other types: pass through with no action
  * - Flush: pass through with no action
  */
 template <typename DataTypes = default_data_types, typename Downstream>
@@ -937,6 +952,7 @@ auto decode_bh_spc600_4096ch(Downstream &&downstream) {
  *   `tcspc::time_reached_event<DataTypes>`,
  *   `tcspc::time_correlated_detection_event<DataTypes>`,
  *   `tcspc::data_lost_event<DataTypes>`
+ * - All other types: pass through with no action
  * - Flush: pass through with no action
  */
 template <typename DataTypes = default_data_types, typename Downstream>
