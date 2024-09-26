@@ -11,6 +11,7 @@
 #include "libtcspc/context.hpp"
 #include "libtcspc/core.hpp"
 #include "libtcspc/processor_traits.hpp"
+#include "libtcspc/span.hpp"
 #include "libtcspc/test_utils.hpp"
 #include "libtcspc/type_list.hpp"
 #include "test_checkers.hpp"
@@ -39,11 +40,13 @@ TEST_CASE("type constraints: unbatch") {
     struct e0 {};
     using proc_type = decltype(unbatch<bucket<int>>(sink_events<int, e0>()));
     STATIC_CHECK(is_processor_v<proc_type, bucket<int>>);
-    STATIC_CHECK_FALSE(handles_event_v<proc_type, bucket<int const>>);
     STATIC_CHECK_FALSE(handles_event_v<proc_type, bucket<short>>);
     STATIC_CHECK_FALSE(handles_event_v<proc_type, bucket<e0>>);
     STATIC_CHECK(handles_event_v<proc_type, int>);
     STATIC_CHECK(handles_event_v<proc_type, e0>);
+    using const_proc_type =
+        decltype(unbatch<bucket<int const>>(sink_events<int, e0>()));
+    STATIC_CHECK(handles_event_v<const_proc_type, bucket<int const>>);
 }
 
 TEST_CASE("type constraints: process_in_batches") {
@@ -124,6 +127,27 @@ TEST_CASE("unbatch") {
     in.handle(std::vector<int>{});
     in.handle(std::vector<int>{45});
     REQUIRE(out.check(emitted_as::same_as_fed, 45));
+    in.flush();
+    REQUIRE(out.check_flushed());
+}
+
+TEST_CASE("unbatch const") {
+    auto const valcat = GENERATE(feed_as::const_lvalue, feed_as::rvalue);
+    auto ctx = context::create();
+    auto in = feed_input(
+        valcat, unbatch<span<int const>>(capture_output<type_list<int>>(
+                    ctx->tracker<capture_output_access>("out"))));
+    in.require_output_checked(ctx, "out");
+    auto out = capture_output_checker<type_list<int>>(valcat, ctx, "out");
+
+    in.handle(span<int const>({42, 43, 44}));
+    REQUIRE(out.check(emitted_as::always_lvalue, 42));
+    REQUIRE(out.check(emitted_as::always_lvalue, 43));
+    REQUIRE(out.check(emitted_as::always_lvalue, 44));
+    in.handle(span<int const>({}));
+    in.handle(span<int const>({}));
+    in.handle(span<int const>({45}));
+    REQUIRE(out.check(emitted_as::always_lvalue, 45));
     in.flush();
     REQUIRE(out.check_flushed());
 }
