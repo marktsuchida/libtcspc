@@ -26,14 +26,16 @@ namespace tcspc {
 
 namespace {
 
-using out_events = type_list<bucket<std::byte const>>;
+using out_events = type_list<bucket<std::byte>>;
 
 } // namespace
 
 TEST_CASE("type constraints: view_as_bytes") {
     using proc_type =
-        decltype(view_as_bytes(sink_events<bucket<std::byte const>>()));
+        decltype(view_as_bytes(sink_events<bucket<std::byte>>()));
     STATIC_CHECK(is_processor_v<proc_type, int, double>);
+    STATIC_CHECK(handles_event_v<proc_type, bucket<int>>);
+    STATIC_CHECK(handles_event_v<proc_type, bucket<int const>>);
     STATIC_CHECK_FALSE(handles_event_v<proc_type, std::vector<int>>);
     STATIC_CHECK_FALSE(handles_event_v<proc_type, bucket<std::vector<int>>>);
 }
@@ -52,9 +54,9 @@ TEST_CASE("view as bytes") {
     auto out = capture_output_checker<out_events>(valcat, ctx, "out");
 
     in.handle(42);
-    int const data = 42;
+    auto data = 42;
     REQUIRE(out.check(emitted_as::always_lvalue,
-                      test_bucket(as_bytes(span(&data, 1)))));
+                      test_bucket(as_writable_bytes(span(&data, 1)))));
     in.flush();
     REQUIRE(out.check_flushed());
 }
@@ -69,9 +71,9 @@ TEST_CASE("view as bytes, bucket input") {
     auto out = capture_output_checker<out_events>(valcat, ctx, "out");
 
     in.handle(test_bucket({42, 43}));
-    std::vector const data{42, 43};
+    std::vector data{42, 43};
     REQUIRE(out.check(emitted_as::always_lvalue,
-                      test_bucket(as_bytes(span(data)))));
+                      test_bucket(as_writable_bytes(span(data)))));
     in.flush();
     REQUIRE(out.check_flushed());
 }

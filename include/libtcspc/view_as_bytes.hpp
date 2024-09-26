@@ -20,7 +20,7 @@ namespace tcspc {
 namespace internal {
 
 template <typename Downstream> class view_as_bytes {
-    static_assert(is_processor_v<Downstream, bucket<std::byte const>>);
+    static_assert(is_processor_v<Downstream, bucket<std::byte>>);
 
     Downstream downstream;
 
@@ -39,13 +39,23 @@ template <typename Downstream> class view_as_bytes {
     template <typename Event,
               typename = std::enable_if_t<std::is_trivial_v<Event>>>
     void handle(Event const &event) {
-        auto const b = ad_hoc_bucket(as_bytes(span(&event, 1)));
+        // It is safe to const_cast the bytes because we emit the bucket by
+        // const ref.
+        auto const_byte_span = as_bytes(span(&event, 1));
+        auto const b = ad_hoc_bucket(
+            span<std::byte>(const_cast<std::byte *>(const_byte_span.data()),
+                            const_byte_span.size()));
         downstream.handle(b);
     }
 
     template <typename T, typename = std::enable_if_t<std::is_trivial_v<T>>>
     void handle(bucket<T> const &event) {
-        auto const b = ad_hoc_bucket(as_bytes(span(event)));
+        // It is safe to const_cast the bytes because we emit the bucket by
+        // const ref.
+        auto const_byte_span = as_bytes(span(event));
+        auto const b = ad_hoc_bucket(
+            span<std::byte>(const_cast<std::byte *>(const_byte_span.data()),
+                            const_byte_span.size()));
         downstream.handle(b);
     }
 
@@ -61,7 +71,7 @@ template <typename Downstream> class view_as_bytes {
  *
  * This processor handles events of trivial types or buckets of trivial types
  * and sends them, without copying, to the downstream processor as (const
- * lvalue) `bucket<std::byte const>`.
+ * lvalue) `bucket<std::byte>`.
  *
  * \see `tcspc::write_binary_stream()`
  *
@@ -72,8 +82,8 @@ template <typename Downstream> class view_as_bytes {
  * \return processor
  *
  * \par Events handled
- * - Any trivial type: emit its span as `tcspc::bucket<std::byte const>`
- * - `tcspc::bucket<T>`: emit its data span as `tcspc::bucket<std::byte const>`
+ * - Any trivial type: emit its span as `tcspc::bucket<std::byte>`
+ * - `tcspc::bucket<T>`: emit its data span as `tcspc::bucket<std::byte>`
  * - Flush: pass through with no action
  */
 template <typename Downstream> auto view_as_bytes(Downstream &&downstream) {
