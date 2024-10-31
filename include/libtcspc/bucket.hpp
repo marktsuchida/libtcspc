@@ -114,10 +114,6 @@ template <typename T> class bucket {
             : p(std::move(ptr)) {}
     };
 
-    struct view_storage {
-        bucket const *original;
-    };
-
     span<T> s;
     internal::move_only_any store;
 
@@ -357,9 +353,6 @@ template <typename T> class bucket {
      * bucket
      */
     template <typename S> [[nodiscard]] auto storage() const -> S const & {
-        auto *view = internal::move_only_any_cast<view_storage>(&store);
-        if (view != nullptr)
-            return view->original->template storage<S>();
         return internal::move_only_any_cast<S const &>(store);
     }
 
