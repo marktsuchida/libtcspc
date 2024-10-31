@@ -18,6 +18,7 @@
 
 #include <cassert>
 #include <cstddef>
+#include <functional>
 #include <memory>
 #include <stdexcept>
 #include <type_traits>
@@ -30,23 +31,23 @@ namespace internal {
 // Helper for batch_bin_increment_clusters.
 template <typename BinIndex>
 class batch_bin_increment_clusters_encoding_adapter {
-    bucket<BinIndex> *bkt;
+    std::reference_wrapper<bucket<BinIndex>> bkt;
     std::size_t *siz;
 
   public:
     explicit batch_bin_increment_clusters_encoding_adapter(
         bucket<BinIndex> &storage, std::size_t &usage)
-        : bkt(&storage), siz(&usage) {}
+        : bkt(storage), siz(&usage) {}
 
     [[nodiscard]] auto available_capacity() const -> std::size_t {
-        return bkt->size() - *siz;
+        return bkt.get().size() - *siz;
     }
 
     [[nodiscard]] auto make_space(std::size_t size) -> span<BinIndex> {
         assert(size <= available_capacity());
         auto const old_size = *siz;
         *siz += size;
-        return bkt->subspan(old_size, size);
+        return bkt.get().subspan(old_size, size);
     }
 };
 

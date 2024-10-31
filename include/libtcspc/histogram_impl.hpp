@@ -14,6 +14,7 @@
 #include <algorithm>
 #include <cassert>
 #include <cstddef>
+#include <functional>
 #include <iterator>
 #include <limits>
 #include <ostream>
@@ -33,24 +34,24 @@ struct stop_on_internal_overflow {
 // Helper for bin_increment_cluster_journal.
 template <typename BinIndex>
 class bin_increment_cluster_journal_encoding_adapter {
-    std::vector<BinIndex> *vec;
+    std::reference_wrapper<std::vector<BinIndex>> vec;
 
   public:
     explicit bin_increment_cluster_journal_encoding_adapter(
         std::vector<BinIndex> &storage)
-        : vec(&storage) {}
+        : vec(storage) {}
 
     [[nodiscard]] auto available_capacity() const -> std::size_t {
         // Effectively limitless for 64-bit (short-circuit the check).
         if constexpr (sizeof(std::size_t) >= 8)
             return std::numeric_limits<std::size_t>::max();
-        return vec->max_size() - vec->size();
+        return vec.get().max_size() - vec.get().size();
     }
 
     [[nodiscard]] auto make_space(std::size_t size) -> span<BinIndex> {
-        auto const old_size = vec->size();
-        vec->resize(old_size + size);
-        return span(*vec).subspan(old_size);
+        auto const old_size = vec.get().size();
+        vec.get().resize(old_size + size);
+        return span(vec.get()).subspan(old_size);
     }
 };
 
