@@ -19,6 +19,21 @@
 
 namespace tcspc::internal {
 
+// Implementation of encoding/decoding for use by batch_bin_increment_clusters
+// and unbatch_bin_increment_clusters.
+//
+// Encode bin increment clusters in a single stream as follows.
+// - The stream element type E (a signed or unsigned integer) is equal to the
+//   bin index type.
+// - Each cluster is prefixed with its size as follows. Let UE be the unsigned
+//   integer type corresponding to E.
+//   - If the cluster size is less than the maximum value of UE, it is stored
+//     as a single stream element.
+//   - Otherwise a single stream element containing the maximum value of UE is
+//     stored, followed by sizeof(std::size_t) unaligned bytes containing the
+//     size.
+// - The cluster's bin indices are stored in order following the size prefix.
+
 template <typename BinIndex> struct bin_increment_cluster_encoding_traits {
     using encoded_size_type = std::make_unsigned_t<BinIndex>;
     static_assert(sizeof(encoded_size_type) <= sizeof(std::size_t));
@@ -28,23 +43,23 @@ template <typename BinIndex> struct bin_increment_cluster_encoding_traits {
         sizeof(std::size_t) / sizeof(encoded_size_type);
 };
 
-// Store bin increment clusters in an encoded single-stream format.
-// - The stream ("storage") is a container (optionally size-limited) with
-//   element type equal to the bin index type.
-// - Each cluster is prefixed with its size, which is either a single element
-//   if the size is less than the maximum value representable by the unsigned
-//   integer type with the same size as the bin index type; otherwise it is
-//   that maximum value followed by 8 (unaligned) bytes containing the u64
-//   size.
-// - The cluster's bin indices are stored in order.
-//
+template <typename BinIndex>
+[[nodiscard]] constexpr auto encoded_bin_increment_cluster_size(
+    std::size_t cluster_size) noexcept -> std::size_t {
+    using traits = bin_increment_cluster_encoding_traits<BinIndex>;
+    bool const is_long_mode = cluster_size >= traits::encoded_size_max;
+    std::size_t const size_of_size =
+        is_long_mode ? 1 + traits::large_size_element_count : 1;
+    return size_of_size + cluster_size;
+}
+
 // The Storage type must define the following member functions:
 // - [[nodiscard]] auto available_capacity() const -> std::size_t;
 // - [[nodiscard]] auto make_space(std::size_t) -> span<BinIndex>;
 // The latter is only called when capacity is available.
 //
-// Returns true if cluster fit in storge; false if not, in which case
-// storage is not modified.
+// Returns true if the encoded cluster fit in storge; false if not, in which
+// case storage is not modified.
 template <typename BinIndex, typename Storage>
 [[nodiscard]] auto
 encode_bin_increment_cluster(Storage dest,

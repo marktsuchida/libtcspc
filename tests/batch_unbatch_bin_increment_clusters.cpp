@@ -69,7 +69,8 @@ TEST_CASE("batch_bin_increment_clusters") {
     REQUIRE(out.check_flushed());
 }
 
-TEST_CASE("batch_bin_increment_clusters handles full bucket") {
+TEST_CASE(
+    "batch_bin_increment_clusters handles cluster not fitting in current bucket") {
     auto const valcat = GENERATE(feed_as::const_lvalue, feed_as::rvalue);
     auto ctx = context::create();
     auto in = feed_input(valcat,
@@ -89,6 +90,27 @@ TEST_CASE("batch_bin_increment_clusters handles full bucket") {
     in.flush();
     REQUIRE(
         out.check(emitted_as::always_rvalue, test_bucket<u16>({3, 5, 6, 7})));
+    REQUIRE(out.check_flushed());
+}
+
+TEST_CASE(
+    "batch_bin_increment_clusters handles cluster bigger than bucket size hint") {
+    auto const valcat = GENERATE(feed_as::const_lvalue, feed_as::rvalue);
+    auto ctx = context::create();
+    auto in = feed_input(valcat,
+                         batch_bin_increment_clusters(
+                             new_delete_bucket_source<u16>::create(),
+                             arg::bucket_size<>{3}, arg::batch_size<>{0},
+                             capture_output<type_list<bucket<u16>>>(
+                                 ctx->tracker<capture_output_access>("out"))));
+    in.require_output_checked(ctx, "out");
+    auto out =
+        capture_output_checker<type_list<bucket<u16>>>(valcat, ctx, "out");
+
+    in.handle(bin_increment_cluster_event<>{test_bucket<u16>({42, 43, 44})});
+    REQUIRE(out.check(emitted_as::always_rvalue,
+                      test_bucket<u16>({3, 42, 43, 44})));
+    in.flush();
     REQUIRE(out.check_flushed());
 }
 

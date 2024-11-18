@@ -20,7 +20,6 @@
 #include <cstddef>
 #include <functional>
 #include <memory>
-#include <stdexcept>
 #include <type_traits>
 #include <utility>
 
@@ -97,23 +96,42 @@ class batch_bin_increment_clusters {
     void handle(bin_increment_cluster_event<DT> const &event) {
         static_assert(std::is_same_v<typename DT::bin_index_type,
                                      typename DataTypes::bin_index_type>);
+        std::size_t const encoded_size = encoded_bin_increment_cluster_size<
+            typename DataTypes::bin_index_type>(event.bin_indices.size());
+        if (encoded_size > bkt_siz - bucket_used_size) { // Won't fit.
+            emit_cur_batch();
+
+            // If the cluster will not fit in a single default-sized bucket,
+            // emit a dedicated batch. We do not attempt to minimize internal
+            // fragmentation (i.e., waste of remaining bucket capacity) under
+            // conditions where clusters take up a significant fraction of the
+            // default bucket size; users should avoid operating in a regime
+            // where that happens frequently (though the degradation is only in
+            // performance, not correctness).
+            if (encoded_size > bkt_siz) {
+                auto single_cluster_batch =
+                    bsource->bucket_of_size(encoded_size);
+                std::size_t usage = 0;
+                [[maybe_unused]] bool const did_fit =
+                    encode_bin_increment_cluster(
+                        batch_bin_increment_clusters_encoding_adapter(
+                            single_cluster_batch, usage),
+                        span(event.bin_indices));
+                assert(did_fit);
+                assert(usage == encoded_size);
+                downstream.handle(std::move(single_cluster_batch));
+                return;
+            }
+        }
+
         if (cur_batch.empty())
             cur_batch = bsource->bucket_of_size(bkt_siz);
-        bool const did_fit = encode_bin_increment_cluster(
+        [[maybe_unused]] bool const did_fit = encode_bin_increment_cluster(
             batch_bin_increment_clusters_encoding_adapter(cur_batch,
                                                           bucket_used_size),
             span(event.bin_indices));
-        if (not did_fit) {
-            emit_cur_batch();
-            cur_batch = bsource->bucket_of_size(bkt_siz);
-            bool const did_fit = encode_bin_increment_cluster(
-                batch_bin_increment_clusters_encoding_adapter(
-                    cur_batch, bucket_used_size),
-                span(event.bin_indices));
-            if (not did_fit)
-                throw std::runtime_error(
-                    "bin increment cluster does not fit in maximum batch size");
-        }
+        assert(did_fit);
+
         ++cur_batch_size;
         if (cur_batch_size == batch_siz)
             emit_cur_batch();
@@ -208,9 +226,11 @@ class unbatch_bin_increment_clusters {
  * cluster individually. It must be paired with
  * `tcspc::unbatch_bin_increment_clusters()`.
  *
- * The `bucket_size` must be large enough that all clusters fit in a single
- * bucket (including the encoded cluster size); otherwise an exception is
- * thrown.
+ * The `bucket_size` should be large enough that all clusters (easily) fit in a
+ * single bucket (including the encoded cluster size). If a cluster takes up
+ * more than `bucket_size` when encoded, it will be emitted as a batch
+ * containing just that cluster. The `buffer_provider` needs to be prepared to
+ * handle this case, if it is expected.
  *
  * \tparam DataTypes data type set specifying `bin_index_type`
  *

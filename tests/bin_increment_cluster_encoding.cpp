@@ -23,6 +23,17 @@ namespace tcspc::internal {
 // Test with signed element type (i8), which is more bug-prone than unsigned
 // due to the signedness conversion during encoding/decoding.
 
+TEST_CASE("encoded_bin_increment_cluster_size") {
+    STATIC_CHECK(encoded_bin_increment_cluster_size<i8>(0) == 1);
+    STATIC_CHECK(encoded_bin_increment_cluster_size<i8>(1) == 2);
+    STATIC_CHECK(encoded_bin_increment_cluster_size<i8>(2) == 3);
+    STATIC_CHECK(encoded_bin_increment_cluster_size<i8>(254) == 255);
+    STATIC_CHECK(encoded_bin_increment_cluster_size<i8>(255) ==
+                 1 + sizeof(std::size_t) + 255);
+    STATIC_CHECK(encoded_bin_increment_cluster_size<i8>(1'000'000'000) ==
+                 1 + sizeof(std::size_t) + 1'000'000'000);
+}
+
 struct mock_storage {
     // NOLINTBEGIN(modernize-use-trailing-return-type)
     MAKE_MOCK0(available_capacity, std::size_t());
