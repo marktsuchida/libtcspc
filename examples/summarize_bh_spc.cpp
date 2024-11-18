@@ -17,6 +17,8 @@
 #include <string>
 #include <vector>
 
+namespace {
+
 struct dtypes : tcspc::default_data_types {
     // BH channels are never negative; use of unsigned type simplifies checks
     // in summarize_and_print().
@@ -109,6 +111,8 @@ auto summarize(std::string const &filename) -> bool {
                   .c_str());
     return true;
 }
+
+} // namespace
 
 auto main(int argc, char const *argv[]) -> int {
     try {

@@ -18,6 +18,8 @@
 #include <utility>
 #include <vector>
 
+namespace {
+
 using channel_type = tcspc::default_data_types::channel_type;
 using abstime_type = tcspc::default_data_types::abstime_type;
 
@@ -126,6 +128,8 @@ auto summarize(std::string const &filename) -> bool {
                   .c_str());
     return true;
 }
+
+} // namespace
 
 auto main(int argc, char const *argv[]) -> int {
     try {

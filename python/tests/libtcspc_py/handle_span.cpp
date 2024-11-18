@@ -10,16 +10,22 @@
 
 #include <Python.h>
 
+namespace {
+
 struct fake_processor {
     void handle(tcspc::span<unsigned short const> /* s */) {}
     void handle(int const & /* i */) {}
     void flush() {}
 };
 
-// NOLINTNEXTLINE(misc-include-cleaner)
-auto instantiate_template(fake_processor &proc, PyObject *pyobj) {
+// NOLINTBEGIN(misc-include-cleaner)
+[[maybe_unused]] auto instantiate_template(fake_processor &proc,
+                                           PyObject *pyobj) {
     return tcspc::py::handle_buffer(proc, pyobj);
 }
+// NOLINTEND(misc-include-cleaner)
+
+} // namespace
 
 auto main() -> int {
     // Actual unit tests are written in Python. The main point of this program

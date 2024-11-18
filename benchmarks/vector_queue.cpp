@@ -13,6 +13,8 @@
 
 namespace tcspc::internal {
 
+namespace {
+
 template <typename Q> void push_read_pop(benchmark::State &state) {
     Q q;
     auto const len = state.range(0);
@@ -33,6 +35,8 @@ void vector_queue_push_read_pop(benchmark::State &state) {
 void std_queue_push_read_pop(benchmark::State &state) {
     push_read_pop<std::queue<std::int64_t>>(state);
 }
+
+} // namespace
 
 namespace benchmark {
 

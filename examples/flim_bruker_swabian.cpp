@@ -23,6 +23,8 @@
 #include <utility>
 #include <vector>
 
+namespace {
+
 void print_out(char const *str) {
     if (std::fputs(str, stdout) == EOF)
         std::terminate();
@@ -448,6 +450,8 @@ auto parse_args(std::vector<std::string> args) -> settings {
     ret.output_filename = positional[1];
     return ret;
 }
+
+} // namespace
 
 auto main(int argc, char *argv[]) -> int {
     try {

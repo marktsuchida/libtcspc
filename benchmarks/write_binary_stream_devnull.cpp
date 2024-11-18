@@ -62,8 +62,6 @@ constexpr auto null_device =
 
 constexpr std::size_t total_bytes = 1 << 20;
 
-} // namespace
-
 void ofstream_unbuf(benchmark::State &state) {
     auto stream = internal::unbuffered_binary_ofstream_output_stream(
         null_device, arg::truncate{false}, arg::append{true});
@@ -123,6 +121,8 @@ void cfile(benchmark::State &state) {
             proc.handle(data);
     }
 }
+
+} // namespace
 
 namespace benchmark {
 

@@ -74,8 +74,6 @@ constexpr auto zero_device = "/dev/zero";
 
 constexpr std::size_t total_bytes = 1 << 20;
 
-} // namespace
-
 void ifstream_unbuf(benchmark::State &state) {
     auto stream = internal::unbuffered_binary_ifstream_input_stream(
         zero_device, arg::start_offset<u64>{0});
@@ -127,6 +125,8 @@ void cfile(benchmark::State &state) {
         src.flush();
     }
 }
+
+} // namespace
 
 // There is no /dev/zero equivalent on Windows.
 #ifndef _WIN32
