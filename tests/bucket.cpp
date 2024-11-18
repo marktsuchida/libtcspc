@@ -6,6 +6,7 @@
 
 #include "libtcspc/bucket.hpp"
 
+#include "libtcspc/arg_wrappers.hpp"
 #include "libtcspc/context.hpp"
 #include "libtcspc/core.hpp"
 #include "libtcspc/errors.hpp"
@@ -155,7 +156,8 @@ TEST_CASE("sharable_new_delete_bucket_source provides sharable buckets") {
 }
 
 TEST_CASE("recycling_bucket_source provides buckets up to max_count") {
-    auto source = recycling_bucket_source<int>::create(2);
+    auto source =
+        recycling_bucket_source<int>::create(arg::max_bucket_count<>{2});
     CHECK_FALSE(source->supports_shared_views());
     auto b0 = source->bucket_of_size(3);
     {
@@ -168,9 +170,10 @@ TEST_CASE("recycling_bucket_source provides buckets up to max_count") {
 
 TEST_CASE("recycling_bucket_source clears recycled buckets iff requested") {
     auto non_clearing_source =
-        recycling_bucket_source<int, false, false>::create(2);
-    auto clearing_source =
-        recycling_bucket_source<int, false, true>::create(2);
+        recycling_bucket_source<int, false, false>::create(
+            arg::max_bucket_count<>{2});
+    auto clearing_source = recycling_bucket_source<int, false, true>::create(
+        arg::max_bucket_count<>{2});
 
     {
         auto b0 = non_clearing_source->bucket_of_size(1);
@@ -186,7 +189,8 @@ TEST_CASE("recycling_bucket_source clears recycled buckets iff requested") {
 
 TEST_CASE(
     "blocking recycling_bucket_source provides buckets up to max_count") {
-    auto source = recycling_bucket_source<int, true>::create(2);
+    auto source =
+        recycling_bucket_source<int, true>::create(arg::max_bucket_count<>{2});
     auto b0 = source->bucket_of_size(3);
     auto b1 = source->bucket_of_size(5);
     latch thread_start_latch(1);
@@ -206,7 +210,8 @@ TEST_CASE(
 
 TEST_CASE(
     "sharable_recycling_bucket_source provides buckets up to max_count") {
-    auto source = sharable_recycling_bucket_source<int>::create(2);
+    auto source = sharable_recycling_bucket_source<int>::create(
+        arg::max_bucket_count<>{2});
     CHECK(source->supports_shared_views());
     auto b0 = source->bucket_of_size(3);
     {
@@ -220,9 +225,11 @@ TEST_CASE(
 TEST_CASE(
     "sharable_recycling_bucket_source clears recycled buckets iff requested") {
     auto non_clearing_source =
-        sharable_recycling_bucket_source<int, false, false>::create(2);
+        sharable_recycling_bucket_source<int, false, false>::create(
+            arg::max_bucket_count<>{2});
     auto clearing_source =
-        sharable_recycling_bucket_source<int, false, true>::create(2);
+        sharable_recycling_bucket_source<int, false, true>::create(
+            arg::max_bucket_count<>{2});
 
     {
         auto b0 = non_clearing_source->bucket_of_size(1);
@@ -238,7 +245,8 @@ TEST_CASE(
 
 TEST_CASE(
     "blocking sharable_recycling_bucket_source provides buckets up to max_count") {
-    auto source = sharable_recycling_bucket_source<int, true>::create(2);
+    auto source = sharable_recycling_bucket_source<int, true>::create(
+        arg::max_bucket_count<>{2});
     auto b0 = source->bucket_of_size(3);
     auto b1 = source->bucket_of_size(5);
     latch thread_start_latch(1);
@@ -289,7 +297,8 @@ TEST_CASE("sharable_recycling_bucket_source provides sharable buckets") {
 
 TEST_CASE(
     "sharable_recycling_bucket_source storage is recycled after all views discarded") {
-    auto source = sharable_recycling_bucket_source<int>::create(2);
+    auto source = sharable_recycling_bucket_source<int>::create(
+        arg::max_bucket_count<>{2});
     CHECK(source->supports_shared_views());
     auto b0 = source->bucket_of_size(3);
     {

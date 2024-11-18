@@ -6,6 +6,7 @@
 
 #pragma once
 
+#include "arg_wrappers.hpp"
 #include "errors.hpp"
 #include "introspect.hpp"
 #include "move_only_any.hpp"
@@ -698,8 +699,8 @@ class recycling_bucket_source final
         operator=(bucket_storage &&) noexcept -> bucket_storage & = default;
     };
 
-    explicit recycling_bucket_source(std::size_t max_bucket_count)
-        : max_buckets(max_bucket_count) {}
+    explicit recycling_bucket_source(arg::max_bucket_count<> max_bucket_count)
+        : max_buckets(max_bucket_count.value) {}
 
   public:
     /**
@@ -708,8 +709,9 @@ class recycling_bucket_source final
      * \param max_bucket_count the maximum number of buckets that can be
      * outstanding from this bucket source at any given time.
      */
-    static auto create(
-        std::size_t max_bucket_count = std::numeric_limits<std::size_t>::max())
+    static auto
+    create(arg::max_bucket_count<> max_bucket_count =
+               arg::max_bucket_count{std::numeric_limits<std::size_t>::max()})
         -> std::shared_ptr<bucket_source<T>> {
         return std::shared_ptr<recycling_bucket_source>(
             new recycling_bucket_source(max_bucket_count));
@@ -778,8 +780,9 @@ class sharable_recycling_bucket_source final
         std::shared_ptr<std::vector<T>> storage; // With custom deleter.
     };
 
-    explicit sharable_recycling_bucket_source(std::size_t max_bucket_count)
-        : max_buckets(max_bucket_count) {}
+    explicit sharable_recycling_bucket_source(
+        arg::max_bucket_count<> max_bucket_count)
+        : max_buckets(max_bucket_count.value) {}
 
   public:
     /**
@@ -787,8 +790,9 @@ class sharable_recycling_bucket_source final
      *
      * \copydetails tcspc::recycling_bucket_source::create()
      */
-    static auto create(
-        std::size_t max_bucket_count = std::numeric_limits<std::size_t>::max())
+    static auto
+    create(arg::max_bucket_count<> max_bucket_count =
+               arg::max_bucket_count{std::numeric_limits<std::size_t>::max()})
         -> std::shared_ptr<bucket_source<T>> {
         return std::shared_ptr<sharable_recycling_bucket_source>(
             new sharable_recycling_bucket_source(max_bucket_count));

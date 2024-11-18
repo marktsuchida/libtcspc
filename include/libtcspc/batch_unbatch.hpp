@@ -235,7 +235,8 @@ template <typename Event, typename Downstream>
 auto process_in_batches(arg::batch_size<std::size_t> batch_size,
                         Downstream &&downstream) {
     return batch<Event>(
-        recycling_bucket_source<Event>::create(1), batch_size,
+        recycling_bucket_source<Event>::create(arg::max_bucket_count<>{1}),
+        batch_size,
         unbatch<bucket<Event>>(std::forward<Downstream>(downstream)));
 }
 

@@ -222,6 +222,16 @@ template <typename T> struct max_bin_index {
 };
 
 /**
+ * \brief Function argument wrapper for maximum bucket count.
+ */
+template <typename T = std::size_t> struct max_bucket_count {
+    /** \brief The argument vlue. */
+    T value;
+    /** \brief Construct by wrapping a value. */
+    explicit max_bucket_count(T arg) : value(arg) {}
+};
+
+/**
  * \brief Function argument wrapper for maximum buffered parameter.
  */
 template <typename T = std::size_t> struct max_buffered {

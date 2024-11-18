@@ -85,10 +85,10 @@ TEST_CASE("write binary stream") {
     // to test different cases.
     static constexpr std::size_t granularity = 4;
     auto stream = mock_output_stream();
-    auto proc =
-        write_binary_stream<>(ref_output_stream(stream),
-                              recycling_bucket_source<std::byte>::create(1),
-                              arg::granularity{granularity});
+    auto proc = write_binary_stream<>(
+        ref_output_stream(stream),
+        recycling_bucket_source<std::byte>::create(arg::max_bucket_count<>{1}),
+        arg::granularity{granularity});
 
     using trompeloeil::_;
 
@@ -343,10 +343,10 @@ TEST_CASE("write binary stream") {
 
 TEST_CASE("write binary file with view as bytes") {
     auto stream = mock_output_stream();
-    auto proc = view_as_bytes(
-        write_binary_stream(ref_output_stream(stream),
-                            recycling_bucket_source<std::byte>::create(1),
-                            arg::granularity{2 * sizeof(int)}));
+    auto proc = view_as_bytes(write_binary_stream(
+        ref_output_stream(stream),
+        recycling_bucket_source<std::byte>::create(arg::max_bucket_count<>{1}),
+        arg::granularity{2 * sizeof(int)}));
 
     ALLOW_CALL(stream, is_error()).RETURN(false);
     ALLOW_CALL(stream, tell()).RETURN(0);
