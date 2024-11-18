@@ -130,7 +130,7 @@ auto make_histo_proc(settings const &settings,
 
 template <bool Cumulative>
 auto make_processor(settings const &settings,
-                    std::shared_ptr<tcspc::context> ctx) {
+                    std::shared_ptr<tcspc::context> const &ctx) {
     using namespace tcspc;
 
     // clang-format off

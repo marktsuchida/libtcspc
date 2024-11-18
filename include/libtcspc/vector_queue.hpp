@@ -40,7 +40,8 @@ template <typename T> class vector_queue {
     using alloctraits = std::allocator_traits<std::allocator<T>>;
 
     [[nodiscard]] constexpr auto is_full() const noexcept -> bool {
-        return !ptr || tail + 1 == head || (tail + 1 == endptr && head == ptr);
+        return ptr == nullptr || tail + 1 == head ||
+               (tail + 1 == endptr && head == ptr);
     }
 
     static auto compute_enlarged_cap(std::size_t oldcap) -> std::size_t {
@@ -178,7 +179,7 @@ template <typename T> class vector_queue {
         assert(head != tail);
         auto alloc = std::allocator<T>();
         alloctraits::destroy(alloc, head);
-        ++head;
+        ++head; // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
         if (head == endptr)
             head = ptr;
     }
@@ -188,7 +189,7 @@ template <typename T> class vector_queue {
             expand_cap();
         auto alloc = std::allocator<T>();
         alloctraits::construct(alloc, tail, value);
-        ++tail;
+        ++tail; // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
         if (tail == endptr)
             tail = ptr;
     }
@@ -198,7 +199,7 @@ template <typename T> class vector_queue {
             expand_cap();
         auto alloc = std::allocator<T>();
         alloctraits::construct(alloc, tail, std::move(value));
-        ++tail;
+        ++tail; // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
         if (tail == endptr)
             tail = ptr;
     }
