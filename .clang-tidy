@@ -44,6 +44,7 @@ Checks: >-
     -modernize-deprecated-ios-base-aliases,
     -performance-enum-size,
     -readability-identifier-length,
+    -readability-math-missing-parentheses,
 
 # Reasons for disabled checks:
 # [cert-dcl16-c]
@@ -69,6 +70,8 @@ Checks: >-
 #   Currently no performance benefit expected given our enum usage.
 # [readability-identifier-length]
 #   TBD
+# [readability-math-missing-parentheses]
+#   Too much noise from the simple cases where parens are not warranted.
 
 CheckOptions:
   cppcoreguidelines-avoid-do-while.IgnoreMacros: true
