@@ -28,8 +28,8 @@ struct fake_processor {
 } // namespace
 
 auto main() -> int {
-    // Actual unit tests are written in Python. The main point of this program
-    // is to catch compile errors early and to provide a usable configuration
-    // for clang-tidy to use.
+    // Actual unit tests for handle_span.hpp are written in Python. The reason
+    // for having this program is to catch compile errors early and to provide
+    // a usable configuration for clang-tidy.
     return 0;
 }
