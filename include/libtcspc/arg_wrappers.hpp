@@ -292,6 +292,16 @@ template <typename T> struct max_per_bin {
 };
 
 /**
+ * \brief Function argument wrapper for maximum recycled size.
+ */
+template <typename T = std::size_t> struct max_recycled_size {
+    /** \brief The argument value. */
+    T value;
+    /** \brief Construct by wrapping a value. */
+    explicit max_recycled_size(T arg) : value(arg) {}
+};
+
+/**
  * \brief Function argument wrapper for maximum time shift parameter.
  */
 template <typename T> struct max_time_shift {

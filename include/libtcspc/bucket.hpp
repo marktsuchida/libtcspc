@@ -657,6 +657,7 @@ class recycling_bucket_source final
     std::mutex mutex;
     std::condition_variable not_empty_condition;
     std::size_t max_buckets;
+    std::size_t max_recycled;
     std::size_t bucket_count = 0;
     std::vector<std::unique_ptr<std::vector<T>>> recyclable;
 
@@ -669,6 +670,15 @@ class recycling_bucket_source final
                 return;
 
             assert(storage);
+
+            // If "large" bucket, release the underlying storage (but do go on
+            // to "recycle", so that a thread waiting on bucket_of_size() will
+            // get a bucket).
+            if (source->max_recycled > 0 &&
+                storage->size() > source->max_recycled) {
+                storage->clear();
+                storage->shrink_to_fit();
+            }
 
             if constexpr (ClearRecycled)
                 storage->clear();
@@ -699,8 +709,11 @@ class recycling_bucket_source final
         operator=(bucket_storage &&) noexcept -> bucket_storage & = default;
     };
 
-    explicit recycling_bucket_source(arg::max_bucket_count<> max_bucket_count)
-        : max_buckets(max_bucket_count.value) {}
+    explicit recycling_bucket_source(
+        arg::max_bucket_count<> max_bucket_count,
+        arg::max_recycled_size<> max_recycled_size)
+        : max_buckets(max_bucket_count.value),
+          max_recycled(max_recycled_size.value) {}
 
   public:
     /**
@@ -708,13 +721,17 @@ class recycling_bucket_source final
      *
      * \param max_bucket_count the maximum number of buckets that can be
      * outstanding from this bucket source at any given time.
+     *
+     * \param max_recycled_size the maximum bucket size whose storage is
+     * recycled; if 0, recycle all
      */
-    static auto
-    create(arg::max_bucket_count<> max_bucket_count =
-               arg::max_bucket_count{std::numeric_limits<std::size_t>::max()})
-        -> std::shared_ptr<bucket_source<T>> {
+    static auto create(
+        arg::max_bucket_count<> max_bucket_count =
+            arg::max_bucket_count{std::numeric_limits<std::size_t>::max()},
+        arg::max_recycled_size<> max_recycled_size = arg::max_recycled_size<>{
+            0}) -> std::shared_ptr<bucket_source<T>> {
         return std::shared_ptr<recycling_bucket_source>(
-            new recycling_bucket_source(max_bucket_count));
+            new recycling_bucket_source(max_bucket_count, max_recycled_size));
     }
 
     /**
@@ -772,6 +789,7 @@ class sharable_recycling_bucket_source final
     std::mutex mutex;
     std::condition_variable not_empty_condition;
     std::size_t max_buckets;
+    std::size_t max_recycled;
     std::size_t bucket_count = 0;
     std::vector<std::unique_ptr<std::vector<T>>> recyclable;
 
@@ -781,8 +799,10 @@ class sharable_recycling_bucket_source final
     };
 
     explicit sharable_recycling_bucket_source(
-        arg::max_bucket_count<> max_bucket_count)
-        : max_buckets(max_bucket_count.value) {}
+        arg::max_bucket_count<> max_bucket_count,
+        arg::max_recycled_size<> max_recycled_size)
+        : max_buckets(max_bucket_count.value),
+          max_recycled(max_recycled_size.value) {}
 
   public:
     /**
@@ -790,12 +810,14 @@ class sharable_recycling_bucket_source final
      *
      * \copydetails tcspc::recycling_bucket_source::create()
      */
-    static auto
-    create(arg::max_bucket_count<> max_bucket_count =
-               arg::max_bucket_count{std::numeric_limits<std::size_t>::max()})
-        -> std::shared_ptr<bucket_source<T>> {
+    static auto create(
+        arg::max_bucket_count<> max_bucket_count =
+            arg::max_bucket_count{std::numeric_limits<std::size_t>::max()},
+        arg::max_recycled_size<> max_recycled_size = arg::max_recycled_size<>{
+            0}) -> std::shared_ptr<bucket_source<T>> {
         return std::shared_ptr<sharable_recycling_bucket_source>(
-            new sharable_recycling_bucket_source(max_bucket_count));
+            new sharable_recycling_bucket_source(max_bucket_count,
+                                                 max_recycled_size));
     }
 
     /**
@@ -830,6 +852,11 @@ class sharable_recycling_bucket_source final
             [self = this->shared_from_this()](std::vector<T> *pv) {
                 if (not pv)
                     return;
+                if (self->max_recycled > 0 &&
+                    pv->size() > self->max_recycled) {
+                    pv->clear();
+                    pv->shrink_to_fit();
+                }
                 if constexpr (ClearRecycled)
                     pv->clear();
                 {
