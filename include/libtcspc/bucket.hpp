@@ -675,10 +675,8 @@ class recycling_bucket_source final
             // to "recycle", so that a thread waiting on bucket_of_size() will
             // get a bucket).
             if (source->max_recycled > 0 &&
-                storage->size() > source->max_recycled) {
-                storage->clear();
-                storage->shrink_to_fit();
-            }
+                storage->size() > source->max_recycled)
+                *storage = std::vector<T>();
 
             if constexpr (ClearRecycled)
                 storage->clear();
@@ -852,11 +850,8 @@ class sharable_recycling_bucket_source final
             [self = this->shared_from_this()](std::vector<T> *pv) {
                 if (not pv)
                     return;
-                if (self->max_recycled > 0 &&
-                    pv->size() > self->max_recycled) {
-                    pv->clear();
-                    pv->shrink_to_fit();
-                }
+                if (self->max_recycled > 0 && pv->size() > self->max_recycled)
+                    *pv = std::vector<T>();
                 if constexpr (ClearRecycled)
                     pv->clear();
                 {
