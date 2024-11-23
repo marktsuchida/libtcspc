@@ -19,6 +19,7 @@
 #include "time_tagged_events.hpp"
 
 #include <array>
+#include <cassert>
 #include <cstddef>
 #include <cstdint>
 #include <ostream>
@@ -225,35 +226,31 @@ template <typename DataTypes, typename Downstream> class decode_swabian_tags {
 
     LIBTCSPC_NOINLINE
     void handle_coldpath_tag(swabian_tag_event const &event) {
-        using tag_type = swabian_tag_event::tag_type;
         switch (event.type()) {
+            using tag_type = swabian_tag_event::tag_type;
+        case tag_type::time_tag:
+            assert(false); // Handled in hot path.
         case tag_type::error:
-            downstream.handle(warning_event{"error tag encountered"});
-            break;
+            return downstream.handle(warning_event{"error tag encountered"});
         case tag_type::overflow_begin:
-            downstream.handle(
+            return downstream.handle(
                 begin_lost_interval_event<DataTypes>{event.time().value()});
-            break;
         case tag_type::overflow_end:
-            downstream.handle(
+            return downstream.handle(
                 end_lost_interval_event<DataTypes>{event.time().value()});
-            break;
         case tag_type::missed_events:
-            downstream.handle(lost_counts_event<DataTypes>{
+            return downstream.handle(lost_counts_event<DataTypes>{
                 event.time().value(), event.channel().value(),
                 event.missed_event_count().value()});
-            break;
-        default: {
-            std::ostringstream stream;
-            stream << "unknown event type ("
-                   << static_cast<
-                          std::underlying_type_t<swabian_tag_event::tag_type>>(
-                          event.type())
-                   << ")";
-            downstream.handle(warning_event{stream.str()});
-            break;
         }
-        }
+
+        std::ostringstream stream;
+        stream << "unknown event type ("
+               << static_cast<
+                      std::underlying_type_t<swabian_tag_event::tag_type>>(
+                      event.type())
+               << ")";
+        downstream.handle(warning_event{stream.str()});
     }
 
   public:
