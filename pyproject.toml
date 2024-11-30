@@ -8,6 +8,8 @@ dynamic = ["version"]
 requires-python = ">=3.10"
 dependencies = [
     "cppyy",
+    "meson",
+    "ninja",
     "typeguard",
     "typing-extensions",
 ]
@@ -21,9 +23,11 @@ build-backend = "mesonpy"
 [project.optional-dependencies]
 testing = [
     "numpy",
+    "psutil",
     "pytest >= 8.0",
     "pytest-mock >= 3.0",
     "pytest-mypy >= 0.4",
+    "types-psutil",
 ]
 
 [tool.meson-python.args]

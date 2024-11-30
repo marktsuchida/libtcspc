@@ -31,6 +31,8 @@ py_sources = files(
     '_processors.py',
     '_streams.py',
     'py.typed',
+    '_odext/__init__.py',
+    '_odext/_async.py',
 )
 
 libtcspc_py_include_dir = include_directories('include')
@@ -41,6 +43,7 @@ py_cpp_headers = files(
 
 python.install_sources(
     py_sources,
+    preserve_path: true,
     subdir: py_package_name,
 )
 
