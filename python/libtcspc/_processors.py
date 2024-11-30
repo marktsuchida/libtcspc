@@ -67,7 +67,6 @@ def read_events_from_binary_file(
     stop_normally_on_error: bool = False,
 ) -> Node:
     g = Graph()
-    stop_proc = Stop if stop_normally_on_error else StopWithError
     g.add_sequence(
         [
             (
@@ -82,7 +81,15 @@ def read_events_from_binary_file(
                     read_granularity_bytes,
                 ),
             ),
-            stop_proc((_events.WarningEvent,), "error reading input"),
+            (
+                Stop((_events.WarningEvent,), "error reading input")
+                if stop_normally_on_error
+                else StopWithError(
+                    (_events.WarningEvent,),
+                    CppTypeName("std::runtime_error"),
+                    "error reading input",
+                )
+            ),
             (
                 "unbatcher",
                 Unbatch(event_type),
