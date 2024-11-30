@@ -2,6 +2,7 @@
 # Copyright 2019-2024 Board of Regents of the University of Wisconsin System
 # SPDX-License-Identifier: MIT
 
+import subprocess
 import sys
 import textwrap
 
@@ -43,8 +44,22 @@ def test_extension_build_and_import():
     module_name = "odext_test_module_0"
     code = module_code.replace("@odext_module_name@", module_name)
     importer = _odext.ExtensionImporter()
-    with _odext.ExtensionBuilder(cpp_std="c++17", code_text=code) as builder:
+    with _odext.Builder(cpp_std="c++17", code_text=code) as builder:
         mod_file = builder.build()
         mod = importer.import_module(module_name, mod_file, ok_to_move=True)
     assert module_name in sys.modules
     assert mod.answer() == 42
+
+
+def test_executable_build():
+    hello_code = textwrap.dedent("""\
+    #include <cstdio>
+    int main() { std::printf("hello\\n"); }
+    """)
+    with _odext.Builder(
+        binary_type="executable", code_text=hello_code
+    ) as builder:
+        exe = builder.build()
+        result = subprocess.run(str(exe), stdout=subprocess.PIPE)
+    assert result.returncode == 0
+    assert result.stdout.decode() == "hello\n"

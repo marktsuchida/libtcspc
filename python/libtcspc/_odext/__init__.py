@@ -12,7 +12,7 @@ Build Python extension modules on demand, from run-time generated C++ code.
 
 # At least for now, we use the Meson build system to handle the build setup.
 
-__all__ = ["ExtensionBuilder", "ExtensionImporter"]
+__all__ = ["Builder", "ExtensionImporter"]
 
 import asyncio
 import atexit
@@ -27,7 +27,7 @@ import textwrap
 import time
 from collections.abc import Mapping, Sequence
 from pathlib import Path
-from typing import Any, Self
+from typing import Any, Literal, Self
 
 from . import _async
 
@@ -80,11 +80,14 @@ async def _run_meson(
     return await _run_subprocess_nostdin(_meson_exe(), *args, cwd=cwd, env=env)
 
 
-class ExtensionBuilder:
+class Builder:
     _DISCARDED, _CREATED, _CODE_WRITTEN, _CONFIGURED, _BUILT = range(5)
 
     def __init__(
         self,
+        binary_type: Literal[
+            "extension_module", "executable"
+        ] = "extension_module",
         *,
         cxx: str | None = None,
         cpp_std: str | None = None,
@@ -92,6 +95,8 @@ class ExtensionBuilder:
         code_text: str | None = None,
         tempdir: Path | None = None,
     ) -> None:
+        self._binary_type = binary_type
+
         self._proj_dir = tempfile.TemporaryDirectory(
             prefix="odext-", dir=tempdir
         )
@@ -143,21 +148,36 @@ class ExtensionBuilder:
             f.write(
                 textwrap.dedent(f"""\
                     project(
-                        'odext_module',
+                        'odext_project',
                         'cpp',
                         default_options: [{rendered_default_options}],
                     )
-                    python = import('python').find_installation(pure: false)
-                    extmod = python.extension_module(
-                        'odext_module',
-                        'odext_module.cpp',
-                        include_directories: [{rendered_include_dirs}],
-                    )
-            """)
+                """)
             )
+            if self._binary_type == "extension_module":
+                f.write(
+                    textwrap.dedent(f"""\
+                        py = import('python').find_installation(pure: false)
+                        py.extension_module(
+                            'odext_target',
+                            'source.cpp',
+                            include_directories: [{rendered_include_dirs}],
+                        )
+                """)
+                )
+            elif self._binary_type == "executable":
+                f.write(
+                    textwrap.dedent(f"""\
+                        executable(
+                            'odext_target',
+                            'source.cpp',
+                            include_directories: [{rendered_include_dirs}],
+                        )
+                    """)
+                )
 
     def _write_code(self, code_text: str) -> None:
-        with open(self._proj_path / "odext_module.cpp", "w") as f:
+        with open(self._proj_path / "source.cpp", "w") as f:
             f.write(code_text)
 
     async def async_set_code(self, code_text: str) -> None:
@@ -181,13 +201,15 @@ class ExtensionBuilder:
         with open(self._proj_path / "builddir/meson-logs/meson-log.txt") as f:
             return f.read()
 
-    def _get_extmod_path(self) -> Path:
+    def _get_target_path(self) -> Path:
         with open(
             self._proj_path / "builddir/meson-info/intro-targets.json"
         ) as f:
             targets = json.load(f)
         for target in targets:
-            if target["name"].startswith("odext_module."):
+            if target["name"] == "odext_target" or target["name"].startswith(
+                "odext_target."
+            ):
                 assert len(target["filename"]) == 1
                 return Path(target["filename"][0])
         else:
@@ -213,8 +235,8 @@ class ExtensionBuilder:
                 + f"Contents of meson-log.txt:\n{log_text}"
             )
 
-        self._extmod_path = await asyncio.get_running_loop().run_in_executor(
-            None, self._get_extmod_path
+        self._target_path = await asyncio.get_running_loop().run_in_executor(
+            None, self._get_target_path
         )
         self._stage = self._CONFIGURED
         self._stats["configure"] = time.perf_counter() - start
@@ -237,7 +259,7 @@ class ExtensionBuilder:
             raise RuntimeError(f"Build failed: {stdout}")
         self._staged = self._BUILT
         self._stats["build"] = time.perf_counter() - start
-        return self._extmod_path
+        return self._target_path
 
     def build(self) -> Path:
         return _async.submit(self.async_build()).result()
