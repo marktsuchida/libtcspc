@@ -2,26 +2,19 @@
 # Copyright 2019-2024 Board of Regents of the University of Wisconsin System
 # SPDX-License-Identifier: MIT
 
-import itertools
-from textwrap import dedent
-from typing import Any
+import subprocess
 
-import cppyy
-from libtcspc import _include
+from libtcspc import _include, _odext
 
-cppyy.add_include_path(str(_include.libtcspc_include_dir()))
-
-cppyy.include("libtcspc/tcspc.hpp")
-
-_cpp_name_counter = itertools.count()
+_builder = _odext.Builder(
+    binary_type="executable",
+    cpp_std="c++17",
+    include_dirs=(_include.libtcspc_include_dir(),),
+)
 
 
-def isolated_cppdef(code: str) -> Any:
-    # Run C++ code in a unique namespace and return the cppyy namespace object.
-    ns = f"ns{next(_cpp_name_counter)}"
-    code = dedent(f"""\
-        namespace tcspc::py::isolated::{ns} {{
-            {code}
-        }}""")
-    cppyy.cppdef(code)
-    return getattr(cppyy.gbl.tcspc.py.isolated, ns)
+def run_cpp_prog(code: str) -> int:
+    _builder.set_code(code)
+    exe_path = _builder.build()
+    result = subprocess.run(exe_path)
+    return result.returncode

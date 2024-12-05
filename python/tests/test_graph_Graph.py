@@ -4,7 +4,7 @@
 
 
 import pytest
-from cpp_utils import isolated_cppdef
+from cpp_utils import run_cpp_prog
 from libtcspc._codegen import CodeGenerationContext
 from libtcspc._cpp_utils import CppExpression, CppIdentifier, CppTypeName
 from libtcspc._events import EventType
@@ -34,13 +34,19 @@ def test_empty_graph():
     code = g.cpp_expression(gencontext)
     # An empty graph has no inputs, so generates a lambda that returns an empty
     # tuple. Assignment should succeed.
-    isolated_cppdef(f"""\
-        void f() {{
-            auto ctx = tcspc::context::create();
-            auto params = 0;
-            std::tuple<> t = {code};
-        }}
-    """)
+    assert (
+        run_cpp_prog(f"""\
+            #include "libtcspc/tcspc.hpp"
+            #include <tuple>
+            int main() {{
+                auto ctx = tcspc::context::create();
+                auto params = 0;
+                std::tuple<> t = {code};
+                return 0;
+            }}
+            """)
+        == 0
+    )
 
     with pytest.raises(ValueError):
         g.cpp_expression(gencontext, [CppExpression("downstream")])
@@ -73,18 +79,22 @@ def test_single_node(mocker):
     code = g.cpp_expression(gencontext, [CppExpression("std::move(dstream)")])
     # The generated lambda should return a single-element tuple whose element
     # was moved from 'ds'.
-    ns = isolated_cppdef(f"""\
-        auto f() {{
-            auto ctx = tcspc::context::create();
-            auto params = 0;
-            int dstream = 42; // Fake the downstream processor with int
-            auto proc = {code};
-            static_assert(std::is_same_v<decltype(proc), int>);
-            return proc;
-        }}
-        auto proc = f();
-    """)
-    assert ns.proc == 42
+    assert (
+        run_cpp_prog(f"""\
+            #include "libtcspc/tcspc.hpp"
+            #include <type_traits>
+            auto f() {{
+                auto ctx = tcspc::context::create();
+                auto params = 0;
+                int dstream = 42; // Fake the downstream processor with int
+                auto proc = {code};
+                static_assert(std::is_same_v<decltype(proc), int>);
+                return proc;
+            }}
+            int main() {{ return f(); }}
+            """)
+        == 42
+    )
 
 
 def test_two_nodes_two_inputs_two_outputs(mocker):
@@ -123,23 +133,34 @@ def test_two_nodes_two_inputs_two_outputs(mocker):
         gencontext,
         [CppExpression("std::move(ds0)"), CppExpression("std::move(ds1)")],
     )
-    ns = isolated_cppdef(f"""\
-        auto f() {{
-            auto ctx = tcspc::context::create();
-            auto params = 0;
-            int ds0 = 42, ds1 = 43;
-            auto [p0, p1] = {code};
-            static_assert(std::is_same_v<decltype(p0), int>);
-            static_assert(std::is_same_v<decltype(p1), int>);
-            // Work around structured binding limitations:
-            return std::tuple(p0, p1);
-        }}
-        auto procs = f();
-        auto proc0 = std::get<0>(procs);
-        auto proc1 = std::get<1>(procs);
-    """)
-    assert ns.proc0 == 2 * (5 * (42 + 43))
-    assert ns.proc1 == 123
+    assert (
+        run_cpp_prog(f"""\
+            #include "libtcspc/tcspc.hpp"
+            #include <string>
+            #include <tuple>
+            #include <type_traits>
+            #include <utility>
+
+            auto f() {{
+                auto ctx = tcspc::context::create();
+                auto params = 0;
+                int ds0 = 42, ds1 = 43;
+                auto [p0, p1] = {code};
+                static_assert(std::is_same_v<decltype(p0), int>);
+                static_assert(std::is_same_v<decltype(p1), int>);
+                // Work around structured binding limitations:
+                return std::tuple(p0, p1);
+            }}
+
+            int main(int argc, char *argv[]) {{
+                auto procs = f();
+                auto proc0 = std::get<0>(procs);
+                auto proc1 = std::get<1>(procs);
+                return proc0 == 2 * (5 * (42 + 43)) && proc1 == 123 ? 0 : 1;
+            }}
+            """)
+        == 0
+    )
 
 
 def test_two_nodes_two_internal_edges(mocker):
@@ -178,18 +199,22 @@ def test_two_nodes_two_internal_edges(mocker):
     node0.cpp_expression = mocker.MagicMock(side_effect=node0_codegen)  # type: ignore
     node1.cpp_expression = mocker.MagicMock(side_effect=node1_codegen)  # type: ignore
     code = g.cpp_expression(gencontext, [CppExpression("std::move(ds)")])
-    ns = isolated_cppdef(f"""\
-        auto f() {{
-            auto ctx = tcspc::context::create();
-            auto params = 0;
-            int ds = 42;
-            auto proc = {code};
-            static_assert(std::is_same_v<decltype(proc), int>);
-            return proc;
-        }}
-        auto proc = f();
-    """)
-    assert ns.proc == 2 * 42 + 123
+    assert (
+        run_cpp_prog(f"""\
+            #include "libtcspc/tcspc.hpp"
+            #include <type_traits>
+            auto f() {{
+                auto ctx = tcspc::context::create();
+                auto params = 0;
+                int ds = 42;
+                auto proc = {code};
+                static_assert(std::is_same_v<decltype(proc), int>);
+                return proc;
+            }}
+            int main() {{ return f(); }}
+            """)
+        == 2 * 42 + 123
+    )
 
 
 def make_simple_node(mocker) -> Node:
@@ -215,18 +240,22 @@ def test_add_sequence(mocker):
     g.add_sequence([node2, node3], upstream="Node-1")
     g.add_sequence([node4], downstream=("Node-0", "input"))
     code = g.cpp_expression(gencontext, [CppExpression("std::move(ds)")])
-    ns = isolated_cppdef(f"""\
-        auto f() {{
-            auto ctx = tcspc::context::create();
-            auto params = 0;
-            int ds = 42;
-            auto proc = {code};
-            static_assert(std::is_same_v<decltype(proc), int>);
-            return proc;
-        }}
-        auto proc = f();
-    """)
-    assert ns.proc == 42
+    assert (
+        run_cpp_prog(f"""\
+            #include "libtcspc/tcspc.hpp"
+            #include <type_traits>
+            auto f() {{
+                auto ctx = tcspc::context::create();
+                auto params = 0;
+                int ds = 42;
+                auto proc = {code};
+                static_assert(std::is_same_v<decltype(proc), int>);
+                return proc;
+            }}
+            int main() {{ return f(); }}
+            """)
+        == 42
+    )
 
 
 def test_add_sequence_with_cycle(mocker):

@@ -2,7 +2,7 @@
 # Copyright 2019-2024 Board of Regents of the University of Wisconsin System
 # SPDX-License-Identifier: MIT
 
-from cpp_utils import isolated_cppdef
+from cpp_utils import run_cpp_prog
 from libtcspc._codegen import CodeGenerationContext
 from libtcspc._cpp_utils import CppExpression, CppIdentifier
 from libtcspc._graph import Graph, Node, Subgraph
@@ -21,13 +21,19 @@ def test_empty_subgraph():
     assert sg.map_event_sets([]) == ()
 
     code = sg.cpp_expression(gencontext, [])
-    isolated_cppdef(f"""\
-        void f() {{
-            auto ctx = tcspc::context::create();
-            auto params = 0;
-            std::tuple<> t = {code};
-        }}
-    """)
+    assert (
+        run_cpp_prog(f"""\
+            #include "libtcspc/tcspc.hpp"
+            #include <tuple>
+            int main() {{
+                auto ctx = tcspc::context::create();
+                auto params = 0;
+                std::tuple<> t = {code};
+                return 0;
+            }}
+            """)
+        == 0
+    )
 
 
 def test_input_output_map():
@@ -71,15 +77,19 @@ def test_nested_subgraph(mocker):
     code = sg1.cpp_expression(
         gencontext, [CppExpression("std::move(dstream)")]
     )
-    ns = isolated_cppdef(f"""\
-        auto f() {{
-            auto ctx = tcspc::context::create();
-            auto params = 0;
-            int dstream = 42;
-            auto proc = {code};
-            static_assert(std::is_same_v<decltype(proc), int>);
-            return proc;
-        }}
-        auto proc = f();
-    """)
-    assert ns.proc == 42
+    assert (
+        run_cpp_prog(f"""\
+            #include "libtcspc/tcspc.hpp"
+            #include <type_traits>
+            auto f() {{
+                auto ctx = tcspc::context::create();
+                auto params = 0;
+                int dstream = 42;
+                auto proc = {code};
+                static_assert(std::is_same_v<decltype(proc), int>);
+                return proc;
+            }}
+            int main() {{ return f(); }}
+            """)
+        == 42
+    )
