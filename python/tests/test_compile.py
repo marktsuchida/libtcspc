@@ -2,7 +2,6 @@
 # Copyright 2019-2024 Board of Regents of the University of Wisconsin System
 # SPDX-License-Identifier: MIT
 
-import cppyy
 import pytest
 from libtcspc._access import AccessTag
 from libtcspc._compile import compile_graph
@@ -38,9 +37,7 @@ def test_compile_graph_with_output_rejected():
 def test_compile_graph_with_single_input_allowed():
     g = Graph()
     g.add_node("a", NullSink())
-    cg = compile_graph(g)
-    p = cg._instantiator(cppyy.gbl.tcspc.context.create(), cg._param_struct())
-    p.flush()
+    compile_graph(g)
 
 
 def test_compile_node_access():
@@ -50,4 +47,4 @@ def test_compile_node_access():
     g.add_node("s", NullSink(), upstream="c")
     cg = compile_graph(g)
     assert len(cg.accesses()) == 1
-    assert cg.accesses()[0] == ("counter", counter.accesses()[0][1])
+    assert cg.accesses()[0] == "counter"

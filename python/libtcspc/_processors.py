@@ -6,7 +6,6 @@ from collections.abc import Collection, Iterable, Sequence
 from textwrap import dedent
 from typing import final
 
-import cppyy
 from typing_extensions import override
 
 from . import _access, _bucket_sources, _cpp_utils, _events, _streams
@@ -17,12 +16,6 @@ from ._events import EventType
 from ._graph import Graph, Subgraph
 from ._node import Node, RelayNode, TypePreservingRelayNode
 from ._param import Param
-
-cppyy.include("libtcspc/tcspc.hpp")
-
-cppyy.include("cstdint")
-cppyy.include("limits")
-cppyy.include("type_traits")
 
 
 def _check_events_subset_of(

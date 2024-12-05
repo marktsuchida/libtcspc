@@ -65,4 +65,34 @@ struct default_data_types {
     using bin_type = u16;
 };
 
+/**
+ * \brief Utility for naming a data type set without additional definitions.
+ *
+ * \ingroup data-types
+ *
+ * This is intended for use by code generators, such as the Python bindings.
+ *
+ * In normal C++ code, it is better to define a data type set from scratch, or
+ * by deriving from `tcspc::default_data_types`. Use of this template should be
+ * avoided because the template parameter ordering is error-prone.
+ */
+template <typename Abstime = default_data_types::abstime_type,
+          typename Channel = default_data_types::channel_type,
+          typename Difftime = default_data_types::difftime_type,
+          typename Count = default_data_types::count_type,
+          typename Datapoint = default_data_types::datapoint_type,
+          typename BinIndex = default_data_types::bin_index_type,
+          typename Bin = default_data_types::bin_type>
+struct parameterized_data_types {
+    /** \cond hidden-from-docs */
+    using abstime_type = Abstime;
+    using channel_type = Channel;
+    using difftime_type = Difftime;
+    using count_type = Count;
+    using datapoint_type = Datapoint;
+    using bin_index_type = BinIndex;
+    using bin_type = Bin;
+    /** \endcond */
+};
+
 } // namespace tcspc

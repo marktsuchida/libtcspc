@@ -2,13 +2,10 @@
 # Copyright 2019-2024 Board of Regents of the University of Wisconsin System
 # SPDX-License-Identifier: MIT
 
-import cppyy
 from cpp_utils import isolated_cppdef
 from libtcspc._codegen import CodeGenerationContext
 from libtcspc._cpp_utils import CppExpression, CppIdentifier
 from libtcspc._graph import Graph, Node, Subgraph
-
-cppyy.include("tuple")
 
 gencontext = CodeGenerationContext(
     CppIdentifier("ctx"), CppIdentifier("params")

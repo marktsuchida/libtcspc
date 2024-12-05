@@ -7,6 +7,11 @@ from textwrap import dedent
 from typing import Any
 
 import cppyy
+from libtcspc import _include
+
+cppyy.add_include_path(str(_include.libtcspc_include_dir()))
+
+cppyy.include("libtcspc/tcspc.hpp")
 
 _cpp_name_counter = itertools.count()
 

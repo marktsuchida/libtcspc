@@ -4,184 +4,236 @@
 
 import functools
 import itertools
+import textwrap
+import threading
 from collections.abc import Iterable, Sequence
-from textwrap import dedent
+from pathlib import Path
 from typing import Any
 
-import cppyy
+import nanobind  # type: ignore
 
+from . import _include, _odext
 from ._access import Access
 from ._codegen import CodeGenerationContext
 from ._cpp_utils import (
     CppExpression,
+    CppFunctionScopeDefs,
     CppIdentifier,
-    CppNamespacedDefs,
+    CppNamespaceScopeDefs,
     CppTypeName,
+    ModuleCodeFragment,
 )
 from ._events import EventType
 from ._graph import Graph
 from ._param import Param
 
-cppyy.include("libtcspc/tcspc.hpp")
 
-cppyy.include("memory")
-cppyy.include("type_traits")
-cppyy.include("utility")
+def _exception_types(module_var: CppIdentifier) -> ModuleCodeFragment:
+    return ModuleCodeFragment(
+        (),
+        (),
+        CppNamespaceScopeDefs(""),
+        CppFunctionScopeDefs(
+            f'nanobind::exception<tcspc::end_of_processing>({module_var}, "EndOfProcessing");\n'
+        ),
+    )
 
 
-class CompiledGraph:
-    """
-    A compiled graph.
+def _context_type(
+    accesses: Sequence[tuple[str, type[Access]]],
+    module_var: CppIdentifier,
+) -> ModuleCodeFragment:
+    # We add specific bindings of access() for each access tag so that Python
+    # code doesn't need to specify the type of the accessor. We also keep the
+    # processor alive (nursed by the accessor) so that the accessor does not
+    # dangle.
+    return ModuleCodeFragment(
+        (),
+        (),
+        CppNamespaceScopeDefs(""),
+        CppFunctionScopeDefs(
+            f'nanobind::class_<tcspc::context>({module_var}, "Context")\n'
+            + "".join(
+                textwrap.indent(
+                    textwrap.dedent(f"""\
 
-    Use `compile_graph()` to obtain an instance. Direct instantiaiton form user
-    code is not supported.
-
-    Objects of this type should be treated as immutable.
-    """
-
-    def __init__(
-        self,
-        instantiator: Any,
-        access_types: Iterable[tuple[str, type[Access]]],
-        param_struct: Any,
-        params: Iterable[tuple[Param, CppTypeName]],
-    ) -> None:
-        self._instantiator = instantiator
-        self._access_types = tuple(access_types)
-        self._param_struct = param_struct
-        self._params = tuple(params)
-
-    def parameters(self) -> Sequence[tuple[Param, CppTypeName]]:
-        return self._params
-
-    def accesses(self) -> Sequence[tuple[str, type[Access]]]:
-        return self._access_types
+                        .def("access__{tag}", +[](tcspc::context &self,
+                                                processor_type *proc) {{
+                            return self.access<{typ.cpp_type_name()}>("{tag}");
+                        }}, nanobind::keep_alive<0, 2>())"""),
+                    prefix="    ",
+                )
+                for tag, typ in accesses
+            )
+            + ";\n"
+            + "\n"
+            + f'{module_var}.def("create_context", &tcspc::context::create);'
+        ),
+    )
 
 
 def _param_struct(
-    param_types: Iterable[tuple[CppIdentifier, CppTypeName]], ctr: int
-) -> tuple[CppIdentifier, CppNamespacedDefs]:
-    tname = CppIdentifier(f"params_{ctr}")
-    fields = "\n".join(
-        f"""\
-                    {typ} {name};"""
-        for name, typ in param_types
-    ).lstrip()
-    return tname, CppNamespacedDefs(
-        dedent(f"""\
-            namespace tcspc::py::compile {{
-                struct {tname} {{
-                    {fields}
-                }};
-            }}""")
-    )
-
-
-cppyy.cppdef(
-    dedent("""\
-    namespace tcspc::py::compile {
-        template <typename T> struct make_event_arg {
-            using type = std::remove_cv_t<std::remove_reference_t<T>> const &;
-        };
-
-        template <typename E> struct make_event_arg<span<E>> {
-            // No need for 'const &', pass 'span' by value.
-            using type = span<std::remove_cv_t<E> const>;
-        };
-
-        template <typename T>
-        using make_event_arg_t = typename make_event_arg<T>::type;
-    }""")
-)
-
-
-def _instantiate_func(
-    graph_code: CppExpression,
-    gencontext: CodeGenerationContext,
-    event_types: Iterable[CppTypeName],
-    ctr: int,
-) -> tuple[CppIdentifier, CppNamespacedDefs]:
-    input_proc = CppIdentifier(f"input_processor_{ctr}")
-    fname = CppIdentifier(f"instantiate_graph_{ctr}")
-    handlers = "\n\n".join(
-        f"""\
-                void handle(make_event_arg_t<{event_type}> event) {{
-                    downstream.handle(event);
-                }}"""
-        for event_type in event_types
-    ).lstrip()
-    return fname, CppNamespacedDefs(
-        dedent(f"""\
-            namespace tcspc::py::compile {{
-                template <typename Downstream> class {input_proc} {{
-                    Downstream downstream;
-
-                public:
-                    explicit {input_proc}(Downstream &&downstream)
-                    : downstream(std::move(downstream)) {{}}
-
-                    {handlers}
-
-                    void flush() {{ downstream.flush(); }}
-                }};
-
-                auto {fname}(std::shared_ptr<tcspc::context> {gencontext.context_varname},
-                             params_{ctr} const &{gencontext.params_varname}) {{
-                    return {input_proc}({graph_code});
-                }}
-            }}""")
-    )
-
-
-_cpp_name_counter = itertools.count()
-
-
-# Define the function to create a processor instance for the give graph. Wrap
-# the input processor so that it handles exactly the requested set of event
-# types. The wrapping also ensures that handle() is a non-template overload
-# set. Return the instantiator function, which takes the shared_ptr<context>
-# and returns the processor.
-@functools.cache
-def _compile_instantiator(
-    graph_code: CppExpression,
-    gencontext: CodeGenerationContext,
     param_types: Iterable[tuple[CppIdentifier, CppTypeName]],
-    event_types: Iterable[CppTypeName],
-) -> tuple[Any, Any]:
-    ctr = next(_cpp_name_counter)
-
-    struct_name, struct_code = _param_struct(param_types, ctr)
-    cppyy.cppdef(struct_code)
-
-    fname, code = _instantiate_func(graph_code, gencontext, event_types, ctr)
-    cppyy.cppdef(code)
-
-    return (
-        getattr(cppyy.gbl.tcspc.py.compile, struct_name),
-        getattr(cppyy.gbl.tcspc.py.compile, fname),
+    module_var: CppIdentifier,
+) -> ModuleCodeFragment:
+    return ModuleCodeFragment(
+        (),
+        (),
+        CppNamespaceScopeDefs(
+            "struct params {\n"
+            + "".join(f"    {typ} {name};\n" for name, typ in param_types)
+            + "};"
+        ),
+        CppFunctionScopeDefs(
+            f'nanobind::class_<params>({module_var}, "Params")\n'
+            "    .def(nanobind::init<>())"
+            + "".join(
+                f'\n    .def_rw("{name}", &params::{name})'
+                for name, type in param_types
+            )
+            + ";"
+        ),
     )
 
 
-def compile_graph(
-    graph: Graph, input_event_types: Iterable[EventType] = ()
-) -> CompiledGraph:
-    """
-    Compile a graph. The result can be used for multiple executions.
+# No-op wrapper to limit event types to the requested ones.
+def _input_processor(
+    event_types: Iterable[CppTypeName],
+) -> ModuleCodeFragment:
+    return ModuleCodeFragment(
+        (),
+        (),
+        CppNamespaceScopeDefs(
+            textwrap.dedent("""\
+            template <typename Downstream> class input_processor {
+                Downstream downstream;
 
-    Parameters
-    ----------
-    graph: Graph
-        The graph to compile. The graph must have exactly one input port and no
-        output ports.
-    input_event_types: Iterable[EventType]
-        The (Python) event types accepted as input (via `handle()`).
+            public:
+                explicit input_processor(Downstream &&downstream)
+                    : downstream(std::move(downstream)) {}
+            """)
+            + "".join(
+                (
+                    textwrap.indent(
+                        textwrap.dedent(f"""\
 
-    Returns
-    -------
-    CompiledGraph
-        The compiled graph.
-    """
+                void handle({event_type} const &event) {{
+                    downstream.handle(event);
+                }}
+                """),
+                        prefix="    ",
+                    )
+                    if not event_type.startswith("nanobind::ndarray<")
+                    else textwrap.indent(
+                        textwrap.dedent(f"""\
+                void handle({event_type} const &event) {{
+                    auto spn = tcspc::span(event.data(), event.size());
+                    downstream.handle(spn);
+                }}
+                """),
+                        prefix="    ",
+                    )
+                )
+                for event_type in event_types
+            )
+            + textwrap.dedent("""\
 
+                void flush() { downstream.flush(); }
+            };""")
+        ),
+        CppFunctionScopeDefs(""),
+    )
+
+
+def _graph_funcs(
+    graph_code: CppExpression,
+    gencontext: CodeGenerationContext,
+    event_types: Sequence[CppTypeName],
+    module_var: CppIdentifier,
+) -> ModuleCodeFragment:
+    input_proc_code = _input_processor(event_types)
+    indented_graph_code = textwrap.indent(
+        graph_code, prefix="    " * 4
+    ).lstrip()
+    return ModuleCodeFragment(
+        input_proc_code.includes,
+        input_proc_code.sys_includes + ("memory",),
+        CppNamespaceScopeDefs(
+            input_proc_code.namespace_scope_defs
+            + "\n\n"
+            + textwrap.dedent(f"""\
+            auto create_processor(
+                    std::shared_ptr<tcspc::context> {gencontext.context_varname},
+                    params const &{gencontext.params_varname}) {{
+                return input_processor({indented_graph_code});
+            }}
+
+            using processor_type = decltype(create_processor(
+                    std::shared_ptr<tcspc::context>(),
+                    params()));""")
+        ),
+        CppFunctionScopeDefs(
+            input_proc_code.nanobind_defs
+            + "\n"
+            + f'nanobind::class_<processor_type>({module_var}, "Processor")\n'
+            + (
+                '    .def("handle", &processor_type::handle, nanobind::call_guard<nanobind::gil_scoped_release>())'
+                if len(event_types) > 0
+                else ""
+            )
+            + '    .def("flush", &processor_type::flush, nanobind::call_guard<nanobind::gil_scoped_release>());\n'
+            + "\n"
+            + f'{module_var}.def("create_processor", &create_processor);'
+        ),
+    )
+
+
+def _module_code(
+    module_name: str,
+    fragments: Iterable[ModuleCodeFragment],
+    module_var: CppIdentifier,
+) -> str:
+    return "\n".join(
+        filter(
+            None,
+            (
+                f"#define NB_DOMAIN {module_name}\n",
+                "".join(
+                    f'#include "{inc}"\n'
+                    for frag in fragments
+                    for inc in frag.includes
+                ),
+                "".join(
+                    f"#include <{inc}>\n"
+                    for frag in fragments
+                    for inc in frag.sys_includes
+                ),
+                "namespace {",
+                textwrap.indent(
+                    "\n".join(
+                        frag.namespace_scope_defs.rstrip() + "\n"
+                        for frag in fragments
+                    ),
+                    prefix="    ",
+                ),
+                "} // namespace\n",
+                f"NB_MODULE({module_name}, {module_var}) {{",
+                textwrap.indent(
+                    "\n".join(
+                        frag.nanobind_defs.rstrip() + "\n"
+                        for frag in fragments
+                    ),
+                    prefix="    ",
+                ).rstrip(),
+                "} // NB_MODULE\n",
+            ),
+        )
+    )
+
+
+def _graph_module_code(
+    module_name: str, graph: Graph, input_event_types: Iterable[EventType] = ()
+):
     n_in, n_out = len(graph.inputs()), len(graph.outputs())
     if n_in != 1:
         raise ValueError(
@@ -192,17 +244,129 @@ def compile_graph(
             f"graph is not executable (must have no output ports; found {n_out})"
         )
 
-    params = graph.parameters()
-    param_types = ((p.name, cpp_type) for p, cpp_type in params)
+    default_includes = ModuleCodeFragment(
+        (
+            "libtcspc/tcspc.hpp",
+            "nanobind/nanobind.h",
+            "nanobind/ndarray.h",
+            "nanobind/stl/shared_ptr.h",
+            "nanobind/stl/string.h",  # For automatic conversion from str.
+        ),
+        (),
+        CppNamespaceScopeDefs(""),
+        CppFunctionScopeDefs(""),
+    )
+
     genctx = CodeGenerationContext(
         CppIdentifier("ctx"), CppIdentifier("params")
     )
-    code = graph.cpp_expression(genctx)
-    param_struct, instantiator = _compile_instantiator(
-        code,
-        genctx,
-        param_types,
-        (e.cpp_type_name() for e in input_event_types),
+    graph_expr = graph.cpp_expression(genctx)
+
+    mod_var = CppIdentifier("mod")
+
+    excs = _exception_types(mod_var)
+
+    params = graph.parameters()
+    param_struct = _param_struct(
+        tuple((p.name, cpp_type) for p, cpp_type in params), mod_var
     )
-    access_types = graph.accesses()
-    return CompiledGraph(instantiator, access_types, param_struct, params)
+
+    context_code = _context_type(graph.accesses(), mod_var)
+
+    proc_code = _graph_funcs(
+        graph_expr,
+        genctx,
+        tuple(e.cpp_type_name() for e in input_event_types),
+        mod_var,
+    )
+
+    accessor_types = set(typ for tag, typ in graph.accesses())
+    accessors = tuple(typ.cpp_bindings(mod_var) for typ in accessor_types)
+
+    return _module_code(
+        module_name,
+        (
+            default_includes,
+            excs,
+            param_struct,
+            context_code,
+            proc_code,
+        )
+        + accessors,
+        mod_var,
+    )
+
+
+class CompiledGraph:
+    """
+    A compiled processing graph.
+
+    Use `compile_graph()` to obtain an instance. Direct instantiaiton form user
+    code is not supported.
+
+    Objects of this type should be treated as immutable.
+    """
+
+    def __init__(
+        self, mod: Any, params: Iterable[Param], accesses: Iterable[str]
+    ) -> None:
+        self._mod = mod
+        self._params = tuple(params)
+        self._accesses = tuple(accesses)
+
+    def parameters(self) -> tuple[Param, ...]:
+        return self._params
+
+    def accesses(self) -> tuple[str, ...]:
+        return self._accesses
+
+
+@functools.cache
+def _nanobind_dir() -> Path:
+    return Path(nanobind.include_dir()).parent
+
+
+_builder = _odext.Builder(
+    cpp_std="c++17",
+    include_dirs=(
+        _include.libtcspc_include_dir(),
+        _nanobind_dir() / "include",
+        _nanobind_dir() / "ext/robin_map/include",  # For nanobind lib build.
+    ),
+    extra_source_files=(_nanobind_dir() / "src/nb_combined.cpp",),
+)
+_importer = _odext.ExtensionImporter()
+_mod_ctr = itertools.count()
+_build_lock = threading.Lock()
+
+
+def compile_graph(
+    graph: Graph, input_event_types: Iterable[EventType] = ()
+) -> CompiledGraph:
+    """
+    Compile a processing graph. The result can be used for multiple executions.
+
+    Parameters
+    ----------
+    graph: Graph
+        The processing graph to compile. The graph must have exactly one input
+        port and no output ports.
+    input_event_types: Iterable[EventType]
+        The (Python) event types accepted as input (via `handle()`).
+
+    Returns
+    -------
+    CompiledGraph
+        The compiled graph.
+    """
+
+    # Serialize builds, at least for now.
+    with _build_lock:
+        mod_name = f"libtcspc_graph_{next(_mod_ctr)}"
+        code = _graph_module_code(mod_name, graph, input_event_types)
+        _builder.set_code(code)
+        mod_path = _builder.build()
+        mod = _importer.import_module(mod_name, mod_path, ok_to_move=True)
+        params = (param for param, typ in graph.parameters())
+        accesses = (tag for tag, typ in graph.accesses())
+        return CompiledGraph(mod, params, accesses)

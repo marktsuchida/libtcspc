@@ -6,16 +6,31 @@ import functools
 import itertools
 import typing
 from collections.abc import Iterable
+from dataclasses import dataclass
 from textwrap import dedent
 
 import cppyy
 
+from . import _include
+
+cppyy.add_include_path(str(_include.libtcspc_include_dir()))
+cppyy.include("libtcspc/tcspc.hpp")
 cppyy.include("type_traits")
 
 CppTypeName = typing.NewType("CppTypeName", str)
 CppIdentifier = typing.NewType("CppIdentifier", str)
 CppExpression = typing.NewType("CppExpression", str)
-CppNamespacedDefs = typing.NewType("CppNamespacedDefs", str)
+CppFunctionScopeDefs = typing.NewType("CppFunctionScopeDefs", str)
+CppNamespaceScopeDefs = typing.NewType("CppNamespaceScopeDefs", str)
+
+
+@dataclass
+class ModuleCodeFragment:
+    includes: tuple[str, ...]
+    sys_includes: tuple[str, ...]
+    namespace_scope_defs: CppNamespaceScopeDefs
+    nanobind_defs: CppFunctionScopeDefs
+
 
 _cpp_name_counter = itertools.count()
 

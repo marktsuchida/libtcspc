@@ -6,15 +6,9 @@ from collections.abc import Iterable
 from contextlib import contextmanager
 from typing import Any
 
-import cppyy
-
-from ._access import Access, AccessTag
+from ._access import AccessTag
 from ._compile import CompiledGraph
 from ._cpp_utils import CppIdentifier
-
-cppyy.include("libtcspc_py/handle_span.hpp")
-
-cppyy.include("libtcspc/tcspc.hpp")
 
 
 class EndOfProcessing(Exception):
@@ -30,23 +24,22 @@ class EndOfProcessing(Exception):
 
 class ExecutionContext:
     """
-    An execution context for a processing graph.
+    An execution context for a compiled processing graph.
 
     Use `create_execution_context()` to obtain an instance. Direct
     instantiation from user code is not supported.
 
-    This encapsulates a single run of stream processing and cannot be reused.
+    This object encapsulates a single run of stream processing and cannot be
+    reused.
     """
 
     def __init__(
-        self,
-        cpp_context,
-        cpp_proc,
-        access_types: Iterable[tuple[str, type[Access]]],
+        self, mod: Any, ctx: Any, proc: Any, accesses: Iterable[str]
     ) -> None:
-        self._ctx = cpp_context
-        self._proc = cpp_proc
-        self._access_types = dict(access_types)
+        self._mod = mod
+        self._ctx = ctx
+        self._proc = proc
+        self._accesses = set(accesses)
         self._end_of_life_reason: str | None = None
 
     def access(self, tag: str | AccessTag) -> Any:
@@ -61,13 +54,13 @@ class ExecutionContext:
         Returns
         -------
         Access
-            The access object of the requested type.
+            The access object for the requested tag.
         """
-
         if isinstance(tag, AccessTag):
             tag = tag.tag
-        access_type = self._access_types[tag]
-        return access_type(self._ctx, tag, ref=self._proc)
+        if tag not in self._accesses:
+            raise ValueError(f"no such access tag: {tag}")
+        return getattr(self._ctx, f"access__{tag}")(self._proc)
 
     @contextmanager
     def _manage_processor_end_of_life(self):
@@ -75,9 +68,9 @@ class ExecutionContext:
             raise RuntimeError(f"processor already {self._end_of_life_reason}")
         try:
             yield
-        except cppyy.gbl.tcspc.end_of_processing as e:
+        except self._mod.EndOfProcessing as e:
             self._end_of_life_reason = "finished by detecting end of stream"
-            raise EndOfProcessing(e.what()) from e
+            raise EndOfProcessing(*e.args) from e
         except:
             self._end_of_life_reason = "finished with error"
             raise
@@ -89,26 +82,15 @@ class ExecutionContext:
         Parameters
         ----------
         event
-            The event, which is translated to a C++ type by cppyy. As a special
-            case, if the event implements the buffer protocol, it is translated
-            to the corresponding span.
+            The event.
 
         Raises
         ------
         EndOfProcessing
             If the processor detected the end of the stream (of interest).
-        cppyy.gbl.std.exception
-            If there was an error during processing.
         """
         with self._manage_processor_end_of_life():
-            if cppyy.gbl.tcspc.py.is_buffer(event):
-                # Explicit template argument for Proc is necessary here (cppyy
-                # 3.1.2).
-                cppyy.gbl.tcspc.py.handle_buffer[type(self._proc)](
-                    self._proc, event
-                )
-            else:
-                self._proc.handle(event)
+            self._proc.handle(event)
 
     def flush(self) -> None:
         """
@@ -118,8 +100,6 @@ class ExecutionContext:
         ------
         EndOfProcessing
             If the processor detected the end of the stream (of interest).
-        cppyy.gbl.std.exception
-            If there was an error during processing.
         """
         with self._manage_processor_end_of_life():
             self._proc.flush()
@@ -131,7 +111,7 @@ def create_execution_context(
     arguments: dict[CppIdentifier, Any] | None = None,
 ) -> ExecutionContext:
     """
-    Create an execution context for a compiled graph.
+    Create an execution context for a compiled processing graph.
 
     Parameters
     ----------
@@ -144,35 +124,24 @@ def create_execution_context(
     -------
     ExecutionContext
         The new execution context.
-
-    Raises
-    ------
-    cppyy.gbl.std.exception
-        If there was an error while initializing the instantiated processing
-        graph.
     """
     args = {} if arguments is None else arguments.copy()
-    for param, _ in compiled_graph.parameters():
+    for param in compiled_graph.parameters():
         if param.name not in args.copy():
             if param.default_value is None:
                 raise ValueError(
-                    f"No value given for required parameter {param.name}"
+                    f"No argument given for required parameter {param.name}"
                 )
             args[param.name] = param.default_value
 
-    arg_struct = compiled_graph._param_struct()
+    arg_struct = compiled_graph._mod.Params()
     for name, value in args.items():
         setattr(arg_struct, name, value)
 
-    context = cppyy.gbl.tcspc.context.create()
-    processor = compiled_graph._instantiator(context, arg_struct)
-
-    # handle() and flush() are wrapped by the CompiledGraph so that they
-    # are overload sets, not template proxies.
-    if hasattr(processor, "handle"):
-        processor.handle.__release_gil__ = True
-    processor.flush.__release_gil__ = True
-
+    context = compiled_graph._mod.create_context()
+    processor = compiled_graph._mod.create_processor(context, arg_struct)
     access_types = compiled_graph.accesses()
 
-    return ExecutionContext(context, processor, access_types)
+    return ExecutionContext(
+        compiled_graph._mod, context, processor, access_types
+    )

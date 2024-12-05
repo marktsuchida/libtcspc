@@ -5,28 +5,42 @@
 from collections.abc import Sequence
 from dataclasses import dataclass
 
-import cppyy
 from typing_extensions import override
 
-from ._cpp_utils import CppTypeName
-
-cppyy.include("stdexcept")
+from ._cpp_utils import (
+    CppFunctionScopeDefs,
+    CppIdentifier,
+    CppNamespaceScopeDefs,
+    CppTypeName,
+    ModuleCodeFragment,
+)
 
 
 class Access:
-    def __init__(self, cpp_ctx, name: str, ref: object) -> None:
-        self._ref = ref  # Extend lifetime
-        try:
-            self._access = cpp_ctx.access[self.cpp_type_name()](name)
-        except cppyy.gbl.std.range_error as e:
-            raise LookupError(f"Access for node {name} does not exist") from e
-        except cppyy.gbl.std.bad_any_cast as e:
-            raise TypeError(
-                f"Access for node {name} exists but does not have type {type}"
-            ) from e
-
-    def cpp_type_name(self) -> CppTypeName:
+    @classmethod
+    def cpp_type_name(cls) -> CppTypeName:
         raise NotImplementedError()
+
+    @classmethod
+    def cpp_methods(cls) -> Sequence[CppIdentifier]:
+        raise NotImplementedError()
+
+    @classmethod
+    def cpp_bindings(cls, module_var: CppIdentifier) -> ModuleCodeFragment:
+        py_class_name = cls.__name__  # Use same name as codegen class.
+        return ModuleCodeFragment(
+            (),
+            (),
+            CppNamespaceScopeDefs(""),
+            CppFunctionScopeDefs(
+                f'nanobind::class_<{cls.cpp_type_name()}>({module_var}, "{py_class_name}")'
+                + "".join(
+                    f'\n    .def("{meth}", &{cls.cpp_type_name()}::{meth})'
+                    for meth in cls.cpp_methods()
+                )
+                + ";"
+            ),
+        )
 
 
 @dataclass(frozen=True)
@@ -65,8 +79,11 @@ class Accessible:
 
 class CountAccess(Access):
     @override
-    def cpp_type_name(self) -> CppTypeName:
+    @classmethod
+    def cpp_type_name(cls) -> CppTypeName:
         return CppTypeName("tcspc::count_access")
 
-    def count(self) -> int:
-        return self._access.count()
+    @override
+    @classmethod
+    def cpp_methods(cls) -> Sequence[CppIdentifier]:
+        return (CppIdentifier("count"),)

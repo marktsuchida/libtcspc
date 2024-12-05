@@ -4,10 +4,7 @@
 
 import sys
 
-import cppyy
 import libtcspc as tcspc
-
-cppyy.include("cstdint")
 
 
 def summarize(filename: str) -> int:
@@ -23,7 +20,7 @@ def summarize(filename: str) -> int:
                 start_offset=4,
                 stop_normally_on_error=True,
             ),
-            tcspc.Count(tcspc.BHSPCEvent, tcspc.AccessTag("count-records")),
+            tcspc.Count(tcspc.BHSPCEvent, tcspc.AccessTag("count_records")),
             tcspc.DecodeBHSPC(dtypes),
             tcspc.CheckMonotonic(dtypes),
             tcspc.Stop(
@@ -32,12 +29,12 @@ def summarize(filename: str) -> int:
             ),
             tcspc.Count(
                 tcspc.TimeCorrelatedDetectionEvent(dtypes),
-                tcspc.AccessTag("count-phot"),
+                tcspc.AccessTag("count_phot"),
             ),
             (
                 "tail",
                 tcspc.Count(
-                    tcspc.MarkerEvent(dtypes), tcspc.AccessTag("count-mark")
+                    tcspc.MarkerEvent(dtypes), tcspc.AccessTag("count_mark")
                 ),
             ),
             # Simplified for now compared to the C++ example (no per-channel
@@ -57,13 +54,13 @@ def summarize(filename: str) -> int:
         print(f"Stopped because: {e}")
         print("The following results are up to where processing stopped.")
         ret = 1
-    except cppyy.gbl.std.exception as e:
-        print(e.what())
+    except Exception as e:
+        print(e)
         return 2
 
-    print(f"Total record count = {ctx.access("count-records").count(): 9}")
-    print(f"Photon count =       {ctx.access("count-phot").count(): 9}")
-    print(f"Marker count =       {ctx.access("count-mark").count(): 9}")
+    print(f"Total record count = {ctx.access("count_records").count(): 9}")
+    print(f"Photon count =       {ctx.access("count_phot").count(): 9}")
+    print(f"Marker count =       {ctx.access("count_mark").count(): 9}")
     return ret
 
 

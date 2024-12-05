@@ -25,7 +25,7 @@ import shutil
 import tempfile
 import textwrap
 import time
-from collections.abc import Mapping, Sequence
+from collections.abc import Iterable, Mapping
 from pathlib import Path
 from typing import Any, Literal, Self
 
@@ -91,7 +91,8 @@ class Builder:
         *,
         cxx: str | None = None,
         cpp_std: str | None = None,
-        include_dirs: Sequence[str] = (),
+        include_dirs: Iterable[str | Path] = (),
+        extra_source_files: Iterable[str | Path] = (),
         code_text: str | None = None,
         tempdir: Path | None = None,
     ) -> None:
@@ -107,7 +108,11 @@ class Builder:
         if cxx:
             self._config_env["CXX"] = cxx
 
-        self._write_project(cpp_std=cpp_std, include_dirs=include_dirs)
+        self._write_project(
+            cpp_std=cpp_std,
+            include_dirs=(str(i) for i in include_dirs),
+            extra_source_files=(str(s) for s in extra_source_files),
+        )
         self._stage = self._CREATED
 
         if code_text is not None:
@@ -121,7 +126,7 @@ class Builder:
         self._stage = self._DISCARDED
 
     def __del__(self) -> None:
-        if self._stage > self._DISCARDED:
+        if hasattr(self, "_stage") and self._stage > self._DISCARDED:
             self.cleanup()
 
     def __enter__(self) -> Self:
@@ -134,7 +139,8 @@ class Builder:
         self,
         *,
         cpp_std: str | None = None,
-        include_dirs: Sequence[str] = (),
+        include_dirs: Iterable[str] = (),
+        extra_source_files: Iterable[str] = (),
     ) -> None:
         rendered_default_options = ", ".join(
             _quote_meson_str(o)
@@ -142,6 +148,9 @@ class Builder:
         )
         rendered_include_dirs = ", ".join(
             _quote_meson_str(d) for d in include_dirs
+        )
+        rendered_extra_sources = ", ".join(
+            _quote_meson_str(s) for s in extra_source_files
         )
 
         with open(self._proj_path / "meson.build", "w") as f:
@@ -154,13 +163,22 @@ class Builder:
                     )
                 """)
             )
+            if extra_source_files:
+                f.write(
+                    textwrap.dedent(f"""\
+                    extra_sources = files({rendered_extra_sources})
+                """)
+                )
             if self._binary_type == "extension_module":
                 f.write(
                     textwrap.dedent(f"""\
                         py = import('python').find_installation(pure: false)
                         py.extension_module(
                             'odext_target',
-                            'source.cpp',
+                            [
+                                'source.cpp',
+                                extra_sources,
+                            ],
                             include_directories: [{rendered_include_dirs}],
                         )
                 """)
@@ -170,7 +188,10 @@ class Builder:
                     textwrap.dedent(f"""\
                         executable(
                             'odext_target',
-                            'source.cpp',
+                            [
+                                'source.cpp',
+                                extra_sources,
+                            ],
                             include_directories: [{rendered_include_dirs}],
                         )
                     """)

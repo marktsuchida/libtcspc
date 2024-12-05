@@ -4,17 +4,14 @@
 
 import array
 
-import cppyy
 import pytest
 from libtcspc._access import AccessTag
 from libtcspc._compile import compile_graph
 from libtcspc._cpp_utils import CppTypeName
-from libtcspc._events import EventType
+from libtcspc._events import BufferSpanEvent, EventType
 from libtcspc._execute import create_execution_context
 from libtcspc._graph import Graph
 from libtcspc._processors import Count, NullSink, SinkEvents
-
-cppyy.include("string")
 
 IntEvent = EventType(CppTypeName("int"))
 
@@ -51,40 +48,24 @@ def test_execute_rejects_events_and_flush_when_expired():
 def test_execute_handles_buffer_events():
     g = Graph()
     g.add_node("a", NullSink())
-    # 'const' not required for span
     c = create_execution_context(
-        compile_graph(
-            g,
-            [
-                EventType(CppTypeName("span<u8 const>")),
-                EventType(CppTypeName("span<i16>")),
-            ],
-        ),
+        compile_graph(g, [BufferSpanEvent(CppTypeName("tcspc::u8"))]),
         {},
     )
     c.handle(b"")
     c.handle(b"abc")
     c.handle(memoryview(b""))
-    c.handle(array.array("h", []))
-    c.handle(array.array("h", [1, 2, 3]))
     with pytest.raises(TypeError):
         c.handle(array.array("I", [1, 2, 3]))
 
 
-@pytest.mark.xfail(reason="https://github.com/wlav/cppyy/issues/243")
 def test_execute_fails_for_unhandle_events():
     g = Graph()
-    g.add_node("s", SinkEvents(EventType(CppTypeName("u32"))))
+    g.add_node("s", SinkEvents(EventType(CppTypeName("tcspc::u32"))))
     c = create_execution_context(
-        compile_graph(g, [EventType(CppTypeName("u32"))])
+        compile_graph(g, [EventType(CppTypeName("tcspc::u32"))])
     )
     c.handle(42)
 
-    # When type is not handled by the actual processor, the error is detected
-    # on first calling handle(), not when the (uninstantiated) template code is
-    # compiled.
-    c2 = create_execution_context(
+    with pytest.raises(RuntimeError):
         compile_graph(g, [EventType(CppTypeName("std::string"))])
-    )
-    with pytest.raises(SyntaxError):
-        c2.handle("abc")

@@ -24,36 +24,12 @@ versions may work but are not tested.
   later. (Visual Studio 2019 does not work.)
 - macOS: Apple Clang 15 or later on macOS 13 or later (x86-64 or arm64).
 
-The **Python** library (under development) is based on cppyy, which requires a
-C++ build environment. However, the C++ library compiler requirements (above)
-do not directly apply because only cppyy is used to compile (at run time)
-libtcspc code. See
-[cppyy installation instructions](https://cppyy.readthedocs.io/en/latest/installation.html).
-Python 3.10 or later is required.
+The **Python** library (under development) requires Python 3.10 or later and a
+C++ build environment (at run time, since C++ code is dynamically generated and
+compiled).
 
-- On Windows, Visual Studio with "C++ Desktop Development" is required. Make
-  sure to work inside the "Developer PowerShell (or Command Prompt) for Visual
-  Studio".
-- On Windows, the environment variable `STDCXX` must be set to `17` when
-  running with Visual Studio 2022
-  ([wlav/cppyy#208](https://github.com/wlav/cppyy/issues/208#issuecomment-1928461467)).
-- On macOS (Intel), Apple's latest Command Line Tools should be sufficient. If
-  using an ARM machine, install Rosetta 2 and use Conda to install an Intel
-  build of Python. macOS 13 or later is required for a new enough C++ standard
-  library.
-
-macOS arm64 (Apple Silicon) is not currently supported due to the lack of
-correct exception handling
-([wlav/cppyy#68](https://github.com/wlav/cppyy/issues/68) due to an upstream
-LLVM limitation; exceptions thrown in C++ compiled by cppyy cannot be caught in
-C++).
-
-When using the Python library:
-
-- The system compiler (GCC, MSVC, Apple Clang) is used to build parts of cppyy
-  during installation.
-- Cppyy compiles libtcspc's C++ code.
-- The C++ standard library comes from the system.
+- On Windows, Visual Studio with "C++ Desktop Development" is required.
+- On macOS (Intel), Apple's latest Command Line Tools should be sufficient.
 
 ## How to build
 

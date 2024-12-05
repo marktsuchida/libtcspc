@@ -11,9 +11,6 @@ option('docs_werror', type: 'boolean', value: false,
 option('tests', type: 'feature', value: 'enabled',
     description: 'Build unit tests',
 )
-option('tests_python', type: 'feature', value: 'enabled',
-    description: 'Build C++ unit tests for the Python bindings',
-)
 option('benchmarks', type: 'feature', value: 'auto',
     description: 'Build benchmarks',
 )

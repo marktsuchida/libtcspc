@@ -28,6 +28,19 @@ class EventType:
         return self._cpp_type
 
 
+class BufferSpanEvent(EventType):
+    def __init__(self, element_cpp_type: CppTypeName) -> None:
+        self._elem_type = element_cpp_type
+        super().__init__(
+            CppTypeName(
+                f"nanobind::ndarray<{element_cpp_type} const, nanobind::device::cpu, nanobind::c_contig>"
+            )
+        )
+
+    def element_cpp_type(self) -> CppTypeName:
+        return self._elem_type
+
+
 class BucketEvent(EventType):
     def __init__(self, element_type: EventType) -> None:
         super().__init__(

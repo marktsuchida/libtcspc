@@ -26,6 +26,7 @@ py_sources = files(
     '_events.py',
     '_execute.py',
     '_graph.py',
+    '_include.py',
     '_node.py',
     '_param.py',
     '_processors.py',
@@ -33,12 +34,6 @@ py_sources = files(
     'py.typed',
     '_odext/__init__.py',
     '_odext/_async.py',
-)
-
-libtcspc_py_include_dir = include_directories('include')
-
-py_cpp_headers = files(
-    'include/libtcspc_py/handle_span.hpp',
 )
 
 python.install_sources(
@@ -53,9 +48,4 @@ python.install_sources(
     public_cpp_headers,
     preserve_path: true,
     subdir: py_package_name / 'include',
-)
-
-python.install_sources(
-    py_cpp_headers,
-    subdir: py_package_name / 'include/libtcspc_py',
 )

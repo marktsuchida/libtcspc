@@ -69,8 +69,8 @@ jobs:
             cxx: clang-cl
             opts: -Dcatch2:werror=false -Dgoogle-benchmark:werror=false
           - runner: windows-2022
-            # Use /Z7 to be ccache-friendly (/Zi is not); no python3x_d.dll.
-            debug_opts: -Dcpp_args=/Z7 -Dtests_python=disabled
+            # Use /Z7 to be ccache-friendly (/Zi is not).
+            debug_opts: -Dcpp_args=/Z7
           - runner: macos-13
             cxx: clang++
             sanitizers: a+ub,thread
