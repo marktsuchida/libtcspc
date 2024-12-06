@@ -259,13 +259,14 @@ template <typename Access> access_tracker<Access>::~access_tracker() {
         LIBTCSPC_INTERNAL_POP_OFFSETOF_WARNING;                               \
     }()
 
-// Note: offsetof() on non-standard-layout types is "conditionally-supported"
-// as of C++17 for non-standard-layout types. I expect this not to be a problem
-// in practice, as long as virtual inheritance is not involved.
+// Note: offsetof() is "conditionally-supported" on non-standard-layout types
+// as of C++17. I expect this not to be a problem in practice, as long as
+// virtual inheritance is not involved.
 
 // Pointer arithmetic on the underlying bytes of an object is technically
 // undefined behavior in C++ (but not C), because no array of bytes was created
-// there. But compilers treat this as valid (see https://wg21.link/p1839r5).
+// there. But compilers treat this as valid (see https://wg21.link/p1839r6).
+// (Also see https://wg21.link/p3407r0 on another technical aspect.)
 
 // NOLINTEND
 
