@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: MIT
 
 import functools
-import importlib
+import importlib.resources
 from pathlib import Path
 
 

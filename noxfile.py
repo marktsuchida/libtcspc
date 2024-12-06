@@ -7,7 +7,7 @@ import nox
 nox.options.sessions = ["test"]
 
 
-@nox.session(python=["3.10", "3.11", "3.12"])
+@nox.session(python=["3.10", "3.11", "3.12", "3.13"])
 @nox.parametrize("numpy2", [False, True])
 def test(session, numpy2):
     session.install(".[testing]")

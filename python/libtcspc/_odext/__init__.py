@@ -27,7 +27,9 @@ import textwrap
 import time
 from collections.abc import Iterable, Mapping
 from pathlib import Path
-from typing import Any, Literal, Self
+from typing import Any, Literal
+
+from typing_extensions import Self
 
 from . import _async
 
@@ -35,7 +37,7 @@ Module = Any
 
 
 def _quote_meson_str(s: str) -> str:
-    return f"'{s.replace("'", "\\'")}'"
+    return "'" + s.replace("'", "\\'") + "'"
 
 
 @functools.cache
