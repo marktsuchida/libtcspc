@@ -12,7 +12,7 @@ from . import _access, _bucket_sources, _cpp_utils, _events, _streams
 from ._codegen import CodeGenerationContext
 from ._cpp_utils import CppExpression, CppTypeName
 from ._data_types import DataTypes
-from ._events import EventType
+from ._events import BucketEvent, EventType
 from ._graph import Graph, Subgraph
 from ._node import Node, RelayNode, TypePreservingRelayNode
 from ._param import Param
@@ -85,7 +85,7 @@ def read_events_from_binary_file(
             ),
             (
                 "unbatcher",
-                Unbatch(event_type),
+                Unbatch(BucketEvent(event_type)),
             ),
         ]
     )
@@ -379,15 +379,17 @@ class StopWithError(RelayNode):
 
 @final
 class Unbatch(RelayNode):
-    def __init__(self, event_type: EventType) -> None:
+    def __init__(self, event_type: BucketEvent) -> None:
         self._event_type = event_type
 
     @override
     def relay_map_event_set(
         self, input_event_set: Collection[EventType]
     ) -> tuple[EventType, ...]:
-        # TODO Check if input event set contains only iterables of event_type.
-        return (self._event_type,)
+        for ie in input_event_set:
+            if ie != self._event_type:
+                raise ValueError("incorrect input event type")
+        return (self._event_type.element_event_type(),)
 
     @override
     def relay_cpp_expression(

@@ -43,9 +43,13 @@ class BufferSpanEvent(EventType):
 
 class BucketEvent(EventType):
     def __init__(self, element_type: EventType) -> None:
+        self._element_type = element_type
         super().__init__(
             CppTypeName(f"tcspc::bucket<{element_type.cpp_type_name()}>")
         )
+
+    def element_event_type(self) -> EventType:
+        return self._element_type
 
 
 # Note: C++ event wrappers are ordered alphabetically without regard to the C++
