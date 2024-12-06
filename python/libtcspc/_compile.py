@@ -27,6 +27,7 @@ from ._cpp_utils import (
     CppNamespaceScopeDefs,
     CppTypeName,
     ModuleCodeFragment,
+    quote_string,
 )
 from ._events import EventType
 from ._graph import Graph
@@ -62,8 +63,8 @@ def _context_type(
                 textwrap.indent(
                     textwrap.dedent(f"""\
 
-                        .def("access__{tag.tag}", +[](tcspc::context &self,
-                                                processor_type *proc) {{
+                        .def({quote_string(tag._context_method_name())},
+                             +[](tcspc::context &self, processor_type *proc) {{
                             return self.access<{typ.cpp_type_name()}>("{tag.tag}");
                         }}, nanobind::keep_alive<0, 2>())"""),
                     prefix="    ",

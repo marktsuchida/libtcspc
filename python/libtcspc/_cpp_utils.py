@@ -10,6 +10,7 @@ __all__ = [
     "CppTypeName",
     "ModuleCodeFragment",
     "contains_type",
+    "identifier_from_string",
     "is_same_type",
     "quote_string",
     "run_cpp_prog",
@@ -91,4 +92,28 @@ def quote_string(s: str) -> CppExpression:
             .replace("\n", "\\n")
             .replace("\t", "\\t")
         )
+    )
+
+
+def identifier_from_string(s: str) -> CppIdentifier:
+    # Convert special chars to underscores, but record their character codes
+    # and append as hex at the end. All leading digits are treated as special
+    # chars. For now, treat all non-ASCII characters as "special" and encode.
+    specials: list[int] = []
+    ret_chars: list[str] = []
+    encoded = s.encode()
+    digits = b"0123456789"
+    allowed = b"0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvxxyz"
+    while len(encoded) > 0 and encoded[0:1] in digits:
+        specials.append(encoded[0])
+        ret_chars.append("_")
+        encoded = encoded[1:]
+    for b in encoded:
+        if chr(b).encode() in allowed:
+            ret_chars.append(chr(b))
+        else:
+            specials.append(b)
+            ret_chars.append("_")
+    return CppIdentifier(
+        "".join(ret_chars) + "_" + "".join(format(c, "02X") for c in specials)
     )

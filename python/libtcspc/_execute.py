@@ -64,7 +64,7 @@ class ExecutionContext:
         """
         if tag.tag not in self._accesses:
             raise ValueError(f"no such access tag: {tag.tag}")
-        return getattr(self._ctx, f"access__{tag.tag}")(self._proc)
+        return getattr(self._ctx, tag._context_method_name())(self._proc)
 
     @contextmanager
     def _manage_processor_end_of_life(self):

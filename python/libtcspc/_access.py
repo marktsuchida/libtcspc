@@ -20,6 +20,7 @@ from ._cpp_utils import (
     CppNamespaceScopeDefs,
     CppTypeName,
     ModuleCodeFragment,
+    identifier_from_string,
 )
 
 
@@ -60,6 +61,9 @@ class AccessTag:
     """
 
     tag: str
+
+    def _context_method_name(self) -> CppIdentifier:
+        return CppIdentifier(f"access__{identifier_from_string(self.tag)}")
 
 
 class Accessible:

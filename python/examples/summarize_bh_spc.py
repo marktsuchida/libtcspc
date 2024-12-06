@@ -6,9 +6,9 @@ import sys
 
 import libtcspc as tcspc
 
-RECORD_COUNT_TAG = tcspc.AccessTag("count_records")
-PHOTON_COUNT_TAG = tcspc.AccessTag("count_phot")
-MARK_COUNT_TAG = tcspc.AccessTag("count_mark")
+RECORD_COUNT_TAG = tcspc.AccessTag("count-records")
+PHOTON_COUNT_TAG = tcspc.AccessTag("count-phot")
+MARK_COUNT_TAG = tcspc.AccessTag("count-mark")
 
 
 def summarize(filename: str) -> int:
