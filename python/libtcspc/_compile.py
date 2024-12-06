@@ -334,6 +334,8 @@ _builder = _odext.Builder(
         _nanobind_dir() / "ext/robin_map/include",  # For nanobind lib build.
     ),
     extra_source_files=(_nanobind_dir() / "src/nb_combined.cpp",),
+    pch_includes=("libtcspc/tcspc.hpp",),
+    # Do not include nanobind in pch, because we need to vary NB_DOMAIN.
 )
 _importer = _odext.ExtensionImporter()
 _mod_ctr = itertools.count()

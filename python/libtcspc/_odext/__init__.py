@@ -95,6 +95,8 @@ class Builder:
         cpp_std: str | None = None,
         include_dirs: Iterable[str | Path] = (),
         extra_source_files: Iterable[str | Path] = (),
+        pch_includes: Iterable[str] = (),
+        pch_sys_includes: Iterable[str] = (),
         code_text: str | None = None,
         tempdir: Path | None = None,
     ) -> None:
@@ -114,6 +116,8 @@ class Builder:
             cpp_std=cpp_std,
             include_dirs=(str(i) for i in include_dirs),
             extra_source_files=(str(s) for s in extra_source_files),
+            pch_includes=pch_includes,
+            pch_sys_includes=pch_sys_includes,
         )
         self._stage = self._CREATED
 
@@ -143,6 +147,8 @@ class Builder:
         cpp_std: str | None = None,
         include_dirs: Iterable[str] = (),
         extra_source_files: Iterable[str] = (),
+        pch_includes: Iterable[str] = (),
+        pch_sys_includes: Iterable[str] = (),
     ) -> None:
         rendered_default_options = ", ".join(
             _quote_meson_str(o)
@@ -154,6 +160,11 @@ class Builder:
         rendered_extra_sources = ", ".join(
             _quote_meson_str(s) for s in extra_source_files
         )
+
+        os.mkdir(self._proj_path / "pch")
+        with open(self._proj_path / "pch/pch.hpp", "w") as f:
+            f.write("".join(f'#include "{inc}"\n' for inc in pch_includes))
+            f.write("".join(f"#include <{inc}>\n" for inc in pch_sys_includes))
 
         with open(self._proj_path / "meson.build", "w") as f:
             f.write(
@@ -182,6 +193,7 @@ class Builder:
                                 extra_sources,
                             ],
                             include_directories: [{rendered_include_dirs}],
+                            cpp_pch: 'pch/pch.hpp',
                         )
                 """)
                 )
@@ -195,6 +207,7 @@ class Builder:
                                 extra_sources,
                             ],
                             include_directories: [{rendered_include_dirs}],
+                            cpp_pch: 'pch/pch.hpp',
                         )
                     """)
                 )

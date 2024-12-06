@@ -14,6 +14,7 @@ _builder = _odext.Builder(
     binary_type="executable",
     cpp_std="c++17",
     include_dirs=(_include.libtcspc_include_dir(),),
+    pch_includes=("libtcspc/tcspc.hpp",),
 )
 
 
