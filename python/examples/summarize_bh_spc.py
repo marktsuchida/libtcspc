@@ -12,6 +12,7 @@ MARK_COUNT_TAG = tcspc.AccessTag("count_mark")
 
 
 def summarize(filename: str) -> int:
+    print("Creating processing graph...")
     # BH SPC has no negative channel or marker numbers.
     dtypes = tcspc.DataTypes(channel_type=tcspc.CppTypeName("std::uint32_t"))
 
@@ -46,18 +47,20 @@ def summarize(filename: str) -> int:
     g.add_node(None, tcspc.NullSink(), upstream="tail")
 
     ret = 0
+    print("Compiling processing graph...", file=sys.stderr)
+    cg = tcspc.compile_graph(g)
+    ctx = tcspc.create_execution_context(
+        cg, {tcspc.CppIdentifier("filename"): filename}
+    )
+    print("Processing...", file=sys.stderr)
     try:
-        cg = tcspc.compile_graph(g)
-        ctx = tcspc.create_execution_context(
-            cg, {tcspc.CppIdentifier("filename"): filename}
-        )
         ctx.flush()
     except tcspc.EndOfProcessing as e:
         print(f"Stopped because: {e}")
         print("The following results are up to where processing stopped.")
         ret = 1
     except Exception as e:
-        print(e)
+        print(e, file=sys.stderr)
         return 2
 
     print(f"Total record count = {ctx.access(RECORD_COUNT_TAG).count(): 9}")
@@ -69,7 +72,7 @@ def summarize(filename: str) -> int:
 def main() -> int:
     if len(sys.argv) != 2:
         print("A single argument (the filename) is required", file=sys.stderr)
-        return 1
+        return 2
     return summarize(sys.argv[1])
 
 
