@@ -71,14 +71,14 @@ class Accessible:
     (``Node``) or their auxiliary objects.
     """
 
-    def accesses(self) -> Sequence[tuple[str, type[Access]]]:
+    def accesses(self) -> Sequence[tuple[AccessTag, type[Access]]]:
         """
         Return the names and types of accesses offered by this object and any
         sub-objects.
 
         Returns
         -------
-        Sequence[tuple[str, type]]
+        Sequence[tuple[AccessTag, type]]
             Access tags and their (Python) types.
         """
         return ()

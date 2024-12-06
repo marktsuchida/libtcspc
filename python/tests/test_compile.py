@@ -47,4 +47,4 @@ def test_compile_node_access():
     g.add_node("s", NullSink(), upstream="c")
     cg = compile_graph(g)
     assert len(cg.accesses()) == 1
-    assert cg.accesses()[0] == "counter"
+    assert cg.accesses()[0] == AccessTag("counter")

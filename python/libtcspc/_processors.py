@@ -140,10 +140,12 @@ class Count(TypePreservingRelayNode):
         self, event_type: EventType, access_tag: _access.AccessTag
     ) -> None:
         self._event_type = event_type
-        self._access_tag = access_tag.tag
+        self._access_tag = access_tag
 
     @override
-    def accesses(self) -> Sequence[tuple[str, type[_access.Access]]]:
+    def accesses(
+        self,
+    ) -> Sequence[tuple[_access.AccessTag, type[_access.Access]]]:
         return ((self._access_tag, _access.CountAccess),)
 
     @override
@@ -156,7 +158,7 @@ class Count(TypePreservingRelayNode):
             dedent(f"""\
             tcspc::count<{self._event_type.cpp_type_name()}>(
                 {gencontext.context_varname}->tracker<tcspc::count_access>(
-                        "{self._access_tag}"),
+                        "{self._access_tag.tag}"),
                 {downstream}
             )""")
         )

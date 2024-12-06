@@ -40,21 +40,21 @@ class ExecutionContext:
     """
 
     def __init__(
-        self, mod: Any, ctx: Any, proc: Any, accesses: Iterable[str]
+        self, mod: Any, ctx: Any, proc: Any, accesses: Iterable[AccessTag]
     ) -> None:
         self._mod = mod
         self._ctx = ctx
         self._proc = proc
-        self._accesses = set(accesses)
+        self._accesses = set(tag.tag for tag in accesses)
         self._end_of_life_reason: str | None = None
 
-    def access(self, tag: str | AccessTag) -> Any:
+    def access(self, tag: AccessTag) -> Any:
         """
         Obtain run-time access to components of the processing graph.
 
         Parameters
         ----------
-        tag : str | AccessTag
+        tag : AccessTag
             The access tag.
 
         Returns
@@ -62,11 +62,9 @@ class ExecutionContext:
         Access
             The access object for the requested tag.
         """
-        if isinstance(tag, AccessTag):
-            tag = tag.tag
-        if tag not in self._accesses:
-            raise ValueError(f"no such access tag: {tag}")
-        return getattr(self._ctx, f"access__{tag}")(self._proc)
+        if tag.tag not in self._accesses:
+            raise ValueError(f"no such access tag: {tag.tag}")
+        return getattr(self._ctx, f"access__{tag.tag}")(self._proc)
 
     @contextmanager
     def _manage_processor_end_of_life(self):

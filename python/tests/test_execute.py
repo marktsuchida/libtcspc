@@ -31,7 +31,7 @@ def test_execute_node_access():
     c = create_execution_context(compile_graph(g, (IntEvent,)), {})
     c.handle(123)
     c.flush()
-    assert c.access("counter").count() == 1
+    assert c.access(AccessTag("counter")).count() == 1
 
 
 def test_execute_rejects_events_and_flush_when_expired():

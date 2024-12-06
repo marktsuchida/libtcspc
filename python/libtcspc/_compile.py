@@ -18,7 +18,7 @@ from typing import Any
 import nanobind  # type: ignore
 
 from . import _include, _odext
-from ._access import Access
+from ._access import Access, AccessTag
 from ._codegen import CodeGenerationContext
 from ._cpp_utils import (
     CppExpression,
@@ -45,7 +45,7 @@ def _exception_types(module_var: CppIdentifier) -> ModuleCodeFragment:
 
 
 def _context_type(
-    accesses: Sequence[tuple[str, type[Access]]],
+    accesses: Sequence[tuple[AccessTag, type[Access]]],
     module_var: CppIdentifier,
 ) -> ModuleCodeFragment:
     # We add specific bindings of access() for each access tag so that Python
@@ -62,9 +62,9 @@ def _context_type(
                 textwrap.indent(
                     textwrap.dedent(f"""\
 
-                        .def("access__{tag}", +[](tcspc::context &self,
+                        .def("access__{tag.tag}", +[](tcspc::context &self,
                                                 processor_type *proc) {{
-                            return self.access<{typ.cpp_type_name()}>("{tag}");
+                            return self.access<{typ.cpp_type_name()}>("{tag.tag}");
                         }}, nanobind::keep_alive<0, 2>())"""),
                     prefix="    ",
                 )
@@ -313,7 +313,7 @@ class CompiledGraph:
     """
 
     def __init__(
-        self, mod: Any, params: Iterable[Param], accesses: Iterable[str]
+        self, mod: Any, params: Iterable[Param], accesses: Iterable[AccessTag]
     ) -> None:
         self._mod = mod
         self._params = tuple(params)
@@ -322,7 +322,7 @@ class CompiledGraph:
     def parameters(self) -> tuple[Param, ...]:
         return self._params
 
-    def accesses(self) -> tuple[str, ...]:
+    def accesses(self) -> tuple[AccessTag, ...]:
         return self._accesses
 
 

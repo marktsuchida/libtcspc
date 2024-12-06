@@ -16,7 +16,7 @@ from typing import final
 
 from typing_extensions import override
 
-from ._access import Access, Accessible
+from ._access import Access, Accessible, AccessTag
 from ._codegen import CodeGenerationContext
 from ._cpp_utils import CppExpression, CppIdentifier, CppTypeName
 from ._events import EventType
@@ -453,8 +453,8 @@ class Graph:
 
         return params
 
-    def accesses(self) -> Sequence[tuple[str, type[Access]]]:
-        accesses: list[tuple[str, type[Access]]] = []
+    def accesses(self) -> Sequence[tuple[AccessTag, type[Access]]]:
+        accesses: list[tuple[AccessTag, type[Access]]] = []
 
         def visit(node_name: str, node: Accessible):
             accesses.extend(node.accesses())
@@ -462,7 +462,7 @@ class Graph:
         self.visit_nodes(visit)
 
         if len(accesses) > len(set(t for t, _ in accesses)):
-            tag_nodes: dict[str, list[str]] = {}
+            tag_nodes: dict[AccessTag, list[str]] = {}
 
             def visit(node_name: str, node: Accessible):
                 for tag, _ in node.accesses():
@@ -537,7 +537,7 @@ class Subgraph(Node):
         return self._graph.parameters()
 
     @override
-    def accesses(self) -> Sequence[tuple[str, type[Access]]]:
+    def accesses(self) -> Sequence[tuple[AccessTag, type[Access]]]:
         return self._graph.accesses()
 
     @override

@@ -6,6 +6,10 @@ import sys
 
 import libtcspc as tcspc
 
+RECORD_COUNT_TAG = tcspc.AccessTag("count_records")
+PHOTON_COUNT_TAG = tcspc.AccessTag("count_phot")
+MARK_COUNT_TAG = tcspc.AccessTag("count_mark")
+
 
 def summarize(filename: str) -> int:
     # BH SPC has no negative channel or marker numbers.
@@ -20,7 +24,7 @@ def summarize(filename: str) -> int:
                 start_offset=4,
                 stop_normally_on_error=True,
             ),
-            tcspc.Count(tcspc.BHSPCEvent, tcspc.AccessTag("count_records")),
+            tcspc.Count(tcspc.BHSPCEvent, RECORD_COUNT_TAG),
             tcspc.DecodeBHSPC(dtypes),
             tcspc.CheckMonotonic(dtypes),
             tcspc.Stop(
@@ -29,13 +33,11 @@ def summarize(filename: str) -> int:
             ),
             tcspc.Count(
                 tcspc.TimeCorrelatedDetectionEvent(dtypes),
-                tcspc.AccessTag("count_phot"),
+                PHOTON_COUNT_TAG,
             ),
             (
                 "tail",
-                tcspc.Count(
-                    tcspc.MarkerEvent(dtypes), tcspc.AccessTag("count_mark")
-                ),
+                tcspc.Count(tcspc.MarkerEvent(dtypes), MARK_COUNT_TAG),
             ),
             # Simplified for now compared to the C++ example (no per-channel
             # counts and time range).
@@ -58,9 +60,9 @@ def summarize(filename: str) -> int:
         print(e)
         return 2
 
-    print(f"Total record count = {ctx.access("count_records").count(): 9}")
-    print(f"Photon count =       {ctx.access("count_phot").count(): 9}")
-    print(f"Marker count =       {ctx.access("count_mark").count(): 9}")
+    print(f"Total record count = {ctx.access(RECORD_COUNT_TAG).count(): 9}")
+    print(f"Photon count =       {ctx.access(PHOTON_COUNT_TAG).count(): 9}")
+    print(f"Marker count =       {ctx.access(MARK_COUNT_TAG).count(): 9}")
     return ret
 
 
