@@ -296,20 +296,9 @@ jobs:
         runner:
           - ubuntu-latest
           - windows-latest
-          - macos-13  # x86_64 only
-        cpp_std:
-          - '20'
-        # https://github.com/wlav/cppyy/issues/208#issuecomment-1928461467
-        exclude:
-          - runner: windows-latest
-            cpp_std: '20'
-        include:
-          - runner: windows-latest
-            cpp_std: '17'
+          - macos-latest
     name: py-test-${{ matrix.runner }}
     runs-on: ${{ matrix.runner }}
-    env:
-      STDCXX: ${{ matrix.cpp_std }}
     steps:
       - run: uname -m
         if: ${{ ! startsWith(matrix.runner, 'windows-') }}

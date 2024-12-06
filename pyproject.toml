@@ -7,7 +7,6 @@ name = "libtcspc"
 dynamic = ["version"]
 requires-python = ">=3.10"
 dependencies = [
-    "cppyy",
     "meson",
     "nanobind",
     "ninja",
@@ -56,14 +55,6 @@ check_untyped_defs = true
 module = "libtcspc._version"
 ignore_missing_imports = true
 
-[[tool.mypy.overrides]]
-module = "cppyy"
-ignore_missing_imports = true
-
 [tool.pytest.ini_options]
 testpaths = ["python/tests"]
-filterwarnings = [
-    # This warning comes from cppyy (as of 3.1.2).
-    "ignore:pkg_resources is deprecated as an API:DeprecationWarning",
-]
 addopts = ["--mypy"]

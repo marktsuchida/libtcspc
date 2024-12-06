@@ -2,14 +2,9 @@
 # Copyright 2019-2024 Board of Regents of the University of Wisconsin System
 # SPDX-License-Identifier: MIT
 
-import cppyy
-
 from . import _cpp_utils
 from ._cpp_utils import CppTypeName
 from ._data_types import DataTypes
-
-cppyy.include("memory")
-cppyy.include("vector")
 
 
 class EventType:
