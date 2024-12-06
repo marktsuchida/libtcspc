@@ -2,6 +2,18 @@
 # Copyright 2019-2024 Board of Regents of the University of Wisconsin System
 # SPDX-License-Identifier: MIT
 
+__all__ = [
+    "EventType",
+    "BufferSpanEvent",
+    "BucketEvent",
+    "BHSPCEvent",
+    "DataLostEvent",
+    "MarkerEvent",
+    "TimeCorrelatedDetectionEvent",
+    "TimeReachedEvent",
+    "WarningEvent",
+]
+
 from . import _cpp_utils
 from ._cpp_utils import CppTypeName
 from ._data_types import DataTypes

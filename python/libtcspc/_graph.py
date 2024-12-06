@@ -2,6 +2,11 @@
 # Copyright 2019-2024 Board of Regents of the University of Wisconsin System
 # SPDX-License-Identifier: MIT
 
+__all__ = [
+    "Graph",
+    "Subgraph",
+]
+
 import itertools
 from collections.abc import Callable, Collection, Mapping, Sequence
 from copy import deepcopy

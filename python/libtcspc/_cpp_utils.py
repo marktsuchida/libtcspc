@@ -2,6 +2,19 @@
 # Copyright 2019-2024 Board of Regents of the University of Wisconsin System
 # SPDX-License-Identifier: MIT
 
+__all__ = [
+    "CppExpression",
+    "CppFunctionScopeDefs",
+    "CppIdentifier",
+    "CppNamespaceScopeDefs",
+    "CppTypeName",
+    "ModuleCodeFragment",
+    "contains_type",
+    "is_same_type",
+    "quote_string",
+    "run_cpp_prog",
+]
+
 import functools
 import subprocess
 import typing

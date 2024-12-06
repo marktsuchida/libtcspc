@@ -8,10 +8,13 @@ from ._access import *
 from ._bucket_sources import *
 from ._codegen import *
 from ._compile import *
+from ._cpp_utils import *
+from ._data_types import *
 from ._events import *
 from ._execute import *
 from ._graph import *
 from ._node import *
+from ._param import *
 from ._processors import *
 from ._streams import *
 from ._version import __version__ as __version__

@@ -6,7 +6,9 @@
 Run coroutines in a private, background event loop.
 """
 
-__all__ = ["submit"]
+__all__ = [
+    "submit",
+]
 
 import asyncio
 import atexit

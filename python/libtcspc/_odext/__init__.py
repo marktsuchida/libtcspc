@@ -12,7 +12,10 @@ Build Python extension modules on demand, from run-time generated C++ code.
 
 # At least for now, we use the Meson build system to handle the build setup.
 
-__all__ = ["Builder", "ExtensionImporter"]
+__all__ = [
+    "Builder",
+    "ExtensionImporter",
+]
 
 import asyncio
 import atexit
