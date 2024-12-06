@@ -307,10 +307,7 @@ jobs:
       - uses: fjwillemsen/setup-nox2@v3.0.0
       - uses: ilammy/msvc-dev-cmd@v1
 
-      - run: nox -s 'test-3.10(numpy2=False)'
-      - run: nox -s 'test-3.10(numpy2=True)'
-      - run: nox -s 'test-3.11(numpy2=True)'
-      - run: nox -s 'test-3.12(numpy2=True)'
+      - run: nox
 
   docs:
     runs-on: ubuntu-24.04

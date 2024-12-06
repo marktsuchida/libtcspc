@@ -8,8 +8,6 @@ nox.options.sessions = ["test"]
 
 
 @nox.session(python=["3.10", "3.11", "3.12", "3.13"])
-@nox.parametrize("numpy2", [False, True])
-def test(session, numpy2):
+def test(session):
     session.install(".[testing]")
-    session.install("numpy>=2" if numpy2 else "numpy<2")
     session.run("pytest")
