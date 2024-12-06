@@ -3,19 +3,26 @@
 # SPDX-License-Identifier: MIT
 
 import functools
-import itertools
+import subprocess
 import typing
 from collections.abc import Iterable
 from dataclasses import dataclass
-from textwrap import dedent
 
-import cppyy
+from . import _include, _odext
 
-from . import _include
+_builder = _odext.Builder(
+    binary_type="executable",
+    cpp_std="c++17",
+    include_dirs=(_include.libtcspc_include_dir(),),
+)
 
-cppyy.add_include_path(str(_include.libtcspc_include_dir()))
-cppyy.include("libtcspc/tcspc.hpp")
-cppyy.include("type_traits")
+
+def run_cpp_prog(code: str) -> int:
+    _builder.set_code(code)
+    exe_path = _builder.build()
+    result = subprocess.run(exe_path)
+    return result.returncode
+
 
 CppTypeName = typing.NewType("CppTypeName", str)
 CppIdentifier = typing.NewType("CppIdentifier", str)
@@ -32,19 +39,20 @@ class ModuleCodeFragment:
     nanobind_defs: CppFunctionScopeDefs
 
 
-_cpp_name_counter = itertools.count()
-
-
 @functools.cache
 def _is_same_type_impl(t0: CppTypeName, t1: CppTypeName) -> bool:
-    result_name = f"is_same_type_impl_{next(_cpp_name_counter)}"
-    cppyy.cppdef(
-        dedent(f"""\
-            namespace tcspc::py::cpp_utils {{
-                constexpr bool {result_name} = std::is_same_v<{t0}, {t1}>;
-            }}""")
+    return (
+        run_cpp_prog(f"""\
+            #include "libtcspc/tcspc.hpp"
+            #include <type_traits>
+
+            int main() {{
+                constexpr bool result = std::is_same_v<{t0}, {t1}>;
+                return result ? 1 : 0;
+            }}
+            """)
+        != 0
     )
-    return getattr(cppyy.gbl.tcspc.py.cpp_utils, result_name)
 
 
 def is_same_type(t0: CppTypeName, t1: CppTypeName) -> bool:

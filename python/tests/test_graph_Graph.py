@@ -4,9 +4,13 @@
 
 
 import pytest
-from cpp_utils import run_cpp_prog
 from libtcspc._codegen import CodeGenerationContext
-from libtcspc._cpp_utils import CppExpression, CppIdentifier, CppTypeName
+from libtcspc._cpp_utils import (
+    CppExpression,
+    CppIdentifier,
+    CppTypeName,
+    run_cpp_prog,
+)
 from libtcspc._events import EventType
 from libtcspc._graph import Graph, Node
 
