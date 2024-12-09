@@ -336,7 +336,7 @@ class ExtensionImporter:
         # contain a timestamp). We also cannot allow the same name if a
         # previous import attempt failed, because in general we cannot cleanly
         # recover from failed imports.
-        final_path = path.parent / (name + path.suffix)
+        final_path = self._module_path() / (name + path.suffix)
         if final_path.exists():
             raise RuntimeError(
                 f"A module with name {name} has already been imported"
