@@ -278,7 +278,9 @@ class Builder:
             except OSError:
                 log_text = "(unavailable)"
             raise RuntimeError(
-                f"Build configuration failed: {stdout}\n"
+                "Build configuration failed:\n"
+                + f"Stdout: {stdout}\n"
+                + f"Stderr: {stderr}\n"
                 + f"Contents of meson-log.txt:\n{log_text}"
             )
 
