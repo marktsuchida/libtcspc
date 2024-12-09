@@ -166,10 +166,16 @@ class Builder:
             _quote_meson_str(s) for s in extra_source_files
         )
 
-        os.mkdir(self._proj_path / "pch")
-        with open(self._proj_path / "pch/pch.hpp", "w") as f:
-            f.write("".join(f'#include "{inc}"\n' for inc in pch_includes))
-            f.write("".join(f"#include <{inc}>\n" for inc in pch_sys_includes))
+        pch_text = "".join(
+            f'#include "{inc}"\n' for inc in pch_includes
+        ) + "".join(f"#include <{inc}>\n" for inc in pch_sys_includes)
+        if len(pch_text):
+            os.mkdir(self._proj_path / "pch")
+            with open(self._proj_path / "pch/pch.hpp", "w") as f:
+                f.write(pch_text)
+            cpp_pch = "cpp_pch: 'pch/pch.hpp',"
+        else:
+            cpp_pch = ""
 
         with open(self._proj_path / "meson.build", "w") as f:
             f.write(
@@ -198,7 +204,7 @@ class Builder:
                                 extra_sources,
                             ],
                             include_directories: [{rendered_include_dirs}],
-                            cpp_pch: 'pch/pch.hpp',
+                            {cpp_pch}
                         )
                 """)
                 )
@@ -212,7 +218,7 @@ class Builder:
                                 extra_sources,
                             ],
                             include_directories: [{rendered_include_dirs}],
-                            cpp_pch: 'pch/pch.hpp',
+                            {cpp_pch}
                         )
                     """)
                 )
