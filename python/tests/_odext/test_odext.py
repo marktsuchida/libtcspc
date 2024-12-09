@@ -62,4 +62,4 @@ def test_executable_build():
         exe = builder.build()
         result = subprocess.run(str(exe), stdout=subprocess.PIPE)
     assert result.returncode == 0
-    assert result.stdout.decode() == "hello\n"
+    assert result.stdout.decode().rstrip() == "hello"

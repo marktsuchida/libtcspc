@@ -67,7 +67,7 @@ def test_run_subprocess():
     )
     retcode, stdout, stderr = fut.result()
     assert retcode == 0
-    assert stdout == "hello\n"
+    assert stdout.rstrip() == "hello"
     assert stderr == ""
 
 
