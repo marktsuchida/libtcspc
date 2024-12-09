@@ -29,6 +29,9 @@ namespace tcspc {
 // faster on an Apple M1 Pro laptop). It is probably also affected by what is
 // done downstream.
 
+// There is no /dev/zero equivalent on Windows.
+#ifndef _WIN32
+
 namespace {
 
 // Access input stream via reference, to ensure stream creation is not
@@ -127,9 +130,6 @@ void cfile(benchmark::State &state) {
 }
 
 } // namespace
-
-// There is no /dev/zero equivalent on Windows.
-#ifndef _WIN32
 
 namespace benchmark {
 
