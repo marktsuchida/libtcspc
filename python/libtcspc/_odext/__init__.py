@@ -110,8 +110,10 @@ class Builder:
         )
         self._proj_path = Path(self._proj_dir.name)
 
-        self._config_env = {}
-        self._config_env["PATH"] = os.environ["PATH"]
+        # It would be nice to be able to isolate the env vars (copying only
+        # PATH), but on Windows the compiler cannot find things (even with
+        # --vsenv) in an environment retaining only PATH and SYSTEMROOT.
+        self._config_env = dict(os.environ)
         if cxx:
             self._config_env["CXX"] = cxx
 
