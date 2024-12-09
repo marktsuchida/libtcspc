@@ -40,7 +40,14 @@ Module = Any
 
 
 def _quote_meson_str(s: str) -> str:
-    return "'" + s.replace("'", "\\'") + "'"
+    # Note: This does not work on arbitrary strings.
+    return "'" + s.replace("\\", "\\\\").replace("'", "\\'") + "'"
+
+
+def _quote_meson_path(p: str) -> str:
+    if platform.system() == "Windows":
+        p = p.replace("\\", "/")
+    return _quote_meson_str(p)
 
 
 @functools.cache
@@ -160,10 +167,10 @@ class Builder:
             for o in ([f"cpp_std={cpp_std}"] if cpp_std else [])
         )
         rendered_include_dirs = ", ".join(
-            _quote_meson_str(d) for d in include_dirs
+            _quote_meson_path(d) for d in include_dirs
         )
         rendered_extra_sources = ", ".join(
-            _quote_meson_str(s) for s in extra_source_files
+            _quote_meson_path(s) for s in extra_source_files
         )
 
         pch_text = "".join(
