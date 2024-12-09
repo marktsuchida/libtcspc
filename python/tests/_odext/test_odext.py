@@ -25,7 +25,7 @@ module_code = textwrap.dedent("""\
 
 
     struct PyModuleDef example_module = {
-        PyModuleDef_HEAD_INIT,
+        .m_base = PyModuleDef_HEAD_INIT,
         .m_name = "@odext_module_name@",
         .m_doc = "Test module.",
         .m_size = -1,
@@ -44,7 +44,7 @@ def test_extension_build_and_import():
     module_name = "odext_test_module_0"
     code = module_code.replace("@odext_module_name@", module_name)
     importer = _odext.ExtensionImporter()
-    with _odext.Builder(cpp_std="c++17", code_text=code) as builder:
+    with _odext.Builder(cpp_std="c++20", code_text=code) as builder:
         mod_file = builder.build()
         mod = importer.import_module(module_name, mod_file, ok_to_move=True)
     assert module_name in sys.modules
