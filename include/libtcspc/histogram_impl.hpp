@@ -45,7 +45,8 @@ class bin_increment_cluster_journal_encoding_adapter {
         // Effectively limitless for 64-bit (short-circuit the check).
         if constexpr (sizeof(std::size_t) >= 8)
             return std::numeric_limits<std::size_t>::max();
-        return vec.get().max_size() - vec.get().size();
+        else
+            return vec.get().max_size() - vec.get().size();
     }
 
     [[nodiscard]] auto make_space(std::size_t size) -> span<BinIndex> {
