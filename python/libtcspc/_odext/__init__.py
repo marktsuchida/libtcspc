@@ -319,9 +319,15 @@ class ExtensionImporter:
         self._module_dir: tempfile.TemporaryDirectory | None = None
 
     def _module_path(self) -> Path:
+        # On Windows, we cannot delete an imported .pyd until after Python has
+        # exited. For now, we leak the temp files, which should hopefully not
+        # be that harmful because the temporary directory is cleared by Storage
+        # Sense (if enabled).
+        # It's hard to fix this from here; applications could provide a known
+        # temporary directory that they then clear the next time they start up.
         if self._module_dir is None:
             self._module_dir = tempfile.TemporaryDirectory(
-                prefix="odext-modules-"
+                prefix="odext-modules-", ignore_cleanup_errors=True
             )
             atexit.register(self._module_dir.cleanup)
         return Path(self._module_dir.name)
