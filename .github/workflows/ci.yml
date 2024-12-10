@@ -297,6 +297,15 @@ jobs:
           - ubuntu-latest
           - windows-latest
           - macos-latest
+        include:
+          # Only test with Python versions available on the runners.
+          - runner: ubuntu-latest
+            py_versions: 3.10 3.11 3.12
+          - runner: windows-latest
+            py_versions: 3.10 3.11 3.12
+          - runner: macos-latest
+            py_versions: 3.11 3.12 3.13
+
     name: py-test-${{ matrix.runner }}
     runs-on: ${{ matrix.runner }}
     steps:
@@ -307,7 +316,7 @@ jobs:
       - uses: fjwillemsen/setup-nox2@v3.0.0
       - uses: ilammy/msvc-dev-cmd@v1
 
-      - run: nox
+      - run: nox -p ${{ matrix.py_versions }}
 
   docs:
     runs-on: ubuntu-24.04
