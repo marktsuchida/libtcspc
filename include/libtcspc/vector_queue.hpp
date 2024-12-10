@@ -46,24 +46,25 @@ template <typename T> class vector_queue {
 
     static auto compute_enlarged_cap(std::size_t oldcap) -> std::size_t {
         auto alloc = std::allocator<T>();
-        auto max_size = alloctraits::max_size(alloc);
+        auto const max_size = alloctraits::max_size(alloc);
         if (oldcap == max_size)
             throw std::bad_alloc();
-        // 1.5x plus a tiny bit to ensure 0 is enlarged to > 0
-        std::size_t newcap = (oldcap + 2) / 2 * 3;
+        if (oldcap == 0)
+            return 8;
+        std::size_t newcap = oldcap / 2 * 3;
         if (newcap < oldcap || newcap > max_size)
             newcap = max_size;
         return newcap;
     }
 
     void expand_cap() {
-        std::size_t siz = size();
-        std::size_t newcap =
+        std::size_t const siz = size();
+        std::size_t const newcap =
             compute_enlarged_cap(as_unsigned(std::distance(ptr, endptr)));
         auto alloc = std::allocator<T>();
-        auto dtor = [&](T &v) { alloctraits::destroy(alloc, &v); };
+        auto const dtor = [&](T &v) { alloctraits::destroy(alloc, &v); };
 
-        T *newptr = alloctraits::allocate(alloc, newcap);
+        T *const newptr = alloctraits::allocate(alloc, newcap);
 
         if (head > tail) {
             std::uninitialized_move(head, endptr, newptr);
@@ -87,7 +88,7 @@ template <typename T> class vector_queue {
   public:
     ~vector_queue() {
         auto alloc = std::allocator<T>();
-        auto dtor = [&](T &v) { alloctraits::destroy(alloc, &v); };
+        auto const dtor = [&](T &v) { alloctraits::destroy(alloc, &v); };
 
         if (head > tail) {
             std::for_each(head, endptr, dtor);
@@ -104,7 +105,7 @@ template <typename T> class vector_queue {
         : ptr(nullptr), endptr(nullptr), head(nullptr), tail(nullptr) {}
 
     vector_queue(vector_queue const &other) {
-        std::size_t cap = other.size() > 0 ? other.size() + 1 : 0;
+        std::size_t const cap = other.size() > 0 ? other.size() + 1 : 0;
         if (cap > 0) {
             auto alloc = std::allocator<T>();
             ptr = alloctraits::allocate(alloc, cap);
