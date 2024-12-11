@@ -7,11 +7,12 @@ import array
 import pytest
 from libtcspc._access import AccessTag
 from libtcspc._compile import compile_graph
-from libtcspc._cpp_utils import CppTypeName
+from libtcspc._cpp_utils import CppIdentifier, CppTypeName
 from libtcspc._events import BufferSpanEvent, EventType
 from libtcspc._execute import create_execution_context
 from libtcspc._graph import Graph
-from libtcspc._processors import Count, NullSink
+from libtcspc._param import Param
+from libtcspc._processors import Count, NullSink, Stop
 
 IntEvent = EventType(CppTypeName("int"))
 
@@ -57,3 +58,26 @@ def test_execute_handles_buffer_events():
     c.handle(memoryview(b""))
     with pytest.raises(TypeError):
         c.handle(array.array("I", [1, 2, 3]))
+
+
+def test_execute_require_parameter_with_no_default():
+    g = Graph()
+    g.add_node("a", Stop((), Param(CppIdentifier("a_msg"))))
+    g.add_node("s", NullSink(), upstream="a")
+    cg = compile_graph(g)
+    create_execution_context(cg, {CppIdentifier("a_msg"): "hello"})
+    with pytest.raises(ValueError):
+        create_execution_context(cg)
+    with pytest.raises(ValueError):
+        create_execution_context(cg, {})
+    with pytest.raises(TypeError):
+        create_execution_context(cg, {CppIdentifier("a_msg"): 123})
+
+
+def test_execute_unknown_parameter():
+    g = Graph()
+    g.add_node("s", NullSink())
+    cg = compile_graph(g)
+    create_execution_context(cg)
+    with pytest.raises(KeyError):
+        create_execution_context(cg, {CppIdentifier("blah"): "hello"})

@@ -140,7 +140,10 @@ def create_execution_context(
 
     arg_struct = compiled_graph._mod.Params()
     for name, value in args.items():
-        setattr(arg_struct, name, value)
+        try:
+            setattr(arg_struct, name, value)
+        except AttributeError as e:
+            raise KeyError(f"Unknown parameter: {name}") from e
 
     context = compiled_graph._mod.create_context()
     processor = compiled_graph._mod.create_processor(context, arg_struct)

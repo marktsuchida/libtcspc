@@ -5,10 +5,17 @@
 import pytest
 from libtcspc._access import AccessTag
 from libtcspc._compile import compile_graph
-from libtcspc._cpp_utils import CppTypeName
+from libtcspc._cpp_utils import CppIdentifier, CppTypeName
 from libtcspc._events import EventType
 from libtcspc._graph import Graph
-from libtcspc._processors import CheckMonotonic, Count, NullSink, SinkEvents
+from libtcspc._param import Param
+from libtcspc._processors import (
+    CheckMonotonic,
+    Count,
+    NullSink,
+    SinkEvents,
+    Stop,
+)
 
 IntEvent = EventType(CppTypeName("int"))
 
@@ -55,3 +62,28 @@ def test_compile_fails_for_unhandle_events():
     g.add_node("s", SinkEvents(EventType(CppTypeName("tcspc::u32"))))
     with pytest.raises(RuntimeError):
         compile_graph(g, [EventType(CppTypeName("std::string"))])
+
+
+def test_compile_string_parameter():
+    g = Graph()
+    g.add_node("a", Stop((), "a_default"))
+    assert len(g.parameters()) == 0
+    g.add_node("b", Stop((), Param(CppIdentifier("b_msg"))), upstream="a")
+    assert len(g.parameters()) == 1
+    assert g.parameters()[0] == (
+        Param(CppIdentifier("b_msg")),
+        CppTypeName("std::string"),
+    )
+    g.add_node(
+        "c",
+        Stop((), Param(CppIdentifier("c_msg"), "c_default")),
+        upstream="b",
+    )
+    g.add_node("sink", NullSink(), upstream="c")
+    cg = compile_graph(g)
+    assert len(cg.parameters()) == 2
+    assert set(p.name for p in cg.parameters()) == {"b_msg", "c_msg"}
+    b_param = list(p for p in cg.parameters() if p.name == "b_msg")[0]
+    c_param = list(p for p in cg.parameters() if p.name == "c_msg")[0]
+    assert b_param.default_value is None
+    assert c_param.default_value == "c_default"
