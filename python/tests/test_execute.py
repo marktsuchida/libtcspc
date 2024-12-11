@@ -8,7 +8,7 @@ import pytest
 from libtcspc._access import AccessTag
 from libtcspc._compile import compile_graph
 from libtcspc._cpp_utils import CppIdentifier, CppTypeName
-from libtcspc._events import BufferSpanEvent, EventType
+from libtcspc._events import BucketEvent, EventType
 from libtcspc._execute import create_execution_context
 from libtcspc._graph import Graph
 from libtcspc._param import Param
@@ -49,10 +49,10 @@ def test_execute_rejects_events_and_flush_when_expired():
 def test_execute_handles_buffer_events():
     g = Graph()
     g.add_node(
-        "a", SinkEvents(EventType(CppTypeName("tcspc::span<tcspc::u8 const>")))
+        "a", SinkEvents(EventType(CppTypeName("tcspc::bucket<tcspc::u8>")))
     )
     c = create_execution_context(
-        compile_graph(g, [BufferSpanEvent(CppTypeName("tcspc::u8"))]),
+        compile_graph(g, [BucketEvent(EventType(CppTypeName("tcspc::u8")))]),
         {},
     )
     c.handle(b"")
