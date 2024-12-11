@@ -12,7 +12,7 @@ from libtcspc._events import BufferSpanEvent, EventType
 from libtcspc._execute import create_execution_context
 from libtcspc._graph import Graph
 from libtcspc._param import Param
-from libtcspc._processors import Count, NullSink, Stop
+from libtcspc._processors import Count, NullSink, SinkEvents, Stop
 
 IntEvent = EventType(CppTypeName("int"))
 
@@ -48,7 +48,9 @@ def test_execute_rejects_events_and_flush_when_expired():
 
 def test_execute_handles_buffer_events():
     g = Graph()
-    g.add_node("a", NullSink())
+    g.add_node(
+        "a", SinkEvents(EventType(CppTypeName("tcspc::span<tcspc::u8 const>")))
+    )
     c = create_execution_context(
         compile_graph(g, [BufferSpanEvent(CppTypeName("tcspc::u8"))]),
         {},
@@ -56,6 +58,7 @@ def test_execute_handles_buffer_events():
     c.handle(b"")
     c.handle(b"abc")
     c.handle(memoryview(b""))
+    c.handle(array.array("B", [1, 2, 3]))
     with pytest.raises(TypeError):
         c.handle(array.array("I", [1, 2, 3]))
 
