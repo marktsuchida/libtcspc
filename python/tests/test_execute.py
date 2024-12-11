@@ -52,8 +52,7 @@ def test_execute_handles_buffer_events():
         "a", SinkEvents(EventType(CppTypeName("tcspc::bucket<tcspc::u8>")))
     )
     c = create_execution_context(
-        compile_graph(g, [BucketEvent(EventType(CppTypeName("tcspc::u8")))]),
-        {},
+        compile_graph(g, [BucketEvent(CppTypeName("tcspc::u8"))]), {}
     )
     c.handle(b"")
     c.handle(b"abc")

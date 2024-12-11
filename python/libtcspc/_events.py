@@ -35,7 +35,9 @@ class EventType:
 
 
 class BucketEvent(EventType):
-    def __init__(self, element_type: EventType) -> None:
+    def __init__(self, element_type: CppTypeName | EventType) -> None:
+        if not isinstance(element_type, EventType):
+            element_type = EventType(element_type)
         self._element_type = element_type
         super().__init__(
             CppTypeName(f"tcspc::bucket<{element_type.cpp_type_name()}>")
