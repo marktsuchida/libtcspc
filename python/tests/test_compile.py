@@ -8,7 +8,7 @@ from libtcspc._compile import compile_graph
 from libtcspc._cpp_utils import CppTypeName
 from libtcspc._events import EventType
 from libtcspc._graph import Graph
-from libtcspc._processors import CheckMonotonic, Count, NullSink
+from libtcspc._processors import CheckMonotonic, Count, NullSink, SinkEvents
 
 IntEvent = EventType(CppTypeName("int"))
 
@@ -48,3 +48,10 @@ def test_compile_node_access():
     cg = compile_graph(g)
     assert len(cg.accesses()) == 1
     assert cg.accesses()[0] == AccessTag("counter")
+
+
+def test_compile_fails_for_unhandle_events():
+    g = Graph()
+    g.add_node("s", SinkEvents(EventType(CppTypeName("tcspc::u32"))))
+    with pytest.raises(RuntimeError):
+        compile_graph(g, [EventType(CppTypeName("std::string"))])

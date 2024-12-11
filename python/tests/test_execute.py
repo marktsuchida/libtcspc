@@ -11,7 +11,7 @@ from libtcspc._cpp_utils import CppTypeName
 from libtcspc._events import BufferSpanEvent, EventType
 from libtcspc._execute import create_execution_context
 from libtcspc._graph import Graph
-from libtcspc._processors import Count, NullSink, SinkEvents
+from libtcspc._processors import Count, NullSink
 
 IntEvent = EventType(CppTypeName("int"))
 
@@ -57,15 +57,3 @@ def test_execute_handles_buffer_events():
     c.handle(memoryview(b""))
     with pytest.raises(TypeError):
         c.handle(array.array("I", [1, 2, 3]))
-
-
-def test_execute_fails_for_unhandle_events():
-    g = Graph()
-    g.add_node("s", SinkEvents(EventType(CppTypeName("tcspc::u32"))))
-    c = create_execution_context(
-        compile_graph(g, [EventType(CppTypeName("tcspc::u32"))])
-    )
-    c.handle(42)
-
-    with pytest.raises(RuntimeError):
-        compile_graph(g, [EventType(CppTypeName("std::string"))])
