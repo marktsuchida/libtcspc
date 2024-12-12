@@ -14,7 +14,7 @@ from typing import final
 from typing_extensions import override
 
 from ._codegen import CodeGenerationContext
-from ._cpp_utils import CppExpression, CppTypeName
+from ._cpp_utils import CppExpression, CppTypeName, string_type, uint64_type
 from ._param import Param, Parameterized
 
 
@@ -47,9 +47,9 @@ class BinaryFileInputStream(InputStream):
     def parameters(self) -> Sequence[tuple[Param, CppTypeName]]:
         params: list[tuple[Param, CppTypeName]] = []
         if isinstance(self._filename, Param):
-            params.append((self._filename, CppTypeName("std::string")))
+            params.append((self._filename, string_type))
         if isinstance(self._start_offset, Param):
-            params.append((self._start_offset, CppTypeName("tcspc::u64")))
+            params.append((self._start_offset, uint64_type))
         return params
 
     @override

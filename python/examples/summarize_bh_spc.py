@@ -14,7 +14,7 @@ MARK_COUNT_TAG = tcspc.AccessTag("count-mark")
 def summarize(filename: str) -> int:
     print("Creating processing graph...")
     # BH SPC has no negative channel or marker numbers.
-    dtypes = tcspc.DataTypes(channel_type=tcspc.CppTypeName("std::uint32_t"))
+    dtypes = tcspc.DataTypes(channel_type=tcspc.uint32_type)
 
     g = tcspc.Graph()
     g.add_sequence(

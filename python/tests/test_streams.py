@@ -4,7 +4,7 @@
 
 import pytest
 from libtcspc._codegen import CodeGenerationContext
-from libtcspc._cpp_utils import CppIdentifier, CppTypeName
+from libtcspc._cpp_utils import CppIdentifier, string_type, uint64_type
 from libtcspc._param import Param
 from libtcspc._streams import BinaryFileInputStream
 
@@ -23,7 +23,7 @@ def test_BinaryFileInputStream_default():
 def test_BinaryFileInputStream_filename_param():
     bfis = BinaryFileInputStream(Param("fname"))
     assert len(bfis.parameters()) == 1
-    assert bfis.parameters()[0] == (Param("fname"), CppTypeName("std::string"))
+    assert bfis.parameters()[0] == (Param("fname"), string_type)
     assert "params.fname" in bfis.cpp_expression(gencontext)
 
 
@@ -35,10 +35,7 @@ def test_BinaryFileInputStream_start_offset():
 def test_BinaryFileInputStream_start_offset_param():
     bfis = BinaryFileInputStream("some_file", start_offset=Param("stoff", 42))
     assert len(bfis.parameters()) == 1
-    assert bfis.parameters()[0] == (
-        Param("stoff", 42),
-        CppTypeName("tcspc::u64"),
-    )
+    assert bfis.parameters()[0] == (Param("stoff", 42), uint64_type)
     assert "params.stoff" in bfis.cpp_expression(gencontext)
 
 

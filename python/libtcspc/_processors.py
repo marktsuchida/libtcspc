@@ -23,7 +23,13 @@ from typing_extensions import override
 
 from . import _access, _bucket_sources, _cpp_utils, _events, _streams
 from ._codegen import CodeGenerationContext
-from ._cpp_utils import CppExpression, CppTypeName
+from ._cpp_utils import (
+    CppExpression,
+    CppTypeName,
+    size_type,
+    string_type,
+    uint64_type,
+)
 from ._data_types import DataTypes
 from ._events import BucketEvent, EventType
 from ._graph import Graph, Subgraph
@@ -251,9 +257,9 @@ class ReadBinaryStream(RelayNode):
     def parameters(self) -> Sequence[tuple[Param, CppTypeName]]:
         params: list[tuple[Param, CppTypeName]] = []
         if isinstance(self._maxlen, Param):
-            params.append((self._maxlen, CppTypeName("tcspc::u64")))
+            params.append((self._maxlen, uint64_type))
         if isinstance(self._granularity, Param):
-            params.append((self._granularity, CppTypeName("std::size_t")))
+            params.append((self._granularity, size_type))
         params.extend(self._stream.parameters())
         params.extend(self._bucket_source.parameters())
         return params
@@ -330,7 +336,7 @@ class Stop(RelayNode):
     @override
     def parameters(self) -> Sequence[tuple[Param, CppTypeName]]:
         if isinstance(self._msg_prefix, Param):
-            return ((self._msg_prefix, CppTypeName("std::string")),)
+            return ((self._msg_prefix, string_type),)
         return ()
 
     @override
@@ -371,7 +377,7 @@ class StopWithError(RelayNode):
     @override
     def parameters(self) -> Sequence[tuple[Param, CppTypeName]]:
         if isinstance(self._msg_prefix, Param):
-            return ((self._msg_prefix, CppTypeName("std::string")),)
+            return ((self._msg_prefix, string_type),)
         return ()
 
     @override

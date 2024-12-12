@@ -5,7 +5,7 @@
 import pytest
 from libtcspc._access import AccessTag
 from libtcspc._compile import compile_graph
-from libtcspc._cpp_utils import CppTypeName
+from libtcspc._cpp_utils import CppTypeName, string_type, uint32_type
 from libtcspc._events import EventType
 from libtcspc._graph import Graph
 from libtcspc._param import Param
@@ -59,9 +59,9 @@ def test_compile_node_access():
 
 def test_compile_fails_for_unhandle_events():
     g = Graph()
-    g.add_node("s", SinkEvents(EventType(CppTypeName("tcspc::u32"))))
+    g.add_node("s", SinkEvents(EventType(uint32_type)))
     with pytest.raises(RuntimeError):
-        compile_graph(g, [EventType(CppTypeName("std::string"))])
+        compile_graph(g, [EventType(string_type)])
 
 
 def test_compile_string_parameter():
@@ -70,7 +70,7 @@ def test_compile_string_parameter():
     assert len(g.parameters()) == 0
     g.add_node("b", Stop((), Param("b_msg")), upstream="a")
     assert len(g.parameters()) == 1
-    assert g.parameters()[0] == (Param("b_msg"), CppTypeName("std::string"))
+    assert g.parameters()[0] == (Param("b_msg"), string_type)
     g.add_node("c", Stop((), Param("c_msg", "c_default")), upstream="b")
     g.add_node("sink", NullSink(), upstream="c")
     cg = compile_graph(g)

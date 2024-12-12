@@ -13,7 +13,7 @@ from collections.abc import Sequence
 from typing_extensions import override
 
 from ._codegen import CodeGenerationContext
-from ._cpp_utils import CppExpression, CppTypeName
+from ._cpp_utils import CppExpression, CppTypeName, size_type
 from ._events import EventType
 from ._param import Param, Parameterized
 
@@ -65,7 +65,7 @@ class RecyclingBucketSource(BucketSource):
     @override
     def parameters(self) -> Sequence[tuple[Param, CppTypeName]]:
         if isinstance(self._max_count, Param):
-            return ((self._max_count, CppTypeName("std::size_t")),)
+            return ((self._max_count, size_type),)
         return ()
 
     @override

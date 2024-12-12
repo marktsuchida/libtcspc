@@ -7,7 +7,7 @@ import array
 import pytest
 from libtcspc._access import AccessTag
 from libtcspc._compile import compile_graph
-from libtcspc._cpp_utils import CppIdentifier, CppTypeName
+from libtcspc._cpp_utils import CppIdentifier, CppTypeName, uint8_type
 from libtcspc._events import BucketEvent, EventType
 from libtcspc._execute import create_execution_context
 from libtcspc._graph import Graph
@@ -52,7 +52,7 @@ def test_execute_handles_buffer_events():
         "a", SinkEvents(EventType(CppTypeName("tcspc::bucket<tcspc::u8>")))
     )
     c = create_execution_context(
-        compile_graph(g, [BucketEvent(CppTypeName("tcspc::u8"))]), {}
+        compile_graph(g, [BucketEvent(uint8_type)]), {}
     )
     c.handle(b"")
     c.handle(b"abc")

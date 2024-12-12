@@ -9,11 +9,24 @@ __all__ = [
     "CppNamespaceScopeDefs",
     "CppTypeName",
     "ModuleCodeFragment",
+    "byte_type",
     "contains_type",
+    "float32_type",
+    "float64_type",
     "identifier_from_string",
+    "int16_type",
+    "int32_type",
+    "int64_type",
+    "int8_type",
     "is_same_type",
     "quote_string",
     "run_cpp_prog",
+    "size_type",
+    "string_type",
+    "uint16_type",
+    "uint32_type",
+    "uint64_type",
+    "uint8_type",
 ]
 
 import functools
@@ -44,6 +57,21 @@ CppIdentifier = typing.NewType("CppIdentifier", str)
 CppExpression = typing.NewType("CppExpression", str)
 CppFunctionScopeDefs = typing.NewType("CppFunctionScopeDefs", str)
 CppNamespaceScopeDefs = typing.NewType("CppNamespaceScopeDefs", str)
+
+
+byte_type = CppTypeName("std::byte")
+size_type = CppTypeName("std::size_t")
+uint8_type = CppTypeName("std::uint8_t")
+int8_type = CppTypeName("std::int8_t")
+uint16_type = CppTypeName("std::uint16_t")
+int16_type = CppTypeName("std::int16_t")
+uint32_type = CppTypeName("std::uint32_t")
+int32_type = CppTypeName("std::int32_t")
+uint64_type = CppTypeName("std::uint64_t")
+int64_type = CppTypeName("std::int64_t")
+float32_type = CppTypeName("float")
+float64_type = CppTypeName("double")
+string_type = CppTypeName("std::string")
 
 
 @dataclass
