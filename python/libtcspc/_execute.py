@@ -112,7 +112,7 @@ class ExecutionContext:
 
 def create_execution_context(
     compiled_graph: CompiledGraph,
-    arguments: dict[CppIdentifier, Any] | None = None,
+    arguments: dict[str, Any] | None = None,
 ) -> ExecutionContext:
     """
     Create an execution context for a compiled processing graph.
@@ -129,21 +129,23 @@ def create_execution_context(
     ExecutionContext
         The new execution context.
     """
-    args = {} if arguments is None else arguments.copy()
+    given_args = {} if arguments is None else arguments.copy()
+    args: dict[CppIdentifier, Any] = {}
     for param in compiled_graph.parameters():
-        if param.name not in args.copy():
+        if param.name in given_args:
+            args[param.cpp_identifier()] = given_args.pop(param.name)
+        else:
             if param.default_value is None:
                 raise ValueError(
                     f"No argument given for required parameter {param.name}"
                 )
-            args[param.name] = param.default_value
+            args[param.cpp_identifier()] = param.default_value
+    for name, _ in given_args.items():
+        raise ValueError(f"Unknown argument: {name}")
 
     arg_struct = compiled_graph._mod.Params()
-    for name, value in args.items():
-        try:
-            setattr(arg_struct, name, value)
-        except AttributeError as e:
-            raise KeyError(f"Unknown parameter: {name}") from e
+    for cpp_identifier, value in args.items():
+        setattr(arg_struct, cpp_identifier, value)
 
     context = compiled_graph._mod.create_context()
     processor = compiled_graph._mod.create_processor(context, arg_struct)

@@ -5,7 +5,7 @@
 import pytest
 from libtcspc._access import AccessTag
 from libtcspc._compile import compile_graph
-from libtcspc._cpp_utils import CppIdentifier, CppTypeName
+from libtcspc._cpp_utils import CppTypeName
 from libtcspc._events import EventType
 from libtcspc._graph import Graph
 from libtcspc._param import Param
@@ -68,17 +68,10 @@ def test_compile_string_parameter():
     g = Graph()
     g.add_node("a", Stop((), "a_default"))
     assert len(g.parameters()) == 0
-    g.add_node("b", Stop((), Param(CppIdentifier("b_msg"))), upstream="a")
+    g.add_node("b", Stop((), Param("b_msg")), upstream="a")
     assert len(g.parameters()) == 1
-    assert g.parameters()[0] == (
-        Param(CppIdentifier("b_msg")),
-        CppTypeName("std::string"),
-    )
-    g.add_node(
-        "c",
-        Stop((), Param(CppIdentifier("c_msg"), "c_default")),
-        upstream="b",
-    )
+    assert g.parameters()[0] == (Param("b_msg"), CppTypeName("std::string"))
+    g.add_node("c", Stop((), Param("c_msg", "c_default")), upstream="b")
     g.add_node("sink", NullSink(), upstream="c")
     cg = compile_graph(g)
     assert len(cg.parameters()) == 2

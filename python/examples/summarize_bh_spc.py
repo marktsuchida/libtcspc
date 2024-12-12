@@ -21,7 +21,7 @@ def summarize(filename: str) -> int:
         [
             tcspc.read_events_from_binary_file(
                 tcspc.BHSPCEvent,
-                tcspc.Param(tcspc.CppIdentifier("filename")),
+                tcspc.Param("filename"),
                 start_offset=4,
                 stop_normally_on_error=True,
             ),
@@ -49,9 +49,7 @@ def summarize(filename: str) -> int:
     ret = 0
     print("Compiling processing graph...", file=sys.stderr)
     cg = tcspc.compile_graph(g)
-    ctx = tcspc.create_execution_context(
-        cg, {tcspc.CppIdentifier("filename"): filename}
-    )
+    ctx = tcspc.create_execution_context(cg, {"filename": filename})
     print("Processing...", file=sys.stderr)
     try:
         ctx.flush()

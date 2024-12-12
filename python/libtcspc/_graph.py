@@ -435,7 +435,7 @@ class Graph:
         self.visit_nodes(visit)
 
         if len(params) > len(set(p.name for p, _ in params)):
-            param_nodes: dict[CppIdentifier, list[str]] = {}
+            param_nodes: dict[str, list[str]] = {}
 
             def visit(node_name: str, node: Parameterized):
                 for param, _ in node.parameters():

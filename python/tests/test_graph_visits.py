@@ -6,7 +6,7 @@ from collections.abc import Sequence
 
 import pytest
 from libtcspc._access import AccessTag
-from libtcspc._cpp_utils import CppIdentifier, CppTypeName
+from libtcspc._cpp_utils import CppTypeName
 from libtcspc._events import EventType
 from libtcspc._graph import Graph
 from libtcspc._node import RelayNode
@@ -22,9 +22,7 @@ def test_graph_visits_duplicate_parameters():
             self._param_name = param_name
 
         def parameters(self) -> Sequence[tuple[Param, CppTypeName]]:
-            return (
-                (Param(CppIdentifier(self._param_name)), CppTypeName("int")),
-            )
+            return ((Param(self._param_name), CppTypeName("int")),)
 
     g = Graph()
     g.add_node("a", ParamNode("hello"))

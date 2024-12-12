@@ -51,14 +51,9 @@ def test_RecyclingBucketSource_max_bucket_count():
 
 
 def test_RecyclingBucketSource_max_bucket_count_param():
-    bs = RecyclingBucketSource(
-        IntEvent, max_bucket_count=Param(CppIdentifier("mbc"))
-    )
+    bs = RecyclingBucketSource(IntEvent, max_bucket_count=Param("mbc"))
     assert len(bs.parameters()) == 1
-    assert bs.parameters()[0] == (
-        Param(CppIdentifier("mbc")),
-        CppTypeName("std::size_t"),
-    )
+    assert bs.parameters()[0] == (Param("mbc"), CppTypeName("std::size_t"))
     assert "params.mbc" in bs.cpp_expression(gencontext)
 
 
@@ -67,6 +62,4 @@ def test_RecyclingBucketSource_max_bucket_count_negative_is_error():
         RecyclingBucketSource(IntEvent, max_bucket_count=-1)
 
     with pytest.raises(ValueError):
-        RecyclingBucketSource(
-            IntEvent, max_bucket_count=Param(CppIdentifier("mbc"), -1)
-        )
+        RecyclingBucketSource(IntEvent, max_bucket_count=Param("mbc", -1))

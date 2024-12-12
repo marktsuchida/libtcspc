@@ -96,7 +96,7 @@ def _param_struct(
             "    .def(nanobind::init<>())"
             + "".join(
                 f'\n    .def_rw("{name}", &params::{name})'
-                for name, type in param_types
+                for name, typ in param_types
             )
             + ";"
         ),
@@ -291,7 +291,8 @@ def _graph_module_code(
 
     params = graph.parameters()
     param_struct = _param_struct(
-        tuple((p.name, cpp_type) for p, cpp_type in params), mod_var
+        tuple((p.cpp_identifier(), cpp_type) for p, cpp_type in params),
+        mod_var,
     )
 
     context_code = _context_type(graph.accesses(), mod_var)

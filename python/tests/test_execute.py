@@ -64,7 +64,7 @@ def test_execute_handles_buffer_events():
 
 def test_execute_require_parameter_with_no_default():
     g = Graph()
-    g.add_node("a", Stop((), Param(CppIdentifier("a_msg"))))
+    g.add_node("a", Stop((), Param("a_msg")))
     g.add_node("s", NullSink(), upstream="a")
     cg = compile_graph(g)
     create_execution_context(cg, {CppIdentifier("a_msg"): "hello"})
@@ -81,5 +81,5 @@ def test_execute_unknown_parameter():
     g.add_node("s", NullSink())
     cg = compile_graph(g)
     create_execution_context(cg)
-    with pytest.raises(KeyError):
+    with pytest.raises(ValueError):
         create_execution_context(cg, {CppIdentifier("blah"): "hello"})

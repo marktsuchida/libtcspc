@@ -11,7 +11,11 @@ from collections.abc import Sequence
 from dataclasses import dataclass
 from typing import Generic, TypeVar
 
-from libtcspc._cpp_utils import CppIdentifier, CppTypeName
+from libtcspc._cpp_utils import (
+    CppIdentifier,
+    CppTypeName,
+    identifier_from_string,
+)
 
 T = TypeVar("T")
 
@@ -22,8 +26,11 @@ class Param(Generic[T]):
     Placeholder for a run-time parameter in a processing graph.
     """
 
-    name: CppIdentifier
+    name: str
     default_value: T | None = None
+
+    def cpp_identifier(self) -> CppIdentifier:
+        return identifier_from_string(self.name)
 
 
 class Parameterized:

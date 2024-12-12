@@ -21,12 +21,9 @@ def test_BinaryFileInputStream_default():
 
 
 def test_BinaryFileInputStream_filename_param():
-    bfis = BinaryFileInputStream(Param(CppIdentifier("fname")))
+    bfis = BinaryFileInputStream(Param("fname"))
     assert len(bfis.parameters()) == 1
-    assert bfis.parameters()[0] == (
-        Param(CppIdentifier("fname")),
-        CppTypeName("std::string"),
-    )
+    assert bfis.parameters()[0] == (Param("fname"), CppTypeName("std::string"))
     assert "params.fname" in bfis.cpp_expression(gencontext)
 
 
@@ -36,12 +33,10 @@ def test_BinaryFileInputStream_start_offset():
 
 
 def test_BinaryFileInputStream_start_offset_param():
-    bfis = BinaryFileInputStream(
-        "some_file", start_offset=Param(CppIdentifier("stoff"), 42)
-    )
+    bfis = BinaryFileInputStream("some_file", start_offset=Param("stoff", 42))
     assert len(bfis.parameters()) == 1
     assert bfis.parameters()[0] == (
-        Param(CppIdentifier("stoff"), 42),
+        Param("stoff", 42),
         CppTypeName("tcspc::u64"),
     )
     assert "params.stoff" in bfis.cpp_expression(gencontext)
@@ -52,6 +47,4 @@ def test_BinaryFileInputStream_start_offset_negative_is_error():
         BinaryFileInputStream("some_file", start_offset=-1)
 
     with pytest.raises(ValueError):
-        BinaryFileInputStream(
-            "some_file", start_offset=Param(CppIdentifier("stoff"), -1)
-        )
+        BinaryFileInputStream("some_file", start_offset=Param("stoff", -1))
