@@ -21,7 +21,9 @@ from typing import final
 
 from typing_extensions import override
 
-from . import _access, _bucket_sources, _cpp_utils, _events, _streams
+from . import _access, _cpp_utils, _events, _streams
+from ._access import Access, AccessTag
+from ._bucket_sources import BucketSource, RecyclingBucketSource
 from ._codegen import CodeGenerationContext
 from ._cpp_utils import (
     CppExpression,
@@ -31,7 +33,7 @@ from ._cpp_utils import (
     uint64_type,
 )
 from ._data_types import DataTypes
-from ._events import BucketEvent, EventType
+from ._events import BucketEvent, EventType, WarningEvent
 from ._graph import Graph, Subgraph
 from ._node import Node, RelayNode, TypePreservingRelayNode
 from ._param import Param
@@ -89,15 +91,15 @@ def read_events_from_binary_file(
                         filename, start_offset=start_offset
                     ),
                     max_length,
-                    _bucket_sources.RecyclingBucketSource(event_type),
+                    RecyclingBucketSource(event_type),
                     read_granularity_bytes,
                 ),
             ),
             (
-                Stop((_events.WarningEvent,), "error reading input")
+                Stop((WarningEvent,), "error reading input")
                 if stop_normally_on_error
                 else StopWithError(
-                    (_events.WarningEvent,),
+                    (WarningEvent,),
                     CppTypeName("std::runtime_error"),
                     "error reading input",
                 )
@@ -142,16 +144,14 @@ class CheckMonotonic(TypePreservingRelayNode):
 
 @final
 class Count(TypePreservingRelayNode):
-    def __init__(
-        self, event_type: EventType, access_tag: _access.AccessTag
-    ) -> None:
+    def __init__(self, event_type: EventType, access_tag: AccessTag) -> None:
         self._event_type = event_type
         self._access_tag = access_tag
 
     @override
     def accesses(
         self,
-    ) -> Sequence[tuple[_access.AccessTag, type[_access.Access]]]:
+    ) -> Sequence[tuple[AccessTag, type[Access]]]:
         return ((self._access_tag, _access.CountAccess),)
 
     @override
@@ -189,7 +189,7 @@ class DecodeBHSPC(RelayNode):
             _events.MarkerEvent(self._data_types),
             _events.TimeCorrelatedDetectionEvent(self._data_types),
             _events.TimeReachedEvent(self._data_types),
-            _events.WarningEvent,
+            WarningEvent,
         )
 
     @override
@@ -233,7 +233,7 @@ class ReadBinaryStream(RelayNode):
         event_type: EventType,
         stream: _streams.InputStream,
         max_length: int | Param[int] | None = None,
-        buffer_provider: _bucket_sources.BucketSource | None = None,
+        buffer_provider: BucketSource | None = None,
         read_granularity_bytes: int | Param[int] = 65536,
     ):
         self._event_type = event_type
@@ -242,7 +242,7 @@ class ReadBinaryStream(RelayNode):
         self._bucket_source = (
             buffer_provider
             if buffer_provider is not None
-            else _bucket_sources.RecyclingBucketSource(event_type)
+            else RecyclingBucketSource(event_type)
         )
         self._granularity = read_granularity_bytes
 
@@ -251,7 +251,7 @@ class ReadBinaryStream(RelayNode):
         self, input_event_set: Collection[EventType]
     ) -> tuple[EventType, ...]:
         _check_events_subset_of(input_event_set, (), self.__class__.__name__)
-        return (_events.BucketEvent(self._event_type),)
+        return (BucketEvent(self._event_type),)
 
     @override
     def parameters(self) -> Sequence[tuple[Param, CppTypeName]]:
