@@ -9,7 +9,8 @@ __all__ = [
 from dataclasses import dataclass
 
 from . import _cpp_utils
-from ._cpp_utils import CppExpression, CppIdentifier
+from ._access import AccessTag
+from ._cpp_utils import CppExpression, CppIdentifier, CppTypeName, quote_string
 from ._param import Param
 
 
@@ -36,3 +37,10 @@ class CodeGenerationContext:
         if isinstance(p, Param):
             return CppExpression(f"{self.params_varname}.{p.cpp_identifier()}")
         return _cpp_utils.quote_string(p)
+
+    def tracker_expression(
+        self, access_type: CppTypeName, access_tag: AccessTag
+    ) -> CppExpression:
+        return CppExpression(
+            f"{self.context_varname}->tracker<{access_type}>({quote_string(access_tag.tag)})"
+        )

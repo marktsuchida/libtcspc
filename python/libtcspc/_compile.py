@@ -272,8 +272,10 @@ def _graph_module_code(
             "libtcspc/tcspc.hpp",
             "nanobind/nanobind.h",
             "nanobind/ndarray.h",
+            "nanobind/stl/function.h",
+            "nanobind/stl/optional.h",
             "nanobind/stl/shared_ptr.h",
-            "nanobind/stl/string.h",  # For automatic conversion from str.
+            "nanobind/stl/string.h",
         ),
         (),
         CppNamespaceScopeDefs(""),

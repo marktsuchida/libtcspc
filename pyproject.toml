@@ -10,6 +10,7 @@ dependencies = [
     "meson",
     "nanobind",
     "ninja",
+    "numpy",
     "typing-extensions",
 ]
 readme = "README.md"
@@ -21,7 +22,6 @@ build-backend = "mesonpy"
 
 [project.optional-dependencies]
 testing = [
-    "numpy",
     "psutil",
     "pytest >= 8.0",
     "pytest-mock >= 3.0",

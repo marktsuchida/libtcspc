@@ -112,6 +112,27 @@ template <typename T, typename Reader, typename Downstream> class acquire {
         });
     }
 
+    // Custom move because we have a mutex. Move only works when not running.
+    ~acquire() = default;
+
+    acquire(acquire const &) = delete;
+    auto operator=(acquire const &) = delete;
+
+    acquire(acquire &&other) noexcept
+        : reader(std::move(other.reader)), bsource(std::move(other.bsource)),
+          bsize(other.bsize), halted(other.halted),
+          downstream(std::move(other.downstream)), trk(std::move(other.trk)) {}
+
+    auto operator=(acquire &&rhs) noexcept -> acquire & {
+        reader = std::move(rhs.reader);
+        bsource = std::move(rhs.bsource);
+        bsize = rhs.bsize;
+        halted = rhs.halted;
+        downstream = std::move(rhs.downstream);
+        trk = std::move(rhs.trk);
+        return *this;
+    }
+
     [[nodiscard]] auto introspect_node() const -> processor_info {
         return processor_info(this, "acquire");
     }
@@ -250,6 +271,31 @@ class acquire_full_buckets {
                                                       trk, tracker);
             return acquire_access([self] { self->halt(); });
         });
+    }
+
+    // Custom move because we have a mutex. Move only works when not running.
+    ~acquire_full_buckets() = default;
+
+    acquire_full_buckets(acquire_full_buckets const &) = delete;
+    auto operator=(acquire_full_buckets const &) = delete;
+
+    acquire_full_buckets(acquire_full_buckets &&other) noexcept
+        : reader(std::move(other.reader)), bsource(std::move(other.bsource)),
+          bsize(other.bsize), halted(other.halted),
+          live_downstream(std::move(other.live_downstream)),
+          batch_downstream(std::move(other.batch_downstream)),
+          trk(std::move(other.trk)) {}
+
+    auto
+    operator=(acquire_full_buckets &&rhs) noexcept -> acquire_full_buckets & {
+        reader = std::move(rhs.reader);
+        bsource = std::move(rhs.bsource);
+        bsize = rhs.bsize;
+        halted = rhs.halted;
+        live_downstream = std::move(rhs.live_downstream);
+        batch_downstream = std::move(rhs.batch_downstream);
+        trk = std::move(rhs.trk);
+        return *this;
     }
 
     [[nodiscard]] auto introspect_node() const -> processor_info {

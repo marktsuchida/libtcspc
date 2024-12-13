@@ -18,6 +18,7 @@ configure_file(
 py_sources = files(
     '__init__.py',
     '_access.py',
+    '_acquisition_readers.py',
     '_bucket_sources.py',
     '_codegen.py',
     '_compile.py',

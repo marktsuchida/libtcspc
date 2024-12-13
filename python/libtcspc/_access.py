@@ -88,6 +88,18 @@ class Accessible:
         return ()
 
 
+class AcquireAccess(Access):
+    @override
+    @classmethod
+    def cpp_type_name(cls) -> CppTypeName:
+        return CppTypeName("tcspc::acquire_access")
+
+    @override
+    @classmethod
+    def cpp_methods(cls) -> Sequence[CppIdentifier]:
+        return (CppIdentifier("halt"),)
+
+
 class CountAccess(Access):
     @override
     @classmethod

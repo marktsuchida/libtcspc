@@ -31,6 +31,7 @@
 #include <exception>
 #include <optional>
 #include <thread>
+#include <type_traits>
 #include <vector>
 
 namespace tcspc {
@@ -118,6 +119,11 @@ TEST_CASE("acquire") {
     auto acq_acc = ctx->access<acquire_access>("acq");
 
     using trompeloeil::_;
+
+    SECTION("acquire processor is movable") {
+        STATIC_CHECK(std::is_move_constructible_v<decltype(acq)> &&
+                     std::is_move_assignable_v<decltype(acq)>);
+    }
 
     SECTION("pre-halted acquisition never reads, immediately throws") {
         acq_acc.halt();
@@ -223,6 +229,11 @@ TEST_CASE("acquire_full_buckets") {
     auto acq_acc = ctx->access<acquire_access>("acq");
 
     using trompeloeil::_;
+
+    SECTION("acquire_full_buckets is movable") {
+        STATIC_CHECK(std::is_move_constructible_v<decltype(acq)> &&
+                     std::is_move_assignable_v<decltype(acq)>);
+    }
 
     SECTION("pre-halted acquisition never reads, immediately throws") {
         acq_acc.halt();

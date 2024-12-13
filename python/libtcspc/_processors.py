@@ -23,6 +23,7 @@ from typing_extensions import override
 
 from . import _access, _cpp_utils, _events, _streams
 from ._access import Access, AccessTag
+from ._acquisition_readers import AcquisitionReader, PyAcquisitionReader
 from ._bucket_sources import BucketSource, RecyclingBucketSource
 from ._codegen import CodeGenerationContext
 from ._cpp_utils import (
@@ -122,6 +123,100 @@ def read_events_from_binary_file(
 
 
 @final
+class Acquire(RelayNode):
+    def __init__(
+        self,
+        event_type: EventType,
+        reader: AcquisitionReader | Param[PyAcquisitionReader],
+        buffer_provider: BucketSource | None,
+        batch_size: int | Param[int] | None,
+        access_tag: _access.AccessTag,
+    ) -> None:
+        self._event_type = event_type
+        self._reader = reader
+        self._bucket_source = (
+            buffer_provider
+            if buffer_provider is not None
+            else RecyclingBucketSource(event_type)
+        )
+        self._batch_size = batch_size if batch_size is not None else 65536
+        self._access_tag = access_tag
+
+    @override
+    def accesses(self) -> Sequence[tuple[AccessTag, type[Access]]]:
+        return ((self._access_tag, _access.AcquireAccess),)
+
+    @override
+    def relay_map_event_set(
+        self, input_event_set: Collection[EventType]
+    ) -> tuple[EventType, ...]:
+        _check_events_subset_of(input_event_set, (), self.__class__.__name__)
+        return (_events.BucketEvent(self._event_type),)
+
+    def _buffer_array_type(self) -> CppTypeName:
+        return CppTypeName(f"""\
+            nanobind::ndarray<
+                {self._event_type.cpp_type_name()},
+                nanobind::numpy, nanobind::device::cpu, nanobind::c_contig>""")
+
+    def _buffer_array_param_type(self) -> CppTypeName:
+        return CppTypeName(f"""\
+            decltype(std::declval<{self._buffer_array_type()}>()
+                .cast(nanobind::rv_policy::reference))""")
+
+    @override
+    def parameters(self) -> Sequence[tuple[Param, CppTypeName]]:
+        params: list[tuple[Param, CppTypeName]] = []
+        if isinstance(self._reader, Param):
+            params.append(
+                (
+                    self._reader,
+                    CppTypeName(
+                        f"""\
+                        std::function<
+                            auto({self._buffer_array_param_type()})
+                            -> std::optional<std::size_t>>"""
+                    ),
+                )
+            )
+        if isinstance(self._batch_size, Param):
+            params.append((self._batch_size, size_type))
+        return params
+
+    @override
+    def relay_cpp_expression(
+        self,
+        gencontext: CodeGenerationContext,
+        downstream: CppExpression,
+    ) -> CppExpression:
+        reader = (
+            CppExpression(
+                f"""\
+                [reader={gencontext.params_varname}.{self._reader.cpp_identifier()}](
+                    tcspc::span<{self._event_type.cpp_type_name()}> spn) {{
+                    nanobind::gil_scoped_acquire held;
+                    {self._buffer_array_type()} arr(spn.data(), {{spn.size(),}});
+                    return reader(arr.cast(nanobind::rv_policy::reference));
+                }}
+                """
+            )
+            if isinstance(self._reader, Param)
+            else self._reader.cpp_expression()
+        )
+        batch_size = gencontext.size_t_expression(self._batch_size)
+        return CppExpression(
+            dedent(f"""\
+            tcspc::acquire<{self._event_type.cpp_type_name()}>(
+                {reader},
+                {self._bucket_source.cpp_expression(gencontext)},
+                tcspc::arg::batch_size{{{batch_size}}},
+                {gencontext.tracker_expression(CppTypeName("tcspc::acquire_access"), self._access_tag)},
+                {downstream}
+            )""")
+        )
+
+
+@final
 class CheckMonotonic(TypePreservingRelayNode):
     def __init__(self, data_types: DataTypes | None = None) -> None:
         self._data_types = (
@@ -163,8 +258,7 @@ class Count(TypePreservingRelayNode):
         return CppExpression(
             dedent(f"""\
             tcspc::count<{self._event_type.cpp_type_name()}>(
-                {gencontext.context_varname}->tracker<tcspc::count_access>(
-                        "{self._access_tag.tag}"),
+                {gencontext.tracker_expression(CppTypeName("tcspc::count_access"), self._access_tag)},
                 {downstream}
             )""")
         )
