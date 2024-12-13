@@ -469,32 +469,4 @@ TEST_CASE("acquire_full_buckets") {
     }
 }
 
-TEST_CASE("late_bound_reader") {
-    auto ctx = context::create();
-    auto reader = late_bound_reader<int>(
-        ctx->tracker<late_bound_reader_access<int>>("r"));
-
-    SECTION("stream is empty if reader func not set") {
-        std::vector<int> buf(10);
-        CHECK(reader(span(buf)) == std::nullopt);
-    }
-
-    SECTION("stream is defined by reader func") {
-        auto acc = ctx->access<late_bound_reader_access<int>>("r");
-        acc.set_read_func([](span<int> buf) -> std::optional<std::size_t> {
-            return buf.size();
-        });
-        // NOLINTBEGIN(bugprone-unchecked-optional-access)
-        std::vector<int> buf(3);
-        auto const r = reader(span(buf));
-        REQUIRE(r.has_value());
-        CHECK(r.value() == 3);
-        std::vector<int> buf2(10);
-        auto const r2 = reader(span(buf2));
-        REQUIRE(r2.has_value());
-        CHECK(r2.value() == 10);
-        // NOLINTEND(bugprone-unchecked-optional-access)
-    }
-}
-
 } // namespace tcspc
