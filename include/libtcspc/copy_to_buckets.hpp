@@ -287,8 +287,8 @@ auto copy_to_buckets(std::shared_ptr<bucket_source<T>> buffer_provider,
  * \par Events handled
  * - Contiguous container or span of `T const`: copy into successive
  *   `tcspc::bucket<T>`s of size `batch_size`, emitting the copied portion to
- *   `live_downstream` as (const) `tcspc::bucket<T const>` and any full buckets
- *   to `batch_downstream` as (rvalue) `tcspc::bucket<T>`.
+ *   `live_downstream` as (rvalue) `tcspc::bucket<T const>` and any full
+ *   buckets to `batch_downstream` as (rvalue) `tcspc::bucket<T>`.
  * - All other types: pass through without action
  * - Flush: emit any pending non-full bucket to `batch_downstream`; pass
  *   through

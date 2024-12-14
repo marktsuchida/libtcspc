@@ -443,7 +443,7 @@ auto acquire(Reader &&reader,
  *
  * \par Events handled
  * - Flush: read from the reader until the end of stream, or until there is an
- *   error, or until halted, and emit (const) `tcspc::bucket<T const>` to
+ *   error, or until halted, and emit (rvalue) `tcspc::bucket<T const>` to
  *   `live_downstream` on each read; emit (rvalue) `tcspc::bucket<T>` when
  *   `batch_size` elements have been collected, to `batch_downstream`. If end
  *   of stream is indicated by the reader, flush the downstream.
