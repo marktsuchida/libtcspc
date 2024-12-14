@@ -22,9 +22,11 @@ import atexit
 import functools
 import importlib.util
 import json
+import logging
 import os
 import platform
 import shutil
+import subprocess
 import tempfile
 import textwrap
 import time
@@ -231,8 +233,22 @@ class Builder:
                 )
 
     def _write_code(self, code_text: str) -> None:
-        with open(self._proj_path / "source.cpp", "w") as f:
+        if filt_cmd := os.environ.get("LIBTCSPC_PY_GENERATED_CODE_FILTER"):
+            r = subprocess.run(
+                filt_cmd,
+                shell=True,
+                input=code_text.encode(),
+                capture_output=True,
+            )
+            if r.returncode == 0:
+                code_text = r.stdout.decode()
+            else:
+                logging.debug(f"Generated-code filter failed: {filt_cmd}")
+        source_path = self._proj_path / "source.cpp"
+        with open(source_path, "w") as f:
             f.write(code_text)
+        if os.environ.get("LIBTCSPC_PY_LOG_GENERATED_CODE") == "1":
+            logging.debug(f"Wrote generated code:\n{code_text}")
 
     async def async_set_code(self, code_text: str) -> None:
         assert self._stage >= self._CREATED
