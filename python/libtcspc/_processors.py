@@ -16,7 +16,6 @@ __all__ = [
 ]
 
 from collections.abc import Collection, Iterable, Sequence
-from textwrap import dedent
 from typing import final
 
 from typing_extensions import override
@@ -205,14 +204,14 @@ class Acquire(RelayNode):
         )
         batch_size = gencontext.size_t_expression(self._batch_size)
         return CppExpression(
-            dedent(f"""\
+            f"""\
             tcspc::acquire<{self._event_type.cpp_type_name()}>(
                 {reader},
                 {self._bucket_source.cpp_expression(gencontext)},
                 tcspc::arg::batch_size{{{batch_size}}},
                 {gencontext.tracker_expression(CppTypeName("tcspc::acquire_access"), self._access_tag)},
                 {downstream}
-            )""")
+            )"""
         )
 
 
@@ -230,10 +229,10 @@ class CheckMonotonic(TypePreservingRelayNode):
         downstream: CppExpression,
     ) -> CppExpression:
         return CppExpression(
-            dedent(f"""\
+            f"""\
             tcspc::check_monotonic<{self._data_types.cpp_type_name()}>(
                 {downstream}
-            )""")
+            )"""
         )
 
 
@@ -256,11 +255,11 @@ class Count(TypePreservingRelayNode):
         downstream: CppExpression,
     ) -> CppExpression:
         return CppExpression(
-            dedent(f"""\
+            f"""\
             tcspc::count<{self._event_type.cpp_type_name()}>(
                 {gencontext.tracker_expression(CppTypeName("tcspc::count_access"), self._access_tag)},
                 {downstream}
-            )""")
+            )"""
         )
 
 
@@ -293,10 +292,10 @@ class DecodeBHSPC(RelayNode):
         downstream: CppExpression,
     ) -> CppExpression:
         return CppExpression(
-            dedent(f"""\
+            f"""\
             tcspc::decode_bh_spc<{self._data_types.cpp_type_name()}>(
                 {downstream}
-            )""")
+            )"""
         )
 
 
@@ -371,14 +370,14 @@ class ReadBinaryStream(RelayNode):
         )
         granularity = gencontext.size_t_expression(self._granularity)
         return CppExpression(
-            dedent(f"""\
+            f"""\
             tcspc::read_binary_stream<{self._event_type.cpp_type_name()}>(
                 {self._stream.cpp_expression(gencontext)},
                 tcspc::arg::max_length<tcspc::u64>{{{maxlen}}},
                 {self._bucket_source.cpp_expression(gencontext)},
                 tcspc::arg::granularity<std::size_t>{{{granularity}}},
                 {downstream}
-            )""")
+            )"""
         )
 
 
@@ -440,13 +439,13 @@ class Stop(RelayNode):
         downstream: CppExpression,
     ) -> CppExpression:
         return CppExpression(
-            dedent(f"""\
+            f"""\
             tcspc::stop<
                 {_make_type_list(self._event_types)}
             >(
                 {gencontext.string_expression(self._msg_prefix)},
                 {downstream}
-            )""")
+            )"""
         )
 
 
@@ -481,14 +480,14 @@ class StopWithError(RelayNode):
         downstream: CppExpression,
     ) -> CppExpression:
         return CppExpression(
-            dedent(f"""\
+            f"""\
             tcspc::stop_with_error<
                 {_make_type_list(self._event_types)}
                 {self._exception_type}
             >(
                 {gencontext.string_expression(self._msg_prefix)},
                 {downstream}
-            )""")
+            )"""
         )
 
 
@@ -513,8 +512,8 @@ class Unbatch(RelayNode):
         downstream: CppExpression,
     ) -> CppExpression:
         return CppExpression(
-            dedent(f"""\
+            f"""\
             tcspc::unbatch<{self._event_type.cpp_type_name()}>(
                 {downstream}
-            )""")
+            )"""
         )

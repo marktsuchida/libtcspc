@@ -28,7 +28,6 @@ import platform
 import shutil
 import subprocess
 import tempfile
-import textwrap
 import time
 from collections.abc import Iterable, Mapping
 from pathlib import Path
@@ -188,24 +187,18 @@ class Builder:
 
         with open(self._proj_path / "meson.build", "w") as f:
             f.write(
-                textwrap.dedent(f"""\
-                    project(
+                f"""project(
                         'odext_project',
                         'cpp',
                         default_options: [{rendered_default_options}],
                     )
-                """)
+                """
             )
             if extra_source_files:
-                f.write(
-                    textwrap.dedent(f"""\
-                    extra_sources = files({rendered_extra_sources})
-                """)
-                )
+                f.write(f"extra_sources = files({rendered_extra_sources})\n")
             if self._binary_type == "extension_module":
                 f.write(
-                    textwrap.dedent(f"""\
-                        py = import('python').find_installation(pure: false)
+                    f"""py = import('python').find_installation(pure: false)
                         py.extension_module(
                             'odext_target',
                             [
@@ -215,12 +208,11 @@ class Builder:
                             include_directories: [{rendered_include_dirs}],
                             {cpp_pch}
                         )
-                """)
+                    """
                 )
             elif self._binary_type == "executable":
                 f.write(
-                    textwrap.dedent(f"""\
-                        executable(
+                    f"""executable(
                             'odext_target',
                             [
                                 'source.cpp',
@@ -229,7 +221,7 @@ class Builder:
                             include_directories: [{rendered_include_dirs}],
                             {cpp_pch}
                         )
-                    """)
+                    """
                 )
 
     def _write_code(self, code_text: str) -> None:

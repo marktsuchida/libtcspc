@@ -11,7 +11,6 @@ import itertools
 from collections.abc import Callable, Collection, Mapping, Sequence
 from copy import deepcopy
 from dataclasses import dataclass
-from textwrap import dedent
 from typing import final
 
 from typing_extensions import override
@@ -419,11 +418,10 @@ class Graph:
             (gencontext.context_varname, f"&{gencontext.params_varname}")
         )
         return CppExpression(
-            dedent(f"""\
-                [{captures}]({external_name_params}) {{
+            f"""[{captures}]({external_name_params}) {{
                     {node_def_lines}
                     return {return_expr};
-                }}({downstream_args})""")
+                }}({downstream_args})"""
         )
 
     def parameters(self) -> Sequence[tuple[Param, CppTypeName]]:

@@ -10,7 +10,6 @@ __all__ = [
 import functools
 import itertools
 import re
-import textwrap
 import threading
 from collections.abc import Iterable, Sequence
 from pathlib import Path
@@ -59,17 +58,13 @@ def _context_type(
         (),
         CppNamespaceScopeDefs(""),
         CppFunctionScopeDefs(
-            f'nanobind::class_<tcspc::context>({module_var}, "Context")\n'
+            f'nanobind::class_<tcspc::context>({module_var}, "Context")'
             + "".join(
-                textwrap.indent(
-                    textwrap.dedent(f"""\
-
-                        .def({quote_string(tag._context_method_name())},
-                             +[](tcspc::context &self, processor_type *proc) {{
-                            return self.access<{typ.cpp_type_name()}>("{tag.tag}");
-                        }}, nanobind::keep_alive<0, 2>())"""),
-                    prefix="    ",
-                )
+                f"""
+                .def({quote_string(tag._context_method_name())},
+                        +[](tcspc::context &self, processor_type *proc) {{
+                    return self.access<{typ.cpp_type_name()}>("{tag.tag}");
+                }}, nanobind::keep_alive<0, 2>())"""
                 for tag, typ in accesses
             )
             + ";\n"
@@ -124,28 +119,23 @@ def _input_processor(
         (),
         (),
         CppNamespaceScopeDefs(
-            textwrap.dedent("""\
+            """\
             template <typename Downstream> class input_processor {
                 Downstream downstream;
 
             public:
                 explicit input_processor(Downstream &&downstream)
                     : downstream(std::move(downstream)) {}
-            """)
+            """
             + "".join(
                 (
-                    textwrap.indent(
-                        textwrap.dedent(f"""\
-
+                    f"""
                 void handle({event_type} const &event) {{
                     downstream.handle(event);
                 }}
-                """),
-                        prefix="    ",
-                    )
+                """
                     if not event_type.startswith("tcspc::bucket<")
-                    else textwrap.indent(
-                        textwrap.dedent(f"""\
+                    else f"""
                 void handle({_ndarray_for_bucket_type(event_type)} const &event) {{
                     // Emit bucket<T>, not bucket<T const>, but by const ref.
                     auto *const ptr = const_cast<{event_type}::value_type *>(event.data());
@@ -153,16 +143,13 @@ def _input_processor(
                     auto const bkt = tcspc::ad_hoc_bucket(spn);
                     downstream.handle(bkt);
                 }}
-                """),
-                        prefix="    ",
-                    )
+                """
                 )
                 for event_type in event_types
             )
-            + textwrap.dedent("""\
-
+            + """
                 void flush() { downstream.flush(); }
-            };""")
+            };"""
         ),
         CppFunctionScopeDefs(""),
     )
@@ -175,36 +162,33 @@ def _graph_funcs(
     module_var: CppIdentifier,
 ) -> ModuleCodeFragment:
     input_proc_code = _input_processor(event_types)
-    indented_graph_code = textwrap.indent(
-        graph_code, prefix="    " * 4
-    ).lstrip()
     return ModuleCodeFragment(
         input_proc_code.includes,
         input_proc_code.sys_includes + ("memory",),
         CppNamespaceScopeDefs(
             input_proc_code.namespace_scope_defs
             + "\n\n"
-            + textwrap.dedent(f"""\
+            + f"""\
             auto create_processor(
                     std::shared_ptr<tcspc::context> {gencontext.context_varname},
                     params const &{gencontext.params_varname}) {{
-                return input_processor({indented_graph_code});
+                return input_processor({graph_code.lstrip()});
             }}
 
             using processor_type = decltype(create_processor(
                     std::shared_ptr<tcspc::context>(),
-                    params()));""")
+                    params()));"""
         ),
         CppFunctionScopeDefs(
             input_proc_code.nanobind_defs
             + "\n"
-            + f'nanobind::class_<processor_type>({module_var}, "Processor")\n'
+            + f'nanobind::class_<processor_type>({module_var}, "Processor")'
             + (
-                '    .def("handle", &processor_type::handle, nanobind::call_guard<nanobind::gil_scoped_release>())'
+                '\n    .def("handle", &processor_type::handle, nanobind::call_guard<nanobind::gil_scoped_release>())'
                 if len(event_types) > 0
                 else ""
             )
-            + '    .def("flush", &processor_type::flush, nanobind::call_guard<nanobind::gil_scoped_release>());\n'
+            + '\n    .def("flush", &processor_type::flush, nanobind::call_guard<nanobind::gil_scoped_release>());\n'
             + "\n"
             + f'{module_var}.def("create_processor", &create_processor);'
         ),
@@ -232,21 +216,14 @@ def _module_code(
                     for inc in frag.sys_includes
                 ),
                 "namespace {",
-                textwrap.indent(
-                    "\n".join(
-                        frag.namespace_scope_defs.rstrip() + "\n"
-                        for frag in fragments
-                    ),
-                    prefix="    ",
+                "\n".join(
+                    frag.namespace_scope_defs.rstrip() + "\n"
+                    for frag in fragments
                 ),
                 "} // namespace\n",
                 f"NB_MODULE({module_name}, {module_var}) {{",
-                textwrap.indent(
-                    "\n".join(
-                        frag.nanobind_defs.rstrip() + "\n"
-                        for frag in fragments
-                    ),
-                    prefix="    ",
+                "\n".join(
+                    frag.nanobind_defs.rstrip() + "\n" for frag in fragments
                 ).rstrip(),
                 "} // NB_MODULE\n",
             ),

@@ -8,7 +8,6 @@ __all__ = [
 ]
 
 from collections.abc import Sequence
-from textwrap import dedent
 from typing import final
 
 from typing_extensions import override
@@ -58,9 +57,9 @@ class BinaryFileInputStream(InputStream):
     ) -> CppExpression:
         start_offset = gencontext.u64_expression(self._start_offset)
         return CppExpression(
-            dedent(f"""\
-                tcspc::binary_file_input_stream(
-                    {gencontext.string_expression(self._filename)},
-                    tcspc::arg::start_offset<tcspc::u64>{{{start_offset}}}
-                )""")
+            f"""\
+            tcspc::binary_file_input_stream(
+                {gencontext.string_expression(self._filename)},
+                tcspc::arg::start_offset<tcspc::u64>{{{start_offset}}}
+            )"""
         )
