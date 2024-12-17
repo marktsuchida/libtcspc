@@ -3,6 +3,7 @@
 # SPDX-License-Identifier: MIT
 
 __all__ = [
+    "CppClassScopeDefs",
     "CppExpression",
     "CppFunctionScopeDefs",
     "CppIdentifier",
@@ -56,6 +57,7 @@ CppTypeName = typing.NewType("CppTypeName", str)
 CppIdentifier = typing.NewType("CppIdentifier", str)
 CppExpression = typing.NewType("CppExpression", str)
 CppFunctionScopeDefs = typing.NewType("CppFunctionScopeDefs", str)
+CppClassScopeDefs = typing.NewType("CppClassScopeDefs", str)
 CppNamespaceScopeDefs = typing.NewType("CppNamespaceScopeDefs", str)
 
 

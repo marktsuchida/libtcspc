@@ -9,7 +9,6 @@ __all__ = [
 
 import functools
 import itertools
-import re
 import threading
 from collections.abc import Iterable, Sequence
 from pathlib import Path
@@ -98,23 +97,8 @@ def _param_struct(
     )
 
 
-_BUCKET_TYPENAME_PATTERN = re.compile(r"tcspc::bucket<(.*)>$")
-
-
-def _ndarray_for_bucket_type(bucket_type: CppTypeName) -> CppTypeName:
-    m = re.match(_BUCKET_TYPENAME_PATTERN, bucket_type)
-    if not m:
-        raise ValueError(f"Unexpected bucket typename: {bucket_type}")
-    elem_type = CppTypeName(m.group(1))
-    return CppTypeName(
-        f"nanobind::ndarray<{elem_type} const, nanobind::device::cpu, nanobind::c_contig>"
-    )
-
-
 # No-op wrapper to limit event types to the requested ones.
-def _input_processor(
-    event_types: Iterable[CppTypeName],
-) -> ModuleCodeFragment:
+def _input_processor(event_types: Iterable[EventType]) -> ModuleCodeFragment:
     return ModuleCodeFragment(
         (),
         (),
@@ -127,24 +111,8 @@ def _input_processor(
                 explicit input_processor(Downstream &&downstream)
                     : downstream(std::move(downstream)) {}
             """
-            + "".join(
-                (
-                    f"""
-                void handle({event_type} const &event) {{
-                    downstream.handle(event);
-                }}
-                """
-                    if not event_type.startswith("tcspc::bucket<")
-                    else f"""
-                void handle({_ndarray_for_bucket_type(event_type)} const &event) {{
-                    // Emit bucket<T>, not bucket<T const>, but by const ref.
-                    auto *const ptr = const_cast<{event_type}::value_type *>(event.data());
-                    auto const spn = tcspc::span(ptr, event.size());
-                    auto const bkt = tcspc::ad_hoc_bucket(spn);
-                    downstream.handle(bkt);
-                }}
-                """
-                )
+            + "\n".join(
+                event_type.cpp_input_handler(CppIdentifier("downstream"))
                 for event_type in event_types
             )
             + """
@@ -158,7 +126,7 @@ def _input_processor(
 def _graph_funcs(
     graph_code: CppExpression,
     gencontext: CodeGenerationContext,
-    event_types: Sequence[CppTypeName],
+    event_types: Sequence[EventType],
     module_var: CppIdentifier,
 ) -> ModuleCodeFragment:
     input_proc_code = _input_processor(event_types)
@@ -232,7 +200,7 @@ def _module_code(
 
 
 def _graph_module_code(
-    module_name: str, graph: Graph, input_event_types: Iterable[EventType] = ()
+    module_name: str, graph: Graph, input_event_types: Sequence[EventType] = ()
 ):
     n_in, n_out = len(graph.inputs()), len(graph.outputs())
     if n_in != 1:
@@ -276,12 +244,7 @@ def _graph_module_code(
 
     context_code = _context_type(graph.accesses(), mod_var)
 
-    proc_code = _graph_funcs(
-        graph_expr,
-        genctx,
-        tuple(e.cpp_type_name() for e in input_event_types),
-        mod_var,
-    )
+    proc_code = _graph_funcs(graph_expr, genctx, input_event_types, mod_var)
 
     accessor_types = set(typ for tag, typ in graph.accesses())
     accessors = tuple(typ.cpp_bindings(mod_var) for typ in accessor_types)
@@ -346,7 +309,7 @@ _build_lock = threading.Lock()
 
 
 def compile_graph(
-    graph: Graph, input_event_types: Iterable[EventType] = ()
+    graph: Graph, input_event_types: Sequence[EventType] = ()
 ) -> CompiledGraph:
     """
     Compile a processing graph. The result can be used for multiple executions.

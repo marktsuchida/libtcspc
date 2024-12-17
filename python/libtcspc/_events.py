@@ -13,8 +13,10 @@ __all__ = [
     "WarningEvent",
 ]
 
+from typing_extensions import override
+
 from . import _cpp_utils
-from ._cpp_utils import CppTypeName
+from ._cpp_utils import CppClassScopeDefs, CppIdentifier, CppTypeName
 from ._data_types import DataTypes
 
 
@@ -33,6 +35,15 @@ class EventType:
     def cpp_type_name(self) -> CppTypeName:
         return self._cpp_type
 
+    def cpp_input_handler(
+        self, downstream: CppIdentifier
+    ) -> CppClassScopeDefs:
+        return CppClassScopeDefs(f"""\
+        void handle({self.cpp_type_name()} const &event) {{
+            {downstream}.handle(event);
+        }}
+        """)
+
 
 class BucketEvent(EventType):
     def __init__(self, element_type: CppTypeName | EventType) -> None:
@@ -42,6 +53,24 @@ class BucketEvent(EventType):
         super().__init__(
             CppTypeName(f"tcspc::bucket<{element_type.cpp_type_name()}>")
         )
+
+    @override
+    def cpp_input_handler(
+        self, downstream: CppIdentifier
+    ) -> CppClassScopeDefs:
+        elem_cpp_type = self._element_type.cpp_type_name()
+        ndarray_type = CppTypeName(
+            f"nanobind::ndarray<{elem_cpp_type} const, nanobind::device::cpu, nanobind::c_contig>"
+        )
+        return CppClassScopeDefs(f"""\
+        void handle({ndarray_type} const &event) {{
+            // Emit bucket<T>, not bucket<T const>, but by const ref.
+            auto *const ptr = const_cast<{elem_cpp_type} *>(event.data());
+            auto const spn = tcspc::span(ptr, event.size());
+            auto const bkt = tcspc::ad_hoc_bucket(spn);
+            {downstream}.handle(bkt);
+        }}
+        """)
 
     def element_event_type(self) -> EventType:
         return self._element_type
