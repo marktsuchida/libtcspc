@@ -17,7 +17,6 @@ from typing_extensions import override
 from ._cpp_utils import (
     CppFunctionScopeDefs,
     CppIdentifier,
-    CppNamespaceScopeDefs,
     CppTypeName,
     ModuleCodeFragment,
     identifier_from_string,
@@ -39,14 +38,16 @@ class Access:
         return ModuleCodeFragment(
             (),
             (),
-            CppNamespaceScopeDefs(""),
-            CppFunctionScopeDefs(
-                f'nanobind::class_<{cls.cpp_type_name()}>({module_var}, "{py_class_name}")'
-                + "".join(
-                    f'\n    .def("{meth}", &{cls.cpp_type_name()}::{meth})'
-                    for meth in cls.cpp_methods()
-                )
-                + ";"
+            (),
+            (
+                CppFunctionScopeDefs(
+                    f'nanobind::class_<{cls.cpp_type_name()}>({module_var}, "{py_class_name}")'
+                    + "".join(
+                        f'\n    .def("{meth}", &{cls.cpp_type_name()}::{meth})'
+                        for meth in cls.cpp_methods()
+                    )
+                    + ";"
+                ),
             ),
         )
 

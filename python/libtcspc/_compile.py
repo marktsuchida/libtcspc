@@ -37,9 +37,11 @@ def _exception_types(module_var: CppIdentifier) -> ModuleCodeFragment:
     return ModuleCodeFragment(
         (),
         (),
-        CppNamespaceScopeDefs(""),
-        CppFunctionScopeDefs(
-            f'nanobind::exception<tcspc::end_of_processing>({module_var}, "EndOfProcessing");\n'
+        (),
+        (
+            CppFunctionScopeDefs(
+                f'nanobind::exception<tcspc::end_of_processing>({module_var}, "EndOfProcessing");\n'
+            ),
         ),
     )
 
@@ -55,20 +57,23 @@ def _context_type(
     return ModuleCodeFragment(
         (),
         (),
-        CppNamespaceScopeDefs(""),
-        CppFunctionScopeDefs(
-            f'nanobind::class_<tcspc::context>({module_var}, "Context")'
-            + "".join(
-                f"""
+        (),
+        (
+            CppFunctionScopeDefs(
+                f'nanobind::class_<tcspc::context>({module_var}, "Context")'
+                + "".join(
+                    f"""
                 .def({quote_string(tag._context_method_name())},
                         +[](tcspc::context &self, processor_type *proc) {{
                     return self.access<{typ.cpp_type_name()}>("{tag.tag}");
                 }}, nanobind::keep_alive<0, 2>())"""
-                for tag, typ in accesses
-            )
-            + ";\n"
-            + "\n"
-            + f'{module_var}.def("create_context", &tcspc::context::create);'
+                    for tag, typ in accesses
+                )
+                + ";"
+            ),
+            CppFunctionScopeDefs(
+                f'{module_var}.def("create_context", &tcspc::context::create);'
+            ),
         ),
     )
 
@@ -80,19 +85,23 @@ def _param_struct(
     return ModuleCodeFragment(
         (),
         (),
-        CppNamespaceScopeDefs(
-            "struct params {\n"
-            + "".join(f"    {typ} {name};\n" for name, typ in param_types)
-            + "};"
+        (
+            CppNamespaceScopeDefs(
+                "struct params {\n"
+                + "".join(f"    {typ} {name};\n" for name, typ in param_types)
+                + "};"
+            ),
         ),
-        CppFunctionScopeDefs(
-            f'nanobind::class_<params>({module_var}, "Params")\n'
-            "    .def(nanobind::init<>())"
-            + "".join(
-                f'\n    .def_rw("{name}", &params::{name})'
-                for name, typ in param_types
-            )
-            + ";"
+        (
+            CppFunctionScopeDefs(
+                f'nanobind::class_<params>({module_var}, "Params")\n'
+                "    .def(nanobind::init<>())"
+                + "".join(
+                    f'\n    .def_rw("{name}", &params::{name})'
+                    for name, typ in param_types
+                )
+                + ";"
+            ),
         ),
     )
 
@@ -102,8 +111,9 @@ def _input_processor(event_types: Iterable[EventType]) -> ModuleCodeFragment:
     return ModuleCodeFragment(
         (),
         (),
-        CppNamespaceScopeDefs(
-            """\
+        (
+            CppNamespaceScopeDefs(
+                """\
             template <typename Downstream> class input_processor {
                 Downstream downstream;
 
@@ -111,15 +121,16 @@ def _input_processor(event_types: Iterable[EventType]) -> ModuleCodeFragment:
                 explicit input_processor(Downstream &&downstream)
                     : downstream(std::move(downstream)) {}
             """
-            + "\n".join(
-                event_type.cpp_input_handler(CppIdentifier("downstream"))
-                for event_type in event_types
-            )
-            + """
+                + "\n".join(
+                    event_type.cpp_input_handler(CppIdentifier("downstream"))
+                    for event_type in event_types
+                )
+                + """
                 void flush() { downstream.flush(); }
             };"""
+            ),
         ),
-        CppFunctionScopeDefs(""),
+        (),
     )
 
 
@@ -129,43 +140,41 @@ def _graph_funcs(
     event_types: Sequence[EventType],
     module_var: CppIdentifier,
 ) -> ModuleCodeFragment:
-    input_proc_code = _input_processor(event_types)
-    return ModuleCodeFragment(
-        input_proc_code.includes,
-        input_proc_code.sys_includes + ("memory",),
-        CppNamespaceScopeDefs(
-            input_proc_code.namespace_scope_defs
-            + "\n\n"
-            + f"""\
+    return _input_processor(event_types) + ModuleCodeFragment(
+        (),
+        ("memory",),
+        (
+            CppNamespaceScopeDefs(f"""\
             auto create_processor(
                     std::shared_ptr<tcspc::context> {gencontext.context_varname},
                     params const &{gencontext.params_varname}) {{
                 return input_processor({graph_code.lstrip()});
-            }}
-
+            }}"""),
+            CppNamespaceScopeDefs("""\
             using processor_type = decltype(create_processor(
                     std::shared_ptr<tcspc::context>(),
-                    params()));"""
+                    params()));"""),
         ),
-        CppFunctionScopeDefs(
-            input_proc_code.nanobind_defs
-            + "\n"
-            + f'nanobind::class_<processor_type>({module_var}, "Processor")'
-            + (
-                '\n    .def("handle", &processor_type::handle, nanobind::call_guard<nanobind::gil_scoped_release>())'
-                if len(event_types) > 0
-                else ""
-            )
-            + '\n    .def("flush", &processor_type::flush, nanobind::call_guard<nanobind::gil_scoped_release>());\n'
-            + "\n"
-            + f'{module_var}.def("create_processor", &create_processor);'
+        (
+            CppFunctionScopeDefs(
+                f'nanobind::class_<processor_type>({module_var}, "Processor")'
+                + (
+                    '\n    .def("handle", &processor_type::handle, nanobind::call_guard<nanobind::gil_scoped_release>())'
+                    if len(event_types) > 0
+                    else ""
+                )
+                + '\n    .def("flush", &processor_type::flush, nanobind::call_guard<nanobind::gil_scoped_release>());\n'
+            ),
+            CppFunctionScopeDefs(
+                f'{module_var}.def("create_processor", &create_processor);'
+            ),
         ),
     )
 
 
 def _module_code(
     module_name: str,
-    fragments: Iterable[ModuleCodeFragment],
+    fragments: ModuleCodeFragment,
     module_var: CppIdentifier,
 ) -> str:
     return "\n".join(
@@ -173,25 +182,19 @@ def _module_code(
             None,
             (
                 f"#define NB_DOMAIN {module_name}\n",
+                "".join(f'#include "{inc}"\n' for inc in fragments.includes),
                 "".join(
-                    f'#include "{inc}"\n'
-                    for frag in fragments
-                    for inc in frag.includes
-                ),
-                "".join(
-                    f"#include <{inc}>\n"
-                    for frag in fragments
-                    for inc in frag.sys_includes
+                    f"#include <{inc}>\n" for inc in fragments.sys_includes
                 ),
                 "namespace {",
                 "\n".join(
-                    frag.namespace_scope_defs.rstrip() + "\n"
-                    for frag in fragments
+                    dfn.strip() + "\n"
+                    for dfn in fragments.namespace_scope_defs
                 ),
                 "} // namespace\n",
                 f"NB_MODULE({module_name}, {module_var}) {{",
                 "\n".join(
-                    frag.nanobind_defs.rstrip() + "\n" for frag in fragments
+                    dfn.rstrip() + "\n" for dfn in fragments.nanobind_defs
                 ).rstrip(),
                 "} // NB_MODULE\n",
             ),
@@ -223,8 +226,8 @@ def _graph_module_code(
             "nanobind/stl/string.h",
         ),
         (),
-        CppNamespaceScopeDefs(""),
-        CppFunctionScopeDefs(""),
+        (),
+        (),
     )
 
     genctx = CodeGenerationContext(
@@ -247,17 +250,19 @@ def _graph_module_code(
     proc_code = _graph_funcs(graph_expr, genctx, input_event_types, mod_var)
 
     accessor_types = set(typ for tag, typ in graph.accesses())
-    accessors = tuple(typ.cpp_bindings(mod_var) for typ in accessor_types)
+    accessors = functools.reduce(
+        lambda f, g: f + g,
+        (typ.cpp_bindings(mod_var) for typ in accessor_types),
+        ModuleCodeFragment((), (), (), ()),
+    )
 
     return _module_code(
         module_name,
-        (
-            default_includes,
-            excs,
-            param_struct,
-            context_code,
-            proc_code,
-        )
+        default_includes
+        + excs
+        + param_struct
+        + context_code
+        + proc_code
         + accessors,
         mod_var,
     )

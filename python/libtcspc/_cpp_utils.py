@@ -36,6 +36,8 @@ import typing
 from collections.abc import Iterable
 from dataclasses import dataclass
 
+from typing_extensions import Self
+
 from . import _include, _odext
 
 _builder = _odext.Builder(
@@ -80,8 +82,16 @@ string_type = CppTypeName("std::string")
 class ModuleCodeFragment:
     includes: tuple[str, ...]
     sys_includes: tuple[str, ...]
-    namespace_scope_defs: CppNamespaceScopeDefs
-    nanobind_defs: CppFunctionScopeDefs
+    namespace_scope_defs: tuple[CppNamespaceScopeDefs, ...]
+    nanobind_defs: tuple[CppFunctionScopeDefs, ...]
+
+    def __add__(self, rhs: Self) -> Self:
+        return type(self)(
+            self.includes + rhs.includes,
+            self.sys_includes + rhs.sys_includes,
+            self.namespace_scope_defs + rhs.namespace_scope_defs,
+            self.nanobind_defs + rhs.nanobind_defs,
+        )
 
 
 @functools.cache
