@@ -136,7 +136,7 @@ def _input_processor(
     )
 
 
-def _graph_funcs(
+def _processor_creation(
     graph_code: CppExpression,
     gencontext: CodeGenerationContext,
     event_types: Sequence[EventType],
@@ -250,7 +250,9 @@ def _graph_module_code(
 
     context_code = _context_type(graph.accesses(), mod_var)
 
-    proc_code = _graph_funcs(graph_expr, genctx, input_event_types, mod_var)
+    proc_code = _processor_creation(
+        graph_expr, genctx, input_event_types, mod_var
+    )
 
     accessor_types = set(typ for tag, typ in graph.accesses())
     accessors = functools.reduce(
