@@ -107,19 +107,21 @@ def _param_struct(
 
 
 # No-op wrapper to limit event types to the requested ones.
-def _input_processor(event_types: Iterable[EventType]) -> ModuleCodeFragment:
+def _input_processor(
+    typename: CppTypeName, event_types: Iterable[EventType]
+) -> ModuleCodeFragment:
     return ModuleCodeFragment(
         (),
         (),
         (
             CppNamespaceScopeDefs(
-                """\
-            template <typename Downstream> class input_processor {
+                f"""\
+            template <typename Downstream> class {typename} {{
                 Downstream downstream;
 
             public:
-                explicit input_processor(Downstream &&downstream)
-                    : downstream(std::move(downstream)) {}
+                explicit {typename}(Downstream &&downstream)
+                    : downstream(std::move(downstream)) {{}}
             """
                 + "\n".join(
                     event_type.cpp_input_handler(CppIdentifier("downstream"))
@@ -140,7 +142,8 @@ def _graph_funcs(
     event_types: Sequence[EventType],
     module_var: CppIdentifier,
 ) -> ModuleCodeFragment:
-    return _input_processor(event_types) + ModuleCodeFragment(
+    input_proc_type = CppTypeName("input_processor")
+    return _input_processor(input_proc_type, event_types) + ModuleCodeFragment(
         (),
         ("memory",),
         (
@@ -148,7 +151,7 @@ def _graph_funcs(
             auto create_processor(
                     std::shared_ptr<tcspc::context> {gencontext.context_varname},
                     params const &{gencontext.params_varname}) {{
-                return input_processor({graph_code.lstrip()});
+                return {input_proc_type}({graph_code.lstrip()});
             }}"""),
             CppNamespaceScopeDefs("""\
             using processor_type = decltype(create_processor(
