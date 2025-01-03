@@ -59,6 +59,9 @@ TEST_CASE("bucket storage can be observed or extracted") {
     std::vector<int> v{42, 43, 44};
     auto b = bucket<int>(span(v), std::move(v));
 
+    CHECK_FALSE(b.check_storage_type<int>());
+    CHECK(b.check_storage_type<std::vector<int>>());
+
     CHECK_THROWS_AS(b.storage<int>(), std::bad_cast);
     CHECK(b.storage<std::vector<int>>()[1] == 43);
 

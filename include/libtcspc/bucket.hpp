@@ -23,6 +23,7 @@
 #include <ostream>
 #include <stdexcept>
 #include <type_traits>
+#include <typeinfo>
 #include <utility>
 #include <vector>
 
@@ -342,6 +343,18 @@ template <typename T> class bucket {
     // We do not prevent access to storage of owning instance, but the value
     // inside the move_only_any will not be accessible because owning_storage
     // is a private type.
+
+    /**
+     * \brief Check if the underlying storage is of a given type.
+     *
+     * \tparam S the storage type to check
+     *
+     * \return true if this bucket's storage is of type \p S
+     */
+    template <typename S>
+    [[nodiscard]] auto check_storage_type() const noexcept -> bool {
+        return store.type() == typeid(S);
+    }
 
     /**
      * \brief Observe the underlying storage.
