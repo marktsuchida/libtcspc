@@ -120,6 +120,9 @@ template <typename T> class bucket {
     internal::move_only_any store;
 
   public:
+    /**
+     * \brief Construct an empty bucket.
+     */
     bucket() noexcept = default;
 
     /**
@@ -135,7 +138,7 @@ template <typename T> class bucket {
 
     ~bucket() = default;
 
-    /** \brief Copy constructor. */
+    /** \brief Copy constructor (allocates new private storage). */
     bucket(bucket const &other)
         : store([&s = other.s] {
               using TMut = std::remove_cv_t<T>;
@@ -153,7 +156,7 @@ template <typename T> class bucket {
     /** \brief Move constructor. */
     bucket(bucket &&other) noexcept = default;
 
-    /** \brief Copy assignment operator. */
+    /** \brief Copy assignment operator (allocates new private storage). */
     auto operator=(bucket const &other) -> bucket & {
         bucket t(other);
         std::swap(*this, t);
