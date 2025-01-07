@@ -347,7 +347,7 @@ template <typename T> class bucket {
     /**
      * \brief Check if the underlying storage is of a given type.
      *
-     * \tparam S the storage type to check
+     * \tparam S the storage type to check for
      *
      * \return true if this bucket's storage is of type \p S
      */
