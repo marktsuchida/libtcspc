@@ -17,6 +17,8 @@
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/generators/catch_generators.hpp>
 
+#include <functional>
+
 namespace tcspc {
 
 namespace {
@@ -118,21 +120,21 @@ TEST_CASE("introspect: type_erased_processor") {
     auto const node = g.entry_points()[0];
     CHECK(g.node_info(node) == info);
     CHECK(g.edges().size() == 2);
-    auto const virtual_node = [&] {
+    auto const virtual_node = std::invoke([&] {
         for (auto const &e : g.edges()) {
             if (e.first == node)
                 return e.second;
         }
         throw;
-    }();
+    });
     CHECK(g.node_info(virtual_node).name() == "virtual_processor_impl");
-    auto const sink_node = [&] {
+    auto const sink_node = std::invoke([&] {
         for (auto const &e : g.edges()) {
             if (e.first == virtual_node)
                 return e.second;
         }
         throw;
-    }();
+    });
     CHECK(g.node_info(sink_node).name() == "null_sink");
 }
 

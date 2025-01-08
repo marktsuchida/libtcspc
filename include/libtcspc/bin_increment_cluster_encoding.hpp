@@ -12,6 +12,7 @@
 #include <cassert>
 #include <cstddef>
 #include <cstring>
+#include <functional>
 #include <iterator>
 #include <limits>
 #include <type_traits>
@@ -118,11 +119,11 @@ template <typename BinIndex> class bin_increment_cluster_decoder {
                 is_long_mode ? 1 + traits::large_size_element_count : 1;
             std::size_t const cluster_size =
                 is_long_mode
-                    ? [sit = std::next(it)] {
+                    ? std::invoke([sit = std::next(it)] {
                           std::size_t size{};
                           std::memcpy(&size, &*sit, sizeof(size));
                           return size;
-                      }()
+                      })
                     : static_cast<typename traits::encoded_size_type>(*it);
             auto const start =
                 std::next(it, static_cast<std::ptrdiff_t>(size_of_size));

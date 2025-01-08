@@ -20,6 +20,7 @@
 #include <catch2/generators/catch_generators.hpp>
 
 #include <cstddef>
+#include <functional>
 #include <limits>
 #include <memory>
 #include <set>
@@ -69,21 +70,21 @@ auto check_introspect_merge_input(MI const &input,
     auto const node = g.entry_points()[0];
     CHECK(g.node_info(node) == info);
     CHECK(g.edges().size() == 2);
-    auto const impl_node = [&] {
+    auto const impl_node = std::invoke([&] {
         for (auto const &e : g.edges()) {
             if (e.first == node)
                 return e.second;
         }
         throw;
-    }();
+    });
     CHECK(g.node_info(impl_node).name() == impl_name);
-    auto const sink_node = [&] {
+    auto const sink_node = std::invoke([&] {
         for (auto const &e : g.edges()) {
             if (e.first == impl_node)
                 return e.second;
         }
         throw;
-    }();
+    });
     CHECK(g.node_info(sink_node).name() == "null_sink");
     return info;
 }

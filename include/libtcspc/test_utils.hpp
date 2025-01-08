@@ -717,6 +717,7 @@ template <typename EventList> class capture_output {
     template <typename Event, typename = std::enable_if_t<type_list_contains_v<
                                   EventList, remove_cvref_t<Event>>>>
     void handle(Event &&event) {
+        // TODO std::invoke() in C++20 (readability).
         static constexpr auto valcat = [] {
             if constexpr (std::is_lvalue_reference_v<Event>) {
                 if constexpr (std::is_const_v<std::remove_reference_t<Event>>)

@@ -251,13 +251,13 @@ template <typename Access> access_tracker<Access>::~access_tracker() {
  * \return pointer to the object
  */
 #define LIBTCSPC_OBJECT_FROM_TRACKER(obj_type, tracker_field_name, tracker)   \
-    [&tracker]() {                                                            \
+    std::invoke([&tracker]() {                                                \
         LIBTCSPC_INTERNAL_DISABLE_OFFSETOF_WARNING;                           \
         return reinterpret_cast<std::add_pointer_t<obj_type>>(                \
             reinterpret_cast<std::byte *>(&(tracker)) -                       \
             offsetof(obj_type, tracker_field_name));                          \
         LIBTCSPC_INTERNAL_POP_OFFSETOF_WARNING;                               \
-    }()
+    })
 
 // Note: offsetof() is "conditionally-supported" on non-standard-layout types
 // as of C++17. I expect this not to be a problem in practice, as long as

@@ -9,6 +9,7 @@
 #include <catch2/catch_test_macros.hpp>
 
 #include <cstddef>
+#include <functional>
 #include <stdexcept>
 #include <string>
 #include <typeindex>
@@ -160,10 +161,10 @@ TEST_CASE("processor_graph push_entry_point", "[processor_graph]") {
     test_proc const p1;
     g.push_entry_point(&p1);
     CHECK(g.nodes().size() == 2);
-    auto const node1 = [&] {
+    auto const node1 = std::invoke([&] {
         auto const nodes = g.nodes();
         return nodes[0] == node0 ? nodes[1] : nodes[0];
-    }();
+    });
     CHECK(g.edges().size() == 1);
     CHECK(g.edges()[0] == std::pair{node1, node0});
     CHECK_FALSE(g.is_entry_point(node0));

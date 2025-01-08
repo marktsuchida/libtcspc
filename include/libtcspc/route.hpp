@@ -18,6 +18,7 @@
 #include <array>
 #include <cstddef>
 #include <exception>
+#include <functional>
 #include <limits>
 #include <numeric>
 #include <type_traits>
@@ -307,20 +308,20 @@ class channel_router {
     template <typename ChannelIndexPair>
     explicit channel_router(
         std::array<ChannelIndexPair, N> const &channel_indices)
-        : channels([&] {
+        : channels(std::invoke([&] {
               std::array<typename DataTypes::channel_type, N> ret{};
               std::transform(channel_indices.begin(), channel_indices.end(),
                              ret.begin(),
                              [](auto p) { return std::get<0>(p); });
               return ret;
-          }()),
-          indices([&] {
+          })),
+          indices(std::invoke([&] {
               std::array<std::size_t, N> ret{};
               std::transform(channel_indices.begin(), channel_indices.end(),
                              ret.begin(),
                              [](auto p) { return std::get<1>(p); });
               return ret;
-          }()) {
+          })) {
 
         static_assert(
             std::is_convertible_v<decltype(std::get<0>(channel_indices[0])),

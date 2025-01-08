@@ -12,6 +12,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <exception>
+#include <functional>
 #include <iterator>
 #include <limits>
 #include <set>
@@ -162,13 +163,15 @@ template <typename Downstream> class write_vcd {
             write_header();
 
         auto const chan = std::abs(event.channel);
-        auto const chanchar = [this](channel_type ch) {
-            auto it = std::find(channels.begin(), channels.end(), ch);
-            if (it == channels.end())
-                return '\0';
-            auto const idx = std::distance(channels.begin(), it);
-            return char('a' + idx);
-        }(chan);
+        auto const chanchar = std::invoke(
+            [this](channel_type ch) {
+                auto it = std::find(channels.begin(), channels.end(), ch);
+                if (it == channels.end())
+                    return '\0';
+                auto const idx = std::distance(channels.begin(), it);
+                return char('a' + idx);
+            },
+            chan);
         if (chanchar) {
             write_time_line(event.abstime);
             char const change = event.channel > 0 ? '1' : '0';

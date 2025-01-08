@@ -412,16 +412,20 @@ class Graph:
             else (CppExpression(f"std::tuple{{{moved_input_names}}}"))
         )
         external_name_params = ", ".join(f"auto &&{d}" for d in external_names)
-        downstream_args = ", ".join(downstreams)
+        comma_downstream_args = (
+            "".join(f", {ds}" for ds in downstreams)
+            if len(downstreams)
+            else ""
+        )
         node_def_lines = "\n".join(node_defs)
         captures = ", ".join(
             (gencontext.context_varname, f"&{gencontext.params_varname}")
         )
         return CppExpression(
-            f"""[{captures}]({external_name_params}) {{
+            f"""std::invoke([{captures}]({external_name_params}) {{
                     {node_def_lines}
                     return {return_expr};
-                }}({downstream_args})"""
+                }}{comma_downstream_args})"""
         )
 
     def parameters(self) -> Sequence[tuple[Param, CppTypeName]]:

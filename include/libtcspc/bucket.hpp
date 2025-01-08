@@ -17,6 +17,7 @@
 #include <cassert>
 #include <condition_variable>
 #include <cstddef>
+#include <functional>
 #include <limits>
 #include <memory>
 #include <mutex>
@@ -140,7 +141,7 @@ template <typename T> class bucket {
 
     /** \brief Copy constructor (allocates new private storage). */
     bucket(bucket const &other)
-        : store([&s = other.s] {
+        : store(std::invoke([&s = other.s] {
               using TMut = std::remove_cv_t<T>;
               // NOLINTNEXTLINE(cppcoreguidelines-avoid-c-arrays,modernize-avoid-c-arrays)
               std::unique_ptr<TMut[]> r(s.empty() ? nullptr
@@ -148,7 +149,7 @@ template <typename T> class bucket {
               std::copy(s.begin(), s.end(), r.get());
               return internal::move_only_any(
                   std::in_place_type<owning_storage>, std::move(r));
-          }()) {
+          })) {
         T *ptr = internal::move_only_any_cast<owning_storage>(&store)->p.get();
         s = {ptr, other.s.size()};
     }
