@@ -36,10 +36,14 @@ for section in root:
         had_bd = False
         for bd in section.findall("briefdescription"):
             had_bd = True
-            section.remove(bd)
+            bd.set("vislble", "no")
         assert had_bd
         section.insert(
-            0, ET.Element("detaileddescription", {"title": "Description"})
+            0,
+            ET.Element(
+                "detaileddescription",
+                {"title": "Description", "visible": "yes"},
+            ),
         )
 
 tree.write(outfile)
