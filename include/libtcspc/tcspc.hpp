@@ -817,6 +817,17 @@ namespace tcspc {
  *
  * \brief Processor introspection and Graphviz graph generation.
  *
+ * A rudimentary mechanism is provided to inspect a processing graph and its
+ * nodes. Every processor implements an `introspect_graph()` member function
+ * (see \ref processors) which returns a representation
+ * (`tcspc::processor_graph`) of the graph made up by that processor and all
+ * downstream processors. This graph can be queried for its nodes (identified
+ * by `tcspc::processor_node_id`) and edges, as well as basic information about
+ * each node (`tcspc::processor_info`).
+ *
+ * The graph can also be formatted as a Graphviz graph using
+ * `tcspc::graphviz_from_processor_graph()`.
+ *
  * \note Proceessor info and graph expose implementation details that may not
  * be stable. It is intended primarily for visualization, debugging, and
  * testing; not as a basis for automation.
