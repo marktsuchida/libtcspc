@@ -285,11 +285,11 @@ TEST_CASE("processor_graph merge", "[processor_graph]") {
 namespace internal {
 
 TEST_CASE("format hex addr", "[processor_graph]") {
-    if constexpr (sizeof(std::size_t) == 8) {
+    if constexpr (sizeof(void *) == 8) {
         CHECK(format_hex_addr(0) == "0x0000000000000000");
         CHECK(format_hex_addr(1) == "0x0000000000000001");
         CHECK(format_hex_addr(0x10000000'00000000uLL) == "0x1000000000000000");
-    } else if constexpr (sizeof(std::size_t) == 4) {
+    } else if constexpr (sizeof(void *) == 4) {
         CHECK(format_hex_addr(0) == "0x00000000");
         CHECK(format_hex_addr(1) == "0x00000001");
         CHECK(format_hex_addr(0x10000000u) == "0x10000000");

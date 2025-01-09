@@ -9,6 +9,7 @@
 #include <algorithm>
 #include <array>
 #include <charconv>
+#include <cstdint>
 #include <cstdlib>
 #include <iterator>
 #include <memory>
@@ -55,7 +56,7 @@ namespace internal {
  * `tcspc::processor_graph::node_info()`.
  */
 class processor_info {
-    void const *addr;
+    std::uintptr_t addr;
     std::type_index typ;
     std::string nm;
 
@@ -73,7 +74,8 @@ class processor_info {
      */
     template <typename Processor>
     explicit processor_info(Processor const *processor, std::string name)
-        : addr(processor), typ(typeid(Processor)), nm(std::move(name)) {}
+        : addr(std::uintptr_t(processor)), typ(typeid(Processor)),
+          nm(std::move(name)) {}
 
     /**
      * \brief Return the address of the processor.
@@ -83,9 +85,7 @@ class processor_info {
      *
      * \return address of processor
      */
-    [[nodiscard]] auto address() const -> std::size_t {
-        return std::size_t(addr);
-    }
+    [[nodiscard]] auto address() const -> std::uintptr_t { return addr; }
 
     /**
      * \brief Return the C++ type name of the processor.
@@ -140,7 +140,7 @@ class processor_node_id {
     // the downstream having the same address). Pairing with the type id fixes
     // this issue, because a data member cannot have the same type as its
     // containing class.
-    std::size_t addr;
+    std::uintptr_t addr;
     std::type_index typ;
 
   public:
@@ -153,7 +153,7 @@ class processor_node_id {
      */
     template <typename Processor>
     explicit processor_node_id(Processor const *processor)
-        : addr(std::size_t(processor)), typ(typeid(Processor)) {}
+        : addr(std::uintptr_t(processor)), typ(typeid(Processor)) {}
 
     /** \brief Equality comparison operator. */
     friend auto operator==(processor_node_id const &lhs,
@@ -393,8 +393,8 @@ merge_processor_graphs(processor_graph const &a,
 
 namespace internal {
 
-inline auto format_hex_addr(std::size_t p) -> std::string {
-    std::array<char, sizeof(std::size_t) * 2 + 3> buf{};
+inline auto format_hex_addr(std::uintptr_t p) -> std::string {
+    std::array<char, sizeof(void *) * 2 + 3> buf{};
     std::fill(buf.begin(), buf.end(), '0');
     // NOLINTBEGIN(cppcoreguidelines-pro-bounds-pointer-arithmetic)
     auto const r =
