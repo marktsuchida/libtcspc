@@ -123,9 +123,9 @@ template <typename DataTypes, typename Downstream> class zero_base_abstime {
  */
 template <typename DataTypes = default_data_types, typename Downstream>
 auto delay(arg::delta<typename DataTypes::abstime_type> delta,
-           Downstream &&downstream) {
-    return internal::delay<DataTypes, Downstream>(
-        delta, std::forward<Downstream>(downstream));
+           Downstream downstream) {
+    return internal::delay<DataTypes, Downstream>(delta,
+                                                  std::move(downstream));
 }
 
 /**
@@ -154,9 +154,9 @@ auto delay(arg::delta<typename DataTypes::abstime_type> delta,
  * - Flush: pass through with no action
  */
 template <typename DataTypes = default_data_types, typename Downstream>
-auto zero_base_abstime(Downstream &&downstream) {
+auto zero_base_abstime(Downstream downstream) {
     return internal::zero_base_abstime<DataTypes, Downstream>(
-        std::forward<Downstream>(downstream));
+        std::move(downstream));
 }
 
 } // namespace tcspc

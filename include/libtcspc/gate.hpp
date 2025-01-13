@@ -107,9 +107,9 @@ class gate {
  */
 template <typename GatedEventList, typename OpenEvent, typename CloseEvent,
           typename Downstream>
-auto gate(arg::initially_open<bool> initially_open, Downstream &&downstream) {
+auto gate(arg::initially_open<bool> initially_open, Downstream downstream) {
     return internal::gate<GatedEventList, OpenEvent, CloseEvent, Downstream>(
-        initially_open, std::forward<Downstream>(downstream));
+        initially_open, std::move(downstream));
 }
 
 } // namespace tcspc

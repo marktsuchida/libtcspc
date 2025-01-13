@@ -38,7 +38,7 @@ template <typename Event, typename Downstream> class batch_from_bytes {
   public:
     explicit batch_from_bytes(
         std::shared_ptr<bucket_source<Event>> buffer_provider,
-        Downstream &&downstream)
+        Downstream downstream)
         : bsource(std::move(buffer_provider)),
           downstream(std::move(downstream)) {}
 
@@ -202,9 +202,9 @@ template <typename Event, typename Downstream> class unbatch_from_bytes {
  */
 template <typename Event, typename Downstream>
 auto batch_from_bytes(std::shared_ptr<bucket_source<Event>> buffer_provider,
-                      Downstream &&downstream) {
+                      Downstream downstream) {
     return internal::batch_from_bytes<Event, Downstream>(
-        std::move(buffer_provider), std::forward<Downstream>(downstream));
+        std::move(buffer_provider), std::move(downstream));
 }
 
 /**
@@ -238,9 +238,9 @@ auto batch_from_bytes(std::shared_ptr<bucket_source<Event>> buffer_provider,
  *   left over; pass through
  */
 template <typename Event, typename Downstream>
-auto unbatch_from_bytes(Downstream &&downstream) {
+auto unbatch_from_bytes(Downstream downstream) {
     return internal::unbatch_from_bytes<Event, Downstream>(
-        std::forward<Downstream>(downstream));
+        std::move(downstream));
 }
 
 } // namespace tcspc

@@ -72,9 +72,9 @@ class select {
  * - Flush: pass through with no action
  */
 template <typename EventList, typename Downstream>
-auto select(Downstream &&downstream) {
+auto select(Downstream downstream) {
     return internal::select<EventList, false, Downstream>(
-        std::forward<Downstream>(downstream));
+        std::move(downstream));
 }
 
 /**
@@ -95,9 +95,9 @@ auto select(Downstream &&downstream) {
  * - All types: ignore
  * - Flush: pass through with no action
  */
-template <typename Downstream> auto select_none(Downstream &&downstream) {
+template <typename Downstream> auto select_none(Downstream downstream) {
     return internal::select<type_list<>, false, Downstream>(
-        std::forward<Downstream>(downstream));
+        std::move(downstream));
 }
 
 /**
@@ -120,9 +120,9 @@ template <typename Downstream> auto select_none(Downstream &&downstream) {
  * - Flush: pass through with no action
  */
 template <typename EventList, typename Downstream>
-auto select_not(Downstream &&downstream) {
+auto select_not(Downstream downstream) {
     return internal::select<EventList, true, Downstream>(
-        std::forward<Downstream>(downstream));
+        std::move(downstream));
 }
 
 /**
@@ -142,9 +142,9 @@ auto select_not(Downstream &&downstream) {
  * - All types: pass through with no action
  * - Flush: pass through with no action
  */
-template <typename Downstream> auto select_all(Downstream &&downstream) {
+template <typename Downstream> auto select_all(Downstream downstream) {
     return internal::select<type_list<>, true, Downstream>(
-        std::forward<Downstream>(downstream));
+        std::move(downstream));
 }
 
 } // namespace tcspc

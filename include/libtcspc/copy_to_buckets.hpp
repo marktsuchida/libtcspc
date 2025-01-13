@@ -36,7 +36,7 @@ template <typename T, typename Downstream> class copy_to_buckets {
 
   public:
     explicit copy_to_buckets(std::shared_ptr<bucket_source<T>> buffer_provider,
-                             Downstream &&downstream)
+                             Downstream downstream)
         : bsource(std::move(buffer_provider)),
           downstream(std::move(downstream)) {
         if (not bsource)
@@ -121,7 +121,7 @@ class copy_to_full_buckets {
     explicit copy_to_full_buckets(
         std::shared_ptr<bucket_source<T>> buffer_provider,
         arg::batch_size<std::size_t> batch_size,
-        LiveDownstream &&live_downstream, BatchDownstream &&batch_downstream)
+        LiveDownstream live_downstream, BatchDownstream batch_downstream)
         : bsource(std::move(buffer_provider)), bsize(batch_size.value),
           live_downstream(std::move(live_downstream)),
           batch_downstream(std::move(batch_downstream)) {
@@ -230,9 +230,9 @@ class copy_to_full_buckets {
  */
 template <typename T, typename Downstream>
 auto copy_to_buckets(std::shared_ptr<bucket_source<T>> buffer_provider,
-                     Downstream &&downstream) {
-    return internal::copy_to_buckets<T, Downstream>(
-        std::move(buffer_provider), std::forward<Downstream>(downstream));
+                     Downstream downstream) {
+    return internal::copy_to_buckets<T, Downstream>(std::move(buffer_provider),
+                                                    std::move(downstream));
 }
 
 /**
@@ -296,12 +296,11 @@ auto copy_to_buckets(std::shared_ptr<bucket_source<T>> buffer_provider,
 template <typename T, typename LiveDownstream, typename BatchDownstream>
 auto copy_to_full_buckets(std::shared_ptr<bucket_source<T>> buffer_provider,
                           arg::batch_size<std::size_t> batch_size,
-                          LiveDownstream &&live_downstream,
-                          BatchDownstream &&batch_downstream) {
+                          LiveDownstream live_downstream,
+                          BatchDownstream batch_downstream) {
     return internal::copy_to_full_buckets<T, LiveDownstream, BatchDownstream>(
-        std::move(buffer_provider), batch_size,
-        std::forward<LiveDownstream>(live_downstream),
-        std::forward<BatchDownstream>(batch_downstream));
+        std::move(buffer_provider), batch_size, std::move(live_downstream),
+        std::move(batch_downstream));
 }
 
 }; // namespace tcspc

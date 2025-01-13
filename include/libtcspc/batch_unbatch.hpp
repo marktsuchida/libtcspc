@@ -171,10 +171,9 @@ template <typename ContainerEvent, typename Downstream> class unbatch {
  */
 template <typename Event, typename Downstream>
 auto batch(std::shared_ptr<bucket_source<Event>> buffer_provider,
-           arg::batch_size<std::size_t> batch_size, Downstream &&downstream) {
+           arg::batch_size<std::size_t> batch_size, Downstream downstream) {
     return internal::batch<Event, Downstream>(
-        std::move(buffer_provider), batch_size,
-        std::forward<Downstream>(downstream));
+        std::move(buffer_provider), batch_size, std::move(downstream));
 }
 
 /**
@@ -201,9 +200,9 @@ auto batch(std::shared_ptr<bucket_source<Event>> buffer_provider,
  * - Flush: pass through with no action
  */
 template <typename ContainerEvent, typename Downstream>
-auto unbatch(Downstream &&downstream) {
+auto unbatch(Downstream downstream) {
     return internal::unbatch<ContainerEvent, Downstream>(
-        std::forward<Downstream>(downstream));
+        std::move(downstream));
 }
 
 /**
@@ -233,11 +232,10 @@ auto unbatch(Downstream &&downstream) {
  */
 template <typename Event, typename Downstream>
 auto process_in_batches(arg::batch_size<std::size_t> batch_size,
-                        Downstream &&downstream) {
+                        Downstream downstream) {
     return batch<Event>(
         recycling_bucket_source<Event>::create(arg::max_bucket_count<>{1}),
-        batch_size,
-        unbatch<bucket<Event>>(std::forward<Downstream>(downstream)));
+        batch_size, unbatch<bucket<Event>>(std::move(downstream)));
 }
 
 } // namespace tcspc

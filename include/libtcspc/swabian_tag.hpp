@@ -314,9 +314,9 @@ template <typename DataTypes, typename Downstream> class decode_swabian_tags {
  * - Flush: pass through with no action
  */
 template <typename DataTypes = default_data_types, typename Downstream>
-auto decode_swabian_tags(Downstream &&downstream) {
+auto decode_swabian_tags(Downstream downstream) {
     return internal::decode_swabian_tags<DataTypes, Downstream>(
-        std::forward<Downstream>(downstream));
+        std::move(downstream));
 }
 
 } // namespace tcspc

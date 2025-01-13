@@ -108,9 +108,9 @@ template <typename Event, typename Downstream> class append {
  * - Flush: pass through with no action
  */
 template <typename Event, typename Downstream>
-auto prepend(Event &&event, Downstream &&downstream) {
-    return internal::prepend<Event, Downstream>(
-        std::forward<Event>(event), std::forward<Downstream>(downstream));
+auto prepend(Event event, Downstream downstream) {
+    return internal::prepend<Event, Downstream>(std::move(event),
+                                                std::move(downstream));
 }
 
 /**
@@ -140,9 +140,9 @@ auto prepend(Event &&event, Downstream &&downstream) {
  * - Flush: emit \p event; pass through
  */
 template <typename Event, typename Downstream>
-auto append(Event &&event, Downstream &&downstream) {
-    return internal::append<Event, Downstream>(
-        std::forward<Event>(event), std::forward<Downstream>(downstream));
+auto append(Event event, Downstream downstream) {
+    return internal::append<Event, Downstream>(std::move(event),
+                                               std::move(downstream));
 }
 
 } // namespace tcspc

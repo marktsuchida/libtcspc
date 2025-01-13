@@ -906,7 +906,7 @@ template <typename Event, typename Downstream> class extract_bucket {
     Downstream downstream;
 
   public:
-    explicit extract_bucket(Downstream &&downstream)
+    explicit extract_bucket(Downstream downstream)
         : downstream(std::move(downstream)) {}
 
     [[nodiscard]] auto introspect_node() const -> processor_info {
@@ -947,9 +947,8 @@ template <typename Event, typename Downstream> class extract_bucket {
  * - Flush: pass through with no action
  */
 template <typename Event, typename Downstream>
-auto extract_bucket(Downstream &&downstream) {
-    return internal::extract_bucket<Event, Downstream>(
-        std::forward<Downstream>(downstream));
+auto extract_bucket(Downstream downstream) {
+    return internal::extract_bucket<Event, Downstream>(std::move(downstream));
 }
 
 } // namespace tcspc

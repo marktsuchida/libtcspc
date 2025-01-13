@@ -276,10 +276,9 @@ binary_file_output_stream(std::string const &filename,
  *
  * \return output stream
  */
-template <typename OStream>
-inline auto ostream_output_stream(OStream &&stream) {
+template <typename OStream> inline auto ostream_output_stream(OStream stream) {
     static_assert(std::is_base_of_v<std::ostream, OStream>);
-    return internal::ostream_output_stream(std::forward<OStream>(stream));
+    return internal::ostream_output_stream(std::move(stream));
 }
 
 /**
@@ -493,19 +492,17 @@ template <typename OutputStream> class write_binary_stream {
  */
 template <typename OutputStream>
 auto write_binary_stream(
-    OutputStream &&stream,
+    OutputStream stream,
     std::shared_ptr<bucket_source<std::byte>> buffer_provider,
     arg::granularity<std::size_t> granularity) {
     // Support direct passing of C++ iostreams stream.
     if constexpr (std::is_base_of_v<std::ostream, OutputStream>) {
-        auto wrapped =
-            ostream_output_stream(std::forward<OutputStream>(stream));
+        auto wrapped = ostream_output_stream(std::move(stream));
         return internal::write_binary_stream<decltype(wrapped)>(
             std::move(wrapped), std::move(buffer_provider), granularity);
     } else {
         return internal::write_binary_stream<OutputStream>(
-            std::forward<OutputStream>(stream), std::move(buffer_provider),
-            granularity);
+            std::move(stream), std::move(buffer_provider), granularity);
     }
 }
 

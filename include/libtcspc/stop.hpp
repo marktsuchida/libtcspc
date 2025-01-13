@@ -102,10 +102,10 @@ class stop {
  */
 template <typename EventList, typename Exception = std::runtime_error,
           typename Downstream>
-auto stop_with_error(std::string message_prefix, Downstream &&downstream) {
+auto stop_with_error(std::string message_prefix, Downstream downstream) {
     static_assert(not std::is_same_v<Exception, end_of_processing>);
     return internal::stop<EventList, Exception, Downstream>(
-        std::move(message_prefix), std::forward<Downstream>(downstream));
+        std::move(message_prefix), std::move(downstream));
 }
 
 /**
@@ -133,9 +133,9 @@ auto stop_with_error(std::string message_prefix, Downstream &&downstream) {
  * - Flush: pass through with no action
  */
 template <typename EventList, typename Downstream>
-auto stop(std::string message_prefix, Downstream &&downstream) {
+auto stop(std::string message_prefix, Downstream downstream) {
     return internal::stop<EventList, end_of_processing, Downstream>(
-        std::move(message_prefix), std::forward<Downstream>(downstream));
+        std::move(message_prefix), std::move(downstream));
 }
 
 } // namespace tcspc

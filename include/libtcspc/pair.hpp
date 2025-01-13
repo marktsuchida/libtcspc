@@ -405,10 +405,9 @@ auto pair_all(
     arg::start_channel<typename DataTypes::channel_type> start_channel,
     std::array<typename DataTypes::channel_type, NStopChannels> stop_channels,
     arg::time_window<typename DataTypes::abstime_type> time_window,
-    Downstream &&downstream) {
+    Downstream downstream) {
     return internal::pair_all<NStopChannels, DataTypes, Downstream>(
-        start_channel, stop_channels, time_window,
-        std::forward<Downstream>(downstream));
+        start_channel, stop_channels, time_window, std::move(downstream));
 }
 
 /**
@@ -457,10 +456,9 @@ auto pair_one(
     arg::start_channel<typename DataTypes::channel_type> start_channel,
     std::array<typename DataTypes::channel_type, NStopChannels> stop_channels,
     arg::time_window<typename DataTypes::abstime_type> time_window,
-    Downstream &&downstream) {
+    Downstream downstream) {
     return internal::pair_one<NStopChannels, DataTypes, Downstream>(
-        start_channel, stop_channels, time_window,
-        std::forward<Downstream>(downstream));
+        start_channel, stop_channels, time_window, std::move(downstream));
 }
 
 /**
@@ -508,10 +506,9 @@ auto pair_all_between(
     arg::start_channel<typename DataTypes::channel_type> start_channel,
     std::array<typename DataTypes::channel_type, NStopChannels> stop_channels,
     arg::time_window<typename DataTypes::abstime_type> time_window,
-    Downstream &&downstream) {
+    Downstream downstream) {
     return internal::pair_all_between<NStopChannels, DataTypes, Downstream>(
-        start_channel, stop_channels, time_window,
-        std::forward<Downstream>(downstream));
+        start_channel, stop_channels, time_window, std::move(downstream));
 }
 
 /**
@@ -560,10 +557,9 @@ auto pair_one_between(
     arg::start_channel<typename DataTypes::channel_type> start_channel,
     std::array<typename DataTypes::channel_type, NStopChannels> stop_channels,
     arg::time_window<typename DataTypes::abstime_type> time_window,
-    Downstream &&downstream) {
+    Downstream downstream) {
     return internal::pair_one_between<NStopChannels, DataTypes, Downstream>(
-        start_channel, stop_channels, time_window,
-        std::forward<Downstream>(downstream));
+        start_channel, stop_channels, time_window, std::move(downstream));
 }
 
 } // namespace tcspc

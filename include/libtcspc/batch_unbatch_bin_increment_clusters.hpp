@@ -260,10 +260,10 @@ auto batch_bin_increment_clusters(
     std::shared_ptr<bucket_source<typename DataTypes::bin_index_type>>
         buffer_provider,
     arg::bucket_size<std::size_t> bucket_size,
-    arg::batch_size<std::size_t> batch_size, Downstream &&downstream) {
+    arg::batch_size<std::size_t> batch_size, Downstream downstream) {
     return internal::batch_bin_increment_clusters<DataTypes, Downstream>(
         std::move(buffer_provider), bucket_size, batch_size,
-        std::forward<Downstream>(downstream));
+        std::move(downstream));
 }
 
 /**
@@ -293,9 +293,9 @@ auto batch_bin_increment_clusters(
  * - Flush: pass through with no action
  */
 template <typename DataTypes = default_data_types, typename Downstream>
-auto unbatch_bin_increment_clusters(Downstream &&downstream) {
+auto unbatch_bin_increment_clusters(Downstream downstream) {
     return internal::unbatch_bin_increment_clusters<DataTypes, Downstream>(
-        std::forward<Downstream>(downstream));
+        std::move(downstream));
 }
 
 } // namespace tcspc

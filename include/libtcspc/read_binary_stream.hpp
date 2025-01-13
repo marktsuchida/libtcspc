@@ -326,10 +326,9 @@ inline auto binary_file_input_stream(
  *
  * \return input stream
  */
-template <typename IStream>
-inline auto istream_input_stream(IStream &&stream) {
+template <typename IStream> inline auto istream_input_stream(IStream stream) {
     static_assert(std::is_base_of_v<std::istream, IStream>);
-    return internal::istream_input_stream(std::forward<IStream>(stream));
+    return internal::istream_input_stream(std::move(stream));
 }
 
 /**
@@ -588,23 +587,22 @@ class read_binary_stream {
  *   `sizeof(Event)` bytes left over
  */
 template <typename Event, typename InputStream, typename Downstream>
-auto read_binary_stream(InputStream &&stream,
+auto read_binary_stream(InputStream stream,
                         arg::max_length<std::uint64_t> max_length,
                         std::shared_ptr<bucket_source<Event>> buffer_provider,
                         arg::granularity<std::size_t> granularity,
-                        Downstream &&downstream) {
+                        Downstream downstream) {
     // Support direct passing of C++ iostreams stream.
     if constexpr (std::is_base_of_v<std::istream, InputStream>) {
-        auto wrapped = istream_input_stream(std::forward<InputStream>(stream));
+        auto wrapped = istream_input_stream(std::move(stream));
         return internal::read_binary_stream<decltype(wrapped), Event,
                                             Downstream>(
             std::move(wrapped), max_length, std::move(buffer_provider),
-            granularity, std::forward<Downstream>(downstream));
+            granularity, std::move(downstream));
     } else {
         return internal::read_binary_stream<InputStream, Event, Downstream>(
-            std::forward<InputStream>(stream), max_length,
-            std::move(buffer_provider), granularity,
-            std::forward<Downstream>(downstream));
+            std::move(stream), max_length, std::move(buffer_provider),
+            granularity, std::move(downstream));
     }
 }
 

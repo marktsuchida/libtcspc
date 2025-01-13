@@ -239,10 +239,10 @@ class merge_input {
 template <typename EventList, typename DataTypes = default_data_types,
           typename Downstream>
 auto merge(arg::max_buffered<std::size_t> max_buffered,
-           Downstream &&downstream) {
+           Downstream downstream) {
     auto p = std::make_shared<
         internal::merge_impl<EventList, DataTypes, Downstream>>(
-        max_buffered, std::forward<Downstream>(downstream));
+        max_buffered, std::move(downstream));
     return std::pair{
         internal::merge_input<0, EventList, DataTypes, Downstream>(p),
         internal::merge_input<1, EventList, DataTypes, Downstream>(p)};
@@ -299,14 +299,14 @@ auto merge(arg::max_buffered<std::size_t> max_buffered,
 template <std::size_t N, typename EventList,
           typename DataTypes = default_data_types, typename Downstream>
 auto merge_n(arg::max_buffered<std::size_t> max_buffered,
-             Downstream &&downstream) {
+             Downstream downstream) {
     if constexpr (N == 0) {
         return std::tuple{};
     } else if constexpr (N == 1) {
-        return std::tuple{std::forward<Downstream>(downstream)};
+        return std::tuple{std::move(downstream)};
     } else {
-        auto [final_in0, final_in1] = merge<EventList, DataTypes>(
-            max_buffered, std::forward<Downstream>(downstream));
+        auto [final_in0, final_in1] =
+            merge<EventList, DataTypes>(max_buffered, std::move(downstream));
 
         std::size_t const left = N / 2;
         std::size_t const right = N - left;
@@ -454,10 +454,10 @@ auto make_merge_unsorted_inputs(
  * - Flush: pass through a single flush once all inputs have been flushed
  */
 template <std::size_t N = 2, typename Downstream>
-auto merge_n_unsorted(Downstream &&downstream) {
+auto merge_n_unsorted(Downstream downstream) {
     auto impl = std::make_shared<internal::merge_unsorted_impl<N, Downstream>>(
-        std::forward<Downstream>(downstream));
-    return internal::make_merge_unsorted_inputs(impl,
+        std::move(downstream));
+    return internal::make_merge_unsorted_inputs(std::move(impl),
                                                 std::make_index_sequence<N>());
 }
 

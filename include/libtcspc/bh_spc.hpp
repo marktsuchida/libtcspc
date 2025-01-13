@@ -864,9 +864,9 @@ class decode_bh_spc {
  * - Flush: pass through with no action
  */
 template <typename DataTypes = default_data_types, typename Downstream>
-auto decode_bh_spc(Downstream &&downstream) {
+auto decode_bh_spc(Downstream downstream) {
     return internal::decode_bh_spc<DataTypes, bh_spc_event, false, Downstream>(
-        std::forward<Downstream>(downstream));
+        std::move(downstream));
 }
 
 /**
@@ -897,9 +897,9 @@ auto decode_bh_spc(Downstream &&downstream) {
  * - Flush: pass through with no action
  */
 template <typename DataTypes = default_data_types, typename Downstream>
-auto decode_bh_spc_with_intensity_counter(Downstream &&downstream) {
+auto decode_bh_spc_with_intensity_counter(Downstream downstream) {
     return internal::decode_bh_spc<DataTypes, bh_spc_event, true, Downstream>(
-        std::forward<Downstream>(downstream));
+        std::move(downstream));
 }
 
 /**
@@ -926,10 +926,9 @@ auto decode_bh_spc_with_intensity_counter(Downstream &&downstream) {
  * - Flush: pass through with no action
  */
 template <typename DataTypes = default_data_types, typename Downstream>
-auto decode_bh_spc600_4096ch(Downstream &&downstream) {
+auto decode_bh_spc600_4096ch(Downstream downstream) {
     return internal::decode_bh_spc<DataTypes, bh_spc600_4096ch_event, false,
-                                   Downstream>(
-        std::forward<Downstream>(downstream));
+                                   Downstream>(std::move(downstream));
 }
 
 /**
@@ -956,10 +955,9 @@ auto decode_bh_spc600_4096ch(Downstream &&downstream) {
  * - Flush: pass through with no action
  */
 template <typename DataTypes = default_data_types, typename Downstream>
-auto decode_bh_spc600_256ch(Downstream &&downstream) {
+auto decode_bh_spc600_256ch(Downstream downstream) {
     return internal::decode_bh_spc<DataTypes, bh_spc600_256ch_event, false,
-                                   Downstream>(
-        std::forward<Downstream>(downstream));
+                                   Downstream>(std::move(downstream));
 }
 
 } // namespace tcspc

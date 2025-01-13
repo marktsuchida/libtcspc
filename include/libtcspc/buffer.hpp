@@ -340,9 +340,9 @@ class buffer {
  */
 template <typename Event, typename Downstream>
 auto buffer(arg::threshold<std::size_t> threshold,
-            access_tracker<buffer_access> &&tracker, Downstream &&downstream) {
+            access_tracker<buffer_access> &&tracker, Downstream downstream) {
     return internal::buffer<Event, false, Downstream>(
-        threshold, std::move(tracker), std::forward<Downstream>(downstream));
+        threshold, std::move(tracker), std::move(downstream));
 }
 
 /**
@@ -405,10 +405,9 @@ template <typename Event, typename Rep, typename Period, typename Downstream>
 auto real_time_buffer(arg::threshold<std::size_t> threshold,
                       std::chrono::duration<Rep, Period> latency_limit,
                       access_tracker<buffer_access> &&tracker,
-                      Downstream &&downstream) {
+                      Downstream downstream) {
     return internal::buffer<Event, true, Downstream>(
-        threshold, latency_limit, std::move(tracker),
-        std::forward<Downstream>(downstream));
+        threshold, latency_limit, std::move(tracker), std::move(downstream));
 }
 
 } // namespace tcspc

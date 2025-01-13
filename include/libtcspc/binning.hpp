@@ -110,11 +110,10 @@ class map_to_datapoints {
  */
 template <typename Event, typename DataTypes = default_data_types,
           typename DataMapper, typename Downstream>
-auto map_to_datapoints(DataMapper &&mapper, Downstream &&downstream) {
+auto map_to_datapoints(DataMapper mapper, Downstream downstream) {
     return internal::map_to_datapoints<Event, DataTypes, DataMapper,
-                                       Downstream>(
-        std::forward<DataMapper>(mapper),
-        std::forward<Downstream>(downstream));
+                                       Downstream>(std::move(mapper),
+                                                   std::move(downstream));
 }
 
 /**
@@ -273,10 +272,9 @@ class map_to_bins {
  */
 template <typename DataTypes = default_data_types, typename BinMapper,
           typename Downstream>
-auto map_to_bins(BinMapper &&bin_mapper, Downstream &&downstream) {
+auto map_to_bins(BinMapper bin_mapper, Downstream downstream) {
     return internal::map_to_bins<DataTypes, BinMapper, Downstream>(
-        std::forward<BinMapper>(bin_mapper),
-        std::forward<Downstream>(downstream));
+        std::move(bin_mapper), std::move(downstream));
 }
 
 /**
@@ -619,10 +617,9 @@ class cluster_bin_increments {
  */
 template <typename StartEvent, typename StopEvent,
           typename DataTypes = default_data_types, typename Downstream>
-auto cluster_bin_increments(Downstream &&downstream) {
+auto cluster_bin_increments(Downstream downstream) {
     return internal::cluster_bin_increments<StartEvent, StopEvent, DataTypes,
-                                            Downstream>(
-        std::forward<Downstream>(downstream));
+                                            Downstream>(std::move(downstream));
 }
 
 } // namespace tcspc

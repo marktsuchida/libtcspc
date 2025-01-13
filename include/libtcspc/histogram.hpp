@@ -263,10 +263,10 @@ auto histogram(arg::num_bins<std::size_t> num_bins,
                arg::max_per_bin<typename DataTypes::bin_type> max_per_bin,
                std::shared_ptr<bucket_source<typename DataTypes::bin_type>>
                    buffer_provider,
-               Downstream &&downstream) {
+               Downstream downstream) {
     return internal::histogram<Policy, ResetEvent, DataTypes, Downstream>(
         num_bins, max_per_bin, std::move(buffer_provider),
-        std ::forward<Downstream>(downstream));
+        std::move(downstream));
 }
 
 } // namespace tcspc

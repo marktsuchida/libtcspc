@@ -292,9 +292,9 @@ class retime_periodic_sequences {
 template <typename DataTypes = default_data_types, typename Downstream>
 auto retime_periodic_sequences(
     arg::max_time_shift<typename DataTypes::abstime_type> max_time_shift,
-    Downstream &&downstream) {
+    Downstream downstream) {
     return internal::retime_periodic_sequences<DataTypes, Downstream>(
-        max_time_shift, std::forward<Downstream>(downstream));
+        max_time_shift, std::move(downstream));
 }
 
 namespace internal {
@@ -386,9 +386,9 @@ class extrapolate_periodic_sequences {
  */
 template <typename DataTypes = default_data_types, typename Downstream>
 auto extrapolate_periodic_sequences(arg::tick_index<std::size_t> tick_index,
-                                    Downstream &&downstream) {
+                                    Downstream downstream) {
     return internal::extrapolate_periodic_sequences<DataTypes, Downstream>(
-        tick_index, std::forward<Downstream>(downstream));
+        tick_index, std::move(downstream));
 }
 
 namespace internal {
@@ -474,9 +474,9 @@ class add_count_to_periodic_sequences {
  */
 template <typename DataTypes = default_data_types, typename Downstream>
 auto add_count_to_periodic_sequences(arg::count<std::size_t> count,
-                                     Downstream &&downstream) {
+                                     Downstream downstream) {
     return internal::add_count_to_periodic_sequences<DataTypes, Downstream>(
-        count, std::forward<Downstream>(downstream));
+        count, std::move(downstream));
 }
 
 namespace internal {
@@ -587,10 +587,10 @@ class convert_sequences_to_start_stop {
 template <typename TickEvent, typename StartEvent, typename StopEvent,
           typename Downstream>
 auto convert_sequences_to_start_stop(arg::count<std::size_t> count,
-                                     Downstream &&downstream) {
+                                     Downstream downstream) {
     return internal::convert_sequences_to_start_stop<TickEvent, StartEvent,
                                                      StopEvent, Downstream>(
-        count, std::forward<Downstream>(downstream));
+        count, std::move(downstream));
 }
 
 } // namespace tcspc

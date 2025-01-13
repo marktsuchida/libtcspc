@@ -149,9 +149,9 @@ template <typename EventList> class type_erased_processor {
                                       type_erased_processor> &&
             is_processor_of_list_v<internal::remove_cvref_t<Downstream>,
                                    event_list>>>
-    explicit type_erased_processor(Downstream &&downstream)
+    explicit type_erased_processor(Downstream downstream)
         : proc(std::make_unique<virtual_processor<Downstream>>(
-              std::forward<Downstream>(downstream))) {}
+              std::move(downstream))) {}
 
     /** \brief Implements processor requirement. */
     [[nodiscard]] auto introspect_node() const -> processor_info {

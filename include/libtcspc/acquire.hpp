@@ -92,11 +92,11 @@ template <typename T, typename Reader, typename Downstream> class acquire {
     }
 
   public:
-    explicit acquire(Reader &&reader,
+    explicit acquire(Reader reader,
                      std::shared_ptr<bucket_source<T>> buffer_provider,
                      arg::batch_size<std::size_t> batch_size,
                      access_tracker<acquire_access> tracker,
-                     Downstream &&downstream)
+                     Downstream downstream)
         : reader(std::move(reader)), bsource(std::move(buffer_provider)),
           bsize(batch_size.value), downstream(std::move(downstream)),
           trk(std::move(tracker)) {
@@ -246,10 +246,10 @@ class acquire_full_buckets {
 
   public:
     explicit acquire_full_buckets(
-        Reader &&reader, std::shared_ptr<bucket_source<T>> buffer_provider,
+        Reader reader, std::shared_ptr<bucket_source<T>> buffer_provider,
         arg::batch_size<std::size_t> batch_size,
-        access_tracker<acquire_access> tracker,
-        LiveDownstream &&live_downstream, BatchDownstream &&batch_downstream)
+        access_tracker<acquire_access> tracker, LiveDownstream live_downstream,
+        BatchDownstream batch_downstream)
         : reader(std::move(reader)), bsource(std::move(buffer_provider)),
           bsize(batch_size.value), live_downstream(std::move(live_downstream)),
           batch_downstream(std::move(batch_downstream)),
@@ -383,13 +383,12 @@ class acquire_full_buckets {
  *   If end of stream is indicated by the reader, flush the downstream.
  */
 template <typename T, typename Reader, typename Downstream>
-auto acquire(Reader &&reader,
-             std::shared_ptr<bucket_source<T>> buffer_provider,
+auto acquire(Reader reader, std::shared_ptr<bucket_source<T>> buffer_provider,
              arg::batch_size<std::size_t> batch_size,
-             access_tracker<acquire_access> tracker, Downstream &&downstream) {
+             access_tracker<acquire_access> tracker, Downstream downstream) {
     return internal::acquire<T, Reader, Downstream>(
-        std::forward<Reader>(reader), std::move(buffer_provider), batch_size,
-        std::move(tracker), std::forward<Downstream>(downstream));
+        std::move(reader), std::move(buffer_provider), batch_size,
+        std::move(tracker), std::move(downstream));
 }
 
 /**
@@ -450,17 +449,17 @@ auto acquire(Reader &&reader,
  */
 template <typename T, typename Reader, typename LiveDownstream,
           typename BatchDownstream>
-auto acquire_full_buckets(Reader &&reader,
+auto acquire_full_buckets(Reader reader,
                           std::shared_ptr<bucket_source<T>> buffer_provider,
                           arg::batch_size<std::size_t> batch_size,
                           access_tracker<acquire_access> tracker,
-                          LiveDownstream &&live_downstream,
-                          BatchDownstream &&batch_downstream) {
+                          LiveDownstream live_downstream,
+                          BatchDownstream batch_downstream) {
     return internal::acquire_full_buckets<T, Reader, LiveDownstream,
                                           BatchDownstream>(
-        std::forward<Reader>(reader), std::move(buffer_provider), batch_size,
-        std::move(tracker), std::forward<LiveDownstream>(live_downstream),
-        std::forward<BatchDownstream>(batch_downstream));
+        std::move(reader), std::move(buffer_provider), batch_size,
+        std::move(tracker), std::move(live_downstream),
+        std::move(batch_downstream));
 }
 
 /**

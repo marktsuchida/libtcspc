@@ -77,9 +77,9 @@ class match {
  */
 template <typename Event, typename OutEvent, typename Matcher,
           typename Downstream>
-auto match_replace(Matcher &&matcher, Downstream &&downstream) {
+auto match_replace(Matcher matcher, Downstream downstream) {
     return internal::match<Event, OutEvent, Matcher, false, Downstream>(
-        std::forward<Matcher>(matcher), std::forward<Downstream>(downstream));
+        std::move(matcher), std::move(downstream));
 }
 
 /**
@@ -118,9 +118,9 @@ auto match_replace(Matcher &&matcher, Downstream &&downstream) {
  */
 template <typename Event, typename OutEvent, typename Matcher,
           typename Downstream>
-auto match(Matcher &&matcher, Downstream &&downstream) {
+auto match(Matcher matcher, Downstream downstream) {
     return internal::match<Event, OutEvent, Matcher, true, Downstream>(
-        std::forward<Matcher>(matcher), std::forward<Downstream>(downstream));
+        std::move(matcher), std::move(downstream));
 }
 
 /**

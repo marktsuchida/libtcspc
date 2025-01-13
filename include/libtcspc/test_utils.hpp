@@ -951,9 +951,9 @@ auto capture_output(access_tracker<capture_output_access> &&tracker) {
  * - Flush: check that the registered outputs have been checked; pass through
  */
 template <typename Downstream>
-auto feed_input(feed_as value_category, Downstream &&downstream) {
-    return internal::feed_input<Downstream>(
-        value_category, std::forward<Downstream>(downstream));
+auto feed_input(feed_as value_category, Downstream downstream) {
+    return internal::feed_input<Downstream>(value_category,
+                                            std::move(downstream));
 }
 
 /**

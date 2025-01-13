@@ -227,10 +227,10 @@ class time_correlate_at_fraction {
  * - Flush: pass through with no action
  */
 template <typename DataTypes = default_data_types, typename Downstream>
-auto time_correlate_at_start(Downstream &&downstream) {
+auto time_correlate_at_start(Downstream downstream) {
     return internal::time_correlate_at_start_or_stop<DataTypes, true,
                                                      Downstream>(
-        std::forward<Downstream>(downstream));
+        std::move(downstream));
 }
 
 /**
@@ -266,10 +266,10 @@ auto time_correlate_at_start(Downstream &&downstream) {
  * - Flush: pass through with no action
  */
 template <typename DataTypes = default_data_types, typename Downstream>
-auto time_correlate_at_stop(Downstream &&downstream) {
+auto time_correlate_at_stop(Downstream downstream) {
     return internal::time_correlate_at_start_or_stop<DataTypes, false,
                                                      Downstream>(
-        std::forward<Downstream>(downstream));
+        std::move(downstream));
 }
 
 /**
@@ -312,10 +312,10 @@ auto time_correlate_at_stop(Downstream &&downstream) {
  */
 template <typename DataTypes = default_data_types,
           bool UseStartChannel = false, typename Downstream>
-auto time_correlate_at_midpoint(Downstream &&downstream) {
+auto time_correlate_at_midpoint(Downstream downstream) {
     return internal::time_correlate_at_midpoint<DataTypes, UseStartChannel,
                                                 Downstream>(
-        std::forward<Downstream>(downstream));
+        std::move(downstream));
 }
 
 /**
@@ -362,10 +362,10 @@ auto time_correlate_at_midpoint(Downstream &&downstream) {
 template <typename DataTypes = default_data_types,
           bool UseStartChannel = false, typename Downstream>
 auto time_correlate_at_fraction(arg::fraction<double> fraction,
-                                Downstream &&downstream) {
+                                Downstream downstream) {
     return internal::time_correlate_at_fraction<DataTypes, UseStartChannel,
                                                 Downstream>(
-        fraction, std::forward<Downstream>(downstream));
+        fraction, std::move(downstream));
 }
 
 namespace internal {
@@ -487,9 +487,9 @@ class remove_time_correlation {
  * - Flush: pass through with no action
  */
 template <typename DataTypes = default_data_types, typename Downstream>
-auto negate_difftime(Downstream &&downstream) {
+auto negate_difftime(Downstream downstream) {
     return internal::negate_difftime<DataTypes, Downstream>(
-        std::forward<Downstream>(downstream));
+        std::move(downstream));
 }
 
 /**
@@ -512,9 +512,9 @@ auto negate_difftime(Downstream &&downstream) {
  * - Flush: pass through with no action
  */
 template <typename DataTypes = default_data_types, typename Downstream>
-auto remove_time_correlation(Downstream &&downstream) {
+auto remove_time_correlation(Downstream downstream) {
     return internal::remove_time_correlation<DataTypes, Downstream>(
-        std::forward<Downstream>(downstream));
+        std::move(downstream));
 }
 
 } // namespace tcspc

@@ -172,8 +172,7 @@ auto regulate_time_reached(
         interval_threshold,
     arg::count_threshold<std::size_t> count_threshold, Downstream downstream) {
     return internal::regulate_time_reached<DataTypes, Downstream>(
-        interval_threshold, count_threshold,
-        std::forward<Downstream>(downstream));
+        interval_threshold, count_threshold, std::move(downstream));
 }
 
 } // namespace tcspc

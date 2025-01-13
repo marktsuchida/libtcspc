@@ -271,10 +271,9 @@ auto fit_periodic_sequences(arg::length<std::size_t> length,
                             arg::min_interval<double> min_interval,
                             arg::max_interval<double> max_interval,
                             arg::max_mse<double> max_mse,
-                            Downstream &&downstream) {
+                            Downstream downstream) {
     return internal::fit_periodic_sequences<Event, DataTypes, Downstream>(
-        length, min_interval, max_interval, max_mse,
-        std::forward<Downstream>(downstream));
+        length, min_interval, max_interval, max_mse, std::move(downstream));
 }
 
 } // namespace tcspc

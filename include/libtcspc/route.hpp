@@ -155,10 +155,9 @@ class route_homogeneous {
  */
 template <typename RoutedEventList, typename Router, std::size_t N,
           typename Downstream>
-auto route_homogeneous(Router &&router,
-                       std::array<Downstream, N> downstreams) {
+auto route_homogeneous(Router router, std::array<Downstream, N> downstreams) {
     return internal::route_homogeneous<RoutedEventList, Router, N, Downstream>(
-        std::forward<Router>(router), std::move(downstreams));
+        std::move(router), std::move(downstreams));
 }
 
 /**
@@ -198,10 +197,9 @@ auto route_homogeneous(Router &&router,
  * - Flush: broadcast to every downstream
  */
 template <typename RoutedEventList, typename Router, typename... Downstreams>
-auto route_homogeneous(Router &&router, Downstreams &&...downstreams) {
+auto route_homogeneous(Router router, Downstreams... downstreams) {
     return route_homogeneous<RoutedEventList, Router>(
-        std::forward<Router>(router),
-        std::array{std::forward<Downstreams>(downstreams)...});
+        std::move(router), std::array{std::move(downstreams)...});
 }
 
 /**
@@ -244,7 +242,7 @@ auto route_homogeneous(Router &&router, Downstreams &&...downstreams) {
  */
 template <typename RoutedEventList, typename BroadcastEventList = type_list<>,
           typename Router, typename... Downstreams>
-auto route(Router &&router, Downstreams &&...downstreams) {
+auto route(Router router, Downstreams... downstreams) {
     static_assert(is_type_list_v<RoutedEventList>);
     static_assert(is_type_list_v<BroadcastEventList>);
     static_assert(
@@ -256,10 +254,9 @@ auto route(Router &&router, Downstreams &&...downstreams) {
         type_list_union_t<RoutedEventList, BroadcastEventList>>;
     return route_homogeneous<RoutedEventList, Router, sizeof...(Downstreams),
                              type_erased_downstream>(
-        std::forward<Router>(router),
+        std::move(router),
         std::array<type_erased_downstream, sizeof...(Downstreams)>{
-            type_erased_downstream(
-                std::forward<Downstreams>(downstreams))...});
+            type_erased_downstream(std::move(downstreams))...});
 }
 
 /**
@@ -392,8 +389,8 @@ auto broadcast_homogeneous(std::array<Downstream, N> downstreams) {
  * - Flush: broadcast to every downstream
  */
 template <typename... Downstreams>
-auto broadcast_homogeneous(Downstreams &&...downstreams) {
-    auto arr = std::array{std::forward<Downstreams>(downstreams)...};
+auto broadcast_homogeneous(Downstreams... downstreams) {
+    auto arr = std::array{std::move(downstreams)...};
     return broadcast_homogeneous(std::move(arr));
 }
 
@@ -419,9 +416,9 @@ auto broadcast_homogeneous(Downstreams &&...downstreams) {
  * - Flush: broadcast to every downstream
  */
 template <typename BroadcastEventList, typename... Downstreams>
-auto broadcast(Downstreams &&...downstreams) {
+auto broadcast(Downstreams... downstreams) {
     return route<type_list<>, BroadcastEventList, null_router, Downstreams...>(
-        null_router(), std::forward<Downstreams>(downstreams)...);
+        null_router(), std::move(downstreams)...);
 }
 
 } // namespace tcspc

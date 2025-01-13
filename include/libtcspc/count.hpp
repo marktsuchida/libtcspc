@@ -178,10 +178,10 @@ template <typename TickEvent, typename FireEvent, typename ResetEvent,
 auto count_up_to(arg::threshold<std::uint64_t> threshold,
                  arg::limit<std::uint64_t> limit,
                  arg::initial_count<std::uint64_t> initial_count,
-                 Downstream &&downstream) {
+                 Downstream downstream) {
     return internal::count_up_to<TickEvent, FireEvent, ResetEvent,
                                  FireAfterTick, Downstream>(
-        threshold, limit, initial_count, std::forward<Downstream>(downstream));
+        threshold, limit, initial_count, std::move(downstream));
 }
 
 /**
@@ -200,7 +200,7 @@ template <typename TickEvent, typename FireEvent, typename ResetEvent,
 auto count_down_to(arg::threshold<std::uint64_t> threshold,
                    arg::limit<std::uint64_t> limit,
                    arg::initial_count<std::uint64_t> initial_count,
-                   Downstream &&downstream) {
+                   Downstream downstream) {
     // Alter parameters to emulate count down using count up.
     if (limit.value >= initial_count.value)
         throw std::invalid_argument(
@@ -218,7 +218,7 @@ auto count_down_to(arg::threshold<std::uint64_t> threshold,
 
     return internal::count_up_to<TickEvent, FireEvent, ResetEvent,
                                  FireAfterTick, Downstream>(
-        threshold, limit, initial_count, std::forward<Downstream>(downstream));
+        threshold, limit, initial_count, std::move(downstream));
 }
 
 /**
@@ -312,9 +312,9 @@ template <typename Event, typename Downstream> class count {
  * - Flush: pass through with no action
  */
 template <typename Event, typename Downstream>
-auto count(access_tracker<count_access> &&tracker, Downstream &&downstream) {
-    return internal::count<Event, Downstream>(
-        std::move(tracker), std::forward<Downstream>(downstream));
+auto count(access_tracker<count_access> &&tracker, Downstream downstream) {
+    return internal::count<Event, Downstream>(std::move(tracker),
+                                              std::move(downstream));
 }
 
 } // namespace tcspc

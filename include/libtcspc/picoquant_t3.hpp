@@ -507,10 +507,9 @@ class decode_pqt3 {
  * - Flush: pass through with no action
  */
 template <typename DataTypes = default_data_types, typename Downstream>
-auto decode_pqt3_picoharp300(Downstream &&downstream) {
+auto decode_pqt3_picoharp300(Downstream downstream) {
     return internal::decode_pqt3<DataTypes, pqt3_picoharp300_event,
-                                 Downstream>(
-        std::forward<Downstream>(downstream));
+                                 Downstream>(std::move(downstream));
 }
 
 /**
@@ -537,10 +536,9 @@ auto decode_pqt3_picoharp300(Downstream &&downstream) {
  * - Flush: pass through with no action
  */
 template <typename DataTypes = default_data_types, typename Downstream>
-auto decode_pqt3_hydraharpv1(Downstream &&downstream) {
+auto decode_pqt3_hydraharpv1(Downstream downstream) {
     return internal::decode_pqt3<DataTypes, pqt3_hydraharpv1_event,
-                                 Downstream>(
-        std::forward<Downstream>(downstream));
+                                 Downstream>(std::move(downstream));
 }
 
 /**
@@ -568,9 +566,9 @@ auto decode_pqt3_hydraharpv1(Downstream &&downstream) {
  * - Flush: pass through with no action
  */
 template <typename DataTypes = default_data_types, typename Downstream>
-auto decode_pqt3_generic(Downstream &&downstream) {
+auto decode_pqt3_generic(Downstream downstream) {
     return internal::decode_pqt3<DataTypes, pqt3_generic_event, Downstream>(
-        std::forward<Downstream>(downstream));
+        std::move(downstream));
 }
 
 } // namespace tcspc

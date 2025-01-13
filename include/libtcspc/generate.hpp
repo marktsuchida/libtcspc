@@ -143,11 +143,10 @@ class generate {
  */
 template <typename TriggerEvent, typename OutputEvent,
           typename TimingGenerator, typename Downstream>
-auto generate(TimingGenerator &&generator, Downstream &&downstream) {
+auto generate(TimingGenerator generator, Downstream downstream) {
     return internal::generate<TriggerEvent, OutputEvent, TimingGenerator,
-                              Downstream>(
-        std::forward<TimingGenerator>(generator),
-        std::forward<Downstream>(downstream));
+                              Downstream>(std::move(generator),
+                                          std::move(downstream));
 }
 
 /**

@@ -120,7 +120,7 @@ def _input_processor(
                 Downstream downstream;
 
             public:
-                explicit {typename}(Downstream &&downstream)
+                explicit {typename}(Downstream downstream)
                     : downstream(std::move(downstream)) {{}}
             """
                 + "\n".join(

@@ -86,9 +86,8 @@ template <typename Downstream> class view_as_bytes {
  * - `tcspc::bucket<T>`: emit its data span as `tcspc::bucket<std::byte>`
  * - Flush: pass through with no action
  */
-template <typename Downstream> auto view_as_bytes(Downstream &&downstream) {
-    return internal::view_as_bytes<Downstream>(
-        std::forward<Downstream>(downstream));
+template <typename Downstream> auto view_as_bytes(Downstream downstream) {
+    return internal::view_as_bytes<Downstream>(std::move(downstream));
 }
 
 } // namespace tcspc

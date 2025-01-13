@@ -109,10 +109,9 @@ class check_monotonic {
  */
 template <typename DataTypes = default_data_types,
           bool RequireStrictlyIncreasing = false, typename Downstream>
-auto check_monotonic(Downstream &&downstream) {
+auto check_monotonic(Downstream downstream) {
     return internal::check_monotonic<DataTypes, RequireStrictlyIncreasing,
-                                     Downstream>(
-        std::forward<Downstream>(downstream));
+                                     Downstream>(std::move(downstream));
 }
 
 namespace internal {
@@ -189,9 +188,9 @@ class check_alternating {
  * - Flush: pass through with no action
  */
 template <typename Event0, typename Event1, typename Downstream>
-auto check_alternating(Downstream &&downstream) {
+auto check_alternating(Downstream downstream) {
     return internal::check_alternating<Event0, Event1, Downstream>(
-        std::forward<Downstream>(downstream));
+        std::move(downstream));
 }
 
 } // namespace tcspc

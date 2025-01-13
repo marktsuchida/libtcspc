@@ -111,11 +111,10 @@ template <typename Downstream> class demultiplex {
  * - Flush: pass through with no action
  */
 template <typename EventList, typename Downstream>
-auto multiplex(Downstream &&downstream) {
+auto multiplex(Downstream downstream) {
     static_assert(type_list_size_v<EventList> > 0,
                   "multiplex requires non-empty event list");
-    return internal::multiplex<EventList, Downstream>(
-        std::forward<Downstream>(downstream));
+    return internal::multiplex<EventList, Downstream>(std::move(downstream));
 }
 
 /**
@@ -142,9 +141,8 @@ auto multiplex(Downstream &&downstream) {
  *   are handled by `downstream`: pass through unwrapped
  * - Flush: pass through with no action
  */
-template <typename Downstream> auto demultiplex(Downstream &&downstream) {
-    return internal::demultiplex<Downstream>(
-        std::forward<Downstream>(downstream));
+template <typename Downstream> auto demultiplex(Downstream downstream) {
+    return internal::demultiplex<Downstream>(std::move(downstream));
 }
 
 } // namespace tcspc

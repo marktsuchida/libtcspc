@@ -135,9 +135,8 @@ template <typename Downstream> class null_source {
  * \par Events handled
  * - Flush: pass through with no action
  */
-template <typename Downstream> auto null_source(Downstream &&downstream) {
-    return internal::null_source<Downstream>(
-        std::forward<Downstream>(downstream));
+template <typename Downstream> auto null_source(Downstream downstream) {
+    return internal::null_source<Downstream>(std::move(downstream));
 }
 
 } // namespace tcspc

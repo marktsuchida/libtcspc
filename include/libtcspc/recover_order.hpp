@@ -156,11 +156,11 @@ template <typename EventList, typename DataTypes = default_data_types,
           typename Downstream>
 auto recover_order(
     arg::time_window<typename DataTypes::abstime_type> time_window,
-    Downstream &&downstream) {
+    Downstream downstream) {
     static_assert(type_list_size_v<EventList> > 0,
                   "recover_order requires non-empty event list");
     return internal::recover_order<EventList, DataTypes, Downstream>(
-        time_window, std::forward<Downstream>(downstream));
+        time_window, std::move(downstream));
 }
 
 } // namespace tcspc
