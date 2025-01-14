@@ -7,7 +7,6 @@
 #include "libtcspc/tcspc.hpp"
 
 #include <algorithm>
-#include <cstdint>
 #include <cstdio>
 #include <cstdlib>
 #include <exception>
@@ -37,7 +36,7 @@ void print_err(char const *str) {
 // prints the results at the end of the stream.
 class summarize_and_print {
     std::vector<channel_type> channel_numbers;
-    std::vector<std::uint64_t> channel_counts;
+    std::vector<tcspc::u64> channel_counts;
     abstime_type first_abstime = std::numeric_limits<abstime_type>::min();
     abstime_type last_abstime = std::numeric_limits<abstime_type>::min();
 
@@ -69,7 +68,7 @@ class summarize_and_print {
             stream << "Time of first event: \t" << first_abstime << '\n';
             stream << "Time of last event: \t" << last_abstime << '\n';
             // Print channel counts in channel number order.
-            std::vector<std::pair<channel_type, std::uint64_t>> counts(
+            std::vector<std::pair<channel_type, tcspc::u64>> counts(
                 channel_numbers.size());
             std::transform(channel_numbers.cbegin(), channel_numbers.cend(),
                            channel_counts.cbegin(), counts.begin(),
@@ -94,7 +93,7 @@ auto summarize(std::string const &filename) -> bool {
     auto proc =
     read_binary_stream<swabian_tag_event>(
         binary_file_input_stream(filename),
-        arg::max_length{std::numeric_limits<std::uint64_t>::max()},
+        arg::max_length{std::numeric_limits<u64>::max()},
         recycling_bucket_source<swabian_tag_event>::create(),
         arg::granularity<>{65536},
     stop<type_list<warning_event>>("error reading input",

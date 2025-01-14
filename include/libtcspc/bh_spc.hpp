@@ -21,7 +21,6 @@
 
 #include <array>
 #include <cstddef>
-#include <cstdint>
 #include <ostream>
 #include <stdexcept>
 #include <type_traits>
@@ -49,7 +48,7 @@ struct bh_spc_event {
     /**
      * \brief The macrotime overflow period of this event type.
      */
-    static constexpr std::uint32_t macrotime_overflow_period = 1 << 12;
+    static constexpr u32 macrotime_overflow_period = 1 << 12;
 
     /**
      * \brief Whether this event type can represent marker events.
@@ -313,7 +312,7 @@ struct bh_spc600_4096ch_event {
     /**
      * \brief The macrotime overflow period of this event type.
      */
-    static constexpr std::uint32_t macrotime_overflow_period = 1 << 24;
+    static constexpr u32 macrotime_overflow_period = 1 << 24;
 
     /**
      * \brief Whether this event type can represent marker events.
@@ -511,7 +510,7 @@ struct bh_spc600_256ch_event {
     /**
      * \brief The macrotime overflow period of this event type.
      */
-    static constexpr std::uint32_t macrotime_overflow_period = 1 << 17;
+    static constexpr u32 macrotime_overflow_period = 1 << 17;
 
     /**
      * \brief Whether this event type can represent marker events.

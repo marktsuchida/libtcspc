@@ -7,7 +7,6 @@
 #include "libtcspc/tcspc.hpp"
 
 #include <array>
-#include <cstdint>
 #include <cstdio>
 #include <cstdlib>
 #include <exception>
@@ -22,7 +21,7 @@ namespace {
 struct dtypes : tcspc::default_data_types {
     // BH channels are never negative; use of unsigned type simplifies checks
     // in summarize_and_print().
-    using channel_type = std::uint32_t;
+    using channel_type = tcspc::u32;
 };
 
 using channel_type = dtypes::channel_type;
@@ -41,8 +40,8 @@ void print_err(char const *str) {
 // Custom sink that counts events in all channels, and prints the results at
 // the end of the stream.
 class summarize_and_print {
-    std::array<std::uint64_t, 16> photon_counts{};
-    std::array<std::uint64_t, 4> marker_counts{};
+    std::array<tcspc::u64, 16> photon_counts{};
+    std::array<tcspc::u64, 4> marker_counts{};
     abstime_type last_abstime = std::numeric_limits<abstime_type>::min();
 
   public:
@@ -81,7 +80,7 @@ auto summarize(std::string const &filename) -> bool {
     read_binary_stream<bh_spc_event>(
         // Assume 4-byte .spc header:
         binary_file_input_stream(filename, arg::start_offset<u64>{4}),
-        arg::max_length{std::numeric_limits<std::uint64_t>::max()},
+        arg::max_length{std::numeric_limits<u64>::max()},
         recycling_bucket_source<bh_spc_event>::create(),
         arg::granularity<>{65536},
     stop<type_list<warning_event>>("error reading input",

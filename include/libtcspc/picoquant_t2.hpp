@@ -21,7 +21,6 @@
 
 #include <array>
 #include <cstddef>
-#include <cstdint>
 #include <ostream>
 #include <stdexcept>
 #include <type_traits>
@@ -62,7 +61,7 @@ struct pqt2_picoharp300_event {
      * Note that this does \e not equal one plus the maximum representable
      * value of the time tag field.
      */
-    static constexpr std::int32_t overflow_period = 210698240;
+    static constexpr i32 overflow_period = 210698240;
 
     /**
      * \brief Read the channel if this event is a non-special event.
@@ -232,7 +231,7 @@ struct pqt2_picoharp300_event {
  * \tparam IsOverflowAlwaysSingle if true, time tag overflow records always
  * indicate a single overflow
  */
-template <std::int32_t OverflowPeriod, bool IsOverflowAlwaysSingle>
+template <i32 OverflowPeriod, bool IsOverflowAlwaysSingle>
 struct basic_pqt2_event {
     /**
      * \brief Bytes of the 32-bit raw device event.
@@ -245,7 +244,7 @@ struct basic_pqt2_event {
      * Note that this may not equal one plus the maximum representable value of
      * the time tag field.
      */
-    static constexpr std::int32_t overflow_period = OverflowPeriod;
+    static constexpr i32 overflow_period = OverflowPeriod;
 
     /**
      * \brief Read the channel if this event is a non-special event.

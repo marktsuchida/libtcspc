@@ -9,7 +9,6 @@
 #include <array>
 #include <cmath>
 #include <cstddef>
-#include <cstdint>
 #include <cstdio>
 #include <cstdlib>
 #include <exception>
@@ -113,11 +112,11 @@ using channel_type = tcspc::default_data_types::channel_type;
 using bin_index_type = tcspc::default_data_types::bin_index_type;
 
 struct pixel_start_event {
-    std::int64_t abstime;
+    tcspc::i64 abstime;
 };
 
 struct pixel_stop_event {
-    std::int64_t abstime;
+    tcspc::i64 abstime;
 };
 
 // Workaround for https://github.com/llvm/llvm-project/issues/54668 (probably
@@ -147,7 +146,7 @@ template <bool Cumulative>
 auto make_histo_proc(settings const &settings,
                      std::shared_ptr<tcspc::context> const &ctx) {
     using namespace tcspc;
-    auto bsource = recycling_bucket_source<std::uint16_t>::create();
+    auto bsource = recycling_bucket_source<u16>::create();
     auto writer = write_binary_stream(
         binary_file_output_stream(settings.output_filename,
                                   arg::truncate{settings.truncate}),
@@ -247,7 +246,7 @@ auto make_processor(settings const &settings,
     return
     read_binary_stream<swabian_tag_event>(
         binary_file_input_stream(settings.input_filename),
-        arg::max_length{std::numeric_limits<std::uint64_t>::max()},
+        arg::max_length{std::numeric_limits<u64>::max()},
         recycling_bucket_source<swabian_tag_event>::create(),
         arg::granularity<>{65536},
     stop_with_error<type_list<warning_event>>("error reading input",

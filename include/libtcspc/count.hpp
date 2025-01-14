@@ -9,10 +9,10 @@
 #include "arg_wrappers.hpp"
 #include "common.hpp"
 #include "context.hpp"
+#include "int_types.hpp"
 #include "introspect.hpp"
 #include "processor_traits.hpp"
 
-#include <cstdint>
 #include <functional>
 #include <stdexcept>
 #include <type_traits>
@@ -28,10 +28,10 @@ class count_up_to {
     // Do not require handling of ResetEvent, as it may not be used at all.
     static_assert(is_processor_v<Downstream, TickEvent, FireEvent>);
 
-    std::uint64_t count;
-    std::uint64_t init;
-    std::uint64_t thresh;
-    std::uint64_t lmt;
+    u64 count;
+    u64 init;
+    u64 thresh;
+    u64 lmt;
 
     Downstream downstream;
 
@@ -55,9 +55,8 @@ class count_up_to {
     }
 
   public:
-    explicit count_up_to(arg::threshold<std::uint64_t> threshold,
-                         arg::limit<std::uint64_t> limit,
-                         arg::initial_count<std::uint64_t> initial_count,
+    explicit count_up_to(arg::threshold<u64> threshold, arg::limit<u64> limit,
+                         arg::initial_count<u64> initial_count,
                          Downstream downstream)
         : count(initial_count.value), init(initial_count.value),
           thresh(threshold.value), lmt(limit.value),
@@ -123,7 +122,7 @@ class count_up_to {
  * After incrementing the count and processing the threshold, if the count
  * equals \p limit, then the count is reset to \p initial_count. Automatic
  * resetting can be effectively disabled by setting \p limit to
- * `std::numeric_limits<std::uint64_t>::max()`.
+ * `std::numeric_limits<tcspc::u64>::max()`.
  *
  * The \p limit must be greater than \p initial_count. When \p FireAfterTick is
  * false, \p threshold should be greater than or equal to \p initial_count and
@@ -175,9 +174,8 @@ class count_up_to {
  */
 template <typename TickEvent, typename FireEvent, typename ResetEvent,
           bool FireAfterTick, typename Downstream>
-auto count_up_to(arg::threshold<std::uint64_t> threshold,
-                 arg::limit<std::uint64_t> limit,
-                 arg::initial_count<std::uint64_t> initial_count,
+auto count_up_to(arg::threshold<u64> threshold, arg::limit<u64> limit,
+                 arg::initial_count<u64> initial_count,
                  Downstream downstream) {
     return internal::count_up_to<TickEvent, FireEvent, ResetEvent,
                                  FireAfterTick, Downstream>(
@@ -197,9 +195,8 @@ auto count_up_to(arg::threshold<std::uint64_t> threshold,
  */
 template <typename TickEvent, typename FireEvent, typename ResetEvent,
           bool FireAfterTick, typename Downstream>
-auto count_down_to(arg::threshold<std::uint64_t> threshold,
-                   arg::limit<std::uint64_t> limit,
-                   arg::initial_count<std::uint64_t> initial_count,
+auto count_down_to(arg::threshold<u64> threshold, arg::limit<u64> limit,
+                   arg::initial_count<u64> initial_count,
                    Downstream downstream) {
     // Alter parameters to emulate count down using count up.
     if (limit.value >= initial_count.value)
@@ -227,7 +224,7 @@ auto count_down_to(arg::threshold<std::uint64_t> threshold,
  * \ingroup context-access
  */
 class count_access {
-    std::function<std::uint64_t()> count_fn;
+    std::function<u64()> count_fn;
 
   public:
     /** \private */
@@ -237,7 +234,7 @@ class count_access {
     /**
      * \brief Return the count value of the associated processor.
      */
-    auto count() -> std::uint64_t { return count_fn(); }
+    auto count() -> u64 { return count_fn(); }
 };
 
 namespace internal {
@@ -245,7 +242,7 @@ namespace internal {
 template <typename Event, typename Downstream> class count {
     static_assert(is_processor_v<Downstream, Event>);
 
-    std::uint64_t ct = 0;
+    u64 ct = 0;
 
     Downstream downstream;
 

@@ -20,7 +20,6 @@
 #include <catch2/generators/catch_generators.hpp>
 
 #include <cstddef>
-#include <cstdint>
 #include <memory>
 
 namespace tcspc {
@@ -128,7 +127,7 @@ TEST_CASE("retime periodic sequence events") {
 TEST_CASE("retime periodic sequence events unsigned",
           "[retime_periodic_sequences]") {
     struct types {
-        using abstime_type = std::uint64_t;
+        using abstime_type = u64;
     };
     using out_events = type_list<periodic_sequence_model_event<types>>;
     auto const valcat = GENERATE(feed_as::const_lvalue, feed_as::rvalue);

@@ -21,7 +21,6 @@
 #include <array>
 #include <cassert>
 #include <cstddef>
-#include <cstdint>
 #include <ostream>
 #include <sstream>
 #include <type_traits>
@@ -61,7 +60,7 @@ struct swabian_tag_event {
     /**
      * \brief 8-bit type for the type field.
      */
-    enum class tag_type : std::uint8_t {
+    enum class tag_type : u8 {
         time_tag = 0,
         error = 1,
         overflow_begin = 2,

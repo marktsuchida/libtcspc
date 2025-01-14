@@ -21,7 +21,6 @@
 
 #include <array>
 #include <cstddef>
-#include <cstdint>
 #include <ostream>
 #include <stdexcept>
 #include <type_traits>
@@ -59,7 +58,7 @@ struct pqt3_picoharp300_event {
     /**
      * \brief The nsync overflow period of this event type.
      */
-    static constexpr std::int32_t nsync_overflow_period = 65536;
+    static constexpr i32 nsync_overflow_period = 65536;
 
     /**
      * \brief Read the channel if this event is a non-special event.
@@ -229,7 +228,7 @@ template <bool IsNSyncOverflowAlwaysSingle> struct basic_pqt3_event {
     /**
      * \brief The nsync overflow period of this event type.
      */
-    static constexpr std::int32_t nsync_overflow_period = 1024;
+    static constexpr i32 nsync_overflow_period = 1024;
 
     /**
      * \brief Read the channel if this event is a non-special event.

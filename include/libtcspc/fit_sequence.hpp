@@ -10,6 +10,7 @@
 #include "common.hpp"
 #include "data_types.hpp"
 #include "errors.hpp"
+#include "int_types.hpp"
 #include "introspect.hpp"
 #include "processor_traits.hpp"
 #include "timing_misc.hpp"
@@ -17,7 +18,6 @@
 #include <algorithm>
 #include <cassert>
 #include <cstddef>
-#include <cstdint>
 #include <functional>
 #include <numeric>
 #include <stdexcept>
@@ -64,7 +64,7 @@ class periodic_fitter {
   public:
     // n should be at least 3. If it is 2, mse will be NaN. If it is 0 or 1,
     // intercept and slope will be NaN.
-    explicit periodic_fitter(std::uint64_t length)
+    explicit periodic_fitter(u64 length)
         : n(static_cast<double>(length)), sigma_x((n - 1.0) * n * 0.5),
           sigma_xx((n - 1.0) * n * (2.0 * n - 1.0) / 6.0),
           det_XtX(n * sigma_xx - sigma_x * sigma_x), x(length) {

@@ -10,6 +10,7 @@
 #include "libtcspc/context.hpp"
 #include "libtcspc/core.hpp"
 #include "libtcspc/data_types.hpp"
+#include "libtcspc/int_types.hpp"
 #include "libtcspc/processor_traits.hpp"
 #include "libtcspc/test_utils.hpp"
 #include "libtcspc/time_tagged_events.hpp"
@@ -20,7 +21,6 @@
 #include <catch2/generators/catch_generators.hpp>
 
 #include <array>
-#include <cstdint>
 #include <memory>
 
 namespace tcspc {
@@ -186,7 +186,7 @@ TEST_CASE("time correlate at fraction") {
 
 TEST_CASE("negate difftime") {
     struct types : default_data_types {
-        using difftime_type = std::int16_t;
+        using difftime_type = i16;
     };
     auto const valcat = GENERATE(feed_as::const_lvalue, feed_as::rvalue);
     auto ctx = context::create();

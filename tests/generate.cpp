@@ -10,6 +10,7 @@
 #include "libtcspc/context.hpp"
 #include "libtcspc/core.hpp"
 #include "libtcspc/data_types.hpp"
+#include "libtcspc/int_types.hpp"
 #include "libtcspc/processor_traits.hpp"
 #include "libtcspc/test_utils.hpp"
 #include "libtcspc/type_list.hpp"
@@ -19,7 +20,6 @@
 #include <catch2/generators/catch_generators.hpp>
 
 #include <cstddef>
-#include <cstdint>
 #include <memory>
 
 namespace tcspc {
@@ -226,8 +226,8 @@ TEST_CASE("dynamic one-shot timing generator",
     auto tg = dynamic_one_shot_timing_generator();
     CHECK_FALSE(tg.peek().has_value());
     struct trig_evt {
-        std::int64_t abstime;
-        std::int64_t delay;
+        i64 abstime;
+        i64 delay;
     };
     tg.trigger(trig_evt{42, 3});
     CHECK(tg.peek().has_value());
@@ -243,9 +243,9 @@ TEST_CASE("dynamic linear timing generator",
     auto tg = dynamic_linear_timing_generator();
     CHECK_FALSE(tg.peek().has_value());
     struct trig_evt {
-        std::int64_t abstime;
-        std::int64_t delay;
-        std::int64_t interval;
+        i64 abstime;
+        i64 delay;
+        i64 interval;
         std::size_t count;
     };
     tg.trigger(trig_evt{42, 3, 5, 2});
