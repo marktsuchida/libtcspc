@@ -7,7 +7,7 @@ from libtcspc._cpp_utils import CppExpression, CppIdentifier, run_cpp_prog
 from libtcspc._graph import Graph, Node, Subgraph
 
 gencontext = CodeGenerationContext(
-    CppIdentifier("ctx"), CppIdentifier("params")
+    CppIdentifier("ctx"), CppIdentifier("params"), CppIdentifier("sinks")
 )
 
 

@@ -10,9 +10,9 @@ from libtcspc._events import EventType
 from libtcspc._graph import Graph
 from libtcspc._param import Param
 from libtcspc._processors import (
-    CheckMonotonic,
     Count,
     NullSink,
+    NullSource,
     SinkEvents,
     Stop,
 )
@@ -34,16 +34,15 @@ def test_compile_graph_with_two_inputs_rejected():
         compile_graph(g)
 
 
-def test_compile_graph_with_output_rejected():
-    g = Graph()
-    g.add_node("a", CheckMonotonic())
-    with pytest.raises(ValueError):
-        compile_graph(g)
-
-
 def test_compile_graph_with_single_input_allowed():
     g = Graph()
     g.add_node("a", NullSink())
+    compile_graph(g)
+
+
+def test_compile_graph_with_input_and_output_allowed():
+    g = Graph()
+    g.add_node("a", NullSource())
     compile_graph(g)
 
 
@@ -60,7 +59,7 @@ def test_compile_node_access():
 def test_compile_fails_for_unhandle_events():
     g = Graph()
     g.add_node("s", SinkEvents(EventType(uint32_type)))
-    with pytest.raises(RuntimeError):
+    with pytest.raises(ValueError):
         compile_graph(g, [EventType(string_type)])
 
 

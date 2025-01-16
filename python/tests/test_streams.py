@@ -9,7 +9,7 @@ from libtcspc._param import Param
 from libtcspc._streams import BinaryFileInputStream
 
 gencontext = CodeGenerationContext(
-    CppIdentifier("ctx"), CppIdentifier("params")
+    CppIdentifier("ctx"), CppIdentifier("params"), CppIdentifier("sinks")
 )
 
 

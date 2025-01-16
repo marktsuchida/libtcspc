@@ -3,16 +3,25 @@
 # SPDX-License-Identifier: MIT
 
 import array
+from typing import final
 
 import pytest
 from libtcspc._access import AccessTag
 from libtcspc._compile import compile_graph
 from libtcspc._cpp_utils import CppIdentifier, CppTypeName, uint8_type
 from libtcspc._events import BucketEvent, EventType
-from libtcspc._execute import create_execution_context
+from libtcspc._execute import PySink, create_execution_context
 from libtcspc._graph import Graph
 from libtcspc._param import Param
-from libtcspc._processors import Count, NullSink, SinkEvents, Stop
+from libtcspc._processors import (
+    Batch,
+    Count,
+    NullSink,
+    SelectAll,
+    SinkEvents,
+    Stop,
+)
+from typing_extensions import override
 
 IntEvent = EventType(CppTypeName("int"))
 
@@ -83,3 +92,66 @@ def test_execute_unknown_parameter():
     create_execution_context(cg)
     with pytest.raises(ValueError):
         create_execution_context(cg, {CppIdentifier("blah"): "hello"})
+
+
+@final
+class MockSink(PySink):
+    def __init__(self, log) -> None:
+        self._log = log
+
+    @override
+    def handle(self, event) -> None:
+        self._log.append(f"handle({event})")
+
+    @override
+    def flush(self) -> None:
+        self._log.append("flush()")
+
+
+def test_execute_pass_through_integers():
+    g = Graph()
+    g.add_node("r", SelectAll())
+    cg = compile_graph(g, (EventType(CppTypeName("int")),))
+
+    log: list[str] = []
+    sink = MockSink(log)
+    c = create_execution_context(cg, None, (sink,))
+    c.handle(42)
+    assert log == ["handle(42)"]
+    c.flush()
+    assert log == ["handle(42)", "flush()"]
+
+
+def test_execute_emit_bucket():
+    g = Graph()
+    g.add_node("b", Batch(EventType(CppTypeName("int")), batch_size=2))
+    cg = compile_graph(g, (EventType(CppTypeName("int")),))
+
+    log: list[str] = []
+    sink = MockSink(log)
+    c = create_execution_context(cg, None, (sink,))
+    c.handle(42)
+    assert len(log) == 0
+    c.handle(43)
+    assert log == ["handle([42 43])"]
+
+
+def test_execute_sink_exception_propagates():
+    g = Graph()
+    g.add_node("r", SelectAll())
+    cg = compile_graph(g, (EventType(CppTypeName("int")),))
+
+    @final
+    class RaisingSink(PySink):
+        @override
+        def handle(self, event) -> None:
+            raise IndexError("test exception")
+
+        @override
+        def flush(self) -> None:
+            pass
+
+    sink = RaisingSink()
+    c = create_execution_context(cg, None, (sink,))
+    with pytest.raises(IndexError):
+        c.handle(42)

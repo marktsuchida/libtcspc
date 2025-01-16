@@ -5,16 +5,35 @@
 __all__ = [
     "EndOfProcessing",
     "ExecutionContext",
+    "PySink",
     "create_execution_context",
 ]
 
-from collections.abc import Iterable
+from abc import abstractmethod
+from collections.abc import Iterable, Sequence
 from contextlib import contextmanager
-from typing import Any
+from typing import Any, final
+
+from typing_extensions import override
 
 from ._access import AccessTag
 from ._compile import CompiledGraph
 from ._cpp_utils import CppIdentifier
+
+
+class PySink:
+    """
+    Abstract base class for sinks (output handling processors) written in
+    Python.
+    """
+
+    @abstractmethod
+    def handle(self, event: Any) -> None:
+        raise NotImplementedError()
+
+    @abstractmethod
+    def flush(self) -> None:
+        raise NotImplementedError()
 
 
 class EndOfProcessing(Exception):
@@ -113,6 +132,7 @@ class ExecutionContext:
 def create_execution_context(
     compiled_graph: CompiledGraph,
     arguments: dict[str, Any] | None = None,
+    downstreams: Sequence[PySink] | None = None,
 ) -> ExecutionContext:
     """
     Create an execution context for a compiled processing graph.
@@ -147,8 +167,30 @@ def create_execution_context(
     for cpp_identifier, value in args.items():
         setattr(arg_struct, cpp_identifier, value)
 
+    # Bridge from our common PySink to the compiled module's PySink:
+    @final
+    class PySinkAdapter(compiled_graph._mod.PySink):  # type: ignore
+        def __init__(self, sink: PySink):
+            super().__init__()  # This is required!
+            self._sink = sink
+
+        @override
+        def handle(self, event):
+            self._sink.handle(event)
+
+        @override
+        def flush(self):
+            self._sink.flush()
+
+    sinks = tuple(
+        PySinkAdapter(ds)
+        for ds in (() if downstreams is None else downstreams)
+    )
+
     context = compiled_graph._mod.create_context()
-    processor = compiled_graph._mod.create_processor(context, arg_struct)
+    processor = compiled_graph._mod.create_processor(
+        context, arg_struct, sinks
+    )
     access_types = compiled_graph.accesses()
 
     return ExecutionContext(

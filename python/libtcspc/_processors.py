@@ -3,11 +3,14 @@
 # SPDX-License-Identifier: MIT
 
 __all__ = [
+    "Batch",
     "CheckMonotonic",
     "Count",
     "DecodeBHSPC",
     "NullSink",
+    "NullSource",
     "ReadBinaryStream",
+    "SelectAll",
     "SinkEvents",
     "Stop",
     "StopWithError",
@@ -119,6 +122,49 @@ def read_events_from_binary_file(
 
 # Note: Wrappers of C++ processors are ordered alphabetically without regard to
 # the C++ header in which they are defined.
+
+
+@final
+class Batch(RelayNode):
+    def __init__(
+        self,
+        event_type: EventType,
+        *,
+        buffer_provider: BucketSource | None = None,
+        batch_size: int | Param[int] | None = None,
+    ) -> None:
+        self._event_type = event_type
+        self._bucket_source = (
+            buffer_provider
+            if buffer_provider is not None
+            else RecyclingBucketSource(event_type)
+        )
+        self._batch_size = batch_size if batch_size is not None else 65536
+
+    @override
+    def relay_map_event_set(
+        self, input_event_set: Collection[EventType]
+    ) -> tuple[EventType, ...]:
+        _check_events_subset_of(
+            input_event_set, (self._event_type,), self.__class__.__name__
+        )
+        return (_events.BucketEvent(self._event_type),)
+
+    @override
+    def relay_cpp_expression(
+        self,
+        gencontext: CodeGenerationContext,
+        downstream: CppExpression,
+    ) -> CppExpression:
+        batch_size = gencontext.size_t_expression(self._batch_size)
+        return CppExpression(
+            f"""\
+            tcspc::batch<{self._event_type.cpp_type_name()}>(
+                {self._bucket_source.cpp_expression(gencontext)},
+                tcspc::arg::batch_size{{{batch_size}}},
+                {downstream}
+            )"""
+        )
 
 
 @final
@@ -320,6 +366,24 @@ class NullSink(Node):
 
 
 @final
+class NullSource(RelayNode):
+    @override
+    def relay_map_event_set(
+        self, input_event_set: Collection[EventType]
+    ) -> tuple[EventType, ...]:
+        _check_events_subset_of(input_event_set, (), self.__class__.__name__)
+        return ()
+
+    @override
+    def relay_cpp_expression(
+        self,
+        gencontext: CodeGenerationContext,
+        downstream: CppExpression,
+    ) -> CppExpression:
+        return CppExpression(f"tcspc::null_source({downstream})")
+
+
+@final
 class ReadBinaryStream(RelayNode):
     def __init__(
         self,
@@ -379,6 +443,17 @@ class ReadBinaryStream(RelayNode):
                 {downstream}
             )"""
         )
+
+
+@final
+class SelectAll(TypePreservingRelayNode):
+    @override
+    def relay_cpp_expression(
+        self,
+        gencontext: CodeGenerationContext,
+        downstream: CppExpression,
+    ) -> CppExpression:
+        return CppExpression(f"tcspc::select_all({downstream})")
 
 
 @final

@@ -19,7 +19,7 @@ IntEvent = EventType(CppTypeName("int"))
 LongEvent = EventType(CppTypeName("long"))
 
 gencontext = CodeGenerationContext(
-    CppIdentifier("ctx"), CppIdentifier("params")
+    CppIdentifier("ctx"), CppIdentifier("params"), CppIdentifier("sinks")
 )
 
 

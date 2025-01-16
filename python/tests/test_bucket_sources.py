@@ -15,7 +15,7 @@ from libtcspc._param import Param
 IntEvent = EventType(CppTypeName("int"))
 
 gencontext = CodeGenerationContext(
-    CppIdentifier("ctx"), CppIdentifier("params")
+    CppIdentifier("ctx"), CppIdentifier("params"), CppIdentifier("sinks")
 )
 
 

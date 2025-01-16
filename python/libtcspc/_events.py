@@ -16,7 +16,11 @@ __all__ = [
 from typing_extensions import override
 
 from . import _cpp_utils
-from ._cpp_utils import CppClassScopeDefs, CppIdentifier, CppTypeName
+from ._cpp_utils import (
+    CppClassScopeDefs,
+    CppIdentifier,
+    CppTypeName,
+)
 from ._data_types import DataTypes
 
 
@@ -41,6 +45,21 @@ class EventType:
         return CppClassScopeDefs(f"""\
         void handle({self.cpp_type_name()} const &event) {{
             {downstream}.handle(event);
+        }}
+        """)
+
+    def cpp_output_handlers(self, pysink: CppIdentifier) -> CppClassScopeDefs:
+        return CppClassScopeDefs(f"""\
+        void handle({self.cpp_type_name()} const &event) {{
+            nanobind::gil_scoped_acquire held;
+            {pysink}->handle(
+                nanobind::cast(event, nanobind::rv_policy::copy));
+        }}
+
+        void handle({self.cpp_type_name()} &&event) {{
+            nanobind::gil_scoped_acquire held;
+            {pysink}->handle(
+                nanobind::cast(std::move(event), nanobind::rv_policy::move));
         }}
         """)
 
@@ -69,6 +88,49 @@ class BucketEvent(EventType):
             auto const spn = tcspc::span(ptr, event.size());
             auto const bkt = tcspc::ad_hoc_bucket(spn);
             {downstream}.handle(bkt);
+        }}
+        """)
+
+    @override
+    def cpp_output_handlers(self, pysink: CppIdentifier) -> CppClassScopeDefs:
+        elem_cpp_type = self._element_type.cpp_type_name()
+        # We take ownership of the bucket if we can; otherwise we make a copy;
+        # in all cases we emit a writable ndarray that owns the memory.
+        # TODO Once we support Python bucket sources, buckets from them should
+        # be handled specially to eliminate copying (and set read-only as
+        # appropriate).
+        return CppClassScopeDefs(f"""\
+        void emit_span_copy(tcspc::span<{elem_cpp_type} const> spn) {{
+            using elem_type = {elem_cpp_type};
+            auto *buf = new elem_type[spn.size()];
+            std::copy(spn.begin(), spn.end(), buf);
+            nanobind::gil_scoped_acquire held;
+            auto deleter = nanobind::capsule(buf,
+                [](void *p) noexcept {{ delete[] static_cast<elem_type *>(p); }});
+            {pysink}->handle(nanobind::ndarray<elem_type, nanobind::numpy>(
+                buf, {{spn.size()}}, deleter).cast());
+
+        }}
+
+        void handle(tcspc::bucket<{elem_cpp_type} const> const &event) {{
+            emit_span_copy(
+                tcspc::span<{elem_cpp_type} const>(event.begin(), event.end()));
+        }}
+
+        void handle(tcspc::bucket<{elem_cpp_type}> const &event) {{
+            emit_span_copy(
+                tcspc::span<{elem_cpp_type} const>(event.begin(), event.end()));
+        }}
+
+        void handle(tcspc::bucket<{elem_cpp_type}> &&event) {{
+            using elem_type = {elem_cpp_type};
+            using bkt_type = tcspc::bucket<elem_type>;
+            auto *bkt = new bkt_type(std::move(event));
+            nanobind::gil_scoped_acquire held;
+            auto deleter = nanobind::capsule(bkt,
+                [](void *p) noexcept {{ delete static_cast<bkt_type *>(p); }});
+            {pysink}->handle(nanobind::ndarray<elem_type, nanobind::numpy>(
+                bkt->data(), {{bkt->size()}}, deleter).cast());
         }}
         """)
 

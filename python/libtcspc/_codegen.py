@@ -18,6 +18,7 @@ from ._param import Param
 class CodeGenerationContext:
     context_varname: CppIdentifier
     params_varname: CppIdentifier
+    sinks_varname: CppIdentifier
 
     def u64_expression(self, p: Param[int] | int) -> CppExpression:
         if isinstance(p, Param):

@@ -136,42 +136,138 @@ def _input_processor(
     )
 
 
-def _processor_creation(
-    graph_code: CppExpression,
-    gencontext: CodeGenerationContext,
-    event_types: Sequence[EventType],
-    module_var: CppIdentifier,
+def _pysink() -> ModuleCodeFragment:
+    return ModuleCodeFragment(
+        (),
+        ("nanobind/trampoline.h",),
+        (
+            CppNamespaceScopeDefs("""\
+            class py_sink {
+            public:
+                virtual ~py_sink() = default;
+                virtual void handle(nanobind::object const &event) = 0;
+                virtual void flush() = 0;
+            };"""),
+            CppNamespaceScopeDefs("""\
+            class py_sink_trampoline : public py_sink {
+            public:
+                NB_TRAMPOLINE(py_sink, 2);
+                void handle(nanobind::object const &event) override {
+                    NB_OVERRIDE_PURE(handle, event);
+                }
+                void flush() override { NB_OVERRIDE_PURE(flush); }
+            };"""),
+        ),
+        (
+            CppFunctionScopeDefs("""\
+            nanobind::class_<py_sink, py_sink_trampoline>(mod, "PySink")
+                .def(nanobind::init<>())
+                .def("handle", &py_sink::handle)
+                .def("flush", &py_sink::flush);"""),
+        ),
+    )
+
+
+def _output_processor(
+    typename: CppTypeName, event_types: Iterable[EventType]
 ) -> ModuleCodeFragment:
-    input_proc_type = CppTypeName("input_processor")
-    return _input_processor(input_proc_type, event_types) + ModuleCodeFragment(
+    return ModuleCodeFragment(
         (),
         ("memory",),
         (
-            CppNamespaceScopeDefs(f"""\
-            auto create_processor(
-                    std::shared_ptr<tcspc::context> {gencontext.context_varname},
-                    params const &{gencontext.params_varname}) {{
-                return {input_proc_type}({graph_code.lstrip()});
-            }}"""),
-            CppNamespaceScopeDefs("""\
-            using processor_type = decltype(create_processor(
-                    std::shared_ptr<tcspc::context>(),
-                    params()));"""),
-        ),
-        (
-            CppFunctionScopeDefs(
-                f'nanobind::class_<processor_type>({module_var}, "Processor")'
-                + (
-                    '\n    .def("handle", &processor_type::handle, nanobind::call_guard<nanobind::gil_scoped_release>())'
-                    if len(event_types) > 0
-                    else ""
+            CppNamespaceScopeDefs(
+                f"""\
+            class {typename} {{
+                std::shared_ptr<py_sink> downstream;
+
+            public:
+                explicit {typename}(std::shared_ptr<py_sink> downstream) :
+                    downstream(std::move(downstream)) {{}}
+            """
+                + "\n".join(
+                    event_type.cpp_output_handlers(CppIdentifier("downstream"))
+                    for event_type in event_types
                 )
-                + '\n    .def("flush", &processor_type::flush, nanobind::call_guard<nanobind::gil_scoped_release>());\n'
-            ),
-            CppFunctionScopeDefs(
-                f'{module_var}.def("create_processor", &create_processor);'
+                + """
+                void flush() { downstream->flush(); }
+            };"""
             ),
         ),
+        (),
+    )
+
+
+def _processor_creation(
+    graph_code: CppExpression,
+    gencontext: CodeGenerationContext,
+    output_names: Sequence[CppExpression],
+    input_event_types: Sequence[EventType],
+    output_event_sets: Sequence[Sequence[EventType]],
+    module_var: CppIdentifier,
+) -> ModuleCodeFragment:
+    input_proc_type = CppTypeName("input_processor")
+
+    assert len(output_names) == len(output_event_sets)
+    output_processors = functools.reduce(
+        lambda f, g: f + g,
+        (
+            _output_processor(
+                CppTypeName(f"output_processor_{i}"), output_event_set
+            )
+            for i, output_event_set in enumerate(output_event_sets)
+        ),
+        ModuleCodeFragment((), (), (), ()),
+    )
+
+    output_proc_defs = "\n".join(
+        f"""\
+        auto {output_names[i]} = output_processor_{i}(
+            {gencontext.sinks_varname}[{i}]);
+        """
+        for i in range(len(output_names))
+    )
+
+    return (
+        _pysink()
+        + _input_processor(input_proc_type, input_event_types)
+        + output_processors
+        + ModuleCodeFragment(
+            (),
+            (
+                "array",
+                "memory",
+            ),
+            (
+                CppNamespaceScopeDefs(f"""\
+                auto create_processor(
+                        std::shared_ptr<tcspc::context> {gencontext.context_varname},
+                        params const &{gencontext.params_varname},
+                        std::array<std::shared_ptr<py_sink>, {len(output_event_sets)}>
+                        {gencontext.sinks_varname}) {{
+                    {output_proc_defs}
+                    return {input_proc_type}({graph_code.lstrip()});
+                }}"""),
+                CppNamespaceScopeDefs(f"""\
+                using processor_type = decltype(create_processor(
+                        std::shared_ptr<tcspc::context>(),
+                        params(),
+                        std::array<std::shared_ptr<py_sink>, {len(output_event_sets)}>{{}}));"""),
+            ),
+            (
+                CppFunctionScopeDefs(
+                    f'nanobind::class_<processor_type>({module_var}, "Processor")'
+                    + (
+                        '\n    .def("handle", &processor_type::handle, nanobind::call_guard<nanobind::gil_scoped_release>())'
+                        if len(input_event_types) > 0
+                        else ""
+                    )
+                    + '\n    .def("flush", &processor_type::flush, nanobind::call_guard<nanobind::gil_scoped_release>());\n'
+                ),
+                CppFunctionScopeDefs(
+                    f'{module_var}.def("create_processor", &create_processor);'
+                ),
+            ),
+        )
     )
 
 
@@ -208,21 +304,20 @@ def _module_code(
 def _graph_module_code(
     module_name: str, graph: Graph, input_event_types: Sequence[EventType] = ()
 ):
-    n_in, n_out = len(graph.inputs()), len(graph.outputs())
+    n_in = len(graph.inputs())
     if n_in != 1:
         raise ValueError(
             f"graph is not executable (must have exactly 1 input port; found {n_in})"
         )
-    if n_out > 0:
-        raise ValueError(
-            f"graph is not executable (must have no output ports; found {n_out})"
-        )
+
+    output_event_types = graph.map_event_sets((input_event_types,))
 
     default_includes = ModuleCodeFragment(
         (
             "libtcspc/tcspc.hpp",
             "nanobind/nanobind.h",
             "nanobind/ndarray.h",
+            "nanobind/stl/array.h",
             "nanobind/stl/function.h",
             "nanobind/stl/optional.h",
             "nanobind/stl/shared_ptr.h",
@@ -234,9 +329,12 @@ def _graph_module_code(
     )
 
     genctx = CodeGenerationContext(
-        CppIdentifier("ctx"), CppIdentifier("params")
+        CppIdentifier("ctx"), CppIdentifier("params"), CppIdentifier("sinks")
     )
-    graph_expr = graph.cpp_expression(genctx)
+    out_proc_names = tuple(
+        CppExpression(f"output_{i}") for i in range(len(output_event_types))
+    )
+    graph_expr = graph.cpp_expression(genctx, out_proc_names)
 
     mod_var = CppIdentifier("mod")
 
@@ -251,7 +349,12 @@ def _graph_module_code(
     context_code = _context_type(graph.accesses(), mod_var)
 
     proc_code = _processor_creation(
-        graph_expr, genctx, input_event_types, mod_var
+        graph_expr,
+        genctx,
+        out_proc_names,
+        input_event_types,
+        output_event_types,
+        mod_var,
     )
 
     accessor_types = set(typ for tag, typ in graph.accesses())
