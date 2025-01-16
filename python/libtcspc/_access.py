@@ -41,7 +41,7 @@ class Access:
             (),
             (
                 CppFunctionScopeDefs(
-                    f'nanobind::class_<{cls.cpp_type_name()}>({module_var}, "{py_class_name}")'
+                    f'nanobind::class_<{cls.cpp_type_name()}>({module_var}, "{py_class_name}", nanobind::is_final())'
                     + "".join(
                         f'\n    .def("{meth}", &{cls.cpp_type_name()}::{meth})'
                         for meth in cls.cpp_methods()

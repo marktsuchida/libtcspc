@@ -60,7 +60,7 @@ def _context_type(
         (),
         (
             CppFunctionScopeDefs(
-                f'nanobind::class_<tcspc::context>({module_var}, "Context")'
+                f'nanobind::class_<tcspc::context>({module_var}, "Context", nanobind::is_final())'
                 + "".join(
                     f"""
                 .def({quote_string(tag._context_method_name())},
@@ -94,7 +94,7 @@ def _param_struct(
         ),
         (
             CppFunctionScopeDefs(
-                f'nanobind::class_<params>({module_var}, "Params")\n'
+                f'nanobind::class_<params>({module_var}, "Params", nanobind::is_final())\n'
                 "    .def(nanobind::init<>())"
                 + "".join(
                     f'\n    .def_rw("{name}", &params::{name})'
@@ -255,7 +255,7 @@ def _processor_creation(
             ),
             (
                 CppFunctionScopeDefs(
-                    f'nanobind::class_<processor_type>({module_var}, "Processor")'
+                    f'nanobind::class_<processor_type>({module_var}, "Processor", nanobind::is_final())'
                     + (
                         '\n    .def("handle", &processor_type::handle, nanobind::call_guard<nanobind::gil_scoped_release>())'
                         if len(input_event_types) > 0
