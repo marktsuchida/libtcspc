@@ -3,6 +3,7 @@
 # SPDX-License-Identifier: MIT
 
 __all__ = [
+    "Acquire",
     "Batch",
     "CheckMonotonic",
     "Count",
@@ -131,47 +132,6 @@ def read_events_from_binary_file(
 
 
 @final
-class Batch(RelayNode):
-    def __init__(
-        self,
-        event_type: EventType,
-        *,
-        buffer_provider: BucketSource | None = None,
-        batch_size: int | Param[int] | None = None,
-    ) -> None:
-        self._event_type = event_type
-        self._bucket_source = _bucket_source_or_default(
-            event_type, buffer_provider
-        )
-        self._batch_size = batch_size if batch_size is not None else 65536
-
-    @override
-    def relay_map_event_set(
-        self, input_event_set: Collection[EventType]
-    ) -> tuple[EventType, ...]:
-        _check_events_subset_of(
-            input_event_set, (self._event_type,), self.__class__.__name__
-        )
-        return (_events.BucketEvent(self._event_type),)
-
-    @override
-    def relay_cpp_expression(
-        self,
-        gencontext: CodeGenerationContext,
-        downstream: CppExpression,
-    ) -> CppExpression:
-        batch_size = gencontext.size_t_expression(self._batch_size)
-        return CppExpression(
-            f"""\
-            tcspc::batch<{self._event_type.cpp_type_name()}>(
-                {self._bucket_source.cpp_expression(gencontext)},
-                tcspc::arg::batch_size{{{batch_size}}},
-                {downstream}
-            )"""
-        )
-
-
-@final
 class Acquire(RelayNode):
     def __init__(
         self,
@@ -258,6 +218,47 @@ class Acquire(RelayNode):
                 {self._bucket_source.cpp_expression(gencontext)},
                 tcspc::arg::batch_size{{{batch_size}}},
                 {gencontext.tracker_expression(CppTypeName("tcspc::acquire_access"), self._access_tag)},
+                {downstream}
+            )"""
+        )
+
+
+@final
+class Batch(RelayNode):
+    def __init__(
+        self,
+        event_type: EventType,
+        *,
+        buffer_provider: BucketSource | None = None,
+        batch_size: int | Param[int] | None = None,
+    ) -> None:
+        self._event_type = event_type
+        self._bucket_source = _bucket_source_or_default(
+            event_type, buffer_provider
+        )
+        self._batch_size = batch_size if batch_size is not None else 65536
+
+    @override
+    def relay_map_event_set(
+        self, input_event_set: Collection[EventType]
+    ) -> tuple[EventType, ...]:
+        _check_events_subset_of(
+            input_event_set, (self._event_type,), self.__class__.__name__
+        )
+        return (_events.BucketEvent(self._event_type),)
+
+    @override
+    def relay_cpp_expression(
+        self,
+        gencontext: CodeGenerationContext,
+        downstream: CppExpression,
+    ) -> CppExpression:
+        batch_size = gencontext.size_t_expression(self._batch_size)
+        return CppExpression(
+            f"""\
+            tcspc::batch<{self._event_type.cpp_type_name()}>(
+                {self._bucket_source.cpp_expression(gencontext)},
+                tcspc::arg::batch_size{{{batch_size}}},
                 {downstream}
             )"""
         )
