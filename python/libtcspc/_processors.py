@@ -74,6 +74,12 @@ def _make_type_list(event_types: Iterable[EventType]) -> CppTypeName:
     )
 
 
+def _bucket_source_or_default(
+    event_type: EventType, arg: BucketSource | None
+) -> BucketSource:
+    return arg if arg is not None else RecyclingBucketSource(event_type)
+
+
 def read_events_from_binary_file(
     event_type: EventType,
     filename: str | Param[str],
@@ -134,10 +140,8 @@ class Batch(RelayNode):
         batch_size: int | Param[int] | None = None,
     ) -> None:
         self._event_type = event_type
-        self._bucket_source = (
-            buffer_provider
-            if buffer_provider is not None
-            else RecyclingBucketSource(event_type)
+        self._bucket_source = _bucket_source_or_default(
+            event_type, buffer_provider
         )
         self._batch_size = batch_size if batch_size is not None else 65536
 
@@ -179,10 +183,8 @@ class Acquire(RelayNode):
     ) -> None:
         self._event_type = event_type
         self._reader = reader
-        self._bucket_source = (
-            buffer_provider
-            if buffer_provider is not None
-            else RecyclingBucketSource(event_type)
+        self._bucket_source = _bucket_source_or_default(
+            event_type, buffer_provider
         )
         self._batch_size = batch_size if batch_size is not None else 65536
         self._access_tag = access_tag
@@ -396,10 +398,8 @@ class ReadBinaryStream(RelayNode):
         self._event_type = event_type
         self._stream = stream
         self._maxlen = max_length
-        self._bucket_source = (
-            buffer_provider
-            if buffer_provider is not None
-            else RecyclingBucketSource(event_type)
+        self._bucket_source = _bucket_source_or_default(
+            event_type, buffer_provider
         )
         self._granularity = read_granularity_bytes
 
