@@ -300,9 +300,9 @@ jobs:
         include:
           # Only test with Python versions available on the runners.
           - runner: ubuntu-latest
-            py_versions: 3.10 3.11 3.12
+            py_versions: 3.10 3.11 3.12 3.13
           - runner: windows-latest
-            py_versions: 3.10 3.11 3.12
+            py_versions: 3.10 3.11 3.12 3.13
           - runner: macos-latest
             py_versions: 3.11 3.12 3.13
 
