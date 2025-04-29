@@ -49,4 +49,13 @@ executable(
     ],
 )
 
+executable(
+    'flim_lineclock_bh_spc',
+    'flim_lineclock_bh_spc.cpp',
+    dependencies: [
+        libtcspc_dep,
+        thread_dep,
+    ],
+)
+
 endif
