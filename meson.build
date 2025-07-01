@@ -14,6 +14,12 @@ project(
     ],
 )
 
+if host_machine.system() == 'darwin'
+    # Work around https://github.com/mesonbuild/meson/issues/14440
+    # Remove when fixed (Meson 1.8.3?)
+    add_global_arguments('-U_LIBCPP_ENABLE_ASSERTIONS', language: 'cpp')
+endif
+
 cxx = meson.get_compiler('cpp')
 if cxx.get_id() in ['gcc', 'clang']
     add_project_arguments('-Wconversion', language: 'cpp')
