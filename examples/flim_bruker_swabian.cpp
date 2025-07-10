@@ -192,7 +192,8 @@ auto make_processor(settings const &settings,
     merge<type_list<
         time_correlated_detection_event<>,
         pixel_start_event,
-        pixel_stop_event>>(
+        pixel_stop_event,
+        time_reached_event<>>>(
             arg::max_buffered<>{1 << 20},
     map_to_datapoints<time_correlated_detection_event<>>(
         difftime_data_mapper(),
@@ -207,13 +208,13 @@ auto make_processor(settings const &settings,
     make_histo_proc<Cumulative>(settings, ctx))))));
 
     auto [sync_merge, cfd_merge] =
-    merge<type_list<detection_event<>>>(
+    merge<type_list<detection_event<>, time_reached_event<>>>(
         arg::max_buffered<>{1 << 20},
     pair_all_between(
         arg::start_channel{settings.sync_channel},
         std::array{settings.photon_trailing_channel},
         arg::time_window<i64>{settings.max_diff_time},
-    select<type_list<std::array<detection_event<>, 2>>>(
+    select<type_list<std::array<detection_event<>, 2>, time_reached_event<>>>(
     time_correlate_at_stop(
     std::move(tc_merge)))));
 
@@ -226,16 +227,16 @@ auto make_processor(settings const &settings,
         arg::start_channel{settings.photon_leading_channel},
         std::array{settings.photon_trailing_channel},
         arg::time_window{settings.max_photon_pulse_width},
-    select<type_list<std::array<detection_event<>, 2>>>(
+    select<type_list<std::array<detection_event<>, 2>, time_reached_event<>>>(
     time_correlate_at_midpoint(
     remove_time_correlation(
-    recover_order<type_list<detection_event<>>>(
+    recover_order<type_list<detection_event<>, time_reached_event<>>>(
         arg::time_window{std::abs(settings.max_photon_pulse_width)},
     std::move(cfd_merge))))));
 
     auto pixel_marker_processor =
     match<detection_event<>, pixel_start_event>(always_matcher(),
-    select<type_list<pixel_start_event>>(
+    select<type_list<pixel_start_event, time_reached_event<>>>(
     generate<pixel_start_event, pixel_stop_event>(
         one_shot_timing_generator(arg::delay{settings.pixel_time}),
     check_alternating<pixel_start_event, pixel_stop_event>(
@@ -260,7 +261,10 @@ auto make_processor(settings const &settings,
         lost_counts_event<>>>("error in input data",
     check_monotonic(
     stop<type_list<warning_event>>("processing stopped",
-    route<type_list<detection_event<>>>(
+    regulate_time_reached(
+        arg::interval_threshold<abstime_type>{1 << 30}, // About 1 ms
+        arg::count_threshold<>{1 << 18}, // 1/4 of merge buffer size
+    route<type_list<detection_event<>>, type_list<time_reached_event<>>>(
         channel_router(std::array{
             std::pair{settings.sync_channel, 0},
             std::pair{settings.photon_leading_channel, 1},
@@ -269,7 +273,7 @@ auto make_processor(settings const &settings,
         }),
         std::move(sync_processor),
         std::move(photon_processor),
-        std::move(pixel_marker_processor))))))))));
+        std::move(pixel_marker_processor)))))))))));
 
     // clang-format on
 }

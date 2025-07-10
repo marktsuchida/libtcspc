@@ -104,7 +104,7 @@ template <typename T> struct count {
 /**
  * \brief Function argument wrapper for count threshold parameter.
  */
-template <typename T> struct count_threshold {
+template <typename T = std::size_t> struct count_threshold {
     /** \brief The argument value. */
     T value;
     /** \brief Construct by wrapping a value. */
