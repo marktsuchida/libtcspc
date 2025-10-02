@@ -25,16 +25,16 @@ jobs:
         runner:
           - ubuntu-22.04
           - ubuntu-24.04
-          - windows-2022
-          - macos-13  # x86_64
-          - macos-14  # arm64
+          - windows-2025
+          - macos-15-intel  # x86_64
+          - macos-15        # arm64
         compiler:
           - platform
           - clang
         exclude:
-          - runner: macos-13
+          - runner: macos-15-intel
             compiler: clang  # Redundant with platform
-          - runner: macos-14
+          - runner: macos-15
             compiler: clang  # Redundant with platform
         include:
           - runner: ubuntu-22.04
@@ -59,22 +59,22 @@ jobs:
             cxx: clang++
             sanitizers: a+ub,thread
             asan_opts: detect_leaks=1
-          - runner: windows-2022
+          - runner: windows-2025
             compiler: platform
             cxx: cl
             opts: -Dcatch2:werror=false
             sanitizers: address
-          - runner: windows-2022
+          - runner: windows-2025
             compiler: clang
             cxx: clang-cl
             opts: -Dcatch2:werror=false -Dgoogle-benchmark:werror=false
-          - runner: windows-2022
+          - runner: windows-2025
             # Use /Z7 to be ccache-friendly (/Zi is not).
             debug_opts: -Dcpp_args=/Z7
-          - runner: macos-13
+          - runner: macos-15-intel
             cxx: clang++
             sanitizers: a+ub,thread
-          - runner: macos-14
+          - runner: macos-15
             cxx: clang++
             sanitizers: a+ub,thread
     name: cpp-test-${{ matrix.runner }}-${{ matrix.cxx }}
