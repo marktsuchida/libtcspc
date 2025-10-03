@@ -107,8 +107,8 @@ struct swabian_tag_event {
      *
      * \return event
      */
-    static auto make_time_tag(i64np time,
-                              i32np channel) noexcept -> swabian_tag_event {
+    static auto make_time_tag(i64np time, i32np channel) noexcept
+        -> swabian_tag_event {
         return make_from_fields(tag_type::time_tag, 0_u16np, channel, time);
     }
 
@@ -177,8 +177,8 @@ struct swabian_tag_event {
     }
 
     /** \brief Stream insertion operator. */
-    friend auto operator<<(std::ostream &strm,
-                           swabian_tag_event const &e) -> std::ostream & {
+    friend auto operator<<(std::ostream &strm, swabian_tag_event const &e)
+        -> std::ostream & {
         return strm << "swabian_tag(type=" << static_cast<int>(e.type())
                     << ", missed=" << e.missed_event_count()
                     << ", channel=" << e.channel() << ", time=" << e.time()

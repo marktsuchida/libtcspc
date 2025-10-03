@@ -119,8 +119,8 @@ struct bh_spc_event {
     /**
      * \brief Determine if this event represents multiple macrotime overflows.
      */
-    [[nodiscard]] auto
-    is_multiple_macrotime_overflow() const noexcept -> bool {
+    [[nodiscard]] auto is_multiple_macrotime_overflow() const noexcept
+        -> bool {
         // Although documentation is not clear, a marker can share an event
         // record with a (single) macrotime overflow, just as a photon can.
         return macrotime_overflow_flag() && invalid_flag() && !marker_flag();
@@ -130,8 +130,8 @@ struct bh_spc_event {
      * \brief Read the macrotime overflow count if this event represents
      * multiple macrotime overflows.
      */
-    [[nodiscard]] auto
-    multiple_macrotime_overflow_count() const noexcept -> u32np {
+    [[nodiscard]] auto multiple_macrotime_overflow_count() const noexcept
+        -> u32np {
         return read_u32le_at<0>(span(bytes)) & 0x0fff'ffff_u32np;
     }
 
@@ -168,8 +168,8 @@ struct bh_spc_event {
      *
      * \return event
      */
-    static auto make_invalid_photon(u16np macrotime,
-                                    u16np adc_value) -> bh_spc_event {
+    static auto make_invalid_photon(u16np macrotime, u16np adc_value)
+        -> bh_spc_event {
         // N.B. No MTOV.
         return make_from_fields(true, false, false, false, adc_value, 0_u8np,
                                 macrotime);
@@ -270,8 +270,8 @@ struct bh_spc_event {
     }
 
     /** \brief Stream insertion operator. */
-    friend auto operator<<(std::ostream &strm,
-                           bh_spc_event const &e) -> std::ostream & {
+    friend auto operator<<(std::ostream &strm, bh_spc_event const &e)
+        -> std::ostream & {
         return strm << "bh_spc(MT=" << e.macrotime()
                     << ", ROUT=" << unsigned(e.routing_signals().value())
                     << ", ADC=" << e.adc_value()
@@ -284,8 +284,8 @@ struct bh_spc_event {
 
   private:
     static auto make_from_fields(bool invalid, bool mtov, bool gap, bool mark,
-                                 u16np adc, u8np rout,
-                                 u16np mt) -> bh_spc_event {
+                                 u16np adc, u8np rout, u16np mt)
+        -> bh_spc_event {
         auto const flags = (u8np(u8(invalid)) << 7) | (u8np(u8(mtov)) << 6) |
                            (u8np(u8(gap)) << 5) | (u8np(u8(mark)) << 4);
         return bh_spc_event{{
@@ -379,8 +379,8 @@ struct bh_spc600_4096ch_event {
     /**
      * \brief Determine if this event represents multiple macrotime overflows.
      */
-    [[nodiscard]] static auto
-    is_multiple_macrotime_overflow() noexcept -> bool {
+    [[nodiscard]] static auto is_multiple_macrotime_overflow() noexcept
+        -> bool {
         return false;
     }
 
@@ -388,8 +388,8 @@ struct bh_spc600_4096ch_event {
      * \brief Read the macrotime overflow count if this event represents
      * multiple macrotime overflows.
      */
-    [[nodiscard]] static auto
-    multiple_macrotime_overflow_count() noexcept -> u32np {
+    [[nodiscard]] static auto multiple_macrotime_overflow_count() noexcept
+        -> u32np {
         return 0_u32np;
     }
 
@@ -408,9 +408,9 @@ struct bh_spc600_4096ch_event {
      *
      * \return event
      */
-    static auto
-    make_photon(u32np macrotime, u16np adc_value, u8np route,
-                bool macrotime_overflow = false) -> bh_spc600_4096ch_event {
+    static auto make_photon(u32np macrotime, u16np adc_value, u8np route,
+                            bool macrotime_overflow = false)
+        -> bh_spc600_4096ch_event {
         return make_from_fields(macrotime, route, false, macrotime_overflow,
                                 false, adc_value);
     }
@@ -451,22 +451,22 @@ struct bh_spc600_4096ch_event {
     }
 
     /** \brief Equality comparison operator. */
-    friend auto
-    operator==(bh_spc600_4096ch_event const &lhs,
-               bh_spc600_4096ch_event const &rhs) noexcept -> bool {
+    friend auto operator==(bh_spc600_4096ch_event const &lhs,
+                           bh_spc600_4096ch_event const &rhs) noexcept
+        -> bool {
         return lhs.bytes == rhs.bytes;
     }
 
     /** \brief Inequality comparison operator. */
-    friend auto
-    operator!=(bh_spc600_4096ch_event const &lhs,
-               bh_spc600_4096ch_event const &rhs) noexcept -> bool {
+    friend auto operator!=(bh_spc600_4096ch_event const &lhs,
+                           bh_spc600_4096ch_event const &rhs) noexcept
+        -> bool {
         return not(lhs == rhs);
     }
 
     /** \brief Stream insertion operator. */
-    friend auto operator<<(std::ostream &strm,
-                           bh_spc600_4096ch_event const &e) -> std::ostream & {
+    friend auto operator<<(std::ostream &strm, bh_spc600_4096ch_event const &e)
+        -> std::ostream & {
         bool const unused_bit =
             (read_u8_at<1>(span(e.bytes)) & (1_u8np << 7)) != 0_u8np;
         return strm << "bh_spc600_4096ch(MT=" << e.macrotime()
@@ -480,8 +480,8 @@ struct bh_spc600_4096ch_event {
 
   private:
     static auto make_from_fields(u32np mt, u8np r, bool gap, bool mtov,
-                                 bool invalid,
-                                 u16np adc) -> bh_spc600_4096ch_event {
+                                 bool invalid, u16np adc)
+        -> bh_spc600_4096ch_event {
         auto const flags = (u8np(u8(gap)) << 6) | (u8np(u8(mtov)) << 5) |
                            (u8np(u8(invalid)) << 4);
         return bh_spc600_4096ch_event{{
@@ -577,8 +577,8 @@ struct bh_spc600_256ch_event {
     /**
      * \brief Determine if this event represents multiple macrotime overflows.
      */
-    [[nodiscard]] auto
-    is_multiple_macrotime_overflow() const noexcept -> bool {
+    [[nodiscard]] auto is_multiple_macrotime_overflow() const noexcept
+        -> bool {
         return macrotime_overflow_flag() && invalid_flag();
     }
 
@@ -586,8 +586,8 @@ struct bh_spc600_256ch_event {
      * \brief Read the macrotime overflow count if this event represents
      * multiple macrotime overflows.
      */
-    [[nodiscard]] auto
-    multiple_macrotime_overflow_count() const noexcept -> u32np {
+    [[nodiscard]] auto multiple_macrotime_overflow_count() const noexcept
+        -> u32np {
         return read_u32le_at<0>(span(bytes)) & 0x0fff'ffff_u32np;
     }
 
@@ -606,9 +606,9 @@ struct bh_spc600_256ch_event {
      *
      * \return event
      */
-    static auto
-    make_photon(u32np macrotime, u8np adc_value, u8np route,
-                bool macrotime_overflow = false) -> bh_spc600_256ch_event {
+    static auto make_photon(u32np macrotime, u8np adc_value, u8np route,
+                            bool macrotime_overflow = false)
+        -> bh_spc600_256ch_event {
         return make_from_fields(false, macrotime_overflow, false, route,
                                 macrotime, adc_value);
     }
@@ -625,8 +625,8 @@ struct bh_spc600_256ch_event {
      *
      * \return event
      */
-    static auto make_invalid_photon(u32np macrotime,
-                                    u8np adc_value) -> bh_spc600_256ch_event {
+    static auto make_invalid_photon(u32np macrotime, u8np adc_value)
+        -> bh_spc600_256ch_event {
         // N.B. No MTOV.
         return make_from_fields(true, false, false, 0_u8np, macrotime,
                                 adc_value);
@@ -642,8 +642,8 @@ struct bh_spc600_256ch_event {
      *
      * \return event
      */
-    static auto
-    make_multiple_macrotime_overflow(u32np count) -> bh_spc600_256ch_event {
+    static auto make_multiple_macrotime_overflow(u32np count)
+        -> bh_spc600_256ch_event {
         static constexpr auto flags = 0b1100'0000_u8np;
         return bh_spc600_256ch_event{{
             std::byte(u8np(count >> 0).value()),
@@ -681,8 +681,8 @@ struct bh_spc600_256ch_event {
     }
 
     /** \brief Stream insertion operator. */
-    friend auto operator<<(std::ostream &strm,
-                           bh_spc600_256ch_event const &e) -> std::ostream & {
+    friend auto operator<<(std::ostream &strm, bh_spc600_256ch_event const &e)
+        -> std::ostream & {
         bool const unused_bit =
             (read_u8_at<3>(span(e.bytes)) & (1_u8np << 4)) != 0_u8np;
         return strm << "bh_spc600_256ch(MT=" << e.macrotime()

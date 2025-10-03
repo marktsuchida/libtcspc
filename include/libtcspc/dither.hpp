@@ -89,8 +89,8 @@ triangular_double_0_2_minstd(std::minstd_rand::result_type r0,
 // Given noise in [0, 2) (from triangular distribution), return dithered value.
 // The return value is in (v - 1.5, v + 1.5).
 template <typename T>
-[[nodiscard]] inline auto apply_dither(double value,
-                                       double dither_noise_0_2) -> T {
+[[nodiscard]] inline auto apply_dither(double value, double dither_noise_0_2)
+    -> T {
     assert(dither_noise_0_2 >= 0.0);
     assert(dither_noise_0_2 < 2.0);
     return static_cast<T>(std::floor(value + dither_noise_0_2 - 0.5));
@@ -148,8 +148,8 @@ class dithered_one_shot_timing_generator {
     }
 
     /** \brief Implements timing generator requirement. */
-    [[nodiscard]] auto
-    peek() const -> std::optional<typename DataTypes::abstime_type> {
+    [[nodiscard]] auto peek() const
+        -> std::optional<typename DataTypes::abstime_type> {
         return next;
     }
 
@@ -189,8 +189,8 @@ class dynamic_dithered_one_shot_timing_generator {
     }
 
     /** \brief Implements timing generator requirement. */
-    [[nodiscard]] auto
-    peek() const -> std::optional<typename DataTypes::abstime_type> {
+    [[nodiscard]] auto peek() const
+        -> std::optional<typename DataTypes::abstime_type> {
         return next;
     }
 
@@ -302,8 +302,8 @@ class dithered_linear_timing_generator {
     }
 
     /** \brief Implements timing generator requirement. */
-    [[nodiscard]] auto
-    peek() const -> std::optional<typename DataTypes::abstime_type> {
+    [[nodiscard]] auto peek() const
+        -> std::optional<typename DataTypes::abstime_type> {
         return impl.peek();
     }
 
@@ -342,8 +342,8 @@ class dynamic_dithered_linear_timing_generator {
     }
 
     /** \brief Implements timing generator requirement. */
-    [[nodiscard]] auto
-    peek() const -> std::optional<typename DataTypes::abstime_type> {
+    [[nodiscard]] auto peek() const
+        -> std::optional<typename DataTypes::abstime_type> {
         return impl.peek();
     }
 

@@ -286,8 +286,8 @@ class acquire_full_buckets {
           batch_downstream(std::move(other.batch_downstream)),
           trk(std::move(other.trk)) {}
 
-    auto
-    operator=(acquire_full_buckets &&rhs) noexcept -> acquire_full_buckets & {
+    auto operator=(acquire_full_buckets &&rhs) noexcept
+        -> acquire_full_buckets & {
         reader = std::move(rhs.reader);
         bsource = std::move(rhs.bsource);
         bsize = rhs.bsize;

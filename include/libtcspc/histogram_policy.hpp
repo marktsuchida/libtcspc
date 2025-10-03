@@ -159,16 +159,16 @@ enum class histogram_policy : unsigned {
 };
 
 /** \private */
-constexpr auto operator|(histogram_policy lhs,
-                         histogram_policy rhs) noexcept -> histogram_policy {
+constexpr auto operator|(histogram_policy lhs, histogram_policy rhs) noexcept
+    -> histogram_policy {
     using U = std::underlying_type_t<histogram_policy>;
     return static_cast<histogram_policy>(static_cast<U>(lhs) |
                                          static_cast<U>(rhs));
 }
 
 /** \private */
-constexpr auto operator&(histogram_policy lhs,
-                         histogram_policy rhs) noexcept -> histogram_policy {
+constexpr auto operator&(histogram_policy lhs, histogram_policy rhs) noexcept
+    -> histogram_policy {
     using U = std::underlying_type_t<histogram_policy>;
     return static_cast<histogram_policy>(static_cast<U>(lhs) &
                                          static_cast<U>(rhs));

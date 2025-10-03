@@ -342,8 +342,8 @@ class processor_graph {
      *
      * \return processor metadata
      */
-    [[nodiscard]] auto
-    node_info(processor_node_id id) const -> processor_info {
+    [[nodiscard]] auto node_info(processor_node_id id) const
+        -> processor_info {
         auto it = std::find_if(nds.begin(), nds.end(),
                                [id](auto const &n) { return n.id == id; });
         if (it == nds.end())
@@ -351,9 +351,9 @@ class processor_graph {
         return it->info;
     }
 
-    friend auto
-    merge_processor_graphs(processor_graph const &a,
-                           processor_graph const &b) -> processor_graph;
+    friend auto merge_processor_graphs(processor_graph const &a,
+                                       processor_graph const &b)
+        -> processor_graph;
 };
 
 /**
@@ -370,9 +370,9 @@ class processor_graph {
  *
  * \return the merged processor graph
  */
-[[nodiscard]] inline auto
-merge_processor_graphs(processor_graph const &a,
-                       processor_graph const &b) -> processor_graph {
+[[nodiscard]] inline auto merge_processor_graphs(processor_graph const &a,
+                                                 processor_graph const &b)
+    -> processor_graph {
     processor_graph c;
 
     c.nds.reserve(a.nds.size() + b.nds.size());

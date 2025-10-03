@@ -45,8 +45,9 @@ template <typename BinIndex> struct bin_increment_cluster_encoding_traits {
 };
 
 template <typename BinIndex>
-[[nodiscard]] constexpr auto encoded_bin_increment_cluster_size(
-    std::size_t cluster_size) noexcept -> std::size_t {
+[[nodiscard]] constexpr auto
+encoded_bin_increment_cluster_size(std::size_t cluster_size) noexcept
+    -> std::size_t {
     using traits = bin_increment_cluster_encoding_traits<BinIndex>;
     bool const is_long_mode = cluster_size >= traits::encoded_size_max;
     std::size_t const size_of_size =
@@ -62,9 +63,9 @@ template <typename BinIndex>
 // Returns true if the encoded cluster fit in storge; false if not, in which
 // case storage is not modified.
 template <typename BinIndex, typename Storage>
-[[nodiscard]] auto
-encode_bin_increment_cluster(Storage dest,
-                             span<BinIndex const> cluster) -> bool {
+[[nodiscard]] auto encode_bin_increment_cluster(Storage dest,
+                                                span<BinIndex const> cluster)
+    -> bool {
     using traits = bin_increment_cluster_encoding_traits<BinIndex>;
 
     std::size_t const size = cluster.size();

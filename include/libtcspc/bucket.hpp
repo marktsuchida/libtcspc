@@ -336,9 +336,9 @@ template <typename T> class bucket {
     }
 
     /** \brief Return the span of the given range of elements. */
-    [[nodiscard]] auto
-    subspan(size_type offset,
-            size_type count = dynamic_extent) const -> span<T const> {
+    [[nodiscard]] auto subspan(size_type offset,
+                               size_type count = dynamic_extent) const
+        -> span<T const> {
         return span<T const>(s).subspan(offset, count);
     }
 
@@ -432,8 +432,8 @@ template <typename T> class bucket {
     }
 
     /** \brief Stream insertion operator. */
-    friend auto operator<<(std::ostream &stream,
-                           bucket const &bkt) -> std::ostream & {
+    friend auto operator<<(std::ostream &stream, bucket const &bkt)
+        -> std::ostream & {
         static constexpr std::size_t num_to_print = 10;
         auto const size = bkt.s.size();
         stream << "bucket(size=" << size;
@@ -629,14 +629,14 @@ class sharable_new_delete_bucket_source final : public bucket_source<T> {
     }
 
     /** \brief Implements sharable bucket source requirement. */
-    [[nodiscard]] auto
-    supports_shared_views() const noexcept -> bool override {
+    [[nodiscard]] auto supports_shared_views() const noexcept
+        -> bool override {
         return true;
     }
 
     /** \brief Implements sharable bucket source requirement. */
-    [[nodiscard]] auto
-    shared_view_of(bucket<T> const &bkt) -> bucket<T const> override {
+    [[nodiscard]] auto shared_view_of(bucket<T> const &bkt)
+        -> bucket<T const> override {
         // NOLINTNEXTLINE(cppcoreguidelines-avoid-c-arrays,modernize-avoid-c-arrays)
         auto storage = bkt.template storage<std::shared_ptr<T[]>>();
         return bucket<T const>{span<T const>(bkt), std::move(storage)};
@@ -720,8 +720,8 @@ class recycling_bucket_source final
         auto operator=(bucket_storage const &) = delete;
 
         bucket_storage(bucket_storage &&) noexcept = default;
-        auto
-        operator=(bucket_storage &&) noexcept -> bucket_storage & = default;
+        auto operator=(bucket_storage &&) noexcept
+            -> bucket_storage & = default;
     };
 
     explicit recycling_bucket_source(
@@ -884,14 +884,14 @@ class sharable_recycling_bucket_source final
     }
 
     /** \brief Implements sharable bucket source requirement. */
-    [[nodiscard]] auto
-    supports_shared_views() const noexcept -> bool override {
+    [[nodiscard]] auto supports_shared_views() const noexcept
+        -> bool override {
         return true;
     }
 
     /** \brief Implements sharable bucket source requirement. */
-    [[nodiscard]] auto
-    shared_view_of(bucket<T> const &bkt) -> bucket<T const> override {
+    [[nodiscard]] auto shared_view_of(bucket<T> const &bkt)
+        -> bucket<T const> override {
         auto storage = bkt.template storage<bucket_storage>();
         return bucket<T const>{span<T const>(bkt), std::move(storage)};
     }

@@ -104,9 +104,9 @@ template <typename BinIndex> class bin_increment_cluster_journal {
         return not(*this == rhs);
     }
 
-    friend auto
-    operator<<(std::ostream &s,
-               bin_increment_cluster_journal const &j) -> std::ostream & {
+    friend auto operator<<(std::ostream &s,
+                           bin_increment_cluster_journal const &j)
+        -> std::ostream & {
         s << "journal(";
         for (auto const cluster : j) {
             s << '{';
@@ -165,8 +165,8 @@ class single_histogram {
     // Increment each bin in 'increments'. Return n_applied, the actual number
     // of increments applied without saturation. This value is between 0 and
     // increments.size(), inclusive.
-    auto
-    apply_increments(span<bin_index_type const> increments) -> std::size_t {
+    auto apply_increments(span<bin_index_type const> increments)
+        -> std::size_t {
         assert(not hist.empty());
         std::size_t n_applied = 0;
         for (auto it = increments.begin(); it != increments.end(); ++it) {

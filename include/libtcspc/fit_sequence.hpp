@@ -71,8 +71,8 @@ class periodic_fitter {
         std::iota(x.begin(), x.end(), 0.0);
     }
 
-    [[nodiscard]] auto
-    fit(std::vector<double> const &y) const -> periodic_fit_result {
+    [[nodiscard]] auto fit(std::vector<double> const &y) const
+        -> periodic_fit_result {
         assert(static_cast<double>(y.size()) == n);
 
         // Sum of y_0, y_1, ..., y_n-1

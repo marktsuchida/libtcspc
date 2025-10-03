@@ -144,8 +144,8 @@ struct pqt2_picoharp300_event {
      *
      * \return event
      */
-    static auto make_nonspecial(u32np timetag,
-                                u8np channel) -> pqt2_picoharp300_event {
+    static auto make_nonspecial(u32np timetag, u8np channel)
+        -> pqt2_picoharp300_event {
         if (channel > 14_u8np)
             throw std::invalid_argument(
                 "pqt2_picoharp300_event channel must be in the range 0-14");
@@ -182,31 +182,31 @@ struct pqt2_picoharp300_event {
     }
 
     /** \brief Equality comparison operator. */
-    friend auto
-    operator==(pqt2_picoharp300_event const &lhs,
-               pqt2_picoharp300_event const &rhs) noexcept -> bool {
+    friend auto operator==(pqt2_picoharp300_event const &lhs,
+                           pqt2_picoharp300_event const &rhs) noexcept
+        -> bool {
         return lhs.bytes == rhs.bytes;
     }
 
     /** \brief Inequality comparison operator. */
-    friend auto
-    operator!=(pqt2_picoharp300_event const &lhs,
-               pqt2_picoharp300_event const &rhs) noexcept -> bool {
+    friend auto operator!=(pqt2_picoharp300_event const &lhs,
+                           pqt2_picoharp300_event const &rhs) noexcept
+        -> bool {
         return not(lhs == rhs);
     }
 
     /** \brief Stream insertion operator. */
-    friend auto
-    operator<<(std::ostream &stream,
-               pqt2_picoharp300_event const &event) -> std::ostream & {
+    friend auto operator<<(std::ostream &stream,
+                           pqt2_picoharp300_event const &event)
+        -> std::ostream & {
         return stream << "pqt2_picoharp(channel="
                       << unsigned(event.channel().value())
                       << ", timetag=" << event.timetag() << ")";
     }
 
   private:
-    static auto make_from_fields(u8np channel,
-                                 u32np timetag) -> pqt2_picoharp300_event {
+    static auto make_from_fields(u8np channel, u32np timetag)
+        -> pqt2_picoharp300_event {
         return pqt2_picoharp300_event{{
             std::byte(u8np(timetag).value()),
             std::byte(u8np(timetag >> 8).value()),
@@ -322,8 +322,8 @@ struct basic_pqt2_event {
      *
      * \return event
      */
-    static auto make_nonspecial(u32np timetag,
-                                u8np channel) -> basic_pqt2_event {
+    static auto make_nonspecial(u32np timetag, u8np channel)
+        -> basic_pqt2_event {
         return make_from_fields(false, channel, timetag);
     }
 
@@ -373,8 +373,8 @@ struct basic_pqt2_event {
      *
      * \return event
      */
-    static auto make_external_marker(u32np timetag,
-                                     u8np marker_bits) -> basic_pqt2_event {
+    static auto make_external_marker(u32np timetag, u8np marker_bits)
+        -> basic_pqt2_event {
         if (marker_bits == 0_u8np || (marker_bits & ~0x0f_u8np) != 0_u8np)
             throw std::invalid_argument(
                 "basic_pqt2_event marker_bits must be in range 1-15");
@@ -394,8 +394,8 @@ struct basic_pqt2_event {
     }
 
     /** \brief Stream insertion operator. */
-    friend auto operator<<(std::ostream &stream,
-                           basic_pqt2_event const &event) -> std::ostream & {
+    friend auto operator<<(std::ostream &stream, basic_pqt2_event const &event)
+        -> std::ostream & {
         static constexpr auto version = IsOverflowAlwaysSingle ? 1 : 2;
         return stream << "pqt2_hydraharpv" << version
                       << "(special=" << event.is_special()
@@ -404,8 +404,8 @@ struct basic_pqt2_event {
     }
 
   private:
-    static auto make_from_fields(bool special, u8np channel,
-                                 u32np timetag) -> basic_pqt2_event {
+    static auto make_from_fields(bool special, u8np channel, u32np timetag)
+        -> basic_pqt2_event {
         return basic_pqt2_event{{
             std::byte(u8np(timetag).value()),
             std::byte(u8np(timetag >> 8).value()),

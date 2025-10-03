@@ -134,8 +134,8 @@ struct pqt3_picoharp300_event {
      *
      * \return event
      */
-    static auto make_nonspecial(u16np nsync, u8np channel,
-                                u16np dtime) -> pqt3_picoharp300_event {
+    static auto make_nonspecial(u16np nsync, u8np channel, u16np dtime)
+        -> pqt3_picoharp300_event {
         if (channel > 14_u8np)
             throw std::invalid_argument(
                 "pqt3_picoharp300_event channel must be in the range 0-14");
@@ -170,23 +170,23 @@ struct pqt3_picoharp300_event {
     }
 
     /** \brief Equality comparison operator. */
-    friend auto
-    operator==(pqt3_picoharp300_event const &lhs,
-               pqt3_picoharp300_event const &rhs) noexcept -> bool {
+    friend auto operator==(pqt3_picoharp300_event const &lhs,
+                           pqt3_picoharp300_event const &rhs) noexcept
+        -> bool {
         return lhs.bytes == rhs.bytes;
     }
 
     /** \brief Inequality comparison operator. */
-    friend auto
-    operator!=(pqt3_picoharp300_event const &lhs,
-               pqt3_picoharp300_event const &rhs) noexcept -> bool {
+    friend auto operator!=(pqt3_picoharp300_event const &lhs,
+                           pqt3_picoharp300_event const &rhs) noexcept
+        -> bool {
         return not(lhs == rhs);
     }
 
     /** \brief Stream insertion operator. */
-    friend auto
-    operator<<(std::ostream &stream,
-               pqt3_picoharp300_event const &event) -> std::ostream & {
+    friend auto operator<<(std::ostream &stream,
+                           pqt3_picoharp300_event const &event)
+        -> std::ostream & {
         return stream << "pqt3_picoharp(channel="
                       << unsigned(event.channel().value())
                       << ", dtime=" << event.dtime()
@@ -194,8 +194,8 @@ struct pqt3_picoharp300_event {
     }
 
   private:
-    static auto make_from_fields(u8np channel, u16np dtime,
-                                 u16np nsync) -> pqt3_picoharp300_event {
+    static auto make_from_fields(u8np channel, u16np dtime, u16np nsync)
+        -> pqt3_picoharp300_event {
         return pqt3_picoharp300_event{{
             std::byte(u8np(nsync).value()),
             std::byte(u8np(nsync >> 8).value()),
@@ -305,8 +305,8 @@ template <bool IsNSyncOverflowAlwaysSingle> struct basic_pqt3_event {
      *
      * \return event
      */
-    static auto make_nonspecial(u16np nsync, u8np channel,
-                                u16np dtime) -> basic_pqt3_event {
+    static auto make_nonspecial(u16np nsync, u8np channel, u16np dtime)
+        -> basic_pqt3_event {
         return make_from_fields(false, channel, dtime, nsync);
     }
 
@@ -345,8 +345,8 @@ template <bool IsNSyncOverflowAlwaysSingle> struct basic_pqt3_event {
      *
      * \return event
      */
-    static auto make_external_marker(u16np nsync,
-                                     u8np marker_bits) -> basic_pqt3_event {
+    static auto make_external_marker(u16np nsync, u8np marker_bits)
+        -> basic_pqt3_event {
         return make_from_fields(true, marker_bits, 0_u16np, nsync);
     }
 
@@ -363,8 +363,8 @@ template <bool IsNSyncOverflowAlwaysSingle> struct basic_pqt3_event {
     }
 
     /** \brief Stream insertion operator. */
-    friend auto operator<<(std::ostream &stream,
-                           basic_pqt3_event const &event) -> std::ostream & {
+    friend auto operator<<(std::ostream &stream, basic_pqt3_event const &event)
+        -> std::ostream & {
         static constexpr auto version = IsNSyncOverflowAlwaysSingle ? 1 : 2;
         return stream << "pqt3_hydraharpv" << version
                       << "(special=" << event.is_special()

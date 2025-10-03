@@ -49,43 +49,43 @@ inline auto use_memcpy() noexcept -> bool {
 #endif
 }
 
-inline auto
-read_u16le_memcpy(span<std::byte const, 2> bytes) noexcept -> u16np {
+inline auto read_u16le_memcpy(span<std::byte const, 2> bytes) noexcept
+    -> u16np {
     assert(is_little_endian());
     u16np ret{};
     std::memcpy(&ret, bytes.data(), sizeof(ret));
     return ret;
 }
 
-inline auto
-read_u32le_memcpy(span<std::byte const, 4> bytes) noexcept -> u32np {
+inline auto read_u32le_memcpy(span<std::byte const, 4> bytes) noexcept
+    -> u32np {
     assert(is_little_endian());
     u32np ret{};
     std::memcpy(&ret, bytes.data(), sizeof(ret));
     return ret;
 }
 
-inline auto
-read_u64le_memcpy(span<std::byte const, 8> bytes) noexcept -> u64np {
+inline auto read_u64le_memcpy(span<std::byte const, 8> bytes) noexcept
+    -> u64np {
     assert(is_little_endian());
     u64np ret{};
     std::memcpy(&ret, bytes.data(), sizeof(ret));
     return ret;
 }
 
-constexpr auto
-read_u16le_generic(span<std::byte const, 2> bytes) noexcept -> u16np {
+constexpr auto read_u16le_generic(span<std::byte const, 2> bytes) noexcept
+    -> u16np {
     return (u16np(u16(bytes[0])) << 0) | (u16np(u16(bytes[1])) << 8);
 }
 
-constexpr auto
-read_u32le_generic(span<std::byte const, 4> bytes) noexcept -> u32np {
+constexpr auto read_u32le_generic(span<std::byte const, 4> bytes) noexcept
+    -> u32np {
     return (u32np(u32(bytes[0])) << 0) | (u32np(u32(bytes[1])) << 8) |
            (u32np(u32(bytes[2])) << 16) | (u32np(u32(bytes[3])) << 24);
 }
 
-constexpr auto
-read_u64le_generic(span<std::byte const, 8> bytes) noexcept -> u64np {
+constexpr auto read_u64le_generic(span<std::byte const, 8> bytes) noexcept
+    -> u64np {
     return (u64np(u64(bytes[0])) << 0) | (u64np(u64(bytes[1])) << 8) |
            (u64np(u64(bytes[2])) << 16) | (u64np(u64(bytes[3])) << 24) |
            (u64np(u64(bytes[4])) << 32) | (u64np(u64(bytes[5])) << 40) |
