@@ -189,7 +189,9 @@ class npint {
     constexpr auto operator+() const noexcept -> npint { return *this; }
 
     /** \brief Unary minus operator. */
-    constexpr auto operator-() const -> npint { return npint(-v); }
+    constexpr auto operator-() const -> npint {
+        return npint(static_cast<T>(-v));
+    }
 
     // Binary arithmetic operators
 
@@ -236,7 +238,9 @@ class npint {
     }
 
     /** \brief Bitwise NOT operator. */
-    constexpr auto operator~() const noexcept -> npint { return npint(~v); }
+    constexpr auto operator~() const noexcept -> npint {
+        return npint(static_cast<T>(~v));
+    }
 
     /** \brief Bitwise left shift operator. */
     template <typename U>

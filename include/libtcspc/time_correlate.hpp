@@ -396,7 +396,8 @@ template <typename DataTypes, typename Downstream> class negate_difftime {
             std::is_signed_v<typename DT::difftime_type>,
             "difftime_type of time_correlated_detection_event used with negate_difftime must be a signed integer type");
         time_correlated_detection_event<DT> copy(event);
-        copy.difftime = -event.difftime;
+        copy.difftime =
+            static_cast<typename DT::difftime_type>(-event.difftime);
         downstream.handle(std::move(copy));
     }
 
