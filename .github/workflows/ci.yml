@@ -157,12 +157,16 @@ jobs:
 
       - name: Configure with ASan
         if: contains(matrix.sanitizers, 'address')
+        # With MS STL + C++20, the Debug runtime is painfully slow, so use
+        # debugoptimized. But GCC doesn't seem to like that with ASan, at least
+        # in some cases.
         # With MSVC, vector/string annotations for ASan fail due to mismatch
         # between Catch2 and libtcspc. Disable these for now.
         run: >
-          meson setup build-asan --buildtype=debug ${{ matrix.opts }}
-          ${{ matrix.debug_opts }} -Dbenchmarks=disabled -Dcatch2:tests=false
-          -Db_lundef=false -Db_sanitize=address
+          meson setup build-asan
+          --buildtype=${{ startsWith(matrix.runner, 'windows-') && 'debugoptimized' || 'debug' }}
+          ${{ matrix.opts }} ${{ matrix.debug_opts }} -Dbenchmarks=disabled
+          -Dcatch2:tests=false -Db_lundef=false -Db_sanitize=address
           -Dcpp_args='-D_DISABLE_VECTOR_ANNOTATION -D_DISABLE_STRING_ANNOTATION'
       - name: Test with ASan
         if: contains(matrix.sanitizers, 'address')
@@ -192,10 +196,13 @@ jobs:
       # instrumented; skip for now.
 
       - name: Configure debug build
+        # With MS STL and C++20, the Debug runtime is impractically slow.
+        if: ${{ !startsWith(matrix.runner, 'windows-') }}
         run: >
           meson setup build-debug --buildtype=debug ${{ matrix.opts }}
           ${{ matrix.debug_opts }} -Dbenchmarks=disabled -Dcatch2:tests=false
       - name: Test debug build
+        if: ${{ !startsWith(matrix.runner, 'windows-') }}
         run: meson test -C build-debug -v
 
       - name: Exercise benchmarks
