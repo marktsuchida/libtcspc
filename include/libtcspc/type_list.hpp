@@ -129,8 +129,7 @@ template <typename TypeList> struct type_list_singleton_element;
 /** \cond implementation-detail */
 
 template <typename T>
-struct type_list_singleton_element<type_list<T>> : internal::type_identity<T> {
-};
+struct type_list_singleton_element<type_list<T>> : std::type_identity<T> {};
 
 /** \endcond */
 
@@ -300,7 +299,7 @@ template <typename Dest, typename Src> struct unique_type_list_impl;
 
 template <typename... Ds>
 struct unique_type_list_impl<type_list<Ds...>, type_list<>>
-    : type_identity<type_list<Ds...>> {};
+    : std::type_identity<type_list<Ds...>> {};
 
 template <typename... Ds, typename T, typename... Ts>
 struct unique_type_list_impl<type_list<Ds...>, type_list<T, Ts...>>
@@ -347,7 +346,7 @@ struct type_list_union_impl;
 
 template <typename... Ds>
 struct type_list_union_impl<type_list<Ds...>, type_list<>, type_list<>>
-    : type_identity<type_list<Ds...>> {};
+    : std::type_identity<type_list<Ds...>> {};
 
 template <typename... Ds, typename S1, typename... S1s>
 struct type_list_union_impl<type_list<Ds...>, type_list<>,
@@ -412,7 +411,7 @@ struct type_list_intersection_impl;
 template <typename... Ds, typename... S1s>
 struct type_list_intersection_impl<type_list<Ds...>, type_list<>,
                                    type_list<S1s...>>
-    : type_identity<type_list<Ds...>> {};
+    : std::type_identity<type_list<Ds...>> {};
 
 template <typename... Ds, typename S0, typename... S0s, typename... S1s>
 struct type_list_intersection_impl<type_list<Ds...>, type_list<S0, S0s...>,
@@ -469,7 +468,7 @@ struct type_list_set_difference_impl;
 template <typename... Ds, typename... S1s>
 struct type_list_set_difference_impl<type_list<Ds...>, type_list<>,
                                      type_list<S1s...>>
-    : type_identity<type_list<Ds...>> {};
+    : std::type_identity<type_list<Ds...>> {};
 
 template <typename... Ds, typename S0, typename... S0s, typename... S1s>
 struct type_list_set_difference_impl<type_list<Ds...>, type_list<S0, S0s...>,

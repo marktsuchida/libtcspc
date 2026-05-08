@@ -433,7 +433,7 @@ class decode_pqt2 {
 
     // 32-bit abstime can work for a few seconds, though 64-bit is recommended.
     static_assert(sizeof(typename DataTypes::abstime_type) >= 4);
-    static_assert(in_range<typename DataTypes::channel_type>(63));
+    static_assert(std::in_range<typename DataTypes::channel_type>(63));
 
     using abstime_type = typename DataTypes::abstime_type;
 

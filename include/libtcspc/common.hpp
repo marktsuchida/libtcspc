@@ -55,11 +55,6 @@ template <typename T, typename... U> struct is_any_of {
 template <typename T, typename... U>
 inline constexpr bool is_any_of_v = is_any_of<T, U...>::value;
 
-// C++20 std::type_identity
-template <typename T> struct type_identity {
-    using type = T;
-};
-
 // Overloaded idiom for std::visit
 template <typename... Ts> struct overloaded : Ts... {
     using Ts::operator()...;

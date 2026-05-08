@@ -9,6 +9,7 @@
 #include <limits>
 #include <stdexcept>
 #include <type_traits>
+#include <utility>
 
 namespace tcspc::internal {
 
@@ -32,56 +33,19 @@ constexpr auto ensure_unsigned(T i) -> std::make_unsigned_t<T> {
     return static_cast<std::make_unsigned_t<T>>(i);
 }
 
-// Cf. C++20 std::cmp_less(), etc.
-template <typename T, typename U>
-[[nodiscard]] constexpr auto cmp_less(T t, U u) noexcept -> bool {
-    static_assert(std::is_integral_v<T>);
-    static_assert(std::is_integral_v<U>);
-    if constexpr (std::is_unsigned_v<T> == std::is_unsigned_v<U>)
-        return t < u;
-    else if constexpr (std::is_signed_v<T>)
-        return t < 0 || as_unsigned(t) < u;
-    else // U is signed:
-        return u >= 0 && t < as_unsigned(u);
-}
-
-template <typename T, typename U>
-[[nodiscard]] constexpr auto cmp_greater(T t, U u) noexcept -> bool {
-    return cmp_less(u, t);
-}
-
-template <typename T, typename U>
-[[nodiscard]] constexpr auto cmp_less_equal(T t, U u) noexcept -> bool {
-    return not cmp_less(u, t);
-}
-
-template <typename T, typename U>
-[[nodiscard]] constexpr auto cmp_greater_equal(T t, U u) noexcept -> bool {
-    return not cmp_less(t, u);
-}
-
 // Statically check for non-narrowing conversion.
 template <typename R, typename T>
 [[nodiscard]] constexpr auto is_type_in_range(T /* i */) noexcept -> bool {
-    return cmp_greater_equal(std::numeric_limits<T>::min(),
-                             std::numeric_limits<R>::min()) &&
-           cmp_less_equal(std::numeric_limits<T>::max(),
-                          std::numeric_limits<R>::max());
-}
-
-// Cf. C++20 std::in_range()
-template <typename R, typename T>
-[[nodiscard]] constexpr auto in_range(T i) noexcept -> bool {
-    if constexpr (is_type_in_range<R>(T{0}))
-        return true;
-    return cmp_greater_equal(i, std::numeric_limits<R>::min()) &&
-           cmp_less_equal(i, std::numeric_limits<R>::max());
+    return std::cmp_greater_equal(std::numeric_limits<T>::min(),
+                                  std::numeric_limits<R>::min()) &&
+           std::cmp_less_equal(std::numeric_limits<T>::max(),
+                               std::numeric_limits<R>::max());
 }
 
 template <typename R, typename T,
           typename = std::enable_if_t<std::is_integral_v<T>>>
 constexpr auto convert_with_check(T v) -> R {
-    if (not in_range<R>(v))
+    if (not std::in_range<R>(v))
         throw std::range_error("value out of range of integer type");
     return static_cast<R>(v);
 }

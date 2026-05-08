@@ -10,6 +10,7 @@
 #include "type_list.hpp"
 
 #include <ostream>
+#include <type_traits>
 #include <utility>
 #include <variant>
 
@@ -79,12 +80,12 @@ class variant_event<type_list<Events...>> : public std::variant<Events...> {
 namespace internal {
 
 template <typename EventList>
-struct variant_or_single_event_impl : type_identity<variant_event<EventList>> {
-};
+struct variant_or_single_event_impl
+    : std::type_identity<variant_event<EventList>> {};
 
 template <typename Event>
-struct variant_or_single_event_impl<type_list<Event>> : type_identity<Event> {
-};
+struct variant_or_single_event_impl<type_list<Event>>
+    : std::type_identity<Event> {};
 
 } // namespace internal
 

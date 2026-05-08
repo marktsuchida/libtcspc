@@ -708,15 +708,15 @@ class decode_bh_spc {
     // 32-bit abstime can work for a few seconds, though 64-bit is recommended.
     static_assert(sizeof(typename DataTypes::abstime_type) >= 4);
 
-    static_assert(in_range<typename DataTypes::channel_type>(255) ||
+    static_assert(std::in_range<typename DataTypes::channel_type>(255) ||
                   (not std::is_same_v<BHSPCEvent, bh_spc600_4096ch_event> &&
-                   in_range<typename DataTypes::channel_type>(15)));
+                   std::in_range<typename DataTypes::channel_type>(15)));
 
-    static_assert(in_range<typename DataTypes::difftime_type>(4095) ||
+    static_assert(std::in_range<typename DataTypes::difftime_type>(4095) ||
                   (std::is_same_v<BHSPCEvent, bh_spc600_256ch_event> &&
-                   in_range<typename DataTypes::difftime_type>(255)));
+                   std::in_range<typename DataTypes::difftime_type>(255)));
 
-    static_assert(in_range<typename DataTypes::count_type>(4095) ||
+    static_assert(std::in_range<typename DataTypes::count_type>(4095) ||
                   not HasIntensityCounter);
 
     using abstime_type = typename DataTypes::abstime_type;

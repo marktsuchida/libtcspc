@@ -21,19 +21,6 @@ TEST_CASE("as signed or unsigned") {
     STATIC_CHECK(as_unsigned(i16(-1)) == u16(65535));
 }
 
-TEST_CASE("cmp_less") {
-    STATIC_CHECK_FALSE(cmp_less(0, 0));
-    STATIC_CHECK(cmp_less(-1, 0));
-    STATIC_CHECK(cmp_less(0, 1));
-    STATIC_CHECK(cmp_less(0u, 1u));
-
-    STATIC_CHECK(cmp_less(i8(-1), u8(0)));
-    STATIC_CHECK(cmp_less(i32(-1), u32(0)));
-
-    STATIC_CHECK(cmp_less(u8(0), i8(1)));
-    STATIC_CHECK(cmp_less(u32(0), i32(1)));
-}
-
 TEST_CASE("is_type_in_range") {
     STATIC_CHECK(is_type_in_range<i8>(i8{0}));
     STATIC_CHECK(is_type_in_range<u8>(u8{0}));
@@ -47,17 +34,6 @@ TEST_CASE("is_type_in_range") {
     STATIC_CHECK(is_type_in_range<u16>(u8{0}));
     STATIC_CHECK(is_type_in_range<i16>(u8{0}));
     STATIC_CHECK_FALSE(is_type_in_range<u16>(i8{0}));
-}
-
-TEST_CASE("in_range") {
-    STATIC_CHECK(in_range<i8>(127));
-    STATIC_CHECK(in_range<i8>(-128));
-    STATIC_CHECK_FALSE(in_range<i8>(128));
-    STATIC_CHECK_FALSE(in_range<i8>(-129));
-    STATIC_CHECK(in_range<u8>(255));
-    STATIC_CHECK(in_range<u8>(0));
-    STATIC_CHECK_FALSE(in_range<u8>(256));
-    STATIC_CHECK_FALSE(in_range<u8>(-1));
 }
 
 TEST_CASE("convert_with_check") {
