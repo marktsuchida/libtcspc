@@ -7,18 +7,13 @@ project(
     'cpp',
     # Follow Python version identifier spec
     version: '0.1.0.dev0',
+    meson_version: '>= 1.9.0',
     default_options: [
         'cpp_std=c++17',
         'warning_level=3',
         'werror=true',
     ],
 )
-
-if host_machine.system() == 'darwin'
-    # Work around https://github.com/mesonbuild/meson/issues/14440
-    # Remove when fixed (Meson 1.8.3?)
-    add_global_arguments('-U_LIBCPP_ENABLE_ASSERTIONS', language: 'cpp')
-endif
 
 cxx = meson.get_compiler('cpp')
 if cxx.get_id() in ['gcc', 'clang']
