@@ -77,7 +77,7 @@
  * - See [Topics](topics.html) for a full table of contents.
  * - See namespace \ref tcspc for an almost-flat list of the public symbols.
  *
- * libtcspc requires C++17 or later.
+ * libtcspc requires C++20 or later.
  *
  * You should include `libtcspc/tcspc.hpp`, which includes all the other
  * headers. (Including individual headers is not recommended because their

@@ -8,28 +8,22 @@ SPDX-License-Identifier: MIT
 
 **Status: C++ library usable but no stable API; Python bindings in progress**.
 
-`libtcspc` is a C++ 17 header-only library for processing photon timestamp
-event streams produced by TCSPC (time-correlated single photon counting) or
-time tagging hardware. It is designed for live stream processing of data being
+`libtcspc` is a C++20 header-only library for processing photon timestamp event
+streams produced by TCSPC (time-correlated single photon counting) or time
+tagging hardware. It is designed for live stream processing of data being
 acquired or replayed from disk.
 
 ## Requirements
 
-The **C++** library requires C++ 17. The following compiler versions are
-supported (that is, it is considered a bug if they don't work). Earlier
-versions may work but are not tested.
-
-- Linux: GCC 11 or later; Clang (with libstdc++) 14 or later.
-- Windows: MSVC 19.40 (Visual Studio 2022 17.10) or later; clang-cl 18 or
-  later. (Visual Studio 2019 does not work.)
-- macOS: Apple Clang 15 or later on macOS 13 or later (x86-64 or arm64).
+The **C++** library requires C++20. Recent versions of GCC, Clang, or MSVC
+should work.
 
 The **Python** library (under development) requires Python 3.10 or later and a
 C++ build environment (at run time, since C++ code is dynamically generated and
 compiled).
 
-- On Windows, Visual Studio with "C++ Desktop Development" is required.
-- On macOS (Intel), Apple's latest Command Line Tools should be sufficient.
+- On Windows, Visual Studio (2022+) with "C++ Desktop Development" is required.
+- On macOS, Apple's latest Command Line Tools should be sufficient.
 
 ## How to build
 

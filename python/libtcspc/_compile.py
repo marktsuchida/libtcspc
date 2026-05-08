@@ -406,7 +406,7 @@ def _nanobind_dir() -> Path:
 
 
 _builder = _odext.Builder(
-    cpp_std="c++17",
+    cpp_std="c++20",
     include_dirs=(
         _include.libtcspc_include_dir(),
         _nanobind_dir() / "include",
