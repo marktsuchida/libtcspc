@@ -104,17 +104,34 @@ TEST_CASE("Generate one-shot timing",
             REQUIRE(
                 out.check(emitted_as::same_as_fed, misc_event{42 + delay}));
         }
-        SECTION("Output not generated when overlapping with next trigger") {
-            in.handle(trigger_event{42 + delay});
-            REQUIRE(
-                out.check(emitted_as::same_as_fed, trigger_event{42 + delay}));
-            SECTION("Nothing more") {}
-            SECTION("Retrigger produces output") {
-                in.handle(misc_event{42 + delay + delay});
+        SECTION("Output generated when overlapping with next trigger") {
+            if (delay > 0) {
+                in.handle(trigger_event{42 + delay});
                 REQUIRE(out.check(emitted_as::always_rvalue,
-                                  output_event{42 + delay + delay}));
+                                  output_event{42 + delay}));
                 REQUIRE(out.check(emitted_as::same_as_fed,
-                                  misc_event{42 + delay + delay}));
+                                  trigger_event{42 + delay}));
+                SECTION("Nothing more") {}
+                SECTION("Retrigger produces output") {
+                    in.handle(misc_event{42 + delay + delay});
+                    REQUIRE(out.check(emitted_as::always_rvalue,
+                                      output_event{42 + delay + delay}));
+                    REQUIRE(out.check(emitted_as::same_as_fed,
+                                      misc_event{42 + delay + delay}));
+                }
+            }
+        }
+        SECTION("Self-tie: pending event at trigger abstime held until next "
+                "event") {
+            if (delay == 0) {
+                in.handle(trigger_event{43});
+                REQUIRE(
+                    out.check(emitted_as::always_rvalue, output_event{42}));
+                REQUIRE(out.check(emitted_as::same_as_fed, trigger_event{43}));
+                in.handle(misc_event{43});
+                REQUIRE(
+                    out.check(emitted_as::always_rvalue, output_event{43}));
+                REQUIRE(out.check(emitted_as::same_as_fed, misc_event{43}));
             }
         }
         in.flush();
@@ -216,6 +233,37 @@ TEST_CASE("Generate linear timing") {
                           output_event{42 + delay + interval}));
         REQUIRE(out.check(emitted_as::same_as_fed,
                           misc_event{42 + delay + interval}));
+        in.flush();
+        REQUIRE(out.check_flushed());
+    }
+
+    SECTION("Pending output emitted when next trigger overlaps") {
+        auto in = feed_input(
+            valcat, generate<trigger_event, output_event>(
+                        linear_timing_generator(arg::delay{delay},
+                                                arg::interval{interval},
+                                                arg::count<std::size_t>{2}),
+                        capture_output<out_events>(
+                            ctx->tracker<capture_output_access>("out"))));
+        in.require_output_checked(ctx, "out");
+        auto out = capture_output_checker<out_events>(valcat, ctx, "out");
+
+        in.handle(trigger_event{42});
+        REQUIRE(out.check(emitted_as::same_as_fed, trigger_event{42}));
+        if (delay > 0) {
+            in.handle(misc_event{42 + delay - 1});
+            REQUIRE(out.check(emitted_as::same_as_fed,
+                              misc_event{42 + delay - 1}));
+        }
+        in.handle(misc_event{42 + delay});
+        REQUIRE(
+            out.check(emitted_as::always_rvalue, output_event{42 + delay}));
+        REQUIRE(out.check(emitted_as::same_as_fed, misc_event{42 + delay}));
+        in.handle(trigger_event{42 + delay + interval});
+        REQUIRE(out.check(emitted_as::always_rvalue,
+                          output_event{42 + delay + interval}));
+        REQUIRE(out.check(emitted_as::same_as_fed,
+                          trigger_event{42 + delay + interval}));
         in.flush();
         REQUIRE(out.check_flushed());
     }
