@@ -39,7 +39,7 @@ template <typename EventList, typename Downstream> class multiplex {
 
     template <typename Event,
               typename = std::enable_if_t<is_convertible_to_type_list_member_v<
-                  remove_cvref_t<Event>, EventList>>>
+                  std::remove_cvref_t<Event>, EventList>>>
     void handle(Event &&event) {
         downstream.handle(
             variant_event<EventList>(std::forward<Event>(event)));

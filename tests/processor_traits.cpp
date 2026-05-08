@@ -6,7 +6,6 @@
 
 #include "libtcspc/processor_traits.hpp"
 
-#include "libtcspc/common.hpp"
 #include "libtcspc/type_list.hpp"
 
 #include <catch2/catch_test_macros.hpp>
@@ -45,15 +44,15 @@ struct p {
     void handle(e_by_value event);
 
     template <typename E, typename = std::enable_if_t<std::is_convertible_v<
-                              internal::remove_cvref_t<E>, e_forwarding_ref>>>
+                              std::remove_cvref_t<E>, e_forwarding_ref>>>
     void handle(E &&event);
 };
 
 struct q {
     // NOLINTNEXTLINE(cppcoreguidelines-missing-std-forward)
     template <typename E> void handle(E && /* event */) {
-        static_assert(std::is_convertible_v<internal::remove_cvref_t<E>,
-                                            e_forwarding_ref>);
+        static_assert(
+            std::is_convertible_v<std::remove_cvref_t<E>, e_forwarding_ref>);
     }
 };
 

@@ -71,8 +71,8 @@ class time_correlate_at_start_or_stop {
     }
 
     template <typename OtherEvent,
-              typename = std::enable_if_t<
-                  handles_event_v<Downstream, remove_cvref_t<OtherEvent>>>>
+              typename = std::enable_if_t<handles_event_v<
+                  Downstream, std::remove_cvref_t<OtherEvent>>>>
     void handle(OtherEvent &&event) {
         downstream.handle(std::forward<OtherEvent>(event));
     }
@@ -122,8 +122,8 @@ class time_correlate_at_midpoint {
     }
 
     template <typename OtherEvent,
-              typename = std::enable_if_t<
-                  handles_event_v<Downstream, remove_cvref_t<OtherEvent>>>>
+              typename = std::enable_if_t<handles_event_v<
+                  Downstream, std::remove_cvref_t<OtherEvent>>>>
     void handle(OtherEvent &&event) {
         downstream.handle(std::forward<OtherEvent>(event));
     }
@@ -182,8 +182,8 @@ class time_correlate_at_fraction {
     }
 
     template <typename OtherEvent,
-              typename = std::enable_if_t<
-                  handles_event_v<Downstream, remove_cvref_t<OtherEvent>>>>
+              typename = std::enable_if_t<handles_event_v<
+                  Downstream, std::remove_cvref_t<OtherEvent>>>>
     void handle(OtherEvent &&event) {
         downstream.handle(std::forward<OtherEvent>(event));
     }
@@ -409,8 +409,8 @@ template <typename DataTypes, typename Downstream> class negate_difftime {
     }
 
     template <typename OtherEvent,
-              typename = std::enable_if_t<
-                  handles_event_v<Downstream, remove_cvref_t<OtherEvent>>>>
+              typename = std::enable_if_t<handles_event_v<
+                  Downstream, std::remove_cvref_t<OtherEvent>>>>
     void handle(OtherEvent &&event) {
         downstream.handle(std::forward<OtherEvent>(event));
     }
@@ -455,8 +455,8 @@ class remove_time_correlation {
     }
 
     template <typename OtherEvent,
-              typename = std::enable_if_t<
-                  handles_event_v<Downstream, remove_cvref_t<OtherEvent>>>>
+              typename = std::enable_if_t<handles_event_v<
+                  Downstream, std::remove_cvref_t<OtherEvent>>>>
     void handle(OtherEvent &&event) {
         downstream.handle(std::forward<OtherEvent>(event));
     }

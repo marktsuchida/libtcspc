@@ -55,7 +55,7 @@ template <typename T, typename Downstream> class copy_to_buckets {
     template <typename Event,
               typename = std::enable_if_t<
                   std::is_constructible_v<std::span<T const>, Event> ||
-                  handles_event_v<Downstream, remove_cvref_t<Event>>>>
+                  handles_event_v<Downstream, std::remove_cvref_t<Event>>>>
     void handle(Event &&event) {
         if constexpr (std::is_constructible_v<std::span<T const>, Event>) {
             auto const event_span = std::span<T const>(event);
@@ -151,7 +151,7 @@ class copy_to_full_buckets {
     template <typename Event,
               typename = std::enable_if_t<
                   std::is_constructible_v<std::span<T const>, Event> ||
-                  handles_event_v<LiveDownstream, remove_cvref_t<Event>>>>
+                  handles_event_v<LiveDownstream, std::remove_cvref_t<Event>>>>
     void handle(Event &&event) {
         if constexpr (std::is_constructible_v<std::span<T const>, Event>) {
             auto src = std::span<T const>(event);

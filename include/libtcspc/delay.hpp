@@ -45,7 +45,7 @@ template <typename DataTypes, typename Downstream> class delay {
 
     template <typename TimeTaggedEvent,
               typename = std::enable_if_t<handles_event_v<
-                  Downstream, remove_cvref_t<TimeTaggedEvent>>>>
+                  Downstream, std::remove_cvref_t<TimeTaggedEvent>>>>
     void handle(TimeTaggedEvent const &event) {
         static_assert(std::is_same_v<decltype(event.abstime),
                                      typename DataTypes::abstime_type>);
@@ -78,7 +78,7 @@ template <typename DataTypes, typename Downstream> class zero_base_abstime {
 
     template <typename TimeTaggedEvent,
               typename = std::enable_if_t<handles_event_v<
-                  Downstream, remove_cvref_t<TimeTaggedEvent>>>>
+                  Downstream, std::remove_cvref_t<TimeTaggedEvent>>>>
     void handle(TimeTaggedEvent const &event) {
         static_assert(std::is_same_v<decltype(event.abstime),
                                      typename DataTypes::abstime_type>);

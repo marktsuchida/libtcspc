@@ -43,18 +43,19 @@ class gate {
         return downstream.introspect_graph().push_entry_point(this);
     }
 
-    template <typename E, typename = std::enable_if_t<
-                              handles_event_v<Downstream, remove_cvref_t<E>>>>
+    template <typename E, typename = std::enable_if_t<handles_event_v<
+                              Downstream, std::remove_cvref_t<E>>>>
     void handle(E &&event) {
-        if constexpr (std::is_convertible_v<remove_cvref_t<E>, OpenEvent>) {
+        if constexpr (std::is_convertible_v<std::remove_cvref_t<E>,
+                                            OpenEvent>) {
             open = true;
             downstream.handle(std::forward<E>(event));
-        } else if constexpr (std::is_convertible_v<remove_cvref_t<E>,
+        } else if constexpr (std::is_convertible_v<std::remove_cvref_t<E>,
                                                    CloseEvent>) {
             open = false;
             downstream.handle(std::forward<E>(event));
         } else if constexpr (is_convertible_to_type_list_member_v<
-                                 remove_cvref_t<E>, GatedEventList>) {
+                                 std::remove_cvref_t<E>, GatedEventList>) {
             if (open)
                 downstream.handle(std::forward<E>(event));
         } else {

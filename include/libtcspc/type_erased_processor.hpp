@@ -142,13 +142,12 @@ template <typename EventList> class type_erased_processor {
      *
      * \param downstream downstream processor
      */
-    template <
-        typename Downstream,
-        typename = std::enable_if_t<
-            not std::is_convertible_v<internal::remove_cvref_t<Downstream>,
-                                      type_erased_processor> &&
-            is_processor_of_list_v<internal::remove_cvref_t<Downstream>,
-                                   event_list>>>
+    template <typename Downstream,
+              typename = std::enable_if_t<
+                  not std::is_convertible_v<std::remove_cvref_t<Downstream>,
+                                            type_erased_processor> &&
+                  is_processor_of_list_v<std::remove_cvref_t<Downstream>,
+                                         event_list>>>
     explicit type_erased_processor(Downstream downstream)
         : proc(std::make_unique<virtual_processor<Downstream>>(
               std::move(downstream))) {}
@@ -166,7 +165,7 @@ template <typename EventList> class type_erased_processor {
     /** \brief Implements processor requirement. */
     template <typename Event,
               typename = std::enable_if_t<is_convertible_to_type_list_member_v<
-                  internal::remove_cvref_t<Event>, event_list>>>
+                  std::remove_cvref_t<Event>, event_list>>>
     void handle(Event &&event) {
         proc->handle(std::forward<Event>(event));
     }

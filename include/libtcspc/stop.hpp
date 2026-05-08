@@ -58,12 +58,12 @@ class stop {
 
     template <typename Event,
               typename = std::enable_if_t<
-                  is_convertible_to_type_list_member_v<remove_cvref_t<Event>,
-                                                       EventList> ||
-                  handles_event_v<Downstream, remove_cvref_t<Event>>>>
+                  is_convertible_to_type_list_member_v<
+                      std::remove_cvref_t<Event>, EventList> ||
+                  handles_event_v<Downstream, std::remove_cvref_t<Event>>>>
     void handle(Event &&event) {
         if constexpr (is_convertible_to_type_list_member_v<
-                          remove_cvref_t<Event>, EventList>)
+                          std::remove_cvref_t<Event>, EventList>)
             handle_stop(event);
         else
             downstream.handle(std::forward<Event>(event));

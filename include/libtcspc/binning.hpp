@@ -66,8 +66,8 @@ class map_to_datapoints {
     void handle(Event &&event) { handle(static_cast<Event const &>(event)); }
 
     template <typename OtherEvent,
-              typename = std::enable_if_t<
-                  handles_event_v<Downstream, remove_cvref_t<OtherEvent>>>>
+              typename = std::enable_if_t<handles_event_v<
+                  Downstream, std::remove_cvref_t<OtherEvent>>>>
     void handle(OtherEvent &&event) {
         downstream.handle(std::forward<OtherEvent>(event));
     }
@@ -229,8 +229,8 @@ class map_to_bins {
     }
 
     template <typename OtherEvent,
-              typename = std::enable_if_t<
-                  handles_event_v<Downstream, remove_cvref_t<OtherEvent>>>>
+              typename = std::enable_if_t<handles_event_v<
+                  Downstream, std::remove_cvref_t<OtherEvent>>>>
     void handle(OtherEvent &&event) {
         downstream.handle(std::forward<OtherEvent>(event));
     }
@@ -578,8 +578,8 @@ class cluster_bin_increments {
     }
 
     template <typename OtherEvent,
-              typename = std::enable_if_t<
-                  handles_event_v<Downstream, remove_cvref_t<OtherEvent>>>>
+              typename = std::enable_if_t<handles_event_v<
+                  Downstream, std::remove_cvref_t<OtherEvent>>>>
     void handle(OtherEvent &&event) {
         downstream.handle(std::forward<OtherEvent>(event));
     }

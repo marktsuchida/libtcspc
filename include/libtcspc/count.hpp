@@ -87,10 +87,11 @@ class count_up_to {
         post_tick(abstime);
     }
 
-    template <typename E, typename = std::enable_if_t<
-                              handles_event_v<Downstream, remove_cvref_t<E>>>>
+    template <typename E, typename = std::enable_if_t<handles_event_v<
+                              Downstream, std::remove_cvref_t<E>>>>
     void handle(E &&event) {
-        if constexpr (std::is_convertible_v<remove_cvref_t<E>, ResetEvent>) {
+        if constexpr (std::is_convertible_v<std::remove_cvref_t<E>,
+                                            ResetEvent>) {
             count = init;
         }
         downstream.handle(std::forward<E>(event));
@@ -267,10 +268,10 @@ template <typename Event, typename Downstream> class count {
         return downstream.introspect_graph().push_entry_point(this);
     }
 
-    template <typename E, typename = std::enable_if_t<
-                              handles_event_v<Downstream, remove_cvref_t<E>>>>
+    template <typename E, typename = std::enable_if_t<handles_event_v<
+                              Downstream, std::remove_cvref_t<E>>>>
     void handle(E &&event) {
-        if constexpr (std::is_convertible_v<remove_cvref_t<E>, Event>)
+        if constexpr (std::is_convertible_v<std::remove_cvref_t<E>, Event>)
             ++ct;
         downstream.handle(std::forward<E>(event));
     }

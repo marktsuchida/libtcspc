@@ -37,8 +37,9 @@ template <typename Event, typename Downstream> class prepend {
         return downstream.introspect_graph().push_entry_point(this);
     }
 
-    template <typename AnyEvent, typename = std::enable_if_t<handles_event_v<
-                                     Downstream, remove_cvref_t<AnyEvent>>>>
+    template <typename AnyEvent,
+              typename = std::enable_if_t<
+                  handles_event_v<Downstream, std::remove_cvref_t<AnyEvent>>>>
     void handle(AnyEvent &&event) {
         if (not prepended) {
             downstream.handle(std::move(evt));
@@ -70,8 +71,9 @@ template <typename Event, typename Downstream> class append {
         return downstream.introspect_graph().push_entry_point(this);
     }
 
-    template <typename AnyEvent, typename = std::enable_if_t<handles_event_v<
-                                     Downstream, remove_cvref_t<AnyEvent>>>>
+    template <typename AnyEvent,
+              typename = std::enable_if_t<
+                  handles_event_v<Downstream, std::remove_cvref_t<AnyEvent>>>>
     void handle(AnyEvent &&event) {
         downstream.handle(std::forward<AnyEvent>(event));
     }

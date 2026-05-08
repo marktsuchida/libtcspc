@@ -53,7 +53,7 @@ template <typename EventList> class sink_events {
 
     template <typename E,
               typename = std::enable_if_t<is_convertible_to_type_list_member_v<
-                  internal::remove_cvref_t<E>, EventList>>>
+                  std::remove_cvref_t<E>, EventList>>>
     void handle(E &&event) {
         [[maybe_unused]] std::remove_reference_t<E> const e =
             std::forward<E>(event);
@@ -715,7 +715,7 @@ template <typename EventList> class capture_output {
     }
 
     template <typename Event, typename = std::enable_if_t<type_list_contains_v<
-                                  EventList, remove_cvref_t<Event>>>>
+                                  EventList, std::remove_cvref_t<Event>>>>
     void handle(Event &&event) {
         // TODO std::invoke() in C++20 (readability).
         static constexpr auto valcat = [] {
@@ -863,7 +863,7 @@ template <typename Downstream> class feed_input {
     }
 
     template <typename Event, typename = std::enable_if_t<handles_event_v<
-                                  Downstream, remove_cvref_t<Event>>>>
+                                  Downstream, std::remove_cvref_t<Event>>>>
     void handle(Event &&event) {
         check_outputs_ready("event of type " +
                             std::string(typeid(event).name()));
@@ -871,7 +871,7 @@ template <typename Downstream> class feed_input {
         if (refmode == feed_as::const_lvalue) {
             downstream.handle(static_cast<Event const &>(event));
         } else if constexpr (std::is_lvalue_reference_v<Event>) {
-            remove_cvref_t<Event> copy(event);
+            std::remove_cvref_t<Event> copy(event);
             downstream.handle(std::move(copy));
         } else {
             downstream.handle(std::forward<Event>(event));

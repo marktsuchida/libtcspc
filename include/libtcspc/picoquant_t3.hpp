@@ -446,12 +446,13 @@ class decode_pqt3 {
         return downstream.introspect_graph().push_entry_point(this);
     }
 
-    template <typename Event,
-              typename = std::enable_if_t<
-                  std::is_convertible_v<remove_cvref_t<Event>, PQT3Event> ||
-                  handles_event_v<Downstream, remove_cvref_t<Event>>>>
+    template <
+        typename Event,
+        typename = std::enable_if_t<
+            std::is_convertible_v<std::remove_cvref_t<Event>, PQT3Event> ||
+            handles_event_v<Downstream, std::remove_cvref_t<Event>>>>
     void handle(Event &&event) {
-        if constexpr (std::is_convertible_v<remove_cvref_t<Event>,
+        if constexpr (std::is_convertible_v<std::remove_cvref_t<Event>,
                                             PQT3Event>) {
             if (event.is_nsync_overflow()) {
                 nsync_base += abstime_type(PQT3Event::nsync_overflow_period) *

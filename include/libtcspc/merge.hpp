@@ -186,7 +186,7 @@ class merge_input {
 
     template <typename Event,
               typename = std::enable_if_t<is_convertible_to_type_list_member_v<
-                  internal::remove_cvref_t<Event>, EventList>>>
+                  std::remove_cvref_t<Event>, EventList>>>
     void handle(Event &&event) {
         static_assert(std::is_same_v<decltype(event.abstime),
                                      typename DataTypes::abstime_type>);
@@ -359,7 +359,7 @@ template <std::size_t N, typename Downstream> class merge_unsorted_impl {
     }
 
     template <typename Event> void handle(Event &&event) {
-        static_assert(handles_event_v<Downstream, remove_cvref_t<Event>>);
+        static_assert(handles_event_v<Downstream, std::remove_cvref_t<Event>>);
         if (ended_with_exception)
             return;
         try {
@@ -409,7 +409,7 @@ template <std::size_t N, typename Downstream> class merge_unsorted_input {
     }
 
     template <typename Event, typename = std::enable_if_t<handles_event_v<
-                                  Downstream, remove_cvref_t<Event>>>>
+                                  Downstream, std::remove_cvref_t<Event>>>>
     void handle(Event &&event) {
         impl->handle(std::forward<Event>(event));
     }

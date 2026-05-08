@@ -53,8 +53,8 @@ template <typename Event, typename Downstream> class batch {
         return downstream.introspect_graph().push_entry_point(this);
     }
 
-    template <typename E, typename = std::enable_if_t<
-                              std::is_convertible_v<remove_cvref_t<E>, Event>>>
+    template <typename E, typename = std::enable_if_t<std::is_convertible_v<
+                              std::remove_cvref_t<E>, Event>>>
     void handle(E &&event) {
         if (cur_bucket.empty())
             cur_bucket = bsource->bucket_of_size(bsize);
@@ -112,12 +112,13 @@ template <typename ContainerEvent, typename Downstream> class unbatch {
     // inlined even if this function is marked noinline. There may be
     // borderline cases where this doesn't hold, but it is probably best to
     // leave it to the compiler.
-    template <typename E,
-              typename = std::enable_if_t<
-                  std::is_convertible_v<remove_cvref_t<E>, ContainerEvent> ||
-                  handles_event_v<Downstream, remove_cvref_t<E>>>>
+    template <
+        typename E,
+        typename = std::enable_if_t<
+            std::is_convertible_v<std::remove_cvref_t<E>, ContainerEvent> ||
+            handles_event_v<Downstream, std::remove_cvref_t<E>>>>
     void handle(E &&event) {
-        if constexpr (std::is_convertible_v<remove_cvref_t<E>,
+        if constexpr (std::is_convertible_v<std::remove_cvref_t<E>,
                                             ContainerEvent>) {
             if constexpr (std::is_lvalue_reference_v<E>) {
                 for (auto const &e : event)

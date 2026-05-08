@@ -74,10 +74,10 @@ class route_homogeneous {
     }
 
     template <typename Event, typename = std::enable_if_t<handles_event_v<
-                                  Downstream, remove_cvref_t<Event>>>>
+                                  Downstream, std::remove_cvref_t<Event>>>>
     void handle(Event &&event) {
         if constexpr (is_convertible_to_type_list_member_v<
-                          remove_cvref_t<Event>, RoutedEventList>) {
+                          std::remove_cvref_t<Event>, RoutedEventList>) {
             std::size_t index = router(std::as_const(event));
             if (index >= N)
                 return;

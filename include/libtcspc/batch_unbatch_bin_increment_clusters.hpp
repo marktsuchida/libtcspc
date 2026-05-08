@@ -145,7 +145,7 @@ class batch_bin_increment_clusters {
     // NOLINTEND(cppcoreguidelines-rvalue-reference-param-not-moved)
 
     template <typename Event, typename = std::enable_if_t<handles_event_v<
-                                  Downstream, remove_cvref_t<Event>>>>
+                                  Downstream, std::remove_cvref_t<Event>>>>
     void handle(Event &&event) {
         downstream.handle(std::forward<Event>(event));
     }
@@ -179,18 +179,18 @@ class unbatch_bin_increment_clusters {
     template <typename Event,
               typename = std::enable_if_t<
                   std::is_convertible_v<
-                      remove_cvref_t<Event>,
+                      std::remove_cvref_t<Event>,
                       bucket<typename DataTypes::bin_index_type>> ||
                   std::is_convertible_v<
-                      remove_cvref_t<Event>,
+                      std::remove_cvref_t<Event>,
                       bucket<typename DataTypes::bin_index_type const>> ||
-                  handles_event_v<Downstream, remove_cvref_t<Event>>>>
+                  handles_event_v<Downstream, std::remove_cvref_t<Event>>>>
     void handle(Event &&event) {
         if constexpr (std::is_convertible_v<
-                          remove_cvref_t<Event>,
+                          std::remove_cvref_t<Event>,
                           bucket<typename DataTypes::bin_index_type>> ||
                       std::is_convertible_v<
-                          remove_cvref_t<Event>,
+                          std::remove_cvref_t<Event>,
                           bucket<typename DataTypes::bin_index_type const>>) {
             bin_increment_cluster_decoder<bin_index_type> const decoder(event);
             for (auto const cluster_span : decoder) {

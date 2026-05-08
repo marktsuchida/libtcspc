@@ -264,13 +264,13 @@ template <typename DataTypes, typename Downstream> class decode_swabian_tags {
         return downstream.introspect_graph().push_entry_point(this);
     }
 
-    template <
-        typename Event,
-        typename = std::enable_if_t<
-            std::is_convertible_v<remove_cvref_t<Event>, swabian_tag_event> ||
-            handles_event_v<Downstream, remove_cvref_t<Event>>>>
+    template <typename Event,
+              typename = std::enable_if_t<
+                  std::is_convertible_v<std::remove_cvref_t<Event>,
+                                        swabian_tag_event> ||
+                  handles_event_v<Downstream, std::remove_cvref_t<Event>>>>
     void handle(Event &&event) {
-        if constexpr (std::is_convertible_v<remove_cvref_t<Event>,
+        if constexpr (std::is_convertible_v<std::remove_cvref_t<Event>,
                                             swabian_tag_event>) {
             if (event.type() == swabian_tag_event::tag_type::time_tag) {
                 downstream.handle(detection_event<DataTypes>{

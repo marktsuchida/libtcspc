@@ -63,7 +63,7 @@ class recover_order {
 
     template <typename Event,
               typename = std::enable_if_t<is_convertible_to_type_list_member_v<
-                  remove_cvref_t<Event>, EventList>>>
+                  std::remove_cvref_t<Event>, EventList>>>
     void handle(Event &&event) {
         static_assert(std::is_same_v<decltype(event.abstime), abstime_type>);
         if (event.abstime < last_emitted_time) {

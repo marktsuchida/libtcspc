@@ -39,11 +39,12 @@ class select {
     template <typename AnyEvent,
               typename = std::enable_if_t<
                   is_convertible_to_type_list_member_v<
-                      remove_cvref_t<AnyEvent>, EventList> == Inverted ||
-                  handles_event_v<Downstream, remove_cvref_t<AnyEvent>>>>
+                      std::remove_cvref_t<AnyEvent>, EventList> == Inverted ||
+                  handles_event_v<Downstream, std::remove_cvref_t<AnyEvent>>>>
     void handle(AnyEvent &&event) {
         if constexpr (is_convertible_to_type_list_member_v<
-                          remove_cvref_t<AnyEvent>, EventList> != Inverted)
+                          std::remove_cvref_t<AnyEvent>, EventList> !=
+                      Inverted)
             downstream.handle(std::forward<AnyEvent>(event));
     }
 

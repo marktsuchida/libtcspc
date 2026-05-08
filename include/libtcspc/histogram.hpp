@@ -164,10 +164,11 @@ class histogram {
         handle(static_cast<bin_increment_event<DT> const &>(event));
     }
 
-    template <typename E, typename = std::enable_if_t<
-                              handles_event_v<Downstream, remove_cvref_t<E>>>>
+    template <typename E, typename = std::enable_if_t<handles_event_v<
+                              Downstream, std::remove_cvref_t<E>>>>
     void handle(E &&event) {
-        if constexpr (std::is_convertible_v<remove_cvref_t<E>, ResetEvent>)
+        if constexpr (std::is_convertible_v<std::remove_cvref_t<E>,
+                                            ResetEvent>)
             reset();
         downstream.handle(std::forward<E>(event));
     }
