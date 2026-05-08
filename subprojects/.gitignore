@@ -3,6 +3,7 @@
 # SPDX-License-Identifier: MIT
 
 /packagecache/
+.wraplock
 
 # Subprojects installed by meson wrap
 /*-*/
