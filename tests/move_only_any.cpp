@@ -189,12 +189,6 @@ template <typename T> struct my_allocator {
                            my_allocator<U> const & /* rhs */) -> bool {
         return true;
     }
-
-    template <typename U>
-    friend auto operator!=(my_allocator<T> const &lhs,
-                           my_allocator<U> const &rhs) -> bool {
-        return !(lhs == rhs);
-    }
 };
 
 #ifndef _MSC_VER

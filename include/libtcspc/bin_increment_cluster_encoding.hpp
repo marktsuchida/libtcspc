@@ -162,13 +162,8 @@ template <typename BinIndex> class bin_increment_cluster_decoder {
             return std::span(&*start, &*stop);
         }
 
-        auto operator==(const_iterator rhs) const noexcept -> bool {
-            return it == rhs.it;
-        }
-
-        auto operator!=(const_iterator rhs) const noexcept -> bool {
-            return not(*this == rhs);
-        }
+        auto operator==(const_iterator const &) const noexcept
+            -> bool = default;
     };
 
     [[nodiscard]] auto begin() const noexcept -> const_iterator {

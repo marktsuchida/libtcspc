@@ -184,16 +184,7 @@ struct pqt2_picoharp300_event {
     /** \brief Equality comparison operator. */
     friend auto operator==(pqt2_picoharp300_event const &lhs,
                            pqt2_picoharp300_event const &rhs) noexcept
-        -> bool {
-        return lhs.bytes == rhs.bytes;
-    }
-
-    /** \brief Inequality comparison operator. */
-    friend auto operator!=(pqt2_picoharp300_event const &lhs,
-                           pqt2_picoharp300_event const &rhs) noexcept
-        -> bool {
-        return not(lhs == rhs);
-    }
+        -> bool = default;
 
     /** \brief Stream insertion operator. */
     friend auto operator<<(std::ostream &stream,
@@ -383,15 +374,8 @@ struct basic_pqt2_event {
 
     /** \brief Equality comparison operator. */
     friend auto operator==(basic_pqt2_event const &lhs,
-                           basic_pqt2_event const &rhs) noexcept -> bool {
-        return lhs.bytes == rhs.bytes;
-    }
-
-    /** \brief Inequality comparison operator. */
-    friend auto operator!=(basic_pqt2_event const &lhs,
-                           basic_pqt2_event const &rhs) noexcept -> bool {
-        return not(lhs == rhs);
-    }
+                           basic_pqt2_event const &rhs) noexcept
+        -> bool = default;
 
     /** \brief Stream insertion operator. */
     friend auto operator<<(std::ostream &stream, basic_pqt2_event const &event)

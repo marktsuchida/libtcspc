@@ -8,6 +8,7 @@
 
 #include "int_types.hpp"
 
+#include <compare>
 #include <istream>
 #include <limits>
 #include <ostream>
@@ -268,35 +269,9 @@ class npint {
 
     // Binary comparison operators
 
-    /** \brief Equal to operator. */
-    friend constexpr auto operator==(npint lhs, npint rhs) noexcept -> bool {
-        return lhs.v == rhs.v;
-    }
-
-    /** \brief Not equal to operator. */
-    friend constexpr auto operator!=(npint lhs, npint rhs) noexcept -> bool {
-        return lhs.v != rhs.v;
-    }
-
-    /** \brief Less than operator. */
-    friend constexpr auto operator<(npint lhs, npint rhs) noexcept -> bool {
-        return lhs.v < rhs.v;
-    }
-
-    /** \brief Greater than operator. */
-    friend constexpr auto operator>(npint lhs, npint rhs) noexcept -> bool {
-        return lhs.v > rhs.v;
-    }
-
-    /** \brief Less than or equal to operator. */
-    friend constexpr auto operator<=(npint lhs, npint rhs) noexcept -> bool {
-        return lhs.v <= rhs.v;
-    }
-
-    /** \brief Greater than or equal to operator. */
-    friend constexpr auto operator>=(npint lhs, npint rhs) noexcept -> bool {
-        return lhs.v >= rhs.v;
-    }
+    /** \brief Three-way comparison operator. */
+    friend constexpr auto operator<=>(npint lhs, npint rhs) noexcept
+        -> std::strong_ordering = default;
 
     // Stream insertion and extraction operators
 

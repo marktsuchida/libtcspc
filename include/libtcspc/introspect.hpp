@@ -112,15 +112,7 @@ class processor_info {
 
     /** \brief Equality comparison operator. */
     friend auto operator==(processor_info const &lhs,
-                           processor_info const &rhs) -> bool {
-        return lhs.addr == rhs.addr && lhs.typ == rhs.typ && lhs.nm == rhs.nm;
-    }
-
-    /** \brief Inequality comparison operator. */
-    friend auto operator!=(processor_info const &lhs,
-                           processor_info const &rhs) -> bool {
-        return not(lhs == rhs);
-    }
+                           processor_info const &rhs) -> bool = default;
 };
 
 /**
@@ -157,15 +149,7 @@ class processor_node_id {
 
     /** \brief Equality comparison operator. */
     friend auto operator==(processor_node_id const &lhs,
-                           processor_node_id const &rhs) -> bool {
-        return lhs.addr == rhs.addr && lhs.typ == rhs.typ;
-    }
-
-    /** \brief Inequality comparison operator. */
-    friend auto operator!=(processor_node_id const &lhs,
-                           processor_node_id const &rhs) -> bool {
-        return not(lhs == rhs);
-    }
+                           processor_node_id const &rhs) -> bool = default;
 
     /** \brief Less-than operator. */
     friend auto operator<(processor_node_id const &lhs,

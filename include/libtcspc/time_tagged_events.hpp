@@ -45,15 +45,8 @@ template <typename DataTypes = default_data_types> struct time_reached_event {
 
     /** \brief Equality comparison operator. */
     friend auto operator==(time_reached_event const &lhs,
-                           time_reached_event const &rhs) noexcept -> bool {
-        return lhs.abstime == rhs.abstime;
-    }
-
-    /** \brief Inequality comparison operator. */
-    friend auto operator!=(time_reached_event const &lhs,
-                           time_reached_event const &rhs) noexcept -> bool {
-        return not(lhs == rhs);
-    }
+                           time_reached_event const &rhs) noexcept
+        -> bool = default;
 
     /** \brief Stream insertion operator. */
     friend auto operator<<(std::ostream &s, time_reached_event const &e)
@@ -87,15 +80,8 @@ template <typename DataTypes = default_data_types> struct data_lost_event {
 
     /** \brief Equality comparison operator. */
     friend auto operator==(data_lost_event const &lhs,
-                           data_lost_event const &rhs) noexcept -> bool {
-        return lhs.abstime == rhs.abstime;
-    }
-
-    /** \brief Inequality comparison operator. */
-    friend auto operator!=(data_lost_event const &lhs,
-                           data_lost_event const &rhs) noexcept -> bool {
-        return not(lhs == rhs);
-    }
+                           data_lost_event const &rhs) noexcept
+        -> bool = default;
 
     /** \brief Stream insertion operator. */
     friend auto operator<<(std::ostream &s, data_lost_event const &e)
@@ -129,16 +115,7 @@ struct begin_lost_interval_event {
     /** \brief Equality comparison operator. */
     friend auto operator==(begin_lost_interval_event const &lhs,
                            begin_lost_interval_event const &rhs) noexcept
-        -> bool {
-        return lhs.abstime == rhs.abstime;
-    }
-
-    /** \brief Inequality comparison operator. */
-    friend auto operator!=(begin_lost_interval_event const &lhs,
-                           begin_lost_interval_event const &rhs) noexcept
-        -> bool {
-        return not(lhs == rhs);
-    }
+        -> bool = default;
 
     /** \brief Stream insertion operator. */
     friend auto operator<<(std::ostream &s, begin_lost_interval_event const &e)
@@ -164,16 +141,7 @@ struct end_lost_interval_event {
     /** \brief Equality comparison operator. */
     friend auto operator==(end_lost_interval_event const &lhs,
                            end_lost_interval_event const &rhs) noexcept
-        -> bool {
-        return lhs.abstime == rhs.abstime;
-    }
-
-    /** \brief Inequality comparison operator. */
-    friend auto operator!=(end_lost_interval_event const &lhs,
-                           end_lost_interval_event const &rhs) noexcept
-        -> bool {
-        return not(lhs == rhs);
-    }
+        -> bool = default;
 
     /** \brief Stream insertion operator. */
     friend auto operator<<(std::ostream &s, end_lost_interval_event const &e)
@@ -210,16 +178,8 @@ template <typename DataTypes = default_data_types> struct lost_counts_event {
 
     /** \brief Equality comparison operator. */
     friend auto operator==(lost_counts_event const &lhs,
-                           lost_counts_event const &rhs) noexcept -> bool {
-        return lhs.abstime == rhs.abstime && lhs.channel == rhs.channel &&
-               lhs.count == rhs.count;
-    }
-
-    /** \brief Inequality comparison operator. */
-    friend auto operator!=(lost_counts_event const &lhs,
-                           lost_counts_event const &rhs) noexcept -> bool {
-        return not(lhs == rhs);
-    }
+                           lost_counts_event const &rhs) noexcept
+        -> bool = default;
 
     /** \brief Stream insertion operator. */
     friend auto operator<<(std::ostream &s, lost_counts_event const &e)
@@ -255,16 +215,8 @@ template <typename DataTypes = default_data_types> struct bulk_counts_event {
 
     /** \brief Equality comparison operator. */
     friend auto operator==(bulk_counts_event const &lhs,
-                           bulk_counts_event const &rhs) noexcept -> bool {
-        return lhs.abstime == rhs.abstime && lhs.channel == rhs.channel &&
-               lhs.count == rhs.count;
-    }
-
-    /** \brief Inequality comparison operator. */
-    friend auto operator!=(bulk_counts_event const &lhs,
-                           bulk_counts_event const &rhs) noexcept -> bool {
-        return not(lhs == rhs);
-    }
+                           bulk_counts_event const &rhs) noexcept
+        -> bool = default;
 
     /** \brief Stream insertion operator. */
     friend auto operator<<(std::ostream &s, bulk_counts_event const &e)
@@ -292,15 +244,8 @@ template <typename DataTypes = default_data_types> struct detection_event {
 
     /** \brief Equality comparison operator. */
     friend auto operator==(detection_event const &lhs,
-                           detection_event const &rhs) noexcept -> bool {
-        return lhs.abstime == rhs.abstime && lhs.channel == rhs.channel;
-    }
-
-    /** \brief Inequality comparison operator. */
-    friend auto operator!=(detection_event const &lhs,
-                           detection_event const &rhs) noexcept -> bool {
-        return not(lhs == rhs);
-    }
+                           detection_event const &rhs) noexcept
+        -> bool = default;
 
     /** \brief Stream insertion operator. */
     friend auto operator<<(std::ostream &s, detection_event const &e)
@@ -338,17 +283,7 @@ struct time_correlated_detection_event {
     /** \brief Equality comparison operator. */
     friend auto operator==(time_correlated_detection_event const &lhs,
                            time_correlated_detection_event const &rhs) noexcept
-        -> bool {
-        return lhs.abstime == rhs.abstime && lhs.channel == rhs.channel &&
-               lhs.difftime == rhs.difftime;
-    }
-
-    /** \brief Inequality comparison operator. */
-    friend auto operator!=(time_correlated_detection_event const &lhs,
-                           time_correlated_detection_event const &rhs) noexcept
-        -> bool {
-        return not(lhs == rhs);
-    }
+        -> bool = default;
 
     /** \brief Stream insertion operator. */
     friend auto operator<<(std::ostream &s,
@@ -393,15 +328,7 @@ template <typename DataTypes = default_data_types> struct marker_event {
 
     /** \brief Equality comparison operator. */
     friend auto operator==(marker_event const &lhs,
-                           marker_event const &rhs) noexcept -> bool {
-        return lhs.abstime == rhs.abstime && lhs.channel == rhs.channel;
-    }
-
-    /** \brief Inequality comparison operator. */
-    friend auto operator!=(marker_event const &lhs,
-                           marker_event const &rhs) noexcept -> bool {
-        return not(lhs == rhs);
-    }
+                           marker_event const &rhs) noexcept -> bool = default;
 
     /** \brief Stream insertion operator. */
     friend auto operator<<(std::ostream &s, marker_event const &e)

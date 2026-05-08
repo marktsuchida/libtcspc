@@ -94,15 +94,8 @@ template <typename BinIndex> class bin_increment_cluster_journal {
         return const_iterator(decoder.end());
     }
 
-    auto operator==(bin_increment_cluster_journal const &rhs) const noexcept
-        -> bool {
-        return encoded == rhs.encoded;
-    }
-
-    auto operator!=(bin_increment_cluster_journal const &rhs) const noexcept
-        -> bool {
-        return not(*this == rhs);
-    }
+    auto operator==(bin_increment_cluster_journal const &) const noexcept
+        -> bool = default;
 
     friend auto operator<<(std::ostream &s,
                            bin_increment_cluster_journal const &j)

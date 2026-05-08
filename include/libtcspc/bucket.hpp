@@ -424,15 +424,6 @@ template <typename T> class bucket {
                std::equal(lhs.s.begin(), lhs.s.end(), rhs.s.begin());
     }
 
-    /**
-     * \brief Inequality comparison operator.
-     *
-     * \return true if the two buckets do not contain equal data.
-     */
-    friend auto operator!=(bucket const &lhs, bucket const &rhs) -> bool {
-        return not(lhs == rhs);
-    }
-
     /** \brief Stream insertion operator. */
     friend auto operator<<(std::ostream &stream, bucket const &bkt)
         -> std::ostream & {

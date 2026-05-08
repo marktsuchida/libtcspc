@@ -965,17 +965,9 @@ auto feed_input(feed_as value_category, Downstream downstream) {
  */
 template <int N> struct empty_test_event {
     /** \brief Equality comparison operator. */
-    friend auto operator==(empty_test_event<N> const & /* lhs */,
-                           empty_test_event<N> const & /* rhs */) noexcept
-        -> bool {
-        return true;
-    }
-
-    /** \brief Inequality comparison operator. */
-    friend auto operator!=(empty_test_event<N> const &lhs,
-                           empty_test_event<N> const &rhs) noexcept -> bool {
-        return not(lhs == rhs);
-    }
+    friend auto operator==(empty_test_event<N> const &lhs,
+                           empty_test_event<N> const &rhs) noexcept
+        -> bool = default;
 
     /** \brief Stream insertion operator. */
     friend auto operator<<(std::ostream &strm,
@@ -1002,16 +994,7 @@ struct time_tagged_test_event {
     /** \brief Equality comparison operator. */
     friend auto operator==(time_tagged_test_event const &lhs,
                            time_tagged_test_event const &rhs) noexcept
-        -> bool {
-        return lhs.abstime == rhs.abstime;
-    }
-
-    /** \brief Inequality comparison operator. */
-    friend auto operator!=(time_tagged_test_event const &lhs,
-                           time_tagged_test_event const &rhs) noexcept
-        -> bool {
-        return not(lhs == rhs);
-    }
+        -> bool = default;
 
     /** \brief Stream insertion operator. */
     friend auto operator<<(std::ostream &strm, time_tagged_test_event const &e)

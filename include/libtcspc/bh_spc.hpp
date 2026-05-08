@@ -259,15 +259,7 @@ struct bh_spc_event {
 
     /** \brief Equality comparison operator. */
     friend auto operator==(bh_spc_event const &lhs,
-                           bh_spc_event const &rhs) noexcept -> bool {
-        return lhs.bytes == rhs.bytes;
-    }
-
-    /** \brief Inequality comparison operator. */
-    friend auto operator!=(bh_spc_event const &lhs,
-                           bh_spc_event const &rhs) noexcept -> bool {
-        return not(lhs == rhs);
-    }
+                           bh_spc_event const &rhs) noexcept -> bool = default;
 
     /** \brief Stream insertion operator. */
     friend auto operator<<(std::ostream &strm, bh_spc_event const &e)
@@ -453,16 +445,7 @@ struct bh_spc600_4096ch_event {
     /** \brief Equality comparison operator. */
     friend auto operator==(bh_spc600_4096ch_event const &lhs,
                            bh_spc600_4096ch_event const &rhs) noexcept
-        -> bool {
-        return lhs.bytes == rhs.bytes;
-    }
-
-    /** \brief Inequality comparison operator. */
-    friend auto operator!=(bh_spc600_4096ch_event const &lhs,
-                           bh_spc600_4096ch_event const &rhs) noexcept
-        -> bool {
-        return not(lhs == rhs);
-    }
+        -> bool = default;
 
     /** \brief Stream insertion operator. */
     friend auto operator<<(std::ostream &strm, bh_spc600_4096ch_event const &e)
@@ -670,15 +653,8 @@ struct bh_spc600_256ch_event {
 
     /** \brief Equality comparison operator. */
     friend auto operator==(bh_spc600_256ch_event const &lhs,
-                           bh_spc600_256ch_event const &rhs) noexcept -> bool {
-        return lhs.bytes == rhs.bytes;
-    }
-
-    /** \brief Inequality comparison operator. */
-    friend auto operator!=(bh_spc600_256ch_event const &lhs,
-                           bh_spc600_256ch_event const &rhs) noexcept -> bool {
-        return not(lhs == rhs);
-    }
+                           bh_spc600_256ch_event const &rhs) noexcept
+        -> bool = default;
 
     /** \brief Stream insertion operator. */
     friend auto operator<<(std::ostream &strm, bh_spc600_256ch_event const &e)

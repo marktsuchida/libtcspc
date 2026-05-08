@@ -166,15 +166,8 @@ struct swabian_tag_event {
 
     /** \brief Equality comparison operator. */
     friend auto operator==(swabian_tag_event const &lhs,
-                           swabian_tag_event const &rhs) noexcept -> bool {
-        return lhs.bytes == rhs.bytes;
-    }
-
-    /** \brief Inequality comparison operator. */
-    friend auto operator!=(swabian_tag_event const &lhs,
-                           swabian_tag_event const &rhs) noexcept -> bool {
-        return not(lhs == rhs);
-    }
+                           swabian_tag_event const &rhs) noexcept
+        -> bool = default;
 
     /** \brief Stream insertion operator. */
     friend auto operator<<(std::ostream &strm, swabian_tag_event const &e)

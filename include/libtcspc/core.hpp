@@ -34,15 +34,8 @@ struct warning_event {
 
     /** \brief Equality comparison operator. */
     friend auto operator==(warning_event const &lhs,
-                           warning_event const &rhs) noexcept -> bool {
-        return lhs.message == rhs.message;
-    }
-
-    /** \brief Inequality comparison operator. */
-    friend auto operator!=(warning_event const &lhs,
-                           warning_event const &rhs) noexcept -> bool {
-        return not(lhs == rhs);
-    }
+                           warning_event const &rhs) noexcept
+        -> bool = default;
 
     /** \brief Stream insertion operator. */
     friend auto operator<<(std::ostream &stream, warning_event const &event)

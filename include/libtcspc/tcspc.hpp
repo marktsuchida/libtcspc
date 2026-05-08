@@ -103,9 +103,9 @@ namespace tcspc {
  * This allows buffering when necessary and also simplifies unit testing of
  * processors).
  *
- * Events provided by libtcspc also support equality comparison (`operator==`
- * and `operator!=`) and stream insertion (`operator<<`). This is mostly to
- * facilitate unit testing of processors.
+ * Events provided by libtcspc also support equality comparison (`operator==`)
+ * and stream insertion (`operator<<`). This is mostly to facilitate unit
+ * testing of processors.
  *
  * Event types and templates are named with the suffix `_event`.
  *
