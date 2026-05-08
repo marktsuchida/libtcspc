@@ -14,7 +14,6 @@
 #include "int_types.hpp"
 #include "introspect.hpp"
 #include "processor_traits.hpp"
-#include "span.hpp"
 
 #include <algorithm>
 #include <cerrno>
@@ -27,6 +26,7 @@
 #include <limits>
 #include <memory>
 #include <optional>
+#include <span>
 #include <stdexcept>
 #include <string>
 #include <system_error>
@@ -49,7 +49,8 @@ struct null_input_stream {
     static auto skip(std::uint64_t bytes) noexcept -> bool {
         return bytes == 0;
     }
-    static auto read(span<std::byte> /* buffer */) noexcept -> std::uint64_t {
+    static auto read(std::span<std::byte> /* buffer */) noexcept
+        -> std::uint64_t {
         return 0;
     }
 };
@@ -95,7 +96,7 @@ template <typename IStream> class istream_input_stream {
         return ret;
     }
 
-    auto read(span<std::byte> buffer) noexcept -> std::uint64_t {
+    auto read(std::span<std::byte> buffer) noexcept -> std::uint64_t {
         // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
         stream.read(reinterpret_cast<char *>(buffer.data()),
                     static_cast<std::streamsize>(buffer.size()));
@@ -171,7 +172,7 @@ class cfile_input_stream {
         return false;
     }
 
-    auto read(span<std::byte> buffer) noexcept -> std::uint64_t {
+    auto read(std::span<std::byte> buffer) noexcept -> std::uint64_t {
         if (fp == nullptr)
             return 0;
         return std::fread(buffer.data(), 1, buffer.size(), fp);
@@ -188,7 +189,7 @@ inline void skip_stream_bytes(InputStream &stream, std::uint64_t bytes) {
         // /dev/zero on an Apple M1 Pro laptop. Could be tuned.
         static constexpr std::streamsize bufsize = 32768;
         std::vector<std::byte> buf(bufsize);
-        span<std::byte> const bufspan(buf);
+        std::span<std::byte> const bufspan(buf);
         while (bytes_discarded < bytes) {
             auto read_size =
                 std::min<std::uint64_t>(bufsize, bytes - bytes_discarded);
@@ -412,7 +413,7 @@ class read_binary_stream {
 
     // Read some multiple (max: max_units) of the read granularity that fits in
     // dest, subject to first-read size and max length.
-    auto read_units(span<std::byte> dest, std::size_t max_units,
+    auto read_units(std::span<std::byte> dest, std::size_t max_units,
                     std::uint64_t &total_bytes_read) -> std::uint64_t {
         auto bytes_to_read =
             std::min<std::uint64_t>(dest.size(), length - total_bytes_read);
@@ -473,7 +474,8 @@ class read_binary_stream {
                 if (bkt.empty())
                     bkt = bsource->bucket_of_size(bucket_size);
                 auto const bytes_read = read_units(
-                    as_writable_bytes(span(bkt)).subspan(remainder_nbytes),
+                    std::as_writable_bytes(std::span(bkt))
+                        .subspan(remainder_nbytes),
                     std::numeric_limits<std::size_t>::max(), total_bytes_read);
                 auto const available_nbytes = remainder_nbytes + bytes_read;
                 auto const this_batch_size = available_nbytes / sizeof(Event);
@@ -483,10 +485,11 @@ class read_binary_stream {
                 bucket<Event> bkt2;
                 if (remainder_nbytes > 0) {
                     bkt2 = bsource->bucket_of_size(bucket_size);
-                    auto const remainder_span = as_bytes(span(bkt)).subspan(
-                        available_nbytes - remainder_nbytes);
+                    auto const remainder_span =
+                        std::as_bytes(std::span(bkt))
+                            .subspan(available_nbytes - remainder_nbytes);
                     std::copy(remainder_span.begin(), remainder_span.end(),
-                              as_writable_bytes(span(bkt2)).begin());
+                              std::as_writable_bytes(std::span(bkt2)).begin());
                 }
                 bkt.shrink(0, this_batch_size);
                 downstream.handle(std::move(bkt));
@@ -494,21 +497,22 @@ class read_binary_stream {
             } else { // Top off single event.
                 bucket<Event> bkt2;
                 bkt2 = bsource->bucket_of_size(bucket_size);
-                auto const bytes_read = read_units(
-                    as_writable_bytes(span(bkt2)), 1, total_bytes_read);
+                auto const bytes_read =
+                    read_units(std::as_writable_bytes(std::span(bkt2)), 1,
+                               total_bytes_read);
                 if (bytes_read < bytes_left_in_bucket)
                     break;
                 auto const top_off_span =
-                    as_bytes(span(bkt2)).first(bytes_left_in_bucket);
-                auto const remainder_span = as_bytes(span(bkt2))
+                    std::as_bytes(std::span(bkt2)).first(bytes_left_in_bucket);
+                auto const remainder_span = std::as_bytes(std::span(bkt2))
                                                 .first(bytes_read)
                                                 .subspan(bytes_left_in_bucket);
                 std::copy(top_off_span.begin(), top_off_span.end(),
-                          as_writable_bytes(span(bkt))
+                          std::as_writable_bytes(std::span(bkt))
                               .last(bytes_left_in_bucket)
                               .begin());
                 std::copy(remainder_span.begin(), remainder_span.end(),
-                          as_writable_bytes(span(bkt2)).begin());
+                          std::as_writable_bytes(std::span(bkt2)).begin());
                 downstream.handle(std::move(bkt));
                 bkt = std::move(bkt2);
                 remainder_nbytes = remainder_span.size();

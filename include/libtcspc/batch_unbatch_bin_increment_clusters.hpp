@@ -14,12 +14,12 @@
 #include "histogram_events.hpp"
 #include "introspect.hpp"
 #include "processor_traits.hpp"
-#include "span.hpp"
 
 #include <cassert>
 #include <cstddef>
 #include <functional>
 #include <memory>
+#include <span>
 #include <type_traits>
 #include <utility>
 
@@ -42,7 +42,7 @@ class batch_bin_increment_clusters_encoding_adapter {
         return bkt.get().size() - *siz;
     }
 
-    [[nodiscard]] auto make_space(std::size_t size) -> span<BinIndex> {
+    [[nodiscard]] auto make_space(std::size_t size) -> std::span<BinIndex> {
         assert(size <= available_capacity());
         auto const old_size = *siz;
         *siz += size;
@@ -116,7 +116,7 @@ class batch_bin_increment_clusters {
                     encode_bin_increment_cluster(
                         batch_bin_increment_clusters_encoding_adapter(
                             single_cluster_batch, usage),
-                        span(event.bin_indices));
+                        std::span(event.bin_indices));
                 assert(did_fit);
                 assert(usage == encoded_size);
                 downstream.handle(std::move(single_cluster_batch));
@@ -129,7 +129,7 @@ class batch_bin_increment_clusters {
         [[maybe_unused]] bool const did_fit = encode_bin_increment_cluster(
             batch_bin_increment_clusters_encoding_adapter(cur_batch,
                                                           bucket_used_size),
-            span(event.bin_indices));
+            std::span(event.bin_indices));
         assert(did_fit);
 
         ++cur_batch_size;
@@ -198,7 +198,7 @@ class unbatch_bin_increment_clusters {
                 // not bucket<T const>. Casting is safe because
                 // `ad_hoc_bucket<T>` emitted as const lvalue reference does
                 // not allow mutation of the referred data.
-                auto const mut_span = span<bin_index_type>(
+                auto const mut_span = std::span<bin_index_type>(
                     const_cast<bin_index_type *>(cluster_span.data()),
                     cluster_span.size());
                 bin_increment_cluster_event<DataTypes> const e{

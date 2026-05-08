@@ -15,7 +15,6 @@
 #include "int_types.hpp"
 #include "introspect.hpp"
 #include "processor_traits.hpp"
-#include "span.hpp"
 
 #include <algorithm>
 #include <cassert>
@@ -24,6 +23,7 @@
 #include <iterator>
 #include <limits>
 #include <optional>
+#include <span>
 #include <stdexcept>
 #include <type_traits>
 #include <utility>
@@ -556,7 +556,7 @@ class cluster_bin_increments {
     void handle(StopEvent const & /* event */) {
         if (in_cluster) {
             auto const e = bin_increment_cluster_event<DataTypes>{
-                ad_hoc_bucket(span(cur_cluster))};
+                ad_hoc_bucket(std::span(cur_cluster))};
             downstream.handle(e);
             in_cluster = false;
         }

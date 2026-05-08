@@ -10,7 +10,6 @@
 #include "libtcspc/context.hpp"
 #include "libtcspc/core.hpp"
 #include "libtcspc/processor_traits.hpp"
-#include "libtcspc/span.hpp"
 #include "libtcspc/test_utils.hpp"
 #include "libtcspc/type_list.hpp"
 #include "test_checkers.hpp"
@@ -20,6 +19,7 @@
 
 #include <cstddef>
 #include <memory>
+#include <span>
 #include <vector>
 
 namespace tcspc {
@@ -55,8 +55,9 @@ TEST_CASE("view as bytes") {
 
     in.handle(42);
     auto data = 42;
-    REQUIRE(out.check(emitted_as::always_lvalue,
-                      test_bucket(as_writable_bytes(span(&data, 1)))));
+    REQUIRE(
+        out.check(emitted_as::always_lvalue,
+                  test_bucket(std::as_writable_bytes(std::span(&data, 1)))));
     in.flush();
     REQUIRE(out.check_flushed());
 }
@@ -73,7 +74,7 @@ TEST_CASE("view as bytes, bucket input") {
     in.handle(test_bucket({42, 43}));
     std::vector data{42, 43};
     REQUIRE(out.check(emitted_as::always_lvalue,
-                      test_bucket(as_writable_bytes(span(data)))));
+                      test_bucket(std::as_writable_bytes(std::span(data)))));
     in.flush();
     REQUIRE(out.check_flushed());
 }

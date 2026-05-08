@@ -11,7 +11,6 @@
 #include "introspect.hpp"
 #include "move_only_any.hpp"
 #include "processor_traits.hpp"
-#include "span.hpp"
 
 #include <algorithm>
 #include <cassert>
@@ -22,6 +21,7 @@
 #include <memory>
 #include <mutex>
 #include <ostream>
+#include <span>
 #include <stdexcept>
 #include <type_traits>
 #include <typeinfo>
@@ -44,7 +44,7 @@ namespace tcspc {
  * bucket-sources).
  *
  * A bucket implements, among other things, an interface similar to
- * `tcspc::span`, allowing it to be treated as a contiguous container of \p T
+ * `std::span`, allowing it to be treated as a contiguous container of \p T
  * objects.
  *
  * Copying a bucket copies the data into newly allocated memory. This should be
@@ -66,7 +66,7 @@ namespace tcspc {
  *
  * Comparing two buckets for equality (`==`) or inequality (`!=`) returns
  * whether the data is equal or not (note that this differs from
- * `tcspc::span`). Together with the copy behavior, this makes `bucket<T>` a
+ * `std::span`). Together with the copy behavior, this makes `bucket<T>` a
  * regular type.
  *
  * Processors emitting buckets are typically constructed by passing in the
@@ -85,7 +85,7 @@ namespace tcspc {
  * preserving their storage and thus avoid copying their data.
  *
  * Note that `bucket<T>` does not implicitly convert to `bucket<T const>`,
- * unlike with `tcspc::span`, because that would require copying or moving the
+ * unlike with `std::span`, because that would require copying or moving the
  * storage.
  *
  * Ways to emit buckets (for `T` non-const):
@@ -117,7 +117,7 @@ template <typename T> class bucket {
             : p(std::move(ptr)) {}
     };
 
-    span<T> s;
+    std::span<T> s;
     internal::move_only_any store;
 
   public:
@@ -134,7 +134,7 @@ template <typename T> class bucket {
      * \tparam S storage type (deduced)
      */
     template <typename S>
-    explicit bucket(span<T> span, S &&storage)
+    explicit bucket(std::span<T> span, S &&storage)
         : s(span), store(std::forward<S>(storage)) {}
 
     ~bucket() = default;
@@ -172,36 +172,37 @@ template <typename T> class bucket {
     // bucket has read-only data, unlike a const span).
 
     /** \brief Element type. */
-    using element_type = typename span<T>::element_type;
+    using element_type = typename std::span<T>::element_type;
     /** \brief Value type. */
-    using value_type = typename span<T>::value_type;
+    using value_type = typename std::span<T>::value_type;
     /** \brief Size type. */
-    using size_type = typename span<T>::size_type;
+    using size_type = typename std::span<T>::size_type;
     /** \brief Difference type. */
-    using difference_type = typename span<T>::difference_type;
+    using difference_type = typename std::span<T>::difference_type;
     /** \brief Element pointer type. */
-    using pointer = typename span<T>::pointer;
+    using pointer = typename std::span<T>::pointer;
     /** \brief Element const pointer type. */
-    using const_pointer = typename span<T>::const_pointer;
+    using const_pointer = typename std::span<T>::const_pointer;
     /** \brief Element reference type. */
-    using reference = typename span<T>::reference;
+    using reference = typename std::span<T>::reference;
     /** \brief Element const reference type. */
-    using const_reference = typename span<T>::const_reference;
+    using const_reference = typename std::span<T>::const_reference;
     /** \brief Iterator type. */
-    using iterator = typename span<T>::iterator;
+    using iterator = typename std::span<T>::iterator;
     /** \brief Const iterator type. */
-    using const_iterator = typename span<T const>::iterator;
+    using const_iterator = typename std::span<T const>::iterator;
     /** \brief Reverse iterator type. */
-    using reverse_iterator = typename span<T>::reverse_iterator;
+    using reverse_iterator = typename std::span<T>::reverse_iterator;
     /** \brief Const reverse iterator type. */
-    using const_reverse_iterator = typename span<T const>::reverse_iterator;
+    using const_reverse_iterator =
+        typename std::span<T const>::reverse_iterator;
 
     /** \brief Return an iterator to the beginning. */
     [[nodiscard]] auto begin() noexcept -> iterator { return s.begin(); }
 
     /** \brief Return an iterator to the beginning. */
     [[nodiscard]] auto cbegin() const noexcept -> const_iterator {
-        return span<T const>(s).begin();
+        return std::span<T const>(s).begin();
     }
 
     /** \brief Return an iterator to the beginning. */
@@ -214,7 +215,7 @@ template <typename T> class bucket {
 
     /** \brief Return an iterator to the end. */
     [[nodiscard]] auto cend() const noexcept -> const_iterator {
-        return span<T const>(s).end();
+        return std::span<T const>(s).end();
     }
 
     /** \brief Return an iterator to the end. */
@@ -229,7 +230,7 @@ template <typename T> class bucket {
 
     /** \brief Return a reverse iterator to the beginning. */
     [[nodiscard]] auto crbegin() const noexcept -> const_reverse_iterator {
-        return span<T const>(s).rbegin();
+        return std::span<T const>(s).rbegin();
     }
 
     /** \brief Return a reverse iterator to the beginning. */
@@ -242,7 +243,7 @@ template <typename T> class bucket {
 
     /** \brief Return a reverse iterator to the end. */
     [[nodiscard]] auto crend() const noexcept -> const_reverse_iterator {
-        return span<T const>(s).rend();
+        return std::span<T const>(s).rend();
     }
 
     /** \brief Return a reverse iterator to the end. */
@@ -255,7 +256,7 @@ template <typename T> class bucket {
 
     /** \brief Return the first element. */
     [[nodiscard]] auto front() const -> const_reference {
-        return span<T const>(s).front();
+        return std::span<T const>(s).front();
     }
 
     /** \brief Return the last element. */
@@ -263,7 +264,7 @@ template <typename T> class bucket {
 
     /** \brief Return the last element. */
     [[nodiscard]] auto back() const -> const_reference {
-        return span<T const>(s).back();
+        return std::span<T const>(s).back();
     }
 
     /** \brief Return an element without bounds checking. */
@@ -310,36 +311,37 @@ template <typename T> class bucket {
     [[nodiscard]] auto empty() const noexcept -> bool { return s.empty(); }
 
     /** \brief Return the span of the first \c count elements. */
-    [[nodiscard]] auto first(size_type count) -> span<T> {
+    [[nodiscard]] auto first(size_type count) -> std::span<T> {
         return s.first(count);
     }
 
     /** \brief Return the span of the first \c count elements. */
-    [[nodiscard]] auto first(size_type count) const -> span<T const> {
-        return span<T const>(s).first(count);
+    [[nodiscard]] auto first(size_type count) const -> std::span<T const> {
+        return std::span<T const>(s).first(count);
     }
 
     /** \brief Return the span of the last \c count elements. */
-    [[nodiscard]] auto last(size_type count) -> span<T> {
+    [[nodiscard]] auto last(size_type count) -> std::span<T> {
         return s.last(count);
     }
 
     /** \brief Return the span of the last \c count elements. */
-    [[nodiscard]] auto last(size_type count) const -> span<T const> {
-        return span<T const>(s).last(count);
+    [[nodiscard]] auto last(size_type count) const -> std::span<T const> {
+        return std::span<T const>(s).last(count);
     }
 
     /** \brief Return the span of the given range of elements. */
     [[nodiscard]] auto subspan(size_type offset,
-                               size_type count = dynamic_extent) -> span<T> {
+                               size_type count = std::dynamic_extent)
+        -> std::span<T> {
         return s.subspan(offset, count);
     }
 
     /** \brief Return the span of the given range of elements. */
     [[nodiscard]] auto subspan(size_type offset,
-                               size_type count = dynamic_extent) const
-        -> span<T const> {
-        return span<T const>(s).subspan(offset, count);
+                               size_type count = std::dynamic_extent) const
+        -> std::span<T const> {
+        return std::span<T const>(s).subspan(offset, count);
     }
 
     // End of span member equivalents.
@@ -406,7 +408,7 @@ template <typename T> class bucket {
      * (except via a sub-bucket, byte bucket, or const bucket previously
      * created from this bucket).
      */
-    void shrink(std::size_t start, std::size_t count = dynamic_extent) {
+    void shrink(std::size_t start, std::size_t count = std::dynamic_extent) {
         s = s.subspan(start, count);
     }
 
@@ -475,7 +477,7 @@ template <typename T> class bucket {
  * \param s the span to wrap as an ad-hoc bucket
  */
 template <typename T>
-[[nodiscard]] auto ad_hoc_bucket(span<T> s) -> bucket<T> {
+[[nodiscard]] auto ad_hoc_bucket(std::span<T> s) -> bucket<T> {
     struct ad_hoc_storage {};
     return bucket<T>(s, ad_hoc_storage{});
 }
@@ -589,7 +591,7 @@ class new_delete_bucket_source final : public bucket_source<T> {
     auto bucket_of_size(std::size_t size) -> bucket<T> override {
         // NOLINTNEXTLINE(cppcoreguidelines-avoid-c-arrays,modernize-avoid-c-arrays)
         std::unique_ptr<T[]> p(new T[size]);
-        return bucket<T>{span(p.get(), size), std::move(p)};
+        return bucket<T>{std::span(p.get(), size), std::move(p)};
     }
 };
 
@@ -625,7 +627,7 @@ class sharable_new_delete_bucket_source final : public bucket_source<T> {
     auto bucket_of_size(std::size_t size) -> bucket<T> override {
         // NOLINTNEXTLINE(cppcoreguidelines-avoid-c-arrays,modernize-avoid-c-arrays)
         std::shared_ptr<T[]> p(new T[size]);
-        return bucket<T>{span(p.get(), size), std::move(p)};
+        return bucket<T>{std::span(p.get(), size), std::move(p)};
     }
 
     /** \brief Implements sharable bucket source requirement. */
@@ -639,7 +641,7 @@ class sharable_new_delete_bucket_source final : public bucket_source<T> {
         -> bucket<T const> override {
         // NOLINTNEXTLINE(cppcoreguidelines-avoid-c-arrays,modernize-avoid-c-arrays)
         auto storage = bkt.template storage<std::shared_ptr<T[]>>();
-        return bucket<T const>{span<T const>(bkt), std::move(storage)};
+        return bucket<T const>{std::span<T const>(bkt), std::move(storage)};
     }
 };
 
@@ -780,7 +782,7 @@ class recycling_bucket_source final
         if (not p)
             p = std::make_unique<std::vector<T>>();
         p->resize(size);
-        auto const spn = span(p->data(), p->size());
+        auto const spn = std::span(p->data(), p->size());
         return bucket<T>{
             spn, bucket_storage(this->shared_from_this(), std::move(p))};
     }
@@ -861,7 +863,7 @@ class sharable_recycling_bucket_source final
         if (not p)
             p = std::make_unique<std::vector<T>>();
         p->resize(size);
-        auto const spn = span(*p);
+        auto const spn = std::span(*p);
         std::shared_ptr<std::vector<T>> shptr{
             p.release(),
             [self = this->shared_from_this()](std::vector<T> *pv) {
@@ -893,7 +895,7 @@ class sharable_recycling_bucket_source final
     [[nodiscard]] auto shared_view_of(bucket<T> const &bkt)
         -> bucket<T const> override {
         auto storage = bkt.template storage<bucket_storage>();
-        return bucket<T const>{span<T const>(bkt), std::move(storage)};
+        return bucket<T const>{std::span<T const>(bkt), std::move(storage)};
     }
 };
 

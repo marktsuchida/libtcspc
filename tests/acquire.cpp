@@ -12,7 +12,6 @@
 #include "libtcspc/errors.hpp"
 #include "libtcspc/introspect.hpp"
 #include "libtcspc/processor_traits.hpp"
-#include "libtcspc/span.hpp"
 #include "libtcspc/test_utils.hpp"
 #include "libtcspc/type_list.hpp"
 #include "test_checkers.hpp"
@@ -30,6 +29,7 @@
 #include <cstddef>
 #include <exception>
 #include <optional>
+#include <span>
 #include <thread>
 #include <type_traits>
 #include <vector>
@@ -89,8 +89,8 @@ namespace {
 struct mock_int_reader {
     using ret_type = std::optional<std::size_t>;
     // NOLINTNEXTLINE(modernize-use-trailing-return-type)
-    MAKE_MOCK1(read, ret_type(span<int>));
-    auto operator()(span<int> s) -> ret_type { return read(s); }
+    MAKE_MOCK1(read, ret_type(std::span<int>));
+    auto operator()(std::span<int> s) -> ret_type { return read(s); }
 };
 
 template <typename Reader> class ref_reader {
@@ -99,7 +99,7 @@ template <typename Reader> class ref_reader {
   public:
     explicit ref_reader(Reader &reader) : r(&reader) {}
 
-    auto operator()(span<int> s) { return (*r)(s); }
+    auto operator()(std::span<int> s) { return (*r)(s); }
 };
 
 constexpr auto ignore_value_category = feed_as::const_lvalue;

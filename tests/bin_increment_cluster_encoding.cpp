@@ -7,7 +7,6 @@
 #include "libtcspc/bin_increment_cluster_encoding.hpp"
 
 #include "libtcspc/int_types.hpp"
-#include "libtcspc/span.hpp"
 
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/trompeloeil.hpp>
@@ -15,6 +14,7 @@
 
 #include <cstddef>
 #include <cstring>
+#include <span>
 #include <utility>
 #include <vector>
 
@@ -37,7 +37,7 @@ TEST_CASE("encoded_bin_increment_cluster_size") {
 struct mock_storage {
     // NOLINTBEGIN(modernize-use-trailing-return-type)
     MAKE_MOCK0(available_capacity, std::size_t());
-    MAKE_MOCK1(make_space, span<i8>(std::size_t));
+    MAKE_MOCK1(make_space, std::span<i8>(std::size_t));
     // NOLINTEND(modernize-use-trailing-return-type)
 };
 
@@ -50,7 +50,7 @@ struct ref_storage {
         return stor->available_capacity();
     }
 
-    [[nodiscard]] auto make_space(std::size_t size) const -> span<i8> {
+    [[nodiscard]] auto make_space(std::size_t size) const -> std::span<i8> {
         return stor->make_space(size);
     }
 };
@@ -59,17 +59,17 @@ TEST_CASE("encode_bin_increment_cluster encodes empty") {
     auto storage = mock_storage();
     ALLOW_CALL(storage, available_capacity()).RETURN(1);
     std::vector<i8> encoded(1);
-    ALLOW_CALL(storage, make_space(1)).LR_RETURN(span(encoded));
-    CHECK(
-        encode_bin_increment_cluster(ref_storage{storage}, span<i8 const>()));
+    ALLOW_CALL(storage, make_space(1)).LR_RETURN(std::span(encoded));
+    CHECK(encode_bin_increment_cluster(ref_storage{storage},
+                                       std::span<i8 const>()));
     CHECK(encoded == std::vector<i8>{0});
 }
 
 TEST_CASE("encode_bin_increment_cluster rejects empty when no space") {
     auto storage = mock_storage();
     ALLOW_CALL(storage, available_capacity()).RETURN(0);
-    CHECK_FALSE(
-        encode_bin_increment_cluster(ref_storage{storage}, span<i8 const>()));
+    CHECK_FALSE(encode_bin_increment_cluster(ref_storage{storage},
+                                             std::span<i8 const>()));
 }
 
 TEST_CASE("encode_bin_increment_cluster encodes small") {
@@ -77,9 +77,9 @@ TEST_CASE("encode_bin_increment_cluster encodes small") {
     auto const cluster = std::vector<i8>{1, 2, 3};
     ALLOW_CALL(storage, available_capacity()).RETURN(4);
     std::vector<i8> encoded(4);
-    ALLOW_CALL(storage, make_space(4)).LR_RETURN(span(encoded));
+    ALLOW_CALL(storage, make_space(4)).LR_RETURN(std::span(encoded));
     CHECK(encode_bin_increment_cluster(ref_storage{storage},
-                                       span(std::as_const(cluster))));
+                                       std::span(std::as_const(cluster))));
     CHECK(encoded == std::vector<i8>{3, 1, 2, 3});
 }
 
@@ -87,8 +87,8 @@ TEST_CASE("encode_bin_increment_cluster rejects when space insufficient") {
     auto storage = mock_storage();
     auto const cluster = std::vector<i8>{1, 2, 3};
     ALLOW_CALL(storage, available_capacity()).RETURN(3);
-    CHECK_FALSE(encode_bin_increment_cluster(ref_storage{storage},
-                                             span(std::as_const(cluster))));
+    CHECK_FALSE(encode_bin_increment_cluster(
+        ref_storage{storage}, std::span(std::as_const(cluster))));
 }
 
 TEST_CASE("encode_bin_increment_cluster encodes large") {
@@ -97,8 +97,10 @@ TEST_CASE("encode_bin_increment_cluster encodes large") {
     auto const encoded_size = 255 + 1 + sizeof(std::size_t);
     ALLOW_CALL(storage, available_capacity()).RETURN(encoded_size);
     std::vector<i8> encoded(encoded_size);
-    ALLOW_CALL(storage, make_space(encoded_size)).LR_RETURN(span(encoded));
-    CHECK(encode_bin_increment_cluster(ref_storage{storage}, span(cluster)));
+    ALLOW_CALL(storage, make_space(encoded_size))
+        .LR_RETURN(std::span(encoded));
+    CHECK(encode_bin_increment_cluster(ref_storage{storage},
+                                       std::span(cluster)));
     CHECK(static_cast<u8>(encoded[0]) == 255);
     std::size_t written_size{};
     std::memcpy(&written_size, &encoded[1], sizeof(written_size));
@@ -112,24 +114,25 @@ TEST_CASE("encode_bin_increment_cluster appends to storage") {
     auto const cluster = std::vector<i8>{1, 2, 3};
     ALLOW_CALL(storage, available_capacity()).RETURN(4);
     std::vector<i8> encoded{3, -1, -2, -3, 42, 42, 42, 42};
-    ALLOW_CALL(storage, make_space(4)).LR_RETURN(span(encoded).subspan(4));
+    ALLOW_CALL(storage, make_space(4))
+        .LR_RETURN(std::span(encoded).subspan(4));
     CHECK(encode_bin_increment_cluster(ref_storage{storage},
-                                       span(std::as_const(cluster))));
+                                       std::span(std::as_const(cluster))));
     CHECK(encoded == std::vector<i8>{3, -1, -2, -3, 3, 1, 2, 3});
 }
 
 TEST_CASE("bin_increment_cluster_decoder decodes empty") {
     std::vector<i8> const encoded;
-    auto const decoder = bin_increment_cluster_decoder(span(encoded));
+    auto const decoder = bin_increment_cluster_decoder(std::span(encoded));
     CHECK(decoder.begin() == decoder.end());
 }
 
 TEST_CASE("bin_increment_cluster_decoder decodes small") {
     std::vector<i8> const encoded{3, 1, 2, 3};
-    auto const decoder = bin_increment_cluster_decoder(span(encoded));
+    auto const decoder = bin_increment_cluster_decoder(std::span(encoded));
 
     auto it = decoder.begin();
-    span<i8 const> const cluster = *it;
+    std::span<i8 const> const cluster = *it;
     CHECK(cluster.size() == 3);
     CHECK(std::vector<i8>(cluster.begin(), cluster.end()) ==
           std::vector<i8>{1, 2, 3});
@@ -146,10 +149,10 @@ TEST_CASE("bin_increment_cluster_decoder decodes large") {
     encoded.insert(encoded.end(), 255, 123);
     REQUIRE(encoded.size() == 1 + sizeof(std::size_t) + 255);
 
-    auto const decoder = bin_increment_cluster_decoder(span(encoded));
+    auto const decoder = bin_increment_cluster_decoder(std::span(encoded));
 
     auto it = decoder.begin();
-    span<i8 const> const cluster = *it;
+    std::span<i8 const> const cluster = *it;
     CHECK(cluster.size() == 255);
     CHECK(int(cluster.front()) == 123);
     CHECK(int(cluster.back()) == 123);

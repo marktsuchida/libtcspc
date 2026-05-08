@@ -11,7 +11,6 @@
 #include "libtcspc/context.hpp"
 #include "libtcspc/core.hpp"
 #include "libtcspc/processor_traits.hpp"
-#include "libtcspc/span.hpp"
 #include "libtcspc/test_utils.hpp"
 #include "libtcspc/type_list.hpp"
 #include "test_checkers.hpp"
@@ -20,6 +19,7 @@
 #include <catch2/generators/catch_generators.hpp>
 
 #include <memory>
+#include <span>
 #include <utility>
 #include <vector>
 
@@ -135,18 +135,18 @@ TEST_CASE("unbatch const") {
     auto const valcat = GENERATE(feed_as::const_lvalue, feed_as::rvalue);
     auto ctx = context::create();
     auto in = feed_input(
-        valcat, unbatch<span<int const>>(capture_output<type_list<int>>(
+        valcat, unbatch<std::span<int const>>(capture_output<type_list<int>>(
                     ctx->tracker<capture_output_access>("out"))));
     in.require_output_checked(ctx, "out");
     auto out = capture_output_checker<type_list<int>>(valcat, ctx, "out");
 
-    in.handle(span<int const>({42, 43, 44}));
+    in.handle(std::span<int const>({42, 43, 44}));
     REQUIRE(out.check(emitted_as::always_lvalue, 42));
     REQUIRE(out.check(emitted_as::always_lvalue, 43));
     REQUIRE(out.check(emitted_as::always_lvalue, 44));
-    in.handle(span<int const>({}));
-    in.handle(span<int const>({}));
-    in.handle(span<int const>({45}));
+    in.handle(std::span<int const>({}));
+    in.handle(std::span<int const>({}));
+    in.handle(std::span<int const>({45}));
     REQUIRE(out.check(emitted_as::always_lvalue, 45));
     in.flush();
     REQUIRE(out.check_flushed());

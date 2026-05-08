@@ -200,7 +200,7 @@ class Acquire(RelayNode):
             CppExpression(
                 f"""\
                 [reader={gencontext.params_varname}.{self._reader.cpp_identifier()}](
-                    tcspc::span<{self._event_type.cpp_type_name()}> spn) {{
+                    std::span<{self._event_type.cpp_type_name()}> spn) {{
                     nanobind::gil_scoped_acquire held;
                     {self._buffer_array_type()} arr(spn.data(), {{spn.size()}});
                     return reader(arr.cast(nanobind::rv_policy::reference));

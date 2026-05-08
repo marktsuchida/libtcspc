@@ -9,7 +9,6 @@
 #include "libtcspc/arg_wrappers.hpp"
 #include "libtcspc/bucket.hpp"
 #include "libtcspc/int_types.hpp"
-#include "libtcspc/span.hpp"
 
 #include <benchmark/benchmark.h>
 
@@ -17,6 +16,7 @@
 #include <cstdint>
 #include <memory>
 #include <optional>
+#include <span>
 
 namespace tcspc {
 
@@ -58,7 +58,7 @@ template <typename InputStream> class ref_input_stream {
         return stream.skip(bytes);
     }
 
-    auto read(span<std::byte> buffer) noexcept -> std::uint64_t {
+    auto read(std::span<std::byte> buffer) noexcept -> std::uint64_t {
         return stream.read(buffer);
     }
 };

@@ -11,7 +11,6 @@
 #include "libtcspc/int_types.hpp"
 #include "libtcspc/npint.hpp"
 #include "libtcspc/processor_traits.hpp"
-#include "libtcspc/span.hpp"
 #include "libtcspc/test_utils.hpp"
 #include "libtcspc/time_tagged_events.hpp"
 #include "libtcspc/type_list.hpp"
@@ -25,6 +24,7 @@
 #include <array>
 #include <cstring>
 #include <memory>
+#include <span>
 #include <type_traits>
 
 namespace tcspc {
@@ -124,7 +124,7 @@ TEST_CASE("swabian tag read") {
 TEST_CASE("swabian tag assign") {
     auto event = swabian_tag_event::make_time_tag(100_i64np, 3_i32np);
     std::array<u8, 16> bytes{0, 0, 0, 0, 3, 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0};
-    auto byte_span = as_bytes(span(bytes));
+    auto byte_span = std::as_bytes(std::span(bytes));
     CHECK(
         std::equal(event.bytes.begin(), event.bytes.end(), byte_span.begin()));
 

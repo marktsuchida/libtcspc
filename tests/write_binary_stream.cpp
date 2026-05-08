@@ -10,7 +10,6 @@
 #include "libtcspc/bucket.hpp"
 #include "libtcspc/errors.hpp"
 #include "libtcspc/processor_traits.hpp"
-#include "libtcspc/span.hpp"
 #include "libtcspc/view_as_bytes.hpp"
 #include "test_checkers.hpp"
 
@@ -26,6 +25,7 @@
 #include <cstdint>
 #include <numeric>
 #include <optional>
+#include <span>
 #include <vector>
 
 namespace tcspc {
@@ -52,7 +52,7 @@ TEST_CASE("introspect: write_binary_stream") {
 namespace {
 
 template <typename T, std::size_t N, std::size_t M>
-auto equal_span(span<T const, N> lhs, span<T const, M> rhs) -> bool {
+auto equal_span(std::span<T const, N> lhs, std::span<T const, M> rhs) -> bool {
     return lhs.size() == rhs.size() &&
            std::equal(lhs.begin(), lhs.end(), rhs.begin());
 }
@@ -61,7 +61,7 @@ struct mock_output_stream {
     // NOLINTBEGIN(modernize-use-trailing-return-type)
     MAKE_MOCK0(is_error, bool());
     MAKE_MOCK0(tell, std::optional<std::uint64_t>());
-    MAKE_MOCK1(write, void(span<std::byte const>));
+    MAKE_MOCK1(write, void(std::span<std::byte const>));
     // NOLINTEND(modernize-use-trailing-return-type)
 };
 
@@ -75,7 +75,7 @@ template <typename OutputStream> class ref_output_stream {
 
     auto is_error() -> bool { return strm->is_error(); }
     auto tell() -> std::optional<std::uint64_t> { return strm->tell(); }
-    void write(span<std::byte const> buf) { strm->write(buf); }
+    void write(std::span<std::byte const> buf) { strm->write(buf); }
 };
 
 }; // namespace
@@ -102,15 +102,15 @@ TEST_CASE("write binary stream") {
 
         auto const start = GENERATE(0, 1, 4);
         ALLOW_CALL(stream, tell()).RETURN(start);
-        proc.handle(span<std::byte>());
-        proc.handle(span<std::byte>());
+        proc.handle(std::span<std::byte>());
+        proc.handle(std::span<std::byte>());
         proc.flush();
     }
 
     SECTION("initially bad stream") {
         ALLOW_CALL(stream, is_error()).RETURN(true);
         ALLOW_CALL(stream, tell()).RETURN(std::nullopt);
-        proc.handle(span<std::byte>()); // Empty spans are okay.
+        proc.handle(std::span<std::byte>()); // Empty spans are okay.
         std::array const data{std::byte(0)};
         proc.handle(data);
         proc.handle(data);
@@ -139,7 +139,7 @@ TEST_CASE("write binary stream") {
         SECTION("event size 2") {
             std::array<std::uint8_t, 8> data{};
             std::iota(data.begin(), data.end(), std::uint8_t(0));
-            auto const data_bytes = as_bytes(span(data));
+            auto const data_bytes = std::as_bytes(std::span(data));
             proc.handle(data_bytes.first(2));
             REQUIRE_CALL(stream, write(_))
                 .TIMES(1)
@@ -165,7 +165,7 @@ TEST_CASE("write binary stream") {
         SECTION("event size 3") {
             std::array<std::uint8_t, 18> data{};
             std::iota(data.begin(), data.end(), std::uint8_t(0));
-            auto const data_bytes = as_bytes(span(data));
+            auto const data_bytes = std::as_bytes(std::span(data));
             proc.handle(data_bytes.first(3));
             REQUIRE_CALL(stream, write(_))
                 .TIMES(1)
@@ -202,7 +202,7 @@ TEST_CASE("write binary stream") {
         SECTION("event size 4") {
             std::array<std::uint8_t, 8> data{};
             std::iota(data.begin(), data.end(), std::uint8_t(0));
-            auto const data_bytes = as_bytes(span(data));
+            auto const data_bytes = std::as_bytes(std::span(data));
             REQUIRE_CALL(stream, write(_))
                 .TIMES(1)
                 .WITH(equal_span(_1, data_bytes.first(4)));
@@ -221,7 +221,7 @@ TEST_CASE("write binary stream") {
         SECTION("event size 5") {
             std::array<std::uint8_t, 15> data{};
             std::iota(data.begin(), data.end(), std::uint8_t(0));
-            auto const data_bytes = as_bytes(span(data));
+            auto const data_bytes = std::as_bytes(std::span(data));
             REQUIRE_CALL(stream, write(_))
                 .TIMES(1)
                 .WITH(equal_span(_1, data_bytes.first(4)));
@@ -241,7 +241,7 @@ TEST_CASE("write binary stream") {
         SECTION("event size 9") {
             std::array<std::uint8_t, 18> data{};
             std::iota(data.begin(), data.end(), std::uint8_t(0));
-            auto const data_bytes = as_bytes(span(data));
+            auto const data_bytes = std::as_bytes(std::span(data));
             REQUIRE_CALL(stream, write(_))
                 .TIMES(1)
                 .WITH(equal_span(_1, data_bytes.first(8)));
@@ -277,7 +277,7 @@ TEST_CASE("write binary stream") {
         SECTION("event size 3") {
             std::array<std::uint8_t, 9> data{};
             std::iota(data.begin(), data.end(), std::uint8_t(0));
-            auto const data_bytes = as_bytes(span(data));
+            auto const data_bytes = std::as_bytes(std::span(data));
             REQUIRE_CALL(stream, write(_))
                 .TIMES(1)
                 .WITH(equal_span(_1, data_bytes.first(3)));
@@ -319,7 +319,7 @@ TEST_CASE("write binary stream") {
         SECTION("event size 4") {
             std::array<std::uint8_t, 4> data{};
             std::iota(data.begin(), data.end(), std::uint8_t(0));
-            auto const data_bytes = as_bytes(span(data));
+            auto const data_bytes = std::as_bytes(std::span(data));
             REQUIRE_CALL(stream, write(_))
                 .TIMES(1)
                 .WITH(equal_span(_1, data_bytes.first(3)));
@@ -353,7 +353,7 @@ TEST_CASE("write binary file with view as bytes") {
     using trompeloeil::_;
 
     std::vector const data{42, 43};
-    auto const data_bytes = as_bytes(span(data));
+    auto const data_bytes = std::as_bytes(std::span(data));
     proc.handle(42);
     REQUIRE_CALL(stream, write(_)).TIMES(1).WITH(equal_span(_1, data_bytes));
     proc.handle(43);

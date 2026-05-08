@@ -9,9 +9,9 @@
 #include "bucket.hpp"
 #include "introspect.hpp"
 #include "processor_traits.hpp"
-#include "span.hpp"
 
 #include <cstddef>
+#include <span>
 #include <type_traits>
 #include <utility>
 
@@ -41,10 +41,10 @@ template <typename Downstream> class view_as_bytes {
     void handle(Event const &event) {
         // It is safe to const_cast the bytes because we emit the bucket by
         // const ref.
-        auto const_byte_span = as_bytes(span(&event, 1));
-        auto const b = ad_hoc_bucket(
-            span<std::byte>(const_cast<std::byte *>(const_byte_span.data()),
-                            const_byte_span.size()));
+        auto const_byte_span = std::as_bytes(std::span(&event, 1));
+        auto const b = ad_hoc_bucket(std::span<std::byte>(
+            const_cast<std::byte *>(const_byte_span.data()),
+            const_byte_span.size()));
         downstream.handle(b);
     }
 
@@ -52,10 +52,10 @@ template <typename Downstream> class view_as_bytes {
     void handle(bucket<T> const &event) {
         // It is safe to const_cast the bytes because we emit the bucket by
         // const ref.
-        auto const_byte_span = as_bytes(span(event));
-        auto const b = ad_hoc_bucket(
-            span<std::byte>(const_cast<std::byte *>(const_byte_span.data()),
-                            const_byte_span.size()));
+        auto const_byte_span = std::as_bytes(std::span(event));
+        auto const b = ad_hoc_bucket(std::span<std::byte>(
+            const_cast<std::byte *>(const_byte_span.data()),
+            const_byte_span.size()));
         downstream.handle(b);
     }
 

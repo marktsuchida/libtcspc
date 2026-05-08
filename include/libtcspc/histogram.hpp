@@ -17,11 +17,11 @@
 #include "histogram_policy.hpp"
 #include "introspect.hpp"
 #include "processor_traits.hpp"
-#include "span.hpp"
 
 #include <algorithm>
 #include <cstddef>
 #include <memory>
+#include <span>
 #include <stdexcept>
 #include <type_traits>
 #include <utility>
@@ -155,7 +155,7 @@ class histogram {
         }
 
         auto const hist_event =
-            histogram_event<DataTypes>{ad_hoc_bucket(span(hist_bucket))};
+            histogram_event<DataTypes>{ad_hoc_bucket(std::span(hist_bucket))};
         downstream.handle(hist_event);
     }
 

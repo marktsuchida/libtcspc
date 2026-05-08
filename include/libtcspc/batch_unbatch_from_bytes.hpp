@@ -10,12 +10,12 @@
 #include "common.hpp"
 #include "introspect.hpp"
 #include "processor_traits.hpp"
-#include "span.hpp"
 
 #include <algorithm>
 #include <array>
 #include <cstddef>
 #include <memory>
+#include <span>
 #include <stdexcept>
 #include <type_traits>
 #include <utility>
@@ -51,21 +51,21 @@ template <typename Event, typename Downstream> class batch_from_bytes {
     }
 
     template <typename ByteSpan,
-              typename = std::void_t<
-                  decltype(span<std::byte const>(std::declval<ByteSpan>()))>>
+              typename = std::void_t<decltype(std::span<std::byte const>(
+                  std::declval<ByteSpan>()))>>
     void handle(ByteSpan const &event) {
-        auto input_span = span<std::byte const>(event);
+        auto input_span = std::span<std::byte const>(event);
         auto const bytes_available = bytes_buffered + input_span.size();
         if (bytes_available < sizeof(Event)) {
             std::copy(input_span.begin(), input_span.end(),
-                      span(buf).subspan(bytes_buffered).begin());
+                      std::span(buf).subspan(bytes_buffered).begin());
             bytes_buffered = bytes_available;
             return;
         }
 
         auto const batch_size = bytes_available / sizeof(Event);
         auto bucket = bsource->bucket_of_size(batch_size);
-        auto const output_span = as_writable_bytes(span(bucket));
+        auto const output_span = std::as_writable_bytes(std::span(bucket));
         auto const input_bulk =
             input_span.first(output_span.size() - bytes_buffered);
         auto const remainder = input_span.subspan(input_bulk.size());
@@ -108,20 +108,20 @@ template <typename Event, typename Downstream> class unbatch_from_bytes {
     }
 
     template <typename ByteSpan,
-              typename = std::void_t<
-                  decltype(span<std::byte const>(std::declval<ByteSpan>()))>>
+              typename = std::void_t<decltype(std::span<std::byte const>(
+                  std::declval<ByteSpan>()))>>
     void handle(ByteSpan const &event) {
-        auto input_span = span<std::byte const>(event);
+        auto input_span = std::span<std::byte const>(event);
         if (bytes_buffered > 0) {
             auto const available_bytes = bytes_buffered + input_span.size();
             if (available_bytes < sizeof(Event)) {
                 std::copy(input_span.begin(), input_span.end(),
-                          span(buf).subspan(bytes_buffered).begin());
+                          std::span(buf).subspan(bytes_buffered).begin());
                 bytes_buffered = available_bytes;
                 return;
             }
             Event e;
-            auto const output_bytes = as_writable_bytes(span(&e, 1));
+            auto const output_bytes = std::as_writable_bytes(std::span(&e, 1));
             auto const bytes_to_fill = sizeof(Event) - bytes_buffered;
             std::copy_n(buf.begin(), bytes_buffered, output_bytes.begin());
             std::copy_n(input_span.begin(), bytes_to_fill,
@@ -139,7 +139,7 @@ template <typename Event, typename Downstream> class unbatch_from_bytes {
             auto const *ptr =
                 // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
                 reinterpret_cast<Event const *>(input_span.data());
-            for (Event const &e : span(ptr, n_whole))
+            for (Event const &e : std::span(ptr, n_whole))
                 downstream.handle(e);
         } else {
             for (std::size_t i = 0; i < whole_event_bytes.size();
@@ -147,7 +147,7 @@ template <typename Event, typename Downstream> class unbatch_from_bytes {
                 Event e;
                 std::copy_n(whole_event_bytes.subspan(i).begin(),
                             sizeof(Event),
-                            as_writable_bytes(span(&e, 1)).begin());
+                            std::as_writable_bytes(std::span(&e, 1)).begin());
                 downstream.handle(std::as_const(e));
             }
         }

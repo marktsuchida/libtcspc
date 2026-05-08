@@ -13,7 +13,6 @@
 #include "errors.hpp"
 #include "introspect.hpp"
 #include "processor_traits.hpp"
-#include "span.hpp"
 #include "type_list.hpp"
 #include "variant_event.hpp"
 #include "vector_queue.hpp"
@@ -28,6 +27,7 @@
 #include <limits>
 #include <memory>
 #include <ostream>
+#include <span>
 #include <sstream>
 #include <stdexcept>
 #include <string>
@@ -1036,7 +1036,7 @@ auto test_bucket(std::initializer_list<T> il) -> bucket<T> {
         std::vector<U> v;
     };
     auto storage = test_storage{std::vector<U>(il.begin(), il.end())};
-    return bucket<T>(span(storage.v), std::move(storage));
+    return bucket<T>(std::span(storage.v), std::move(storage));
 }
 
 /**
@@ -1046,13 +1046,13 @@ auto test_bucket(std::initializer_list<T> il) -> bucket<T> {
  *
  * The returned bucket does not support storage extraction.
  */
-template <typename T> auto test_bucket(span<T> s) -> bucket<T> {
+template <typename T> auto test_bucket(std::span<T> s) -> bucket<T> {
     using U = std::remove_cv_t<T>;
     struct test_storage {
         std::vector<U> v;
     };
     auto storage = test_storage{std::vector<U>(s.begin(), s.end())};
-    return bucket<T>(span(storage.v), std::move(storage));
+    return bucket<T>(std::span(storage.v), std::move(storage));
 }
 
 /**
@@ -1136,9 +1136,9 @@ template <typename Event>
 inline auto
 from_reversed_bytes(std::array<std::uint8_t, sizeof(Event)> bytes) noexcept {
     static_assert(std::is_trivial_v<Event>);
-    auto const srcspan = as_bytes(span(&bytes, 1));
+    auto const srcspan = std::as_bytes(std::span(&bytes, 1));
     Event ret{};
-    auto const retspan = as_writable_bytes(span(&ret, 1));
+    auto const retspan = std::as_writable_bytes(std::span(&ret, 1));
     std::reverse_copy(srcspan.begin(), srcspan.end(), retspan.begin());
     return ret;
 }

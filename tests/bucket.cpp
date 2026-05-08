@@ -11,7 +11,6 @@
 #include "libtcspc/core.hpp"
 #include "libtcspc/errors.hpp"
 #include "libtcspc/processor_traits.hpp"
-#include "libtcspc/span.hpp"
 #include "libtcspc/test_utils.hpp"
 #include "libtcspc/type_list.hpp"
 #include "test_checkers.hpp"
@@ -23,6 +22,7 @@
 #include <algorithm>
 #include <array>
 #include <memory>
+#include <span>
 #include <sstream>
 #include <thread>
 #include <type_traits>
@@ -47,17 +47,17 @@ TEST_CASE("default-constructed bucket is empty and regular") {
 
 TEST_CASE("non-empty bucket has expected contents") {
     std::vector<int> v{42, 43, 44};
-    auto b = bucket<int>(span(v), std::move(v));
+    auto b = bucket<int>(std::span(v), std::move(v));
     CHECK_FALSE(b.empty());
     CHECK(b.size() == 3);
     CHECK(b.size_bytes() == 3 * sizeof(int));
     CHECK(b[1] == 43);
-    CHECK(span(b).size() == 3);
+    CHECK(std::span(b).size() == 3);
 }
 
 TEST_CASE("bucket storage can be observed or extracted") {
     std::vector<int> v{42, 43, 44};
-    auto b = bucket<int>(span(v), std::move(v));
+    auto b = bucket<int>(std::span(v), std::move(v));
 
     CHECK_FALSE(b.check_storage_type<int>());
     CHECK(b.check_storage_type<std::vector<int>>());
@@ -74,7 +74,7 @@ TEST_CASE("bucket storage can be observed or extracted") {
 
 TEST_CASE("move constructed or assigned bucket transfers storage") {
     std::vector<int> v{42, 43, 44};
-    auto b = bucket<int>(span(v), std::move(v));
+    auto b = bucket<int>(std::span(v), std::move(v));
     auto bb = std::move(b);
     // NOLINTNEXTLINE(bugprone-use-after-move,clang-analyzer-cplusplus.Move)
     CHECK_THROWS_AS(b.storage<std::vector<int>>(), std::bad_cast);
@@ -84,7 +84,7 @@ TEST_CASE("move constructed or assigned bucket transfers storage") {
 
 TEST_CASE("copy constructed or assigned bucket has its own storage") {
     std::vector<int> v{42, 43, 44};
-    auto b = bucket<int>(span(v), std::move(v));
+    auto b = bucket<int>(std::span(v), std::move(v));
     auto bb = b;
     CHECK_THROWS_AS(bb.storage<std::vector<int>>(), std::bad_cast);
     CHECK(bb[1] == 43);
@@ -95,15 +95,15 @@ TEST_CASE("copy constructed or assigned bucket has its own storage") {
 TEST_CASE("unrelated buckets compare equal if data equal") {
     struct ignore_storage {};
     std::vector<int> v{42, 43, 44};
-    auto b = bucket<int>(span(v), ignore_storage{});
+    auto b = bucket<int>(std::span(v), ignore_storage{});
     std::array<int, 3> a{42, 43, 44};
-    auto bb = bucket<int>(span(a), ignore_storage{});
+    auto bb = bucket<int>(std::span(a), ignore_storage{});
     CHECK(b == bb);
 }
 
 TEST_CASE("bucket can be inserted into stream") {
     std::vector<int> v{42, 43, 44};
-    auto b = bucket<int>(span(v), std::move(v));
+    auto b = bucket<int>(std::span(v), std::move(v));
     std::ostringstream strm;
     strm << b;
 }

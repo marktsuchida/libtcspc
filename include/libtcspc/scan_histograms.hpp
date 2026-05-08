@@ -17,11 +17,11 @@
 #include "histogram_policy.hpp"
 #include "introspect.hpp"
 #include "processor_traits.hpp"
-#include "span.hpp"
 
 #include <algorithm>
 #include <cstddef>
 #include <memory>
+#include <span>
 #include <stdexcept>
 #include <type_traits>
 #include <utility>
@@ -116,8 +116,8 @@ class scan_histograms {
 
     void end_of_scan() {
         mhista.new_scan(journal, clear_every_scan);
-        auto const array_event =
-            histogram_array_event<DataTypes>{ad_hoc_bucket(span(hist_bucket))};
+        auto const array_event = histogram_array_event<DataTypes>{
+            ad_hoc_bucket(std::span(hist_bucket))};
         downstream.handle(array_event);
         if constexpr (reset_after_scan)
             reset_without_replay();
@@ -214,7 +214,7 @@ class scan_histograms {
 
         auto const progress = histogram_array_progress_event<DataTypes>{
             (element_index + 1) * mhista.num_bins(),
-            ad_hoc_bucket(span(hist_bucket))};
+            ad_hoc_bucket(std::span(hist_bucket))};
         downstream.handle(progress);
 
         if (mhista.is_scan_complete())

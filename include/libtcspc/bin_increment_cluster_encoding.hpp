@@ -6,8 +6,6 @@
 
 #pragma once
 
-#include "span.hpp"
-
 #include <algorithm>
 #include <cassert>
 #include <cstddef>
@@ -15,6 +13,7 @@
 #include <functional>
 #include <iterator>
 #include <limits>
+#include <span>
 #include <type_traits>
 #include <utility>
 
@@ -57,14 +56,14 @@ encoded_bin_increment_cluster_size(std::size_t cluster_size) noexcept
 
 // The Storage type must define the following member functions:
 // - [[nodiscard]] auto available_capacity() const -> std::size_t;
-// - [[nodiscard]] auto make_space(std::size_t) -> span<BinIndex>;
+// - [[nodiscard]] auto make_space(std::size_t) -> std::span<BinIndex>;
 // The latter is only called when capacity is available.
 //
 // Returns true if the encoded cluster fit in storge; false if not, in which
 // case storage is not modified.
 template <typename BinIndex, typename Storage>
-[[nodiscard]] auto encode_bin_increment_cluster(Storage dest,
-                                                span<BinIndex const> cluster)
+[[nodiscard]] auto
+encode_bin_increment_cluster(Storage dest, std::span<BinIndex const> cluster)
     -> bool {
     using traits = bin_increment_cluster_encoding_traits<BinIndex>;
 
@@ -80,7 +79,7 @@ template <typename BinIndex, typename Storage>
     if (is_long_mode) {
         spn.front() = static_cast<BinIndex>(traits::encoded_size_max);
         spn = spn.subspan(1);
-        auto const size_dest = as_writable_bytes(
+        auto const size_dest = std::as_writable_bytes(
             spn.subspan(0, traits::large_size_element_count));
         assert(size_dest.size() == sizeof(size));
         std::memcpy(size_dest.data(), &size, sizeof(size));
@@ -98,17 +97,17 @@ template <typename BinIndex, typename Storage>
 template <typename BinIndex> class bin_increment_cluster_decoder {
     using traits = bin_increment_cluster_encoding_traits<BinIndex>;
 
-    span<BinIndex const> clusters;
+    std::span<BinIndex const> clusters;
 
   public:
-    explicit bin_increment_cluster_decoder(span<BinIndex const> clusters)
+    explicit bin_increment_cluster_decoder(std::span<BinIndex const> clusters)
         : clusters(clusters) {}
 
     // Constant forward iterator over the clusters. There is no non-const
-    // iteration support. Dereferencing yields `span<BinIndex const>`
+    // iteration support. Dereferencing yields `std::span<BinIndex const>`
     // (including for empty clusters).
     class const_iterator {
-        typename span<BinIndex const>::iterator it;
+        typename std::span<BinIndex const>::iterator it;
 
         // Given a valid (not past-end) it, return the range of the encoded
         // cluster pointed to by *this.
@@ -138,7 +137,7 @@ template <typename BinIndex> class bin_increment_cluster_decoder {
         friend class bin_increment_cluster_decoder;
 
       public:
-        using value_type = span<BinIndex const>;
+        using value_type = std::span<BinIndex const>;
         using difference_type = std::ptrdiff_t;
         using reference = value_type const &;
         using pointer = value_type const *;
@@ -160,7 +159,7 @@ template <typename BinIndex> class bin_increment_cluster_decoder {
 
         auto operator*() const -> value_type {
             auto const [start, stop] = cluster_range();
-            return span(&*start, &*stop);
+            return std::span(&*start, &*stop);
         }
 
         auto operator==(const_iterator rhs) const noexcept -> bool {
@@ -183,7 +182,7 @@ template <typename BinIndex> class bin_increment_cluster_decoder {
 
 // Deduction guide for span-of-non-const.
 template <typename BinIndex>
-bin_increment_cluster_decoder(span<BinIndex>)
+bin_increment_cluster_decoder(std::span<BinIndex>)
     -> bin_increment_cluster_decoder<BinIndex>;
 
 } // namespace tcspc::internal

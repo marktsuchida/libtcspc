@@ -56,7 +56,6 @@
 #include "route.hpp"
 #include "scan_histograms.hpp"
 #include "select.hpp"
-#include "span.hpp"
 #include "stop.hpp"
 #include "swabian_tag.hpp"
 #include "test_utils.hpp"
@@ -608,7 +607,7 @@ namespace tcspc {
  * - `auto skip(std::uint64_t bytes) noexcept -> bool`:
  *   Seek, relative to the current offset, forward by \p bytes. Return true if
  *   successful.
- * - `auto read(tcspc::span<std::byte> buffer) noexcept ->
+ * - `auto read(std::span<std::byte> buffer) noexcept ->
  *   std::uint64_t`:
  *   Read into the given buffer, up to the buffer size. Return the number of
  *   bytes read.
@@ -627,7 +626,7 @@ namespace tcspc {
  * - `auto tell() noexcept -> std::optional<std::uint64_t>`:
  *   Return the current stream position if supported by the stream, or
  *   `std::nullopt`.
- * - `void write(tcspc::span<std::byte const> buffer) noexcept`:
+ * - `void write(std::span<std::byte const> buffer) noexcept`:
  *   Write the given bytes to the stream.
  */
 
@@ -637,11 +636,11 @@ namespace tcspc {
  * \brief Readers that wrap pull-style device acquisition APIs.
  *
  * A reader is a movable object that defines the function call operator:
- * `auto operator()(span<T> buffer) -> std::optional<std::size_t>`, in which
- * `buffer` is the span into which data should be placed. The return value is
- * `std::nullopt` if the end of the acquired data has been reached; otherwise
- * it is the number of `T` elements actually read; this may be zero. If there
- * was an error, an exception should be thrown.
+ * `auto operator()(std::span<T> buffer) -> std::optional<std::size_t>`, in
+ * which `buffer` is the span into which data should be placed. The return
+ * value is `std::nullopt` if the end of the acquired data has been reached;
+ * otherwise it is the number of `T` elements actually read; this may be zero.
+ * If there was an error, an exception should be thrown.
  */
 
 /**

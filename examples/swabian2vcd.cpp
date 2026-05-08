@@ -16,6 +16,7 @@
 #include <iterator>
 #include <limits>
 #include <set>
+#include <span>
 #include <stdexcept>
 #include <string>
 #include <utility>
@@ -136,7 +137,7 @@ template <typename Downstream> class write_vcd {
         }
         header += "$upscope $end\n";
         header += "$enddefinitions $end\n";
-        downstream.handle(tcspc::as_bytes(tcspc::span(header)));
+        downstream.handle(std::as_bytes(std::span(header)));
         wrote_header = true;
     }
 
@@ -148,7 +149,7 @@ template <typename Downstream> class write_vcd {
             std::string time_line("#");
             time_line += std::to_string(abstime);
             time_line += '\n';
-            downstream.handle(tcspc::as_bytes(tcspc::span(time_line)));
+            downstream.handle(std::as_bytes(std::span(time_line)));
             last_abstime = abstime;
         }
     }
@@ -176,7 +177,7 @@ template <typename Downstream> class write_vcd {
             write_time_line(event.abstime);
             char const change = event.channel > 0 ? '1' : '0';
             std::array<char, 3> change_line{change, chanchar, '\n'};
-            downstream.handle(tcspc::as_bytes(tcspc::span(change_line)));
+            downstream.handle(std::as_bytes(std::span(change_line)));
         }
     }
 

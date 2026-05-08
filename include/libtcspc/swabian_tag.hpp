@@ -15,13 +15,13 @@
 #include "npint.hpp"
 #include "processor_traits.hpp"
 #include "read_integers.hpp"
-#include "span.hpp"
 #include "time_tagged_events.hpp"
 
 #include <array>
 #include <cassert>
 #include <cstddef>
 #include <ostream>
+#include <span>
 #include <sstream>
 #include <type_traits>
 
@@ -72,7 +72,7 @@ struct swabian_tag_event {
      * \brief Read the event type.
      */
     [[nodiscard]] auto type() const noexcept -> tag_type {
-        return tag_type(read_u8_at<0>(span(bytes)).value());
+        return tag_type(read_u8_at<0>(std::span(bytes)).value());
     }
 
     // bytes[1] is reserved and should be written zero.
@@ -81,21 +81,21 @@ struct swabian_tag_event {
      * \brief Read the missed event count if this is a missed events event.
      */
     [[nodiscard]] auto missed_event_count() const noexcept -> u16np {
-        return read_u16le_at<2>(span(bytes));
+        return read_u16le_at<2>(std::span(bytes));
     }
 
     /**
      * \brief Read the channel if this is a time tag or missed events event.
      */
     [[nodiscard]] auto channel() const noexcept -> i32np {
-        return read_i32le_at<4>(span(bytes));
+        return read_i32le_at<4>(std::span(bytes));
     }
 
     /**
      * \brief Read the time (picoseconds).
      */
     [[nodiscard]] auto time() const noexcept -> i64np {
-        return read_i64le_at<8>(span(bytes));
+        return read_i64le_at<8>(std::span(bytes));
     }
 
     /**

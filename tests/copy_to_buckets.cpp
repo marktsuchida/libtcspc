@@ -13,7 +13,6 @@
 #include "libtcspc/errors.hpp"
 #include "libtcspc/introspect.hpp"
 #include "libtcspc/processor_traits.hpp"
-#include "libtcspc/span.hpp"
 #include "libtcspc/test_utils.hpp"
 #include "libtcspc/type_list.hpp"
 #include "test_checkers.hpp"
@@ -21,6 +20,7 @@
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/generators/catch_generators.hpp>
 
+#include <span>
 #include <utility>
 #include <vector>
 
@@ -36,10 +36,10 @@ TEST_CASE("type constraints: copy_to_buckets") {
     using proc_type =
         decltype(copy_to_buckets<int>(new_delete_bucket_source<int>::create(),
                                       sink_events<bucket<int>, misc_event>()));
-    STATIC_CHECK(is_processor_v<proc_type, span<int const>, misc_event>);
+    STATIC_CHECK(is_processor_v<proc_type, std::span<int const>, misc_event>);
     STATIC_CHECK_FALSE(handles_event_v<proc_type, int>);
 
-    STATIC_CHECK(handles_event_v<proc_type, span<int>>);
+    STATIC_CHECK(handles_event_v<proc_type, std::span<int>>);
     STATIC_CHECK(handles_event_v<proc_type, bucket<int>>);
     STATIC_CHECK(handles_event_v<proc_type, bucket<int const>>);
     STATIC_CHECK(handles_event_v<proc_type, std::vector<int>>);
@@ -50,10 +50,10 @@ TEST_CASE("type constraints: copy_to_full_buckets") {
         sharable_new_delete_bucket_source<int>::create(),
         arg::batch_size<>{64}, sink_events<bucket<int const>, misc_event>(),
         sink_events<bucket<int>>()));
-    STATIC_CHECK(is_processor_v<proc_type, span<int const>, misc_event>);
+    STATIC_CHECK(is_processor_v<proc_type, std::span<int const>, misc_event>);
     STATIC_CHECK_FALSE(handles_event_v<proc_type, int>);
 
-    STATIC_CHECK(handles_event_v<proc_type, span<int>>);
+    STATIC_CHECK(handles_event_v<proc_type, std::span<int>>);
     STATIC_CHECK(handles_event_v<proc_type, bucket<int>>);
     STATIC_CHECK(handles_event_v<proc_type, bucket<int const>>);
     STATIC_CHECK(handles_event_v<proc_type, std::vector<int>>);
@@ -145,7 +145,7 @@ TEST_CASE("copy_to_full_buckets") {
     }
 
     SECTION("empty read emits nothing") {
-        in.handle(span<int>());
+        in.handle(std::span<int>());
         in.flush();
         CHECK(live_out.check_flushed());
         CHECK(batch_out.check_flushed());

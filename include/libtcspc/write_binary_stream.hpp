@@ -10,7 +10,6 @@
 #include "bucket.hpp"
 #include "errors.hpp"
 #include "introspect.hpp"
-#include "span.hpp"
 
 #include <algorithm>
 #include <cerrno>
@@ -23,6 +22,7 @@
 #include <memory>
 #include <optional>
 #include <ostream>
+#include <span>
 #include <stdexcept>
 #include <string>
 #include <system_error>
@@ -44,7 +44,7 @@ class null_output_stream {
     [[nodiscard]] auto tell() const noexcept -> std::optional<std::uint64_t> {
         return bytes_written;
     }
-    void write(span<std::byte const> buffer) noexcept {
+    void write(std::span<std::byte const> buffer) noexcept {
         bytes_written += buffer.size();
     }
 };
@@ -73,7 +73,7 @@ template <typename OStream> class ostream_output_stream {
         return std::nullopt;
     }
 
-    void write(span<std::byte const> buffer) noexcept {
+    void write(std::span<std::byte const> buffer) noexcept {
         // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
         stream.write(reinterpret_cast<char const *>(buffer.data()),
                      static_cast<std::streamsize>(buffer.size()));
@@ -128,7 +128,7 @@ class cfile_output_stream {
         return std::nullopt;
     }
 
-    void write(span<std::byte const> buffer) noexcept {
+    void write(std::span<std::byte const> buffer) noexcept {
         // Errors are checked separately by is_error(); ignore here.
         if (fp == nullptr)
             return;
@@ -342,7 +342,7 @@ template <typename OutputStream> class write_binary_stream {
     bucket<std::byte> buffer;
     std::size_t bytes_buffered = 0;
 
-    void handle_span(span<std::byte const> event_span) {
+    void handle_span(std::span<std::byte const> event_span) {
         auto first_block_size = write_granularity;
         if (total_bytes_written == 0) {
             // Align second and subsequent writes to write_granularity if
@@ -421,14 +421,14 @@ template <typename OutputStream> class write_binary_stream {
 
     template <typename Span,
               typename = std::void_t<
-                  decltype(span<std::byte const>(std::declval<Span>()))>>
+                  decltype(std::span<std::byte const>(std::declval<Span>()))>>
     void handle(Span const &event) {
-        handle_span(span<std::byte const>(event));
+        handle_span(std::span<std::byte const>(event));
     }
 
     void flush() {
         if (bytes_buffered > 0) {
-            strm.write(span(buffer).first(bytes_buffered));
+            strm.write(std::span(buffer).first(bytes_buffered));
             buffer = {};
             if (strm.is_error())
                 throw input_output_error("failed to write output");
@@ -449,7 +449,7 @@ template <typename OutputStream> class write_binary_stream {
  * recommended due to usually poor performance.)
  *
  * The processor receives data in the form of `tcspc::bucket<std::byte>` or
- * another type that can be explicitly converted to `tcspc::span<std::byte
+ * another type that can be explicitly converted to `std::span<std::byte
  * const>` (see `tcspc::view_as_bytes()`). The bytes are written sequentially
  * and contiguously to the stream.
  *

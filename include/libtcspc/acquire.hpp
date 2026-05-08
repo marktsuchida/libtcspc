@@ -13,7 +13,6 @@
 #include "errors.hpp"
 #include "introspect.hpp"
 #include "processor_traits.hpp"
-#include "span.hpp"
 
 #include <chrono>
 #include <condition_variable>
@@ -23,6 +22,7 @@
 #include <memory>
 #include <mutex>
 #include <optional>
+#include <span>
 #include <stdexcept>
 #include <utility>
 
@@ -151,7 +151,7 @@ template <typename T, typename Reader, typename Downstream> class acquire {
                 auto const start_time = std::chrono::steady_clock::now();
                 if (b.empty())
                     b = bsource->bucket_of_size(bsize);
-                std::optional<std::size_t> const read = reader(span(b));
+                std::optional<std::size_t> const read = reader(std::span(b));
                 if (not read) {
                     reached_end = true;
                     break;
@@ -320,7 +320,7 @@ class acquire_full_buckets {
                     b = bsource->bucket_of_size(bsize);
                     filled = 0;
                 }
-                auto const unfilled = span(b).subspan(filled);
+                auto const unfilled = std::span(b).subspan(filled);
                 std::optional<std::size_t> const read = reader(unfilled);
                 if (not read)
                     return flush_downstreams(std::move(b), filled);
@@ -469,7 +469,7 @@ auto acquire_full_buckets(Reader reader,
  */
 template <typename T> struct null_reader {
     /** \brief Implements the acquisition reader requirement. */
-    auto operator()(span<T> /* buffer */) -> std::optional<std::size_t> {
+    auto operator()(std::span<T> /* buffer */) -> std::optional<std::size_t> {
         return std::nullopt;
     }
 };
@@ -481,7 +481,7 @@ template <typename T> struct null_reader {
  */
 template <typename T> struct stuck_reader {
     /** \brief Implements the acquisition reader requirement. */
-    auto operator()(span<T> /* buffer */) -> std::optional<std::size_t> {
+    auto operator()(std::span<T> /* buffer */) -> std::optional<std::size_t> {
         return 0;
     }
 };

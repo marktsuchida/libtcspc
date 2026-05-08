@@ -9,7 +9,6 @@
 #include "arg_wrappers.hpp"
 #include "bin_increment_cluster_encoding.hpp"
 #include "common.hpp"
-#include "span.hpp"
 
 #include <algorithm>
 #include <cassert>
@@ -18,6 +17,7 @@
 #include <iterator>
 #include <limits>
 #include <ostream>
+#include <span>
 #include <type_traits>
 #include <vector>
 
@@ -49,10 +49,10 @@ class bin_increment_cluster_journal_encoding_adapter {
             return vec.get().max_size() - vec.get().size();
     }
 
-    [[nodiscard]] auto make_space(std::size_t size) -> span<BinIndex> {
+    [[nodiscard]] auto make_space(std::size_t size) -> std::span<BinIndex> {
         auto const old_size = vec.get().size();
         vec.get().resize(old_size + size);
-        return span(vec.get()).subspan(old_size);
+        return std::span(vec.get()).subspan(old_size);
     }
 };
 
@@ -64,7 +64,7 @@ template <typename BinIndex> class bin_increment_cluster_journal {
 
     // Slow, not for use in production. For use by tests.
     [[nodiscard]] auto size() const noexcept -> std::size_t {
-        auto const decoder = bin_increment_cluster_decoder(span(encoded));
+        auto const decoder = bin_increment_cluster_decoder(std::span(encoded));
         return std::size_t(std::distance(decoder.begin(), decoder.end()));
     }
 
@@ -74,7 +74,7 @@ template <typename BinIndex> class bin_increment_cluster_journal {
 
     void clear() noexcept { encoded.clear(); }
 
-    void append_cluster(span<bin_index_type const> cluster) {
+    void append_cluster(std::span<bin_index_type const> cluster) {
         [[maybe_unused]] bool const ok = encode_bin_increment_cluster(
             bin_increment_cluster_journal_encoding_adapter(encoded), cluster);
         assert(ok); // Otherwise bad_alloc would have been thrown.
@@ -90,7 +90,7 @@ template <typename BinIndex> class bin_increment_cluster_journal {
     }
 
     [[nodiscard]] auto end() const noexcept -> const_iterator {
-        auto const decoder = bin_increment_cluster_decoder(span(encoded));
+        auto const decoder = bin_increment_cluster_decoder(std::span(encoded));
         return const_iterator(decoder.end());
     }
 
@@ -121,7 +121,7 @@ template <typename BinIndex> class bin_increment_cluster_journal {
 // Can be used to disable journaling.
 template <typename BinIndex> struct null_journal {
     using bin_index_type = BinIndex;
-    void append_cluster(span<bin_index_type const> /* cluster */) {}
+    void append_cluster(std::span<bin_index_type const> /* cluster */) {}
     void clear() noexcept {}
 };
 
@@ -135,20 +135,20 @@ class single_histogram {
                               stop_on_internal_overflow>);
 
   private:
-    span<bin_type> hist;
+    std::span<bin_type> hist;
     bin_type bin_max = 0;
     std::size_t n_bins{};
 
   public:
     // Attach to 'histogram' and allow bin values up to max_per_bin.
-    explicit single_histogram(span<bin_type> histogram,
+    explicit single_histogram(std::span<bin_type> histogram,
                               arg::max_per_bin<bin_type> max_per_bin,
                               arg::num_bins<std::size_t> num_bins) noexcept
         : hist(histogram), bin_max(max_per_bin.value), n_bins(num_bins.value) {
     }
 
     // Reconstruct with new span.
-    explicit single_histogram(span<bin_type> histogram,
+    explicit single_histogram(std::span<bin_type> histogram,
                               single_histogram const &params) noexcept
         : single_histogram(histogram, arg::max_per_bin{params.bin_max},
                            arg::num_bins{params.n_bins}) {}
@@ -165,7 +165,7 @@ class single_histogram {
     // Increment each bin in 'increments'. Return n_applied, the actual number
     // of increments applied without saturation. This value is between 0 and
     // increments.size(), inclusive.
-    auto apply_increments(span<bin_index_type const> increments)
+    auto apply_increments(std::span<bin_index_type const> increments)
         -> std::size_t {
         assert(not hist.empty());
         std::size_t n_applied = 0;
@@ -192,7 +192,7 @@ class single_histogram {
     // Undo the given 'increments'. Behavior is undefined unless 'increments'
     // equal the values passed to apply_increments() in an immediately prior
     // call. Not available in saturate mode.
-    void undo_increments(span<bin_index_type const> increments) {
+    void undo_increments(std::span<bin_index_type const> increments) {
         static_assert(
             std::is_same_v<OverflowPolicy, stop_on_internal_overflow>);
         assert(not hist.empty());
@@ -214,7 +214,7 @@ class multi_histogram {
                               stop_on_internal_overflow>);
 
   private:
-    span<bin_type> hist_arr;
+    std::span<bin_type> hist_arr;
     std::size_t element_index = 0;
     bin_type bin_max = 0;
     std::size_t n_bins = 0;
@@ -222,7 +222,7 @@ class multi_histogram {
     bool need_to_clear = false;
 
   public:
-    explicit multi_histogram(span<bin_type> hist_array,
+    explicit multi_histogram(std::span<bin_type> hist_array,
                              arg::max_per_bin<bin_type> max_per_bin,
                              arg::num_bins<std::size_t> num_bins,
                              arg::num_elements<std::size_t> num_elements,
@@ -234,7 +234,7 @@ class multi_histogram {
     }
 
     // Reconstruct with new span.
-    explicit multi_histogram(span<bin_type> hist_array,
+    explicit multi_histogram(std::span<bin_type> hist_array,
                              multi_histogram const &params,
                              bool clear) noexcept
         : multi_histogram(hist_array, arg::max_per_bin{params.bin_max},
@@ -286,7 +286,7 @@ class multi_histogram {
     // true if the entire cluster could be applied (without saturation); false
     // if there was saturation or we stopped and rolled back.
     template <typename Journal>
-    auto apply_increment_cluster(span<bin_index_type const> cluster,
+    auto apply_increment_cluster(std::span<bin_index_type const> cluster,
                                  Journal &journal) -> bool {
         static_assert(
             std::is_same_v<typename Journal::bin_index_type, bin_index_type>);
@@ -408,7 +408,7 @@ class multi_histogram_accumulation {
 
   public:
     explicit multi_histogram_accumulation(
-        span<bin_type> hist_array, arg::max_per_bin<bin_type> max_per_bin,
+        std::span<bin_type> hist_array, arg::max_per_bin<bin_type> max_per_bin,
         arg::num_bins<std::size_t> num_bins,
         arg::num_elements<std::size_t> num_elements, bool clear_first) noexcept
         : cur_scan(hist_array, max_per_bin, num_bins, num_elements,
@@ -416,8 +416,8 @@ class multi_histogram_accumulation {
 
     // Reconstruct with new span.
     explicit multi_histogram_accumulation(
-        span<bin_type> hist_array, multi_histogram_accumulation const &params,
-        bool clear_first) noexcept
+        std::span<bin_type> hist_array,
+        multi_histogram_accumulation const &params, bool clear_first) noexcept
         : multi_histogram_accumulation(
               hist_array, arg::max_per_bin{params.max_per_bin()},
               arg::num_bins{params.num_bins()},
@@ -467,7 +467,7 @@ class multi_histogram_accumulation {
     }
 
     template <typename Journal>
-    auto apply_increment_cluster(span<bin_index_type const> cluster,
+    auto apply_increment_cluster(std::span<bin_index_type const> cluster,
                                  Journal &journal) -> bool {
         assert(not is_scan_complete());
         return cur_scan.apply_increment_cluster(cluster, journal);

@@ -85,7 +85,7 @@ class BucketEvent(EventType):
         void handle({ndarray_type} const &event) {{
             // Emit bucket<T>, not bucket<T const>, but by const ref.
             auto *const ptr = const_cast<{elem_cpp_type} *>(event.data());
-            auto const spn = tcspc::span(ptr, event.size());
+            auto const spn = std::span(ptr, event.size());
             auto const bkt = tcspc::ad_hoc_bucket(spn);
             {downstream}.handle(bkt);
         }}
@@ -100,7 +100,7 @@ class BucketEvent(EventType):
         # be handled specially to eliminate copying (and set read-only as
         # appropriate).
         return CppClassScopeDefs(f"""\
-        void emit_span_copy(tcspc::span<{elem_cpp_type} const> spn) {{
+        void emit_span_copy(std::span<{elem_cpp_type} const> spn) {{
             using elem_type = {elem_cpp_type};
             auto *buf = new elem_type[spn.size()];
             std::copy(spn.begin(), spn.end(), buf);
@@ -114,12 +114,12 @@ class BucketEvent(EventType):
 
         void handle(tcspc::bucket<{elem_cpp_type} const> const &event) {{
             emit_span_copy(
-                tcspc::span<{elem_cpp_type} const>(event.begin(), event.end()));
+                std::span<{elem_cpp_type} const>(event.begin(), event.end()));
         }}
 
         void handle(tcspc::bucket<{elem_cpp_type}> const &event) {{
             emit_span_copy(
-                tcspc::span<{elem_cpp_type} const>(event.begin(), event.end()));
+                std::span<{elem_cpp_type} const>(event.begin(), event.end()));
         }}
 
         void handle(tcspc::bucket<{elem_cpp_type}> &&event) {{

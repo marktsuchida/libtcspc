@@ -52,7 +52,6 @@ public_cpp_headers = files(
     'libtcspc/route.hpp',
     'libtcspc/scan_histograms.hpp',
     'libtcspc/select.hpp',
-    'libtcspc/span.hpp',
     'libtcspc/stop.hpp',
     'libtcspc/swabian_tag.hpp',
     'libtcspc/tcspc.hpp',
@@ -66,7 +65,6 @@ public_cpp_headers = files(
     'libtcspc/vector_queue.hpp',
     'libtcspc/view_as_bytes.hpp',
     'libtcspc/write_binary_stream.hpp',
-    'tcb/span.hpp',
 )
 
 install_headers(public_cpp_headers, preserve_path: true)

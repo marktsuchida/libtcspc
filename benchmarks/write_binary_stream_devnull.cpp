@@ -8,7 +8,6 @@
 
 #include "libtcspc/arg_wrappers.hpp"
 #include "libtcspc/bucket.hpp"
-#include "libtcspc/span.hpp"
 
 #include <benchmark/benchmark.h>
 
@@ -16,6 +15,7 @@
 #include <cstdint>
 #include <memory>
 #include <optional>
+#include <span>
 #include <vector>
 
 namespace tcspc {
@@ -49,7 +49,9 @@ template <typename OutputStream> class ref_output_stream {
         return stream.tell();
     }
 
-    void write(span<std::byte const> buffer) noexcept { stream.write(buffer); }
+    void write(std::span<std::byte const> buffer) noexcept {
+        stream.write(buffer);
+    }
 };
 // NOLINTEND(bugprone-exception-escape)
 
