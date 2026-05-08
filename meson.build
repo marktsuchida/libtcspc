@@ -19,6 +19,9 @@ cxx = meson.get_compiler('cpp')
 if cxx.get_id() in ['gcc', 'clang']
     add_project_arguments('-Wconversion', language: 'cpp')
 endif
+if cxx.get_id() == 'msvc'
+    add_project_arguments('/Zc:preprocessor', language: 'cpp')
+endif
 
 thread_dep = dependency('threads')
 
