@@ -11,8 +11,8 @@ jobs:
   lint:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
         with:
           python-version: '3.12'
           cache: pip
@@ -84,8 +84,8 @@ jobs:
       ASAN_OPTIONS: ${{ matrix.asan_opts }}
       CCACHE_DIR: ${{ github.workspace }}/.ccache-cache
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
         with:
           python-version: '3.10'
           cache: pip
@@ -94,7 +94,7 @@ jobs:
       - uses: ilammy/msvc-dev-cmd@v1
 
       - name: Cache ccache cache
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           # Currently there is no way to update the cache when hit
           # (https://github.com/actions/toolkit/issues/505). Instead, use
@@ -222,10 +222,10 @@ jobs:
     env:
       CXX: clang++
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           path: libtcspc
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: '3.10'
           cache: pip
@@ -235,7 +235,7 @@ jobs:
       - run: clang-tidy --version
 
       - name: Install ctcache
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           repository: matus-chochlik/ctcache
           # Significant bugs have been fixed since the last release (1.1.0).
@@ -268,7 +268,7 @@ jobs:
           echo ${{ github.workspace }}/ctcache >>$GITHUB_PATH
 
       - name: Cache ctcache cache
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           # Currently there is no way to update the cache when hit
           # (https://github.com/actions/toolkit/issues/505). Instead, use
@@ -312,7 +312,7 @@ jobs:
       - run: uname -m
         if: ${{ ! startsWith(matrix.runner, 'windows-') }}
 
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: fjwillemsen/setup-nox2@v3.0.0
       - uses: ilammy/msvc-dev-cmd@v1
 
@@ -325,8 +325,8 @@ jobs:
       # expected (https://github.com/doxygen/doxygen/pull/11334).
       DOXYGEN_VERSION: '1.12.0'
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
         with:
           python-version: '3.10'
           cache: pip
