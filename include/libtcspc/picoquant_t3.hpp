@@ -63,14 +63,14 @@ struct pqt3_picoharp300_event {
     /**
      * \brief Read the channel if this event is a non-special event.
      */
-    [[nodiscard]] auto channel() const noexcept -> u8np {
+    [[nodiscard]] constexpr auto channel() const noexcept -> u8np {
         return read_u8_at<3>(std::span(bytes)) >> 4;
     }
 
     /**
      * \brief Read the difference time if this event is a non-special event.
      */
-    [[nodiscard]] auto dtime() const noexcept -> u16np {
+    [[nodiscard]] constexpr auto dtime() const noexcept -> u16np {
         return read_u16le_at<2>(std::span(bytes)) & 0x0fff_u16np;
     }
 
@@ -78,21 +78,21 @@ struct pqt3_picoharp300_event {
      * \brief Read the nsync counter value if this event is a non-special event
      * or an external marker event.
      */
-    [[nodiscard]] auto nsync() const noexcept -> u16np {
+    [[nodiscard]] constexpr auto nsync() const noexcept -> u16np {
         return read_u16le_at<0>(std::span(bytes));
     }
 
     /**
      * \brief Determine if this event is a special event.
      */
-    [[nodiscard]] auto is_special() const noexcept -> bool {
+    [[nodiscard]] constexpr auto is_special() const noexcept -> bool {
         return channel() == 15_u8np;
     }
 
     /**
      * \brief Determine if this event represents an nsync overflow.
      */
-    [[nodiscard]] auto is_nsync_overflow() const noexcept -> bool {
+    [[nodiscard]] constexpr auto is_nsync_overflow() const noexcept -> bool {
         return is_special() && dtime() == 0_u16np;
     }
 
@@ -100,14 +100,15 @@ struct pqt3_picoharp300_event {
      * \brief Read the nsync overflow count if this event represents an nsync
      * overflow.
      */
-    [[nodiscard]] static auto nsync_overflow_count() noexcept -> u16np {
+    [[nodiscard]] static constexpr auto nsync_overflow_count() noexcept
+        -> u16np {
         return 1_u16np;
     }
 
     /**
      * \brief Determine if this event represents external markers.
      */
-    [[nodiscard]] auto is_external_marker() const noexcept -> bool {
+    [[nodiscard]] constexpr auto is_external_marker() const noexcept -> bool {
         // Vendor docs do not specifically say markers are 4 bits in PicoHarp
         // 300 T3, but they are in a 4-bit field in T2, and in
         // HydraHarp/Generic T2/T3 the marker bits explicitly range 1-15. Let's
@@ -119,7 +120,8 @@ struct pqt3_picoharp300_event {
      * \brief Read the marker bits (mask) if this event represents external
      * markers.
      */
-    [[nodiscard]] auto external_marker_bits() const noexcept -> u16np {
+    [[nodiscard]] constexpr auto external_marker_bits() const noexcept
+        -> u16np {
         return dtime();
     }
 
@@ -134,7 +136,8 @@ struct pqt3_picoharp300_event {
      *
      * \return event
      */
-    static auto make_nonspecial(u16np nsync, u8np channel, u16np dtime)
+    static constexpr auto make_nonspecial(u16np nsync, u8np channel,
+                                          u16np dtime)
         -> pqt3_picoharp300_event {
         if (channel > 14_u8np)
             throw std::invalid_argument(
@@ -147,7 +150,8 @@ struct pqt3_picoharp300_event {
      *
      * \return event
      */
-    static auto make_nsync_overflow() noexcept -> pqt3_picoharp300_event {
+    static constexpr auto make_nsync_overflow() noexcept
+        -> pqt3_picoharp300_event {
         return make_from_fields(15_u8np, 0_u16np, 0_u16np);
     }
 
@@ -160,7 +164,7 @@ struct pqt3_picoharp300_event {
      *
      * \return event
      */
-    static auto make_external_marker(u16np nsync, u8np marker_bits)
+    static constexpr auto make_external_marker(u16np nsync, u8np marker_bits)
         -> pqt3_picoharp300_event {
         if (marker_bits == 0_u8np)
             throw std::invalid_argument(
@@ -185,7 +189,8 @@ struct pqt3_picoharp300_event {
     }
 
   private:
-    static auto make_from_fields(u8np channel, u16np dtime, u16np nsync)
+    static constexpr auto make_from_fields(u8np channel, u16np dtime,
+                                           u16np nsync)
         -> pqt3_picoharp300_event {
         return pqt3_picoharp300_event{{
             std::byte(u8np(nsync).value()),
@@ -224,14 +229,14 @@ template <bool IsNSyncOverflowAlwaysSingle> struct basic_pqt3_event {
     /**
      * \brief Read the channel if this event is a non-special event.
      */
-    [[nodiscard]] auto channel() const noexcept -> u8np {
+    [[nodiscard]] constexpr auto channel() const noexcept -> u8np {
         return (read_u8_at<3>(std::span(bytes)) & 0x7f_u8np) >> 1;
     }
 
     /**
      * \brief Read the difference time if this event is a non-special event.
      */
-    [[nodiscard]] auto dtime() const noexcept -> u16np {
+    [[nodiscard]] constexpr auto dtime() const noexcept -> u16np {
         auto const lo6 = u16np(read_u8_at<1>(std::span(bytes))) >> 2;
         auto const mid8 = u16np(read_u8_at<2>(std::span(bytes)));
         auto const hi1 = u16np(read_u8_at<3>(std::span(bytes))) & 1_u16np;
@@ -242,21 +247,21 @@ template <bool IsNSyncOverflowAlwaysSingle> struct basic_pqt3_event {
      * \brief Read the nsync counter value if this event is a non-special event
      * or an external marker event.
      */
-    [[nodiscard]] auto nsync() const noexcept -> u16np {
+    [[nodiscard]] constexpr auto nsync() const noexcept -> u16np {
         return read_u16le_at<0>(std::span(bytes)) & 0x03ff_u16np;
     }
 
     /**
      * \brief Determine if this event is a special event.
      */
-    [[nodiscard]] auto is_special() const noexcept -> bool {
+    [[nodiscard]] constexpr auto is_special() const noexcept -> bool {
         return (read_u8_at<3>(std::span(bytes)) & (1_u8np << 7)) != 0_u8np;
     }
 
     /**
      * \brief Determine if this event represents an nsync overflow.
      */
-    [[nodiscard]] auto is_nsync_overflow() const noexcept -> bool {
+    [[nodiscard]] constexpr auto is_nsync_overflow() const noexcept -> bool {
         return is_special() && channel() == 63_u8np;
     }
 
@@ -264,7 +269,8 @@ template <bool IsNSyncOverflowAlwaysSingle> struct basic_pqt3_event {
      * \brief Read the nsync overflow count if this event represents an nsync
      * overflow.
      */
-    [[nodiscard]] auto nsync_overflow_count() const noexcept -> u16np {
+    [[nodiscard]] constexpr auto nsync_overflow_count() const noexcept
+        -> u16np {
         if (IsNSyncOverflowAlwaysSingle)
             return 1_u16np;
         return nsync();
@@ -273,7 +279,7 @@ template <bool IsNSyncOverflowAlwaysSingle> struct basic_pqt3_event {
     /**
      * \brief Determine if this event represents external markers.
      */
-    [[nodiscard]] auto is_external_marker() const noexcept -> bool {
+    [[nodiscard]] constexpr auto is_external_marker() const noexcept -> bool {
         return is_special() && channel() > 0_u8np && channel() <= 15_u8np;
     }
 
@@ -281,7 +287,8 @@ template <bool IsNSyncOverflowAlwaysSingle> struct basic_pqt3_event {
      * \brief Read the marker bits (mask) if this event represents external
      * markers.
      */
-    [[nodiscard]] auto external_marker_bits() const noexcept -> u8np {
+    [[nodiscard]] constexpr auto external_marker_bits() const noexcept
+        -> u8np {
         return channel();
     }
 
@@ -296,8 +303,8 @@ template <bool IsNSyncOverflowAlwaysSingle> struct basic_pqt3_event {
      *
      * \return event
      */
-    static auto make_nonspecial(u16np nsync, u8np channel, u16np dtime)
-        -> basic_pqt3_event {
+    static constexpr auto make_nonspecial(u16np nsync, u8np channel,
+                                          u16np dtime) -> basic_pqt3_event {
         return make_from_fields(false, channel, dtime, nsync);
     }
 
@@ -311,7 +318,8 @@ template <bool IsNSyncOverflowAlwaysSingle> struct basic_pqt3_event {
      *
      * \return event
      */
-    static auto make_nsync_overflow(u16np count) -> basic_pqt3_event {
+    static constexpr auto make_nsync_overflow(u16np count)
+        -> basic_pqt3_event {
         static_assert(
             not IsNSyncOverflowAlwaysSingle,
             "multiple nsync overflow is not available in HydraHarp V1 format");
@@ -323,7 +331,7 @@ template <bool IsNSyncOverflowAlwaysSingle> struct basic_pqt3_event {
      *
      * \return event;
      */
-    static auto make_nsync_overflow() noexcept -> basic_pqt3_event {
+    static constexpr auto make_nsync_overflow() noexcept -> basic_pqt3_event {
         return make_from_fields(true, 63_u8np, 0_u16np, 1_u16np);
     }
 
@@ -336,7 +344,7 @@ template <bool IsNSyncOverflowAlwaysSingle> struct basic_pqt3_event {
      *
      * \return event
      */
-    static auto make_external_marker(u16np nsync, u8np marker_bits)
+    static constexpr auto make_external_marker(u16np nsync, u8np marker_bits)
         -> basic_pqt3_event {
         return make_from_fields(true, marker_bits, 0_u16np, nsync);
     }
@@ -358,8 +366,9 @@ template <bool IsNSyncOverflowAlwaysSingle> struct basic_pqt3_event {
     }
 
   private:
-    static auto make_from_fields(bool special, u8np channel, u16np dtime,
-                                 u16np nsync) -> basic_pqt3_event {
+    static constexpr auto make_from_fields(bool special, u8np channel,
+                                           u16np dtime, u16np nsync)
+        -> basic_pqt3_event {
         return basic_pqt3_event{{
             std::byte(u8np(nsync).value()),
             std::byte(

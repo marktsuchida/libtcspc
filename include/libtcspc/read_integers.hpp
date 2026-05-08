@@ -9,9 +9,9 @@
 #include "int_types.hpp"
 #include "npint.hpp"
 
-#include <cassert>
+#include <array>
+#include <bit>
 #include <cstddef>
-#include <cstring>
 #include <span>
 #include <type_traits>
 
@@ -19,99 +19,51 @@ namespace tcspc {
 
 namespace internal {
 
-// Internal functions to read integers from little-endian data streams.
-
-// We provide 2 implementations of each read_u*le() function, "_generic" and
-// "_memcpy". The "_generic" way is endian-agnostic but is poorly optimized by
-// some compilers, including MSVC at the time of writing. The "_memcpy" way is
-// only implemented for little-endian targets (for now).
-
-// All variants work with any (lack of) alignment.
-
-// For the "_generic" implementations, see
+// Read little-endian integers from raw bytes, regardless of source alignment.
+//
+// On little-endian targets we use std::bit_cast. On big-endian targets we fall
+// back to a shift-based composition. The shift form is endian-agnostic and
+// would produce correct results everywhere, but at the time this code was
+// originally written some compilers (notably MSVC) generated poor code for it;
+// std::bit_cast reliably compiles to a single load.
+//
+// For the shift-based composition see
 // https://commandcenter.blogspot.com/2012/04/byte-order-fallacy.html
-// (but note the need for extra casts for it to actually work correctly).
+// (note the explicit casts, which are needed to suppress integer promotions
+// that would otherwise mangle the result).
 
-inline auto is_little_endian() noexcept -> bool {
-    // Note: in C++20 this can be replaced with std::endian checks, and be made
-    // constexpr.
-    int i = 1;
-    char c[sizeof(i)];             // NOLINT
-    std::memcpy(c, &i, sizeof(i)); // NOLINT
-    return c[0] != 0;
-}
-
-inline auto use_memcpy() noexcept -> bool {
-#ifdef _MSC_VER
-    return is_little_endian();
-#else
-    return false;
-#endif
-}
-
-inline auto read_u16le_memcpy(std::span<std::byte const, 2> bytes) noexcept
+constexpr auto read_u16le(std::span<std::byte const, 2> bytes) noexcept
     -> u16np {
-    assert(is_little_endian());
-    u16np ret{};
-    std::memcpy(&ret, bytes.data(), sizeof(ret));
-    return ret;
+    if constexpr (std::endian::native == std::endian::little) {
+        return u16np(std::bit_cast<u16>(std::array{bytes[0], bytes[1]}));
+    } else {
+        return (u16np(u16(bytes[0])) << 0) | (u16np(u16(bytes[1])) << 8);
+    }
 }
 
-inline auto read_u32le_memcpy(std::span<std::byte const, 4> bytes) noexcept
+constexpr auto read_u32le(std::span<std::byte const, 4> bytes) noexcept
     -> u32np {
-    assert(is_little_endian());
-    u32np ret{};
-    std::memcpy(&ret, bytes.data(), sizeof(ret));
-    return ret;
+    if constexpr (std::endian::native == std::endian::little) {
+        return u32np(std::bit_cast<u32>(
+            std::array{bytes[0], bytes[1], bytes[2], bytes[3]}));
+    } else {
+        return (u32np(u32(bytes[0])) << 0) | (u32np(u32(bytes[1])) << 8) |
+               (u32np(u32(bytes[2])) << 16) | (u32np(u32(bytes[3])) << 24);
+    }
 }
 
-inline auto read_u64le_memcpy(std::span<std::byte const, 8> bytes) noexcept
+constexpr auto read_u64le(std::span<std::byte const, 8> bytes) noexcept
     -> u64np {
-    assert(is_little_endian());
-    u64np ret{};
-    std::memcpy(&ret, bytes.data(), sizeof(ret));
-    return ret;
-}
-
-constexpr auto read_u16le_generic(std::span<std::byte const, 2> bytes) noexcept
-    -> u16np {
-    return (u16np(u16(bytes[0])) << 0) | (u16np(u16(bytes[1])) << 8);
-}
-
-constexpr auto read_u32le_generic(std::span<std::byte const, 4> bytes) noexcept
-    -> u32np {
-    return (u32np(u32(bytes[0])) << 0) | (u32np(u32(bytes[1])) << 8) |
-           (u32np(u32(bytes[2])) << 16) | (u32np(u32(bytes[3])) << 24);
-}
-
-constexpr auto read_u64le_generic(std::span<std::byte const, 8> bytes) noexcept
-    -> u64np {
-    return (u64np(u64(bytes[0])) << 0) | (u64np(u64(bytes[1])) << 8) |
-           (u64np(u64(bytes[2])) << 16) | (u64np(u64(bytes[3])) << 24) |
-           (u64np(u64(bytes[4])) << 32) | (u64np(u64(bytes[5])) << 40) |
-           (u64np(u64(bytes[6])) << 48) | (u64np(u64(bytes[7])) << 56);
-}
-
-constexpr auto read_u8(std::span<std::byte const, 1> byte) noexcept -> u8np {
-    return u8np(u8(byte.front()));
-}
-
-inline auto read_u16le(std::span<std::byte const, 2> bytes) noexcept -> u16np {
-    if (internal::use_memcpy())
-        return internal::read_u16le_memcpy(bytes);
-    return internal::read_u16le_generic(bytes);
-}
-
-inline auto read_u32le(std::span<std::byte const, 4> bytes) noexcept -> u32np {
-    if (internal::use_memcpy())
-        return internal::read_u32le_memcpy(bytes);
-    return internal::read_u32le_generic(bytes);
-}
-
-inline auto read_u64le(std::span<std::byte const, 8> bytes) noexcept -> u64np {
-    if (internal::use_memcpy())
-        return internal::read_u64le_memcpy(bytes);
-    return internal::read_u64le_generic(bytes);
+    if constexpr (std::endian::native == std::endian::little) {
+        return u64np(std::bit_cast<u64>(
+            std::array{bytes[0], bytes[1], bytes[2], bytes[3], bytes[4],
+                       bytes[5], bytes[6], bytes[7]}));
+    } else {
+        return (u64np(u64(bytes[0])) << 0) | (u64np(u64(bytes[1])) << 8) |
+               (u64np(u64(bytes[2])) << 16) | (u64np(u64(bytes[3])) << 24) |
+               (u64np(u64(bytes[4])) << 32) | (u64np(u64(bytes[5])) << 40) |
+               (u64np(u64(bytes[6])) << 48) | (u64np(u64(bytes[7])) << 56);
+    }
 }
 
 } // namespace internal
@@ -126,7 +78,8 @@ template <std::size_t Offset, typename T, std::size_t N,
 constexpr auto read_u8_at(std::span<T, N> bytes) noexcept -> u8np {
     static_assert(Offset + 1 <= N);
     auto const s = bytes.template subspan<Offset, 1>();
-    return internal::read_u8(std::span<std::byte const, 1>(s));
+    auto const b = std::span<std::byte const, 1>(s);
+    return u8np(u8(b.front()));
 }
 
 /**
@@ -136,7 +89,7 @@ constexpr auto read_u8_at(std::span<T, N> bytes) noexcept -> u8np {
  */
 template <std::size_t Offset, typename T, std::size_t N,
           typename = std::enable_if_t<std::is_convertible_v<T, std::byte>>>
-inline auto read_u16le_at(std::span<T, N> bytes) noexcept -> u16np {
+constexpr auto read_u16le_at(std::span<T, N> bytes) noexcept -> u16np {
     static_assert(Offset + 2 <= N);
     auto const s = bytes.template subspan<Offset, 2>();
     return internal::read_u16le(std::span<std::byte const, 2>(s));
@@ -149,7 +102,7 @@ inline auto read_u16le_at(std::span<T, N> bytes) noexcept -> u16np {
  */
 template <std::size_t Offset, typename T, std::size_t N,
           typename = std::enable_if_t<std::is_convertible_v<T, std::byte>>>
-inline auto read_u32le_at(std::span<T, N> bytes) noexcept -> u32np {
+constexpr auto read_u32le_at(std::span<T, N> bytes) noexcept -> u32np {
     static_assert(Offset + 4 <= N);
     auto const s = bytes.template subspan<Offset, 4>();
     return internal::read_u32le(std::span<std::byte const, 4>(s));
@@ -162,7 +115,7 @@ inline auto read_u32le_at(std::span<T, N> bytes) noexcept -> u32np {
  */
 template <std::size_t Offset, typename T, std::size_t N,
           typename = std::enable_if_t<std::is_convertible_v<T, std::byte>>>
-inline auto read_u64le_at(std::span<T, N> bytes) noexcept -> u64np {
+constexpr auto read_u64le_at(std::span<T, N> bytes) noexcept -> u64np {
     static_assert(Offset + 8 <= N);
     auto const s = bytes.template subspan<Offset, 8>();
     return internal::read_u64le(std::span<std::byte const, 8>(s));
@@ -186,7 +139,7 @@ constexpr auto read_i8_at(std::span<T, N> bytes) noexcept -> i8np {
  */
 template <std::size_t Offset, typename T, std::size_t N,
           typename = std::enable_if_t<std::is_convertible_v<T, std::byte>>>
-inline auto read_i16le_at(std::span<T, N> bytes) noexcept -> i16np {
+constexpr auto read_i16le_at(std::span<T, N> bytes) noexcept -> i16np {
     return i16np(read_u16le_at<Offset, T, N>(bytes));
 }
 
@@ -197,7 +150,7 @@ inline auto read_i16le_at(std::span<T, N> bytes) noexcept -> i16np {
  */
 template <std::size_t Offset, typename T, std::size_t N,
           typename = std::enable_if_t<std::is_convertible_v<T, std::byte>>>
-inline auto read_i32le_at(std::span<T, N> bytes) noexcept -> i32np {
+constexpr auto read_i32le_at(std::span<T, N> bytes) noexcept -> i32np {
     return i32np(read_u32le_at<Offset, T, N>(bytes));
 }
 
@@ -208,7 +161,7 @@ inline auto read_i32le_at(std::span<T, N> bytes) noexcept -> i32np {
  */
 template <std::size_t Offset, typename T, std::size_t N,
           typename = std::enable_if_t<std::is_convertible_v<T, std::byte>>>
-inline auto read_i64le_at(std::span<T, N> bytes) noexcept -> i64np {
+constexpr auto read_i64le_at(std::span<T, N> bytes) noexcept -> i64np {
     return i64np(read_u64le_at<Offset, T, N>(bytes));
 }
 

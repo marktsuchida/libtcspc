@@ -71,7 +71,7 @@ struct swabian_tag_event {
     /**
      * \brief Read the event type.
      */
-    [[nodiscard]] auto type() const noexcept -> tag_type {
+    [[nodiscard]] constexpr auto type() const noexcept -> tag_type {
         return tag_type(read_u8_at<0>(std::span(bytes)).value());
     }
 
@@ -80,21 +80,21 @@ struct swabian_tag_event {
     /**
      * \brief Read the missed event count if this is a missed events event.
      */
-    [[nodiscard]] auto missed_event_count() const noexcept -> u16np {
+    [[nodiscard]] constexpr auto missed_event_count() const noexcept -> u16np {
         return read_u16le_at<2>(std::span(bytes));
     }
 
     /**
      * \brief Read the channel if this is a time tag or missed events event.
      */
-    [[nodiscard]] auto channel() const noexcept -> i32np {
+    [[nodiscard]] constexpr auto channel() const noexcept -> i32np {
         return read_i32le_at<4>(std::span(bytes));
     }
 
     /**
      * \brief Read the time (picoseconds).
      */
-    [[nodiscard]] auto time() const noexcept -> i64np {
+    [[nodiscard]] constexpr auto time() const noexcept -> i64np {
         return read_i64le_at<8>(std::span(bytes));
     }
 
@@ -107,7 +107,7 @@ struct swabian_tag_event {
      *
      * \return event
      */
-    static auto make_time_tag(i64np time, i32np channel) noexcept
+    static constexpr auto make_time_tag(i64np time, i32np channel) noexcept
         -> swabian_tag_event {
         return make_from_fields(tag_type::time_tag, 0_u16np, channel, time);
     }
@@ -119,7 +119,8 @@ struct swabian_tag_event {
      *
      * \return event
      */
-    static auto make_error(i64np time) noexcept -> swabian_tag_event {
+    static constexpr auto make_error(i64np time) noexcept
+        -> swabian_tag_event {
         return make_from_fields(tag_type::error, 0_u16np, 0_i32np, time);
     }
 
@@ -131,7 +132,8 @@ struct swabian_tag_event {
      *
      * \return event
      */
-    static auto make_overflow_begin(i64np time) noexcept -> swabian_tag_event {
+    static constexpr auto make_overflow_begin(i64np time) noexcept
+        -> swabian_tag_event {
         return make_from_fields(tag_type::overflow_begin, 0_u16np, 0_i32np,
                                 time);
     }
@@ -143,7 +145,8 @@ struct swabian_tag_event {
      *
      * \return event
      */
-    static auto make_overflow_end(i64np time) noexcept -> swabian_tag_event {
+    static constexpr auto make_overflow_end(i64np time) noexcept
+        -> swabian_tag_event {
         return make_from_fields(tag_type::overflow_end, 0_u16np, 0_i32np,
                                 time);
     }
@@ -159,8 +162,9 @@ struct swabian_tag_event {
      *
      * \return event
      */
-    static auto make_missed_events(i64np time, i32np channel,
-                                   u16np count) noexcept -> swabian_tag_event {
+    static constexpr auto make_missed_events(i64np time, i32np channel,
+                                             u16np count) noexcept
+        -> swabian_tag_event {
         return make_from_fields(tag_type::missed_events, count, channel, time);
     }
 
@@ -179,8 +183,9 @@ struct swabian_tag_event {
     }
 
   private:
-    static auto make_from_fields(tag_type type, u16np missed, i32np channel,
-                                 i64np time) noexcept -> swabian_tag_event {
+    static constexpr auto make_from_fields(tag_type type, u16np missed,
+                                           i32np channel, i64np time) noexcept
+        -> swabian_tag_event {
         return swabian_tag_event{{
             std::byte(type),
             std::byte(0), // Padding

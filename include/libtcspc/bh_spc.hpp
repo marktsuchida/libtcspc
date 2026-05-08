@@ -59,7 +59,7 @@ struct bh_spc_event {
      * \brief Read the ADC value (i.e., difference time) if this event
      * represents a photon.
      */
-    [[nodiscard]] auto adc_value() const noexcept -> u16np {
+    [[nodiscard]] constexpr auto adc_value() const noexcept -> u16np {
         return read_u16le_at<2>(std::span(bytes)) & 0x0fff_u16np;
     }
 
@@ -67,7 +67,7 @@ struct bh_spc_event {
      * \brief Read the routing signals (usually the detector channel) if this
      * event represents a photon.
      */
-    [[nodiscard]] auto routing_signals() const noexcept -> u8np {
+    [[nodiscard]] constexpr auto routing_signals() const noexcept -> u8np {
         // The documentation somewhat confusingly says that these bits are
         // "inverted", but what they mean is that the TTL inputs are active
         // low. The bits in the FIFO data are not inverted.
@@ -77,50 +77,51 @@ struct bh_spc_event {
     /**
      * \brief Read the macrotime counter value (no rollover correction).
      */
-    [[nodiscard]] auto macrotime() const noexcept -> u16np {
+    [[nodiscard]] constexpr auto macrotime() const noexcept -> u16np {
         return read_u16le_at<0>(std::span(bytes)) & 0x0fff_u16np;
     }
 
     /**
      * \brief Read the 'marker' flag.
      */
-    [[nodiscard]] auto marker_flag() const noexcept -> bool {
+    [[nodiscard]] constexpr auto marker_flag() const noexcept -> bool {
         return (read_u8_at<3>(std::span(bytes)) & (1_u8np << 4)) != 0_u8np;
     }
 
     /**
      * \brief Read the marker bits (mask) if this event represents markers.
      */
-    [[nodiscard]] auto marker_bits() const noexcept -> u8np {
+    [[nodiscard]] constexpr auto marker_bits() const noexcept -> u8np {
         return routing_signals();
     }
 
     /**
      * \brief Read the 'gap' (data lost) flag.
      */
-    [[nodiscard]] auto gap_flag() const noexcept -> bool {
+    [[nodiscard]] constexpr auto gap_flag() const noexcept -> bool {
         return (read_u8_at<3>(std::span(bytes)) & (1_u8np << 5)) != 0_u8np;
     }
 
     /**
      * \brief Read the 'macrotime overflow' flag.
      */
-    [[nodiscard]] auto macrotime_overflow_flag() const noexcept -> bool {
+    [[nodiscard]] constexpr auto macrotime_overflow_flag() const noexcept
+        -> bool {
         return (read_u8_at<3>(std::span(bytes)) & (1_u8np << 6)) != 0_u8np;
     }
 
     /**
      * \brief Read the 'invalid' flag.
      */
-    [[nodiscard]] auto invalid_flag() const noexcept -> bool {
+    [[nodiscard]] constexpr auto invalid_flag() const noexcept -> bool {
         return (read_u8_at<3>(std::span(bytes)) & (1_u8np << 7)) != 0_u8np;
     }
 
     /**
      * \brief Determine if this event represents multiple macrotime overflows.
      */
-    [[nodiscard]] auto is_multiple_macrotime_overflow() const noexcept
-        -> bool {
+    [[nodiscard]] constexpr auto
+    is_multiple_macrotime_overflow() const noexcept -> bool {
         // Although documentation is not clear, a marker can share an event
         // record with a (single) macrotime overflow, just as a photon can.
         return macrotime_overflow_flag() && invalid_flag() && !marker_flag();
@@ -130,8 +131,8 @@ struct bh_spc_event {
      * \brief Read the macrotime overflow count if this event represents
      * multiple macrotime overflows.
      */
-    [[nodiscard]] auto multiple_macrotime_overflow_count() const noexcept
-        -> u32np {
+    [[nodiscard]] constexpr auto
+    multiple_macrotime_overflow_count() const noexcept -> u32np {
         return read_u32le_at<0>(std::span(bytes)) & 0x0fff'ffff_u32np;
     }
 
@@ -150,8 +151,10 @@ struct bh_spc_event {
      *
      * \return event
      */
-    static auto make_photon(u16np macrotime, u16np adc_value, u8np route,
-                            bool macrotime_overflow = false) -> bh_spc_event {
+    static constexpr auto make_photon(u16np macrotime, u16np adc_value,
+                                      u8np route,
+                                      bool macrotime_overflow = false)
+        -> bh_spc_event {
         return make_from_fields(false, macrotime_overflow, false, false,
                                 adc_value, route, macrotime);
     }
@@ -168,7 +171,7 @@ struct bh_spc_event {
      *
      * \return event
      */
-    static auto make_invalid_photon(u16np macrotime, u16np adc_value)
+    static constexpr auto make_invalid_photon(u16np macrotime, u16np adc_value)
         -> bh_spc_event {
         // N.B. No MTOV.
         return make_from_fields(true, false, false, false, adc_value, 0_u8np,
@@ -189,8 +192,9 @@ struct bh_spc_event {
      *
      * \return event
      */
-    static auto make_marker(u16np macrotime, u8np marker_bits,
-                            bool macrotime_overflow = false) -> bh_spc_event {
+    static constexpr auto make_marker(u16np macrotime, u8np marker_bits,
+                                      bool macrotime_overflow = false)
+        -> bh_spc_event {
         return make_from_fields(true, macrotime_overflow, false, true, 0_u16np,
                                 marker_bits, macrotime);
     }
@@ -212,7 +216,7 @@ struct bh_spc_event {
      *
      * \return event
      */
-    static auto make_marker0_with_intensity_count(
+    static constexpr auto make_marker0_with_intensity_count(
         u16np macrotime, u8np marker_bits, u16np count,
         bool macrotime_overflow = false) -> bh_spc_event {
         if ((marker_bits & 0x01_u8np) == 0_u8np)
@@ -232,8 +236,9 @@ struct bh_spc_event {
      *
      * \return event
      */
-    static auto make_multiple_macrotime_overflow(u32np count) -> bh_spc_event {
-        static constexpr auto flags = 0b1100'0000_u8np;
+    static constexpr auto make_multiple_macrotime_overflow(u32np count)
+        -> bh_spc_event {
+        constexpr auto flags = 0b1100'0000_u8np;
         return bh_spc_event{{
             std::byte(u8np(count >> 0).value()),
             std::byte(u8np(count >> 8).value()),
@@ -275,9 +280,9 @@ struct bh_spc_event {
     }
 
   private:
-    static auto make_from_fields(bool invalid, bool mtov, bool gap, bool mark,
-                                 u16np adc, u8np rout, u16np mt)
-        -> bh_spc_event {
+    static constexpr auto make_from_fields(bool invalid, bool mtov, bool gap,
+                                           bool mark, u16np adc, u8np rout,
+                                           u16np mt) -> bh_spc_event {
         auto const flags = (u8np(u8(invalid)) << 7) | (u8np(u8(mtov)) << 6) |
                            (u8np(u8(gap)) << 5) | (u8np(u8(mark)) << 4);
         return bh_spc_event{{
@@ -315,7 +320,7 @@ struct bh_spc600_4096ch_event {
      * \brief Read the ADC value (i.e., difference time) if this event
      * represents a photon.
      */
-    [[nodiscard]] auto adc_value() const noexcept -> u16np {
+    [[nodiscard]] constexpr auto adc_value() const noexcept -> u16np {
         return read_u16le_at<0>(std::span(bytes)) & 0x0fff_u16np;
     }
 
@@ -323,14 +328,14 @@ struct bh_spc600_4096ch_event {
      * \brief Read the routing signals (usually the detector channel) if this
      * event represents a photon.
      */
-    [[nodiscard]] auto routing_signals() const noexcept -> u8np {
+    [[nodiscard]] constexpr auto routing_signals() const noexcept -> u8np {
         return read_u8_at<3>(std::span(bytes));
     }
 
     /**
      * \brief Read the macrotime counter value (no rollover correction).
      */
-    [[nodiscard]] auto macrotime() const noexcept -> u32np {
+    [[nodiscard]] constexpr auto macrotime() const noexcept -> u32np {
         auto const lo8 = u32np(read_u8_at<4>(std::span(bytes)));
         auto const mid8 = u32np(read_u8_at<5>(std::span(bytes)));
         auto const hi8 = u32np(read_u8_at<2>(std::span(bytes)));
@@ -340,39 +345,44 @@ struct bh_spc600_4096ch_event {
     /**
      * \brief Read the 'marker' flag.
      */
-    [[nodiscard]] static auto marker_flag() noexcept -> bool { return false; }
+    [[nodiscard]] static constexpr auto marker_flag() noexcept -> bool {
+        return false;
+    }
 
     /**
      * \brief Read the marker bits (mask) if this event represents markers.
      */
-    [[nodiscard]] static auto marker_bits() noexcept -> u8np { return 0_u8np; }
+    [[nodiscard]] static constexpr auto marker_bits() noexcept -> u8np {
+        return 0_u8np;
+    }
 
     /**
      * \brief Read the 'gap' (data lost) flag.
      */
-    [[nodiscard]] auto gap_flag() const noexcept -> bool {
+    [[nodiscard]] constexpr auto gap_flag() const noexcept -> bool {
         return (read_u8_at<1>(std::span(bytes)) & (1_u8np << 6)) != 0_u8np;
     }
 
     /**
      * \brief Read the 'macrotime overflow' flag.
      */
-    [[nodiscard]] auto macrotime_overflow_flag() const noexcept -> bool {
+    [[nodiscard]] constexpr auto macrotime_overflow_flag() const noexcept
+        -> bool {
         return (read_u8_at<1>(std::span(bytes)) & (1_u8np << 5)) != 0_u8np;
     }
 
     /**
      * \brief Read the 'invalid' flag.
      */
-    [[nodiscard]] auto invalid_flag() const noexcept -> bool {
+    [[nodiscard]] constexpr auto invalid_flag() const noexcept -> bool {
         return (read_u8_at<1>(std::span(bytes)) & (1_u8np << 4)) != 0_u8np;
     }
 
     /**
      * \brief Determine if this event represents multiple macrotime overflows.
      */
-    [[nodiscard]] static auto is_multiple_macrotime_overflow() noexcept
-        -> bool {
+    [[nodiscard]] static constexpr auto
+    is_multiple_macrotime_overflow() noexcept -> bool {
         return false;
     }
 
@@ -380,8 +390,8 @@ struct bh_spc600_4096ch_event {
      * \brief Read the macrotime overflow count if this event represents
      * multiple macrotime overflows.
      */
-    [[nodiscard]] static auto multiple_macrotime_overflow_count() noexcept
-        -> u32np {
+    [[nodiscard]] static constexpr auto
+    multiple_macrotime_overflow_count() noexcept -> u32np {
         return 0_u32np;
     }
 
@@ -400,8 +410,9 @@ struct bh_spc600_4096ch_event {
      *
      * \return event
      */
-    static auto make_photon(u32np macrotime, u16np adc_value, u8np route,
-                            bool macrotime_overflow = false)
+    static constexpr auto make_photon(u32np macrotime, u16np adc_value,
+                                      u8np route,
+                                      bool macrotime_overflow = false)
         -> bh_spc600_4096ch_event {
         return make_from_fields(macrotime, route, false, macrotime_overflow,
                                 false, adc_value);
@@ -420,8 +431,8 @@ struct bh_spc600_4096ch_event {
      *
      * \return event
      */
-    static auto make_invalid_photon(u32np macrotime, u16np adc_value,
-                                    bool macrotime_overflow = false)
+    static constexpr auto make_invalid_photon(u32np macrotime, u16np adc_value,
+                                              bool macrotime_overflow = false)
         -> bh_spc600_4096ch_event {
         return make_from_fields(macrotime, 0_u8np, false, macrotime_overflow,
                                 true, adc_value);
@@ -462,8 +473,8 @@ struct bh_spc600_4096ch_event {
     }
 
   private:
-    static auto make_from_fields(u32np mt, u8np r, bool gap, bool mtov,
-                                 bool invalid, u16np adc)
+    static constexpr auto make_from_fields(u32np mt, u8np r, bool gap,
+                                           bool mtov, bool invalid, u16np adc)
         -> bh_spc600_4096ch_event {
         auto const flags = (u8np(u8(gap)) << 6) | (u8np(u8(mtov)) << 5) |
                            (u8np(u8(invalid)) << 4);
@@ -504,7 +515,7 @@ struct bh_spc600_256ch_event {
      * \brief Read the ADC value (i.e., difference time) if this event
      * represents a photon.
      */
-    [[nodiscard]] auto adc_value() const noexcept -> u16np {
+    [[nodiscard]] constexpr auto adc_value() const noexcept -> u16np {
         return u16np(read_u8_at<0>(std::span(bytes)));
     }
 
@@ -512,14 +523,14 @@ struct bh_spc600_256ch_event {
      * \brief Read the routing signals (usually the detector channel) if this
      * event represents a photon.
      */
-    [[nodiscard]] auto routing_signals() const noexcept -> u8np {
+    [[nodiscard]] constexpr auto routing_signals() const noexcept -> u8np {
         return (read_u8_at<3>(std::span(bytes)) & 0x0f_u8np) >> 1;
     }
 
     /**
      * \brief Read the macrotime counter value (no rollover correction).
      */
-    [[nodiscard]] auto macrotime() const noexcept -> u32np {
+    [[nodiscard]] constexpr auto macrotime() const noexcept -> u32np {
         auto const lo8 = u32np(read_u8_at<1>(std::span(bytes)));
         auto const mid8 = u32np(read_u8_at<2>(std::span(bytes)));
         auto const hi1 = u32np(read_u8_at<3>(std::span(bytes))) & 1_u32np;
@@ -529,39 +540,44 @@ struct bh_spc600_256ch_event {
     /**
      * \brief Read the 'marker' flag.
      */
-    [[nodiscard]] static auto marker_flag() noexcept -> bool { return false; }
+    [[nodiscard]] static constexpr auto marker_flag() noexcept -> bool {
+        return false;
+    }
 
     /**
      * \brief Read the marker bits (mask) if this event represents markers.
      */
-    [[nodiscard]] static auto marker_bits() noexcept -> u8np { return 0_u8np; }
+    [[nodiscard]] static constexpr auto marker_bits() noexcept -> u8np {
+        return 0_u8np;
+    }
 
     /**
      * \brief Read the 'gap' (data lost) flag.
      */
-    [[nodiscard]] auto gap_flag() const noexcept -> bool {
+    [[nodiscard]] constexpr auto gap_flag() const noexcept -> bool {
         return (read_u8_at<3>(std::span(bytes)) & (1_u8np << 5)) != 0_u8np;
     }
 
     /**
      * \brief Read the 'macrotime overflow' flag.
      */
-    [[nodiscard]] auto macrotime_overflow_flag() const noexcept -> bool {
+    [[nodiscard]] constexpr auto macrotime_overflow_flag() const noexcept
+        -> bool {
         return (read_u8_at<3>(std::span(bytes)) & (1_u8np << 6)) != 0_u8np;
     }
 
     /**
      * \brief Read the 'invalid' flag.
      */
-    [[nodiscard]] auto invalid_flag() const noexcept -> bool {
+    [[nodiscard]] constexpr auto invalid_flag() const noexcept -> bool {
         return (read_u8_at<3>(std::span(bytes)) & (1_u8np << 7)) != 0_u8np;
     }
 
     /**
      * \brief Determine if this event represents multiple macrotime overflows.
      */
-    [[nodiscard]] auto is_multiple_macrotime_overflow() const noexcept
-        -> bool {
+    [[nodiscard]] constexpr auto
+    is_multiple_macrotime_overflow() const noexcept -> bool {
         return macrotime_overflow_flag() && invalid_flag();
     }
 
@@ -569,8 +585,8 @@ struct bh_spc600_256ch_event {
      * \brief Read the macrotime overflow count if this event represents
      * multiple macrotime overflows.
      */
-    [[nodiscard]] auto multiple_macrotime_overflow_count() const noexcept
-        -> u32np {
+    [[nodiscard]] constexpr auto
+    multiple_macrotime_overflow_count() const noexcept -> u32np {
         return read_u32le_at<0>(std::span(bytes)) & 0x0fff'ffff_u32np;
     }
 
@@ -589,8 +605,9 @@ struct bh_spc600_256ch_event {
      *
      * \return event
      */
-    static auto make_photon(u32np macrotime, u8np adc_value, u8np route,
-                            bool macrotime_overflow = false)
+    static constexpr auto make_photon(u32np macrotime, u8np adc_value,
+                                      u8np route,
+                                      bool macrotime_overflow = false)
         -> bh_spc600_256ch_event {
         return make_from_fields(false, macrotime_overflow, false, route,
                                 macrotime, adc_value);
@@ -608,7 +625,7 @@ struct bh_spc600_256ch_event {
      *
      * \return event
      */
-    static auto make_invalid_photon(u32np macrotime, u8np adc_value)
+    static constexpr auto make_invalid_photon(u32np macrotime, u8np adc_value)
         -> bh_spc600_256ch_event {
         // N.B. No MTOV.
         return make_from_fields(true, false, false, 0_u8np, macrotime,
@@ -625,9 +642,9 @@ struct bh_spc600_256ch_event {
      *
      * \return event
      */
-    static auto make_multiple_macrotime_overflow(u32np count)
+    static constexpr auto make_multiple_macrotime_overflow(u32np count)
         -> bh_spc600_256ch_event {
-        static constexpr auto flags = 0b1100'0000_u8np;
+        constexpr auto flags = 0b1100'0000_u8np;
         return bh_spc600_256ch_event{{
             std::byte(u8np(count >> 0).value()),
             std::byte(u8np(count >> 8).value()),
@@ -672,8 +689,9 @@ struct bh_spc600_256ch_event {
     }
 
   private:
-    static auto make_from_fields(bool invalid, bool mtov, bool gap, u8np r,
-                                 u32np mt, u8np adc) -> bh_spc600_256ch_event {
+    static constexpr auto make_from_fields(bool invalid, bool mtov, bool gap,
+                                           u8np r, u32np mt, u8np adc)
+        -> bh_spc600_256ch_event {
         auto const flags = (u8np(u8(invalid)) << 7) | (u8np(u8(mtov)) << 6) |
                            (u8np(u8(gap)) << 5);
         return bh_spc600_256ch_event{{

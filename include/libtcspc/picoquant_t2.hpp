@@ -66,7 +66,7 @@ struct pqt2_picoharp300_event {
     /**
      * \brief Read the channel if this event is a non-special event.
      */
-    [[nodiscard]] auto channel() const noexcept -> u8np {
+    [[nodiscard]] constexpr auto channel() const noexcept -> u8np {
         return read_u8_at<3>(std::span(bytes)) >> 4;
     }
 
@@ -74,7 +74,7 @@ struct pqt2_picoharp300_event {
      * \brief Read the time tag if this event is a non-special event (not
      * external marker event).
      */
-    [[nodiscard]] auto timetag() const noexcept -> u32np {
+    [[nodiscard]] constexpr auto timetag() const noexcept -> u32np {
         return read_u32le_at<0>(std::span(bytes)) & 0x0fff'ffff_u32np;
     }
 
@@ -83,7 +83,8 @@ struct pqt2_picoharp300_event {
      *
      * The low 4 bits are zeroed to remove the marker bits.
      */
-    [[nodiscard]] auto external_marker_timetag() const noexcept -> u32np {
+    [[nodiscard]] constexpr auto external_marker_timetag() const noexcept
+        -> u32np {
         // For markers, the low 4 bits of the time tag are used to store the
         // marker bits, giving markers 1/16 the time resolution (the actual
         // time resolution for markers is even lower, in the 10s of ns range).
@@ -94,14 +95,14 @@ struct pqt2_picoharp300_event {
     /**
      * \brief Determine if this event is a special event.
      */
-    [[nodiscard]] auto is_special() const noexcept -> bool {
+    [[nodiscard]] constexpr auto is_special() const noexcept -> bool {
         return channel() == 15_u8np;
     }
 
     /**
      * \brief Determine if this event represents a time tag overflow.
      */
-    [[nodiscard]] auto is_timetag_overflow() const noexcept -> bool {
+    [[nodiscard]] constexpr auto is_timetag_overflow() const noexcept -> bool {
         return is_special() && (timetag() & 0x0f_u32np) == 0_u32np;
     }
 
@@ -109,21 +110,22 @@ struct pqt2_picoharp300_event {
      * \brief Read the time tag overflow count if this event represents a time
      * tag overflow.
      */
-    [[nodiscard]] static auto timetag_overflow_count() noexcept -> u32np {
+    [[nodiscard]] static constexpr auto timetag_overflow_count() noexcept
+        -> u32np {
         return 1_u32np;
     }
 
     /**
      * \brief Determine if this event represents a sync event.
      */
-    [[nodiscard]] static auto is_sync_event() noexcept -> bool {
+    [[nodiscard]] static constexpr auto is_sync_event() noexcept -> bool {
         return false;
     }
 
     /**
      * \brief Determine if this event represents external markers.
      */
-    [[nodiscard]] auto is_external_marker() const noexcept -> bool {
+    [[nodiscard]] constexpr auto is_external_marker() const noexcept -> bool {
         return is_special() && (timetag() & 0x0f_u32np) != 0_u32np;
     }
 
@@ -131,7 +133,8 @@ struct pqt2_picoharp300_event {
      * \brief Read the marker bits (mask) if this event represents external
      * markers.
      */
-    [[nodiscard]] auto external_marker_bits() const noexcept -> u8np {
+    [[nodiscard]] constexpr auto external_marker_bits() const noexcept
+        -> u8np {
         return u8np(timetag()) & 0x0f_u8np;
     }
 
@@ -144,7 +147,7 @@ struct pqt2_picoharp300_event {
      *
      * \return event
      */
-    static auto make_nonspecial(u32np timetag, u8np channel)
+    static constexpr auto make_nonspecial(u32np timetag, u8np channel)
         -> pqt2_picoharp300_event {
         if (channel > 14_u8np)
             throw std::invalid_argument(
@@ -157,7 +160,8 @@ struct pqt2_picoharp300_event {
      *
      * \return event
      */
-    static auto make_timetag_overflow() noexcept -> pqt2_picoharp300_event {
+    static constexpr auto make_timetag_overflow() noexcept
+        -> pqt2_picoharp300_event {
         return make_from_fields(15_u8np, 0_u32np);
     }
 
@@ -171,7 +175,7 @@ struct pqt2_picoharp300_event {
      *
      * \return event
      */
-    static auto make_external_marker(u32np timetag, u8np marker_bits)
+    static constexpr auto make_external_marker(u32np timetag, u8np marker_bits)
         -> pqt2_picoharp300_event {
         if (marker_bits == 0_u8np)
             throw std::invalid_argument(
@@ -196,7 +200,7 @@ struct pqt2_picoharp300_event {
     }
 
   private:
-    static auto make_from_fields(u8np channel, u32np timetag)
+    static constexpr auto make_from_fields(u8np channel, u32np timetag)
         -> pqt2_picoharp300_event {
         return pqt2_picoharp300_event{{
             std::byte(u8np(timetag).value()),
@@ -240,35 +244,36 @@ struct basic_pqt2_event {
     /**
      * \brief Read the channel if this event is a non-special event.
      */
-    [[nodiscard]] auto channel() const noexcept -> u8np {
+    [[nodiscard]] constexpr auto channel() const noexcept -> u8np {
         return (read_u8_at<3>(std::span(bytes)) & 0x7f_u8np) >> 1;
     }
 
     /**
      * \brief Read the time tag if this event is a non-special event.
      */
-    [[nodiscard]] auto timetag() const noexcept -> u32np {
+    [[nodiscard]] constexpr auto timetag() const noexcept -> u32np {
         return read_u32le_at<0>(std::span(bytes)) & 0x01ff'ffff_u32np;
     }
 
     /**
      * \brief Read the time tag if this event is an external marker event.
      */
-    [[nodiscard]] auto external_marker_timetag() const noexcept -> u32np {
+    [[nodiscard]] constexpr auto external_marker_timetag() const noexcept
+        -> u32np {
         return timetag();
     }
 
     /**
      * \brief Determine if this event is a special event.
      */
-    [[nodiscard]] auto is_special() const noexcept -> bool {
+    [[nodiscard]] constexpr auto is_special() const noexcept -> bool {
         return (read_u8_at<3>(std::span(bytes)) & (1_u8np << 7)) != 0_u8np;
     }
 
     /**
      * \brief Determine if this event represents a time tag overflow.
      */
-    [[nodiscard]] auto is_timetag_overflow() const noexcept -> bool {
+    [[nodiscard]] constexpr auto is_timetag_overflow() const noexcept -> bool {
         return is_special() && channel() == 63_u8np;
     }
 
@@ -276,7 +281,8 @@ struct basic_pqt2_event {
      * \brief Read the time tag overflow count if this event represents a time
      * tag overflow.
      */
-    [[nodiscard]] auto timetag_overflow_count() const noexcept -> u32np {
+    [[nodiscard]] constexpr auto timetag_overflow_count() const noexcept
+        -> u32np {
         if (IsOverflowAlwaysSingle)
             return 1_u32np;
         return timetag();
@@ -285,14 +291,14 @@ struct basic_pqt2_event {
     /**
      * \brief Determine if this event represents a sync event.
      */
-    [[nodiscard]] auto is_sync_event() const noexcept -> bool {
+    [[nodiscard]] constexpr auto is_sync_event() const noexcept -> bool {
         return is_special() && channel() == 0_u8np;
     }
 
     /**
      * \brief Determine if this event represents external markers.
      */
-    [[nodiscard]] auto is_external_marker() const noexcept -> bool {
+    [[nodiscard]] constexpr auto is_external_marker() const noexcept -> bool {
         return is_special() && channel() > 0_u8np && channel() <= 15_u8np;
     }
 
@@ -300,7 +306,8 @@ struct basic_pqt2_event {
      * \brief Read the marker bits (mask) if this event represents external
      * markers.
      */
-    [[nodiscard]] auto external_marker_bits() const noexcept -> u8np {
+    [[nodiscard]] constexpr auto external_marker_bits() const noexcept
+        -> u8np {
         return channel();
     }
 
@@ -313,7 +320,7 @@ struct basic_pqt2_event {
      *
      * \return event
      */
-    static auto make_nonspecial(u32np timetag, u8np channel)
+    static constexpr auto make_nonspecial(u32np timetag, u8np channel)
         -> basic_pqt2_event {
         return make_from_fields(false, channel, timetag);
     }
@@ -328,7 +335,8 @@ struct basic_pqt2_event {
      *
      * \return event
      */
-    static auto make_timetag_overflow(u32np count) -> basic_pqt2_event {
+    static constexpr auto make_timetag_overflow(u32np count)
+        -> basic_pqt2_event {
         static_assert(
             not IsOverflowAlwaysSingle,
             "multiple time tag overflow is not available in HydraHarp V1 format");
@@ -340,7 +348,8 @@ struct basic_pqt2_event {
      *
      * \return event
      */
-    static auto make_timetag_overflow() noexcept -> basic_pqt2_event {
+    static constexpr auto make_timetag_overflow() noexcept
+        -> basic_pqt2_event {
         return make_from_fields(true, 63_u8np, 1_u32np);
     }
 
@@ -351,7 +360,8 @@ struct basic_pqt2_event {
      *
      * \return event
      */
-    static auto make_sync(u32np timetag) noexcept -> basic_pqt2_event {
+    static constexpr auto make_sync(u32np timetag) noexcept
+        -> basic_pqt2_event {
         return make_from_fields(true, 0_u8np, timetag);
     }
 
@@ -364,7 +374,7 @@ struct basic_pqt2_event {
      *
      * \return event
      */
-    static auto make_external_marker(u32np timetag, u8np marker_bits)
+    static constexpr auto make_external_marker(u32np timetag, u8np marker_bits)
         -> basic_pqt2_event {
         if (marker_bits == 0_u8np || (marker_bits & ~0x0f_u8np) != 0_u8np)
             throw std::invalid_argument(
@@ -388,8 +398,8 @@ struct basic_pqt2_event {
     }
 
   private:
-    static auto make_from_fields(bool special, u8np channel, u32np timetag)
-        -> basic_pqt2_event {
+    static constexpr auto make_from_fields(bool special, u8np channel,
+                                           u32np timetag) -> basic_pqt2_event {
         return basic_pqt2_event{{
             std::byte(u8np(timetag).value()),
             std::byte(u8np(timetag >> 8).value()),
