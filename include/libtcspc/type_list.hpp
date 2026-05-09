@@ -39,13 +39,6 @@ template <typename... Ts> struct type_list {
     type_list() = delete;
 };
 
-/**
- * \defgroup is-type-list Concept is_type_list
- * \ingroup type-list
- * \copydoc is_type_list
- * @{
- */
-
 /** \cond implementation-detail */
 
 namespace internal {
@@ -63,12 +56,12 @@ struct is_type_list_impl<type_list<Ts...>> : std::true_type {};
  * \brief Concept that is satisfied when a type is a `tcspc::type_list`
  * specialization.
  *
+ * \ingroup type-list
+ *
  * Checks if \p T is a specialization of `tcspc::type_list`.
  */
 template <typename T>
 concept is_type_list = internal::is_type_list_impl<T>::value;
-
-/** @} <!-- group is-type-list --> */
 
 /**
  * \defgroup type-list-size Metafunction type_list_size
@@ -139,13 +132,6 @@ using type_list_singleton_element_t =
 
 /** @} <!-- group type-list-singleelem --> */
 
-/**
- * \defgroup type-list-contains Concept type_list_contains
- * \ingroup type-list
- * \copydoc type_list_contains
- * @{
- */
-
 /** \cond implementation-detail */
 
 namespace internal {
@@ -163,24 +149,14 @@ struct type_list_contains_impl<type_list<Ts...>, Type>
 /**
  * \brief Concept that is satisfied when a type is contained in a type list.
  *
+ * \ingroup type-list
+ *
  * Checks if \p Type is in the template arguments of the `tcspc::type_list`
  * specialization \p TypeList.
  */
 template <typename TypeList, typename Type>
 concept type_list_contains =
     internal::type_list_contains_impl<TypeList, Type>::value;
-
-/** @} <!-- group type-list-contains --> */
-
-// clang-format off
-/**
- * \defgroup is-convertible-to-type-list-member Concept is_convertible_to_type_list_member
- *
- * \ingroup type-list
- * \copydoc is_convertible_to_type_list_member
- * @{
- */
-// clang-format on
 
 /** \cond implementation-detail */
 
@@ -201,14 +177,14 @@ struct is_convertible_to_type_list_member_impl<Type, type_list<Ts...>>
  * \brief Concept that is satisfied when a type is convertible to at least one
  * of the members of a type list.
  *
+ * \ingroup type-list
+ *
  * Checks if \p Type is `std::convertible_to` any of the template arguments of
  * the `tcspc::type_list` specialization \p TypeList.
  */
 template <typename Type, typename TypeList>
 concept is_convertible_to_type_list_member =
     internal::is_convertible_to_type_list_member_impl<Type, TypeList>::value;
-
-/** @} <!-- group is-convertible-to-type-list-member --> */
 
 /**
  * \defgroup type-list-is-subset Metafunction type_list_is_subset
@@ -500,5 +476,7 @@ struct type_list_set_difference
 template <typename TL0, typename TL1>
 using type_list_set_difference_t =
     typename type_list_set_difference<TL0, TL1>::type;
+
+/** @} <!-- group type-list-set-difference --> */
 
 } // namespace tcspc

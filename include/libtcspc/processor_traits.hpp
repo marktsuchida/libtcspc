@@ -15,14 +15,9 @@
 namespace tcspc {
 
 /**
- * \defgroup handles-flush Concept handles_flush
- * \ingroup processor-traits
- * \copydoc handles_flush
- * @{
- */
-
-/**
  * \brief Concept that is satisfied when a processor handles flushing.
+ *
+ * \ingroup processor-traits
  *
  * Determines whether the processor \p Proc handles `flush()` (which all
  * processors should).
@@ -40,18 +35,11 @@ concept handles_flush = requires(Proc p) {
     { p.flush() } -> std::same_as<void>;
 };
 
-/** @} <!-- group handles-flush --> */
-
-/**
- * \defgroup handles-rvalue-event Concept handles_rvalue_event
- * \ingroup processor-traits
- * \copydoc handles_rvalue_event
- * @{
- */
-
 /**
  * \brief Concept that is satisfied when a processor handles an event type by
  * rvalue reference.
+ *
+ * \ingroup processor-traits
  *
  * Determines whether the processor \p Proc handles the event type \p Event
  * passed as rvalue reference.
@@ -78,18 +66,11 @@ concept handles_rvalue_event = requires(Proc p, Event &&e) {
     { p.handle(std::move(e)) } -> std::same_as<void>;
 };
 
-/** @} <!-- group handles-rvalue-event --> */
-
-/**
- * \defgroup handles-const-event Concept handles_const_event
- * \ingroup processor-traits
- * \copydoc handles_const_event
- * @{
- */
-
 /**
  * \brief Concept that is satisfied when a processor handles an event type by
  * const lvalue reference.
+ *
+ * \ingroup processor-traits
  *
  * Determines whether the processor \p Proc handles the event type \p Event
  * passed as const lvalue reference.
@@ -111,17 +92,10 @@ concept handles_const_event = requires(Proc p, Event const &e) {
     { p.handle(e) } -> std::same_as<void>;
 };
 
-/** @} <!-- group handles-const-event --> */
-
-/**
- * \defgroup handles-event Concept handles_event
- * \ingroup processor-traits
- * \copydoc handles_event
- * @{
- */
-
 /**
  * \brief Concept that is satisfied when a processor handles an event type.
+ *
+ * \ingroup processor-traits
  *
  * Determines whether the processor \p Proc handles the event type \p Event.
  *
@@ -141,18 +115,11 @@ template <typename Proc, typename Event>
 concept handles_event =
     handles_const_event<Proc, Event> && handles_rvalue_event<Proc, Event>;
 
-/** @} <!-- group handles-event --> */
-
-/**
- * \defgroup handles-events Concept handles_events
- * \ingroup processor-traits
- * \copydoc handles_events
- * @{
- */
-
 /**
  * \brief Concept that is satisfied when a processor handles the given event
  * types.
+ *
+ * \ingroup processor-traits
  *
  * Determines whether the processor \p Proc handles all of the event types \p
  * Events.
@@ -169,18 +136,11 @@ concept handles_event =
 template <typename Proc, typename... Events>
 concept handles_events = (handles_event<Proc, Events> && ...);
 
-/** @} <!-- group handles-events --> */
-
-/**
- * \defgroup is-processor Concept is_processor
- * \ingroup processor-traits
- * \copydoc is_processor
- * @{
- */
-
 /**
  * \brief Concept that is satisfied when a processor handles the given event
  * types and flush.
+ *
+ * \ingroup processor-traits
  *
  * Determines whether the processor \p Proc handles all of the event types \p
  * Events as well as `flush()`.
@@ -199,14 +159,6 @@ concept handles_events = (handles_event<Proc, Events> && ...);
  */
 template <typename Proc, typename... Events>
 concept is_processor = handles_flush<Proc> && handles_events<Proc, Events...>;
-
-/** @} <!-- group is-processor --> */
-
-/**
- * \defgroup handles-event-list Trait handles_event_list_v
- * \ingroup processor-traits
- * @{
- */
 
 /** \cond implementation-detail */
 
@@ -227,6 +179,8 @@ struct handles_event_list_impl<Proc, type_list<Events...>>
 /**
  * \brief Trait variable to check whether a processor handles a list of event
  * types.
+ *
+ * \ingroup processor-traits
  *
  * Determines whether the processor \p Proc handles all of the event types in
  * the `tcspc::type_list` specialization \p EventList. Equivalent to
@@ -258,14 +212,6 @@ template <typename Proc, typename EventList>
 inline constexpr bool handles_event_list_v =
     internal::handles_event_list_impl<Proc, EventList>::value;
 
-/** @} <!-- group handles-event-list --> */
-
-/**
- * \defgroup is-processor-of-list Trait is_processor_of_list_v
- * \ingroup processor-traits
- * @{
- */
-
 /** \cond implementation-detail */
 
 namespace internal {
@@ -285,6 +231,8 @@ struct is_processor_of_list_impl<Proc, type_list<Events...>>
 /**
  * \brief Trait variable to check whether a processor handles a list of event
  * types and flush.
+ *
+ * \ingroup processor-traits
  *
  * Determines whether the processor \p Proc handles all of the event types in
  * the `tcspc::type_list` specialization \p EventList as well as `flush()`.
@@ -315,7 +263,5 @@ struct is_processor_of_list_impl<Proc, type_list<Events...>>
 template <typename Proc, typename EventList>
 inline constexpr bool is_processor_of_list_v =
     internal::is_processor_of_list_impl<Proc, EventList>::value;
-
-/** @} <!-- group is-processor-of-list --> */
 
 } // namespace tcspc
