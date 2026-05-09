@@ -198,148 +198,165 @@ template <typename T> class bucket {
         typename std::span<T const>::reverse_iterator;
 
     /** \brief Return an iterator to the beginning. */
-    [[nodiscard]] auto begin() noexcept -> iterator { return s.begin(); }
+    [[nodiscard]] constexpr auto begin() noexcept -> iterator {
+        return s.begin();
+    }
 
     /** \brief Return an iterator to the beginning. */
-    [[nodiscard]] auto cbegin() const noexcept -> const_iterator {
+    [[nodiscard]] constexpr auto cbegin() const noexcept -> const_iterator {
         return std::span<T const>(s).begin();
     }
 
     /** \brief Return an iterator to the beginning. */
-    [[nodiscard]] auto begin() const noexcept -> const_iterator {
+    [[nodiscard]] constexpr auto begin() const noexcept -> const_iterator {
         return cbegin();
     }
 
     /** \brief Return an iterator to the end. */
-    [[nodiscard]] auto end() noexcept -> iterator { return s.end(); }
+    [[nodiscard]] constexpr auto end() noexcept -> iterator { return s.end(); }
 
     /** \brief Return an iterator to the end. */
-    [[nodiscard]] auto cend() const noexcept -> const_iterator {
+    [[nodiscard]] constexpr auto cend() const noexcept -> const_iterator {
         return std::span<T const>(s).end();
     }
 
     /** \brief Return an iterator to the end. */
-    [[nodiscard]] auto end() const noexcept -> const_iterator {
+    [[nodiscard]] constexpr auto end() const noexcept -> const_iterator {
         return cend();
     }
 
     /** \brief Return a reverse iterator to the beginning. */
-    [[nodiscard]] auto rbegin() noexcept -> reverse_iterator {
+    [[nodiscard]] constexpr auto rbegin() noexcept -> reverse_iterator {
         return s.rbegin();
     }
 
     /** \brief Return a reverse iterator to the beginning. */
-    [[nodiscard]] auto crbegin() const noexcept -> const_reverse_iterator {
+    [[nodiscard]] constexpr auto crbegin() const noexcept
+        -> const_reverse_iterator {
         return std::span<T const>(s).rbegin();
     }
 
     /** \brief Return a reverse iterator to the beginning. */
-    [[nodiscard]] auto rbegin() const noexcept -> const_reverse_iterator {
+    [[nodiscard]] constexpr auto rbegin() const noexcept
+        -> const_reverse_iterator {
         return crbegin();
     }
 
     /** \brief Return a reverse iterator to the end. */
-    [[nodiscard]] auto rend() noexcept -> reverse_iterator { return s.rend(); }
+    [[nodiscard]] constexpr auto rend() noexcept -> reverse_iterator {
+        return s.rend();
+    }
 
     /** \brief Return a reverse iterator to the end. */
-    [[nodiscard]] auto crend() const noexcept -> const_reverse_iterator {
+    [[nodiscard]] constexpr auto crend() const noexcept
+        -> const_reverse_iterator {
         return std::span<T const>(s).rend();
     }
 
     /** \brief Return a reverse iterator to the end. */
-    [[nodiscard]] auto rend() const noexcept -> const_reverse_iterator {
+    [[nodiscard]] constexpr auto rend() const noexcept
+        -> const_reverse_iterator {
         return crend();
     }
 
     /** \brief Return the first element. */
-    [[nodiscard]] auto front() -> reference { return s.front(); }
+    [[nodiscard]] constexpr auto front() -> reference { return s.front(); }
 
     /** \brief Return the first element. */
-    [[nodiscard]] auto front() const -> const_reference {
+    [[nodiscard]] constexpr auto front() const -> const_reference {
         return std::span<T const>(s).front();
     }
 
     /** \brief Return the last element. */
-    [[nodiscard]] auto back() -> reference { return s.back(); }
+    [[nodiscard]] constexpr auto back() -> reference { return s.back(); }
 
     /** \brief Return the last element. */
-    [[nodiscard]] auto back() const -> const_reference {
+    [[nodiscard]] constexpr auto back() const -> const_reference {
         return std::span<T const>(s).back();
     }
 
     /** \brief Return an element without bounds checking. */
-    [[nodiscard]] auto operator[](size_type idx) -> reference {
+    [[nodiscard]] constexpr auto operator[](size_type idx) -> reference {
         return s[idx];
     }
 
     /** \brief Return an element without bounds checking. */
-    [[nodiscard]] auto operator[](size_type idx) const -> const_reference {
+    [[nodiscard]] constexpr auto operator[](size_type idx) const
+        -> const_reference {
         return s[idx];
     }
 
     /** \brief Return an element with bounds checking. */
-    [[nodiscard]] auto at(size_type pos) -> reference {
+    [[nodiscard]] constexpr auto at(size_type pos) -> reference {
         if (pos >= size())
             throw std::out_of_range("bucket element index out of range");
         return s[pos];
     }
 
     /** \brief Return an element with bounds checking. */
-    [[nodiscard]] auto at(size_type pos) const -> const_reference {
+    [[nodiscard]] constexpr auto at(size_type pos) const -> const_reference {
         if (pos >= size())
             throw std::out_of_range("bucket element index out of range");
         return s[pos];
     }
 
     /** \brief Return the address of the data.. */
-    [[nodiscard]] auto data() noexcept -> pointer { return s.data(); }
+    [[nodiscard]] constexpr auto data() noexcept -> pointer {
+        return s.data();
+    }
 
     /** \brief Return the address of the data. */
-    [[nodiscard]] auto data() const noexcept -> const_pointer {
+    [[nodiscard]] constexpr auto data() const noexcept -> const_pointer {
         return s.data();
     }
 
     /** \brief Return the number of data elements in this bucket. */
-    [[nodiscard]] auto size() const noexcept -> size_type { return s.size(); }
+    [[nodiscard]] constexpr auto size() const noexcept -> size_type {
+        return s.size();
+    }
 
     /** \brief Return the size of this bucket's data in bytes. */
-    [[nodiscard]] auto size_bytes() const noexcept -> size_type {
+    [[nodiscard]] constexpr auto size_bytes() const noexcept -> size_type {
         return s.size_bytes();
     }
 
     /** \brief Return whether this bucket is empty. */
-    [[nodiscard]] auto empty() const noexcept -> bool { return s.empty(); }
+    [[nodiscard]] constexpr auto empty() const noexcept -> bool {
+        return s.empty();
+    }
 
     /** \brief Return the span of the first \c count elements. */
-    [[nodiscard]] auto first(size_type count) -> std::span<T> {
+    [[nodiscard]] constexpr auto first(size_type count) -> std::span<T> {
         return s.first(count);
     }
 
     /** \brief Return the span of the first \c count elements. */
-    [[nodiscard]] auto first(size_type count) const -> std::span<T const> {
+    [[nodiscard]] constexpr auto first(size_type count) const
+        -> std::span<T const> {
         return std::span<T const>(s).first(count);
     }
 
     /** \brief Return the span of the last \c count elements. */
-    [[nodiscard]] auto last(size_type count) -> std::span<T> {
+    [[nodiscard]] constexpr auto last(size_type count) -> std::span<T> {
         return s.last(count);
     }
 
     /** \brief Return the span of the last \c count elements. */
-    [[nodiscard]] auto last(size_type count) const -> std::span<T const> {
+    [[nodiscard]] constexpr auto last(size_type count) const
+        -> std::span<T const> {
         return std::span<T const>(s).last(count);
     }
 
     /** \brief Return the span of the given range of elements. */
-    [[nodiscard]] auto subspan(size_type offset,
-                               size_type count = std::dynamic_extent)
+    [[nodiscard]] constexpr auto subspan(size_type offset,
+                                         size_type count = std::dynamic_extent)
         -> std::span<T> {
         return s.subspan(offset, count);
     }
 
     /** \brief Return the span of the given range of elements. */
-    [[nodiscard]] auto subspan(size_type offset,
-                               size_type count = std::dynamic_extent) const
+    [[nodiscard]] constexpr auto
+    subspan(size_type offset, size_type count = std::dynamic_extent) const
         -> std::span<T const> {
         return std::span<T const>(s).subspan(offset, count);
     }
@@ -419,7 +436,8 @@ template <typename T> class bucket {
      *
      * \return true if the two buckets contain equal data.
      */
-    friend auto operator==(bucket const &lhs, bucket const &rhs) -> bool {
+    friend constexpr auto operator==(bucket const &lhs, bucket const &rhs)
+        -> bool {
         return lhs.s.size() == rhs.s.size() &&
                std::equal(lhs.s.begin(), lhs.s.end(), rhs.s.begin());
     }

@@ -68,7 +68,7 @@ template <typename BinIndex> class bin_increment_cluster_journal {
         return std::size_t(std::distance(decoder.begin(), decoder.end()));
     }
 
-    [[nodiscard]] auto empty() const noexcept -> bool {
+    [[nodiscard]] constexpr auto empty() const noexcept -> bool {
         return encoded.empty();
     }
 

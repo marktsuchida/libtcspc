@@ -143,9 +143,11 @@ template <typename T> class vector_queue {
         return *this;
     }
 
-    [[nodiscard]] auto empty() const noexcept -> bool { return head == tail; }
+    [[nodiscard]] constexpr auto empty() const noexcept -> bool {
+        return head == tail;
+    }
 
-    [[nodiscard]] auto size() const noexcept -> std::size_t {
+    [[nodiscard]] constexpr auto size() const noexcept -> std::size_t {
         if (head > tail)
             return as_unsigned(std::distance(head, endptr) +
                                std::distance(ptr, tail));

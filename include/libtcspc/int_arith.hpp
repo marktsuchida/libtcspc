@@ -51,7 +51,7 @@ constexpr auto convert_with_check(T v) -> R {
     return static_cast<R>(v);
 }
 
-template <std::integral T> auto add_with_check(T a, T b) -> T {
+template <std::integral T> constexpr auto add_with_check(T a, T b) -> T {
 #ifdef __GNUC__
     T c{};
     if (not __builtin_add_overflow(a, b, &c))
@@ -67,7 +67,7 @@ template <std::integral T> auto add_with_check(T a, T b) -> T {
     throw std::overflow_error("integer overflow on addition");
 }
 
-template <std::integral T> auto subtract_with_check(T a, T b) -> T {
+template <std::integral T> constexpr auto subtract_with_check(T a, T b) -> T {
 #ifdef __GNUC__
     T c{};
     if (not __builtin_sub_overflow(a, b, &c))
