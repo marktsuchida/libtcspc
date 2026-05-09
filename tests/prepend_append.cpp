@@ -22,14 +22,14 @@ TEST_CASE("type constraints: prepend") {
     struct e0 {};
     struct e1 {};
     STATIC_CHECK(
-        is_processor<decltype(prepend(e0{}, sink_events<e0, e1>())), e0, e1>);
+        processor<decltype(prepend(e0{}, sink_events<e0, e1>())), e0, e1>);
 }
 
 TEST_CASE("type constraints: append") {
     struct e0 {};
     struct e1 {};
     STATIC_CHECK(
-        is_processor<decltype(append(e0{}, sink_events<e0, e1>())), e0, e1>);
+        processor<decltype(append(e0{}, sink_events<e0, e1>())), e0, e1>);
 }
 
 TEST_CASE("introspect: prepend/append") {

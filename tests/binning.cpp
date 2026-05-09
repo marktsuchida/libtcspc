@@ -44,10 +44,10 @@ TEST_CASE("type constraints: map_to_datapoints") {
         decltype(map_to_datapoints<bulk_counts_event<>, data_types>(
             count_data_mapper<data_types>(),
             sink_events<datapoint_event<data_types>, int>()));
-    STATIC_CHECK(is_processor<proc_type, bulk_counts_event<>>);
-    STATIC_CHECK(handles_event<proc_type, int>);
+    STATIC_CHECK(processor<proc_type, bulk_counts_event<>>);
+    STATIC_CHECK(handler_for<proc_type, int>);
     struct some_type {};
-    STATIC_CHECK_FALSE(handles_event<proc_type, some_type>);
+    STATIC_CHECK_FALSE(handler_for<proc_type, some_type>);
 }
 
 TEST_CASE("type constraints: map_to_bins") {
@@ -57,10 +57,10 @@ TEST_CASE("type constraints: map_to_bins") {
     using proc_type = decltype(map_to_bins<data_types>(
         power_of_2_bin_mapper<16, 8, false, data_types>(),
         sink_events<bin_increment_event<data_types>, int>()));
-    STATIC_CHECK(is_processor<proc_type, datapoint_event<>>);
-    STATIC_CHECK(handles_event<proc_type, int>);
+    STATIC_CHECK(processor<proc_type, datapoint_event<>>);
+    STATIC_CHECK(handler_for<proc_type, int>);
     struct some_type {};
-    STATIC_CHECK_FALSE(handles_event<proc_type, some_type>);
+    STATIC_CHECK_FALSE(handler_for<proc_type, some_type>);
 }
 
 TEST_CASE("type constraints: cluster_bin_increments") {
@@ -70,11 +70,11 @@ TEST_CASE("type constraints: cluster_bin_increments") {
     using proc_type =
         decltype(cluster_bin_increments<start_event, stop_event, data_types>(
             sink_events<bin_increment_cluster_event<data_types>, int>()));
-    STATIC_CHECK(is_processor<proc_type, start_event, stop_event,
-                              bin_increment_event<>>);
-    STATIC_CHECK(handles_event<proc_type, int>);
+    STATIC_CHECK(
+        processor<proc_type, start_event, stop_event, bin_increment_event<>>);
+    STATIC_CHECK(handler_for<proc_type, int>);
     struct some_type {};
-    STATIC_CHECK_FALSE(handles_event<proc_type, some_type>);
+    STATIC_CHECK_FALSE(handler_for<proc_type, some_type>);
 }
 
 TEST_CASE("introspect: binning") {

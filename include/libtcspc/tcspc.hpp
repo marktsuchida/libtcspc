@@ -332,7 +332,7 @@ namespace tcspc {
  *   a `requires` clause. Choose carefully between a `requires` clause and
  *   `static_assert` when specifying requirements on the handled event types,
  *   because they have different implications. Requirements specified by a
- *   `requires` clause are detected by `tcspc::handles_event` and will prevent
+ *   `requires` clause are detected by `tcspc::handler_for` and will prevent
  *   the overload from competing with other overloads when not satisfied.
  *   Requirements specified by `static_assert`, if not satisfied, will cause a
  *   compile error _after_ the overload has been selected. There are use cases

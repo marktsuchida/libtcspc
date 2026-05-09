@@ -10,13 +10,13 @@
 
 namespace tcspc::internal {
 
-TEST_CASE("has_abstime") {
+TEST_CASE("abstime_stamped") {
     struct have_not {};
     struct have {
         int abstime;
     };
-    STATIC_CHECK_FALSE(has_abstime<have_not>);
-    STATIC_CHECK(has_abstime<have>);
+    STATIC_CHECK_FALSE(abstime_stamped<have_not>);
+    STATIC_CHECK(abstime_stamped<have>);
 }
 
 } // namespace tcspc::internal

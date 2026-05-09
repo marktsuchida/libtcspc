@@ -31,7 +31,7 @@ namespace tcspc {
  * `static_assert` failures or other issues) even if the concept is satisfied.
  */
 template <typename Proc>
-concept handles_flush = requires(Proc p) {
+concept flushable = requires(Proc p) {
     { p.flush() } -> std::same_as<void>;
 };
 
@@ -62,7 +62,7 @@ concept handles_flush = requires(Proc p) {
  * even if the concept is satisfied.
  */
 template <typename Proc, typename Event>
-concept handles_rvalue_event = requires(Proc p, Event &&e) {
+concept rvalue_handler_for = requires(Proc p, Event &&e) {
     { p.handle(std::move(e)) } -> std::same_as<void>;
 };
 
@@ -88,32 +88,9 @@ concept handles_rvalue_event = requires(Proc p, Event &&e) {
  * even if the concept is satisfied.
  */
 template <typename Proc, typename Event>
-concept handles_const_event = requires(Proc p, Event const &e) {
+concept const_handler_for = requires(Proc p, Event const &e) {
     { p.handle(e) } -> std::same_as<void>;
 };
-
-/**
- * \brief Concept that is satisfied when a processor handles an event type.
- *
- * \ingroup processor-traits
- *
- * Determines whether the processor \p Proc handles the event type \p Event.
- *
- * This is equivalent to the logical AND of `tcspc::handles_const_event<Proc,
- * Event>` and `tcspc::handles_rvalue_event<Proc, Event>`.
- *
- * If the event handler(s) exist but have a return type other than `void`, the
- * concept is not satisfied.
- *
- * \note A satisfied concept indicates that \p Proc handles `Event` _provided
- * that `Proc` and the relevant `Proc::handle()` overload(s) can be
- * instantiated_ (if \p Proc is a template class). It is possible that
- * instantiation will fail (due to `static_assert` failures or other issues)
- * even if the concept is satisfied.
- */
-template <typename Proc, typename Event>
-concept handles_event =
-    handles_const_event<Proc, Event> && handles_rvalue_event<Proc, Event>;
 
 /**
  * \brief Concept that is satisfied when a processor handles the given event
@@ -123,6 +100,10 @@ concept handles_event =
  *
  * Determines whether the processor \p Proc handles all of the event types \p
  * Events.
+ *
+ * This is equivalent to the logical AND of `tcspc::const_handler_for<Proc,
+ * Event>` and `tcspc::rvalue_handler_for<Proc, Event>` over each \p Event in
+ * \p Events.
  *
  * If the event handler(s) exist but any of them has a return type other than
  * `void`, the concept is not satisfied.
@@ -134,7 +115,8 @@ concept handles_event =
  * even if the concept is satisfied.
  */
 template <typename Proc, typename... Events>
-concept handles_events = (handles_event<Proc, Events> && ...);
+concept handler_for = (... && (const_handler_for<Proc, Events> &&
+                               rvalue_handler_for<Proc, Events>));
 
 /**
  * \brief Concept that is satisfied when a processor handles the given event
@@ -145,8 +127,8 @@ concept handles_events = (handles_event<Proc, Events> && ...);
  * Determines whether the processor \p Proc handles all of the event types \p
  * Events as well as `flush()`.
  *
- * This is equivalent to the logical AND of `tcspc::handles_events<Proc,
- * Events...>` and `tcspc::handles_flush<Proc>`.
+ * This is equivalent to the logical AND of `tcspc::handler_for<Proc,
+ * Events...>` and `tcspc::flushable<Proc>`.
  *
  * If the event handler(s) and/or `flush()` exist but any of them has a return
  * type other than `void`, the concept is not satisfied.
@@ -158,19 +140,19 @@ concept handles_events = (handles_event<Proc, Events> && ...);
  * failures or other issues) even if the concept is satisfied.
  */
 template <typename Proc, typename... Events>
-concept is_processor = handles_flush<Proc> && handles_events<Proc, Events...>;
+concept processor = flushable<Proc> && handler_for<Proc, Events...>;
 
 /** \cond implementation-detail */
 
 namespace internal {
 
 template <typename Proc, typename TypeList> struct handles_event_list_impl {
-    static_assert(is_type_list<TypeList>);
+    static_assert(type_list_like<TypeList>);
 };
 
 template <typename Proc, typename... Events>
 struct handles_event_list_impl<Proc, type_list<Events...>>
-    : std::bool_constant<handles_events<Proc, Events...>> {};
+    : std::bool_constant<handler_for<Proc, Events...>> {};
 
 } // namespace internal
 
@@ -184,7 +166,7 @@ struct handles_event_list_impl<Proc, type_list<Events...>>
  *
  * Determines whether the processor \p Proc handles all of the event types in
  * the `tcspc::type_list` specialization \p EventList. Equivalent to
- * `tcspc::handles_events<Proc, Events...>` where `Events...` is the parameter
+ * `tcspc::handler_for<Proc, Events...>` where `Events...` is the parameter
  * pack of \p EventList.
  *
  * If the event handler(s) exist but any of them has a return type other than
@@ -196,7 +178,7 @@ struct handles_event_list_impl<Proc, type_list<Events...>>
  * class and variable templates). A type-list-keyed predicate written as a
  * concept therefore has to route through a helper class template and is
  * structurally `<helper-impl>::value` — a single atomic constraint. It would
- * not subsume with the pack-keyed `tcspc::handles_events` concept, so the two
+ * not subsume with the pack-keyed `tcspc::handler_for` concept, so the two
  * could not participate together in concept-subsumption-arbitrated overload
  * resolution. Presenting this predicate as a `_v` query rather than a
  * peer-named concept avoids implying a subsumption relationship that the
@@ -217,12 +199,12 @@ inline constexpr bool handles_event_list_v =
 namespace internal {
 
 template <typename Proc, typename TypeList> struct is_processor_of_list_impl {
-    static_assert(is_type_list<TypeList>);
+    static_assert(type_list_like<TypeList>);
 };
 
 template <typename Proc, typename... Events>
 struct is_processor_of_list_impl<Proc, type_list<Events...>>
-    : std::bool_constant<is_processor<Proc, Events...>> {};
+    : std::bool_constant<processor<Proc, Events...>> {};
 
 } // namespace internal
 
@@ -236,7 +218,7 @@ struct is_processor_of_list_impl<Proc, type_list<Events...>>
  *
  * Determines whether the processor \p Proc handles all of the event types in
  * the `tcspc::type_list` specialization \p EventList as well as `flush()`.
- * Equivalent to `tcspc::is_processor<Proc, Events...>` where `Events...` is
+ * Equivalent to `tcspc::processor<Proc, Events...>` where `Events...` is
  * the parameter pack of \p EventList.
  *
  * If the event handler(s) and/or `flush()` exist but any of them has a return
@@ -248,7 +230,7 @@ struct is_processor_of_list_impl<Proc, type_list<Events...>>
  * class and variable templates). A type-list-keyed predicate written as a
  * concept therefore has to route through a helper class template and is
  * structurally `<helper-impl>::value` — a single atomic constraint. It would
- * not subsume with the pack-keyed `tcspc::is_processor` concept, so the two
+ * not subsume with the pack-keyed `tcspc::processor` concept, so the two
  * could not participate together in concept-subsumption-arbitrated overload
  * resolution. Presenting this predicate as a `_v` query rather than a
  * peer-named concept avoids implying a subsumption relationship that the

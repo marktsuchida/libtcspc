@@ -28,7 +28,7 @@ namespace tcspc {
 namespace internal {
 
 template <typename T, typename Downstream> class copy_to_buckets {
-    static_assert(is_processor<Downstream, bucket<T>>);
+    static_assert(processor<Downstream, bucket<T>>);
 
     std::shared_ptr<bucket_source<T>> bsource;
 
@@ -54,7 +54,7 @@ template <typename T, typename Downstream> class copy_to_buckets {
 
     template <typename Event>
         requires(std::is_constructible_v<std::span<T const>, Event> ||
-                 handles_event<Downstream, std::remove_cvref_t<Event>>)
+                 handler_for<Downstream, std::remove_cvref_t<Event>>)
     void handle(Event &&event) {
         if constexpr (std::is_constructible_v<std::span<T const>, Event>) {
             auto const event_span = std::span<T const>(event);
@@ -71,8 +71,8 @@ template <typename T, typename Downstream> class copy_to_buckets {
 
 template <typename T, typename LiveDownstream, typename BatchDownstream>
 class copy_to_full_buckets {
-    static_assert(is_processor<LiveDownstream, bucket<T const>>);
-    static_assert(is_processor<BatchDownstream, bucket<T>>);
+    static_assert(processor<LiveDownstream, bucket<T const>>);
+    static_assert(processor<BatchDownstream, bucket<T>>);
 
     std::shared_ptr<bucket_source<T>> bsource;
     std::size_t bsize;
@@ -149,7 +149,7 @@ class copy_to_full_buckets {
 
     template <typename Event>
         requires(std::is_constructible_v<std::span<T const>, Event> ||
-                 handles_event<LiveDownstream, std::remove_cvref_t<Event>>)
+                 handler_for<LiveDownstream, std::remove_cvref_t<Event>>)
     void handle(Event &&event) {
         if constexpr (std::is_constructible_v<std::span<T const>, Event>) {
             auto src = std::span<T const>(event);

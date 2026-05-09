@@ -50,7 +50,7 @@ template <typename T>
 inline constexpr bool always_false_v = always_false<T>::value;
 
 template <typename T, typename... U>
-concept is_any_of = (std::same_as<T, U> || ...);
+concept same_as_any_of = (std::same_as<T, U> || ...);
 
 // Overloaded idiom for std::visit
 template <typename... Ts> struct overloaded : Ts... {

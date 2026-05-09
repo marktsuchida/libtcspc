@@ -17,7 +17,7 @@ namespace tcspc {
 namespace internal {
 
 template <typename Event, typename Downstream> class prepend {
-    static_assert(is_processor<Downstream, Event>);
+    static_assert(processor<Downstream, Event>);
 
     bool prepended = false;
     Downstream downstream;
@@ -38,7 +38,7 @@ template <typename Event, typename Downstream> class prepend {
     }
 
     template <typename AnyEvent>
-        requires handles_event<Downstream, std::remove_cvref_t<AnyEvent>>
+        requires handler_for<Downstream, std::remove_cvref_t<AnyEvent>>
     void handle(AnyEvent &&event) {
         if (not prepended) {
             downstream.handle(std::move(evt));
@@ -51,7 +51,7 @@ template <typename Event, typename Downstream> class prepend {
 };
 
 template <typename Event, typename Downstream> class append {
-    static_assert(is_processor<Downstream, Event>);
+    static_assert(processor<Downstream, Event>);
 
     Downstream downstream;
 
@@ -71,7 +71,7 @@ template <typename Event, typename Downstream> class append {
     }
 
     template <typename AnyEvent>
-        requires handles_event<Downstream, std::remove_cvref_t<AnyEvent>>
+        requires handler_for<Downstream, std::remove_cvref_t<AnyEvent>>
     void handle(AnyEvent &&event) {
         downstream.handle(std::forward<AnyEvent>(event));
     }

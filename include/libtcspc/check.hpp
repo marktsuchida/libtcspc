@@ -26,7 +26,7 @@ namespace internal {
 template <typename DataTypes, bool RequireStrictlyIncreasing,
           typename Downstream>
 class check_monotonic {
-    static_assert(is_processor<Downstream, warning_event>);
+    static_assert(processor<Downstream, warning_event>);
 
     typename DataTypes::abstime_type last_seen =
         std::numeric_limits<typename DataTypes::abstime_type>::min();
@@ -54,9 +54,9 @@ class check_monotonic {
     }
 
     template <typename Event>
-        requires handles_event<Downstream, std::remove_cvref_t<Event>>
+        requires handler_for<Downstream, std::remove_cvref_t<Event>>
     void handle(Event &&event) {
-        if constexpr (has_abstime<std::remove_cvref_t<Event>>) {
+        if constexpr (abstime_stamped<std::remove_cvref_t<Event>>) {
             static_assert(std::is_same_v<decltype(event.abstime),
                                          typename DataTypes::abstime_type>);
             bool const monotonic = RequireStrictlyIncreasing
@@ -118,7 +118,7 @@ namespace internal {
 
 template <typename Event0, typename Event1, typename Downstream>
 class check_alternating {
-    static_assert(is_processor<Downstream, Event0, Event1, warning_event>);
+    static_assert(processor<Downstream, Event0, Event1, warning_event>);
 
     bool last_saw_0 = false;
     Downstream downstream;
@@ -140,7 +140,7 @@ class check_alternating {
     }
 
     template <typename E>
-        requires handles_event<Downstream, std::remove_cvref_t<E>>
+        requires handler_for<Downstream, std::remove_cvref_t<E>>
     void handle(E &&event) {
         if constexpr (std::is_convertible_v<std::remove_cvref_t<E>, Event0>) {
             if (last_saw_0)

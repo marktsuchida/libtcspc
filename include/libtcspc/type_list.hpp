@@ -61,7 +61,7 @@ struct is_type_list_impl<type_list<Ts...>> : std::true_type {};
  * Checks if \p T is a specialization of `tcspc::type_list`.
  */
 template <typename T>
-concept is_type_list = internal::is_type_list_impl<T>::value;
+concept type_list_like = internal::is_type_list_impl<T>::value;
 
 /**
  * \defgroup type-list-size Metafunction type_list_size
@@ -154,8 +154,8 @@ struct type_list_contains_impl<type_list<Ts...>, Type>
  * Checks if \p Type is in the template arguments of the `tcspc::type_list`
  * specialization \p TypeList.
  */
-template <typename TypeList, typename Type>
-concept type_list_contains =
+template <typename Type, typename TypeList>
+concept type_list_member =
     internal::type_list_contains_impl<TypeList, Type>::value;
 
 /** \cond implementation-detail */
@@ -183,7 +183,7 @@ struct is_convertible_to_type_list_member_impl<Type, type_list<Ts...>>
  * the `tcspc::type_list` specialization \p TypeList.
  */
 template <typename Type, typename TypeList>
-concept is_convertible_to_type_list_member =
+concept convertible_to_type_list_member =
     internal::is_convertible_to_type_list_member_impl<Type, TypeList>::value;
 
 /**
@@ -208,7 +208,7 @@ template <typename TL0, typename TL1> struct type_list_is_subset;
 
 template <typename... T0s, typename TL1>
 struct type_list_is_subset<type_list<T0s...>, TL1>
-    : std::bool_constant<(type_list_contains<TL1, T0s> && ...)> {};
+    : std::bool_constant<(type_list_member<T0s, TL1> && ...)> {};
 
 /** \endcond */
 
@@ -272,7 +272,7 @@ struct unique_type_list_impl<type_list<Ds...>, type_list<>>
 template <typename... Ds, typename T, typename... Ts>
 struct unique_type_list_impl<type_list<Ds...>, type_list<T, Ts...>>
     : std::conditional_t<
-          type_list_contains<type_list<Ds...>, T>,
+          type_list_member<T, type_list<Ds...>>,
           unique_type_list_impl<type_list<Ds...>, type_list<Ts...>>,
           unique_type_list_impl<type_list<Ds..., T>, type_list<Ts...>>> {};
 
@@ -320,7 +320,7 @@ template <typename... Ds, typename S1, typename... S1s>
 struct type_list_union_impl<type_list<Ds...>, type_list<>,
                             type_list<S1, S1s...>>
     : std::conditional_t<
-          type_list_contains<type_list<Ds...>, S1>,
+          type_list_member<S1, type_list<Ds...>>,
           type_list_union_impl<type_list<Ds...>, type_list<>,
                                type_list<S1s...>>,
           type_list_union_impl<type_list<Ds..., S1>, type_list<>,
@@ -330,7 +330,7 @@ template <typename... Ds, typename S0, typename... S0s, typename... S1s>
 struct type_list_union_impl<type_list<Ds...>, type_list<S0, S0s...>,
                             type_list<S1s...>>
     : std::conditional_t<
-          type_list_contains<type_list<Ds...>, S0>,
+          type_list_member<S0, type_list<Ds...>>,
           type_list_union_impl<type_list<Ds...>, type_list<S0s...>,
                                type_list<S1s...>>,
           type_list_union_impl<type_list<Ds..., S0>, type_list<S0s...>,
@@ -385,7 +385,7 @@ template <typename... Ds, typename S0, typename... S0s, typename... S1s>
 struct type_list_intersection_impl<type_list<Ds...>, type_list<S0, S0s...>,
                                    type_list<S1s...>>
     : std::conditional_t<
-          type_list_contains<type_list<S1s...>, S0>,
+          type_list_member<S0, type_list<S1s...>>,
           type_list_intersection_impl<type_list<Ds..., S0>, type_list<S0s...>,
                                       type_list<S1s...>>,
           type_list_intersection_impl<type_list<Ds...>, type_list<S0s...>,
@@ -442,7 +442,7 @@ template <typename... Ds, typename S0, typename... S0s, typename... S1s>
 struct type_list_set_difference_impl<type_list<Ds...>, type_list<S0, S0s...>,
                                      type_list<S1s...>>
     : std::conditional_t<
-          type_list_contains<type_list<S1s...>, S0>,
+          type_list_member<S0, type_list<S1s...>>,
           type_list_set_difference_impl<type_list<Ds...>, type_list<S0s...>,
                                         type_list<S1s...>>,
           type_list_set_difference_impl<

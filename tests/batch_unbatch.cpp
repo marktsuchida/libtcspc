@@ -31,30 +31,30 @@ TEST_CASE("type constraints: batch") {
     using proc_type =
         decltype(batch<e0>(new_delete_bucket_source<e0>::create(),
                            arg::batch_size<>{100}, sink_events<bucket<e0>>()));
-    STATIC_CHECK(is_processor<proc_type, e0>);
-    STATIC_CHECK_FALSE(is_processor<proc_type, e1>);
-    STATIC_CHECK_FALSE(handles_event<proc_type, bucket<e0>>);
+    STATIC_CHECK(processor<proc_type, e0>);
+    STATIC_CHECK_FALSE(processor<proc_type, e1>);
+    STATIC_CHECK_FALSE(handler_for<proc_type, bucket<e0>>);
 }
 
 TEST_CASE("type constraints: unbatch") {
     struct e0 {};
     using proc_type = decltype(unbatch<bucket<int>>(sink_events<int, e0>()));
-    STATIC_CHECK(is_processor<proc_type, bucket<int>>);
-    STATIC_CHECK_FALSE(handles_event<proc_type, bucket<short>>);
-    STATIC_CHECK_FALSE(handles_event<proc_type, bucket<e0>>);
-    STATIC_CHECK(handles_event<proc_type, int>);
-    STATIC_CHECK(handles_event<proc_type, e0>);
+    STATIC_CHECK(processor<proc_type, bucket<int>>);
+    STATIC_CHECK_FALSE(handler_for<proc_type, bucket<short>>);
+    STATIC_CHECK_FALSE(handler_for<proc_type, bucket<e0>>);
+    STATIC_CHECK(handler_for<proc_type, int>);
+    STATIC_CHECK(handler_for<proc_type, e0>);
     using const_proc_type =
         decltype(unbatch<bucket<int const>>(sink_events<int, e0>()));
-    STATIC_CHECK(handles_event<const_proc_type, bucket<int const>>);
+    STATIC_CHECK(handler_for<const_proc_type, bucket<int const>>);
 }
 
 TEST_CASE("type constraints: process_in_batches") {
     struct e0 {};
     using proc_type = decltype(process_in_batches<e0>(arg::batch_size<>{1},
                                                       sink_events<e0>()));
-    STATIC_CHECK(is_processor<proc_type, e0>);
-    STATIC_CHECK_FALSE(handles_event<proc_type, int>);
+    STATIC_CHECK(processor<proc_type, e0>);
+    STATIC_CHECK_FALSE(handler_for<proc_type, int>);
 }
 
 TEST_CASE("introspect: batch, unbatch") {

@@ -124,8 +124,8 @@ class single_histogram {
   public:
     using bin_index_type = BinIndex;
     using bin_type = Bin;
-    static_assert(is_any_of<OverflowPolicy, saturate_on_internal_overflow,
-                            stop_on_internal_overflow>);
+    static_assert(same_as_any_of<OverflowPolicy, saturate_on_internal_overflow,
+                                 stop_on_internal_overflow>);
 
   private:
     std::span<bin_type> hist;
@@ -203,8 +203,8 @@ class multi_histogram {
   public:
     using bin_index_type = BinIndex;
     using bin_type = Bin;
-    static_assert(is_any_of<OverflowPolicy, saturate_on_internal_overflow,
-                            stop_on_internal_overflow>);
+    static_assert(same_as_any_of<OverflowPolicy, saturate_on_internal_overflow,
+                                 stop_on_internal_overflow>);
 
   private:
     std::span<bin_type> hist_arr;
@@ -392,8 +392,8 @@ class multi_histogram_accumulation {
   public:
     using bin_index_type = BinIndex;
     using bin_type = Bin;
-    static_assert(is_any_of<OverflowPolicy, saturate_on_internal_overflow,
-                            stop_on_internal_overflow>);
+    static_assert(same_as_any_of<OverflowPolicy, saturate_on_internal_overflow,
+                                 stop_on_internal_overflow>);
 
   private:
     std::size_t scan_idx = 0;

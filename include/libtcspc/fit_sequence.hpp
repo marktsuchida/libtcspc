@@ -104,7 +104,7 @@ class periodic_fitter {
 template <typename Event, typename DataTypes, typename Downstream>
 class fit_periodic_sequences {
     static_assert(
-        is_processor<Downstream, periodic_sequence_model_event<DataTypes>>);
+        processor<Downstream, periodic_sequence_model_event<DataTypes>>);
 
     using abstime_type = typename DataTypes::abstime_type;
 
@@ -196,7 +196,7 @@ class fit_periodic_sequences {
     void handle(Event &&event) { handle(static_cast<Event const &>(event)); }
 
     template <typename OtherEvent>
-        requires handles_event<Downstream, std::remove_cvref_t<OtherEvent>>
+        requires handler_for<Downstream, std::remove_cvref_t<OtherEvent>>
     void handle(OtherEvent &&event) {
         downstream.handle(std::forward<OtherEvent>(event));
     }

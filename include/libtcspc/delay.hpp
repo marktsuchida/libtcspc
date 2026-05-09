@@ -44,8 +44,7 @@ template <typename DataTypes, typename Downstream> class delay {
     // heap buffer). Also only handling lvalues is simpler.
 
     template <typename TimeTaggedEvent>
-        requires handles_event<Downstream,
-                               std::remove_cvref_t<TimeTaggedEvent>>
+        requires handler_for<Downstream, std::remove_cvref_t<TimeTaggedEvent>>
     void handle(TimeTaggedEvent const &event) {
         static_assert(std::is_same_v<decltype(event.abstime),
                                      typename DataTypes::abstime_type>);
@@ -77,8 +76,7 @@ template <typename DataTypes, typename Downstream> class zero_base_abstime {
     // Handle only const lvalue (see note on delay::handle()).
 
     template <typename TimeTaggedEvent>
-        requires handles_event<Downstream,
-                               std::remove_cvref_t<TimeTaggedEvent>>
+        requires handler_for<Downstream, std::remove_cvref_t<TimeTaggedEvent>>
     void handle(TimeTaggedEvent const &event) {
         static_assert(std::is_same_v<decltype(event.abstime),
                                      typename DataTypes::abstime_type>);

@@ -52,8 +52,8 @@ template <typename EventList> class sink_events {
     }
 
     template <typename E>
-        requires is_convertible_to_type_list_member<std::remove_cvref_t<E>,
-                                                    EventList>
+        requires convertible_to_type_list_member<std::remove_cvref_t<E>,
+                                                 EventList>
     void handle(E &&event) {
         [[maybe_unused]] std::remove_reference_t<E> const e =
             std::forward<E>(event);
@@ -305,7 +305,7 @@ class capture_output_access {
     template <typename Event, typename EventList>
     auto pop(feed_as feeder_value_category, emitted_as value_category)
         -> Event {
-        static_assert(type_list_contains<EventList, Event>);
+        static_assert(type_list_member<Event, EventList>);
         auto const events = peek_events<EventList>();
         try {
             if (events.empty())
@@ -362,7 +362,7 @@ class capture_output_access {
     template <typename Event, typename EventList>
     auto check(feed_as feeder_value_category, emitted_as value_category,
                Event const &expected_event) -> bool {
-        static_assert(type_list_contains<EventList, Event>);
+        static_assert(type_list_member<Event, EventList>);
         auto events = peek_events<EventList>();
         try {
             if (events.empty())
@@ -533,7 +533,7 @@ template <typename EventList> class capture_output_checker {
      * \return the event
      */
     template <typename Event> auto pop(emitted_as value_category) -> Event {
-        static_assert(type_list_contains<EventList, Event>);
+        static_assert(type_list_member<Event, EventList>);
         return acc.pop<Event, EventList>(feeder_valcat, value_category);
     }
 
@@ -569,7 +569,7 @@ template <typename EventList> class capture_output_checker {
     template <typename Event>
     auto check(emitted_as value_category, Event const &expected_event)
         -> bool {
-        static_assert(type_list_contains<EventList, Event>);
+        static_assert(type_list_member<Event, EventList>);
         return acc.check<Event, EventList>(feeder_valcat, value_category,
                                            expected_event);
     }
@@ -715,7 +715,7 @@ template <typename EventList> class capture_output {
     }
 
     template <typename Event>
-        requires type_list_contains<EventList, std::remove_cvref_t<Event>>
+        requires type_list_member<std::remove_cvref_t<Event>, EventList>
     void handle(Event &&event) {
         // TODO std::invoke() in C++20 (readability).
         static constexpr auto valcat = [] {
@@ -825,7 +825,7 @@ template <> class capture_output<type_list<>> {
 };
 
 template <typename Downstream> class feed_input {
-    static_assert(is_processor<Downstream>);
+    static_assert(processor<Downstream>);
 
     std::vector<std::pair<std::shared_ptr<context>, std::string>>
         outputs_to_check; // (context, name)
@@ -863,7 +863,7 @@ template <typename Downstream> class feed_input {
     }
 
     template <typename Event>
-        requires handles_event<Downstream, std::remove_cvref_t<Event>>
+        requires handler_for<Downstream, std::remove_cvref_t<Event>>
     void handle(Event &&event) {
         check_outputs_ready("event of type " +
                             std::string(typeid(event).name()));

@@ -26,8 +26,8 @@ TEST_CASE("type constraints: capture_output") {
     using e1 = empty_test_event<1>;
     using proc_type = decltype(capture_output<type_list<e0, e1>>(
         context::create()->tracker<capture_output_access>("out")));
-    STATIC_CHECK(is_processor<proc_type, e0, e1>);
-    STATIC_CHECK_FALSE(handles_event<proc_type, int>);
+    STATIC_CHECK(processor<proc_type, e0, e1>);
+    STATIC_CHECK_FALSE(handler_for<proc_type, int>);
 }
 
 TEST_CASE("type constraints: feed_input") {
@@ -35,20 +35,20 @@ TEST_CASE("type constraints: feed_input") {
     using e1 = empty_test_event<1>;
     using proc_type =
         decltype(feed_input(feed_as::const_lvalue, sink_events<e0, e1>()));
-    STATIC_CHECK(is_processor<proc_type, e0, e1>);
-    STATIC_CHECK_FALSE(handles_event<proc_type, int>);
+    STATIC_CHECK(processor<proc_type, e0, e1>);
+    STATIC_CHECK_FALSE(handler_for<proc_type, int>);
 }
 
 TEST_CASE("type constraints: sink_events") {
     using e0 = empty_test_event<0>;
 
-    STATIC_CHECK(handles_flush<decltype(sink_events<>())>);
+    STATIC_CHECK(flushable<decltype(sink_events<>())>);
 
-    STATIC_CHECK_FALSE(handles_rvalue_event<decltype(sink_events<>()), e0>);
-    STATIC_CHECK(handles_rvalue_event<decltype(sink_events<e0>()), e0>);
+    STATIC_CHECK_FALSE(rvalue_handler_for<decltype(sink_events<>()), e0>);
+    STATIC_CHECK(rvalue_handler_for<decltype(sink_events<e0>()), e0>);
 
-    STATIC_CHECK_FALSE(handles_const_event<decltype(sink_events<>()), e0>);
-    STATIC_CHECK(handles_const_event<decltype(sink_events<e0>()), e0>);
+    STATIC_CHECK_FALSE(const_handler_for<decltype(sink_events<>()), e0>);
+    STATIC_CHECK(const_handler_for<decltype(sink_events<e0>()), e0>);
 }
 
 TEST_CASE("introspect: test_utils") {

@@ -31,7 +31,7 @@ namespace internal {
 template <std::size_t NStopChannels, typename DataTypes, typename Downstream>
 class pair_all {
     static_assert(
-        is_processor<Downstream, std::array<detection_event<DataTypes>, 2>>);
+        processor<Downstream, std::array<detection_event<DataTypes>, 2>>);
 
     typename DataTypes::channel_type start_chan;
     std::array<typename DataTypes::channel_type, NStopChannels> stop_chans;
@@ -97,7 +97,7 @@ class pair_all {
     }
 
     template <typename OtherEvent>
-        requires handles_event<Downstream, std::remove_cvref_t<OtherEvent>>
+        requires handler_for<Downstream, std::remove_cvref_t<OtherEvent>>
     void handle(OtherEvent &&event) {
         downstream.handle(std::forward<OtherEvent>(event));
     }
@@ -108,7 +108,7 @@ class pair_all {
 template <std::size_t NStopChannels, typename DataTypes, typename Downstream>
 class pair_one {
     static_assert(
-        is_processor<Downstream, std::array<detection_event<DataTypes>, 2>>);
+        processor<Downstream, std::array<detection_event<DataTypes>, 2>>);
 
     typename DataTypes::channel_type start_chan;
     std::array<typename DataTypes::channel_type, NStopChannels> stop_chans;
@@ -184,7 +184,7 @@ class pair_one {
     }
 
     template <typename OtherEvent>
-        requires handles_event<Downstream, std::remove_cvref_t<OtherEvent>>
+        requires handler_for<Downstream, std::remove_cvref_t<OtherEvent>>
     void handle(OtherEvent &&event) {
         downstream.handle(std::forward<OtherEvent>(event));
     }
@@ -195,7 +195,7 @@ class pair_one {
 template <std::size_t NStopChannels, typename DataTypes, typename Downstream>
 class pair_all_between {
     static_assert(
-        is_processor<Downstream, std::array<detection_event<DataTypes>, 2>>);
+        processor<Downstream, std::array<detection_event<DataTypes>, 2>>);
 
     typename DataTypes::channel_type start_chan;
     std::array<typename DataTypes::channel_type, NStopChannels> stop_chans;
@@ -262,7 +262,7 @@ class pair_all_between {
     }
 
     template <typename OtherEvent>
-        requires handles_event<Downstream, std::remove_cvref_t<OtherEvent>>
+        requires handler_for<Downstream, std::remove_cvref_t<OtherEvent>>
     void handle(OtherEvent &&event) {
         downstream.handle(std::forward<OtherEvent>(event));
     }
@@ -273,7 +273,7 @@ class pair_all_between {
 template <std::size_t NStopChannels, typename DataTypes, typename Downstream>
 class pair_one_between {
     static_assert(
-        is_processor<Downstream, std::array<detection_event<DataTypes>, 2>>);
+        processor<Downstream, std::array<detection_event<DataTypes>, 2>>);
 
     typename DataTypes::channel_type start_chan;
     std::array<typename DataTypes::channel_type, NStopChannels> stop_chans;
@@ -347,7 +347,7 @@ class pair_one_between {
     }
 
     template <typename OtherEvent>
-        requires handles_event<Downstream, std::remove_cvref_t<OtherEvent>>
+        requires handler_for<Downstream, std::remove_cvref_t<OtherEvent>>
     void handle(OtherEvent &&event) {
         downstream.handle(std::forward<OtherEvent>(event));
     }

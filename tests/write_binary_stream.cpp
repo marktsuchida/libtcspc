@@ -34,13 +34,13 @@ TEST_CASE("type constraints: write_binary_stream") {
     using proc_type = decltype(write_binary_stream(
         null_output_stream(), new_delete_bucket_source<std::byte>::create(),
         arg::granularity<>{16}));
-    STATIC_CHECK(is_processor<proc_type, bucket<std::byte>>);
-    STATIC_CHECK(is_processor<proc_type, bucket<std::byte const>>);
-    STATIC_CHECK(is_processor<proc_type, std::array<std::byte, 8>>);
-    STATIC_CHECK(is_processor<proc_type, std::vector<std::byte>>);
-    STATIC_CHECK_FALSE(handles_event<proc_type, std::byte>);
-    STATIC_CHECK_FALSE(handles_event<proc_type, bucket<int>>);
-    STATIC_CHECK_FALSE(handles_event<proc_type, int>);
+    STATIC_CHECK(processor<proc_type, bucket<std::byte>>);
+    STATIC_CHECK(processor<proc_type, bucket<std::byte const>>);
+    STATIC_CHECK(processor<proc_type, std::array<std::byte, 8>>);
+    STATIC_CHECK(processor<proc_type, std::vector<std::byte>>);
+    STATIC_CHECK_FALSE(handler_for<proc_type, std::byte>);
+    STATIC_CHECK_FALSE(handler_for<proc_type, bucket<int>>);
+    STATIC_CHECK_FALSE(handler_for<proc_type, int>);
 }
 
 TEST_CASE("introspect: write_binary_stream") {

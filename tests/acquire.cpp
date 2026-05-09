@@ -42,8 +42,8 @@ TEST_CASE("type constraints: acquire") {
         null_reader<int>(), new_delete_bucket_source<int>::create(),
         arg::batch_size<>{64}, ctx->tracker<acquire_access>("acq"),
         sink_events<bucket<int>>()));
-    STATIC_CHECK(is_processor<proc_type>);
-    STATIC_CHECK_FALSE(handles_event<proc_type, int>);
+    STATIC_CHECK(processor<proc_type>);
+    STATIC_CHECK_FALSE(handler_for<proc_type, int>);
 }
 
 TEST_CASE("type constraints: acquire_full_buckets") {
@@ -52,8 +52,8 @@ TEST_CASE("type constraints: acquire_full_buckets") {
         null_reader<int>(), sharable_new_delete_bucket_source<int>::create(),
         arg::batch_size<>{64}, ctx->tracker<acquire_access>("acq"),
         sink_events<bucket<int const>>(), sink_events<bucket<int>>()));
-    STATIC_CHECK(is_processor<proc_type>);
-    STATIC_CHECK_FALSE(handles_event<proc_type, int>);
+    STATIC_CHECK(processor<proc_type>);
+    STATIC_CHECK_FALSE(handler_for<proc_type, int>);
 }
 
 TEST_CASE("introspect: acquire") {

@@ -25,7 +25,7 @@ namespace internal {
 template <typename TriggerEvent, typename OutputEvent,
           typename TimingGenerator, typename Downstream>
 class generate {
-    static_assert(is_processor<Downstream, TriggerEvent, OutputEvent>);
+    static_assert(processor<Downstream, TriggerEvent, OutputEvent>);
 
     using abstime_type = decltype(std::declval<TriggerEvent>().abstime);
     static_assert(
@@ -64,7 +64,7 @@ class generate {
     }
 
     template <typename E>
-        requires handles_event<Downstream, std::remove_cvref_t<E>>
+        requires handler_for<Downstream, std::remove_cvref_t<E>>
     void handle(E &&event) {
         emit([now = event.abstime](auto t) { return t <= now; });
         if constexpr (std::is_convertible_v<std::remove_cvref_t<E>,

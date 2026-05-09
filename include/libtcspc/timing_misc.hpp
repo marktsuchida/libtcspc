@@ -148,7 +148,7 @@ namespace internal {
 template <typename DataTypes, typename Downstream>
 class retime_periodic_sequences {
     static_assert(
-        is_processor<Downstream, periodic_sequence_model_event<DataTypes>>);
+        processor<Downstream, periodic_sequence_model_event<DataTypes>>);
 
     using abstime_type = typename DataTypes::abstime_type;
 
@@ -273,7 +273,7 @@ namespace internal {
 template <typename DataTypes, typename Downstream>
 class extrapolate_periodic_sequences {
     static_assert(
-        is_processor<Downstream, real_one_shot_timing_event<DataTypes>>);
+        processor<Downstream, real_one_shot_timing_event<DataTypes>>);
 
     double m;
     Downstream downstream;
@@ -307,7 +307,7 @@ class extrapolate_periodic_sequences {
     }
 
     template <typename OtherEvent>
-        requires handles_event<Downstream, std::remove_cvref_t<OtherEvent>>
+        requires handler_for<Downstream, std::remove_cvref_t<OtherEvent>>
     void handle(OtherEvent &&event) {
         downstream.handle(std::forward<OtherEvent>(event));
     }
@@ -365,8 +365,7 @@ namespace internal {
 
 template <typename DataTypes, typename Downstream>
 class add_count_to_periodic_sequences {
-    static_assert(
-        is_processor<Downstream, real_linear_timing_event<DataTypes>>);
+    static_assert(processor<Downstream, real_linear_timing_event<DataTypes>>);
 
     std::size_t ct;
     Downstream downstream;
@@ -399,7 +398,7 @@ class add_count_to_periodic_sequences {
     }
 
     template <typename OtherEvent>
-        requires handles_event<Downstream, std::remove_cvref_t<OtherEvent>>
+        requires handler_for<Downstream, std::remove_cvref_t<OtherEvent>>
     void handle(OtherEvent &&event) {
         downstream.handle(std::forward<OtherEvent>(event));
     }
@@ -453,7 +452,7 @@ namespace internal {
 template <typename TickEvent, typename StartEvent, typename StopEvent,
           typename Downstream>
 class convert_sequences_to_start_stop {
-    static_assert(is_processor<Downstream, StartEvent, StopEvent>);
+    static_assert(processor<Downstream, StartEvent, StopEvent>);
 
     static_assert(
         std::is_same_v<decltype(std::declval<TickEvent>().abstime),
@@ -500,7 +499,7 @@ class convert_sequences_to_start_stop {
     }
 
     template <typename OtherEvent>
-        requires handles_event<Downstream, std::remove_cvref_t<OtherEvent>>
+        requires handler_for<Downstream, std::remove_cvref_t<OtherEvent>>
     void handle(OtherEvent &&event) {
         downstream.handle(std::forward<OtherEvent>(event));
     }

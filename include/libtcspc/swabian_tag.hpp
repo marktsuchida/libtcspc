@@ -210,10 +210,10 @@ struct swabian_tag_event {
 namespace internal {
 
 template <typename DataTypes, typename Downstream> class decode_swabian_tags {
-    static_assert(is_processor<Downstream, detection_event<DataTypes>,
-                               begin_lost_interval_event<DataTypes>,
-                               end_lost_interval_event<DataTypes>,
-                               lost_counts_event<DataTypes>, warning_event>);
+    static_assert(processor<Downstream, detection_event<DataTypes>,
+                            begin_lost_interval_event<DataTypes>,
+                            end_lost_interval_event<DataTypes>,
+                            lost_counts_event<DataTypes>, warning_event>);
 
     static_assert(is_type_in_range<typename DataTypes::abstime_type>(i64{0}));
     static_assert(is_type_in_range<typename DataTypes::channel_type>(i32{0}));
@@ -265,7 +265,7 @@ template <typename DataTypes, typename Downstream> class decode_swabian_tags {
     template <typename Event>
         requires(std::convertible_to<std::remove_cvref_t<Event>,
                                      swabian_tag_event> ||
-                 handles_event<Downstream, std::remove_cvref_t<Event>>)
+                 handler_for<Downstream, std::remove_cvref_t<Event>>)
     void handle(Event &&event) {
         if constexpr (std::is_convertible_v<std::remove_cvref_t<Event>,
                                             swabian_tag_event>) {

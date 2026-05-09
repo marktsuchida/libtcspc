@@ -26,7 +26,7 @@ template <typename TickEvent, typename FireEvent, typename ResetEvent,
           bool FireAfterTick, typename Downstream>
 class count_up_to {
     // Do not require handling of ResetEvent, as it may not be used at all.
-    static_assert(is_processor<Downstream, TickEvent, FireEvent>);
+    static_assert(processor<Downstream, TickEvent, FireEvent>);
 
     u64 count;
     u64 init;
@@ -88,7 +88,7 @@ class count_up_to {
     }
 
     template <typename E>
-        requires handles_event<Downstream, std::remove_cvref_t<E>>
+        requires handler_for<Downstream, std::remove_cvref_t<E>>
     void handle(E &&event) {
         if constexpr (std::is_convertible_v<std::remove_cvref_t<E>,
                                             ResetEvent>) {
@@ -241,7 +241,7 @@ class count_access {
 namespace internal {
 
 template <typename Event, typename Downstream> class count {
-    static_assert(is_processor<Downstream, Event>);
+    static_assert(processor<Downstream, Event>);
 
     u64 ct = 0;
 
@@ -269,7 +269,7 @@ template <typename Event, typename Downstream> class count {
     }
 
     template <typename E>
-        requires handles_event<Downstream, std::remove_cvref_t<E>>
+        requires handler_for<Downstream, std::remove_cvref_t<E>>
     void handle(E &&event) {
         if constexpr (std::is_convertible_v<std::remove_cvref_t<E>, Event>)
             ++ct;

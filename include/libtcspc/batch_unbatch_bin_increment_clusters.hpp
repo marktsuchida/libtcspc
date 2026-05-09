@@ -53,7 +53,7 @@ class batch_bin_increment_clusters_encoding_adapter {
 template <typename DataTypes, typename Downstream>
 class batch_bin_increment_clusters {
     using bin_index_type = typename DataTypes::bin_index_type;
-    static_assert(is_processor<Downstream, bucket<bin_index_type>>);
+    static_assert(processor<Downstream, bucket<bin_index_type>>);
 
     std::shared_ptr<bucket_source<bin_index_type>> bsource;
 
@@ -145,7 +145,7 @@ class batch_bin_increment_clusters {
     // NOLINTEND(cppcoreguidelines-rvalue-reference-param-not-moved)
 
     template <typename Event>
-        requires handles_event<Downstream, std::remove_cvref_t<Event>>
+        requires handler_for<Downstream, std::remove_cvref_t<Event>>
     void handle(Event &&event) {
         downstream.handle(std::forward<Event>(event));
     }
@@ -160,7 +160,7 @@ template <typename DataTypes, typename Downstream>
 class unbatch_bin_increment_clusters {
     using bin_index_type = typename DataTypes::bin_index_type;
     static_assert(
-        is_processor<Downstream, bin_increment_cluster_event<DataTypes>>);
+        processor<Downstream, bin_increment_cluster_event<DataTypes>>);
 
     Downstream downstream;
 
@@ -183,7 +183,7 @@ class unbatch_bin_increment_clusters {
             std::convertible_to<
                 std::remove_cvref_t<Event>,
                 bucket<typename DataTypes::bin_index_type const>> ||
-            handles_event<Downstream, std::remove_cvref_t<Event>>)
+            handler_for<Downstream, std::remove_cvref_t<Event>>)
     void handle(Event &&event) {
         if constexpr (std::is_convertible_v<
                           std::remove_cvref_t<Event>,

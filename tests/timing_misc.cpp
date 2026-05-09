@@ -28,28 +28,26 @@ TEST_CASE("type constraints: retime_periodic_sequences") {
     using proc_type = decltype(retime_periodic_sequences(
         arg::max_time_shift<i64>{42},
         sink_events<periodic_sequence_model_event<>, int>()));
-    STATIC_CHECK(is_processor<proc_type, periodic_sequence_model_event<>>);
-    STATIC_CHECK_FALSE(handles_event<proc_type, int>);
+    STATIC_CHECK(processor<proc_type, periodic_sequence_model_event<>>);
+    STATIC_CHECK_FALSE(handler_for<proc_type, int>);
 }
 
 TEST_CASE("type constraints: extrapolate_periodic_sequences") {
     using proc_type = decltype(extrapolate_periodic_sequences(
         arg::tick_index<std::size_t>{42},
         sink_events<real_one_shot_timing_event<>, int>()));
-    STATIC_CHECK(
-        is_processor<proc_type, periodic_sequence_model_event<>, int>);
+    STATIC_CHECK(processor<proc_type, periodic_sequence_model_event<>, int>);
     struct some_type {};
-    STATIC_CHECK_FALSE(handles_event<proc_type, some_type>);
+    STATIC_CHECK_FALSE(handler_for<proc_type, some_type>);
 }
 
 TEST_CASE("type constraints: add_count_to_periodic_sequences") {
     using proc_type = decltype(add_count_to_periodic_sequences(
         arg::count<std::size_t>{42},
         sink_events<real_linear_timing_event<>, int>()));
-    STATIC_CHECK(
-        is_processor<proc_type, periodic_sequence_model_event<>, int>);
+    STATIC_CHECK(processor<proc_type, periodic_sequence_model_event<>, int>);
     struct some_type {};
-    STATIC_CHECK_FALSE(handles_event<proc_type, some_type>);
+    STATIC_CHECK_FALSE(handler_for<proc_type, some_type>);
 }
 
 TEST_CASE("type constraints: convert_sequences_to_start_stop") {
@@ -65,10 +63,10 @@ TEST_CASE("type constraints: convert_sequences_to_start_stop") {
     using proc_type =
         decltype(convert_sequences_to_start_stop<tick, start, stop>(
             arg::count<std::size_t>{42}, sink_events<start, stop, int>()));
-    STATIC_CHECK(is_processor<proc_type, tick, int>);
-    STATIC_CHECK(handles_events<proc_type, start, stop>);
+    STATIC_CHECK(processor<proc_type, tick, int>);
+    STATIC_CHECK(handler_for<proc_type, start, stop>);
     struct some_type {};
-    STATIC_CHECK_FALSE(handles_event<proc_type, some_type>);
+    STATIC_CHECK_FALSE(handler_for<proc_type, some_type>);
 }
 
 TEST_CASE("introspect: timing_misc") {

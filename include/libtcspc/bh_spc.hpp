@@ -712,15 +712,16 @@ namespace internal {
 template <typename DataTypes, typename BHSPCEvent, bool HasIntensityCounter,
           typename Downstream>
 class decode_bh_spc {
-    static_assert(is_any_of<BHSPCEvent, bh_spc_event, bh_spc600_256ch_event,
-                            bh_spc600_4096ch_event>);
+    static_assert(
+        same_as_any_of<BHSPCEvent, bh_spc_event, bh_spc600_256ch_event,
+                       bh_spc600_4096ch_event>);
 
-    static_assert(is_processor<Downstream, time_reached_event<DataTypes>,
-                               time_correlated_detection_event<DataTypes>,
-                               data_lost_event<DataTypes>, warning_event>);
-    static_assert(handles_event<Downstream, bulk_counts_event<DataTypes>> ||
+    static_assert(processor<Downstream, time_reached_event<DataTypes>,
+                            time_correlated_detection_event<DataTypes>,
+                            data_lost_event<DataTypes>, warning_event>);
+    static_assert(handler_for<Downstream, bulk_counts_event<DataTypes>> ||
                   not HasIntensityCounter);
-    static_assert(handles_event<Downstream, marker_event<DataTypes>> ||
+    static_assert(handler_for<Downstream, marker_event<DataTypes>> ||
                   not BHSPCEvent::has_markers);
 
     // 32-bit abstime can work for a few seconds, though 64-bit is recommended.
@@ -811,7 +812,7 @@ class decode_bh_spc {
 
     template <typename Event>
         requires(std::convertible_to<std::remove_cvref_t<Event>, BHSPCEvent> ||
-                 handles_event<Downstream, std::remove_cvref_t<Event>>)
+                 handler_for<Downstream, std::remove_cvref_t<Event>>)
     void handle(Event &&event) {
         if constexpr (std::is_convertible_v<std::remove_cvref_t<Event>,
                                             BHSPCEvent>)

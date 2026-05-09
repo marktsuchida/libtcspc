@@ -21,7 +21,7 @@ namespace tcspc {
 namespace internal {
 
 template <typename EventList, typename Downstream> class multiplex {
-    static_assert(is_processor<Downstream, variant_event<EventList>>);
+    static_assert(processor<Downstream, variant_event<EventList>>);
 
     Downstream downstream;
 
@@ -38,8 +38,8 @@ template <typename EventList, typename Downstream> class multiplex {
     }
 
     template <typename Event>
-        requires is_convertible_to_type_list_member<std::remove_cvref_t<Event>,
-                                                    EventList>
+        requires convertible_to_type_list_member<std::remove_cvref_t<Event>,
+                                                 EventList>
     void handle(Event &&event) {
         downstream.handle(
             variant_event<EventList>(std::forward<Event>(event)));
@@ -49,7 +49,7 @@ template <typename EventList, typename Downstream> class multiplex {
 };
 
 template <typename Downstream> class demultiplex {
-    static_assert(handles_flush<Downstream>);
+    static_assert(flushable<Downstream>);
 
     Downstream downstream;
 

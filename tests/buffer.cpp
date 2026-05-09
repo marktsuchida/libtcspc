@@ -36,8 +36,8 @@ TEST_CASE("type constraints: buffer") {
     using proc_type = decltype(buffer<e0>(arg::threshold<std::size_t>{1},
                                           ctx->tracker<buffer_access>("buf"),
                                           sink_events<e0>()));
-    STATIC_CHECK(is_processor<proc_type, e0>);
-    STATIC_CHECK_FALSE(handles_event<proc_type, int>);
+    STATIC_CHECK(processor<proc_type, e0>);
+    STATIC_CHECK_FALSE(handler_for<proc_type, int>);
 }
 
 TEST_CASE("type constraints: real_time_buffer") {
@@ -46,8 +46,8 @@ TEST_CASE("type constraints: real_time_buffer") {
     using proc_type = decltype(real_time_buffer<e0>(
         arg::threshold<std::size_t>{1}, std::chrono::milliseconds(10),
         ctx->tracker<buffer_access>("buf"), sink_events<e0>()));
-    STATIC_CHECK(is_processor<proc_type, e0>);
-    STATIC_CHECK_FALSE(handles_event<proc_type, int>);
+    STATIC_CHECK(processor<proc_type, e0>);
+    STATIC_CHECK_FALSE(handler_for<proc_type, int>);
 }
 
 TEST_CASE("introspect: buffer") {

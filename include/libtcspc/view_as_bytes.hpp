@@ -20,7 +20,7 @@ namespace tcspc {
 namespace internal {
 
 template <typename Downstream> class view_as_bytes {
-    static_assert(is_processor<Downstream, bucket<std::byte>>);
+    static_assert(processor<Downstream, bucket<std::byte>>);
 
     Downstream downstream;
 

@@ -164,8 +164,8 @@ template <typename EventList> class type_erased_processor {
 
     /** \brief Implements processor requirement. */
     template <typename Event>
-        requires is_convertible_to_type_list_member<std::remove_cvref_t<Event>,
-                                                    event_list>
+        requires convertible_to_type_list_member<std::remove_cvref_t<Event>,
+                                                 event_list>
     void handle(Event &&event) {
         proc->handle(std::forward<Event>(event));
     }

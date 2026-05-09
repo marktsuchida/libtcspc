@@ -9,6 +9,6 @@
 namespace tcspc::internal {
 
 template <typename Event>
-concept has_abstime = requires { Event::abstime; };
+concept abstime_stamped = requires { Event::abstime; };
 
 } // namespace tcspc::internal

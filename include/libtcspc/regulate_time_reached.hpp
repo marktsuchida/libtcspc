@@ -25,7 +25,7 @@ namespace internal {
 
 template <typename DataTypes, typename Downstream>
 class regulate_time_reached {
-    static_assert(is_processor<Downstream, time_reached_event<DataTypes>>);
+    static_assert(processor<Downstream, time_reached_event<DataTypes>>);
 
     using abstime_type = typename DataTypes::abstime_type;
 
@@ -80,7 +80,7 @@ class regulate_time_reached {
     }
 
     template <typename OtherEvent>
-        requires handles_event<Downstream, std::remove_cvref_t<OtherEvent>>
+        requires handler_for<Downstream, std::remove_cvref_t<OtherEvent>>
     void handle(OtherEvent &&event) {
         static_assert(std::is_same_v<decltype(event.abstime), abstime_type>);
         auto const abstime = event.abstime;

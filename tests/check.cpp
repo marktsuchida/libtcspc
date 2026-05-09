@@ -25,8 +25,8 @@ TEST_CASE("type constraints: check_monotonic") {
     using e0 = time_tagged_test_event<0>;
     using proc_type =
         decltype(check_monotonic(sink_events<e0, warning_event>()));
-    STATIC_CHECK(is_processor<proc_type, e0, warning_event>);
-    STATIC_CHECK_FALSE(handles_event<proc_type, int>);
+    STATIC_CHECK(processor<proc_type, e0, warning_event>);
+    STATIC_CHECK_FALSE(handler_for<proc_type, int>);
 }
 
 TEST_CASE("type constraints: check_alternating") {
@@ -35,8 +35,8 @@ TEST_CASE("type constraints: check_alternating") {
     using e2 = empty_test_event<2>;
     using proc_type = decltype(check_alternating<e0, e1>(
         sink_events<e0, e1, e2, warning_event>()));
-    STATIC_CHECK(is_processor<proc_type, e0, e1, e2, warning_event>);
-    STATIC_CHECK_FALSE(handles_event<proc_type, int>);
+    STATIC_CHECK(processor<proc_type, e0, e1, e2, warning_event>);
+    STATIC_CHECK_FALSE(handler_for<proc_type, int>);
 }
 
 TEST_CASE("introspect: check") {

@@ -53,9 +53,9 @@ TEMPLATE_TEST_CASE_SIG("type constraints: scan_histograms", "", ((hp P), P),
             arg::max_per_bin<u16>{255},
             new_delete_bucket_source<u16>::create(),
             sink_event_list<output_events>()));
-        STATIC_CHECK(is_processor<proc_type, bin_increment_cluster_event<>,
-                                  reset_event, misc_event>);
-        STATIC_CHECK_FALSE(handles_event<proc_type, int>);
+        STATIC_CHECK(processor<proc_type, bin_increment_cluster_event<>,
+                               reset_event, misc_event>);
+        STATIC_CHECK_FALSE(handler_for<proc_type, int>);
     }
 
     if constexpr (P != hp::saturate_on_overflow) {
@@ -69,9 +69,9 @@ TEMPLATE_TEST_CASE_SIG("type constraints: scan_histograms", "", ((hp P), P),
                     arg::max_per_bin<u16>{255},
                     new_delete_bucket_source<u16>::create(),
                     sink_event_list<output_events_with_concluding>()));
-            STATIC_CHECK(is_processor<proc_type, bin_increment_cluster_event<>,
-                                      reset_event, misc_event>);
-            STATIC_CHECK_FALSE(handles_event<proc_type, int>);
+            STATIC_CHECK(processor<proc_type, bin_increment_cluster_event<>,
+                                   reset_event, misc_event>);
+            STATIC_CHECK_FALSE(handler_for<proc_type, int>);
         }
     }
 }

@@ -22,9 +22,9 @@ namespace internal {
 template <typename GatedEventList, typename OpenEvent, typename CloseEvent,
           typename Downstream>
 class gate {
-    static_assert(is_type_list<GatedEventList>);
+    static_assert(type_list_like<GatedEventList>);
     // We do not require Downstream to handle all of GatedEventList.
-    static_assert(handles_events<Downstream, OpenEvent, CloseEvent>);
+    static_assert(handler_for<Downstream, OpenEvent, CloseEvent>);
 
     bool open;
 
@@ -44,7 +44,7 @@ class gate {
     }
 
     template <typename E>
-        requires handles_event<Downstream, std::remove_cvref_t<E>>
+        requires handler_for<Downstream, std::remove_cvref_t<E>>
     void handle(E &&event) {
         if constexpr (std::is_convertible_v<std::remove_cvref_t<E>,
                                             OpenEvent>) {
@@ -54,7 +54,7 @@ class gate {
                                                    CloseEvent>) {
             open = false;
             downstream.handle(std::forward<E>(event));
-        } else if constexpr (is_convertible_to_type_list_member<
+        } else if constexpr (convertible_to_type_list_member<
                                  std::remove_cvref_t<E>, GatedEventList>) {
             if (open)
                 downstream.handle(std::forward<E>(event));

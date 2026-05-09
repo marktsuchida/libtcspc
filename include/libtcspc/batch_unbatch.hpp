@@ -24,7 +24,7 @@ namespace tcspc {
 namespace internal {
 
 template <typename Event, typename Downstream> class batch {
-    static_assert(is_processor<Downstream, bucket<Event>>);
+    static_assert(processor<Downstream, bucket<Event>>);
 
     std::shared_ptr<bucket_source<Event>> bsource;
     std::size_t bsize;
@@ -88,7 +88,7 @@ template <typename ContainerEvent, typename Downstream> class unbatch {
             element_type>,
         "ContainerEvent begin() and end() must return compatible iterators");
 
-    static_assert(is_processor<Downstream, element_type>);
+    static_assert(processor<Downstream, element_type>);
 
     Downstream downstream;
 
@@ -114,7 +114,7 @@ template <typename ContainerEvent, typename Downstream> class unbatch {
     // leave it to the compiler.
     template <typename E>
         requires(std::convertible_to<std::remove_cvref_t<E>, ContainerEvent> ||
-                 handles_event<Downstream, std::remove_cvref_t<E>>)
+                 handler_for<Downstream, std::remove_cvref_t<E>>)
     void handle(E &&event) {
         if constexpr (std::is_convertible_v<std::remove_cvref_t<E>,
                                             ContainerEvent>) {

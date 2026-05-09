@@ -39,7 +39,7 @@ class map_to_datapoints {
     static_assert(std::is_same_v<std::invoke_result_t<DataMapper, Event>,
                                  typename DataTypes::datapoint_type>);
 
-    static_assert(is_processor<Downstream, datapoint_event<DataTypes>>);
+    static_assert(processor<Downstream, datapoint_event<DataTypes>>);
 
     DataMapper mapper;
 
@@ -66,7 +66,7 @@ class map_to_datapoints {
     void handle(Event &&event) { handle(static_cast<Event const &>(event)); }
 
     template <typename OtherEvent>
-        requires handles_event<Downstream, std::remove_cvref_t<OtherEvent>>
+        requires handler_for<Downstream, std::remove_cvref_t<OtherEvent>>
     void handle(OtherEvent &&event) {
         downstream.handle(std::forward<OtherEvent>(event));
     }
@@ -188,7 +188,7 @@ namespace internal {
 
 template <typename DataTypes, typename BinMapper, typename Downstream>
 class map_to_bins {
-    static_assert(is_processor<Downstream, bin_increment_event<DataTypes>>);
+    static_assert(processor<Downstream, bin_increment_event<DataTypes>>);
 
     static_assert(
         std::is_same_v<std::invoke_result_t<
@@ -228,7 +228,7 @@ class map_to_bins {
     }
 
     template <typename OtherEvent>
-        requires handles_event<Downstream, std::remove_cvref_t<OtherEvent>>
+        requires handler_for<Downstream, std::remove_cvref_t<OtherEvent>>
     void handle(OtherEvent &&event) {
         downstream.handle(std::forward<OtherEvent>(event));
     }
@@ -520,7 +520,7 @@ template <typename StartEvent, typename StopEvent, typename DataTypes,
           typename Downstream>
 class cluster_bin_increments {
     static_assert(
-        is_processor<Downstream, bin_increment_cluster_event<DataTypes>>);
+        processor<Downstream, bin_increment_cluster_event<DataTypes>>);
 
     bool in_cluster = false;
     std::vector<typename DataTypes::bin_index_type> cur_cluster;
@@ -576,7 +576,7 @@ class cluster_bin_increments {
     }
 
     template <typename OtherEvent>
-        requires handles_event<Downstream, std::remove_cvref_t<OtherEvent>>
+        requires handler_for<Downstream, std::remove_cvref_t<OtherEvent>>
     void handle(OtherEvent &&event) {
         downstream.handle(std::forward<OtherEvent>(event));
     }

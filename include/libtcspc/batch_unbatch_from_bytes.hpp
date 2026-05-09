@@ -26,7 +26,7 @@ namespace internal {
 
 template <typename Event, typename Downstream> class batch_from_bytes {
     static_assert(std::is_trivial_v<Event>);
-    static_assert(is_processor<Downstream, bucket<Event>>);
+    static_assert(processor<Downstream, bucket<Event>>);
 
     std::shared_ptr<bucket_source<Event>> bsource;
 
@@ -88,7 +88,7 @@ template <typename Event, typename Downstream> class batch_from_bytes {
 
 template <typename Event, typename Downstream> class unbatch_from_bytes {
     static_assert(std::is_trivial_v<Event>);
-    static_assert(is_processor<Downstream, Event>);
+    static_assert(processor<Downstream, Event>);
 
     std::size_t bytes_buffered = 0; // < sizeof(buf)
     std::array<std::byte, sizeof(Event)> buf;

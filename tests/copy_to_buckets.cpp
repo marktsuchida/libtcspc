@@ -36,13 +36,13 @@ TEST_CASE("type constraints: copy_to_buckets") {
     using proc_type =
         decltype(copy_to_buckets<int>(new_delete_bucket_source<int>::create(),
                                       sink_events<bucket<int>, misc_event>()));
-    STATIC_CHECK(is_processor<proc_type, std::span<int const>, misc_event>);
-    STATIC_CHECK_FALSE(handles_event<proc_type, int>);
+    STATIC_CHECK(processor<proc_type, std::span<int const>, misc_event>);
+    STATIC_CHECK_FALSE(handler_for<proc_type, int>);
 
-    STATIC_CHECK(handles_event<proc_type, std::span<int>>);
-    STATIC_CHECK(handles_event<proc_type, bucket<int>>);
-    STATIC_CHECK(handles_event<proc_type, bucket<int const>>);
-    STATIC_CHECK(handles_event<proc_type, std::vector<int>>);
+    STATIC_CHECK(handler_for<proc_type, std::span<int>>);
+    STATIC_CHECK(handler_for<proc_type, bucket<int>>);
+    STATIC_CHECK(handler_for<proc_type, bucket<int const>>);
+    STATIC_CHECK(handler_for<proc_type, std::vector<int>>);
 }
 
 TEST_CASE("type constraints: copy_to_full_buckets") {
@@ -50,13 +50,13 @@ TEST_CASE("type constraints: copy_to_full_buckets") {
         sharable_new_delete_bucket_source<int>::create(),
         arg::batch_size<>{64}, sink_events<bucket<int const>, misc_event>(),
         sink_events<bucket<int>>()));
-    STATIC_CHECK(is_processor<proc_type, std::span<int const>, misc_event>);
-    STATIC_CHECK_FALSE(handles_event<proc_type, int>);
+    STATIC_CHECK(processor<proc_type, std::span<int const>, misc_event>);
+    STATIC_CHECK_FALSE(handler_for<proc_type, int>);
 
-    STATIC_CHECK(handles_event<proc_type, std::span<int>>);
-    STATIC_CHECK(handles_event<proc_type, bucket<int>>);
-    STATIC_CHECK(handles_event<proc_type, bucket<int const>>);
-    STATIC_CHECK(handles_event<proc_type, std::vector<int>>);
+    STATIC_CHECK(handler_for<proc_type, std::span<int>>);
+    STATIC_CHECK(handler_for<proc_type, bucket<int>>);
+    STATIC_CHECK(handler_for<proc_type, bucket<int const>>);
+    STATIC_CHECK(handler_for<proc_type, std::vector<int>>);
 }
 
 TEST_CASE("introspect: copy_to_buckets") {

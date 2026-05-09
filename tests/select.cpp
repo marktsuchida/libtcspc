@@ -30,14 +30,13 @@ using out_events = type_list<e0, e1>;
 
 TEST_CASE("type constraints: select") {
     STATIC_CHECK(
-        is_processor<decltype(select<type_list<e1>>(sink_events<e1>())), e0,
-                     e1>);
-    STATIC_CHECK(is_processor<decltype(select_none(sink_events<>())), e0, e1>);
+        processor<decltype(select<type_list<e1>>(sink_events<e1>())), e0, e1>);
+    STATIC_CHECK(processor<decltype(select_none(sink_events<>())), e0, e1>);
     STATIC_CHECK(
-        is_processor<decltype(select_not<type_list<e1>>(sink_events<e0>())),
-                     e0, e1>);
+        processor<decltype(select_not<type_list<e1>>(sink_events<e0>())), e0,
+                  e1>);
     STATIC_CHECK(
-        is_processor<decltype(select_all(sink_events<e0, e1>())), e0, e1>);
+        processor<decltype(select_all(sink_events<e0, e1>())), e0, e1>);
 }
 
 TEST_CASE("introspect: select") {

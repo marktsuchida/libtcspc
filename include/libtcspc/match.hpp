@@ -22,7 +22,7 @@ namespace internal {
 template <typename Event, typename OutEvent, typename Matcher,
           bool PassMatched, typename Downstream>
 class match {
-    static_assert(is_processor<Downstream, Event, OutEvent>);
+    static_assert(processor<Downstream, Event, OutEvent>);
 
     Matcher matcher;
     Downstream downstream;
@@ -40,7 +40,7 @@ class match {
     }
 
     template <typename E>
-        requires handles_event<Downstream, std::remove_cvref_t<E>>
+        requires handler_for<Downstream, std::remove_cvref_t<E>>
     void handle(E &&event) {
         if constexpr (std::is_convertible_v<std::remove_cvref_t<E>, Event>) {
             auto const abstime = event.abstime;

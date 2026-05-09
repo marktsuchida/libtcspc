@@ -407,9 +407,9 @@ namespace internal {
 // PQT3Event is the binary record event class.
 template <typename DataTypes, typename PQT3Event, typename Downstream>
 class decode_pqt3 {
-    static_assert(is_processor<Downstream, time_reached_event<DataTypes>,
-                               time_correlated_detection_event<DataTypes>,
-                               marker_event<DataTypes>, warning_event>);
+    static_assert(processor<Downstream, time_reached_event<DataTypes>,
+                            time_correlated_detection_event<DataTypes>,
+                            marker_event<DataTypes>, warning_event>);
 
     // 16-bit abstime would overflow so fast that we just prohibit. 32-bit can
     // work for a few seconds, though 64-bit is recommended.
@@ -441,7 +441,7 @@ class decode_pqt3 {
 
     template <typename Event>
         requires(std::convertible_to<std::remove_cvref_t<Event>, PQT3Event> ||
-                 handles_event<Downstream, std::remove_cvref_t<Event>>)
+                 handler_for<Downstream, std::remove_cvref_t<Event>>)
     void handle(Event &&event) {
         if constexpr (std::is_convertible_v<std::remove_cvref_t<Event>,
                                             PQT3Event>) {

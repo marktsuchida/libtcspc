@@ -39,15 +39,15 @@ class histogram {
         (Policy & histogram_policy::emit_concluding_events) !=
         histogram_policy::default_policy;
 
-    static_assert(is_processor<Downstream, histogram_event<DataTypes>>);
+    static_assert(processor<Downstream, histogram_event<DataTypes>>);
     static_assert(std::is_same_v<ResetEvent, never_event> ||
-                  handles_event<Downstream, ResetEvent>);
+                  handler_for<Downstream, ResetEvent>);
     static_assert(overflow_policy != histogram_policy::saturate_on_overflow ||
-                  handles_event<Downstream, warning_event>);
+                  handler_for<Downstream, warning_event>);
     static_assert(
         (Policy & histogram_policy::emit_concluding_events) ==
             histogram_policy::default_policy ||
-        handles_event<Downstream, concluding_histogram_event<DataTypes>>);
+        handler_for<Downstream, concluding_histogram_event<DataTypes>>);
 
     using internal_overflow_policy = std::conditional_t<
         overflow_policy == histogram_policy::saturate_on_overflow,
@@ -165,7 +165,7 @@ class histogram {
     }
 
     template <typename E>
-        requires handles_event<Downstream, std::remove_cvref_t<E>>
+        requires handler_for<Downstream, std::remove_cvref_t<E>>
     void handle(E &&event) {
         if constexpr (std::is_convertible_v<std::remove_cvref_t<E>,
                                             ResetEvent>)
