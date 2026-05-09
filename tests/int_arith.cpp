@@ -21,19 +21,19 @@ TEST_CASE("as signed or unsigned") {
     STATIC_CHECK(as_unsigned(i16(-1)) == u16(65535));
 }
 
-TEST_CASE("is_type_in_range") {
-    STATIC_CHECK(is_type_in_range<i8>(i8{0}));
-    STATIC_CHECK(is_type_in_range<u8>(u8{0}));
-    STATIC_CHECK_FALSE(is_type_in_range<i8>(u8{0}));
-    STATIC_CHECK_FALSE(is_type_in_range<u8>(i8{0}));
-    STATIC_CHECK_FALSE(is_type_in_range<i8>(i16{0}));
-    STATIC_CHECK_FALSE(is_type_in_range<u8>(u16{0}));
-    STATIC_CHECK_FALSE(is_type_in_range<i8>(u16{0}));
-    STATIC_CHECK_FALSE(is_type_in_range<u8>(i16{0}));
-    STATIC_CHECK(is_type_in_range<i16>(i8{0}));
-    STATIC_CHECK(is_type_in_range<u16>(u8{0}));
-    STATIC_CHECK(is_type_in_range<i16>(u8{0}));
-    STATIC_CHECK_FALSE(is_type_in_range<u16>(i8{0}));
+TEST_CASE("representable_in") {
+    STATIC_CHECK(representable_in<i8, i8>);
+    STATIC_CHECK(representable_in<u8, u8>);
+    STATIC_CHECK_FALSE(representable_in<u8, i8>);
+    STATIC_CHECK_FALSE(representable_in<i8, u8>);
+    STATIC_CHECK_FALSE(representable_in<i16, i8>);
+    STATIC_CHECK_FALSE(representable_in<u16, u8>);
+    STATIC_CHECK_FALSE(representable_in<u16, i8>);
+    STATIC_CHECK_FALSE(representable_in<i16, u8>);
+    STATIC_CHECK(representable_in<i8, i16>);
+    STATIC_CHECK(representable_in<u8, u16>);
+    STATIC_CHECK(representable_in<u8, i16>);
+    STATIC_CHECK_FALSE(representable_in<i8, u16>);
 }
 
 TEST_CASE("convert_with_check") {

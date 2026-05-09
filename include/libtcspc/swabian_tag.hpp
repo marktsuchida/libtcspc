@@ -215,9 +215,9 @@ template <typename DataTypes, typename Downstream> class decode_swabian_tags {
                             end_lost_interval_event<DataTypes>,
                             lost_counts_event<DataTypes>, warning_event>);
 
-    static_assert(is_type_in_range<typename DataTypes::abstime_type>(i64{0}));
-    static_assert(is_type_in_range<typename DataTypes::channel_type>(i32{0}));
-    static_assert(is_type_in_range<typename DataTypes::count_type>(u16{0}));
+    static_assert(representable_in<i64, typename DataTypes::abstime_type>);
+    static_assert(representable_in<i32, typename DataTypes::channel_type>);
+    static_assert(representable_in<u16, typename DataTypes::count_type>);
 
     Downstream downstream;
 

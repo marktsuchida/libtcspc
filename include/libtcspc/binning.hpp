@@ -131,8 +131,8 @@ template <typename DataTypes = default_data_types> class difftime_data_mapper {
     auto operator()(Event const &event) const ->
         typename DataTypes::datapoint_type {
         static_assert(
-            internal::is_type_in_range<typename DataTypes::datapoint_type>(
-                decltype(event.difftime){0}),
+            internal::representable_in<decltype(event.difftime),
+                                       typename DataTypes::datapoint_type>,
             "difftime_data_mapper does not allow narrowing conversion");
         return event.difftime;
     }
@@ -154,8 +154,8 @@ template <typename DataTypes = default_data_types> class count_data_mapper {
     auto operator()(Event const &event) const ->
         typename DataTypes::datapoint_type {
         static_assert(
-            internal::is_type_in_range<typename DataTypes::datapoint_type>(
-                decltype(event.count){0}),
+            internal::representable_in<decltype(event.count),
+                                       typename DataTypes::datapoint_type>,
             "count_data_mapper does not allow narrowing conversion");
         return event.count;
     }
@@ -177,8 +177,8 @@ template <typename DataTypes = default_data_types> class channel_data_mapper {
     auto operator()(Event const &event) const ->
         typename DataTypes::datapoint_type {
         static_assert(
-            internal::is_type_in_range<typename DataTypes::datapoint_type>(
-                decltype(event.channel){0}),
+            internal::representable_in<decltype(event.channel),
+                                       typename DataTypes::datapoint_type>,
             "channel_data_mapper does not allow narrowing conversion");
         return event.channel;
     }

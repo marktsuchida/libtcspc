@@ -34,14 +34,15 @@ constexpr auto ensure_unsigned(std::integral auto i)
     return static_cast<std::make_unsigned_t<decltype(i)>>(i);
 }
 
-// Statically check for non-narrowing conversion.
-template <typename R, typename T>
-[[nodiscard]] constexpr auto is_type_in_range(T /* i */) noexcept -> bool {
-    return std::cmp_greater_equal(std::numeric_limits<T>::min(),
-                                  std::numeric_limits<R>::min()) &&
-           std::cmp_less_equal(std::numeric_limits<T>::max(),
-                               std::numeric_limits<R>::max());
-}
+// Whether the conversion T -> R is non-narrowing (every value of T is
+// representable in R).
+template <typename T, typename R>
+concept representable_in =
+    std::integral<T> && std::integral<R> &&
+    std::cmp_greater_equal(std::numeric_limits<T>::min(),
+                           std::numeric_limits<R>::min()) &&
+    std::cmp_less_equal(std::numeric_limits<T>::max(),
+                        std::numeric_limits<R>::max());
 
 template <typename R, std::integral T>
 constexpr auto convert_with_check(T v) -> R {
