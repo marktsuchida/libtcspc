@@ -35,16 +35,16 @@ TEST_CASE("type constraints: match") {
     using proc_type = decltype(match<some_event, output_event>(
         always_matcher(),
         sink_events<some_event, output_event, misc_event>()));
-    STATIC_CHECK(is_processor_v<proc_type, some_event, misc_event>);
-    STATIC_CHECK_FALSE(handles_event_v<proc_type, int>);
+    STATIC_CHECK(is_processor<proc_type, some_event, misc_event>);
+    STATIC_CHECK_FALSE(handles_event<proc_type, int>);
 }
 
 TEST_CASE("type constraints: match_replace") {
     using proc_type = decltype(match_replace<some_event, output_event>(
         always_matcher(),
         sink_events<some_event, output_event, misc_event>()));
-    STATIC_CHECK(is_processor_v<proc_type, some_event, misc_event>);
-    STATIC_CHECK_FALSE(handles_event_v<proc_type, int>);
+    STATIC_CHECK(is_processor<proc_type, some_event, misc_event>);
+    STATIC_CHECK_FALSE(handles_event<proc_type, int>);
 }
 
 TEST_CASE("introspect: match") {

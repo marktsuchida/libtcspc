@@ -112,7 +112,7 @@ namespace internal {
 
 template <typename Event, bool LatencyLimited, typename Downstream>
 class buffer {
-    static_assert(is_processor_v<Downstream, Event>);
+    static_assert(is_processor<Downstream, Event>);
 
     using clock_type = std::chrono::steady_clock;
     using queue_type = vector_queue<Event>;

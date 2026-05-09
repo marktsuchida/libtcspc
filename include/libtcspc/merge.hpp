@@ -34,7 +34,7 @@ namespace internal {
 // two input processors via shared_ptr.
 template <typename EventList, typename DataTypes, typename Downstream>
 class merge_impl {
-    static_assert(is_type_list_v<EventList>);
+    static_assert(is_type_list<EventList>);
     static_assert(is_processor_of_list_v<Downstream, EventList>);
 
     // When events have equal abstime, those originating from input 0 are
@@ -101,7 +101,7 @@ class merge_impl {
 
     template <unsigned InputChannel, typename Event>
     void handle(Event const &event) {
-        static_assert(is_convertible_to_type_list_member_v<Event, EventList>);
+        static_assert(is_convertible_to_type_list_member<Event, EventList>);
         static_assert(std::is_same_v<decltype(event.abstime),
                                      typename DataTypes::abstime_type>);
         if (ended_with_exception)
@@ -332,7 +332,7 @@ namespace internal {
 // Internal implementation of N-way unsorted merge processor. This processor is
 // owned by the N input processors via shared_ptr.
 template <std::size_t N, typename Downstream> class merge_unsorted_impl {
-    static_assert(is_processor_v<Downstream>);
+    static_assert(is_processor<Downstream>);
 
     Downstream downstream;
 
@@ -359,7 +359,7 @@ template <std::size_t N, typename Downstream> class merge_unsorted_impl {
     }
 
     template <typename Event> void handle(Event &&event) {
-        static_assert(handles_event_v<Downstream, std::remove_cvref_t<Event>>);
+        static_assert(handles_event<Downstream, std::remove_cvref_t<Event>>);
         if (ended_with_exception)
             return;
         try {

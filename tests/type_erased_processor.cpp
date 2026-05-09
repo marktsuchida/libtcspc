@@ -32,18 +32,17 @@ namespace internal {
 
 TEST_CASE("type constraints: abstract_processor") {
     SECTION("handles flush") {
-        STATIC_CHECK(handles_flush_v<abstract_processor<type_list<>>>);
-        STATIC_CHECK(handles_flush_v<abstract_processor<type_list<e0>>>);
+        STATIC_CHECK(handles_flush<abstract_processor<type_list<>>>);
+        STATIC_CHECK(handles_flush<abstract_processor<type_list<e0>>>);
     }
 
     SECTION("handles events in list only") {
+        STATIC_CHECK_FALSE(handles_event<abstract_processor<type_list<>>, e0>);
+        STATIC_CHECK(handles_event<abstract_processor<type_list<e0>>, e0>);
         STATIC_CHECK_FALSE(
-            handles_event_v<abstract_processor<type_list<>>, e0>);
-        STATIC_CHECK(handles_event_v<abstract_processor<type_list<e0>>, e0>);
-        STATIC_CHECK_FALSE(
-            handles_event_v<abstract_processor<type_list<e0>>, e1>);
+            handles_event<abstract_processor<type_list<e0>>, e1>);
         STATIC_CHECK(
-            handles_events_v<abstract_processor<type_list<e0, e1>>, e0, e1>);
+            handles_events<abstract_processor<type_list<e0, e1>>, e0, e1>);
     }
 }
 
@@ -52,30 +51,30 @@ TEST_CASE("type constraints: virtual_processor") {
 
     SECTION("handles flush") {
         STATIC_CHECK(
-            handles_flush_v<
+            handles_flush<
                 virtual_processor<decltype(sink_events<>()), type_list<>>>);
         STATIC_CHECK(
-            handles_flush_v<virtual_processor<decltype(sink_events<e0>()),
-                                              type_list<e0>>>);
+            handles_flush<virtual_processor<decltype(sink_events<e0>()),
+                                            type_list<e0>>>);
     }
 
     SECTION("handles events in list only") {
         STATIC_CHECK_FALSE(
-            handles_event_v<
+            handles_event<
                 virtual_processor<decltype(sink_events<e0>()), type_list<>>,
                 e0>);
         STATIC_CHECK(
-            handles_event_v<
+            handles_event<
                 virtual_processor<decltype(sink_events<e0>()), type_list<e0>>,
                 e0>);
         STATIC_CHECK_FALSE(
-            handles_event_v<
+            handles_event<
                 virtual_processor<decltype(sink_events<e0>()), type_list<e0>>,
                 e1>);
         STATIC_CHECK(
-            handles_events_v<virtual_processor<decltype(sink_events<e0, e1>()),
-                                               type_list<e0, e1>>,
-                             e0, e1>);
+            handles_events<virtual_processor<decltype(sink_events<e0, e1>()),
+                                             type_list<e0, e1>>,
+                           e0, e1>);
     }
 }
 
@@ -83,31 +82,30 @@ TEST_CASE("type constraints: virtual_processor") {
 
 TEST_CASE("type constraints: type_erased_processor") {
     SECTION("handles flush") {
+        STATIC_CHECK(handles_flush<decltype(type_erased_processor<type_list<>>(
+                         sink_events<>()))>);
         STATIC_CHECK(
-            handles_flush_v<decltype(type_erased_processor<type_list<>>(
-                sink_events<>()))>);
-        STATIC_CHECK(
-            handles_flush_v<decltype(type_erased_processor<type_list<e0>>(
+            handles_flush<decltype(type_erased_processor<type_list<e0>>(
                 sink_events<e0>()))>);
     }
 
     SECTION("handles events in list only") {
         STATIC_CHECK_FALSE(
-            handles_event_v<decltype(type_erased_processor<type_list<>>(
-                                sink_events<e0>())),
-                            e0>);
+            handles_event<decltype(type_erased_processor<type_list<>>(
+                              sink_events<e0>())),
+                          e0>);
         STATIC_CHECK(
-            handles_event_v<decltype(type_erased_processor<type_list<e0>>(
-                                sink_events<e0>())),
-                            e0>);
+            handles_event<decltype(type_erased_processor<type_list<e0>>(
+                              sink_events<e0>())),
+                          e0>);
         STATIC_CHECK_FALSE(
-            handles_event_v<decltype(type_erased_processor<type_list<e0>>(
-                                sink_events<e0>())),
-                            e1>);
+            handles_event<decltype(type_erased_processor<type_list<e0>>(
+                              sink_events<e0>())),
+                          e1>);
         STATIC_CHECK(
-            handles_events_v<decltype(type_erased_processor<type_list<e0, e1>>(
-                                 sink_events<e0, e1>())),
-                             e0, e1>);
+            handles_events<decltype(type_erased_processor<type_list<e0, e1>>(
+                               sink_events<e0, e1>())),
+                           e0, e1>);
     }
 }
 

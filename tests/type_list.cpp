@@ -13,10 +13,10 @@
 namespace tcspc {
 
 TEST_CASE("is_type_list") {
-    STATIC_CHECK(is_type_list_v<type_list<>>);
-    STATIC_CHECK(is_type_list_v<type_list<int>>);
-    STATIC_CHECK(is_type_list_v<type_list<int, long>>);
-    STATIC_CHECK_FALSE(is_type_list_v<int>);
+    STATIC_CHECK(is_type_list<type_list<>>);
+    STATIC_CHECK(is_type_list<type_list<int>>);
+    STATIC_CHECK(is_type_list<type_list<int, long>>);
+    STATIC_CHECK_FALSE(is_type_list<int>);
 }
 
 TEST_CASE("type_list_size") {
@@ -32,26 +32,23 @@ TEST_CASE("type_list_singleton_element") {
 }
 
 TEST_CASE("type_list_contains") {
-    STATIC_CHECK_FALSE(type_list_contains_v<type_list<>, int>);
-    STATIC_CHECK(type_list_contains_v<type_list<int>, int>);
-    STATIC_CHECK_FALSE(type_list_contains_v<type_list<int>, long>);
-    STATIC_CHECK(type_list_contains_v<type_list<int, long>, int>);
-    STATIC_CHECK(type_list_contains_v<type_list<int, long>, long>);
-    STATIC_CHECK_FALSE(type_list_contains_v<type_list<int, long>, double>);
+    STATIC_CHECK_FALSE(type_list_contains<type_list<>, int>);
+    STATIC_CHECK(type_list_contains<type_list<int>, int>);
+    STATIC_CHECK_FALSE(type_list_contains<type_list<int>, long>);
+    STATIC_CHECK(type_list_contains<type_list<int, long>, int>);
+    STATIC_CHECK(type_list_contains<type_list<int, long>, long>);
+    STATIC_CHECK_FALSE(type_list_contains<type_list<int, long>, double>);
 }
 
 TEST_CASE("is_convertible_to_type_list_member") {
-    STATIC_CHECK_FALSE(
-        is_convertible_to_type_list_member_v<short, type_list<>>);
-    STATIC_CHECK(
-        is_convertible_to_type_list_member_v<short, type_list<short>>);
-    STATIC_CHECK(is_convertible_to_type_list_member_v<short, type_list<long>>);
+    STATIC_CHECK_FALSE(is_convertible_to_type_list_member<short, type_list<>>);
+    STATIC_CHECK(is_convertible_to_type_list_member<short, type_list<short>>);
+    STATIC_CHECK(is_convertible_to_type_list_member<short, type_list<long>>);
     struct some_type {};
     STATIC_CHECK_FALSE(
-        is_convertible_to_type_list_member_v<short, type_list<some_type>>);
+        is_convertible_to_type_list_member<short, type_list<some_type>>);
     STATIC_CHECK(
-        is_convertible_to_type_list_member_v<short,
-                                             type_list<some_type, long>>);
+        is_convertible_to_type_list_member<short, type_list<some_type, long>>);
 }
 
 TEST_CASE("type_list_is_subset") {

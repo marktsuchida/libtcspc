@@ -68,7 +68,7 @@ namespace internal {
 constexpr auto slow_acq_sleep = std::chrono::milliseconds(10);
 
 template <typename T, typename Reader, typename Downstream> class acquire {
-    static_assert(is_processor_v<Downstream, bucket<T>>);
+    static_assert(is_processor<Downstream, bucket<T>>);
 
     Reader reader;
     std::shared_ptr<bucket_source<T>> bsource;
@@ -178,8 +178,8 @@ template <typename T, typename Reader, typename Downstream> class acquire {
 template <typename T, typename Reader, typename LiveDownstream,
           typename BatchDownstream>
 class acquire_full_buckets {
-    static_assert(is_processor_v<LiveDownstream, bucket<T const>>);
-    static_assert(is_processor_v<BatchDownstream, bucket<T>>);
+    static_assert(is_processor<LiveDownstream, bucket<T const>>);
+    static_assert(is_processor<BatchDownstream, bucket<T>>);
 
     Reader reader;
     std::shared_ptr<bucket_source<T>> bsource;

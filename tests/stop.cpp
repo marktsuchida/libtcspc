@@ -31,11 +31,11 @@ using e1 = empty_test_event<1>;
 
 TEST_CASE("type constraints: stop") {
     STATIC_CHECK(
-        is_processor_v<decltype(stop<type_list<e0>>("", sink_events<e1>())),
-                       e0, e1>);
+        is_processor<decltype(stop<type_list<e0>>("", sink_events<e1>())), e0,
+                     e1>);
     STATIC_CHECK_FALSE(
-        handles_event_v<decltype(stop<type_list<e0>>("", sink_events<e1>())),
-                        int>);
+        handles_event<decltype(stop<type_list<e0>>("", sink_events<e1>())),
+                      int>);
 }
 
 TEST_CASE("introspect: stop") {

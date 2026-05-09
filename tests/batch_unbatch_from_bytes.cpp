@@ -31,18 +31,18 @@ namespace tcspc {
 TEST_CASE("type constraints: batch_from_bytes") {
     using proc_type = decltype(batch_from_bytes<int>(
         new_delete_bucket_source<int>::create(), sink_events<bucket<int>>()));
-    STATIC_CHECK(is_processor_v<proc_type, std::span<std::byte>>);
-    STATIC_CHECK(is_processor_v<proc_type, std::span<std::byte const>>);
-    STATIC_CHECK(is_processor_v<proc_type, std::array<std::byte const, 3>>);
-    STATIC_CHECK_FALSE(is_processor_v<proc_type, std::span<short const>>);
+    STATIC_CHECK(is_processor<proc_type, std::span<std::byte>>);
+    STATIC_CHECK(is_processor<proc_type, std::span<std::byte const>>);
+    STATIC_CHECK(is_processor<proc_type, std::array<std::byte const, 3>>);
+    STATIC_CHECK_FALSE(is_processor<proc_type, std::span<short const>>);
 }
 
 TEST_CASE("type constraints: unbatch_from_bytes") {
     using proc_type = decltype(unbatch_from_bytes<int>(sink_events<int>()));
-    STATIC_CHECK(is_processor_v<proc_type, std::span<std::byte>>);
-    STATIC_CHECK(is_processor_v<proc_type, std::span<std::byte const>>);
-    STATIC_CHECK(is_processor_v<proc_type, std::array<std::byte const, 3>>);
-    STATIC_CHECK_FALSE(is_processor_v<proc_type, std::span<short const>>);
+    STATIC_CHECK(is_processor<proc_type, std::span<std::byte>>);
+    STATIC_CHECK(is_processor<proc_type, std::span<std::byte const>>);
+    STATIC_CHECK(is_processor<proc_type, std::array<std::byte const, 3>>);
+    STATIC_CHECK_FALSE(is_processor<proc_type, std::span<short const>>);
 }
 
 TEST_CASE("introspect: batch_from_bytes, unbatch_from_bytes") {

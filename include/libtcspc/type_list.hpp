@@ -322,7 +322,7 @@ struct unique_type_list_impl<type_list<Ds...>, type_list<>>
 template <typename... Ds, typename T, typename... Ts>
 struct unique_type_list_impl<type_list<Ds...>, type_list<T, Ts...>>
     : std::conditional_t<
-          type_list_contains_v<type_list<Ds...>, T>,
+          type_list_contains<type_list<Ds...>, T>,
           unique_type_list_impl<type_list<Ds...>, type_list<Ts...>>,
           unique_type_list_impl<type_list<Ds..., T>, type_list<Ts...>>> {};
 
@@ -370,7 +370,7 @@ template <typename... Ds, typename S1, typename... S1s>
 struct type_list_union_impl<type_list<Ds...>, type_list<>,
                             type_list<S1, S1s...>>
     : std::conditional_t<
-          type_list_contains_v<type_list<Ds...>, S1>,
+          type_list_contains<type_list<Ds...>, S1>,
           type_list_union_impl<type_list<Ds...>, type_list<>,
                                type_list<S1s...>>,
           type_list_union_impl<type_list<Ds..., S1>, type_list<>,
@@ -380,7 +380,7 @@ template <typename... Ds, typename S0, typename... S0s, typename... S1s>
 struct type_list_union_impl<type_list<Ds...>, type_list<S0, S0s...>,
                             type_list<S1s...>>
     : std::conditional_t<
-          type_list_contains_v<type_list<Ds...>, S0>,
+          type_list_contains<type_list<Ds...>, S0>,
           type_list_union_impl<type_list<Ds...>, type_list<S0s...>,
                                type_list<S1s...>>,
           type_list_union_impl<type_list<Ds..., S0>, type_list<S0s...>,
@@ -435,7 +435,7 @@ template <typename... Ds, typename S0, typename... S0s, typename... S1s>
 struct type_list_intersection_impl<type_list<Ds...>, type_list<S0, S0s...>,
                                    type_list<S1s...>>
     : std::conditional_t<
-          type_list_contains_v<type_list<S1s...>, S0>,
+          type_list_contains<type_list<S1s...>, S0>,
           type_list_intersection_impl<type_list<Ds..., S0>, type_list<S0s...>,
                                       type_list<S1s...>>,
           type_list_intersection_impl<type_list<Ds...>, type_list<S0s...>,
@@ -492,7 +492,7 @@ template <typename... Ds, typename S0, typename... S0s, typename... S1s>
 struct type_list_set_difference_impl<type_list<Ds...>, type_list<S0, S0s...>,
                                      type_list<S1s...>>
     : std::conditional_t<
-          type_list_contains_v<type_list<S1s...>, S0>,
+          type_list_contains<type_list<S1s...>, S0>,
           type_list_set_difference_impl<type_list<Ds...>, type_list<S0s...>,
                                         type_list<S1s...>>,
           type_list_set_difference_impl<

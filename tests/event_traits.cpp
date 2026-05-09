@@ -15,8 +15,8 @@ TEST_CASE("has_abstime") {
     struct have {
         int abstime;
     };
-    STATIC_CHECK_FALSE(has_abstime_v<have_not>);
-    STATIC_CHECK(has_abstime_v<have>);
+    STATIC_CHECK_FALSE(has_abstime<have_not>);
+    STATIC_CHECK(has_abstime<have>);
 }
 
 } // namespace tcspc::internal

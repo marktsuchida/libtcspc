@@ -26,7 +26,7 @@ namespace internal {
 template <typename DataTypes, bool RequireStrictlyIncreasing,
           typename Downstream>
 class check_monotonic {
-    static_assert(is_processor_v<Downstream, warning_event>);
+    static_assert(is_processor<Downstream, warning_event>);
 
     typename DataTypes::abstime_type last_seen =
         std::numeric_limits<typename DataTypes::abstime_type>::min();
@@ -56,7 +56,7 @@ class check_monotonic {
     template <typename Event>
         requires handles_event<Downstream, std::remove_cvref_t<Event>>
     void handle(Event &&event) {
-        if constexpr (has_abstime_v<std::remove_cvref_t<Event>>) {
+        if constexpr (has_abstime<std::remove_cvref_t<Event>>) {
             static_assert(std::is_same_v<decltype(event.abstime),
                                          typename DataTypes::abstime_type>);
             bool const monotonic = RequireStrictlyIncreasing
@@ -118,7 +118,7 @@ namespace internal {
 
 template <typename Event0, typename Event1, typename Downstream>
 class check_alternating {
-    static_assert(is_processor_v<Downstream, Event0, Event1, warning_event>);
+    static_assert(is_processor<Downstream, Event0, Event1, warning_event>);
 
     bool last_saw_0 = false;
     Downstream downstream;

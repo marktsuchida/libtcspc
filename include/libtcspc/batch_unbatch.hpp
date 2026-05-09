@@ -24,7 +24,7 @@ namespace tcspc {
 namespace internal {
 
 template <typename Event, typename Downstream> class batch {
-    static_assert(is_processor_v<Downstream, bucket<Event>>);
+    static_assert(is_processor<Downstream, bucket<Event>>);
 
     std::shared_ptr<bucket_source<Event>> bsource;
     std::size_t bsize;
@@ -88,7 +88,7 @@ template <typename ContainerEvent, typename Downstream> class unbatch {
             element_type>,
         "ContainerEvent begin() and end() must return compatible iterators");
 
-    static_assert(is_processor_v<Downstream, element_type>);
+    static_assert(is_processor<Downstream, element_type>);
 
     Downstream downstream;
 

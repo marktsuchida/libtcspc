@@ -17,7 +17,7 @@ namespace tcspc {
 namespace internal {
 
 template <typename Event, typename Downstream> class prepend {
-    static_assert(is_processor_v<Downstream, Event>);
+    static_assert(is_processor<Downstream, Event>);
 
     bool prepended = false;
     Downstream downstream;
@@ -51,7 +51,7 @@ template <typename Event, typename Downstream> class prepend {
 };
 
 template <typename Event, typename Downstream> class append {
-    static_assert(is_processor_v<Downstream, Event>);
+    static_assert(is_processor<Downstream, Event>);
 
     Downstream downstream;
 

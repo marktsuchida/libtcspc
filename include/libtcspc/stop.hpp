@@ -24,8 +24,8 @@ namespace internal {
 
 template <typename EventList, typename Exception, typename Downstream>
 class stop {
-    static_assert(is_type_list_v<EventList>);
-    static_assert(is_processor_v<Downstream>);
+    static_assert(is_type_list<EventList>);
+    static_assert(is_processor<Downstream>);
 
     Downstream downstream;
 
@@ -61,7 +61,7 @@ class stop {
                                                     EventList> ||
                  handles_event<Downstream, std::remove_cvref_t<Event>>)
     void handle(Event &&event) {
-        if constexpr (is_convertible_to_type_list_member_v<
+        if constexpr (is_convertible_to_type_list_member<
                           std::remove_cvref_t<Event>, EventList>)
             handle_stop(event);
         else

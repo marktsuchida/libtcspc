@@ -262,7 +262,7 @@ inline constexpr bool is_processor_v = is_processor<Proc, Events...>;
 namespace internal {
 
 template <typename Proc, typename TypeList> struct handles_event_list_impl {
-    static_assert(is_type_list_v<TypeList>);
+    static_assert(is_type_list<TypeList>);
 };
 
 template <typename Proc, typename... Events>
@@ -313,7 +313,7 @@ inline constexpr bool handles_event_list_v =
 namespace internal {
 
 template <typename Proc, typename TypeList> struct is_processor_of_list_impl {
-    static_assert(is_type_list_v<TypeList>);
+    static_assert(is_type_list<TypeList>);
 };
 
 template <typename Proc, typename... Events>

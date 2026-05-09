@@ -36,9 +36,9 @@ TEST_CASE("type constraints: gate") {
         decltype(gate<type_list<gated_event>, open_event, close_event>(
             arg::initially_open{false},
             sink_events<open_event, close_event, gated_event, misc_event>()));
-    STATIC_CHECK(is_processor_v<proc_type, open_event, close_event,
-                                gated_event, misc_event>);
-    STATIC_CHECK_FALSE(handles_event_v<proc_type, int>);
+    STATIC_CHECK(is_processor<proc_type, open_event, close_event, gated_event,
+                              misc_event>);
+    STATIC_CHECK_FALSE(handles_event<proc_type, int>);
 }
 
 TEST_CASE("introspect: gate") {

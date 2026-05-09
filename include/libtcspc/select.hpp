@@ -20,7 +20,7 @@ namespace internal {
 
 template <typename EventList, bool Inverted, typename Downstream>
 class select {
-    static_assert(is_processor_v<Downstream>);
+    static_assert(is_processor<Downstream>);
 
     Downstream downstream;
 
@@ -41,7 +41,7 @@ class select {
                       std::remove_cvref_t<AnyEvent>, EventList> == Inverted) ||
                  handles_event<Downstream, std::remove_cvref_t<AnyEvent>>)
     void handle(AnyEvent &&event) {
-        if constexpr (is_convertible_to_type_list_member_v<
+        if constexpr (is_convertible_to_type_list_member<
                           std::remove_cvref_t<AnyEvent>, EventList> !=
                       Inverted)
             downstream.handle(std::forward<AnyEvent>(event));

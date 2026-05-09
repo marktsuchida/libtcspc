@@ -437,9 +437,9 @@ namespace internal {
 // PQT2Event is the binary record event class.
 template <typename DataTypes, typename PQT2Event, typename Downstream>
 class decode_pqt2 {
-    static_assert(is_processor_v<Downstream, time_reached_event<DataTypes>,
-                                 detection_event<DataTypes>,
-                                 marker_event<DataTypes>, warning_event>);
+    static_assert(is_processor<Downstream, time_reached_event<DataTypes>,
+                               detection_event<DataTypes>,
+                               marker_event<DataTypes>, warning_event>);
 
     // 32-bit abstime can work for a few seconds, though 64-bit is recommended.
     static_assert(sizeof(typename DataTypes::abstime_type) >= 4);

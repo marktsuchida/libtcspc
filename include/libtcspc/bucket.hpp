@@ -893,8 +893,8 @@ class sharable_recycling_bucket_source final
 namespace internal {
 
 template <typename Event, typename Downstream> class extract_bucket {
-    static_assert(is_processor_v<Downstream,
-                                 decltype(std::declval<Event>().data_bucket)>);
+    static_assert(
+        is_processor<Downstream, decltype(std::declval<Event>().data_bucket)>);
 
     Downstream downstream;
 

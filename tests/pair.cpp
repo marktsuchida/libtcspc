@@ -29,36 +29,36 @@ TEST_CASE("type constraints: pair_all") {
     using proc_type = decltype(pair_all(
         arg::start_channel{0}, std::array{1, 2}, arg::time_window<i64>{100},
         sink_events<std::array<detection_event<>, 2>, int>()));
-    STATIC_CHECK(is_processor_v<proc_type, detection_event<>, int>);
+    STATIC_CHECK(is_processor<proc_type, detection_event<>, int>);
     struct some_type {};
-    STATIC_CHECK_FALSE(handles_event_v<proc_type, some_type>);
+    STATIC_CHECK_FALSE(handles_event<proc_type, some_type>);
 }
 
 TEST_CASE("type constraints: pair_one") {
     using proc_type = decltype(pair_one(
         arg::start_channel{0}, std::array{1, 2}, arg::time_window<i64>{100},
         sink_events<std::array<detection_event<>, 2>, int>()));
-    STATIC_CHECK(is_processor_v<proc_type, detection_event<>, int>);
+    STATIC_CHECK(is_processor<proc_type, detection_event<>, int>);
     struct some_type {};
-    STATIC_CHECK_FALSE(handles_event_v<proc_type, some_type>);
+    STATIC_CHECK_FALSE(handles_event<proc_type, some_type>);
 }
 
 TEST_CASE("type constraints: pair_all_between") {
     using proc_type = decltype(pair_all_between(
         arg::start_channel{0}, std::array{1, 2}, arg::time_window<i64>{100},
         sink_events<std::array<detection_event<>, 2>, int>()));
-    STATIC_CHECK(is_processor_v<proc_type, detection_event<>, int>);
+    STATIC_CHECK(is_processor<proc_type, detection_event<>, int>);
     struct some_type {};
-    STATIC_CHECK_FALSE(handles_event_v<proc_type, some_type>);
+    STATIC_CHECK_FALSE(handles_event<proc_type, some_type>);
 }
 
 TEST_CASE("type constraints: pair_one_between") {
     using proc_type = decltype(pair_one_between(
         arg::start_channel{0}, std::array{1, 2}, arg::time_window<i64>{100},
         sink_events<std::array<detection_event<>, 2>, int>()));
-    STATIC_CHECK(is_processor_v<proc_type, detection_event<>, int>);
+    STATIC_CHECK(is_processor<proc_type, detection_event<>, int>);
     struct some_type {};
-    STATIC_CHECK_FALSE(handles_event_v<proc_type, some_type>);
+    STATIC_CHECK_FALSE(handles_event<proc_type, some_type>);
 }
 
 TEST_CASE("introspect: pair") {

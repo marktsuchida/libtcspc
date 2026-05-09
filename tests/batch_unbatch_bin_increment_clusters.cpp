@@ -26,19 +26,19 @@ TEST_CASE("type constraints: batch_bin_increment_clusters") {
     using proc_type = decltype(batch_bin_increment_clusters(
         new_delete_bucket_source<u16>::create(), arg::bucket_size<>{100},
         arg::batch_size<>{50}, sink_events<bucket<u16>>()));
-    STATIC_CHECK(is_processor_v<proc_type, bin_increment_cluster_event<>>);
-    STATIC_CHECK_FALSE(is_processor_v<proc_type, int>);
+    STATIC_CHECK(is_processor<proc_type, bin_increment_cluster_event<>>);
+    STATIC_CHECK_FALSE(is_processor<proc_type, int>);
 }
 
 TEST_CASE("type constraints: unbatch_bin_increment_clusters") {
     struct e0 {};
     using proc_type = decltype(unbatch_bin_increment_clusters(
         sink_events<bin_increment_cluster_event<>, e0>()));
-    STATIC_CHECK(is_processor_v<proc_type, bucket<u16>>);
-    STATIC_CHECK(handles_event_v<proc_type, bucket<u16 const>>);
-    STATIC_CHECK_FALSE(is_processor_v<proc_type, bucket<e0>>);
-    STATIC_CHECK_FALSE(handles_event_v<proc_type, int>);
-    STATIC_CHECK(handles_event_v<proc_type, e0>);
+    STATIC_CHECK(is_processor<proc_type, bucket<u16>>);
+    STATIC_CHECK(handles_event<proc_type, bucket<u16 const>>);
+    STATIC_CHECK_FALSE(is_processor<proc_type, bucket<e0>>);
+    STATIC_CHECK_FALSE(handles_event<proc_type, int>);
+    STATIC_CHECK(handles_event<proc_type, e0>);
 }
 
 TEST_CASE(

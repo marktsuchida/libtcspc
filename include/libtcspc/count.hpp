@@ -26,7 +26,7 @@ template <typename TickEvent, typename FireEvent, typename ResetEvent,
           bool FireAfterTick, typename Downstream>
 class count_up_to {
     // Do not require handling of ResetEvent, as it may not be used at all.
-    static_assert(is_processor_v<Downstream, TickEvent, FireEvent>);
+    static_assert(is_processor<Downstream, TickEvent, FireEvent>);
 
     u64 count;
     u64 init;
@@ -241,7 +241,7 @@ class count_access {
 namespace internal {
 
 template <typename Event, typename Downstream> class count {
-    static_assert(is_processor_v<Downstream, Event>);
+    static_assert(is_processor<Downstream, Event>);
 
     u64 ct = 0;
 

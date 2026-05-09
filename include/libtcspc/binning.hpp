@@ -39,7 +39,7 @@ class map_to_datapoints {
     static_assert(std::is_same_v<std::invoke_result_t<DataMapper, Event>,
                                  typename DataTypes::datapoint_type>);
 
-    static_assert(is_processor_v<Downstream, datapoint_event<DataTypes>>);
+    static_assert(is_processor<Downstream, datapoint_event<DataTypes>>);
 
     DataMapper mapper;
 
@@ -188,7 +188,7 @@ namespace internal {
 
 template <typename DataTypes, typename BinMapper, typename Downstream>
 class map_to_bins {
-    static_assert(is_processor_v<Downstream, bin_increment_event<DataTypes>>);
+    static_assert(is_processor<Downstream, bin_increment_event<DataTypes>>);
 
     static_assert(
         std::is_same_v<std::invoke_result_t<
@@ -520,7 +520,7 @@ template <typename StartEvent, typename StopEvent, typename DataTypes,
           typename Downstream>
 class cluster_bin_increments {
     static_assert(
-        is_processor_v<Downstream, bin_increment_cluster_event<DataTypes>>);
+        is_processor<Downstream, bin_increment_cluster_event<DataTypes>>);
 
     bool in_cluster = false;
     std::vector<typename DataTypes::bin_index_type> cur_cluster;

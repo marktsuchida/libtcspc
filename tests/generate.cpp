@@ -37,8 +37,8 @@ TEST_CASE("type constraints: generate") {
     using proc_type = decltype(generate<trigger_event, output_event>(
         null_timing_generator(),
         sink_events<trigger_event, output_event, misc_event>()));
-    STATIC_CHECK(is_processor_v<proc_type, trigger_event, misc_event>);
-    STATIC_CHECK_FALSE(handles_event_v<proc_type, int>);
+    STATIC_CHECK(is_processor<proc_type, trigger_event, misc_event>);
+    STATIC_CHECK_FALSE(handles_event<proc_type, int>);
 }
 
 TEST_CASE("introspect: generate") {

@@ -37,9 +37,9 @@ TEST_CASE("type constraints: fit_periodic_sequences") {
         arg::max_interval{20.0}, arg::max_mse{1.0},
         sink_events<periodic_sequence_model_event<>, int>()));
 
-    STATIC_CHECK(is_processor_v<proc_type, tick, int>);
+    STATIC_CHECK(is_processor<proc_type, tick, int>);
     struct some_type {};
-    STATIC_CHECK_FALSE(handles_event_v<proc_type, some_type>);
+    STATIC_CHECK_FALSE(handles_event<proc_type, some_type>);
 }
 
 TEST_CASE("introspect: fit_sequence") {

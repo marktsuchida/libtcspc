@@ -31,7 +31,7 @@ namespace internal {
 template <std::size_t NStopChannels, typename DataTypes, typename Downstream>
 class pair_all {
     static_assert(
-        is_processor_v<Downstream, std::array<detection_event<DataTypes>, 2>>);
+        is_processor<Downstream, std::array<detection_event<DataTypes>, 2>>);
 
     typename DataTypes::channel_type start_chan;
     std::array<typename DataTypes::channel_type, NStopChannels> stop_chans;
@@ -108,7 +108,7 @@ class pair_all {
 template <std::size_t NStopChannels, typename DataTypes, typename Downstream>
 class pair_one {
     static_assert(
-        is_processor_v<Downstream, std::array<detection_event<DataTypes>, 2>>);
+        is_processor<Downstream, std::array<detection_event<DataTypes>, 2>>);
 
     typename DataTypes::channel_type start_chan;
     std::array<typename DataTypes::channel_type, NStopChannels> stop_chans;
@@ -195,7 +195,7 @@ class pair_one {
 template <std::size_t NStopChannels, typename DataTypes, typename Downstream>
 class pair_all_between {
     static_assert(
-        is_processor_v<Downstream, std::array<detection_event<DataTypes>, 2>>);
+        is_processor<Downstream, std::array<detection_event<DataTypes>, 2>>);
 
     typename DataTypes::channel_type start_chan;
     std::array<typename DataTypes::channel_type, NStopChannels> stop_chans;
@@ -273,7 +273,7 @@ class pair_all_between {
 template <std::size_t NStopChannels, typename DataTypes, typename Downstream>
 class pair_one_between {
     static_assert(
-        is_processor_v<Downstream, std::array<detection_event<DataTypes>, 2>>);
+        is_processor<Downstream, std::array<detection_event<DataTypes>, 2>>);
 
     typename DataTypes::channel_type start_chan;
     std::array<typename DataTypes::channel_type, NStopChannels> stop_chans;

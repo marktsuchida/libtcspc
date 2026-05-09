@@ -38,8 +38,8 @@ TEST_CASE("type constraints: read_binary_stream") {
         null_input_stream(), arg::max_length<u64>{0},
         new_delete_bucket_source<int>::create(), arg::granularity<>{16},
         sink_events<bucket<int>, warning_event>()));
-    STATIC_CHECK(is_processor_v<proc_type>);
-    STATIC_CHECK_FALSE(handles_event_v<proc_type, int>);
+    STATIC_CHECK(is_processor<proc_type>);
+    STATIC_CHECK_FALSE(handles_event<proc_type, int>);
 }
 
 TEST_CASE("introspect: read_binary_stream") {

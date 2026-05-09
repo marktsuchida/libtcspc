@@ -25,7 +25,7 @@ namespace internal {
 
 template <typename DataTypes, typename Downstream>
 class regulate_time_reached {
-    static_assert(is_processor_v<Downstream, time_reached_event<DataTypes>>);
+    static_assert(is_processor<Downstream, time_reached_event<DataTypes>>);
 
     using abstime_type = typename DataTypes::abstime_type;
 

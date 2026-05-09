@@ -21,11 +21,11 @@ namespace tcspc {
 
 TEST_CASE("type constraints: null_sink") {
     struct e0 {};
-    STATIC_CHECK(is_processor_v<null_sink, e0>);
+    STATIC_CHECK(is_processor<null_sink, e0>);
 }
 
 TEST_CASE("type constraints: null_source") {
-    STATIC_CHECK(is_processor_v<decltype(null_source(sink_events<>()))>);
+    STATIC_CHECK(is_processor<decltype(null_source(sink_events<>()))>);
 }
 
 TEST_CASE("introspect: core") {

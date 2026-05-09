@@ -671,7 +671,7 @@ TEST_CASE("type constraints: decode_bh_spc") {
                     marker_event<bh_data_types>,
                     data_lost_event<bh_data_types>, warning_event, int>()));
 
-    STATIC_CHECK(is_processor_v<proc_type, bh_spc_event, int>);
+    STATIC_CHECK(is_processor<proc_type, bh_spc_event, int>);
 }
 
 TEST_CASE("type constraints: decode_bh_spc_with_intensity_counter") {
@@ -683,7 +683,7 @@ TEST_CASE("type constraints: decode_bh_spc_with_intensity_counter") {
                 marker_event<bh_data_types>, bulk_counts_event<bh_data_types>,
                 data_lost_event<bh_data_types>, warning_event, int>()));
 
-    STATIC_CHECK(is_processor_v<proc_type, bh_spc_event, int>);
+    STATIC_CHECK(is_processor<proc_type, bh_spc_event, int>);
 }
 
 TEST_CASE("type constraints: decode_bh_spc600_256ch") {
@@ -692,7 +692,7 @@ TEST_CASE("type constraints: decode_bh_spc600_256ch") {
                     time_correlated_detection_event<bh_data_types>,
                     data_lost_event<bh_data_types>, warning_event, int>()));
 
-    STATIC_CHECK(is_processor_v<proc_type, bh_spc600_256ch_event, int>);
+    STATIC_CHECK(is_processor<proc_type, bh_spc600_256ch_event, int>);
 }
 
 TEST_CASE("type constraints: decode_bh_spc600_4096ch") {
@@ -701,7 +701,7 @@ TEST_CASE("type constraints: decode_bh_spc600_4096ch") {
                     time_correlated_detection_event<bh_data_types>,
                     data_lost_event<bh_data_types>, warning_event, int>()));
 
-    STATIC_CHECK(is_processor_v<proc_type, bh_spc600_4096ch_event, int>);
+    STATIC_CHECK(is_processor<proc_type, bh_spc600_4096ch_event, int>);
 }
 
 TEST_CASE("introspect: bh_spc") {

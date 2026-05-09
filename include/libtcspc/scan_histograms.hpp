@@ -49,17 +49,16 @@ class scan_histograms {
         histogram_policy::default_policy;
 
     static_assert(
-        is_processor_v<Downstream, histogram_array_progress_event<DataTypes>,
-                       histogram_array_event<DataTypes>>);
+        is_processor<Downstream, histogram_array_progress_event<DataTypes>,
+                     histogram_array_event<DataTypes>>);
     static_assert(std::is_same_v<ResetEvent, never_event> ||
-                  handles_event_v<Downstream, ResetEvent>);
+                  handles_event<Downstream, ResetEvent>);
     static_assert(overflow_policy != histogram_policy::saturate_on_overflow ||
-                  handles_event_v<Downstream, warning_event>);
-    static_assert(
-        (Policy & histogram_policy::emit_concluding_events) ==
-            histogram_policy::default_policy ||
-        handles_event_v<Downstream,
-                        concluding_histogram_array_event<DataTypes>>);
+                  handles_event<Downstream, warning_event>);
+    static_assert((Policy & histogram_policy::emit_concluding_events) ==
+                      histogram_policy::default_policy ||
+                  handles_event<Downstream,
+                                concluding_histogram_array_event<DataTypes>>);
 
     // There is no way to roll back a partial scan in saturate mode, so
     // concluding events cannot be emitted.

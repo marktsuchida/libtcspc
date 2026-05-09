@@ -38,8 +38,8 @@ TEST_CASE("type constraints: regulate_time_reached") {
     using proc_type = decltype(regulate_time_reached(
         arg::interval_threshold<i64>{1}, arg::count_threshold<std::size_t>{1},
         sink_events<time_reached_event<>, other_event>()));
-    STATIC_CHECK(is_processor_v<proc_type, time_reached_event<>, other_event>);
-    STATIC_CHECK_FALSE(handles_event_v<proc_type, int>);
+    STATIC_CHECK(is_processor<proc_type, time_reached_event<>, other_event>);
+    STATIC_CHECK_FALSE(handles_event<proc_type, int>);
 }
 
 TEST_CASE("introspect: regulate_time_reached") {

@@ -305,7 +305,7 @@ class capture_output_access {
     template <typename Event, typename EventList>
     auto pop(feed_as feeder_value_category, emitted_as value_category)
         -> Event {
-        static_assert(type_list_contains_v<EventList, Event>);
+        static_assert(type_list_contains<EventList, Event>);
         auto const events = peek_events<EventList>();
         try {
             if (events.empty())
@@ -362,7 +362,7 @@ class capture_output_access {
     template <typename Event, typename EventList>
     auto check(feed_as feeder_value_category, emitted_as value_category,
                Event const &expected_event) -> bool {
-        static_assert(type_list_contains_v<EventList, Event>);
+        static_assert(type_list_contains<EventList, Event>);
         auto events = peek_events<EventList>();
         try {
             if (events.empty())
@@ -533,7 +533,7 @@ template <typename EventList> class capture_output_checker {
      * \return the event
      */
     template <typename Event> auto pop(emitted_as value_category) -> Event {
-        static_assert(type_list_contains_v<EventList, Event>);
+        static_assert(type_list_contains<EventList, Event>);
         return acc.pop<Event, EventList>(feeder_valcat, value_category);
     }
 
@@ -569,7 +569,7 @@ template <typename EventList> class capture_output_checker {
     template <typename Event>
     auto check(emitted_as value_category, Event const &expected_event)
         -> bool {
-        static_assert(type_list_contains_v<EventList, Event>);
+        static_assert(type_list_contains<EventList, Event>);
         return acc.check<Event, EventList>(feeder_valcat, value_category,
                                            expected_event);
     }
@@ -825,7 +825,7 @@ template <> class capture_output<type_list<>> {
 };
 
 template <typename Downstream> class feed_input {
-    static_assert(is_processor_v<Downstream>);
+    static_assert(is_processor<Downstream>);
 
     std::vector<std::pair<std::shared_ptr<context>, std::string>>
         outputs_to_check; // (context, name)

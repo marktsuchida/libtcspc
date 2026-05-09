@@ -329,10 +329,10 @@ template <typename T> struct evt_with_bucket {
 TEST_CASE("type constraints: extract_bucket") {
     using proc_type = decltype(extract_bucket<evt_with_bucket<int>>(
         sink_events<bucket<int>>()));
-    STATIC_CHECK(is_processor_v<proc_type, evt_with_bucket<int>>);
-    STATIC_CHECK_FALSE(handles_event_v<proc_type, evt_with_bucket<double>>);
-    STATIC_CHECK_FALSE(handles_event_v<proc_type, bucket<int>>);
-    STATIC_CHECK_FALSE(handles_event_v<proc_type, int>);
+    STATIC_CHECK(is_processor<proc_type, evt_with_bucket<int>>);
+    STATIC_CHECK_FALSE(handles_event<proc_type, evt_with_bucket<double>>);
+    STATIC_CHECK_FALSE(handles_event<proc_type, bucket<int>>);
+    STATIC_CHECK_FALSE(handles_event<proc_type, int>);
 }
 
 TEST_CASE("introspect: extract_bucket") {

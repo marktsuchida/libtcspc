@@ -33,8 +33,8 @@ namespace internal {
 
 template <typename DataTypes, bool UseStartTimeAndChannel, typename Downstream>
 class time_correlate_at_start_or_stop {
-    static_assert(is_processor_v<Downstream,
-                                 time_correlated_detection_event<DataTypes>>);
+    static_assert(
+        is_processor<Downstream, time_correlated_detection_event<DataTypes>>);
 
     Downstream downstream;
 
@@ -81,8 +81,8 @@ class time_correlate_at_start_or_stop {
 
 template <typename DataTypes, bool UseStartChannel, typename Downstream>
 class time_correlate_at_midpoint {
-    static_assert(is_processor_v<Downstream,
-                                 time_correlated_detection_event<DataTypes>>);
+    static_assert(
+        is_processor<Downstream, time_correlated_detection_event<DataTypes>>);
 
     Downstream downstream;
 
@@ -131,8 +131,8 @@ class time_correlate_at_midpoint {
 
 template <typename DataTypes, bool UseStartChannel, typename Downstream>
 class time_correlate_at_fraction {
-    static_assert(is_processor_v<Downstream,
-                                 time_correlated_detection_event<DataTypes>>);
+    static_assert(
+        is_processor<Downstream, time_correlated_detection_event<DataTypes>>);
 
     double frac; // 0.0-1.0 for internal division of start-stop
     Downstream downstream;
@@ -368,8 +368,8 @@ auto time_correlate_at_fraction(arg::fraction<double> fraction,
 namespace internal {
 
 template <typename DataTypes, typename Downstream> class negate_difftime {
-    static_assert(is_processor_v<Downstream,
-                                 time_correlated_detection_event<DataTypes>>);
+    static_assert(
+        is_processor<Downstream, time_correlated_detection_event<DataTypes>>);
 
     Downstream downstream;
 
@@ -416,7 +416,7 @@ template <typename DataTypes, typename Downstream> class negate_difftime {
 
 template <typename DataTypes, typename Downstream>
 class remove_time_correlation {
-    static_assert(is_processor_v<Downstream, detection_event<DataTypes>>);
+    static_assert(is_processor<Downstream, detection_event<DataTypes>>);
 
     Downstream downstream;
 

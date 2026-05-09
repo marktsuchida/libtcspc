@@ -154,7 +154,7 @@ TEST_CASE("type constraints: decode_swabian_tags") {
         sink_events<detection_event<>, begin_lost_interval_event<>,
                     end_lost_interval_event<>, lost_counts_event<>,
                     warning_event, int>()));
-    STATIC_CHECK(is_processor_v<proc_type, swabian_tag_event, int>);
+    STATIC_CHECK(is_processor<proc_type, swabian_tag_event, int>);
 }
 
 TEST_CASE("introspect: decode_swabian_tags") {

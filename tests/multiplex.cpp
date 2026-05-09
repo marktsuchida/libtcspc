@@ -30,27 +30,25 @@ using e1 = empty_test_event<1>;
 
 TEST_CASE("type constraints: multiplex") {
     STATIC_CHECK(
-        is_processor_v<decltype(multiplex<type_list<e0, e1>>(
-                           sink_events<variant_event<type_list<e0, e1>>>())),
-                       e0, e1>);
+        is_processor<decltype(multiplex<type_list<e0, e1>>(
+                         sink_events<variant_event<type_list<e0, e1>>>())),
+                     e0, e1>);
     STATIC_CHECK_FALSE(
-        handles_event_v<
+        handles_event<
             decltype(multiplex<type_list<e0, e1>>(
                 sink_events<variant_event<type_list<e0, e1>>, int>())),
             int>);
 }
 
 TEST_CASE("type constraints: demultiplex") {
-    STATIC_CHECK(is_processor_v<decltype(demultiplex(sink_events<e0, e1>())),
-                                variant_event<type_list<e0, e1>>>);
-    STATIC_CHECK(handles_event_v<decltype(demultiplex(sink_events<e0, e1>())),
-                                 variant_event<type_list<e0>>>);
+    STATIC_CHECK(is_processor<decltype(demultiplex(sink_events<e0, e1>())),
+                              variant_event<type_list<e0, e1>>>);
+    STATIC_CHECK(handles_event<decltype(demultiplex(sink_events<e0, e1>())),
+                               variant_event<type_list<e0>>>);
+    STATIC_CHECK_FALSE(handles_event<decltype(demultiplex(sink_events<e0>())),
+                                     variant_event<type_list<e0, e1>>>);
     STATIC_CHECK_FALSE(
-        handles_event_v<decltype(demultiplex(sink_events<e0>())),
-                        variant_event<type_list<e0, e1>>>);
-    STATIC_CHECK_FALSE(
-        handles_event_v<decltype(demultiplex(sink_events<e0, e1, int>())),
-                        int>);
+        handles_event<decltype(demultiplex(sink_events<e0, e1, int>())), int>);
 }
 
 TEST_CASE("introspect: multiplex") {
