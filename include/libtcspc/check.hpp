@@ -9,9 +9,9 @@
 #include "common.hpp"
 #include "core.hpp"
 #include "data_types.hpp"
-#include "event_traits.hpp"
+#include "event.hpp"
 #include "introspect.hpp"
-#include "processor_traits.hpp"
+#include "processor.hpp"
 
 #include <limits>
 #include <ostream>

@@ -10,7 +10,7 @@
 #include "bucket.hpp"
 #include "common.hpp"
 #include "introspect.hpp"
-#include "processor_traits.hpp"
+#include "processor.hpp"
 
 #include <cstddef>
 #include <iterator>

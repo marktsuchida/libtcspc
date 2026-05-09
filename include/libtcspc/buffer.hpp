@@ -11,7 +11,7 @@
 #include "context.hpp"
 #include "errors.hpp"
 #include "introspect.hpp"
-#include "processor_traits.hpp"
+#include "processor.hpp"
 #include "vector_queue.hpp"
 
 #include <algorithm>

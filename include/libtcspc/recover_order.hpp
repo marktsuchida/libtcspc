@@ -12,7 +12,7 @@
 #include "errors.hpp"
 #include "int_arith.hpp"
 #include "introspect.hpp"
-#include "processor_traits.hpp"
+#include "processor.hpp"
 #include "type_list.hpp"
 #include "variant_event.hpp"
 

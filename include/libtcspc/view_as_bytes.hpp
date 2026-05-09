@@ -8,7 +8,7 @@
 
 #include "bucket.hpp"
 #include "introspect.hpp"
-#include "processor_traits.hpp"
+#include "processor.hpp"
 
 #include <cstddef>
 #include <span>

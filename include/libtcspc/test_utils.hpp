@@ -12,7 +12,7 @@
 #include "data_types.hpp"
 #include "errors.hpp"
 #include "introspect.hpp"
-#include "processor_traits.hpp"
+#include "processor.hpp"
 #include "type_list.hpp"
 #include "variant_event.hpp"
 #include "vector_queue.hpp"

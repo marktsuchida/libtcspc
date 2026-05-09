@@ -10,7 +10,7 @@
 #include "common.hpp"
 #include "data_types.hpp"
 #include "introspect.hpp"
-#include "processor_traits.hpp"
+#include "processor.hpp"
 
 #include <type_traits>
 #include <utility>

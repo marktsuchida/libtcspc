@@ -11,7 +11,7 @@
 #include "data_types.hpp"
 #include "errors.hpp"
 #include "introspect.hpp"
-#include "processor_traits.hpp"
+#include "processor.hpp"
 
 #include <cmath>
 #include <cstddef>

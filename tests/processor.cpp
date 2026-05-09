@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: MIT
  */
 
-#include "libtcspc/processor_traits.hpp"
+#include "libtcspc/processor.hpp"
 
 #include "libtcspc/type_list.hpp"
 

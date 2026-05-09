@@ -9,7 +9,7 @@
 #include "common.hpp"
 #include "errors.hpp"
 #include "introspect.hpp"
-#include "processor_traits.hpp"
+#include "processor.hpp"
 #include "type_list.hpp"
 
 #include <sstream>

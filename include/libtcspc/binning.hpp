@@ -14,7 +14,7 @@
 #include "int_arith.hpp"
 #include "int_types.hpp"
 #include "introspect.hpp"
-#include "processor_traits.hpp"
+#include "processor.hpp"
 
 #include <algorithm>
 #include <cassert>

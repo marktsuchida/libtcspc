@@ -9,7 +9,7 @@
 #include "libtcspc/arg_wrappers.hpp"
 #include "libtcspc/bucket.hpp"
 #include "libtcspc/errors.hpp"
-#include "libtcspc/processor_traits.hpp"
+#include "libtcspc/processor.hpp"
 #include "libtcspc/view_as_bytes.hpp"
 #include "test_checkers.hpp"
 

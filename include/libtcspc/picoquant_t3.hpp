@@ -14,7 +14,7 @@
 #include "introspect.hpp"
 #include "npint.hpp"
 #include "npint_ops.hpp"
-#include "processor_traits.hpp"
+#include "processor.hpp"
 #include "read_integers.hpp"
 #include "time_tagged_events.hpp"
 

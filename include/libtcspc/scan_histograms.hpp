@@ -16,7 +16,7 @@
 #include "histogram_impl.hpp"
 #include "histogram_policy.hpp"
 #include "introspect.hpp"
-#include "processor_traits.hpp"
+#include "processor.hpp"
 
 #include <algorithm>
 #include <cstddef>

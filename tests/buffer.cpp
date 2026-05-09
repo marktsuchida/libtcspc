@@ -10,7 +10,7 @@
 #include "libtcspc/context.hpp"
 #include "libtcspc/core.hpp"
 #include "libtcspc/errors.hpp"
-#include "libtcspc/processor_traits.hpp"
+#include "libtcspc/processor.hpp"
 #include "libtcspc/test_utils.hpp"
 #include "test_checkers.hpp"
 #include "test_thread_utils.hpp"

@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: MIT
  */
 
-#include "libtcspc/event_traits.hpp"
+#include "libtcspc/event.hpp"
 
 #include <catch2/catch_test_macros.hpp>
 

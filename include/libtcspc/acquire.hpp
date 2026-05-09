@@ -12,7 +12,7 @@
 #include "core.hpp"
 #include "errors.hpp"
 #include "introspect.hpp"
-#include "processor_traits.hpp"
+#include "processor.hpp"
 
 #include <chrono>
 #include <condition_variable>

@@ -13,7 +13,7 @@
 #include "data_types.hpp"
 #include "histogram_events.hpp"
 #include "introspect.hpp"
-#include "processor_traits.hpp"
+#include "processor.hpp"
 
 #include <cassert>
 #include <cstddef>

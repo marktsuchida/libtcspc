@@ -7,7 +7,7 @@
 #include "libtcspc/core.hpp"
 
 #include "libtcspc/context.hpp"
-#include "libtcspc/processor_traits.hpp"
+#include "libtcspc/processor.hpp"
 #include "libtcspc/test_utils.hpp"
 #include "libtcspc/type_list.hpp"
 #include "test_checkers.hpp"
