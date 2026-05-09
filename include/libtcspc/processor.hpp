@@ -31,7 +31,7 @@ namespace tcspc {
  * `static_assert` failures or other issues) even if the concept is satisfied.
  */
 template <typename Proc>
-concept flushable = requires(Proc p) {
+concept flushable = requires(Proc &p) {
     { p.flush() } -> std::same_as<void>;
 };
 
@@ -62,7 +62,7 @@ concept flushable = requires(Proc p) {
  * even if the concept is satisfied.
  */
 template <typename Proc, typename Event>
-concept rvalue_handler_for = requires(Proc p, Event &&e) {
+concept rvalue_handler_for = requires(Proc &p, Event &&e) {
     { p.handle(std::move(e)) } -> std::same_as<void>;
 };
 
@@ -88,7 +88,7 @@ concept rvalue_handler_for = requires(Proc p, Event &&e) {
  * even if the concept is satisfied.
  */
 template <typename Proc, typename Event>
-concept const_handler_for = requires(Proc p, Event const &e) {
+concept const_handler_for = requires(Proc &p, Event const &e) {
     { p.handle(e) } -> std::same_as<void>;
 };
 
