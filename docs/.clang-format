@@ -2,5 +2,7 @@
 # Copyright 2019-2026 Board of Regents of the University of Wisconsin System
 # SPDX-License-Identifier: MIT
 
-# Do not touch vendored doxygen-awesome-css files.
-root = true
+---
+DisableFormat: true
+SortIncludes: Never
+...
