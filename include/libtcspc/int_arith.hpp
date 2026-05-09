@@ -114,8 +114,9 @@ constexpr auto subtract_with_wrap(T a, T b) noexcept -> T {
     return static_cast<T>(as_unsigned(a) - as_unsigned(b));
 }
 
-// window_size must be non-negative
-template <typename T>
+// The earliest abstime that is still within window_size of stop_time (and
+// within T's limits). Requires window_size >= 0.
+template <std::integral T>
 constexpr auto pairing_cutoff(T stop_time, T window_size) noexcept {
     // Guard against underflow (window_size is non-negative).
     if (stop_time < std::numeric_limits<T>::min() + window_size)
