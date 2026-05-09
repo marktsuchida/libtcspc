@@ -11,7 +11,4 @@ namespace tcspc::internal {
 template <typename Event>
 concept has_abstime = requires { Event::abstime; };
 
-template <typename Event>
-inline constexpr bool has_abstime_v = has_abstime<Event>;
-
 } // namespace tcspc::internal

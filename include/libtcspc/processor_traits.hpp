@@ -34,19 +34,11 @@ namespace tcspc {
  * that `Proc` and `Proc::flush()` can be instantiated_ (if \p Proc is a
  * template class). It is possible that instantiation will fail (due to
  * `static_assert` failures or other issues) even if the concept is satisfied.
- *
- * \see `tcspc::handles_flush_v`
  */
 template <typename Proc>
 concept handles_flush = requires(Proc p) {
     { p.flush() } -> std::same_as<void>;
 };
-
-/**
- * \brief Helper variable template for `tcspc::handles_flush`.
- */
-template <typename Proc>
-inline constexpr bool handles_flush_v = handles_flush<Proc>;
 
 /** @} <!-- group handles-flush --> */
 
@@ -80,20 +72,11 @@ inline constexpr bool handles_flush_v = handles_flush<Proc>;
  * instantiated_ (if \p Proc is a template class). It is possible that
  * instantiation will fail (due to `static_assert` failures or other issues)
  * even if the concept is satisfied.
- *
- * \see `tcspc::handles_rvalue_event_v`
  */
 template <typename Proc, typename Event>
 concept handles_rvalue_event = requires(Proc p, Event &&e) {
     { p.handle(std::move(e)) } -> std::same_as<void>;
 };
-
-/**
- * \brief Helper variable template for `tcspc::handles_rvalue_event`.
- */
-template <typename Proc, typename Event>
-inline constexpr bool handles_rvalue_event_v =
-    handles_rvalue_event<Proc, Event>;
 
 /** @} <!-- group handles-rvalue-event --> */
 
@@ -122,19 +105,11 @@ inline constexpr bool handles_rvalue_event_v =
  * instantiated_ (if \p Proc is a template class). It is possible that
  * instantiation will fail (due to `static_assert` failures or other issues)
  * even if the concept is satisfied.
- *
- * \see `tcspc::handles_const_event_v`
  */
 template <typename Proc, typename Event>
 concept handles_const_event = requires(Proc p, Event const &e) {
     { p.handle(e) } -> std::same_as<void>;
 };
-
-/**
- * \brief Helper variable template for `tcspc::handles_const_event`.
- */
-template <typename Proc, typename Event>
-inline constexpr bool handles_const_event_v = handles_const_event<Proc, Event>;
 
 /** @} <!-- group handles-const-event --> */
 
@@ -161,18 +136,10 @@ inline constexpr bool handles_const_event_v = handles_const_event<Proc, Event>;
  * instantiated_ (if \p Proc is a template class). It is possible that
  * instantiation will fail (due to `static_assert` failures or other issues)
  * even if the concept is satisfied.
- *
- * \see `tcspc::handles_event_v`
  */
 template <typename Proc, typename Event>
 concept handles_event =
     handles_const_event<Proc, Event> && handles_rvalue_event<Proc, Event>;
-
-/**
- * \brief Helper variable template for `tcspc::handles_event`.
- */
-template <typename Proc, typename Event>
-inline constexpr bool handles_event_v = handles_event<Proc, Event>;
 
 /** @} <!-- group handles-event --> */
 
@@ -198,17 +165,9 @@ inline constexpr bool handles_event_v = handles_event<Proc, Event>;
  * instantiated_ (if \p Proc is a template class). It is possible that
  * instantiation will fail (due to `static_assert` failures or other issues)
  * even if the concept is satisfied.
- *
- * \see `tcspc::handles_events_v`
  */
 template <typename Proc, typename... Events>
 concept handles_events = (handles_event<Proc, Events> && ...);
-
-/**
- * \brief Helper variable template for `tcspc::handles_events`.
- */
-template <typename Proc, typename... Events>
-inline constexpr bool handles_events_v = handles_events<Proc, Events...>;
 
 /** @} <!-- group handles-events --> */
 
@@ -237,17 +196,9 @@ inline constexpr bool handles_events_v = handles_events<Proc, Events...>;
  * `Proc::handle()` overloads can be instantiated_ (if \p Proc is a template
  * class). It is possible that instantiation will fail (due to `static_assert`
  * failures or other issues) even if the concept is satisfied.
- *
- * \see `tcspc::is_processor_v`
  */
 template <typename Proc, typename... Events>
 concept is_processor = handles_flush<Proc> && handles_events<Proc, Events...>;
-
-/**
- * \brief Helper variable template for `tcspc::is_processor`.
- */
-template <typename Proc, typename... Events>
-inline constexpr bool is_processor_v = is_processor<Proc, Events...>;
 
 /** @} <!-- group is-processor --> */
 

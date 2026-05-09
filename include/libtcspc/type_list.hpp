@@ -64,16 +64,9 @@ struct is_type_list_impl<type_list<Ts...>> : std::true_type {};
  * specialization.
  *
  * Checks if \p T is a specialization of `tcspc::type_list`.
- *
- * \see `tcspc::is_type_list_v`
  */
 template <typename T>
 concept is_type_list = internal::is_type_list_impl<T>::value;
-
-/**
- * \brief Helper variable template for `tcspc::is_type_list`.
- */
-template <typename T> inline constexpr bool is_type_list_v = is_type_list<T>;
 
 /** @} <!-- group is-type-list --> */
 
@@ -172,19 +165,10 @@ struct type_list_contains_impl<type_list<Ts...>, Type>
  *
  * Checks if \p Type is in the template arguments of the `tcspc::type_list`
  * specialization \p TypeList.
- *
- * \see `tcspc::type_list_contains_v`
  */
 template <typename TypeList, typename Type>
 concept type_list_contains =
     internal::type_list_contains_impl<TypeList, Type>::value;
-
-/**
- * \brief Helper variable template for `tcspc::type_list_contains`.
- */
-template <typename TypeList, typename Type>
-inline constexpr bool type_list_contains_v =
-    type_list_contains<TypeList, Type>;
 
 /** @} <!-- group type-list-contains --> */
 
@@ -219,20 +203,10 @@ struct is_convertible_to_type_list_member_impl<Type, type_list<Ts...>>
  *
  * Checks if \p Type is `std::convertible_to` any of the template arguments of
  * the `tcspc::type_list` specialization \p TypeList.
- *
- * \see `tcspc::is_convertible_to_type_list_member_v`
  */
 template <typename Type, typename TypeList>
 concept is_convertible_to_type_list_member =
     internal::is_convertible_to_type_list_member_impl<Type, TypeList>::value;
-
-/**
- * \brief Helper variable template for
- * `tcspc::is_convertible_to_type_list_member_v`.
- */
-template <typename Type, typename TypeList>
-inline constexpr bool is_convertible_to_type_list_member_v =
-    is_convertible_to_type_list_member<Type, TypeList>;
 
 /** @} <!-- group is-convertible-to-type-list-member --> */
 

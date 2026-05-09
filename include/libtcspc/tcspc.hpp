@@ -867,13 +867,14 @@ namespace tcspc {
 /**
  * \defgroup type-list Type lists
  *
- * \brief Types and metafunctions for handling lists (or sets) of types.
+ * \brief Types, concepts, and metafunctions for handling lists (or sets) of
+ * types.
  */
 
 /**
  * \defgroup processor-traits Processor traits
  *
- * \brief Trait metafunctions to check processor capabilities.
+ * \brief Concepts and traits to check processor capabilities.
  */
 
 /**
