@@ -229,17 +229,24 @@ struct handles_event_list_impl<Proc, type_list<Events...>>
  * types.
  *
  * Determines whether the processor \p Proc handles all of the event types in
- * the `tcspc::type_list` specialization \p EventList.
+ * the `tcspc::type_list` specialization \p EventList. Equivalent to
+ * `tcspc::handles_events<Proc, Events...>` where `Events...` is the parameter
+ * pack of \p EventList.
  *
  * If the event handler(s) exist but any of them has a return type other than
  * `void`, compilation fails.
  *
- * This trait is intentionally retained as a `_v` variable rather than a
- * concept: C++20 does not permit partial specialization of concepts, so a
- * type-list-keyed concept must route through a class-template specialization
- * to unpack the pack and would not subsume with the pack-keyed
- * `tcspc::handles_events` concept. Presenting it as a query trait avoids
- * misleading subsumption expectations.
+ * \par Why this is a `_v` trait, not a concept
+ * Unpacking the type list requires a class-template partial specialization,
+ * because C++20 does not permit partial specialization of concepts (only of
+ * class and variable templates). A type-list-keyed predicate written as a
+ * concept therefore has to route through a helper class template and is
+ * structurally `<helper-impl>::value` — a single atomic constraint. It would
+ * not subsume with the pack-keyed `tcspc::handles_events` concept, so the two
+ * could not participate together in concept-subsumption-arbitrated overload
+ * resolution. Presenting this predicate as a `_v` query rather than a
+ * peer-named concept avoids implying a subsumption relationship that the
+ * language cannot deliver.
  *
  * \note A true result indicates that \p Proc handles the events in `EventList`
  * _provided that `Proc` and the relevant `Proc::handle()` overloads can be
@@ -281,19 +288,23 @@ struct is_processor_of_list_impl<Proc, type_list<Events...>>
  *
  * Determines whether the processor \p Proc handles all of the event types in
  * the `tcspc::type_list` specialization \p EventList as well as `flush()`.
- *
- * This is equivalent to the logical AND of `tcspc::handles_event_list_v<Proc,
- * EventList>` and `tcspc::handles_flush<Proc>`.
+ * Equivalent to `tcspc::is_processor<Proc, Events...>` where `Events...` is
+ * the parameter pack of \p EventList.
  *
  * If the event handler(s) and/or `flush()` exist but any of them has a return
  * type other than `void`, compilation fails.
  *
- * This trait is intentionally retained as a `_v` variable rather than a
- * concept: C++20 does not permit partial specialization of concepts, so a
- * type-list-keyed concept must route through a class-template specialization
- * to unpack the pack and would not subsume with the pack-keyed
- * `tcspc::is_processor` concept. Presenting it as a query trait avoids
- * misleading subsumption expectations.
+ * \par Why this is a `_v` trait, not a concept
+ * Unpacking the type list requires a class-template partial specialization,
+ * because C++20 does not permit partial specialization of concepts (only of
+ * class and variable templates). A type-list-keyed predicate written as a
+ * concept therefore has to route through a helper class template and is
+ * structurally `<helper-impl>::value` — a single atomic constraint. It would
+ * not subsume with the pack-keyed `tcspc::is_processor` concept, so the two
+ * could not participate together in concept-subsumption-arbitrated overload
+ * resolution. Presenting this predicate as a `_v` query rather than a
+ * peer-named concept avoids implying a subsumption relationship that the
+ * language cannot deliver.
  *
  * \note A true result indicates that \p Proc handles flush and the events in
  * `EventList` _provided that `Proc`, `Proc::flush()`, and the relevant
