@@ -7,6 +7,7 @@
 #pragma once
 
 #include <cassert>
+#include <concepts>
 #include <cstdint>
 #include <type_traits>
 
@@ -48,12 +49,11 @@ template <typename T> struct always_false : std::false_type {};
 template <typename T>
 inline constexpr bool always_false_v = always_false<T>::value;
 
-template <typename T, typename... U> struct is_any_of {
-    static constexpr bool value = (std::is_same_v<T, U> || ...);
-};
+template <typename T, typename... U>
+concept is_any_of = (std::same_as<T, U> || ...);
 
 template <typename T, typename... U>
-inline constexpr bool is_any_of_v = is_any_of<T, U...>::value;
+inline constexpr bool is_any_of_v = is_any_of<T, U...>;
 
 // Overloaded idiom for std::visit
 template <typename... Ts> struct overloaded : Ts... {

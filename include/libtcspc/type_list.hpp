@@ -8,6 +8,7 @@
 
 #include "common.hpp"
 
+#include <concepts>
 #include <cstddef>
 #include <type_traits>
 
@@ -39,37 +40,40 @@ template <typename... Ts> struct type_list {
 };
 
 /**
- * \defgroup is-type-list Metafunction is_type_list
+ * \defgroup is-type-list Concept is_type_list
  * \ingroup type-list
  * \copydoc is_type_list
  * @{
  */
 
-/**
- * \brief Metafunction to tell if a type is a type list.
- * specialization.
- *
- * \hideinheritancegraph
- *
- * Checks if \p T is a specialization of `tcspc::type_list` and provides the
- * result in the `bool` member `value`.
- *
- * \see `tcspc::is_type_list_v`
- */
-template <typename T> struct is_type_list : std::false_type {};
-
 /** \cond implementation-detail */
 
+namespace internal {
+
+template <typename> struct is_type_list_impl : std::false_type {};
+
 template <typename... Ts>
-struct is_type_list<type_list<Ts...>> : std::true_type {};
+struct is_type_list_impl<type_list<Ts...>> : std::true_type {};
+
+} // namespace internal
 
 /** \endcond */
 
 /**
- * \brief Helper variable template for `tcspc::is_type_list`.
+ * \brief Concept that is satisfied when a type is a `tcspc::type_list`
+ * specialization.
+ *
+ * Checks if \p T is a specialization of `tcspc::type_list`.
+ *
+ * \see `tcspc::is_type_list_v`
  */
 template <typename T>
-inline constexpr bool is_type_list_v = is_type_list<T>::value;
+concept is_type_list = internal::is_type_list_impl<T>::value;
+
+/**
+ * \brief Helper variable template for `tcspc::is_type_list`.
+ */
+template <typename T> inline constexpr bool is_type_list_v = is_type_list<T>;
 
 /** @} <!-- group is-type-list --> */
 
@@ -143,43 +147,50 @@ using type_list_singleton_element_t =
 /** @} <!-- group type-list-singleelem --> */
 
 /**
- * \defgroup type-list-contains Metafunction type_list_contains
+ * \defgroup type-list-contains Concept type_list_contains
  * \ingroup type-list
  * \copydoc type_list_contains
  * @{
  */
 
+/** \cond implementation-detail */
+
+namespace internal {
+
+template <typename TypeList, typename Type> struct type_list_contains_impl;
+
+template <typename Type, typename... Ts>
+struct type_list_contains_impl<type_list<Ts...>, Type>
+    : std::bool_constant<(std::same_as<Type, Ts> || ...)> {};
+
+} // namespace internal
+
+/** \endcond */
+
 /**
- * \brief Metafunction to determine if a type is contained in a type list.
+ * \brief Concept that is satisfied when a type is contained in a type list.
  *
  * Checks if \p Type is in the template arguments of the `tcspc::type_list`
- * specialization \p TypeList and provides the result in the `bool` member
- * `value`.
+ * specialization \p TypeList.
  *
  * \see `tcspc::type_list_contains_v`
  */
-template <typename TypeList, typename Type> struct type_list_contains;
-
-/** \cond implementation-detail */
-
-template <typename Type, typename... Ts>
-struct type_list_contains<type_list<Ts...>, Type>
-    : std::disjunction<std::is_same<Type, Ts>...> {};
-
-/** \endcond */
+template <typename TypeList, typename Type>
+concept type_list_contains =
+    internal::type_list_contains_impl<TypeList, Type>::value;
 
 /**
  * \brief Helper variable template for `tcspc::type_list_contains`.
  */
 template <typename TypeList, typename Type>
 inline constexpr bool type_list_contains_v =
-    type_list_contains<TypeList, Type>::value;
+    type_list_contains<TypeList, Type>;
 
 /** @} <!-- group type-list-contains --> */
 
 // clang-format off
 /**
- * \defgroup is-convertible-to-type-list-member Metafunction is_convertible_to_type_list_member
+ * \defgroup is-convertible-to-type-list-member Concept is_convertible_to_type_list_member
  *
  * \ingroup type-list
  * \copydoc is_convertible_to_type_list_member
@@ -187,26 +198,33 @@ inline constexpr bool type_list_contains_v =
  */
 // clang-format on
 
+/** \cond implementation-detail */
+
+namespace internal {
+
+template <typename Type, typename TypeList>
+struct is_convertible_to_type_list_member_impl;
+
+template <typename Type, typename... Ts>
+struct is_convertible_to_type_list_member_impl<Type, type_list<Ts...>>
+    : std::bool_constant<(std::convertible_to<Type, Ts> || ...)> {};
+
+} // namespace internal
+
+/** \endcond */
+
 /**
- * \brief Metafunction to determine if a type is convertible to at least one of
- * the members of a type list.
+ * \brief Concept that is satisfied when a type is convertible to at least one
+ * of the members of a type list.
  *
- * Checks if \p Type is `std::is_convertible` to any of the template arguments
- * of the `tcspc::type_list` specialization \p TypeList and provides the result
- * in the `bool` member `value`.
+ * Checks if \p Type is `std::convertible_to` any of the template arguments of
+ * the `tcspc::type_list` specialization \p TypeList.
  *
  * \see `tcspc::is_convertible_to_type_list_member_v`
  */
 template <typename Type, typename TypeList>
-struct is_convertible_to_type_list_member;
-
-/** \cond implementation-detail */
-
-template <typename Type, typename... Ts>
-struct is_convertible_to_type_list_member<Type, type_list<Ts...>>
-    : std::disjunction<std::is_convertible<Type, Ts>...> {};
-
-/** \endcond */
+concept is_convertible_to_type_list_member =
+    internal::is_convertible_to_type_list_member_impl<Type, TypeList>::value;
 
 /**
  * \brief Helper variable template for
@@ -214,7 +232,7 @@ struct is_convertible_to_type_list_member<Type, type_list<Ts...>>
  */
 template <typename Type, typename TypeList>
 inline constexpr bool is_convertible_to_type_list_member_v =
-    is_convertible_to_type_list_member<Type, TypeList>::value;
+    is_convertible_to_type_list_member<Type, TypeList>;
 
 /** @} <!-- group is-convertible-to-type-list-member --> */
 
@@ -240,7 +258,7 @@ template <typename TL0, typename TL1> struct type_list_is_subset;
 
 template <typename... T0s, typename TL1>
 struct type_list_is_subset<type_list<T0s...>, TL1>
-    : std::conjunction<type_list_contains<TL1, T0s>...> {};
+    : std::bool_constant<(type_list_contains<TL1, T0s> && ...)> {};
 
 /** \endcond */
 

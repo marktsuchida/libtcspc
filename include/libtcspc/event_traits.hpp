@@ -6,18 +6,12 @@
 
 #pragma once
 
-#include <type_traits>
-
 namespace tcspc::internal {
 
-template <typename Event, typename = void>
-struct has_abstime : std::false_type {};
+template <typename Event>
+concept has_abstime = requires { Event::abstime; };
 
 template <typename Event>
-struct has_abstime<Event, std::void_t<decltype(Event::abstime)>>
-    : std::true_type {};
-
-template <typename Event>
-static constexpr bool has_abstime_v = has_abstime<Event>::value;
+inline constexpr bool has_abstime_v = has_abstime<Event>;
 
 } // namespace tcspc::internal
