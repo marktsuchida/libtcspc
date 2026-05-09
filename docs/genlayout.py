@@ -36,7 +36,7 @@ for section in root:
         had_bd = False
         for bd in section.findall("briefdescription"):
             had_bd = True
-            bd.set("vislble", "no")
+            bd.set("visible", "no")
         assert had_bd
         section.insert(
             0,
