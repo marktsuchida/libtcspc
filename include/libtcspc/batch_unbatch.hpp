@@ -113,21 +113,23 @@ template <typename ContainerEvent, typename Downstream> class unbatch {
     // borderline cases where this doesn't hold, but it is probably best to
     // leave it to the compiler.
     template <typename E>
-        requires(std::convertible_to<std::remove_cvref_t<E>, ContainerEvent> ||
-                 handler_for<Downstream, std::remove_cvref_t<E>>)
+        requires std::convertible_to<std::remove_cvref_t<E>, ContainerEvent>
     void handle(E &&event) {
-        if constexpr (std::is_convertible_v<std::remove_cvref_t<E>,
-                                            ContainerEvent>) {
-            if constexpr (std::is_lvalue_reference_v<E>) {
-                for (auto const &e : event)
-                    downstream.handle(e);
-            } else {
-                for (auto &e : event)
-                    downstream.handle(std::move(e));
-            }
+        if constexpr (std::is_lvalue_reference_v<E>) {
+            for (auto const &e : event)
+                downstream.handle(e);
         } else {
-            downstream.handle(std::forward<E>(event));
+            for (auto &e : event)
+                downstream.handle(std::move(e));
         }
+    }
+
+    template <typename E>
+        requires(
+            not std::convertible_to<std::remove_cvref_t<E>, ContainerEvent> and
+            handler_for<Downstream, std::remove_cvref_t<E>>)
+    void handle(E &&event) {
+        downstream.handle(std::forward<E>(event));
     }
 
     void flush() { downstream.flush(); }

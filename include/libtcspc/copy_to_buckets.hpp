@@ -53,17 +53,21 @@ template <typename T, typename Downstream> class copy_to_buckets {
     }
 
     template <typename Event>
-        requires(std::is_constructible_v<std::span<T const>, Event> ||
+        requires std::is_constructible_v<std::span<T const>,
+                                         std::remove_cvref_t<Event>>
+    void handle(Event &&event) {
+        auto const event_span = std::span<T const>(event);
+        auto b = bsource->bucket_of_size(event_span.size());
+        std::copy(event_span.begin(), event_span.end(), b.begin());
+        downstream.handle(std::move(b));
+    }
+
+    template <typename Event>
+        requires(not std::is_constructible_v<std::span<T const>,
+                                             std::remove_cvref_t<Event>> and
                  handler_for<Downstream, std::remove_cvref_t<Event>>)
     void handle(Event &&event) {
-        if constexpr (std::is_constructible_v<std::span<T const>, Event>) {
-            auto const event_span = std::span<T const>(event);
-            auto b = bsource->bucket_of_size(event_span.size());
-            std::copy(event_span.begin(), event_span.end(), b.begin());
-            downstream.handle(std::move(b));
-        } else {
-            downstream.handle(std::forward<Event>(event));
-        }
+        downstream.handle(std::forward<Event>(event));
     }
 
     void flush() { downstream.flush(); }
@@ -148,34 +152,38 @@ class copy_to_full_buckets {
     }
 
     template <typename Event>
-        requires(std::is_constructible_v<std::span<T const>, Event> ||
+        requires std::is_constructible_v<std::span<T const>,
+                                         std::remove_cvref_t<Event>>
+    void handle(Event &&event) {
+        auto src = std::span<T const>(event);
+        while (not src.empty()) {
+            if (filled == 0 && bkt.empty())
+                bkt = bsource->bucket_of_size(bsize);
+            auto const dest = std::span(bkt).subspan(filled);
+            auto const copy_size = std::min(src.size(), dest.size());
+            std::copy_n(src.begin(), copy_size, dest.begin());
+            if constexpr (not std::is_same_v<LiveDownstream, null_sink>)
+                emit_live(bkt, filled, copy_size);
+            filled += copy_size;
+            if (filled == bsize) {
+                emit_batch(std::move(bkt));
+                bkt = {};
+                filled = 0;
+            }
+            src = src.subspan(copy_size);
+        }
+    }
+
+    template <typename Event>
+        requires(not std::is_constructible_v<std::span<T const>,
+                                             std::remove_cvref_t<Event>> and
                  handler_for<LiveDownstream, std::remove_cvref_t<Event>>)
     void handle(Event &&event) {
-        if constexpr (std::is_constructible_v<std::span<T const>, Event>) {
-            auto src = std::span<T const>(event);
-            while (not src.empty()) {
-                if (filled == 0 && bkt.empty())
-                    bkt = bsource->bucket_of_size(bsize);
-                auto const dest = std::span(bkt).subspan(filled);
-                auto const copy_size = std::min(src.size(), dest.size());
-                std::copy_n(src.begin(), copy_size, dest.begin());
-                if constexpr (not std::is_same_v<LiveDownstream, null_sink>)
-                    emit_live(bkt, filled, copy_size);
-                filled += copy_size;
-                if (filled == bsize) {
-                    emit_batch(std::move(bkt));
-                    bkt = {};
-                    filled = 0;
-                }
-                src = src.subspan(copy_size);
-            }
-        } else {
-            try {
-                live_downstream.handle(std::forward<Event>(event));
-            } catch (end_of_processing const &) {
-                flush_batch();
-                throw;
-            }
+        try {
+            live_downstream.handle(std::forward<Event>(event));
+        } catch (end_of_processing const &) {
+            flush_batch();
+            throw;
         }
     }
 

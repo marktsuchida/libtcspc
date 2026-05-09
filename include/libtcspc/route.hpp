@@ -74,27 +74,32 @@ class route_homogeneous {
     }
 
     template <typename Event>
-        requires handler_for<Downstream, std::remove_cvref_t<Event>>
+        requires(convertible_to_type_list_member<std::remove_cvref_t<Event>,
+                                                 RoutedEventList> and
+                 handler_for<Downstream, std::remove_cvref_t<Event>>)
     void handle(Event &&event) {
-        if constexpr (convertible_to_type_list_member<
-                          std::remove_cvref_t<Event>, RoutedEventList>) {
-            std::size_t index = router(std::as_const(event));
-            if (index >= N)
-                return;
+        std::size_t index = router(std::as_const(event));
+        if (index >= N)
+            return;
+        try {
+            downstreams[index].handle(std::forward<Event>(event));
+        } catch (end_of_processing const &) {
+            flush_all_but(downstreams[index]);
+            throw;
+        }
+    }
+
+    template <typename Event>
+        requires(not convertible_to_type_list_member<
+                     std::remove_cvref_t<Event>, RoutedEventList> and
+                 handler_for<Downstream, std::remove_cvref_t<Event>>)
+    void handle(Event &&event) {
+        for (auto &d : downstreams) {
             try {
-                downstreams[index].handle(std::forward<Event>(event));
+                d.handle(std::as_const(event));
             } catch (end_of_processing const &) {
-                flush_all_but(downstreams[index]);
+                flush_all_but(d);
                 throw;
-            }
-        } else { // Broadcast
-            for (auto &d : downstreams) {
-                try {
-                    d.handle(std::as_const(event));
-                } catch (end_of_processing const &) {
-                    flush_all_but(d);
-                    throw;
-                }
             }
         }
     }

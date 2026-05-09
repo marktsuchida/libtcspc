@@ -179,34 +179,36 @@ class unbatch_bin_increment_clusters {
     template <typename Event>
         requires(
             std::convertible_to<std::remove_cvref_t<Event>,
-                                bucket<typename DataTypes::bin_index_type>> ||
+                                bucket<typename DataTypes::bin_index_type>> or
             std::convertible_to<
                 std::remove_cvref_t<Event>,
-                bucket<typename DataTypes::bin_index_type const>> ||
-            handler_for<Downstream, std::remove_cvref_t<Event>>)
+                bucket<typename DataTypes::bin_index_type const>>)
     void handle(Event &&event) {
-        if constexpr (std::is_convertible_v<
-                          std::remove_cvref_t<Event>,
-                          bucket<typename DataTypes::bin_index_type>> ||
-                      std::is_convertible_v<
-                          std::remove_cvref_t<Event>,
-                          bucket<typename DataTypes::bin_index_type const>>) {
-            bin_increment_cluster_decoder<bin_index_type> const decoder(event);
-            for (auto const cluster_span : decoder) {
-                // The cluster_span is a span<T const>, but we want bucket<T>,
-                // not bucket<T const>. Casting is safe because
-                // `ad_hoc_bucket<T>` emitted as const lvalue reference does
-                // not allow mutation of the referred data.
-                auto const mut_span = std::span<bin_index_type>(
-                    const_cast<bin_index_type *>(cluster_span.data()),
-                    cluster_span.size());
-                bin_increment_cluster_event<DataTypes> const e{
-                    ad_hoc_bucket(mut_span)};
-                downstream.handle(e);
-            }
-        } else {
-            downstream.handle(std::forward<Event>(event));
+        bin_increment_cluster_decoder<bin_index_type> const decoder(event);
+        for (auto const cluster_span : decoder) {
+            // The cluster_span is a span<T const>, but we want bucket<T>,
+            // not bucket<T const>. Casting is safe because
+            // `ad_hoc_bucket<T>` emitted as const lvalue reference does
+            // not allow mutation of the referred data.
+            auto const mut_span = std::span<bin_index_type>(
+                const_cast<bin_index_type *>(cluster_span.data()),
+                cluster_span.size());
+            bin_increment_cluster_event<DataTypes> const e{
+                ad_hoc_bucket(mut_span)};
+            downstream.handle(e);
         }
+    }
+
+    template <typename Event>
+        requires(not std::convertible_to<
+                     std::remove_cvref_t<Event>,
+                     bucket<typename DataTypes::bin_index_type>> and
+                 not std::convertible_to<
+                     std::remove_cvref_t<Event>,
+                     bucket<typename DataTypes::bin_index_type const>> and
+                 handler_for<Downstream, std::remove_cvref_t<Event>>)
+    void handle(Event &&event) {
+        downstream.handle(std::forward<Event>(event));
     }
 
     void flush() { downstream.flush(); }

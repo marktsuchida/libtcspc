@@ -57,15 +57,18 @@ class stop {
     }
 
     template <typename Event>
-        requires(convertible_to_type_list_member<std::remove_cvref_t<Event>,
-                                                 EventList> ||
+        requires convertible_to_type_list_member<std::remove_cvref_t<Event>,
+                                                 EventList>
+    [[noreturn]] void handle(Event &&event) {
+        handle_stop(event);
+    }
+
+    template <typename Event>
+        requires(not convertible_to_type_list_member<
+                     std::remove_cvref_t<Event>, EventList> and
                  handler_for<Downstream, std::remove_cvref_t<Event>>)
     void handle(Event &&event) {
-        if constexpr (convertible_to_type_list_member<
-                          std::remove_cvref_t<Event>, EventList>)
-            handle_stop(event);
-        else
-            downstream.handle(std::forward<Event>(event));
+        downstream.handle(std::forward<Event>(event));
     }
 
     void flush() { downstream.flush(); }

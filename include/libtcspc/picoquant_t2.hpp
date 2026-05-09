@@ -468,42 +468,42 @@ class decode_pqt2 {
     }
 
     template <typename Event>
-        requires(std::convertible_to<std::remove_cvref_t<Event>, PQT2Event> ||
-                 handler_for<Downstream, std::remove_cvref_t<Event>>)
+        requires std::convertible_to<std::remove_cvref_t<Event>, PQT2Event>
     void handle(Event &&event) {
-        if constexpr (std::is_convertible_v<std::remove_cvref_t<Event>,
-                                            PQT2Event>) {
-            if (event.is_timetag_overflow()) {
-                timetag_base += abstime_type(PQT2Event::overflow_period) *
-                                event.timetag_overflow_count().value();
-                return downstream.handle(
-                    time_reached_event<DataTypes>{timetag_base});
-            }
-
-            // In the case where the overflow period is smaller than one plus
-            // the maximum representable time tag (PicoHarp 300 and HydraHarp
-            // V1), any invalid time tags will be caught when (externally)
-            // checking for monotonicity. So we do not check here.
-
-            if (not event.is_special() || event.is_sync_event()) {
-                abstime_type const timetag =
-                    timetag_base + event.timetag().value();
-                downstream.handle(detection_event<DataTypes>{
-                    timetag,
-                    event.is_special() ? -1 : event.channel().value()});
-            } else if (event.is_external_marker()) {
-                abstime_type const timetag =
-                    timetag_base + event.external_marker_timetag().value();
-                for_each_set_bit(
-                    u32np(event.external_marker_bits()), [&](int b) {
-                        downstream.handle(marker_event<DataTypes>{timetag, b});
-                    });
-            } else {
-                issue_warning("invalid special event encountered");
-            }
-        } else {
-            downstream.handle(std::forward<Event>(event));
+        if (event.is_timetag_overflow()) {
+            timetag_base += abstime_type(PQT2Event::overflow_period) *
+                            event.timetag_overflow_count().value();
+            return downstream.handle(
+                time_reached_event<DataTypes>{timetag_base});
         }
+
+        // In the case where the overflow period is smaller than one plus
+        // the maximum representable time tag (PicoHarp 300 and HydraHarp
+        // V1), any invalid time tags will be caught when (externally)
+        // checking for monotonicity. So we do not check here.
+
+        if (not event.is_special() || event.is_sync_event()) {
+            abstime_type const timetag =
+                timetag_base + event.timetag().value();
+            downstream.handle(detection_event<DataTypes>{
+                timetag, event.is_special() ? -1 : event.channel().value()});
+        } else if (event.is_external_marker()) {
+            abstime_type const timetag =
+                timetag_base + event.external_marker_timetag().value();
+            for_each_set_bit(u32np(event.external_marker_bits()), [&](int b) {
+                downstream.handle(marker_event<DataTypes>{timetag, b});
+            });
+        } else {
+            issue_warning("invalid special event encountered");
+        }
+    }
+
+    template <typename Event>
+        requires(
+            not std::convertible_to<std::remove_cvref_t<Event>, PQT2Event> and
+            handler_for<Downstream, std::remove_cvref_t<Event>>)
+    void handle(Event &&event) {
+        downstream.handle(std::forward<Event>(event));
     }
 
     void flush() { downstream.flush(); }

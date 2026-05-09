@@ -263,21 +263,23 @@ template <typename DataTypes, typename Downstream> class decode_swabian_tags {
     }
 
     template <typename Event>
-        requires(std::convertible_to<std::remove_cvref_t<Event>,
-                                     swabian_tag_event> ||
+        requires std::convertible_to<std::remove_cvref_t<Event>,
+                                     swabian_tag_event>
+    void handle(Event &&event) {
+        if (event.type() == swabian_tag_event::tag_type::time_tag) {
+            downstream.handle(detection_event<DataTypes>{
+                event.time().value(), event.channel().value()});
+        } else {
+            handle_coldpath_tag(event);
+        }
+    }
+
+    template <typename Event>
+        requires(not std::convertible_to<std::remove_cvref_t<Event>,
+                                         swabian_tag_event> and
                  handler_for<Downstream, std::remove_cvref_t<Event>>)
     void handle(Event &&event) {
-        if constexpr (std::is_convertible_v<std::remove_cvref_t<Event>,
-                                            swabian_tag_event>) {
-            if (event.type() == swabian_tag_event::tag_type::time_tag) {
-                downstream.handle(detection_event<DataTypes>{
-                    event.time().value(), event.channel().value()});
-            } else {
-                handle_coldpath_tag(event);
-            }
-        } else {
-            downstream.handle(std::forward<Event>(event));
-        }
+        downstream.handle(std::forward<Event>(event));
     }
 
     void flush() { downstream.flush(); }

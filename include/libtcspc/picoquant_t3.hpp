@@ -440,34 +440,35 @@ class decode_pqt3 {
     }
 
     template <typename Event>
-        requires(std::convertible_to<std::remove_cvref_t<Event>, PQT3Event> ||
-                 handler_for<Downstream, std::remove_cvref_t<Event>>)
+        requires std::convertible_to<std::remove_cvref_t<Event>, PQT3Event>
     void handle(Event &&event) {
-        if constexpr (std::is_convertible_v<std::remove_cvref_t<Event>,
-                                            PQT3Event>) {
-            if (event.is_nsync_overflow()) {
-                nsync_base += abstime_type(PQT3Event::nsync_overflow_period) *
-                              event.nsync_overflow_count().value();
-                return downstream.handle(
-                    time_reached_event<DataTypes>{nsync_base});
-            }
-
-            abstime_type const nsync = nsync_base + event.nsync().value();
-
-            if (not event.is_special()) {
-                downstream.handle(time_correlated_detection_event<DataTypes>{
-                    nsync, event.channel().value(), event.dtime().value()});
-            } else if (event.is_external_marker()) {
-                for_each_set_bit(
-                    u32np(event.external_marker_bits()), [&](int b) {
-                        downstream.handle(marker_event<DataTypes>{nsync, b});
-                    });
-            } else {
-                issue_warning("invalid special event encountered");
-            }
-        } else {
-            downstream.handle(std::forward<Event>(event));
+        if (event.is_nsync_overflow()) {
+            nsync_base += abstime_type(PQT3Event::nsync_overflow_period) *
+                          event.nsync_overflow_count().value();
+            return downstream.handle(
+                time_reached_event<DataTypes>{nsync_base});
         }
+
+        abstime_type const nsync = nsync_base + event.nsync().value();
+
+        if (not event.is_special()) {
+            downstream.handle(time_correlated_detection_event<DataTypes>{
+                nsync, event.channel().value(), event.dtime().value()});
+        } else if (event.is_external_marker()) {
+            for_each_set_bit(u32np(event.external_marker_bits()), [&](int b) {
+                downstream.handle(marker_event<DataTypes>{nsync, b});
+            });
+        } else {
+            issue_warning("invalid special event encountered");
+        }
+    }
+
+    template <typename Event>
+        requires(
+            not std::convertible_to<std::remove_cvref_t<Event>, PQT3Event> and
+            handler_for<Downstream, std::remove_cvref_t<Event>>)
+    void handle(Event &&event) {
+        downstream.handle(std::forward<Event>(event));
     }
 
     void flush() { downstream.flush(); }

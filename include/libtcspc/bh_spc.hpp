@@ -811,14 +811,17 @@ class decode_bh_spc {
     }
 
     template <typename Event>
-        requires(std::convertible_to<std::remove_cvref_t<Event>, BHSPCEvent> ||
-                 handler_for<Downstream, std::remove_cvref_t<Event>>)
+        requires std::convertible_to<std::remove_cvref_t<Event>, BHSPCEvent>
     void handle(Event &&event) {
-        if constexpr (std::is_convertible_v<std::remove_cvref_t<Event>,
-                                            BHSPCEvent>)
-            handle_bh(event);
-        else
-            downstream.handle(std::forward<Event>(event));
+        handle_bh(event);
+    }
+
+    template <typename Event>
+        requires(
+            not std::convertible_to<std::remove_cvref_t<Event>, BHSPCEvent> and
+            handler_for<Downstream, std::remove_cvref_t<Event>>)
+    void handle(Event &&event) {
+        downstream.handle(std::forward<Event>(event));
     }
 
     void flush() { downstream.flush(); }

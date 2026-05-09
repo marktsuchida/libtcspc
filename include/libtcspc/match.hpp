@@ -40,19 +40,23 @@ class match {
     }
 
     template <typename E>
-        requires handler_for<Downstream, std::remove_cvref_t<E>>
+        requires(std::convertible_to<std::remove_cvref_t<E>, Event> and
+                 handler_for<Downstream, std::remove_cvref_t<E>>)
     void handle(E &&event) {
-        if constexpr (std::is_convertible_v<std::remove_cvref_t<E>, Event>) {
-            auto const abstime = event.abstime;
-            bool const matched = matcher(event);
-            bool const pass = PassMatched ? true : not matched;
-            if (pass)
-                downstream.handle(std::forward<E>(event));
-            if (matched)
-                downstream.handle(OutEvent{abstime});
-        } else {
+        auto const abstime = event.abstime;
+        bool const matched = matcher(event);
+        bool const pass = PassMatched ? true : not matched;
+        if (pass)
             downstream.handle(std::forward<E>(event));
-        }
+        if (matched)
+            downstream.handle(OutEvent{abstime});
+    }
+
+    template <typename E>
+        requires(not std::convertible_to<std::remove_cvref_t<E>, Event> and
+                 handler_for<Downstream, std::remove_cvref_t<E>>)
+    void handle(E &&event) {
+        downstream.handle(std::forward<E>(event));
     }
 
     void flush() { downstream.flush(); }

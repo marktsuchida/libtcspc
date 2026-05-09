@@ -37,15 +37,18 @@ class select {
     }
 
     template <typename AnyEvent>
-        requires((convertible_to_type_list_member<
-                      std::remove_cvref_t<AnyEvent>, EventList> == Inverted) ||
-                 handler_for<Downstream, std::remove_cvref_t<AnyEvent>>)
+        requires(
+            (convertible_to_type_list_member<std::remove_cvref_t<AnyEvent>,
+                                             EventList> != Inverted) and
+            handler_for<Downstream, std::remove_cvref_t<AnyEvent>>)
     void handle(AnyEvent &&event) {
-        if constexpr (convertible_to_type_list_member<
-                          std::remove_cvref_t<AnyEvent>, EventList> !=
-                      Inverted)
-            downstream.handle(std::forward<AnyEvent>(event));
+        downstream.handle(std::forward<AnyEvent>(event));
     }
+
+    template <typename AnyEvent>
+        requires(convertible_to_type_list_member<std::remove_cvref_t<AnyEvent>,
+                                                 EventList> == Inverted)
+    void handle(AnyEvent && /* event */) {}
 
     void flush() { downstream.flush(); }
 };
