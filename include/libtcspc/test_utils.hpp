@@ -51,9 +51,9 @@ template <typename EventList> class sink_events {
         return processor_graph().push_entry_point(this);
     }
 
-    template <typename E,
-              typename = std::enable_if_t<is_convertible_to_type_list_member_v<
-                  std::remove_cvref_t<E>, EventList>>>
+    template <typename E>
+        requires is_convertible_to_type_list_member<std::remove_cvref_t<E>,
+                                                    EventList>
     void handle(E &&event) {
         [[maybe_unused]] std::remove_reference_t<E> const e =
             std::forward<E>(event);
@@ -714,8 +714,8 @@ template <typename EventList> class capture_output {
         return processor_graph().push_entry_point(this);
     }
 
-    template <typename Event, typename = std::enable_if_t<type_list_contains_v<
-                                  EventList, std::remove_cvref_t<Event>>>>
+    template <typename Event>
+        requires type_list_contains<EventList, std::remove_cvref_t<Event>>
     void handle(Event &&event) {
         // TODO std::invoke() in C++20 (readability).
         static constexpr auto valcat = [] {
@@ -862,8 +862,8 @@ template <typename Downstream> class feed_input {
         outputs_to_check.emplace_back(std::move(context), std::move(name));
     }
 
-    template <typename Event, typename = std::enable_if_t<handles_event_v<
-                                  Downstream, std::remove_cvref_t<Event>>>>
+    template <typename Event>
+        requires handles_event<Downstream, std::remove_cvref_t<Event>>
     void handle(Event &&event) {
         check_outputs_ready("event of type " +
                             std::string(typeid(event).name()));

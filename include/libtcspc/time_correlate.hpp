@@ -70,9 +70,8 @@ class time_correlate_at_start_or_stop {
         handle(static_cast<std::array<detection_event<DT>, 2> const &>(event));
     }
 
-    template <typename OtherEvent,
-              typename = std::enable_if_t<handles_event_v<
-                  Downstream, std::remove_cvref_t<OtherEvent>>>>
+    template <typename OtherEvent>
+        requires handles_event<Downstream, std::remove_cvref_t<OtherEvent>>
     void handle(OtherEvent &&event) {
         downstream.handle(std::forward<OtherEvent>(event));
     }
@@ -121,9 +120,8 @@ class time_correlate_at_midpoint {
         handle(static_cast<std::array<detection_event<DT>, 2> const &>(event));
     }
 
-    template <typename OtherEvent,
-              typename = std::enable_if_t<handles_event_v<
-                  Downstream, std::remove_cvref_t<OtherEvent>>>>
+    template <typename OtherEvent>
+        requires handles_event<Downstream, std::remove_cvref_t<OtherEvent>>
     void handle(OtherEvent &&event) {
         downstream.handle(std::forward<OtherEvent>(event));
     }
@@ -181,9 +179,8 @@ class time_correlate_at_fraction {
         handle(static_cast<std::array<detection_event<DT>, 2> const &>(event));
     }
 
-    template <typename OtherEvent,
-              typename = std::enable_if_t<handles_event_v<
-                  Downstream, std::remove_cvref_t<OtherEvent>>>>
+    template <typename OtherEvent>
+        requires handles_event<Downstream, std::remove_cvref_t<OtherEvent>>
     void handle(OtherEvent &&event) {
         downstream.handle(std::forward<OtherEvent>(event));
     }
@@ -408,9 +405,8 @@ template <typename DataTypes, typename Downstream> class negate_difftime {
             static_cast<time_correlated_detection_event<DT> const &>(event));
     }
 
-    template <typename OtherEvent,
-              typename = std::enable_if_t<handles_event_v<
-                  Downstream, std::remove_cvref_t<OtherEvent>>>>
+    template <typename OtherEvent>
+        requires handles_event<Downstream, std::remove_cvref_t<OtherEvent>>
     void handle(OtherEvent &&event) {
         downstream.handle(std::forward<OtherEvent>(event));
     }
@@ -454,9 +450,8 @@ class remove_time_correlation {
             static_cast<time_correlated_detection_event<DT> const &>(event));
     }
 
-    template <typename OtherEvent,
-              typename = std::enable_if_t<handles_event_v<
-                  Downstream, std::remove_cvref_t<OtherEvent>>>>
+    template <typename OtherEvent>
+        requires handles_event<Downstream, std::remove_cvref_t<OtherEvent>>
     void handle(OtherEvent &&event) {
         downstream.handle(std::forward<OtherEvent>(event));
     }

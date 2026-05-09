@@ -96,9 +96,8 @@ class pair_all {
         handle(static_cast<detection_event<DT> const &>(event));
     }
 
-    template <typename OtherEvent,
-              typename = std::enable_if_t<handles_event_v<
-                  Downstream, std::remove_cvref_t<OtherEvent>>>>
+    template <typename OtherEvent>
+        requires handles_event<Downstream, std::remove_cvref_t<OtherEvent>>
     void handle(OtherEvent &&event) {
         downstream.handle(std::forward<OtherEvent>(event));
     }
@@ -184,9 +183,8 @@ class pair_one {
         handle(static_cast<detection_event<DT> const &>(event));
     }
 
-    template <typename OtherEvent,
-              typename = std::enable_if_t<handles_event_v<
-                  Downstream, std::remove_cvref_t<OtherEvent>>>>
+    template <typename OtherEvent>
+        requires handles_event<Downstream, std::remove_cvref_t<OtherEvent>>
     void handle(OtherEvent &&event) {
         downstream.handle(std::forward<OtherEvent>(event));
     }
@@ -263,9 +261,8 @@ class pair_all_between {
         handle(static_cast<detection_event<DT> const &>(event));
     }
 
-    template <typename OtherEvent,
-              typename = std::enable_if_t<handles_event_v<
-                  Downstream, std::remove_cvref_t<OtherEvent>>>>
+    template <typename OtherEvent>
+        requires handles_event<Downstream, std::remove_cvref_t<OtherEvent>>
     void handle(OtherEvent &&event) {
         downstream.handle(std::forward<OtherEvent>(event));
     }
@@ -349,9 +346,8 @@ class pair_one_between {
         handle(static_cast<detection_event<DT> const &>(event));
     }
 
-    template <typename OtherEvent,
-              typename = std::enable_if_t<handles_event_v<
-                  Downstream, std::remove_cvref_t<OtherEvent>>>>
+    template <typename OtherEvent>
+        requires handles_event<Downstream, std::remove_cvref_t<OtherEvent>>
     void handle(OtherEvent &&event) {
         downstream.handle(std::forward<OtherEvent>(event));
     }

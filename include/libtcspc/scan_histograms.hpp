@@ -228,8 +228,8 @@ class scan_histograms {
     }
     // NOLINTEND(cppcoreguidelines-rvalue-reference-param-not-moved)
 
-    template <typename E, typename = std::enable_if_t<handles_event_v<
-                              Downstream, std::remove_cvref_t<E>>>>
+    template <typename E>
+        requires handles_event<Downstream, std::remove_cvref_t<E>>
     void handle(E &&event) {
         if constexpr (std::is_convertible_v<std::remove_cvref_t<E>,
                                             ResetEvent>)

@@ -12,6 +12,7 @@
 #include "processor_traits.hpp"
 #include "type_list.hpp"
 
+#include <concepts>
 #include <memory>
 #include <type_traits>
 #include <utility>
@@ -142,12 +143,11 @@ template <typename EventList> class type_erased_processor {
      *
      * \param downstream downstream processor
      */
-    template <typename Downstream,
-              typename = std::enable_if_t<
-                  not std::is_convertible_v<std::remove_cvref_t<Downstream>,
-                                            type_erased_processor> &&
-                  is_processor_of_list_v<std::remove_cvref_t<Downstream>,
-                                         event_list>>>
+    template <typename Downstream>
+        requires(not std::same_as<std::remove_cvref_t<Downstream>,
+                                  type_erased_processor> &&
+                 is_processor_of_list_v<std::remove_cvref_t<Downstream>,
+                                        event_list>)
     explicit type_erased_processor(Downstream downstream)
         : proc(std::make_unique<virtual_processor<Downstream>>(
               std::move(downstream))) {}
@@ -163,9 +163,9 @@ template <typename EventList> class type_erased_processor {
     }
 
     /** \brief Implements processor requirement. */
-    template <typename Event,
-              typename = std::enable_if_t<is_convertible_to_type_list_member_v<
-                  std::remove_cvref_t<Event>, event_list>>>
+    template <typename Event>
+        requires is_convertible_to_type_list_member<std::remove_cvref_t<Event>,
+                                                    event_list>
     void handle(Event &&event) {
         proc->handle(std::forward<Event>(event));
     }

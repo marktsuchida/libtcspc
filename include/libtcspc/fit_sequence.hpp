@@ -195,9 +195,8 @@ class fit_periodic_sequences {
     // NOLINTNEXTLINE(cppcoreguidelines-rvalue-reference-param-not-moved)
     void handle(Event &&event) { handle(static_cast<Event const &>(event)); }
 
-    template <typename OtherEvent,
-              typename = std::enable_if_t<handles_event_v<
-                  Downstream, std::remove_cvref_t<OtherEvent>>>>
+    template <typename OtherEvent>
+        requires handles_event<Downstream, std::remove_cvref_t<OtherEvent>>
     void handle(OtherEvent &&event) {
         downstream.handle(std::forward<OtherEvent>(event));
     }

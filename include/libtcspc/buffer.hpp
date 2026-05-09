@@ -254,8 +254,8 @@ class buffer {
         return downstream.introspect_graph().push_entry_point(this);
     }
 
-    template <typename E, typename = std::enable_if_t<std::is_convertible_v<
-                              std::remove_cvref_t<E>, Event>>>
+    template <typename E>
+        requires std::convertible_to<std::remove_cvref_t<E>, Event>
     void handle(E &&event) {
         bool should_notify{};
         {

@@ -144,8 +144,8 @@ class batch_bin_increment_clusters {
     }
     // NOLINTEND(cppcoreguidelines-rvalue-reference-param-not-moved)
 
-    template <typename Event, typename = std::enable_if_t<handles_event_v<
-                                  Downstream, std::remove_cvref_t<Event>>>>
+    template <typename Event>
+        requires handles_event<Downstream, std::remove_cvref_t<Event>>
     void handle(Event &&event) {
         downstream.handle(std::forward<Event>(event));
     }
@@ -176,15 +176,14 @@ class unbatch_bin_increment_clusters {
         return downstream.introspect_graph().push_entry_point(this);
     }
 
-    template <typename Event,
-              typename = std::enable_if_t<
-                  std::is_convertible_v<
-                      std::remove_cvref_t<Event>,
-                      bucket<typename DataTypes::bin_index_type>> ||
-                  std::is_convertible_v<
-                      std::remove_cvref_t<Event>,
-                      bucket<typename DataTypes::bin_index_type const>> ||
-                  handles_event_v<Downstream, std::remove_cvref_t<Event>>>>
+    template <typename Event>
+        requires(
+            std::convertible_to<std::remove_cvref_t<Event>,
+                                bucket<typename DataTypes::bin_index_type>> ||
+            std::convertible_to<
+                std::remove_cvref_t<Event>,
+                bucket<typename DataTypes::bin_index_type const>> ||
+            handles_event<Downstream, std::remove_cvref_t<Event>>)
     void handle(Event &&event) {
         if constexpr (std::is_convertible_v<
                           std::remove_cvref_t<Event>,

@@ -56,11 +56,10 @@ class stop {
         return downstream.introspect_graph().push_entry_point(this);
     }
 
-    template <typename Event,
-              typename = std::enable_if_t<
-                  is_convertible_to_type_list_member_v<
-                      std::remove_cvref_t<Event>, EventList> ||
-                  handles_event_v<Downstream, std::remove_cvref_t<Event>>>>
+    template <typename Event>
+        requires(is_convertible_to_type_list_member<std::remove_cvref_t<Event>,
+                                                    EventList> ||
+                 handles_event<Downstream, std::remove_cvref_t<Event>>)
     void handle(Event &&event) {
         if constexpr (is_convertible_to_type_list_member_v<
                           std::remove_cvref_t<Event>, EventList>)

@@ -809,11 +809,9 @@ class decode_bh_spc {
         return downstream.introspect_graph().push_entry_point(this);
     }
 
-    template <
-        typename Event,
-        typename = std::enable_if_t<
-            std::is_convertible_v<std::remove_cvref_t<Event>, BHSPCEvent> ||
-            handles_event_v<Downstream, std::remove_cvref_t<Event>>>>
+    template <typename Event>
+        requires(std::convertible_to<std::remove_cvref_t<Event>, BHSPCEvent> ||
+                 handles_event<Downstream, std::remove_cvref_t<Event>>)
     void handle(Event &&event) {
         if constexpr (std::is_convertible_v<std::remove_cvref_t<Event>,
                                             BHSPCEvent>)

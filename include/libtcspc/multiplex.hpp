@@ -37,9 +37,9 @@ template <typename EventList, typename Downstream> class multiplex {
         return downstream.introspect_graph().push_entry_point(this);
     }
 
-    template <typename Event,
-              typename = std::enable_if_t<is_convertible_to_type_list_member_v<
-                  std::remove_cvref_t<Event>, EventList>>>
+    template <typename Event>
+        requires is_convertible_to_type_list_member<std::remove_cvref_t<Event>,
+                                                    EventList>
     void handle(Event &&event) {
         downstream.handle(
             variant_event<EventList>(std::forward<Event>(event)));
@@ -65,14 +65,14 @@ template <typename Downstream> class demultiplex {
         return downstream.introspect_graph().push_entry_point(this);
     }
 
-    template <typename EL, typename = std::enable_if_t<
-                               handles_event_list_v<Downstream, EL>>>
+    template <typename EL>
+        requires(handles_event_list_v<Downstream, EL>)
     void handle(variant_event<EL> const &event) {
         std::visit([&](auto const &e) { downstream.handle(e); }, event);
     }
 
-    template <typename EL, typename = std::enable_if_t<
-                               handles_event_list_v<Downstream, EL>>>
+    template <typename EL>
+        requires(handles_event_list_v<Downstream, EL>)
     void handle(variant_event<EL> &&event) {
         // With C++20 explicit lambda template parameters we can use
         // std::forward. With C++17 we need to suppress warning.

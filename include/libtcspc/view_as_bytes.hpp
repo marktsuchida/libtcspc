@@ -36,8 +36,8 @@ template <typename Downstream> class view_as_bytes {
         return downstream.introspect_graph().push_entry_point(this);
     }
 
-    template <typename Event,
-              typename = std::enable_if_t<std::is_trivial_v<Event>>>
+    template <typename Event>
+        requires std::is_trivial_v<Event>
     void handle(Event const &event) {
         // It is safe to const_cast the bytes because we emit the bucket by
         // const ref.
@@ -48,7 +48,8 @@ template <typename Downstream> class view_as_bytes {
         downstream.handle(b);
     }
 
-    template <typename T, typename = std::enable_if_t<std::is_trivial_v<T>>>
+    template <typename T>
+        requires std::is_trivial_v<T>
     void handle(bucket<T> const &event) {
         // It is safe to const_cast the bytes because we emit the bucket by
         // const ref.

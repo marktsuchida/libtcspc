@@ -79,9 +79,8 @@ class regulate_time_reached {
         handle(static_cast<time_reached_event<DT> const &>(event));
     }
 
-    template <typename OtherEvent,
-              typename = std::enable_if_t<handles_event_v<
-                  Downstream, std::remove_cvref_t<OtherEvent>>>>
+    template <typename OtherEvent>
+        requires handles_event<Downstream, std::remove_cvref_t<OtherEvent>>
     void handle(OtherEvent &&event) {
         static_assert(std::is_same_v<decltype(event.abstime), abstime_type>);
         auto const abstime = event.abstime;

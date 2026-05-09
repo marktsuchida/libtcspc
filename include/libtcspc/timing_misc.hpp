@@ -306,9 +306,8 @@ class extrapolate_periodic_sequences {
         handle(static_cast<periodic_sequence_model_event<DT> const &>(event));
     }
 
-    template <typename OtherEvent,
-              typename = std::enable_if_t<handles_event_v<
-                  Downstream, std::remove_cvref_t<OtherEvent>>>>
+    template <typename OtherEvent>
+        requires handles_event<Downstream, std::remove_cvref_t<OtherEvent>>
     void handle(OtherEvent &&event) {
         downstream.handle(std::forward<OtherEvent>(event));
     }
@@ -399,9 +398,8 @@ class add_count_to_periodic_sequences {
         handle(static_cast<periodic_sequence_model_event<DT> const &>(event));
     }
 
-    template <typename OtherEvent,
-              typename = std::enable_if_t<handles_event_v<
-                  Downstream, std::remove_cvref_t<OtherEvent>>>>
+    template <typename OtherEvent>
+        requires handles_event<Downstream, std::remove_cvref_t<OtherEvent>>
     void handle(OtherEvent &&event) {
         downstream.handle(std::forward<OtherEvent>(event));
     }
@@ -501,9 +499,8 @@ class convert_sequences_to_start_stop {
         handle(static_cast<TickEvent const &>(event));
     }
 
-    template <typename OtherEvent,
-              typename = std::enable_if_t<handles_event_v<
-                  Downstream, std::remove_cvref_t<OtherEvent>>>>
+    template <typename OtherEvent>
+        requires handles_event<Downstream, std::remove_cvref_t<OtherEvent>>
     void handle(OtherEvent &&event) {
         downstream.handle(std::forward<OtherEvent>(event));
     }

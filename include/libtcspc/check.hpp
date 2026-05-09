@@ -53,8 +53,8 @@ class check_monotonic {
         return downstream.introspect_graph().push_entry_point(this);
     }
 
-    template <typename Event, typename = std::enable_if_t<handles_event_v<
-                                  Downstream, std::remove_cvref_t<Event>>>>
+    template <typename Event>
+        requires handles_event<Downstream, std::remove_cvref_t<Event>>
     void handle(Event &&event) {
         if constexpr (has_abstime_v<std::remove_cvref_t<Event>>) {
             static_assert(std::is_same_v<decltype(event.abstime),
@@ -139,8 +139,8 @@ class check_alternating {
         return downstream.introspect_graph().push_entry_point(this);
     }
 
-    template <typename E, typename = std::enable_if_t<handles_event_v<
-                              Downstream, std::remove_cvref_t<E>>>>
+    template <typename E>
+        requires handles_event<Downstream, std::remove_cvref_t<E>>
     void handle(E &&event) {
         if constexpr (std::is_convertible_v<std::remove_cvref_t<E>, Event0>) {
             if (last_saw_0)

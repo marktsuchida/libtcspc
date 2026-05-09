@@ -52,10 +52,9 @@ template <typename T, typename Downstream> class copy_to_buckets {
         return downstream.introspect_graph().push_entry_point(this);
     }
 
-    template <typename Event,
-              typename = std::enable_if_t<
-                  std::is_constructible_v<std::span<T const>, Event> ||
-                  handles_event_v<Downstream, std::remove_cvref_t<Event>>>>
+    template <typename Event>
+        requires(std::is_constructible_v<std::span<T const>, Event> ||
+                 handles_event<Downstream, std::remove_cvref_t<Event>>)
     void handle(Event &&event) {
         if constexpr (std::is_constructible_v<std::span<T const>, Event>) {
             auto const event_span = std::span<T const>(event);
@@ -148,10 +147,9 @@ class copy_to_full_buckets {
             batch_downstream.introspect_graph().push_entry_point(this));
     }
 
-    template <typename Event,
-              typename = std::enable_if_t<
-                  std::is_constructible_v<std::span<T const>, Event> ||
-                  handles_event_v<LiveDownstream, std::remove_cvref_t<Event>>>>
+    template <typename Event>
+        requires(std::is_constructible_v<std::span<T const>, Event> ||
+                 handles_event<LiveDownstream, std::remove_cvref_t<Event>>)
     void handle(Event &&event) {
         if constexpr (std::is_constructible_v<std::span<T const>, Event>) {
             auto src = std::span<T const>(event);
