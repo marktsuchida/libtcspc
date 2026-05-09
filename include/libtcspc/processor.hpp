@@ -17,7 +17,7 @@ namespace tcspc {
 /**
  * \brief Concept that is satisfied when a processor handles flushing.
  *
- * \ingroup processor-traits
+ * \ingroup processor-concepts
  *
  * Determines whether the processor \p Proc handles `flush()` (which all
  * processors should).
@@ -39,7 +39,7 @@ concept flushable = requires(Proc p) {
  * \brief Concept that is satisfied when a processor handles an event type by
  * rvalue reference.
  *
- * \ingroup processor-traits
+ * \ingroup processor-concepts
  *
  * Determines whether the processor \p Proc handles the event type \p Event
  * passed as rvalue reference.
@@ -70,7 +70,7 @@ concept rvalue_handler_for = requires(Proc p, Event &&e) {
  * \brief Concept that is satisfied when a processor handles an event type by
  * const lvalue reference.
  *
- * \ingroup processor-traits
+ * \ingroup processor-concepts
  *
  * Determines whether the processor \p Proc handles the event type \p Event
  * passed as const lvalue reference.
@@ -96,7 +96,7 @@ concept const_handler_for = requires(Proc p, Event const &e) {
  * \brief Concept that is satisfied when a processor handles the given event
  * types.
  *
- * \ingroup processor-traits
+ * \ingroup processor-concepts
  *
  * Determines whether the processor \p Proc handles all of the event types \p
  * Events.
@@ -122,7 +122,7 @@ concept handler_for = (... && (const_handler_for<Proc, Events> &&
  * \brief Concept that is satisfied when a processor handles the given event
  * types and flush.
  *
- * \ingroup processor-traits
+ * \ingroup processor-concepts
  *
  * Determines whether the processor \p Proc handles all of the event types \p
  * Events as well as `flush()`.
@@ -162,7 +162,7 @@ struct handles_event_list_impl<Proc, type_list<Events...>>
  * \brief Trait variable to check whether a processor handles a list of event
  * types.
  *
- * \ingroup processor-traits
+ * \ingroup processor-concepts
  *
  * Determines whether the processor \p Proc handles all of the event types in
  * the `tcspc::type_list` specialization \p EventList. Equivalent to
@@ -214,7 +214,7 @@ struct is_processor_of_list_impl<Proc, type_list<Events...>>
  * \brief Trait variable to check whether a processor handles a list of event
  * types and flush.
  *
- * \ingroup processor-traits
+ * \ingroup processor-concepts
  *
  * Determines whether the processor \p Proc handles all of the event types in
  * the `tcspc::type_list` specialization \p EventList as well as `flush()`.

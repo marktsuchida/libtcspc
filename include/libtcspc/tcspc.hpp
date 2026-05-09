@@ -872,7 +872,7 @@ namespace tcspc {
  */
 
 /**
- * \defgroup processor-traits Processor traits
+ * \defgroup processor-concepts Processor concepts
  *
  * \brief Concepts and traits to check processor capabilities.
  */
