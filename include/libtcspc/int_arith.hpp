@@ -6,6 +6,7 @@
 
 #pragma once
 
+#include <concepts>
 #include <limits>
 #include <stdexcept>
 #include <type_traits>
@@ -13,24 +14,24 @@
 
 namespace tcspc::internal {
 
-template <typename T, typename = std::enable_if_t<std::is_unsigned_v<T>>>
-constexpr auto as_signed(T i) -> std::make_signed_t<T> {
-    return static_cast<std::make_signed_t<T>>(i);
+constexpr auto as_signed(std::unsigned_integral auto i)
+    -> std::make_signed_t<decltype(i)> {
+    return static_cast<std::make_signed_t<decltype(i)>>(i);
 }
 
-template <typename T, typename = std::enable_if_t<std::is_signed_v<T>>>
-constexpr auto as_unsigned(T i) -> std::make_unsigned_t<T> {
-    return static_cast<std::make_unsigned_t<T>>(i);
+constexpr auto as_unsigned(std::signed_integral auto i)
+    -> std::make_unsigned_t<decltype(i)> {
+    return static_cast<std::make_unsigned_t<decltype(i)>>(i);
 }
 
-template <typename T, typename = std::enable_if_t<std::is_integral_v<T>>>
-constexpr auto ensure_signed(T i) -> std::make_signed_t<T> {
-    return static_cast<std::make_signed_t<T>>(i);
+constexpr auto ensure_signed(std::integral auto i)
+    -> std::make_signed_t<decltype(i)> {
+    return static_cast<std::make_signed_t<decltype(i)>>(i);
 }
 
-template <typename T, typename = std::enable_if_t<std::is_integral_v<T>>>
-constexpr auto ensure_unsigned(T i) -> std::make_unsigned_t<T> {
-    return static_cast<std::make_unsigned_t<T>>(i);
+constexpr auto ensure_unsigned(std::integral auto i)
+    -> std::make_unsigned_t<decltype(i)> {
+    return static_cast<std::make_unsigned_t<decltype(i)>>(i);
 }
 
 // Statically check for non-narrowing conversion.
@@ -42,16 +43,14 @@ template <typename R, typename T>
                                std::numeric_limits<R>::max());
 }
 
-template <typename R, typename T,
-          typename = std::enable_if_t<std::is_integral_v<T>>>
+template <typename R, std::integral T>
 constexpr auto convert_with_check(T v) -> R {
     if (not std::in_range<R>(v))
         throw std::range_error("value out of range of integer type");
     return static_cast<R>(v);
 }
 
-template <typename T, typename = std::enable_if_t<std::is_integral_v<T>>>
-auto add_with_check(T a, T b) -> T {
+template <std::integral T> auto add_with_check(T a, T b) -> T {
 #ifdef __GNUC__
     T c{};
     if (not __builtin_add_overflow(a, b, &c))
@@ -67,8 +66,7 @@ auto add_with_check(T a, T b) -> T {
     throw std::overflow_error("integer overflow on addition");
 }
 
-template <typename T, typename = std::enable_if_t<std::is_integral_v<T>>>
-auto subtract_with_check(T a, T b) -> T {
+template <std::integral T> auto subtract_with_check(T a, T b) -> T {
 #ifdef __GNUC__
     T c{};
     if (not __builtin_sub_overflow(a, b, &c))
@@ -85,8 +83,7 @@ auto subtract_with_check(T a, T b) -> T {
 }
 
 // Cf. C++26 std::add_sat()
-template <typename T, typename = std::enable_if_t<std::is_integral_v<T>>>
-constexpr auto add_sat(T a, T b) noexcept -> T {
+template <std::integral T> constexpr auto add_sat(T a, T b) noexcept -> T {
     using limits = std::numeric_limits<T>;
 #ifdef __GNUC__
     T c{};
@@ -106,12 +103,12 @@ constexpr auto add_sat(T a, T b) noexcept -> T {
     return limits::max();
 }
 
-template <typename T, typename = std::enable_if_t<std::is_integral_v<T>>>
+template <std::integral T>
 constexpr auto add_with_wrap(T a, T b) noexcept -> T {
     return static_cast<T>(as_unsigned(a) + as_unsigned(b));
 }
 
-template <typename T, typename = std::enable_if_t<std::is_integral_v<T>>>
+template <std::integral T>
 constexpr auto subtract_with_wrap(T a, T b) noexcept -> T {
     return static_cast<T>(as_unsigned(a) - as_unsigned(b));
 }

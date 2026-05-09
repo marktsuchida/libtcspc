@@ -9,6 +9,7 @@
 #include "int_types.hpp"
 
 #include <compare>
+#include <concepts>
 #include <istream>
 #include <limits>
 #include <ostream>
@@ -29,8 +30,7 @@ namespace tcspc {
  *
  * \tparam T underlying (scalar) integer type
  */
-template <typename T, typename = std::enable_if_t<std::is_integral_v<T>>>
-class npint {
+template <std::integral T> class npint {
     T v;
 
   public:
@@ -79,8 +79,8 @@ class npint {
      *
      * \param other source
      */
-    template <typename U,
-              typename = std::enable_if_t<not std::is_same_v<T, U>>>
+    template <typename U>
+        requires(not std::same_as<T, U>)
     explicit constexpr npint(npint<U> const &other) : v(T(other.value())) {
         static_assert(
             sizeof(T) <= sizeof(U) ||
@@ -171,15 +171,13 @@ class npint {
     }
 
     /** \brief Bitwise right shift assignment operator. */
-    template <typename U, typename = std::enable_if_t<std::is_integral_v<U>>>
-    constexpr auto operator>>=(U rhs) -> npint & {
+    constexpr auto operator>>=(std::integral auto rhs) -> npint & {
         v = static_cast<T>(v >> rhs);
         return *this;
     }
 
     /** \brief Bitwise left shift assignment operator. */
-    template <typename U, typename = std::enable_if_t<std::is_integral_v<U>>>
-    constexpr auto operator<<=(U rhs) -> npint & {
+    constexpr auto operator<<=(std::integral auto rhs) -> npint & {
         v = static_cast<T>(v << rhs);
         return *this;
     }
@@ -256,14 +254,14 @@ class npint {
     }
 
     /** \brief Bitwise left shift operator. */
-    template <typename U, typename = std::enable_if_t<std::is_integral_v<U>>>
-    friend constexpr auto operator<<(npint lhs, U rhs) -> npint {
+    friend constexpr auto operator<<(npint lhs, std::integral auto rhs)
+        -> npint {
         return lhs <<= rhs;
     }
 
     /** \brief Bitwise right shift operator. */
-    template <typename U, typename = std::enable_if_t<std::is_integral_v<U>>>
-    friend constexpr auto operator>>(npint lhs, U rhs) -> npint {
+    friend constexpr auto operator>>(npint lhs, std::integral auto rhs)
+        -> npint {
         return lhs >>= rhs;
     }
 

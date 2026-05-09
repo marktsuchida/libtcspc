@@ -10,6 +10,7 @@
 
 #include <catch2/catch_test_macros.hpp>
 
+#include <concepts>
 #include <type_traits>
 
 namespace tcspc {
@@ -43,8 +44,8 @@ struct p {
     void handle(e_both const &event);
     void handle(e_by_value event);
 
-    template <typename E, typename = std::enable_if_t<std::is_convertible_v<
-                              std::remove_cvref_t<E>, e_forwarding_ref>>>
+    template <typename E>
+        requires std::convertible_to<std::remove_cvref_t<E>, e_forwarding_ref>
     void handle(E &&event);
 };
 

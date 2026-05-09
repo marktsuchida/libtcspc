@@ -11,9 +11,9 @@
 
 #include <array>
 #include <bit>
+#include <concepts>
 #include <cstddef>
 #include <span>
-#include <type_traits>
 
 namespace tcspc {
 
@@ -73,8 +73,7 @@ constexpr auto read_u64le(std::span<std::byte const, 8> bytes) noexcept
  *
  * \ingroup integers
  */
-template <std::size_t Offset, typename T, std::size_t N,
-          typename = std::enable_if_t<std::is_convertible_v<T, std::byte>>>
+template <std::size_t Offset, std::convertible_to<std::byte> T, std::size_t N>
 constexpr auto read_u8_at(std::span<T, N> bytes) noexcept -> u8np {
     static_assert(Offset + 1 <= N);
     auto const s = bytes.template subspan<Offset, 1>();
@@ -87,8 +86,7 @@ constexpr auto read_u8_at(std::span<T, N> bytes) noexcept -> u8np {
  *
  * \ingroup integers
  */
-template <std::size_t Offset, typename T, std::size_t N,
-          typename = std::enable_if_t<std::is_convertible_v<T, std::byte>>>
+template <std::size_t Offset, std::convertible_to<std::byte> T, std::size_t N>
 constexpr auto read_u16le_at(std::span<T, N> bytes) noexcept -> u16np {
     static_assert(Offset + 2 <= N);
     auto const s = bytes.template subspan<Offset, 2>();
@@ -100,8 +98,7 @@ constexpr auto read_u16le_at(std::span<T, N> bytes) noexcept -> u16np {
  *
  * \ingroup integers
  */
-template <std::size_t Offset, typename T, std::size_t N,
-          typename = std::enable_if_t<std::is_convertible_v<T, std::byte>>>
+template <std::size_t Offset, std::convertible_to<std::byte> T, std::size_t N>
 constexpr auto read_u32le_at(std::span<T, N> bytes) noexcept -> u32np {
     static_assert(Offset + 4 <= N);
     auto const s = bytes.template subspan<Offset, 4>();
@@ -113,8 +110,7 @@ constexpr auto read_u32le_at(std::span<T, N> bytes) noexcept -> u32np {
  *
  * \ingroup integers
  */
-template <std::size_t Offset, typename T, std::size_t N,
-          typename = std::enable_if_t<std::is_convertible_v<T, std::byte>>>
+template <std::size_t Offset, std::convertible_to<std::byte> T, std::size_t N>
 constexpr auto read_u64le_at(std::span<T, N> bytes) noexcept -> u64np {
     static_assert(Offset + 8 <= N);
     auto const s = bytes.template subspan<Offset, 8>();
@@ -126,8 +122,7 @@ constexpr auto read_u64le_at(std::span<T, N> bytes) noexcept -> u64np {
  *
  * \ingroup integers
  */
-template <std::size_t Offset, typename T, std::size_t N,
-          typename = std::enable_if_t<std::is_convertible_v<T, std::byte>>>
+template <std::size_t Offset, std::convertible_to<std::byte> T, std::size_t N>
 constexpr auto read_i8_at(std::span<T, N> bytes) noexcept -> i8np {
     return i8np(read_u8_at<Offset, T, N>(bytes));
 }
@@ -137,8 +132,7 @@ constexpr auto read_i8_at(std::span<T, N> bytes) noexcept -> i8np {
  *
  * \ingroup integers
  */
-template <std::size_t Offset, typename T, std::size_t N,
-          typename = std::enable_if_t<std::is_convertible_v<T, std::byte>>>
+template <std::size_t Offset, std::convertible_to<std::byte> T, std::size_t N>
 constexpr auto read_i16le_at(std::span<T, N> bytes) noexcept -> i16np {
     return i16np(read_u16le_at<Offset, T, N>(bytes));
 }
@@ -148,8 +142,7 @@ constexpr auto read_i16le_at(std::span<T, N> bytes) noexcept -> i16np {
  *
  * \ingroup integers
  */
-template <std::size_t Offset, typename T, std::size_t N,
-          typename = std::enable_if_t<std::is_convertible_v<T, std::byte>>>
+template <std::size_t Offset, std::convertible_to<std::byte> T, std::size_t N>
 constexpr auto read_i32le_at(std::span<T, N> bytes) noexcept -> i32np {
     return i32np(read_u32le_at<Offset, T, N>(bytes));
 }
@@ -159,8 +152,7 @@ constexpr auto read_i32le_at(std::span<T, N> bytes) noexcept -> i32np {
  *
  * \ingroup integers
  */
-template <std::size_t Offset, typename T, std::size_t N,
-          typename = std::enable_if_t<std::is_convertible_v<T, std::byte>>>
+template <std::size_t Offset, std::convertible_to<std::byte> T, std::size_t N>
 constexpr auto read_i64le_at(std::span<T, N> bytes) noexcept -> i64np {
     return i64np(read_u64le_at<Offset, T, N>(bytes));
 }
