@@ -18,8 +18,7 @@ namespace tcspc::internal {
 #if defined(__GNUC__)
 #define LIBTCSPC_NOINLINE [[gnu::noinline]]
 #elif defined(_MSC_VER)
-// [[msvc::noinline]] requires /std:c++20
-#define LIBTCSPC_NOINLINE __declspec(noinline)
+#define LIBTCSPC_NOINLINE [[msvc::noinline]]
 #else
 #define LIBTCSPC_NOINLINE
 #endif

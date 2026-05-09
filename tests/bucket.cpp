@@ -21,6 +21,7 @@
 
 #include <algorithm>
 #include <array>
+#include <latch>
 #include <memory>
 #include <span>
 #include <sstream>
@@ -196,8 +197,8 @@ TEST_CASE(
         recycling_bucket_source<int, true>::create(arg::max_bucket_count<>{2});
     auto b0 = source->bucket_of_size(3);
     auto b1 = source->bucket_of_size(5);
-    latch thread_start_latch(1);
-    latch third_bucket_obtained_latch(1);
+    std::latch thread_start_latch(1);
+    std::latch third_bucket_obtained_latch(1);
     std::thread t([&, source] {
         thread_start_latch.count_down();
         auto b = source->bucket_of_size(7);
@@ -252,8 +253,8 @@ TEST_CASE(
         arg::max_bucket_count<>{2});
     auto b0 = source->bucket_of_size(3);
     auto b1 = source->bucket_of_size(5);
-    latch thread_start_latch(1);
-    latch third_bucket_obtained_latch(1);
+    std::latch thread_start_latch(1);
+    std::latch third_bucket_obtained_latch(1);
     std::thread t([&, source] {
         thread_start_latch.count_down();
         auto b = source->bucket_of_size(7);

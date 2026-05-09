@@ -717,7 +717,6 @@ template <typename EventList> class capture_output {
     template <typename Event>
         requires type_list_member<std::remove_cvref_t<Event>, EventList>
     void handle(Event &&event) {
-        // TODO std::invoke() in C++20 (readability).
         static constexpr auto valcat = [] {
             if constexpr (std::is_lvalue_reference_v<Event>) {
                 if constexpr (std::is_const_v<std::remove_reference_t<Event>>)

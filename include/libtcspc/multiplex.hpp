@@ -74,11 +74,9 @@ template <typename Downstream> class demultiplex {
     template <typename EL>
         requires(handles_event_list_v<Downstream, EL>)
     void handle(variant_event<EL> &&event) {
-        // With C++20 explicit lambda template parameters we can use
-        // std::forward. With C++17 we need to suppress warning.
-        // NOLINTNEXTLINE(bugprone-move-forwarding-reference)
-        std::visit([&](auto &&e) { downstream.handle(std::move(e)); },
-                   std::move(event));
+        std::visit(
+            [&]<typename E>(E &&e) { downstream.handle(std::forward<E>(e)); },
+            std::move(event));
     }
 
     void flush() { downstream.flush(); }

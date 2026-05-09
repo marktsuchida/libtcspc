@@ -23,6 +23,7 @@
 
 #include <chrono>
 #include <cstddef>
+#include <latch>
 #include <memory>
 #include <stdexcept>
 #include <thread>
@@ -105,7 +106,7 @@ TEST_CASE("buffer empty stream") {
     auto buf_acc = ctx->access<buffer_access>("buf");
 
     SECTION("pump in thread") {
-        latch thread_start_latch(1);
+        std::latch thread_start_latch(1);
         std::thread t([&] {
             thread_start_latch.count_down();
             buf_acc.pump();
@@ -133,7 +134,7 @@ TEST_CASE("buffer stream ended downstream") {
 
     SECTION("pump in thread") {
         bool threw = false;
-        latch thread_start_latch(1);
+        std::latch thread_start_latch(1);
         std::thread t([&] {
             thread_start_latch.count_down();
             try {
@@ -166,7 +167,7 @@ TEST_CASE("buffer stream error downstream") {
 
     SECTION("pump in thread") {
         bool threw = false;
-        latch thread_start_latch(1);
+        std::latch thread_start_latch(1);
         std::thread t([&] {
             thread_start_latch.count_down();
             try {
@@ -199,7 +200,7 @@ TEST_CASE("buffer stream halted") {
 
     SECTION("pump in thread") {
         bool threw = false;
-        latch thread_start_latch(1);
+        std::latch thread_start_latch(1);
         std::thread t([&] {
             thread_start_latch.count_down();
             try {
@@ -232,7 +233,7 @@ TEST_CASE("buffer does not emit events before threshold") {
 
     SECTION("pump in thread") {
         bool threw = false;
-        latch thread_start_latch(1);
+        std::latch thread_start_latch(1);
         std::thread t([&] {
             thread_start_latch.count_down();
             try {
@@ -267,7 +268,7 @@ TEST_CASE("buffer flushes stored events") {
     auto buf_acc = ctx->access<buffer_access>("buf");
 
     SECTION("pump in thread") {
-        latch thread_start_latch(1);
+        std::latch thread_start_latch(1);
         std::thread t([&] {
             thread_start_latch.count_down();
             buf_acc.pump();
@@ -303,7 +304,7 @@ TEST_CASE("buffer emits stored events on reaching threshold") {
     auto buf_acc = ctx->access<buffer_access>("buf");
 
     SECTION("pump in thread") {
-        latch thread_start_latch(1);
+        std::latch thread_start_latch(1);
         std::thread t([&] {
             thread_start_latch.count_down();
             buf_acc.pump();
@@ -314,7 +315,7 @@ TEST_CASE("buffer emits stored events on reaching threshold") {
         buf.handle(43);
         wait_a_little(); // Likely catch any incorrect call to out.
         {
-            latch event44_emit_latch(1);
+            std::latch event44_emit_latch(1);
             REQUIRE_CALL(out, handle(42)).TIMES(1);
             REQUIRE_CALL(out, handle(43)).TIMES(1);
             REQUIRE_CALL(out, handle(44))
@@ -332,13 +333,13 @@ TEST_CASE("buffer emits stored events on reaching threshold") {
         buf.handle(42);
         buf.handle(43);
         buf.handle(44);
-        latch pump_start_latch(1);
+        std::latch pump_start_latch(1);
         std::thread t([&] {
             pump_start_latch.wait();
             buf_acc.pump();
         });
         {
-            latch event44_emit_latch(1);
+            std::latch event44_emit_latch(1);
             REQUIRE_CALL(out, handle(42)).TIMES(1);
             REQUIRE_CALL(out, handle(43)).TIMES(1);
             REQUIRE_CALL(out, handle(44))
@@ -363,7 +364,7 @@ TEMPLATE_TEST_CASE("buffer input throws after downstream stopped", "",
 
     SECTION("pump in thread") {
         bool threw = false;
-        latch thread_start_latch(1);
+        std::latch thread_start_latch(1);
         std::thread t([&] {
             thread_start_latch.count_down();
             try {
@@ -400,7 +401,7 @@ TEST_CASE(
 
     SECTION("pump in thread") {
         bool threw = false;
-        latch thread_start_latch(1);
+        std::latch thread_start_latch(1);
         std::thread t([&] {
             thread_start_latch.count_down();
             try {
@@ -437,7 +438,7 @@ TEST_CASE("real_time_buffer emits event before threshold after latency") {
     auto buf_acc = ctx->access<buffer_access>("buf");
 
     SECTION("pump in thread") {
-        latch thread_start_latch(1);
+        std::latch thread_start_latch(1);
         std::thread t([&] {
             thread_start_latch.count_down();
             buf_acc.pump();
@@ -445,7 +446,7 @@ TEST_CASE("real_time_buffer emits event before threshold after latency") {
         thread_start_latch.wait();
         wait_a_little(); // For likely pump loop start.
         {
-            latch event42_emit_latch(1);
+            std::latch event42_emit_latch(1);
             REQUIRE_CALL(out, handle(42))
                 .TIMES(1)
                 .LR_SIDE_EFFECT(event42_emit_latch.count_down());

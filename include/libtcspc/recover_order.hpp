@@ -88,14 +88,13 @@ class recover_order {
                     [&](auto const &e) { return e.abstime < cutoff; }, v);
             });
 
-        std::for_each(buf.begin(), keep_it, [&](auto &&v) {
+        std::for_each(buf.begin(), keep_it, [&](auto &v) {
             visit_variant_or_single_event(
-                [&](auto &&e) {
+                [&]<typename E>(E &&e) {
                     last_emitted_time = e.abstime;
-                    // NOLINTNEXTLINE(bugprone-move-forwarding-reference)
-                    downstream.handle(std::move(e));
+                    downstream.handle(std::forward<E>(e));
                 },
-                std::move(v)); // NOLINT(bugprone-move-forwarding-reference)
+                std::move(v));
         });
         buf.erase(buf.begin(), keep_it);
 
@@ -114,11 +113,12 @@ class recover_order {
     // Do not allow other events.
 
     void flush() {
-        std::for_each(buf.begin(), buf.end(), [&](auto &&v) {
+        std::for_each(buf.begin(), buf.end(), [&](auto &v) {
             visit_variant_or_single_event(
-                // NOLINTNEXTLINE(bugprone-move-forwarding-reference)
-                [&](auto &&e) { downstream.handle(std::move(e)); },
-                std::move(v)); // NOLINT(bugprone-move-forwarding-reference)
+                [&]<typename E>(E &&e) {
+                    downstream.handle(std::forward<E>(e));
+                },
+                std::move(v));
         });
         buf.clear();
         downstream.flush();

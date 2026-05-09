@@ -28,6 +28,7 @@
 #include <chrono>
 #include <cstddef>
 #include <exception>
+#include <latch>
 #include <optional>
 #include <span>
 #include <thread>
@@ -200,7 +201,7 @@ TEST_CASE("acquire") {
     SECTION("halt causes ongoing flush() to throw") {
         auto const read_size = GENERATE(std::size_t{0}, 4);
         ALLOW_CALL(reader, read(_)).RETURN(read_size);
-        latch thread_start_latch(1);
+        std::latch thread_start_latch(1);
         std::thread t([&] {
             thread_start_latch.count_down();
             wait_a_little();
@@ -457,7 +458,7 @@ TEST_CASE("acquire_full_buckets") {
     SECTION("halt causes ongoing flush() to throw") {
         auto const read_size = GENERATE(std::size_t{0}, 4);
         ALLOW_CALL(reader, read(_)).RETURN(read_size);
-        latch thread_start_latch(1);
+        std::latch thread_start_latch(1);
         std::thread t([&] {
             thread_start_latch.count_down();
             wait_a_little();
