@@ -37,7 +37,7 @@ def test_graph_visits_duplicate_access_tags():
     g = Graph()
     g.add_node("a", Count(IntEvent, AccessTag("hello")))
     g.add_node("b", Count(IntEvent, AccessTag("world")))
-    assert len(g.accesses()) == 2
+    assert len(g._accesses()) == 2
     g.add_node("c", Count(IntEvent, AccessTag("hello")))
     with pytest.raises(ValueError, match="tag.*hello"):
-        g.accesses()
+        g._accesses()

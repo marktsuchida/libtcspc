@@ -22,6 +22,4 @@ context. Access objects expose live state from running graphs.
    libtcspc.PySink
    libtcspc.Accessible
    libtcspc.AccessTag
-   libtcspc.Access
-   libtcspc.CountAccess
 ```

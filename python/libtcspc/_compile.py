@@ -12,7 +12,7 @@ from typing import Any
 import nanobind  # type: ignore
 
 from . import _include, _odext
-from ._access import Access, AccessTag
+from ._access import AccessSpec, AccessTag
 from ._codegen import CodeGenerationContext
 from ._cpp_utils import (
     CppExpression,
@@ -42,7 +42,7 @@ def _exception_types(module_var: CppIdentifier) -> ModuleCodeFragment:
 
 
 def _context_type(
-    accesses: Sequence[tuple[AccessTag, type[Access]]],
+    accesses: Sequence[tuple[AccessTag, type[AccessSpec]]],
     module_var: CppIdentifier,
 ) -> ModuleCodeFragment:
     # We add specific bindings of access() for each access tag so that Python
@@ -341,7 +341,7 @@ def _graph_module_code(
         mod_var,
     )
 
-    context_code = _context_type(graph.accesses(), mod_var)
+    context_code = _context_type(graph._accesses(), mod_var)
 
     proc_code = _processor_creation(
         graph_expr,
@@ -352,7 +352,7 @@ def _graph_module_code(
         mod_var,
     )
 
-    accessor_types = set(typ for tag, typ in graph.accesses())
+    accessor_types = set(typ for tag, typ in graph._accesses())
     accessors = functools.reduce(
         lambda f, g: f + g,
         (typ.cpp_bindings(mod_var) for typ in accessor_types),
@@ -386,13 +386,13 @@ class CompiledGraph:
     ) -> None:
         self._mod = mod
         self._params = tuple(params)
-        self._accesses = tuple(accesses)
+        self._access_tags = tuple(accesses)
 
     def parameters(self) -> tuple[Param, ...]:
         return self._params
 
-    def accesses(self) -> tuple[AccessTag, ...]:
-        return self._accesses
+    def _accesses(self) -> tuple[AccessTag, ...]:
+        return self._access_tags
 
 
 @functools.cache
@@ -444,5 +444,5 @@ def compile_graph(
         mod_path = _builder.build()
         mod = _importer.import_module(mod_name, mod_path, ok_to_move=True)
         params = (param for param, typ in graph.parameters())
-        accesses = (tag for tag, typ in graph.accesses())
+        accesses = (tag for tag, typ in graph._accesses())
         return CompiledGraph(mod, params, accesses)

@@ -16,7 +16,7 @@ from ._cpp_utils import (
 )
 
 
-class Access:
+class AccessSpec:
     @classmethod
     def cpp_type_name(cls) -> CppTypeName:
         raise NotImplementedError()
@@ -26,8 +26,12 @@ class Access:
         raise NotImplementedError()
 
     @classmethod
+    def py_class_name(cls) -> str:
+        raise NotImplementedError()
+
+    @classmethod
     def cpp_bindings(cls, module_var: CppIdentifier) -> ModuleCodeFragment:
-        py_class_name = cls.__name__  # Use same name as codegen class.
+        py_class_name = cls.py_class_name()
         return ModuleCodeFragment(
             (),
             (),
@@ -69,20 +73,11 @@ class Accessible:
     (``Node``) or their auxiliary objects.
     """
 
-    def accesses(self) -> Sequence[tuple[AccessTag, type[Access]]]:
-        """
-        Return the names and types of accesses offered by this object and any
-        sub-objects.
-
-        Returns
-        -------
-        Sequence[tuple[AccessTag, type]]
-            Access tags and their (Python) types.
-        """
+    def _accesses(self) -> Sequence[tuple[AccessTag, type[AccessSpec]]]:
         return ()
 
 
-class AcquireAccess(Access):
+class AcquireAccessSpec(AccessSpec):
     @override
     @classmethod
     def cpp_type_name(cls) -> CppTypeName:
@@ -93,8 +88,13 @@ class AcquireAccess(Access):
     def cpp_methods(cls) -> Sequence[CppIdentifier]:
         return (CppIdentifier("halt"),)
 
+    @override
+    @classmethod
+    def py_class_name(cls) -> str:
+        return "AcquireAccess"
 
-class CountAccess(Access):
+
+class CountAccessSpec(AccessSpec):
     @override
     @classmethod
     def cpp_type_name(cls) -> CppTypeName:
@@ -104,3 +104,8 @@ class CountAccess(Access):
     @classmethod
     def cpp_methods(cls) -> Sequence[CppIdentifier]:
         return (CppIdentifier("count"),)
+
+    @override
+    @classmethod
+    def py_class_name(cls) -> str:
+        return "CountAccess"

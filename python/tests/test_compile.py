@@ -52,8 +52,8 @@ def test_compile_node_access():
     g.add_node("c", counter)
     g.add_node("s", NullSink(), upstream="c")
     cg = compile_graph(g)
-    assert len(cg.accesses()) == 1
-    assert cg.accesses()[0] == AccessTag("counter")
+    assert len(cg._accesses()) == 1
+    assert cg._accesses()[0] == AccessTag("counter")
 
 
 def test_compile_fails_for_unhandle_events():

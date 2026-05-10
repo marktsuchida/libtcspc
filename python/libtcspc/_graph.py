@@ -10,7 +10,7 @@ from typing import final
 
 from typing_extensions import override
 
-from ._access import Access, Accessible, AccessTag
+from ._access import Accessible, AccessSpec, AccessTag
 from ._codegen import CodeGenerationContext
 from ._cpp_utils import CppExpression, CppIdentifier, CppTypeName
 from ._events import EventType
@@ -450,11 +450,11 @@ class Graph:
 
         return params
 
-    def accesses(self) -> Sequence[tuple[AccessTag, type[Access]]]:
-        accesses: list[tuple[AccessTag, type[Access]]] = []
+    def _accesses(self) -> Sequence[tuple[AccessTag, type[AccessSpec]]]:
+        accesses: list[tuple[AccessTag, type[AccessSpec]]] = []
 
         def visit(node_name: str, node: Accessible):
-            accesses.extend(node.accesses())
+            accesses.extend(node._accesses())
 
         self.visit_nodes(visit)
 
@@ -462,7 +462,7 @@ class Graph:
             tag_nodes: dict[AccessTag, list[str]] = {}
 
             def visit(node_name: str, node: Accessible):
-                for tag, _ in node.accesses():
+                for tag, _ in node._accesses():
                     tag_nodes.setdefault(tag, []).append(node_name)
 
             self.visit_nodes(visit)
@@ -534,8 +534,8 @@ class Subgraph(Node):
         return self._graph.parameters()
 
     @override
-    def accesses(self) -> Sequence[tuple[AccessTag, type[Access]]]:
-        return self._graph.accesses()
+    def _accesses(self) -> Sequence[tuple[AccessTag, type[AccessSpec]]]:
+        return self._graph._accesses()
 
     @override
     def cpp_expression(

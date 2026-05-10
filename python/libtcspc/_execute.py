@@ -184,7 +184,7 @@ def create_execution_context(
     processor = compiled_graph._mod.create_processor(
         context, arg_struct, sinks
     )
-    access_types = compiled_graph.accesses()
+    access_types = compiled_graph._accesses()
 
     return ExecutionContext(
         compiled_graph._mod, context, processor, access_types

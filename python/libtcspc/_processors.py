@@ -8,7 +8,7 @@ from typing import final
 from typing_extensions import override
 
 from . import _access, _cpp_utils, _events, _streams
-from ._access import Access, AccessTag
+from ._access import AccessSpec, AccessTag
 from ._acquisition_readers import AcquisitionReader, PyAcquisitionReader
 from ._bucket_sources import BucketSource, RecyclingBucketSource
 from ._codegen import CodeGenerationContext
@@ -133,8 +133,8 @@ class Acquire(RelayNode):
         self._access_tag = access_tag
 
     @override
-    def accesses(self) -> Sequence[tuple[AccessTag, type[Access]]]:
-        return ((self._access_tag, _access.AcquireAccess),)
+    def _accesses(self) -> Sequence[tuple[AccessTag, type[AccessSpec]]]:
+        return ((self._access_tag, _access.AcquireAccessSpec),)
 
     @override
     def relay_map_event_set(
@@ -275,10 +275,10 @@ class Count(TypePreservingRelayNode):
         self._access_tag = access_tag
 
     @override
-    def accesses(
+    def _accesses(
         self,
-    ) -> Sequence[tuple[AccessTag, type[Access]]]:
-        return ((self._access_tag, _access.CountAccess),)
+    ) -> Sequence[tuple[AccessTag, type[AccessSpec]]]:
+        return ((self._access_tag, _access.CountAccessSpec),)
 
     @override
     def relay_cpp_expression(
