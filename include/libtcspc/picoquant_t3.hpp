@@ -329,7 +329,7 @@ template <bool IsNSyncOverflowAlwaysSingle> struct basic_pqt3_event {
     /**
      * \brief Make an event representing a single nsync overflow.
      *
-     * \return event;
+     * \return event
      */
     static constexpr auto make_nsync_overflow() noexcept -> basic_pqt3_event {
         return make_from_fields(true, 63_u8np, 0_u16np, 1_u16np);

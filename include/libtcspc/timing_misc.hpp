@@ -215,7 +215,7 @@ class retime_periodic_sequences {
  * \ingroup processors-timing-modeling
  *
  * Events of type `tcspc::periodic_sequence_model_event` (with matching
- * `abstime_type`) have their `abstime` and `delay` noramlized, such that
+ * `abstime_type`) have their `abstime` and `delay` normalized, such that
  * `delay` is at least 1.0 and no more than 2.0, without altering the modeled
  * tick sequence.
  *
@@ -540,7 +540,7 @@ class convert_sequences_to_start_stop {
  *
  * \param count sequence length of the emitted start-stop pairs
  *
- * \param downstream doownstream processor
+ * \param downstream downstream processor
  *
  * \return processor
  *

@@ -292,8 +292,8 @@ inline auto null_input_stream() { return internal::null_input_stream(); }
  *
  * \ingroup streams-input
  *
- * If the file cannot be opened, or is smaller than \p start bytes, the stream
- * will be in an error state.
+ * If the file cannot be opened, or is smaller than \p start_offset bytes, the
+ * stream will be in an error state.
  *
  * \param filename the filename
  *
@@ -571,7 +571,7 @@ class read_binary_stream {
  * \param stream the input stream (see \ref streams-input)
  *
  * \param max_length maximum number of bytes to read from stream (should be a
- * multiple of `sizeof(Event)`, or `std::numeric_limit<std::size_t>::max()` to
+ * multiple of `sizeof(Event)`, or `std::numeric_limits<std::size_t>::max()` to
  * read to the end of the stream)
  *
  * \param buffer_provider bucket source providing event buffers; must be able

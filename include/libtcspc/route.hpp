@@ -128,8 +128,8 @@ class route_homogeneous {
  * \ingroup processors-branching
  *
  * This processor forwards each event in \p RoutedEventList to a different
- * downstream according to the provided \p router (see \ref routers), which map
- * events to downstream indices.
+ * downstream according to the provided \p router (see \ref routers), which
+ * maps events to downstream indices.
  *
  * Events mapped to indices out of range are discarded.
  *
@@ -172,8 +172,8 @@ auto route_homogeneous(Router router, std::array<Downstream, N> downstreams) {
  * \ingroup processors-branching
  *
  * This processor forwards each event in \p RoutedEventList to a different
- * downstream according to the provided \p router (see \ref routers), which map
- * events to downstream indices.
+ * downstream according to the provided \p router (see \ref routers), which
+ * maps events to downstream indices.
  *
  * Events mapped to indices out of range are discarded.
  *
@@ -213,8 +213,8 @@ auto route_homogeneous(Router router, Downstreams... downstreams) {
  * \ingroup processors-branching
  *
  * This processor forwards each event in \p RoutedEventList to a different
- * downstream according to the provided \p router (see \ref routers), which map
- * events to downstream indices.
+ * downstream according to the provided \p router (see \ref routers), which
+ * maps events to downstream indices.
  *
  * Events mapped to indices out of range are discarded.
  *

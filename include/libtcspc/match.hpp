@@ -97,7 +97,7 @@ auto match_replace(Matcher matcher, Downstream downstream) {
  * matchers). If it is a match, an \p OutEvent is generated with the same
  * `abstime` as the \p Event.
  *
- * Both \p Event and \p OutEvent must have a `abstime` field.
+ * Both \p Event and \p OutEvent must have an `abstime` field.
  *
  * \see `tcspc::match_replace()`
  *

@@ -228,7 +228,7 @@ class fit_periodic_sequences {
  * satisfied:
  *
  * -# the mean squared error is no more than \p max_mse
- * -# the estimated event interval is within \p min_max_interval
+ * -# the estimated event interval is within [\p min_interval, \p max_interval]
  *
  * This processor does not pass through \p Event, but passes through any other
  * event.

@@ -309,7 +309,7 @@ inline auto owning_cfile_output_stream(std::FILE *fp) {
  * \ingroup streams-output
  *
  * The stream will use the C stdio functions, such as `std::fwrite()`. The
- * file pointer is not closed when the stream is destroyed. The call is
+ * file pointer is not closed when the stream is destroyed. The caller is
  * responsible for ensuring that the file pointer will remain valid throughout
  * the lifetime of the returned output stream.
  *
@@ -458,7 +458,7 @@ template <typename OutputStream> class write_binary_stream {
  *
  * The \p granularity can be tuned for best performance. If too small, writes
  * may incur more overhead per byte written; if too large, CPU caches may be
- * polluted (if the event size and write granularity is such that buffering is
+ * polluted (if the event size and write granularity are such that buffering is
  * necessary). It is best to try different powers of 2 and measure.
  *
  * If there is an error (either in this processor or upstream), an incomplete
@@ -478,7 +478,7 @@ template <typename OutputStream> class write_binary_stream {
  * events can be written directly
  *
  * \param granularity minimum size, in bytes, to write; all writes (except
- * possible the first and last ones, for alignment) will be a multiple of this
+ * possibly the first and last ones, for alignment) will be a multiple of this
  * value
  *
  * \return processor

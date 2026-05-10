@@ -304,7 +304,7 @@ class processor_graph {
     /**
      * \brief Return the numerical index of the given node in this graph.
      *
-     * The returned index maps bijectionally to the node id within the context
+     * The returned index maps bijectively to the node id within the context
      * of this graph, so long as the graph is not modified.
      *
      * \param id a node id in this graph

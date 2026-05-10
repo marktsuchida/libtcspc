@@ -110,49 +110,49 @@ template <std::integral T> class npint {
 
     // Compound assignment operators
 
-    /** \brief Addition asignment operator. */
+    /** \brief Addition assignment operator. */
     constexpr auto operator+=(npint rhs) -> npint & {
         v += rhs.v;
         return *this;
     }
 
-    /** \brief Subtraction asignment operator. */
+    /** \brief Subtraction assignment operator. */
     constexpr auto operator-=(npint rhs) -> npint & {
         v -= rhs.v;
         return *this;
     }
 
-    /** \brief Multiplication asignment operator. */
+    /** \brief Multiplication assignment operator. */
     constexpr auto operator*=(npint rhs) -> npint & {
         v *= rhs.v;
         return *this;
     }
 
-    /** \brief Division asignment operator. */
+    /** \brief Division assignment operator. */
     constexpr auto operator/=(npint rhs) -> npint & {
         v /= rhs.v;
         return *this;
     }
 
-    /** \brief Remainder asignment operator. */
+    /** \brief Remainder assignment operator. */
     constexpr auto operator%=(npint rhs) -> npint & {
         v %= rhs.v;
         return *this;
     }
 
-    /** \brief Bitwise AND asignment operator. */
+    /** \brief Bitwise AND assignment operator. */
     constexpr auto operator&=(npint rhs) noexcept -> npint & {
         v &= rhs.v;
         return *this;
     }
 
-    /** \brief Bitwise OR asignment operator. */
+    /** \brief Bitwise OR assignment operator. */
     constexpr auto operator|=(npint rhs) noexcept -> npint & {
         v |= rhs.v;
         return *this;
     }
 
-    /** \brief Bitwise XOR asignment operator. */
+    /** \brief Bitwise XOR assignment operator. */
     constexpr auto operator^=(npint rhs) noexcept -> npint & {
         v ^= rhs.v;
         return *this;
@@ -182,7 +182,7 @@ template <std::integral T> class npint {
         return *this;
     }
 
-    // Unary arighmetic operators
+    // Unary arithmetic operators
 
     /** \brief Unary plus operator. */
     constexpr auto operator+() const noexcept -> npint { return *this; }
@@ -300,42 +300,42 @@ using u16np = npint<u16>;
 
 /**
  * \brief Non-promoted unsigned 32-bit integer.
-
+ *
  * \ingroup integers
  */
 using u32np = npint<u32>;
 
 /**
  * \brief Non-promoted unsigned 64-bit integer.
-
+ *
  * \ingroup integers
  */
 using u64np = npint<u64>;
 
 /**
  * \brief Non-promoted signed 8-bit integer.
-
+ *
  * \ingroup integers
  */
 using i8np = npint<i8>;
 
 /**
  * \brief Non-promoted signed 16-bit integer.
-
+ *
  * \ingroup integers
  */
 using i16np = npint<i16>;
 
 /**
  * \brief Non-promoted signed 32-bit integer.
-
+ *
  * \ingroup integers
  */
 using i32np = npint<i32>;
 
 /**
  * \brief Non-promoted signed 64-bit integer.
-
+ *
  * \ingroup integers
  */
 using i64np = npint<i64>;

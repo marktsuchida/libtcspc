@@ -225,7 +225,7 @@ namespace tcspc {
  *
  * \brief Event processors.
  *
- * Processors in libtcspc are usually classes defined in an internal namesapce.
+ * Processors in libtcspc are usually classes defined in an internal namespace.
  * They are exposed in the API through factory functions named after a verb
  * describing what the processor does and return the processor by value. A few
  * special processor factory functions (e.g., tcspc::merge()) return multiple
@@ -251,7 +251,7 @@ namespace tcspc {
  * from upstream processors to downstream processors by function calls. Each
  * processor is basically a state machine that changes state based on events
  * received, and in some cases emits events to the downstream processor(s). The
- * set of event types accepted by a given processor is determine by C++ type
+ * set of event types accepted by a given processor is determined by C++ type
  * rules based on the processor's `handle()` member function overload set. The
  * end of the stream of events is signaled down the chain of processors via the
  * `flush()` member function. Processing may also terminate due to an error
@@ -259,7 +259,7 @@ namespace tcspc {
  *
  * Processor factory functions never call `handle()` or `flush()` on
  * downstream processors. After construction, processors must always be
- * prepared to receive any of its accepted events while processing continues
+ * prepared to receive any of their accepted events while processing continues
  * (but they may signal an error if the sequence of events is incorrect).
  * Behavior is undefined if `handle()` or `flush()` is called on a processor
  * that has been flushed or has stopped with an error.
@@ -489,7 +489,7 @@ namespace tcspc {
 /**
  * \defgroup processors-histogramming Histogramming processors
  *
- * \brief Processors for histograming.
+ * \brief Processors for histogramming.
  *
  * @{
  */
@@ -600,7 +600,7 @@ namespace tcspc {
  *   the stream (or if the stream is not available). Not influenced by failure
  *   of `tell()` or `skip()`.
  * - `auto is_good() noexcept -> bool`:
- *   Return true if neiter `is_error()` nor `is_eof()` is true.
+ *   Return true if neither `is_error()` nor `is_eof()` is true.
  * - `auto tell() noexcept -> std::optional<std::uint64_t>`:
  *   Return the current stream position if supported by the stream, or
  *   `std::nullopt`.
@@ -745,7 +745,7 @@ namespace tcspc {
  * - `auto operator()(datapoint_type d) -> std::optional<bin_index_type>`,
  *   where `datapoint_type` and `bin_index_type` must match the
  *   `tcspc::map_to_bins()` processor's `DataTypes`. This function call
- *   operator mapps the datapoint `d` to a bin index.
+ *   operator maps the datapoint `d` to a bin index.
  *
  * (`n_bins()` is provided for convenience and is not used by
  * `tcspc::map_to_bins`. Thus, any invokable, such as a lambda, can be used as
@@ -827,7 +827,7 @@ namespace tcspc {
  * The graph can also be formatted as a Graphviz graph using
  * `tcspc::graphviz_from_processor_graph()`.
  *
- * \note Proceessor info and graph expose implementation details that may not
+ * \note Processor info and graph expose implementation details that may not
  * be stable. It is intended primarily for visualization, debugging, and
  * testing; not as a basis for automation.
  */
@@ -843,7 +843,7 @@ namespace tcspc {
  * `tcspc::end_of_processing`).
  *
  * Usually, exceptions that indicate errors during processing are derived from
- * `std::runtime_error`.  However, other exceptions may also be thrown, such as
+ * `std::runtime_error`. However, other exceptions may also be thrown, such as
  * `std::bad_alloc`.
  *
  * Outside of processing, programming errors such as passing an invalid

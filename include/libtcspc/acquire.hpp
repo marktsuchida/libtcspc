@@ -407,13 +407,13 @@ auto acquire(Reader reader, std::shared_ptr<bucket_source<T>> buffer_provider,
  * receives newly acquired data as soon as it is available, but in the form of
  * a const view bucket. This is typically used for live processing and display.
  *
- * The \p batch_downstream recieves the same data, but only as each batch fills
+ * The \p batch_downstream receives the same data, but only as each batch fills
  * up to the given \p batch_size (except for the last batch, which may be
  * smaller). This is typically used for saving the raw data to disk.
  *
  * The two streams share the underlying bucket storage.
  *
- * \tparam T the element type of the acquired data (usually a byte or  integer
+ * \tparam T the element type of the acquired data (usually a byte or integer
  * type)
  *
  * \tparam Reader type of reader (usually deduced)

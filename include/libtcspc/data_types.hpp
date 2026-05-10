@@ -16,7 +16,7 @@ namespace tcspc {
  * This data type set is the default for the `DataTypes` template parameter in
  * most events, processors, and auxiliary objects that require a data type set.
  *
- * Custom data types sets may (but need not) derive from this type and override
+ * Custom data type sets may (but need not) derive from this type and override
  * some or all of the member type aliases.
  *
  * \ingroup data-types

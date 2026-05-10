@@ -99,7 +99,7 @@ namespace tcspc {
  *   const &`.
  *
  * Handlers accepting buckets (as with any other event type) should always
- * accept `bucket<T> const &`. In addition, they should accept `bucket <T
+ * accept `bucket<T> const &`. In addition, they should accept `bucket<T
  * const> const &`. Optionally they may also accept `bucket<T> &&` and/or
  * `bucket<T const> &&` if they benefit from being able to transfer the bucket
  * storage or, in the case of `bucket<T> &&`, being able to move out the bucket
@@ -127,7 +127,7 @@ template <typename T> class bucket {
     bucket() noexcept = default;
 
     /**
-     * \brief Construct a bucket referenceing a \p span and holding \p storage.
+     * \brief Construct a bucket referencing a \p span and holding \p storage.
      *
      * This constructor is normally used by bucket sources.
      *
@@ -300,7 +300,7 @@ template <typename T> class bucket {
         return s[pos];
     }
 
-    /** \brief Return the address of the data.. */
+    /** \brief Return the address of the data. */
     [[nodiscard]] constexpr auto data() noexcept -> pointer {
         return s.data();
     }
@@ -940,7 +940,7 @@ template <typename Event, typename Downstream> class extract_bucket {
 } // namespace internal
 
 /**
- * Create a processor that extracts the bucket carried by an event.
+ * \brief Create a processor that extracts the bucket carried by an event.
  *
  * \ingroup processors-io
  *

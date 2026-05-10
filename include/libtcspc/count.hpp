@@ -117,8 +117,8 @@ class count_up_to {
  * TickEvent is passed through. Just before or after the \p TickEvent is
  * emitted (depending on whether \p FireAfterTick is false or true), the count
  * is compared to the \p threshold and if equal, \p FireEvent is emitted. The
- * abstime of the \p FireEvent is set equal to the \p TickEvent that triggered
- * it.
+ * abstime of the \p FireEvent is set equal to that of the \p TickEvent that
+ * triggered it.
  *
  * After incrementing the count and processing the threshold, if the count
  * equals \p limit, then the count is reset to \p initial_count. Automatic

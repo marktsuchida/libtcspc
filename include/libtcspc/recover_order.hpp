@@ -139,7 +139,7 @@ class recover_order {
  *
  * \tparam Downstream downstream processor type
  *
- * \param time_window maximum abstime by which events are our of order; must
+ * \param time_window maximum abstime by which events are out of order; must
  * not be negative
  *
  * \param downstream downstream processor

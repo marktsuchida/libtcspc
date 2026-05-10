@@ -66,7 +66,7 @@ template <typename Downstream> class view_as_bytes {
 } // namespace internal
 
 /**
- * \brief Create a processor that views events to byte spans.
+ * \brief Create a processor that views events as byte spans.
  *
  * \ingroup processors-binary
  *

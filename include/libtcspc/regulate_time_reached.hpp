@@ -132,7 +132,7 @@ class regulate_time_reached {
  * the time-reached event is only emitted upon receiving an upstream event past
  * the interval threshold.
  *
- * When procssing stored data, or when live display update is not a
+ * When processing stored data, or when live display update is not a
  * requirement, the \p interval_threshold can be set to the maximum value of
  * the `abstime_type` to disable the criterion, relying solely on the \p
  * count_threshold. It is recommended that \p count_threshold be set to a

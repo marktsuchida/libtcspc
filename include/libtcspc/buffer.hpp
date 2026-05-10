@@ -394,7 +394,7 @@ auto buffer(arg::threshold<std::size_t> threshold,
  * \return processor
  *
  * \par Events handled
- * - `Event`: buffer and pass through on pumping thread; throw
+ * - `Event`: buffer and pass through on the pumping thread; throw
  *   `tcspc::end_of_processing` if pumping thread has exited (normally or with
  *   error)
  * - Flush: buffer and pass through on the pumping thread; throw

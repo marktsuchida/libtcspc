@@ -49,7 +49,7 @@ template <typename DataTypes = default_data_types> struct datapoint_event {
  *
  * \ingroup events-binning
  *
- * \tparam DataTypes data type set specifying and `bin_index_type`
+ * \tparam DataTypes data type set specifying `bin_index_type`
  */
 template <typename DataTypes = default_data_types> struct bin_increment_event {
     /**
@@ -198,7 +198,7 @@ struct histogram_array_event {
 template <typename DataTypes = default_data_types>
 struct histogram_array_progress_event {
     /**
-     * \brief Size of the udpated part of the histogram array.
+     * \brief Size of the updated part of the histogram array.
      */
     std::size_t valid_size;
 

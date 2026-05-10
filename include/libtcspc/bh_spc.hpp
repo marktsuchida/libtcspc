@@ -868,7 +868,7 @@ auto decode_bh_spc(Downstream downstream) {
 
 /**
  * \brief Create a processor that decodes FIFO records from Becker & Hickl
- * SPC-160 and SPC-180N with fast intensity counter
+ * SPC-160 and SPC-180N with fast intensity counter.
  *
  * \ingroup processors-bh
  *
@@ -888,7 +888,7 @@ auto decode_bh_spc(Downstream downstream) {
  * - `tcspc::bh_spc_event`: decode and emit one or more of
  *   `tcspc::time_reached_event<DataTypes>`,
  *   `tcspc::time_correlated_detection_event<DataTypes>`,
- *   `tcspc::bulk_counts_event<DataTypes>`
+ *   `tcspc::bulk_counts_event<DataTypes>`,
  *   `tcspc::marker_event<DataTypes>`, `tcspc::data_lost_event<DataTypes>`
  * - All other types: pass through with no action
  * - Flush: pass through with no action

@@ -265,8 +265,8 @@ auto merge(arg::max_buffered<std::size_t> max_buffered,
  * This processor does not guarantee any particular ordering for events of
  * equal abstime.
  *
- * If any input falls far behind the the others (in terms of abstime), an
- * unidesirably large number of events may be buffered (undesirable either in
+ * If any input falls far behind the others (in terms of abstime), an
+ * undesirably large number of events may be buffered (undesirable either in
  * terms of timely update of downstream or in terms of excessive memory use).
  * The only way to prevent such a situation is to ensure that all inputs carry
  * events at some minimal frequency, for example by injecting

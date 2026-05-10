@@ -126,7 +126,7 @@ auto map_to_datapoints(DataMapper mapper, Downstream downstream) {
  */
 template <typename DataTypes = default_data_types> class difftime_data_mapper {
   public:
-    /** \brief Implements data mapper requirement */
+    /** \brief Implements data mapper requirement. */
     template <typename Event>
     auto operator()(Event const &event) const ->
         typename DataTypes::datapoint_type {
@@ -149,7 +149,7 @@ template <typename DataTypes = default_data_types> class difftime_data_mapper {
  */
 template <typename DataTypes = default_data_types> class count_data_mapper {
   public:
-    /** \brief Implements data mapper requirement */
+    /** \brief Implements data mapper requirement. */
     template <typename Event>
     auto operator()(Event const &event) const ->
         typename DataTypes::datapoint_type {
@@ -172,7 +172,7 @@ template <typename DataTypes = default_data_types> class count_data_mapper {
  */
 template <typename DataTypes = default_data_types> class channel_data_mapper {
   public:
-    /** \brief Implements data mapper requirement */
+    /** \brief Implements data mapper requirement. */
     template <typename Event>
     auto operator()(Event const &event) const ->
         typename DataTypes::datapoint_type {

@@ -381,7 +381,7 @@ class pair_one_between {
  *
  * \param stop_channels the stop channel numbers
  *
- * \param time_window the maximum abstime separateion between start and stop
+ * \param time_window the maximum abstime separation between start and stop
  * detection events
  *
  * \param downstream downstream processor
@@ -432,7 +432,7 @@ auto pair_all(
  *
  * \param stop_channels the stop channel numbers
  *
- * \param time_window the maximum abstime separateion between start and stop
+ * \param time_window the maximum abstime separation between start and stop
  * detection events
  *
  * \param downstream downstream processor
@@ -440,7 +440,7 @@ auto pair_all(
  * \return processor
  *
  * \par Events handled
- * - `tcspc::detection_event<DT>`: emit  (as
+ * - `tcspc::detection_event<DT>`: emit (as
  *   `tcspc::std::array<detection_event<DataTypes>, 2>`) any pairs where the
  *   current event serves as the stop event; pass through
  * - All other types: pass through with no action
@@ -482,7 +482,7 @@ auto pair_one(
  *
  * \param stop_channels the stop channel numbers
  *
- * \param time_window the maximum abstime separateion between start and stop
+ * \param time_window the maximum abstime separation between start and stop
  * detection events
  *
  * \param downstream downstream processor
@@ -533,7 +533,7 @@ auto pair_all_between(
  *
  * \param stop_channels the stop channel numbers
  *
- * \param time_window the maximum abstime separateion between start and stop
+ * \param time_window the maximum abstime separation between start and stop
  * detection events
  *
  * \param downstream downstream processor

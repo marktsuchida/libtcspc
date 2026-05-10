@@ -215,7 +215,7 @@ auto unbatch(Downstream downstream) {
  * This is intended for use in cases where separating the processing loop is
  * beneficial, for example to limit the (code or data) working set size.
  * Usually the regular `tcspc::buffer()` (requiring two separate threads) is
- * more beneficial because it can exploit parallellism, but a single-threaded
+ * more beneficial because it can exploit parallelism, but a single-threaded
  * buffer is easier to introduce (it can simply be inserted in a processor
  * graph) so may be convenient for experimentation.
  *

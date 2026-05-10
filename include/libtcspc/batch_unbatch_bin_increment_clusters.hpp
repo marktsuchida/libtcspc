@@ -269,7 +269,7 @@ auto batch_bin_increment_clusters(
 
 /**
  * \brief Create a processor that splits encoded batches of bin increment
- * clusters into indivisual clusters.
+ * clusters into individual clusters.
  *
  * \ingroup processors-batching
  *

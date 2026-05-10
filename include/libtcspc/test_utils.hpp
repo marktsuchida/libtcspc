@@ -72,7 +72,7 @@ template <typename EventList> class sink_events {
  * This can be used for compile-time checks of the output event types of a
  * processor.
  *
- * \tparam Events event types to accept
+ * \tparam Event event types to accept
  *
  * \par Events handled
  * - Events in `Event...`: consume with no action
@@ -893,7 +893,7 @@ template <typename Downstream> class feed_input {
  * In order to access the recorded output or arrange to simulate errors and
  * end-of-processing, use a `tcspc::capture_output_access` (usually accessed
  * through the wrapper `tcspc::capture_output_checker`) retrieved from the
- * `tcspc::context` from which \p tracker was obtained..
+ * `tcspc::context` from which \p tracker was obtained.
  *
  * \tparam EventList event set to accept
  *

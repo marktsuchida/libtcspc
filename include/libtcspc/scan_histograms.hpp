@@ -282,7 +282,7 @@ class scan_histograms {
  *
  * \attention Behavior is undefined if an incoming
  * `tcspc::bin_increment_cluster_event` contains a bin index beyond the size of
- * the histogram. The bin maper should be chosen so that this does not occur.
+ * the histogram. The bin mapper should be chosen so that this does not occur.
  *
  * \tparam Policy policy specifying behavior of the processor
  *

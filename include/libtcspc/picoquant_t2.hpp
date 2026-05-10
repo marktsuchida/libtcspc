@@ -156,7 +156,7 @@ struct pqt2_picoharp300_event {
     }
 
     /**
-     * \brief Make an event representing an time tag overflow.
+     * \brief Make an event representing a time tag overflow.
      *
      * \return event
      */
@@ -326,7 +326,7 @@ struct basic_pqt2_event {
     }
 
     /**
-     * \brief Make an event representing an time tag overflow.
+     * \brief Make an event representing a time tag overflow.
      *
      * This overload is only available in `tcspc::pqt2_generic_event`.
      *

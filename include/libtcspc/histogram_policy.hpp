@@ -11,7 +11,7 @@
 namespace tcspc {
 
 /**
- * \brief Histogramming policy specifying behavor.
+ * \brief Histogramming policy specifying behavior.
  *
  * \ingroup histogram-policy
  *

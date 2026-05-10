@@ -231,7 +231,7 @@ class histogram {
  * \par Events handled
  *
  * - `tcspc::bin_increment_event<DT>`: apply the increment to the histogram
- * and, if there is no bin overflow, emit (const)
+ *   and, if there is no bin overflow, emit (const)
  *   `tcspc::histogram_event<DataTypes>`. If a bin overflowed,
  *   behavior depends on the value of `Policy &
  *   tcspc::histogram_policy::overflow_mask`:

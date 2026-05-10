@@ -105,8 +105,8 @@ class data_validation_error : public std::runtime_error {
  * This error is thrown when the `tcspc::error_on_overflow_t` policy was
  * requested and there was an overflow. It is also thrown when
  * `tcspc::reset_on_overflow_t` was requested but a reset would result in an
- * infinite loop: in the case of `tcspc::histogram()` when maximum-per-bin set
- * to 0, or `tcspc::scan_histograms()` when a single batch contains enough
+ * infinite loop: in the case of `tcspc::histogram()` when maximum-per-bin is
+ * set to 0, or `tcspc::scan_histograms()` when a single batch contains enough
  * increments to overflow a bin.
  */
 class histogram_overflow_error : public std::runtime_error {
@@ -120,7 +120,7 @@ class histogram_overflow_error : public std::runtime_error {
  * \ingroup errors
  *
  * This error strictly represents input/output errors, usually coming from the
- * operating system, such as inaibility to open a file or inability to read or
+ * operating system, such as inability to open a file or inability to read or
  * write bytes.
  *
  * It is not used for errors in the data contained in a file or stream.
