@@ -2,10 +2,6 @@
 # Copyright 2019-2026 Board of Regents of the University of Wisconsin System
 # SPDX-License-Identifier: MIT
 
-__all__ = [
-    "libtcspc_include_dir",
-]
-
 import functools
 import importlib.resources
 from pathlib import Path

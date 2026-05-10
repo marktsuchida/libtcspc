@@ -2,10 +2,6 @@
 # Copyright 2019-2026 Board of Regents of the University of Wisconsin System
 # SPDX-License-Identifier: MIT
 
-__all__ = [
-    "DataTypes",
-]
-
 from typing import TypedDict
 
 from typing_extensions import Unpack

@@ -2,13 +2,6 @@
 # Copyright 2019-2026 Board of Regents of the University of Wisconsin System
 # SPDX-License-Identifier: MIT
 
-__all__ = [
-    "EndOfProcessing",
-    "ExecutionContext",
-    "PySink",
-    "create_execution_context",
-]
-
 from abc import abstractmethod
 from collections.abc import Iterable, Sequence
 from contextlib import contextmanager

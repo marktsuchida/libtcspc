@@ -2,11 +2,6 @@
 # Copyright 2019-2026 Board of Regents of the University of Wisconsin System
 # SPDX-License-Identifier: MIT
 
-__all__ = [
-    "Param",
-    "Parameterized",
-]
-
 from collections.abc import Sequence
 from dataclasses import dataclass
 from typing import Generic, TypeVar
