@@ -24,4 +24,9 @@ types should be documented with Doxygen comments (follow existing practice).
 
 # Python coding guidelines
 
-(TODO).
+Public API symbols should carry
+[NumPy-style](https://numpydoc.readthedocs.io/en/latest/format.html#docstring-standard)
+docstrings; these are rendered into the Sphinx site under `docs/python/`. Build
+the Python docs locally with `ninja -C <builddir> docs/python/html` after
+installing the optional `docs` dependency group (`pip install -e .[docs]`) and
+configuring with `-Dpython_docs=enabled`.

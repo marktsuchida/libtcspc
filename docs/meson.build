@@ -33,6 +33,7 @@ doxyfile = configure_file(
         'DOXYGEN_INPUT': meson.current_source_dir() / '../include',
         'DOXYGEN_EXCLUDE': meson.current_source_dir() / '../include/tcb',
         'DOXYGEN_OUTPUT': meson.current_build_dir() / 'apidoc',
+        'DOXYGEN_TAGFILE': meson.current_build_dir() / 'libtcspc.tag',
         'DOXYGEN_LAYOUT': meson.current_build_dir() / 'DoxygenLayout.xml',
         'DOXYGEN_CSS': meson.current_source_dir() / 'doxygen-awesome-css',
         'DOXYGEN_WERROR': doxygen_werror,

@@ -334,13 +334,17 @@ jobs:
           curl -LO https://www.doxygen.nl/files/doxygen-${DOXYGEN_VERSION}.linux.bin.tar.gz
           tar xf doxygen-${DOXYGEN_VERSION}.linux.bin.tar.gz
           echo $PWD/doxygen-${DOXYGEN_VERSION}/bin >>$GITHUB_PATH
-
+      - name: Install Python doc dependencies
+        run: pip install .[docs]
       - name: Configure
         run: >
           meson setup builddir -Dtests=disabled -Dexamples=disabled
-          -Dbenchmarks=disabled -Ddocs=enabled -Ddocs_werror=true
+          -Dbenchmarks=disabled -Ddocs=enabled -Dpython_docs=enabled
+          -Ddocs_werror=true
       - name: Build
         run: ninja -C builddir docs/apidoc
+      - name: Build Python documentation
+        run: ninja -C builddir docs/python/html
 
       # TODO Publish, but we first need to decide how to combine C++ API docs
-      # with (yet-to-be-created) Python docs.
+      # with the Python docs.

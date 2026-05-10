@@ -59,6 +59,7 @@ endif
 
 subdir('include')
 subdir('docs')
+subdir('docs/python')
 subdir('tests')
 subdir('benchmarks')
 subdir('examples')

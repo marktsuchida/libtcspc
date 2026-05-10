@@ -1,0 +1,15 @@
+/*
+ * This file is part of libtcspc
+ * Copyright 2019-2026 Board of Regents of the University of Wisconsin System
+ * SPDX-License-Identifier: MIT
+ */
+
+/* Sphinx's basic.css centers `table.align-default`, and autosummary tables
+ * have no intrinsic width, so they end up floating in the middle of the page
+ * with whitespace on both sides. Make them full-width instead. */
+table.autosummary {
+    width: 100%;
+}
+table.autosummary td {
+    word-break: break-word;
+}

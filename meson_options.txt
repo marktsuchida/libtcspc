@@ -5,6 +5,9 @@
 option('docs', type: 'feature', value: 'auto',
     description: 'Build documentation (requires Doxygen)',
 )
+option('python_docs', type: 'feature', value: 'auto',
+    description: 'Build Python documentation (requires Sphinx)',
+)
 option('docs_werror', type: 'boolean', value: false,
     description: 'Fail build on documentation generation warning',
 )

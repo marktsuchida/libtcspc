@@ -158,9 +158,6 @@ class RelayNode(Node):
 
     @override
     def __init__(self) -> None:
-        """
-        Initialize.
-        """
         pass
 
     @override

@@ -28,10 +28,17 @@ testing = [
     "pytest-mypy >= 0.4",
     "types-psutil",
 ]
+docs = [
+    "sphinx >= 7.0",
+    "furo",
+    "myst-parser",
+    "sphinxcontrib-doxylink",
+]
 
 [tool.meson-python.args]
 setup = [
     '-Ddocs=disabled',
+    '-Dpython_docs=disabled',
     '-Dtests=disabled',
     '-Dbenchmarks=disabled',
     '-Dexamples=disabled',
