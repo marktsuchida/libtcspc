@@ -217,8 +217,7 @@ class time_correlate_at_fraction {
  * - `tcspc::std::array<detection_event<DT>, 2>`: emit
  *   `tcspc::time_correlated_detection_event<DataTypes>` with
  *   - `abstime` set equal to that of the first event of the pair
- *   - `channel` set to the channel of the first event of the pair if
- *     `UseStartChannel` is true, else of the second
+ *   - `channel` set to the channel of the first event of the pair
  *   - `difftime` set to the `abstime` difference of the pair
  * - All other types: pass through with no action
  * - Flush: pass through with no action
@@ -256,8 +255,7 @@ auto time_correlate_at_start(Downstream downstream) {
  * - `tcspc::std::array<detection_event<DT>, 2>`: emit
  *   `tcspc::time_correlated_detection_event<DataTypes>` with
  *   - `abstime` set equal to that of the second event of the pair
- *   - `channel` set to the channel of the first event of the pair if
- *     `UseStartChannel` is true, else of the second
+ *   - `channel` set to the channel of the second event of the pair
  *   - `difftime` set to the `abstime` difference of the pair
  * - All other types: pass through with no action
  * - Flush: pass through with no action

@@ -321,7 +321,7 @@ class buffer {
  *
  * \tparam Downstream downstream processor type (usually deduced)
  *
- * \param threshold number of events to buffer before start sending to
+ * \param threshold number of events to accumulate before sending them to the
  * downstream
  *
  * \param tracker access tracker for later access
@@ -380,8 +380,8 @@ auto buffer(arg::threshold<std::size_t> threshold,
  *
  * \tparam Downstream downstream processor type (usually deduced)
  *
- * \param threshold number of events to buffer before start sending to
- * downstream
+ * \param threshold number of events to accumulate before sending them to the
+ * downstream even if the latency limit has not been reached
  *
  * \param latency_limit the maximum time an event can remain in the buffer
  * before sending to downstream is started even if there are fewer events than

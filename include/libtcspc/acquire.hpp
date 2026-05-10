@@ -445,7 +445,7 @@ auto acquire(Reader reader, std::shared_ptr<bucket_source<T>> buffer_provider,
  *   error, or until halted, and emit (rvalue) `tcspc::bucket<T const>` to
  *   `live_downstream` on each read; emit (rvalue) `tcspc::bucket<T>` when
  *   `batch_size` elements have been collected, to `batch_downstream`. If end
- *   of stream is indicated by the reader, flush the downstream.
+ *   of stream is indicated by the reader, flush the downstreams.
  */
 template <typename T, typename Reader, typename LiveDownstream,
           typename BatchDownstream>

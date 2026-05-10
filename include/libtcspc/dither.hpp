@@ -319,7 +319,7 @@ class dithered_linear_timing_generator {
  *
  * The configuration of output timings is obtained from the `delay`,
  * `interval`, and `count` data members of each trigger event (typically
- * tcspc::real_linear_timing_event). The delay must be at least 1.5 and the
+ * `tcspc::real_linear_timing_event`). The delay must be at least 1.5 and the
  * interval must be at least 3.0 (so that a negative delay or interval does not
  * result from the dithering).
  *

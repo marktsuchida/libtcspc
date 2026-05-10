@@ -154,7 +154,8 @@ template <typename ContainerEvent, typename Downstream> class unbatch {
  *
  * \see `tcspc::unbatch()`
  *
- * \tparam Event the event type (must be a trivial type)
+ * \tparam Event the event type (must be default-constructible; trivial type
+ * recommended)
  *
  * \tparam Downstream downstream processor type
  *
@@ -224,6 +225,15 @@ auto unbatch(Downstream downstream) {
  * processing.
  *
  * \see `tcspc::buffer()`
+ *
+ * \tparam Event the event type (must be default-constructible; trivial type
+ * recommended)
+ *
+ * \tparam Downstream downstream processor type
+ *
+ * \param batch_size number of events per batch
+ *
+ * \param downstream downstream processor
  *
  * \return processor
  *

@@ -538,6 +538,8 @@ class convert_sequences_to_start_stop {
  *
  * \tparam StopEvent stop event type to emit
  *
+ * \tparam Downstream downstream processor type
+ *
  * \param count sequence length of the emitted start-stop pairs
  *
  * \param downstream downstream processor

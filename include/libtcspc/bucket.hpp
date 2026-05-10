@@ -945,7 +945,7 @@ template <typename Event, typename Downstream> class extract_bucket {
  * \ingroup processors-io
  *
  * \tparam Event the event type, which must have the public data member
- * `bucket`
+ * `data_bucket`
  *
  * \tparam Downstream downstream processor type (usually deduced)
  *
