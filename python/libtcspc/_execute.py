@@ -72,7 +72,9 @@ class ExecutionContext:
         Returns
         -------
         Access
-            The access object for the requested tag.
+            The access object for the requested tag. The concrete protocol
+            (e.g., `AcquireAccess`, `CountAccess`) depends on the node type
+            that was tagged.
         """
         if tag.tag not in self._accesses:
             raise ValueError(f"no such access tag: {tag.tag}")

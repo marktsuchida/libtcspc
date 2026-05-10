@@ -4,6 +4,7 @@
 
 from collections.abc import Sequence
 from dataclasses import dataclass
+from typing import Protocol
 
 from typing_extensions import override
 
@@ -109,3 +110,39 @@ class CountAccessSpec(AccessSpec):
     @classmethod
     def py_class_name(cls) -> str:
         return "CountAccess"
+
+
+class Access(Protocol):
+    """
+    Base protocol for run-time access objects.
+
+    Concrete access protocols (such as `AcquireAccess` or `CountAccess`)
+    derive from this. The protocol itself has no methods; it serves as a
+    common type for any access object returned by
+    `ExecutionContext.access`.
+    """
+
+
+class AcquireAccess(Access, Protocol):
+    """Run-time access object for an ``Acquire`` processor."""
+
+    def halt(self) -> None:
+        """
+        Request that the running acquisition stop at its earliest opportunity.
+        """
+        ...
+
+
+class CountAccess(Access, Protocol):
+    """Run-time access object for a ``Count`` processor."""
+
+    def count(self) -> int:
+        """
+        Return the current event count.
+
+        Returns
+        -------
+        int
+            The number of events counted so far.
+        """
+        ...

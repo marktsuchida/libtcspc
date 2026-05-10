@@ -2,7 +2,7 @@
 # Copyright 2019-2026 Board of Regents of the University of Wisconsin System
 # SPDX-License-Identifier: MIT
 
-from ._access import Accessible, AccessTag
+from ._access import Access, Accessible, AccessTag, AcquireAccess, CountAccess
 from ._acquisition_readers import AcquisitionReader, NullReader, StuckReader
 from ._bucket_sources import (
     BucketSource,
@@ -78,9 +78,11 @@ from ._streams import BinaryFileInputStream, InputStream
 from ._version import __version__ as __version__
 
 __all__ = [
+    "Access",
     "AccessTag",
     "Accessible",
     "Acquire",
+    "AcquireAccess",
     "AcquisitionReader",
     "BHSPCEvent",
     "Batch",
@@ -91,6 +93,7 @@ __all__ = [
     "CodeGenerationContext",
     "CompiledGraph",
     "Count",
+    "CountAccess",
     "CppClassScopeDefs",
     "CppExpression",
     "CppFunctionScopeDefs",
