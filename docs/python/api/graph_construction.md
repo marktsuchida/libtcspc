@@ -17,8 +17,5 @@ referenced by name and parameterized through `Param` placeholders.
    libtcspc.Graph
    libtcspc.Node
    libtcspc.Subgraph
-   libtcspc.RelayNode
-   libtcspc.TypePreservingRelayNode
    libtcspc.Param
-   libtcspc.Parameterized
 ```

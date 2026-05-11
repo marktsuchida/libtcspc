@@ -20,7 +20,6 @@ context. Access objects expose live state from running graphs.
    libtcspc.ExecutionContext
    libtcspc.EndOfProcessing
    libtcspc.PySink
-   libtcspc.Accessible
    libtcspc.AccessTag
    libtcspc.Access
    libtcspc.AcquireAccess

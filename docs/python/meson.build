@@ -19,7 +19,6 @@ py_doc_sources = files(
     'api/processors.md',
     'api/resources.md',
     'api/compilation_and_execution.md',
-    'api/code_generation.md',
     'user_guide/index.md',
     'user_guide/introduction.md',
     'user_guide/installation.md',

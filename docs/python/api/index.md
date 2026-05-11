@@ -17,5 +17,4 @@ graph_construction
 processors
 resources
 compilation_and_execution
-code_generation
 ```
