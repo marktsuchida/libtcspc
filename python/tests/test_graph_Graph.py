@@ -4,7 +4,7 @@
 
 
 import pytest
-from _test_helpers import _NamedEvent
+from _test_helpers import _NamedEvent, _TestNode
 from libtcspc._codegen import CodeGenerationContext
 from libtcspc._cpp_utils import (
     CppExpression,
@@ -58,7 +58,7 @@ def test_empty_graph():
 
 def test_single_node(mocker):
     g = Graph()
-    node = Node()
+    node = _TestNode()
     assert g.add_node("node", node) == "node"
     assert g._inputs() == ((0, 0),)
     assert g.inputs() == (("node", "input"),)
@@ -110,8 +110,8 @@ def test_two_nodes_two_inputs_two_outputs(mocker):
 
     g = Graph()
 
-    node0 = Node(input=["in0", "in1"])
-    node1 = Node(output=["out0", "out1"])
+    node0 = _TestNode(input=["in0", "in1"])
+    node1 = _TestNode(output=["out0", "out1"])
     assert g.add_node("n0", node0) == "n0"
     assert g.add_node("n1", node1) == "n1"
 
@@ -176,8 +176,8 @@ def test_two_nodes_two_internal_edges(mocker):
 
     g = Graph()
 
-    node0 = Node(output=["out0", "out1"])
-    node1 = Node(input=["in0", "in1"])
+    node0 = _TestNode(output=["out0", "out1"])
+    node1 = _TestNode(input=["in0", "in1"])
     assert g.add_node("n0", node0) == "n0"
     assert g.add_node("n1", node1) == "n1"
 
@@ -226,7 +226,7 @@ def make_simple_node(mocker) -> Node:
         assert len(downstreams) == 1
         return downstreams[0]
 
-    node = Node()
+    node = _TestNode()
     node._map_event_sets = mocker.MagicMock(return_value=(IntEvent,))  # type: ignore
     node._cpp_expression = mocker.MagicMock(side_effect=node_codegen)  # type: ignore
     return node
@@ -241,8 +241,8 @@ def test_add_sequence(mocker):
 
     g = Graph()
     g.add_sequence([node0, node1])
-    g.add_sequence([node2, node3], upstream="Node-1")
-    g.add_sequence([node4], downstream=("Node-0", "input"))
+    g.add_sequence([node2, node3], upstream="_TestNode-1")
+    g.add_sequence([node4], downstream=("_TestNode-0", "input"))
     code = g._cpp_expression(gencontext, [CppExpression("std::move(ds)")])
     assert (
         run_cpp_prog(f"""\
@@ -273,23 +273,25 @@ def test_add_sequence_with_cycle(mocker):
     g.add_sequence([node0, node1, node2])
     with pytest.raises(ValueError):
         # Would introduce cycle
-        g.add_sequence([node3, node4], upstream="Node-2", downstream="Node-0")
+        g.add_sequence(
+            [node3, node4], upstream="_TestNode-2", downstream="_TestNode-0"
+        )
 
 
 def test_add_sequence_not_single_input_output(mocker):
     g = Graph()
-    n0 = Node(input=["in0", "in1"])
+    n0 = _TestNode(input=["in0", "in1"])
     with pytest.raises(ValueError):
         g.add_sequence([n0])
-    n1 = Node(output=["out0", "out1"])
+    n1 = _TestNode(output=["out0", "out1"])
     with pytest.raises(ValueError):
         g.add_sequence([n1])
 
 
 def test_empty_add_sequence_connects_upstream_downstream(mocker):
     g = Graph()
-    n0 = Node()
-    n1 = Node()
+    n0 = _TestNode()
+    n1 = _TestNode()
     g.add_node("n0", n0)
     g.add_node("n1", n1)
     n0._map_event_sets = mocker.MagicMock(return_value=((IntEvent,),))  # type: ignore

@@ -2,6 +2,7 @@
 # Copyright 2019-2026 Board of Regents of the University of Wisconsin System
 # SPDX-License-Identifier: MIT
 
+from abc import ABC, abstractmethod
 from collections.abc import Collection, Sequence
 from typing import final
 
@@ -14,7 +15,7 @@ from ._events import EventType
 from ._param import Parameterized
 
 
-class Node(Accessible, Parameterized):
+class Node(Accessible, Parameterized, ABC):
     """
     Base class for a processing graph node.
 
@@ -82,6 +83,7 @@ class Node(Accessible, Parameterized):
         """
         return self._outputs
 
+    @abstractmethod
     def _map_event_sets(
         self, input_event_sets: Sequence[Collection[EventType]]
     ) -> tuple[tuple[EventType, ...], ...]:
@@ -109,8 +111,9 @@ class Node(Accessible, Parameterized):
             If `input_event_sets` contains events that are incompatible with
             this node.
         """
-        raise NotImplementedError()
+        ...
 
+    @abstractmethod
     def _cpp_expression(
         self,
         gencontext: CodeGenerationContext,
@@ -134,7 +137,7 @@ class Node(Accessible, Parameterized):
         CppExpression
             C++ code for this node.
         """
-        raise NotImplementedError()
+        ...
 
 
 class RelayNode(Node):
@@ -169,6 +172,7 @@ class RelayNode(Node):
             )
         return (self._relay_map_event_set(input_event_sets[0]),)
 
+    @abstractmethod
     def _relay_map_event_set(
         self, input_event_set: Collection[EventType]
     ) -> tuple[EventType, ...]:
@@ -196,7 +200,7 @@ class RelayNode(Node):
             If `input_event_set` contains events that are incompatible with
             this node.
         """
-        raise NotImplementedError()
+        ...
 
     @override
     @final
@@ -215,6 +219,7 @@ class RelayNode(Node):
             )
         return self._relay_cpp_expression(gencontext, downstreams[0])
 
+    @abstractmethod
     def _relay_cpp_expression(
         self,
         gencontext: CodeGenerationContext,
@@ -238,7 +243,7 @@ class RelayNode(Node):
         str
             C++ code for this node.
         """
-        raise NotImplementedError()
+        ...
 
 
 class TypePreservingRelayNode(RelayNode):

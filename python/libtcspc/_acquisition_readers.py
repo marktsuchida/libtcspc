@@ -2,7 +2,7 @@
 # Copyright 2019-2026 Board of Regents of the University of Wisconsin System
 # SPDX-License-Identifier: MIT
 
-from abc import abstractmethod
+from abc import ABC, abstractmethod
 from typing import Protocol, final
 
 import numpy as np
@@ -12,10 +12,9 @@ from ._cpp_utils import CppExpression
 from ._events import EventType
 
 
-class AcquisitionReader:
+class AcquisitionReader(ABC):
     @abstractmethod
-    def _cpp_expression(self) -> CppExpression:
-        raise NotImplementedError()
+    def _cpp_expression(self) -> CppExpression: ...
 
 
 @final

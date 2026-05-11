@@ -2,9 +2,9 @@
 # Copyright 2019-2026 Board of Regents of the University of Wisconsin System
 # SPDX-License-Identifier: MIT
 
-from _test_helpers import _NamedEvent
+from _test_helpers import _NamedEvent, _TestNode
 from libtcspc._cpp_utils import CppTypeName
-from libtcspc._graph import Node, _Edge, _update_edge_event_sets
+from libtcspc._graph import _Edge, _update_edge_event_sets
 
 ShortEvent = _NamedEvent(CppTypeName("short"))
 IntEvent = _NamedEvent(CppTypeName("int"))
@@ -16,7 +16,7 @@ def test_empty():
 
 
 def test_single_node(mocker):
-    node = Node(input=["i0", "i1"], output=["o0", "o1"])
+    node = _TestNode(input=["i0", "i1"], output=["o0", "o1"])
     node._map_event_sets = mocker.MagicMock(  # type: ignore
         return_value=((IntEvent), ())
     )
@@ -30,7 +30,7 @@ def test_single_node(mocker):
 
 
 def test_single_node_with_pseudo_edges(mocker):
-    node = Node(input=["i0", "i1"], output=["o0", "o1"])
+    node = _TestNode(input=["i0", "i1"], output=["o0", "o1"])
     node._map_event_sets = mocker.MagicMock(  # type: ignore
         return_value=((IntEvent,), ())
     )
@@ -46,8 +46,8 @@ def test_single_node_with_pseudo_edges(mocker):
 
 
 def test_two_nodes(mocker):
-    node0 = Node()
-    node1 = Node()
+    node0 = _TestNode()
+    node1 = _TestNode()
     edge01 = _Edge(0, 1, ())
     node0._map_event_sets = mocker.MagicMock(  # type: ignore
         return_value=((ShortEvent,),)

@@ -2,9 +2,10 @@
 # Copyright 2019-2026 Board of Regents of the University of Wisconsin System
 # SPDX-License-Identifier: MIT
 
+from _test_helpers import _TestNode
 from libtcspc._codegen import CodeGenerationContext
 from libtcspc._cpp_utils import CppExpression, CppIdentifier, run_cpp_prog
-from libtcspc._graph import Graph, Node, Subgraph
+from libtcspc._graph import Graph, Subgraph
 
 gencontext = CodeGenerationContext(
     CppIdentifier("ctx"), CppIdentifier("params"), CppIdentifier("sinks")
@@ -37,7 +38,7 @@ def test_empty_subgraph():
 
 def test_input_output_map():
     g = Graph()
-    node = Node()
+    node = _TestNode()
     g.add_node("n", node)
 
     sg = Subgraph(g)
@@ -54,7 +55,7 @@ def test_input_output_map():
 
 
 def test_nested_subgraph(mocker):
-    node = Node()
+    node = _TestNode()
 
     def node_codegen(gencontext, downstreams):
         assert len(downstreams) == 1

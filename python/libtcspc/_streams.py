@@ -2,6 +2,7 @@
 # Copyright 2019-2026 Board of Regents of the University of Wisconsin System
 # SPDX-License-Identifier: MIT
 
+from abc import ABC, abstractmethod
 from collections.abc import Sequence
 from typing import final
 
@@ -12,11 +13,11 @@ from ._cpp_utils import CppExpression, CppTypeName, string_type, uint64_type
 from ._param import Param, Parameterized
 
 
-class InputStream(Parameterized):
+class InputStream(Parameterized, ABC):
+    @abstractmethod
     def _cpp_expression(
         self, gencontext: CodeGenerationContext
-    ) -> CppExpression:
-        raise NotImplementedError()
+    ) -> CppExpression: ...
 
 
 @final
