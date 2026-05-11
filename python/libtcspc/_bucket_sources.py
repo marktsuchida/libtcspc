@@ -27,7 +27,7 @@ class NewDeleteBucketSource(BucketSource):
     def cpp_expression(
         self, gencontext: CodeGenerationContext
     ) -> CppExpression:
-        t = self._object_type.cpp_type_name()
+        t = self._object_type._cpp_type_name()
         return CppExpression(f"tcspc::new_delete_bucket_source<{t}>::create()")
 
 
@@ -68,7 +68,7 @@ class RecyclingBucketSource(BucketSource):
     ) -> CppExpression:
         tmpl_args = ", ".join(
             (
-                self._object_type.cpp_type_name(),
+                self._object_type._cpp_type_name(),
                 "true" if self._blocking else "false",
                 "true" if self._clear else "false",
             )

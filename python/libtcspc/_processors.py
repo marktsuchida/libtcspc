@@ -33,7 +33,7 @@ def _check_events_subset_of(
 ) -> None:
     for t in input_events:
         if not _cpp_utils.contains_type(
-            (u.cpp_type_name() for u in allowed_events), t.cpp_type_name()
+            (u._cpp_type_name() for u in allowed_events), t._cpp_type_name()
         ):
             raise ValueError(f"input type {t} not accepted by {processor}")
 
@@ -45,7 +45,7 @@ def _remove_events_from_set(
         t
         for t in input_events
         if not _cpp_utils.contains_type(
-            (u.cpp_type_name() for u in events_to_remove), t.cpp_type_name()
+            (u._cpp_type_name() for u in events_to_remove), t._cpp_type_name()
         )
     )
 
@@ -53,7 +53,7 @@ def _remove_events_from_set(
 def _make_type_list(event_types: Iterable[EventType]) -> CppTypeName:
     return CppTypeName(
         "tcspc::type_list<{}>".format(
-            ", ".join(t.cpp_type_name() for t in event_types)
+            ", ".join(t._cpp_type_name() for t in event_types)
         )
     )
 
@@ -89,10 +89,10 @@ def read_events_from_binary_file(
                 ),
             ),
             (
-                Stop((WarningEvent,), "error reading input")
+                Stop((WarningEvent(),), "error reading input")
                 if stop_normally_on_error
                 else StopWithError(
-                    (WarningEvent,),
+                    (WarningEvent(),),
                     CppTypeName("std::runtime_error"),
                     "error reading input",
                 )
@@ -146,7 +146,7 @@ class Acquire(RelayNode):
     def _buffer_array_type(self) -> CppTypeName:
         return CppTypeName(f"""\
             nanobind::ndarray<
-                {self._event_type.cpp_type_name()},
+                {self._event_type._cpp_type_name()},
                 nanobind::numpy, nanobind::device::cpu, nanobind::c_contig>""")
 
     def _buffer_array_param_type(self) -> CppTypeName:
@@ -183,7 +183,7 @@ class Acquire(RelayNode):
             CppExpression(
                 f"""\
                 [reader={gencontext.params_varname}.{self._reader.cpp_identifier()}](
-                    std::span<{self._event_type.cpp_type_name()}> spn) {{
+                    std::span<{self._event_type._cpp_type_name()}> spn) {{
                     nanobind::gil_scoped_acquire held;
                     {self._buffer_array_type()} arr(spn.data(), {{spn.size()}});
                     return reader(arr.cast(nanobind::rv_policy::reference));
@@ -196,7 +196,7 @@ class Acquire(RelayNode):
         batch_size = gencontext.size_t_expression(self._batch_size)
         return CppExpression(
             f"""\
-            tcspc::acquire<{self._event_type.cpp_type_name()}>(
+            tcspc::acquire<{self._event_type._cpp_type_name()}>(
                 {reader},
                 {self._bucket_source.cpp_expression(gencontext)},
                 tcspc::arg::batch_size{{{batch_size}}},
@@ -239,7 +239,7 @@ class Batch(RelayNode):
         batch_size = gencontext.size_t_expression(self._batch_size)
         return CppExpression(
             f"""\
-            tcspc::batch<{self._event_type.cpp_type_name()}>(
+            tcspc::batch<{self._event_type._cpp_type_name()}>(
                 {self._bucket_source.cpp_expression(gencontext)},
                 tcspc::arg::batch_size{{{batch_size}}},
                 {downstream}
@@ -288,7 +288,7 @@ class Count(TypePreservingRelayNode):
     ) -> CppExpression:
         return CppExpression(
             f"""\
-            tcspc::count<{self._event_type.cpp_type_name()}>(
+            tcspc::count<{self._event_type._cpp_type_name()}>(
                 {gencontext.tracker_expression(CppTypeName("tcspc::count_access"), self._access_tag)},
                 {downstream}
             )"""
@@ -307,14 +307,14 @@ class DecodeBHSPC(RelayNode):
         self, input_event_set: Collection[EventType]
     ) -> tuple[EventType, ...]:
         _check_events_subset_of(
-            input_event_set, (_events.BHSPCEvent,), self.__class__.__name__
+            input_event_set, (_events.BHSPCEvent(),), self.__class__.__name__
         )
         return (
             _events.DataLostEvent(self._data_types),
             _events.MarkerEvent(self._data_types),
             _events.TimeCorrelatedDetectionEvent(self._data_types),
             _events.TimeReachedEvent(self._data_types),
-            WarningEvent,
+            WarningEvent(),
         )
 
     @override
@@ -419,7 +419,7 @@ class ReadBinaryStream(RelayNode):
         granularity = gencontext.size_t_expression(self._granularity)
         return CppExpression(
             f"""\
-            tcspc::read_binary_stream<{self._event_type.cpp_type_name()}>(
+            tcspc::read_binary_stream<{self._event_type._cpp_type_name()}>(
                 {self._stream.cpp_expression(gencontext)},
                 tcspc::arg::max_length<tcspc::u64>{{{maxlen}}},
                 {self._bucket_source.cpp_expression(gencontext)},
@@ -465,7 +465,7 @@ class SinkEvents(Node):
         gencontext: CodeGenerationContext,
         downstreams: Sequence[CppExpression],
     ) -> CppExpression:
-        evts = ", ".join(t.cpp_type_name() for t in self._event_types)
+        evts = ", ".join(t._cpp_type_name() for t in self._event_types)
         return CppExpression(f"tcspc::sink_events<{evts}>()")
 
 
@@ -572,7 +572,7 @@ class Unbatch(RelayNode):
     ) -> CppExpression:
         return CppExpression(
             f"""\
-            tcspc::unbatch<{self._event_type.cpp_type_name()}>(
+            tcspc::unbatch<{self._event_type._cpp_type_name()}>(
                 {downstream}
             )"""
         )

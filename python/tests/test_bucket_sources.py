@@ -3,16 +3,16 @@
 # SPDX-License-Identifier: MIT
 
 import pytest
+from _test_helpers import _NamedEvent
 from libtcspc._bucket_sources import (
     NewDeleteBucketSource,
     RecyclingBucketSource,
 )
 from libtcspc._codegen import CodeGenerationContext
 from libtcspc._cpp_utils import CppIdentifier, CppTypeName, size_type
-from libtcspc._events import EventType
 from libtcspc._param import Param
 
-IntEvent = EventType(CppTypeName("int"))
+IntEvent = _NamedEvent(CppTypeName("int"))
 
 gencontext = CodeGenerationContext(
     CppIdentifier("ctx"), CppIdentifier("params"), CppIdentifier("sinks")

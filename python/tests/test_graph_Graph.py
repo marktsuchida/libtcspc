@@ -4,6 +4,7 @@
 
 
 import pytest
+from _test_helpers import _NamedEvent
 from libtcspc._codegen import CodeGenerationContext
 from libtcspc._cpp_utils import (
     CppExpression,
@@ -11,12 +12,11 @@ from libtcspc._cpp_utils import (
     CppTypeName,
     run_cpp_prog,
 )
-from libtcspc._events import EventType
 from libtcspc._graph import Graph, Node
 
-ShortEvent = EventType(CppTypeName("short"))
-IntEvent = EventType(CppTypeName("int"))
-LongEvent = EventType(CppTypeName("long"))
+ShortEvent = _NamedEvent(CppTypeName("short"))
+IntEvent = _NamedEvent(CppTypeName("int"))
+LongEvent = _NamedEvent(CppTypeName("long"))
 
 gencontext = CodeGenerationContext(
     CppIdentifier("ctx"), CppIdentifier("params"), CppIdentifier("sinks")

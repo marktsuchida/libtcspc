@@ -5,15 +5,15 @@
 from collections.abc import Sequence
 
 import pytest
+from _test_helpers import _NamedEvent
 from libtcspc._access import AccessTag
 from libtcspc._cpp_utils import CppTypeName
-from libtcspc._events import EventType
 from libtcspc._graph import Graph
 from libtcspc._node import RelayNode
 from libtcspc._param import Param
 from libtcspc._processors import Count
 
-IntEvent = EventType(CppTypeName("int"))
+IntEvent = _NamedEvent(CppTypeName("int"))
 
 
 def test_graph_visits_duplicate_parameters():

@@ -3,10 +3,10 @@
 # SPDX-License-Identifier: MIT
 
 import pytest
+from _test_helpers import _NamedEvent
 from libtcspc._access import AccessTag
 from libtcspc._compile import compile_graph
 from libtcspc._cpp_utils import CppTypeName, string_type, uint32_type
-from libtcspc._events import EventType
 from libtcspc._graph import Graph
 from libtcspc._param import Param
 from libtcspc._processors import (
@@ -17,7 +17,7 @@ from libtcspc._processors import (
     Stop,
 )
 
-IntEvent = EventType(CppTypeName("int"))
+IntEvent = _NamedEvent(CppTypeName("int"))
 
 
 def test_compile_empty_graph_rejected():
@@ -58,9 +58,9 @@ def test_compile_node_access():
 
 def test_compile_fails_for_unhandle_events():
     g = Graph()
-    g.add_node("s", SinkEvents(EventType(uint32_type)))
+    g.add_node("s", SinkEvents(_NamedEvent(uint32_type)))
     with pytest.raises(ValueError):
-        compile_graph(g, [EventType(string_type)])
+        compile_graph(g, [_NamedEvent(string_type)])
 
 
 def test_compile_string_parameter():

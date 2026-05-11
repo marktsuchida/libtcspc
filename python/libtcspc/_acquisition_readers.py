@@ -26,7 +26,7 @@ class NullReader(AcquisitionReader):
     @override
     def cpp_expression(self) -> CppExpression:
         return CppExpression(
-            f"tcspc::null_reader<{self._event_type.cpp_type_name()}>()"
+            f"tcspc::null_reader<{self._event_type._cpp_type_name()}>()"
         )
 
 
@@ -38,7 +38,7 @@ class StuckReader(AcquisitionReader):
     @override
     def cpp_expression(self) -> CppExpression:
         return CppExpression(
-            f"tcspc::stuck_reader<{self._event_type.cpp_type_name()}>()"
+            f"tcspc::stuck_reader<{self._event_type._cpp_type_name()}>()"
         )
 
 

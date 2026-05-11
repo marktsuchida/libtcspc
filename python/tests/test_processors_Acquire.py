@@ -4,6 +4,7 @@
 
 import numpy as np
 import pytest
+from _test_helpers import _NamedEvent
 from libtcspc import Graph
 from libtcspc._access import AccessTag
 from libtcspc._acquisition_readers import (
@@ -13,7 +14,6 @@ from libtcspc._acquisition_readers import (
 )
 from libtcspc._compile import compile_graph
 from libtcspc._cpp_utils import uint32_type
-from libtcspc._events import EventType
 from libtcspc._execute import create_execution_context
 from libtcspc._param import Param
 from libtcspc._processors import Acquire, NullSink
@@ -26,8 +26,8 @@ def test_Acquire_NullReader():
     g.add_node(
         "acq",
         Acquire(
-            EventType(uint32_type),
-            NullReader(EventType(uint32_type)),
+            _NamedEvent(uint32_type),
+            NullReader(_NamedEvent(uint32_type)),
             None,
             32768,
             acq_tag,
@@ -45,8 +45,8 @@ def test_Acquire_StuckReader():
     g.add_node(
         "acq",
         Acquire(
-            EventType(uint32_type),
-            StuckReader(EventType(uint32_type)),
+            _NamedEvent(uint32_type),
+            StuckReader(_NamedEvent(uint32_type)),
             None,
             None,
             acq_tag,
@@ -79,7 +79,9 @@ def test_Acquire_PyAcquisitionReader():
     g = Graph()
     g.add_node(
         "acq",
-        Acquire(EventType(uint32_type), Param("reader"), None, None, acq_tag),
+        Acquire(
+            _NamedEvent(uint32_type), Param("reader"), None, None, acq_tag
+        ),
     )
     g.add_node("sink", NullSink(), upstream="acq")
     cg = compile_graph(g)

@@ -2,13 +2,13 @@
 # Copyright 2019-2026 Board of Regents of the University of Wisconsin System
 # SPDX-License-Identifier: MIT
 
+from _test_helpers import _NamedEvent
 from libtcspc._cpp_utils import CppTypeName
-from libtcspc._events import EventType
 from libtcspc._graph import Node, _Edge, _update_edge_event_sets
 
-ShortEvent = EventType(CppTypeName("short"))
-IntEvent = EventType(CppTypeName("int"))
-LongEvent = EventType(CppTypeName("long"))
+ShortEvent = _NamedEvent(CppTypeName("short"))
+IntEvent = _NamedEvent(CppTypeName("int"))
+LongEvent = _NamedEvent(CppTypeName("long"))
 
 
 def test_empty():

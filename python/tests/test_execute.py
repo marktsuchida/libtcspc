@@ -6,10 +6,11 @@ import array
 from typing import final
 
 import pytest
+from _test_helpers import _NamedEvent
 from libtcspc._access import AccessTag
 from libtcspc._compile import compile_graph
 from libtcspc._cpp_utils import CppIdentifier, CppTypeName, uint8_type
-from libtcspc._events import BucketEvent, EventType
+from libtcspc._events import BucketEvent
 from libtcspc._execute import PySink, create_execution_context
 from libtcspc._graph import Graph
 from libtcspc._param import Param
@@ -23,7 +24,7 @@ from libtcspc._processors import (
 )
 from typing_extensions import override
 
-IntEvent = EventType(CppTypeName("int"))
+IntEvent = _NamedEvent(CppTypeName("int"))
 
 
 def test_execute_graph_with_single_input():
@@ -58,10 +59,10 @@ def test_execute_rejects_events_and_flush_when_expired():
 def test_execute_handles_buffer_events():
     g = Graph()
     g.add_node(
-        "a", SinkEvents(EventType(CppTypeName("tcspc::bucket<tcspc::u8>")))
+        "a", SinkEvents(_NamedEvent(CppTypeName("tcspc::bucket<tcspc::u8>")))
     )
     c = create_execution_context(
-        compile_graph(g, [BucketEvent(uint8_type)]), {}
+        compile_graph(g, [BucketEvent(_NamedEvent(uint8_type))]), {}
     )
     c.handle(b"")
     c.handle(b"abc")
@@ -111,7 +112,7 @@ class MockSink(PySink):
 def test_execute_pass_through_integers():
     g = Graph()
     g.add_node("r", SelectAll())
-    cg = compile_graph(g, (EventType(CppTypeName("int")),))
+    cg = compile_graph(g, (_NamedEvent(CppTypeName("int")),))
 
     log: list[str] = []
     sink = MockSink(log)
@@ -124,8 +125,8 @@ def test_execute_pass_through_integers():
 
 def test_execute_emit_bucket():
     g = Graph()
-    g.add_node("b", Batch(EventType(CppTypeName("int")), batch_size=2))
-    cg = compile_graph(g, (EventType(CppTypeName("int")),))
+    g.add_node("b", Batch(_NamedEvent(CppTypeName("int")), batch_size=2))
+    cg = compile_graph(g, (_NamedEvent(CppTypeName("int")),))
 
     log: list[str] = []
     sink = MockSink(log)
@@ -139,7 +140,7 @@ def test_execute_emit_bucket():
 def test_execute_sink_exception_propagates():
     g = Graph()
     g.add_node("r", SelectAll())
-    cg = compile_graph(g, (EventType(CppTypeName("int")),))
+    cg = compile_graph(g, (_NamedEvent(CppTypeName("int")),))
 
     @final
     class RaisingSink(PySink):

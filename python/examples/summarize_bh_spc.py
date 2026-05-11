@@ -21,16 +21,16 @@ def summarize(filename: str) -> int:
     g.add_sequence(
         [
             tcspc.read_events_from_binary_file(
-                tcspc.BHSPCEvent,
+                tcspc.BHSPCEvent(),
                 tcspc.Param("filename"),
                 start_offset=4,
                 stop_normally_on_error=True,
             ),
-            tcspc.Count(tcspc.BHSPCEvent, RECORD_COUNT_TAG),
+            tcspc.Count(tcspc.BHSPCEvent(), RECORD_COUNT_TAG),
             tcspc.DecodeBHSPC(dtypes),
             tcspc.CheckMonotonic(dtypes),
             tcspc.Stop(
-                (tcspc.WarningEvent, tcspc.DataLostEvent(dtypes)),
+                (tcspc.WarningEvent(), tcspc.DataLostEvent(dtypes)),
                 "error in data",
             ),
             tcspc.Count(

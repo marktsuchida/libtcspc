@@ -2,6 +2,8 @@
 # Copyright 2019-2026 Board of Regents of the University of Wisconsin System
 # SPDX-License-Identifier: MIT
 
+from abc import ABC, abstractmethod
+
 from typing_extensions import override
 
 from . import _cpp_utils
@@ -13,39 +15,44 @@ from ._cpp_utils import (
 from ._data_types import DataTypes
 
 
-class EventType:
-    def __init__(self, cpp_type: CppTypeName) -> None:
-        self._cpp_type = cpp_type
+class EventType(ABC):
+    """Opaque marker for the type of events carried on a graph edge.
+
+    ``EventType`` itself is abstract; instantiate one of its concrete
+    subclasses.
+
+    User-defined event types are not supported.
+    """
+
+    @abstractmethod
+    def _cpp_type_name(self) -> CppTypeName: ...
 
     def __repr__(self) -> str:
-        return f"<{self.__class__.__name__}({self.cpp_type_name()})>"
+        return f"<{type(self).__name__}({self._cpp_type_name()})>"
 
-    def __eq__(self, other) -> bool:
+    def __eq__(self, other: object) -> bool:
         return isinstance(other, EventType) and _cpp_utils.is_same_type(
-            self.cpp_type_name(), other.cpp_type_name()
+            self._cpp_type_name(), other._cpp_type_name()
         )
 
-    def cpp_type_name(self) -> CppTypeName:
-        return self._cpp_type
-
-    def cpp_input_handler(
+    def _cpp_input_handler(
         self, downstream: CppIdentifier
     ) -> CppClassScopeDefs:
         return CppClassScopeDefs(f"""\
-        void handle({self.cpp_type_name()} const &event) {{
+        void handle({self._cpp_type_name()} const &event) {{
             {downstream}.handle(event);
         }}
         """)
 
-    def cpp_output_handlers(self, pysink: CppIdentifier) -> CppClassScopeDefs:
+    def _cpp_output_handlers(self, pysink: CppIdentifier) -> CppClassScopeDefs:
         return CppClassScopeDefs(f"""\
-        void handle({self.cpp_type_name()} const &event) {{
+        void handle({self._cpp_type_name()} const &event) {{
             nanobind::gil_scoped_acquire held;
             {pysink}->handle(
                 nanobind::cast(event, nanobind::rv_policy::copy));
         }}
 
-        void handle({self.cpp_type_name()} &&event) {{
+        void handle({self._cpp_type_name()} &&event) {{
             nanobind::gil_scoped_acquire held;
             {pysink}->handle(
                 nanobind::cast(std::move(event), nanobind::rv_policy::move));
@@ -54,19 +61,20 @@ class EventType:
 
 
 class BucketEvent(EventType):
-    def __init__(self, element_type: CppTypeName | EventType) -> None:
-        if not isinstance(element_type, EventType):
-            element_type = EventType(element_type)
+    def __init__(self, element_type: EventType) -> None:
         self._element_type = element_type
-        super().__init__(
-            CppTypeName(f"tcspc::bucket<{element_type.cpp_type_name()}>")
+
+    @override
+    def _cpp_type_name(self) -> CppTypeName:
+        return CppTypeName(
+            f"tcspc::bucket<{self._element_type._cpp_type_name()}>"
         )
 
     @override
-    def cpp_input_handler(
+    def _cpp_input_handler(
         self, downstream: CppIdentifier
     ) -> CppClassScopeDefs:
-        elem_cpp_type = self._element_type.cpp_type_name()
+        elem_cpp_type = self._element_type._cpp_type_name()
         ndarray_type = CppTypeName(
             f"nanobind::ndarray<{elem_cpp_type} const, nanobind::device::cpu, nanobind::c_contig>"
         )
@@ -81,8 +89,8 @@ class BucketEvent(EventType):
         """)
 
     @override
-    def cpp_output_handlers(self, pysink: CppIdentifier) -> CppClassScopeDefs:
-        elem_cpp_type = self._element_type.cpp_type_name()
+    def _cpp_output_handlers(self, pysink: CppIdentifier) -> CppClassScopeDefs:
+        elem_cpp_type = self._element_type._cpp_type_name()
         # We take ownership of the bucket if we can; otherwise we make a copy;
         # in all cases we emit a writable ndarray that owns the memory.
         # TODO Once we support Python bucket sources, buckets from them should
@@ -131,43 +139,65 @@ class BucketEvent(EventType):
 # header in which they are defined.
 
 
-BHSPCEvent = EventType(CppTypeName("tcspc::bh_spc_event"))
+class BHSPCEvent(EventType):
+    @override
+    def _cpp_type_name(self) -> CppTypeName:
+        return CppTypeName("tcspc::bh_spc_event")
 
 
-def DataLostEvent(data_types: DataTypes | None = None) -> EventType:
-    if data_types is None:
-        data_types = DataTypes()
-    return EventType(
-        CppTypeName(f"tcspc::data_lost_event<{data_types.cpp_type_name()}>")
-    )
-
-
-def MarkerEvent(data_types: DataTypes | None = None) -> EventType:
-    if data_types is None:
-        data_types = DataTypes()
-    return EventType(
-        CppTypeName(f"tcspc::marker_event<{data_types.cpp_type_name()}>")
-    )
-
-
-def TimeCorrelatedDetectionEvent(
-    data_types: DataTypes | None = None,
-) -> EventType:
-    if data_types is None:
-        data_types = DataTypes()
-    return EventType(
-        CppTypeName(
-            f"tcspc::time_correlated_detection_event<{data_types.cpp_type_name()}>"
+class DataLostEvent(EventType):
+    def __init__(self, data_types: DataTypes | None = None) -> None:
+        self._data_types = (
+            data_types if data_types is not None else DataTypes()
         )
-    )
+
+    @override
+    def _cpp_type_name(self) -> CppTypeName:
+        return CppTypeName(
+            f"tcspc::data_lost_event<{self._data_types.cpp_type_name()}>"
+        )
 
 
-def TimeReachedEvent(data_types: DataTypes | None = None) -> EventType:
-    if data_types is None:
-        data_types = DataTypes()
-    return EventType(
-        CppTypeName(f"tcspc::time_reached_event<{data_types.cpp_type_name()}>")
-    )
+class MarkerEvent(EventType):
+    def __init__(self, data_types: DataTypes | None = None) -> None:
+        self._data_types = (
+            data_types if data_types is not None else DataTypes()
+        )
+
+    @override
+    def _cpp_type_name(self) -> CppTypeName:
+        return CppTypeName(
+            f"tcspc::marker_event<{self._data_types.cpp_type_name()}>"
+        )
 
 
-WarningEvent = EventType(CppTypeName("tcspc::warning_event"))
+class TimeCorrelatedDetectionEvent(EventType):
+    def __init__(self, data_types: DataTypes | None = None) -> None:
+        self._data_types = (
+            data_types if data_types is not None else DataTypes()
+        )
+
+    @override
+    def _cpp_type_name(self) -> CppTypeName:
+        return CppTypeName(
+            f"tcspc::time_correlated_detection_event<{self._data_types.cpp_type_name()}>"
+        )
+
+
+class TimeReachedEvent(EventType):
+    def __init__(self, data_types: DataTypes | None = None) -> None:
+        self._data_types = (
+            data_types if data_types is not None else DataTypes()
+        )
+
+    @override
+    def _cpp_type_name(self) -> CppTypeName:
+        return CppTypeName(
+            f"tcspc::time_reached_event<{self._data_types.cpp_type_name()}>"
+        )
+
+
+class WarningEvent(EventType):
+    @override
+    def _cpp_type_name(self) -> CppTypeName:
+        return CppTypeName("tcspc::warning_event")

@@ -119,7 +119,7 @@ def _input_processor(
                     : downstream(std::move(downstream)) {{}}
             """
                 + "\n".join(
-                    event_type.cpp_input_handler(CppIdentifier("downstream"))
+                    event_type._cpp_input_handler(CppIdentifier("downstream"))
                     for event_type in event_types
                 )
                 + """
@@ -180,7 +180,9 @@ def _output_processor(
                     downstream(std::move(downstream)) {{}}
             """
                 + "\n".join(
-                    event_type.cpp_output_handlers(CppIdentifier("downstream"))
+                    event_type._cpp_output_handlers(
+                        CppIdentifier("downstream")
+                    )
                     for event_type in event_types
                 )
                 + """
