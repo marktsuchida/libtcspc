@@ -13,7 +13,7 @@ from ._param import Param, Parameterized
 
 
 class InputStream(Parameterized):
-    def cpp_expression(
+    def _cpp_expression(
         self, gencontext: CodeGenerationContext
     ) -> CppExpression:
         raise NotImplementedError()
@@ -38,7 +38,7 @@ class BinaryFileInputStream(InputStream):
         self._start_offset = start_offset
 
     @override
-    def parameters(self) -> Sequence[tuple[Param, CppTypeName]]:
+    def _parameters(self) -> Sequence[tuple[Param, CppTypeName]]:
         params: list[tuple[Param, CppTypeName]] = []
         if isinstance(self._filename, Param):
             params.append((self._filename, string_type))
@@ -47,7 +47,7 @@ class BinaryFileInputStream(InputStream):
         return params
 
     @override
-    def cpp_expression(
+    def _cpp_expression(
         self, gencontext: CodeGenerationContext
     ) -> CppExpression:
         start_offset = gencontext.u64_expression(self._start_offset)

@@ -60,7 +60,7 @@ def _context_type(
                     f"""
                 .def({quote_string(tag._context_method_name())},
                         +[](tcspc::context &self, processor_type *proc) {{
-                    return self.access<{typ.cpp_type_name()}>("{tag.tag}");
+                    return self.access<{typ._cpp_type_name()}>("{tag.tag}");
                 }}, nanobind::keep_alive<0, 2>())"""
                     for tag, typ in accesses
                 )
@@ -307,7 +307,7 @@ def _graph_module_code(
             f"graph is not executable (must have exactly 1 input port; found {n_in})"
         )
 
-    output_event_types = graph.map_event_sets((input_event_types,))
+    output_event_types = graph._map_event_sets((input_event_types,))
 
     default_includes = ModuleCodeFragment(
         (
@@ -331,15 +331,15 @@ def _graph_module_code(
     out_proc_names = tuple(
         CppExpression(f"output_{i}") for i in range(len(output_event_types))
     )
-    graph_expr = graph.cpp_expression(genctx, out_proc_names)
+    graph_expr = graph._cpp_expression(genctx, out_proc_names)
 
     mod_var = CppIdentifier("mod")
 
     excs = _exception_types(mod_var)
 
-    params = graph.parameters()
+    params = graph._parameters()
     param_struct = _param_struct(
-        tuple((p.cpp_identifier(), cpp_type) for p, cpp_type in params),
+        tuple((p._cpp_identifier(), cpp_type) for p, cpp_type in params),
         mod_var,
     )
 
@@ -445,6 +445,6 @@ def compile_graph(
         _builder.set_code(code)
         mod_path = _builder.build()
         mod = _importer.import_module(mod_name, mod_path, ok_to_move=True)
-        params = (param for param, typ in graph.parameters())
+        params = (param for param, typ in graph._parameters())
         accesses = (tag for tag, typ in graph._accesses())
         return CompiledGraph(mod, params, accesses)

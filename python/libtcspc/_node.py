@@ -82,7 +82,7 @@ class Node(Accessible, Parameterized):
         """
         return self._outputs
 
-    def map_event_sets(
+    def _map_event_sets(
         self, input_event_sets: Sequence[Collection[EventType]]
     ) -> tuple[tuple[EventType, ...], ...]:
         """
@@ -111,7 +111,7 @@ class Node(Accessible, Parameterized):
         """
         raise NotImplementedError()
 
-    def cpp_expression(
+    def _cpp_expression(
         self,
         gencontext: CodeGenerationContext,
         downstreams: Sequence[CppExpression],
@@ -144,9 +144,9 @@ class RelayNode(Node):
     Most nodes are relay nodes.
 
     This base class simplifies the implementation of relay nodes: subclasses
-    must override the simplified methods `relay_map_event_set()` and
-    `relay_cpp_expression()`, instead of the `Node` methods `map_event_sets()`
-    and `cpp_expression()`. Implementations of the latter methods is provided
+    must override the simplified methods `_relay_map_event_set()` and
+    `_relay_cpp_expression()`, instead of the `Node` methods `_map_event_sets()`
+    and `_cpp_expression()`. Implementations of the latter methods is provided
     by `RelayNode`.
     """
 
@@ -156,27 +156,27 @@ class RelayNode(Node):
 
     @override
     @final
-    def map_event_sets(
+    def _map_event_sets(
         self, input_event_sets: Sequence[Collection[EventType]]
     ) -> tuple[tuple[EventType, ...], ...]:
         """
-        Maps events sets based on `relay_map_event_set()`.
+        Maps events sets based on `_relay_map_event_set()`.
         """
         n_upstreams = len(input_event_sets)
         if n_upstreams != 1:
             raise ValueError(
                 f"expected a single upstream; found {n_upstreams}"
             )
-        return (self.relay_map_event_set(input_event_sets[0]),)
+        return (self._relay_map_event_set(input_event_sets[0]),)
 
-    def relay_map_event_set(
+    def _relay_map_event_set(
         self, input_event_set: Collection[EventType]
     ) -> tuple[EventType, ...]:
         """
         Given the set of events received on the input port, return the set of
         events emitted on the output port.
 
-        This is analogous to `map_event_sets` but for the single input and
+        This is analogous to `_map_event_sets` but for the single input and
         output ports of the relay node. Concrete subclasses must override this
         method.
 
@@ -200,22 +200,22 @@ class RelayNode(Node):
 
     @override
     @final
-    def cpp_expression(
+    def _cpp_expression(
         self,
         gencontext: CodeGenerationContext,
         downstreams: Sequence[CppExpression],
     ) -> CppExpression:
         """
-        Generates C++ code based on `relay_cpp_expression()`.
+        Generates C++ code based on `_relay_cpp_expression()`.
         """
         n_downstreams = len(downstreams)
         if n_downstreams != 1:
             raise ValueError(
                 f"expected a single downstream; found {n_downstreams}"
             )
-        return self.relay_cpp_expression(gencontext, downstreams[0])
+        return self._relay_cpp_expression(gencontext, downstreams[0])
 
-    def relay_cpp_expression(
+    def _relay_cpp_expression(
         self,
         gencontext: CodeGenerationContext,
         downstream: CppExpression,
@@ -223,7 +223,7 @@ class RelayNode(Node):
         """
         Returns C++ code for this node and its downstream.
 
-        This is analogous to `cpp_expression` but for the single downstream of
+        This is analogous to `_cpp_expression` but for the single downstream of
         the relay node. Concrete subclasses must override this method.
 
         Parameters
@@ -245,11 +245,11 @@ class TypePreservingRelayNode(RelayNode):
     """
     A relay node whose output event set matches its input event set.
 
-    Subclasses need only override `relay_cpp_expression`.
+    Subclasses need only override `_relay_cpp_expression`.
     """
 
     @override
-    def relay_map_event_set(
+    def _relay_map_event_set(
         self, input_event_set: Collection[EventType]
     ) -> tuple[EventType, ...]:
         return tuple(input_event_set)

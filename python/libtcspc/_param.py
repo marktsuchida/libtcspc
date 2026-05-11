@@ -24,7 +24,7 @@ class Param(Generic[T]):
     name: str
     default_value: T | None = None
 
-    def cpp_identifier(self) -> CppIdentifier:
+    def _cpp_identifier(self) -> CppIdentifier:
         return identifier_from_string(self.name)
 
 
@@ -39,7 +39,7 @@ class Parameterized:
     when creating an execution context from a compiled graph.
     """
 
-    def parameters(self) -> Sequence[tuple[Param, CppTypeName]]:
+    def _parameters(self) -> Sequence[tuple[Param, CppTypeName]]:
         """
         Return the names, C++ types, and default values of the parameters of
         this object and any sub-objects.

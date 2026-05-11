@@ -66,10 +66,10 @@ def test_compile_fails_for_unhandle_events():
 def test_compile_string_parameter():
     g = Graph()
     g.add_node("a", Stop((), "a_default"))
-    assert len(g.parameters()) == 0
+    assert len(g._parameters()) == 0
     g.add_node("b", Stop((), Param("b_msg")), upstream="a")
-    assert len(g.parameters()) == 1
-    assert g.parameters()[0] == (Param("b_msg"), string_type)
+    assert len(g._parameters()) == 1
+    assert g._parameters()[0] == (Param("b_msg"), string_type)
     g.add_node("c", Stop((), Param("c_msg", "c_default")), upstream="b")
     g.add_node("sink", NullSink(), upstream="c")
     cg = compile_graph(g)

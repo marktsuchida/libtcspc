@@ -136,7 +136,7 @@ class Acquire(RelayNode):
         return ((self._access_tag, _access.AcquireAccessSpec),)
 
     @override
-    def relay_map_event_set(
+    def _relay_map_event_set(
         self, input_event_set: Collection[EventType]
     ) -> tuple[EventType, ...]:
         _check_events_subset_of(input_event_set, (), self.__class__.__name__)
@@ -154,7 +154,7 @@ class Acquire(RelayNode):
                 .cast(nanobind::rv_policy::reference))""")
 
     @override
-    def parameters(self) -> Sequence[tuple[Param, CppTypeName]]:
+    def _parameters(self) -> Sequence[tuple[Param, CppTypeName]]:
         params: list[tuple[Param, CppTypeName]] = []
         if isinstance(self._reader, Param):
             params.append(
@@ -173,7 +173,7 @@ class Acquire(RelayNode):
         return params
 
     @override
-    def relay_cpp_expression(
+    def _relay_cpp_expression(
         self,
         gencontext: CodeGenerationContext,
         downstream: CppExpression,
@@ -181,7 +181,7 @@ class Acquire(RelayNode):
         reader = (
             CppExpression(
                 f"""\
-                [reader={gencontext.params_varname}.{self._reader.cpp_identifier()}](
+                [reader={gencontext.params_varname}.{self._reader._cpp_identifier()}](
                     std::span<{self._event_type._cpp_type_name()}> spn) {{
                     nanobind::gil_scoped_acquire held;
                     {self._buffer_array_type()} arr(spn.data(), {{spn.size()}});
@@ -190,14 +190,14 @@ class Acquire(RelayNode):
                 """
             )
             if isinstance(self._reader, Param)
-            else self._reader.cpp_expression()
+            else self._reader._cpp_expression()
         )
         batch_size = gencontext.size_t_expression(self._batch_size)
         return CppExpression(
             f"""\
             tcspc::acquire<{self._event_type._cpp_type_name()}>(
                 {reader},
-                {self._bucket_source.cpp_expression(gencontext)},
+                {self._bucket_source._cpp_expression(gencontext)},
                 tcspc::arg::batch_size{{{batch_size}}},
                 {gencontext.tracker_expression(CppTypeName("tcspc::acquire_access"), self._access_tag)},
                 {downstream}
@@ -221,7 +221,7 @@ class Batch(RelayNode):
         self._batch_size = batch_size if batch_size is not None else 65536
 
     @override
-    def relay_map_event_set(
+    def _relay_map_event_set(
         self, input_event_set: Collection[EventType]
     ) -> tuple[EventType, ...]:
         _check_events_subset_of(
@@ -230,7 +230,7 @@ class Batch(RelayNode):
         return (_events.BucketEvent(self._event_type),)
 
     @override
-    def relay_cpp_expression(
+    def _relay_cpp_expression(
         self,
         gencontext: CodeGenerationContext,
         downstream: CppExpression,
@@ -239,7 +239,7 @@ class Batch(RelayNode):
         return CppExpression(
             f"""\
             tcspc::batch<{self._event_type._cpp_type_name()}>(
-                {self._bucket_source.cpp_expression(gencontext)},
+                {self._bucket_source._cpp_expression(gencontext)},
                 tcspc::arg::batch_size{{{batch_size}}},
                 {downstream}
             )"""
@@ -254,14 +254,14 @@ class CheckMonotonic(TypePreservingRelayNode):
         )
 
     @override
-    def relay_cpp_expression(
+    def _relay_cpp_expression(
         self,
         gencontext: CodeGenerationContext,
         downstream: CppExpression,
     ) -> CppExpression:
         return CppExpression(
             f"""\
-            tcspc::check_monotonic<{self._data_types.cpp_type_name()}>(
+            tcspc::check_monotonic<{self._data_types._cpp_type_name()}>(
                 {downstream}
             )"""
         )
@@ -280,7 +280,7 @@ class Count(TypePreservingRelayNode):
         return ((self._access_tag, _access.CountAccessSpec),)
 
     @override
-    def relay_cpp_expression(
+    def _relay_cpp_expression(
         self,
         gencontext: CodeGenerationContext,
         downstream: CppExpression,
@@ -302,7 +302,7 @@ class DecodeBHSPC(RelayNode):
         )
 
     @override
-    def relay_map_event_set(
+    def _relay_map_event_set(
         self, input_event_set: Collection[EventType]
     ) -> tuple[EventType, ...]:
         _check_events_subset_of(
@@ -317,14 +317,14 @@ class DecodeBHSPC(RelayNode):
         )
 
     @override
-    def relay_cpp_expression(
+    def _relay_cpp_expression(
         self,
         gencontext: CodeGenerationContext,
         downstream: CppExpression,
     ) -> CppExpression:
         return CppExpression(
             f"""\
-            tcspc::decode_bh_spc<{self._data_types.cpp_type_name()}>(
+            tcspc::decode_bh_spc<{self._data_types._cpp_type_name()}>(
                 {downstream}
             )"""
         )
@@ -336,13 +336,13 @@ class NullSink(Node):
         super().__init__(output=())
 
     @override
-    def map_event_sets(
+    def _map_event_sets(
         self, input_event_sets: Sequence[Collection[EventType]]
     ) -> tuple[tuple[EventType, ...], ...]:
         return ()
 
     @override
-    def cpp_expression(
+    def _cpp_expression(
         self,
         gencontext: CodeGenerationContext,
         downstreams: Sequence[CppExpression],
@@ -353,14 +353,14 @@ class NullSink(Node):
 @final
 class NullSource(RelayNode):
     @override
-    def relay_map_event_set(
+    def _relay_map_event_set(
         self, input_event_set: Collection[EventType]
     ) -> tuple[EventType, ...]:
         _check_events_subset_of(input_event_set, (), self.__class__.__name__)
         return ()
 
     @override
-    def relay_cpp_expression(
+    def _relay_cpp_expression(
         self,
         gencontext: CodeGenerationContext,
         downstream: CppExpression,
@@ -387,25 +387,25 @@ class ReadBinaryStream(RelayNode):
         self._granularity = read_granularity_bytes
 
     @override
-    def relay_map_event_set(
+    def _relay_map_event_set(
         self, input_event_set: Collection[EventType]
     ) -> tuple[EventType, ...]:
         _check_events_subset_of(input_event_set, (), self.__class__.__name__)
         return (BucketEvent(self._event_type),)
 
     @override
-    def parameters(self) -> Sequence[tuple[Param, CppTypeName]]:
+    def _parameters(self) -> Sequence[tuple[Param, CppTypeName]]:
         params: list[tuple[Param, CppTypeName]] = []
         if isinstance(self._maxlen, Param):
             params.append((self._maxlen, uint64_type))
         if isinstance(self._granularity, Param):
             params.append((self._granularity, size_type))
-        params.extend(self._stream.parameters())
-        params.extend(self._bucket_source.parameters())
+        params.extend(self._stream._parameters())
+        params.extend(self._bucket_source._parameters())
         return params
 
     @override
-    def relay_cpp_expression(
+    def _relay_cpp_expression(
         self,
         gencontext: CodeGenerationContext,
         downstream: CppExpression,
@@ -419,9 +419,9 @@ class ReadBinaryStream(RelayNode):
         return CppExpression(
             f"""\
             tcspc::read_binary_stream<{self._event_type._cpp_type_name()}>(
-                {self._stream.cpp_expression(gencontext)},
+                {self._stream._cpp_expression(gencontext)},
                 tcspc::arg::max_length<tcspc::u64>{{{maxlen}}},
-                {self._bucket_source.cpp_expression(gencontext)},
+                {self._bucket_source._cpp_expression(gencontext)},
                 tcspc::arg::granularity<std::size_t>{{{granularity}}},
                 {downstream}
             )"""
@@ -431,7 +431,7 @@ class ReadBinaryStream(RelayNode):
 @final
 class SelectAll(TypePreservingRelayNode):
     @override
-    def relay_cpp_expression(
+    def _relay_cpp_expression(
         self,
         gencontext: CodeGenerationContext,
         downstream: CppExpression,
@@ -446,7 +446,7 @@ class SinkEvents(Node):
         self._event_types = tuple(event_types)
 
     @override
-    def map_event_sets(
+    def _map_event_sets(
         self, input_event_sets: Sequence[Collection[EventType]]
     ) -> tuple[tuple[EventType, ...], ...]:
         if len(input_event_sets) != 1:
@@ -459,7 +459,7 @@ class SinkEvents(Node):
         return ()
 
     @override
-    def cpp_expression(
+    def _cpp_expression(
         self,
         gencontext: CodeGenerationContext,
         downstreams: Sequence[CppExpression],
@@ -479,19 +479,19 @@ class Stop(RelayNode):
         self._msg_prefix = message_prefix
 
     @override
-    def relay_map_event_set(
+    def _relay_map_event_set(
         self, input_event_set: Collection[EventType]
     ) -> tuple[EventType, ...]:
         return _remove_events_from_set(input_event_set, self._event_types)
 
     @override
-    def parameters(self) -> Sequence[tuple[Param, CppTypeName]]:
+    def _parameters(self) -> Sequence[tuple[Param, CppTypeName]]:
         if isinstance(self._msg_prefix, Param):
             return ((self._msg_prefix, string_type),)
         return ()
 
     @override
-    def relay_cpp_expression(
+    def _relay_cpp_expression(
         self,
         gencontext: CodeGenerationContext,
         downstream: CppExpression,
@@ -518,19 +518,19 @@ class StopWithError(RelayNode):
         self._msg_prefix = message_prefix
 
     @override
-    def relay_map_event_set(
+    def _relay_map_event_set(
         self, input_event_set: Collection[EventType]
     ) -> tuple[EventType, ...]:
         return _remove_events_from_set(input_event_set, self._event_types)
 
     @override
-    def parameters(self) -> Sequence[tuple[Param, CppTypeName]]:
+    def _parameters(self) -> Sequence[tuple[Param, CppTypeName]]:
         if isinstance(self._msg_prefix, Param):
             return ((self._msg_prefix, string_type),)
         return ()
 
     @override
-    def relay_cpp_expression(
+    def _relay_cpp_expression(
         self,
         gencontext: CodeGenerationContext,
         downstream: CppExpression,
@@ -552,7 +552,7 @@ class Unbatch(RelayNode):
         self._event_type = event_type
 
     @override
-    def relay_map_event_set(
+    def _relay_map_event_set(
         self, input_event_set: Collection[EventType]
     ) -> tuple[EventType, ...]:
         for ie in input_event_set:
@@ -561,7 +561,7 @@ class Unbatch(RelayNode):
         return (self._event_type.element_event_type(),)
 
     @override
-    def relay_cpp_expression(
+    def _relay_cpp_expression(
         self,
         gencontext: CodeGenerationContext,
         downstream: CppExpression,

@@ -10,7 +10,7 @@ import pytest
 
 
 def test_default_construction():
-    name = tcspc.DataTypes().cpp_type_name()
+    name = tcspc.DataTypes()._cpp_type_name()
     assert name.startswith("tcspc::parameterized_data_types<")
     for slot in (
         "abstime",
@@ -37,7 +37,7 @@ def test_default_construction():
 
 
 def test_per_slot_override_scalar():
-    name = tcspc.DataTypes(channel_type=np.uint32).cpp_type_name()
+    name = tcspc.DataTypes(channel_type=np.uint32)._cpp_type_name()
     assert "std::uint32_t" in name
     for slot in (
         "abstime",
@@ -52,21 +52,21 @@ def test_per_slot_override_scalar():
 
 
 def test_per_slot_override_dtype_object():
-    name = tcspc.DataTypes(abstime_type=np.dtype("int64")).cpp_type_name()
+    name = tcspc.DataTypes(abstime_type=np.dtype("int64"))._cpp_type_name()
     assert "std::int64_t" in name
     assert "tcspc::default_data_types::abstime_type" not in name
 
 
 def test_per_slot_override_string():
-    name = tcspc.DataTypes(count_type="uint16").cpp_type_name()
+    name = tcspc.DataTypes(count_type="uint16")._cpp_type_name()
     assert "std::uint16_t" in name
     assert "tcspc::default_data_types::count_type" not in name
 
 
 def test_difftime_accepts_signed_integer():
-    name = tcspc.DataTypes(difftime_type=np.int32).cpp_type_name()
+    name = tcspc.DataTypes(difftime_type=np.int32)._cpp_type_name()
     assert "std::int32_t" in name
-    name = tcspc.DataTypes(difftime_type=np.int64).cpp_type_name()
+    name = tcspc.DataTypes(difftime_type=np.int64)._cpp_type_name()
     assert "std::int64_t" in name
 
 
@@ -89,7 +89,7 @@ def test_difftime_rejects_bool():
 
 def test_bin_index_accepts_unsigned_integer():
     for t in (np.uint8, np.uint16, np.uint32, np.uint64):
-        name = tcspc.DataTypes(bin_index_type=t).cpp_type_name()
+        name = tcspc.DataTypes(bin_index_type=t)._cpp_type_name()
         assert "tcspc::default_data_types::bin_index_type" not in name
 
 
@@ -114,9 +114,9 @@ def test_bin_index_rejects_bool():
 )
 def test_integer_slot_accepts_signed_and_unsigned(slot):
     key = f"{slot}_type"
-    name = tcspc.DataTypes(**{key: np.int32}).cpp_type_name()
+    name = tcspc.DataTypes(**{key: np.int32})._cpp_type_name()
     assert "std::int32_t" in name
-    name = tcspc.DataTypes(**{key: np.uint32}).cpp_type_name()
+    name = tcspc.DataTypes(**{key: np.uint32})._cpp_type_name()
     assert "std::uint32_t" in name
 
 

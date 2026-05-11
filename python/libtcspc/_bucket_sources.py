@@ -13,7 +13,7 @@ from ._param import Param, Parameterized
 
 
 class BucketSource(Parameterized):
-    def cpp_expression(
+    def _cpp_expression(
         self, gencontext: CodeGenerationContext
     ) -> CppExpression:
         raise NotImplementedError()
@@ -24,7 +24,7 @@ class NewDeleteBucketSource(BucketSource):
         self._object_type = object_type
 
     @override
-    def cpp_expression(
+    def _cpp_expression(
         self, gencontext: CodeGenerationContext
     ) -> CppExpression:
         t = self._object_type._cpp_type_name()
@@ -57,13 +57,13 @@ class RecyclingBucketSource(BucketSource):
         self._max_count = max_bucket_count
 
     @override
-    def parameters(self) -> Sequence[tuple[Param, CppTypeName]]:
+    def _parameters(self) -> Sequence[tuple[Param, CppTypeName]]:
         if isinstance(self._max_count, Param):
             return ((self._max_count, size_type),)
         return ()
 
     @override
-    def cpp_expression(
+    def _cpp_expression(
         self, gencontext: CodeGenerationContext
     ) -> CppExpression:
         tmpl_args = ", ".join(

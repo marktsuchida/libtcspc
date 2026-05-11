@@ -14,7 +14,7 @@ from ._events import EventType
 
 class AcquisitionReader:
     @abstractmethod
-    def cpp_expression(self) -> CppExpression:
+    def _cpp_expression(self) -> CppExpression:
         raise NotImplementedError()
 
 
@@ -24,7 +24,7 @@ class NullReader(AcquisitionReader):
         self._event_type = event_type
 
     @override
-    def cpp_expression(self) -> CppExpression:
+    def _cpp_expression(self) -> CppExpression:
         return CppExpression(
             f"tcspc::null_reader<{self._event_type._cpp_type_name()}>()"
         )
@@ -36,7 +36,7 @@ class StuckReader(AcquisitionReader):
         self._event_type = event_type
 
     @override
-    def cpp_expression(self) -> CppExpression:
+    def _cpp_expression(self) -> CppExpression:
         return CppExpression(
             f"tcspc::stuck_reader<{self._event_type._cpp_type_name()}>()"
         )

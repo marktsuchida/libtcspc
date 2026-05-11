@@ -108,7 +108,7 @@ def _update_edge_event_sets(
             (e.event_set if e is not None else ())
             for e in input_edges[node_id]
         ]
-        out_event_sets = node.map_event_sets(in_event_sets)
+        out_event_sets = node._map_event_sets(in_event_sets)
         for edge, event_set in zip(
             output_edges[node_id], out_event_sets, strict=True
         ):
@@ -214,7 +214,7 @@ class Graph:
             (e.event_set if e is not None else ())
             for e in producer_input_edges
         ]
-        event_set = pnode.map_event_sets(producer_input_event_sets)[ipport]
+        event_set = pnode._map_event_sets(producer_input_event_sets)[ipport]
 
         edge = _Edge(ipnode, icnode, event_set)
         self._input_edge_index[icnode][icport] = edge
@@ -318,7 +318,7 @@ class Graph:
                     result.append((name, output_ports[i]))
         return tuple(result)
 
-    def map_event_sets(
+    def _map_event_sets(
         self, input_event_sets: Sequence[Collection[EventType]]
     ) -> tuple[tuple[EventType, ...], ...]:
         # Copy input edge index and add pseudo-edges for input event sets in
@@ -349,7 +349,7 @@ class Graph:
 
         return tuple(edge.event_set for edge in output_pseudo_edges)
 
-    def cpp_expression(
+    def _cpp_expression(
         self,
         gencontext: CodeGenerationContext,
         downstreams: Sequence[CppExpression] | None = None,
@@ -390,7 +390,7 @@ class Graph:
                 internal_name_index[(node_id, i)] = input
                 inputs.append(input)
 
-            node_code = node.cpp_expression(gencontext, outputs)
+            node_code = node._cpp_expression(gencontext, outputs)
             if len(inputs) > 1:
                 input_list = ", ".join(inputs)
                 node_defs.append(f"auto [{input_list}] = {node_code};")
@@ -423,11 +423,11 @@ class Graph:
                 }}{comma_downstream_args})"""
         )
 
-    def parameters(self) -> Sequence[tuple[Param, CppTypeName]]:
+    def _parameters(self) -> Sequence[tuple[Param, CppTypeName]]:
         params: list[tuple[Param, CppTypeName]] = []
 
         def visit(node_name: str, node: Parameterized):
-            params.extend(node.parameters())
+            params.extend(node._parameters())
 
         self.visit_nodes(visit)
 
@@ -435,7 +435,7 @@ class Graph:
             param_nodes: dict[str, list[str]] = {}
 
             def visit(node_name: str, node: Parameterized):
-                for param, _ in node.parameters():
+                for param, _ in node._parameters():
                     param_nodes.setdefault(param.name, []).append(node_name)
 
             self.visit_nodes(visit)
@@ -524,23 +524,23 @@ class Subgraph(Node):
         return self._graph
 
     @override
-    def map_event_sets(
+    def _map_event_sets(
         self, input_event_sets: Sequence[Collection[EventType]]
     ) -> tuple[tuple[EventType, ...], ...]:
-        return self._graph.map_event_sets(input_event_sets)
+        return self._graph._map_event_sets(input_event_sets)
 
     @override
-    def parameters(self) -> Sequence[tuple[Param, CppTypeName]]:
-        return self._graph.parameters()
+    def _parameters(self) -> Sequence[tuple[Param, CppTypeName]]:
+        return self._graph._parameters()
 
     @override
     def _accesses(self) -> Sequence[tuple[AccessTag, type[AccessSpec]]]:
         return self._graph._accesses()
 
     @override
-    def cpp_expression(
+    def _cpp_expression(
         self,
         gencontext: CodeGenerationContext,
         downstreams: Sequence[CppExpression],
     ) -> CppExpression:
-        return self._graph.cpp_expression(gencontext, downstreams)
+        return self._graph._cpp_expression(gencontext, downstreams)

@@ -72,5 +72,5 @@ class DataTypes:
             f"tcspc::parameterized_data_types<{tparams}>"
         )
 
-    def cpp_type_name(self) -> CppTypeName:
+    def _cpp_type_name(self) -> CppTypeName:
         return self._type_set_class

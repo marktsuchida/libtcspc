@@ -22,15 +22,15 @@ gencontext = CodeGenerationContext(
 def test_NewDeleteBucketSource():
     bs = NewDeleteBucketSource(IntEvent)
     assert (
-        bs.cpp_expression(gencontext)
+        bs._cpp_expression(gencontext)
         == "tcspc::new_delete_bucket_source<int>::create()"
     )
 
 
 def test_RecyclingBucketSource_default():
     bs = RecyclingBucketSource(IntEvent)
-    assert len(bs.parameters()) == 0
-    assert "recycling_bucket_source<int, false, false>" in bs.cpp_expression(
+    assert len(bs._parameters()) == 0
+    assert "recycling_bucket_source<int, false, false>" in bs._cpp_expression(
         gencontext
     )
 
@@ -38,23 +38,23 @@ def test_RecyclingBucketSource_default():
 def test_RecyclingBucketSource_flags():
     assert "<int, true, false>" in RecyclingBucketSource(
         IntEvent, blocking=True
-    ).cpp_expression(gencontext)
+    )._cpp_expression(gencontext)
     assert "<int, false, true>" in RecyclingBucketSource(
         IntEvent, clear_recycled=True
-    ).cpp_expression(gencontext)
+    )._cpp_expression(gencontext)
 
 
 def test_RecyclingBucketSource_max_bucket_count():
     bs = RecyclingBucketSource(IntEvent, max_bucket_count=42)
-    assert len(bs.parameters()) == 0
-    assert "42uLL" in bs.cpp_expression(gencontext)
+    assert len(bs._parameters()) == 0
+    assert "42uLL" in bs._cpp_expression(gencontext)
 
 
 def test_RecyclingBucketSource_max_bucket_count_param():
     bs = RecyclingBucketSource(IntEvent, max_bucket_count=Param("mbc"))
-    assert len(bs.parameters()) == 1
-    assert bs.parameters()[0] == (Param("mbc"), size_type)
-    assert "params.mbc" in bs.cpp_expression(gencontext)
+    assert len(bs._parameters()) == 1
+    assert bs._parameters()[0] == (Param("mbc"), size_type)
+    assert "params.mbc" in bs._cpp_expression(gencontext)
 
 
 def test_RecyclingBucketSource_max_bucket_count_negative_is_error():

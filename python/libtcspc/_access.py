@@ -19,7 +19,7 @@ from ._cpp_utils import (
 
 class AccessSpec:
     @classmethod
-    def cpp_type_name(cls) -> CppTypeName:
+    def _cpp_type_name(cls) -> CppTypeName:
         raise NotImplementedError()
 
     @classmethod
@@ -39,9 +39,9 @@ class AccessSpec:
             (),
             (
                 CppFunctionScopeDefs(
-                    f'nanobind::class_<{cls.cpp_type_name()}>({module_var}, "{py_class_name}", nanobind::is_final())'
+                    f'nanobind::class_<{cls._cpp_type_name()}>({module_var}, "{py_class_name}", nanobind::is_final())'
                     + "".join(
-                        f'\n    .def("{meth}", &{cls.cpp_type_name()}::{meth})'
+                        f'\n    .def("{meth}", &{cls._cpp_type_name()}::{meth})'
                         for meth in cls.cpp_methods()
                     )
                     + ";"
@@ -81,7 +81,7 @@ class Accessible:
 class AcquireAccessSpec(AccessSpec):
     @override
     @classmethod
-    def cpp_type_name(cls) -> CppTypeName:
+    def _cpp_type_name(cls) -> CppTypeName:
         return CppTypeName("tcspc::acquire_access")
 
     @override
@@ -98,7 +98,7 @@ class AcquireAccessSpec(AccessSpec):
 class CountAccessSpec(AccessSpec):
     @override
     @classmethod
-    def cpp_type_name(cls) -> CppTypeName:
+    def _cpp_type_name(cls) -> CppTypeName:
         return CppTypeName("tcspc::count_access")
 
     @override

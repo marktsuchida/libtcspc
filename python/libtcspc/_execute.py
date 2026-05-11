@@ -148,13 +148,13 @@ def create_execution_context(
     args: dict[CppIdentifier, Any] = {}
     for param in compiled_graph.parameters():
         if param.name in given_args:
-            args[param.cpp_identifier()] = given_args.pop(param.name)
+            args[param._cpp_identifier()] = given_args.pop(param.name)
         else:
             if param.default_value is None:
                 raise ValueError(
                     f"No argument given for required parameter {param.name}"
                 )
-            args[param.cpp_identifier()] = param.default_value
+            args[param._cpp_identifier()] = param.default_value
     for name, _ in given_args.items():
         raise ValueError(f"Unknown argument: {name}")
 

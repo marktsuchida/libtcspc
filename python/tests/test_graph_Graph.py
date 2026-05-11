@@ -30,12 +30,12 @@ def test_empty_graph():
     assert g._outputs() == ()
     assert g.outputs() == ()
 
-    assert g.map_event_sets([]) == ()
+    assert g._map_event_sets([]) == ()
 
     with pytest.raises(ValueError):
-        g.map_event_sets([(IntEvent,)])
+        g._map_event_sets([(IntEvent,)])
 
-    code = g.cpp_expression(gencontext)
+    code = g._cpp_expression(gencontext)
     # An empty graph has no inputs, so generates a lambda that returns an empty
     # tuple. Assignment should succeed.
     assert (
@@ -53,7 +53,7 @@ def test_empty_graph():
     )
 
     with pytest.raises(ValueError):
-        g.cpp_expression(gencontext, [CppExpression("downstream")])
+        g._cpp_expression(gencontext, [CppExpression("downstream")])
 
 
 def test_single_node(mocker):
@@ -66,21 +66,21 @@ def test_single_node(mocker):
     assert g.outputs() == (("node", "output"),)
 
     with pytest.raises(ValueError):
-        g.map_event_sets([])
+        g._map_event_sets([])
 
-    node.map_event_sets = mocker.MagicMock(return_value=((LongEvent,),))  # type: ignore
-    assert g.map_event_sets([(IntEvent,)]) == ((LongEvent,),)
-    node.map_event_sets.assert_called_with([(IntEvent,)])  # type: ignore
+    node._map_event_sets = mocker.MagicMock(return_value=((LongEvent,),))  # type: ignore
+    assert g._map_event_sets([(IntEvent,)]) == ((LongEvent,),)
+    node._map_event_sets.assert_called_with([(IntEvent,)])  # type: ignore
 
     with pytest.raises(ValueError):
-        g.cpp_expression(gencontext)
+        g._cpp_expression(gencontext)
 
     def node_codegen(gencontext, downstreams):
         assert len(downstreams) == 1
         return downstreams[0]
 
-    node.cpp_expression = mocker.MagicMock(side_effect=node_codegen)  # type: ignore
-    code = g.cpp_expression(gencontext, [CppExpression("std::move(dstream)")])
+    node._cpp_expression = mocker.MagicMock(side_effect=node_codegen)  # type: ignore
+    code = g._cpp_expression(gencontext, [CppExpression("std::move(dstream)")])
     # The generated lambda should return a single-element tuple whose element
     # was moved from 'ds'.
     assert (
@@ -115,13 +115,13 @@ def test_two_nodes_two_inputs_two_outputs(mocker):
     assert g.add_node("n0", node0) == "n0"
     assert g.add_node("n1", node1) == "n1"
 
-    node0.map_event_sets = mocker.MagicMock(return_value=((IntEvent,),))  # type: ignore
-    node1.map_event_sets = mocker.MagicMock(  # type: ignore
+    node0._map_event_sets = mocker.MagicMock(return_value=((IntEvent,),))  # type: ignore
+    node1._map_event_sets = mocker.MagicMock(  # type: ignore
         return_value=((ShortEvent,), (LongEvent,))
     )
     g.connect("n0", "n1")
-    node0.map_event_sets.assert_called_with([(), ()])  # type: ignore
-    node1.map_event_sets.assert_called_with([(IntEvent,)])  # type: ignore
+    node0._map_event_sets.assert_called_with([(), ()])  # type: ignore
+    node1._map_event_sets.assert_called_with([(IntEvent,)])  # type: ignore
 
     def node0_codegen(gencontext, downstreams):
         assert len(downstreams) == 1
@@ -131,9 +131,9 @@ def test_two_nodes_two_inputs_two_outputs(mocker):
         assert len(downstreams) == 2
         return f"5 * ({downstreams[0]} + {downstreams[1]})"
 
-    node0.cpp_expression = mocker.MagicMock(side_effect=node0_codegen)  # type: ignore
-    node1.cpp_expression = mocker.MagicMock(side_effect=node1_codegen)  # type: ignore
-    code = g.cpp_expression(
+    node0._cpp_expression = mocker.MagicMock(side_effect=node0_codegen)  # type: ignore
+    node1._cpp_expression = mocker.MagicMock(side_effect=node1_codegen)  # type: ignore
+    code = g._cpp_expression(
         gencontext,
         [CppExpression("std::move(ds0)"), CppExpression("std::move(ds1)")],
     )
@@ -181,16 +181,16 @@ def test_two_nodes_two_internal_edges(mocker):
     assert g.add_node("n0", node0) == "n0"
     assert g.add_node("n1", node1) == "n1"
 
-    node0.map_event_sets = mocker.MagicMock(  # type: ignore
+    node0._map_event_sets = mocker.MagicMock(  # type: ignore
         return_value=((LongEvent,), (ShortEvent,))
     )
-    node1.map_event_sets = mocker.MagicMock(return_value=((IntEvent,),))  # type: ignore
+    node1._map_event_sets = mocker.MagicMock(return_value=((IntEvent,),))  # type: ignore
     with pytest.raises(ValueError):
         g.connect("n0", "n1")
     g.connect(("n0", "out0"), ("n1", "in0"))
     g.connect(("n0", "out1"), ("n1", "in1"))
-    node0.map_event_sets.assert_called_with([()])  # type: ignore
-    node1.map_event_sets.assert_called_with([(LongEvent,), (ShortEvent,)])  # type: ignore
+    node0._map_event_sets.assert_called_with([()])  # type: ignore
+    node1._map_event_sets.assert_called_with([(LongEvent,), (ShortEvent,)])  # type: ignore
 
     def node0_codegen(gencontext, downstreams):
         assert len(downstreams) == 2
@@ -200,9 +200,9 @@ def test_two_nodes_two_internal_edges(mocker):
         assert len(downstreams) == 1
         return f"std::tuple{{2 * {downstreams[0]}, 123}}"
 
-    node0.cpp_expression = mocker.MagicMock(side_effect=node0_codegen)  # type: ignore
-    node1.cpp_expression = mocker.MagicMock(side_effect=node1_codegen)  # type: ignore
-    code = g.cpp_expression(gencontext, [CppExpression("std::move(ds)")])
+    node0._cpp_expression = mocker.MagicMock(side_effect=node0_codegen)  # type: ignore
+    node1._cpp_expression = mocker.MagicMock(side_effect=node1_codegen)  # type: ignore
+    code = g._cpp_expression(gencontext, [CppExpression("std::move(ds)")])
     assert (
         run_cpp_prog(f"""\
             #include "libtcspc/tcspc.hpp"
@@ -227,8 +227,8 @@ def make_simple_node(mocker) -> Node:
         return downstreams[0]
 
     node = Node()
-    node.map_event_sets = mocker.MagicMock(return_value=(IntEvent,))  # type: ignore
-    node.cpp_expression = mocker.MagicMock(side_effect=node_codegen)  # type: ignore
+    node._map_event_sets = mocker.MagicMock(return_value=(IntEvent,))  # type: ignore
+    node._cpp_expression = mocker.MagicMock(side_effect=node_codegen)  # type: ignore
     return node
 
 
@@ -243,7 +243,7 @@ def test_add_sequence(mocker):
     g.add_sequence([node0, node1])
     g.add_sequence([node2, node3], upstream="Node-1")
     g.add_sequence([node4], downstream=("Node-0", "input"))
-    code = g.cpp_expression(gencontext, [CppExpression("std::move(ds)")])
+    code = g._cpp_expression(gencontext, [CppExpression("std::move(ds)")])
     assert (
         run_cpp_prog(f"""\
             #include "libtcspc/tcspc.hpp"
@@ -292,11 +292,11 @@ def test_empty_add_sequence_connects_upstream_downstream(mocker):
     n1 = Node()
     g.add_node("n0", n0)
     g.add_node("n1", n1)
-    n0.map_event_sets = mocker.MagicMock(return_value=((IntEvent,),))  # type: ignore
-    n1.map_event_sets = mocker.MagicMock(return_value=((LongEvent,),))  # type: ignore
+    n0._map_event_sets = mocker.MagicMock(return_value=((IntEvent,),))  # type: ignore
+    n1._map_event_sets = mocker.MagicMock(return_value=((LongEvent,),))  # type: ignore
     g.add_sequence([], upstream="n0", downstream="n1")
-    n0.map_event_sets.assert_called_with([()])  # type: ignore
-    n1.map_event_sets.assert_called_with([(IntEvent,)])  # type: ignore
+    n0._map_event_sets.assert_called_with([()])  # type: ignore
+    n1._map_event_sets.assert_called_with([(IntEvent,)])  # type: ignore
     with pytest.raises(ValueError):
         # Would introduce cycle
         g.add_sequence([], upstream="n1", downstream="n0")

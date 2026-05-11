@@ -154,7 +154,7 @@ class DataLostEvent(EventType):
     @override
     def _cpp_type_name(self) -> CppTypeName:
         return CppTypeName(
-            f"tcspc::data_lost_event<{self._data_types.cpp_type_name()}>"
+            f"tcspc::data_lost_event<{self._data_types._cpp_type_name()}>"
         )
 
 
@@ -167,7 +167,7 @@ class MarkerEvent(EventType):
     @override
     def _cpp_type_name(self) -> CppTypeName:
         return CppTypeName(
-            f"tcspc::marker_event<{self._data_types.cpp_type_name()}>"
+            f"tcspc::marker_event<{self._data_types._cpp_type_name()}>"
         )
 
 
@@ -180,7 +180,7 @@ class TimeCorrelatedDetectionEvent(EventType):
     @override
     def _cpp_type_name(self) -> CppTypeName:
         return CppTypeName(
-            f"tcspc::time_correlated_detection_event<{self._data_types.cpp_type_name()}>"
+            f"tcspc::time_correlated_detection_event<{self._data_types._cpp_type_name()}>"
         )
 
 
@@ -193,7 +193,7 @@ class TimeReachedEvent(EventType):
     @override
     def _cpp_type_name(self) -> CppTypeName:
         return CppTypeName(
-            f"tcspc::time_reached_event<{self._data_types.cpp_type_name()}>"
+            f"tcspc::time_reached_event<{self._data_types._cpp_type_name()}>"
         )
 
 

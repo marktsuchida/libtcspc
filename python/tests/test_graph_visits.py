@@ -21,16 +21,16 @@ def test_graph_visits_duplicate_parameters():
         def __init__(self, param_name: str) -> None:
             self._param_name = param_name
 
-        def parameters(self) -> Sequence[tuple[Param, CppTypeName]]:
+        def _parameters(self) -> Sequence[tuple[Param, CppTypeName]]:
             return ((Param(self._param_name), CppTypeName("int")),)
 
     g = Graph()
     g.add_node("a", ParamNode("hello"))
     g.add_node("b", ParamNode("world"))
-    assert len(g.parameters()) == 2
+    assert len(g._parameters()) == 2
     g.add_node("c", ParamNode("hello"))
     with pytest.raises(ValueError, match="param.*hello"):
-        g.parameters()
+        g._parameters()
 
 
 def test_graph_visits_duplicate_access_tags():

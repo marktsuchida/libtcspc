@@ -17,7 +17,7 @@ def test_empty():
 
 def test_single_node(mocker):
     node = Node(input=["i0", "i1"], output=["o0", "o1"])
-    node.map_event_sets = mocker.MagicMock(  # type: ignore
+    node._map_event_sets = mocker.MagicMock(  # type: ignore
         return_value=((IntEvent), ())
     )
     _update_edge_event_sets(
@@ -26,12 +26,12 @@ def test_single_node(mocker):
         {0: [None, None]},
         {0: [None, None]},
     )
-    node.map_event_sets.assert_called_with([(), ()])  # type: ignore
+    node._map_event_sets.assert_called_with([(), ()])  # type: ignore
 
 
 def test_single_node_with_pseudo_edges(mocker):
     node = Node(input=["i0", "i1"], output=["o0", "o1"])
-    node.map_event_sets = mocker.MagicMock(  # type: ignore
+    node._map_event_sets = mocker.MagicMock(  # type: ignore
         return_value=((IntEvent,), ())
     )
     output0_pseudo_edge = _Edge(0, -1, ())
@@ -41,7 +41,7 @@ def test_single_node_with_pseudo_edges(mocker):
         {0: [_Edge(-1, 0, (LongEvent,)), None]},
         {0: [output0_pseudo_edge, None]},
     )
-    node.map_event_sets.assert_called_with([(LongEvent,), ()])  # type: ignore
+    node._map_event_sets.assert_called_with([(LongEvent,), ()])  # type: ignore
     assert output0_pseudo_edge.event_set == (IntEvent,)
 
 
@@ -49,10 +49,10 @@ def test_two_nodes(mocker):
     node0 = Node()
     node1 = Node()
     edge01 = _Edge(0, 1, ())
-    node0.map_event_sets = mocker.MagicMock(  # type: ignore
+    node0._map_event_sets = mocker.MagicMock(  # type: ignore
         return_value=((ShortEvent,),)
     )
-    node1.map_event_sets = mocker.MagicMock(  # type: ignore
+    node1._map_event_sets = mocker.MagicMock(  # type: ignore
         return_value=((LongEvent,),)
     )
     _update_edge_event_sets(
@@ -61,6 +61,6 @@ def test_two_nodes(mocker):
         {0: [None], 1: [edge01]},
         {0: [edge01], 1: [None]},
     )
-    node0.map_event_sets.assert_called_with([()])  # type: ignore
+    node0._map_event_sets.assert_called_with([()])  # type: ignore
     assert edge01.event_set == (ShortEvent,)
-    node1.map_event_sets.assert_called_with([edge01.event_set])  # type: ignore
+    node1._map_event_sets.assert_called_with([edge01.event_set])  # type: ignore

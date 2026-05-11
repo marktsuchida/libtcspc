@@ -15,28 +15,30 @@ gencontext = CodeGenerationContext(
 
 def test_BinaryFileInputStream_default():
     bfis = BinaryFileInputStream("some_file")
-    assert len(bfis.parameters()) == 0
-    assert "tcspc::binary_file_input_stream" in bfis.cpp_expression(gencontext)
-    assert '"some_file"' in bfis.cpp_expression(gencontext)
+    assert len(bfis._parameters()) == 0
+    assert "tcspc::binary_file_input_stream" in bfis._cpp_expression(
+        gencontext
+    )
+    assert '"some_file"' in bfis._cpp_expression(gencontext)
 
 
 def test_BinaryFileInputStream_filename_param():
     bfis = BinaryFileInputStream(Param("fname"))
-    assert len(bfis.parameters()) == 1
-    assert bfis.parameters()[0] == (Param("fname"), string_type)
-    assert "params.fname" in bfis.cpp_expression(gencontext)
+    assert len(bfis._parameters()) == 1
+    assert bfis._parameters()[0] == (Param("fname"), string_type)
+    assert "params.fname" in bfis._cpp_expression(gencontext)
 
 
 def test_BinaryFileInputStream_start_offset():
     bfis = BinaryFileInputStream("some_file", start_offset=42)
-    assert "42uLL" in bfis.cpp_expression(gencontext)
+    assert "42uLL" in bfis._cpp_expression(gencontext)
 
 
 def test_BinaryFileInputStream_start_offset_param():
     bfis = BinaryFileInputStream("some_file", start_offset=Param("stoff", 42))
-    assert len(bfis.parameters()) == 1
-    assert bfis.parameters()[0] == (Param("stoff", 42), uint64_type)
-    assert "params.stoff" in bfis.cpp_expression(gencontext)
+    assert len(bfis._parameters()) == 1
+    assert bfis._parameters()[0] == (Param("stoff", 42), uint64_type)
+    assert "params.stoff" in bfis._cpp_expression(gencontext)
 
 
 def test_BinaryFileInputStream_start_offset_negative_is_error():

@@ -17,9 +17,9 @@ def test_empty_subgraph():
     assert sg.inputs() == ()
     assert sg.outputs() == ()
 
-    assert sg.map_event_sets([]) == ()
+    assert sg._map_event_sets([]) == ()
 
-    code = sg.cpp_expression(gencontext, [])
+    code = sg._cpp_expression(gencontext, [])
     assert (
         run_cpp_prog(f"""\
             #include "libtcspc/tcspc.hpp"
@@ -64,7 +64,7 @@ def test_nested_subgraph(mocker):
     # copied when the graph is copied. (Not ideal because we cannot check that
     # it is called, but here we are mainly interested in testing the codegen
     # result.)
-    node.cpp_expression = mocker.MagicMock(side_effect=node_codegen)  # type: ignore
+    node._cpp_expression = mocker.MagicMock(side_effect=node_codegen)  # type: ignore
 
     g0 = Graph()
     g0.add_node("n", node)
@@ -73,7 +73,7 @@ def test_nested_subgraph(mocker):
     g1.add_node("sg0", sg0)
     sg1 = Subgraph(g1)
 
-    code = sg1.cpp_expression(
+    code = sg1._cpp_expression(
         gencontext, [CppExpression("std::move(dstream)")]
     )
     assert (
