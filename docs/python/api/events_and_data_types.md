@@ -8,7 +8,8 @@ SPDX-License-Identifier: MIT
 
 Event classes describe the records that flow through a processing graph.
 `DataTypes` parameterizes the integer and floating-point widths used by the
-generated C++ code.
+generated C++ code. Each slot accepts any NumPy dtype-like value (e.g.
+`np.uint32`, `np.dtype("int64")`, or the string `"uint16"`).
 
 ```{eval-rst}
 .. autosummary::

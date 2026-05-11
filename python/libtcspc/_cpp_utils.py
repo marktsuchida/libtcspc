@@ -8,6 +8,7 @@ import typing
 from collections.abc import Iterable
 from dataclasses import dataclass
 
+import numpy as np
 from typing_extensions import Self
 
 from . import _include, _odext
@@ -48,6 +49,52 @@ int64_type = CppTypeName("std::int64_t")
 float32_type = CppTypeName("float")
 float64_type = CppTypeName("double")
 string_type = CppTypeName("std::string")
+
+
+_INT_BY_SIZE = {
+    1: int8_type,
+    2: int16_type,
+    4: int32_type,
+    8: int64_type,
+}
+_UINT_BY_SIZE = {
+    1: uint8_type,
+    2: uint16_type,
+    4: uint32_type,
+    8: uint64_type,
+}
+_FLOAT_BY_SIZE = {
+    4: float32_type,
+    8: float64_type,
+}
+
+
+def cpp_type_from_dtype(dtype_like: object) -> CppTypeName:
+    """Convert a NumPy dtype-like value to a CppTypeName.
+
+    Accepts anything ``np.dtype()`` accepts (scalar types like ``np.uint16``,
+    dtype objects, or strings like ``"uint16"``). Returns the matching
+    ``std::<int|uint><N>_t`` / ``float`` / ``double`` ``CppTypeName``.
+    Rejects non-native byte order, bool, complex, datetime, object,
+    structured types, and unsupported widths with ``TypeError``.
+    """
+    try:
+        dt = np.dtype(typing.cast(typing.Any, dtype_like))
+    except TypeError as e:
+        raise TypeError(f"not a NumPy dtype: {dtype_like!r}") from e
+    if dt.byteorder not in ("=", "|"):
+        raise TypeError(f"non-native byte order not supported: {dtype_like!r}")
+    table = {
+        "i": _INT_BY_SIZE,
+        "u": _UINT_BY_SIZE,
+        "f": _FLOAT_BY_SIZE,
+    }.get(dt.kind)
+    if table is None or dt.itemsize not in table:
+        raise TypeError(
+            f"unsupported dtype {dt!s} (must be integer or float of "
+            f"supported width)"
+        )
+    return table[dt.itemsize]
 
 
 @dataclass

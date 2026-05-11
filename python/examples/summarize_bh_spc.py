@@ -5,6 +5,7 @@
 import sys
 
 import libtcspc as tcspc
+import numpy as np
 
 RECORD_COUNT_TAG = tcspc.AccessTag("count-records")
 PHOTON_COUNT_TAG = tcspc.AccessTag("count-phot")
@@ -14,7 +15,7 @@ MARK_COUNT_TAG = tcspc.AccessTag("count-mark")
 def summarize(filename: str) -> int:
     print("Creating processing graph...")
     # BH SPC has no negative channel or marker numbers.
-    dtypes = tcspc.DataTypes(channel_type=tcspc.uint32_type)
+    dtypes = tcspc.DataTypes(channel_type=np.uint32)
 
     g = tcspc.Graph()
     g.add_sequence(
