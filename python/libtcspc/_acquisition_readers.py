@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: MIT
 
 from abc import ABC, abstractmethod
-from typing import Protocol, final
+from typing import final
 
 import numpy as np
 from typing_extensions import override
@@ -41,7 +41,7 @@ class StuckReader(AcquisitionReader):
         )
 
 
-class PyAcquisitionReader(Protocol):
+class PyAcquisitionReader(ABC):
     """
     Acquisition reader implemented in Python and supplied as an argument upon
     creation of the execution context.
@@ -62,4 +62,4 @@ class PyAcquisitionReader(Protocol):
         will crash the Python interpreter (this dangerous behavior is a
         compromise for performance, to avoid copying the data unnecessarily).
         """
-        raise NotImplementedError()
+        ...

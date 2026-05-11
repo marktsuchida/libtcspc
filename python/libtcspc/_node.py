@@ -2,7 +2,7 @@
 # Copyright 2019-2026 Board of Regents of the University of Wisconsin System
 # SPDX-License-Identifier: MIT
 
-from abc import ABC, abstractmethod
+from abc import abstractmethod
 from collections.abc import Collection, Sequence
 from typing import final
 
@@ -15,7 +15,7 @@ from ._events import EventType
 from ._param import Parameterized
 
 
-class Node(Accessible, Parameterized, ABC):
+class Node(Accessible, Parameterized):
     """
     Base class for a processing graph node.
 

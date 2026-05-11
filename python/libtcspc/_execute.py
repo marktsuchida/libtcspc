@@ -2,7 +2,7 @@
 # Copyright 2019-2026 Board of Regents of the University of Wisconsin System
 # SPDX-License-Identifier: MIT
 
-from abc import abstractmethod
+from abc import ABC, abstractmethod
 from collections.abc import Sequence
 from contextlib import contextmanager
 from typing import Any, final
@@ -14,19 +14,17 @@ from ._compile import CompiledGraph
 from ._cpp_utils import CppIdentifier
 
 
-class PySink:
+class PySink(ABC):
     """
     Abstract base class for sinks (output handling processors) written in
     Python.
     """
 
     @abstractmethod
-    def handle(self, event: Any) -> None:
-        raise NotImplementedError()
+    def handle(self, event: Any) -> None: ...
 
     @abstractmethod
-    def flush(self) -> None:
-        raise NotImplementedError()
+    def flush(self) -> None: ...
 
 
 class EndOfProcessing(Exception):

@@ -2,7 +2,7 @@
 # Copyright 2019-2026 Board of Regents of the University of Wisconsin System
 # SPDX-License-Identifier: MIT
 
-from abc import ABC, abstractmethod
+from abc import abstractmethod
 from collections.abc import Sequence
 
 from typing_extensions import override
@@ -13,7 +13,7 @@ from ._events import EventType
 from ._param import Param, Parameterized
 
 
-class BucketSource(Parameterized, ABC):
+class BucketSource(Parameterized):
     @abstractmethod
     def _cpp_expression(
         self, gencontext: CodeGenerationContext

@@ -2,6 +2,7 @@
 # Copyright 2019-2026 Board of Regents of the University of Wisconsin System
 # SPDX-License-Identifier: MIT
 
+from abc import ABC
 from collections.abc import Sequence
 from dataclasses import dataclass
 from typing import Generic, TypeVar
@@ -28,7 +29,7 @@ class Param(Generic[T]):
         return identifier_from_string(self.name)
 
 
-class Parameterized:
+class Parameterized(ABC):  # noqa: B024
     """
     Interface for any object that depends on parameters settable at run time.
 

@@ -2,6 +2,7 @@
 # Copyright 2019-2026 Board of Regents of the University of Wisconsin System
 # SPDX-License-Identifier: MIT
 
+from abc import ABC, abstractmethod
 from collections.abc import Sequence
 from dataclasses import dataclass
 from typing import Protocol
@@ -17,18 +18,18 @@ from ._cpp_utils import (
 )
 
 
-class AccessSpec:
+class AccessSpec(ABC):
     @classmethod
-    def _cpp_type_name(cls) -> CppTypeName:
-        raise NotImplementedError()
+    @abstractmethod
+    def _cpp_type_name(cls) -> CppTypeName: ...
 
     @classmethod
-    def cpp_methods(cls) -> Sequence[CppIdentifier]:
-        raise NotImplementedError()
+    @abstractmethod
+    def cpp_methods(cls) -> Sequence[CppIdentifier]: ...
 
     @classmethod
-    def py_class_name(cls) -> str:
-        raise NotImplementedError()
+    @abstractmethod
+    def py_class_name(cls) -> str: ...
 
     @classmethod
     def cpp_bindings(cls, module_var: CppIdentifier) -> ModuleCodeFragment:
@@ -65,7 +66,7 @@ class AccessTag:
         return CppIdentifier(f"access__{identifier_from_string(self.tag)}")
 
 
-class Accessible:
+class Accessible(ABC):  # noqa: B024
     """
     Interface for any object that serves as a template for an entity that
     provides access through the execution context at run time.
