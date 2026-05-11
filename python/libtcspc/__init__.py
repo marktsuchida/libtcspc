@@ -3,7 +3,12 @@
 # SPDX-License-Identifier: MIT
 
 from ._access import Access, AccessTag, AcquireAccess, CountAccess
-from ._acquisition_readers import AcquisitionReader, NullReader, StuckReader
+from ._acquisition_readers import (
+    AcquisitionReader,
+    NullReader,
+    PyAcquisitionReader,
+    StuckReader,
+)
 from ._bucket_sources import (
     BucketSource,
     NewDeleteBucketSource,
@@ -78,6 +83,7 @@ __all__ = [
     "NullSink",
     "NullSource",
     "Param",
+    "PyAcquisitionReader",
     "PySink",
     "ReadBinaryStream",
     "RecyclingBucketSource",

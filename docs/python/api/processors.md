@@ -28,7 +28,8 @@ by `Acquire`.
    libtcspc.StopWithError
    libtcspc.Unbatch
    libtcspc.read_events_from_binary_file
-   libtcspc._acquisition_readers.AcquisitionReader
-   libtcspc._acquisition_readers.NullReader
-   libtcspc._acquisition_readers.StuckReader
+   libtcspc.AcquisitionReader
+   libtcspc.NullReader
+   libtcspc.PyAcquisitionReader
+   libtcspc.StuckReader
 ```
