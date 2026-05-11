@@ -93,7 +93,6 @@ def read_events_from_binary_file(
                 if stop_normally_on_error
                 else StopWithError(
                     (WarningEvent(),),
-                    CppTypeName("std::runtime_error"),
                     "error reading input",
                 )
             ),
@@ -513,11 +512,9 @@ class StopWithError(RelayNode):
     def __init__(
         self,
         event_types: Iterable[EventType],
-        exception_type: CppTypeName,
         message_prefix: str | Param[str],
     ) -> None:
         self._event_types = list(event_types)
-        self._exception_type = exception_type
         self._msg_prefix = message_prefix
 
     @override
@@ -542,7 +539,6 @@ class StopWithError(RelayNode):
             f"""\
             tcspc::stop_with_error<
                 {_make_type_list(self._event_types)}
-                {self._exception_type}
             >(
                 {gencontext.string_expression(self._msg_prefix)},
                 {downstream}
