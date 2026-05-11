@@ -49,8 +49,8 @@ def summarize(filename: str) -> int:
 
     ret = 0
     print("Compiling processing graph...", file=sys.stderr)
-    cg = tcspc.compile_graph(g)
-    ctx = tcspc.create_execution_context(cg, {"filename": filename})
+    cg = tcspc.CompiledGraph(g)
+    ctx = tcspc.ExecutionContext(cg, {"filename": filename})
     print("Processing...", file=sys.stderr)
     try:
         ctx.flush()

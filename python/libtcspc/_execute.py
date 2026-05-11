@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: MIT
 
 from abc import abstractmethod
-from collections.abc import Iterable, Sequence
+from collections.abc import Sequence
 from contextlib import contextmanager
 from typing import Any, final
 
@@ -40,24 +40,82 @@ class EndOfProcessing(Exception):
     pass
 
 
+def _build_execution(
+    compiled_graph: CompiledGraph,
+    arguments: dict[str, Any] | None,
+    downstreams: Sequence[PySink] | None,
+) -> tuple[Any, Any, Any, set[str]]:
+    given_args = {} if arguments is None else arguments.copy()
+    args: dict[CppIdentifier, Any] = {}
+    for param in compiled_graph.parameters():
+        if param.name in given_args:
+            args[param._cpp_identifier()] = given_args.pop(param.name)
+        else:
+            if param.default_value is None:
+                raise ValueError(
+                    f"No argument given for required parameter {param.name}"
+                )
+            args[param._cpp_identifier()] = param.default_value
+    for name, _ in given_args.items():
+        raise ValueError(f"Unknown argument: {name}")
+
+    arg_struct = compiled_graph._mod.Params()
+    for cpp_identifier, value in args.items():
+        setattr(arg_struct, cpp_identifier, value)
+
+    # Bridge from our common PySink to the compiled module's PySink:
+    @final
+    class PySinkAdapter(compiled_graph._mod.PySink):  # type: ignore
+        def __init__(self, sink: PySink):
+            super().__init__()  # This is required!
+            self._sink = sink
+
+        @override
+        def handle(self, event):
+            self._sink.handle(event)
+
+        @override
+        def flush(self):
+            self._sink.flush()
+
+    sinks = tuple(
+        PySinkAdapter(ds)
+        for ds in (() if downstreams is None else downstreams)
+    )
+
+    context = compiled_graph._mod.create_context()
+    processor = compiled_graph._mod.create_processor(
+        context, arg_struct, sinks
+    )
+    accesses = set(tag.tag for tag in compiled_graph._accesses())
+
+    return compiled_graph._mod, context, processor, accesses
+
+
 class ExecutionContext:
     """
     An execution context for a compiled processing graph.
 
-    Use `create_execution_context()` to obtain an instance. Direct
-    instantiation from user code is not supported.
-
     This object encapsulates a single run of stream processing and cannot be
     reused.
+
+    Parameters
+    ----------
+    compiled_graph : CompiledGraph
+        The compiled graph from which to instantiate the processor.
+    arguments : dict[CppIdentifier, Any]
+        The values that parameters should bind to.
     """
 
     def __init__(
-        self, mod: Any, ctx: Any, proc: Any, accesses: Iterable[AccessTag]
+        self,
+        compiled_graph: CompiledGraph,
+        arguments: dict[str, Any] | None = None,
+        downstreams: Sequence[PySink] | None = None,
     ) -> None:
-        self._mod = mod
-        self._ctx = ctx
-        self._proc = proc
-        self._accesses = set(tag.tag for tag in accesses)
+        self._mod, self._ctx, self._proc, self._accesses = _build_execution(
+            compiled_graph, arguments, downstreams
+        )
         self._end_of_life_reason: str | None = None
 
     def access(self, tag: AccessTag) -> Any:
@@ -122,72 +180,3 @@ class ExecutionContext:
         with self._manage_processor_end_of_life():
             self._proc.flush()
         self._end_of_life_reason = "flushed"
-
-
-def create_execution_context(
-    compiled_graph: CompiledGraph,
-    arguments: dict[str, Any] | None = None,
-    downstreams: Sequence[PySink] | None = None,
-) -> ExecutionContext:
-    """
-    Create an execution context for a compiled processing graph.
-
-    Parameters
-    ----------
-    compiled_graph : CompiledGraph
-        The compiled graph from which to instantiate the processor.
-    arguments : dict[CppIdentifier, Any]
-        The values that parameters should bind to.
-
-    Returns
-    -------
-    ExecutionContext
-        The new execution context.
-    """
-    given_args = {} if arguments is None else arguments.copy()
-    args: dict[CppIdentifier, Any] = {}
-    for param in compiled_graph.parameters():
-        if param.name in given_args:
-            args[param._cpp_identifier()] = given_args.pop(param.name)
-        else:
-            if param.default_value is None:
-                raise ValueError(
-                    f"No argument given for required parameter {param.name}"
-                )
-            args[param._cpp_identifier()] = param.default_value
-    for name, _ in given_args.items():
-        raise ValueError(f"Unknown argument: {name}")
-
-    arg_struct = compiled_graph._mod.Params()
-    for cpp_identifier, value in args.items():
-        setattr(arg_struct, cpp_identifier, value)
-
-    # Bridge from our common PySink to the compiled module's PySink:
-    @final
-    class PySinkAdapter(compiled_graph._mod.PySink):  # type: ignore
-        def __init__(self, sink: PySink):
-            super().__init__()  # This is required!
-            self._sink = sink
-
-        @override
-        def handle(self, event):
-            self._sink.handle(event)
-
-        @override
-        def flush(self):
-            self._sink.flush()
-
-    sinks = tuple(
-        PySinkAdapter(ds)
-        for ds in (() if downstreams is None else downstreams)
-    )
-
-    context = compiled_graph._mod.create_context()
-    processor = compiled_graph._mod.create_processor(
-        context, arg_struct, sinks
-    )
-    access_types = compiled_graph._accesses()
-
-    return ExecutionContext(
-        compiled_graph._mod, context, processor, access_types
-    )

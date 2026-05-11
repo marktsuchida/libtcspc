@@ -12,9 +12,9 @@ from libtcspc._acquisition_readers import (
     PyAcquisitionReader,
     StuckReader,
 )
-from libtcspc._compile import compile_graph
+from libtcspc._compile import CompiledGraph
 from libtcspc._cpp_utils import uint32_type
-from libtcspc._execute import create_execution_context
+from libtcspc._execute import ExecutionContext
 from libtcspc._param import Param
 from libtcspc._processors import Acquire, NullSink
 from typing_extensions import override
@@ -34,8 +34,8 @@ def test_Acquire_NullReader():
         ),
     )
     g.add_node("sink", NullSink(), upstream="acq")
-    cg = compile_graph(g)
-    ctx = create_execution_context(cg)
+    cg = CompiledGraph(g)
+    ctx = ExecutionContext(cg)
     ctx.flush()
 
 
@@ -53,8 +53,8 @@ def test_Acquire_StuckReader():
         ),
     )
     g.add_node("sink", NullSink(), upstream="acq")
-    cg = compile_graph(g)
-    ctx = create_execution_context(cg)
+    cg = CompiledGraph(g)
+    ctx = ExecutionContext(cg)
     # flush() would hang if called here.
     ctx.access(acq_tag).halt()
     with pytest.raises(RuntimeError):
@@ -84,11 +84,11 @@ def test_Acquire_PyAcquisitionReader():
         ),
     )
     g.add_node("sink", NullSink(), upstream="acq")
-    cg = compile_graph(g)
+    cg = CompiledGraph(g)
     with pytest.raises(ValueError):
-        ctx = create_execution_context(cg)
+        ctx = ExecutionContext(cg)
     reader = MockReader(3)
-    ctx = create_execution_context(
+    ctx = ExecutionContext(
         cg,
         {
             "reader": reader,

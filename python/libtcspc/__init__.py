@@ -9,7 +9,7 @@ from ._bucket_sources import (
     NewDeleteBucketSource,
     RecyclingBucketSource,
 )
-from ._compile import CompiledGraph, compile_graph
+from ._compile import CompiledGraph
 from ._data_types import DataTypes
 from ._events import (
     BHSPCEvent,
@@ -25,7 +25,6 @@ from ._execute import (
     EndOfProcessing,
     ExecutionContext,
     PySink,
-    create_execution_context,
 )
 from ._graph import Graph, Subgraph
 from ._node import Node
@@ -92,7 +91,5 @@ __all__ = [
     "TimeReachedEvent",
     "Unbatch",
     "WarningEvent",
-    "compile_graph",
-    "create_execution_context",
     "read_events_from_binary_file",
 ]

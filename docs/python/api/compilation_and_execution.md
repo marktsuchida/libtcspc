@@ -14,9 +14,7 @@ context. Access objects expose live state from running graphs.
    :toctree: generated
    :nosignatures:
 
-   libtcspc.compile_graph
    libtcspc.CompiledGraph
-   libtcspc.create_execution_context
    libtcspc.ExecutionContext
    libtcspc.EndOfProcessing
    libtcspc.PySink

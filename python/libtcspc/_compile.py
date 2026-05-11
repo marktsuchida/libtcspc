@@ -373,30 +373,6 @@ def _graph_module_code(
     )
 
 
-class CompiledGraph:
-    """
-    A compiled processing graph.
-
-    Use `compile_graph()` to obtain an instance. Direct instantiaiton form user
-    code is not supported.
-
-    Objects of this type should be treated as immutable.
-    """
-
-    def __init__(
-        self, mod: Any, params: Iterable[Param], accesses: Iterable[AccessTag]
-    ) -> None:
-        self._mod = mod
-        self._params = tuple(params)
-        self._access_tags = tuple(accesses)
-
-    def parameters(self) -> tuple[Param, ...]:
-        return self._params
-
-    def _accesses(self) -> tuple[AccessTag, ...]:
-        return self._access_tags
-
-
 @functools.cache
 def _nanobind_dir() -> Path:
     return Path(nanobind.include_dir()).parent
@@ -418,11 +394,26 @@ _mod_ctr = itertools.count()
 _build_lock = threading.Lock()
 
 
-def compile_graph(
-    graph: Graph, input_event_types: Sequence[EventType] = ()
-) -> CompiledGraph:
+def _compile_graph_module(
+    graph: Graph, input_event_types: Sequence[EventType]
+) -> tuple[Any, tuple[Param, ...], tuple[AccessTag, ...]]:
+    # Serialize builds, at least for now.
+    with _build_lock:
+        mod_name = f"libtcspc_graph_{next(_mod_ctr)}"
+        code = _graph_module_code(mod_name, graph, input_event_types)
+        _builder.set_code(code)
+        mod_path = _builder.build()
+        mod = _importer.import_module(mod_name, mod_path, ok_to_move=True)
+        params = tuple(param for param, typ in graph._parameters())
+        accesses = tuple(tag for tag, typ in graph._accesses())
+        return mod, params, accesses
+
+
+class CompiledGraph:
     """
-    Compile a processing graph. The result can be used for multiple executions.
+    A compiled processing graph. The result can be used for multiple executions.
+
+    Objects of this type should be treated as immutable.
 
     Parameters
     ----------
@@ -431,20 +422,17 @@ def compile_graph(
         port and no output ports.
     input_event_types: Iterable[EventType]
         The (Python) event types accepted as input (via `handle()`).
-
-    Returns
-    -------
-    CompiledGraph
-        The compiled graph.
     """
 
-    # Serialize builds, at least for now.
-    with _build_lock:
-        mod_name = f"libtcspc_graph_{next(_mod_ctr)}"
-        code = _graph_module_code(mod_name, graph, input_event_types)
-        _builder.set_code(code)
-        mod_path = _builder.build()
-        mod = _importer.import_module(mod_name, mod_path, ok_to_move=True)
-        params = (param for param, typ in graph._parameters())
-        accesses = (tag for tag, typ in graph._accesses())
-        return CompiledGraph(mod, params, accesses)
+    def __init__(
+        self, graph: Graph, input_event_types: Sequence[EventType] = ()
+    ) -> None:
+        self._mod, self._params, self._access_tags = _compile_graph_module(
+            graph, input_event_types
+        )
+
+    def parameters(self) -> tuple[Param, ...]:
+        return self._params
+
+    def _accesses(self) -> tuple[AccessTag, ...]:
+        return self._access_tags
