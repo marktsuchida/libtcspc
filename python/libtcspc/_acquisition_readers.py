@@ -13,12 +13,39 @@ from ._events import EventType
 
 
 class AcquisitionReader(ABC):
+    """Base class for built-in C++-side acquisition data sources usable with `Acquire`.
+
+    Subclasses wrap a C++ reader type that fills buckets supplied by
+    `Acquire`. Acquisition readers implemented in Python use the
+    separate `PyAcquisitionReader` interface and are bound at execution
+    time via a `Param`.
+    """
+
     @abstractmethod
     def _cpp_expression(self) -> _CppExpression: ...
 
 
 @final
 class NullReader(AcquisitionReader):
+    """Acquisition reader that immediately signals end of stream.
+
+    Useful as a placeholder when an `Acquire` source is required
+    structurally but no data is expected to be read.
+
+    Parameters
+    ----------
+    event_type : EventType
+        Element type that the reader would otherwise produce. Must
+        match the element type of the `Acquire` processor.
+
+    See Also
+    --------
+    :cpp:`tcspc::null_reader`
+        The underlying C++ reader.
+    Acquire
+        Source processor that drives the reader.
+    """
+
     def __init__(self, event_type: EventType) -> None:
         self._event_type = event_type
 
@@ -31,6 +58,26 @@ class NullReader(AcquisitionReader):
 
 @final
 class StuckReader(AcquisitionReader):
+    """Acquisition reader that waits indefinitely without producing data.
+
+    Used to exercise cancellation paths. When this reader is in use,
+    the only way to terminate the surrounding `Acquire` is to call
+    ``halt()`` on its `AcquireAccess`.
+
+    Parameters
+    ----------
+    event_type : EventType
+        Element type that the reader would otherwise produce. Must
+        match the element type of the `Acquire` processor.
+
+    See Also
+    --------
+    :cpp:`tcspc::stuck_reader`
+        The underlying C++ reader.
+    AcquireAccess
+        Runtime access object providing ``halt()``.
+    """
+
     def __init__(self, event_type: EventType) -> None:
         self._event_type = event_type
 
@@ -45,6 +92,13 @@ class PyAcquisitionReader(ABC):
     """
     Acquisition reader implemented in Python and supplied as an argument upon
     creation of the execution context.
+
+    See Also
+    --------
+    Acquire
+        Source processor that drives the reader.
+    AcquireAccess
+        Runtime access object providing ``halt()``.
     """
 
     @abstractmethod

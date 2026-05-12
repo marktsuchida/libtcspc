@@ -14,6 +14,19 @@ from ._param import Param, _Parameterized
 
 
 class BucketSource(_Parameterized):
+    """Base class for sources of `bucket` storage used by stream-processing graphs.
+
+    Subclasses implement different allocation strategies (fresh
+    allocation per request, pooled recycling, etc.) for the storage
+    that backs the buckets emitted by processors such as
+    `ReadBinaryStream`, `Batch`, and `Acquire`.
+
+    See Also
+    --------
+    :cpp:`tcspc::bucket_source`
+        The underlying C++ bucket source interface.
+    """
+
     @abstractmethod
     def _cpp_expression(
         self, gencontext: _CodeGenerationContext
@@ -21,6 +34,28 @@ class BucketSource(_Parameterized):
 
 
 class NewDeleteBucketSource(BucketSource):
+    """Bucket source that allocates fresh storage for each bucket using ``new[]``/``delete[]``.
+
+    Storage from destroyed buckets is not reused. Suitable for simple
+    workloads where allocation cost is not a concern.
+
+    Parameters
+    ----------
+    object_type : EventType
+        Element type of the buckets produced by this source.
+
+    Notes
+    -----
+    Thread-safe.
+
+    See Also
+    --------
+    :cpp:`tcspc::new_delete_bucket_source`
+        The underlying C++ bucket source.
+    RecyclingBucketSource
+        Bucket source that reuses storage.
+    """
+
     def __init__(self, object_type: EventType) -> None:
         self._object_type = object_type
 
@@ -35,6 +70,46 @@ class NewDeleteBucketSource(BucketSource):
 
 
 class RecyclingBucketSource(BucketSource):
+    """Bucket source that reuses storage from destroyed buckets.
+
+    Storage allocated for a bucket is returned to an internal pool when
+    the bucket is destroyed and may be reused for a subsequent request,
+    avoiding repeated allocation.
+
+    Parameters
+    ----------
+    object_type : EventType
+        Element type of the buckets produced by this source.
+    blocking : bool, keyword-only
+        Behavior when ``max_bucket_count`` outstanding buckets exist
+        and a new one is requested. ``True`` blocks until a bucket is
+        recycled; ``False`` (the default) raises an overflow error.
+    clear_recycled : bool, keyword-only
+        If ``True``, recycled storage is cleared before reuse. Default
+        ``False``.
+    max_bucket_count : int or Param[int] or None, keyword-only
+        Maximum number of outstanding buckets. ``None`` (the default)
+        is unlimited. Must be non-negative.
+
+    Raises
+    ------
+    ValueError
+        If ``max_bucket_count`` is a negative integer, or a `Param`
+        whose ``default_value`` is negative.
+
+    Notes
+    -----
+    Thread-safe. When ``max_bucket_count`` is set, at least two
+    buckets must be allowed to circulate to avoid deadlock.
+
+    See Also
+    --------
+    :cpp:`tcspc::recycling_bucket_source`
+        The underlying C++ bucket source.
+    NewDeleteBucketSource
+        Bucket source without recycling.
+    """
+
     def __init__(
         self,
         object_type: EventType,

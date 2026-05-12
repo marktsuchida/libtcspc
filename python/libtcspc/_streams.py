@@ -19,6 +19,17 @@ from ._param import Param, _Parameterized
 
 
 class InputStream(_Parameterized):
+    """Base class for binary input streams used by `ReadBinaryStream`.
+
+    Subclasses select between different byte-source backends, such as
+    a file on disk or a memory-resident buffer.
+
+    See Also
+    --------
+    ReadBinaryStream
+        Processor that consumes an `InputStream`.
+    """
+
     @abstractmethod
     def _cpp_expression(
         self, gencontext: _CodeGenerationContext
@@ -27,6 +38,36 @@ class InputStream(_Parameterized):
 
 @final
 class BinaryFileInputStream(InputStream):
+    """Binary input stream that reads from a file on disk.
+
+    Parameters
+    ----------
+    filename : str or Param[str]
+        Path to the file to read.
+    start_offset : int or Param[int], keyword-only
+        Byte offset within the file at which to begin reading. Must be
+        non-negative. Default ``0``.
+
+    Raises
+    ------
+    ValueError
+        If ``start_offset`` is a negative integer, or a `Param` whose
+        ``default_value`` is negative.
+
+    Notes
+    -----
+    The file is opened with unbuffered I/O. Failure to open the file,
+    or a file shorter than ``start_offset``, is reported when the
+    downstream `ReadBinaryStream` performs its first read.
+
+    See Also
+    --------
+    ReadBinaryStream
+        Processor that consumes this stream.
+    :cpp:`tcspc::binary_file_input_stream`
+        The underlying C++ input stream.
+    """
+
     def __init__(
         self, filename: str | Param[str], *, start_offset: int | Param[int] = 0
     ) -> None:

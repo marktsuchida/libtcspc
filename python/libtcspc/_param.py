@@ -18,8 +18,35 @@ T = TypeVar("T")
 
 @dataclass(frozen=True)
 class Param(Generic[T]):
-    """
-    Placeholder for a run-time parameter in a processing graph.
+    """Typed placeholder for a run-time parameter of a processing graph.
+
+    Processing nodes, input streams, bucket sources, and acquisition
+    readers accept `Param` instances in place of concrete values at
+    graph-build time. At that point a `Param` only declares a named,
+    typed slot to be filled in later; codegen substitutes a reference
+    to a generated parameter struct. At execution time
+    `ExecutionContext` binds each name to a concrete value supplied by
+    the caller, falling back to ``default_value`` when the caller did
+    not provide one.
+
+    The generic parameter ``T`` is the Python-side type of the value
+    (for example, ``int`` or ``str``). The C++ type used in the
+    generated source is determined separately by the processor that
+    declares the parameter.
+
+    Parameters
+    ----------
+    name : str
+        Name used to bind the parameter at run time. Must be unique
+        within a graph.
+    default_value : T or None
+        Value used when no argument is supplied at execution time.
+        ``None`` (the default) makes the parameter required.
+
+    See Also
+    --------
+    ExecutionContext
+        Binds `Param` placeholders to concrete values at run time.
     """
 
     name: str

@@ -168,6 +168,42 @@ class Graph:
         upstream: tuple[str, str] | str | None = None,
         downstream: tuple[str, str] | str | None = None,
     ) -> str:
+        """
+        Add a node to the graph, optionally connecting it to an existing node.
+
+        Parameters
+        ----------
+        name : str or None
+            Name under which the node will be retrievable. If ``None``,
+            an auto-generated name of the form ``"{ClassName}-{N}"`` is
+            assigned, where ``N`` is the smallest non-negative integer
+            making the name unique.
+        node : Node
+            The node to add.
+        upstream : tuple[str, str] or str or None
+            If given, connect ``upstream`` to the new node's ``"input"``
+            port. A ``(node_name, port_name)`` tuple selects an explicit
+            output port; a bare node name defaults to its ``"output"``
+            port.
+        downstream : tuple[str, str] or str or None
+            If given, connect the new node's ``"output"`` port to
+            ``downstream``. A ``(node_name, port_name)`` tuple selects
+            an explicit input port; a bare node name defaults to its
+            ``"input"`` port.
+
+        Returns
+        -------
+        str
+            The name under which the node was added (the auto-generated
+            name if ``name`` was ``None``, otherwise ``name``).
+
+        Raises
+        ------
+        ValueError
+            If ``name`` already exists in the graph, if a requested
+            connection's port types do not match, or if a requested
+            connection would introduce a cycle.
+        """
         if name is None:
             node_name = self._unique_node_name(type(node).__name__)
         elif name in self._node_name_index:
@@ -192,6 +228,33 @@ class Graph:
     def connect(
         self, producer: tuple[str, str] | str, consumer: tuple[str, str] | str
     ) -> None:
+        """
+        Connect an output port to an input port.
+
+        Parameters
+        ----------
+        producer : tuple[str, str] or str
+            A ``(node_name, port_name)`` tuple selecting the producing
+            node and its output port. A bare node name is shorthand for
+            ``(name, "output")``.
+        consumer : tuple[str, str] or str
+            A ``(node_name, port_name)`` tuple selecting the consuming
+            node and its input port. A bare node name is shorthand for
+            ``(name, "input")``.
+
+        Raises
+        ------
+        ValueError
+            If either port is already connected, if the producer's
+            output event set is not compatible with the consumer's
+            input, or if the connection would introduce a cycle.
+
+        Notes
+        -----
+        Validation is performed immediately. If the connection is
+        rejected, the graph is restored to its previous state before
+        the exception propagates.
+        """
         pname, pport = (
             producer if isinstance(producer, tuple) else (producer, "output")
         )
@@ -249,7 +312,33 @@ class Graph:
         upstream: tuple[str, str] | str | None = None,
         downstream: tuple[str, str] | str | None = None,
     ) -> None:
-        # Note: If nodes is empty, connects upstream to downstream.
+        """
+        Add a sequence of single-input single-output nodes connected in series.
+
+        Parameters
+        ----------
+        nodes : Sequence[tuple[str, Node] or Node]
+            The nodes to add, in order. Each element is either a
+            ``(name, node)`` tuple or a bare `Node`; in the latter case
+            a name is auto-generated as by `add_node`.
+        upstream : tuple[str, str] or str or None
+            If given, connect ``upstream`` to the first added node's
+            input port. The shorthand rules of `add_node` apply.
+        downstream : tuple[str, str] or str or None
+            If given, connect the last added node's output port to
+            ``downstream``. The shorthand rules of `add_node` apply.
+
+        Raises
+        ------
+        ValueError
+            If any node does not have exactly one input and one output
+            port, or if any requested connection fails.
+
+        Notes
+        -----
+        If ``nodes`` is empty and both ``upstream`` and ``downstream``
+        are given, ``upstream`` is connected directly to ``downstream``.
+        """
         for node in nodes:
             nm, n = node if isinstance(node, tuple) else (None, node)
             if len(n.inputs()) != 1 or len(n.outputs()) != 1:
@@ -271,7 +360,17 @@ class Graph:
 
     def visit_nodes(self, visitor: Callable[[str, Node], None]) -> None:
         """
-        Call the given visitor callable on every node.
+        Invoke ``visitor`` on every node in the graph.
+
+        Parameters
+        ----------
+        visitor : Callable[[str, Node], None]
+            Called once per node with ``(node_name, node)``. The return
+            value is ignored.
+
+        Notes
+        -----
+        Traversal is in node-addition order, not topological order.
         """
         for name, node in self._nodes:
             visitor(name, node)
@@ -288,6 +387,15 @@ class Graph:
         return tuple(result)
 
     def inputs(self) -> tuple[tuple[str, str], ...]:
+        """
+        Return the graph's external input ports — those without an incoming edge.
+
+        Returns
+        -------
+        tuple[tuple[str, str], ...]
+            A tuple of ``(node_name, port_name)`` pairs, in
+            node-addition order.
+        """
         result: list[tuple[str, str]] = []
         for node_id, (name, node) in enumerate(self._nodes):
             input_ports = node.inputs()
@@ -309,6 +417,15 @@ class Graph:
         return tuple(result)
 
     def outputs(self) -> tuple[tuple[str, str], ...]:
+        """
+        Return the graph's external output ports — those without an outgoing edge.
+
+        Returns
+        -------
+        tuple[tuple[str, str], ...]
+            A tuple of ``(node_name, port_name)`` pairs, in
+            node-addition order.
+        """
         result: list[tuple[str, str]] = []
         for node_id, (name, node) in enumerate(self._nodes):
             output_ports = node.outputs()

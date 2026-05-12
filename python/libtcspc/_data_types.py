@@ -38,6 +38,53 @@ _SLOT_DESCRIPTION: dict[frozenset[str], str] = {
 
 
 class DataTypes:
+    """Set of integer types used by events and processors that are parameterised by data types.
+
+    This is the Python-side counterpart to ``tcspc::default_data_types``
+    on the C++ side. Constructing `DataTypes` with no arguments yields
+    the default set; supply one or more keyword arguments to override
+    individual slots. Each override must be a NumPy dtype object, dtype
+    instance, or dtype string, and must satisfy the kind constraint
+    documented below.
+
+    Parameters
+    ----------
+    abstime_type : dtype-like, optional
+        Type used for absolute time (macrotime). Must be a signed or
+        unsigned integer dtype. Default ``numpy.int64``.
+    channel_type : dtype-like, optional
+        Type used for channel numbers. Must be a signed or unsigned
+        integer dtype. Default ``numpy.int32``.
+    difftime_type : dtype-like, optional
+        Type used for difference times (microtime). Must be a **signed**
+        integer dtype. Default ``numpy.int32``.
+    count_type : dtype-like, optional
+        Type used for counts of detections. Must be a signed or
+        unsigned integer dtype. Default ``numpy.uint32``.
+    datapoint_type : dtype-like, optional
+        Type used for histogram datapoint values. Must be a signed or
+        unsigned integer dtype. Default ``numpy.int32``.
+    bin_index_type : dtype-like, optional
+        Type used for histogram bin indices. Must be an **unsigned**
+        integer dtype. Default ``numpy.uint16``.
+    bin_type : dtype-like, optional
+        Type used for histogram bin values (counts). Must be a signed
+        or unsigned integer dtype. Default ``numpy.uint16``.
+
+    Notes
+    -----
+    Unknown keyword arguments raise ``TypeError`` from the underlying
+    ``TypedDict``; values whose dtype kind violates the constraint
+    above raise ``TypeError`` from the constructor.
+
+    See Also
+    --------
+    :cpp:`tcspc::default_data_types`
+        The C++ default data type set.
+    :cpp:`tcspc::parameterized_data_types`
+        The C++ template used to assemble a custom set.
+    """
+
     def __init__(self, **kwargs: Unpack[_DataTypes]) -> None:
         def typ(category: str) -> _CppTypeName:
             key = f"{category}_type"
