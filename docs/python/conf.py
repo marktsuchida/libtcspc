@@ -38,6 +38,7 @@ autosummary_generate = True
 autodoc_default_options = {
     "members": True,
     "show-inheritance": True,
+    "special-members": "__call__",
 }
 
 autoclass_content = "both"

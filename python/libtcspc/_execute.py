@@ -21,10 +21,36 @@ class PySink(ABC):
     """
 
     @abstractmethod
-    def handle(self, event: Any) -> None: ...
+    def handle(self, event: Any) -> None:
+        """
+        Process one event emitted to this sink from the graph.
+
+        Parameters
+        ----------
+        event
+            The event object. The Python type depends on the event type
+            declared on the corresponding graph output: a wrapped event
+            for most types, or a NumPy array for `BucketEvent`.
+
+        Notes
+        -----
+        Called once per event delivered to this sink. Exceptions raised
+        propagate out of the surrounding `ExecutionContext.handle` call.
+        """
+        ...
 
     @abstractmethod
-    def flush(self) -> None: ...
+    def flush(self) -> None:
+        """
+        Signal end of input to this sink.
+
+        Notes
+        -----
+        Called once after the graph's downstream output is flushed.
+        Exceptions raised propagate out of the surrounding
+        `ExecutionContext.flush` call.
+        """
+        ...
 
 
 class EndOfProcessing(Exception):
