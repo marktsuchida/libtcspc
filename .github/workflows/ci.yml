@@ -346,5 +346,30 @@ jobs:
       - name: Build Python documentation
         run: ninja -C builddir docs/python
 
-      # TODO Publish, but we first need to decide how to combine C++ API docs
-      # with the Python docs.
+      - name: Stage docs site
+        if: github.ref == 'refs/heads/main'
+        run: |
+          mkdir -p _site
+          cp builddir/docs/index.html _site/
+          cp -r builddir/docs/cpp _site/cpp
+          cp -r builddir/docs/python _site/python
+      - name: Upload Pages artifact
+        if: github.ref == 'refs/heads/main'
+        uses: actions/upload-pages-artifact@v5
+        with:
+          path: _site
+
+  publish-docs:
+    needs: docs
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v5
