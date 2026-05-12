@@ -62,7 +62,7 @@ custom_target(
     command: [
         'env',
         'LIBTCSPC_DOXYGEN_TAGFILE=' + meson.current_build_dir() / '..' / 'libtcspc.tag',
-        'LIBTCSPC_DOXYGEN_HTML_BASE=../apidoc',
+        'LIBTCSPC_DOXYGEN_HTML_BASE=../cpp',
         sphinx_build,
         '-b', 'html',
         '-d', meson.current_build_dir() / 'doctrees',

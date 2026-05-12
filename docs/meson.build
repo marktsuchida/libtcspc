@@ -32,7 +32,7 @@ doxyfile = configure_file(
     configuration: {
         'DOXYGEN_INPUT': meson.current_source_dir() / '../include',
         'DOXYGEN_EXCLUDE': meson.current_source_dir() / '../include/tcb',
-        'DOXYGEN_OUTPUT': meson.current_build_dir() / 'apidoc',
+        'DOXYGEN_OUTPUT': meson.current_build_dir() / 'cpp',
         'DOXYGEN_TAGFILE': meson.current_build_dir() / 'libtcspc.tag',
         'DOXYGEN_LAYOUT': meson.current_build_dir() / 'DoxygenLayout.xml',
         'DOXYGEN_CSS': meson.current_source_dir() / 'doxygen-awesome-css',
@@ -49,7 +49,7 @@ custom_target(
     command: [doxygen, '-q', doxyfile],
     depends: [doxygen_layout],
     depend_files: [public_cpp_headers, doxygen_css],
-    output: ['apidoc'],
+    output: ['cpp'],
     install: true,
     install_dir: doc_install_dir,
 )

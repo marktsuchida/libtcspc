@@ -342,7 +342,7 @@ jobs:
           -Dbenchmarks=disabled -Ddocs=enabled -Dpython_docs=enabled
           -Ddocs_werror=true
       - name: Build
-        run: ninja -C builddir docs/apidoc
+        run: ninja -C builddir docs/cpp
       - name: Build Python documentation
         run: ninja -C builddir docs/python/html
 

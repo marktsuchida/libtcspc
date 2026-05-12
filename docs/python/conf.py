@@ -64,7 +64,7 @@ doxylink = {
                 )
             ).resolve()
         ),
-        os.environ.get("LIBTCSPC_DOXYGEN_HTML_BASE", "../apidoc"),
+        os.environ.get("LIBTCSPC_DOXYGEN_HTML_BASE", "../cpp"),
     ),
 }
 
