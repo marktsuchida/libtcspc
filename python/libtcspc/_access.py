@@ -18,7 +18,7 @@ from ._cpp_utils import (
 )
 
 
-class AccessSpec(ABC):
+class _AccessSpec(ABC):
     @classmethod
     @abstractmethod
     def _cpp_type_name(cls) -> CppTypeName: ...
@@ -54,7 +54,7 @@ class AccessSpec(ABC):
 @dataclass(frozen=True)
 class AccessTag:
     """
-    Tag attached to Accessible objects.
+    Tag attached to `_Accessible` objects.
 
     This tag can later be used to gain access to entities in the generated
     processor via its execution context.
@@ -66,7 +66,7 @@ class AccessTag:
         return CppIdentifier(f"access__{identifier_from_string(self.tag)}")
 
 
-class Accessible(ABC):  # noqa: B024
+class _Accessible(ABC):  # noqa: B024
     """
     Interface for any object that serves as a template for an entity that
     provides access through the execution context at run time.
@@ -75,11 +75,11 @@ class Accessible(ABC):  # noqa: B024
     (``Node``) or their auxiliary objects.
     """
 
-    def _accesses(self) -> Sequence[tuple[AccessTag, type[AccessSpec]]]:
+    def _accesses(self) -> Sequence[tuple[AccessTag, type[_AccessSpec]]]:
         return ()
 
 
-class AcquireAccessSpec(AccessSpec):
+class _AcquireAccessSpec(_AccessSpec):
     @override
     @classmethod
     def _cpp_type_name(cls) -> CppTypeName:
@@ -96,7 +96,7 @@ class AcquireAccessSpec(AccessSpec):
         return "AcquireAccess"
 
 
-class CountAccessSpec(AccessSpec):
+class _CountAccessSpec(_AccessSpec):
     @override
     @classmethod
     def _cpp_type_name(cls) -> CppTypeName:

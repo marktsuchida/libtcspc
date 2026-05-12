@@ -10,10 +10,10 @@ from typing_extensions import override
 from ._codegen import CodeGenerationContext
 from ._cpp_utils import CppExpression, CppTypeName, size_type
 from ._events import EventType
-from ._param import Param, Parameterized
+from ._param import Param, _Parameterized
 
 
-class BucketSource(Parameterized):
+class BucketSource(_Parameterized):
     @abstractmethod
     def _cpp_expression(
         self, gencontext: CodeGenerationContext

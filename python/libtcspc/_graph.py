@@ -10,12 +10,12 @@ from typing import final
 
 from typing_extensions import override
 
-from ._access import Accessible, AccessSpec, AccessTag
+from ._access import AccessTag, _Accessible, _AccessSpec
 from ._codegen import CodeGenerationContext
 from ._cpp_utils import CppExpression, CppIdentifier, CppTypeName
 from ._events import EventType
 from ._node import Node
-from ._param import Param, Parameterized
+from ._param import Param, _Parameterized
 
 
 @dataclass
@@ -426,7 +426,7 @@ class Graph:
     def _parameters(self) -> Sequence[tuple[Param, CppTypeName]]:
         params: list[tuple[Param, CppTypeName]] = []
 
-        def visit(node_name: str, node: Parameterized):
+        def visit(node_name: str, node: _Parameterized):
             params.extend(node._parameters())
 
         self.visit_nodes(visit)
@@ -434,7 +434,7 @@ class Graph:
         if len(params) > len(set(p.name for p, _ in params)):
             param_nodes: dict[str, list[str]] = {}
 
-            def visit(node_name: str, node: Parameterized):
+            def visit(node_name: str, node: _Parameterized):
                 for param, _ in node._parameters():
                     param_nodes.setdefault(param.name, []).append(node_name)
 
@@ -450,10 +450,10 @@ class Graph:
 
         return params
 
-    def _accesses(self) -> Sequence[tuple[AccessTag, type[AccessSpec]]]:
-        accesses: list[tuple[AccessTag, type[AccessSpec]]] = []
+    def _accesses(self) -> Sequence[tuple[AccessTag, type[_AccessSpec]]]:
+        accesses: list[tuple[AccessTag, type[_AccessSpec]]] = []
 
-        def visit(node_name: str, node: Accessible):
+        def visit(node_name: str, node: _Accessible):
             accesses.extend(node._accesses())
 
         self.visit_nodes(visit)
@@ -461,7 +461,7 @@ class Graph:
         if len(accesses) > len(set(t for t, _ in accesses)):
             tag_nodes: dict[AccessTag, list[str]] = {}
 
-            def visit(node_name: str, node: Accessible):
+            def visit(node_name: str, node: _Accessible):
                 for tag, _ in node._accesses():
                     tag_nodes.setdefault(tag, []).append(node_name)
 
@@ -534,7 +534,7 @@ class Subgraph(Node):
         return self._graph._parameters()
 
     @override
-    def _accesses(self) -> Sequence[tuple[AccessTag, type[AccessSpec]]]:
+    def _accesses(self) -> Sequence[tuple[AccessTag, type[_AccessSpec]]]:
         return self._graph._accesses()
 
     @override

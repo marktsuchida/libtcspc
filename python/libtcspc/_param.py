@@ -29,7 +29,7 @@ class Param(Generic[T]):
         return identifier_from_string(self.name)
 
 
-class Parameterized(ABC):  # noqa: B024
+class _Parameterized(ABC):  # noqa: B024
     """
     Interface for any object that depends on parameters settable at run time.
 

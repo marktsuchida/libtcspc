@@ -7,7 +7,7 @@ from collections.abc import Collection, Sequence
 from libtcspc._codegen import CodeGenerationContext
 from libtcspc._cpp_utils import CppExpression, CppTypeName
 from libtcspc._events import EventType
-from libtcspc._node import Node, RelayNode
+from libtcspc._node import Node, _RelayNode
 from typing_extensions import override
 
 
@@ -39,8 +39,8 @@ class _TestNode(Node):
         raise NotImplementedError
 
 
-class _TestRelayNode(RelayNode):
-    """Concrete `RelayNode` for tests; the abstract methods are stubs intended
+class _TestRelayNode(_RelayNode):
+    """Concrete `_RelayNode` for tests; the abstract methods are stubs intended
     to be replaced by `mocker.MagicMock` on the instance."""
 
     @override

@@ -8,14 +8,14 @@ from typing import final
 
 from typing_extensions import override
 
-from ._access import Accessible
+from ._access import _Accessible
 from ._codegen import CodeGenerationContext
 from ._cpp_utils import CppExpression
 from ._events import EventType
-from ._param import Parameterized
+from ._param import _Parameterized
 
 
-class Node(Accessible, Parameterized):
+class Node(_Accessible, _Parameterized):
     """
     Base class for a processing graph node.
 
@@ -140,7 +140,7 @@ class Node(Accessible, Parameterized):
         ...
 
 
-class RelayNode(Node):
+class _RelayNode(Node):
     """
     A node representing a single-upstream, single-downstream processor.
 
@@ -150,7 +150,7 @@ class RelayNode(Node):
     must override the simplified methods `_relay_map_event_set()` and
     `_relay_cpp_expression()`, instead of the `Node` methods `_map_event_sets()`
     and `_cpp_expression()`. Implementations of the latter methods is provided
-    by `RelayNode`.
+    by `_RelayNode`.
     """
 
     @override
@@ -246,7 +246,7 @@ class RelayNode(Node):
         ...
 
 
-class TypePreservingRelayNode(RelayNode):
+class _TypePreservingRelayNode(_RelayNode):
     """
     A relay node whose output event set matches its input event set.
 

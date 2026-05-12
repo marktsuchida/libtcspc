@@ -10,10 +10,10 @@ from typing_extensions import override
 
 from ._codegen import CodeGenerationContext
 from ._cpp_utils import CppExpression, CppTypeName, string_type, uint64_type
-from ._param import Param, Parameterized
+from ._param import Param, _Parameterized
 
 
-class InputStream(Parameterized):
+class InputStream(_Parameterized):
     @abstractmethod
     def _cpp_expression(
         self, gencontext: CodeGenerationContext

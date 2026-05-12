@@ -12,7 +12,7 @@ from typing import Any
 import nanobind  # type: ignore
 
 from . import _include, _odext
-from ._access import AccessSpec, AccessTag
+from ._access import AccessTag, _AccessSpec
 from ._codegen import CodeGenerationContext
 from ._cpp_utils import (
     CppExpression,
@@ -42,7 +42,7 @@ def _exception_types(module_var: CppIdentifier) -> ModuleCodeFragment:
 
 
 def _context_type(
-    accesses: Sequence[tuple[AccessTag, type[AccessSpec]]],
+    accesses: Sequence[tuple[AccessTag, type[_AccessSpec]]],
     module_var: CppIdentifier,
 ) -> ModuleCodeFragment:
     # We add specific bindings of access() for each access tag so that Python

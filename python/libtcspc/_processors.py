@@ -8,7 +8,7 @@ from typing import final
 from typing_extensions import override
 
 from . import _access, _cpp_utils, _events, _streams
-from ._access import AccessSpec, AccessTag
+from ._access import AccessTag, _AccessSpec
 from ._acquisition_readers import AcquisitionReader, PyAcquisitionReader
 from ._bucket_sources import BucketSource, RecyclingBucketSource
 from ._codegen import CodeGenerationContext
@@ -22,7 +22,7 @@ from ._cpp_utils import (
 from ._data_types import DataTypes
 from ._events import BucketEvent, EventType, WarningEvent
 from ._graph import Graph, Subgraph
-from ._node import Node, RelayNode, TypePreservingRelayNode
+from ._node import Node, _RelayNode, _TypePreservingRelayNode
 from ._param import Param
 
 
@@ -114,7 +114,7 @@ def read_events_from_binary_file(
 
 
 @final
-class Acquire(RelayNode):
+class Acquire(_RelayNode):
     def __init__(
         self,
         event_type: EventType,
@@ -132,8 +132,8 @@ class Acquire(RelayNode):
         self._access_tag = access_tag
 
     @override
-    def _accesses(self) -> Sequence[tuple[AccessTag, type[AccessSpec]]]:
-        return ((self._access_tag, _access.AcquireAccessSpec),)
+    def _accesses(self) -> Sequence[tuple[AccessTag, type[_AccessSpec]]]:
+        return ((self._access_tag, _access._AcquireAccessSpec),)
 
     @override
     def _relay_map_event_set(
@@ -206,7 +206,7 @@ class Acquire(RelayNode):
 
 
 @final
-class Batch(RelayNode):
+class Batch(_RelayNode):
     def __init__(
         self,
         event_type: EventType,
@@ -247,7 +247,7 @@ class Batch(RelayNode):
 
 
 @final
-class CheckMonotonic(TypePreservingRelayNode):
+class CheckMonotonic(_TypePreservingRelayNode):
     def __init__(self, data_types: DataTypes | None = None) -> None:
         self._data_types = (
             data_types if data_types is not None else DataTypes()
@@ -268,7 +268,7 @@ class CheckMonotonic(TypePreservingRelayNode):
 
 
 @final
-class Count(TypePreservingRelayNode):
+class Count(_TypePreservingRelayNode):
     def __init__(self, event_type: EventType, access_tag: AccessTag) -> None:
         self._event_type = event_type
         self._access_tag = access_tag
@@ -276,8 +276,8 @@ class Count(TypePreservingRelayNode):
     @override
     def _accesses(
         self,
-    ) -> Sequence[tuple[AccessTag, type[AccessSpec]]]:
-        return ((self._access_tag, _access.CountAccessSpec),)
+    ) -> Sequence[tuple[AccessTag, type[_AccessSpec]]]:
+        return ((self._access_tag, _access._CountAccessSpec),)
 
     @override
     def _relay_cpp_expression(
@@ -295,7 +295,7 @@ class Count(TypePreservingRelayNode):
 
 
 @final
-class DecodeBHSPC(RelayNode):
+class DecodeBHSPC(_RelayNode):
     def __init__(self, data_types: DataTypes | None = None) -> None:
         self._data_types = (
             data_types if data_types is not None else DataTypes()
@@ -351,7 +351,7 @@ class NullSink(Node):
 
 
 @final
-class NullSource(RelayNode):
+class NullSource(_RelayNode):
     @override
     def _relay_map_event_set(
         self, input_event_set: Collection[EventType]
@@ -369,7 +369,7 @@ class NullSource(RelayNode):
 
 
 @final
-class ReadBinaryStream(RelayNode):
+class ReadBinaryStream(_RelayNode):
     def __init__(
         self,
         event_type: EventType,
@@ -429,7 +429,7 @@ class ReadBinaryStream(RelayNode):
 
 
 @final
-class SelectAll(TypePreservingRelayNode):
+class SelectAll(_TypePreservingRelayNode):
     @override
     def _relay_cpp_expression(
         self,
@@ -469,7 +469,7 @@ class SinkEvents(Node):
 
 
 @final
-class Stop(RelayNode):
+class Stop(_RelayNode):
     def __init__(
         self,
         event_types: Iterable[EventType],
@@ -508,7 +508,7 @@ class Stop(RelayNode):
 
 
 @final
-class StopWithError(RelayNode):
+class StopWithError(_RelayNode):
     def __init__(
         self,
         event_types: Iterable[EventType],
@@ -547,7 +547,7 @@ class StopWithError(RelayNode):
 
 
 @final
-class Unbatch(RelayNode):
+class Unbatch(_RelayNode):
     def __init__(self, event_type: BucketEvent) -> None:
         self._event_type = event_type
 
