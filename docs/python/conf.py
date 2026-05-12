@@ -79,3 +79,38 @@ exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
 default_role = "py:obj"
 
 nitpicky = False
+
+
+def _resolve_public_base(base):
+    """Return the first public class along ``base``'s MRO, or ``base``
+    itself if it is already public or not a class.
+    """
+    mro = getattr(base, "__mro__", None)
+    if mro is None:
+        return base
+    name = getattr(base, "__name__", "")
+    if not name.startswith("_"):
+        return base
+    for cls in mro[1:]:
+        cls_name = getattr(cls, "__name__", "")
+        if cls_name and not cls_name.startswith("_"):
+            return cls
+    return None
+
+
+def _process_bases(app, name, obj, options, bases):
+    resolved = []
+    seen_ids = set()
+    for base in bases:
+        new_base = _resolve_public_base(base)
+        if new_base is None:
+            continue
+        if id(new_base) in seen_ids:
+            continue
+        seen_ids.add(id(new_base))
+        resolved.append(new_base)
+    bases[:] = resolved
+
+
+def setup(app):
+    app.connect("autodoc-process-bases", _process_bases)
