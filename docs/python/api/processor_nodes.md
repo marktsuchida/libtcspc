@@ -4,10 +4,9 @@ Copyright 2019-2026 Board of Regents of the University of Wisconsin System
 SPDX-License-Identifier: MIT
 -->
 
-# Processors
+# Processor nodes
 
-Built-in processor nodes and the supporting acquisition-reader interface used
-by `Acquire`.
+Built-in processor nodes.
 
 ```{eval-rst}
 .. autosummary::
@@ -28,8 +27,4 @@ by `Acquire`.
    libtcspc.StopWithError
    libtcspc.Unbatch
    libtcspc.read_events_from_binary_file
-   libtcspc.AcquisitionReader
-   libtcspc.NullReader
-   libtcspc.PyAcquisitionReader
-   libtcspc.StuckReader
 ```

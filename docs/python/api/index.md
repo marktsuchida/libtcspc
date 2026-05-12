@@ -6,15 +6,14 @@ SPDX-License-Identifier: MIT
 
 # API reference
 
-The public API of `libtcspc` is divided into the following areas.
+The `libtcspc` Python API is divided into three areas matching the lifecycle of
+a processing graph: graph definition, compilation, and execution.
 
 ```{toctree}
 ---
-maxdepth: 1
+maxdepth: 2
 ---
-events_and_data_types
-graph_construction
-processors
-resources
-compilation_and_execution
+graph_definition
+compilation
+execution
 ```
