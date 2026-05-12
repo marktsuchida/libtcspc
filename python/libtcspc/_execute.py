@@ -32,7 +32,7 @@ class EndOfProcessing(Exception):
     Exception raised when processing finished without error, but for a reason
     other than reaching the end of the input.
 
-    By convention, ``arg[0]`` is a message indicating the reason for stopping.
+    By convention, ``args[0]`` is a message indicating the reason for stopping.
     """
 
     pass
@@ -101,8 +101,9 @@ class ExecutionContext:
     ----------
     compiled_graph : CompiledGraph
         The compiled graph from which to instantiate the processor.
-    arguments : dict[_CppIdentifier, Any]
-        The values that parameters should bind to.
+    arguments : dict[str, Any] or None
+        The values that parameters should bind to, keyed by `Param` name.
+        ``None`` (the default) means all parameters use their defaults.
     """
 
     def __init__(

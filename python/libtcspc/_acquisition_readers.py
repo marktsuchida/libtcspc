@@ -55,8 +55,9 @@ class PyAcquisitionReader(ABC):
         The element type of the buffer will match that of the ``Acquire``
         processor. An implementation of this method should read at most the
         number of elements that fit in `buffer`, and return the number read.
-        If there is no more data to be written (because the acquisition
-        finished, either successfully or with an error), return ``None``.
+        If the end of the data stream has been reached, return ``None``
+        instead. To signal a read error, raise an exception; do not return
+        ``None`` for error conditions.
 
         Implementations must not store `buffer`; accessing it after returning
         will crash the Python interpreter (this dangerous behavior is a

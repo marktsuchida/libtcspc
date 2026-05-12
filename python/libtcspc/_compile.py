@@ -419,10 +419,10 @@ class CompiledGraph:
 
     Parameters
     ----------
-    graph: Graph
+    graph : Graph
         The processing graph to compile. The graph must have exactly one input
         port and no output ports.
-    input_event_types: Iterable[EventType]
+    input_event_types : Sequence[EventType]
         The (Python) event types accepted as input (via `handle()`).
     """
 

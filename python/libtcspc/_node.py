@@ -72,14 +72,14 @@ class Node(_Accessible, _Parameterized):
     @final
     def inputs(self) -> tuple[str, ...]:
         """
-        Returns the names of the node's input ports.
+        Return the names of the node's input ports.
         """
         return self._inputs
 
     @final
     def outputs(self) -> tuple[str, ...]:
         """
-        Returns the names of the node's output ports.
+        Return the names of the node's output ports.
         """
         return self._outputs
 
@@ -120,7 +120,7 @@ class Node(_Accessible, _Parameterized):
         downstreams: Sequence[_CppExpression],
     ) -> _CppExpression:
         """
-        Returns C++ code for this node and its downstreams.
+        Return C++ code for this node and its downstreams.
 
         This method must be overridden by concrete node classes.
 
@@ -149,7 +149,7 @@ class _RelayNode(Node):
     This base class simplifies the implementation of relay nodes: subclasses
     must override the simplified methods `_relay_map_event_set()` and
     `_relay_cpp_expression()`, instead of the `Node` methods `_map_event_sets()`
-    and `_cpp_expression()`. Implementations of the latter methods is provided
+    and `_cpp_expression()`. Implementations of the latter methods are provided
     by `_RelayNode`.
     """
 
@@ -163,7 +163,7 @@ class _RelayNode(Node):
         self, input_event_sets: Sequence[Collection[EventType]]
     ) -> tuple[tuple[EventType, ...], ...]:
         """
-        Maps events sets based on `_relay_map_event_set()`.
+        Map event sets based on `_relay_map_event_set()`.
         """
         n_upstreams = len(input_event_sets)
         if n_upstreams != 1:
@@ -210,7 +210,7 @@ class _RelayNode(Node):
         downstreams: Sequence[_CppExpression],
     ) -> _CppExpression:
         """
-        Generates C++ code based on `_relay_cpp_expression()`.
+        Generate C++ code based on `_relay_cpp_expression()`.
         """
         n_downstreams = len(downstreams)
         if n_downstreams != 1:
@@ -226,7 +226,7 @@ class _RelayNode(Node):
         downstream: _CppExpression,
     ) -> _CppExpression:
         """
-        Returns C++ code for this node and its downstream.
+        Return C++ code for this node and its downstream.
 
         This is analogous to `_cpp_expression` but for the single downstream of
         the relay node. Concrete subclasses must override this method.
@@ -236,7 +236,7 @@ class _RelayNode(Node):
         gencontext
             Contextual information required for generating code.
         downstream
-            The C++ code representing an rvalue reference ot the downstream.
+            The C++ code representing an rvalue reference to the downstream.
 
         Returns
         -------

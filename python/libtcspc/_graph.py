@@ -124,8 +124,8 @@ class Graph:
     is also assigned a name for later reference and retrieval.
 
     Edges of the graph connect a specific output port of one node to a specific
-    input port of another (in that direction). Any given input or output node
-    may only have at most a single edge connected to it.
+    input port of another (in that direction). Any given input or output port
+    may have at most a single edge connected to it.
 
     At any point in time, the graph may contain nodes with unconnected input or
     output ports. These ports are the input and output ports of the graph as a
@@ -486,12 +486,12 @@ class Subgraph(Node):
     Parameters
     ----------
     graph
-        The subgraph to wrap
-    input_map:
+        The subgraph to wrap.
+    input_map
         Mapping from input port names of this node to (node, input_port) pairs
         of the graph. Any ports that are not mapped use the standard naming of
         node:input_port. Default: only use standard names.
-    output_map:
+    output_map
         Mapping from output port names of this node to (node, output_port)
         pairs of the graph. Any ports that are not mapped use the standard
         naming of node:output_port. Default: only use standard names.

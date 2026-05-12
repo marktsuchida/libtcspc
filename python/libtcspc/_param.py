@@ -33,7 +33,7 @@ class _Parameterized(ABC):  # noqa: B024
     """
     Interface for any object that depends on parameters settable at run time.
 
-    These are objects that constitue a ``Graph``, namely processing nodes
+    These are objects that constitute a ``Graph``, namely processing nodes
     (``Node``) or their auxiliary objects.
 
     The parameters are left unbound at compile time; values need to be supplied
