@@ -44,6 +44,14 @@ doxyfile = configure_file(
 
 doc_install_dir = get_option('datadir') / 'doc/libtcspc'
 
+configure_file(
+    input: 'index.html',
+    output: 'index.html',
+    copy: true,
+    install: true,
+    install_dir: doc_install_dir,
+)
+
 custom_target(
     'docs',
     command: [doxygen, '-q', doxyfile],
