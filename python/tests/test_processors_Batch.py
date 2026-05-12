@@ -4,8 +4,14 @@
 
 import pytest
 from _test_helpers import _NamedEvent
+from libtcspc._bucket_sources import RecyclingBucketSource
 from libtcspc._codegen import _CodeGenerationContext
-from libtcspc._cpp_utils import _CppExpression, _CppIdentifier, _CppTypeName
+from libtcspc._cpp_utils import (
+    _CppExpression,
+    _CppIdentifier,
+    _CppTypeName,
+    _size_type,
+)
 from libtcspc._events import BucketEvent
 from libtcspc._param import Param
 from libtcspc._processors import Batch
@@ -40,11 +46,18 @@ def test_Batch_batch_size_int():
 
 def test_Batch_batch_size_param():
     node = Batch(IntEvent, batch_size=Param("bs"))
+    params = node._parameters()
+    assert len(params) == 1
+    assert params[0] == (Param("bs"), _size_type)
     code = node._cpp_expression(gencontext, [_CppExpression("DOWN")])
     assert "params.bs" in code
-    # FIXME: Batch does not currently override _parameters(), so a
-    # Param-valued batch_size is referenced in codegen but not declared.
-    assert len(node._parameters()) == 0
+
+
+def test_Batch_buffer_provider_params_propagate():
+    bp = RecyclingBucketSource(IntEvent, max_bucket_count=Param("mbc"))
+    node = Batch(IntEvent, buffer_provider=bp)
+    params = node._parameters()
+    assert (Param("mbc"), _size_type) in params
 
 
 def test_Batch_default_bucket_source_is_recycling():

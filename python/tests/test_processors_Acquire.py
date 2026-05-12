@@ -12,6 +12,7 @@ from libtcspc._acquisition_readers import (
     PyAcquisitionReader,
     StuckReader,
 )
+from libtcspc._bucket_sources import RecyclingBucketSource
 from libtcspc._codegen import _CodeGenerationContext
 from libtcspc._compile import CompiledGraph
 from libtcspc._cpp_utils import (
@@ -188,3 +189,10 @@ def test_Acquire_codegen_tracker():
     node = _acquire(tag="the-tag")
     code = node._cpp_expression(gencontext, [_CppExpression("DOWN")])
     assert 'ctx->tracker<tcspc::acquire_access>("the-tag")' in code
+
+
+def test_Acquire_buffer_provider_params_propagate():
+    bp = RecyclingBucketSource(IntEvent, max_bucket_count=Param("mbc"))
+    node = Acquire(IntEvent, NullReader(IntEvent), bp, None, AccessTag("acq"))
+    params = node._parameters()
+    assert (Param("mbc"), _size_type) in params

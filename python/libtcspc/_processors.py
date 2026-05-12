@@ -273,6 +273,7 @@ class Acquire(_RelayNode):
             )
         if isinstance(self._batch_size, Param):
             params.append((self._batch_size, _size_type))
+        params.extend(self._bucket_source._parameters())
         return params
 
     @override
@@ -357,6 +358,14 @@ class Batch(_RelayNode):
             event_type, buffer_provider
         )
         self._batch_size = batch_size if batch_size is not None else 65536
+
+    @override
+    def _parameters(self) -> Sequence[tuple[Param, _CppTypeName]]:
+        params: list[tuple[Param, _CppTypeName]] = []
+        if isinstance(self._batch_size, Param):
+            params.append((self._batch_size, _size_type))
+        params.extend(self._bucket_source._parameters())
+        return params
 
     @override
     def _relay_map_event_set(
