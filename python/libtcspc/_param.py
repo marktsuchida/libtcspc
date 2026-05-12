@@ -8,9 +8,9 @@ from dataclasses import dataclass
 from typing import Generic, TypeVar
 
 from libtcspc._cpp_utils import (
-    CppIdentifier,
-    CppTypeName,
-    identifier_from_string,
+    _CppIdentifier,
+    _CppTypeName,
+    _identifier_from_string,
 )
 
 T = TypeVar("T")
@@ -25,8 +25,8 @@ class Param(Generic[T]):
     name: str
     default_value: T | None = None
 
-    def _cpp_identifier(self) -> CppIdentifier:
-        return identifier_from_string(self.name)
+    def _cpp_identifier(self) -> _CppIdentifier:
+        return _identifier_from_string(self.name)
 
 
 class _Parameterized(ABC):  # noqa: B024
@@ -40,14 +40,14 @@ class _Parameterized(ABC):  # noqa: B024
     when creating an execution context from a compiled graph.
     """
 
-    def _parameters(self) -> Sequence[tuple[Param, CppTypeName]]:
+    def _parameters(self) -> Sequence[tuple[Param, _CppTypeName]]:
         """
         Return the names, C++ types, and default values of the parameters of
         this object and any sub-objects.
 
         Returns
         -------
-        Sequence[tuple[Param, CppTypeName]]
+        Sequence[tuple[Param, _CppTypeName]]
             Parameters (name and optional default value) and their C++ types.
         """
         return ()

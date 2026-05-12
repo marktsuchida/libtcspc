@@ -13,11 +13,11 @@ from ._acquisition_readers import AcquisitionReader, PyAcquisitionReader
 from ._bucket_sources import BucketSource, RecyclingBucketSource
 from ._codegen import CodeGenerationContext
 from ._cpp_utils import (
-    CppExpression,
-    CppTypeName,
-    size_type,
-    string_type,
-    uint64_type,
+    _CppExpression,
+    _CppTypeName,
+    _size_type,
+    _string_type,
+    _uint64_type,
 )
 from ._data_types import DataTypes
 from ._events import BucketEvent, EventType, WarningEvent
@@ -32,7 +32,7 @@ def _check_events_subset_of(
     processor: str,
 ) -> None:
     for t in input_events:
-        if not _cpp_utils.contains_type(
+        if not _cpp_utils._contains_type(
             (u._cpp_type_name() for u in allowed_events), t._cpp_type_name()
         ):
             raise ValueError(f"input type {t} not accepted by {processor}")
@@ -44,14 +44,14 @@ def _remove_events_from_set(
     return tuple(
         t
         for t in input_events
-        if not _cpp_utils.contains_type(
+        if not _cpp_utils._contains_type(
             (u._cpp_type_name() for u in events_to_remove), t._cpp_type_name()
         )
     )
 
 
-def _make_type_list(event_types: Iterable[EventType]) -> CppTypeName:
-    return CppTypeName(
+def _make_type_list(event_types: Iterable[EventType]) -> _CppTypeName:
+    return _CppTypeName(
         "tcspc::type_list<{}>".format(
             ", ".join(t._cpp_type_name() for t in event_types)
         )
@@ -142,25 +142,25 @@ class Acquire(_RelayNode):
         _check_events_subset_of(input_event_set, (), self.__class__.__name__)
         return (_events.BucketEvent(self._event_type),)
 
-    def _buffer_array_type(self) -> CppTypeName:
-        return CppTypeName(f"""\
+    def _buffer_array_type(self) -> _CppTypeName:
+        return _CppTypeName(f"""\
             nanobind::ndarray<
                 {self._event_type._cpp_type_name()},
                 nanobind::numpy, nanobind::device::cpu, nanobind::c_contig>""")
 
-    def _buffer_array_param_type(self) -> CppTypeName:
-        return CppTypeName(f"""\
+    def _buffer_array_param_type(self) -> _CppTypeName:
+        return _CppTypeName(f"""\
             decltype(std::declval<{self._buffer_array_type()}>()
                 .cast(nanobind::rv_policy::reference))""")
 
     @override
-    def _parameters(self) -> Sequence[tuple[Param, CppTypeName]]:
-        params: list[tuple[Param, CppTypeName]] = []
+    def _parameters(self) -> Sequence[tuple[Param, _CppTypeName]]:
+        params: list[tuple[Param, _CppTypeName]] = []
         if isinstance(self._reader, Param):
             params.append(
                 (
                     self._reader,
-                    CppTypeName(
+                    _CppTypeName(
                         f"""\
                         std::function<
                             auto({self._buffer_array_param_type()})
@@ -169,17 +169,17 @@ class Acquire(_RelayNode):
                 )
             )
         if isinstance(self._batch_size, Param):
-            params.append((self._batch_size, size_type))
+            params.append((self._batch_size, _size_type))
         return params
 
     @override
     def _relay_cpp_expression(
         self,
         gencontext: CodeGenerationContext,
-        downstream: CppExpression,
-    ) -> CppExpression:
+        downstream: _CppExpression,
+    ) -> _CppExpression:
         reader = (
-            CppExpression(
+            _CppExpression(
                 f"""\
                 [reader={gencontext.params_varname}.{self._reader._cpp_identifier()}](
                     std::span<{self._event_type._cpp_type_name()}> spn) {{
@@ -193,13 +193,13 @@ class Acquire(_RelayNode):
             else self._reader._cpp_expression()
         )
         batch_size = gencontext.size_t_expression(self._batch_size)
-        return CppExpression(
+        return _CppExpression(
             f"""\
             tcspc::acquire<{self._event_type._cpp_type_name()}>(
                 {reader},
                 {self._bucket_source._cpp_expression(gencontext)},
                 tcspc::arg::batch_size{{{batch_size}}},
-                {gencontext.tracker_expression(CppTypeName("tcspc::acquire_access"), self._access_tag)},
+                {gencontext.tracker_expression(_CppTypeName("tcspc::acquire_access"), self._access_tag)},
                 {downstream}
             )"""
         )
@@ -233,10 +233,10 @@ class Batch(_RelayNode):
     def _relay_cpp_expression(
         self,
         gencontext: CodeGenerationContext,
-        downstream: CppExpression,
-    ) -> CppExpression:
+        downstream: _CppExpression,
+    ) -> _CppExpression:
         batch_size = gencontext.size_t_expression(self._batch_size)
-        return CppExpression(
+        return _CppExpression(
             f"""\
             tcspc::batch<{self._event_type._cpp_type_name()}>(
                 {self._bucket_source._cpp_expression(gencontext)},
@@ -257,9 +257,9 @@ class CheckMonotonic(_TypePreservingRelayNode):
     def _relay_cpp_expression(
         self,
         gencontext: CodeGenerationContext,
-        downstream: CppExpression,
-    ) -> CppExpression:
-        return CppExpression(
+        downstream: _CppExpression,
+    ) -> _CppExpression:
+        return _CppExpression(
             f"""\
             tcspc::check_monotonic<{self._data_types._cpp_type_name()}>(
                 {downstream}
@@ -283,12 +283,12 @@ class Count(_TypePreservingRelayNode):
     def _relay_cpp_expression(
         self,
         gencontext: CodeGenerationContext,
-        downstream: CppExpression,
-    ) -> CppExpression:
-        return CppExpression(
+        downstream: _CppExpression,
+    ) -> _CppExpression:
+        return _CppExpression(
             f"""\
             tcspc::count<{self._event_type._cpp_type_name()}>(
-                {gencontext.tracker_expression(CppTypeName("tcspc::count_access"), self._access_tag)},
+                {gencontext.tracker_expression(_CppTypeName("tcspc::count_access"), self._access_tag)},
                 {downstream}
             )"""
         )
@@ -320,9 +320,9 @@ class DecodeBHSPC(_RelayNode):
     def _relay_cpp_expression(
         self,
         gencontext: CodeGenerationContext,
-        downstream: CppExpression,
-    ) -> CppExpression:
-        return CppExpression(
+        downstream: _CppExpression,
+    ) -> _CppExpression:
+        return _CppExpression(
             f"""\
             tcspc::decode_bh_spc<{self._data_types._cpp_type_name()}>(
                 {downstream}
@@ -345,9 +345,9 @@ class NullSink(Node):
     def _cpp_expression(
         self,
         gencontext: CodeGenerationContext,
-        downstreams: Sequence[CppExpression],
-    ) -> CppExpression:
-        return CppExpression("tcspc::null_sink()")
+        downstreams: Sequence[_CppExpression],
+    ) -> _CppExpression:
+        return _CppExpression("tcspc::null_sink()")
 
 
 @final
@@ -363,9 +363,9 @@ class NullSource(_RelayNode):
     def _relay_cpp_expression(
         self,
         gencontext: CodeGenerationContext,
-        downstream: CppExpression,
-    ) -> CppExpression:
-        return CppExpression(f"tcspc::null_source({downstream})")
+        downstream: _CppExpression,
+    ) -> _CppExpression:
+        return _CppExpression(f"tcspc::null_source({downstream})")
 
 
 @final
@@ -394,12 +394,12 @@ class ReadBinaryStream(_RelayNode):
         return (BucketEvent(self._event_type),)
 
     @override
-    def _parameters(self) -> Sequence[tuple[Param, CppTypeName]]:
-        params: list[tuple[Param, CppTypeName]] = []
+    def _parameters(self) -> Sequence[tuple[Param, _CppTypeName]]:
+        params: list[tuple[Param, _CppTypeName]] = []
         if isinstance(self._maxlen, Param):
-            params.append((self._maxlen, uint64_type))
+            params.append((self._maxlen, _uint64_type))
         if isinstance(self._granularity, Param):
-            params.append((self._granularity, size_type))
+            params.append((self._granularity, _size_type))
         params.extend(self._stream._parameters())
         params.extend(self._bucket_source._parameters())
         return params
@@ -408,15 +408,15 @@ class ReadBinaryStream(_RelayNode):
     def _relay_cpp_expression(
         self,
         gencontext: CodeGenerationContext,
-        downstream: CppExpression,
-    ) -> CppExpression:
+        downstream: _CppExpression,
+    ) -> _CppExpression:
         maxlen = (
             "std::numeric_limits<tcspc::u64>::max()"
             if self._maxlen is None
             else gencontext.u64_expression(self._maxlen)
         )
         granularity = gencontext.size_t_expression(self._granularity)
-        return CppExpression(
+        return _CppExpression(
             f"""\
             tcspc::read_binary_stream<{self._event_type._cpp_type_name()}>(
                 {self._stream._cpp_expression(gencontext)},
@@ -434,9 +434,9 @@ class SelectAll(_TypePreservingRelayNode):
     def _relay_cpp_expression(
         self,
         gencontext: CodeGenerationContext,
-        downstream: CppExpression,
-    ) -> CppExpression:
-        return CppExpression(f"tcspc::select_all({downstream})")
+        downstream: _CppExpression,
+    ) -> _CppExpression:
+        return _CppExpression(f"tcspc::select_all({downstream})")
 
 
 @final
@@ -462,10 +462,10 @@ class SinkEvents(Node):
     def _cpp_expression(
         self,
         gencontext: CodeGenerationContext,
-        downstreams: Sequence[CppExpression],
-    ) -> CppExpression:
+        downstreams: Sequence[_CppExpression],
+    ) -> _CppExpression:
         evts = ", ".join(t._cpp_type_name() for t in self._event_types)
-        return CppExpression(f"tcspc::sink_events<{evts}>()")
+        return _CppExpression(f"tcspc::sink_events<{evts}>()")
 
 
 @final
@@ -485,18 +485,18 @@ class Stop(_RelayNode):
         return _remove_events_from_set(input_event_set, self._event_types)
 
     @override
-    def _parameters(self) -> Sequence[tuple[Param, CppTypeName]]:
+    def _parameters(self) -> Sequence[tuple[Param, _CppTypeName]]:
         if isinstance(self._msg_prefix, Param):
-            return ((self._msg_prefix, string_type),)
+            return ((self._msg_prefix, _string_type),)
         return ()
 
     @override
     def _relay_cpp_expression(
         self,
         gencontext: CodeGenerationContext,
-        downstream: CppExpression,
-    ) -> CppExpression:
-        return CppExpression(
+        downstream: _CppExpression,
+    ) -> _CppExpression:
+        return _CppExpression(
             f"""\
             tcspc::stop<
                 {_make_type_list(self._event_types)}
@@ -524,18 +524,18 @@ class StopWithError(_RelayNode):
         return _remove_events_from_set(input_event_set, self._event_types)
 
     @override
-    def _parameters(self) -> Sequence[tuple[Param, CppTypeName]]:
+    def _parameters(self) -> Sequence[tuple[Param, _CppTypeName]]:
         if isinstance(self._msg_prefix, Param):
-            return ((self._msg_prefix, string_type),)
+            return ((self._msg_prefix, _string_type),)
         return ()
 
     @override
     def _relay_cpp_expression(
         self,
         gencontext: CodeGenerationContext,
-        downstream: CppExpression,
-    ) -> CppExpression:
-        return CppExpression(
+        downstream: _CppExpression,
+    ) -> _CppExpression:
+        return _CppExpression(
             f"""\
             tcspc::stop_with_error<
                 {_make_type_list(self._event_types)}
@@ -564,9 +564,9 @@ class Unbatch(_RelayNode):
     def _relay_cpp_expression(
         self,
         gencontext: CodeGenerationContext,
-        downstream: CppExpression,
-    ) -> CppExpression:
-        return CppExpression(
+        downstream: _CppExpression,
+    ) -> _CppExpression:
+        return _CppExpression(
             f"""\
             tcspc::unbatch<{self._event_type._cpp_type_name()}>(
                 {downstream}

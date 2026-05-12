@@ -10,7 +10,7 @@ from typing_extensions import override
 
 from ._access import _Accessible
 from ._codegen import CodeGenerationContext
-from ._cpp_utils import CppExpression
+from ._cpp_utils import _CppExpression
 from ._events import EventType
 from ._param import _Parameterized
 
@@ -117,8 +117,8 @@ class Node(_Accessible, _Parameterized):
     def _cpp_expression(
         self,
         gencontext: CodeGenerationContext,
-        downstreams: Sequence[CppExpression],
-    ) -> CppExpression:
+        downstreams: Sequence[_CppExpression],
+    ) -> _CppExpression:
         """
         Returns C++ code for this node and its downstreams.
 
@@ -134,7 +134,7 @@ class Node(_Accessible, _Parameterized):
 
         Returns
         -------
-        CppExpression
+        _CppExpression
             C++ code for this node.
         """
         ...
@@ -207,8 +207,8 @@ class _RelayNode(Node):
     def _cpp_expression(
         self,
         gencontext: CodeGenerationContext,
-        downstreams: Sequence[CppExpression],
-    ) -> CppExpression:
+        downstreams: Sequence[_CppExpression],
+    ) -> _CppExpression:
         """
         Generates C++ code based on `_relay_cpp_expression()`.
         """
@@ -223,8 +223,8 @@ class _RelayNode(Node):
     def _relay_cpp_expression(
         self,
         gencontext: CodeGenerationContext,
-        downstream: CppExpression,
-    ) -> CppExpression:
+        downstream: _CppExpression,
+    ) -> _CppExpression:
         """
         Returns C++ code for this node and its downstream.
 

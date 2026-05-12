@@ -12,7 +12,7 @@ from typing_extensions import override
 
 from ._access import AccessTag, _Accessible, _AccessSpec
 from ._codegen import CodeGenerationContext
-from ._cpp_utils import CppExpression, CppIdentifier, CppTypeName
+from ._cpp_utils import _CppExpression, _CppIdentifier, _CppTypeName
 from ._events import EventType
 from ._node import Node
 from ._param import Param, _Parameterized
@@ -352,25 +352,25 @@ class Graph:
     def _cpp_expression(
         self,
         gencontext: CodeGenerationContext,
-        downstreams: Sequence[CppExpression] | None = None,
-    ) -> CppExpression:
+        downstreams: Sequence[_CppExpression] | None = None,
+    ) -> _CppExpression:
         downstreams = downstreams if downstreams is not None else ()
         external_names = [
-            CppIdentifier(f"d{i}") for i in range(len(downstreams))
+            _CppIdentifier(f"d{i}") for i in range(len(downstreams))
         ]
-        external_name_index: dict[tuple[int, int], CppIdentifier] = {
+        external_name_index: dict[tuple[int, int], _CppIdentifier] = {
             (n, p): name
             for (n, p), name in zip(
                 self._outputs(), external_names, strict=True
             )
         }
-        internal_name_index: dict[tuple[int, int], CppIdentifier] = {}
+        internal_name_index: dict[tuple[int, int], _CppIdentifier] = {}
         name_ctr = itertools.count()
         node_defs: list[str] = []
         for node_id in reversed(self._topo_sorted_node_ids):
             _, node = self._nodes[node_id]
 
-            outputs: list[CppExpression] = []
+            outputs: list[_CppExpression] = []
             for i in range(len(node.outputs())):
                 edge = self._output_edge_index[node_id][i]
                 if edge is None:  # External downstream.
@@ -382,11 +382,11 @@ class Graph:
                     output = internal_name_index[
                         (edge.consumer_id, consumer_input_idx)
                     ]
-                outputs.append(CppExpression(f"std::move({output})"))
+                outputs.append(_CppExpression(f"std::move({output})"))
 
-            inputs: list[CppIdentifier] = []
+            inputs: list[_CppIdentifier] = []
             for i in range(len(node.inputs())):
-                input = CppIdentifier(f"proc_{next(name_ctr)}")
+                input = _CppIdentifier(f"proc_{next(name_ctr)}")
                 internal_name_index[(node_id, i)] = input
                 inputs.append(input)
 
@@ -397,14 +397,14 @@ class Graph:
             else:
                 node_defs.append(f"auto {inputs[0]} = {node_code};")
 
-        input_names: list[CppIdentifier] = [
+        input_names: list[_CppIdentifier] = [
             internal_name_index[node_input] for node_input in self._inputs()
         ]
         moved_input_names = ", ".join(f"std::move({n})" for n in input_names)
         return_expr = (
-            CppExpression(input_names[0])  # No move needed due to NRVO.
+            _CppExpression(input_names[0])  # No move needed due to NRVO.
             if len(input_names) == 1
-            else (CppExpression(f"std::tuple{{{moved_input_names}}}"))
+            else (_CppExpression(f"std::tuple{{{moved_input_names}}}"))
         )
         external_name_params = ", ".join(f"auto &&{d}" for d in external_names)
         comma_downstream_args = (
@@ -416,15 +416,15 @@ class Graph:
         captures = ", ".join(
             (gencontext.context_varname, f"&{gencontext.params_varname}")
         )
-        return CppExpression(
+        return _CppExpression(
             f"""std::invoke([{captures}]({external_name_params}) {{
                     {node_def_lines}
                     return {return_expr};
                 }}{comma_downstream_args})"""
         )
 
-    def _parameters(self) -> Sequence[tuple[Param, CppTypeName]]:
-        params: list[tuple[Param, CppTypeName]] = []
+    def _parameters(self) -> Sequence[tuple[Param, _CppTypeName]]:
+        params: list[tuple[Param, _CppTypeName]] = []
 
         def visit(node_name: str, node: _Parameterized):
             params.extend(node._parameters())
@@ -530,7 +530,7 @@ class Subgraph(Node):
         return self._graph._map_event_sets(input_event_sets)
 
     @override
-    def _parameters(self) -> Sequence[tuple[Param, CppTypeName]]:
+    def _parameters(self) -> Sequence[tuple[Param, _CppTypeName]]:
         return self._graph._parameters()
 
     @override
@@ -541,6 +541,6 @@ class Subgraph(Node):
     def _cpp_expression(
         self,
         gencontext: CodeGenerationContext,
-        downstreams: Sequence[CppExpression],
-    ) -> CppExpression:
+        downstreams: Sequence[_CppExpression],
+    ) -> _CppExpression:
         return self._graph._cpp_expression(gencontext, downstreams)

@@ -6,7 +6,7 @@ import pytest
 from _test_helpers import _NamedEvent
 from libtcspc._access import AccessTag
 from libtcspc._compile import CompiledGraph
-from libtcspc._cpp_utils import CppTypeName, string_type, uint32_type
+from libtcspc._cpp_utils import _CppTypeName, _string_type, _uint32_type
 from libtcspc._graph import Graph
 from libtcspc._param import Param
 from libtcspc._processors import (
@@ -17,7 +17,7 @@ from libtcspc._processors import (
     Stop,
 )
 
-IntEvent = _NamedEvent(CppTypeName("int"))
+IntEvent = _NamedEvent(_CppTypeName("int"))
 
 
 def test_compile_empty_graph_rejected():
@@ -58,9 +58,9 @@ def test_compile_node_access():
 
 def test_compile_fails_for_unhandle_events():
     g = Graph()
-    g.add_node("s", SinkEvents(_NamedEvent(uint32_type)))
+    g.add_node("s", SinkEvents(_NamedEvent(_uint32_type)))
     with pytest.raises(ValueError):
-        CompiledGraph(g, [_NamedEvent(string_type)])
+        CompiledGraph(g, [_NamedEvent(_string_type)])
 
 
 def test_compile_string_parameter():
@@ -69,7 +69,7 @@ def test_compile_string_parameter():
     assert len(g._parameters()) == 0
     g.add_node("b", Stop((), Param("b_msg")), upstream="a")
     assert len(g._parameters()) == 1
-    assert g._parameters()[0] == (Param("b_msg"), string_type)
+    assert g._parameters()[0] == (Param("b_msg"), _string_type)
     g.add_node("c", Stop((), Param("c_msg", "c_default")), upstream="b")
     g.add_node("sink", NullSink(), upstream="c")
     cg = CompiledGraph(g)

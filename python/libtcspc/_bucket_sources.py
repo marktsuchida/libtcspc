@@ -8,7 +8,7 @@ from collections.abc import Sequence
 from typing_extensions import override
 
 from ._codegen import CodeGenerationContext
-from ._cpp_utils import CppExpression, CppTypeName, size_type
+from ._cpp_utils import _CppExpression, _CppTypeName, _size_type
 from ._events import EventType
 from ._param import Param, _Parameterized
 
@@ -17,7 +17,7 @@ class BucketSource(_Parameterized):
     @abstractmethod
     def _cpp_expression(
         self, gencontext: CodeGenerationContext
-    ) -> CppExpression: ...
+    ) -> _CppExpression: ...
 
 
 class NewDeleteBucketSource(BucketSource):
@@ -27,9 +27,11 @@ class NewDeleteBucketSource(BucketSource):
     @override
     def _cpp_expression(
         self, gencontext: CodeGenerationContext
-    ) -> CppExpression:
+    ) -> _CppExpression:
         t = self._object_type._cpp_type_name()
-        return CppExpression(f"tcspc::new_delete_bucket_source<{t}>::create()")
+        return _CppExpression(
+            f"tcspc::new_delete_bucket_source<{t}>::create()"
+        )
 
 
 class RecyclingBucketSource(BucketSource):
@@ -58,15 +60,15 @@ class RecyclingBucketSource(BucketSource):
         self._max_count = max_bucket_count
 
     @override
-    def _parameters(self) -> Sequence[tuple[Param, CppTypeName]]:
+    def _parameters(self) -> Sequence[tuple[Param, _CppTypeName]]:
         if isinstance(self._max_count, Param):
-            return ((self._max_count, size_type),)
+            return ((self._max_count, _size_type),)
         return ()
 
     @override
     def _cpp_expression(
         self, gencontext: CodeGenerationContext
-    ) -> CppExpression:
+    ) -> _CppExpression:
         tmpl_args = ", ".join(
             (
                 self._object_type._cpp_type_name(),
@@ -79,6 +81,6 @@ class RecyclingBucketSource(BucketSource):
             if self._max_count is None
             else gencontext.size_t_expression(self._max_count)
         )
-        return CppExpression(
+        return _CppExpression(
             f"tcspc::recycling_bucket_source<{tmpl_args}>::create({max_count})"
         )

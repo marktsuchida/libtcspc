@@ -3,12 +3,12 @@
 # SPDX-License-Identifier: MIT
 
 from _test_helpers import _NamedEvent, _TestNode
-from libtcspc._cpp_utils import CppTypeName
+from libtcspc._cpp_utils import _CppTypeName
 from libtcspc._graph import _Edge, _update_edge_event_sets
 
-ShortEvent = _NamedEvent(CppTypeName("short"))
-IntEvent = _NamedEvent(CppTypeName("int"))
-LongEvent = _NamedEvent(CppTypeName("long"))
+ShortEvent = _NamedEvent(_CppTypeName("short"))
+IntEvent = _NamedEvent(_CppTypeName("int"))
+LongEvent = _NamedEvent(_CppTypeName("long"))
 
 
 def test_empty():

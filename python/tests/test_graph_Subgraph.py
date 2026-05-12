@@ -4,11 +4,11 @@
 
 from _test_helpers import _TestNode
 from libtcspc._codegen import CodeGenerationContext
-from libtcspc._cpp_utils import CppExpression, CppIdentifier, run_cpp_prog
+from libtcspc._cpp_utils import _CppExpression, _CppIdentifier, _run_cpp_prog
 from libtcspc._graph import Graph, Subgraph
 
 gencontext = CodeGenerationContext(
-    CppIdentifier("ctx"), CppIdentifier("params"), CppIdentifier("sinks")
+    _CppIdentifier("ctx"), _CppIdentifier("params"), _CppIdentifier("sinks")
 )
 
 
@@ -22,7 +22,7 @@ def test_empty_subgraph():
 
     code = sg._cpp_expression(gencontext, [])
     assert (
-        run_cpp_prog(f"""\
+        _run_cpp_prog(f"""\
             #include "libtcspc/tcspc.hpp"
             #include <tuple>
             int main() {{
@@ -75,10 +75,10 @@ def test_nested_subgraph(mocker):
     sg1 = Subgraph(g1)
 
     code = sg1._cpp_expression(
-        gencontext, [CppExpression("std::move(dstream)")]
+        gencontext, [_CppExpression("std::move(dstream)")]
     )
     assert (
-        run_cpp_prog(f"""\
+        _run_cpp_prog(f"""\
             #include "libtcspc/tcspc.hpp"
             #include <type_traits>
             auto f() {{

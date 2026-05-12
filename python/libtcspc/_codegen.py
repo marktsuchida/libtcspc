@@ -6,44 +6,49 @@ from dataclasses import dataclass
 
 from . import _cpp_utils
 from ._access import AccessTag
-from ._cpp_utils import CppExpression, CppIdentifier, CppTypeName, quote_string
+from ._cpp_utils import (
+    _CppExpression,
+    _CppIdentifier,
+    _CppTypeName,
+    _quote_string,
+)
 from ._param import Param
 
 
 @dataclass(frozen=True)
 class CodeGenerationContext:
-    context_varname: CppIdentifier
-    params_varname: CppIdentifier
-    sinks_varname: CppIdentifier
+    context_varname: _CppIdentifier
+    params_varname: _CppIdentifier
+    sinks_varname: _CppIdentifier
 
-    def u64_expression(self, p: Param[int] | int) -> CppExpression:
+    def u64_expression(self, p: Param[int] | int) -> _CppExpression:
         if isinstance(p, Param):
-            return CppExpression(
+            return _CppExpression(
                 f"{self.params_varname}.{p._cpp_identifier()}"
             )
         if p < 0:
             raise ValueError("non-negative value required")
-        return CppExpression(f"tcspc::u64{{{p}uLL}}")
+        return _CppExpression(f"tcspc::u64{{{p}uLL}}")
 
-    def size_t_expression(self, p: Param[int] | int) -> CppExpression:
+    def size_t_expression(self, p: Param[int] | int) -> _CppExpression:
         if isinstance(p, Param):
-            return CppExpression(
+            return _CppExpression(
                 f"{self.params_varname}.{p._cpp_identifier()}"
             )
         if p < 0:
             raise ValueError("non-negative value required")
-        return CppExpression(f"std::size_t{{{p}uLL}}")
+        return _CppExpression(f"std::size_t{{{p}uLL}}")
 
-    def string_expression(self, p: Param[str] | str) -> CppExpression:
+    def string_expression(self, p: Param[str] | str) -> _CppExpression:
         if isinstance(p, Param):
-            return CppExpression(
+            return _CppExpression(
                 f"{self.params_varname}.{p._cpp_identifier()}"
             )
-        return _cpp_utils.quote_string(p)
+        return _cpp_utils._quote_string(p)
 
     def tracker_expression(
-        self, access_type: CppTypeName, access_tag: AccessTag
-    ) -> CppExpression:
-        return CppExpression(
-            f"{self.context_varname}->tracker<{access_type}>({quote_string(access_tag.tag)})"
+        self, access_type: _CppTypeName, access_tag: AccessTag
+    ) -> _CppExpression:
+        return _CppExpression(
+            f"{self.context_varname}->tracker<{access_type}>({_quote_string(access_tag.tag)})"
         )

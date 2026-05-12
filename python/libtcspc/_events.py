@@ -8,9 +8,9 @@ from typing_extensions import override
 
 from . import _cpp_utils
 from ._cpp_utils import (
-    CppClassScopeDefs,
-    CppIdentifier,
-    CppTypeName,
+    _CppClassScopeDefs,
+    _CppIdentifier,
+    _CppTypeName,
 )
 from ._data_types import DataTypes
 
@@ -25,27 +25,29 @@ class EventType(ABC):
     """
 
     @abstractmethod
-    def _cpp_type_name(self) -> CppTypeName: ...
+    def _cpp_type_name(self) -> _CppTypeName: ...
 
     def __repr__(self) -> str:
         return f"<{type(self).__name__}({self._cpp_type_name()})>"
 
     def __eq__(self, other: object) -> bool:
-        return isinstance(other, EventType) and _cpp_utils.is_same_type(
+        return isinstance(other, EventType) and _cpp_utils._is_same_type(
             self._cpp_type_name(), other._cpp_type_name()
         )
 
     def _cpp_input_handler(
-        self, downstream: CppIdentifier
-    ) -> CppClassScopeDefs:
-        return CppClassScopeDefs(f"""\
+        self, downstream: _CppIdentifier
+    ) -> _CppClassScopeDefs:
+        return _CppClassScopeDefs(f"""\
         void handle({self._cpp_type_name()} const &event) {{
             {downstream}.handle(event);
         }}
         """)
 
-    def _cpp_output_handlers(self, pysink: CppIdentifier) -> CppClassScopeDefs:
-        return CppClassScopeDefs(f"""\
+    def _cpp_output_handlers(
+        self, pysink: _CppIdentifier
+    ) -> _CppClassScopeDefs:
+        return _CppClassScopeDefs(f"""\
         void handle({self._cpp_type_name()} const &event) {{
             nanobind::gil_scoped_acquire held;
             {pysink}->handle(
@@ -65,20 +67,20 @@ class BucketEvent(EventType):
         self._element_type = element_type
 
     @override
-    def _cpp_type_name(self) -> CppTypeName:
-        return CppTypeName(
+    def _cpp_type_name(self) -> _CppTypeName:
+        return _CppTypeName(
             f"tcspc::bucket<{self._element_type._cpp_type_name()}>"
         )
 
     @override
     def _cpp_input_handler(
-        self, downstream: CppIdentifier
-    ) -> CppClassScopeDefs:
+        self, downstream: _CppIdentifier
+    ) -> _CppClassScopeDefs:
         elem_cpp_type = self._element_type._cpp_type_name()
-        ndarray_type = CppTypeName(
+        ndarray_type = _CppTypeName(
             f"nanobind::ndarray<{elem_cpp_type} const, nanobind::device::cpu, nanobind::c_contig>"
         )
-        return CppClassScopeDefs(f"""\
+        return _CppClassScopeDefs(f"""\
         void handle({ndarray_type} const &event) {{
             // Emit bucket<T>, not bucket<T const>, but by const ref.
             auto *const ptr = const_cast<{elem_cpp_type} *>(event.data());
@@ -89,14 +91,16 @@ class BucketEvent(EventType):
         """)
 
     @override
-    def _cpp_output_handlers(self, pysink: CppIdentifier) -> CppClassScopeDefs:
+    def _cpp_output_handlers(
+        self, pysink: _CppIdentifier
+    ) -> _CppClassScopeDefs:
         elem_cpp_type = self._element_type._cpp_type_name()
         # We take ownership of the bucket if we can; otherwise we make a copy;
         # in all cases we emit a writable ndarray that owns the memory.
         # TODO Once we support Python bucket sources, buckets from them should
         # be handled specially to eliminate copying (and set read-only as
         # appropriate).
-        return CppClassScopeDefs(f"""\
+        return _CppClassScopeDefs(f"""\
         void emit_span_copy(std::span<{elem_cpp_type} const> spn) {{
             using elem_type = {elem_cpp_type};
             auto *buf = new elem_type[spn.size()];
@@ -141,8 +145,8 @@ class BucketEvent(EventType):
 
 class BHSPCEvent(EventType):
     @override
-    def _cpp_type_name(self) -> CppTypeName:
-        return CppTypeName("tcspc::bh_spc_event")
+    def _cpp_type_name(self) -> _CppTypeName:
+        return _CppTypeName("tcspc::bh_spc_event")
 
 
 class DataLostEvent(EventType):
@@ -152,8 +156,8 @@ class DataLostEvent(EventType):
         )
 
     @override
-    def _cpp_type_name(self) -> CppTypeName:
-        return CppTypeName(
+    def _cpp_type_name(self) -> _CppTypeName:
+        return _CppTypeName(
             f"tcspc::data_lost_event<{self._data_types._cpp_type_name()}>"
         )
 
@@ -165,8 +169,8 @@ class MarkerEvent(EventType):
         )
 
     @override
-    def _cpp_type_name(self) -> CppTypeName:
-        return CppTypeName(
+    def _cpp_type_name(self) -> _CppTypeName:
+        return _CppTypeName(
             f"tcspc::marker_event<{self._data_types._cpp_type_name()}>"
         )
 
@@ -178,8 +182,8 @@ class TimeCorrelatedDetectionEvent(EventType):
         )
 
     @override
-    def _cpp_type_name(self) -> CppTypeName:
-        return CppTypeName(
+    def _cpp_type_name(self) -> _CppTypeName:
+        return _CppTypeName(
             f"tcspc::time_correlated_detection_event<{self._data_types._cpp_type_name()}>"
         )
 
@@ -191,13 +195,13 @@ class TimeReachedEvent(EventType):
         )
 
     @override
-    def _cpp_type_name(self) -> CppTypeName:
-        return CppTypeName(
+    def _cpp_type_name(self) -> _CppTypeName:
+        return _CppTypeName(
             f"tcspc::time_reached_event<{self._data_types._cpp_type_name()}>"
         )
 
 
 class WarningEvent(EventType):
     @override
-    def _cpp_type_name(self) -> CppTypeName:
-        return CppTypeName("tcspc::warning_event")
+    def _cpp_type_name(self) -> _CppTypeName:
+        return _CppTypeName("tcspc::warning_event")

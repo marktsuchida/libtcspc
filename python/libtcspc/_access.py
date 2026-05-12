@@ -10,36 +10,36 @@ from typing import Protocol
 from typing_extensions import override
 
 from ._cpp_utils import (
-    CppFunctionScopeDefs,
-    CppIdentifier,
-    CppTypeName,
-    ModuleCodeFragment,
-    identifier_from_string,
+    _CppFunctionScopeDefs,
+    _CppIdentifier,
+    _CppTypeName,
+    _identifier_from_string,
+    _ModuleCodeFragment,
 )
 
 
 class _AccessSpec(ABC):
     @classmethod
     @abstractmethod
-    def _cpp_type_name(cls) -> CppTypeName: ...
+    def _cpp_type_name(cls) -> _CppTypeName: ...
 
     @classmethod
     @abstractmethod
-    def cpp_methods(cls) -> Sequence[CppIdentifier]: ...
+    def cpp_methods(cls) -> Sequence[_CppIdentifier]: ...
 
     @classmethod
     @abstractmethod
     def py_class_name(cls) -> str: ...
 
     @classmethod
-    def cpp_bindings(cls, module_var: CppIdentifier) -> ModuleCodeFragment:
+    def cpp_bindings(cls, module_var: _CppIdentifier) -> _ModuleCodeFragment:
         py_class_name = cls.py_class_name()
-        return ModuleCodeFragment(
+        return _ModuleCodeFragment(
             (),
             (),
             (),
             (
-                CppFunctionScopeDefs(
+                _CppFunctionScopeDefs(
                     f'nanobind::class_<{cls._cpp_type_name()}>({module_var}, "{py_class_name}", nanobind::is_final())'
                     + "".join(
                         f'\n    .def("{meth}", &{cls._cpp_type_name()}::{meth})'
@@ -62,8 +62,8 @@ class AccessTag:
 
     tag: str
 
-    def _context_method_name(self) -> CppIdentifier:
-        return CppIdentifier(f"access__{identifier_from_string(self.tag)}")
+    def _context_method_name(self) -> _CppIdentifier:
+        return _CppIdentifier(f"access__{_identifier_from_string(self.tag)}")
 
 
 class _Accessible(ABC):  # noqa: B024
@@ -82,13 +82,13 @@ class _Accessible(ABC):  # noqa: B024
 class _AcquireAccessSpec(_AccessSpec):
     @override
     @classmethod
-    def _cpp_type_name(cls) -> CppTypeName:
-        return CppTypeName("tcspc::acquire_access")
+    def _cpp_type_name(cls) -> _CppTypeName:
+        return _CppTypeName("tcspc::acquire_access")
 
     @override
     @classmethod
-    def cpp_methods(cls) -> Sequence[CppIdentifier]:
-        return (CppIdentifier("halt"),)
+    def cpp_methods(cls) -> Sequence[_CppIdentifier]:
+        return (_CppIdentifier("halt"),)
 
     @override
     @classmethod
@@ -99,13 +99,13 @@ class _AcquireAccessSpec(_AccessSpec):
 class _CountAccessSpec(_AccessSpec):
     @override
     @classmethod
-    def _cpp_type_name(cls) -> CppTypeName:
-        return CppTypeName("tcspc::count_access")
+    def _cpp_type_name(cls) -> _CppTypeName:
+        return _CppTypeName("tcspc::count_access")
 
     @override
     @classmethod
-    def cpp_methods(cls) -> Sequence[CppIdentifier]:
-        return (CppIdentifier("count"),)
+    def cpp_methods(cls) -> Sequence[_CppIdentifier]:
+        return (_CppIdentifier("count"),)
 
     @override
     @classmethod

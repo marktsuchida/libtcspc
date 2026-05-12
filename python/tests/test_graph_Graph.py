@@ -7,19 +7,19 @@ import pytest
 from _test_helpers import _NamedEvent, _TestNode
 from libtcspc._codegen import CodeGenerationContext
 from libtcspc._cpp_utils import (
-    CppExpression,
-    CppIdentifier,
-    CppTypeName,
-    run_cpp_prog,
+    _CppExpression,
+    _CppIdentifier,
+    _CppTypeName,
+    _run_cpp_prog,
 )
 from libtcspc._graph import Graph, Node
 
-ShortEvent = _NamedEvent(CppTypeName("short"))
-IntEvent = _NamedEvent(CppTypeName("int"))
-LongEvent = _NamedEvent(CppTypeName("long"))
+ShortEvent = _NamedEvent(_CppTypeName("short"))
+IntEvent = _NamedEvent(_CppTypeName("int"))
+LongEvent = _NamedEvent(_CppTypeName("long"))
 
 gencontext = CodeGenerationContext(
-    CppIdentifier("ctx"), CppIdentifier("params"), CppIdentifier("sinks")
+    _CppIdentifier("ctx"), _CppIdentifier("params"), _CppIdentifier("sinks")
 )
 
 
@@ -39,7 +39,7 @@ def test_empty_graph():
     # An empty graph has no inputs, so generates a lambda that returns an empty
     # tuple. Assignment should succeed.
     assert (
-        run_cpp_prog(f"""\
+        _run_cpp_prog(f"""\
             #include "libtcspc/tcspc.hpp"
             #include <tuple>
             int main() {{
@@ -53,7 +53,7 @@ def test_empty_graph():
     )
 
     with pytest.raises(ValueError):
-        g._cpp_expression(gencontext, [CppExpression("downstream")])
+        g._cpp_expression(gencontext, [_CppExpression("downstream")])
 
 
 def test_single_node(mocker):
@@ -80,11 +80,13 @@ def test_single_node(mocker):
         return downstreams[0]
 
     node._cpp_expression = mocker.MagicMock(side_effect=node_codegen)  # type: ignore
-    code = g._cpp_expression(gencontext, [CppExpression("std::move(dstream)")])
+    code = g._cpp_expression(
+        gencontext, [_CppExpression("std::move(dstream)")]
+    )
     # The generated lambda should return a single-element tuple whose element
     # was moved from 'ds'.
     assert (
-        run_cpp_prog(f"""\
+        _run_cpp_prog(f"""\
             #include "libtcspc/tcspc.hpp"
             #include <type_traits>
             auto f() {{
@@ -135,10 +137,10 @@ def test_two_nodes_two_inputs_two_outputs(mocker):
     node1._cpp_expression = mocker.MagicMock(side_effect=node1_codegen)  # type: ignore
     code = g._cpp_expression(
         gencontext,
-        [CppExpression("std::move(ds0)"), CppExpression("std::move(ds1)")],
+        [_CppExpression("std::move(ds0)"), _CppExpression("std::move(ds1)")],
     )
     assert (
-        run_cpp_prog(f"""\
+        _run_cpp_prog(f"""\
             #include "libtcspc/tcspc.hpp"
             #include <string>
             #include <tuple>
@@ -202,9 +204,9 @@ def test_two_nodes_two_internal_edges(mocker):
 
     node0._cpp_expression = mocker.MagicMock(side_effect=node0_codegen)  # type: ignore
     node1._cpp_expression = mocker.MagicMock(side_effect=node1_codegen)  # type: ignore
-    code = g._cpp_expression(gencontext, [CppExpression("std::move(ds)")])
+    code = g._cpp_expression(gencontext, [_CppExpression("std::move(ds)")])
     assert (
-        run_cpp_prog(f"""\
+        _run_cpp_prog(f"""\
             #include "libtcspc/tcspc.hpp"
             #include <type_traits>
             auto f() {{
@@ -243,9 +245,9 @@ def test_add_sequence(mocker):
     g.add_sequence([node0, node1])
     g.add_sequence([node2, node3], upstream="_TestNode-1")
     g.add_sequence([node4], downstream=("_TestNode-0", "input"))
-    code = g._cpp_expression(gencontext, [CppExpression("std::move(ds)")])
+    code = g._cpp_expression(gencontext, [_CppExpression("std::move(ds)")])
     assert (
-        run_cpp_prog(f"""\
+        _run_cpp_prog(f"""\
             #include "libtcspc/tcspc.hpp"
             #include <type_traits>
             auto f() {{

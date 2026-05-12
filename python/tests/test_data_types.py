@@ -168,22 +168,22 @@ def test_rejects_unsupported_width():
 
 def test_type_constants_not_publicly_accessible():
     with pytest.raises(AttributeError):
-        getattr(tcspc, "uint32_type")  # noqa: B009
+        getattr(tcspc, "_uint32_type")  # noqa: B009
 
 
 def test_type_constants_still_in_private_module():
     from libtcspc._cpp_utils import (  # noqa: F401
-        byte_type,
-        float32_type,
-        float64_type,
-        int8_type,
-        int16_type,
-        int32_type,
-        int64_type,
-        size_type,
-        string_type,
-        uint8_type,
-        uint16_type,
-        uint32_type,
-        uint64_type,
+        _byte_type,
+        _float32_type,
+        _float64_type,
+        _int8_type,
+        _int16_type,
+        _int32_type,
+        _int64_type,
+        _size_type,
+        _string_type,
+        _uint8_type,
+        _uint16_type,
+        _uint32_type,
+        _uint64_type,
     )

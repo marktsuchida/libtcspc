@@ -7,7 +7,7 @@ from typing import Any, TypedDict
 import numpy as np
 from typing_extensions import Unpack
 
-from ._cpp_utils import CppTypeName, cpp_type_from_dtype
+from ._cpp_utils import _cpp_type_from_dtype, _CppTypeName
 
 
 class _DataTypes(TypedDict, total=False):
@@ -39,14 +39,14 @@ _SLOT_DESCRIPTION: dict[frozenset[str], str] = {
 
 class DataTypes:
     def __init__(self, **kwargs: Unpack[_DataTypes]) -> None:
-        def typ(category: str) -> CppTypeName:
+        def typ(category: str) -> _CppTypeName:
             key = f"{category}_type"
             if key not in kwargs:
-                return CppTypeName(
+                return _CppTypeName(
                     f"tcspc::default_data_types::{category}_type"
                 )
             value = kwargs[key]  # type: ignore[literal-required]
-            cpp_type = cpp_type_from_dtype(value)
+            cpp_type = _cpp_type_from_dtype(value)
             allowed = _SLOT_RULES[category]
             kind = np.dtype(value).kind
             if kind not in allowed:
@@ -68,9 +68,9 @@ class DataTypes:
                 typ("bin"),
             )
         )
-        self._type_set_class = CppTypeName(
+        self._type_set_class = _CppTypeName(
             f"tcspc::parameterized_data_types<{tparams}>"
         )
 
-    def _cpp_type_name(self) -> CppTypeName:
+    def _cpp_type_name(self) -> _CppTypeName:
         return self._type_set_class

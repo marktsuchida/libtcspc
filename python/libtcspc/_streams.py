@@ -9,7 +9,12 @@ from typing import final
 from typing_extensions import override
 
 from ._codegen import CodeGenerationContext
-from ._cpp_utils import CppExpression, CppTypeName, string_type, uint64_type
+from ._cpp_utils import (
+    _CppExpression,
+    _CppTypeName,
+    _string_type,
+    _uint64_type,
+)
 from ._param import Param, _Parameterized
 
 
@@ -17,7 +22,7 @@ class InputStream(_Parameterized):
     @abstractmethod
     def _cpp_expression(
         self, gencontext: CodeGenerationContext
-    ) -> CppExpression: ...
+    ) -> _CppExpression: ...
 
 
 @final
@@ -39,20 +44,20 @@ class BinaryFileInputStream(InputStream):
         self._start_offset = start_offset
 
     @override
-    def _parameters(self) -> Sequence[tuple[Param, CppTypeName]]:
-        params: list[tuple[Param, CppTypeName]] = []
+    def _parameters(self) -> Sequence[tuple[Param, _CppTypeName]]:
+        params: list[tuple[Param, _CppTypeName]] = []
         if isinstance(self._filename, Param):
-            params.append((self._filename, string_type))
+            params.append((self._filename, _string_type))
         if isinstance(self._start_offset, Param):
-            params.append((self._start_offset, uint64_type))
+            params.append((self._start_offset, _uint64_type))
         return params
 
     @override
     def _cpp_expression(
         self, gencontext: CodeGenerationContext
-    ) -> CppExpression:
+    ) -> _CppExpression:
         start_offset = gencontext.u64_expression(self._start_offset)
-        return CppExpression(
+        return _CppExpression(
             f"""\
             tcspc::binary_file_input_stream(
                 {gencontext.string_expression(self._filename)},

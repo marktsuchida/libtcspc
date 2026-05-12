@@ -11,7 +11,7 @@ from typing_extensions import override
 
 from ._access import AccessTag
 from ._compile import CompiledGraph
-from ._cpp_utils import CppIdentifier
+from ._cpp_utils import _CppIdentifier
 
 
 class PySink(ABC):
@@ -44,7 +44,7 @@ def _build_execution(
     downstreams: Sequence[PySink] | None,
 ) -> tuple[Any, Any, Any, set[str]]:
     given_args = {} if arguments is None else arguments.copy()
-    args: dict[CppIdentifier, Any] = {}
+    args: dict[_CppIdentifier, Any] = {}
     for param in compiled_graph.parameters():
         if param.name in given_args:
             args[param._cpp_identifier()] = given_args.pop(param.name)
@@ -101,7 +101,7 @@ class ExecutionContext:
     ----------
     compiled_graph : CompiledGraph
         The compiled graph from which to instantiate the processor.
-    arguments : dict[CppIdentifier, Any]
+    arguments : dict[_CppIdentifier, Any]
         The values that parameters should bind to.
     """
 

@@ -8,13 +8,13 @@ from typing import final
 import numpy as np
 from typing_extensions import override
 
-from ._cpp_utils import CppExpression
+from ._cpp_utils import _CppExpression
 from ._events import EventType
 
 
 class AcquisitionReader(ABC):
     @abstractmethod
-    def _cpp_expression(self) -> CppExpression: ...
+    def _cpp_expression(self) -> _CppExpression: ...
 
 
 @final
@@ -23,8 +23,8 @@ class NullReader(AcquisitionReader):
         self._event_type = event_type
 
     @override
-    def _cpp_expression(self) -> CppExpression:
-        return CppExpression(
+    def _cpp_expression(self) -> _CppExpression:
+        return _CppExpression(
             f"tcspc::null_reader<{self._event_type._cpp_type_name()}>()"
         )
 
@@ -35,8 +35,8 @@ class StuckReader(AcquisitionReader):
         self._event_type = event_type
 
     @override
-    def _cpp_expression(self) -> CppExpression:
-        return CppExpression(
+    def _cpp_expression(self) -> _CppExpression:
+        return _CppExpression(
             f"tcspc::stuck_reader<{self._event_type._cpp_type_name()}>()"
         )
 

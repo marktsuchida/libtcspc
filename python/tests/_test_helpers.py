@@ -5,18 +5,18 @@
 from collections.abc import Collection, Sequence
 
 from libtcspc._codegen import CodeGenerationContext
-from libtcspc._cpp_utils import CppExpression, CppTypeName
+from libtcspc._cpp_utils import _CppExpression, _CppTypeName
 from libtcspc._events import EventType
 from libtcspc._node import Node, _RelayNode
 from typing_extensions import override
 
 
 class _NamedEvent(EventType):
-    def __init__(self, cpp_type: CppTypeName) -> None:
+    def __init__(self, cpp_type: _CppTypeName) -> None:
         self._cpp_type = cpp_type
 
     @override
-    def _cpp_type_name(self) -> CppTypeName:
+    def _cpp_type_name(self) -> _CppTypeName:
         return self._cpp_type
 
 
@@ -34,8 +34,8 @@ class _TestNode(Node):
     def _cpp_expression(
         self,
         gencontext: CodeGenerationContext,
-        downstreams: Sequence[CppExpression],
-    ) -> CppExpression:
+        downstreams: Sequence[_CppExpression],
+    ) -> _CppExpression:
         raise NotImplementedError
 
 
@@ -53,6 +53,6 @@ class _TestRelayNode(_RelayNode):
     def _relay_cpp_expression(
         self,
         gencontext: CodeGenerationContext,
-        downstream: CppExpression,
-    ) -> CppExpression:
+        downstream: _CppExpression,
+    ) -> _CppExpression:
         raise NotImplementedError

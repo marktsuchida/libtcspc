@@ -9,7 +9,7 @@ import pytest
 from _test_helpers import _NamedEvent
 from libtcspc._access import AccessTag
 from libtcspc._compile import CompiledGraph
-from libtcspc._cpp_utils import CppIdentifier, CppTypeName, uint8_type
+from libtcspc._cpp_utils import _CppIdentifier, _CppTypeName, _uint8_type
 from libtcspc._events import BucketEvent
 from libtcspc._execute import ExecutionContext, PySink
 from libtcspc._graph import Graph
@@ -24,7 +24,7 @@ from libtcspc._processors import (
 )
 from typing_extensions import override
 
-IntEvent = _NamedEvent(CppTypeName("int"))
+IntEvent = _NamedEvent(_CppTypeName("int"))
 
 
 def test_execute_graph_with_single_input():
@@ -59,10 +59,10 @@ def test_execute_rejects_events_and_flush_when_expired():
 def test_execute_handles_buffer_events():
     g = Graph()
     g.add_node(
-        "a", SinkEvents(_NamedEvent(CppTypeName("tcspc::bucket<tcspc::u8>")))
+        "a", SinkEvents(_NamedEvent(_CppTypeName("tcspc::bucket<tcspc::u8>")))
     )
     c = ExecutionContext(
-        CompiledGraph(g, [BucketEvent(_NamedEvent(uint8_type))]), {}
+        CompiledGraph(g, [BucketEvent(_NamedEvent(_uint8_type))]), {}
     )
     c.handle(b"")
     c.handle(b"abc")
@@ -77,13 +77,13 @@ def test_execute_require_parameter_with_no_default():
     g.add_node("a", Stop((), Param("a_msg")))
     g.add_node("s", NullSink(), upstream="a")
     cg = CompiledGraph(g)
-    ExecutionContext(cg, {CppIdentifier("a_msg"): "hello"})
+    ExecutionContext(cg, {_CppIdentifier("a_msg"): "hello"})
     with pytest.raises(ValueError):
         ExecutionContext(cg)
     with pytest.raises(ValueError):
         ExecutionContext(cg, {})
     with pytest.raises(TypeError):
-        ExecutionContext(cg, {CppIdentifier("a_msg"): 123})
+        ExecutionContext(cg, {_CppIdentifier("a_msg"): 123})
 
 
 def test_execute_unknown_parameter():
@@ -92,7 +92,7 @@ def test_execute_unknown_parameter():
     cg = CompiledGraph(g)
     ExecutionContext(cg)
     with pytest.raises(ValueError):
-        ExecutionContext(cg, {CppIdentifier("blah"): "hello"})
+        ExecutionContext(cg, {_CppIdentifier("blah"): "hello"})
 
 
 @final
@@ -112,7 +112,7 @@ class MockSink(PySink):
 def test_execute_pass_through_integers():
     g = Graph()
     g.add_node("r", SelectAll())
-    cg = CompiledGraph(g, (_NamedEvent(CppTypeName("int")),))
+    cg = CompiledGraph(g, (_NamedEvent(_CppTypeName("int")),))
 
     log: list[str] = []
     sink = MockSink(log)
@@ -125,8 +125,8 @@ def test_execute_pass_through_integers():
 
 def test_execute_emit_bucket():
     g = Graph()
-    g.add_node("b", Batch(_NamedEvent(CppTypeName("int")), batch_size=2))
-    cg = CompiledGraph(g, (_NamedEvent(CppTypeName("int")),))
+    g.add_node("b", Batch(_NamedEvent(_CppTypeName("int")), batch_size=2))
+    cg = CompiledGraph(g, (_NamedEvent(_CppTypeName("int")),))
 
     log: list[str] = []
     sink = MockSink(log)
@@ -140,7 +140,7 @@ def test_execute_emit_bucket():
 def test_execute_sink_exception_propagates():
     g = Graph()
     g.add_node("r", SelectAll())
-    cg = CompiledGraph(g, (_NamedEvent(CppTypeName("int")),))
+    cg = CompiledGraph(g, (_NamedEvent(_CppTypeName("int")),))
 
     @final
     class RaisingSink(PySink):
