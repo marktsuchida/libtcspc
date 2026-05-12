@@ -344,7 +344,7 @@ jobs:
       - name: Build
         run: ninja -C builddir docs/cpp
       - name: Build Python documentation
-        run: ninja -C builddir docs/python/html
+        run: ninja -C builddir docs/python
 
       # TODO Publish, but we first need to decide how to combine C++ API docs
       # with the Python docs.

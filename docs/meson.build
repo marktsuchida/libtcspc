@@ -53,3 +53,29 @@ custom_target(
     install: true,
     install_dir: doc_install_dir,
 )
+
+subdir('python')
+
+sphinx_werror_arg = get_option('docs_werror') ? '-W' : '-q'
+
+# No hard dependency on the Doxygen target: doxylink tolerates a missing
+# tagfile (links degrade to plain text), so users without Doxygen can still
+# build the Python docs.
+custom_target(
+    'python-docs',
+    command: [
+        'env',
+        'LIBTCSPC_DOXYGEN_TAGFILE=' + meson.current_build_dir() / 'libtcspc.tag',
+        'LIBTCSPC_DOXYGEN_HTML_BASE=../cpp',
+        sphinx_build,
+        '-b', 'html',
+        '-d', meson.current_build_dir() / 'python-doctrees',
+        sphinx_werror_arg,
+        meson.current_source_dir() / 'python',
+        meson.current_build_dir() / 'python',
+    ],
+    output: ['python'],
+    depend_files: [py_doc_sources, python_pkg_sources],
+    install: true,
+    install_dir: doc_install_dir,
+)

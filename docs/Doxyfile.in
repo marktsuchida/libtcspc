@@ -16,6 +16,7 @@ WARN_AS_ERROR          = @DOXYGEN_WERROR@
 
 GENERATE_HTML          = YES
 GENERATE_LATEX         = NO
+HTML_OUTPUT            = .
 
 DISTRIBUTE_GROUP_DOC   = NO
 EXCLUDE_SYMBOLS        = internal std
