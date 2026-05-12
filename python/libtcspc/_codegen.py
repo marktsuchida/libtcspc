@@ -16,7 +16,7 @@ from ._param import Param
 
 
 @dataclass(frozen=True)
-class CodeGenerationContext:
+class _CodeGenerationContext:
     context_varname: _CppIdentifier
     params_varname: _CppIdentifier
     sinks_varname: _CppIdentifier

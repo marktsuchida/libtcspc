@@ -11,7 +11,7 @@ from typing import final
 from typing_extensions import override
 
 from ._access import AccessTag, _Accessible, _AccessSpec
-from ._codegen import CodeGenerationContext
+from ._codegen import _CodeGenerationContext
 from ._cpp_utils import _CppExpression, _CppIdentifier, _CppTypeName
 from ._events import EventType
 from ._node import Node
@@ -351,7 +351,7 @@ class Graph:
 
     def _cpp_expression(
         self,
-        gencontext: CodeGenerationContext,
+        gencontext: _CodeGenerationContext,
         downstreams: Sequence[_CppExpression] | None = None,
     ) -> _CppExpression:
         downstreams = downstreams if downstreams is not None else ()
@@ -540,7 +540,7 @@ class Subgraph(Node):
     @override
     def _cpp_expression(
         self,
-        gencontext: CodeGenerationContext,
+        gencontext: _CodeGenerationContext,
         downstreams: Sequence[_CppExpression],
     ) -> _CppExpression:
         return self._graph._cpp_expression(gencontext, downstreams)

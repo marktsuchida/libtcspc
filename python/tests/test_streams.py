@@ -3,12 +3,12 @@
 # SPDX-License-Identifier: MIT
 
 import pytest
-from libtcspc._codegen import CodeGenerationContext
+from libtcspc._codegen import _CodeGenerationContext
 from libtcspc._cpp_utils import _CppIdentifier, _string_type, _uint64_type
 from libtcspc._param import Param
 from libtcspc._streams import BinaryFileInputStream
 
-gencontext = CodeGenerationContext(
+gencontext = _CodeGenerationContext(
     _CppIdentifier("ctx"), _CppIdentifier("params"), _CppIdentifier("sinks")
 )
 

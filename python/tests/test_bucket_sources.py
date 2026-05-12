@@ -8,13 +8,13 @@ from libtcspc._bucket_sources import (
     NewDeleteBucketSource,
     RecyclingBucketSource,
 )
-from libtcspc._codegen import CodeGenerationContext
+from libtcspc._codegen import _CodeGenerationContext
 from libtcspc._cpp_utils import _CppIdentifier, _CppTypeName, _size_type
 from libtcspc._param import Param
 
 IntEvent = _NamedEvent(_CppTypeName("int"))
 
-gencontext = CodeGenerationContext(
+gencontext = _CodeGenerationContext(
     _CppIdentifier("ctx"), _CppIdentifier("params"), _CppIdentifier("sinks")
 )
 

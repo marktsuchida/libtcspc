@@ -9,7 +9,7 @@ from typing import final
 from typing_extensions import override
 
 from ._access import _Accessible
-from ._codegen import CodeGenerationContext
+from ._codegen import _CodeGenerationContext
 from ._cpp_utils import _CppExpression
 from ._events import EventType
 from ._param import _Parameterized
@@ -116,7 +116,7 @@ class Node(_Accessible, _Parameterized):
     @abstractmethod
     def _cpp_expression(
         self,
-        gencontext: CodeGenerationContext,
+        gencontext: _CodeGenerationContext,
         downstreams: Sequence[_CppExpression],
     ) -> _CppExpression:
         """
@@ -206,7 +206,7 @@ class _RelayNode(Node):
     @final
     def _cpp_expression(
         self,
-        gencontext: CodeGenerationContext,
+        gencontext: _CodeGenerationContext,
         downstreams: Sequence[_CppExpression],
     ) -> _CppExpression:
         """
@@ -222,7 +222,7 @@ class _RelayNode(Node):
     @abstractmethod
     def _relay_cpp_expression(
         self,
-        gencontext: CodeGenerationContext,
+        gencontext: _CodeGenerationContext,
         downstream: _CppExpression,
     ) -> _CppExpression:
         """

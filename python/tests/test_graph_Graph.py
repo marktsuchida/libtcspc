@@ -5,7 +5,7 @@
 
 import pytest
 from _test_helpers import _NamedEvent, _TestNode
-from libtcspc._codegen import CodeGenerationContext
+from libtcspc._codegen import _CodeGenerationContext
 from libtcspc._cpp_utils import (
     _CppExpression,
     _CppIdentifier,
@@ -18,7 +18,7 @@ ShortEvent = _NamedEvent(_CppTypeName("short"))
 IntEvent = _NamedEvent(_CppTypeName("int"))
 LongEvent = _NamedEvent(_CppTypeName("long"))
 
-gencontext = CodeGenerationContext(
+gencontext = _CodeGenerationContext(
     _CppIdentifier("ctx"), _CppIdentifier("params"), _CppIdentifier("sinks")
 )
 

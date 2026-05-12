@@ -3,11 +3,11 @@
 # SPDX-License-Identifier: MIT
 
 from _test_helpers import _TestNode
-from libtcspc._codegen import CodeGenerationContext
+from libtcspc._codegen import _CodeGenerationContext
 from libtcspc._cpp_utils import _CppExpression, _CppIdentifier, _run_cpp_prog
 from libtcspc._graph import Graph, Subgraph
 
-gencontext = CodeGenerationContext(
+gencontext = _CodeGenerationContext(
     _CppIdentifier("ctx"), _CppIdentifier("params"), _CppIdentifier("sinks")
 )
 

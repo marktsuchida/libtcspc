@@ -16,7 +16,7 @@ from . import _include, _odext
 _builder = _odext.Builder(
     binary_type="executable",
     cpp_std="c++20",
-    include_dirs=(_include.libtcspc_include_dir(),),
+    include_dirs=(_include._libtcspc_include_dir(),),
     pch_includes=("libtcspc/tcspc.hpp",),
 )
 

@@ -7,7 +7,7 @@ from collections.abc import Sequence
 
 from typing_extensions import override
 
-from ._codegen import CodeGenerationContext
+from ._codegen import _CodeGenerationContext
 from ._cpp_utils import _CppExpression, _CppTypeName, _size_type
 from ._events import EventType
 from ._param import Param, _Parameterized
@@ -16,7 +16,7 @@ from ._param import Param, _Parameterized
 class BucketSource(_Parameterized):
     @abstractmethod
     def _cpp_expression(
-        self, gencontext: CodeGenerationContext
+        self, gencontext: _CodeGenerationContext
     ) -> _CppExpression: ...
 
 
@@ -26,7 +26,7 @@ class NewDeleteBucketSource(BucketSource):
 
     @override
     def _cpp_expression(
-        self, gencontext: CodeGenerationContext
+        self, gencontext: _CodeGenerationContext
     ) -> _CppExpression:
         t = self._object_type._cpp_type_name()
         return _CppExpression(
@@ -67,7 +67,7 @@ class RecyclingBucketSource(BucketSource):
 
     @override
     def _cpp_expression(
-        self, gencontext: CodeGenerationContext
+        self, gencontext: _CodeGenerationContext
     ) -> _CppExpression:
         tmpl_args = ", ".join(
             (

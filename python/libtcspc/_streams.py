@@ -8,7 +8,7 @@ from typing import final
 
 from typing_extensions import override
 
-from ._codegen import CodeGenerationContext
+from ._codegen import _CodeGenerationContext
 from ._cpp_utils import (
     _CppExpression,
     _CppTypeName,
@@ -21,7 +21,7 @@ from ._param import Param, _Parameterized
 class InputStream(_Parameterized):
     @abstractmethod
     def _cpp_expression(
-        self, gencontext: CodeGenerationContext
+        self, gencontext: _CodeGenerationContext
     ) -> _CppExpression: ...
 
 
@@ -54,7 +54,7 @@ class BinaryFileInputStream(InputStream):
 
     @override
     def _cpp_expression(
-        self, gencontext: CodeGenerationContext
+        self, gencontext: _CodeGenerationContext
     ) -> _CppExpression:
         start_offset = gencontext.u64_expression(self._start_offset)
         return _CppExpression(

@@ -13,7 +13,7 @@ import nanobind  # type: ignore
 
 from . import _include, _odext
 from ._access import AccessTag, _AccessSpec
-from ._codegen import CodeGenerationContext
+from ._codegen import _CodeGenerationContext
 from ._cpp_utils import (
     _CppExpression,
     _CppFunctionScopeDefs,
@@ -196,7 +196,7 @@ def _output_processor(
 
 def _processor_creation(
     graph_code: _CppExpression,
-    gencontext: CodeGenerationContext,
+    gencontext: _CodeGenerationContext,
     output_names: Sequence[_CppExpression],
     input_event_types: Sequence[EventType],
     output_event_sets: Sequence[Sequence[EventType]],
@@ -325,7 +325,7 @@ def _graph_module_code(
         (),
     )
 
-    genctx = CodeGenerationContext(
+    genctx = _CodeGenerationContext(
         _CppIdentifier("ctx"),
         _CppIdentifier("params"),
         _CppIdentifier("sinks"),
@@ -383,7 +383,7 @@ def _nanobind_dir() -> Path:
 _builder = _odext.Builder(
     cpp_std="c++20",
     include_dirs=(
-        _include.libtcspc_include_dir(),
+        _include._libtcspc_include_dir(),
         _nanobind_dir() / "include",
         _nanobind_dir() / "ext/robin_map/include",  # For nanobind lib build.
     ),

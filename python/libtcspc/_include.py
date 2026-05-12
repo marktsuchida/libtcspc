@@ -13,7 +13,7 @@ from pathlib import Path
 # extension modules, so nothing is really lost. This does work with
 # meson-python's editable install.
 @functools.cache
-def libtcspc_include_dir() -> Path:
+def _libtcspc_include_dir() -> Path:
     with importlib.resources.as_file(
         importlib.resources.files("libtcspc").joinpath(
             "include/libtcspc/tcspc.hpp"

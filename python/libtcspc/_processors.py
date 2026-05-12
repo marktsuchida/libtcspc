@@ -11,7 +11,7 @@ from . import _access, _cpp_utils, _events, _streams
 from ._access import AccessTag, _AccessSpec
 from ._acquisition_readers import AcquisitionReader, PyAcquisitionReader
 from ._bucket_sources import BucketSource, RecyclingBucketSource
-from ._codegen import CodeGenerationContext
+from ._codegen import _CodeGenerationContext
 from ._cpp_utils import (
     _CppExpression,
     _CppTypeName,
@@ -175,7 +175,7 @@ class Acquire(_RelayNode):
     @override
     def _relay_cpp_expression(
         self,
-        gencontext: CodeGenerationContext,
+        gencontext: _CodeGenerationContext,
         downstream: _CppExpression,
     ) -> _CppExpression:
         reader = (
@@ -232,7 +232,7 @@ class Batch(_RelayNode):
     @override
     def _relay_cpp_expression(
         self,
-        gencontext: CodeGenerationContext,
+        gencontext: _CodeGenerationContext,
         downstream: _CppExpression,
     ) -> _CppExpression:
         batch_size = gencontext.size_t_expression(self._batch_size)
@@ -256,7 +256,7 @@ class CheckMonotonic(_TypePreservingRelayNode):
     @override
     def _relay_cpp_expression(
         self,
-        gencontext: CodeGenerationContext,
+        gencontext: _CodeGenerationContext,
         downstream: _CppExpression,
     ) -> _CppExpression:
         return _CppExpression(
@@ -282,7 +282,7 @@ class Count(_TypePreservingRelayNode):
     @override
     def _relay_cpp_expression(
         self,
-        gencontext: CodeGenerationContext,
+        gencontext: _CodeGenerationContext,
         downstream: _CppExpression,
     ) -> _CppExpression:
         return _CppExpression(
@@ -319,7 +319,7 @@ class DecodeBHSPC(_RelayNode):
     @override
     def _relay_cpp_expression(
         self,
-        gencontext: CodeGenerationContext,
+        gencontext: _CodeGenerationContext,
         downstream: _CppExpression,
     ) -> _CppExpression:
         return _CppExpression(
@@ -344,7 +344,7 @@ class NullSink(Node):
     @override
     def _cpp_expression(
         self,
-        gencontext: CodeGenerationContext,
+        gencontext: _CodeGenerationContext,
         downstreams: Sequence[_CppExpression],
     ) -> _CppExpression:
         return _CppExpression("tcspc::null_sink()")
@@ -362,7 +362,7 @@ class NullSource(_RelayNode):
     @override
     def _relay_cpp_expression(
         self,
-        gencontext: CodeGenerationContext,
+        gencontext: _CodeGenerationContext,
         downstream: _CppExpression,
     ) -> _CppExpression:
         return _CppExpression(f"tcspc::null_source({downstream})")
@@ -407,7 +407,7 @@ class ReadBinaryStream(_RelayNode):
     @override
     def _relay_cpp_expression(
         self,
-        gencontext: CodeGenerationContext,
+        gencontext: _CodeGenerationContext,
         downstream: _CppExpression,
     ) -> _CppExpression:
         maxlen = (
@@ -433,7 +433,7 @@ class SelectAll(_TypePreservingRelayNode):
     @override
     def _relay_cpp_expression(
         self,
-        gencontext: CodeGenerationContext,
+        gencontext: _CodeGenerationContext,
         downstream: _CppExpression,
     ) -> _CppExpression:
         return _CppExpression(f"tcspc::select_all({downstream})")
@@ -461,7 +461,7 @@ class SinkEvents(Node):
     @override
     def _cpp_expression(
         self,
-        gencontext: CodeGenerationContext,
+        gencontext: _CodeGenerationContext,
         downstreams: Sequence[_CppExpression],
     ) -> _CppExpression:
         evts = ", ".join(t._cpp_type_name() for t in self._event_types)
@@ -493,7 +493,7 @@ class Stop(_RelayNode):
     @override
     def _relay_cpp_expression(
         self,
-        gencontext: CodeGenerationContext,
+        gencontext: _CodeGenerationContext,
         downstream: _CppExpression,
     ) -> _CppExpression:
         return _CppExpression(
@@ -532,7 +532,7 @@ class StopWithError(_RelayNode):
     @override
     def _relay_cpp_expression(
         self,
-        gencontext: CodeGenerationContext,
+        gencontext: _CodeGenerationContext,
         downstream: _CppExpression,
     ) -> _CppExpression:
         return _CppExpression(
@@ -563,7 +563,7 @@ class Unbatch(_RelayNode):
     @override
     def _relay_cpp_expression(
         self,
-        gencontext: CodeGenerationContext,
+        gencontext: _CodeGenerationContext,
         downstream: _CppExpression,
     ) -> _CppExpression:
         return _CppExpression(
