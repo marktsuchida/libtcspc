@@ -2,10 +2,13 @@
 # Copyright 2019-2026 Board of Regents of the University of Wisconsin System
 # SPDX-License-Identifier: MIT
 
+from typing import final
+
 import pytest
 from _test_helpers import _NamedEvent
 from libtcspc._bucket_sources import RecyclingBucketSource
 from libtcspc._codegen import _CodeGenerationContext
+from libtcspc._compile import CompiledGraph
 from libtcspc._cpp_utils import (
     _CppExpression,
     _CppIdentifier,
@@ -14,8 +17,11 @@ from libtcspc._cpp_utils import (
     _size_type,
 )
 from libtcspc._events import BucketEvent
+from libtcspc._execute import ExecutionContext, PySink
+from libtcspc._graph import Graph
 from libtcspc._param import Param
 from libtcspc._processors import Batch
+from typing_extensions import override
 
 IntEvent = _NamedEvent(_CppTypeName("int"))
 OtherEvent = _NamedEvent(_CppTypeName("long"))
@@ -72,3 +78,29 @@ def test_Batch_codegen_calls_tcspc_batch():
     code = node._cpp_expression(gencontext, [_CppExpression("DOWN")])
     assert "tcspc::batch<int>(" in code
     assert "DOWN" in code
+
+
+@final
+class _MockSink(PySink):
+    def __init__(self, log: list[str]) -> None:
+        self._log = log
+
+    @override
+    def handle(self, event) -> None:
+        self._log.append(f"handle({event})")
+
+    @override
+    def flush(self) -> None:
+        self._log.append("flush()")
+
+
+def test_Batch_param_round_trip():
+    g = Graph()
+    g.add_node("b", Batch(IntEvent, batch_size=Param("bs")))
+    cg = CompiledGraph(g, (IntEvent,))
+    log: list[str] = []
+    c = ExecutionContext(cg, {"bs": 2}, (_MockSink(log),))
+    c.handle(10)
+    assert log == []
+    c.handle(20)
+    assert log == ["handle([10 20])"]
