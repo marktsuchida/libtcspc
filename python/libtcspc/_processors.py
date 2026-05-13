@@ -712,7 +712,7 @@ class ReadBinaryStream(_RelayNode):
         self, input_event_set: Collection[EventType]
     ) -> tuple[EventType, ...]:
         _check_events_subset_of(input_event_set, (), self.__class__.__name__)
-        return (BucketEvent(self._event_type),)
+        return (BucketEvent(self._event_type), WarningEvent())
 
     @override
     def _parameters(self) -> Sequence[tuple[Param, _CppTypeName]]:

@@ -14,7 +14,7 @@ from libtcspc._cpp_utils import (
     _string_type,
     _uint64_type,
 )
-from libtcspc._events import BucketEvent
+from libtcspc._events import BucketEvent, WarningEvent
 from libtcspc._param import Param
 from libtcspc._processors import ReadBinaryStream
 from libtcspc._streams import BinaryFileInputStream
@@ -48,7 +48,9 @@ def test_ReadBinaryStream_rejects_nonempty_input_set():
 
 def test_ReadBinaryStream_output_event_set():
     node = _read()
-    assert node._map_event_sets([()]) == ((BucketEvent(IntEvent),),)
+    assert node._map_event_sets([()]) == (
+        (BucketEvent(IntEvent), WarningEvent()),
+    )
 
 
 def test_ReadBinaryStream_default_max_length_is_unlimited():
