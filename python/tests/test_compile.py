@@ -13,7 +13,8 @@ from libtcspc._cpp_utils import (
     _uint32_type,
     _uint64_type,
 )
-from libtcspc._graph import Graph
+from libtcspc._execute import ExecutionContext
+from libtcspc._graph import Graph, Subgraph
 from libtcspc._param import Param
 from libtcspc._processors import (
     Batch,
@@ -63,6 +64,49 @@ def test_compile_node_access():
     cg = CompiledGraph(g)
     assert len(cg._accesses()) == 1
     assert cg._accesses()[0] == AccessTag("counter")
+
+
+def test_compile_two_tags_same_access_type():
+    g = Graph()
+    g.add_node("c1", Count(IntEvent, AccessTag("a")))
+    g.add_node("c2", Count(IntEvent, AccessTag("b")), upstream="c1")
+    g.add_node("s", NullSink(), upstream="c2")
+    cg = CompiledGraph(g, (IntEvent,))
+    assert {t.tag for t in cg._accesses()} == {"a", "b"}
+    ec = ExecutionContext(cg, {})
+    ec.handle(1)
+    assert ec.access(AccessTag("a")).count() == 1
+    assert ec.access(AccessTag("b")).count() == 1
+
+
+def test_compile_subgraph_access_propagates():
+    inner = Graph()
+    inner.add_node("c", Count(IntEvent, AccessTag("inner_tag")))
+    outer = Graph()
+    outer.add_node("sg", Subgraph(inner))
+    outer.add_node("s", NullSink(), upstream=("sg", "c:output"))
+    cg = CompiledGraph(outer, (IntEvent,))
+    assert AccessTag("inner_tag") in cg._accesses()
+    ec = ExecutionContext(cg, {})
+    ec.handle(1)
+    ec.flush()
+    assert ec.access(AccessTag("inner_tag")).count() == 1
+
+
+def test_compile_duplicate_access_tag_in_subgraph_raises():
+    inner = Graph()
+    inner.add_node("c_inner", Count(IntEvent, AccessTag("dup")))
+    sg = Subgraph(
+        inner,
+        input_map={"input": ("c_inner", "input")},
+        output_map={"output": ("c_inner", "output")},
+    )
+    outer = Graph()
+    outer.add_node("c_outer", Count(IntEvent, AccessTag("dup")))
+    outer.add_node("sg", sg, upstream="c_outer")
+    outer.add_node("s", NullSink(), upstream="sg")
+    with pytest.raises(ValueError, match="dup"):
+        CompiledGraph(outer, (IntEvent,))
 
 
 def test_compile_fails_for_unhandle_events():
