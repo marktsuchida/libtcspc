@@ -52,6 +52,10 @@ class Param(Generic[T]):
     name: str
     default_value: T | None = None
 
+    def __post_init__(self) -> None:
+        if not self.name:
+            raise ValueError("Param name must not be empty")
+
     def _cpp_identifier(self) -> _CppIdentifier:
         return _identifier_from_string(self.name)
 

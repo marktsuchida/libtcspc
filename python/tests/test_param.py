@@ -36,6 +36,11 @@ def test_param_is_frozen():
         p.default_value = 2  # type: ignore[misc]
 
 
+def test_param_rejects_empty_name():
+    with pytest.raises(ValueError, match="empty"):
+        Param("")
+
+
 def test_param_equality():
     assert Param("x") == Param("x")
     assert Param("x", 1) == Param("x", 1)
@@ -75,7 +80,6 @@ def test_param_cpp_identifier_special_chars():
     # test_cpp_utils_identifier_from_string assertions on purpose).
     assert Param("a-b")._cpp_identifier() == "z_aQ2db"
     assert Param("_x")._cpp_identifier() == "z_Q5fx"
-    assert Param("")._cpp_identifier() == "z_"
 
 
 def test_param_cpp_identifier_collision_via_name():
