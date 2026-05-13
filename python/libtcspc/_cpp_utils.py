@@ -155,24 +155,19 @@ def _quote_string(s: str) -> _CppExpression:
 
 
 def _identifier_from_string(s: str) -> _CppIdentifier:
-    # Convert special chars to underscores, but record their character codes
-    # and append as hex at the end. All leading digits are treated as special
-    # chars. For now, treat all non-ASCII characters as "special" and encode.
-    specials: list[int] = []
-    ret_chars: list[str] = []
-    encoded = s.encode()
-    digits = b"0123456789"
-    allowed = b"0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvxxyz"
-    while len(encoded) > 0 and encoded[0:1] in digits:
-        specials.append(encoded[0])
-        ret_chars.append("_")
-        encoded = encoded[1:]
-    for b in encoded:
-        if chr(b).encode() in allowed:
-            ret_chars.append(chr(b))
+    # Map strings to valid and safe C++ identifiers by escaping with 'Q'.
+    # Use a fixed prefix (guarantees letter start). Importantly, C++ has
+    # no keyword beginning with 'z_'.
+    out = ["z_"]
+    for b in s.encode():
+        c = chr(b)
+        safe = (
+            ("a" <= c <= "z")
+            or ("A" <= c <= "Z" and c != "Q")
+            or ("0" <= c <= "9")
+        )
+        if safe:
+            out.append(c)
         else:
-            specials.append(b)
-            ret_chars.append("_")
-    return _CppIdentifier(
-        "".join(ret_chars) + "_" + "".join(format(c, "02X") for c in specials)
-    )
+            out.append(f"Q{b:02x}")
+    return _CppIdentifier("".join(out))

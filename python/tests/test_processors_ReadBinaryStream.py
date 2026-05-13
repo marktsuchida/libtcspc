@@ -9,6 +9,7 @@ from libtcspc._cpp_utils import (
     _CppExpression,
     _CppIdentifier,
     _CppTypeName,
+    _identifier_from_string,
     _size_type,
     _string_type,
     _uint64_type,
@@ -69,7 +70,7 @@ def test_ReadBinaryStream_max_length_param():
     params = node._parameters()
     assert (Param("ml"), _uint64_type) in params
     code = node._cpp_expression(gencontext, [_CppExpression("DOWN")])
-    assert "params.ml" in code
+    assert f"params.{_identifier_from_string('ml')}" in code
 
 
 def test_ReadBinaryStream_granularity_param():
@@ -77,7 +78,7 @@ def test_ReadBinaryStream_granularity_param():
     params = node._parameters()
     assert (Param("g"), _size_type) in params
     code = node._cpp_expression(gencontext, [_CppExpression("DOWN")])
-    assert "params.g" in code
+    assert f"params.{_identifier_from_string('g')}" in code
 
 
 def test_ReadBinaryStream_propagates_stream_parameters():

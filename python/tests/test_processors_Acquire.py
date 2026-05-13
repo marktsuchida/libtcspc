@@ -19,6 +19,7 @@ from libtcspc._cpp_utils import (
     _CppExpression,
     _CppIdentifier,
     _CppTypeName,
+    _identifier_from_string,
     _size_type,
     _uint32_type,
 )
@@ -182,7 +183,7 @@ def test_Acquire_codegen_includes_batch_size_arg():
     code_param = node_param._cpp_expression(
         gencontext, [_CppExpression("DOWN")]
     )
-    assert "params.bs" in code_param
+    assert f"params.{_identifier_from_string('bs')}" in code_param
 
 
 def test_Acquire_codegen_tracker():

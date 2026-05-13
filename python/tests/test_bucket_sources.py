@@ -9,7 +9,12 @@ from libtcspc._bucket_sources import (
     RecyclingBucketSource,
 )
 from libtcspc._codegen import _CodeGenerationContext
-from libtcspc._cpp_utils import _CppIdentifier, _CppTypeName, _size_type
+from libtcspc._cpp_utils import (
+    _CppIdentifier,
+    _CppTypeName,
+    _identifier_from_string,
+    _size_type,
+)
 from libtcspc._param import Param
 
 IntEvent = _NamedEvent(_CppTypeName("int"))
@@ -54,7 +59,9 @@ def test_RecyclingBucketSource_max_bucket_count_param():
     bs = RecyclingBucketSource(IntEvent, max_bucket_count=Param("mbc"))
     assert len(bs._parameters()) == 1
     assert bs._parameters()[0] == (Param("mbc"), _size_type)
-    assert "params.mbc" in bs._cpp_expression(gencontext)
+    assert f"params.{_identifier_from_string('mbc')}" in bs._cpp_expression(
+        gencontext
+    )
 
 
 def test_RecyclingBucketSource_max_bucket_count_negative_is_error():

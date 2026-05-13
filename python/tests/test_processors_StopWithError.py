@@ -13,6 +13,7 @@ from libtcspc._cpp_utils import (
     _CppExpression,
     _CppIdentifier,
     _CppTypeName,
+    _identifier_from_string,
     _string_type,
     _uint32_type,
 )
@@ -58,7 +59,7 @@ def test_StopWithError_message_prefix_param():
     assert len(params) == 1
     assert params[0] == (Param("msg"), _string_type)
     code = node._cpp_expression(gencontext, [_CppExpression("DOWN")])
-    assert "params.msg" in code
+    assert f"params.{_identifier_from_string('msg')}" in code
 
 
 def test_StopWithError_codegen_calls_tcspc_stop_with_error():

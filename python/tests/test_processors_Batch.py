@@ -10,6 +10,7 @@ from libtcspc._cpp_utils import (
     _CppExpression,
     _CppIdentifier,
     _CppTypeName,
+    _identifier_from_string,
     _size_type,
 )
 from libtcspc._events import BucketEvent
@@ -50,7 +51,7 @@ def test_Batch_batch_size_param():
     assert len(params) == 1
     assert params[0] == (Param("bs"), _size_type)
     code = node._cpp_expression(gencontext, [_CppExpression("DOWN")])
-    assert "params.bs" in code
+    assert f"params.{_identifier_from_string('bs')}" in code
 
 
 def test_Batch_buffer_provider_params_propagate():
