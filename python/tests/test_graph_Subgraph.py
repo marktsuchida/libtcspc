@@ -2,10 +2,29 @@
 # Copyright 2019-2026 Board of Regents of the University of Wisconsin System
 # SPDX-License-Identifier: MIT
 
-from _test_helpers import _TestNode
+from collections.abc import Sequence
+
+import pytest
+from _test_helpers import _TestNode, _TestRelayNode
 from libtcspc._codegen import _CodeGenerationContext
-from libtcspc._cpp_utils import _CppExpression, _CppIdentifier, _run_cpp_prog
+from libtcspc._cpp_utils import (
+    _CppExpression,
+    _CppIdentifier,
+    _CppTypeName,
+    _run_cpp_prog,
+)
 from libtcspc._graph import Graph, Subgraph
+from libtcspc._param import Param
+
+
+class _ParamNode(_TestRelayNode):
+    def __init__(self, param_name: str, default: object = None) -> None:
+        self._param_name = param_name
+        self._default = default
+
+    def _parameters(self) -> Sequence[tuple[Param, _CppTypeName]]:
+        return ((Param(self._param_name, self._default), _CppTypeName("int")),)
+
 
 gencontext = _CodeGenerationContext(
     _CppIdentifier("ctx"), _CppIdentifier("params"), _CppIdentifier("sinks")
@@ -52,6 +71,48 @@ def test_input_output_map():
     )
     assert sg.inputs() == ("renamed_input",)
     assert sg.outputs() == ("renamed_output",)
+
+
+def test_subgraph_with_no_parameters():
+    g_empty = Graph()
+    assert Subgraph(g_empty)._parameters() == []
+
+    g = Graph()
+    g.add_node("n", _TestRelayNode())
+    assert Subgraph(g)._parameters() == []
+
+
+def test_subgraph_propagates_parameters():
+    inner = Graph()
+    inner.add_node("n", _ParamNode("p", "default"))
+    sg = Subgraph(inner)
+    params = sg._parameters()
+    assert len(params) == 1
+    assert params[0] == (Param("p", "default"), _CppTypeName("int"))
+
+
+def test_subgraph_nested_parameter_propagation():
+    inner = Graph()
+    inner.add_node("n", _ParamNode("p"))
+    sg_inner = Subgraph(inner)
+    middle = Graph()
+    middle.add_node("sg_inner", sg_inner)
+    sg_outer = Subgraph(middle)
+    params = sg_outer._parameters()
+    assert len(params) == 1
+    assert params[0] == (Param("p"), _CppTypeName("int"))
+
+
+def test_subgraph_param_collides_with_outer_node_param():
+    inner = Graph()
+    inner.add_node("n_inner", _ParamNode("x"))
+    sg = Subgraph(inner)
+
+    outer = Graph()
+    outer.add_node("n_outer", _ParamNode("x"))
+    outer.add_node("sg", sg)
+    with pytest.raises(ValueError, match="param.*x"):
+        outer._parameters()
 
 
 def test_nested_subgraph(mocker):
