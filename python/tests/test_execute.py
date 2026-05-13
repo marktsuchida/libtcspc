@@ -3,6 +3,7 @@
 # SPDX-License-Identifier: MIT
 
 import array
+import gc
 from typing import final
 
 import pytest
@@ -43,6 +44,82 @@ def test_execute_node_access():
     c.handle(123)
     c.flush()
     assert c.access(AccessTag("counter")).count() == 1
+
+
+def test_execute_access_unknown_tag_raises():
+    g = Graph()
+    g.add_node("c", Count(IntEvent, AccessTag("counter")))
+    g.add_node("a", NullSink(), upstream="c")
+    ec = ExecutionContext(CompiledGraph(g, (IntEvent,)), {})
+    with pytest.raises(ValueError, match="no such access tag"):
+        ec.access(AccessTag("nope"))
+
+
+def test_execute_access_before_handle_returns_initial_state():
+    g = Graph()
+    g.add_node("c", Count(IntEvent, AccessTag("counter")))
+    g.add_node("a", NullSink(), upstream="c")
+    ec = ExecutionContext(CompiledGraph(g, (IntEvent,)), {})
+    assert ec.access(AccessTag("counter")).count() == 0
+
+
+def test_execute_access_after_flush_returns_final_state():
+    g = Graph()
+    g.add_node("c", Count(IntEvent, AccessTag("counter")))
+    g.add_node("a", NullSink(), upstream="c")
+    ec = ExecutionContext(CompiledGraph(g, (IntEvent,)), {})
+    ec.handle(1)
+    ec.handle(2)
+    ec.flush()
+    assert ec.access(AccessTag("counter")).count() == 2
+
+
+def test_execute_access_after_end_of_processing_returns_final_state():
+    g = Graph()
+    g.add_node("c", Count(IntEvent, AccessTag("counter")))
+    g.add_node("s", Stop((IntEvent,), "stopped"), upstream="c")
+    g.add_node("n", NullSink(), upstream="s")
+    ec = ExecutionContext(CompiledGraph(g, (IntEvent,)), {})
+    with pytest.raises(EndOfProcessing):
+        ec.handle(42)
+    assert ec.access(AccessTag("counter")).count() == 1
+
+
+def test_execute_access_multiple_calls_share_state():
+    g = Graph()
+    g.add_node("c", Count(IntEvent, AccessTag("counter")))
+    g.add_node("a", NullSink(), upstream="c")
+    ec = ExecutionContext(CompiledGraph(g, (IntEvent,)), {})
+    ec.handle(1)
+    acc1 = ec.access(AccessTag("counter"))
+    ec.handle(2)
+    acc2 = ec.access(AccessTag("counter"))
+    assert acc1.count() == 2
+    assert acc2.count() == 2
+
+
+def test_execute_access_outlives_execution_context():
+    g = Graph()
+    g.add_node("c", Count(IntEvent, AccessTag("counter")))
+    g.add_node("a", NullSink(), upstream="c")
+    ec = ExecutionContext(CompiledGraph(g, (IntEvent,)), {})
+    ec.handle(1)
+    ec.handle(2)
+    ec.handle(3)
+    acc = ec.access(AccessTag("counter"))
+    del ec
+    gc.collect()
+    assert acc.count() == 3
+
+
+def test_execute_access_with_special_character_tag_roundtrips():
+    g = Graph()
+    g.add_node("c", Count(IntEvent, AccessTag("foo.bar-baz/0")))
+    g.add_node("a", NullSink(), upstream="c")
+    ec = ExecutionContext(CompiledGraph(g, (IntEvent,)), {})
+    ec.handle(1)
+    ec.flush()
+    assert ec.access(AccessTag("foo.bar-baz/0")).count() == 1
 
 
 def test_execute_rejects_events_and_flush_when_expired():
