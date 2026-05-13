@@ -6,16 +6,25 @@ import pytest
 from _test_helpers import _NamedEvent
 from libtcspc._access import AccessTag
 from libtcspc._compile import CompiledGraph
-from libtcspc._cpp_utils import _CppTypeName, _string_type, _uint32_type
+from libtcspc._cpp_utils import (
+    _CppTypeName,
+    _size_type,
+    _string_type,
+    _uint32_type,
+    _uint64_type,
+)
 from libtcspc._graph import Graph
 from libtcspc._param import Param
 from libtcspc._processors import (
+    Batch,
     Count,
     NullSink,
     NullSource,
+    ReadBinaryStream,
     SinkEvents,
     Stop,
 )
+from libtcspc._streams import BinaryFileInputStream
 
 IntEvent = _NamedEvent(_CppTypeName("int"))
 
@@ -79,3 +88,51 @@ def test_compile_string_parameter():
     c_param = list(p for p in cg.parameters() if p.name == "c_msg")[0]
     assert b_param.default_value is None
     assert c_param.default_value == "c_default"
+
+
+def test_compile_int_parameter():
+    g = Graph()
+    g.add_node("b", Batch(IntEvent, batch_size=Param("bs")))
+    g.add_node("sink", NullSink(), upstream="b")
+    assert g._parameters()[0] == (Param("bs"), _size_type)
+    cg = CompiledGraph(g, (IntEvent,))
+    assert cg.parameters() == (Param("bs"),)
+
+
+def test_compile_multiple_params_same_node():
+    g = Graph()
+    g.add_node(
+        "r",
+        ReadBinaryStream(
+            IntEvent,
+            BinaryFileInputStream("some_file"),
+            max_length=Param("ml"),
+            read_granularity_bytes=Param("rg"),
+        ),
+    )
+    g.add_node("sink", NullSink(), upstream="r")
+    cg = CompiledGraph(g)
+    assert {p.name for p in cg.parameters()} == {"ml", "rg"}
+    by_name = {p.name: p for p in cg.parameters()}
+    assert by_name["ml"].default_value is None
+    assert by_name["rg"].default_value is None
+    # Verify the declared C++ types match what the node reports.
+    types_by_name = {p.name: t for p, t in g._parameters()}
+    assert types_by_name["ml"] == _uint64_type
+    assert types_by_name["rg"] == _size_type
+
+
+def test_compile_mixes_concrete_and_param():
+    g = Graph()
+    g.add_node("a", Stop((), "concrete-prefix"))
+    g.add_node("b", Stop((), Param("only_param")), upstream="a")
+    g.add_node("sink", NullSink(), upstream="b")
+    cg = CompiledGraph(g)
+    assert cg.parameters() == (Param("only_param"),)
+
+
+def test_compile_param_count_zero():
+    g = Graph()
+    g.add_node("sink", NullSink())
+    cg = CompiledGraph(g)
+    assert cg.parameters() == ()
