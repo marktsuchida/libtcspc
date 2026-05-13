@@ -62,6 +62,10 @@ class AccessTag:
 
     tag: str
 
+    def __post_init__(self) -> None:
+        if not self.tag:
+            raise ValueError("AccessTag string must not be empty")
+
     def _context_method_name(self) -> _CppIdentifier:
         return _CppIdentifier(f"access__{_identifier_from_string(self.tag)}")
 
