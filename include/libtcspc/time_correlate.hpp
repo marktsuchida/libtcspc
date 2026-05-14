@@ -365,53 +365,6 @@ auto time_correlate_at_fraction(arg::fraction<double> fraction,
 
 namespace internal {
 
-template <typename DataTypes, typename Downstream> class negate_difftime {
-    static_assert(
-        processor<Downstream, time_correlated_detection_event<DataTypes>>);
-
-    Downstream downstream;
-
-  public:
-    explicit negate_difftime(Downstream downstream)
-        : downstream(std::move(downstream)) {}
-
-    [[nodiscard]] auto introspect_node() const -> processor_info {
-        return processor_info(this, "negate_difftime");
-    }
-
-    [[nodiscard]] auto introspect_graph() const -> processor_graph {
-        return downstream.introspect_graph().push_entry_point(this);
-    }
-
-    template <typename DT>
-    void handle(time_correlated_detection_event<DT> const &event) {
-        static_assert(std::is_same_v<typename DT::difftime_type,
-                                     typename DataTypes::difftime_type>);
-        static_assert(
-            std::is_signed_v<typename DT::difftime_type>,
-            "difftime_type of time_correlated_detection_event used with negate_difftime must be a signed integer type");
-        time_correlated_detection_event<DT> copy(event);
-        copy.difftime =
-            static_cast<typename DT::difftime_type>(-event.difftime);
-        downstream.handle(std::move(copy));
-    }
-
-    template <typename DT>
-    // NOLINTNEXTLINE(cppcoreguidelines-rvalue-reference-param-not-moved)
-    void handle(time_correlated_detection_event<DT> &&event) {
-        handle(
-            static_cast<time_correlated_detection_event<DT> const &>(event));
-    }
-
-    template <typename OtherEvent>
-        requires handler_for<Downstream, std::remove_cvref_t<OtherEvent>>
-    void handle(OtherEvent &&event) {
-        downstream.handle(std::forward<OtherEvent>(event));
-    }
-
-    void flush() { downstream.flush(); }
-};
-
 template <typename DataTypes, typename Downstream>
 class remove_time_correlation {
     static_assert(processor<Downstream, detection_event<DataTypes>>);
@@ -458,33 +411,6 @@ class remove_time_correlation {
 };
 
 } // namespace internal
-
-/**
- * \brief Create a processor that changes the sign of difftime in
- * time-correlated detection events.
- *
- * \ingroup processors-time-corr
- *
- * \tparam DataTypes data type set specifying `difftime_type` and output events
- *
- * \tparam Downstream downstream processor type (usually deduced)
- *
- * \param downstream downstream processor
- *
- * \return processor
- *
- * \par Events handled
- * - `tcspc::time_correlated_detection_event<DT>`: pass through a copy (as
- *   `tcspc::time_correlated_detection_event<DataTypes>`) where the `difftime`
- *   has been negated
- * - All other types: pass through with no action
- * - Flush: pass through with no action
- */
-template <typename DataTypes = default_data_types, typename Downstream>
-auto negate_difftime(Downstream downstream) {
-    return internal::negate_difftime<DataTypes, Downstream>(
-        std::move(downstream));
-}
 
 /**
  * \brief Create a processor that removes the difftime from detection events.

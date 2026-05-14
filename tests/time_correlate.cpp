@@ -10,7 +10,6 @@
 #include "libtcspc/context.hpp"
 #include "libtcspc/core.hpp"
 #include "libtcspc/data_types.hpp"
-#include "libtcspc/int_types.hpp"
 #include "libtcspc/processor.hpp"
 #include "libtcspc/test_utils.hpp"
 #include "libtcspc/time_tagged_events.hpp"
@@ -50,14 +49,6 @@ TEST_CASE("type constraints: time_correlate_at_fraction") {
     STATIC_CHECK_FALSE(handler_for<proc_type, some_type>);
 }
 
-TEST_CASE("type constraints: negate_difftime") {
-    using proc_type = decltype(negate_difftime(
-        sink_events<time_correlated_detection_event<>, int>()));
-    STATIC_CHECK(processor<proc_type, time_correlated_detection_event<>, int>);
-    struct some_type {};
-    STATIC_CHECK_FALSE(handler_for<proc_type, some_type>);
-}
-
 TEST_CASE("type constraints: remove_time_correlation") {
     using proc_type = decltype(remove_time_correlation(
         sink_events<detection_event<>, int>()));
@@ -72,7 +63,6 @@ TEST_CASE("introspect: time_correlate") {
     check_introspect_simple_processor(time_correlate_at_midpoint(null_sink()));
     check_introspect_simple_processor(
         time_correlate_at_fraction(arg::fraction{0.3}, null_sink()));
-    check_introspect_simple_processor(negate_difftime(null_sink()));
     check_introspect_simple_processor(remove_time_correlation(null_sink()));
 }
 
@@ -177,29 +167,6 @@ TEST_CASE("time correlate at fraction") {
         in.flush();
         REQUIRE(out.check_flushed());
     }
-}
-
-TEST_CASE("negate difftime") {
-    struct types : default_data_types {
-        using difftime_type = i16;
-    };
-    auto const valcat = GENERATE(feed_as::const_lvalue, feed_as::rvalue);
-    auto ctx = context::create();
-    auto in = feed_input(
-        valcat,
-        negate_difftime<types>(
-            capture_output<type_list<time_correlated_detection_event<types>>>(
-                ctx->tracker<capture_output_access>("out"))));
-    in.require_output_checked(ctx, "out");
-    auto out = capture_output_checker<
-        type_list<time_correlated_detection_event<types>>>(valcat, ctx, "out");
-
-    in.handle(time_correlated_detection_event<types>{3, 1, 2});
-    REQUIRE(out.check(time_correlated_detection_event<types>{3, 1, -2}));
-    in.handle(time_correlated_detection_event<types>{5, 1, -7});
-    REQUIRE(out.check(time_correlated_detection_event<types>{5, 1, 7}));
-    in.flush();
-    REQUIRE(out.check_flushed());
 }
 
 TEST_CASE("remove time correlation") {
