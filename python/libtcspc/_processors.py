@@ -15,6 +15,7 @@ from ._codegen import _CodeGenerationContext
 from ._cpp_utils import (
     _CppExpression,
     _CppTypeName,
+    _int64_type,
     _size_type,
     _string_type,
     _uint64_type,
@@ -394,7 +395,153 @@ class Batch(_RelayNode):
 
 
 @final
-class CheckMonotonic(_TypePreservingRelayNode):
+class BatchFromBytes(_RelayNode):
+    """Processor that copies batches of bytes into batches of typed events.
+
+    Input is a `BucketEvent` of an internal byte event type (``std::byte``).
+    The processor copies the incoming bytes into a fresh `BucketEvent` of
+    ``event_type``, drawing storage from the buffer provider. Any trailing
+    bytes that do not make up a whole ``event_type`` are buffered and
+    combined with subsequent input.
+
+    Parameters
+    ----------
+    event_type : EventType
+        Element type of the output buckets. Must be a trivially-typed
+        event.
+    buffer_provider : BucketSource or None
+        Source of buckets used to hold each output batch. If ``None``, a
+        default `RecyclingBucketSource` for ``event_type`` is used.
+
+    Notes
+    -----
+    Events handled:
+
+    - `BucketEvent` of byte event type: copy up to object boundary as
+      `BucketEvent` of ``event_type``; emit.
+    - All other event types: rejected at graph build time.
+    - End of input: pass through. Raises an exception if any unconsumed
+      bytes remain.
+
+    See Also
+    --------
+    :cpp:`tcspc::batch_from_bytes`
+        The underlying C++ factory function.
+    UnbatchFromBytes
+    ViewAsBytes
+    """
+
+    def __init__(
+        self,
+        event_type: EventType,
+        *,
+        buffer_provider: BucketSource | None = None,
+    ) -> None:
+        self._event_type = event_type
+        self._byte_event_type = _events.BucketEvent(_events._ByteEvent())
+        self._bucket_source = _bucket_source_or_default(
+            event_type, buffer_provider
+        )
+
+    @override
+    def _parameters(self) -> Sequence[tuple[Param, _CppTypeName]]:
+        return tuple(self._bucket_source._parameters())
+
+    @override
+    def _relay_map_event_set(
+        self, input_event_set: Collection[EventType]
+    ) -> tuple[EventType, ...]:
+        _check_events_subset_of(
+            input_event_set,
+            (self._byte_event_type,),
+            self.__class__.__name__,
+        )
+        return (_events.BucketEvent(self._event_type),)
+
+    @override
+    def _relay_cpp_expression(
+        self,
+        gencontext: _CodeGenerationContext,
+        downstream: _CppExpression,
+    ) -> _CppExpression:
+        return _CppExpression(
+            f"""\
+            tcspc::batch_from_bytes<{self._event_type._cpp_type_name()}>(
+                {self._bucket_source._cpp_expression(gencontext)},
+                {downstream}
+            )"""
+        )
+
+
+@final
+class CheckAlternating(_RelayNode):
+    """Pass-through processor that checks two event types alternate.
+
+    Verifies that events of types ``event0_type`` and ``event1_type``
+    appear in strict alternation starting with ``event0_type``. On
+    violation, a `WarningEvent` is emitted just before the offending
+    event. All events (including warnings) are then passed through.
+
+    Parameters
+    ----------
+    event0_type : EventType
+        The event type expected first in each alternation.
+    event1_type : EventType
+        The event type expected to follow ``event0_type``.
+
+    Notes
+    -----
+    Events handled:
+
+    - ``event0_type``, ``event1_type``: if not strictly alternating
+      starting with ``event0_type``, emit `WarningEvent` just before
+      passing through.
+    - All other event types: pass through unchanged.
+    - End of input: pass through.
+
+    The output event set always includes `WarningEvent`, even if the
+    upstream event set does not.
+
+    See Also
+    --------
+    :cpp:`tcspc::check_alternating`
+        The underlying C++ factory function.
+    """
+
+    def __init__(self, event0_type: EventType, event1_type: EventType) -> None:
+        self._event0_type = event0_type
+        self._event1_type = event1_type
+
+    @override
+    def _relay_map_event_set(
+        self, input_event_set: Collection[EventType]
+    ) -> tuple[EventType, ...]:
+        if _cpp_utils._contains_type(
+            (t._cpp_type_name() for t in input_event_set),
+            WarningEvent()._cpp_type_name(),
+        ):
+            return tuple(input_event_set)
+        return (*input_event_set, WarningEvent())
+
+    @override
+    def _relay_cpp_expression(
+        self,
+        gencontext: _CodeGenerationContext,
+        downstream: _CppExpression,
+    ) -> _CppExpression:
+        return _CppExpression(
+            f"""\
+            tcspc::check_alternating<
+                {self._event0_type._cpp_type_name()},
+                {self._event1_type._cpp_type_name()}
+            >(
+                {downstream}
+            )"""
+        )
+
+
+@final
+class CheckMonotonic(_RelayNode):
     """Pass-through processor that checks event timestamps are non-decreasing.
 
     For each event that carries an ``abstime`` field, this processor checks
@@ -420,6 +567,9 @@ class CheckMonotonic(_TypePreservingRelayNode):
     - All other event types: pass through unchanged.
     - End of input: pass through.
 
+    The output event set always includes `WarningEvent`, even if the
+    upstream event set does not.
+
     See Also
     --------
     :cpp:`tcspc::check_monotonic`
@@ -430,6 +580,17 @@ class CheckMonotonic(_TypePreservingRelayNode):
         self._data_types = (
             data_types if data_types is not None else DataTypes()
         )
+
+    @override
+    def _relay_map_event_set(
+        self, input_event_set: Collection[EventType]
+    ) -> tuple[EventType, ...]:
+        if _cpp_utils._contains_type(
+            (t._cpp_type_name() for t in input_event_set),
+            WarningEvent()._cpp_type_name(),
+        ):
+            return tuple(input_event_set)
+        return (*input_event_set, WarningEvent())
 
     @override
     def _relay_cpp_expression(
@@ -504,6 +665,242 @@ class Count(_TypePreservingRelayNode):
 
 
 @final
+class CountDownTo(_RelayNode):
+    """Processor that counts down on a tick event and fires when a threshold is reached.
+
+    The mirror of `CountUpTo`. The internal counter starts at
+    ``initial_count`` and is decremented each time a `TickEvent` is
+    received. ``limit`` must be less than ``initial_count``. See
+    `CountUpTo` for full semantics.
+
+    Parameters
+    ----------
+    tick_event_type : EventType
+        Event type that increments (here, decrements) the counter.
+    fire_event_type : EventType
+        Event type to emit when the count reaches ``threshold``. Must
+        be brace-initializable with an ``abstime``.
+    reset_event_type : EventType
+        Event type that resets the counter to ``initial_count``.
+    threshold : int or Param[int]
+        Count value at which `FireEvent` is emitted.
+    limit : int or Param[int]
+        Count value at which the counter is reset to ``initial_count``.
+        Must be less than ``initial_count``.
+    initial_count : int or Param[int]
+        Starting and reset value of the counter.
+    fire_after_tick : bool
+        If ``True``, the fire event is emitted after the tick event is
+        passed through (after the count is decremented); otherwise it is
+        emitted before. Defaults to ``False``.
+
+    Notes
+    -----
+    Events handled:
+
+    - ``tick_event_type``: pass through and decrement; emit
+      ``fire_event_type`` (before or after, per ``fire_after_tick``) on
+      threshold; reset on limit.
+    - ``reset_event_type``: reset counter; pass through.
+    - All other event types: pass through unchanged.
+    - End of input: pass through.
+
+    See Also
+    --------
+    :cpp:`tcspc::count_down_to`
+        The underlying C++ factory function.
+    CountUpTo
+    """
+
+    def __init__(
+        self,
+        tick_event_type: EventType,
+        fire_event_type: EventType,
+        reset_event_type: EventType,
+        threshold: int | Param[int],
+        limit: int | Param[int],
+        initial_count: int | Param[int],
+        *,
+        fire_after_tick: bool = False,
+    ) -> None:
+        self._tick_event_type = tick_event_type
+        self._fire_event_type = fire_event_type
+        self._reset_event_type = reset_event_type
+        self._threshold = threshold
+        self._limit = limit
+        self._initial_count = initial_count
+        self._fire_after_tick = fire_after_tick
+
+    @override
+    def _parameters(self) -> Sequence[tuple[Param, _CppTypeName]]:
+        params: list[tuple[Param, _CppTypeName]] = []
+        if isinstance(self._threshold, Param):
+            params.append((self._threshold, _uint64_type))
+        if isinstance(self._limit, Param):
+            params.append((self._limit, _uint64_type))
+        if isinstance(self._initial_count, Param):
+            params.append((self._initial_count, _uint64_type))
+        return params
+
+    @override
+    def _relay_map_event_set(
+        self, input_event_set: Collection[EventType]
+    ) -> tuple[EventType, ...]:
+        out = list(input_event_set)
+        if not _cpp_utils._contains_type(
+            (t._cpp_type_name() for t in out),
+            self._fire_event_type._cpp_type_name(),
+        ):
+            out.append(self._fire_event_type)
+        return tuple(out)
+
+    @override
+    def _relay_cpp_expression(
+        self,
+        gencontext: _CodeGenerationContext,
+        downstream: _CppExpression,
+    ) -> _CppExpression:
+        threshold = gencontext.u64_expression(self._threshold)
+        limit = gencontext.u64_expression(self._limit)
+        initial = gencontext.u64_expression(self._initial_count)
+        fat = "true" if self._fire_after_tick else "false"
+        return _CppExpression(
+            f"""\
+            tcspc::count_down_to<
+                {self._tick_event_type._cpp_type_name()},
+                {self._fire_event_type._cpp_type_name()},
+                {self._reset_event_type._cpp_type_name()},
+                {fat}
+            >(
+                tcspc::arg::threshold<tcspc::u64>{{{threshold}}},
+                tcspc::arg::limit<tcspc::u64>{{{limit}}},
+                tcspc::arg::initial_count<tcspc::u64>{{{initial}}},
+                {downstream}
+            )"""
+        )
+
+
+@final
+class CountUpTo(_RelayNode):
+    """Processor that counts up on a tick event and fires when a threshold is reached.
+
+    The internal counter starts at ``initial_count`` and is incremented
+    each time a `TickEvent` is received and passed through. When the
+    counter equals ``threshold``, ``fire_event_type`` is emitted (just
+    before or just after the tick, controlled by ``fire_after_tick``)
+    with its ``abstime`` set to that of the triggering tick. When the
+    counter equals ``limit``, it is reset to ``initial_count``. A
+    `ResetEvent` resets the counter explicitly.
+
+    Parameters
+    ----------
+    tick_event_type : EventType
+        Event type that increments the counter. Must have an ``abstime``
+        field.
+    fire_event_type : EventType
+        Event type to emit on threshold. Must be brace-initializable
+        with an ``abstime``.
+    reset_event_type : EventType
+        Event type that resets the counter to ``initial_count``.
+    threshold : int or Param[int]
+        Count value at which `FireEvent` is emitted.
+    limit : int or Param[int]
+        Count value at which the counter is reset to ``initial_count``.
+        Must be greater than ``initial_count``.
+    initial_count : int or Param[int]
+        Starting and reset value of the counter.
+    fire_after_tick : bool
+        If ``True``, the fire event is emitted after the tick event is
+        passed through (after the count is incremented); otherwise it
+        is emitted before. Defaults to ``False``.
+
+    Notes
+    -----
+    Events handled:
+
+    - ``tick_event_type``: pass through and increment; emit
+      ``fire_event_type`` (before or after, per ``fire_after_tick``) on
+      threshold; reset on limit.
+    - ``reset_event_type``: reset counter; pass through.
+    - All other event types: pass through unchanged.
+    - End of input: pass through.
+
+    See Also
+    --------
+    :cpp:`tcspc::count_up_to`
+        The underlying C++ factory function.
+    CountDownTo
+    """
+
+    def __init__(
+        self,
+        tick_event_type: EventType,
+        fire_event_type: EventType,
+        reset_event_type: EventType,
+        threshold: int | Param[int],
+        limit: int | Param[int],
+        initial_count: int | Param[int],
+        *,
+        fire_after_tick: bool = False,
+    ) -> None:
+        self._tick_event_type = tick_event_type
+        self._fire_event_type = fire_event_type
+        self._reset_event_type = reset_event_type
+        self._threshold = threshold
+        self._limit = limit
+        self._initial_count = initial_count
+        self._fire_after_tick = fire_after_tick
+
+    @override
+    def _parameters(self) -> Sequence[tuple[Param, _CppTypeName]]:
+        params: list[tuple[Param, _CppTypeName]] = []
+        if isinstance(self._threshold, Param):
+            params.append((self._threshold, _uint64_type))
+        if isinstance(self._limit, Param):
+            params.append((self._limit, _uint64_type))
+        if isinstance(self._initial_count, Param):
+            params.append((self._initial_count, _uint64_type))
+        return params
+
+    @override
+    def _relay_map_event_set(
+        self, input_event_set: Collection[EventType]
+    ) -> tuple[EventType, ...]:
+        out = list(input_event_set)
+        if not _cpp_utils._contains_type(
+            (t._cpp_type_name() for t in out),
+            self._fire_event_type._cpp_type_name(),
+        ):
+            out.append(self._fire_event_type)
+        return tuple(out)
+
+    @override
+    def _relay_cpp_expression(
+        self,
+        gencontext: _CodeGenerationContext,
+        downstream: _CppExpression,
+    ) -> _CppExpression:
+        threshold = gencontext.u64_expression(self._threshold)
+        limit = gencontext.u64_expression(self._limit)
+        initial = gencontext.u64_expression(self._initial_count)
+        fat = "true" if self._fire_after_tick else "false"
+        return _CppExpression(
+            f"""\
+            tcspc::count_up_to<
+                {self._tick_event_type._cpp_type_name()},
+                {self._fire_event_type._cpp_type_name()},
+                {self._reset_event_type._cpp_type_name()},
+                {fat}
+            >(
+                tcspc::arg::threshold<tcspc::u64>{{{threshold}}},
+                tcspc::arg::limit<tcspc::u64>{{{limit}}},
+                tcspc::arg::initial_count<tcspc::u64>{{{initial}}},
+                {downstream}
+            )"""
+        )
+
+
+@final
 class DecodeBHSPC(_RelayNode):
     """Processor that decodes Becker & Hickl SPC FIFO records into libtcspc TCSPC events.
 
@@ -566,6 +963,696 @@ class DecodeBHSPC(_RelayNode):
         return _CppExpression(
             f"""\
             tcspc::decode_bh_spc<{self._data_types._cpp_type_name()}>(
+                {downstream}
+            )"""
+        )
+
+
+@final
+class DecodeBHSPC600_256ch(_RelayNode):
+    """Processor that decodes BH SPC-600/630 32-bit FIFO records (256-channel mode).
+
+    Parameters
+    ----------
+    data_types : DataTypes or None
+        Data type set specifying the ``abstime``, ``channel``, and
+        ``difftime`` types of the emitted events. Defaults to
+        ``DataTypes()``.
+
+    Notes
+    -----
+    Events handled:
+
+    - `BHSPC600_256chEvent`: decoded; emits zero or more of
+      `TimeReachedEvent`, `TimeCorrelatedDetectionEvent`, `DataLostEvent`,
+      and `WarningEvent`.
+    - All other event types: rejected at graph build time.
+    - End of input: pass through.
+
+    See Also
+    --------
+    :cpp:`tcspc::decode_bh_spc600_256ch`
+        The underlying C++ factory function.
+    """
+
+    def __init__(self, data_types: DataTypes | None = None) -> None:
+        self._data_types = (
+            data_types if data_types is not None else DataTypes()
+        )
+
+    @override
+    def _relay_map_event_set(
+        self, input_event_set: Collection[EventType]
+    ) -> tuple[EventType, ...]:
+        _check_events_subset_of(
+            input_event_set,
+            (_events.BHSPC600_256chEvent(),),
+            self.__class__.__name__,
+        )
+        return (
+            _events.DataLostEvent(self._data_types),
+            _events.TimeCorrelatedDetectionEvent(self._data_types),
+            _events.TimeReachedEvent(self._data_types),
+            WarningEvent(),
+        )
+
+    @override
+    def _relay_cpp_expression(
+        self,
+        gencontext: _CodeGenerationContext,
+        downstream: _CppExpression,
+    ) -> _CppExpression:
+        return _CppExpression(
+            f"""\
+            tcspc::decode_bh_spc600_256ch<{self._data_types._cpp_type_name()}>(
+                {downstream}
+            )"""
+        )
+
+
+@final
+class DecodeBHSPC600_4096ch(_RelayNode):
+    """Processor that decodes BH SPC-600/630 48-bit FIFO records (4096-channel mode).
+
+    Parameters
+    ----------
+    data_types : DataTypes or None
+        Data type set specifying the ``abstime``, ``channel``, and
+        ``difftime`` types of the emitted events. Defaults to
+        ``DataTypes()``.
+
+    Notes
+    -----
+    Events handled:
+
+    - `BHSPC600_4096chEvent`: decoded; emits zero or more of
+      `TimeReachedEvent`, `TimeCorrelatedDetectionEvent`, `DataLostEvent`,
+      and `WarningEvent`.
+    - All other event types: rejected at graph build time.
+    - End of input: pass through.
+
+    See Also
+    --------
+    :cpp:`tcspc::decode_bh_spc600_4096ch`
+        The underlying C++ factory function.
+    """
+
+    def __init__(self, data_types: DataTypes | None = None) -> None:
+        self._data_types = (
+            data_types if data_types is not None else DataTypes()
+        )
+
+    @override
+    def _relay_map_event_set(
+        self, input_event_set: Collection[EventType]
+    ) -> tuple[EventType, ...]:
+        _check_events_subset_of(
+            input_event_set,
+            (_events.BHSPC600_4096chEvent(),),
+            self.__class__.__name__,
+        )
+        return (
+            _events.DataLostEvent(self._data_types),
+            _events.TimeCorrelatedDetectionEvent(self._data_types),
+            _events.TimeReachedEvent(self._data_types),
+            WarningEvent(),
+        )
+
+    @override
+    def _relay_cpp_expression(
+        self,
+        gencontext: _CodeGenerationContext,
+        downstream: _CppExpression,
+    ) -> _CppExpression:
+        return _CppExpression(
+            f"""\
+            tcspc::decode_bh_spc600_4096ch<{self._data_types._cpp_type_name()}>(
+                {downstream}
+            )"""
+        )
+
+
+@final
+class DecodeBHSPCWithIntensityCounter(_RelayNode):
+    """Processor that decodes BH SPC FIFO records including fast intensity counter.
+
+    For SPC-160 and SPC-180N devices. Like `DecodeBHSPC`, but the
+    marker-0 records are also decoded into `BulkCountsEvent`.
+
+    Parameters
+    ----------
+    data_types : DataTypes or None
+        Data type set specifying the ``abstime``, ``channel``, ``difftime``,
+        and ``count`` types of the emitted events. Defaults to
+        ``DataTypes()``.
+
+    Notes
+    -----
+    Events handled:
+
+    - `BHSPCEvent`: decoded; emits zero or more of `TimeReachedEvent`,
+      `TimeCorrelatedDetectionEvent`, `BulkCountsEvent`, `MarkerEvent`,
+      `DataLostEvent`, and `WarningEvent`.
+    - All other event types: rejected at graph build time.
+    - End of input: pass through.
+
+    See Also
+    --------
+    :cpp:`tcspc::decode_bh_spc_with_intensity_counter`
+        The underlying C++ factory function.
+    DecodeBHSPC
+    """
+
+    def __init__(self, data_types: DataTypes | None = None) -> None:
+        self._data_types = (
+            data_types if data_types is not None else DataTypes()
+        )
+
+    @override
+    def _relay_map_event_set(
+        self, input_event_set: Collection[EventType]
+    ) -> tuple[EventType, ...]:
+        _check_events_subset_of(
+            input_event_set,
+            (_events.BHSPCEvent(),),
+            self.__class__.__name__,
+        )
+        return (
+            _events.BulkCountsEvent(self._data_types),
+            _events.DataLostEvent(self._data_types),
+            _events.MarkerEvent(self._data_types),
+            _events.TimeCorrelatedDetectionEvent(self._data_types),
+            _events.TimeReachedEvent(self._data_types),
+            WarningEvent(),
+        )
+
+    @override
+    def _relay_cpp_expression(
+        self,
+        gencontext: _CodeGenerationContext,
+        downstream: _CppExpression,
+    ) -> _CppExpression:
+        return _CppExpression(
+            f"""\
+            tcspc::decode_bh_spc_with_intensity_counter<{self._data_types._cpp_type_name()}>(
+                {downstream}
+            )"""
+        )
+
+
+def _pqt2_decode_output(
+    data_types: DataTypes,
+) -> tuple[EventType, ...]:
+    return (
+        _events.DetectionEvent(data_types),
+        _events.MarkerEvent(data_types),
+        _events.TimeReachedEvent(data_types),
+        WarningEvent(),
+    )
+
+
+def _pqt3_decode_output(
+    data_types: DataTypes,
+) -> tuple[EventType, ...]:
+    return (
+        _events.MarkerEvent(data_types),
+        _events.TimeCorrelatedDetectionEvent(data_types),
+        _events.TimeReachedEvent(data_types),
+        WarningEvent(),
+    )
+
+
+@final
+class DecodePQT2Generic(_RelayNode):
+    """Processor that decodes PicoQuant T2 (Generic) FIFO records.
+
+    Used with HydraHarp V2, MultiHarp, TimeHarp 260, and PicoHarp 330.
+    Sync edges are reported as `DetectionEvent` on channel ``-1``.
+
+    Parameters
+    ----------
+    data_types : DataTypes or None
+        Data type set specifying ``abstime`` and ``channel`` types.
+        Defaults to ``DataTypes()``.
+
+    Notes
+    -----
+    Events handled:
+
+    - `PQT2GenericEvent`: decoded; emits zero or more of
+      `TimeReachedEvent`, `DetectionEvent`, `MarkerEvent`, and
+      `WarningEvent`.
+    - All other event types: rejected at graph build time.
+    - End of input: pass through.
+
+    See Also
+    --------
+    :cpp:`tcspc::decode_pqt2_generic`
+        The underlying C++ factory function.
+    """
+
+    def __init__(self, data_types: DataTypes | None = None) -> None:
+        self._data_types = (
+            data_types if data_types is not None else DataTypes()
+        )
+
+    @override
+    def _relay_map_event_set(
+        self, input_event_set: Collection[EventType]
+    ) -> tuple[EventType, ...]:
+        _check_events_subset_of(
+            input_event_set,
+            (_events.PQT2GenericEvent(),),
+            self.__class__.__name__,
+        )
+        return _pqt2_decode_output(self._data_types)
+
+    @override
+    def _relay_cpp_expression(
+        self,
+        gencontext: _CodeGenerationContext,
+        downstream: _CppExpression,
+    ) -> _CppExpression:
+        return _CppExpression(
+            f"""\
+            tcspc::decode_pqt2_generic<{self._data_types._cpp_type_name()}>(
+                {downstream}
+            )"""
+        )
+
+
+@final
+class DecodePQT2HydraHarpV1(_RelayNode):
+    """Processor that decodes PicoQuant HydraHarp V1 T2 FIFO records.
+
+    Sync edges are reported as `DetectionEvent` on channel ``-1``.
+
+    Parameters
+    ----------
+    data_types : DataTypes or None
+        Data type set specifying ``abstime`` and ``channel`` types.
+        Defaults to ``DataTypes()``.
+
+    Notes
+    -----
+    Events handled:
+
+    - `PQT2HydraHarpV1Event`: decoded; emits zero or more of
+      `TimeReachedEvent`, `DetectionEvent`, `MarkerEvent`, and
+      `WarningEvent`.
+    - All other event types: rejected at graph build time.
+    - End of input: pass through.
+
+    See Also
+    --------
+    :cpp:`tcspc::decode_pqt2_hydraharpv1`
+        The underlying C++ factory function.
+    """
+
+    def __init__(self, data_types: DataTypes | None = None) -> None:
+        self._data_types = (
+            data_types if data_types is not None else DataTypes()
+        )
+
+    @override
+    def _relay_map_event_set(
+        self, input_event_set: Collection[EventType]
+    ) -> tuple[EventType, ...]:
+        _check_events_subset_of(
+            input_event_set,
+            (_events.PQT2HydraHarpV1Event(),),
+            self.__class__.__name__,
+        )
+        return _pqt2_decode_output(self._data_types)
+
+    @override
+    def _relay_cpp_expression(
+        self,
+        gencontext: _CodeGenerationContext,
+        downstream: _CppExpression,
+    ) -> _CppExpression:
+        return _CppExpression(
+            f"""\
+            tcspc::decode_pqt2_hydraharpv1<{self._data_types._cpp_type_name()}>(
+                {downstream}
+            )"""
+        )
+
+
+@final
+class DecodePQT2PicoHarp300(_RelayNode):
+    """Processor that decodes PicoQuant PicoHarp 300 T2 FIFO records.
+
+    Parameters
+    ----------
+    data_types : DataTypes or None
+        Data type set specifying ``abstime`` and ``channel`` types.
+        Defaults to ``DataTypes()``.
+
+    Notes
+    -----
+    Events handled:
+
+    - `PQT2PicoHarp300Event`: decoded; emits zero or more of
+      `TimeReachedEvent`, `DetectionEvent`, `MarkerEvent`, and
+      `WarningEvent`.
+    - All other event types: rejected at graph build time.
+    - End of input: pass through.
+
+    See Also
+    --------
+    :cpp:`tcspc::decode_pqt2_picoharp300`
+        The underlying C++ factory function.
+    """
+
+    def __init__(self, data_types: DataTypes | None = None) -> None:
+        self._data_types = (
+            data_types if data_types is not None else DataTypes()
+        )
+
+    @override
+    def _relay_map_event_set(
+        self, input_event_set: Collection[EventType]
+    ) -> tuple[EventType, ...]:
+        _check_events_subset_of(
+            input_event_set,
+            (_events.PQT2PicoHarp300Event(),),
+            self.__class__.__name__,
+        )
+        return _pqt2_decode_output(self._data_types)
+
+    @override
+    def _relay_cpp_expression(
+        self,
+        gencontext: _CodeGenerationContext,
+        downstream: _CppExpression,
+    ) -> _CppExpression:
+        return _CppExpression(
+            f"""\
+            tcspc::decode_pqt2_picoharp300<{self._data_types._cpp_type_name()}>(
+                {downstream}
+            )"""
+        )
+
+
+@final
+class DecodePQT3Generic(_RelayNode):
+    """Processor that decodes PicoQuant T3 (Generic) FIFO records.
+
+    Used with HydraHarp V2, MultiHarp, TimeHarp 260, and PicoHarp 330.
+
+    Parameters
+    ----------
+    data_types : DataTypes or None
+        Data type set specifying ``abstime``, ``channel``, and
+        ``difftime`` types. Defaults to ``DataTypes()``.
+
+    Notes
+    -----
+    Events handled:
+
+    - `PQT3GenericEvent`: decoded; emits zero or more of
+      `TimeReachedEvent`, `TimeCorrelatedDetectionEvent`, `MarkerEvent`,
+      and `WarningEvent`.
+    - All other event types: rejected at graph build time.
+    - End of input: pass through.
+
+    See Also
+    --------
+    :cpp:`tcspc::decode_pqt3_generic`
+        The underlying C++ factory function.
+    """
+
+    def __init__(self, data_types: DataTypes | None = None) -> None:
+        self._data_types = (
+            data_types if data_types is not None else DataTypes()
+        )
+
+    @override
+    def _relay_map_event_set(
+        self, input_event_set: Collection[EventType]
+    ) -> tuple[EventType, ...]:
+        _check_events_subset_of(
+            input_event_set,
+            (_events.PQT3GenericEvent(),),
+            self.__class__.__name__,
+        )
+        return _pqt3_decode_output(self._data_types)
+
+    @override
+    def _relay_cpp_expression(
+        self,
+        gencontext: _CodeGenerationContext,
+        downstream: _CppExpression,
+    ) -> _CppExpression:
+        return _CppExpression(
+            f"""\
+            tcspc::decode_pqt3_generic<{self._data_types._cpp_type_name()}>(
+                {downstream}
+            )"""
+        )
+
+
+@final
+class DecodePQT3HydraHarpV1(_RelayNode):
+    """Processor that decodes PicoQuant HydraHarp V1 T3 FIFO records.
+
+    Parameters
+    ----------
+    data_types : DataTypes or None
+        Data type set specifying ``abstime``, ``channel``, and
+        ``difftime`` types. Defaults to ``DataTypes()``.
+
+    Notes
+    -----
+    Events handled:
+
+    - `PQT3HydraHarpV1Event`: decoded; emits zero or more of
+      `TimeReachedEvent`, `TimeCorrelatedDetectionEvent`, `MarkerEvent`,
+      and `WarningEvent`.
+    - All other event types: rejected at graph build time.
+    - End of input: pass through.
+
+    See Also
+    --------
+    :cpp:`tcspc::decode_pqt3_hydraharpv1`
+        The underlying C++ factory function.
+    """
+
+    def __init__(self, data_types: DataTypes | None = None) -> None:
+        self._data_types = (
+            data_types if data_types is not None else DataTypes()
+        )
+
+    @override
+    def _relay_map_event_set(
+        self, input_event_set: Collection[EventType]
+    ) -> tuple[EventType, ...]:
+        _check_events_subset_of(
+            input_event_set,
+            (_events.PQT3HydraHarpV1Event(),),
+            self.__class__.__name__,
+        )
+        return _pqt3_decode_output(self._data_types)
+
+    @override
+    def _relay_cpp_expression(
+        self,
+        gencontext: _CodeGenerationContext,
+        downstream: _CppExpression,
+    ) -> _CppExpression:
+        return _CppExpression(
+            f"""\
+            tcspc::decode_pqt3_hydraharpv1<{self._data_types._cpp_type_name()}>(
+                {downstream}
+            )"""
+        )
+
+
+@final
+class DecodePQT3PicoHarp300(_RelayNode):
+    """Processor that decodes PicoQuant PicoHarp 300 T3 FIFO records.
+
+    Parameters
+    ----------
+    data_types : DataTypes or None
+        Data type set specifying ``abstime``, ``channel``, and
+        ``difftime`` types. Defaults to ``DataTypes()``.
+
+    Notes
+    -----
+    Events handled:
+
+    - `PQT3PicoHarp300Event`: decoded; emits zero or more of
+      `TimeReachedEvent`, `TimeCorrelatedDetectionEvent`, `MarkerEvent`,
+      and `WarningEvent`.
+    - All other event types: rejected at graph build time.
+    - End of input: pass through.
+
+    See Also
+    --------
+    :cpp:`tcspc::decode_pqt3_picoharp300`
+        The underlying C++ factory function.
+    """
+
+    def __init__(self, data_types: DataTypes | None = None) -> None:
+        self._data_types = (
+            data_types if data_types is not None else DataTypes()
+        )
+
+    @override
+    def _relay_map_event_set(
+        self, input_event_set: Collection[EventType]
+    ) -> tuple[EventType, ...]:
+        _check_events_subset_of(
+            input_event_set,
+            (_events.PQT3PicoHarp300Event(),),
+            self.__class__.__name__,
+        )
+        return _pqt3_decode_output(self._data_types)
+
+    @override
+    def _relay_cpp_expression(
+        self,
+        gencontext: _CodeGenerationContext,
+        downstream: _CppExpression,
+    ) -> _CppExpression:
+        return _CppExpression(
+            f"""\
+            tcspc::decode_pqt3_picoharp300<{self._data_types._cpp_type_name()}>(
+                {downstream}
+            )"""
+        )
+
+
+@final
+class DecodeSwabianTags(_RelayNode):
+    """Processor that decodes 16-byte Swabian Time Tagger tags.
+
+    Parameters
+    ----------
+    data_types : DataTypes or None
+        Data type set specifying ``abstime``, ``channel``, and
+        ``count`` types. Defaults to ``DataTypes()``.
+
+    Notes
+    -----
+    Events handled:
+
+    - `SwabianTagEvent`: decoded; emits one of `DetectionEvent`,
+      `BeginLostIntervalEvent`, `EndLostIntervalEvent`,
+      `LostCountsEvent`, or `WarningEvent`.
+    - All other event types: rejected at graph build time.
+    - End of input: pass through.
+
+    See Also
+    --------
+    :cpp:`tcspc::decode_swabian_tags`
+        The underlying C++ factory function.
+    """
+
+    def __init__(self, data_types: DataTypes | None = None) -> None:
+        self._data_types = (
+            data_types if data_types is not None else DataTypes()
+        )
+
+    @override
+    def _relay_map_event_set(
+        self, input_event_set: Collection[EventType]
+    ) -> tuple[EventType, ...]:
+        _check_events_subset_of(
+            input_event_set,
+            (_events.SwabianTagEvent(),),
+            self.__class__.__name__,
+        )
+        return (
+            _events.BeginLostIntervalEvent(self._data_types),
+            _events.DetectionEvent(self._data_types),
+            _events.EndLostIntervalEvent(self._data_types),
+            _events.LostCountsEvent(self._data_types),
+            WarningEvent(),
+        )
+
+    @override
+    def _relay_cpp_expression(
+        self,
+        gencontext: _CodeGenerationContext,
+        downstream: _CppExpression,
+    ) -> _CppExpression:
+        return _CppExpression(
+            f"""\
+            tcspc::decode_swabian_tags<{self._data_types._cpp_type_name()}>(
+                {downstream}
+            )"""
+        )
+
+
+@final
+class Delay(_TypePreservingRelayNode):
+    """Pass-through processor that offsets event abstimes by a constant delta.
+
+    Adds ``delta`` to the ``abstime`` field of every event that has one.
+    Wrap-around is handled correctly even if ``abstime_type`` is a signed
+    integer type. Only events with an ``abstime`` field may flow through.
+
+    Parameters
+    ----------
+    delta : int or Param[int]
+        Offset added to ``abstime``. May be negative.
+    data_types : DataTypes or None
+        Data type set specifying the ``abstime_type``. Defaults to
+        ``DataTypes()``.
+
+    Notes
+    -----
+    Events handled:
+
+    - All event types with an ``abstime`` field: pass through with
+      ``delta`` added.
+    - End of input: pass through.
+
+    See Also
+    --------
+    :cpp:`tcspc::delay`
+        The underlying C++ factory function.
+    ZeroBaseAbstime
+    """
+
+    def __init__(
+        self,
+        delta: int | Param[int],
+        data_types: DataTypes | None = None,
+    ) -> None:
+        self._delta = delta
+        self._data_types = (
+            data_types if data_types is not None else DataTypes()
+        )
+
+    @override
+    def _parameters(self) -> Sequence[tuple[Param, _CppTypeName]]:
+        if isinstance(self._delta, Param):
+            return ((self._delta, _int64_type),)
+        return ()
+
+    @override
+    def _relay_cpp_expression(
+        self,
+        gencontext: _CodeGenerationContext,
+        downstream: _CppExpression,
+    ) -> _CppExpression:
+        abstime_t = (
+            f"typename {self._data_types._cpp_type_name()}::abstime_type"
+        )
+        if isinstance(self._delta, Param):
+            value_expr = (
+                f"{gencontext.params_varname}.{self._delta._cpp_identifier()}"
+            )
+        else:
+            value_expr = f"tcspc::i64{{{self._delta}LL}}"
+        return _CppExpression(
+            f"""\
+            tcspc::delay<{self._data_types._cpp_type_name()}>(
+                tcspc::arg::delta<{abstime_t}>{{static_cast<{abstime_t}>({value_expr})}},
                 {downstream}
             )"""
         )
@@ -750,6 +1837,287 @@ class ReadBinaryStream(_RelayNode):
 
 
 @final
+class RecoverOrder(_TypePreservingRelayNode):
+    """Pass-through processor that sorts events by abstime within a time window.
+
+    Buffers events and emits them in non-decreasing ``abstime`` order
+    once each is at least ``time_window`` behind the latest received
+    event. If an event arrives that is older than the latest by more
+    than ``time_window``, an error is raised.
+
+    Parameters
+    ----------
+    time_window : int or Param[int]
+        Maximum abstime range over which events may be out of order.
+        Must be non-negative.
+    data_types : DataTypes or None
+        Data type set specifying ``abstime_type``. Defaults to
+        ``DataTypes()``.
+
+    Notes
+    -----
+    Events handled:
+
+    - All event types with an ``abstime`` field: buffered and forwarded
+      in ``abstime`` order once ``time_window`` has elapsed.
+    - End of input: emit any buffered events in ``abstime`` order; pass
+      through.
+
+    See Also
+    --------
+    :cpp:`tcspc::recover_order`
+        The underlying C++ factory function.
+    """
+
+    def __init__(
+        self,
+        time_window: int | Param[int],
+        data_types: DataTypes | None = None,
+    ) -> None:
+        self._time_window = time_window
+        self._data_types = (
+            data_types if data_types is not None else DataTypes()
+        )
+
+    @override
+    def _parameters(self) -> Sequence[tuple[Param, _CppTypeName]]:
+        if isinstance(self._time_window, Param):
+            return ((self._time_window, _int64_type),)
+        return ()
+
+    @override
+    def _relay_map_event_set(
+        self, input_event_set: Collection[EventType]
+    ) -> tuple[EventType, ...]:
+        self._sorted_events = tuple(input_event_set)
+        return self._sorted_events
+
+    @override
+    def _relay_cpp_expression(
+        self,
+        gencontext: _CodeGenerationContext,
+        downstream: _CppExpression,
+    ) -> _CppExpression:
+        abstime_t = (
+            f"typename {self._data_types._cpp_type_name()}::abstime_type"
+        )
+        if isinstance(self._time_window, Param):
+            value_expr = f"{gencontext.params_varname}.{self._time_window._cpp_identifier()}"
+        else:
+            value_expr = f"tcspc::i64{{{self._time_window}LL}}"
+        event_list = _make_type_list(self._sorted_events)
+        return _CppExpression(
+            f"""\
+            tcspc::recover_order<
+                {event_list},
+                {self._data_types._cpp_type_name()}
+            >(
+                tcspc::arg::time_window<{abstime_t}>{{static_cast<{abstime_t}>({value_expr})}},
+                {downstream}
+            )"""
+        )
+
+
+@final
+class RegulateTimeReached(_TypePreservingRelayNode):
+    """Processor that regulates the frequency of `TimeReachedEvent`.
+
+    Ensures that the event stream contains `TimeReachedEvent` at
+    reasonable abstime intervals and event-count intervals, removing
+    redundant ones based on the same criteria. Useful when sorting
+    events from multiple streams by abstime downstream.
+
+    Parameters
+    ----------
+    interval_threshold : int or Param[int]
+        A `TimeReachedEvent` is emitted at the next opportunity if at
+        least this abstime interval has elapsed since the previously
+        emitted one. Use the maximum value of the abstime type to
+        effectively disable the interval criterion.
+    count_threshold : int or Param[int]
+        A `TimeReachedEvent` is emitted when this many events have
+        been emitted since the previously emitted one.
+    data_types : DataTypes or None
+        Data type set specifying ``abstime_type``. Defaults to
+        ``DataTypes()``.
+
+    Notes
+    -----
+    Events handled:
+
+    - `TimeReachedEvent`: emit, possibly rate-limited.
+    - All event types with an ``abstime`` field: pass through, possibly
+      followed by a `TimeReachedEvent`.
+    - End of input: emit a final `TimeReachedEvent` with the time of
+      the last event passed; pass through.
+
+    See Also
+    --------
+    :cpp:`tcspc::regulate_time_reached`
+        The underlying C++ factory function.
+    """
+
+    def __init__(
+        self,
+        interval_threshold: int | Param[int],
+        count_threshold: int | Param[int],
+        data_types: DataTypes | None = None,
+    ) -> None:
+        self._interval = interval_threshold
+        self._count = count_threshold
+        self._data_types = (
+            data_types if data_types is not None else DataTypes()
+        )
+
+    @override
+    def _parameters(self) -> Sequence[tuple[Param, _CppTypeName]]:
+        params: list[tuple[Param, _CppTypeName]] = []
+        if isinstance(self._interval, Param):
+            params.append((self._interval, _int64_type))
+        if isinstance(self._count, Param):
+            params.append((self._count, _size_type))
+        return params
+
+    @override
+    def _relay_cpp_expression(
+        self,
+        gencontext: _CodeGenerationContext,
+        downstream: _CppExpression,
+    ) -> _CppExpression:
+        abstime_t = (
+            f"typename {self._data_types._cpp_type_name()}::abstime_type"
+        )
+        if isinstance(self._interval, Param):
+            interval_expr = f"{gencontext.params_varname}.{self._interval._cpp_identifier()}"
+        else:
+            interval_expr = f"tcspc::i64{{{self._interval}LL}}"
+        count_expr = gencontext.size_t_expression(self._count)
+        return _CppExpression(
+            f"""\
+            tcspc::regulate_time_reached<{self._data_types._cpp_type_name()}>(
+                tcspc::arg::interval_threshold<{abstime_t}>{{static_cast<{abstime_t}>({interval_expr})}},
+                tcspc::arg::count_threshold<std::size_t>{{{count_expr}}},
+                {downstream}
+            )"""
+        )
+
+
+@final
+class RemoveTimeCorrelation(_RelayNode):
+    """Processor that strips the difftime from time-correlated detection events.
+
+    Converts each `TimeCorrelatedDetectionEvent` into a `DetectionEvent`
+    (with the same ``abstime`` and ``channel``); other event types pass
+    through unchanged.
+
+    Parameters
+    ----------
+    data_types : DataTypes or None
+        Data type set specifying ``abstime`` and ``channel`` types.
+        Defaults to ``DataTypes()``.
+
+    Notes
+    -----
+    Events handled:
+
+    - `TimeCorrelatedDetectionEvent`: emit a `DetectionEvent` with the
+      same ``abstime`` and ``channel``.
+    - All other event types: pass through unchanged.
+    - End of input: pass through.
+
+    See Also
+    --------
+    :cpp:`tcspc::remove_time_correlation`
+        The underlying C++ factory function.
+    """
+
+    def __init__(self, data_types: DataTypes | None = None) -> None:
+        self._data_types = (
+            data_types if data_types is not None else DataTypes()
+        )
+
+    @override
+    def _relay_map_event_set(
+        self, input_event_set: Collection[EventType]
+    ) -> tuple[EventType, ...]:
+        tcd = _events.TimeCorrelatedDetectionEvent(self._data_types)
+        det = _events.DetectionEvent(self._data_types)
+        out = tuple(t for t in input_event_set if t != tcd)
+        return (*out, det)
+
+    @override
+    def _relay_cpp_expression(
+        self,
+        gencontext: _CodeGenerationContext,
+        downstream: _CppExpression,
+    ) -> _CppExpression:
+        return _CppExpression(
+            f"""\
+            tcspc::remove_time_correlation<{self._data_types._cpp_type_name()}>(
+                {downstream}
+            )"""
+        )
+
+
+@final
+class Select(_RelayNode):
+    """Processor that passes only events of the listed types, dropping others.
+
+    Parameters
+    ----------
+    *event_types : EventType
+        The event types to pass through. Events of all other types are
+        silently discarded.
+
+    Notes
+    -----
+    Events handled:
+
+    - Events in ``event_types``: pass through unchanged.
+    - All other event types: discarded.
+    - End of input: pass through.
+
+    See Also
+    --------
+    :cpp:`tcspc::select`
+        The underlying C++ factory function.
+    SelectAll
+    SelectNot
+    """
+
+    def __init__(self, *event_types: EventType) -> None:
+        self._event_types = tuple(event_types)
+
+    @override
+    def _relay_map_event_set(
+        self, input_event_set: Collection[EventType]
+    ) -> tuple[EventType, ...]:
+        return tuple(
+            t
+            for t in input_event_set
+            if _cpp_utils._contains_type(
+                (u._cpp_type_name() for u in self._event_types),
+                t._cpp_type_name(),
+            )
+        )
+
+    @override
+    def _relay_cpp_expression(
+        self,
+        gencontext: _CodeGenerationContext,
+        downstream: _CppExpression,
+    ) -> _CppExpression:
+        return _CppExpression(
+            f"""\
+            tcspc::select<
+                {_make_type_list(self._event_types)}
+            >(
+                {downstream}
+            )"""
+        )
+
+
+@final
 class SelectAll(_TypePreservingRelayNode):
     """Pass-through processor that forwards every event unchanged.
 
@@ -777,6 +2145,59 @@ class SelectAll(_TypePreservingRelayNode):
         downstream: _CppExpression,
     ) -> _CppExpression:
         return _CppExpression(f"tcspc::select_all({downstream})")
+
+
+@final
+class SelectNot(_RelayNode):
+    """Processor that discards events of the listed types, passing others.
+
+    The complement of `Select`.
+
+    Parameters
+    ----------
+    *event_types : EventType
+        The event types to discard. Events of all other types pass
+        through unchanged.
+
+    Notes
+    -----
+    Events handled:
+
+    - Events in ``event_types``: discarded.
+    - All other event types: pass through unchanged.
+    - End of input: pass through.
+
+    See Also
+    --------
+    :cpp:`tcspc::select_not`
+        The underlying C++ factory function.
+    Select
+    SelectAll
+    """
+
+    def __init__(self, *event_types: EventType) -> None:
+        self._event_types = tuple(event_types)
+
+    @override
+    def _relay_map_event_set(
+        self, input_event_set: Collection[EventType]
+    ) -> tuple[EventType, ...]:
+        return _remove_events_from_set(input_event_set, self._event_types)
+
+    @override
+    def _relay_cpp_expression(
+        self,
+        gencontext: _CodeGenerationContext,
+        downstream: _CppExpression,
+    ) -> _CppExpression:
+        return _CppExpression(
+            f"""\
+            tcspc::select_not<
+                {_make_type_list(self._event_types)}
+            >(
+                {downstream}
+            )"""
+        )
 
 
 @final
@@ -1024,6 +2445,174 @@ class Unbatch(_RelayNode):
         return _CppExpression(
             f"""\
             tcspc::unbatch<{self._event_type._cpp_type_name()}>(
+                {downstream}
+            )"""
+        )
+
+
+@final
+class UnbatchFromBytes(_RelayNode):
+    """Processor that emits typed events one-at-a-time from batches of bytes.
+
+    Input is a `BucketEvent` of bytes. The incoming bytes are interpreted
+    as a contiguous stream of ``event_type`` and emitted individually
+    (after copying for alignment if needed). Trailing bytes that do not
+    form a whole ``event_type`` are buffered and combined with subsequent
+    input.
+
+    Parameters
+    ----------
+    event_type : EventType
+        Element type emitted. Must be a trivially-typed event.
+
+    Notes
+    -----
+    Events handled:
+
+    - `BucketEvent` of byte event type: each contained event is emitted
+      one at a time.
+    - All other event types: rejected at graph build time.
+    - End of input: pass through. Raises an exception if any unconsumed
+      bytes remain.
+
+    See Also
+    --------
+    :cpp:`tcspc::unbatch_from_bytes`
+        The underlying C++ factory function.
+    BatchFromBytes
+    """
+
+    def __init__(self, event_type: EventType) -> None:
+        self._event_type = event_type
+        self._byte_event_type = _events.BucketEvent(_events._ByteEvent())
+
+    @override
+    def _relay_map_event_set(
+        self, input_event_set: Collection[EventType]
+    ) -> tuple[EventType, ...]:
+        _check_events_subset_of(
+            input_event_set,
+            (self._byte_event_type,),
+            self.__class__.__name__,
+        )
+        return (self._event_type,)
+
+    @override
+    def _relay_cpp_expression(
+        self,
+        gencontext: _CodeGenerationContext,
+        downstream: _CppExpression,
+    ) -> _CppExpression:
+        return _CppExpression(
+            f"""\
+            tcspc::unbatch_from_bytes<{self._event_type._cpp_type_name()}>(
+                {downstream}
+            )"""
+        )
+
+
+@final
+class ViewAsBytes(_RelayNode):
+    """Processor that emits the in-memory bytes of bucketed events.
+
+    For each incoming `BucketEvent` of ``event_type``, the underlying
+    storage is viewed (without copying) as a `BucketEvent` of bytes and
+    emitted.
+
+    Parameters
+    ----------
+    event_type : EventType
+        Element type of the input buckets. Must be trivially-typed.
+
+    Notes
+    -----
+    Events handled:
+
+    - `BucketEvent` of ``event_type``: emit its storage as `BucketEvent`
+      of bytes (no copy).
+    - All other event types: rejected at graph build time.
+    - End of input: pass through.
+
+    See Also
+    --------
+    :cpp:`tcspc::view_as_bytes`
+        The underlying C++ factory function.
+    BatchFromBytes
+    """
+
+    def __init__(self, event_type: EventType) -> None:
+        self._event_type = event_type
+        self._byte_event_type = _events.BucketEvent(_events._ByteEvent())
+
+    @override
+    def _relay_map_event_set(
+        self, input_event_set: Collection[EventType]
+    ) -> tuple[EventType, ...]:
+        _check_events_subset_of(
+            input_event_set,
+            (_events.BucketEvent(self._event_type),),
+            self.__class__.__name__,
+        )
+        return (self._byte_event_type,)
+
+    @override
+    def _relay_cpp_expression(
+        self,
+        gencontext: _CodeGenerationContext,
+        downstream: _CppExpression,
+    ) -> _CppExpression:
+        return _CppExpression(
+            f"""\
+            tcspc::view_as_bytes(
+                {downstream}
+            )"""
+        )
+
+
+@final
+class ZeroBaseAbstime(_TypePreservingRelayNode):
+    """Pass-through processor that shifts abstime so the first event is at zero.
+
+    Subtracts the abstime of the first event seen from every event's
+    abstime, so that downstream processing sees an abstime starting at
+    zero. Wrap-around is handled correctly even if ``abstime_type`` is
+    a signed integer type.
+
+    Parameters
+    ----------
+    data_types : DataTypes or None
+        Data type set specifying ``abstime_type``. Defaults to
+        ``DataTypes()``.
+
+    Notes
+    -----
+    Events handled:
+
+    - All event types with an ``abstime`` field: pass through with
+      ``abstime`` made relative to the first event.
+    - End of input: pass through.
+
+    See Also
+    --------
+    :cpp:`tcspc::zero_base_abstime`
+        The underlying C++ factory function.
+    Delay
+    """
+
+    def __init__(self, data_types: DataTypes | None = None) -> None:
+        self._data_types = (
+            data_types if data_types is not None else DataTypes()
+        )
+
+    @override
+    def _relay_cpp_expression(
+        self,
+        gencontext: _CodeGenerationContext,
+        downstream: _CppExpression,
+    ) -> _CppExpression:
+        return _CppExpression(
+            f"""\
+            tcspc::zero_base_abstime<{self._data_types._cpp_type_name()}>(
                 {downstream}
             )"""
         )

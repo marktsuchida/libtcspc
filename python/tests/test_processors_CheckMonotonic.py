@@ -7,6 +7,7 @@ from _test_helpers import _NamedEvent
 from libtcspc._codegen import _CodeGenerationContext
 from libtcspc._cpp_utils import _CppExpression, _CppIdentifier, _CppTypeName
 from libtcspc._data_types import DataTypes
+from libtcspc._events import WarningEvent
 from libtcspc._processors import CheckMonotonic
 
 IntEvent = _NamedEvent(_CppTypeName("int"))
@@ -17,10 +18,17 @@ gencontext = _CodeGenerationContext(
 )
 
 
-def test_CheckMonotonic_event_set_is_preserved():
+def test_CheckMonotonic_adds_WarningEvent_to_output():
     node = CheckMonotonic()
     assert node._map_event_sets([(IntEvent, OtherEvent)]) == (
-        (IntEvent, OtherEvent),
+        (IntEvent, OtherEvent, WarningEvent()),
+    )
+
+
+def test_CheckMonotonic_does_not_duplicate_WarningEvent_in_output():
+    node = CheckMonotonic()
+    assert node._map_event_sets([(IntEvent, OtherEvent, WarningEvent())]) == (
+        (IntEvent, OtherEvent, WarningEvent()),
     )
 
 

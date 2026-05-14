@@ -166,8 +166,99 @@ class BucketEvent(EventType):
         return self._element_type
 
 
+class _ByteEvent(EventType):
+    """Internal placeholder for C++ ``std::byte``.
+
+    Used as the element type of `BucketEvent` for byte-level processors
+    (`ViewAsBytes`, `BatchFromBytes`, `UnbatchFromBytes`). Not exposed
+    in the public API.
+    """
+
+    @override
+    def _cpp_type_name(self) -> _CppTypeName:
+        return _CppTypeName("std::byte")
+
+
 # Note: C++ event wrappers are ordered alphabetically without regard to the C++
 # header in which they are defined.
+
+
+class BeginLostIntervalEvent(EventType):
+    """Event marking the beginning of an interval in which counts were lost.
+
+    The interval must be closed with a subsequent `EndLostIntervalEvent`.
+    Unlike `DataLostEvent`, the ``abstime`` remains consistent before,
+    during, and after the lost interval; detected but un-time-tagged
+    counts during the interval can be reported as `LostCountsEvent`.
+
+    Parameters
+    ----------
+    data_types : DataTypes or None
+        Set of integer types parameterising the C++ event. ``None`` (the
+        default) uses `DataTypes` defaults.
+
+    Notes
+    -----
+    The corresponding C++ event has the field ``abstime``.
+
+    See Also
+    --------
+    :cpp:`tcspc::begin_lost_interval_event`
+        The underlying C++ event type.
+    """
+
+    def __init__(self, data_types: DataTypes | None = None) -> None:
+        self._data_types = (
+            data_types if data_types is not None else DataTypes()
+        )
+
+    @override
+    def _cpp_type_name(self) -> _CppTypeName:
+        return _CppTypeName(
+            f"tcspc::begin_lost_interval_event<{self._data_types._cpp_type_name()}>"
+        )
+
+
+class BHSPC600_256chEvent(EventType):
+    """Raw 32-bit FIFO record from Becker & Hickl SPC-600/630 in 256-channel mode.
+
+    Typically appears upstream of `DecodeBHSPC600_256ch`.
+
+    Notes
+    -----
+    The corresponding C++ event has a single field
+    ``std::array<std::byte, 4> bytes`` holding the raw record.
+
+    See Also
+    --------
+    :cpp:`tcspc::bh_spc600_256ch_event`
+        The underlying C++ event type.
+    """
+
+    @override
+    def _cpp_type_name(self) -> _CppTypeName:
+        return _CppTypeName("tcspc::bh_spc600_256ch_event")
+
+
+class BHSPC600_4096chEvent(EventType):
+    """Raw 48-bit FIFO record from Becker & Hickl SPC-600/630 in 4096-channel mode.
+
+    Typically appears upstream of `DecodeBHSPC600_4096ch`.
+
+    Notes
+    -----
+    The corresponding C++ event has a single field
+    ``std::array<std::byte, 6> bytes`` holding the raw record.
+
+    See Also
+    --------
+    :cpp:`tcspc::bh_spc600_4096ch_event`
+        The underlying C++ event type.
+    """
+
+    @override
+    def _cpp_type_name(self) -> _CppTypeName:
+        return _CppTypeName("tcspc::bh_spc600_4096ch_event")
 
 
 class BHSPCEvent(EventType):
@@ -193,6 +284,42 @@ class BHSPCEvent(EventType):
     @override
     def _cpp_type_name(self) -> _CppTypeName:
         return _CppTypeName("tcspc::bh_spc_event")
+
+
+class BulkCountsEvent(EventType):
+    """Event representing detection counts from a non-time-tagging counter.
+
+    Used for devices that emit counter values at some interval (often
+    based on an internal or external clock signal) rather than tagging
+    individual detections.
+
+    Parameters
+    ----------
+    data_types : DataTypes or None
+        Set of integer types parameterising the C++ event. ``None`` (the
+        default) uses `DataTypes` defaults.
+
+    Notes
+    -----
+    The corresponding C++ event has fields ``abstime``, ``channel``, and
+    ``count``.
+
+    See Also
+    --------
+    :cpp:`tcspc::bulk_counts_event`
+        The underlying C++ event type.
+    """
+
+    def __init__(self, data_types: DataTypes | None = None) -> None:
+        self._data_types = (
+            data_types if data_types is not None else DataTypes()
+        )
+
+    @override
+    def _cpp_type_name(self) -> _CppTypeName:
+        return _CppTypeName(
+            f"tcspc::bulk_counts_event<{self._data_types._cpp_type_name()}>"
+        )
 
 
 class DataLostEvent(EventType):
@@ -234,6 +361,110 @@ class DataLostEvent(EventType):
         )
 
 
+class DetectionEvent(EventType):
+    """Event representing a detected count without time correlation.
+
+    Like `TimeCorrelatedDetectionEvent` but without a ``difftime`` field;
+    used when the device does not report a microtime (or it has been
+    discarded). The PicoQuant T2 decoders and `RemoveTimeCorrelation`
+    emit this type.
+
+    Parameters
+    ----------
+    data_types : DataTypes or None
+        Set of integer types parameterising the C++ event. ``None`` (the
+        default) uses `DataTypes` defaults.
+
+    Notes
+    -----
+    The corresponding C++ event has fields ``abstime`` and ``channel``.
+
+    See Also
+    --------
+    :cpp:`tcspc::detection_event`
+        The underlying C++ event type.
+    """
+
+    def __init__(self, data_types: DataTypes | None = None) -> None:
+        self._data_types = (
+            data_types if data_types is not None else DataTypes()
+        )
+
+    @override
+    def _cpp_type_name(self) -> _CppTypeName:
+        return _CppTypeName(
+            f"tcspc::detection_event<{self._data_types._cpp_type_name()}>"
+        )
+
+
+class EndLostIntervalEvent(EventType):
+    """Event marking the end of an interval in which counts were lost.
+
+    Closes an interval opened by `BeginLostIntervalEvent`.
+
+    Parameters
+    ----------
+    data_types : DataTypes or None
+        Set of integer types parameterising the C++ event. ``None`` (the
+        default) uses `DataTypes` defaults.
+
+    Notes
+    -----
+    The corresponding C++ event has the field ``abstime``.
+
+    See Also
+    --------
+    :cpp:`tcspc::end_lost_interval_event`
+        The underlying C++ event type.
+    """
+
+    def __init__(self, data_types: DataTypes | None = None) -> None:
+        self._data_types = (
+            data_types if data_types is not None else DataTypes()
+        )
+
+    @override
+    def _cpp_type_name(self) -> _CppTypeName:
+        return _CppTypeName(
+            f"tcspc::end_lost_interval_event<{self._data_types._cpp_type_name()}>"
+        )
+
+
+class LostCountsEvent(EventType):
+    """Event indicating a number of counts that could not be time-tagged.
+
+    Should only occur between a `BeginLostIntervalEvent` and the
+    corresponding `EndLostIntervalEvent`.
+
+    Parameters
+    ----------
+    data_types : DataTypes or None
+        Set of integer types parameterising the C++ event. ``None`` (the
+        default) uses `DataTypes` defaults.
+
+    Notes
+    -----
+    The corresponding C++ event has fields ``abstime``, ``channel``, and
+    ``count``.
+
+    See Also
+    --------
+    :cpp:`tcspc::lost_counts_event`
+        The underlying C++ event type.
+    """
+
+    def __init__(self, data_types: DataTypes | None = None) -> None:
+        self._data_types = (
+            data_types if data_types is not None else DataTypes()
+        )
+
+    @override
+    def _cpp_type_name(self) -> _CppTypeName:
+        return _CppTypeName(
+            f"tcspc::lost_counts_event<{self._data_types._cpp_type_name()}>"
+        )
+
+
 class MarkerEvent(EventType):
     """Event representing a timing marker or external trigger.
 
@@ -272,6 +503,157 @@ class MarkerEvent(EventType):
         return _CppTypeName(
             f"tcspc::marker_event<{self._data_types._cpp_type_name()}>"
         )
+
+
+class PQT2GenericEvent(EventType):
+    """Raw 32-bit FIFO record for PicoQuant T2 (Generic) format.
+
+    Format used by HydraHarp V2, MultiHarp, TimeHarp 260, and PicoHarp
+    330 devices. Typically appears upstream of `DecodePQT2Generic`.
+
+    Notes
+    -----
+    The corresponding C++ event has a single field
+    ``std::array<std::byte, 4> bytes`` holding the raw record.
+
+    See Also
+    --------
+    :cpp:`tcspc::pqt2_generic_event`
+        The underlying C++ event type.
+    """
+
+    @override
+    def _cpp_type_name(self) -> _CppTypeName:
+        return _CppTypeName("tcspc::pqt2_generic_event")
+
+
+class PQT2HydraHarpV1Event(EventType):
+    """Raw 32-bit FIFO record for PicoQuant HydraHarp V1 T2 format.
+
+    Typically appears upstream of `DecodePQT2HydraHarpV1`.
+
+    Notes
+    -----
+    The corresponding C++ event has a single field
+    ``std::array<std::byte, 4> bytes`` holding the raw record.
+
+    See Also
+    --------
+    :cpp:`tcspc::pqt2_hydraharpv1_event`
+        The underlying C++ event type.
+    """
+
+    @override
+    def _cpp_type_name(self) -> _CppTypeName:
+        return _CppTypeName("tcspc::pqt2_hydraharpv1_event")
+
+
+class PQT2PicoHarp300Event(EventType):
+    """Raw 32-bit FIFO record for PicoQuant PicoHarp 300 T2 format.
+
+    Typically appears upstream of `DecodePQT2PicoHarp300`.
+
+    Notes
+    -----
+    The corresponding C++ event has a single field
+    ``std::array<std::byte, 4> bytes`` holding the raw record.
+
+    See Also
+    --------
+    :cpp:`tcspc::pqt2_picoharp300_event`
+        The underlying C++ event type.
+    """
+
+    @override
+    def _cpp_type_name(self) -> _CppTypeName:
+        return _CppTypeName("tcspc::pqt2_picoharp300_event")
+
+
+class PQT3GenericEvent(EventType):
+    """Raw 32-bit FIFO record for PicoQuant T3 (Generic) format.
+
+    Format used by HydraHarp V2, MultiHarp, TimeHarp 260, and PicoHarp
+    330 devices. Typically appears upstream of `DecodePQT3Generic`.
+
+    Notes
+    -----
+    The corresponding C++ event has a single field
+    ``std::array<std::byte, 4> bytes`` holding the raw record.
+
+    See Also
+    --------
+    :cpp:`tcspc::pqt3_generic_event`
+        The underlying C++ event type.
+    """
+
+    @override
+    def _cpp_type_name(self) -> _CppTypeName:
+        return _CppTypeName("tcspc::pqt3_generic_event")
+
+
+class PQT3HydraHarpV1Event(EventType):
+    """Raw 32-bit FIFO record for PicoQuant HydraHarp V1 T3 format.
+
+    Typically appears upstream of `DecodePQT3HydraHarpV1`.
+
+    Notes
+    -----
+    The corresponding C++ event has a single field
+    ``std::array<std::byte, 4> bytes`` holding the raw record.
+
+    See Also
+    --------
+    :cpp:`tcspc::pqt3_hydraharpv1_event`
+        The underlying C++ event type.
+    """
+
+    @override
+    def _cpp_type_name(self) -> _CppTypeName:
+        return _CppTypeName("tcspc::pqt3_hydraharpv1_event")
+
+
+class PQT3PicoHarp300Event(EventType):
+    """Raw 32-bit FIFO record for PicoQuant PicoHarp 300 T3 format.
+
+    Typically appears upstream of `DecodePQT3PicoHarp300`.
+
+    Notes
+    -----
+    The corresponding C++ event has a single field
+    ``std::array<std::byte, 4> bytes`` holding the raw record.
+
+    See Also
+    --------
+    :cpp:`tcspc::pqt3_picoharp300_event`
+        The underlying C++ event type.
+    """
+
+    @override
+    def _cpp_type_name(self) -> _CppTypeName:
+        return _CppTypeName("tcspc::pqt3_picoharp300_event")
+
+
+class SwabianTagEvent(EventType):
+    """Raw 16-byte tag record from a Swabian Time Tagger.
+
+    Has the same memory layout as the ``Tag`` struct in the Swabian
+    Time Tagger C++ API and the format used by the Python ``CustomMeasurement``
+    class. Typically appears upstream of `DecodeSwabianTags`.
+
+    Notes
+    -----
+    The corresponding C++ event has a single field
+    ``std::array<std::byte, 16> bytes`` holding the raw record.
+
+    See Also
+    --------
+    :cpp:`tcspc::swabian_tag_event`
+        The underlying C++ event type.
+    """
+
+    @override
+    def _cpp_type_name(self) -> _CppTypeName:
+        return _CppTypeName("tcspc::swabian_tag_event")
 
 
 class TimeCorrelatedDetectionEvent(EventType):

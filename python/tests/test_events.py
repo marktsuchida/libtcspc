@@ -11,7 +11,12 @@ from libtcspc._cpp_utils import _CppIdentifier, _CppTypeName
 IntEvent = _NamedEvent(_CppTypeName("int"))
 
 PARAMETERIZED_EVENTS = [
+    (tcspc.BeginLostIntervalEvent, "tcspc::begin_lost_interval_event<"),
+    (tcspc.BulkCountsEvent, "tcspc::bulk_counts_event<"),
     (tcspc.DataLostEvent, "tcspc::data_lost_event<"),
+    (tcspc.DetectionEvent, "tcspc::detection_event<"),
+    (tcspc.EndLostIntervalEvent, "tcspc::end_lost_interval_event<"),
+    (tcspc.LostCountsEvent, "tcspc::lost_counts_event<"),
     (tcspc.MarkerEvent, "tcspc::marker_event<"),
     (
         tcspc.TimeCorrelatedDetectionEvent,
@@ -20,9 +25,23 @@ PARAMETERIZED_EVENTS = [
     (tcspc.TimeReachedEvent, "tcspc::time_reached_event<"),
 ]
 
+UNTEMPLATED_DEVICE_EVENTS = [
+    (tcspc.BHSPC600_256chEvent, "tcspc::bh_spc600_256ch_event"),
+    (tcspc.BHSPC600_4096chEvent, "tcspc::bh_spc600_4096ch_event"),
+    (tcspc.BHSPCEvent, "tcspc::bh_spc_event"),
+    (tcspc.PQT2GenericEvent, "tcspc::pqt2_generic_event"),
+    (tcspc.PQT2HydraHarpV1Event, "tcspc::pqt2_hydraharpv1_event"),
+    (tcspc.PQT2PicoHarp300Event, "tcspc::pqt2_picoharp300_event"),
+    (tcspc.PQT3GenericEvent, "tcspc::pqt3_generic_event"),
+    (tcspc.PQT3HydraHarpV1Event, "tcspc::pqt3_hydraharpv1_event"),
+    (tcspc.PQT3PicoHarp300Event, "tcspc::pqt3_picoharp300_event"),
+    (tcspc.SwabianTagEvent, "tcspc::swabian_tag_event"),
+]
 
-def test_BHSPCEvent_cpp_type_name():
-    assert tcspc.BHSPCEvent()._cpp_type_name() == "tcspc::bh_spc_event"
+
+@pytest.mark.parametrize(("cls", "cpp_type"), UNTEMPLATED_DEVICE_EVENTS)
+def test_untemplated_device_event_cpp_type_name(cls, cpp_type):
+    assert cls()._cpp_type_name() == cpp_type
 
 
 def test_WarningEvent_cpp_type_name():
