@@ -288,6 +288,78 @@ def test_add_chain_not_single_input_output(mocker):
     n1 = _TestNode(output=["out0", "out1"])
     with pytest.raises(ValueError):
         g.add_chain([n1])
+    # A 2-output node in middle position is also rejected.
+    n2 = make_simple_node(mocker)
+    n3 = _TestNode(output=["out0", "out1"])
+    n4 = make_simple_node(mocker)
+    with pytest.raises(ValueError):
+        g.add_chain([n2, n3, n4])
+
+
+def _make_sink_node(mocker) -> Node:
+    def sink_codegen(gencontext, downstreams):
+        assert len(downstreams) == 0
+        return _CppExpression("sink_proc()")
+
+    node = _TestNode(output=[])
+    node._map_event_sets = mocker.MagicMock(return_value=())  # type: ignore
+    node._cpp_expression = mocker.MagicMock(side_effect=sink_codegen)  # type: ignore
+    return node
+
+
+def test_add_chain_ending_in_sink(mocker):
+    g = Graph()
+    n0 = make_simple_node(mocker)
+    n1 = make_simple_node(mocker)
+    sink = _make_sink_node(mocker)
+    g.add_chain([("a", n0), ("b", n1), ("sink", sink)])
+    # All three nodes added.
+    assert [name for name, _ in g._nodes] == ["a", "b", "sink"]
+    # Only "a"'s input is open; no outputs are open (sink has none, a/b are
+    # connected downstream).
+    assert g.inputs() == (("a", "input"),)
+    assert g.outputs() == ()
+
+
+def test_add_chain_single_sink_node(mocker):
+    g = Graph()
+    sink = _make_sink_node(mocker)
+    g.add_chain([("sink", sink)])
+    assert [name for name, _ in g._nodes] == ["sink"]
+    # Sink's input is open (no upstream provided).
+    assert g.inputs() == (("sink", "input"),)
+    assert g.outputs() == ()
+
+
+def test_add_chain_sink_with_upstream(mocker):
+    g = Graph()
+    src = make_simple_node(mocker)
+    sink = _make_sink_node(mocker)
+    g.add_node("src", src)
+    g.add_chain([("sink", sink)], upstream="src")
+    # Both src's output and sink's input are now connected.
+    assert g.inputs() == (("src", "input"),)
+    assert g.outputs() == ()
+
+
+def test_add_chain_sink_with_downstream_raises(mocker):
+    g = Graph()
+    existing = make_simple_node(mocker)
+    g.add_node("existing", existing)
+    sink = _make_sink_node(mocker)
+    with pytest.raises(ValueError):
+        g.add_chain([("sink", sink)], downstream="existing")
+    # Graph unchanged: sink was not added.
+    assert [name for name, _ in g._nodes] == ["existing"]
+
+
+def test_add_chain_middle_sink_rejected(mocker):
+    g = Graph()
+    n0 = make_simple_node(mocker)
+    sink = _make_sink_node(mocker)
+    n2 = make_simple_node(mocker)
+    with pytest.raises(ValueError):
+        g.add_chain([n0, sink, n2])
 
 
 def test_empty_add_chain_connects_upstream_downstream(mocker):

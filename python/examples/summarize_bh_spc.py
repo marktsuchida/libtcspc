@@ -37,15 +37,12 @@ def summarize(filename: str) -> int:
                 tcspc.TimeCorrelatedDetectionEvent(dtypes),
                 PHOTON_COUNT_TAG,
             ),
-            (
-                "tail",
-                tcspc.Count(tcspc.MarkerEvent(dtypes), MARK_COUNT_TAG),
-            ),
+            tcspc.Count(tcspc.MarkerEvent(dtypes), MARK_COUNT_TAG),
             # Simplified for now compared to the C++ example (no per-channel
             # counts and time range).
+            tcspc.NullSink(),
         ]
     )
-    g.add_node(None, tcspc.NullSink(), upstream="tail")
 
     ret = 0
     print("Compiling processing graph...", file=sys.stderr)

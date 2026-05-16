@@ -315,6 +315,10 @@ class Graph:
         """
         Add a chain of single-input single-output nodes connected in series.
 
+        The last node may be a sink — that is, it may have zero outputs in
+        addition to its single input. The first and middle nodes must have
+        exactly one input and one output.
+
         Parameters
         ----------
         nodes : Sequence[tuple[str, Node] or Node]
@@ -327,25 +331,51 @@ class Graph:
         downstream : tuple[str, str] or str or None
             If given, connect the last added node's output port to
             ``downstream``. The shorthand rules of `add_node` apply.
+            Must be ``None`` if the last node is a sink (zero outputs).
 
         Raises
         ------
         ValueError
-            If any node does not have exactly one input and one output
-            port, or if any requested connection fails.
+            If the first or any middle node does not have exactly one input
+            and one output; if the last node does not have exactly one input
+            and (zero or one) outputs; if ``downstream`` is given but the
+            last node has zero outputs; or if any requested connection
+            fails.
 
         Notes
         -----
         If ``nodes`` is empty and both ``upstream`` and ``downstream``
         are given, ``upstream`` is connected directly to ``downstream``.
         """
-        for node in nodes:
+        nodes_list = list(nodes)
+        last_index = len(nodes_list) - 1
+        for i, node in enumerate(nodes_list):
             nm, n = node if isinstance(node, tuple) else (None, node)
-            if len(n.inputs()) != 1 or len(n.outputs()) != 1:
-                raise ValueError(
-                    "Graph.add_chain() requires single-input, single-output nodes"
-                )
+            n_in, n_out = len(n.inputs()), len(n.outputs())
+            is_last = i == last_index
+            if is_last:
+                if n_in != 1 or n_out > 1:
+                    raise ValueError(
+                        "Graph.add_chain() last node must have exactly one "
+                        "input and zero or one outputs; "
+                        f"got {n_in} input(s) and {n_out} output(s)"
+                    )
+                if n_out == 0 and downstream is not None:
+                    raise ValueError(
+                        "Graph.add_chain() last node has zero outputs; "
+                        "downstream= must not be given"
+                    )
+            else:
+                if n_in != 1 or n_out != 1:
+                    position = "first" if i == 0 else "middle"
+                    raise ValueError(
+                        f"Graph.add_chain() {position} node must have "
+                        "exactly one input and one output; "
+                        f"got {n_in} input(s) and {n_out} output(s)"
+                    )
             upstream = self.add_node(nm, n, upstream=upstream)
+            if is_last and n_out == 0:
+                upstream = None
         if upstream is not None and downstream is not None:
             self.connect(upstream, downstream)
 
