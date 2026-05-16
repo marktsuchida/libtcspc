@@ -79,7 +79,7 @@ def test_StopWithError_raises_RuntimeError_on_event(tmp_path: Path) -> None:
     path.write_bytes(b"\x00\x00\x00")
 
     g = Graph()
-    g.add_sequence(
+    g.add_chain(
         [
             (
                 "reader",

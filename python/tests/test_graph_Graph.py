@@ -234,7 +234,7 @@ def make_simple_node(mocker) -> Node:
     return node
 
 
-def test_add_sequence(mocker):
+def test_add_chain(mocker):
     node0 = make_simple_node(mocker)
     node1 = make_simple_node(mocker)
     node2 = make_simple_node(mocker)
@@ -242,9 +242,9 @@ def test_add_sequence(mocker):
     node4 = make_simple_node(mocker)
 
     g = Graph()
-    g.add_sequence([node0, node1])
-    g.add_sequence([node2, node3], upstream="_TestNode-1")
-    g.add_sequence([node4], downstream=("_TestNode-0", "input"))
+    g.add_chain([node0, node1])
+    g.add_chain([node2, node3], upstream="_TestNode-1")
+    g.add_chain([node4], downstream=("_TestNode-0", "input"))
     code = g._cpp_expression(gencontext, [_CppExpression("std::move(ds)")])
     assert (
         _run_cpp_prog(f"""\
@@ -264,7 +264,7 @@ def test_add_sequence(mocker):
     )
 
 
-def test_add_sequence_with_cycle(mocker):
+def test_add_chain_with_cycle(mocker):
     node0 = make_simple_node(mocker)
     node1 = make_simple_node(mocker)
     node2 = make_simple_node(mocker)
@@ -272,25 +272,25 @@ def test_add_sequence_with_cycle(mocker):
     node4 = make_simple_node(mocker)
 
     g = Graph()
-    g.add_sequence([node0, node1, node2])
+    g.add_chain([node0, node1, node2])
     with pytest.raises(ValueError):
         # Would introduce cycle
-        g.add_sequence(
+        g.add_chain(
             [node3, node4], upstream="_TestNode-2", downstream="_TestNode-0"
         )
 
 
-def test_add_sequence_not_single_input_output(mocker):
+def test_add_chain_not_single_input_output(mocker):
     g = Graph()
     n0 = _TestNode(input=["in0", "in1"])
     with pytest.raises(ValueError):
-        g.add_sequence([n0])
+        g.add_chain([n0])
     n1 = _TestNode(output=["out0", "out1"])
     with pytest.raises(ValueError):
-        g.add_sequence([n1])
+        g.add_chain([n1])
 
 
-def test_empty_add_sequence_connects_upstream_downstream(mocker):
+def test_empty_add_chain_connects_upstream_downstream(mocker):
     g = Graph()
     n0 = _TestNode()
     n1 = _TestNode()
@@ -298,9 +298,9 @@ def test_empty_add_sequence_connects_upstream_downstream(mocker):
     g.add_node("n1", n1)
     n0._map_event_sets = mocker.MagicMock(return_value=((IntEvent,),))  # type: ignore
     n1._map_event_sets = mocker.MagicMock(return_value=((LongEvent,),))  # type: ignore
-    g.add_sequence([], upstream="n0", downstream="n1")
+    g.add_chain([], upstream="n0", downstream="n1")
     n0._map_event_sets.assert_called_with([()])  # type: ignore
     n1._map_event_sets.assert_called_with([(IntEvent,)])  # type: ignore
     with pytest.raises(ValueError):
         # Would introduce cycle
-        g.add_sequence([], upstream="n1", downstream="n0")
+        g.add_chain([], upstream="n1", downstream="n0")

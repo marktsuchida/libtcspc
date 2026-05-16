@@ -305,7 +305,7 @@ class Graph:
             rollback()
             raise
 
-    def add_sequence(
+    def add_chain(
         self,
         nodes: Sequence[tuple[str, Node] | Node],
         *,
@@ -313,7 +313,7 @@ class Graph:
         downstream: tuple[str, str] | str | None = None,
     ) -> None:
         """
-        Add a sequence of single-input single-output nodes connected in series.
+        Add a chain of single-input single-output nodes connected in series.
 
         Parameters
         ----------
@@ -343,7 +343,7 @@ class Graph:
             nm, n = node if isinstance(node, tuple) else (None, node)
             if len(n.inputs()) != 1 or len(n.outputs()) != 1:
                 raise ValueError(
-                    "Graph.add_sequence() requires single-input, single-output nodes"
+                    "Graph.add_chain() requires single-input, single-output nodes"
                 )
             upstream = self.add_node(nm, n, upstream=upstream)
         if upstream is not None and downstream is not None:

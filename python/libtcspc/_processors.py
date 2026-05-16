@@ -116,7 +116,7 @@ def read_events_from_binary_file(
     StopWithError
     """
     g = Graph()
-    g.add_sequence(
+    g.add_chain(
         [
             (
                 "reader",

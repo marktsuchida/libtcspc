@@ -74,7 +74,7 @@ def test_Stop_raises_EndOfProcessing_on_event(tmp_path: Path) -> None:
     path.write_bytes(b"\x00\x00\x00")
 
     g = Graph()
-    g.add_sequence(
+    g.add_chain(
         [
             (
                 "reader",

@@ -18,7 +18,7 @@ def summarize(filename: str) -> int:
     dtypes = tcspc.DataTypes(channel_type=np.uint32)
 
     g = tcspc.Graph()
-    g.add_sequence(
+    g.add_chain(
         [
             tcspc.read_events_from_binary_file(
                 tcspc.BHSPCEvent(),
