@@ -37,7 +37,7 @@ using events = type_list<other_event, time_reached_event<>>;
 TEST_CASE("type constraints: regulate_time_reached") {
     using proc_type = decltype(regulate_time_reached(
         arg::interval_threshold<i64>{1}, arg::count_threshold<std::size_t>{1},
-        sink_events<time_reached_event<>, other_event>()));
+        sink_only<time_reached_event<>, other_event>()));
     STATIC_CHECK(processor<proc_type, time_reached_event<>, other_event>);
     STATIC_CHECK_FALSE(handler_for<proc_type, int>);
 }
@@ -45,7 +45,7 @@ TEST_CASE("type constraints: regulate_time_reached") {
 TEST_CASE("introspect: regulate_time_reached") {
     check_introspect_simple_processor(regulate_time_reached(
         arg::interval_threshold<i64>{1}, arg::count_threshold<std::size_t>{1},
-        null_sink()));
+        sink_all()));
 }
 
 TEST_CASE("regulate time reached by abstime") {

@@ -5,7 +5,7 @@
 from _test_helpers import _NamedEvent
 from libtcspc._codegen import _CodeGenerationContext
 from libtcspc._cpp_utils import _CppIdentifier, _CppTypeName
-from libtcspc._processors import NullSink
+from libtcspc._processors import SinkAll
 
 IntEvent = _NamedEvent(_CppTypeName("int"))
 OtherEvent = _NamedEvent(_CppTypeName("long"))
@@ -15,17 +15,17 @@ gencontext = _CodeGenerationContext(
 )
 
 
-def test_NullSink_has_no_output_ports():
-    node = NullSink()
+def test_SinkAll_has_no_output_ports():
+    node = SinkAll()
     assert node.outputs() == ()
 
 
-def test_NullSink_accepts_any_input_event_set():
-    node = NullSink()
+def test_SinkAll_accepts_any_input_event_set():
+    node = SinkAll()
     assert node._map_event_sets([(IntEvent, OtherEvent)]) == ()
     assert node._map_event_sets([()]) == ()
 
 
-def test_NullSink_codegen_is_tcspc_null_sink():
-    node = NullSink()
-    assert node._cpp_expression(gencontext, []) == "tcspc::null_sink()"
+def test_SinkAll_codegen_is_tcspc_sink_all():
+    node = SinkAll()
+    assert node._cpp_expression(gencontext, []) == "tcspc::sink_all()"

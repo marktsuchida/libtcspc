@@ -61,9 +61,11 @@ def test_Delay_compiles_end_to_end():
 
     g = Graph()
     g.add_node("dec", tcspc.DecodeBHSPC())
-    g.add_node("filter", tcspc.SelectNot(tcspc.WarningEvent()), upstream="dec")
+    g.add_node(
+        "filter", tcspc.SelectExcept(tcspc.WarningEvent()), upstream="dec"
+    )
     g.add_node("delay", Delay(100), upstream="filter")
-    g.add_node(None, tcspc.NullSink(), upstream="delay")
+    g.add_node(None, tcspc.SinkAll(), upstream="delay")
     cg = CompiledGraph(g, (tcspc.BHSPCEvent(),))
     ctx = ExecutionContext(cg)
     ctx.flush()

@@ -100,7 +100,7 @@ def test_CountUpTo_compiles_end_to_end():
         ),
         upstream="dec",
     )
-    g.add_node(None, tcspc.NullSink(), upstream="counter")
+    g.add_node(None, tcspc.SinkAll(), upstream="counter")
     cg = CompiledGraph(g, (tcspc.BHSPCEvent(),))
     ctx = ExecutionContext(cg)
     ctx.flush()

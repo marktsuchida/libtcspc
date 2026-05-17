@@ -59,11 +59,11 @@ def test_DecodeBHSPCWithIntensityCounter_compiles_end_to_end():
     from libtcspc._compile import CompiledGraph
     from libtcspc._execute import ExecutionContext
     from libtcspc._graph import Graph
-    from libtcspc._processors import NullSink
+    from libtcspc._processors import SinkAll
 
     g = Graph()
     g.add_node("dec", DecodeBHSPCWithIntensityCounter())
-    g.add_node(None, NullSink(), upstream="dec")
+    g.add_node(None, SinkAll(), upstream="dec")
     cg = CompiledGraph(g, (BHSPCEvent(),))
     ctx = ExecutionContext(cg)
     ctx.flush()

@@ -134,7 +134,7 @@ template <typename EventList> class type_erased_processor {
      * The stub processor discards all events.
      */
     type_erased_processor()
-        : proc(std::make_unique<virtual_processor<null_sink>>()) {}
+        : proc(std::make_unique<virtual_processor<internal::sink_all>>()) {}
 
     /**
      * \brief Construct with the given downstream processor.

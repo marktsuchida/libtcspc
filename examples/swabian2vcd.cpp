@@ -102,7 +102,7 @@ auto scan_for_channels(std::string const &input_filename)
             ctx->tracker<unique_bin_mapper_access<channel_type>>("channels"),
             arg::max_bin_index<u64>{26}
         ),
-    null_sink())))))));
+    sink_all())))))));
     // clang-format on
     chan_proc.flush();
     return ctx->access<unique_bin_mapper_access<channel_type>>("channels")

@@ -31,17 +31,15 @@ using e1 = empty_test_event<1>;
 
 TEST_CASE("type constraints: stop") {
     STATIC_CHECK(
-        processor<decltype(stop<type_list<e0>>("", sink_events<e1>())), e0,
-                  e1>);
+        processor<decltype(stop<type_list<e0>>("", sink_only<e1>())), e0, e1>);
     STATIC_CHECK_FALSE(
-        handler_for<decltype(stop<type_list<e0>>("", sink_events<e1>())),
-                    int>);
+        handler_for<decltype(stop<type_list<e0>>("", sink_only<e1>())), int>);
 }
 
 TEST_CASE("introspect: stop") {
     check_introspect_simple_processor(
-        stop_with_error<type_list<>>("", null_sink()));
-    check_introspect_simple_processor(stop<type_list<>>("", null_sink()));
+        stop_with_error<type_list<>>("", sink_all()));
+    check_introspect_simple_processor(stop<type_list<>>("", sink_all()));
 }
 
 TEST_CASE("stop with error") {

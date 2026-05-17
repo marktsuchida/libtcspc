@@ -31,8 +31,7 @@ using out_events = type_list<bucket<std::byte>>;
 } // namespace
 
 TEST_CASE("type constraints: view_as_bytes") {
-    using proc_type =
-        decltype(view_as_bytes(sink_events<bucket<std::byte>>()));
+    using proc_type = decltype(view_as_bytes(sink_only<bucket<std::byte>>()));
     STATIC_CHECK(processor<proc_type, int, double>);
     STATIC_CHECK(handler_for<proc_type, bucket<int>>);
     STATIC_CHECK(handler_for<proc_type, bucket<int const>>);
@@ -41,7 +40,7 @@ TEST_CASE("type constraints: view_as_bytes") {
 }
 
 TEST_CASE("introspect: view_as_bytes") {
-    check_introspect_simple_processor(view_as_bytes(null_sink()));
+    check_introspect_simple_processor(view_as_bytes(sink_all()));
 }
 
 TEST_CASE("view as bytes") {

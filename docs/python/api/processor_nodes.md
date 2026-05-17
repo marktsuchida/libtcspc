@@ -18,11 +18,11 @@ Built-in processor nodes.
    libtcspc.CheckMonotonic
    libtcspc.Count
    libtcspc.DecodeBHSPC
-   libtcspc.NullSink
-   libtcspc.NullSource
    libtcspc.ReadBinaryStream
    libtcspc.SelectAll
-   libtcspc.SinkEvents
+   libtcspc.SinkAll
+   libtcspc.SinkOnly
+   libtcspc.SourceNothing
    libtcspc.Stop
    libtcspc.StopWithError
    libtcspc.Unbatch

@@ -30,7 +30,7 @@ TEST_CASE("type constraints: batch") {
     struct e1 {};
     using proc_type =
         decltype(batch<e0>(new_delete_bucket_source<e0>::create(),
-                           arg::batch_size<>{100}, sink_events<bucket<e0>>()));
+                           arg::batch_size<>{100}, sink_only<bucket<e0>>()));
     STATIC_CHECK(processor<proc_type, e0>);
     STATIC_CHECK_FALSE(processor<proc_type, e1>);
     STATIC_CHECK_FALSE(handler_for<proc_type, bucket<e0>>);
@@ -38,21 +38,21 @@ TEST_CASE("type constraints: batch") {
 
 TEST_CASE("type constraints: unbatch") {
     struct e0 {};
-    using proc_type = decltype(unbatch<bucket<int>>(sink_events<int, e0>()));
+    using proc_type = decltype(unbatch<bucket<int>>(sink_only<int, e0>()));
     STATIC_CHECK(processor<proc_type, bucket<int>>);
     STATIC_CHECK_FALSE(handler_for<proc_type, bucket<short>>);
     STATIC_CHECK_FALSE(handler_for<proc_type, bucket<e0>>);
     STATIC_CHECK(handler_for<proc_type, int>);
     STATIC_CHECK(handler_for<proc_type, e0>);
     using const_proc_type =
-        decltype(unbatch<bucket<int const>>(sink_events<int, e0>()));
+        decltype(unbatch<bucket<int const>>(sink_only<int, e0>()));
     STATIC_CHECK(handler_for<const_proc_type, bucket<int const>>);
 }
 
 TEST_CASE("type constraints: process_in_batches") {
     struct e0 {};
     using proc_type = decltype(process_in_batches<e0>(arg::batch_size<>{1},
-                                                      sink_events<e0>()));
+                                                      sink_only<e0>()));
     STATIC_CHECK(processor<proc_type, e0>);
     STATIC_CHECK_FALSE(handler_for<proc_type, int>);
 }
@@ -60,8 +60,8 @@ TEST_CASE("type constraints: process_in_batches") {
 TEST_CASE("introspect: batch, unbatch") {
     check_introspect_simple_processor(
         batch<int>(new_delete_bucket_source<int>::create(),
-                   arg::batch_size<>{1}, null_sink()));
-    check_introspect_simple_processor(unbatch<bucket<int>>(null_sink()));
+                   arg::batch_size<>{1}, sink_all()));
+    check_introspect_simple_processor(unbatch<bucket<int>>(sink_all()));
 }
 
 TEST_CASE("batch") {

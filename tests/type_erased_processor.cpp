@@ -46,31 +46,31 @@ TEST_CASE("type constraints: abstract_processor") {
 }
 
 TEST_CASE("type constraints: virtual_processor") {
-    using ::tcspc::sink_events;
+    using ::tcspc::sink_only;
 
     SECTION("handles flush") {
+        STATIC_CHECK(flushable<
+                     virtual_processor<decltype(sink_only<>()), type_list<>>>);
         STATIC_CHECK(
             flushable<
-                virtual_processor<decltype(sink_events<>()), type_list<>>>);
-        STATIC_CHECK(flushable<virtual_processor<decltype(sink_events<e0>()),
-                                                 type_list<e0>>>);
+                virtual_processor<decltype(sink_only<e0>()), type_list<e0>>>);
     }
 
     SECTION("handles events in list only") {
         STATIC_CHECK_FALSE(
             handler_for<
-                virtual_processor<decltype(sink_events<e0>()), type_list<>>,
+                virtual_processor<decltype(sink_only<e0>()), type_list<>>,
                 e0>);
         STATIC_CHECK(
             handler_for<
-                virtual_processor<decltype(sink_events<e0>()), type_list<e0>>,
+                virtual_processor<decltype(sink_only<e0>()), type_list<e0>>,
                 e0>);
         STATIC_CHECK_FALSE(
             handler_for<
-                virtual_processor<decltype(sink_events<e0>()), type_list<e0>>,
+                virtual_processor<decltype(sink_only<e0>()), type_list<e0>>,
                 e1>);
         STATIC_CHECK(
-            handler_for<virtual_processor<decltype(sink_events<e0, e1>()),
+            handler_for<virtual_processor<decltype(sink_only<e0, e1>()),
                                           type_list<e0, e1>>,
                         e0, e1>);
     }
@@ -81,32 +81,32 @@ TEST_CASE("type constraints: virtual_processor") {
 TEST_CASE("type constraints: type_erased_processor") {
     SECTION("handles flush") {
         STATIC_CHECK(flushable<decltype(type_erased_processor<type_list<>>(
-                         sink_events<>()))>);
+                         sink_only<>()))>);
         STATIC_CHECK(flushable<decltype(type_erased_processor<type_list<e0>>(
-                         sink_events<e0>()))>);
+                         sink_only<e0>()))>);
     }
 
     SECTION("handles events in list only") {
         STATIC_CHECK_FALSE(
             handler_for<decltype(type_erased_processor<type_list<>>(
-                            sink_events<e0>())),
+                            sink_only<e0>())),
                         e0>);
         STATIC_CHECK(handler_for<decltype(type_erased_processor<type_list<e0>>(
-                                     sink_events<e0>())),
+                                     sink_only<e0>())),
                                  e0>);
         STATIC_CHECK_FALSE(
             handler_for<decltype(type_erased_processor<type_list<e0>>(
-                            sink_events<e0>())),
+                            sink_only<e0>())),
                         e1>);
         STATIC_CHECK(
             handler_for<decltype(type_erased_processor<type_list<e0, e1>>(
-                            sink_events<e0, e1>())),
+                            sink_only<e0, e1>())),
                         e0, e1>);
     }
 }
 
 TEST_CASE("introspect: type_erased_processor") {
-    auto const tep = type_erased_processor<type_list<>>(null_sink());
+    auto const tep = type_erased_processor<type_list<>>(sink_all());
     auto const info = check_introspect_node_info(tep);
     auto const g = tep.introspect_graph();
     CHECK(g.nodes().size() == 3);
@@ -129,7 +129,7 @@ TEST_CASE("introspect: type_erased_processor") {
         }
         throw;
     });
-    CHECK(g.node_info(sink_node).name() == "null_sink");
+    CHECK(g.node_info(sink_node).name() == "sink_all");
 }
 
 TEST_CASE("type_erased_processor move assignment") {

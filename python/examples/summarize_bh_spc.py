@@ -40,7 +40,7 @@ def summarize(filename: str) -> int:
             tcspc.Count(tcspc.MarkerEvent(dtypes), MARK_COUNT_TAG),
             # Simplified for now compared to the C++ example (no per-channel
             # counts and time range).
-            tcspc.NullSink(),
+            tcspc.SinkAll(),
         ]
     )
 

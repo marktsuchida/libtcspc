@@ -33,25 +33,23 @@ using out_events = type_list<marker_event<>, output_event, misc_event>;
 
 TEST_CASE("type constraints: match") {
     using proc_type = decltype(match<some_event, output_event>(
-        always_matcher(),
-        sink_events<some_event, output_event, misc_event>()));
+        always_matcher(), sink_only<some_event, output_event, misc_event>()));
     STATIC_CHECK(processor<proc_type, some_event, misc_event>);
     STATIC_CHECK_FALSE(handler_for<proc_type, int>);
 }
 
 TEST_CASE("type constraints: match_replace") {
     using proc_type = decltype(match_replace<some_event, output_event>(
-        always_matcher(),
-        sink_events<some_event, output_event, misc_event>()));
+        always_matcher(), sink_only<some_event, output_event, misc_event>()));
     STATIC_CHECK(processor<proc_type, some_event, misc_event>);
     STATIC_CHECK_FALSE(handler_for<proc_type, int>);
 }
 
 TEST_CASE("introspect: match") {
     check_introspect_simple_processor(
-        match_replace<int, long>(never_matcher(), null_sink()));
+        match_replace<int, long>(never_matcher(), sink_all()));
     check_introspect_simple_processor(
-        match<int, long>(never_matcher(), null_sink()));
+        match<int, long>(never_matcher(), sink_all()));
 }
 
 TEST_CASE("Match and replace") {

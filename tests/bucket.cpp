@@ -329,7 +329,7 @@ template <typename T> struct evt_with_bucket {
 
 TEST_CASE("type constraints: extract_bucket") {
     using proc_type = decltype(extract_bucket<evt_with_bucket<int>>(
-        sink_events<bucket<int>>()));
+        sink_only<bucket<int>>()));
     STATIC_CHECK(processor<proc_type, evt_with_bucket<int>>);
     STATIC_CHECK_FALSE(handler_for<proc_type, evt_with_bucket<double>>);
     STATIC_CHECK_FALSE(handler_for<proc_type, bucket<int>>);
@@ -338,7 +338,7 @@ TEST_CASE("type constraints: extract_bucket") {
 
 TEST_CASE("introspect: extract_bucket") {
     check_introspect_simple_processor(
-        extract_bucket<evt_with_bucket<int>>(null_sink()));
+        extract_bucket<evt_with_bucket<int>>(sink_all()));
 }
 
 TEST_CASE("extract_bucket preserves value category") {

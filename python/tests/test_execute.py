@@ -18,9 +18,9 @@ from libtcspc._param import Param
 from libtcspc._processors import (
     Batch,
     Count,
-    NullSink,
     SelectAll,
-    SinkEvents,
+    SinkAll,
+    SinkOnly,
     Stop,
 )
 from typing_extensions import override
@@ -30,7 +30,7 @@ IntEvent = _NamedEvent(_CppTypeName("int"))
 
 def test_execute_graph_with_single_input():
     g = Graph()
-    g.add_node("a", NullSink())
+    g.add_node("a", SinkAll())
     c = ExecutionContext(CompiledGraph(g, (IntEvent,)), {})
     c.handle(123)
     c.flush()
@@ -39,7 +39,7 @@ def test_execute_graph_with_single_input():
 def test_execute_node_access():
     g = Graph()
     g.add_node("c", Count(IntEvent, AccessTag("counter")))
-    g.add_node("a", NullSink(), upstream="c")
+    g.add_node("a", SinkAll(), upstream="c")
     c = ExecutionContext(CompiledGraph(g, (IntEvent,)), {})
     c.handle(123)
     c.flush()
@@ -49,7 +49,7 @@ def test_execute_node_access():
 def test_execute_access_unknown_tag_raises():
     g = Graph()
     g.add_node("c", Count(IntEvent, AccessTag("counter")))
-    g.add_node("a", NullSink(), upstream="c")
+    g.add_node("a", SinkAll(), upstream="c")
     ec = ExecutionContext(CompiledGraph(g, (IntEvent,)), {})
     with pytest.raises(ValueError, match="no such access tag"):
         ec.access(AccessTag("nope"))
@@ -58,7 +58,7 @@ def test_execute_access_unknown_tag_raises():
 def test_execute_access_before_handle_returns_initial_state():
     g = Graph()
     g.add_node("c", Count(IntEvent, AccessTag("counter")))
-    g.add_node("a", NullSink(), upstream="c")
+    g.add_node("a", SinkAll(), upstream="c")
     ec = ExecutionContext(CompiledGraph(g, (IntEvent,)), {})
     assert ec.access(AccessTag("counter")).count() == 0
 
@@ -66,7 +66,7 @@ def test_execute_access_before_handle_returns_initial_state():
 def test_execute_access_after_flush_returns_final_state():
     g = Graph()
     g.add_node("c", Count(IntEvent, AccessTag("counter")))
-    g.add_node("a", NullSink(), upstream="c")
+    g.add_node("a", SinkAll(), upstream="c")
     ec = ExecutionContext(CompiledGraph(g, (IntEvent,)), {})
     ec.handle(1)
     ec.handle(2)
@@ -78,7 +78,7 @@ def test_execute_access_after_end_of_processing_returns_final_state():
     g = Graph()
     g.add_node("c", Count(IntEvent, AccessTag("counter")))
     g.add_node("s", Stop((IntEvent,), "stopped"), upstream="c")
-    g.add_node("n", NullSink(), upstream="s")
+    g.add_node("n", SinkAll(), upstream="s")
     ec = ExecutionContext(CompiledGraph(g, (IntEvent,)), {})
     with pytest.raises(EndOfProcessing):
         ec.handle(42)
@@ -88,7 +88,7 @@ def test_execute_access_after_end_of_processing_returns_final_state():
 def test_execute_access_multiple_calls_share_state():
     g = Graph()
     g.add_node("c", Count(IntEvent, AccessTag("counter")))
-    g.add_node("a", NullSink(), upstream="c")
+    g.add_node("a", SinkAll(), upstream="c")
     ec = ExecutionContext(CompiledGraph(g, (IntEvent,)), {})
     ec.handle(1)
     acc1 = ec.access(AccessTag("counter"))
@@ -101,7 +101,7 @@ def test_execute_access_multiple_calls_share_state():
 def test_execute_access_outlives_execution_context():
     g = Graph()
     g.add_node("c", Count(IntEvent, AccessTag("counter")))
-    g.add_node("a", NullSink(), upstream="c")
+    g.add_node("a", SinkAll(), upstream="c")
     ec = ExecutionContext(CompiledGraph(g, (IntEvent,)), {})
     ec.handle(1)
     ec.handle(2)
@@ -115,7 +115,7 @@ def test_execute_access_outlives_execution_context():
 def test_execute_access_with_special_character_tag_roundtrips():
     g = Graph()
     g.add_node("c", Count(IntEvent, AccessTag("foo.bar-baz/0")))
-    g.add_node("a", NullSink(), upstream="c")
+    g.add_node("a", SinkAll(), upstream="c")
     ec = ExecutionContext(CompiledGraph(g, (IntEvent,)), {})
     ec.handle(1)
     ec.flush()
@@ -124,7 +124,7 @@ def test_execute_access_with_special_character_tag_roundtrips():
 
 def test_execute_rejects_events_and_flush_when_expired():
     g = Graph()
-    g.add_node("a", NullSink())
+    g.add_node("a", SinkAll())
     c = ExecutionContext(CompiledGraph(g, (IntEvent,)), {})
     c.flush()
     with pytest.raises(RuntimeError):
@@ -136,7 +136,7 @@ def test_execute_rejects_events_and_flush_when_expired():
 def test_execute_handles_buffer_events():
     g = Graph()
     g.add_node(
-        "a", SinkEvents(_NamedEvent(_CppTypeName("tcspc::bucket<tcspc::u8>")))
+        "a", SinkOnly(_NamedEvent(_CppTypeName("tcspc::bucket<tcspc::u8>")))
     )
     c = ExecutionContext(
         CompiledGraph(g, [BucketEvent(_NamedEvent(_uint8_type))]), {}
@@ -152,7 +152,7 @@ def test_execute_handles_buffer_events():
 def test_execute_require_parameter_with_no_default():
     g = Graph()
     g.add_node("a", Stop((), Param("a_msg")))
-    g.add_node("s", NullSink(), upstream="a")
+    g.add_node("s", SinkAll(), upstream="a")
     cg = CompiledGraph(g)
     ExecutionContext(cg, {_CppIdentifier("a_msg"): "hello"})
     with pytest.raises(ValueError):
@@ -165,7 +165,7 @@ def test_execute_require_parameter_with_no_default():
 
 def test_execute_unknown_parameter():
     g = Graph()
-    g.add_node("s", NullSink())
+    g.add_node("s", SinkAll())
     cg = CompiledGraph(g)
     ExecutionContext(cg)
     with pytest.raises(ValueError):
@@ -238,7 +238,7 @@ def test_execute_sink_exception_propagates():
 def _stop_graph_with_param(param: Param[str]) -> Graph:
     g = Graph()
     g.add_node("a", Stop((IntEvent,), param))
-    g.add_node("s", NullSink(), upstream="a")
+    g.add_node("s", SinkAll(), upstream="a")
     return g
 
 
@@ -255,7 +255,7 @@ def test_execute_uses_default_when_arguments_dict_omits_key():
     g.add_node(
         "b", Stop((IntEvent,), Param("defaulted", "default-2")), upstream="a"
     )
-    g.add_node("s", NullSink(), upstream="b")
+    g.add_node("s", SinkAll(), upstream="b")
     cg = CompiledGraph(g, (IntEvent,))
     c = ExecutionContext(cg, {"supplied": "given-1"})
     with pytest.raises(EndOfProcessing) as exc_info:
@@ -281,7 +281,7 @@ def test_execute_missing_required_param_message():
 
 def test_execute_unknown_argument_message():
     g = Graph()
-    g.add_node("s", NullSink())
+    g.add_node("s", SinkAll())
     cg = CompiledGraph(g)
     with pytest.raises(ValueError, match="bogus"):
         ExecutionContext(cg, {"bogus": "value"})
@@ -296,7 +296,7 @@ def test_execute_arguments_dict_not_mutated():
 
 def test_execute_arguments_none_with_no_params_ok():
     g = Graph()
-    g.add_node("s", NullSink())
+    g.add_node("s", SinkAll())
     cg = CompiledGraph(g)
     ExecutionContext(cg, None)
 
@@ -347,7 +347,7 @@ def test_execute_two_params_independent():
     g = Graph()
     g.add_node("a", Stop((IntEvent,), Param("p1", "default-1")))
     g.add_node("b", Stop((IntEvent,), Param("p2", "default-2")), upstream="a")
-    g.add_node("s", NullSink(), upstream="b")
+    g.add_node("s", SinkAll(), upstream="b")
     cg = CompiledGraph(g, (IntEvent,))
 
     # Override p1 only; p2 keeps its default.

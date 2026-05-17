@@ -34,20 +34,20 @@ using out_events = type_list<e0, e1>;
 
 TEST_CASE("type constraints: delay") {
     using proc_type = decltype(delay(
-        arg::delta<default_data_types::abstime_type>{10}, sink_events<e0>()));
+        arg::delta<default_data_types::abstime_type>{10}, sink_only<e0>()));
     STATIC_CHECK(processor<proc_type, e0>);
     STATIC_CHECK_FALSE(handler_for<proc_type, e1>);
 }
 
 TEST_CASE("type constraints: zero_base_abstime") {
-    using proc_type = decltype(zero_base_abstime(sink_events<e0>()));
+    using proc_type = decltype(zero_base_abstime(sink_only<e0>()));
     STATIC_CHECK(processor<proc_type, e0>);
     STATIC_CHECK_FALSE(handler_for<proc_type, e1>);
 }
 
 TEST_CASE("introspect: delay") {
-    check_introspect_simple_processor(delay(arg::delta<i64>{0}, null_sink()));
-    check_introspect_simple_processor(zero_base_abstime(null_sink()));
+    check_introspect_simple_processor(delay(arg::delta<i64>{0}, sink_all()));
+    check_introspect_simple_processor(zero_base_abstime(sink_all()));
 }
 
 TEST_CASE("Delay") {

@@ -5,7 +5,7 @@
 from _test_helpers import _NamedEvent
 from libtcspc._codegen import _CodeGenerationContext
 from libtcspc._cpp_utils import _CppExpression, _CppIdentifier, _CppTypeName
-from libtcspc._processors import SelectNot
+from libtcspc._processors import SelectExcept
 
 IntEvent = _NamedEvent(_CppTypeName("int"))
 OtherEvent = _NamedEvent(_CppTypeName("long"))
@@ -16,24 +16,24 @@ gencontext = _CodeGenerationContext(
 )
 
 
-def test_SelectNot_drops_listed_events():
-    node = SelectNot(IntEvent)
+def test_SelectExcept_drops_listed_events():
+    node = SelectExcept(IntEvent)
     assert node._map_event_sets([(IntEvent, OtherEvent, ThirdEvent)]) == (
         (OtherEvent, ThirdEvent),
     )
 
 
-def test_SelectNot_drops_multiple_listed_events():
-    node = SelectNot(IntEvent, OtherEvent)
+def test_SelectExcept_drops_multiple_listed_events():
+    node = SelectExcept(IntEvent, OtherEvent)
     out = node._map_event_sets([(IntEvent, OtherEvent, ThirdEvent)])[0]
     assert IntEvent not in out
     assert OtherEvent not in out
     assert ThirdEvent in out
 
 
-def test_SelectNot_codegen_calls_tcspc_select_not():
-    node = SelectNot(IntEvent, OtherEvent)
+def test_SelectExcept_codegen_calls_tcspc_select_except():
+    node = SelectExcept(IntEvent, OtherEvent)
     code = node._cpp_expression(gencontext, [_CppExpression("DOWN")])
-    assert "tcspc::select_not<" in code
+    assert "tcspc::select_except<" in code
     assert "tcspc::type_list<int, long>" in code
     assert "DOWN" in code

@@ -26,7 +26,7 @@ namespace tcspc {
 
 TEST_CASE("type constraints: time_correlate_at_start") {
     using proc_type = decltype(time_correlate_at_start(
-        sink_events<time_correlated_detection_event<>, int>()));
+        sink_only<time_correlated_detection_event<>, int>()));
     STATIC_CHECK(processor<proc_type, std::array<detection_event<>, 2>, int>);
     struct some_type {};
     STATIC_CHECK_FALSE(handler_for<proc_type, some_type>);
@@ -34,7 +34,7 @@ TEST_CASE("type constraints: time_correlate_at_start") {
 
 TEST_CASE("type constraints: time_correlate_at_midpoint") {
     using proc_type = decltype(time_correlate_at_midpoint(
-        sink_events<time_correlated_detection_event<>, int>()));
+        sink_only<time_correlated_detection_event<>, int>()));
     STATIC_CHECK(processor<proc_type, std::array<detection_event<>, 2>, int>);
     struct some_type {};
     STATIC_CHECK_FALSE(handler_for<proc_type, some_type>);
@@ -43,27 +43,27 @@ TEST_CASE("type constraints: time_correlate_at_midpoint") {
 TEST_CASE("type constraints: time_correlate_at_fraction") {
     using proc_type = decltype(time_correlate_at_fraction(
         arg::fraction{0.333},
-        sink_events<time_correlated_detection_event<>, int>()));
+        sink_only<time_correlated_detection_event<>, int>()));
     STATIC_CHECK(processor<proc_type, std::array<detection_event<>, 2>, int>);
     struct some_type {};
     STATIC_CHECK_FALSE(handler_for<proc_type, some_type>);
 }
 
 TEST_CASE("type constraints: remove_time_correlation") {
-    using proc_type = decltype(remove_time_correlation(
-        sink_events<detection_event<>, int>()));
+    using proc_type =
+        decltype(remove_time_correlation(sink_only<detection_event<>, int>()));
     STATIC_CHECK(processor<proc_type, time_correlated_detection_event<>, int>);
     struct some_type {};
     STATIC_CHECK_FALSE(handler_for<proc_type, some_type>);
 }
 
 TEST_CASE("introspect: time_correlate") {
-    check_introspect_simple_processor(time_correlate_at_start(null_sink()));
-    check_introspect_simple_processor(time_correlate_at_stop(null_sink()));
-    check_introspect_simple_processor(time_correlate_at_midpoint(null_sink()));
+    check_introspect_simple_processor(time_correlate_at_start(sink_all()));
+    check_introspect_simple_processor(time_correlate_at_stop(sink_all()));
+    check_introspect_simple_processor(time_correlate_at_midpoint(sink_all()));
     check_introspect_simple_processor(
-        time_correlate_at_fraction(arg::fraction{0.3}, null_sink()));
-    check_introspect_simple_processor(remove_time_correlation(null_sink()));
+        time_correlate_at_fraction(arg::fraction{0.3}, sink_all()));
+    check_introspect_simple_processor(remove_time_correlation(sink_all()));
 }
 
 namespace {

@@ -18,7 +18,7 @@ from libtcspc._cpp_utils import (
 from libtcspc._events import BucketEvent
 from libtcspc._execute import ExecutionContext
 from libtcspc._param import Param
-from libtcspc._processors import Acquire, Count, NullSink
+from libtcspc._processors import Acquire, Count, SinkAll
 from typing_extensions import override
 
 IntEvent = _NamedEvent(_CppTypeName("int"))
@@ -80,7 +80,7 @@ def test_Count_access_returns_running_count():
         Acquire(elem_type, Param("reader"), None, 8, acq_tag),
     )
     g.add_node("cnt", Count(BucketEvent(elem_type), cnt_tag), upstream="acq")
-    g.add_node("sink", NullSink(), upstream="cnt")
+    g.add_node("sink", SinkAll(), upstream="cnt")
     cg = CompiledGraph(g)
     ctx = ExecutionContext(cg, {"reader": _NBucketReader(3)})
     ctx.flush()

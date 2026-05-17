@@ -257,7 +257,7 @@ class acquire_full_buckets {
         if (not bsource)
             throw std::invalid_argument(
                 "acquire_full_buckets buffer_provider must not be null");
-        if constexpr (not std::is_same_v<LiveDownstream, null_sink>) {
+        if constexpr (not std::is_same_v<LiveDownstream, internal::sink_all>) {
             if (not bsource->supports_shared_views())
                 throw std::invalid_argument(
                     "acquire_full_buckets buffer_provider must support shared views");
@@ -324,7 +324,8 @@ class acquire_full_buckets {
                 std::optional<std::size_t> const read = reader(unfilled);
                 if (not read)
                     return flush_downstreams(std::move(b), filled);
-                if constexpr (not std::is_same_v<LiveDownstream, null_sink>)
+                if constexpr (not std::is_same_v<LiveDownstream,
+                                                 internal::sink_all>)
                     emit_live(b, filled, *read);
                 filled += *read;
                 if (filled == bsize) {
@@ -427,7 +428,7 @@ auto acquire(Reader reader, std::shared_ptr<bucket_source<T>> buffer_provider,
  * \param reader reader
  *
  * \param buffer_provider bucket source providing event buffers (must support
- * shared views unless \p LiveDownstream is `tcspc::null_sink`)
+ * shared views unless \p LiveDownstream is `tcspc::sink_all`)
  *
  * \param batch_size number of elements (`T`) to collect in each bucket
  *

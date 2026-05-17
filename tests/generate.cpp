@@ -36,14 +36,14 @@ using out_events = type_list<trigger_event, output_event, misc_event>;
 TEST_CASE("type constraints: generate") {
     using proc_type = decltype(generate<trigger_event, output_event>(
         null_timing_generator(),
-        sink_events<trigger_event, output_event, misc_event>()));
+        sink_only<trigger_event, output_event, misc_event>()));
     STATIC_CHECK(processor<proc_type, trigger_event, misc_event>);
     STATIC_CHECK_FALSE(handler_for<proc_type, int>);
 }
 
 TEST_CASE("introspect: generate") {
     check_introspect_simple_processor(generate<trigger_event, output_event>(
-        null_timing_generator(), null_sink()));
+        null_timing_generator(), sink_all()));
 }
 
 TEST_CASE("Generate null timing") {

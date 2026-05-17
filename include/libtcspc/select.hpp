@@ -123,7 +123,7 @@ template <typename Downstream> auto select_none(Downstream downstream) {
  * - Flush: pass through with no action
  */
 template <typename EventList, typename Downstream>
-auto select_not(Downstream downstream) {
+auto select_except(Downstream downstream) {
     return internal::select<EventList, true, Downstream>(
         std::move(downstream));
 }

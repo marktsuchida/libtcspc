@@ -44,14 +44,14 @@ using all_events = type_list<e0, e1, e2, e3>;
 TEST_CASE("type constraints: merge") {
     using input_proc_type = decltype(std::get<0>(merge<type_list<e0, e1>>(
         arg::max_buffered{std::numeric_limits<std::size_t>::max()},
-        sink_events<e0, e1, e2>())));
+        sink_only<e0, e1, e2>())));
     STATIC_CHECK(processor<input_proc_type, e0, e1>);
     STATIC_CHECK_FALSE(handler_for<input_proc_type, e2>);
 }
 
 TEST_CASE("type constraints: merge_n_unsorted") {
     using input_proc_type =
-        decltype(std::get<0>(merge_n_unsorted<2>(sink_events<e0, e1>())));
+        decltype(std::get<0>(merge_n_unsorted<2>(sink_only<e0, e1>())));
     STATIC_CHECK(processor<input_proc_type, e0, e1>);
     STATIC_CHECK_FALSE(handler_for<input_proc_type, e2>);
 }
@@ -85,7 +85,7 @@ auto check_introspect_merge_input(MI const &input,
         }
         throw;
     });
-    CHECK(g.node_info(sink_node).name() == "null_sink");
+    CHECK(g.node_info(sink_node).name() == "sink_all");
     return info;
 }
 
@@ -93,12 +93,12 @@ auto check_introspect_merge_input(MI const &input,
 
 TEST_CASE("introspect: merge") {
     auto const [m0, m1] =
-        merge<all_events>(arg::max_buffered<>{1}, null_sink());
+        merge<all_events>(arg::max_buffered<>{1}, sink_all());
     check_introspect_merge_input(m0, "merge_impl");
     check_introspect_merge_input(m1, "merge_impl");
 
     auto const [n0, n1, n2, n3, n4] =
-        merge_n<5, all_events>(arg::max_buffered<>{1}, null_sink());
+        merge_n<5, all_events>(arg::max_buffered<>{1}, sink_all());
     std::set<processor_node_id> unique_nodes;
     std::set<std::pair<processor_node_id, processor_node_id>> unique_edges;
     auto add_to_sets = [&](auto const &n) {
@@ -113,10 +113,10 @@ TEST_CASE("introspect: merge") {
     add_to_sets(n2);
     add_to_sets(n3);
     add_to_sets(n4);
-    CHECK(unique_nodes.size() == 13); // 4 merge_impl, 8 merge_input, null_sink
+    CHECK(unique_nodes.size() == 13); // 4 merge_impl, 8 merge_input, sink_all
     CHECK(unique_edges.size() == 12); // 4 merge_impl, 8 merge_input
 
-    auto const [u0, u1, u2, u3, u4] = merge_n_unsorted<5>(null_sink());
+    auto const [u0, u1, u2, u3, u4] = merge_n_unsorted<5>(sink_all());
     check_introspect_merge_input(u0, "merge_unsorted_impl");
     check_introspect_merge_input(u1, "merge_unsorted_impl");
     check_introspect_merge_input(u2, "merge_unsorted_impl");

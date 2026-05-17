@@ -149,11 +149,11 @@ auto make_processor(settings const &settings,
         "error in input data",
     match<marker_event<>, pixel_start_event>(
         channel_matcher(arg::channel{0}), // Extract pixel clock.
-    select_not<type_list<marker_event<>>>(
+    select_except<type_list<marker_event<>>>(
     generate<pixel_start_event, pixel_stop_event>(
         // Generate pixel stop events.
         one_shot_timing_generator(arg::delay{settings.pixel_time}),
-    select_not<type_list<time_reached_event<>>>(
+    select_except<type_list<time_reached_event<>>>(
     check_alternating<pixel_start_event, pixel_stop_event>(
     stop_with_error<type_list<warning_event, data_lost_event<>>>(
         "pixel time is such that pixel stop occurs after next pixel start",

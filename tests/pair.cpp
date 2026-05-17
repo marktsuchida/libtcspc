@@ -28,7 +28,7 @@ namespace tcspc {
 TEST_CASE("type constraints: pair_all") {
     using proc_type = decltype(pair_all(
         arg::start_channel{0}, std::array{1, 2}, arg::time_window<i64>{100},
-        sink_events<std::array<detection_event<>, 2>, int>()));
+        sink_only<std::array<detection_event<>, 2>, int>()));
     STATIC_CHECK(processor<proc_type, detection_event<>, int>);
     struct some_type {};
     STATIC_CHECK_FALSE(handler_for<proc_type, some_type>);
@@ -37,7 +37,7 @@ TEST_CASE("type constraints: pair_all") {
 TEST_CASE("type constraints: pair_one") {
     using proc_type = decltype(pair_one(
         arg::start_channel{0}, std::array{1, 2}, arg::time_window<i64>{100},
-        sink_events<std::array<detection_event<>, 2>, int>()));
+        sink_only<std::array<detection_event<>, 2>, int>()));
     STATIC_CHECK(processor<proc_type, detection_event<>, int>);
     struct some_type {};
     STATIC_CHECK_FALSE(handler_for<proc_type, some_type>);
@@ -46,7 +46,7 @@ TEST_CASE("type constraints: pair_one") {
 TEST_CASE("type constraints: pair_all_between") {
     using proc_type = decltype(pair_all_between(
         arg::start_channel{0}, std::array{1, 2}, arg::time_window<i64>{100},
-        sink_events<std::array<detection_event<>, 2>, int>()));
+        sink_only<std::array<detection_event<>, 2>, int>()));
     STATIC_CHECK(processor<proc_type, detection_event<>, int>);
     struct some_type {};
     STATIC_CHECK_FALSE(handler_for<proc_type, some_type>);
@@ -55,7 +55,7 @@ TEST_CASE("type constraints: pair_all_between") {
 TEST_CASE("type constraints: pair_one_between") {
     using proc_type = decltype(pair_one_between(
         arg::start_channel{0}, std::array{1, 2}, arg::time_window<i64>{100},
-        sink_events<std::array<detection_event<>, 2>, int>()));
+        sink_only<std::array<detection_event<>, 2>, int>()));
     STATIC_CHECK(processor<proc_type, detection_event<>, int>);
     struct some_type {};
     STATIC_CHECK_FALSE(handler_for<proc_type, some_type>);
@@ -63,13 +63,13 @@ TEST_CASE("type constraints: pair_one_between") {
 
 TEST_CASE("introspect: pair") {
     check_introspect_simple_processor(pair_all<1>(
-        arg::start_channel{0}, {1}, arg::time_window<i64>{1}, null_sink()));
+        arg::start_channel{0}, {1}, arg::time_window<i64>{1}, sink_all()));
     check_introspect_simple_processor(pair_one<1>(
-        arg::start_channel{0}, {1}, arg::time_window<i64>{1}, null_sink()));
+        arg::start_channel{0}, {1}, arg::time_window<i64>{1}, sink_all()));
     check_introspect_simple_processor(pair_all_between<1>(
-        arg::start_channel{0}, {1}, arg::time_window<i64>{1}, null_sink()));
+        arg::start_channel{0}, {1}, arg::time_window<i64>{1}, sink_all()));
     check_introspect_simple_processor(pair_one_between<1>(
-        arg::start_channel{0}, {1}, arg::time_window<i64>{1}, null_sink()));
+        arg::start_channel{0}, {1}, arg::time_window<i64>{1}, sink_all()));
 }
 
 namespace {

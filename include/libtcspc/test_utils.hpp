@@ -41,10 +41,10 @@ namespace tcspc {
 
 namespace internal {
 
-template <typename EventList> class sink_events {
+template <typename EventList> class sink_only {
   public:
     [[nodiscard]] auto introspect_node() const -> processor_info {
-        return processor_info(this, "sink_events");
+        return processor_info(this, "sink_only");
     }
 
     [[nodiscard]] auto introspect_graph() const -> processor_graph {
@@ -78,8 +78,8 @@ template <typename EventList> class sink_events {
  * - Events in `Event...`: consume with no action
  * - Flush: consume with no action
  */
-template <typename... Event> auto sink_events() {
-    return internal::sink_events<type_list<Event...>>();
+template <typename... Event> auto sink_only() {
+    return internal::sink_only<type_list<Event...>>();
 }
 
 /**
@@ -96,8 +96,8 @@ template <typename... Event> auto sink_events() {
  * - Events in `EventList`: consume with no action
  * - Flush: consume with no action
  */
-template <typename EventList> auto sink_event_list() {
-    return internal::sink_events<EventList>();
+template <typename EventList> auto sink_only_list() {
+    return internal::sink_only<EventList>();
 }
 
 /**

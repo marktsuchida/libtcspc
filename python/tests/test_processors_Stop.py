@@ -20,7 +20,7 @@ from libtcspc._cpp_utils import (
 from libtcspc._events import BucketEvent, WarningEvent
 from libtcspc._execute import EndOfProcessing, ExecutionContext
 from libtcspc._param import Param
-from libtcspc._processors import NullSink, ReadBinaryStream, Stop, Unbatch
+from libtcspc._processors import ReadBinaryStream, SinkAll, Stop, Unbatch
 from libtcspc._streams import BinaryFileInputStream
 
 IntEvent = _NamedEvent(_CppTypeName("int"))
@@ -84,7 +84,7 @@ def test_Stop_raises_EndOfProcessing_on_event(tmp_path: Path) -> None:
             Unbatch(BucketEvent(elem_type)),
         ]
     )
-    g.add_node(None, NullSink(), upstream=g.outputs()[0][0])
+    g.add_node(None, SinkAll(), upstream=g.outputs()[0][0])
 
     cg = CompiledGraph(g)
     ctx = ExecutionContext(cg)

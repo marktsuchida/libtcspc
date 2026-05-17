@@ -29,30 +29,29 @@ using e1 = empty_test_event<1>;
 } // namespace
 
 TEST_CASE("type constraints: multiplex") {
-    STATIC_CHECK(
-        processor<decltype(multiplex<type_list<e0, e1>>(
-                      sink_events<variant_event<type_list<e0, e1>>>())),
-                  e0, e1>);
+    STATIC_CHECK(processor<decltype(multiplex<type_list<e0, e1>>(
+                               sink_only<variant_event<type_list<e0, e1>>>())),
+                           e0, e1>);
     STATIC_CHECK_FALSE(
         handler_for<decltype(multiplex<type_list<e0, e1>>(
-                        sink_events<variant_event<type_list<e0, e1>>, int>())),
+                        sink_only<variant_event<type_list<e0, e1>>, int>())),
                     int>);
 }
 
 TEST_CASE("type constraints: demultiplex") {
-    STATIC_CHECK(processor<decltype(demultiplex(sink_events<e0, e1>())),
+    STATIC_CHECK(processor<decltype(demultiplex(sink_only<e0, e1>())),
                            variant_event<type_list<e0, e1>>>);
-    STATIC_CHECK(handler_for<decltype(demultiplex(sink_events<e0, e1>())),
+    STATIC_CHECK(handler_for<decltype(demultiplex(sink_only<e0, e1>())),
                              variant_event<type_list<e0>>>);
-    STATIC_CHECK_FALSE(handler_for<decltype(demultiplex(sink_events<e0>())),
+    STATIC_CHECK_FALSE(handler_for<decltype(demultiplex(sink_only<e0>())),
                                    variant_event<type_list<e0, e1>>>);
     STATIC_CHECK_FALSE(
-        handler_for<decltype(demultiplex(sink_events<e0, e1, int>())), int>);
+        handler_for<decltype(demultiplex(sink_only<e0, e1, int>())), int>);
 }
 
 TEST_CASE("introspect: multiplex") {
-    check_introspect_simple_processor(multiplex<type_list<e0>>(null_sink()));
-    check_introspect_simple_processor(demultiplex(null_sink()));
+    check_introspect_simple_processor(multiplex<type_list<e0>>(sink_all()));
+    check_introspect_simple_processor(demultiplex(sink_all()));
 }
 
 TEST_CASE("multiplex") {

@@ -30,7 +30,7 @@ namespace tcspc {
 
 TEST_CASE("type constraints: batch_from_bytes") {
     using proc_type = decltype(batch_from_bytes<int>(
-        new_delete_bucket_source<int>::create(), sink_events<bucket<int>>()));
+        new_delete_bucket_source<int>::create(), sink_only<bucket<int>>()));
     STATIC_CHECK(processor<proc_type, std::span<std::byte>>);
     STATIC_CHECK(processor<proc_type, std::span<std::byte const>>);
     STATIC_CHECK(processor<proc_type, std::array<std::byte const, 3>>);
@@ -38,7 +38,7 @@ TEST_CASE("type constraints: batch_from_bytes") {
 }
 
 TEST_CASE("type constraints: unbatch_from_bytes") {
-    using proc_type = decltype(unbatch_from_bytes<int>(sink_events<int>()));
+    using proc_type = decltype(unbatch_from_bytes<int>(sink_only<int>()));
     STATIC_CHECK(processor<proc_type, std::span<std::byte>>);
     STATIC_CHECK(processor<proc_type, std::span<std::byte const>>);
     STATIC_CHECK(processor<proc_type, std::array<std::byte const, 3>>);
@@ -47,8 +47,8 @@ TEST_CASE("type constraints: unbatch_from_bytes") {
 
 TEST_CASE("introspect: batch_from_bytes, unbatch_from_bytes") {
     check_introspect_simple_processor(batch_from_bytes<int>(
-        new_delete_bucket_source<int>::create(), null_sink()));
-    check_introspect_simple_processor(unbatch_from_bytes<int>(null_sink()));
+        new_delete_bucket_source<int>::create(), sink_all()));
+    check_introspect_simple_processor(unbatch_from_bytes<int>(sink_all()));
 }
 
 TEST_CASE("batch_from_bytes") {

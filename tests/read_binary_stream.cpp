@@ -37,7 +37,7 @@ TEST_CASE("type constraints: read_binary_stream") {
     using proc_type = decltype(read_binary_stream<int>(
         null_input_stream(), arg::max_length<u64>{0},
         new_delete_bucket_source<int>::create(), arg::granularity<>{16},
-        sink_events<bucket<int>, warning_event>()));
+        sink_only<bucket<int>, warning_event>()));
     STATIC_CHECK(processor<proc_type>);
     STATIC_CHECK_FALSE(handler_for<proc_type, int>);
 }
@@ -46,7 +46,7 @@ TEST_CASE("introspect: read_binary_stream") {
     check_introspect_simple_processor(
         read_binary_stream<int>(null_input_stream(), arg::max_length<u64>{0},
                                 new_delete_bucket_source<int>::create(),
-                                arg::granularity<>{1}, null_sink()));
+                                arg::granularity<>{1}, sink_all()));
 }
 
 namespace {

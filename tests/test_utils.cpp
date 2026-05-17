@@ -34,21 +34,21 @@ TEST_CASE("type constraints: feed_input") {
     using e0 = empty_test_event<0>;
     using e1 = empty_test_event<1>;
     using proc_type =
-        decltype(feed_input(feed_as::const_lvalue, sink_events<e0, e1>()));
+        decltype(feed_input(feed_as::const_lvalue, sink_only<e0, e1>()));
     STATIC_CHECK(processor<proc_type, e0, e1>);
     STATIC_CHECK_FALSE(handler_for<proc_type, int>);
 }
 
-TEST_CASE("type constraints: sink_events") {
+TEST_CASE("type constraints: sink_only") {
     using e0 = empty_test_event<0>;
 
-    STATIC_CHECK(flushable<decltype(sink_events<>())>);
+    STATIC_CHECK(flushable<decltype(sink_only<>())>);
 
-    STATIC_CHECK_FALSE(rvalue_handler_for<decltype(sink_events<>()), e0>);
-    STATIC_CHECK(rvalue_handler_for<decltype(sink_events<e0>()), e0>);
+    STATIC_CHECK_FALSE(rvalue_handler_for<decltype(sink_only<>()), e0>);
+    STATIC_CHECK(rvalue_handler_for<decltype(sink_only<e0>()), e0>);
 
-    STATIC_CHECK_FALSE(const_handler_for<decltype(sink_events<>()), e0>);
-    STATIC_CHECK(const_handler_for<decltype(sink_events<e0>()), e0>);
+    STATIC_CHECK_FALSE(const_handler_for<decltype(sink_only<>()), e0>);
+    STATIC_CHECK(const_handler_for<decltype(sink_only<e0>()), e0>);
 }
 
 TEST_CASE("introspect: test_utils") {
@@ -58,8 +58,8 @@ TEST_CASE("introspect: test_utils") {
     check_introspect_simple_sink(capture_output<type_list<int>>(
         ctx->tracker<capture_output_access>("out1")));
     check_introspect_simple_processor(
-        feed_input(feed_as::const_lvalue, null_sink()));
-    check_introspect_simple_sink(sink_events<>());
+        feed_input(feed_as::const_lvalue, sink_all()));
+    check_introspect_simple_sink(sink_only<>());
 }
 
 namespace {

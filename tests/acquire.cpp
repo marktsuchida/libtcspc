@@ -9,6 +9,7 @@
 #include "libtcspc/arg_wrappers.hpp"
 #include "libtcspc/bucket.hpp"
 #include "libtcspc/context.hpp"
+#include "libtcspc/core.hpp"
 #include "libtcspc/errors.hpp"
 #include "libtcspc/introspect.hpp"
 #include "libtcspc/processor.hpp"
@@ -42,7 +43,7 @@ TEST_CASE("type constraints: acquire") {
     using proc_type = decltype(acquire<int>(
         null_reader<int>(), new_delete_bucket_source<int>::create(),
         arg::batch_size<>{64}, ctx->tracker<acquire_access>("acq"),
-        sink_events<bucket<int>>()));
+        sink_only<bucket<int>>()));
     STATIC_CHECK(processor<proc_type>);
     STATIC_CHECK_FALSE(handler_for<proc_type, int>);
 }
@@ -52,7 +53,7 @@ TEST_CASE("type constraints: acquire_full_buckets") {
     using proc_type = decltype(acquire_full_buckets<int>(
         null_reader<int>(), sharable_new_delete_bucket_source<int>::create(),
         arg::batch_size<>{64}, ctx->tracker<acquire_access>("acq"),
-        sink_events<bucket<int const>>(), sink_events<bucket<int>>()));
+        sink_only<bucket<int const>>(), sink_only<bucket<int>>()));
     STATIC_CHECK(processor<proc_type>);
     STATIC_CHECK_FALSE(handler_for<proc_type, int>);
 }
@@ -62,15 +63,15 @@ TEST_CASE("introspect: acquire") {
     check_introspect_simple_processor(acquire<int>(
         null_reader<int>(), new_delete_bucket_source<int>::create(),
         arg::batch_size<>{64}, ctx->tracker<acquire_access>("acq"),
-        null_sink()));
+        sink_all()));
 }
 
 TEST_CASE("introspect: acquire_full_buckets") {
     auto ctx = context::create();
     auto const afb = acquire_full_buckets<int>(
         null_reader<int>(), sharable_new_delete_bucket_source<int>::create(),
-        arg::batch_size<>{64}, ctx->tracker<acquire_access>("acq"),
-        null_sink(), null_sink());
+        arg::batch_size<>{64}, ctx->tracker<acquire_access>("acq"), sink_all(),
+        sink_all());
     auto const info = check_introspect_node_info(afb);
     auto const g = afb.introspect_graph();
     CHECK(g.nodes().size() == 3);
@@ -81,8 +82,8 @@ TEST_CASE("introspect: acquire_full_buckets") {
     CHECK(edges.size() == 2);
     CHECK(edges[0].first == node);
     CHECK(edges[1].first == node);
-    CHECK(g.node_info(edges[0].second).name() == "null_sink");
-    CHECK(g.node_info(edges[1].second).name() == "null_sink");
+    CHECK(g.node_info(edges[0].second).name() == "sink_all");
+    CHECK(g.node_info(edges[1].second).name() == "sink_all");
 }
 
 namespace {

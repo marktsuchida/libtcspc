@@ -35,7 +35,7 @@ using misc_event = empty_test_event<0>;
 TEST_CASE("type constraints: copy_to_buckets") {
     using proc_type =
         decltype(copy_to_buckets<int>(new_delete_bucket_source<int>::create(),
-                                      sink_events<bucket<int>, misc_event>()));
+                                      sink_only<bucket<int>, misc_event>()));
     STATIC_CHECK(processor<proc_type, std::span<int const>, misc_event>);
     STATIC_CHECK_FALSE(handler_for<proc_type, int>);
 
@@ -48,8 +48,8 @@ TEST_CASE("type constraints: copy_to_buckets") {
 TEST_CASE("type constraints: copy_to_full_buckets") {
     using proc_type = decltype(copy_to_full_buckets<int>(
         sharable_new_delete_bucket_source<int>::create(),
-        arg::batch_size<>{64}, sink_events<bucket<int const>, misc_event>(),
-        sink_events<bucket<int>>()));
+        arg::batch_size<>{64}, sink_only<bucket<int const>, misc_event>(),
+        sink_only<bucket<int>>()));
     STATIC_CHECK(processor<proc_type, std::span<int const>, misc_event>);
     STATIC_CHECK_FALSE(handler_for<proc_type, int>);
 
@@ -61,13 +61,13 @@ TEST_CASE("type constraints: copy_to_full_buckets") {
 
 TEST_CASE("introspect: copy_to_buckets") {
     check_introspect_simple_processor(copy_to_buckets<int>(
-        new_delete_bucket_source<int>::create(), null_sink()));
+        new_delete_bucket_source<int>::create(), sink_all()));
 }
 
 TEST_CASE("introspect: copy_to_full_buckets") {
     auto const ctfb = copy_to_full_buckets<int>(
         sharable_new_delete_bucket_source<int>::create(),
-        arg::batch_size<>{64}, null_sink(), null_sink());
+        arg::batch_size<>{64}, sink_all(), sink_all());
     auto const info = check_introspect_node_info(ctfb);
     auto const g = ctfb.introspect_graph();
     CHECK(g.nodes().size() == 3);
@@ -78,8 +78,8 @@ TEST_CASE("introspect: copy_to_full_buckets") {
     CHECK(edges.size() == 2);
     CHECK(edges[0].first == node);
     CHECK(edges[1].first == node);
-    CHECK(g.node_info(edges[0].second).name() == "null_sink");
-    CHECK(g.node_info(edges[1].second).name() == "null_sink");
+    CHECK(g.node_info(edges[0].second).name() == "sink_all");
+    CHECK(g.node_info(edges[1].second).name() == "sink_all");
 }
 
 TEST_CASE("copy_to_buckets") {

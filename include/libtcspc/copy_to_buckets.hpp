@@ -131,7 +131,7 @@ class copy_to_full_buckets {
         if (not bsource)
             throw std::invalid_argument(
                 "copy_to_full_buckets buffer_provider must not be null");
-        if constexpr (not std::is_same_v<LiveDownstream, null_sink>) {
+        if constexpr (not std::is_same_v<LiveDownstream, internal::sink_all>) {
             if (not bsource->supports_shared_views())
                 throw std::invalid_argument(
                     "copy_to_full_buckets buffer_provider must support shared views");
@@ -162,7 +162,8 @@ class copy_to_full_buckets {
             auto const dest = std::span(bkt).subspan(filled);
             auto const copy_size = std::min(src.size(), dest.size());
             std::copy_n(src.begin(), copy_size, dest.begin());
-            if constexpr (not std::is_same_v<LiveDownstream, null_sink>)
+            if constexpr (not std::is_same_v<LiveDownstream,
+                                             internal::sink_all>)
                 emit_live(bkt, filled, copy_size);
             filled += copy_size;
             if (filled == bsize) {
@@ -279,7 +280,7 @@ auto copy_to_buckets(std::shared_ptr<bucket_source<T>> buffer_provider,
  * deduced)
  *
  * \param buffer_provider bucket source providing event buffers (must support
- * shared views unless \p LiveDownstream is `tcspc::null_sink`)
+ * shared views unless \p LiveDownstream is `tcspc::sink_all`)
  *
  * \param batch_size number of elements (`T`) to collect in each bucket
  *

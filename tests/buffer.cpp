@@ -36,7 +36,7 @@ TEST_CASE("type constraints: buffer") {
     auto ctx = context::create();
     using proc_type = decltype(buffer<e0>(arg::threshold<std::size_t>{1},
                                           ctx->tracker<buffer_access>("buf"),
-                                          sink_events<e0>()));
+                                          sink_only<e0>()));
     STATIC_CHECK(processor<proc_type, e0>);
     STATIC_CHECK_FALSE(handler_for<proc_type, int>);
 }
@@ -46,7 +46,7 @@ TEST_CASE("type constraints: real_time_buffer") {
     auto ctx = context::create();
     using proc_type = decltype(real_time_buffer<e0>(
         arg::threshold<std::size_t>{1}, std::chrono::milliseconds(10),
-        ctx->tracker<buffer_access>("buf"), sink_events<e0>()));
+        ctx->tracker<buffer_access>("buf"), sink_only<e0>()));
     STATIC_CHECK(processor<proc_type, e0>);
     STATIC_CHECK_FALSE(handler_for<proc_type, int>);
 }
@@ -55,10 +55,10 @@ TEST_CASE("introspect: buffer") {
     auto ctx = context::create();
     check_introspect_simple_processor(
         buffer<int>(arg::threshold<std::size_t>{1},
-                    ctx->tracker<buffer_access>("buf"), null_sink()));
+                    ctx->tracker<buffer_access>("buf"), sink_all()));
     check_introspect_simple_processor(real_time_buffer<int>(
         arg::threshold<std::size_t>{1}, std::chrono::seconds(1),
-        ctx->tracker<buffer_access>("rtbuf"), null_sink()));
+        ctx->tracker<buffer_access>("rtbuf"), sink_all()));
 }
 
 // We use Trompeloeil rather than feed_input/capture_output for fine-grain
@@ -92,7 +92,7 @@ TEST_CASE("buffer moves out rvalue events") {
     auto ctx = context::create();
     auto buf = buffer<std::unique_ptr<int>>(arg::threshold<std::size_t>{3},
                                             ctx->tracker<buffer_access>("buf"),
-                                            null_sink());
+                                            sink_all());
     auto event = std::make_unique<int>(42);
     buf.handle(std::move(event));
     CHECK_FALSE(event);

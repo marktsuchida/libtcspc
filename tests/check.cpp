@@ -24,7 +24,7 @@ namespace tcspc {
 TEST_CASE("type constraints: check_monotonic") {
     using e0 = time_tagged_test_event<0>;
     using proc_type =
-        decltype(check_monotonic(sink_events<e0, warning_event>()));
+        decltype(check_monotonic(sink_only<e0, warning_event>()));
     STATIC_CHECK(processor<proc_type, e0, warning_event>);
     STATIC_CHECK_FALSE(handler_for<proc_type, int>);
 }
@@ -34,15 +34,15 @@ TEST_CASE("type constraints: check_alternating") {
     using e1 = empty_test_event<1>;
     using e2 = empty_test_event<2>;
     using proc_type = decltype(check_alternating<e0, e1>(
-        sink_events<e0, e1, e2, warning_event>()));
+        sink_only<e0, e1, e2, warning_event>()));
     STATIC_CHECK(processor<proc_type, e0, e1, e2, warning_event>);
     STATIC_CHECK_FALSE(handler_for<proc_type, int>);
 }
 
 TEST_CASE("introspect: check") {
-    check_introspect_simple_processor(check_monotonic(null_sink()));
+    check_introspect_simple_processor(check_monotonic(sink_all()));
     check_introspect_simple_processor(
-        check_alternating<int, long>(null_sink()));
+        check_alternating<int, long>(sink_all()));
 }
 
 TEST_CASE("check monotonic") {

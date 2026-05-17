@@ -35,7 +35,7 @@ TEST_CASE("type constraints: fit_periodic_sequences") {
     using proc_type = decltype(fit_periodic_sequences<tick>(
         arg::length<std::size_t>{42}, arg::min_interval{10.0},
         arg::max_interval{20.0}, arg::max_mse{1.0},
-        sink_events<periodic_sequence_model_event<>, int>()));
+        sink_only<periodic_sequence_model_event<>, int>()));
 
     STATIC_CHECK(processor<proc_type, tick, int>);
     struct some_type {};
@@ -45,7 +45,7 @@ TEST_CASE("type constraints: fit_periodic_sequences") {
 TEST_CASE("introspect: fit_sequence") {
     check_introspect_simple_processor(fit_periodic_sequences<int>(
         arg::length<std::size_t>{3}, arg::min_interval{0.0},
-        arg::max_interval{1.0}, arg::max_mse{0.5}, null_sink()));
+        arg::max_interval{1.0}, arg::max_mse{0.5}, sink_all()));
 }
 
 namespace internal {

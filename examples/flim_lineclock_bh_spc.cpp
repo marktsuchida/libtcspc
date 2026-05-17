@@ -156,7 +156,7 @@ auto make_processor(settings const &settings,
         "error in input data",
     match<marker_event<>, line_start_event>(
         channel_matcher(arg::channel{1}), // Extract line clock.
-    select_not<type_list<marker_event<>>>(
+    select_except<type_list<marker_event<>>>(
     generate<line_start_event, pixel_start_event>(
         linear_timing_generator(
             arg::delay{abstime_type(0)},
@@ -169,8 +169,8 @@ auto make_processor(settings const &settings,
             arg::delay{settings.pixel_time},
             arg::interval{settings.pixel_time},
             arg::count{settings.pixels_per_line}),
-    select_not<type_list<line_start_event>>(
-    select_not<type_list<time_reached_event<>>>(
+    select_except<type_list<line_start_event>>(
+    select_except<type_list<time_reached_event<>>>(
     check_alternating<pixel_start_event, pixel_stop_event>(
     stop_with_error<type_list<warning_event, data_lost_event<>>>(
         "pixel time is such that pixel stop occurs after next pixel start",

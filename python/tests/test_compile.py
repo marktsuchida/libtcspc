@@ -19,10 +19,10 @@ from libtcspc._param import Param
 from libtcspc._processors import (
     Batch,
     Count,
-    NullSink,
-    NullSource,
     ReadBinaryStream,
-    SinkEvents,
+    SinkAll,
+    SinkOnly,
+    SourceNothing,
     Stop,
 )
 from libtcspc._streams import BinaryFileInputStream
@@ -38,21 +38,21 @@ def test_compile_empty_graph_rejected():
 
 def test_compile_graph_with_two_inputs_rejected():
     g = Graph()
-    g.add_node("a", NullSink())
-    g.add_node("b", NullSink())
+    g.add_node("a", SinkAll())
+    g.add_node("b", SinkAll())
     with pytest.raises(ValueError):
         CompiledGraph(g)
 
 
 def test_compile_graph_with_single_input_allowed():
     g = Graph()
-    g.add_node("a", NullSink())
+    g.add_node("a", SinkAll())
     CompiledGraph(g)
 
 
 def test_compile_graph_with_input_and_output_allowed():
     g = Graph()
-    g.add_node("a", NullSource())
+    g.add_node("a", SourceNothing())
     CompiledGraph(g)
 
 
@@ -60,7 +60,7 @@ def test_compile_node_access():
     g = Graph()
     counter = Count(IntEvent, AccessTag("counter"))
     g.add_node("c", counter)
-    g.add_node("s", NullSink(), upstream="c")
+    g.add_node("s", SinkAll(), upstream="c")
     cg = CompiledGraph(g)
     assert len(cg._accesses()) == 1
     assert cg._accesses()[0] == AccessTag("counter")
@@ -70,7 +70,7 @@ def test_compile_two_tags_same_access_type():
     g = Graph()
     g.add_node("c1", Count(IntEvent, AccessTag("a")))
     g.add_node("c2", Count(IntEvent, AccessTag("b")), upstream="c1")
-    g.add_node("s", NullSink(), upstream="c2")
+    g.add_node("s", SinkAll(), upstream="c2")
     cg = CompiledGraph(g, (IntEvent,))
     assert {t.tag for t in cg._accesses()} == {"a", "b"}
     ec = ExecutionContext(cg, {})
@@ -84,7 +84,7 @@ def test_compile_subgraph_access_propagates():
     inner.add_node("c", Count(IntEvent, AccessTag("inner_tag")))
     outer = Graph()
     outer.add_node("sg", Subgraph(inner))
-    outer.add_node("s", NullSink(), upstream=("sg", "c:output"))
+    outer.add_node("s", SinkAll(), upstream=("sg", "c:output"))
     cg = CompiledGraph(outer, (IntEvent,))
     assert AccessTag("inner_tag") in cg._accesses()
     ec = ExecutionContext(cg, {})
@@ -104,14 +104,14 @@ def test_compile_duplicate_access_tag_in_subgraph_raises():
     outer = Graph()
     outer.add_node("c_outer", Count(IntEvent, AccessTag("dup")))
     outer.add_node("sg", sg, upstream="c_outer")
-    outer.add_node("s", NullSink(), upstream="sg")
+    outer.add_node("s", SinkAll(), upstream="sg")
     with pytest.raises(ValueError, match="dup"):
         CompiledGraph(outer, (IntEvent,))
 
 
 def test_compile_fails_for_unhandle_events():
     g = Graph()
-    g.add_node("s", SinkEvents(_NamedEvent(_uint32_type)))
+    g.add_node("s", SinkOnly(_NamedEvent(_uint32_type)))
     with pytest.raises(ValueError):
         CompiledGraph(g, [_NamedEvent(_string_type)])
 
@@ -124,7 +124,7 @@ def test_compile_string_parameter():
     assert len(g._parameters()) == 1
     assert g._parameters()[0] == (Param("b_msg"), _string_type)
     g.add_node("c", Stop((), Param("c_msg", "c_default")), upstream="b")
-    g.add_node("sink", NullSink(), upstream="c")
+    g.add_node("sink", SinkAll(), upstream="c")
     cg = CompiledGraph(g)
     assert len(cg.parameters()) == 2
     assert set(p.name for p in cg.parameters()) == {"b_msg", "c_msg"}
@@ -137,7 +137,7 @@ def test_compile_string_parameter():
 def test_compile_int_parameter():
     g = Graph()
     g.add_node("b", Batch(IntEvent, batch_size=Param("bs")))
-    g.add_node("sink", NullSink(), upstream="b")
+    g.add_node("sink", SinkAll(), upstream="b")
     assert g._parameters()[0] == (Param("bs"), _size_type)
     cg = CompiledGraph(g, (IntEvent,))
     assert cg.parameters() == (Param("bs"),)
@@ -154,7 +154,7 @@ def test_compile_multiple_params_same_node():
             read_granularity_bytes=Param("rg"),
         ),
     )
-    g.add_node("sink", NullSink(), upstream="r")
+    g.add_node("sink", SinkAll(), upstream="r")
     cg = CompiledGraph(g)
     assert {p.name for p in cg.parameters()} == {"ml", "rg"}
     by_name = {p.name: p for p in cg.parameters()}
@@ -170,13 +170,13 @@ def test_compile_mixes_concrete_and_param():
     g = Graph()
     g.add_node("a", Stop((), "concrete-prefix"))
     g.add_node("b", Stop((), Param("only_param")), upstream="a")
-    g.add_node("sink", NullSink(), upstream="b")
+    g.add_node("sink", SinkAll(), upstream="b")
     cg = CompiledGraph(g)
     assert cg.parameters() == (Param("only_param"),)
 
 
 def test_compile_param_count_zero():
     g = Graph()
-    g.add_node("sink", NullSink())
+    g.add_node("sink", SinkAll())
     cg = CompiledGraph(g)
     assert cg.parameters() == ()

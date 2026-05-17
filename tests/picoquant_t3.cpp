@@ -379,31 +379,31 @@ TEMPLATE_TEST_CASE("pqt3 assign", "", pqt3_hydraharpv1_event,
 }
 
 TEST_CASE("introspect: picoquant_t3") {
-    check_introspect_simple_processor(decode_pqt3_picoharp300(null_sink()));
-    check_introspect_simple_processor(decode_pqt3_hydraharpv1(null_sink()));
-    check_introspect_simple_processor(decode_pqt3_generic(null_sink()));
+    check_introspect_simple_processor(decode_pqt3_picoharp300(sink_all()));
+    check_introspect_simple_processor(decode_pqt3_hydraharpv1(sink_all()));
+    check_introspect_simple_processor(decode_pqt3_generic(sink_all()));
 }
 
 TEST_CASE("type constraints: decode_pqt3_picoharp300") {
     using proc_type = decltype(decode_pqt3_picoharp300(
-        sink_events<time_reached_event<>, time_correlated_detection_event<>,
-                    marker_event<>, warning_event, int>()));
+        sink_only<time_reached_event<>, time_correlated_detection_event<>,
+                  marker_event<>, warning_event, int>()));
 
     STATIC_CHECK(processor<proc_type, pqt3_picoharp300_event, int>);
 }
 
 TEST_CASE("type constraints: decode_pqt3_hydraharpv1") {
     using proc_type = decltype(decode_pqt3_hydraharpv1(
-        sink_events<time_reached_event<>, time_correlated_detection_event<>,
-                    marker_event<>, warning_event, int>()));
+        sink_only<time_reached_event<>, time_correlated_detection_event<>,
+                  marker_event<>, warning_event, int>()));
 
     STATIC_CHECK(processor<proc_type, pqt3_hydraharpv1_event, int>);
 }
 
 TEST_CASE("type constraints: decode_pqt3_generic") {
     using proc_type = decltype(decode_pqt3_generic(
-        sink_events<time_reached_event<>, time_correlated_detection_event<>,
-                    marker_event<>, warning_event, int>()));
+        sink_only<time_reached_event<>, time_correlated_detection_event<>,
+                  marker_event<>, warning_event, int>()));
 
     STATIC_CHECK(processor<proc_type, pqt3_generic_event, int>);
 }

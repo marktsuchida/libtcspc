@@ -26,7 +26,7 @@ from libtcspc._cpp_utils import (
 from libtcspc._events import BucketEvent
 from libtcspc._execute import ExecutionContext
 from libtcspc._param import Param
-from libtcspc._processors import Acquire, NullSink
+from libtcspc._processors import Acquire, SinkAll
 from typing_extensions import override
 
 IntEvent = _NamedEvent(_CppTypeName("int"))
@@ -49,7 +49,7 @@ def test_Acquire_NullReader():
             acq_tag,
         ),
     )
-    g.add_node("sink", NullSink(), upstream="acq")
+    g.add_node("sink", SinkAll(), upstream="acq")
     cg = CompiledGraph(g)
     ctx = ExecutionContext(cg)
     ctx.flush()
@@ -68,7 +68,7 @@ def test_Acquire_StuckReader():
             acq_tag,
         ),
     )
-    g.add_node("sink", NullSink(), upstream="acq")
+    g.add_node("sink", SinkAll(), upstream="acq")
     cg = CompiledGraph(g)
     ctx = ExecutionContext(cg)
     # flush() would hang if called here.
@@ -99,7 +99,7 @@ def test_Acquire_PyAcquisitionReader():
             _NamedEvent(_uint32_type), Param("reader"), None, None, acq_tag
         ),
     )
-    g.add_node("sink", NullSink(), upstream="acq")
+    g.add_node("sink", SinkAll(), upstream="acq")
     cg = CompiledGraph(g)
     with pytest.raises(ValueError):
         ctx = ExecutionContext(cg)

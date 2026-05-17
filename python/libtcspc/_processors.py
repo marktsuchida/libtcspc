@@ -1659,7 +1659,7 @@ class Delay(_TypePreservingRelayNode):
 
 
 @final
-class NullSink(Node):
+class SinkAll(Node):
     """Sink that discards every event it receives.
 
     Notes
@@ -1671,7 +1671,7 @@ class NullSink(Node):
 
     See Also
     --------
-    :cpp:`tcspc::null_sink`
+    :cpp:`tcspc::sink_all`
         The underlying C++ factory function.
     """
 
@@ -1690,11 +1690,11 @@ class NullSink(Node):
         gencontext: _CodeGenerationContext,
         downstreams: Sequence[_CppExpression],
     ) -> _CppExpression:
-        return _CppExpression("tcspc::null_sink()")
+        return _CppExpression("tcspc::sink_all()")
 
 
 @final
-class NullSource(_RelayNode):
+class SourceNothing(_RelayNode):
     """Source processor that emits no events.
 
     Notes
@@ -1707,7 +1707,7 @@ class NullSource(_RelayNode):
 
     See Also
     --------
-    :cpp:`tcspc::null_source`
+    :cpp:`tcspc::source_nothing`
         The underlying C++ factory function.
     """
 
@@ -1724,7 +1724,7 @@ class NullSource(_RelayNode):
         gencontext: _CodeGenerationContext,
         downstream: _CppExpression,
     ) -> _CppExpression:
-        return _CppExpression(f"tcspc::null_source({downstream})")
+        return _CppExpression(f"tcspc::source_nothing({downstream})")
 
 
 @final
@@ -2082,7 +2082,7 @@ class Select(_RelayNode):
     :cpp:`tcspc::select`
         The underlying C++ factory function.
     SelectAll
-    SelectNot
+    SelectExcept
     """
 
     def __init__(self, *event_types: EventType) -> None:
@@ -2148,7 +2148,7 @@ class SelectAll(_TypePreservingRelayNode):
 
 
 @final
-class SelectNot(_RelayNode):
+class SelectExcept(_RelayNode):
     """Processor that discards events of the listed types, passing others.
 
     The complement of `Select`.
@@ -2169,7 +2169,7 @@ class SelectNot(_RelayNode):
 
     See Also
     --------
-    :cpp:`tcspc::select_not`
+    :cpp:`tcspc::select_except`
         The underlying C++ factory function.
     Select
     SelectAll
@@ -2192,7 +2192,7 @@ class SelectNot(_RelayNode):
     ) -> _CppExpression:
         return _CppExpression(
             f"""\
-            tcspc::select_not<
+            tcspc::select_except<
                 {_make_type_list(self._event_types)}
             >(
                 {downstream}
@@ -2201,7 +2201,7 @@ class SelectNot(_RelayNode):
 
 
 @final
-class SinkEvents(Node):
+class SinkOnly(Node):
     """Sink that accepts and discards a fixed set of event types.
 
     Most useful for testing, or for asserting at graph-build time that an
@@ -2224,7 +2224,7 @@ class SinkEvents(Node):
 
     See Also
     --------
-    :cpp:`tcspc::sink_events`
+    :cpp:`tcspc::sink_only`
         The underlying C++ factory function.
     """
 
@@ -2252,7 +2252,7 @@ class SinkEvents(Node):
         downstreams: Sequence[_CppExpression],
     ) -> _CppExpression:
         evts = ", ".join(t._cpp_type_name() for t in self._event_types)
-        return _CppExpression(f"tcspc::sink_events<{evts}>()")
+        return _CppExpression(f"tcspc::sink_only<{evts}>()")
 
 
 @final

@@ -22,19 +22,19 @@ TEST_CASE("type constraints: prepend") {
     struct e0 {};
     struct e1 {};
     STATIC_CHECK(
-        processor<decltype(prepend(e0{}, sink_events<e0, e1>())), e0, e1>);
+        processor<decltype(prepend(e0{}, sink_only<e0, e1>())), e0, e1>);
 }
 
 TEST_CASE("type constraints: append") {
     struct e0 {};
     struct e1 {};
     STATIC_CHECK(
-        processor<decltype(append(e0{}, sink_events<e0, e1>())), e0, e1>);
+        processor<decltype(append(e0{}, sink_only<e0, e1>())), e0, e1>);
 }
 
 TEST_CASE("introspect: prepend/append") {
-    check_introspect_simple_processor(prepend<int>(42, null_sink()));
-    check_introspect_simple_processor(append<int>(42, null_sink()));
+    check_introspect_simple_processor(prepend<int>(42, sink_all()));
+    check_introspect_simple_processor(append<int>(42, sink_all()));
 }
 
 TEST_CASE("prepend") {

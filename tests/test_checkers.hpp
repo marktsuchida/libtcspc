@@ -64,10 +64,10 @@ inline auto check_introspect_node_info(Processor const &proc) {
 
 template <typename Processor>
 inline auto
-check_introspect_simple_processor(Processor const &processor_with_null_sink) {
-    auto const info = check_introspect_node_info(processor_with_null_sink);
+check_introspect_simple_processor(Processor const &processor_with_sink_all) {
+    auto const info = check_introspect_node_info(processor_with_sink_all);
 
-    auto const g = processor_with_null_sink.introspect_graph();
+    auto const g = processor_with_sink_all.introspect_graph();
     CHECK(g.nodes().size() == 2);
     CHECK(g.entry_points().size() == 1);
     auto const node = g.entry_points()[0];
@@ -75,7 +75,7 @@ check_introspect_simple_processor(Processor const &processor_with_null_sink) {
     CHECK(g.edges().size() == 1);
     CHECK(g.edges()[0].first == node);
     auto const downstream_node = g.edges()[0].second;
-    CHECK(g.node_info(downstream_node).name() == "null_sink");
+    CHECK(g.node_info(downstream_node).name() == "sink_all");
     return info;
 }
 

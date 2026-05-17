@@ -10,7 +10,7 @@ from libtcspc._access import AccessTag
 from libtcspc._cpp_utils import _CppTypeName
 from libtcspc._graph import Graph
 from libtcspc._param import Param
-from libtcspc._processors import Count, NullSink
+from libtcspc._processors import Count, SinkAll
 
 IntEvent = _NamedEvent(_CppTypeName("int"))
 
@@ -29,7 +29,7 @@ def test_graph_visits_collects_no_parameters_for_paramless_graph():
     assert g._parameters() == []
 
     g.add_node("a", _TestRelayNode())
-    g.add_node("b", NullSink())
+    g.add_node("b", SinkAll())
     assert g._parameters() == []
 
 

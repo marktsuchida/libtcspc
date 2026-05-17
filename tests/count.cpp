@@ -37,12 +37,12 @@ TEST_CASE("type constraints: count_up_to") {
         decltype(count_up_to<tick_event, fire_event, reset_event, false>(
             arg::threshold<u64>{100}, arg::limit<u64>{100},
             arg::initial_count<u64>{0},
-            sink_events<tick_event, fire_event, misc_event>()));
+            sink_only<tick_event, fire_event, misc_event>()));
     using proc_reset =
         decltype(count_up_to<tick_event, fire_event, reset_event, false>(
             arg::threshold<u64>{100}, arg::limit<u64>{100},
             arg::initial_count<u64>{0},
-            sink_events<tick_event, fire_event, reset_event, misc_event>()));
+            sink_only<tick_event, fire_event, reset_event, misc_event>()));
     STATIC_CHECK(processor<proc_noreset, tick_event, misc_event>);
     STATIC_CHECK_FALSE(handler_for<proc_noreset, reset_event>);
     STATIC_CHECK_FALSE(handler_for<proc_noreset, int>);
@@ -53,7 +53,7 @@ TEST_CASE("type constraints: count_up_to") {
 TEST_CASE("type constraints: count") {
     using proc_type = decltype(count<tick_event>(
         context::create()->tracker<count_access>("c"),
-        sink_events<tick_event, misc_event>()));
+        sink_only<tick_event, misc_event>()));
     STATIC_CHECK(processor<proc_type, tick_event, misc_event>);
     STATIC_CHECK_FALSE(processor<proc_type, int>);
 }
@@ -62,14 +62,14 @@ TEST_CASE("introspect: count") {
     check_introspect_simple_processor(
         count_up_to<tick_event, fire_event, reset_event, false>(
             arg::threshold<u64>{1}, arg::limit<u64>{2},
-            arg::initial_count<u64>{0}, null_sink()));
+            arg::initial_count<u64>{0}, sink_all()));
     check_introspect_simple_processor(
         count_down_to<tick_event, fire_event, reset_event, false>(
             arg::threshold<u64>{1}, arg::limit<u64>{0},
-            arg::initial_count<u64>{2}, null_sink()));
+            arg::initial_count<u64>{2}, sink_all()));
     auto ctx = context::create();
     check_introspect_simple_processor(
-        count<tick_event>(ctx->tracker<count_access>("t"), null_sink()));
+        count<tick_event>(ctx->tracker<count_access>("t"), sink_all()));
 }
 
 TEST_CASE("Count up to") {

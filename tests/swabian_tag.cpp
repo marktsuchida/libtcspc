@@ -151,14 +151,14 @@ TEST_CASE("swabian tag assign") {
 
 TEST_CASE("type constraints: decode_swabian_tags") {
     using proc_type = decltype(decode_swabian_tags(
-        sink_events<detection_event<>, begin_lost_interval_event<>,
-                    end_lost_interval_event<>, lost_counts_event<>,
-                    warning_event, int>()));
+        sink_only<detection_event<>, begin_lost_interval_event<>,
+                  end_lost_interval_event<>, lost_counts_event<>,
+                  warning_event, int>()));
     STATIC_CHECK(processor<proc_type, swabian_tag_event, int>);
 }
 
 TEST_CASE("introspect: decode_swabian_tags") {
-    check_introspect_simple_processor(decode_swabian_tags(null_sink()));
+    check_introspect_simple_processor(decode_swabian_tags(sink_all()));
 }
 
 TEST_CASE("decode swabian tags") {

@@ -55,47 +55,33 @@ struct never_event {
     never_event() = delete;
 };
 
-/**
- * \brief Processor that sinks any event and the end-of-stream and does
- * nothing.
- *
- * \ingroup processors-core
- *
- * \par Events handled
- * - All types: ignore
- * - Flush: ignore
- */
-class null_sink {
+namespace internal {
+
+class sink_all {
   public:
-    /** \brief Implements processor requirement. */
     [[nodiscard]] auto introspect_node() const -> processor_info {
-        return processor_info(this, "null_sink");
+        return processor_info(this, "sink_all");
     }
 
-    /** \brief Implements processor requirement. */
     [[nodiscard]] auto introspect_graph() const -> processor_graph {
         return processor_graph().push_entry_point(this);
     }
 
-    /** \brief Implements processor requirement. */
     template <typename Event> void handle(Event const & /* event */) {}
 
-    /** \brief Implements processor requirement. */
     void flush() {}
 };
 
-namespace internal {
-
-template <typename Downstream> class null_source {
+template <typename Downstream> class source_nothing {
     bool flushed = false;
     Downstream downstream;
 
   public:
-    explicit null_source(Downstream downstream)
+    explicit source_nothing(Downstream downstream)
         : downstream(std::move(downstream)) {}
 
     [[nodiscard]] auto introspect_node() const -> processor_info {
-        return processor_info(this, "null_source");
+        return processor_info(this, "source_nothing");
     }
 
     [[nodiscard]] auto introspect_graph() const -> processor_graph {
@@ -105,7 +91,7 @@ template <typename Downstream> class null_source {
     void flush() {
         if (flushed) {
             throw std::logic_error(
-                "null_source may not be flushed a second time");
+                "source_nothing may not be flushed a second time");
         }
         flushed = true;
         downstream.flush();
@@ -113,6 +99,20 @@ template <typename Downstream> class null_source {
 };
 
 } // namespace internal
+
+/**
+ * \brief Create a processor that sinks any event and the end-of-stream and
+ * does nothing.
+ *
+ * \ingroup processors-core
+ *
+ * \return processor
+ *
+ * \par Events handled
+ * - All types: ignore
+ * - Flush: ignore
+ */
+inline auto sink_all() { return internal::sink_all(); }
 
 /**
  * \brief Create a processor that sources an empty stream.
@@ -128,8 +128,8 @@ template <typename Downstream> class null_source {
  * \par Events handled
  * - Flush: pass through with no action
  */
-template <typename Downstream> auto null_source(Downstream downstream) {
-    return internal::null_source<Downstream>(std::move(downstream));
+template <typename Downstream> auto source_nothing(Downstream downstream) {
+    return internal::source_nothing<Downstream>(std::move(downstream));
 }
 
 } // namespace tcspc
