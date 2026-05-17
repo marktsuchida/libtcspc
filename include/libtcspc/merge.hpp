@@ -358,8 +358,9 @@ class merge_unsorted_impl {
         return downstream.introspect_graph().push_entry_point(this);
     }
 
-    template <typename Event> void handle(Event &&event) {
-        static_assert(handler_for<Downstream, std::remove_cvref_t<Event>>);
+    template <typename Event>
+        requires handler_for<Downstream, std::remove_cvref_t<Event>>
+    void handle(Event &&event) {
         if (ended_with_exception)
             return;
         try {
