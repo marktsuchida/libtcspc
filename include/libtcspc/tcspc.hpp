@@ -878,6 +878,12 @@ namespace tcspc {
  */
 
 /**
+ * \defgroup data-type-concepts Data type set concepts
+ *
+ * \brief Concepts to check the validity of a `DataTypes` template argument.
+ */
+
+/**
  * \defgroup integers Integers
  *
  * \brief Facilities for reading integers from bit-packed records.
