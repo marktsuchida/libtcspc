@@ -327,16 +327,16 @@ namespace tcspc {
  *   and the event value needs to be reused afterwards, the event should be
  *   passed using `std::as_const()`. Conversely, if the local event will not be
  *   reused, it may be passed using `std::move()`.
- * - The `handle()` member function is often overloaded for multiple event
- *   types, some of which may be template parameters, possibly constrained by
- *   a `requires` clause. Choose carefully between a `requires` clause and
- *   `static_assert` when specifying requirements on the handled event types,
- *   because they have different implications. Requirements specified by a
- *   `requires` clause are detected by `tcspc::handler_for` and will prevent
- *   the overload from competing with other overloads when not satisfied.
- *   Requirements specified by `static_assert`, if not satisfied, will cause a
- *   compile error _after_ the overload has been selected. There are use cases
- *   for both.
+ * - Constrain the processor class with `requires tcspc::processor<Downstream,
+ *   EventsHandled...>`; use class-level `static_assert` for deeper
+ *   invariants on `DataTypes` or other template parameters.
+ * - On a templated `handle()` overload, a `requires` clause participates in
+ *   `tcspc::handler_for` detection (so the overload drops out of overload
+ *   resolution when not satisfied), while a body `static_assert` is a hard
+ *   error after selection. Pass-through overloads typically use `requires
+ *   handler_for<Downstream, ...>`; specific-event overloads validating
+ *   `DataTypes` compatibility typically use `static_assert`, with the
+ *   matching `&&` overload delegating to the `const &` one.
  * - When implementing `handle()` for both const lvalue and rvalue references,
  *   make sure that a generic forwarding reference handler does not shadow a
  *   specific const lvalue handler.
