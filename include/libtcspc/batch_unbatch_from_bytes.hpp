@@ -13,6 +13,7 @@
 
 #include <algorithm>
 #include <array>
+#include <concepts>
 #include <cstddef>
 #include <memory>
 #include <span>
@@ -51,9 +52,9 @@ class batch_from_bytes {
         return downstream.introspect_graph().push_entry_point(this);
     }
 
-    template <typename ByteSpan,
-              typename = std::void_t<decltype(std::span<std::byte const>(
-                  std::declval<ByteSpan>()))>>
+    template <typename ByteSpan>
+        requires std::constructible_from<std::span<std::byte const>,
+                                         ByteSpan const &>
     void handle(ByteSpan const &event) {
         auto input_span = std::span<std::byte const>(event);
         auto const bytes_available = bytes_buffered + input_span.size();
@@ -109,9 +110,9 @@ class unbatch_from_bytes {
         return downstream.introspect_graph().push_entry_point(this);
     }
 
-    template <typename ByteSpan,
-              typename = std::void_t<decltype(std::span<std::byte const>(
-                  std::declval<ByteSpan>()))>>
+    template <typename ByteSpan>
+        requires std::constructible_from<std::span<std::byte const>,
+                                         ByteSpan const &>
     void handle(ByteSpan const &event) {
         auto input_span = std::span<std::byte const>(event);
         if (bytes_buffered > 0) {
