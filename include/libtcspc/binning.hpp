@@ -192,12 +192,11 @@ class map_to_bins {
         std::is_same_v<std::invoke_result_t<
                            BinMapper, typename DataTypes::datapoint_type>,
                        std::optional<typename DataTypes::bin_index_type>>);
+    static_assert(with_datapoint_type<DataTypes>);
+    static_assert(with_bin_index_type<DataTypes>);
 
     BinMapper bin_mapper;
     Downstream downstream;
-
-    static_assert(std::is_unsigned_v<typename DataTypes::bin_index_type>,
-                  "The bin_index_type must be an unsigned integer type");
 
   public:
     explicit map_to_bins(BinMapper bin_mapper, Downstream downstream)
@@ -301,6 +300,8 @@ auto map_to_bins(BinMapper bin_mapper, Downstream downstream) {
 template <unsigned NDataBits, unsigned NHistoBits, bool Flip = false,
           typename DataTypes = default_data_types>
 struct power_of_2_bin_mapper {
+    static_assert(with_datapoint_type<DataTypes>);
+    static_assert(with_bin_index_type<DataTypes>);
     static_assert(NHistoBits <= 64); // Assumption made below.
     static_assert(NDataBits >= NHistoBits);
     static_assert(NDataBits <= 8 * sizeof(typename DataTypes::datapoint_type));
@@ -357,10 +358,8 @@ template <typename DataTypes = default_data_types> class linear_bin_mapper {
     typename DataTypes::bin_index_type max_index;
     bool clamp;
 
-    static_assert(std::is_integral_v<typename DataTypes::datapoint_type>,
-                  "datapoint_type must be an integer type");
-    static_assert(std::is_integral_v<typename DataTypes::bin_index_type>,
-                  "bin_index_type must be an integer type");
+    static_assert(with_datapoint_type<DataTypes>);
+    static_assert(with_bin_index_type<DataTypes>);
 
     // Assumptions used by implementation.
     static_assert(sizeof(typename DataTypes::datapoint_type) <= sizeof(u64));
