@@ -39,15 +39,15 @@ TEST_CASE("type constraints: delay") {
     STATIC_CHECK_FALSE(handler_for<proc_type, e1>);
 }
 
-TEST_CASE("type constraints: zero_base_abstime") {
-    using proc_type = decltype(zero_base_abstime(sink_only<e0>()));
+TEST_CASE("type constraints: rebase_abstime") {
+    using proc_type = decltype(rebase_abstime(sink_only<e0>()));
     STATIC_CHECK(processor<proc_type, e0>);
     STATIC_CHECK_FALSE(handler_for<proc_type, e1>);
 }
 
 TEST_CASE("introspect: delay") {
     check_introspect_simple_processor(delay(arg::delta<i64>{0}, sink_all()));
-    check_introspect_simple_processor(zero_base_abstime(sink_all()));
+    check_introspect_simple_processor(rebase_abstime(sink_all()));
 }
 
 TEST_CASE("Delay") {
@@ -105,7 +105,7 @@ TEST_CASE("zero-base abstime") {
     auto const valcat = GENERATE(feed_as::const_lvalue, feed_as::rvalue);
     auto ctx = context::create();
     auto in =
-        feed_input(valcat, zero_base_abstime(capture_output<out_events>(
+        feed_input(valcat, rebase_abstime(capture_output<out_events>(
                                ctx->tracker<capture_output_access>("out"))));
     in.require_output_checked(ctx, "out");
     auto out = capture_output_checker<out_events>(valcat, ctx, "out");

@@ -81,7 +81,7 @@ class match {
  */
 template <typename Event, typename OutEvent, typename Matcher,
           typename Downstream>
-auto match_replace(Matcher matcher, Downstream downstream) {
+auto match_and_consume(Matcher matcher, Downstream downstream) {
     return internal::match<Event, OutEvent, Matcher, false, Downstream>(
         std::move(matcher), std::move(downstream));
 }
@@ -99,7 +99,7 @@ auto match_replace(Matcher matcher, Downstream downstream) {
  *
  * Both \p Event and \p OutEvent must have an `abstime` field.
  *
- * \see `tcspc::match_replace()`
+ * \see `tcspc::match_and_consume()`
  *
  * \tparam Event event type to match
  *

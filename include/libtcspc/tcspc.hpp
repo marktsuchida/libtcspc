@@ -708,7 +708,7 @@ namespace tcspc {
 /**
  * \defgroup matchers Matchers
  *
- * \brief Matchers for use with `tcspc::match` and `tcspc::match_replace`.
+ * \brief Matchers for use with `tcspc::match` and `tcspc::match_and_consume`.
  *
  * These objects are essentially predicates: they define the member `auto
  * operator()(Event const &event) const -> bool`, where `Event const &` must be

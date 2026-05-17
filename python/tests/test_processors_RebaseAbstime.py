@@ -6,7 +6,7 @@ from _test_helpers import _NamedEvent
 from libtcspc._codegen import _CodeGenerationContext
 from libtcspc._cpp_utils import _CppExpression, _CppIdentifier, _CppTypeName
 from libtcspc._data_types import DataTypes
-from libtcspc._processors import ZeroBaseAbstime
+from libtcspc._processors import RebaseAbstime
 
 IntEvent = _NamedEvent(_CppTypeName("int"))
 OtherEvent = _NamedEvent(_CppTypeName("long"))
@@ -16,16 +16,16 @@ gencontext = _CodeGenerationContext(
 )
 
 
-def test_ZeroBaseAbstime_event_set_is_preserved():
-    node = ZeroBaseAbstime()
+def test_RebaseAbstime_event_set_is_preserved():
+    node = RebaseAbstime()
     assert node._map_event_sets([(IntEvent, OtherEvent)]) == (
         (IntEvent, OtherEvent),
     )
 
 
-def test_ZeroBaseAbstime_codegen():
-    node = ZeroBaseAbstime()
+def test_RebaseAbstime_codegen():
+    node = RebaseAbstime()
     code = node._cpp_expression(gencontext, [_CppExpression("DOWN")])
-    assert "tcspc::zero_base_abstime<" in code
+    assert "tcspc::rebase_abstime<" in code
     assert DataTypes()._cpp_type_name() in code
     assert "DOWN" in code

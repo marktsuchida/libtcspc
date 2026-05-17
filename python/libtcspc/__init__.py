@@ -70,6 +70,7 @@ from ._processors import (
     DecodeSwabianTags,
     Delay,
     ReadBinaryStream,
+    RebaseAbstime,
     RecoverOrder,
     RegulateTimeReached,
     RemoveTimeCorrelation,
@@ -84,7 +85,6 @@ from ._processors import (
     Unbatch,
     UnbatchFromBytes,
     ViewAsBytes,
-    ZeroBaseAbstime,
     read_events_from_binary_file,
 )
 from ._streams import BinaryFileInputStream, InputStream
@@ -149,6 +149,7 @@ __all__ = [
     "PyAcquisitionReader",
     "PySink",
     "ReadBinaryStream",
+    "RebaseAbstime",
     "RecoverOrder",
     "RecyclingBucketSource",
     "RegulateTimeReached",
@@ -170,6 +171,5 @@ __all__ = [
     "UnbatchFromBytes",
     "ViewAsBytes",
     "WarningEvent",
-    "ZeroBaseAbstime",
     "read_events_from_binary_file",
 ]

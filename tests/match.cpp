@@ -38,8 +38,8 @@ TEST_CASE("type constraints: match") {
     STATIC_CHECK_FALSE(handler_for<proc_type, int>);
 }
 
-TEST_CASE("type constraints: match_replace") {
-    using proc_type = decltype(match_replace<some_event, output_event>(
+TEST_CASE("type constraints: match_and_consume") {
+    using proc_type = decltype(match_and_consume<some_event, output_event>(
         always_matcher(), sink_only<some_event, output_event, misc_event>()));
     STATIC_CHECK(processor<proc_type, some_event, misc_event>);
     STATIC_CHECK_FALSE(handler_for<proc_type, int>);
@@ -47,16 +47,16 @@ TEST_CASE("type constraints: match_replace") {
 
 TEST_CASE("introspect: match") {
     check_introspect_simple_processor(
-        match_replace<int, long>(never_matcher(), sink_all()));
+        match_and_consume<int, long>(never_matcher(), sink_all()));
     check_introspect_simple_processor(
         match<int, long>(never_matcher(), sink_all()));
 }
 
-TEST_CASE("Match and replace") {
+TEST_CASE("Match and consume") {
     auto const valcat = GENERATE(feed_as::const_lvalue, feed_as::rvalue);
     auto ctx = context::create();
     auto in = feed_input(valcat,
-                         match_replace<marker_event<>, output_event>(
+                         match_and_consume<marker_event<>, output_event>(
                              channel_matcher(arg::channel{0}),
                              capture_output<out_events>(
                                  ctx->tracker<capture_output_access>("out"))));

@@ -56,17 +56,17 @@ template <typename DataTypes, typename Downstream> class delay {
     void flush() { downstream.flush(); }
 };
 
-template <typename DataTypes, typename Downstream> class zero_base_abstime {
+template <typename DataTypes, typename Downstream> class rebase_abstime {
     bool initialized = false;
     typename DataTypes::abstime_type minus_delta{};
     Downstream downstream;
 
   public:
-    explicit zero_base_abstime(Downstream downstream)
+    explicit rebase_abstime(Downstream downstream)
         : downstream(std::move(downstream)) {}
 
     [[nodiscard]] auto introspect_node() const -> processor_info {
-        return processor_info(this, "zero_base_abstime");
+        return processor_info(this, "rebase_abstime");
     }
 
     [[nodiscard]] auto introspect_graph() const -> processor_graph {
@@ -152,8 +152,8 @@ auto delay(arg::delta<typename DataTypes::abstime_type> delta,
  * - Flush: pass through with no action
  */
 template <typename DataTypes = default_data_types, typename Downstream>
-auto zero_base_abstime(Downstream downstream) {
-    return internal::zero_base_abstime<DataTypes, Downstream>(
+auto rebase_abstime(Downstream downstream) {
+    return internal::rebase_abstime<DataTypes, Downstream>(
         std::move(downstream));
 }
 

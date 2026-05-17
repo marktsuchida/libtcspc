@@ -1615,7 +1615,7 @@ class Delay(_TypePreservingRelayNode):
     --------
     :cpp:`tcspc::delay`
         The underlying C++ factory function.
-    ZeroBaseAbstime
+    RebaseAbstime
     """
 
     def __init__(
@@ -2570,7 +2570,7 @@ class ViewAsBytes(_RelayNode):
 
 
 @final
-class ZeroBaseAbstime(_TypePreservingRelayNode):
+class RebaseAbstime(_TypePreservingRelayNode):
     """Pass-through processor that shifts abstime so the first event is at zero.
 
     Subtracts the abstime of the first event seen from every event's
@@ -2594,7 +2594,7 @@ class ZeroBaseAbstime(_TypePreservingRelayNode):
 
     See Also
     --------
-    :cpp:`tcspc::zero_base_abstime`
+    :cpp:`tcspc::rebase_abstime`
         The underlying C++ factory function.
     Delay
     """
@@ -2612,7 +2612,7 @@ class ZeroBaseAbstime(_TypePreservingRelayNode):
     ) -> _CppExpression:
         return _CppExpression(
             f"""\
-            tcspc::zero_base_abstime<{self._data_types._cpp_type_name()}>(
+            tcspc::rebase_abstime<{self._data_types._cpp_type_name()}>(
                 {downstream}
             )"""
         )
