@@ -24,9 +24,8 @@ namespace internal {
 
 template <typename TriggerEvent, typename OutputEvent,
           typename TimingGenerator, typename Downstream>
+    requires processor<Downstream, TriggerEvent, OutputEvent>
 class generate {
-    static_assert(processor<Downstream, TriggerEvent, OutputEvent>);
-
     using abstime_type = decltype(std::declval<TriggerEvent>().abstime);
     static_assert(
         std::is_same_v<std::remove_reference_t<

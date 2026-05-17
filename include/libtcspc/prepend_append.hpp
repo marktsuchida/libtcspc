@@ -16,9 +16,9 @@ namespace tcspc {
 
 namespace internal {
 
-template <typename Event, typename Downstream> class prepend {
-    static_assert(processor<Downstream, Event>);
-
+template <typename Event, typename Downstream>
+    requires processor<Downstream, Event>
+class prepend {
     bool prepended = false;
     Downstream downstream;
 
@@ -50,9 +50,9 @@ template <typename Event, typename Downstream> class prepend {
     void flush() { downstream.flush(); }
 };
 
-template <typename Event, typename Downstream> class append {
-    static_assert(processor<Downstream, Event>);
-
+template <typename Event, typename Downstream>
+    requires processor<Downstream, Event>
+class append {
     Downstream downstream;
 
     // Cold data after downstream:

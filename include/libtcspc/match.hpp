@@ -21,9 +21,8 @@ namespace internal {
 
 template <typename Event, typename OutEvent, typename Matcher,
           bool PassMatched, typename Downstream>
+    requires processor<Downstream, Event, OutEvent>
 class match {
-    static_assert(processor<Downstream, Event, OutEvent>);
-
     Matcher matcher;
     Downstream downstream;
 

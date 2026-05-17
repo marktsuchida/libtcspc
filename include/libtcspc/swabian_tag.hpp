@@ -209,12 +209,12 @@ struct swabian_tag_event {
 
 namespace internal {
 
-template <typename DataTypes, typename Downstream> class decode_swabian_tags {
-    static_assert(processor<Downstream, detection_event<DataTypes>,
-                            begin_lost_interval_event<DataTypes>,
-                            end_lost_interval_event<DataTypes>,
-                            lost_counts_event<DataTypes>, warning_event>);
-
+template <typename DataTypes, typename Downstream>
+    requires processor<Downstream, detection_event<DataTypes>,
+                       begin_lost_interval_event<DataTypes>,
+                       end_lost_interval_event<DataTypes>,
+                       lost_counts_event<DataTypes>, warning_event>
+class decode_swabian_tags {
     static_assert(representable_in<i64, typename DataTypes::abstime_type>);
     static_assert(representable_in<i32, typename DataTypes::channel_type>);
     static_assert(representable_in<u16, typename DataTypes::count_type>);

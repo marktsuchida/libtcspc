@@ -823,9 +823,9 @@ template <> class capture_output<type_list<>> {
     }
 };
 
-template <typename Downstream> class feed_input {
-    static_assert(processor<Downstream>);
-
+template <typename Downstream>
+    requires processor<Downstream>
+class feed_input {
     std::vector<std::pair<std::shared_ptr<context>, std::string>>
         outputs_to_check; // (context, name)
     feed_as refmode = feed_as::const_lvalue;

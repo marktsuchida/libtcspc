@@ -25,9 +25,8 @@ namespace internal {
 
 template <typename DataTypes, bool RequireStrictlyIncreasing,
           typename Downstream>
+    requires processor<Downstream, warning_event>
 class check_monotonic {
-    static_assert(processor<Downstream, warning_event>);
-
     typename DataTypes::abstime_type last_seen =
         std::numeric_limits<typename DataTypes::abstime_type>::min();
 
@@ -117,9 +116,8 @@ auto check_monotonic(Downstream downstream) {
 namespace internal {
 
 template <typename Event0, typename Event1, typename Downstream>
+    requires processor<Downstream, Event0, Event1, warning_event>
 class check_alternating {
-    static_assert(processor<Downstream, Event0, Event1, warning_event>);
-
     bool last_saw_0 = false;
     Downstream downstream;
 

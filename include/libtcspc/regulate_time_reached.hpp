@@ -24,9 +24,8 @@ namespace tcspc {
 namespace internal {
 
 template <typename DataTypes, typename Downstream>
+    requires processor<Downstream, time_reached_event<DataTypes>>
 class regulate_time_reached {
-    static_assert(processor<Downstream, time_reached_event<DataTypes>>);
-
     using abstime_type = typename DataTypes::abstime_type;
 
     abstime_type interval_thresh;

@@ -102,10 +102,8 @@ class periodic_fitter {
 };
 
 template <typename Event, typename DataTypes, typename Downstream>
+    requires processor<Downstream, periodic_sequence_model_event<DataTypes>>
 class fit_periodic_sequences {
-    static_assert(
-        processor<Downstream, periodic_sequence_model_event<DataTypes>>);
-
     using abstime_type = typename DataTypes::abstime_type;
 
     std::size_t len; // At least 3

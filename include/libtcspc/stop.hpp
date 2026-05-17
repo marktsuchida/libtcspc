@@ -23,9 +23,9 @@ namespace tcspc {
 namespace internal {
 
 template <typename EventList, typename Exception, typename Downstream>
+    requires processor<Downstream>
 class stop {
     static_assert(type_list_like<EventList>);
-    static_assert(processor<Downstream>);
 
     Downstream downstream;
 

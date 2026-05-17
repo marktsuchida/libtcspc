@@ -32,22 +32,21 @@ namespace internal {
 
 template <histogram_policy Policy, typename ResetEvent, typename DataTypes,
           typename Downstream>
+    requires processor<Downstream, histogram_event<DataTypes>> &&
+             (std::is_same_v<ResetEvent, never_event> ||
+              handler_for<Downstream, ResetEvent>) &&
+             ((Policy & histogram_policy::overflow_mask) !=
+                  histogram_policy::saturate_on_overflow ||
+              handler_for<Downstream, warning_event>) &&
+             ((Policy & histogram_policy::emit_concluding_events) ==
+                  histogram_policy::default_policy ||
+              handler_for<Downstream, concluding_histogram_event<DataTypes>>)
 class histogram {
     static constexpr histogram_policy overflow_policy =
         Policy & histogram_policy::overflow_mask;
     static constexpr bool emit_concluding =
         (Policy & histogram_policy::emit_concluding_events) !=
         histogram_policy::default_policy;
-
-    static_assert(processor<Downstream, histogram_event<DataTypes>>);
-    static_assert(std::is_same_v<ResetEvent, never_event> ||
-                  handler_for<Downstream, ResetEvent>);
-    static_assert(overflow_policy != histogram_policy::saturate_on_overflow ||
-                  handler_for<Downstream, warning_event>);
-    static_assert(
-        (Policy & histogram_policy::emit_concluding_events) ==
-            histogram_policy::default_policy ||
-        handler_for<Downstream, concluding_histogram_event<DataTypes>>);
 
     using internal_overflow_policy = std::conditional_t<
         overflow_policy == histogram_policy::saturate_on_overflow,

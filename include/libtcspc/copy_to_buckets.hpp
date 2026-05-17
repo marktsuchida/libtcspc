@@ -27,9 +27,9 @@ namespace tcspc {
 
 namespace internal {
 
-template <typename T, typename Downstream> class copy_to_buckets {
-    static_assert(processor<Downstream, bucket<T>>);
-
+template <typename T, typename Downstream>
+    requires processor<Downstream, bucket<T>>
+class copy_to_buckets {
     std::shared_ptr<bucket_source<T>> bsource;
 
     Downstream downstream;
@@ -74,10 +74,9 @@ template <typename T, typename Downstream> class copy_to_buckets {
 };
 
 template <typename T, typename LiveDownstream, typename BatchDownstream>
+    requires processor<LiveDownstream, bucket<T const>> &&
+             processor<BatchDownstream, bucket<T>>
 class copy_to_full_buckets {
-    static_assert(processor<LiveDownstream, bucket<T const>>);
-    static_assert(processor<BatchDownstream, bucket<T>>);
-
     std::shared_ptr<bucket_source<T>> bsource;
     std::size_t bsize;
 

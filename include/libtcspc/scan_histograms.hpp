@@ -32,6 +32,17 @@ namespace internal {
 
 template <histogram_policy Policy, typename ResetEvent, typename DataTypes,
           typename Downstream>
+    requires processor<Downstream, histogram_array_progress_event<DataTypes>,
+                       histogram_array_event<DataTypes>> &&
+             (std::is_same_v<ResetEvent, never_event> ||
+              handler_for<Downstream, ResetEvent>) &&
+             ((Policy & histogram_policy::overflow_mask) !=
+                  histogram_policy::saturate_on_overflow ||
+              handler_for<Downstream, warning_event>) &&
+             ((Policy & histogram_policy::emit_concluding_events) ==
+                  histogram_policy::default_policy ||
+              handler_for<Downstream,
+                          concluding_histogram_array_event<DataTypes>>)
 class scan_histograms {
     static constexpr histogram_policy overflow_policy =
         Policy & histogram_policy::overflow_mask;
@@ -47,18 +58,6 @@ class scan_histograms {
     static constexpr bool clear_new_bucket =
         (Policy & histogram_policy::no_clear_new_bucket) ==
         histogram_policy::default_policy;
-
-    static_assert(
-        processor<Downstream, histogram_array_progress_event<DataTypes>,
-                  histogram_array_event<DataTypes>>);
-    static_assert(std::is_same_v<ResetEvent, never_event> ||
-                  handler_for<Downstream, ResetEvent>);
-    static_assert(overflow_policy != histogram_policy::saturate_on_overflow ||
-                  handler_for<Downstream, warning_event>);
-    static_assert(
-        (Policy & histogram_policy::emit_concluding_events) ==
-            histogram_policy::default_policy ||
-        handler_for<Downstream, concluding_histogram_array_event<DataTypes>>);
 
     // There is no way to roll back a partial scan in saturate mode, so
     // concluding events cannot be emitted.

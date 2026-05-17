@@ -111,9 +111,8 @@ class buffer_access {
 namespace internal {
 
 template <typename Event, bool LatencyLimited, typename Downstream>
+    requires processor<Downstream, Event>
 class buffer {
-    static_assert(processor<Downstream, Event>);
-
     using clock_type = std::chrono::steady_clock;
     using queue_type = vector_queue<Event>;
 

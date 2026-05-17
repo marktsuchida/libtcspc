@@ -23,9 +23,9 @@ namespace tcspc {
 
 namespace internal {
 
-template <typename Event, typename Downstream> class batch {
-    static_assert(processor<Downstream, bucket<Event>>);
-
+template <typename Event, typename Downstream>
+    requires processor<Downstream, bucket<Event>>
+class batch {
     std::shared_ptr<bucket_source<Event>> bsource;
     std::size_t bsize;
 
@@ -78,18 +78,19 @@ template <typename Event, typename Downstream> class batch {
     }
 };
 
-template <typename ContainerEvent, typename Downstream> class unbatch {
-    using element_type = typename std::iterator_traits<
-        decltype(std::declval<ContainerEvent>().end())>::value_type;
-    static_assert(
-        std::is_same_v<
-            typename std::iterator_traits<
-                decltype(std::declval<ContainerEvent>().begin())>::value_type,
-            element_type>,
-        "ContainerEvent begin() and end() must return compatible iterators");
+template <typename ContainerEvent>
+    requires std::is_same_v<typename std::iterator_traits<
+                                decltype(std::declval<ContainerEvent>()
+                                             .begin())>::value_type,
+                            typename std::iterator_traits<
+                                decltype(std::declval<ContainerEvent>()
+                                             .end())>::value_type>
+using unbatch_element_t = typename std::iterator_traits<
+    decltype(std::declval<ContainerEvent>().end())>::value_type;
 
-    static_assert(processor<Downstream, element_type>);
-
+template <typename ContainerEvent, typename Downstream>
+    requires processor<Downstream, unbatch_element_t<ContainerEvent>>
+class unbatch {
     Downstream downstream;
 
   public:

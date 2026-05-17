@@ -22,12 +22,11 @@ namespace tcspc {
 
 namespace internal {
 
+// Do not require handling of ResetEvent, as it may not be used at all.
 template <typename TickEvent, typename FireEvent, typename ResetEvent,
           bool FireAfterTick, typename Downstream>
+    requires processor<Downstream, TickEvent, FireEvent>
 class count_up_to {
-    // Do not require handling of ResetEvent, as it may not be used at all.
-    static_assert(processor<Downstream, TickEvent, FireEvent>);
-
     u64 count;
     u64 init;
     u64 thresh;
@@ -240,9 +239,9 @@ class count_access {
 
 namespace internal {
 
-template <typename Event, typename Downstream> class count {
-    static_assert(processor<Downstream, Event>);
-
+template <typename Event, typename Downstream>
+    requires processor<Downstream, Event>
+class count {
     u64 ct = 0;
 
     Downstream downstream;

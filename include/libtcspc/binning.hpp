@@ -35,11 +35,10 @@ namespace internal {
 
 template <typename Event, typename DataTypes, typename DataMapper,
           typename Downstream>
+    requires processor<Downstream, datapoint_event<DataTypes>>
 class map_to_datapoints {
     static_assert(std::is_same_v<std::invoke_result_t<DataMapper, Event>,
                                  typename DataTypes::datapoint_type>);
-
-    static_assert(processor<Downstream, datapoint_event<DataTypes>>);
 
     DataMapper mapper;
 
@@ -187,9 +186,8 @@ template <typename DataTypes = default_data_types> class channel_data_mapper {
 namespace internal {
 
 template <typename DataTypes, typename BinMapper, typename Downstream>
+    requires processor<Downstream, bin_increment_event<DataTypes>>
 class map_to_bins {
-    static_assert(processor<Downstream, bin_increment_event<DataTypes>>);
-
     static_assert(
         std::is_same_v<std::invoke_result_t<
                            BinMapper, typename DataTypes::datapoint_type>,

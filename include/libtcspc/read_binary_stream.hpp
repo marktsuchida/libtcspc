@@ -383,11 +383,11 @@ inline auto borrowed_cfile_input_stream(std::FILE *fp) {
 namespace internal {
 
 template <typename InputStream, typename Event, typename Downstream>
+    requires processor<Downstream, bucket<Event>, warning_event>
 class read_binary_stream {
     static_assert(
         std::is_trivial_v<Event>,
         "Event type must be trivial to work with read_binary_stream");
-    static_assert(processor<Downstream, bucket<Event>, warning_event>);
 
     InputStream stream;
     std::uint64_t length;

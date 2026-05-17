@@ -33,9 +33,9 @@ namespace internal {
 // Internal implementation of merge processor. This processor is owned by the
 // two input processors via shared_ptr.
 template <typename EventList, typename DataTypes, typename Downstream>
+    requires is_processor_of_list_v<Downstream, EventList>
 class merge_impl {
     static_assert(type_list_like<EventList>);
-    static_assert(is_processor_of_list_v<Downstream, EventList>);
 
     // When events have equal abstime, those originating from input 0 are
     // emitted before those originating from input1. Within the same input, the
@@ -331,9 +331,9 @@ namespace internal {
 
 // Internal implementation of N-way unsorted merge processor. This processor is
 // owned by the N input processors via shared_ptr.
-template <std::size_t N, typename Downstream> class merge_unsorted_impl {
-    static_assert(processor<Downstream>);
-
+template <std::size_t N, typename Downstream>
+    requires processor<Downstream>
+class merge_unsorted_impl {
     Downstream downstream;
 
     // Cold data.

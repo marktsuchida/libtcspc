@@ -67,9 +67,9 @@ namespace internal {
 // empty, given the buffer capacity and maximum count rates of typical devices.
 constexpr auto slow_acq_sleep = std::chrono::milliseconds(10);
 
-template <typename T, typename Reader, typename Downstream> class acquire {
-    static_assert(processor<Downstream, bucket<T>>);
-
+template <typename T, typename Reader, typename Downstream>
+    requires processor<Downstream, bucket<T>>
+class acquire {
     Reader reader;
     std::shared_ptr<bucket_source<T>> bsource;
     std::size_t bsize;
@@ -177,10 +177,9 @@ template <typename T, typename Reader, typename Downstream> class acquire {
 
 template <typename T, typename Reader, typename LiveDownstream,
           typename BatchDownstream>
+    requires processor<LiveDownstream, bucket<T const>> &&
+             processor<BatchDownstream, bucket<T>>
 class acquire_full_buckets {
-    static_assert(processor<LiveDownstream, bucket<T const>>);
-    static_assert(processor<BatchDownstream, bucket<T>>);
-
     Reader reader;
     std::shared_ptr<bucket_source<T>> bsource;
     std::size_t bsize;

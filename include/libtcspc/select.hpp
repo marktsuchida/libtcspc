@@ -19,9 +19,8 @@ namespace tcspc {
 namespace internal {
 
 template <typename EventList, bool Inverted, typename Downstream>
+    requires processor<Downstream>
 class select {
-    static_assert(processor<Downstream>);
-
     Downstream downstream;
 
   public:

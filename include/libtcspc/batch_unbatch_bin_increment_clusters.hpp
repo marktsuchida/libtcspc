@@ -51,9 +51,9 @@ class batch_bin_increment_clusters_encoding_adapter {
 };
 
 template <typename DataTypes, typename Downstream>
+    requires processor<Downstream, bucket<typename DataTypes::bin_index_type>>
 class batch_bin_increment_clusters {
     using bin_index_type = typename DataTypes::bin_index_type;
-    static_assert(processor<Downstream, bucket<bin_index_type>>);
 
     std::shared_ptr<bucket_source<bin_index_type>> bsource;
 
@@ -157,10 +157,9 @@ class batch_bin_increment_clusters {
 };
 
 template <typename DataTypes, typename Downstream>
+    requires processor<Downstream, bin_increment_cluster_event<DataTypes>>
 class unbatch_bin_increment_clusters {
     using bin_index_type = typename DataTypes::bin_index_type;
-    static_assert(
-        processor<Downstream, bin_increment_cluster_event<DataTypes>>);
 
     Downstream downstream;
 

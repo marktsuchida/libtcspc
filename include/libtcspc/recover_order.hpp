@@ -28,9 +28,8 @@ namespace tcspc {
 namespace internal {
 
 template <typename EventList, typename DataTypes, typename Downstream>
+    requires is_processor_of_list_v<Downstream, EventList>
 class recover_order {
-    static_assert(is_processor_of_list_v<Downstream, EventList>);
-
     using abstime_type = typename DataTypes::abstime_type;
     abstime_type window_size;
 

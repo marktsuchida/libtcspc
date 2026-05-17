@@ -366,9 +366,8 @@ auto time_correlate_at_fraction(arg::fraction<double> fraction,
 namespace internal {
 
 template <typename DataTypes, typename Downstream>
+    requires processor<Downstream, detection_event<DataTypes>>
 class remove_time_correlation {
-    static_assert(processor<Downstream, detection_event<DataTypes>>);
-
     Downstream downstream;
 
   public:

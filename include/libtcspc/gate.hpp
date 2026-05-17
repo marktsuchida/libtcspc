@@ -19,12 +19,12 @@ namespace tcspc {
 
 namespace internal {
 
+// We do not require Downstream to handle all of GatedEventList.
 template <typename GatedEventList, typename OpenEvent, typename CloseEvent,
           typename Downstream>
+    requires processor<Downstream, OpenEvent, CloseEvent>
 class gate {
     static_assert(type_list_like<GatedEventList>);
-    // We do not require Downstream to handle all of GatedEventList.
-    static_assert(handler_for<Downstream, OpenEvent, CloseEvent>);
 
     bool open;
 

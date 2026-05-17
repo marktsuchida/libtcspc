@@ -711,18 +711,17 @@ namespace internal {
 // BHEvent is the binary record event class.
 template <typename DataTypes, typename BHSPCEvent, bool HasIntensityCounter,
           typename Downstream>
+    requires processor<Downstream, time_reached_event<DataTypes>,
+                       time_correlated_detection_event<DataTypes>,
+                       data_lost_event<DataTypes>, warning_event> &&
+             (handler_for<Downstream, bulk_counts_event<DataTypes>> ||
+              not HasIntensityCounter) &&
+             (handler_for<Downstream, marker_event<DataTypes>> ||
+              not BHSPCEvent::has_markers)
 class decode_bh_spc {
     static_assert(
         same_as_any_of<BHSPCEvent, bh_spc_event, bh_spc600_256ch_event,
                        bh_spc600_4096ch_event>);
-
-    static_assert(processor<Downstream, time_reached_event<DataTypes>,
-                            time_correlated_detection_event<DataTypes>,
-                            data_lost_event<DataTypes>, warning_event>);
-    static_assert(handler_for<Downstream, bulk_counts_event<DataTypes>> ||
-                  not HasIntensityCounter);
-    static_assert(handler_for<Downstream, marker_event<DataTypes>> ||
-                  not BHSPCEvent::has_markers);
 
     // 32-bit abstime can work for a few seconds, though 64-bit is recommended.
     static_assert(sizeof(typename DataTypes::abstime_type) >= 4);

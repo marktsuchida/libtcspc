@@ -34,12 +34,12 @@ namespace internal {
 // downstreams. But let's keep it simple. If necessary, a "multiroute"
 // processor can be added.
 
+// We do not require Downstream to handle all of RoutedEventList.
 template <typename RoutedEventList, typename Router, std::size_t N,
           typename Downstream>
+    requires processor<Downstream>
 class route_homogeneous {
     static_assert(type_list_like<RoutedEventList>);
-    // We do not require Downstream to handle all of RoutedEventList.
-    static_assert(processor<Downstream>);
 
     Router router;
     std::array<Downstream, N> downstreams;

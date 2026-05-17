@@ -20,9 +20,9 @@ namespace tcspc {
 
 namespace internal {
 
-template <typename EventList, typename Downstream> class multiplex {
-    static_assert(processor<Downstream, variant_event<EventList>>);
-
+template <typename EventList, typename Downstream>
+    requires processor<Downstream, variant_event<EventList>>
+class multiplex {
     Downstream downstream;
 
   public:
@@ -48,9 +48,9 @@ template <typename EventList, typename Downstream> class multiplex {
     void flush() { downstream.flush(); }
 };
 
-template <typename Downstream> class demultiplex {
-    static_assert(flushable<Downstream>);
-
+template <typename Downstream>
+    requires processor<Downstream>
+class demultiplex {
     Downstream downstream;
 
   public:

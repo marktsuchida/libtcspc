@@ -364,9 +364,8 @@ auto extrapolate_periodic_sequences(arg::tick_index<std::size_t> tick_index,
 namespace internal {
 
 template <typename DataTypes, typename Downstream>
+    requires processor<Downstream, real_linear_timing_event<DataTypes>>
 class add_count_to_periodic_sequences {
-    static_assert(processor<Downstream, real_linear_timing_event<DataTypes>>);
-
     std::size_t ct;
     Downstream downstream;
 
@@ -451,9 +450,8 @@ namespace internal {
 
 template <typename TickEvent, typename StartEvent, typename StopEvent,
           typename Downstream>
+    requires processor<Downstream, StartEvent, StopEvent>
 class convert_sequences_to_start_stop {
-    static_assert(processor<Downstream, StartEvent, StopEvent>);
-
     static_assert(
         std::is_same_v<decltype(std::declval<TickEvent>().abstime),
                        decltype(std::declval<StartEvent>().abstime)>);
