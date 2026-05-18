@@ -63,6 +63,19 @@ struct r {
     void flush();
 };
 
+struct nonmovable_proc {
+    nonmovable_proc() = default;
+    nonmovable_proc(nonmovable_proc const &) = delete;
+    auto operator=(nonmovable_proc const &) -> nonmovable_proc & = delete;
+    nonmovable_proc(nonmovable_proc &&) = delete;
+    auto operator=(nonmovable_proc &&) -> nonmovable_proc & = delete;
+    ~nonmovable_proc() = default;
+
+    void handle(e_both &&event);
+    void handle(e_both const &event);
+    void flush();
+};
+
 } // namespace
 
 TEST_CASE("rvalue_handler_for") {
@@ -126,6 +139,8 @@ TEST_CASE("processor") {
     STATIC_CHECK(processor<r>);
     STATIC_CHECK(processor<r, e_both>);
     STATIC_CHECK_FALSE(processor<r, e_both, e_const_lvalue>);
+    STATIC_CHECK_FALSE(processor<nonmovable_proc>);
+    STATIC_CHECK_FALSE(processor<nonmovable_proc, e_both>);
 }
 
 TEST_CASE("is_processor_of_list") {

@@ -233,7 +233,10 @@ namespace tcspc {
  * function, by convention, takes the downstream processor as the last
  * parameter and takes ownership of it (or copies it, if lvalue).
  *
- * All processors are movable but not necessarily copyable.
+ * All processors are movable but not necessarily copyable. Movability is
+ * intended for graph construction: an upstream processor takes ownership
+ * of its downstream by move. It is undefined behavior to move a processor
+ * once `handle()` or `flush()` has been called on it.
  *
  * All processors (except for sinks) have a downstream processor. This
  * downstream processor is moved into the next-upstream processor, so that an

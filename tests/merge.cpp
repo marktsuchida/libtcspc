@@ -42,16 +42,17 @@ using all_events = type_list<e0, e1, e2, e3>;
 } // namespace
 
 TEST_CASE("type constraints: merge") {
-    using input_proc_type = decltype(std::get<0>(merge<type_list<e0, e1>>(
-        arg::max_buffered{std::numeric_limits<std::size_t>::max()},
-        sink_only<e0, e1, e2>())));
+    using input_proc_type =
+        std::remove_cvref_t<decltype(std::get<0>(merge<type_list<e0, e1>>(
+            arg::max_buffered{std::numeric_limits<std::size_t>::max()},
+            sink_only<e0, e1, e2>())))>;
     STATIC_CHECK(processor<input_proc_type, e0, e1>);
     STATIC_CHECK_FALSE(handler_for<input_proc_type, e2>);
 }
 
 TEST_CASE("type constraints: merge_n_unsorted") {
-    using input_proc_type =
-        decltype(std::get<0>(merge_n_unsorted<2>(sink_only<e0, e1>())));
+    using input_proc_type = std::remove_cvref_t<decltype(std::get<0>(
+        merge_n_unsorted<2>(sink_only<e0, e1>())))>;
     STATIC_CHECK(processor<input_proc_type, e0, e1>);
     STATIC_CHECK_FALSE(handler_for<input_proc_type, e2>);
 }

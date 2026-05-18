@@ -101,17 +101,23 @@ concept handler_for = (... && (const_handler_for<Proc, Events> &&
  *
  * \ingroup processor-concepts
  *
- * Determines whether the processor \p Proc handles all of the event types \p
- * Events as well as `flush()`.
+ * Determines whether \p Proc is movable and handles all of the event types
+ * \p Events as well as `flush()`.
  *
- * This is equivalent to the logical AND of `tcspc::handler_for<Proc,
- * Events...>` and `tcspc::flushable<Proc>`.
+ * This is equivalent to the logical AND of `std::movable<Proc>`,
+ * `tcspc::handler_for<Proc, Events...>`, and `tcspc::flushable<Proc>`.
+ *
+ * \note Movability is required to support construction of processor graphs,
+ * during which each upstream factory consumes its downstream by value. It is
+ * not valid to move a processor on which `handle()` or `flush()` has been
+ * called; see \ref processors.
  *
  * If the event handler(s) and/or `flush()` exist but any of them has a return
  * type other than `void`, the concept is not satisfied.
  */
 template <typename Proc, typename... Events>
-concept processor = flushable<Proc> && handler_for<Proc, Events...>;
+concept processor =
+    std::movable<Proc> && flushable<Proc> && handler_for<Proc, Events...>;
 
 /** \cond implementation-detail */
 
@@ -187,10 +193,10 @@ struct is_processor_of_list_impl<Proc, type_list<Events...>>
  *
  * \ingroup processor-concepts
  *
- * Determines whether the processor \p Proc handles all of the event types in
- * the `tcspc::type_list` specialization \p EventList as well as `flush()`.
- * Equivalent to `tcspc::processor<Proc, Events...>` where `Events...` is
- * the parameter pack of \p EventList.
+ * Determines whether the processor \p Proc is movable and handles all of the
+ * event types in the `tcspc::type_list` specialization \p EventList as well
+ * as `flush()`. Equivalent to `tcspc::processor<Proc, Events...>` where
+ * `Events...` is the parameter pack of \p EventList.
  *
  * If the event handler(s) and/or `flush()` exist but any of them has a return
  * type other than `void`, compilation fails.
