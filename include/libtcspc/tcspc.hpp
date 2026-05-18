@@ -345,6 +345,13 @@ namespace tcspc {
  */
 
 /**
+ * \defgroup processor-concepts Processor concepts and traits
+ * \ingroup processors
+ *
+ * \brief Concepts and traits to check processor capabilities.
+ */
+
+/**
  * \defgroup processors-core Core processors
  *
  * \brief Basic and generic processors.
@@ -869,18 +876,6 @@ namespace tcspc {
  *
  * \brief Types, concepts, and metafunctions for handling lists (or sets) of
  * types.
- */
-
-/**
- * \defgroup processor-concepts Processor concepts
- *
- * \brief Concepts and traits to check processor capabilities.
- */
-
-/**
- * \defgroup data-type-concepts Data type set concepts
- *
- * \brief Concepts to check the validity of a `DataTypes` template argument.
  */
 
 /**

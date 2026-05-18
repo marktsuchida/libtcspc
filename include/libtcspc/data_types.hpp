@@ -101,7 +101,7 @@ struct parameterized_data_types {
  * \brief Concept that is satisfied when \p DT provides an integral
  * `abstime_type`.
  *
- * \ingroup data-type-concepts
+ * \ingroup data-types
  *
  * \note A satisfied concept indicates that \p DT names an integral
  * `abstime_type`, provided that `DT` can be instantiated (if \p DT is a
@@ -114,7 +114,7 @@ concept with_abstime_type = std::integral<typename DT::abstime_type>;
  * \brief Concept that is satisfied when \p DT provides an integral
  * `channel_type`.
  *
- * \ingroup data-type-concepts
+ * \ingroup data-types
  *
  * \note A satisfied concept indicates that \p DT names an integral
  * `channel_type`, provided that `DT` can be instantiated (if \p DT is a
@@ -127,7 +127,7 @@ concept with_channel_type = std::integral<typename DT::channel_type>;
  * \brief Concept that is satisfied when \p DT provides an integral
  * `difftime_type`.
  *
- * \ingroup data-type-concepts
+ * \ingroup data-types
  *
  * \note A satisfied concept indicates that \p DT names an integral
  * `difftime_type`, provided that `DT` can be instantiated (if \p DT is a
@@ -140,7 +140,7 @@ concept with_difftime_type = std::integral<typename DT::difftime_type>;
  * \brief Concept that is satisfied when \p DT provides an integral
  * `count_type`.
  *
- * \ingroup data-type-concepts
+ * \ingroup data-types
  *
  * \note A satisfied concept indicates that \p DT names an integral
  * `count_type`, provided that `DT` can be instantiated (if \p DT is a template
@@ -153,7 +153,7 @@ concept with_count_type = std::integral<typename DT::count_type>;
  * \brief Concept that is satisfied when \p DT provides an integral
  * `datapoint_type`.
  *
- * \ingroup data-type-concepts
+ * \ingroup data-types
  *
  * \note A satisfied concept indicates that \p DT names an integral
  * `datapoint_type`, provided that `DT` can be instantiated (if \p DT is a
@@ -166,7 +166,7 @@ concept with_datapoint_type = std::integral<typename DT::datapoint_type>;
  * \brief Concept that is satisfied when \p DT provides an integral
  * `bin_index_type`.
  *
- * \ingroup data-type-concepts
+ * \ingroup data-types
  *
  * \note A satisfied concept indicates that \p DT names an integral
  * `bin_index_type`, provided that `DT` can be instantiated (if \p DT is a
@@ -179,7 +179,7 @@ concept with_bin_index_type = std::integral<typename DT::bin_index_type>;
  * \brief Concept that is satisfied when \p DT provides an integral
  * `bin_type`.
  *
- * \ingroup data-type-concepts
+ * \ingroup data-types
  *
  * \note A satisfied concept indicates that \p DT names an integral `bin_type`,
  * provided that `DT` can be instantiated (if \p DT is a template class).
