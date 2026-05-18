@@ -664,6 +664,9 @@ namespace tcspc {
  *
  * \brief Timing generators for use with `tcspc::generate()`.
  *
+ * The interface described below is captured by the
+ * `tcspc::timing_generator_for` concept.
+ *
  * Timing generators must define the following member functions:
  *
  * - `void trigger(TriggerEvent const &event)`, which starts a new

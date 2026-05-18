@@ -21,6 +21,7 @@
 
 #include <cstddef>
 #include <memory>
+#include <optional>
 
 namespace tcspc {
 
@@ -31,6 +32,45 @@ using output_event = time_tagged_test_event<1>;
 using misc_event = time_tagged_test_event<2>;
 using out_events = type_list<trigger_event, output_event, misc_event>;
 
+struct dynamic_trigger_event {
+    default_numeric_traits::abstime_type abstime;
+    default_numeric_traits::abstime_type delay;
+    default_numeric_traits::abstime_type interval;
+    std::size_t count;
+};
+
+struct peek_wrong_optional {
+    template <typename E> void trigger(E const & /*event*/) {}
+    [[nodiscard]] static auto peek() -> std::optional<int> { return {}; }
+    void pop() {}
+};
+
+struct missing_pop {
+    template <typename E> void trigger(E const & /*event*/) {}
+    [[nodiscard]] static auto peek()
+        -> std::optional<default_numeric_traits::abstime_type> {
+        return {};
+    }
+};
+
+struct nonmovable_timing_generator {
+    nonmovable_timing_generator() = default;
+    nonmovable_timing_generator(nonmovable_timing_generator const &) = delete;
+    auto operator=(nonmovable_timing_generator const &)
+        -> nonmovable_timing_generator & = delete;
+    nonmovable_timing_generator(nonmovable_timing_generator &&) = delete;
+    auto operator=(nonmovable_timing_generator &&)
+        -> nonmovable_timing_generator & = delete;
+    ~nonmovable_timing_generator() = default;
+
+    template <typename E> void trigger(E const & /*event*/) {}
+    [[nodiscard]] static auto peek()
+        -> std::optional<default_numeric_traits::abstime_type> {
+        return {};
+    }
+    void pop() {}
+};
+
 } // namespace
 
 TEST_CASE("type constraints: generate") {
@@ -39,6 +79,24 @@ TEST_CASE("type constraints: generate") {
         sink_only<trigger_event, output_event, misc_event>()));
     STATIC_CHECK(processor<proc_type, trigger_event, misc_event>);
     STATIC_CHECK_FALSE(handler_for<proc_type, int>);
+}
+
+TEST_CASE("timing_generator_for concept") {
+    STATIC_CHECK(timing_generator_for<null_timing_generator<>, trigger_event>);
+    STATIC_CHECK(
+        timing_generator_for<one_shot_timing_generator<>, trigger_event>);
+    STATIC_CHECK(timing_generator_for<dynamic_one_shot_timing_generator<>,
+                                      dynamic_trigger_event>);
+    STATIC_CHECK(
+        timing_generator_for<linear_timing_generator<>, trigger_event>);
+    STATIC_CHECK(timing_generator_for<dynamic_linear_timing_generator<>,
+                                      dynamic_trigger_event>);
+
+    STATIC_CHECK_FALSE(
+        timing_generator_for<peek_wrong_optional, trigger_event>);
+    STATIC_CHECK_FALSE(timing_generator_for<missing_pop, trigger_event>);
+    STATIC_CHECK_FALSE(
+        timing_generator_for<nonmovable_timing_generator, trigger_event>);
 }
 
 TEST_CASE("introspect: generate") {

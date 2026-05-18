@@ -12,6 +12,7 @@
 #include "numeric_traits.hpp"
 #include "processor.hpp"
 
+#include <concepts>
 #include <cstddef>
 #include <optional>
 #include <stdexcept>
@@ -20,17 +21,36 @@
 
 namespace tcspc {
 
+/**
+ * \brief Concept that is satisfied when \p T conforms to the libtcspc
+ * timing generator interface for trigger event type \p TriggerEvent.
+ *
+ * \ingroup timing-generators
+ *
+ * Determines whether \p T is movable and provides the member functions
+ * `trigger()`, `peek()`, and `pop()` with the signatures and return types
+ * documented at \ref timing-generators. The `abstime` type used for `peek()`
+ * is `decltype(TriggerEvent::abstime)`.
+ */
+template <typename T, typename TriggerEvent>
+concept timing_generator_for =
+    std::movable<T> && requires(T &g, T const &cg, TriggerEvent const &event) {
+        { g.trigger(event) } -> std::same_as<void>;
+        {
+            cg.peek()
+        } -> std::same_as<
+            std::optional<decltype(std::declval<TriggerEvent>().abstime)>>;
+        { g.pop() } -> std::same_as<void>;
+    };
+
 namespace internal {
 
 template <typename TriggerEvent, typename OutputEvent,
           typename TimingGenerator, typename Downstream>
-    requires processor<Downstream, TriggerEvent, OutputEvent>
+    requires timing_generator_for<TimingGenerator, TriggerEvent> &&
+             processor<Downstream, TriggerEvent, OutputEvent>
 class generate {
     using abstime_type = decltype(std::declval<TriggerEvent>().abstime);
-    static_assert(
-        std::is_same_v<std::remove_reference_t<
-                           decltype(*std::declval<TimingGenerator>().peek())>,
-                       abstime_type>);
     static_assert(std::is_same_v<decltype(std::declval<OutputEvent>().abstime),
                                  abstime_type>);
 

@@ -7,7 +7,9 @@
 #include "libtcspc/dither.hpp"
 
 #include "libtcspc/arg_wrappers.hpp"
+#include "libtcspc/generate.hpp"
 #include "libtcspc/int_types.hpp"
+#include "libtcspc/numeric_traits.hpp"
 #include "libtcspc/test_utils.hpp"
 
 #include <catch2/catch_test_macros.hpp>
@@ -22,7 +24,32 @@ namespace {
 using trigger_event = time_tagged_test_event<0>;
 using output_event = time_tagged_test_event<1>;
 
+struct dynamic_dithered_one_shot_trigger_event {
+    default_numeric_traits::abstime_type abstime;
+    double delay;
+};
+
+struct dynamic_dithered_linear_trigger_event {
+    default_numeric_traits::abstime_type abstime;
+    double delay;
+    double interval;
+    std::size_t count;
+};
+
 } // namespace
+
+TEST_CASE("timing_generator_for concept (dithered)") {
+    STATIC_CHECK(timing_generator_for<dithered_one_shot_timing_generator<>,
+                                      trigger_event>);
+    STATIC_CHECK(
+        timing_generator_for<dynamic_dithered_one_shot_timing_generator<>,
+                             dynamic_dithered_one_shot_trigger_event>);
+    STATIC_CHECK(timing_generator_for<dithered_linear_timing_generator<>,
+                                      trigger_event>);
+    STATIC_CHECK(
+        timing_generator_for<dynamic_dithered_linear_timing_generator<>,
+                             dynamic_dithered_linear_trigger_event>);
+}
 
 namespace internal {
 
