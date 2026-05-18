@@ -349,6 +349,12 @@ namespace tcspc {
  * \ingroup processors
  *
  * \brief Concepts and traits to check processor capabilities.
+ *
+ * \note Concepts (here and elsewhere in libtcspc) check only the surface
+ * signatures of the required members. A satisfied concept does not guarantee
+ * that the type and its required members can actually be instantiated: a
+ * class-level or member-level `static_assert` (or other instantiation failure)
+ * may still fire when the type is used.
  */
 
 /**

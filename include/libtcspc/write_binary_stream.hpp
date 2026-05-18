@@ -44,12 +44,6 @@ namespace tcspc {
  * Determines whether \p T provides the noexcept member functions
  * `is_error()`, `tell()`, and `write()` with the signatures and return
  * types documented at \ref streams-output.
- *
- * \note A satisfied concept indicates that \p T provides the required
- * member functions _provided that `T` and the relevant member functions
- * can be instantiated_ (if \p T is a template class). It is possible that
- * instantiation will fail (due to `static_assert` failures or other
- * issues) even if the concept is satisfied.
  */
 template <typename T>
 concept output_stream = requires(T &s, std::span<std::byte const> buf) {

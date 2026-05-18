@@ -24,11 +24,6 @@ namespace tcspc {
  *
  * If `flush()` exists but has a return type other than `void`, the concept is
  * not satisfied.
- *
- * \note A satisfied concept indicates that \p Proc handles `flush()` _provided
- * that `Proc` and `Proc::flush()` can be instantiated_ (if \p Proc is a
- * template class). It is possible that instantiation will fail (due to
- * `static_assert` failures or other issues) even if the concept is satisfied.
  */
 template <typename Proc>
 concept flushable = requires(Proc &p) {
@@ -54,12 +49,6 @@ concept flushable = requires(Proc &p) {
  *
  * If the event handler exists but has a return type other than `void`, the
  * concept is not satisfied.
- *
- * \note A satisfied concept indicates that \p Proc handles `Event &&`
- * _provided that `Proc` and the relevant `Proc::handle()` overload can be
- * instantiated_ (if \p Proc is a template class). It is possible that
- * instantiation will fail (due to `static_assert` failures or other issues)
- * even if the concept is satisfied.
  */
 template <typename Proc, typename Event>
 concept rvalue_handler_for = requires(Proc &p, Event &&e) {
@@ -80,12 +69,6 @@ concept rvalue_handler_for = requires(Proc &p, Event &&e) {
  *
  * If the event handler exists but has a return type other than `void`, the
  * concept is not satisfied.
- *
- * \note A satisfied concept indicates that \p Proc handles `Event const &`
- * _provided that `Proc` and the relevant `Proc::handle()` overload can be
- * instantiated_ (if \p Proc is a template class). It is possible that
- * instantiation will fail (due to `static_assert` failures or other issues)
- * even if the concept is satisfied.
  */
 template <typename Proc, typename Event>
 concept const_handler_for = requires(Proc &p, Event const &e) {
@@ -107,12 +90,6 @@ concept const_handler_for = requires(Proc &p, Event const &e) {
  *
  * If the event handler(s) exist but any of them has a return type other than
  * `void`, the concept is not satisfied.
- *
- * \note A satisfied concept indicates that \p Proc handles the `Events`
- * _provided that `Proc` and the relevant `Proc::handle()` overloads can be
- * instantiated_ (if \p Proc is a template class). It is possible that
- * instantiation will fail (due to `static_assert` failures or other issues)
- * even if the concept is satisfied.
  */
 template <typename Proc, typename... Events>
 concept handler_for = (... && (const_handler_for<Proc, Events> &&
@@ -132,12 +109,6 @@ concept handler_for = (... && (const_handler_for<Proc, Events> &&
  *
  * If the event handler(s) and/or `flush()` exist but any of them has a return
  * type other than `void`, the concept is not satisfied.
- *
- * \note A satisfied concept indicates that \p Proc handles flush and the
- * `Events` _provided that `Proc`, `Proc::flush()`, and the relevant
- * `Proc::handle()` overloads can be instantiated_ (if \p Proc is a template
- * class). It is possible that instantiation will fail (due to `static_assert`
- * failures or other issues) even if the concept is satisfied.
  */
 template <typename Proc, typename... Events>
 concept processor = flushable<Proc> && handler_for<Proc, Events...>;

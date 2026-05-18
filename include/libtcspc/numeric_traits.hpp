@@ -103,10 +103,6 @@ struct parameterized_numeric_traits {
  * `abstime_type`.
  *
  * \ingroup numeric-traits
- *
- * \note A satisfied concept indicates that \p NT names an integral
- * `abstime_type`, provided that `NT` can be instantiated (if \p NT is a
- * template class).
  */
 template <typename NT>
 concept with_abstime_type = std::integral<typename NT::abstime_type>;
@@ -116,10 +112,6 @@ concept with_abstime_type = std::integral<typename NT::abstime_type>;
  * `channel_type`.
  *
  * \ingroup numeric-traits
- *
- * \note A satisfied concept indicates that \p NT names an integral
- * `channel_type`, provided that `NT` can be instantiated (if \p NT is a
- * template class).
  */
 template <typename NT>
 concept with_channel_type = std::integral<typename NT::channel_type>;
@@ -129,10 +121,6 @@ concept with_channel_type = std::integral<typename NT::channel_type>;
  * `difftime_type`.
  *
  * \ingroup numeric-traits
- *
- * \note A satisfied concept indicates that \p NT names an integral
- * `difftime_type`, provided that `NT` can be instantiated (if \p NT is a
- * template class).
  */
 template <typename NT>
 concept with_difftime_type = std::integral<typename NT::difftime_type>;
@@ -142,10 +130,6 @@ concept with_difftime_type = std::integral<typename NT::difftime_type>;
  * `count_type`.
  *
  * \ingroup numeric-traits
- *
- * \note A satisfied concept indicates that \p NT names an integral
- * `count_type`, provided that `NT` can be instantiated (if \p NT is a template
- * class).
  */
 template <typename NT>
 concept with_count_type = std::integral<typename NT::count_type>;
@@ -155,10 +139,6 @@ concept with_count_type = std::integral<typename NT::count_type>;
  * `datapoint_type`.
  *
  * \ingroup numeric-traits
- *
- * \note A satisfied concept indicates that \p NT names an integral
- * `datapoint_type`, provided that `NT` can be instantiated (if \p NT is a
- * template class).
  */
 template <typename NT>
 concept with_datapoint_type = std::integral<typename NT::datapoint_type>;
@@ -168,10 +148,6 @@ concept with_datapoint_type = std::integral<typename NT::datapoint_type>;
  * `bin_index_type`.
  *
  * \ingroup numeric-traits
- *
- * \note A satisfied concept indicates that \p NT names an integral
- * `bin_index_type`, provided that `NT` can be instantiated (if \p NT is a
- * template class).
  */
 template <typename NT>
 concept with_bin_index_type = std::integral<typename NT::bin_index_type>;
@@ -181,9 +157,6 @@ concept with_bin_index_type = std::integral<typename NT::bin_index_type>;
  * `bin_type`.
  *
  * \ingroup numeric-traits
- *
- * \note A satisfied concept indicates that \p NT names an integral `bin_type`,
- * provided that `NT` can be instantiated (if \p NT is a template class).
  */
 template <typename NT>
 concept with_bin_type = std::integral<typename NT::bin_type>;
