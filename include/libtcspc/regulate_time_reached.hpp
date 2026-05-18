@@ -8,9 +8,9 @@
 
 #include "arg_wrappers.hpp"
 #include "common.hpp"
-#include "data_types.hpp"
 #include "int_arith.hpp"
 #include "introspect.hpp"
+#include "numeric_traits.hpp"
 #include "processor.hpp"
 #include "time_tagged_events.hpp"
 
@@ -23,10 +23,10 @@ namespace tcspc {
 
 namespace internal {
 
-template <typename DataTypes, typename Downstream>
-    requires processor<Downstream, time_reached_event<DataTypes>>
+template <typename NumericTraits, typename Downstream>
+    requires processor<Downstream, time_reached_event<NumericTraits>>
 class regulate_time_reached {
-    using abstime_type = typename DataTypes::abstime_type;
+    using abstime_type = typename NumericTraits::abstime_type;
 
     abstime_type interval_thresh;
     std::size_t count_thresh;
@@ -43,7 +43,7 @@ class regulate_time_reached {
         ++seen_since_prev_time_reached;
         if (abstime >= next_time_thresh ||
             emitted_since_prev_time_reached >= count_thresh) {
-            downstream.handle(time_reached_event<DataTypes>{abstime});
+            downstream.handle(time_reached_event<NumericTraits>{abstime});
             next_time_thresh = add_sat(abstime, interval_thresh);
             emitted_since_prev_time_reached = 0;
             seen_since_prev_time_reached = 0;
@@ -68,14 +68,14 @@ class regulate_time_reached {
         return downstream.introspect_graph().push_entry_point(this);
     }
 
-    template <typename DT> void handle(time_reached_event<DT> const &event) {
-        static_assert(std::is_same_v<typename DT::abstime_type, abstime_type>);
+    template <typename NT> void handle(time_reached_event<NT> const &event) {
+        static_assert(std::is_same_v<typename NT::abstime_type, abstime_type>);
         handle_time_reached(event.abstime);
     }
 
     // NOLINTNEXTLINE(cppcoreguidelines-rvalue-reference-param-not-moved)
-    template <typename DT> void handle(time_reached_event<DT> &&event) {
-        handle(static_cast<time_reached_event<DT> const &>(event));
+    template <typename NT> void handle(time_reached_event<NT> &&event) {
+        handle(static_cast<time_reached_event<NT> const &>(event));
     }
 
     template <typename OtherEvent>
@@ -95,7 +95,8 @@ class regulate_time_reached {
         // was something other than time-reached.
         if (exact_reached > std::numeric_limits<abstime_type>::min() &&
             seen_since_prev_time_reached > 0)
-            downstream.handle(time_reached_event<DataTypes>{exact_reached});
+            downstream.handle(
+                time_reached_event<NumericTraits>{exact_reached});
         downstream.flush();
     }
 };
@@ -141,7 +142,7 @@ class regulate_time_reached {
  * \attention The `abstime` of incoming events must be monotonically
  * non-decreasing and must not wrap around.
  *
- * \tparam DataTypes data type set specifying `abstime_type`
+ * \tparam NumericTraits numeric traits specifying `abstime_type`
  *
  * \tparam Downstream downstream processor type
  *
@@ -157,19 +158,19 @@ class regulate_time_reached {
  * \return processor
  *
  * \par Events handled
- * - `tcspc::time_reached_event<DT>`: emit as
- *   `tcspc::time_reached_event<DataTypes>` with rate limiting
+ * - `tcspc::time_reached_event<NT>`: emit as
+ *   `tcspc::time_reached_event<NumericTraits>` with rate limiting
  * - All types with `abstime` field: passed through, possibly followed by
- *   `tcspc::time_reached_event<DataTypes>`
- * - Flush: emit `tcspc::time_reached_event<DataTypes>` with time of last
+ *   `tcspc::time_reached_event<NumericTraits>`
+ * - Flush: emit `tcspc::time_reached_event<NumericTraits>` with time of last
  *   passed event; pass through
  */
-template <typename DataTypes = default_data_types, typename Downstream>
+template <typename NumericTraits = default_numeric_traits, typename Downstream>
 auto regulate_time_reached(
-    arg::interval_threshold<typename DataTypes::abstime_type>
+    arg::interval_threshold<typename NumericTraits::abstime_type>
         interval_threshold,
     arg::count_threshold<std::size_t> count_threshold, Downstream downstream) {
-    return internal::regulate_time_reached<DataTypes, Downstream>(
+    return internal::regulate_time_reached<NumericTraits, Downstream>(
         interval_threshold, count_threshold, std::move(downstream));
 }
 

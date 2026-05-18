@@ -9,7 +9,7 @@
 #include "libtcspc/arg_wrappers.hpp"
 #include "libtcspc/context.hpp"
 #include "libtcspc/core.hpp"
-#include "libtcspc/data_types.hpp"
+#include "libtcspc/numeric_traits.hpp"
 #include "libtcspc/processor.hpp"
 #include "libtcspc/test_utils.hpp"
 #include "libtcspc/time_tagged_events.hpp"
@@ -121,7 +121,7 @@ TEST_CASE("time correlate at midpoint") {
 
     SECTION("use start channel") {
         auto in = feed_input(
-            valcat, time_correlate_at_midpoint<default_data_types, true>(
+            valcat, time_correlate_at_midpoint<default_numeric_traits, true>(
                         capture_output<tc_out_events>(
                             ctx->tracker<capture_output_access>("out"))));
         in.require_output_checked(ctx, "out");
@@ -155,7 +155,7 @@ TEST_CASE("time correlate at fraction") {
 
     SECTION("use start channel") {
         auto in = feed_input(
-            valcat, time_correlate_at_fraction<default_data_types, true>(
+            valcat, time_correlate_at_fraction<default_numeric_traits, true>(
                         arg::fraction{1.0 / 3.0},
                         capture_output<tc_out_events>(
                             ctx->tracker<capture_output_access>("out"))));

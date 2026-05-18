@@ -10,11 +10,11 @@
 #include "libtcspc/bucket.hpp"
 #include "libtcspc/context.hpp"
 #include "libtcspc/core.hpp"
-#include "libtcspc/data_types.hpp"
 #include "libtcspc/errors.hpp"
 #include "libtcspc/histogram_events.hpp"
 #include "libtcspc/histogram_policy.hpp"
 #include "libtcspc/int_types.hpp"
+#include "libtcspc/numeric_traits.hpp"
 #include "libtcspc/processor.hpp"
 #include "libtcspc/test_utils.hpp"
 #include "libtcspc/type_list.hpp"
@@ -35,7 +35,7 @@ using hp = histogram_policy;
 using reset_event = empty_test_event<0>;
 using misc_event = empty_test_event<1>;
 
-struct data_types : default_data_types {
+struct numtraits : default_numeric_traits {
     using bin_index_type = u32;
     using bin_type = u16;
 };

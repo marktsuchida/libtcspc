@@ -8,11 +8,11 @@
 
 #include "common.hpp"
 #include "core.hpp"
-#include "data_types.hpp"
 #include "int_arith.hpp"
 #include "int_types.hpp"
 #include "introspect.hpp"
 #include "npint.hpp"
+#include "numeric_traits.hpp"
 #include "processor.hpp"
 #include "read_integers.hpp"
 #include "time_tagged_events.hpp"
@@ -209,15 +209,15 @@ struct swabian_tag_event {
 
 namespace internal {
 
-template <typename DataTypes, typename Downstream>
-    requires processor<Downstream, detection_event<DataTypes>,
-                       begin_lost_interval_event<DataTypes>,
-                       end_lost_interval_event<DataTypes>,
-                       lost_counts_event<DataTypes>, warning_event>
+template <typename NumericTraits, typename Downstream>
+    requires processor<Downstream, detection_event<NumericTraits>,
+                       begin_lost_interval_event<NumericTraits>,
+                       end_lost_interval_event<NumericTraits>,
+                       lost_counts_event<NumericTraits>, warning_event>
 class decode_swabian_tags {
-    static_assert(representable_in<i64, typename DataTypes::abstime_type>);
-    static_assert(representable_in<i32, typename DataTypes::channel_type>);
-    static_assert(representable_in<u16, typename DataTypes::count_type>);
+    static_assert(representable_in<i64, typename NumericTraits::abstime_type>);
+    static_assert(representable_in<i32, typename NumericTraits::channel_type>);
+    static_assert(representable_in<u16, typename NumericTraits::count_type>);
 
     Downstream downstream;
 
@@ -230,13 +230,13 @@ class decode_swabian_tags {
         case tag_type::error:
             return downstream.handle(warning_event{"error tag encountered"});
         case tag_type::overflow_begin:
-            return downstream.handle(
-                begin_lost_interval_event<DataTypes>{event.time().value()});
+            return downstream.handle(begin_lost_interval_event<NumericTraits>{
+                event.time().value()});
         case tag_type::overflow_end:
             return downstream.handle(
-                end_lost_interval_event<DataTypes>{event.time().value()});
+                end_lost_interval_event<NumericTraits>{event.time().value()});
         case tag_type::missed_events:
-            return downstream.handle(lost_counts_event<DataTypes>{
+            return downstream.handle(lost_counts_event<NumericTraits>{
                 event.time().value(), event.channel().value(),
                 event.missed_event_count().value()});
         }
@@ -267,7 +267,7 @@ class decode_swabian_tags {
                                      swabian_tag_event>
     void handle(Event &&event) {
         if (event.type() == swabian_tag_event::tag_type::time_tag) {
-            downstream.handle(detection_event<DataTypes>{
+            downstream.handle(detection_event<NumericTraits>{
                 event.time().value(), event.channel().value()});
         } else {
             handle_coldpath_tag(event);
@@ -292,8 +292,8 @@ class decode_swabian_tags {
  *
  * \ingroup processors-swabian
  *
- * \tparam DataTypes data type set specifying `abstime_type` and `channel_type`
- * for the emitted events
+ * \tparam NumericTraits numeric traits specifying `abstime_type` and
+ * `channel_type` for the emitted events
  *
  * \tparam Downstream downstream processor type
  *
@@ -303,17 +303,17 @@ class decode_swabian_tags {
  *
  * \par Events handled
  * - `tcspc::swabian_tag_event`: decode and emit one of
- *   `tcspc::detection_event<DataTypes>`,
- *   `tcspc::begin_lost_interval_event<DataTypes>`,
- *   `tcspc::end_lost_interval_event<DataTypes>`,
- *   `tcspc::lost_counts_event<DataTypes>`, `warning_event` (warning in
+ *   `tcspc::detection_event<NumericTraits>`,
+ *   `tcspc::begin_lost_interval_event<NumericTraits>`,
+ *   `tcspc::end_lost_interval_event<NumericTraits>`,
+ *   `tcspc::lost_counts_event<NumericTraits>`, `warning_event` (warning in
  *   the case of an error tag or unknown tag)
  * - All other types: pass through with no action
  * - Flush: pass through with no action
  */
-template <typename DataTypes = default_data_types, typename Downstream>
+template <typename NumericTraits = default_numeric_traits, typename Downstream>
 auto decode_swabian_tags(Downstream downstream) {
-    return internal::decode_swabian_tags<DataTypes, Downstream>(
+    return internal::decode_swabian_tags<NumericTraits, Downstream>(
         std::move(downstream));
 }
 

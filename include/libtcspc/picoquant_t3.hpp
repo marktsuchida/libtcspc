@@ -8,12 +8,12 @@
 
 #include "common.hpp"
 #include "core.hpp"
-#include "data_types.hpp"
 #include "int_arith.hpp"
 #include "int_types.hpp"
 #include "introspect.hpp"
 #include "npint.hpp"
 #include "npint_ops.hpp"
+#include "numeric_traits.hpp"
 #include "processor.hpp"
 #include "read_integers.hpp"
 #include "time_tagged_events.hpp"
@@ -405,18 +405,18 @@ namespace internal {
 
 // Common implementation for decode_pqt3_*.
 // PQT3Event is the binary record event class.
-template <typename DataTypes, typename PQT3Event, typename Downstream>
-    requires processor<Downstream, time_reached_event<DataTypes>,
-                       time_correlated_detection_event<DataTypes>,
-                       marker_event<DataTypes>, warning_event>
+template <typename NumericTraits, typename PQT3Event, typename Downstream>
+    requires processor<Downstream, time_reached_event<NumericTraits>,
+                       time_correlated_detection_event<NumericTraits>,
+                       marker_event<NumericTraits>, warning_event>
 class decode_pqt3 {
     // 16-bit abstime would overflow so fast that we just prohibit. 32-bit can
     // work for a few seconds, though 64-bit is recommended.
-    static_assert(sizeof(typename DataTypes::abstime_type) >= 4);
-    static_assert(std::in_range<typename DataTypes::channel_type>(63));
-    static_assert(std::in_range<typename DataTypes::difftime_type>(32767));
+    static_assert(sizeof(typename NumericTraits::abstime_type) >= 4);
+    static_assert(std::in_range<typename NumericTraits::channel_type>(63));
+    static_assert(std::in_range<typename NumericTraits::difftime_type>(32767));
 
-    using abstime_type = typename DataTypes::abstime_type;
+    using abstime_type = typename NumericTraits::abstime_type;
 
     abstime_type nsync_base = 0;
 
@@ -445,17 +445,17 @@ class decode_pqt3 {
             nsync_base += abstime_type(PQT3Event::nsync_overflow_period) *
                           event.nsync_overflow_count().value();
             return downstream.handle(
-                time_reached_event<DataTypes>{nsync_base});
+                time_reached_event<NumericTraits>{nsync_base});
         }
 
         abstime_type const nsync = nsync_base + event.nsync().value();
 
         if (not event.is_special()) {
-            downstream.handle(time_correlated_detection_event<DataTypes>{
+            downstream.handle(time_correlated_detection_event<NumericTraits>{
                 nsync, event.channel().value(), event.dtime().value()});
         } else if (event.is_external_marker()) {
             for_each_set_bit(u32np(event.external_marker_bits()), [&](int b) {
-                downstream.handle(marker_event<DataTypes>{nsync, b});
+                downstream.handle(marker_event<NumericTraits>{nsync, b});
             });
         } else {
             issue_warning("invalid special event encountered");
@@ -479,8 +479,8 @@ class decode_pqt3 {
  *
  * \ingroup processors-pq
  *
- * \tparam DataTypes data type set specifying `abstime_type`, `channel_type`,
- * and `difftime_type` for the emitted events
+ * \tparam NumericTraits numeric traits specifying `abstime_type`,
+ * `channel_type`, and `difftime_type` for the emitted events
  *
  * \tparam Downstream downstream processor type
  *
@@ -490,16 +490,16 @@ class decode_pqt3 {
  *
  * \par Events handled
  * - `tcspc::pqt3_picoharp300_event`: decode and emit one or more of
- *   `tcspc::time_reached_event<DataTypes>`,
- *   `tcspc::time_correlated_detection_event<DataTypes>`,
- *   `tcspc::marker_event<DataTypes>`, `tcspc::warning_event` (warning in the
- *   case of an invalid event)
+ *   `tcspc::time_reached_event<NumericTraits>`,
+ *   `tcspc::time_correlated_detection_event<NumericTraits>`,
+ *   `tcspc::marker_event<NumericTraits>`, `tcspc::warning_event` (warning in
+ * the case of an invalid event)
  * - All other types: pass through with no action
  * - Flush: pass through with no action
  */
-template <typename DataTypes = default_data_types, typename Downstream>
+template <typename NumericTraits = default_numeric_traits, typename Downstream>
 auto decode_pqt3_picoharp300(Downstream downstream) {
-    return internal::decode_pqt3<DataTypes, pqt3_picoharp300_event,
+    return internal::decode_pqt3<NumericTraits, pqt3_picoharp300_event,
                                  Downstream>(std::move(downstream));
 }
 
@@ -508,8 +508,8 @@ auto decode_pqt3_picoharp300(Downstream downstream) {
  *
  * \ingroup processors-pq
  *
- * \tparam DataTypes data type set specifying `abstime_type`, `channel_type`,
- * and `difftime_type` for the emitted events
+ * \tparam NumericTraits numeric traits specifying `abstime_type`,
+ * `channel_type`, and `difftime_type` for the emitted events
  *
  * \tparam Downstream downstream processor type
  *
@@ -519,16 +519,16 @@ auto decode_pqt3_picoharp300(Downstream downstream) {
  *
  * \par Events handled
  * - `tcspc::pqt3_hydraharpv1_event`: decode and emit one or more of
- *   `tcspc::time_reached_event<DataTypes>`,
- *   `tcspc::time_correlated_detection_event<DataTypes>`,
- *   `tcspc::marker_event<DataTypes>`, `tcspc::warning_event` (warning in the
- *   case of an invalid event)
+ *   `tcspc::time_reached_event<NumericTraits>`,
+ *   `tcspc::time_correlated_detection_event<NumericTraits>`,
+ *   `tcspc::marker_event<NumericTraits>`, `tcspc::warning_event` (warning in
+ * the case of an invalid event)
  * - All other types: pass through with no action
  * - Flush: pass through with no action
  */
-template <typename DataTypes = default_data_types, typename Downstream>
+template <typename NumericTraits = default_numeric_traits, typename Downstream>
 auto decode_pqt3_hydraharpv1(Downstream downstream) {
-    return internal::decode_pqt3<DataTypes, pqt3_hydraharpv1_event,
+    return internal::decode_pqt3<NumericTraits, pqt3_hydraharpv1_event,
                                  Downstream>(std::move(downstream));
 }
 
@@ -538,8 +538,8 @@ auto decode_pqt3_hydraharpv1(Downstream downstream) {
  *
  * \ingroup processors-pq
  *
- * \tparam DataTypes data type set specifying `abstime_type`, `channel_type`,
- * and `difftime_type` for the emitted events
+ * \tparam NumericTraits numeric traits specifying `abstime_type`,
+ * `channel_type`, and `difftime_type` for the emitted events
  *
  * \tparam Downstream downstream processor type
  *
@@ -549,17 +549,17 @@ auto decode_pqt3_hydraharpv1(Downstream downstream) {
  *
  * \par Events handled
  * - `tcspc::pqt3_generic_event`: decode and emit one or more of
- *   `tcspc::time_reached_event<DataTypes>`,
- *   `tcspc::time_correlated_detection_event<DataTypes>`,
- *   `tcspc::marker_event<DataTypes>`, `tcspc::warning_event` (warning in the
- *   case of an invalid event)
+ *   `tcspc::time_reached_event<NumericTraits>`,
+ *   `tcspc::time_correlated_detection_event<NumericTraits>`,
+ *   `tcspc::marker_event<NumericTraits>`, `tcspc::warning_event` (warning in
+ * the case of an invalid event)
  * - All other types: pass through with no action
  * - Flush: pass through with no action
  */
-template <typename DataTypes = default_data_types, typename Downstream>
+template <typename NumericTraits = default_numeric_traits, typename Downstream>
 auto decode_pqt3_generic(Downstream downstream) {
-    return internal::decode_pqt3<DataTypes, pqt3_generic_event, Downstream>(
-        std::move(downstream));
+    return internal::decode_pqt3<NumericTraits, pqt3_generic_event,
+                                 Downstream>(std::move(downstream));
 }
 
 } // namespace tcspc

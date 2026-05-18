@@ -8,12 +8,12 @@
 
 #include "common.hpp"
 #include "core.hpp"
-#include "data_types.hpp"
 #include "int_arith.hpp"
 #include "int_types.hpp"
 #include "introspect.hpp"
 #include "npint.hpp"
 #include "npint_ops.hpp"
+#include "numeric_traits.hpp"
 #include "processor.hpp"
 #include "read_integers.hpp"
 #include "time_tagged_events.hpp"
@@ -709,14 +709,14 @@ namespace internal {
 
 // Common implementation for decode_bh_spc*.
 // BHEvent is the binary record event class.
-template <typename DataTypes, typename BHSPCEvent, bool HasIntensityCounter,
-          typename Downstream>
-    requires processor<Downstream, time_reached_event<DataTypes>,
-                       time_correlated_detection_event<DataTypes>,
-                       data_lost_event<DataTypes>, warning_event> &&
-             (handler_for<Downstream, bulk_counts_event<DataTypes>> ||
+template <typename NumericTraits, typename BHSPCEvent,
+          bool HasIntensityCounter, typename Downstream>
+    requires processor<Downstream, time_reached_event<NumericTraits>,
+                       time_correlated_detection_event<NumericTraits>,
+                       data_lost_event<NumericTraits>, warning_event> &&
+             (handler_for<Downstream, bulk_counts_event<NumericTraits>> ||
               not HasIntensityCounter) &&
-             (handler_for<Downstream, marker_event<DataTypes>> ||
+             (handler_for<Downstream, marker_event<NumericTraits>> ||
               not BHSPCEvent::has_markers)
 class decode_bh_spc {
     static_assert(
@@ -724,20 +724,20 @@ class decode_bh_spc {
                        bh_spc600_4096ch_event>);
 
     // 32-bit abstime can work for a few seconds, though 64-bit is recommended.
-    static_assert(sizeof(typename DataTypes::abstime_type) >= 4);
+    static_assert(sizeof(typename NumericTraits::abstime_type) >= 4);
 
-    static_assert(std::in_range<typename DataTypes::channel_type>(255) ||
+    static_assert(std::in_range<typename NumericTraits::channel_type>(255) ||
                   (not std::is_same_v<BHSPCEvent, bh_spc600_4096ch_event> &&
-                   std::in_range<typename DataTypes::channel_type>(15)));
+                   std::in_range<typename NumericTraits::channel_type>(15)));
 
-    static_assert(std::in_range<typename DataTypes::difftime_type>(4095) ||
+    static_assert(std::in_range<typename NumericTraits::difftime_type>(4095) ||
                   (std::is_same_v<BHSPCEvent, bh_spc600_256ch_event> &&
-                   std::in_range<typename DataTypes::difftime_type>(255)));
+                   std::in_range<typename NumericTraits::difftime_type>(255)));
 
-    static_assert(std::in_range<typename DataTypes::count_type>(4095) ||
+    static_assert(std::in_range<typename NumericTraits::count_type>(4095) ||
                   not HasIntensityCounter);
 
-    using abstime_type = typename DataTypes::abstime_type;
+    using abstime_type = typename NumericTraits::abstime_type;
 
     abstime_type abstime_base = 0; // Time of last overflow
 
@@ -753,9 +753,10 @@ class decode_bh_spc {
                 abstime_type(BHSPCEvent::macrotime_overflow_period) *
                 event.multiple_macrotime_overflow_count().value();
             if (event.gap_flag())
-                downstream.handle(data_lost_event<DataTypes>{abstime_base});
+                downstream.handle(
+                    data_lost_event<NumericTraits>{abstime_base});
             return downstream.handle(
-                time_reached_event<DataTypes>{abstime_base});
+                time_reached_event<NumericTraits>{abstime_base});
         }
 
         if (event.macrotime_overflow_flag())
@@ -763,29 +764,31 @@ class decode_bh_spc {
         abstime_type const abstime = abstime_base + event.macrotime().value();
 
         if (event.gap_flag())
-            downstream.handle(data_lost_event<DataTypes>{abstime});
+            downstream.handle(data_lost_event<NumericTraits>{abstime});
 
         if (not event.marker_flag()) {
             if (not event.invalid_flag()) { // Valid photon
-                downstream.handle(time_correlated_detection_event<DataTypes>{
-                    abstime, event.routing_signals().value(),
-                    event.adc_value().value()});
+                downstream.handle(
+                    time_correlated_detection_event<NumericTraits>{
+                        abstime, event.routing_signals().value(),
+                        event.adc_value().value()});
             } else { // Invalid photon
-                downstream.handle(time_reached_event<DataTypes>{abstime});
+                downstream.handle(time_reached_event<NumericTraits>{abstime});
             }
         } else {
             if (event.invalid_flag()) { // Marker
                 auto const bits = u32np(event.marker_bits());
                 if constexpr (HasIntensityCounter) {    // SPC-160, 180N
                     if ((bits & 0x01_u32np) != 0_u32np) // Marker 0
-                        downstream.handle(bulk_counts_event<DataTypes>{
+                        downstream.handle(bulk_counts_event<NumericTraits>{
                             abstime, -1, event.adc_value().value()});
                 }
                 if constexpr (BHSPCEvent::has_markers) {
                     for_each_set_bit(bits, [&](int b) {
-                        downstream.handle(marker_event<DataTypes>{
+                        downstream.handle(marker_event<NumericTraits>{
                             abstime,
-                            static_cast<typename DataTypes::channel_type>(b)});
+                            static_cast<typename NumericTraits::channel_type>(
+                                b)});
                     });
                 }
             } else {
@@ -842,8 +845,8 @@ class decode_bh_spc {
  * `tcspc::decode_bh_spc_with_intensity_counter()`), but can be used for these
  * models if the counter value is not of interest.
  *
- * \tparam DataTypes data type set specifying `abstime_type`, `channel_type`,
- * and `difftime_type` for the emitted events
+ * \tparam NumericTraits numeric traits specifying `abstime_type`,
+ * `channel_type`, and `difftime_type` for the emitted events
  *
  * \tparam Downstream downstream processor type
  *
@@ -853,16 +856,17 @@ class decode_bh_spc {
  *
  * \par Events handled
  * - `tcspc::bh_spc_event`: decode and emit one or more of
- *   `tcspc::time_reached_event<DataTypes>`,
- *   `tcspc::time_correlated_detection_event<DataTypes>`,
- *   `tcspc::marker_event<DataTypes>`, `tcspc::data_lost_event<DataTypes>`
+ *   `tcspc::time_reached_event<NumericTraits>`,
+ *   `tcspc::time_correlated_detection_event<NumericTraits>`,
+ *   `tcspc::marker_event<NumericTraits>`,
+ * `tcspc::data_lost_event<NumericTraits>`
  * - All other types: pass through with no action
  * - Flush: pass through with no action
  */
-template <typename DataTypes = default_data_types, typename Downstream>
+template <typename NumericTraits = default_numeric_traits, typename Downstream>
 auto decode_bh_spc(Downstream downstream) {
-    return internal::decode_bh_spc<DataTypes, bh_spc_event, false, Downstream>(
-        std::move(downstream));
+    return internal::decode_bh_spc<NumericTraits, bh_spc_event, false,
+                                   Downstream>(std::move(downstream));
 }
 
 /**
@@ -874,8 +878,8 @@ auto decode_bh_spc(Downstream downstream) {
  * Decoder for SPC-160 and SPC-180N. Generates events for the fast intensity
  * counter on marker 0. Otherwise the same as `tcspc::decode_bh_spc()`.
  *
- * \tparam DataTypes data type set specifying `abstime_type`, `channel_type`,
- * and `difftime_type` for the emitted events
+ * \tparam NumericTraits numeric traits specifying `abstime_type`,
+ * `channel_type`, and `difftime_type` for the emitted events
  *
  * \tparam Downstream downstream processor type
  *
@@ -885,17 +889,18 @@ auto decode_bh_spc(Downstream downstream) {
  *
  * \par Events handled
  * - `tcspc::bh_spc_event`: decode and emit one or more of
- *   `tcspc::time_reached_event<DataTypes>`,
- *   `tcspc::time_correlated_detection_event<DataTypes>`,
- *   `tcspc::bulk_counts_event<DataTypes>`,
- *   `tcspc::marker_event<DataTypes>`, `tcspc::data_lost_event<DataTypes>`
+ *   `tcspc::time_reached_event<NumericTraits>`,
+ *   `tcspc::time_correlated_detection_event<NumericTraits>`,
+ *   `tcspc::bulk_counts_event<NumericTraits>`,
+ *   `tcspc::marker_event<NumericTraits>`,
+ * `tcspc::data_lost_event<NumericTraits>`
  * - All other types: pass through with no action
  * - Flush: pass through with no action
  */
-template <typename DataTypes = default_data_types, typename Downstream>
+template <typename NumericTraits = default_numeric_traits, typename Downstream>
 auto decode_bh_spc_with_intensity_counter(Downstream downstream) {
-    return internal::decode_bh_spc<DataTypes, bh_spc_event, true, Downstream>(
-        std::move(downstream));
+    return internal::decode_bh_spc<NumericTraits, bh_spc_event, true,
+                                   Downstream>(std::move(downstream));
 }
 
 /**
@@ -904,8 +909,8 @@ auto decode_bh_spc_with_intensity_counter(Downstream downstream) {
  *
  * \ingroup processors-bh
  *
- * \tparam DataTypes data type set specifying `abstime_type`, `channel_type`,
- * and `difftime_type` for the emitted events
+ * \tparam NumericTraits numeric traits specifying `abstime_type`,
+ * `channel_type`, and `difftime_type` for the emitted events
  *
  * \tparam Downstream downstream processor type
  *
@@ -915,16 +920,16 @@ auto decode_bh_spc_with_intensity_counter(Downstream downstream) {
  *
  * \par Events handled
  * - `tcspc::bh_spc600_4096ch_event`: decode and emit one or more of
- *   `tcspc::time_reached_event<DataTypes>`,
- *   `tcspc::time_correlated_detection_event<DataTypes>`,
- *   `tcspc::data_lost_event<DataTypes>`
+ *   `tcspc::time_reached_event<NumericTraits>`,
+ *   `tcspc::time_correlated_detection_event<NumericTraits>`,
+ *   `tcspc::data_lost_event<NumericTraits>`
  * - All other types: pass through with no action
  * - Flush: pass through with no action
  */
-template <typename DataTypes = default_data_types, typename Downstream>
+template <typename NumericTraits = default_numeric_traits, typename Downstream>
 auto decode_bh_spc600_4096ch(Downstream downstream) {
-    return internal::decode_bh_spc<DataTypes, bh_spc600_4096ch_event, false,
-                                   Downstream>(std::move(downstream));
+    return internal::decode_bh_spc<NumericTraits, bh_spc600_4096ch_event,
+                                   false, Downstream>(std::move(downstream));
 }
 
 /**
@@ -933,8 +938,8 @@ auto decode_bh_spc600_4096ch(Downstream downstream) {
  *
  * \ingroup processors-bh
  *
- * \tparam DataTypes data type set specifying `abstime_type`, `channel_type`,
- * and `difftime_type` for the emitted events
+ * \tparam NumericTraits numeric traits specifying `abstime_type`,
+ * `channel_type`, and `difftime_type` for the emitted events
  *
  * \tparam Downstream downstream processor type
  *
@@ -944,15 +949,15 @@ auto decode_bh_spc600_4096ch(Downstream downstream) {
  *
  * \par Events handled
  * - `tcspc::bh_spc600_256ch_event`: decode and emit one or more of
- *   `tcspc::time_reached_event<DataTypes>`,
- *   `tcspc::time_correlated_detection_event<DataTypes>`,
- *   `tcspc::data_lost_event<DataTypes>`
+ *   `tcspc::time_reached_event<NumericTraits>`,
+ *   `tcspc::time_correlated_detection_event<NumericTraits>`,
+ *   `tcspc::data_lost_event<NumericTraits>`
  * - All other types: pass through with no action
  * - Flush: pass through with no action
  */
-template <typename DataTypes = default_data_types, typename Downstream>
+template <typename NumericTraits = default_numeric_traits, typename Downstream>
 auto decode_bh_spc600_256ch(Downstream downstream) {
-    return internal::decode_bh_spc<DataTypes, bh_spc600_256ch_event, false,
+    return internal::decode_bh_spc<NumericTraits, bh_spc600_256ch_event, false,
                                    Downstream>(std::move(downstream));
 }
 

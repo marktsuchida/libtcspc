@@ -7,8 +7,8 @@
 #pragma once
 
 #include "arg_wrappers.hpp"
-#include "data_types.hpp"
 #include "errors.hpp"
+#include "numeric_traits.hpp"
 
 #include <cassert>
 #include <cmath>
@@ -116,14 +116,14 @@ template <typename T> class dithering_quantizer {
  *
  * \ingroup timing-generators-dither
  *
- * \tparam DataTypes data type set specifying `abstime_type`
+ * \tparam NumericTraits numeric traits specifying `abstime_type`
  */
-template <typename DataTypes = default_data_types>
+template <typename NumericTraits = default_numeric_traits>
 class dithered_one_shot_timing_generator {
-    std::optional<typename DataTypes::abstime_type> next;
+    std::optional<typename NumericTraits::abstime_type> next;
     double dly;
 
-    internal::dithering_quantizer<typename DataTypes::abstime_type> dithq;
+    internal::dithering_quantizer<typename NumericTraits::abstime_type> dithq;
 
   public:
     /**
@@ -143,13 +143,13 @@ class dithered_one_shot_timing_generator {
     /** \brief Implements timing generator requirement. */
     template <typename TriggerEvent> void trigger(TriggerEvent const &event) {
         static_assert(std::is_same_v<decltype(event.abstime),
-                                     typename DataTypes::abstime_type>);
+                                     typename NumericTraits::abstime_type>);
         next = event.abstime + dithq(dly);
     }
 
     /** \brief Implements timing generator requirement. */
     [[nodiscard]] auto peek() const
-        -> std::optional<typename DataTypes::abstime_type> {
+        -> std::optional<typename NumericTraits::abstime_type> {
         return next;
     }
 
@@ -168,19 +168,19 @@ class dithered_one_shot_timing_generator {
  * (typically `tcspc::real_one_shot_timing_event`). It must be at least 1.5 (so
  * that a negative delay does not result from the dithering).
  *
- * \tparam DataTypes data type set specifying `abstime_type`
+ * \tparam NumericTraits numeric traits specifying `abstime_type`
  */
-template <typename DataTypes = default_data_types>
+template <typename NumericTraits = default_numeric_traits>
 class dynamic_dithered_one_shot_timing_generator {
-    std::optional<typename DataTypes::abstime_type> next;
+    std::optional<typename NumericTraits::abstime_type> next;
 
-    internal::dithering_quantizer<typename DataTypes::abstime_type> dithq;
+    internal::dithering_quantizer<typename NumericTraits::abstime_type> dithq;
 
   public:
     /** \brief Implements timing generator requirement. */
     template <typename TriggerEvent> void trigger(TriggerEvent const &event) {
         static_assert(std::is_same_v<decltype(event.abstime),
-                                     typename DataTypes::abstime_type>);
+                                     typename NumericTraits::abstime_type>);
         static_assert(std::is_same_v<decltype(event.delay), double>);
         if (event.delay < 1.5)
             throw data_validation_error(
@@ -190,7 +190,7 @@ class dynamic_dithered_one_shot_timing_generator {
 
     /** \brief Implements timing generator requirement. */
     [[nodiscard]] auto peek() const
-        -> std::optional<typename DataTypes::abstime_type> {
+        -> std::optional<typename NumericTraits::abstime_type> {
         return next;
     }
 
@@ -273,12 +273,12 @@ template <typename Abstime> class dithered_linear_timing_generator_impl {
  *
  * \ingroup timing-generators-dither
  *
- * \tparam DataTypes data type set specifying `abstime_type`
+ * \tparam NumericTraits numeric traits specifying `abstime_type`
  */
-template <typename DataTypes = default_data_types>
+template <typename NumericTraits = default_numeric_traits>
 class dithered_linear_timing_generator {
     internal::dithered_linear_timing_generator_impl<
-        typename DataTypes::abstime_type>
+        typename NumericTraits::abstime_type>
         impl;
 
   public:
@@ -297,13 +297,13 @@ class dithered_linear_timing_generator {
     /** \brief Implements timing generator requirement. */
     template <typename TriggerEvent> void trigger(TriggerEvent const &event) {
         static_assert(std::is_same_v<decltype(event.abstime),
-                                     typename DataTypes::abstime_type>);
+                                     typename NumericTraits::abstime_type>);
         impl.trigger(arg::abstime{event.abstime});
     }
 
     /** \brief Implements timing generator requirement. */
     [[nodiscard]] auto peek() const
-        -> std::optional<typename DataTypes::abstime_type> {
+        -> std::optional<typename NumericTraits::abstime_type> {
         return impl.peek();
     }
 
@@ -323,19 +323,19 @@ class dithered_linear_timing_generator {
  * interval must be at least 3.0 (so that a negative delay or interval does not
  * result from the dithering).
  *
- * \tparam DataTypes data type set specifying `abstime_type`
+ * \tparam NumericTraits numeric traits specifying `abstime_type`
  */
-template <typename DataTypes = default_data_types>
+template <typename NumericTraits = default_numeric_traits>
 class dynamic_dithered_linear_timing_generator {
     internal::dithered_linear_timing_generator_impl<
-        typename DataTypes::abstime_type>
+        typename NumericTraits::abstime_type>
         impl;
 
   public:
     /** \brief Implements timing generator requirement. */
     template <typename TriggerEvent> void trigger(TriggerEvent const &event) {
         static_assert(std::is_same_v<decltype(event.abstime),
-                                     typename DataTypes::abstime_type>);
+                                     typename NumericTraits::abstime_type>);
         impl.trigger_and_configure(
             arg::abstime{event.abstime}, arg::delay{event.delay},
             arg::interval{event.interval}, arg::count{event.count});
@@ -343,7 +343,7 @@ class dynamic_dithered_linear_timing_generator {
 
     /** \brief Implements timing generator requirement. */
     [[nodiscard]] auto peek() const
-        -> std::optional<typename DataTypes::abstime_type> {
+        -> std::optional<typename NumericTraits::abstime_type> {
         return impl.peek();
     }
 

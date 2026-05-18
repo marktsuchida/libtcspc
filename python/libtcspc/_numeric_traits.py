@@ -10,7 +10,7 @@ from typing_extensions import Unpack
 from ._cpp_utils import _cpp_type_from_dtype, _CppTypeName
 
 
-class _DataTypes(TypedDict, total=False):
+class _NumericTraits(TypedDict, total=False):
     abstime_type: Any
     channel_type: Any
     difftime_type: Any
@@ -37,11 +37,11 @@ _SLOT_DESCRIPTION: dict[frozenset[str], str] = {
 }
 
 
-class DataTypes:
-    """Set of integer types used by events and processors that are parameterised by data types.
+class NumericTraits:
+    """Set of integer types used by events and processors that are parameterised by numeric traits.
 
-    This is the Python-side counterpart to ``tcspc::default_data_types``
-    on the C++ side. Constructing `DataTypes` with no arguments yields
+    This is the Python-side counterpart to ``tcspc::default_numeric_traits``
+    on the C++ side. Constructing `NumericTraits` with no arguments yields
     the default set; supply one or more keyword arguments to override
     individual slots. Each override must be a NumPy dtype object, dtype
     instance, or dtype string, and must satisfy the kind constraint
@@ -79,18 +79,18 @@ class DataTypes:
 
     See Also
     --------
-    :cpp:`tcspc::default_data_types`
-        The C++ default data type set.
-    :cpp:`tcspc::parameterized_data_types`
-        The C++ template used to assemble a custom set.
+    :cpp:`tcspc::default_numeric_traits`
+        The C++ default numeric traits.
+    :cpp:`tcspc::parameterized_numeric_traits`
+        The C++ template used to assemble custom numeric traits.
     """
 
-    def __init__(self, **kwargs: Unpack[_DataTypes]) -> None:
+    def __init__(self, **kwargs: Unpack[_NumericTraits]) -> None:
         def typ(category: str) -> _CppTypeName:
             key = f"{category}_type"
             if key not in kwargs:
                 return _CppTypeName(
-                    f"tcspc::default_data_types::{category}_type"
+                    f"tcspc::default_numeric_traits::{category}_type"
                 )
             value = kwargs[key]  # type: ignore[literal-required]
             cpp_type = _cpp_type_from_dtype(value)
@@ -98,7 +98,7 @@ class DataTypes:
             kind = np.dtype(value).kind
             if kind not in allowed:
                 raise TypeError(
-                    f"DataTypes.{category}_type must be "
+                    f"NumericTraits.{category}_type must be "
                     f"{_SLOT_DESCRIPTION[allowed]} dtype, got "
                     f"{np.dtype(value)!s}"
                 )
@@ -116,7 +116,7 @@ class DataTypes:
             )
         )
         self._type_set_class = _CppTypeName(
-            f"tcspc::parameterized_data_types<{tparams}>"
+            f"tcspc::parameterized_numeric_traits<{tparams}>"
         )
 
     def _cpp_type_name(self) -> _CppTypeName:

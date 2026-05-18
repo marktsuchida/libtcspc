@@ -7,7 +7,7 @@
 #pragma once
 
 #include "bucket.hpp"
-#include "data_types.hpp"
+#include "numeric_traits.hpp"
 
 #include <cstddef>
 #include <ostream>
@@ -19,13 +19,14 @@ namespace tcspc {
  *
  * \ingroup events-binning
  *
- * \tparam DataTypes data type set specifying `datapoint_type`
+ * \tparam NumericTraits numeric traits specifying `datapoint_type`
  */
-template <typename DataTypes = default_data_types> struct datapoint_event {
+template <typename NumericTraits = default_numeric_traits>
+struct datapoint_event {
     /**
      * \brief The data type.
      */
-    using datapoint_type = typename DataTypes::datapoint_type;
+    using datapoint_type = typename NumericTraits::datapoint_type;
 
     /**
      * \brief The datapoint value.
@@ -49,13 +50,14 @@ template <typename DataTypes = default_data_types> struct datapoint_event {
  *
  * \ingroup events-binning
  *
- * \tparam DataTypes data type set specifying `bin_index_type`
+ * \tparam NumericTraits numeric traits specifying `bin_index_type`
  */
-template <typename DataTypes = default_data_types> struct bin_increment_event {
+template <typename NumericTraits = default_numeric_traits>
+struct bin_increment_event {
     /**
      * \brief The histogram bin index to which the data value was mapped.
      */
-    typename DataTypes::bin_index_type bin_index;
+    typename NumericTraits::bin_index_type bin_index;
 
     /** \brief Equality comparison operator. */
     friend constexpr auto operator==(bin_increment_event const &lhs,
@@ -77,14 +79,14 @@ template <typename DataTypes = default_data_types> struct bin_increment_event {
  * Typically the cluster represents some unit of data collection, such as a
  * time interval or pixel.
  *
- * \tparam DataTypes data type set specifying `bin_index_type`
+ * \tparam NumericTraits numeric traits specifying `bin_index_type`
  */
-template <typename DataTypes = default_data_types>
+template <typename NumericTraits = default_numeric_traits>
 struct bin_increment_cluster_event {
     /**
      * \brief The bin indices for the datapoints in the cluster.
      */
-    bucket<typename DataTypes::bin_index_type> bin_indices;
+    bucket<typename NumericTraits::bin_index_type> bin_indices;
 
     /** \brief Equality comparison operator. */
     friend auto operator==(bin_increment_cluster_event const &lhs,
@@ -107,13 +109,14 @@ struct bin_increment_cluster_event {
  * This event may be used both for a series of independent histograms and for a
  * series of updates to the same histogram.
  *
- * \tparam DataTypes data type set specifying `bin_type`
+ * \tparam NumericTraits numeric traits specifying `bin_type`
  */
-template <typename DataTypes = default_data_types> struct histogram_event {
+template <typename NumericTraits = default_numeric_traits>
+struct histogram_event {
     /**
      * \brief The histogram.
      */
-    bucket<typename DataTypes::bin_type> data_bucket;
+    bucket<typename NumericTraits::bin_type> data_bucket;
 
     /** \brief Equality comparison operator. */
     friend auto operator==(histogram_event const &lhs,
@@ -137,14 +140,14 @@ template <typename DataTypes = default_data_types> struct histogram_event {
  * accumulated result. The contained histogram covers only whole clusters;
  * counts from any partial cluster are not included.
  *
- * \tparam DataTypes data type set specifying `bin_type`
+ * \tparam NumericTraits numeric traits specifying `bin_type`
  */
-template <typename DataTypes = default_data_types>
+template <typename NumericTraits = default_numeric_traits>
 struct concluding_histogram_event {
     /**
      * \brief The accumulated histogram.
      */
-    bucket<typename DataTypes::bin_type> data_bucket;
+    bucket<typename NumericTraits::bin_type> data_bucket;
 
     /** \brief Equality comparison operator. */
     friend auto operator==(concluding_histogram_event const &lhs,
@@ -164,14 +167,14 @@ struct concluding_histogram_event {
  *
  * \ingroup events-histogram
  *
- * \tparam DataTypes data type set specifying `bin_type`
+ * \tparam NumericTraits numeric traits specifying `bin_type`
  */
-template <typename DataTypes = default_data_types>
+template <typename NumericTraits = default_numeric_traits>
 struct histogram_array_event {
     /**
      * \brief Histogram array, or view thereof.
      */
-    bucket<typename DataTypes::bin_type> data_bucket;
+    bucket<typename NumericTraits::bin_type> data_bucket;
 
     /** \brief Equality comparison operator. */
     friend auto operator==(histogram_array_event const &lhs,
@@ -193,9 +196,9 @@ struct histogram_array_event {
  * This event is used to report updates to each element of a histogram array.
  * A view of the entire histogram array is included.
  *
- * \tparam DataTypes data type set specifying `bin_type`
+ * \tparam NumericTraits numeric traits specifying `bin_type`
  */
-template <typename DataTypes = default_data_types>
+template <typename NumericTraits = default_numeric_traits>
 struct histogram_array_progress_event {
     /**
      * \brief Size of the updated part of the histogram array.
@@ -209,7 +212,7 @@ struct histogram_array_progress_event {
      * The remaining indices may contain invalid data unless otherwise
      * specified.
      */
-    bucket<typename DataTypes::bin_type> data_bucket;
+    bucket<typename NumericTraits::bin_type> data_bucket;
 
     /** \brief Equality comparison operator. */
     friend auto operator==(histogram_array_progress_event const &lhs,
@@ -236,14 +239,14 @@ struct histogram_array_progress_event {
  * contained histogram array includes only whole scans; counts from any partial
  * scan are not included.
  *
- * \tparam DataTypes data type set specifying `bin_type`
+ * \tparam NumericTraits numeric traits specifying `bin_type`
  */
-template <typename DataTypes = default_data_types>
+template <typename NumericTraits = default_numeric_traits>
 struct concluding_histogram_array_event {
     /**
      * \brief View of the histogram array.
      */
-    bucket<typename DataTypes::bin_type> data_bucket;
+    bucket<typename NumericTraits::bin_type> data_bucket;
 
     /** \brief Equality comparison operator. */
     friend auto

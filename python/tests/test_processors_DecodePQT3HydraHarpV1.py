@@ -6,7 +6,6 @@ import pytest
 from _test_helpers import _NamedEvent
 from libtcspc._codegen import _CodeGenerationContext
 from libtcspc._cpp_utils import _CppExpression, _CppIdentifier, _CppTypeName
-from libtcspc._data_types import DataTypes
 from libtcspc._events import (
     MarkerEvent,
     PQT3HydraHarpV1Event,
@@ -14,6 +13,7 @@ from libtcspc._events import (
     TimeReachedEvent,
     WarningEvent,
 )
+from libtcspc._numeric_traits import NumericTraits
 from libtcspc._processors import DecodePQT3HydraHarpV1
 
 IntEvent = _NamedEvent(_CppTypeName("int"))
@@ -32,7 +32,7 @@ def test_DecodePQT3HydraHarpV1_accepts_only_matching_input():
 
 
 def test_DecodePQT3HydraHarpV1_output_event_set():
-    dt = DataTypes()
+    dt = NumericTraits()
     node = DecodePQT3HydraHarpV1(dt)
     assert node._map_event_sets([(PQT3HydraHarpV1Event(),)]) == (
         (

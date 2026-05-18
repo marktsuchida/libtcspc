@@ -6,7 +6,6 @@ import pytest
 from _test_helpers import _NamedEvent
 from libtcspc._codegen import _CodeGenerationContext
 from libtcspc._cpp_utils import _CppExpression, _CppIdentifier, _CppTypeName
-from libtcspc._data_types import DataTypes
 from libtcspc._events import (
     DetectionEvent,
     MarkerEvent,
@@ -14,6 +13,7 @@ from libtcspc._events import (
     TimeReachedEvent,
     WarningEvent,
 )
+from libtcspc._numeric_traits import NumericTraits
 from libtcspc._processors import DecodePQT2PicoHarp300
 
 IntEvent = _NamedEvent(_CppTypeName("int"))
@@ -32,7 +32,7 @@ def test_DecodePQT2PicoHarp300_accepts_only_matching_input():
 
 
 def test_DecodePQT2PicoHarp300_output_event_set():
-    dt = DataTypes()
+    dt = NumericTraits()
     node = DecodePQT2PicoHarp300(dt)
     assert node._map_event_sets([(PQT2PicoHarp300Event(),)]) == (
         (

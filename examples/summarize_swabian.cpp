@@ -19,8 +19,8 @@
 
 namespace {
 
-using channel_type = tcspc::default_data_types::channel_type;
-using abstime_type = tcspc::default_data_types::abstime_type;
+using channel_type = tcspc::default_numeric_traits::channel_type;
+using abstime_type = tcspc::default_numeric_traits::abstime_type;
 
 void print_out(char const *str) {
     if (std::fputs(str, stdout) == EOF)

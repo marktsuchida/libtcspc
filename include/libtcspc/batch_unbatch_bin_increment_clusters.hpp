@@ -10,9 +10,9 @@
 #include "bin_increment_cluster_encoding.hpp"
 #include "bucket.hpp"
 #include "common.hpp"
-#include "data_types.hpp"
 #include "histogram_events.hpp"
 #include "introspect.hpp"
+#include "numeric_traits.hpp"
 #include "processor.hpp"
 
 #include <cassert>
@@ -50,10 +50,11 @@ class batch_bin_increment_clusters_encoding_adapter {
     }
 };
 
-template <typename DataTypes, typename Downstream>
-    requires processor<Downstream, bucket<typename DataTypes::bin_index_type>>
+template <typename NumericTraits, typename Downstream>
+    requires processor<Downstream,
+                       bucket<typename NumericTraits::bin_index_type>>
 class batch_bin_increment_clusters {
-    using bin_index_type = typename DataTypes::bin_index_type;
+    using bin_index_type = typename NumericTraits::bin_index_type;
 
     std::shared_ptr<bucket_source<bin_index_type>> bsource;
 
@@ -77,7 +78,7 @@ class batch_bin_increment_clusters {
 
   public:
     explicit batch_bin_increment_clusters(
-        std::shared_ptr<bucket_source<typename DataTypes::bin_index_type>>
+        std::shared_ptr<bucket_source<typename NumericTraits::bin_index_type>>
             buffer_provider,
         arg::bucket_size<std::size_t> bucket_size,
         arg::batch_size<std::size_t> batch_size, Downstream downstream)
@@ -92,12 +93,12 @@ class batch_bin_increment_clusters {
         return downstream.introspect_graph().push_entry_point(this);
     }
 
-    template <typename DT>
-    void handle(bin_increment_cluster_event<DT> const &event) {
-        static_assert(std::is_same_v<typename DT::bin_index_type,
-                                     typename DataTypes::bin_index_type>);
+    template <typename NT>
+    void handle(bin_increment_cluster_event<NT> const &event) {
+        static_assert(std::is_same_v<typename NT::bin_index_type,
+                                     typename NumericTraits::bin_index_type>);
         std::size_t const encoded_size = encoded_bin_increment_cluster_size<
-            typename DataTypes::bin_index_type>(event.bin_indices.size());
+            typename NumericTraits::bin_index_type>(event.bin_indices.size());
         if (encoded_size > bkt_siz - bucket_used_size) { // Won't fit.
             emit_cur_batch();
 
@@ -138,9 +139,9 @@ class batch_bin_increment_clusters {
     }
 
     // NOLINTBEGIN(cppcoreguidelines-rvalue-reference-param-not-moved)
-    template <typename DT>
-    void handle(bin_increment_cluster_event<DT> &&event) {
-        handle(static_cast<bin_increment_cluster_event<DT> const &>(event));
+    template <typename NT>
+    void handle(bin_increment_cluster_event<NT> &&event) {
+        handle(static_cast<bin_increment_cluster_event<NT> const &>(event));
     }
     // NOLINTEND(cppcoreguidelines-rvalue-reference-param-not-moved)
 
@@ -156,10 +157,10 @@ class batch_bin_increment_clusters {
     }
 };
 
-template <typename DataTypes, typename Downstream>
-    requires processor<Downstream, bin_increment_cluster_event<DataTypes>>
+template <typename NumericTraits, typename Downstream>
+    requires processor<Downstream, bin_increment_cluster_event<NumericTraits>>
 class unbatch_bin_increment_clusters {
-    using bin_index_type = typename DataTypes::bin_index_type;
+    using bin_index_type = typename NumericTraits::bin_index_type;
 
     Downstream downstream;
 
@@ -176,12 +177,12 @@ class unbatch_bin_increment_clusters {
     }
 
     template <typename Event>
-        requires(
-            std::convertible_to<std::remove_cvref_t<Event>,
-                                bucket<typename DataTypes::bin_index_type>> or
-            std::convertible_to<
-                std::remove_cvref_t<Event>,
-                bucket<typename DataTypes::bin_index_type const>>)
+        requires(std::convertible_to<
+                     std::remove_cvref_t<Event>,
+                     bucket<typename NumericTraits::bin_index_type>> or
+                 std::convertible_to<
+                     std::remove_cvref_t<Event>,
+                     bucket<typename NumericTraits::bin_index_type const>>)
     void handle(Event &&event) {
         bin_increment_cluster_decoder<bin_index_type> const decoder(event);
         for (auto const cluster_span : decoder) {
@@ -192,7 +193,7 @@ class unbatch_bin_increment_clusters {
             auto const mut_span = std::span<bin_index_type>(
                 const_cast<bin_index_type *>(cluster_span.data()),
                 cluster_span.size());
-            bin_increment_cluster_event<DataTypes> const e{
+            bin_increment_cluster_event<NumericTraits> const e{
                 ad_hoc_bucket(mut_span)};
             downstream.handle(e);
         }
@@ -201,10 +202,10 @@ class unbatch_bin_increment_clusters {
     template <typename Event>
         requires(not std::convertible_to<
                      std::remove_cvref_t<Event>,
-                     bucket<typename DataTypes::bin_index_type>> and
+                     bucket<typename NumericTraits::bin_index_type>> and
                  not std::convertible_to<
                      std::remove_cvref_t<Event>,
-                     bucket<typename DataTypes::bin_index_type const>> and
+                     bucket<typename NumericTraits::bin_index_type const>> and
                  handler_for<Downstream, std::remove_cvref_t<Event>>)
     void handle(Event &&event) {
         downstream.handle(std::forward<Event>(event));
@@ -232,7 +233,7 @@ class unbatch_bin_increment_clusters {
  * containing just that cluster. The `buffer_provider` needs to be prepared to
  * handle this case, if it is expected.
  *
- * \tparam DataTypes data type set specifying `bin_index_type`
+ * \tparam NumericTraits numeric traits specifying `bin_index_type`
  *
  * \tparam Downstream downstream processor type (usually deduced)
  *
@@ -249,19 +250,19 @@ class unbatch_bin_increment_clusters {
  * \return processor
  *
  * \par Events handled
- * - `bin_increment_cluster_event<DataTypes>`: collect and encode into
- *   `tcspc::bucket<typename DataTypes::bin_index_type>` and emit as batch
+ * - `bin_increment_cluster_event<NumericTraits>`: collect and encode into
+ *   `tcspc::bucket<typename NumericTraits::bin_index_type>` and emit as batch
  * - All other types: pass through with no action
  * - Flush: emit any buffered clusters as `tcspc::bucket<typename
- *   DataTypes::bin_index_type>`; pass through
+ *   NumericTraits::bin_index_type>`; pass through
  */
-template <typename DataTypes = default_data_types, typename Downstream>
+template <typename NumericTraits = default_numeric_traits, typename Downstream>
 auto batch_bin_increment_clusters(
-    std::shared_ptr<bucket_source<typename DataTypes::bin_index_type>>
+    std::shared_ptr<bucket_source<typename NumericTraits::bin_index_type>>
         buffer_provider,
     arg::bucket_size<std::size_t> bucket_size,
     arg::batch_size<std::size_t> batch_size, Downstream downstream) {
-    return internal::batch_bin_increment_clusters<DataTypes, Downstream>(
+    return internal::batch_bin_increment_clusters<NumericTraits, Downstream>(
         std::move(buffer_provider), bucket_size, batch_size,
         std::move(downstream));
 }
@@ -276,8 +277,8 @@ auto batch_bin_increment_clusters(
  * `tcspc::bin_increment_cluster_event`. It must be paired with
  * `tcspc::batch_bin_increment_clusters()`.
  *
- * \tparam DataTypes data type set specifying `bin_index_type` and the emitted
- * events
+ * \tparam NumericTraits numeric traits specifying `bin_index_type` and the
+ * emitted events
  *
  * \tparam Downstream downstream processor type (usually deduced)
  *
@@ -286,15 +287,15 @@ auto batch_bin_increment_clusters(
  * \return processor
  *
  * \par Events handled
- * - `tcspc::bucket<typename DataTypes::bin_index_type>` or
- *   `tcspc::bucket<typename DataTypes::bin_index_type const>`: decode and emit
- *   each cluster as `bin_increment_cluster_event<DataTypes>`
+ * - `tcspc::bucket<typename NumericTraits::bin_index_type>` or
+ *   `tcspc::bucket<typename NumericTraits::bin_index_type const>`: decode and
+ * emit each cluster as `bin_increment_cluster_event<NumericTraits>`
  * - All other types: pass through with no action
  * - Flush: pass through with no action
  */
-template <typename DataTypes = default_data_types, typename Downstream>
+template <typename NumericTraits = default_numeric_traits, typename Downstream>
 auto unbatch_bin_increment_clusters(Downstream downstream) {
-    return internal::unbatch_bin_increment_clusters<DataTypes, Downstream>(
+    return internal::unbatch_bin_increment_clusters<NumericTraits, Downstream>(
         std::move(downstream));
 }
 

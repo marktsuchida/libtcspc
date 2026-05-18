@@ -8,9 +8,9 @@
 
 #include "libtcspc/context.hpp"
 #include "libtcspc/core.hpp"
-#include "libtcspc/data_types.hpp"
 #include "libtcspc/int_types.hpp"
 #include "libtcspc/npint.hpp"
+#include "libtcspc/numeric_traits.hpp"
 #include "libtcspc/processor.hpp"
 #include "libtcspc/test_utils.hpp"
 #include "libtcspc/time_tagged_events.hpp"
@@ -657,7 +657,7 @@ TEST_CASE("bh spc600 4096ch assign") {
 
 namespace {
 
-struct bh_data_types : default_data_types {
+struct bh_numtraits : default_numeric_traits {
     using channel_type = u8;
     using difftime_type = u16;
 };
@@ -665,10 +665,10 @@ struct bh_data_types : default_data_types {
 } // namespace
 
 TEST_CASE("type constraints: decode_bh_spc") {
-    using proc_type = decltype(decode_bh_spc<bh_data_types>(
-        sink_only<time_reached_event<bh_data_types>,
-                  time_correlated_detection_event<bh_data_types>,
-                  marker_event<bh_data_types>, data_lost_event<bh_data_types>,
+    using proc_type = decltype(decode_bh_spc<bh_numtraits>(
+        sink_only<time_reached_event<bh_numtraits>,
+                  time_correlated_detection_event<bh_numtraits>,
+                  marker_event<bh_numtraits>, data_lost_event<bh_numtraits>,
                   warning_event, int>()));
 
     STATIC_CHECK(processor<proc_type, bh_spc_event, int>);
@@ -676,30 +676,30 @@ TEST_CASE("type constraints: decode_bh_spc") {
 
 TEST_CASE("type constraints: decode_bh_spc_with_intensity_counter") {
     using proc_type =
-        decltype(decode_bh_spc_with_intensity_counter<bh_data_types>(
-            sink_only<time_reached_event<bh_data_types>,
-                      time_correlated_detection_event<bh_data_types>,
-                      marker_event<bh_data_types>,
-                      bulk_counts_event<bh_data_types>,
-                      data_lost_event<bh_data_types>, warning_event, int>()));
+        decltype(decode_bh_spc_with_intensity_counter<bh_numtraits>(
+            sink_only<time_reached_event<bh_numtraits>,
+                      time_correlated_detection_event<bh_numtraits>,
+                      marker_event<bh_numtraits>,
+                      bulk_counts_event<bh_numtraits>,
+                      data_lost_event<bh_numtraits>, warning_event, int>()));
 
     STATIC_CHECK(processor<proc_type, bh_spc_event, int>);
 }
 
 TEST_CASE("type constraints: decode_bh_spc600_256ch") {
-    using proc_type = decltype(decode_bh_spc600_256ch<bh_data_types>(
-        sink_only<time_reached_event<bh_data_types>,
-                  time_correlated_detection_event<bh_data_types>,
-                  data_lost_event<bh_data_types>, warning_event, int>()));
+    using proc_type = decltype(decode_bh_spc600_256ch<bh_numtraits>(
+        sink_only<time_reached_event<bh_numtraits>,
+                  time_correlated_detection_event<bh_numtraits>,
+                  data_lost_event<bh_numtraits>, warning_event, int>()));
 
     STATIC_CHECK(processor<proc_type, bh_spc600_256ch_event, int>);
 }
 
 TEST_CASE("type constraints: decode_bh_spc600_4096ch") {
-    using proc_type = decltype(decode_bh_spc600_4096ch<bh_data_types>(
-        sink_only<time_reached_event<bh_data_types>,
-                  time_correlated_detection_event<bh_data_types>,
-                  data_lost_event<bh_data_types>, warning_event, int>()));
+    using proc_type = decltype(decode_bh_spc600_4096ch<bh_numtraits>(
+        sink_only<time_reached_event<bh_numtraits>,
+                  time_correlated_detection_event<bh_numtraits>,
+                  data_lost_event<bh_numtraits>, warning_event, int>()));
 
     STATIC_CHECK(processor<proc_type, bh_spc600_4096ch_event, int>);
 }

@@ -8,12 +8,12 @@
 
 #include "common.hpp"
 #include "core.hpp"
-#include "data_types.hpp"
 #include "int_arith.hpp"
 #include "int_types.hpp"
 #include "introspect.hpp"
 #include "npint.hpp"
 #include "npint_ops.hpp"
+#include "numeric_traits.hpp"
 #include "processor.hpp"
 #include "read_integers.hpp"
 #include "time_tagged_events.hpp"
@@ -435,16 +435,16 @@ namespace internal {
 
 // Common implementation for decode_pqt2_*.
 // PQT2Event is the binary record event class.
-template <typename DataTypes, typename PQT2Event, typename Downstream>
-    requires processor<Downstream, time_reached_event<DataTypes>,
-                       detection_event<DataTypes>, marker_event<DataTypes>,
-                       warning_event>
+template <typename NumericTraits, typename PQT2Event, typename Downstream>
+    requires processor<Downstream, time_reached_event<NumericTraits>,
+                       detection_event<NumericTraits>,
+                       marker_event<NumericTraits>, warning_event>
 class decode_pqt2 {
     // 32-bit abstime can work for a few seconds, though 64-bit is recommended.
-    static_assert(sizeof(typename DataTypes::abstime_type) >= 4);
-    static_assert(std::in_range<typename DataTypes::channel_type>(63));
+    static_assert(sizeof(typename NumericTraits::abstime_type) >= 4);
+    static_assert(std::in_range<typename NumericTraits::channel_type>(63));
 
-    using abstime_type = typename DataTypes::abstime_type;
+    using abstime_type = typename NumericTraits::abstime_type;
 
     abstime_type timetag_base = 0;
 
@@ -473,7 +473,7 @@ class decode_pqt2 {
             timetag_base += abstime_type(PQT2Event::overflow_period) *
                             event.timetag_overflow_count().value();
             return downstream.handle(
-                time_reached_event<DataTypes>{timetag_base});
+                time_reached_event<NumericTraits>{timetag_base});
         }
 
         // In the case where the overflow period is smaller than one plus
@@ -484,13 +484,13 @@ class decode_pqt2 {
         if (not event.is_special() || event.is_sync_event()) {
             abstime_type const timetag =
                 timetag_base + event.timetag().value();
-            downstream.handle(detection_event<DataTypes>{
+            downstream.handle(detection_event<NumericTraits>{
                 timetag, event.is_special() ? -1 : event.channel().value()});
         } else if (event.is_external_marker()) {
             abstime_type const timetag =
                 timetag_base + event.external_marker_timetag().value();
             for_each_set_bit(u32np(event.external_marker_bits()), [&](int b) {
-                downstream.handle(marker_event<DataTypes>{timetag, b});
+                downstream.handle(marker_event<NumericTraits>{timetag, b});
             });
         } else {
             issue_warning("invalid special event encountered");
@@ -515,8 +515,8 @@ class decode_pqt2 {
  *
  * \ingroup processors-pq
  *
- * \tparam DataTypes data type set specifying `abstime_type` and `channel_type`
- * for the emitted events
+ * \tparam NumericTraits numeric traits specifying `abstime_type` and
+ * `channel_type` for the emitted events
  *
  * \tparam Downstream downstream processor type
  *
@@ -526,15 +526,16 @@ class decode_pqt2 {
  *
  * \par Events handled
  * - `tcspc::pqt2_picoharp300_event`: decode and emit one or more of
- *   `tcspc::time_reached_event<DataTypes>`,
- *   `tcspc::detection_event<DataTypes>`, `tcspc::marker_event<DataTypes>`,
- *   `tcspc::warning_event` (warning in the case of an invalid event)
+ *   `tcspc::time_reached_event<NumericTraits>`,
+ *   `tcspc::detection_event<NumericTraits>`,
+ * `tcspc::marker_event<NumericTraits>`, `tcspc::warning_event` (warning in the
+ * case of an invalid event)
  * - All other types: pass through with no action
  * - Flush: pass through with no action
  */
-template <typename DataTypes = default_data_types, typename Downstream>
+template <typename NumericTraits = default_numeric_traits, typename Downstream>
 auto decode_pqt2_picoharp300(Downstream downstream) {
-    return internal::decode_pqt2<DataTypes, pqt2_picoharp300_event,
+    return internal::decode_pqt2<NumericTraits, pqt2_picoharp300_event,
                                  Downstream>(std::move(downstream));
 }
 
@@ -546,8 +547,8 @@ auto decode_pqt2_picoharp300(Downstream downstream) {
  * Sync events (edges detected on the sync channel) are reported as detection
  * events on channel -1.
  *
- * \tparam DataTypes data type set specifying `abstime_type` and `channel_type`
- * for the emitted events
+ * \tparam NumericTraits numeric traits specifying `abstime_type` and
+ * `channel_type` for the emitted events
  *
  * \tparam Downstream downstream processor type
  *
@@ -557,15 +558,16 @@ auto decode_pqt2_picoharp300(Downstream downstream) {
  *
  * \par Events handled
  * - `tcspc::pqt2_hydraharpv1_event`: decode and emit one or more of
- *   `tcspc::time_reached_event<DataTypes>`,
- *   `tcspc::detection_event<DataTypes>`, `tcspc::marker_event<DataTypes>`,
- *   `tcspc::warning_event` (warning in the case of an invalid event)
+ *   `tcspc::time_reached_event<NumericTraits>`,
+ *   `tcspc::detection_event<NumericTraits>`,
+ * `tcspc::marker_event<NumericTraits>`, `tcspc::warning_event` (warning in the
+ * case of an invalid event)
  * - All other types: pass through with no action
  * - Flush: pass through with no action
  */
-template <typename DataTypes = default_data_types, typename Downstream>
+template <typename NumericTraits = default_numeric_traits, typename Downstream>
 auto decode_pqt2_hydraharpv1(Downstream downstream) {
-    return internal::decode_pqt2<DataTypes, pqt2_hydraharpv1_event,
+    return internal::decode_pqt2<NumericTraits, pqt2_hydraharpv1_event,
                                  Downstream>(std::move(downstream));
 }
 
@@ -578,8 +580,8 @@ auto decode_pqt2_hydraharpv1(Downstream downstream) {
  * Sync events (edges detected on the sync channel) are reported as detection
  * events on channel -1.
  *
- * \tparam DataTypes data type set specifying `abstime_type` and `channel_type`
- * for the emitted events
+ * \tparam NumericTraits numeric traits specifying `abstime_type` and
+ * `channel_type` for the emitted events
  *
  * \tparam Downstream downstream processor type
  *
@@ -589,16 +591,17 @@ auto decode_pqt2_hydraharpv1(Downstream downstream) {
  *
  * \par Events handled
  * - `tcspc::pqt2_generic_event`: decode and emit one or more of
- *   `tcspc::time_reached_event<DataTypes>`,
- *   `tcspc::detection_event<DataTypes>`, `tcspc::marker_event<DataTypes>`,
- *   `tcspc::warning_event` (warning in the case of an invalid event)
+ *   `tcspc::time_reached_event<NumericTraits>`,
+ *   `tcspc::detection_event<NumericTraits>`,
+ * `tcspc::marker_event<NumericTraits>`, `tcspc::warning_event` (warning in the
+ * case of an invalid event)
  * - All other types: pass through with no action
  * - Flush: pass through with no action
  */
-template <typename DataTypes = default_data_types, typename Downstream>
+template <typename NumericTraits = default_numeric_traits, typename Downstream>
 auto decode_pqt2_generic(Downstream downstream) {
-    return internal::decode_pqt2<DataTypes, pqt2_generic_event, Downstream>(
-        std::move(downstream));
+    return internal::decode_pqt2<NumericTraits, pqt2_generic_event,
+                                 Downstream>(std::move(downstream));
 }
 
 } // namespace tcspc

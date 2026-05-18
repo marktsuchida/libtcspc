@@ -6,7 +6,6 @@ import pytest
 from _test_helpers import _NamedEvent
 from libtcspc._codegen import _CodeGenerationContext
 from libtcspc._cpp_utils import _CppExpression, _CppIdentifier, _CppTypeName
-from libtcspc._data_types import DataTypes
 from libtcspc._events import (
     BHSPC600_4096chEvent,
     DataLostEvent,
@@ -14,6 +13,7 @@ from libtcspc._events import (
     TimeReachedEvent,
     WarningEvent,
 )
+from libtcspc._numeric_traits import NumericTraits
 from libtcspc._processors import DecodeBHSPC600_4096ch
 
 IntEvent = _NamedEvent(_CppTypeName("int"))
@@ -32,7 +32,7 @@ def test_DecodeBHSPC600_4096ch_accepts_only_BHSPC600_4096chEvent():
 
 
 def test_DecodeBHSPC600_4096ch_output_event_set():
-    dt = DataTypes()
+    dt = NumericTraits()
     node = DecodeBHSPC600_4096ch(dt)
     assert node._map_event_sets([(BHSPC600_4096chEvent(),)]) == (
         (

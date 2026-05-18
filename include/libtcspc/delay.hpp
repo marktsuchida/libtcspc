@@ -8,9 +8,9 @@
 
 #include "arg_wrappers.hpp"
 #include "common.hpp"
-#include "data_types.hpp"
 #include "int_arith.hpp"
 #include "introspect.hpp"
+#include "numeric_traits.hpp"
 #include "processor.hpp"
 
 #include <type_traits>
@@ -20,12 +20,12 @@ namespace tcspc {
 
 namespace internal {
 
-template <typename DataTypes, typename Downstream> class delay {
-    typename DataTypes::abstime_type delta;
+template <typename NumericTraits, typename Downstream> class delay {
+    typename NumericTraits::abstime_type delta;
     Downstream downstream;
 
   public:
-    explicit delay(arg::delta<typename DataTypes::abstime_type> delta,
+    explicit delay(arg::delta<typename NumericTraits::abstime_type> delta,
                    Downstream downstream)
         : delta(delta.value), downstream(std::move(downstream)) {}
 
@@ -47,7 +47,7 @@ template <typename DataTypes, typename Downstream> class delay {
         requires handler_for<Downstream, std::remove_cvref_t<TimeTaggedEvent>>
     void handle(TimeTaggedEvent const &event) {
         static_assert(std::is_same_v<decltype(event.abstime),
-                                     typename DataTypes::abstime_type>);
+                                     typename NumericTraits::abstime_type>);
         TimeTaggedEvent copy(event);
         copy.abstime = add_with_wrap(copy.abstime, delta);
         downstream.handle(std::move(copy));
@@ -56,9 +56,9 @@ template <typename DataTypes, typename Downstream> class delay {
     void flush() { downstream.flush(); }
 };
 
-template <typename DataTypes, typename Downstream> class rebase_abstime {
+template <typename NumericTraits, typename Downstream> class rebase_abstime {
     bool initialized = false;
-    typename DataTypes::abstime_type minus_delta{};
+    typename NumericTraits::abstime_type minus_delta{};
     Downstream downstream;
 
   public:
@@ -79,7 +79,7 @@ template <typename DataTypes, typename Downstream> class rebase_abstime {
         requires handler_for<Downstream, std::remove_cvref_t<TimeTaggedEvent>>
     void handle(TimeTaggedEvent const &event) {
         static_assert(std::is_same_v<decltype(event.abstime),
-                                     typename DataTypes::abstime_type>);
+                                     typename NumericTraits::abstime_type>);
         if (not initialized) {
             minus_delta = event.abstime;
             initialized = true;
@@ -104,7 +104,7 @@ template <typename DataTypes, typename Downstream> class rebase_abstime {
  * adjusted). Even if the `abstime_type` is a signed integer type, wrap-around
  * is handled correctly.
  *
- * \tparam DataTypes data type set specifying `abstime_type`
+ * \tparam NumericTraits numeric traits specifying `abstime_type`
  *
  * \tparam Downstream downstream processor type
  *
@@ -119,11 +119,11 @@ template <typename DataTypes, typename Downstream> class rebase_abstime {
  *   `abstime`
  * - Flush: pass through with no action
  */
-template <typename DataTypes = default_data_types, typename Downstream>
-auto delay(arg::delta<typename DataTypes::abstime_type> delta,
+template <typename NumericTraits = default_numeric_traits, typename Downstream>
+auto delay(arg::delta<typename NumericTraits::abstime_type> delta,
            Downstream downstream) {
-    return internal::delay<DataTypes, Downstream>(delta,
-                                                  std::move(downstream));
+    return internal::delay<NumericTraits, Downstream>(delta,
+                                                      std::move(downstream));
 }
 
 /**
@@ -138,7 +138,7 @@ auto delay(arg::delta<typename DataTypes::abstime_type> delta,
  *
  * \see delay
  *
- * \tparam DataTypes data type set specifying `abstime_type`
+ * \tparam NumericTraits numeric traits specifying `abstime_type`
  *
  * \tparam Downstream downstream processor type
  *
@@ -151,9 +151,9 @@ auto delay(arg::delta<typename DataTypes::abstime_type> delta,
  *   relative to the first event encountered
  * - Flush: pass through with no action
  */
-template <typename DataTypes = default_data_types, typename Downstream>
+template <typename NumericTraits = default_numeric_traits, typename Downstream>
 auto rebase_abstime(Downstream downstream) {
-    return internal::rebase_abstime<DataTypes, Downstream>(
+    return internal::rebase_abstime<NumericTraits, Downstream>(
         std::move(downstream));
 }
 

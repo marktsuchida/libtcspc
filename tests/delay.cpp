@@ -9,8 +9,8 @@
 #include "libtcspc/arg_wrappers.hpp"
 #include "libtcspc/context.hpp"
 #include "libtcspc/core.hpp"
-#include "libtcspc/data_types.hpp"
 #include "libtcspc/int_types.hpp"
+#include "libtcspc/numeric_traits.hpp"
 #include "libtcspc/processor.hpp"
 #include "libtcspc/test_utils.hpp"
 #include "libtcspc/type_list.hpp"
@@ -33,8 +33,9 @@ using out_events = type_list<e0, e1>;
 } // namespace
 
 TEST_CASE("type constraints: delay") {
-    using proc_type = decltype(delay(
-        arg::delta<default_data_types::abstime_type>{10}, sink_only<e0>()));
+    using proc_type =
+        decltype(delay(arg::delta<default_numeric_traits::abstime_type>{10},
+                       sink_only<e0>()));
     STATIC_CHECK(processor<proc_type, e0>);
     STATIC_CHECK_FALSE(handler_for<proc_type, e1>);
 }
@@ -115,11 +116,11 @@ TEST_CASE("zero-base abstime") {
         REQUIRE(out.check(e0{0}));
         in.handle(e1{125});
         REQUIRE(out.check(e1{2}));
-        in.handle(
-            e0{std::numeric_limits<default_data_types::abstime_type>::min()});
-        REQUIRE(out.check(
-            e0{std::numeric_limits<default_data_types::abstime_type>::max() -
-               122}));
+        in.handle(e0{
+            std::numeric_limits<default_numeric_traits::abstime_type>::min()});
+        REQUIRE(out.check(e0{
+            std::numeric_limits<default_numeric_traits::abstime_type>::max() -
+            122}));
         in.flush();
         REQUIRE(out.check_flushed());
     }
@@ -129,11 +130,11 @@ TEST_CASE("zero-base abstime") {
         REQUIRE(out.check(e0{0}));
         in.handle(e1{-121});
         REQUIRE(out.check(e1{2}));
-        in.handle(
-            e0{std::numeric_limits<default_data_types::abstime_type>::max()});
-        REQUIRE(out.check(
-            e0{std::numeric_limits<default_data_types::abstime_type>::min() +
-               122}));
+        in.handle(e0{
+            std::numeric_limits<default_numeric_traits::abstime_type>::max()});
+        REQUIRE(out.check(e0{
+            std::numeric_limits<default_numeric_traits::abstime_type>::min() +
+            122}));
         in.flush();
         REQUIRE(out.check_flushed());
     }

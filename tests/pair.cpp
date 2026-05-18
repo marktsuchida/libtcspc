@@ -9,8 +9,8 @@
 #include "libtcspc/arg_wrappers.hpp"
 #include "libtcspc/context.hpp"
 #include "libtcspc/core.hpp"
-#include "libtcspc/data_types.hpp"
 #include "libtcspc/int_types.hpp"
+#include "libtcspc/numeric_traits.hpp"
 #include "libtcspc/processor.hpp"
 #include "libtcspc/test_utils.hpp"
 #include "libtcspc/time_tagged_events.hpp"
@@ -83,11 +83,12 @@ TEST_CASE("pair all") {
     auto const valcat = GENERATE(feed_as::const_lvalue, feed_as::rvalue);
     auto ctx = context::create();
     auto in = feed_input(
-        valcat, pair_all(arg::start_channel{0},
-                         std::array<default_data_types::channel_type, 1>{1},
-                         arg::time_window<i64>{2},
-                         capture_output<out_events>(
-                             ctx->tracker<capture_output_access>("out"))));
+        valcat,
+        pair_all(arg::start_channel{0},
+                 std::array<default_numeric_traits::channel_type, 1>{1},
+                 arg::time_window<i64>{2},
+                 capture_output<out_events>(
+                     ctx->tracker<capture_output_access>("out"))));
     in.require_output_checked(ctx, "out");
     auto out = capture_output_checker<out_events>(valcat, ctx, "out");
 
@@ -158,11 +159,12 @@ TEST_CASE("pair all with self") {
     auto const valcat = GENERATE(feed_as::const_lvalue, feed_as::rvalue);
     auto ctx = context::create();
     auto in = feed_input(
-        valcat, pair_all(arg::start_channel{0},
-                         std::array<default_data_types::channel_type, 1>{0},
-                         arg::time_window<i64>{2},
-                         capture_output<out_events>(
-                             ctx->tracker<capture_output_access>("out"))));
+        valcat,
+        pair_all(arg::start_channel{0},
+                 std::array<default_numeric_traits::channel_type, 1>{0},
+                 arg::time_window<i64>{2},
+                 capture_output<out_events>(
+                     ctx->tracker<capture_output_access>("out"))));
     in.require_output_checked(ctx, "out");
     auto out = capture_output_checker<out_events>(valcat, ctx, "out");
 
@@ -191,11 +193,12 @@ TEST_CASE("pair one") {
     auto const valcat = GENERATE(feed_as::const_lvalue, feed_as::rvalue);
     auto ctx = context::create();
     auto in = feed_input(
-        valcat, pair_one(arg::start_channel{0},
-                         std::array<default_data_types::channel_type, 1>{1},
-                         arg::time_window<i64>{2},
-                         capture_output<out_events>(
-                             ctx->tracker<capture_output_access>("out"))));
+        valcat,
+        pair_one(arg::start_channel{0},
+                 std::array<default_numeric_traits::channel_type, 1>{1},
+                 arg::time_window<i64>{2},
+                 capture_output<out_events>(
+                     ctx->tracker<capture_output_access>("out"))));
     in.require_output_checked(ctx, "out");
     auto out = capture_output_checker<out_events>(valcat, ctx, "out");
 
@@ -260,11 +263,12 @@ TEST_CASE("pair one with self") {
     auto const valcat = GENERATE(feed_as::const_lvalue, feed_as::rvalue);
     auto ctx = context::create();
     auto in = feed_input(
-        valcat, pair_one(arg::start_channel{0},
-                         std::array<default_data_types::channel_type, 1>{0},
-                         arg::time_window<i64>{2},
-                         capture_output<out_events>(
-                             ctx->tracker<capture_output_access>("out"))));
+        valcat,
+        pair_one(arg::start_channel{0},
+                 std::array<default_numeric_traits::channel_type, 1>{0},
+                 arg::time_window<i64>{2},
+                 capture_output<out_events>(
+                     ctx->tracker<capture_output_access>("out"))));
     in.require_output_checked(ctx, "out");
     auto out = capture_output_checker<out_events>(valcat, ctx, "out");
 
@@ -291,12 +295,12 @@ TEST_CASE("pair all between") {
     auto const valcat = GENERATE(feed_as::const_lvalue, feed_as::rvalue);
     auto ctx = context::create();
     auto in = feed_input(
-        valcat,
-        pair_all_between(arg::start_channel{0},
-                         std::array<default_data_types::channel_type, 1>{1},
-                         arg::time_window<i64>{2},
-                         capture_output<out_events>(
-                             ctx->tracker<capture_output_access>("out"))));
+        valcat, pair_all_between(
+                    arg::start_channel{0},
+                    std::array<default_numeric_traits::channel_type, 1>{1},
+                    arg::time_window<i64>{2},
+                    capture_output<out_events>(
+                        ctx->tracker<capture_output_access>("out"))));
     in.require_output_checked(ctx, "out");
     auto out = capture_output_checker<out_events>(valcat, ctx, "out");
 
@@ -363,12 +367,12 @@ TEST_CASE("pair all between with self") {
     auto const valcat = GENERATE(feed_as::const_lvalue, feed_as::rvalue);
     auto ctx = context::create();
     auto in = feed_input(
-        valcat,
-        pair_all_between(arg::start_channel{0},
-                         std::array<default_data_types::channel_type, 1>{0},
-                         arg::time_window<i64>{2},
-                         capture_output<out_events>(
-                             ctx->tracker<capture_output_access>("out"))));
+        valcat, pair_all_between(
+                    arg::start_channel{0},
+                    std::array<default_numeric_traits::channel_type, 1>{0},
+                    arg::time_window<i64>{2},
+                    capture_output<out_events>(
+                        ctx->tracker<capture_output_access>("out"))));
     in.require_output_checked(ctx, "out");
     auto out = capture_output_checker<out_events>(valcat, ctx, "out");
 
@@ -395,12 +399,12 @@ TEST_CASE("pair one between") {
     auto const valcat = GENERATE(feed_as::const_lvalue, feed_as::rvalue);
     auto ctx = context::create();
     auto in = feed_input(
-        valcat,
-        pair_one_between(arg::start_channel{0},
-                         std::array<default_data_types::channel_type, 1>{1},
-                         arg::time_window<i64>{2},
-                         capture_output<out_events>(
-                             ctx->tracker<capture_output_access>("out"))));
+        valcat, pair_one_between(
+                    arg::start_channel{0},
+                    std::array<default_numeric_traits::channel_type, 1>{1},
+                    arg::time_window<i64>{2},
+                    capture_output<out_events>(
+                        ctx->tracker<capture_output_access>("out"))));
     in.require_output_checked(ctx, "out");
     auto out = capture_output_checker<out_events>(valcat, ctx, "out");
 
@@ -465,12 +469,12 @@ TEST_CASE("pair one between with self") {
     auto const valcat = GENERATE(feed_as::const_lvalue, feed_as::rvalue);
     auto ctx = context::create();
     auto in = feed_input(
-        valcat,
-        pair_one_between(arg::start_channel{0},
-                         std::array<default_data_types::channel_type, 1>{0},
-                         arg::time_window<i64>{2},
-                         capture_output<out_events>(
-                             ctx->tracker<capture_output_access>("out"))));
+        valcat, pair_one_between(
+                    arg::start_channel{0},
+                    std::array<default_numeric_traits::channel_type, 1>{0},
+                    arg::time_window<i64>{2},
+                    capture_output<out_events>(
+                        ctx->tracker<capture_output_access>("out"))));
     in.require_output_checked(ctx, "out");
     auto out = capture_output_checker<out_events>(valcat, ctx, "out");
 

@@ -10,8 +10,8 @@ import pytest
 
 
 def test_default_construction():
-    name = tcspc.DataTypes()._cpp_type_name()
-    assert name.startswith("tcspc::parameterized_data_types<")
+    name = tcspc.NumericTraits()._cpp_type_name()
+    assert name.startswith("tcspc::parameterized_numeric_traits<")
     for slot in (
         "abstime",
         "channel",
@@ -21,23 +21,23 @@ def test_default_construction():
         "bin_index",
         "bin",
     ):
-        assert f"tcspc::default_data_types::{slot}_type" in name
+        assert f"tcspc::default_numeric_traits::{slot}_type" in name
     # Documented order.
     order = [
-        "tcspc::default_data_types::abstime_type",
-        "tcspc::default_data_types::channel_type",
-        "tcspc::default_data_types::difftime_type",
-        "tcspc::default_data_types::count_type",
-        "tcspc::default_data_types::datapoint_type",
-        "tcspc::default_data_types::bin_index_type",
-        "tcspc::default_data_types::bin_type",
+        "tcspc::default_numeric_traits::abstime_type",
+        "tcspc::default_numeric_traits::channel_type",
+        "tcspc::default_numeric_traits::difftime_type",
+        "tcspc::default_numeric_traits::count_type",
+        "tcspc::default_numeric_traits::datapoint_type",
+        "tcspc::default_numeric_traits::bin_index_type",
+        "tcspc::default_numeric_traits::bin_type",
     ]
     positions = [name.index(s) for s in order]
     assert positions == sorted(positions)
 
 
 def test_per_slot_override_scalar():
-    name = tcspc.DataTypes(channel_type=np.uint32)._cpp_type_name()
+    name = tcspc.NumericTraits(channel_type=np.uint32)._cpp_type_name()
     assert "std::uint32_t" in name
     for slot in (
         "abstime",
@@ -47,65 +47,65 @@ def test_per_slot_override_scalar():
         "bin_index",
         "bin",
     ):
-        assert f"tcspc::default_data_types::{slot}_type" in name
-    assert "tcspc::default_data_types::channel_type" not in name
+        assert f"tcspc::default_numeric_traits::{slot}_type" in name
+    assert "tcspc::default_numeric_traits::channel_type" not in name
 
 
 def test_per_slot_override_dtype_object():
-    name = tcspc.DataTypes(abstime_type=np.dtype("int64"))._cpp_type_name()
+    name = tcspc.NumericTraits(abstime_type=np.dtype("int64"))._cpp_type_name()
     assert "std::int64_t" in name
-    assert "tcspc::default_data_types::abstime_type" not in name
+    assert "tcspc::default_numeric_traits::abstime_type" not in name
 
 
 def test_per_slot_override_string():
-    name = tcspc.DataTypes(count_type="uint16")._cpp_type_name()
+    name = tcspc.NumericTraits(count_type="uint16")._cpp_type_name()
     assert "std::uint16_t" in name
-    assert "tcspc::default_data_types::count_type" not in name
+    assert "tcspc::default_numeric_traits::count_type" not in name
 
 
 def test_difftime_accepts_signed_integer():
-    name = tcspc.DataTypes(difftime_type=np.int32)._cpp_type_name()
+    name = tcspc.NumericTraits(difftime_type=np.int32)._cpp_type_name()
     assert "std::int32_t" in name
-    name = tcspc.DataTypes(difftime_type=np.int64)._cpp_type_name()
+    name = tcspc.NumericTraits(difftime_type=np.int64)._cpp_type_name()
     assert "std::int64_t" in name
 
 
 def test_difftime_rejects_unsigned():
     with pytest.raises(TypeError, match="difftime_type"):
-        tcspc.DataTypes(difftime_type=np.uint32)
+        tcspc.NumericTraits(difftime_type=np.uint32)
     with pytest.raises(TypeError, match="difftime_type"):
-        tcspc.DataTypes(difftime_type=np.uint64)
+        tcspc.NumericTraits(difftime_type=np.uint64)
 
 
 def test_difftime_rejects_float():
     with pytest.raises(TypeError, match="difftime_type"):
-        tcspc.DataTypes(difftime_type=np.float32)
+        tcspc.NumericTraits(difftime_type=np.float32)
 
 
 def test_difftime_rejects_bool():
     with pytest.raises(TypeError):
-        tcspc.DataTypes(difftime_type=np.bool_)
+        tcspc.NumericTraits(difftime_type=np.bool_)
 
 
 def test_bin_index_accepts_unsigned_integer():
     for t in (np.uint8, np.uint16, np.uint32, np.uint64):
-        name = tcspc.DataTypes(bin_index_type=t)._cpp_type_name()
-        assert "tcspc::default_data_types::bin_index_type" not in name
+        name = tcspc.NumericTraits(bin_index_type=t)._cpp_type_name()
+        assert "tcspc::default_numeric_traits::bin_index_type" not in name
 
 
 def test_bin_index_rejects_signed():
     with pytest.raises(TypeError, match="bin_index_type"):
-        tcspc.DataTypes(bin_index_type=np.int16)
+        tcspc.NumericTraits(bin_index_type=np.int16)
 
 
 def test_bin_index_rejects_float():
     with pytest.raises(TypeError, match="bin_index_type"):
-        tcspc.DataTypes(bin_index_type=np.float32)
+        tcspc.NumericTraits(bin_index_type=np.float32)
 
 
 def test_bin_index_rejects_bool():
     with pytest.raises(TypeError):
-        tcspc.DataTypes(bin_index_type=np.bool_)
+        tcspc.NumericTraits(bin_index_type=np.bool_)
 
 
 @pytest.mark.parametrize(
@@ -114,9 +114,9 @@ def test_bin_index_rejects_bool():
 )
 def test_integer_slot_accepts_signed_and_unsigned(slot):
     key = f"{slot}_type"
-    name = tcspc.DataTypes(**{key: np.int32})._cpp_type_name()
+    name = tcspc.NumericTraits(**{key: np.int32})._cpp_type_name()
     assert "std::int32_t" in name
-    name = tcspc.DataTypes(**{key: np.uint32})._cpp_type_name()
+    name = tcspc.NumericTraits(**{key: np.uint32})._cpp_type_name()
     assert "std::uint32_t" in name
 
 
@@ -127,7 +127,7 @@ def test_integer_slot_accepts_signed_and_unsigned(slot):
 def test_integer_slot_rejects_float(slot):
     key = f"{slot}_type"
     with pytest.raises(TypeError, match=key):
-        tcspc.DataTypes(**{key: np.float32})
+        tcspc.NumericTraits(**{key: np.float32})
 
 
 @pytest.mark.parametrize(
@@ -137,7 +137,7 @@ def test_integer_slot_rejects_float(slot):
 def test_integer_slot_rejects_bool(slot):
     key = f"{slot}_type"
     with pytest.raises(TypeError):
-        tcspc.DataTypes(**{key: np.bool_})
+        tcspc.NumericTraits(**{key: np.bool_})
 
 
 @pytest.mark.parametrize(
@@ -147,23 +147,23 @@ def test_integer_slot_rejects_bool(slot):
 def test_integer_slot_rejects_complex(slot):
     key = f"{slot}_type"
     with pytest.raises(TypeError):
-        tcspc.DataTypes(**{key: np.complex64})
+        tcspc.NumericTraits(**{key: np.complex64})
 
 
 def test_rejects_non_native_byte_order():
     nonnative = ">u4" if sys.byteorder == "little" else "<u4"
     with pytest.raises(TypeError, match="non-native byte order"):
-        tcspc.DataTypes(abstime_type=np.dtype(nonnative))
+        tcspc.NumericTraits(abstime_type=np.dtype(nonnative))
 
 
 def test_rejects_structured_dtype():
     with pytest.raises(TypeError, match="unsupported dtype"):
-        tcspc.DataTypes(abstime_type=np.dtype([("a", "i4"), ("b", "f4")]))
+        tcspc.NumericTraits(abstime_type=np.dtype([("a", "i4"), ("b", "f4")]))
 
 
 def test_rejects_unsupported_width():
     with pytest.raises(TypeError, match="unsupported dtype"):
-        tcspc.DataTypes(abstime_type=np.float16)
+        tcspc.NumericTraits(abstime_type=np.float16)
 
 
 def test_type_constants_not_publicly_accessible():

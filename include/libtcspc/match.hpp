@@ -8,8 +8,8 @@
 
 #include "arg_wrappers.hpp"
 #include "common.hpp"
-#include "data_types.hpp"
 #include "introspect.hpp"
+#include "numeric_traits.hpp"
 #include "processor.hpp"
 
 #include <type_traits>
@@ -161,24 +161,25 @@ class never_matcher {
  *
  * The events to be matched must contain a `channel` field.
  *
- * \tparam DataTypes data type set specifying `channel_type`
+ * \tparam NumericTraits numeric traits specifying `channel_type`
  */
-template <typename DataTypes = default_data_types> class channel_matcher {
-    typename DataTypes::channel_type channel;
+template <typename NumericTraits = default_numeric_traits>
+class channel_matcher {
+    typename NumericTraits::channel_type channel;
 
   public:
     /**
      * \brief Construct with the given \p channel to match.
      */
     explicit channel_matcher(
-        arg::channel<typename DataTypes::channel_type> channel)
+        arg::channel<typename NumericTraits::channel_type> channel)
         : channel(channel.value) {}
 
     /** \brief Implements matcher requirement. */
     template <typename Event>
     auto operator()(Event const &event) const -> bool {
         static_assert(std::is_same_v<decltype(event.channel),
-                                     typename DataTypes::channel_type>);
+                                     typename NumericTraits::channel_type>);
         return event.channel == channel;
     }
 };

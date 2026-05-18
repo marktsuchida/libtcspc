@@ -53,14 +53,16 @@ def test_parameterised_event_cpp_type_name_default(cls, prefix):
     name = cls()._cpp_type_name()
     assert name.startswith(prefix)
     assert name.endswith(">")
-    assert "tcspc::parameterized_data_types<" in name
+    assert "tcspc::parameterized_numeric_traits<" in name
 
 
 @pytest.mark.parametrize(("cls", "prefix"), PARAMETERIZED_EVENTS)
-def test_parameterised_event_cpp_type_name_propagates_data_types(cls, prefix):
-    name = cls(tcspc.DataTypes(abstime_type=np.uint64))._cpp_type_name()
+def test_parameterised_event_cpp_type_name_propagates_numeric_traits(
+    cls, prefix
+):
+    name = cls(tcspc.NumericTraits(abstime_type=np.uint64))._cpp_type_name()
     assert "std::uint64_t" in name
-    assert "tcspc::default_data_types::abstime_type" not in name
+    assert "tcspc::default_numeric_traits::abstime_type" not in name
 
 
 def test_BucketEvent_cpp_type_name_wraps_element():
@@ -120,16 +122,16 @@ def test_eq_parameterised_same_defaults_is_true(cls, prefix):
 
 
 @pytest.mark.parametrize(("cls", "prefix"), PARAMETERIZED_EVENTS)
-def test_eq_parameterised_different_data_types_is_false(cls, prefix):
-    assert cls(tcspc.DataTypes()) != cls(
-        tcspc.DataTypes(abstime_type=np.uint64)
+def test_eq_parameterised_different_numeric_traits_is_false(cls, prefix):
+    assert cls(tcspc.NumericTraits()) != cls(
+        tcspc.NumericTraits(abstime_type=np.uint64)
     )
 
 
-def test_eq_equivalent_but_differently_spelled_data_types_is_true():
+def test_eq_equivalent_but_differently_spelled_numeric_traits_is_true():
     assert tcspc.DataLostEvent(
-        tcspc.DataTypes(abstime_type=np.uint64)
-    ) == tcspc.DataLostEvent(tcspc.DataTypes(abstime_type="uint64"))
+        tcspc.NumericTraits(abstime_type=np.uint64)
+    ) == tcspc.DataLostEvent(tcspc.NumericTraits(abstime_type="uint64"))
 
 
 def test_eq_BucketEvent_wraps_element_in_equality():

@@ -20,10 +20,10 @@ from ._cpp_utils import (
     _string_type,
     _uint64_type,
 )
-from ._data_types import DataTypes
 from ._events import BucketEvent, EventType, WarningEvent
 from ._graph import Graph, Subgraph
 from ._node import Node, _RelayNode, _TypePreservingRelayNode
+from ._numeric_traits import NumericTraits
 from ._param import Param
 
 
@@ -553,9 +553,9 @@ class CheckMonotonic(_RelayNode):
 
     Parameters
     ----------
-    data_types : DataTypes or None
-        Data type set specifying the ``abstime`` type expected on input
-        events. Defaults to ``DataTypes()``.
+    numeric_traits : NumericTraits or None
+        Numeric traits specifying the ``abstime`` type expected on input
+        events. Defaults to ``NumericTraits()``.
 
     Notes
     -----
@@ -576,9 +576,9 @@ class CheckMonotonic(_RelayNode):
         The underlying C++ factory function.
     """
 
-    def __init__(self, data_types: DataTypes | None = None) -> None:
-        self._data_types = (
-            data_types if data_types is not None else DataTypes()
+    def __init__(self, numeric_traits: NumericTraits | None = None) -> None:
+        self._numeric_traits = (
+            numeric_traits if numeric_traits is not None else NumericTraits()
         )
 
     @override
@@ -600,7 +600,7 @@ class CheckMonotonic(_RelayNode):
     ) -> _CppExpression:
         return _CppExpression(
             f"""\
-            tcspc::check_monotonic<{self._data_types._cpp_type_name()}>(
+            tcspc::check_monotonic<{self._numeric_traits._cpp_type_name()}>(
                 {downstream}
             )"""
         )
@@ -912,10 +912,10 @@ class DecodeBHSPC(_RelayNode):
 
     Parameters
     ----------
-    data_types : DataTypes or None
-        Data type set specifying the ``abstime``, ``channel``, and
+    numeric_traits : NumericTraits or None
+        Numeric traits specifying the ``abstime``, ``channel``, and
         ``difftime`` types of the emitted events. Defaults to
-        ``DataTypes()``.
+        ``NumericTraits()``.
 
     Notes
     -----
@@ -934,9 +934,9 @@ class DecodeBHSPC(_RelayNode):
         The underlying C++ factory function.
     """
 
-    def __init__(self, data_types: DataTypes | None = None) -> None:
-        self._data_types = (
-            data_types if data_types is not None else DataTypes()
+    def __init__(self, numeric_traits: NumericTraits | None = None) -> None:
+        self._numeric_traits = (
+            numeric_traits if numeric_traits is not None else NumericTraits()
         )
 
     @override
@@ -947,10 +947,10 @@ class DecodeBHSPC(_RelayNode):
             input_event_set, (_events.BHSPCEvent(),), self.__class__.__name__
         )
         return (
-            _events.DataLostEvent(self._data_types),
-            _events.MarkerEvent(self._data_types),
-            _events.TimeCorrelatedDetectionEvent(self._data_types),
-            _events.TimeReachedEvent(self._data_types),
+            _events.DataLostEvent(self._numeric_traits),
+            _events.MarkerEvent(self._numeric_traits),
+            _events.TimeCorrelatedDetectionEvent(self._numeric_traits),
+            _events.TimeReachedEvent(self._numeric_traits),
             WarningEvent(),
         )
 
@@ -962,7 +962,7 @@ class DecodeBHSPC(_RelayNode):
     ) -> _CppExpression:
         return _CppExpression(
             f"""\
-            tcspc::decode_bh_spc<{self._data_types._cpp_type_name()}>(
+            tcspc::decode_bh_spc<{self._numeric_traits._cpp_type_name()}>(
                 {downstream}
             )"""
         )
@@ -974,10 +974,10 @@ class DecodeBHSPC600_256ch(_RelayNode):
 
     Parameters
     ----------
-    data_types : DataTypes or None
-        Data type set specifying the ``abstime``, ``channel``, and
+    numeric_traits : NumericTraits or None
+        Numeric traits specifying the ``abstime``, ``channel``, and
         ``difftime`` types of the emitted events. Defaults to
-        ``DataTypes()``.
+        ``NumericTraits()``.
 
     Notes
     -----
@@ -995,9 +995,9 @@ class DecodeBHSPC600_256ch(_RelayNode):
         The underlying C++ factory function.
     """
 
-    def __init__(self, data_types: DataTypes | None = None) -> None:
-        self._data_types = (
-            data_types if data_types is not None else DataTypes()
+    def __init__(self, numeric_traits: NumericTraits | None = None) -> None:
+        self._numeric_traits = (
+            numeric_traits if numeric_traits is not None else NumericTraits()
         )
 
     @override
@@ -1010,9 +1010,9 @@ class DecodeBHSPC600_256ch(_RelayNode):
             self.__class__.__name__,
         )
         return (
-            _events.DataLostEvent(self._data_types),
-            _events.TimeCorrelatedDetectionEvent(self._data_types),
-            _events.TimeReachedEvent(self._data_types),
+            _events.DataLostEvent(self._numeric_traits),
+            _events.TimeCorrelatedDetectionEvent(self._numeric_traits),
+            _events.TimeReachedEvent(self._numeric_traits),
             WarningEvent(),
         )
 
@@ -1024,7 +1024,7 @@ class DecodeBHSPC600_256ch(_RelayNode):
     ) -> _CppExpression:
         return _CppExpression(
             f"""\
-            tcspc::decode_bh_spc600_256ch<{self._data_types._cpp_type_name()}>(
+            tcspc::decode_bh_spc600_256ch<{self._numeric_traits._cpp_type_name()}>(
                 {downstream}
             )"""
         )
@@ -1036,10 +1036,10 @@ class DecodeBHSPC600_4096ch(_RelayNode):
 
     Parameters
     ----------
-    data_types : DataTypes or None
-        Data type set specifying the ``abstime``, ``channel``, and
+    numeric_traits : NumericTraits or None
+        Numeric traits specifying the ``abstime``, ``channel``, and
         ``difftime`` types of the emitted events. Defaults to
-        ``DataTypes()``.
+        ``NumericTraits()``.
 
     Notes
     -----
@@ -1057,9 +1057,9 @@ class DecodeBHSPC600_4096ch(_RelayNode):
         The underlying C++ factory function.
     """
 
-    def __init__(self, data_types: DataTypes | None = None) -> None:
-        self._data_types = (
-            data_types if data_types is not None else DataTypes()
+    def __init__(self, numeric_traits: NumericTraits | None = None) -> None:
+        self._numeric_traits = (
+            numeric_traits if numeric_traits is not None else NumericTraits()
         )
 
     @override
@@ -1072,9 +1072,9 @@ class DecodeBHSPC600_4096ch(_RelayNode):
             self.__class__.__name__,
         )
         return (
-            _events.DataLostEvent(self._data_types),
-            _events.TimeCorrelatedDetectionEvent(self._data_types),
-            _events.TimeReachedEvent(self._data_types),
+            _events.DataLostEvent(self._numeric_traits),
+            _events.TimeCorrelatedDetectionEvent(self._numeric_traits),
+            _events.TimeReachedEvent(self._numeric_traits),
             WarningEvent(),
         )
 
@@ -1086,7 +1086,7 @@ class DecodeBHSPC600_4096ch(_RelayNode):
     ) -> _CppExpression:
         return _CppExpression(
             f"""\
-            tcspc::decode_bh_spc600_4096ch<{self._data_types._cpp_type_name()}>(
+            tcspc::decode_bh_spc600_4096ch<{self._numeric_traits._cpp_type_name()}>(
                 {downstream}
             )"""
         )
@@ -1101,10 +1101,10 @@ class DecodeBHSPCWithIntensityCounter(_RelayNode):
 
     Parameters
     ----------
-    data_types : DataTypes or None
-        Data type set specifying the ``abstime``, ``channel``, ``difftime``,
+    numeric_traits : NumericTraits or None
+        Numeric traits specifying the ``abstime``, ``channel``, ``difftime``,
         and ``count`` types of the emitted events. Defaults to
-        ``DataTypes()``.
+        ``NumericTraits()``.
 
     Notes
     -----
@@ -1123,9 +1123,9 @@ class DecodeBHSPCWithIntensityCounter(_RelayNode):
     DecodeBHSPC
     """
 
-    def __init__(self, data_types: DataTypes | None = None) -> None:
-        self._data_types = (
-            data_types if data_types is not None else DataTypes()
+    def __init__(self, numeric_traits: NumericTraits | None = None) -> None:
+        self._numeric_traits = (
+            numeric_traits if numeric_traits is not None else NumericTraits()
         )
 
     @override
@@ -1138,11 +1138,11 @@ class DecodeBHSPCWithIntensityCounter(_RelayNode):
             self.__class__.__name__,
         )
         return (
-            _events.BulkCountsEvent(self._data_types),
-            _events.DataLostEvent(self._data_types),
-            _events.MarkerEvent(self._data_types),
-            _events.TimeCorrelatedDetectionEvent(self._data_types),
-            _events.TimeReachedEvent(self._data_types),
+            _events.BulkCountsEvent(self._numeric_traits),
+            _events.DataLostEvent(self._numeric_traits),
+            _events.MarkerEvent(self._numeric_traits),
+            _events.TimeCorrelatedDetectionEvent(self._numeric_traits),
+            _events.TimeReachedEvent(self._numeric_traits),
             WarningEvent(),
         )
 
@@ -1154,30 +1154,30 @@ class DecodeBHSPCWithIntensityCounter(_RelayNode):
     ) -> _CppExpression:
         return _CppExpression(
             f"""\
-            tcspc::decode_bh_spc_with_intensity_counter<{self._data_types._cpp_type_name()}>(
+            tcspc::decode_bh_spc_with_intensity_counter<{self._numeric_traits._cpp_type_name()}>(
                 {downstream}
             )"""
         )
 
 
 def _pqt2_decode_output(
-    data_types: DataTypes,
+    numeric_traits: NumericTraits,
 ) -> tuple[EventType, ...]:
     return (
-        _events.DetectionEvent(data_types),
-        _events.MarkerEvent(data_types),
-        _events.TimeReachedEvent(data_types),
+        _events.DetectionEvent(numeric_traits),
+        _events.MarkerEvent(numeric_traits),
+        _events.TimeReachedEvent(numeric_traits),
         WarningEvent(),
     )
 
 
 def _pqt3_decode_output(
-    data_types: DataTypes,
+    numeric_traits: NumericTraits,
 ) -> tuple[EventType, ...]:
     return (
-        _events.MarkerEvent(data_types),
-        _events.TimeCorrelatedDetectionEvent(data_types),
-        _events.TimeReachedEvent(data_types),
+        _events.MarkerEvent(numeric_traits),
+        _events.TimeCorrelatedDetectionEvent(numeric_traits),
+        _events.TimeReachedEvent(numeric_traits),
         WarningEvent(),
     )
 
@@ -1191,9 +1191,9 @@ class DecodePQT2Generic(_RelayNode):
 
     Parameters
     ----------
-    data_types : DataTypes or None
-        Data type set specifying ``abstime`` and ``channel`` types.
-        Defaults to ``DataTypes()``.
+    numeric_traits : NumericTraits or None
+        Numeric traits specifying ``abstime`` and ``channel`` types.
+        Defaults to ``NumericTraits()``.
 
     Notes
     -----
@@ -1211,9 +1211,9 @@ class DecodePQT2Generic(_RelayNode):
         The underlying C++ factory function.
     """
 
-    def __init__(self, data_types: DataTypes | None = None) -> None:
-        self._data_types = (
-            data_types if data_types is not None else DataTypes()
+    def __init__(self, numeric_traits: NumericTraits | None = None) -> None:
+        self._numeric_traits = (
+            numeric_traits if numeric_traits is not None else NumericTraits()
         )
 
     @override
@@ -1225,7 +1225,7 @@ class DecodePQT2Generic(_RelayNode):
             (_events.PQT2GenericEvent(),),
             self.__class__.__name__,
         )
-        return _pqt2_decode_output(self._data_types)
+        return _pqt2_decode_output(self._numeric_traits)
 
     @override
     def _relay_cpp_expression(
@@ -1235,7 +1235,7 @@ class DecodePQT2Generic(_RelayNode):
     ) -> _CppExpression:
         return _CppExpression(
             f"""\
-            tcspc::decode_pqt2_generic<{self._data_types._cpp_type_name()}>(
+            tcspc::decode_pqt2_generic<{self._numeric_traits._cpp_type_name()}>(
                 {downstream}
             )"""
         )
@@ -1249,9 +1249,9 @@ class DecodePQT2HydraHarpV1(_RelayNode):
 
     Parameters
     ----------
-    data_types : DataTypes or None
-        Data type set specifying ``abstime`` and ``channel`` types.
-        Defaults to ``DataTypes()``.
+    numeric_traits : NumericTraits or None
+        Numeric traits specifying ``abstime`` and ``channel`` types.
+        Defaults to ``NumericTraits()``.
 
     Notes
     -----
@@ -1269,9 +1269,9 @@ class DecodePQT2HydraHarpV1(_RelayNode):
         The underlying C++ factory function.
     """
 
-    def __init__(self, data_types: DataTypes | None = None) -> None:
-        self._data_types = (
-            data_types if data_types is not None else DataTypes()
+    def __init__(self, numeric_traits: NumericTraits | None = None) -> None:
+        self._numeric_traits = (
+            numeric_traits if numeric_traits is not None else NumericTraits()
         )
 
     @override
@@ -1283,7 +1283,7 @@ class DecodePQT2HydraHarpV1(_RelayNode):
             (_events.PQT2HydraHarpV1Event(),),
             self.__class__.__name__,
         )
-        return _pqt2_decode_output(self._data_types)
+        return _pqt2_decode_output(self._numeric_traits)
 
     @override
     def _relay_cpp_expression(
@@ -1293,7 +1293,7 @@ class DecodePQT2HydraHarpV1(_RelayNode):
     ) -> _CppExpression:
         return _CppExpression(
             f"""\
-            tcspc::decode_pqt2_hydraharpv1<{self._data_types._cpp_type_name()}>(
+            tcspc::decode_pqt2_hydraharpv1<{self._numeric_traits._cpp_type_name()}>(
                 {downstream}
             )"""
         )
@@ -1305,9 +1305,9 @@ class DecodePQT2PicoHarp300(_RelayNode):
 
     Parameters
     ----------
-    data_types : DataTypes or None
-        Data type set specifying ``abstime`` and ``channel`` types.
-        Defaults to ``DataTypes()``.
+    numeric_traits : NumericTraits or None
+        Numeric traits specifying ``abstime`` and ``channel`` types.
+        Defaults to ``NumericTraits()``.
 
     Notes
     -----
@@ -1325,9 +1325,9 @@ class DecodePQT2PicoHarp300(_RelayNode):
         The underlying C++ factory function.
     """
 
-    def __init__(self, data_types: DataTypes | None = None) -> None:
-        self._data_types = (
-            data_types if data_types is not None else DataTypes()
+    def __init__(self, numeric_traits: NumericTraits | None = None) -> None:
+        self._numeric_traits = (
+            numeric_traits if numeric_traits is not None else NumericTraits()
         )
 
     @override
@@ -1339,7 +1339,7 @@ class DecodePQT2PicoHarp300(_RelayNode):
             (_events.PQT2PicoHarp300Event(),),
             self.__class__.__name__,
         )
-        return _pqt2_decode_output(self._data_types)
+        return _pqt2_decode_output(self._numeric_traits)
 
     @override
     def _relay_cpp_expression(
@@ -1349,7 +1349,7 @@ class DecodePQT2PicoHarp300(_RelayNode):
     ) -> _CppExpression:
         return _CppExpression(
             f"""\
-            tcspc::decode_pqt2_picoharp300<{self._data_types._cpp_type_name()}>(
+            tcspc::decode_pqt2_picoharp300<{self._numeric_traits._cpp_type_name()}>(
                 {downstream}
             )"""
         )
@@ -1363,9 +1363,9 @@ class DecodePQT3Generic(_RelayNode):
 
     Parameters
     ----------
-    data_types : DataTypes or None
-        Data type set specifying ``abstime``, ``channel``, and
-        ``difftime`` types. Defaults to ``DataTypes()``.
+    numeric_traits : NumericTraits or None
+        Numeric traits specifying ``abstime``, ``channel``, and
+        ``difftime`` types. Defaults to ``NumericTraits()``.
 
     Notes
     -----
@@ -1383,9 +1383,9 @@ class DecodePQT3Generic(_RelayNode):
         The underlying C++ factory function.
     """
 
-    def __init__(self, data_types: DataTypes | None = None) -> None:
-        self._data_types = (
-            data_types if data_types is not None else DataTypes()
+    def __init__(self, numeric_traits: NumericTraits | None = None) -> None:
+        self._numeric_traits = (
+            numeric_traits if numeric_traits is not None else NumericTraits()
         )
 
     @override
@@ -1397,7 +1397,7 @@ class DecodePQT3Generic(_RelayNode):
             (_events.PQT3GenericEvent(),),
             self.__class__.__name__,
         )
-        return _pqt3_decode_output(self._data_types)
+        return _pqt3_decode_output(self._numeric_traits)
 
     @override
     def _relay_cpp_expression(
@@ -1407,7 +1407,7 @@ class DecodePQT3Generic(_RelayNode):
     ) -> _CppExpression:
         return _CppExpression(
             f"""\
-            tcspc::decode_pqt3_generic<{self._data_types._cpp_type_name()}>(
+            tcspc::decode_pqt3_generic<{self._numeric_traits._cpp_type_name()}>(
                 {downstream}
             )"""
         )
@@ -1419,9 +1419,9 @@ class DecodePQT3HydraHarpV1(_RelayNode):
 
     Parameters
     ----------
-    data_types : DataTypes or None
-        Data type set specifying ``abstime``, ``channel``, and
-        ``difftime`` types. Defaults to ``DataTypes()``.
+    numeric_traits : NumericTraits or None
+        Numeric traits specifying ``abstime``, ``channel``, and
+        ``difftime`` types. Defaults to ``NumericTraits()``.
 
     Notes
     -----
@@ -1439,9 +1439,9 @@ class DecodePQT3HydraHarpV1(_RelayNode):
         The underlying C++ factory function.
     """
 
-    def __init__(self, data_types: DataTypes | None = None) -> None:
-        self._data_types = (
-            data_types if data_types is not None else DataTypes()
+    def __init__(self, numeric_traits: NumericTraits | None = None) -> None:
+        self._numeric_traits = (
+            numeric_traits if numeric_traits is not None else NumericTraits()
         )
 
     @override
@@ -1453,7 +1453,7 @@ class DecodePQT3HydraHarpV1(_RelayNode):
             (_events.PQT3HydraHarpV1Event(),),
             self.__class__.__name__,
         )
-        return _pqt3_decode_output(self._data_types)
+        return _pqt3_decode_output(self._numeric_traits)
 
     @override
     def _relay_cpp_expression(
@@ -1463,7 +1463,7 @@ class DecodePQT3HydraHarpV1(_RelayNode):
     ) -> _CppExpression:
         return _CppExpression(
             f"""\
-            tcspc::decode_pqt3_hydraharpv1<{self._data_types._cpp_type_name()}>(
+            tcspc::decode_pqt3_hydraharpv1<{self._numeric_traits._cpp_type_name()}>(
                 {downstream}
             )"""
         )
@@ -1475,9 +1475,9 @@ class DecodePQT3PicoHarp300(_RelayNode):
 
     Parameters
     ----------
-    data_types : DataTypes or None
-        Data type set specifying ``abstime``, ``channel``, and
-        ``difftime`` types. Defaults to ``DataTypes()``.
+    numeric_traits : NumericTraits or None
+        Numeric traits specifying ``abstime``, ``channel``, and
+        ``difftime`` types. Defaults to ``NumericTraits()``.
 
     Notes
     -----
@@ -1495,9 +1495,9 @@ class DecodePQT3PicoHarp300(_RelayNode):
         The underlying C++ factory function.
     """
 
-    def __init__(self, data_types: DataTypes | None = None) -> None:
-        self._data_types = (
-            data_types if data_types is not None else DataTypes()
+    def __init__(self, numeric_traits: NumericTraits | None = None) -> None:
+        self._numeric_traits = (
+            numeric_traits if numeric_traits is not None else NumericTraits()
         )
 
     @override
@@ -1509,7 +1509,7 @@ class DecodePQT3PicoHarp300(_RelayNode):
             (_events.PQT3PicoHarp300Event(),),
             self.__class__.__name__,
         )
-        return _pqt3_decode_output(self._data_types)
+        return _pqt3_decode_output(self._numeric_traits)
 
     @override
     def _relay_cpp_expression(
@@ -1519,7 +1519,7 @@ class DecodePQT3PicoHarp300(_RelayNode):
     ) -> _CppExpression:
         return _CppExpression(
             f"""\
-            tcspc::decode_pqt3_picoharp300<{self._data_types._cpp_type_name()}>(
+            tcspc::decode_pqt3_picoharp300<{self._numeric_traits._cpp_type_name()}>(
                 {downstream}
             )"""
         )
@@ -1531,9 +1531,9 @@ class DecodeSwabianTags(_RelayNode):
 
     Parameters
     ----------
-    data_types : DataTypes or None
-        Data type set specifying ``abstime``, ``channel``, and
-        ``count`` types. Defaults to ``DataTypes()``.
+    numeric_traits : NumericTraits or None
+        Numeric traits specifying ``abstime``, ``channel``, and
+        ``count`` types. Defaults to ``NumericTraits()``.
 
     Notes
     -----
@@ -1551,9 +1551,9 @@ class DecodeSwabianTags(_RelayNode):
         The underlying C++ factory function.
     """
 
-    def __init__(self, data_types: DataTypes | None = None) -> None:
-        self._data_types = (
-            data_types if data_types is not None else DataTypes()
+    def __init__(self, numeric_traits: NumericTraits | None = None) -> None:
+        self._numeric_traits = (
+            numeric_traits if numeric_traits is not None else NumericTraits()
         )
 
     @override
@@ -1566,10 +1566,10 @@ class DecodeSwabianTags(_RelayNode):
             self.__class__.__name__,
         )
         return (
-            _events.BeginLostIntervalEvent(self._data_types),
-            _events.DetectionEvent(self._data_types),
-            _events.EndLostIntervalEvent(self._data_types),
-            _events.LostCountsEvent(self._data_types),
+            _events.BeginLostIntervalEvent(self._numeric_traits),
+            _events.DetectionEvent(self._numeric_traits),
+            _events.EndLostIntervalEvent(self._numeric_traits),
+            _events.LostCountsEvent(self._numeric_traits),
             WarningEvent(),
         )
 
@@ -1581,7 +1581,7 @@ class DecodeSwabianTags(_RelayNode):
     ) -> _CppExpression:
         return _CppExpression(
             f"""\
-            tcspc::decode_swabian_tags<{self._data_types._cpp_type_name()}>(
+            tcspc::decode_swabian_tags<{self._numeric_traits._cpp_type_name()}>(
                 {downstream}
             )"""
         )
@@ -1599,9 +1599,9 @@ class Delay(_TypePreservingRelayNode):
     ----------
     delta : int or Param[int]
         Offset added to ``abstime``. May be negative.
-    data_types : DataTypes or None
-        Data type set specifying the ``abstime_type``. Defaults to
-        ``DataTypes()``.
+    numeric_traits : NumericTraits or None
+        Numeric traits specifying the ``abstime_type``. Defaults to
+        ``NumericTraits()``.
 
     Notes
     -----
@@ -1621,11 +1621,11 @@ class Delay(_TypePreservingRelayNode):
     def __init__(
         self,
         delta: int | Param[int],
-        data_types: DataTypes | None = None,
+        numeric_traits: NumericTraits | None = None,
     ) -> None:
         self._delta = delta
-        self._data_types = (
-            data_types if data_types is not None else DataTypes()
+        self._numeric_traits = (
+            numeric_traits if numeric_traits is not None else NumericTraits()
         )
 
     @override
@@ -1641,7 +1641,7 @@ class Delay(_TypePreservingRelayNode):
         downstream: _CppExpression,
     ) -> _CppExpression:
         abstime_t = (
-            f"typename {self._data_types._cpp_type_name()}::abstime_type"
+            f"typename {self._numeric_traits._cpp_type_name()}::abstime_type"
         )
         if isinstance(self._delta, Param):
             value_expr = (
@@ -1651,7 +1651,7 @@ class Delay(_TypePreservingRelayNode):
             value_expr = f"tcspc::i64{{{self._delta}LL}}"
         return _CppExpression(
             f"""\
-            tcspc::delay<{self._data_types._cpp_type_name()}>(
+            tcspc::delay<{self._numeric_traits._cpp_type_name()}>(
                 tcspc::arg::delta<{abstime_t}>{{static_cast<{abstime_t}>({value_expr})}},
                 {downstream}
             )"""
@@ -1850,9 +1850,9 @@ class RecoverOrder(_TypePreservingRelayNode):
     time_window : int or Param[int]
         Maximum abstime range over which events may be out of order.
         Must be non-negative.
-    data_types : DataTypes or None
-        Data type set specifying ``abstime_type``. Defaults to
-        ``DataTypes()``.
+    numeric_traits : NumericTraits or None
+        Numeric traits specifying ``abstime_type``. Defaults to
+        ``NumericTraits()``.
 
     Notes
     -----
@@ -1872,11 +1872,11 @@ class RecoverOrder(_TypePreservingRelayNode):
     def __init__(
         self,
         time_window: int | Param[int],
-        data_types: DataTypes | None = None,
+        numeric_traits: NumericTraits | None = None,
     ) -> None:
         self._time_window = time_window
-        self._data_types = (
-            data_types if data_types is not None else DataTypes()
+        self._numeric_traits = (
+            numeric_traits if numeric_traits is not None else NumericTraits()
         )
 
     @override
@@ -1899,7 +1899,7 @@ class RecoverOrder(_TypePreservingRelayNode):
         downstream: _CppExpression,
     ) -> _CppExpression:
         abstime_t = (
-            f"typename {self._data_types._cpp_type_name()}::abstime_type"
+            f"typename {self._numeric_traits._cpp_type_name()}::abstime_type"
         )
         if isinstance(self._time_window, Param):
             value_expr = f"{gencontext.params_varname}.{self._time_window._cpp_identifier()}"
@@ -1910,7 +1910,7 @@ class RecoverOrder(_TypePreservingRelayNode):
             f"""\
             tcspc::recover_order<
                 {event_list},
-                {self._data_types._cpp_type_name()}
+                {self._numeric_traits._cpp_type_name()}
             >(
                 tcspc::arg::time_window<{abstime_t}>{{static_cast<{abstime_t}>({value_expr})}},
                 {downstream}
@@ -1937,9 +1937,9 @@ class RegulateTimeReached(_TypePreservingRelayNode):
     count_threshold : int or Param[int]
         A `TimeReachedEvent` is emitted when this many events have
         been emitted since the previously emitted one.
-    data_types : DataTypes or None
-        Data type set specifying ``abstime_type``. Defaults to
-        ``DataTypes()``.
+    numeric_traits : NumericTraits or None
+        Numeric traits specifying ``abstime_type``. Defaults to
+        ``NumericTraits()``.
 
     Notes
     -----
@@ -1961,12 +1961,12 @@ class RegulateTimeReached(_TypePreservingRelayNode):
         self,
         interval_threshold: int | Param[int],
         count_threshold: int | Param[int],
-        data_types: DataTypes | None = None,
+        numeric_traits: NumericTraits | None = None,
     ) -> None:
         self._interval = interval_threshold
         self._count = count_threshold
-        self._data_types = (
-            data_types if data_types is not None else DataTypes()
+        self._numeric_traits = (
+            numeric_traits if numeric_traits is not None else NumericTraits()
         )
 
     @override
@@ -1985,7 +1985,7 @@ class RegulateTimeReached(_TypePreservingRelayNode):
         downstream: _CppExpression,
     ) -> _CppExpression:
         abstime_t = (
-            f"typename {self._data_types._cpp_type_name()}::abstime_type"
+            f"typename {self._numeric_traits._cpp_type_name()}::abstime_type"
         )
         if isinstance(self._interval, Param):
             interval_expr = f"{gencontext.params_varname}.{self._interval._cpp_identifier()}"
@@ -1994,7 +1994,7 @@ class RegulateTimeReached(_TypePreservingRelayNode):
         count_expr = gencontext.size_t_expression(self._count)
         return _CppExpression(
             f"""\
-            tcspc::regulate_time_reached<{self._data_types._cpp_type_name()}>(
+            tcspc::regulate_time_reached<{self._numeric_traits._cpp_type_name()}>(
                 tcspc::arg::interval_threshold<{abstime_t}>{{static_cast<{abstime_t}>({interval_expr})}},
                 tcspc::arg::count_threshold<std::size_t>{{{count_expr}}},
                 {downstream}
@@ -2012,9 +2012,9 @@ class RemoveTimeCorrelation(_RelayNode):
 
     Parameters
     ----------
-    data_types : DataTypes or None
-        Data type set specifying ``abstime`` and ``channel`` types.
-        Defaults to ``DataTypes()``.
+    numeric_traits : NumericTraits or None
+        Numeric traits specifying ``abstime`` and ``channel`` types.
+        Defaults to ``NumericTraits()``.
 
     Notes
     -----
@@ -2031,17 +2031,17 @@ class RemoveTimeCorrelation(_RelayNode):
         The underlying C++ factory function.
     """
 
-    def __init__(self, data_types: DataTypes | None = None) -> None:
-        self._data_types = (
-            data_types if data_types is not None else DataTypes()
+    def __init__(self, numeric_traits: NumericTraits | None = None) -> None:
+        self._numeric_traits = (
+            numeric_traits if numeric_traits is not None else NumericTraits()
         )
 
     @override
     def _relay_map_event_set(
         self, input_event_set: Collection[EventType]
     ) -> tuple[EventType, ...]:
-        tcd = _events.TimeCorrelatedDetectionEvent(self._data_types)
-        det = _events.DetectionEvent(self._data_types)
+        tcd = _events.TimeCorrelatedDetectionEvent(self._numeric_traits)
+        det = _events.DetectionEvent(self._numeric_traits)
         out = tuple(t for t in input_event_set if t != tcd)
         return (*out, det)
 
@@ -2053,7 +2053,7 @@ class RemoveTimeCorrelation(_RelayNode):
     ) -> _CppExpression:
         return _CppExpression(
             f"""\
-            tcspc::remove_time_correlation<{self._data_types._cpp_type_name()}>(
+            tcspc::remove_time_correlation<{self._numeric_traits._cpp_type_name()}>(
                 {downstream}
             )"""
         )
@@ -2580,9 +2580,9 @@ class RebaseAbstime(_TypePreservingRelayNode):
 
     Parameters
     ----------
-    data_types : DataTypes or None
-        Data type set specifying ``abstime_type``. Defaults to
-        ``DataTypes()``.
+    numeric_traits : NumericTraits or None
+        Numeric traits specifying ``abstime_type``. Defaults to
+        ``NumericTraits()``.
 
     Notes
     -----
@@ -2599,9 +2599,9 @@ class RebaseAbstime(_TypePreservingRelayNode):
     Delay
     """
 
-    def __init__(self, data_types: DataTypes | None = None) -> None:
-        self._data_types = (
-            data_types if data_types is not None else DataTypes()
+    def __init__(self, numeric_traits: NumericTraits | None = None) -> None:
+        self._numeric_traits = (
+            numeric_traits if numeric_traits is not None else NumericTraits()
         )
 
     @override
@@ -2612,7 +2612,7 @@ class RebaseAbstime(_TypePreservingRelayNode):
     ) -> _CppExpression:
         return _CppExpression(
             f"""\
-            tcspc::rebase_abstime<{self._data_types._cpp_type_name()}>(
+            tcspc::rebase_abstime<{self._numeric_traits._cpp_type_name()}>(
                 {downstream}
             )"""
         )

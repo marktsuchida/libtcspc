@@ -67,8 +67,8 @@ excluded from the output.
 )");
 }
 
-using abstime_type = tcspc::default_data_types::abstime_type;
-using channel_type = tcspc::default_data_types::channel_type;
+using abstime_type = tcspc::default_numeric_traits::abstime_type;
+using channel_type = tcspc::default_numeric_traits::channel_type;
 
 struct line_start_event {
     tcspc::i64 abstime;

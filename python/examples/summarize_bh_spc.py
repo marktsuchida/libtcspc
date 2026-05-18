@@ -15,7 +15,7 @@ MARK_COUNT_TAG = tcspc.AccessTag("count-mark")
 def summarize(filename: str) -> int:
     print("Creating processing graph...")
     # BH SPC has no negative channel or marker numbers.
-    dtypes = tcspc.DataTypes(channel_type=np.uint32)
+    numtraits = tcspc.NumericTraits(channel_type=np.uint32)
 
     g = tcspc.Graph()
     g.add_chain(
@@ -27,17 +27,17 @@ def summarize(filename: str) -> int:
                 stop_normally_on_error=True,
             ),
             tcspc.Count(tcspc.BHSPCEvent(), RECORD_COUNT_TAG),
-            tcspc.DecodeBHSPC(dtypes),
-            tcspc.CheckMonotonic(dtypes),
+            tcspc.DecodeBHSPC(numtraits),
+            tcspc.CheckMonotonic(numtraits),
             tcspc.Stop(
-                (tcspc.WarningEvent(), tcspc.DataLostEvent(dtypes)),
+                (tcspc.WarningEvent(), tcspc.DataLostEvent(numtraits)),
                 "error in data",
             ),
             tcspc.Count(
-                tcspc.TimeCorrelatedDetectionEvent(dtypes),
+                tcspc.TimeCorrelatedDetectionEvent(numtraits),
                 PHOTON_COUNT_TAG,
             ),
-            tcspc.Count(tcspc.MarkerEvent(dtypes), MARK_COUNT_TAG),
+            tcspc.Count(tcspc.MarkerEvent(numtraits), MARK_COUNT_TAG),
             # Simplified for now compared to the C++ example (no per-channel
             # counts and time range).
             tcspc.SinkAll(),

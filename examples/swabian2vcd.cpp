@@ -66,8 +66,8 @@ Options:
 )");
 }
 
-using abstime_type = tcspc::default_data_types::abstime_type;
-using channel_type = tcspc::default_data_types::channel_type;
+using abstime_type = tcspc::default_numeric_traits::abstime_type;
+using channel_type = tcspc::default_numeric_traits::channel_type;
 
 struct settings {
     std::string input_filename;
@@ -79,7 +79,7 @@ struct settings {
 auto scan_for_channels(std::string const &input_filename)
     -> std::vector<channel_type> {
     using namespace tcspc;
-    struct data_types {
+    struct numtraits {
         using datapoint_type = channel_type;
         using bin_index_type = u64;
     };
@@ -95,10 +95,10 @@ auto scan_for_channels(std::string const &input_filename)
     unbatch<bucket<swabian_tag_event>>(
     decode_swabian_tags(
     select<type_list<detection_event<>>>(
-    map_to_datapoints<detection_event<>, data_types>(
-        channel_data_mapper<data_types>(),
-    map_to_bins<data_types>(
-        unique_bin_mapper<data_types>(
+    map_to_datapoints<detection_event<>, numtraits>(
+        channel_data_mapper<numtraits>(),
+    map_to_bins<numtraits>(
+        unique_bin_mapper<numtraits>(
             ctx->tracker<unique_bin_mapper_access<channel_type>>("channels"),
             arg::max_bin_index<u64>{26}
         ),

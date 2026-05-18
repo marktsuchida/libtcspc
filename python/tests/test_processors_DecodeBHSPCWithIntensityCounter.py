@@ -6,7 +6,6 @@ import pytest
 from _test_helpers import _NamedEvent
 from libtcspc._codegen import _CodeGenerationContext
 from libtcspc._cpp_utils import _CppExpression, _CppIdentifier, _CppTypeName
-from libtcspc._data_types import DataTypes
 from libtcspc._events import (
     BHSPCEvent,
     BulkCountsEvent,
@@ -16,6 +15,7 @@ from libtcspc._events import (
     TimeReachedEvent,
     WarningEvent,
 )
+from libtcspc._numeric_traits import NumericTraits
 from libtcspc._processors import DecodeBHSPCWithIntensityCounter
 
 IntEvent = _NamedEvent(_CppTypeName("int"))
@@ -34,7 +34,7 @@ def test_DecodeBHSPCWithIntensityCounter_accepts_only_BHSPCEvent():
 
 
 def test_DecodeBHSPCWithIntensityCounter_output_event_set():
-    dt = DataTypes()
+    dt = NumericTraits()
     node = DecodeBHSPCWithIntensityCounter(dt)
     assert node._map_event_sets([(BHSPCEvent(),)]) == (
         (

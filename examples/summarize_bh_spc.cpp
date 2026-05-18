@@ -18,14 +18,14 @@
 
 namespace {
 
-struct dtypes : tcspc::default_data_types {
+struct numtraits : tcspc::default_numeric_traits {
     // BH channels are never negative; use of unsigned type simplifies checks
     // in summarize_and_print().
     using channel_type = tcspc::u32;
 };
 
-using channel_type = dtypes::channel_type;
-using abstime_type = dtypes::abstime_type;
+using channel_type = numtraits::channel_type;
+using abstime_type = numtraits::abstime_type;
 
 void print_out(char const *str) {
     if (std::fputs(str, stdout) == EOF)
@@ -45,17 +45,18 @@ class summarize_and_print {
     abstime_type last_abstime = std::numeric_limits<abstime_type>::min();
 
   public:
-    void handle(tcspc::time_correlated_detection_event<dtypes> const &event) {
+    void
+    handle(tcspc::time_correlated_detection_event<numtraits> const &event) {
         ++photon_counts.at(event.channel);
         last_abstime = event.abstime;
     }
 
-    void handle(tcspc::marker_event<dtypes> const &event) {
+    void handle(tcspc::marker_event<numtraits> const &event) {
         ++marker_counts.at(event.channel);
         last_abstime = event.abstime;
     }
 
-    void handle(tcspc::time_reached_event<dtypes> const &event) {
+    void handle(tcspc::time_reached_event<numtraits> const &event) {
         last_abstime = event.abstime;
     }
 
@@ -86,9 +87,9 @@ auto summarize(std::string const &filename) -> bool {
     stop<type_list<warning_event>>("error reading input",
     unbatch<bucket<bh_spc_event>>( // Get individual device events.
     count<bh_spc_event>(ctx->tracker<count_access>("counter"), // Count.
-    decode_bh_spc<dtypes>( // Decode device events into generic TCSPC events.
-    check_monotonic<dtypes>( // Ensure the abstime is non-decreasing.
-    stop<type_list<warning_event, data_lost_event<dtypes>>>("error in data",
+    decode_bh_spc<numtraits>( // Decode device events into generic TCSPC events.
+    check_monotonic<numtraits>( // Ensure the abstime is non-decreasing.
+    stop<type_list<warning_event, data_lost_event<numtraits>>>("error in data",
     summarize_and_print())))))));
     // clang-format on
 

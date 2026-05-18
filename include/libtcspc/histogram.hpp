@@ -10,12 +10,12 @@
 #include "bucket.hpp"
 #include "common.hpp"
 #include "core.hpp"
-#include "data_types.hpp"
 #include "errors.hpp"
 #include "histogram_events.hpp"
 #include "histogram_impl.hpp"
 #include "histogram_policy.hpp"
 #include "introspect.hpp"
+#include "numeric_traits.hpp"
 #include "processor.hpp"
 
 #include <algorithm>
@@ -30,9 +30,9 @@ namespace tcspc {
 
 namespace internal {
 
-template <histogram_policy Policy, typename ResetEvent, typename DataTypes,
+template <histogram_policy Policy, typename ResetEvent, typename NumericTraits,
           typename Downstream>
-    requires processor<Downstream, histogram_event<DataTypes>> &&
+    requires processor<Downstream, histogram_event<NumericTraits>> &&
              (std::is_same_v<ResetEvent, never_event> ||
               handler_for<Downstream, ResetEvent>) &&
              ((Policy & histogram_policy::overflow_mask) !=
@@ -40,7 +40,8 @@ template <histogram_policy Policy, typename ResetEvent, typename DataTypes,
               handler_for<Downstream, warning_event>) &&
              ((Policy & histogram_policy::emit_concluding_events) ==
                   histogram_policy::default_policy ||
-              handler_for<Downstream, concluding_histogram_event<DataTypes>>)
+              handler_for<Downstream,
+                          concluding_histogram_event<NumericTraits>>)
 class histogram {
     static constexpr histogram_policy overflow_policy =
         Policy & histogram_policy::overflow_mask;
@@ -52,8 +53,8 @@ class histogram {
         overflow_policy == histogram_policy::saturate_on_overflow,
         saturate_on_internal_overflow, stop_on_internal_overflow>;
 
-    using bin_index_type = typename DataTypes::bin_index_type;
-    using bin_type = typename DataTypes::bin_type;
+    using bin_index_type = typename NumericTraits::bin_index_type;
+    using bin_type = typename NumericTraits::bin_type;
 
     std::shared_ptr<bucket_source<bin_type>> bsource;
     bucket<bin_type> hist_bucket;
@@ -72,8 +73,8 @@ class histogram {
         if (hist_bucket.empty())
             start_new_round();
         if constexpr (emit_concluding) {
-            downstream.handle(
-                concluding_histogram_event<DataTypes>{std::move(hist_bucket)});
+            downstream.handle(concluding_histogram_event<NumericTraits>{
+                std::move(hist_bucket)});
         }
         hist_bucket = {};
         if constexpr (overflow_policy ==
@@ -96,9 +97,9 @@ class histogram {
         saturate_warning_issued = true;
     }
 
-    template <typename DT>
+    template <typename NT>
     LIBTCSPC_NOINLINE void
-    overflow_reset(bin_increment_event<DT> const &event) {
+    overflow_reset(bin_increment_event<NT> const &event) {
         if (shist.max_per_bin() == 0)
             overflow_error();
         reset();
@@ -131,9 +132,9 @@ class histogram {
         return downstream.introspect_graph().push_entry_point(this);
     }
 
-    template <typename DT> void handle(bin_increment_event<DT> const &event) {
-        static_assert(std::is_same_v<typename DT::bin_index_type,
-                                     typename DataTypes::bin_index_type>);
+    template <typename NT> void handle(bin_increment_event<NT> const &event) {
+        static_assert(std::is_same_v<typename NT::bin_index_type,
+                                     typename NumericTraits::bin_index_type>);
         if (hist_bucket.empty())
             start_new_round();
         if (not shist.apply_increments({&event.bin_index, 1})) {
@@ -153,14 +154,14 @@ class histogram {
             }
         }
 
-        auto const hist_event =
-            histogram_event<DataTypes>{ad_hoc_bucket(std::span(hist_bucket))};
+        auto const hist_event = histogram_event<NumericTraits>{
+            ad_hoc_bucket(std::span(hist_bucket))};
         downstream.handle(hist_event);
     }
 
     // NOLINTNEXTLINE(cppcoreguidelines-rvalue-reference-param-not-moved)
-    template <typename DT> void handle(bin_increment_event<DT> &&event) {
-        handle(static_cast<bin_increment_event<DT> const &>(event));
+    template <typename NT> void handle(bin_increment_event<NT> &&event) {
+        handle(static_cast<bin_increment_event<NT> const &>(event));
     }
 
     template <typename E>
@@ -183,7 +184,7 @@ class histogram {
  * \ingroup processors-histogramming
  *
  * The processor fills a histogram (held in a
- * `tcspc::bucket<DataTypes::bin_type>` provided by \p buffer_provider) by
+ * `tcspc::bucket<NumericTraits::bin_type>` provided by \p buffer_provider) by
  * incrementing the bin given by each incoming `tcspc::bin_increment_event`.
  *
  * A _round_ of accumulation is ended by resetting, for example by receiving a
@@ -195,13 +196,13 @@ class histogram {
  *
  * The result is emitted in 2 ways:
  *
- * - A `tcspc::histogram_event<DataTypes>` is emitted on each bin increment,
- *   carrying a view of the histogram.
+ * - A `tcspc::histogram_event<NumericTraits>` is emitted on each bin
+ * increment, carrying a view of the histogram.
  *
  * - If requested (i.e., \p Policy contains
  *   `tcspc::histogram_policy::emit_concluding_events`), a
- *   `tcspc::concluding_histogram_event<DataTypes>` is emitted upon each reset.
- *   This event carries a bucket with extractable storage.
+ *   `tcspc::concluding_histogram_event<NumericTraits>` is emitted upon each
+ * reset. This event carries a bucket with extractable storage.
  *
  * \attention Behavior is undefined if an incoming `tcspc::bin_increment_event`
  * contains a bin index beyond the size of the histogram. The bin mapper should
@@ -211,7 +212,8 @@ class histogram {
  *
  * \tparam ResetEvent type of event causing a new round to start
  *
- * \tparam DataTypes data type set specifying `bin_index_type` and `bin_type`
+ * \tparam NumericTraits numeric traits specifying `bin_index_type` and
+ * `bin_type`
  *
  * \tparam Downstream downstream processor type (usually deduced)
  *
@@ -229,28 +231,28 @@ class histogram {
  *
  * \par Events handled
  *
- * - `tcspc::bin_increment_event<DT>`: apply the increment to the histogram
+ * - `tcspc::bin_increment_event<NT>`: apply the increment to the histogram
  *   and, if there is no bin overflow, emit (const)
- *   `tcspc::histogram_event<DataTypes>`. If a bin overflowed,
+ *   `tcspc::histogram_event<NumericTraits>`. If a bin overflowed,
  *   behavior depends on the value of `Policy &
  *   tcspc::histogram_policy::overflow_mask`:
  *   - If `tcspc::histogram_policy::error_on_overflow` (the default), throw
  *     `tcspc::histogram_overflow_error`
  *   - If `tcspc::histogram_policy::stop_on_overflow`, emit
- *     `tcspc::concluding_histogram_event<DataTypes>` if `Policy` has
+ *     `tcspc::concluding_histogram_event<NumericTraits>` if `Policy` has
  *     `tcspc::histogram_policy::emit_concluding_events` set, then flush the
  *     downstream and throw `tcspc::end_of_processing`
  *   - If `tcspc::histogram_policy::saturate_on_overflow`, emit a
  *     `tcspc::warning_event` (but only if this is the first overflow in the
  *     current round); then ignore the increment but do proceed to emit
- *     `tcspc::histogram_event<DataTypes>`
+ *     `tcspc::histogram_event<NumericTraits>`
  *   - If `tcspc::histogram_policy::reset_on_overflow`, perform a reset, as if
  *     a `ResetEvent` was received just prior to the current event; then, in
  *     the fresh histogram, reapply the current event (but throw
  *     `tcspc::histogram_overflow_error` if `max_per_bin` equals 0)
  * - `ResetEvent`: if `Policy` has
  *   `tcspc::histogram_policy::emit_concluding_events` set, emit (rvalue)
- *   `tcspc::concluding_histogram_event<DataTypes>` with the current
+ *   `tcspc::concluding_histogram_event<NumericTraits>` with the current
  *   histogram; pass through; then start a new round by arranging to switch to
  *   a new bucket for the histogram on the next `tcspc::bin_increment_event`
  * - All other types: pass through with no action
@@ -258,13 +260,13 @@ class histogram {
  */
 template <histogram_policy Policy = histogram_policy::default_policy,
           typename ResetEvent = never_event,
-          typename DataTypes = default_data_types, typename Downstream>
+          typename NumericTraits = default_numeric_traits, typename Downstream>
 auto histogram(arg::num_bins<std::size_t> num_bins,
-               arg::max_per_bin<typename DataTypes::bin_type> max_per_bin,
-               std::shared_ptr<bucket_source<typename DataTypes::bin_type>>
+               arg::max_per_bin<typename NumericTraits::bin_type> max_per_bin,
+               std::shared_ptr<bucket_source<typename NumericTraits::bin_type>>
                    buffer_provider,
                Downstream downstream) {
-    return internal::histogram<Policy, ResetEvent, DataTypes, Downstream>(
+    return internal::histogram<Policy, ResetEvent, NumericTraits, Downstream>(
         num_bins, max_per_bin, std::move(buffer_provider),
         std::move(downstream));
 }

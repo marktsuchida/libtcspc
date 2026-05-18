@@ -8,8 +8,8 @@
 
 #include "arg_wrappers.hpp"
 #include "common.hpp"
-#include "data_types.hpp"
 #include "introspect.hpp"
+#include "numeric_traits.hpp"
 #include "processor.hpp"
 
 #include <cstddef>
@@ -146,20 +146,20 @@ auto generate(TimingGenerator generator, Downstream downstream) {
  *
  * \ingroup timing-generators
  *
- * \tparam DataTypes data type set specifying `abstime_type`
+ * \tparam NumericTraits numeric traits specifying `abstime_type`
  */
-template <typename DataTypes = default_data_types>
+template <typename NumericTraits = default_numeric_traits>
 class null_timing_generator {
   public:
     /** \brief Implements timing generator requirement. */
     template <typename TriggerEvent> void trigger(TriggerEvent const &event) {
         static_assert(std::is_same_v<decltype(event.abstime),
-                                     typename DataTypes::abstime_type>);
+                                     typename NumericTraits::abstime_type>);
     }
 
     /** \brief Implements timing generator requirement. */
     [[nodiscard]] auto peek() const
-        -> std::optional<typename DataTypes::abstime_type> {
+        -> std::optional<typename NumericTraits::abstime_type> {
         return std::nullopt;
     }
 
@@ -172,12 +172,12 @@ class null_timing_generator {
  *
  * \ingroup timing-generators
  *
- * \tparam DataTypes data type set specifying `abstime_type`
+ * \tparam NumericTraits numeric traits specifying `abstime_type`
  */
-template <typename DataTypes = default_data_types>
+template <typename NumericTraits = default_numeric_traits>
 class one_shot_timing_generator {
-    std::optional<typename DataTypes::abstime_type> next;
-    typename DataTypes::abstime_type dly;
+    std::optional<typename NumericTraits::abstime_type> next;
+    typename NumericTraits::abstime_type dly;
 
   public:
     /**
@@ -187,7 +187,7 @@ class one_shot_timing_generator {
      * \p delay must be nonnegative.
      */
     explicit one_shot_timing_generator(
-        arg::delay<typename DataTypes::abstime_type> delay)
+        arg::delay<typename NumericTraits::abstime_type> delay)
         : dly(delay.value) {
         if (dly < 0)
             throw std::invalid_argument(
@@ -197,13 +197,13 @@ class one_shot_timing_generator {
     /** \brief Implements timing generator requirement. */
     template <typename TriggerEvent> void trigger(TriggerEvent const &event) {
         static_assert(std::is_same_v<decltype(event.abstime),
-                                     typename DataTypes::abstime_type>);
+                                     typename NumericTraits::abstime_type>);
         next = event.abstime + dly;
     }
 
     /** \brief Implements timing generator requirement. */
     [[nodiscard]] auto peek() const
-        -> std::optional<typename DataTypes::abstime_type> {
+        -> std::optional<typename NumericTraits::abstime_type> {
         return next;
     }
 
@@ -220,25 +220,25 @@ class one_shot_timing_generator {
  * The delay of the output timing (relative to the trigger event) is obtained
  * from the `delay` data member of each trigger event.
  *
- * \tparam DataTypes data type set specifying `abstime_type`
+ * \tparam NumericTraits numeric traits specifying `abstime_type`
  */
-template <typename DataTypes = default_data_types>
+template <typename NumericTraits = default_numeric_traits>
 class dynamic_one_shot_timing_generator {
-    std::optional<typename DataTypes::abstime_type> next;
+    std::optional<typename NumericTraits::abstime_type> next;
 
   public:
     /** \brief Implements timing generator requirement. */
     template <typename TriggerEvent> void trigger(TriggerEvent const &event) {
         static_assert(std::is_same_v<decltype(event.abstime),
-                                     typename DataTypes::abstime_type>);
+                                     typename NumericTraits::abstime_type>);
         static_assert(std::is_same_v<decltype(event.delay),
-                                     typename DataTypes::abstime_type>);
+                                     typename NumericTraits::abstime_type>);
         next = event.abstime + event.delay;
     }
 
     /** \brief Implements timing generator requirement. */
     [[nodiscard]] auto peek() const
-        -> std::optional<typename DataTypes::abstime_type> {
+        -> std::optional<typename NumericTraits::abstime_type> {
         return next;
     }
 
@@ -251,15 +251,15 @@ class dynamic_one_shot_timing_generator {
  *
  * \ingroup timing-generators
  *
- * \tparam DataTypes data type set specifying `abstime_type`
+ * \tparam NumericTraits numeric traits specifying `abstime_type`
  */
-template <typename DataTypes = default_data_types>
+template <typename NumericTraits = default_numeric_traits>
 class linear_timing_generator {
-    typename DataTypes::abstime_type next = 0;
+    typename NumericTraits::abstime_type next = 0;
     std::size_t remaining = 0;
 
-    typename DataTypes::abstime_type dly;
-    typename DataTypes::abstime_type intval;
+    typename NumericTraits::abstime_type dly;
+    typename NumericTraits::abstime_type intval;
     std::size_t ct;
 
   public:
@@ -270,8 +270,8 @@ class linear_timing_generator {
      * \p delay must be nonnegative; \p interval must be positive.
      */
     explicit linear_timing_generator(
-        arg::delay<typename DataTypes::abstime_type> delay,
-        arg::interval<typename DataTypes::abstime_type> interval,
+        arg::delay<typename NumericTraits::abstime_type> delay,
+        arg::interval<typename NumericTraits::abstime_type> interval,
         arg::count<std::size_t> count)
         : dly(delay.value), intval(interval.value), ct(count.value) {
         if (dly < 0)
@@ -285,14 +285,14 @@ class linear_timing_generator {
     /** \brief Implements timing generator requirement. */
     template <typename TriggerEvent> void trigger(TriggerEvent const &event) {
         static_assert(std::is_same_v<decltype(event.abstime),
-                                     typename DataTypes::abstime_type>);
+                                     typename NumericTraits::abstime_type>);
         next = event.abstime + dly;
         remaining = ct;
     }
 
     /** \brief Implements timing generator requirement. */
     [[nodiscard]] auto peek() const
-        -> std::optional<typename DataTypes::abstime_type> {
+        -> std::optional<typename NumericTraits::abstime_type> {
         if (remaining > 0)
             return next;
         return std::nullopt;
@@ -314,19 +314,19 @@ class linear_timing_generator {
  * The configuration of output timings is obtained from the `delay`,
  * `interval`, and `count` data members of each trigger event.
  *
- * \tparam DataTypes data type set specifying `abstime_type`
+ * \tparam NumericTraits numeric traits specifying `abstime_type`
  */
-template <typename DataTypes = default_data_types>
+template <typename NumericTraits = default_numeric_traits>
 class dynamic_linear_timing_generator {
-    typename DataTypes::abstime_type next = 0;
+    typename NumericTraits::abstime_type next = 0;
     std::size_t remaining = 0;
-    typename DataTypes::abstime_type interval = 0;
+    typename NumericTraits::abstime_type interval = 0;
 
   public:
     /** \brief Implements timing generator requirement. */
     template <typename TriggerEvent> void trigger(TriggerEvent const &event) {
         static_assert(std::is_same_v<decltype(event.abstime),
-                                     typename DataTypes::abstime_type>);
+                                     typename NumericTraits::abstime_type>);
         next = event.abstime + event.delay;
         remaining = event.count;
         interval = event.interval;
@@ -334,7 +334,7 @@ class dynamic_linear_timing_generator {
 
     /** \brief Implements timing generator requirement. */
     [[nodiscard]] auto peek() const
-        -> std::optional<typename DataTypes::abstime_type> {
+        -> std::optional<typename NumericTraits::abstime_type> {
         if (remaining > 0)
             return next;
         return std::nullopt;

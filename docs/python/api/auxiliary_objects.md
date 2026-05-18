@@ -9,9 +9,9 @@ SPDX-License-Identifier: MIT
 These objects are used during graph definition to configure event types and
 processor nodes.
 
-## Data types
+## Numeric traits
 
-{py:class}`~libtcspc.DataTypes` objects are used to specify the numeric data
+{py:class}`~libtcspc.NumericTraits` objects are used to specify the numeric
 types used for timestamp and related event fields.
 
 ```{eval-rst}
@@ -19,7 +19,7 @@ types used for timestamp and related event fields.
    :toctree: generated
    :nosignatures:
 
-   libtcspc.DataTypes
+   libtcspc.NumericTraits
 ```
 
 ## Parameters

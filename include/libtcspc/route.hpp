@@ -7,10 +7,10 @@
 #pragma once
 
 #include "common.hpp"
-#include "data_types.hpp"
 #include "errors.hpp"
 #include "int_arith.hpp"
 #include "introspect.hpp"
+#include "numeric_traits.hpp"
 #include "type_erased_processor.hpp"
 #include "type_list.hpp"
 
@@ -290,18 +290,18 @@ class null_router {
  *
  * \tparam N the number of channels to route
  *
- * \tparam DataTypes data type set specifying `channel_type`
+ * \tparam NumericTraits numeric traits specifying `channel_type`
  */
-template <std::size_t N, typename DataTypes = default_data_types>
+template <std::size_t N, typename NumericTraits = default_numeric_traits>
 class channel_router {
-    std::array<typename DataTypes::channel_type, N> channels;
+    std::array<typename NumericTraits::channel_type, N> channels;
     std::array<std::size_t, N> indices;
 
   public:
     /**
      * \brief Construct with channels and corresponding downstream indices.
      *
-     * \tparam ChannelIndexPair tuple-like type (`DataTypes::channel_type`,
+     * \tparam ChannelIndexPair tuple-like type (`NumericTraits::channel_type`,
      * `std::size_t`) of \p channel_indices (usually deduced)
      *
      * \param channel_indices pairs of channels with downstream indices to
@@ -311,7 +311,7 @@ class channel_router {
     explicit channel_router(
         std::array<ChannelIndexPair, N> const &channel_indices)
         : channels(std::invoke([&] {
-              std::array<typename DataTypes::channel_type, N> ret{};
+              std::array<typename NumericTraits::channel_type, N> ret{};
               std::transform(channel_indices.begin(), channel_indices.end(),
                              ret.begin(),
                              [](auto p) { return std::get<0>(p); });
@@ -327,7 +327,7 @@ class channel_router {
 
         static_assert(
             std::is_convertible_v<decltype(std::get<0>(channel_indices[0])),
-                                  typename DataTypes::channel_type> &&
+                                  typename NumericTraits::channel_type> &&
                 std::is_convertible_v<
                     decltype(std::get<1>(channel_indices[0])), std::size_t>,
             "channel_indices must be an array of pair-like convertible to (channel, std::size_t)");
@@ -337,7 +337,7 @@ class channel_router {
     template <typename Event>
     auto operator()(Event const &event) const -> std::size_t {
         static_assert(std::is_same_v<decltype(event.channel),
-                                     typename DataTypes::channel_type>);
+                                     typename NumericTraits::channel_type>);
         auto it = std::find(channels.begin(), channels.end(), event.channel);
         if (it == channels.end())
             return std::numeric_limits<std::size_t>::max();

@@ -8,9 +8,9 @@
 
 #include "common.hpp"
 #include "core.hpp"
-#include "data_types.hpp"
 #include "event.hpp"
 #include "introspect.hpp"
+#include "numeric_traits.hpp"
 #include "processor.hpp"
 
 #include <limits>
@@ -23,17 +23,17 @@ namespace tcspc {
 
 namespace internal {
 
-template <typename DataTypes, bool RequireStrictlyIncreasing,
+template <typename NumericTraits, bool RequireStrictlyIncreasing,
           typename Downstream>
     requires processor<Downstream, warning_event>
 class check_monotonic {
-    typename DataTypes::abstime_type last_seen =
-        std::numeric_limits<typename DataTypes::abstime_type>::min();
+    typename NumericTraits::abstime_type last_seen =
+        std::numeric_limits<typename NumericTraits::abstime_type>::min();
 
     Downstream downstream;
 
     LIBTCSPC_NOINLINE void
-    issue_warning(typename DataTypes::abstime_type abstime) {
+    issue_warning(typename NumericTraits::abstime_type abstime) {
         std::ostringstream stream;
         stream << "non-monotonic abstime: " << last_seen << " followed by "
                << abstime;
@@ -56,8 +56,9 @@ class check_monotonic {
         requires handler_for<Downstream, std::remove_cvref_t<Event>>
     void handle(Event &&event) {
         if constexpr (abstime_stamped<std::remove_cvref_t<Event>>) {
-            static_assert(std::is_same_v<decltype(event.abstime),
-                                         typename DataTypes::abstime_type>);
+            static_assert(
+                std::is_same_v<decltype(event.abstime),
+                               typename NumericTraits::abstime_type>);
             bool const monotonic = RequireStrictlyIncreasing
                                        ? event.abstime > last_seen
                                        : event.abstime >= last_seen;
@@ -81,15 +82,15 @@ class check_monotonic {
  *
  * The processor passes through time-tagged events and checks that their
  * `abstime` is monotonic (that is, increasing or non-decreasing). The event's
- * `abstime` field type must match `DataTypes::abstime_type`. If a violation is
- * detected, a `tcspc::warning_event` is emitted just before the offending
- * event.
+ * `abstime` field type must match `NumericTraits::abstime_type`. If a
+ * violation is detected, a `tcspc::warning_event` is emitted just before the
+ * offending event.
  *
  * Checking abstime monotonicity is often a good way to detect gross issues in
  * the data, such as reading data in an incorrect format or using text mode to
  * read binary data.
  *
- * \tparam DataTypes data type set specifying `abstime_type`
+ * \tparam NumericTraits numeric traits specifying `abstime_type`
  *
  * \tparam RequireStrictlyIncreasing if true, issue warning also on equal
  * `abstime`
@@ -106,10 +107,10 @@ class check_monotonic {
  * - All other types: pass through with no action
  * - Flush: pass through with no action
  */
-template <typename DataTypes = default_data_types,
+template <typename NumericTraits = default_numeric_traits,
           bool RequireStrictlyIncreasing = false, typename Downstream>
 auto check_monotonic(Downstream downstream) {
-    return internal::check_monotonic<DataTypes, RequireStrictlyIncreasing,
+    return internal::check_monotonic<NumericTraits, RequireStrictlyIncreasing,
                                      Downstream>(std::move(downstream));
 }
 

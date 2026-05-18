@@ -23,7 +23,6 @@
 #include "copy_to_buckets.hpp"
 #include "core.hpp"
 #include "count.hpp"
-#include "data_types.hpp"
 #include "delay.hpp"
 #include "dither.hpp"
 #include "errors.hpp"
@@ -44,6 +43,7 @@
 #include "multiplex.hpp"
 #include "npint.hpp"
 #include "npint_ops.hpp"
+#include "numeric_traits.hpp"
 #include "pair.hpp"
 #include "picoquant_t2.hpp"
 #include "picoquant_t3.hpp"
@@ -329,13 +329,13 @@ namespace tcspc {
  *   reused, it may be passed using `std::move()`.
  * - Constrain the processor class with `requires tcspc::processor<Downstream,
  *   EventsHandled...>`; use class-level `static_assert` for deeper
- *   invariants on `DataTypes` or other template parameters.
+ *   invariants on `NumericTraits` or other template parameters.
  * - On a templated `handle()` overload, a `requires` clause participates in
  *   `tcspc::handler_for` detection (so the overload drops out of overload
  *   resolution when not satisfied), while a body `static_assert` is a hard
  *   error after selection. Pass-through overloads typically use `requires
  *   handler_for<Downstream, ...>`; specific-event overloads validating
- *   `DataTypes` compatibility typically use `static_assert`, with the
+ *   `NumericTraits` compatibility typically use `static_assert`, with the
  *   matching `&&` overload delegating to the `const &` one.
  * - When implementing `handle()` for both const lvalue and rvalue references,
  *   make sure that a generic forwarding reference handler does not shadow a
@@ -530,15 +530,15 @@ namespace tcspc {
 /** @} <!-- group processors --> */
 
 /**
- * \defgroup data-types Data type sets
+ * \defgroup numeric-traits Numeric traits
  *
  * \brief Bundle of numeric types used by events and processors.
  *
  * Many events and processors in libtcspc deal with multiple integer types, so
  * specifying them individually would be cumbersome. We therefore usually
- * specify them as a single unit called the _data type set_ (usually template
- * parameter `DataTypes`), which is a type containing several type aliases to
- * be used across a processing graph (or part of a processing graph).
+ * specify them as a single unit called the _numeric traits_ (usually template
+ * parameter `NumericTraits`), which is a type containing several type aliases
+ * to be used across a processing graph (or part of a processing graph).
  */
 
 /**
@@ -751,7 +751,7 @@ namespace tcspc {
  *   number of bins to which datapoints are mapped, and
  * - `auto operator()(datapoint_type d) -> std::optional<bin_index_type>`,
  *   where `datapoint_type` and `bin_index_type` must match the
- *   `tcspc::map_to_bins()` processor's `DataTypes`. This function call
+ *   `tcspc::map_to_bins()` processor's `NumericTraits`. This function call
  *   operator maps the datapoint `d` to a bin index.
  *
  * (`n_bins()` is provided for convenience and is not used by

@@ -9,8 +9,8 @@
 #include "libtcspc/arg_wrappers.hpp"
 #include "libtcspc/context.hpp"
 #include "libtcspc/core.hpp"
-#include "libtcspc/data_types.hpp"
 #include "libtcspc/int_types.hpp"
+#include "libtcspc/numeric_traits.hpp"
 #include "libtcspc/processor.hpp"
 #include "libtcspc/test_utils.hpp"
 #include "libtcspc/type_list.hpp"
@@ -68,7 +68,7 @@ TEST_CASE("Generate null timing") {
 TEST_CASE("Generate one-shot timing",
           "[generate][one_shot_timing_generator]") {
     auto const valcat = GENERATE(feed_as::const_lvalue, feed_as::rvalue);
-    default_data_types::abstime_type const delay = GENERATE(0, 1, 2);
+    default_numeric_traits::abstime_type const delay = GENERATE(0, 1, 2);
     auto ctx = context::create();
     auto in = feed_input(valcat,
                          generate<trigger_event, output_event>(
@@ -140,8 +140,8 @@ TEST_CASE("Generate one-shot timing",
 }
 
 TEST_CASE("Generate linear timing") {
-    default_data_types::abstime_type const delay = GENERATE(0, 1, 2);
-    default_data_types::abstime_type const interval = GENERATE(1, 2);
+    default_numeric_traits::abstime_type const delay = GENERATE(0, 1, 2);
+    default_numeric_traits::abstime_type const interval = GENERATE(1, 2);
 
     auto const valcat = GENERATE(feed_as::const_lvalue, feed_as::rvalue);
     auto ctx = context::create();

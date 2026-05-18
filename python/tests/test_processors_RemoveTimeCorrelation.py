@@ -5,11 +5,11 @@
 from _test_helpers import _NamedEvent
 from libtcspc._codegen import _CodeGenerationContext
 from libtcspc._cpp_utils import _CppExpression, _CppIdentifier, _CppTypeName
-from libtcspc._data_types import DataTypes
 from libtcspc._events import (
     DetectionEvent,
     TimeCorrelatedDetectionEvent,
 )
+from libtcspc._numeric_traits import NumericTraits
 from libtcspc._processors import RemoveTimeCorrelation
 
 OtherEvent = _NamedEvent(_CppTypeName("int"))
@@ -20,7 +20,7 @@ gencontext = _CodeGenerationContext(
 
 
 def test_RemoveTimeCorrelation_replaces_tcd_with_detection():
-    dt = DataTypes()
+    dt = NumericTraits()
     node = RemoveTimeCorrelation(dt)
     out = node._map_event_sets(
         [(TimeCorrelatedDetectionEvent(dt), OtherEvent)]
@@ -31,7 +31,7 @@ def test_RemoveTimeCorrelation_replaces_tcd_with_detection():
 
 
 def test_RemoveTimeCorrelation_appends_detection_if_not_present():
-    dt = DataTypes()
+    dt = NumericTraits()
     node = RemoveTimeCorrelation(dt)
     out = node._map_event_sets([(OtherEvent,)])
     assert OtherEvent in out[0]
@@ -42,5 +42,5 @@ def test_RemoveTimeCorrelation_codegen():
     node = RemoveTimeCorrelation()
     code = node._cpp_expression(gencontext, [_CppExpression("DOWN")])
     assert "tcspc::remove_time_correlation<" in code
-    assert DataTypes()._cpp_type_name() in code
+    assert NumericTraits()._cpp_type_name() in code
     assert "DOWN" in code

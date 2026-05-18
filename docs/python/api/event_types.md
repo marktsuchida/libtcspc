@@ -13,7 +13,7 @@ Instances of these classes describe the event *type*; they are not themselves
 instances of the run-time events.
 
 Some event types (those carrying timestamp and related data) are parameterized
-by the exact numeric data types used. {py:class}`~libtcspc.DataTypes` objects
+by the exact numeric types used. {py:class}`~libtcspc.NumericTraits` objects
 are used to specify these types.
 
 ```{eval-rst}

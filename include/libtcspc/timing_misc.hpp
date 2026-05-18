@@ -8,9 +8,9 @@
 
 #include "arg_wrappers.hpp"
 #include "common.hpp"
-#include "data_types.hpp"
 #include "errors.hpp"
 #include "introspect.hpp"
+#include "numeric_traits.hpp"
 #include "processor.hpp"
 
 #include <cmath>
@@ -28,14 +28,14 @@ namespace tcspc {
  *
  * \ingroup events-timing-modeling
  *
- * \tparam DataTypes data type set specifying `abstime_type`
+ * \tparam NumericTraits numeric traits specifying `abstime_type`
  */
-template <typename DataTypes = default_data_types>
+template <typename NumericTraits = default_numeric_traits>
 struct periodic_sequence_model_event {
     /**
      * \brief Absolute time of this event, used as a reference point.
      */
-    typename DataTypes::abstime_type abstime;
+    typename NumericTraits::abstime_type abstime;
 
     /**
      * \brief The estimated time of the first event, relative to `abstime`.
@@ -70,14 +70,14 @@ struct periodic_sequence_model_event {
  *
  * \ingroup events-timing-modeling
  *
- * \tparam DataTypes data type set specifying `abstime_type`
+ * \tparam NumericTraits numeric traits specifying `abstime_type`
  */
-template <typename DataTypes = default_data_types>
+template <typename NumericTraits = default_numeric_traits>
 struct real_one_shot_timing_event {
     /**
      * \brief Absolute time of this event, used as a reference point.
      */
-    typename DataTypes::abstime_type abstime;
+    typename NumericTraits::abstime_type abstime;
 
     /**
      * \brief The time delay relative to `abstime`.
@@ -104,14 +104,14 @@ struct real_one_shot_timing_event {
  *
  * \ingroup events-timing-modeling
  *
- * \tparam DataTypes data type set specifying `abstime_type`
+ * \tparam NumericTraits numeric traits specifying `abstime_type`
  */
-template <typename DataTypes = default_data_types>
+template <typename NumericTraits = default_numeric_traits>
 struct real_linear_timing_event {
     /**
      * \brief Absolute time of this event, used as a reference point.
      */
-    typename DataTypes::abstime_type abstime;
+    typename NumericTraits::abstime_type abstime;
 
     /**
      * \brief The time delay relative to `abstime`.
@@ -145,12 +145,12 @@ struct real_linear_timing_event {
 
 namespace internal {
 
-template <typename DataTypes, typename Downstream>
+template <typename NumericTraits, typename Downstream>
 class retime_periodic_sequences {
     static_assert(
-        processor<Downstream, periodic_sequence_model_event<DataTypes>>);
+        processor<Downstream, periodic_sequence_model_event<NumericTraits>>);
 
-    using abstime_type = typename DataTypes::abstime_type;
+    using abstime_type = typename NumericTraits::abstime_type;
 
     abstime_type max_shift;
 
@@ -158,7 +158,8 @@ class retime_periodic_sequences {
 
   public:
     explicit retime_periodic_sequences(
-        arg::max_time_shift<typename DataTypes::abstime_type> max_time_shift,
+        arg::max_time_shift<typename NumericTraits::abstime_type>
+            max_time_shift,
         Downstream downstream)
         : max_shift(max_time_shift.value), downstream(std::move(downstream)) {
         if (max_shift < 0)
@@ -174,9 +175,9 @@ class retime_periodic_sequences {
         return downstream.introspect_graph().push_entry_point(this);
     }
 
-    template <typename DT>
-    void handle(periodic_sequence_model_event<DT> const &event) {
-        static_assert(std::is_same_v<typename DT::abstime_type, abstime_type>);
+    template <typename NT>
+    void handle(periodic_sequence_model_event<NT> const &event) {
+        static_assert(std::is_same_v<typename NT::abstime_type, abstime_type>);
 
         auto delta = std::floor(event.delay) - 1.0;
         if (std::abs(delta) > static_cast<double>(max_shift))
@@ -198,7 +199,7 @@ class retime_periodic_sequences {
             abstime = event.abstime + static_cast<abstime_type>(delta);
         }
 
-        downstream.handle(periodic_sequence_model_event<DataTypes>{
+        downstream.handle(periodic_sequence_model_event<NumericTraits>{
             abstime, event.delay - delta, event.interval});
     }
 
@@ -243,7 +244,8 @@ class retime_periodic_sequences {
  *
  * \see `tcspc::fit_periodic_sequences()`
  *
- * \tparam DataTypes data type set specifying `abstime_type` and emitted events
+ * \tparam NumericTraits numeric traits specifying `abstime_type` and emitted
+ * events
  *
  * \tparam Downstream downstream processor type
  *
@@ -254,26 +256,26 @@ class retime_periodic_sequences {
  * \return processor
  *
  * \par Events handled
- * - `tcspc::periodic_sequence_model_event<DT>`: emit with normalized `abstime`
- *   and `delay` as `tcspc::periodic_sequence_model_event<DataTypes>`; throw
- *   `tcspc::data_validation_error` if the time shift or result range criteria
- *   are not met
+ * - `tcspc::periodic_sequence_model_event<NT>`: emit with normalized `abstime`
+ *   and `delay` as `tcspc::periodic_sequence_model_event<NumericTraits>`;
+ * throw `tcspc::data_validation_error` if the time shift or result range
+ * criteria are not met
  * - Flush: pass through with no action
  */
-template <typename DataTypes = default_data_types, typename Downstream>
+template <typename NumericTraits = default_numeric_traits, typename Downstream>
 auto retime_periodic_sequences(
-    arg::max_time_shift<typename DataTypes::abstime_type> max_time_shift,
+    arg::max_time_shift<typename NumericTraits::abstime_type> max_time_shift,
     Downstream downstream) {
-    return internal::retime_periodic_sequences<DataTypes, Downstream>(
+    return internal::retime_periodic_sequences<NumericTraits, Downstream>(
         max_time_shift, std::move(downstream));
 }
 
 namespace internal {
 
-template <typename DataTypes, typename Downstream>
+template <typename NumericTraits, typename Downstream>
 class extrapolate_periodic_sequences {
     static_assert(
-        processor<Downstream, real_one_shot_timing_event<DataTypes>>);
+        processor<Downstream, real_one_shot_timing_event<NumericTraits>>);
 
     double m;
     Downstream downstream;
@@ -292,18 +294,18 @@ class extrapolate_periodic_sequences {
         return downstream.introspect_graph().push_entry_point(this);
     }
 
-    template <typename DT>
-    void handle(periodic_sequence_model_event<DT> const &event) {
-        static_assert(std::is_same_v<typename DT::abstime_type,
-                                     typename DataTypes::abstime_type>);
-        downstream.handle(real_one_shot_timing_event<DataTypes>{
+    template <typename NT>
+    void handle(periodic_sequence_model_event<NT> const &event) {
+        static_assert(std::is_same_v<typename NT::abstime_type,
+                                     typename NumericTraits::abstime_type>);
+        downstream.handle(real_one_shot_timing_event<NumericTraits>{
             event.abstime, event.delay + event.interval * m});
     }
 
-    template <typename DT>
+    template <typename NT>
     // NOLINTNEXTLINE(cppcoreguidelines-rvalue-reference-param-not-moved)
-    void handle(periodic_sequence_model_event<DT> &&event) {
-        handle(static_cast<periodic_sequence_model_event<DT> const &>(event));
+    void handle(periodic_sequence_model_event<NT> &&event) {
+        handle(static_cast<periodic_sequence_model_event<NT> const &>(event));
     }
 
     template <typename OtherEvent>
@@ -337,7 +339,8 @@ class extrapolate_periodic_sequences {
  * non-decreasing and must not wrap around. The `abstime` of the result must
  * not overflow or underflow.
  *
- * \tparam DataTypes data type set specifying `abstime_type` and emitted events
+ * \tparam NumericTraits numeric traits specifying `abstime_type` and emitted
+ * events
  *
  * \tparam Downstream downstream processor type
  *
@@ -348,23 +351,23 @@ class extrapolate_periodic_sequences {
  * \return processor
  *
  * \par Events handled
- * - `tcspc::periodic_sequence_model_event<DT>`: emit
- *   `tcspc::real_one_shot_timing_event<DataTypes>` with the same `abstime`
+ * - `tcspc::periodic_sequence_model_event<NT>`: emit
+ *   `tcspc::real_one_shot_timing_event<NumericTraits>` with the same `abstime`
  *   but the `delay` offset by `interval` times `tick_index`
  * - All other types: pass through with no action
  * - Flush: pass through with no action
  */
-template <typename DataTypes = default_data_types, typename Downstream>
+template <typename NumericTraits = default_numeric_traits, typename Downstream>
 auto extrapolate_periodic_sequences(arg::tick_index<std::size_t> tick_index,
                                     Downstream downstream) {
-    return internal::extrapolate_periodic_sequences<DataTypes, Downstream>(
+    return internal::extrapolate_periodic_sequences<NumericTraits, Downstream>(
         tick_index, std::move(downstream));
 }
 
 namespace internal {
 
-template <typename DataTypes, typename Downstream>
-    requires processor<Downstream, real_linear_timing_event<DataTypes>>
+template <typename NumericTraits, typename Downstream>
+    requires processor<Downstream, real_linear_timing_event<NumericTraits>>
 class add_count_to_periodic_sequences {
     std::size_t ct;
     Downstream downstream;
@@ -382,18 +385,18 @@ class add_count_to_periodic_sequences {
         return downstream.introspect_graph().push_entry_point(this);
     }
 
-    template <typename DT>
-    void handle(periodic_sequence_model_event<DT> const &event) {
-        static_assert(std::is_same_v<typename DT::abstime_type,
-                                     typename DataTypes::abstime_type>);
-        downstream.handle(real_linear_timing_event<DataTypes>{
+    template <typename NT>
+    void handle(periodic_sequence_model_event<NT> const &event) {
+        static_assert(std::is_same_v<typename NT::abstime_type,
+                                     typename NumericTraits::abstime_type>);
+        downstream.handle(real_linear_timing_event<NumericTraits>{
             event.abstime, event.delay, event.interval, ct});
     }
 
-    template <typename DT>
+    template <typename NT>
     // NOLINTNEXTLINE(cppcoreguidelines-rvalue-reference-param-not-moved)
-    void handle(periodic_sequence_model_event<DT> &&event) {
-        handle(static_cast<periodic_sequence_model_event<DT> const &>(event));
+    void handle(periodic_sequence_model_event<NT> &&event) {
+        handle(static_cast<periodic_sequence_model_event<NT> const &>(event));
     }
 
     template <typename OtherEvent>
@@ -422,7 +425,8 @@ class add_count_to_periodic_sequences {
  *
  * All other events are passed through.
  *
- * \tparam DataTypes data type set specifying `abstime_type` and emitted events
+ * \tparam NumericTraits numeric traits specifying `abstime_type` and emitted
+ * events
  *
  * \tparam Downstream downstream processor type
  *
@@ -433,16 +437,17 @@ class add_count_to_periodic_sequences {
  * \return processor
  *
  * \par Events handled
- * - `tcspc::periodic_sequence_model_event<DT>`: emit
- *   `tcspc::real_linear_timing_event<DataTypes>` with the same `abstime`,
+ * - `tcspc::periodic_sequence_model_event<NT>`: emit
+ *   `tcspc::real_linear_timing_event<NumericTraits>` with the same `abstime`,
  *   `delay`, and `interval` and added `count`.
  * - All other types: pass through with no action
  * - Flush: pass through with no action
  */
-template <typename DataTypes = default_data_types, typename Downstream>
+template <typename NumericTraits = default_numeric_traits, typename Downstream>
 auto add_count_to_periodic_sequences(arg::count<std::size_t> count,
                                      Downstream downstream) {
-    return internal::add_count_to_periodic_sequences<DataTypes, Downstream>(
+    return internal::add_count_to_periodic_sequences<NumericTraits,
+                                                     Downstream>(
         count, std::move(downstream));
 }
 

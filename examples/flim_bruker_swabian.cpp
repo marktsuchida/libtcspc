@@ -106,10 +106,10 @@ error upon detection of a decreasing timestamp in the input.
 )");
 }
 
-using abstime_type = tcspc::default_data_types::abstime_type;
-using difftime_type = tcspc::default_data_types::difftime_type;
-using channel_type = tcspc::default_data_types::channel_type;
-using bin_index_type = tcspc::default_data_types::bin_index_type;
+using abstime_type = tcspc::default_numeric_traits::abstime_type;
+using difftime_type = tcspc::default_numeric_traits::difftime_type;
+using channel_type = tcspc::default_numeric_traits::channel_type;
+using bin_index_type = tcspc::default_numeric_traits::bin_index_type;
 
 struct pixel_start_event {
     tcspc::i64 abstime;

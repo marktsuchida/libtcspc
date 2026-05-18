@@ -6,8 +6,8 @@ import numpy as np
 from _test_helpers import _NamedEvent
 from libtcspc._codegen import _CodeGenerationContext
 from libtcspc._cpp_utils import _CppExpression, _CppIdentifier, _CppTypeName
-from libtcspc._data_types import DataTypes
 from libtcspc._events import WarningEvent
+from libtcspc._numeric_traits import NumericTraits
 from libtcspc._processors import CheckMonotonic
 
 IntEvent = _NamedEvent(_CppTypeName("int"))
@@ -32,16 +32,16 @@ def test_CheckMonotonic_does_not_duplicate_WarningEvent_in_output():
     )
 
 
-def test_CheckMonotonic_codegen_default_data_types():
+def test_CheckMonotonic_codegen_default_numeric_traits():
     node = CheckMonotonic()
     code = node._cpp_expression(gencontext, [_CppExpression("DOWN")])
     assert "tcspc::check_monotonic<" in code
-    assert DataTypes()._cpp_type_name() in code
+    assert NumericTraits()._cpp_type_name() in code
     assert "DOWN" in code
 
 
-def test_CheckMonotonic_codegen_explicit_data_types():
-    dt = DataTypes(abstime_type=np.uint32)
+def test_CheckMonotonic_codegen_explicit_numeric_traits():
+    dt = NumericTraits(abstime_type=np.uint32)
     node = CheckMonotonic(dt)
     code = node._cpp_expression(gencontext, [_CppExpression("DOWN")])
     assert dt._cpp_type_name() in code

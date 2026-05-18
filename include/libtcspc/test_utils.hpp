@@ -9,9 +9,9 @@
 #include "bucket.hpp"
 #include "common.hpp"
 #include "context.hpp"
-#include "data_types.hpp"
 #include "errors.hpp"
 #include "introspect.hpp"
+#include "numeric_traits.hpp"
 #include "processor.hpp"
 #include "type_list.hpp"
 #include "variant_event.hpp"
@@ -983,12 +983,12 @@ template <int N> struct empty_test_event {
  *
  * \tparam N a number to distinguish event types.
  *
- * \tparam DataTypes data type set specifying `abstime_type`
+ * \tparam NumericTraits numeric traits specifying `abstime_type`
  */
-template <int N, typename DataTypes = default_data_types>
+template <int N, typename NumericTraits = default_numeric_traits>
 struct time_tagged_test_event {
     /** \brief Timestamp. */
-    typename DataTypes::abstime_type abstime;
+    typename NumericTraits::abstime_type abstime;
 
     /** \brief Equality comparison operator. */
     friend auto operator==(time_tagged_test_event const &lhs,

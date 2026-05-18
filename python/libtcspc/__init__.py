@@ -15,7 +15,6 @@ from ._bucket_sources import (
     RecyclingBucketSource,
 )
 from ._compile import CompiledGraph
-from ._data_types import DataTypes
 from ._events import (
     BeginLostIntervalEvent,
     BHSPC600_256chEvent,
@@ -47,6 +46,7 @@ from ._execute import (
 )
 from ._graph import Graph, Subgraph
 from ._node import Node
+from ._numeric_traits import NumericTraits
 from ._param import Param
 from ._processors import (
     Acquire,
@@ -114,7 +114,6 @@ __all__ = [
     "CountDownTo",
     "CountUpTo",
     "DataLostEvent",
-    "DataTypes",
     "DecodeBHSPC",
     "DecodeBHSPC600_256ch",
     "DecodeBHSPC600_4096ch",
@@ -139,6 +138,7 @@ __all__ = [
     "NewDeleteBucketSource",
     "Node",
     "NullReader",
+    "NumericTraits",
     "PQT2GenericEvent",
     "PQT2HydraHarpV1Event",
     "PQT2PicoHarp300Event",

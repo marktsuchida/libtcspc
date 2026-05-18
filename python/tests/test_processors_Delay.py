@@ -10,7 +10,7 @@ from libtcspc._cpp_utils import (
     _CppTypeName,
     _int64_type,
 )
-from libtcspc._data_types import DataTypes
+from libtcspc._numeric_traits import NumericTraits
 from libtcspc._param import Param
 from libtcspc._processors import Delay
 
@@ -33,7 +33,7 @@ def test_Delay_codegen_int_delta():
     node = Delay(42)
     code = node._cpp_expression(gencontext, [_CppExpression("DOWN")])
     assert "tcspc::delay<" in code
-    assert DataTypes()._cpp_type_name() in code
+    assert NumericTraits()._cpp_type_name() in code
     assert "tcspc::i64{42LL}" in code
     assert "DOWN" in code
 

@@ -12,7 +12,7 @@ from ._cpp_utils import (
     _CppIdentifier,
     _CppTypeName,
 )
-from ._data_types import DataTypes
+from ._numeric_traits import NumericTraits
 
 
 class EventType(ABC):
@@ -21,7 +21,7 @@ class EventType(ABC):
     An `EventType` instance is a type tag, not a data carrier. Each concrete
     subclass corresponds to a C++ event type in ``namespace tcspc``; an
     instance describes a particular instantiation of that C++ type (for
-    example, parameterised by `DataTypes`) and is used by the codegen layer
+    example, parameterised by `NumericTraits`) and is used by the codegen layer
     to determine the C++ types flowing on each graph edge.
 
     ``EventType`` itself is abstract; instantiate one of its concrete
@@ -193,9 +193,9 @@ class BeginLostIntervalEvent(EventType):
 
     Parameters
     ----------
-    data_types : DataTypes or None
+    numeric_traits : NumericTraits or None
         Set of integer types parameterising the C++ event. ``None`` (the
-        default) uses `DataTypes` defaults.
+        default) uses `NumericTraits` defaults.
 
     Notes
     -----
@@ -207,15 +207,15 @@ class BeginLostIntervalEvent(EventType):
         The underlying C++ event type.
     """
 
-    def __init__(self, data_types: DataTypes | None = None) -> None:
-        self._data_types = (
-            data_types if data_types is not None else DataTypes()
+    def __init__(self, numeric_traits: NumericTraits | None = None) -> None:
+        self._numeric_traits = (
+            numeric_traits if numeric_traits is not None else NumericTraits()
         )
 
     @override
     def _cpp_type_name(self) -> _CppTypeName:
         return _CppTypeName(
-            f"tcspc::begin_lost_interval_event<{self._data_types._cpp_type_name()}>"
+            f"tcspc::begin_lost_interval_event<{self._numeric_traits._cpp_type_name()}>"
         )
 
 
@@ -295,9 +295,9 @@ class BulkCountsEvent(EventType):
 
     Parameters
     ----------
-    data_types : DataTypes or None
+    numeric_traits : NumericTraits or None
         Set of integer types parameterising the C++ event. ``None`` (the
-        default) uses `DataTypes` defaults.
+        default) uses `NumericTraits` defaults.
 
     Notes
     -----
@@ -310,15 +310,15 @@ class BulkCountsEvent(EventType):
         The underlying C++ event type.
     """
 
-    def __init__(self, data_types: DataTypes | None = None) -> None:
-        self._data_types = (
-            data_types if data_types is not None else DataTypes()
+    def __init__(self, numeric_traits: NumericTraits | None = None) -> None:
+        self._numeric_traits = (
+            numeric_traits if numeric_traits is not None else NumericTraits()
         )
 
     @override
     def _cpp_type_name(self) -> _CppTypeName:
         return _CppTypeName(
-            f"tcspc::bulk_counts_event<{self._data_types._cpp_type_name()}>"
+            f"tcspc::bulk_counts_event<{self._numeric_traits._cpp_type_name()}>"
         )
 
 
@@ -332,9 +332,9 @@ class DataLostEvent(EventType):
 
     Parameters
     ----------
-    data_types : DataTypes or None
+    numeric_traits : NumericTraits or None
         Set of integer types parameterising the C++ event. ``None`` (the
-        default) uses `DataTypes` defaults.
+        default) uses `NumericTraits` defaults.
 
     Notes
     -----
@@ -349,15 +349,15 @@ class DataLostEvent(EventType):
         The underlying C++ event type.
     """
 
-    def __init__(self, data_types: DataTypes | None = None) -> None:
-        self._data_types = (
-            data_types if data_types is not None else DataTypes()
+    def __init__(self, numeric_traits: NumericTraits | None = None) -> None:
+        self._numeric_traits = (
+            numeric_traits if numeric_traits is not None else NumericTraits()
         )
 
     @override
     def _cpp_type_name(self) -> _CppTypeName:
         return _CppTypeName(
-            f"tcspc::data_lost_event<{self._data_types._cpp_type_name()}>"
+            f"tcspc::data_lost_event<{self._numeric_traits._cpp_type_name()}>"
         )
 
 
@@ -371,9 +371,9 @@ class DetectionEvent(EventType):
 
     Parameters
     ----------
-    data_types : DataTypes or None
+    numeric_traits : NumericTraits or None
         Set of integer types parameterising the C++ event. ``None`` (the
-        default) uses `DataTypes` defaults.
+        default) uses `NumericTraits` defaults.
 
     Notes
     -----
@@ -385,15 +385,15 @@ class DetectionEvent(EventType):
         The underlying C++ event type.
     """
 
-    def __init__(self, data_types: DataTypes | None = None) -> None:
-        self._data_types = (
-            data_types if data_types is not None else DataTypes()
+    def __init__(self, numeric_traits: NumericTraits | None = None) -> None:
+        self._numeric_traits = (
+            numeric_traits if numeric_traits is not None else NumericTraits()
         )
 
     @override
     def _cpp_type_name(self) -> _CppTypeName:
         return _CppTypeName(
-            f"tcspc::detection_event<{self._data_types._cpp_type_name()}>"
+            f"tcspc::detection_event<{self._numeric_traits._cpp_type_name()}>"
         )
 
 
@@ -404,9 +404,9 @@ class EndLostIntervalEvent(EventType):
 
     Parameters
     ----------
-    data_types : DataTypes or None
+    numeric_traits : NumericTraits or None
         Set of integer types parameterising the C++ event. ``None`` (the
-        default) uses `DataTypes` defaults.
+        default) uses `NumericTraits` defaults.
 
     Notes
     -----
@@ -418,15 +418,15 @@ class EndLostIntervalEvent(EventType):
         The underlying C++ event type.
     """
 
-    def __init__(self, data_types: DataTypes | None = None) -> None:
-        self._data_types = (
-            data_types if data_types is not None else DataTypes()
+    def __init__(self, numeric_traits: NumericTraits | None = None) -> None:
+        self._numeric_traits = (
+            numeric_traits if numeric_traits is not None else NumericTraits()
         )
 
     @override
     def _cpp_type_name(self) -> _CppTypeName:
         return _CppTypeName(
-            f"tcspc::end_lost_interval_event<{self._data_types._cpp_type_name()}>"
+            f"tcspc::end_lost_interval_event<{self._numeric_traits._cpp_type_name()}>"
         )
 
 
@@ -438,9 +438,9 @@ class LostCountsEvent(EventType):
 
     Parameters
     ----------
-    data_types : DataTypes or None
+    numeric_traits : NumericTraits or None
         Set of integer types parameterising the C++ event. ``None`` (the
-        default) uses `DataTypes` defaults.
+        default) uses `NumericTraits` defaults.
 
     Notes
     -----
@@ -453,15 +453,15 @@ class LostCountsEvent(EventType):
         The underlying C++ event type.
     """
 
-    def __init__(self, data_types: DataTypes | None = None) -> None:
-        self._data_types = (
-            data_types if data_types is not None else DataTypes()
+    def __init__(self, numeric_traits: NumericTraits | None = None) -> None:
+        self._numeric_traits = (
+            numeric_traits if numeric_traits is not None else NumericTraits()
         )
 
     @override
     def _cpp_type_name(self) -> _CppTypeName:
         return _CppTypeName(
-            f"tcspc::lost_counts_event<{self._data_types._cpp_type_name()}>"
+            f"tcspc::lost_counts_event<{self._numeric_traits._cpp_type_name()}>"
         )
 
 
@@ -474,9 +474,9 @@ class MarkerEvent(EventType):
 
     Parameters
     ----------
-    data_types : DataTypes or None
+    numeric_traits : NumericTraits or None
         Set of integer types parameterising the C++ event. ``None`` (the
-        default) uses `DataTypes` defaults.
+        default) uses `NumericTraits` defaults.
 
     Notes
     -----
@@ -493,15 +493,15 @@ class MarkerEvent(EventType):
         The underlying C++ event type.
     """
 
-    def __init__(self, data_types: DataTypes | None = None) -> None:
-        self._data_types = (
-            data_types if data_types is not None else DataTypes()
+    def __init__(self, numeric_traits: NumericTraits | None = None) -> None:
+        self._numeric_traits = (
+            numeric_traits if numeric_traits is not None else NumericTraits()
         )
 
     @override
     def _cpp_type_name(self) -> _CppTypeName:
         return _CppTypeName(
-            f"tcspc::marker_event<{self._data_types._cpp_type_name()}>"
+            f"tcspc::marker_event<{self._numeric_traits._cpp_type_name()}>"
         )
 
 
@@ -666,9 +666,9 @@ class TimeCorrelatedDetectionEvent(EventType):
 
     Parameters
     ----------
-    data_types : DataTypes or None
+    numeric_traits : NumericTraits or None
         Set of integer types parameterising the C++ event. ``None`` (the
-        default) uses `DataTypes` defaults.
+        default) uses `NumericTraits` defaults.
 
     Notes
     -----
@@ -681,15 +681,15 @@ class TimeCorrelatedDetectionEvent(EventType):
         The underlying C++ event type.
     """
 
-    def __init__(self, data_types: DataTypes | None = None) -> None:
-        self._data_types = (
-            data_types if data_types is not None else DataTypes()
+    def __init__(self, numeric_traits: NumericTraits | None = None) -> None:
+        self._numeric_traits = (
+            numeric_traits if numeric_traits is not None else NumericTraits()
         )
 
     @override
     def _cpp_type_name(self) -> _CppTypeName:
         return _CppTypeName(
-            f"tcspc::time_correlated_detection_event<{self._data_types._cpp_type_name()}>"
+            f"tcspc::time_correlated_detection_event<{self._numeric_traits._cpp_type_name()}>"
         )
 
 
@@ -703,9 +703,9 @@ class TimeReachedEvent(EventType):
 
     Parameters
     ----------
-    data_types : DataTypes or None
+    numeric_traits : NumericTraits or None
         Set of integer types parameterising the C++ event. ``None`` (the
-        default) uses `DataTypes` defaults.
+        default) uses `NumericTraits` defaults.
 
     Notes
     -----
@@ -719,15 +719,15 @@ class TimeReachedEvent(EventType):
         The underlying C++ event type.
     """
 
-    def __init__(self, data_types: DataTypes | None = None) -> None:
-        self._data_types = (
-            data_types if data_types is not None else DataTypes()
+    def __init__(self, numeric_traits: NumericTraits | None = None) -> None:
+        self._numeric_traits = (
+            numeric_traits if numeric_traits is not None else NumericTraits()
         )
 
     @override
     def _cpp_type_name(self) -> _CppTypeName:
         return _CppTypeName(
-            f"tcspc::time_reached_event<{self._data_types._cpp_type_name()}>"
+            f"tcspc::time_reached_event<{self._numeric_traits._cpp_type_name()}>"
         )
 
 

@@ -9,8 +9,8 @@
 #include "libtcspc/arg_wrappers.hpp"
 #include "libtcspc/context.hpp"
 #include "libtcspc/core.hpp"
-#include "libtcspc/data_types.hpp"
 #include "libtcspc/int_types.hpp"
+#include "libtcspc/numeric_traits.hpp"
 #include "libtcspc/processor.hpp"
 #include "libtcspc/test_utils.hpp"
 #include "libtcspc/time_tagged_events.hpp"
@@ -28,7 +28,7 @@ namespace tcspc {
 
 namespace {
 
-using abstime_type = default_data_types::abstime_type;
+using abstime_type = default_numeric_traits::abstime_type;
 using other_event = time_tagged_test_event<0>;
 using events = type_list<other_event, time_reached_event<>>;
 

@@ -8,10 +8,10 @@
 
 #include "arg_wrappers.hpp"
 #include "common.hpp"
-#include "data_types.hpp"
 #include "errors.hpp"
 #include "int_arith.hpp"
 #include "introspect.hpp"
+#include "numeric_traits.hpp"
 #include "processor.hpp"
 #include "type_list.hpp"
 #include "variant_event.hpp"
@@ -27,10 +27,10 @@ namespace tcspc {
 
 namespace internal {
 
-template <typename EventList, typename DataTypes, typename Downstream>
+template <typename EventList, typename NumericTraits, typename Downstream>
     requires is_processor_of_list_v<Downstream, EventList>
 class recover_order {
-    using abstime_type = typename DataTypes::abstime_type;
+    using abstime_type = typename NumericTraits::abstime_type;
     abstime_type window_size;
 
     // We just use a sorted vector, because the intended use cases do not
@@ -134,7 +134,7 @@ class recover_order {
  *
  * \tparam EventList events to sort
  *
- * \tparam DataTypes data type set specifying `abstime_type`
+ * \tparam NumericTraits numeric traits specifying `abstime_type`
  *
  * \tparam Downstream downstream processor type
  *
@@ -151,14 +151,14 @@ class recover_order {
  *   not be maintained due to event outside of time window
  * - Flush: emit any buffered `Event`s in `abstime` order; pass through
  */
-template <typename EventList, typename DataTypes = default_data_types,
+template <typename EventList, typename NumericTraits = default_numeric_traits,
           typename Downstream>
 auto recover_order(
-    arg::time_window<typename DataTypes::abstime_type> time_window,
+    arg::time_window<typename NumericTraits::abstime_type> time_window,
     Downstream downstream) {
     static_assert(type_list_size_v<EventList> > 0,
                   "recover_order requires non-empty event list");
-    return internal::recover_order<EventList, DataTypes, Downstream>(
+    return internal::recover_order<EventList, NumericTraits, Downstream>(
         time_window, std::move(downstream));
 }
 
