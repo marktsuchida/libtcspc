@@ -21,6 +21,7 @@
 #include <catch2/matchers/catch_matchers_string.hpp>
 
 #include <array>
+#include <cstddef>
 #include <cstdint>
 #include <cstdio>
 #include <filesystem>
@@ -28,6 +29,8 @@
 #include <ios>
 #include <limits>
 #include <memory>
+#include <optional>
+#include <span>
 #include <sstream>
 #include <utility>
 
@@ -240,6 +243,69 @@ TEST_CASE("read existing istream, empty") {
         ignore_value_category, ctx, "out");
     src.flush();
     REQUIRE(out.check_flushed());
+}
+
+namespace {
+
+struct empty_stream {};
+
+struct missing_skip {
+    static auto is_error() noexcept -> bool { return false; }
+    static auto is_eof() noexcept -> bool { return false; }
+    static auto is_good() noexcept -> bool { return true; }
+    static auto tell() noexcept -> std::optional<std::uint64_t> { return 0; }
+    static auto read(std::span<std::byte> /*buf*/) noexcept -> std::uint64_t {
+        return 0;
+    }
+};
+
+struct read_not_noexcept {
+    static auto is_error() noexcept -> bool { return false; }
+    static auto is_eof() noexcept -> bool { return false; }
+    static auto is_good() noexcept -> bool { return true; }
+    static auto tell() noexcept -> std::optional<std::uint64_t> { return 0; }
+    static auto skip(std::uint64_t /*bytes*/) noexcept -> bool { return true; }
+    static auto read(std::span<std::byte> /*buf*/) -> std::uint64_t {
+        return 0;
+    }
+};
+
+struct read_wrong_return {
+    static auto is_error() noexcept -> bool { return false; }
+    static auto is_eof() noexcept -> bool { return false; }
+    static auto is_good() noexcept -> bool { return true; }
+    static auto tell() noexcept -> std::optional<std::uint64_t> { return 0; }
+    static auto skip(std::uint64_t /*bytes*/) noexcept -> bool { return true; }
+    static auto read(std::span<std::byte> /*buf*/) noexcept -> std::int64_t {
+        return 0;
+    }
+};
+
+struct tell_wrong_return {
+    static auto is_error() noexcept -> bool { return false; }
+    static auto is_eof() noexcept -> bool { return false; }
+    static auto is_good() noexcept -> bool { return true; }
+    static auto tell() noexcept -> std::uint64_t { return 0; }
+    static auto skip(std::uint64_t /*bytes*/) noexcept -> bool { return true; }
+    static auto read(std::span<std::byte> /*buf*/) noexcept -> std::uint64_t {
+        return 0;
+    }
+};
+
+} // namespace
+
+TEST_CASE("input_stream concept") {
+    STATIC_CHECK(input_stream<internal::null_input_stream>);
+    STATIC_CHECK(input_stream<internal::cfile_input_stream>);
+    STATIC_CHECK(input_stream<internal::istream_input_stream<std::ifstream>>);
+    STATIC_CHECK(
+        input_stream<internal::istream_input_stream<std::istringstream>>);
+
+    STATIC_CHECK_FALSE(input_stream<empty_stream>);
+    STATIC_CHECK_FALSE(input_stream<missing_skip>);
+    STATIC_CHECK_FALSE(input_stream<read_not_noexcept>);
+    STATIC_CHECK_FALSE(input_stream<read_wrong_return>);
+    STATIC_CHECK_FALSE(input_stream<tell_wrong_return>);
 }
 
 } // namespace tcspc

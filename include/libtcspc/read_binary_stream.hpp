@@ -17,6 +17,7 @@
 
 #include <algorithm>
 #include <cerrno>
+#include <concepts>
 #include <cstddef>
 #include <cstdint>
 #include <cstdio>
@@ -38,6 +39,33 @@
 // write_binary_stream.hpp.
 
 namespace tcspc {
+
+/**
+ * \brief Concept that is satisfied when \p T conforms to the libtcspc
+ * input stream interface.
+ *
+ * \ingroup streams-input
+ *
+ * Determines whether \p T provides the noexcept member functions
+ * `is_error()`, `is_eof()`, `is_good()`, `tell()`, `skip()`, and `read()`
+ * with the signatures and return types documented at \ref streams-input.
+ *
+ * \note A satisfied concept indicates that \p T provides the required
+ * member functions _provided that `T` and the relevant member functions
+ * can be instantiated_ (if \p T is a template class). It is possible that
+ * instantiation will fail (due to `static_assert` failures or other
+ * issues) even if the concept is satisfied.
+ */
+template <typename T>
+concept input_stream =
+    requires(T &s, std::uint64_t bytes, std::span<std::byte> buf) {
+        { s.is_error() } noexcept -> std::same_as<bool>;
+        { s.is_eof() } noexcept -> std::same_as<bool>;
+        { s.is_good() } noexcept -> std::same_as<bool>;
+        { s.tell() } noexcept -> std::same_as<std::optional<std::uint64_t>>;
+        { s.skip(bytes) } noexcept -> std::same_as<bool>;
+        { s.read(buf) } noexcept -> std::same_as<std::uint64_t>;
+    };
 
 namespace internal {
 

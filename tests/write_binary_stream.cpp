@@ -23,9 +23,11 @@
 #include <array>
 #include <cstddef>
 #include <cstdint>
+#include <fstream>
 #include <numeric>
 #include <optional>
 #include <span>
+#include <sstream>
 #include <vector>
 
 namespace tcspc {
@@ -358,6 +360,52 @@ TEST_CASE("write binary file with view as bytes") {
     REQUIRE_CALL(stream, write(_)).TIMES(1).WITH(equal_span(_1, data_bytes));
     proc.handle(43);
     proc.flush();
+}
+
+namespace {
+
+struct empty_stream {};
+
+struct missing_tell {
+    static auto is_error() noexcept -> bool { return false; }
+    void write(std::span<std::byte const> /*buf*/) noexcept {}
+};
+
+struct write_not_noexcept {
+    static auto is_error() noexcept -> bool { return false; }
+    static auto tell() noexcept -> std::optional<std::uint64_t> { return 0; }
+    void write(std::span<std::byte const> /*buf*/) {}
+};
+
+struct write_wrong_return {
+    static auto is_error() noexcept -> bool { return false; }
+    static auto tell() noexcept -> std::optional<std::uint64_t> { return 0; }
+    static auto write(std::span<std::byte const> /*buf*/) noexcept -> bool {
+        return true;
+    }
+};
+
+struct write_wrong_param {
+    static auto is_error() noexcept -> bool { return false; }
+    static auto tell() noexcept -> std::optional<std::uint64_t> { return 0; }
+    void write(std::span<std::byte> /*buf*/) noexcept {}
+};
+
+} // namespace
+
+TEST_CASE("output_stream concept") {
+    STATIC_CHECK(output_stream<internal::null_output_stream>);
+    STATIC_CHECK(output_stream<internal::cfile_output_stream>);
+    STATIC_CHECK(
+        output_stream<internal::ostream_output_stream<std::ofstream>>);
+    STATIC_CHECK(
+        output_stream<internal::ostream_output_stream<std::ostringstream>>);
+
+    STATIC_CHECK_FALSE(output_stream<empty_stream>);
+    STATIC_CHECK_FALSE(output_stream<missing_tell>);
+    STATIC_CHECK_FALSE(output_stream<write_not_noexcept>);
+    STATIC_CHECK_FALSE(output_stream<write_wrong_return>);
+    STATIC_CHECK_FALSE(output_stream<write_wrong_param>);
 }
 
 } // namespace tcspc

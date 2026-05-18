@@ -13,6 +13,7 @@
 
 #include <algorithm>
 #include <cerrno>
+#include <concepts>
 #include <cstddef>
 #include <cstdint>
 #include <cstdio>
@@ -33,6 +34,29 @@
 // read_binary_stream.hpp.
 
 namespace tcspc {
+
+/**
+ * \brief Concept that is satisfied when \p T conforms to the libtcspc
+ * output stream interface.
+ *
+ * \ingroup streams-output
+ *
+ * Determines whether \p T provides the noexcept member functions
+ * `is_error()`, `tell()`, and `write()` with the signatures and return
+ * types documented at \ref streams-output.
+ *
+ * \note A satisfied concept indicates that \p T provides the required
+ * member functions _provided that `T` and the relevant member functions
+ * can be instantiated_ (if \p T is a template class). It is possible that
+ * instantiation will fail (due to `static_assert` failures or other
+ * issues) even if the concept is satisfied.
+ */
+template <typename T>
+concept output_stream = requires(T &s, std::span<std::byte const> buf) {
+    { s.is_error() } noexcept -> std::same_as<bool>;
+    { s.tell() } noexcept -> std::same_as<std::optional<std::uint64_t>>;
+    { s.write(buf) } noexcept -> std::same_as<void>;
+};
 
 namespace internal {
 
