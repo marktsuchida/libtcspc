@@ -355,7 +355,9 @@ inline auto borrowed_cfile_output_stream(std::FILE *fp) {
 
 namespace internal {
 
-template <typename OutputStream> class write_binary_stream {
+template <typename OutputStream>
+    requires output_stream<OutputStream>
+class write_binary_stream {
     OutputStream strm;
     std::shared_ptr<bucket_source<std::byte>> bsource;
     std::size_t write_granularity;

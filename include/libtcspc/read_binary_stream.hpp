@@ -208,6 +208,7 @@ class cfile_input_stream {
 };
 
 template <typename InputStream>
+    requires input_stream<InputStream>
 inline void skip_stream_bytes(InputStream &stream, std::uint64_t bytes) {
     if (not stream.skip(bytes)) {
         // Try instead reading and discarding up to 'start', to support
@@ -411,7 +412,8 @@ inline auto borrowed_cfile_input_stream(std::FILE *fp) {
 namespace internal {
 
 template <typename InputStream, typename Event, typename Downstream>
-    requires processor<Downstream, bucket<Event>, warning_event>
+    requires input_stream<InputStream> &&
+             processor<Downstream, bucket<Event>, warning_event>
 class read_binary_stream {
     static_assert(
         std::is_trivial_v<Event>,

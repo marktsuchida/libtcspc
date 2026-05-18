@@ -60,11 +60,15 @@ auto equal_span(std::span<T const, N> lhs, std::span<T const, M> rhs) -> bool {
 }
 
 struct mock_output_stream {
+    // Trompeloeil's mock_func can throw on expectation mismatch; with
+    // noexcept that becomes std::terminate, which is acceptable in tests.
+    // NOLINTBEGIN(bugprone-exception-escape)
     // NOLINTBEGIN(modernize-use-trailing-return-type)
-    MAKE_MOCK0(is_error, bool());
-    MAKE_MOCK0(tell, std::optional<std::uint64_t>());
-    MAKE_MOCK1(write, void(std::span<std::byte const>));
+    MAKE_MOCK0(is_error, bool(), noexcept);
+    MAKE_MOCK0(tell, std::optional<std::uint64_t>(), noexcept);
+    MAKE_MOCK1(write, void(std::span<std::byte const>), noexcept);
     // NOLINTEND(modernize-use-trailing-return-type)
+    // NOLINTEND(bugprone-exception-escape)
 };
 
 // Reference-semantic output stream, to work with Trompeloeil mocks that cannot
@@ -75,9 +79,11 @@ template <typename OutputStream> class ref_output_stream {
   public:
     explicit ref_output_stream(OutputStream &stream) : strm(&stream) {}
 
-    auto is_error() -> bool { return strm->is_error(); }
-    auto tell() -> std::optional<std::uint64_t> { return strm->tell(); }
-    void write(std::span<std::byte const> buf) { strm->write(buf); }
+    auto is_error() noexcept -> bool { return strm->is_error(); }
+    auto tell() noexcept -> std::optional<std::uint64_t> {
+        return strm->tell();
+    }
+    void write(std::span<std::byte const> buf) noexcept { strm->write(buf); }
 };
 
 }; // namespace
