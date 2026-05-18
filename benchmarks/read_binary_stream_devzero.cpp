@@ -40,26 +40,25 @@ namespace {
 // Exception escape likely a false positive here.
 // NOLINTBEGIN(bugprone-exception-escape)
 template <typename InputStream> class ref_input_stream {
-    // NOLINTNEXTLINE(cppcoreguidelines-avoid-const-or-ref-data-members)
-    InputStream &stream;
+    InputStream *strm;
 
   public:
-    explicit ref_input_stream(InputStream &stream) : stream(stream) {}
+    explicit ref_input_stream(InputStream &stream) : strm(&stream) {}
 
-    auto is_error() noexcept -> bool { return stream.is_error(); }
-    auto is_eof() noexcept -> bool { return stream.is_eof(); }
-    auto is_good() noexcept -> bool { return stream.is_good(); }
+    auto is_error() noexcept -> bool { return strm->is_error(); }
+    auto is_eof() noexcept -> bool { return strm->is_eof(); }
+    auto is_good() noexcept -> bool { return strm->is_good(); }
 
     auto tell() noexcept -> std::optional<std::uint64_t> {
-        return stream.tell();
+        return strm->tell();
     }
 
     auto skip(std::uint64_t bytes) noexcept -> bool {
-        return stream.skip(bytes);
+        return strm->skip(bytes);
     }
 
     auto read(std::span<std::byte> buffer) noexcept -> std::uint64_t {
-        return stream.read(buffer);
+        return strm->read(buffer);
     }
 };
 // NOLINTEND(bugprone-exception-escape)

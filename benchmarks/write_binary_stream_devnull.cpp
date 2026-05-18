@@ -37,20 +37,19 @@ namespace {
 // Exception escape likely a false positive here.
 // NOLINTBEGIN(bugprone-exception-escape)
 template <typename OutputStream> class ref_output_stream {
-    // NOLINTNEXTLINE(cppcoreguidelines-avoid-const-or-ref-data-members)
-    OutputStream &stream;
+    OutputStream *strm;
 
   public:
-    explicit ref_output_stream(OutputStream &stream) : stream(stream) {}
+    explicit ref_output_stream(OutputStream &stream) : strm(&stream) {}
 
-    auto is_error() noexcept -> bool { return stream.is_error(); }
+    auto is_error() noexcept -> bool { return strm->is_error(); }
 
     auto tell() noexcept -> std::optional<std::uint64_t> {
-        return stream.tell();
+        return strm->tell();
     }
 
     void write(std::span<std::byte const> buffer) noexcept {
-        stream.write(buffer);
+        strm->write(buffer);
     }
 };
 // NOLINTEND(bugprone-exception-escape)

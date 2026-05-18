@@ -397,6 +397,21 @@ struct write_wrong_param {
     void write(std::span<std::byte> /*buf*/) noexcept {}
 };
 
+struct nonmovable_output_stream {
+    nonmovable_output_stream() = default;
+    nonmovable_output_stream(nonmovable_output_stream const &) = delete;
+    auto operator=(nonmovable_output_stream const &)
+        -> nonmovable_output_stream & = delete;
+    nonmovable_output_stream(nonmovable_output_stream &&) = delete;
+    auto operator=(nonmovable_output_stream &&)
+        -> nonmovable_output_stream & = delete;
+    ~nonmovable_output_stream() = default;
+
+    static auto is_error() noexcept -> bool { return false; }
+    static auto tell() noexcept -> std::optional<std::uint64_t> { return 0; }
+    static void write(std::span<std::byte const> /*buf*/) noexcept {}
+};
+
 } // namespace
 
 TEST_CASE("output_stream concept") {
@@ -412,6 +427,7 @@ TEST_CASE("output_stream concept") {
     STATIC_CHECK_FALSE(output_stream<write_not_noexcept>);
     STATIC_CHECK_FALSE(output_stream<write_wrong_return>);
     STATIC_CHECK_FALSE(output_stream<write_wrong_param>);
+    STATIC_CHECK_FALSE(output_stream<nonmovable_output_stream>);
 }
 
 } // namespace tcspc

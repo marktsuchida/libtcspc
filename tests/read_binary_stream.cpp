@@ -292,6 +292,26 @@ struct tell_wrong_return {
     }
 };
 
+struct nonmovable_input_stream {
+    nonmovable_input_stream() = default;
+    nonmovable_input_stream(nonmovable_input_stream const &) = delete;
+    auto operator=(nonmovable_input_stream const &)
+        -> nonmovable_input_stream & = delete;
+    nonmovable_input_stream(nonmovable_input_stream &&) = delete;
+    auto operator=(nonmovable_input_stream &&)
+        -> nonmovable_input_stream & = delete;
+    ~nonmovable_input_stream() = default;
+
+    static auto is_error() noexcept -> bool { return false; }
+    static auto is_eof() noexcept -> bool { return false; }
+    static auto is_good() noexcept -> bool { return true; }
+    static auto tell() noexcept -> std::optional<std::uint64_t> { return 0; }
+    static auto skip(std::uint64_t /*bytes*/) noexcept -> bool { return true; }
+    static auto read(std::span<std::byte> /*buf*/) noexcept -> std::uint64_t {
+        return 0;
+    }
+};
+
 } // namespace
 
 TEST_CASE("input_stream concept") {
@@ -306,6 +326,7 @@ TEST_CASE("input_stream concept") {
     STATIC_CHECK_FALSE(input_stream<read_not_noexcept>);
     STATIC_CHECK_FALSE(input_stream<read_wrong_return>);
     STATIC_CHECK_FALSE(input_stream<tell_wrong_return>);
+    STATIC_CHECK_FALSE(input_stream<nonmovable_input_stream>);
 }
 
 } // namespace tcspc
