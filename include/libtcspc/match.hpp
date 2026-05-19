@@ -12,16 +12,32 @@
 #include "numeric_traits.hpp"
 #include "processor.hpp"
 
+#include <concepts>
 #include <type_traits>
 #include <utility>
 
 namespace tcspc {
 
+/**
+ * \brief Concept that is satisfied when \p T conforms to the libtcspc
+ * matcher interface for event type \p Event.
+ *
+ * \ingroup matchers
+ *
+ * Determines whether \p T is movable and provides `operator()(Event const &)
+ * const` returning `bool`.
+ */
+template <typename T, typename Event>
+concept matcher_for = std::movable<T> && requires(T const &m, Event const &e) {
+    { m(e) } -> std::same_as<bool>;
+};
+
 namespace internal {
 
 template <typename Event, typename OutEvent, typename Matcher,
           bool PassMatched, typename Downstream>
-    requires processor<Downstream, Event, OutEvent>
+    requires matcher_for<Matcher, Event> &&
+             processor<Downstream, Event, OutEvent>
 class match {
     Matcher matcher;
     Downstream downstream;

@@ -29,6 +29,28 @@ using output_event = time_tagged_test_event<1>;
 using misc_event = time_tagged_test_event<2>;
 using out_events = type_list<marker_event<>, output_event, misc_event>;
 
+struct wrong_return_matcher {
+    auto operator()(some_event const & /*event*/) const -> int { return 0; }
+};
+
+struct mutable_only_matcher {
+    auto operator()(some_event const & /*event*/) -> bool { return true; }
+};
+
+struct nonmovable_matcher {
+    nonmovable_matcher() = default;
+    nonmovable_matcher(nonmovable_matcher const &) = delete;
+    auto operator=(nonmovable_matcher const &)
+        -> nonmovable_matcher & = delete;
+    nonmovable_matcher(nonmovable_matcher &&) = delete;
+    auto operator=(nonmovable_matcher &&) -> nonmovable_matcher & = delete;
+    ~nonmovable_matcher() = default;
+
+    auto operator()(some_event const & /*event*/) const -> bool {
+        return true;
+    }
+};
+
 } // namespace
 
 TEST_CASE("type constraints: match") {
@@ -36,6 +58,16 @@ TEST_CASE("type constraints: match") {
         always_matcher(), sink_only<some_event, output_event, misc_event>()));
     STATIC_CHECK(processor<proc_type, some_event, misc_event>);
     STATIC_CHECK_FALSE(handler_for<proc_type, int>);
+}
+
+TEST_CASE("matcher_for concept") {
+    STATIC_CHECK(matcher_for<always_matcher, some_event>);
+    STATIC_CHECK(matcher_for<never_matcher, some_event>);
+    STATIC_CHECK(matcher_for<channel_matcher<>, marker_event<>>);
+
+    STATIC_CHECK_FALSE(matcher_for<wrong_return_matcher, some_event>);
+    STATIC_CHECK_FALSE(matcher_for<mutable_only_matcher, some_event>);
+    STATIC_CHECK_FALSE(matcher_for<nonmovable_matcher, some_event>);
 }
 
 TEST_CASE("type constraints: match_and_consume") {

@@ -18,6 +18,7 @@
 
 #include <algorithm>
 #include <cassert>
+#include <concepts>
 #include <cstddef>
 #include <functional>
 #include <iterator>
@@ -31,15 +32,49 @@
 
 namespace tcspc {
 
+/**
+ * \brief Concept that is satisfied when \p T conforms to the libtcspc data
+ * mapper interface for event type \p Event and datapoint type \p Datapoint.
+ *
+ * \ingroup data-mappers
+ *
+ * Determines whether \p T is movable and provides `operator()(Event const &)
+ * const` returning \p Datapoint.
+ */
+template <typename T, typename Event, typename Datapoint>
+concept data_mapper_for =
+    std::movable<T> && requires(T const &m, Event const &e) {
+        { m(e) } -> std::same_as<Datapoint>;
+    };
+
+/**
+ * \brief Concept that is satisfied when \p T conforms to the libtcspc bin
+ * mapper interface mapping datapoints of type \p Datapoint to bin indices of
+ * type \p BinIndex.
+ *
+ * \ingroup bin-mappers
+ *
+ * Determines whether \p T is movable and provides `operator()(Datapoint)`
+ * returning `std::optional<BinIndex>`. The call is permitted to be
+ * non-const (e.g., `tcspc::unique_bin_mapper` accumulates state).
+ *
+ * The optional `n_bins()` member function described at \ref bin-mappers is
+ * a convention on concrete bin-mapper classes and is not required by this
+ * concept; `tcspc::map_to_bins` does not call it.
+ */
+template <typename T, typename Datapoint, typename BinIndex>
+concept bin_mapper_for = std::movable<T> && requires(T &m, Datapoint d) {
+    { m(d) } -> std::same_as<std::optional<BinIndex>>;
+};
+
 namespace internal {
 
 template <typename Event, typename NumericTraits, typename DataMapper,
           typename Downstream>
-    requires processor<Downstream, datapoint_event<NumericTraits>>
+    requires data_mapper_for<DataMapper, Event,
+                             typename NumericTraits::datapoint_type> &&
+             processor<Downstream, datapoint_event<NumericTraits>>
 class map_to_datapoints {
-    static_assert(std::is_same_v<std::invoke_result_t<DataMapper, Event>,
-                                 typename NumericTraits::datapoint_type>);
-
     DataMapper mapper;
 
     Downstream downstream;
@@ -189,12 +224,10 @@ class channel_data_mapper {
 namespace internal {
 
 template <typename NumericTraits, typename BinMapper, typename Downstream>
-    requires processor<Downstream, bin_increment_event<NumericTraits>>
+    requires bin_mapper_for<BinMapper, typename NumericTraits::datapoint_type,
+                            typename NumericTraits::bin_index_type> &&
+             processor<Downstream, bin_increment_event<NumericTraits>>
 class map_to_bins {
-    static_assert(
-        std::is_same_v<std::invoke_result_t<
-                           BinMapper, typename NumericTraits::datapoint_type>,
-                       std::optional<typename NumericTraits::bin_index_type>>);
     static_assert(with_datapoint_type<NumericTraits>);
     static_assert(with_bin_index_type<NumericTraits>);
 

@@ -34,6 +34,57 @@ using start_event = time_tagged_test_event<0>;
 using stop_event = time_tagged_test_event<1>;
 using misc_event = time_tagged_test_event<2>;
 
+struct wrong_datapoint_type_mapper {
+    auto operator()(time_correlated_detection_event<> const & /*event*/) const
+        -> u32 {
+        return 0;
+    }
+};
+
+struct mutable_only_data_mapper {
+    auto operator()(time_correlated_detection_event<> const & /*event*/)
+        -> i32 {
+        return 0;
+    }
+};
+
+struct nonmovable_data_mapper {
+    nonmovable_data_mapper() = default;
+    nonmovable_data_mapper(nonmovable_data_mapper const &) = delete;
+    auto operator=(nonmovable_data_mapper const &)
+        -> nonmovable_data_mapper & = delete;
+    nonmovable_data_mapper(nonmovable_data_mapper &&) = delete;
+    auto operator=(nonmovable_data_mapper &&)
+        -> nonmovable_data_mapper & = delete;
+    ~nonmovable_data_mapper() = default;
+
+    auto operator()(time_correlated_detection_event<> const & /*event*/) const
+        -> i32 {
+        return 0;
+    }
+};
+
+struct add_42_bin_mapper {
+    auto operator()(i32 d) const -> std::optional<u32> { return u32(d) + 42u; }
+};
+
+struct wrong_return_bin_mapper {
+    auto operator()(i32 /*d*/) const -> u32 { return 0; }
+};
+
+struct nonmovable_bin_mapper {
+    nonmovable_bin_mapper() = default;
+    nonmovable_bin_mapper(nonmovable_bin_mapper const &) = delete;
+    auto operator=(nonmovable_bin_mapper const &)
+        -> nonmovable_bin_mapper & = delete;
+    nonmovable_bin_mapper(nonmovable_bin_mapper &&) = delete;
+    auto operator=(nonmovable_bin_mapper &&)
+        -> nonmovable_bin_mapper & = delete;
+    ~nonmovable_bin_mapper() = default;
+
+    auto operator()(i32 /*d*/) const -> std::optional<u32> { return {}; }
+};
+
 } // namespace
 
 TEST_CASE("type constraints: map_to_datapoints") {
@@ -50,6 +101,25 @@ TEST_CASE("type constraints: map_to_datapoints") {
     STATIC_CHECK_FALSE(handler_for<proc_type, some_type>);
 }
 
+TEST_CASE("data_mapper_for concept") {
+    STATIC_CHECK(data_mapper_for<difftime_data_mapper<>,
+                                 time_correlated_detection_event<>, i32>);
+    STATIC_CHECK(
+        data_mapper_for<count_data_mapper<>, bulk_counts_event<>, i32>);
+    STATIC_CHECK(
+        data_mapper_for<channel_data_mapper<>, detection_event<>, i32>);
+
+    STATIC_CHECK_FALSE(
+        data_mapper_for<wrong_datapoint_type_mapper,
+                        time_correlated_detection_event<>, i32>);
+    STATIC_CHECK_FALSE(
+        data_mapper_for<mutable_only_data_mapper,
+                        time_correlated_detection_event<>, i32>);
+    STATIC_CHECK_FALSE(
+        data_mapper_for<nonmovable_data_mapper,
+                        time_correlated_detection_event<>, i32>);
+}
+
 TEST_CASE("type constraints: map_to_bins") {
     struct numtraits : default_numeric_traits {
         using bin_index_type = u8;
@@ -61,6 +131,16 @@ TEST_CASE("type constraints: map_to_bins") {
     STATIC_CHECK(handler_for<proc_type, int>);
     struct some_type {};
     STATIC_CHECK_FALSE(handler_for<proc_type, some_type>);
+}
+
+TEST_CASE("bin_mapper_for concept") {
+    STATIC_CHECK(bin_mapper_for<power_of_2_bin_mapper<12, 8>, i32, u16>);
+    STATIC_CHECK(bin_mapper_for<linear_bin_mapper<>, i32, u16>);
+    STATIC_CHECK(bin_mapper_for<unique_bin_mapper<>, i32, u16>);
+    STATIC_CHECK(bin_mapper_for<add_42_bin_mapper, i32, u32>);
+
+    STATIC_CHECK_FALSE(bin_mapper_for<wrong_return_bin_mapper, i32, u32>);
+    STATIC_CHECK_FALSE(bin_mapper_for<nonmovable_bin_mapper, i32, u32>);
 }
 
 TEST_CASE("type constraints: cluster_bin_increments") {
@@ -144,11 +224,6 @@ TEST_CASE("Map to bins") {
     }
 
     SECTION("Simple mapping") {
-        struct add_42_bin_mapper {
-            auto operator()(i32 d) const -> std::optional<u32> {
-                return u32(d) + 42u;
-            }
-        };
         using out_events = type_list<bin_increment_event<numtraits>>;
         auto in = feed_input(
             valcat, map_to_bins<numtraits>(

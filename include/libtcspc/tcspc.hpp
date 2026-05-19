@@ -736,6 +736,9 @@ namespace tcspc {
  * `operator()()`. The function call operator returns true if the `event` was
  * matched; otherwise false.
  *
+ * The interface described above is captured by the `tcspc::matcher_for`
+ * concept.
+ *
  * (Note that lambdas can also be used as matchers: `tcspc::always_matcher()`
  * is equivalent to `[](auto const &) { return true; }`.)
  */
@@ -749,6 +752,9 @@ namespace tcspc {
  * datapoint_type`, where `Event const &` must be implicitly convertible from
  * the event type being mapped by the processor. `Event` can be a template
  * parameter of the `operator()()`.
+ *
+ * The interface described above is captured by the `tcspc::data_mapper_for`
+ * concept.
  *
  * (Note that lambdas can also be used as data mappers.)
  */
@@ -765,6 +771,10 @@ namespace tcspc {
  *   where `datapoint_type` and `bin_index_type` must match the
  *   `tcspc::map_to_bins()` processor's `NumericTraits`. This function call
  *   operator maps the datapoint `d` to a bin index.
+ *
+ * The mapping `operator()` is captured by the `tcspc::bin_mapper_for`
+ * concept. `n_bins()` is an additional convention not enforced by the
+ * concept.
  *
  * (`n_bins()` is provided for convenience and is not used by
  * `tcspc::map_to_bins`. Thus, any invokable, such as a lambda, can be used as
