@@ -245,7 +245,8 @@ class buffer {
                  std::move(downstream)) {}
     // NOLINTEND(cppcoreguidelines-pro-type-member-init)
 
-    // Custom move because we have a mutex. Move only works when not running.
+    // Custom move ctor because we have a mutex. Move only works when not
+    // running.
     ~buffer() = default;
 
     buffer(buffer const &) = delete;
@@ -262,20 +263,7 @@ class buffer {
           downstream(std::move(other.downstream)), pumped(other.pumped),
           trk(std::move(other.trk)) {}
 
-    auto operator=(buffer &&rhs) noexcept -> buffer & {
-        threshold = rhs.threshold;
-        max_latency = rhs.max_latency;
-        shared_queue = std::move(rhs.shared_queue);
-        oldest_enqueued_time = rhs.oldest_enqueued_time;
-        upstream_flushed = rhs.upstream_flushed;
-        upstream_halted = rhs.upstream_halted;
-        downstream_threw = rhs.downstream_threw;
-        emit_queue = std::move(rhs.emit_queue);
-        downstream = std::move(rhs.downstream);
-        pumped = rhs.pumped;
-        trk = std::move(rhs.trk);
-        return *this;
-    }
+    auto operator=(buffer &&) = delete;
 
     [[nodiscard]] auto introspect_node() const -> processor_info {
         return processor_info(this, "buffer");

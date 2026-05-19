@@ -176,9 +176,10 @@ TEST_CASE("acquire") {
 
     using trompeloeil::_;
 
-    SECTION("acquire processor is movable") {
-        STATIC_CHECK(std::is_move_constructible_v<decltype(acq)> &&
-                     std::is_move_assignable_v<decltype(acq)>);
+    SECTION(
+        "acquire processor is move-constructible but not move-assignable") {
+        STATIC_CHECK(std::is_move_constructible_v<decltype(acq)>);
+        STATIC_CHECK_FALSE(std::is_move_assignable_v<decltype(acq)>);
     }
 
     SECTION("pre-halted acquisition never reads, immediately throws") {
@@ -286,9 +287,10 @@ TEST_CASE("acquire_full_buckets") {
 
     using trompeloeil::_;
 
-    SECTION("acquire_full_buckets is movable") {
-        STATIC_CHECK(std::is_move_constructible_v<decltype(acq)> &&
-                     std::is_move_assignable_v<decltype(acq)>);
+    SECTION(
+        "acquire_full_buckets is move-constructible but not move-assignable") {
+        STATIC_CHECK(std::is_move_constructible_v<decltype(acq)>);
+        STATIC_CHECK_FALSE(std::is_move_assignable_v<decltype(acq)>);
     }
 
     SECTION("pre-halted acquisition never reads, immediately throws") {

@@ -128,7 +128,8 @@ class acquire {
         });
     }
 
-    // Custom move because we have a mutex. Move only works when not running.
+    // Custom move ctor because we have a mutex. Move only works when not
+    // running.
     ~acquire() = default;
 
     acquire(acquire const &) = delete;
@@ -139,15 +140,7 @@ class acquire {
           bsize(other.bsize), halted(other.halted),
           downstream(std::move(other.downstream)), trk(std::move(other.trk)) {}
 
-    auto operator=(acquire &&rhs) noexcept -> acquire & {
-        reader = std::move(rhs.reader);
-        bsource = std::move(rhs.bsource);
-        bsize = rhs.bsize;
-        halted = rhs.halted;
-        downstream = std::move(rhs.downstream);
-        trk = std::move(rhs.trk);
-        return *this;
-    }
+    auto operator=(acquire &&) = delete;
 
     [[nodiscard]] auto introspect_node() const -> processor_info {
         return processor_info(this, "acquire");
@@ -289,7 +282,8 @@ class acquire_full_buckets {
         });
     }
 
-    // Custom move because we have a mutex. Move only works when not running.
+    // Custom move ctor because we have a mutex. Move only works when not
+    // running.
     ~acquire_full_buckets() = default;
 
     acquire_full_buckets(acquire_full_buckets const &) = delete;
@@ -302,17 +296,7 @@ class acquire_full_buckets {
           batch_downstream(std::move(other.batch_downstream)),
           trk(std::move(other.trk)) {}
 
-    auto operator=(acquire_full_buckets &&rhs) noexcept
-        -> acquire_full_buckets & {
-        reader = std::move(rhs.reader);
-        bsource = std::move(rhs.bsource);
-        bsize = rhs.bsize;
-        halted = rhs.halted;
-        live_downstream = std::move(rhs.live_downstream);
-        batch_downstream = std::move(rhs.batch_downstream);
-        trk = std::move(rhs.trk);
-        return *this;
-    }
+    auto operator=(acquire_full_buckets &&) = delete;
 
     [[nodiscard]] auto introspect_node() const -> processor_info {
         return processor_info(this, "acquire_full_buckets");

@@ -144,13 +144,7 @@ class cfile_input_stream {
         : fp(std::exchange(other.fp, nullptr)),
           should_close(std::exchange(other.should_close, false)) {}
 
-    auto operator=(cfile_input_stream &&rhs) noexcept -> cfile_input_stream & {
-        if (should_close)
-            (void)std::fclose(fp); // NOLINT(cppcoreguidelines-owning-memory)
-        fp = std::exchange(rhs.fp, nullptr);
-        should_close = std::exchange(rhs.should_close, false);
-        return *this;
-    }
+    auto operator=(cfile_input_stream &&) = delete;
 
     ~cfile_input_stream() {
         if (should_close)

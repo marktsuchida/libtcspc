@@ -169,11 +169,11 @@ class merge_input {
         std::shared_ptr<merge_impl<EventList, NumericTraits, Downstream>> impl)
         : impl(std::move(impl)) {}
 
-    // Movable but not copyable
+    // Move-constructible but not copyable or move-assignable
     merge_input(merge_input const &) = delete;
     auto operator=(merge_input const &) = delete;
     merge_input(merge_input &&) noexcept = default;
-    auto operator=(merge_input &&) noexcept -> merge_input & = default;
+    auto operator=(merge_input &&) = delete;
     ~merge_input() = default;
 
     [[nodiscard]] auto introspect_node() const -> processor_info {
@@ -393,12 +393,11 @@ template <std::size_t N, typename Downstream> class merge_unsorted_input {
         std::size_t channel)
         : impl(std::move(impl)), chan(channel) {}
 
-    // Movable but not copyable
+    // Move-constructible but not copyable or move-assignable
     merge_unsorted_input(merge_unsorted_input const &) = delete;
     auto operator=(merge_unsorted_input const &) = delete;
     merge_unsorted_input(merge_unsorted_input &&) noexcept = default;
-    auto operator=(merge_unsorted_input &&) noexcept
-        -> merge_unsorted_input & = default;
+    auto operator=(merge_unsorted_input &&) = delete;
     ~merge_unsorted_input() = default;
 
     [[nodiscard]] auto introspect_node() const -> processor_info {
