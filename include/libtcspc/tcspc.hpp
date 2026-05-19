@@ -609,6 +609,10 @@ namespace tcspc {
  *
  * \brief Streams for use with `tcspc::read_binary_stream()`
  *
+ * \note Not to be confused with \ref acquisition-readers, which wrap
+ * pull-style device APIs for live data acquisition. Input streams are for
+ * reading stored data (files, pipes, in-memory buffers).
+ *
  * An input stream is a movable (usually noncopyable) object with the following
  * member functions:
  * - `auto is_error() noexcept -> bool`:
@@ -654,6 +658,10 @@ namespace tcspc {
  * \defgroup acquisition-readers Readers for acquisition
  *
  * \brief Readers that wrap pull-style device acquisition APIs.
+ *
+ * \note Not to be confused with \ref streams-input, which wrap file-like,
+ * byte-oriented sources of stored data. Acquisition readers are for live data
+ * acquisition from TCSPC hardware via pull-style driver APIs.
  *
  * A reader is a movable object that defines the function call operator:
  * `auto operator()(std::span<T> buffer) -> std::optional<std::size_t>`, in
