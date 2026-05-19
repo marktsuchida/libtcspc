@@ -11,11 +11,13 @@
 #include "int_arith.hpp"
 #include "introspect.hpp"
 #include "numeric_traits.hpp"
+#include "processor.hpp"
 #include "type_erased_processor.hpp"
 #include "type_list.hpp"
 
 #include <algorithm>
 #include <array>
+#include <concepts>
 #include <cstddef>
 #include <exception>
 #include <functional>
@@ -26,6 +28,21 @@
 
 namespace tcspc {
 
+/**
+ * \brief Concept that is satisfied when \p R conforms to the libtcspc router
+ * interface for event types \p Events.
+ *
+ * \ingroup routers
+ *
+ * Determines whether \p R is movable and provides `operator()(Event const &)
+ * const` returning `std::size_t` for every `Event` in \p Events.
+ */
+template <typename R, typename... Events>
+concept router_for =
+    std::movable<R> && (... && requires(R const &r, Events const &e) {
+        { r(e) } -> std::same_as<std::size_t>;
+    });
+
 namespace internal {
 
 // Design note: Currently the router produces a single downstream index per
@@ -34,13 +51,18 @@ namespace internal {
 // downstreams. But let's keep it simple. If necessary, a "multiroute"
 // processor can be added.
 
+template <typename Router, typename EventList> struct router_for_each_event;
+
+template <typename Router, typename... Events>
+struct router_for_each_event<Router, type_list<Events...>>
+    : std::bool_constant<router_for<Router, Events...>> {};
+
 // We do not require Downstream to handle all of RoutedEventList.
 template <typename RoutedEventList, typename Router, std::size_t N,
           typename Downstream>
-    requires processor<Downstream>
+    requires type_list_like<RoutedEventList> && processor<Downstream> &&
+             router_for_each_event<Router, RoutedEventList>::value
 class route_homogeneous {
-    static_assert(type_list_like<RoutedEventList>);
-
     Router router;
     std::array<Downstream, N> downstreams;
 

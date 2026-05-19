@@ -34,7 +34,38 @@ using tc_event = time_correlated_detection_event<>;
 using e0 = empty_test_event<0>;
 using e1 = empty_test_event<1>;
 
+struct wrong_return_router {
+    auto operator()(tc_event const & /*event*/) const -> int { return 0; }
+};
+
+struct mutable_only_router {
+    auto operator()(tc_event const & /*event*/) -> std::size_t { return 0; }
+};
+
+struct nonmovable_router {
+    nonmovable_router() = default;
+    nonmovable_router(nonmovable_router const &) = delete;
+    auto operator=(nonmovable_router const &) -> nonmovable_router & = delete;
+    nonmovable_router(nonmovable_router &&) = delete;
+    auto operator=(nonmovable_router &&) -> nonmovable_router & = delete;
+    ~nonmovable_router() = default;
+
+    auto operator()(tc_event const & /*event*/) const -> std::size_t {
+        return 0;
+    }
+};
+
 } // namespace
+
+TEST_CASE("router_for concept") {
+    STATIC_CHECK(router_for<null_router, tc_event>);
+    STATIC_CHECK(router_for<null_router, tc_event, marker_event<>>);
+    STATIC_CHECK(router_for<channel_router<3>, tc_event>);
+
+    STATIC_CHECK_FALSE(router_for<wrong_return_router, tc_event>);
+    STATIC_CHECK_FALSE(router_for<mutable_only_router, tc_event>);
+    STATIC_CHECK_FALSE(router_for<nonmovable_router, tc_event>);
+}
 
 TEST_CASE("route_homogeneous constructed two ways have same type") {
     STATIC_CHECK(std::is_same_v<decltype(route_homogeneous<type_list<>>(

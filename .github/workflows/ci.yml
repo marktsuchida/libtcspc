@@ -32,17 +32,13 @@ jobs:
           - platform
           - clang
         exclude:
+          - runner: ubuntu-22.04
+            compiler: platform  # GCC 11 has fold-over-requires bug; no support
           - runner: macos-15-intel
             compiler: clang  # Redundant with platform
           - runner: macos-15
             compiler: clang  # Redundant with platform
         include:
-          - runner: ubuntu-22.04
-            compiler: platform
-            cxx: g++
-            # TSan appears to have false positives in this configuration.
-            sanitizers: address,undefined
-            asan_opts: detect_leaks=1
           - runner: ubuntu-22.04
             compiler: clang
             cxx: clang++

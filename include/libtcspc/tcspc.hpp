@@ -590,9 +590,13 @@ namespace tcspc {
  * \brief Routers for use with `tcspc::route()` and
  * `tcspc::route_homogeneous()`.
  *
- * Routers implement the function call operator `auto operator()(Event const &)
- * const -> std::size_t` where the `Event` must be overloaded (or templated)
- * for every event handled by the routing processor.
+ * These objects define the member `auto operator()(Event const &event) const
+ * -> std::size_t`, where `Event const &` must be implicitly convertible from
+ * every event type routed by the processor. In general-purpose routers,
+ * `Event` is often a template parameter of the `operator()()`.
+ *
+ * The interface described above is captured by the `tcspc::router_for`
+ * concept.
  *
  * The return value is the index of the downstream processor to which the event
  * should be routed. If the index is out of range, the event is discarded.
