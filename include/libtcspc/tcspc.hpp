@@ -661,6 +661,9 @@ namespace tcspc {
  * value is `std::nullopt` if the end of the acquired data has been reached;
  * otherwise it is the number of `T` elements actually read; this may be zero.
  * If there was an error, an exception should be thrown.
+ *
+ * The interface described above is captured by the
+ * `tcspc::acquisition_reader` concept.
  */
 
 /**

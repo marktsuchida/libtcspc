@@ -15,6 +15,7 @@
 #include "processor.hpp"
 
 #include <chrono>
+#include <concepts>
 #include <condition_variable>
 #include <cstddef>
 #include <exception>
@@ -27,6 +28,21 @@
 #include <utility>
 
 namespace tcspc {
+
+/**
+ * \brief Concept that is satisfied when \p R conforms to the libtcspc
+ * acquisition reader interface for element type \p T.
+ *
+ * \ingroup acquisition-readers
+ *
+ * Determines whether \p R is move-constructible and provides
+ * `operator()(std::span<T>)` returning `std::optional<std::size_t>`.
+ */
+template <typename R, typename T>
+concept acquisition_reader =
+    std::move_constructible<R> && requires(R &r, std::span<T> buffer) {
+        { r(buffer) } -> std::same_as<std::optional<std::size_t>>;
+    };
 
 /**
  * \brief Access for acquire processors.
@@ -68,7 +84,7 @@ namespace internal {
 constexpr auto slow_acq_sleep = std::chrono::milliseconds(10);
 
 template <typename T, typename Reader, typename Downstream>
-    requires processor<Downstream, bucket<T>>
+    requires acquisition_reader<Reader, T> && processor<Downstream, bucket<T>>
 class acquire {
     Reader reader;
     std::shared_ptr<bucket_source<T>> bsource;
@@ -177,7 +193,8 @@ class acquire {
 
 template <typename T, typename Reader, typename LiveDownstream,
           typename BatchDownstream>
-    requires processor<LiveDownstream, bucket<T const>> &&
+    requires acquisition_reader<Reader, T> &&
+             processor<LiveDownstream, bucket<T const>> &&
              processor<BatchDownstream, bucket<T>>
 class acquire_full_buckets {
     Reader reader;

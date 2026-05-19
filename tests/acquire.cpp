@@ -104,9 +104,63 @@ template <typename Reader> class ref_reader {
     auto operator()(std::span<int> s) { return (*r)(s); }
 };
 
+struct wrong_return_reader {
+    auto operator()(std::span<int> /*buffer*/) -> std::size_t { return 0; }
+};
+
+struct wrong_buffer_reader {
+    auto operator()(std::span<float> /*buffer*/)
+        -> std::optional<std::size_t> {
+        return std::nullopt;
+    }
+};
+
+struct missing_call_reader {};
+
+struct nonassignable_reader {
+    nonassignable_reader() = default;
+    nonassignable_reader(nonassignable_reader const &) = default;
+    auto operator=(nonassignable_reader const &)
+        -> nonassignable_reader & = delete;
+    nonassignable_reader(nonassignable_reader &&) = default;
+    auto operator=(nonassignable_reader &&) -> nonassignable_reader & = delete;
+    ~nonassignable_reader() = default;
+
+    auto operator()(std::span<int> /*buffer*/) -> std::optional<std::size_t> {
+        return std::nullopt;
+    }
+};
+
+struct nonmovable_reader {
+    nonmovable_reader() = default;
+    nonmovable_reader(nonmovable_reader const &) = delete;
+    auto operator=(nonmovable_reader const &) -> nonmovable_reader & = delete;
+    nonmovable_reader(nonmovable_reader &&) = delete;
+    auto operator=(nonmovable_reader &&) -> nonmovable_reader & = delete;
+    ~nonmovable_reader() = default;
+
+    auto operator()(std::span<int> /*buffer*/) -> std::optional<std::size_t> {
+        return std::nullopt;
+    }
+};
+
 constexpr auto ignore_value_category = feed_as::const_lvalue;
 
 } // namespace
+
+TEST_CASE("acquisition_reader concept") {
+    STATIC_CHECK(acquisition_reader<null_reader<int>, int>);
+    STATIC_CHECK(acquisition_reader<null_reader<std::byte>, std::byte>);
+    STATIC_CHECK(acquisition_reader<stuck_reader<int>, int>);
+    STATIC_CHECK(acquisition_reader<ref_reader<mock_int_reader>, int>);
+    STATIC_CHECK(acquisition_reader<nonassignable_reader, int>);
+
+    STATIC_CHECK_FALSE(acquisition_reader<wrong_return_reader, int>);
+    STATIC_CHECK_FALSE(acquisition_reader<wrong_buffer_reader, int>);
+    STATIC_CHECK_FALSE(acquisition_reader<missing_call_reader, int>);
+    STATIC_CHECK_FALSE(acquisition_reader<nonmovable_reader, int>);
+    STATIC_CHECK_FALSE(acquisition_reader<null_reader<int>, float>);
+}
 
 TEST_CASE("acquire") {
     auto ctx = context::create();
