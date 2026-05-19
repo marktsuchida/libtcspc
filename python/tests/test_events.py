@@ -52,8 +52,7 @@ def test_WarningEvent_cpp_type_name():
 def test_parameterised_event_cpp_type_name_default(cls, prefix):
     name = cls()._cpp_type_name()
     assert name.startswith(prefix)
-    assert name.endswith(">")
-    assert "tcspc::parameterized_numeric_traits<" in name
+    assert name.endswith("<tcspc::default_numeric_traits>")
 
 
 @pytest.mark.parametrize(("cls", "prefix"), PARAMETERIZED_EVENTS)
@@ -61,8 +60,9 @@ def test_parameterised_event_cpp_type_name_propagates_numeric_traits(
     cls, prefix
 ):
     name = cls(tcspc.NumericTraits(abstime_type=np.uint64))._cpp_type_name()
-    assert "std::uint64_t" in name
-    assert "tcspc::default_numeric_traits::abstime_type" not in name
+    assert name.startswith(prefix)
+    inner = name[len(prefix) : -1]
+    assert inner.startswith("nt_")
 
 
 def test_BucketEvent_cpp_type_name_wraps_element():

@@ -7,67 +7,90 @@ import sys
 import libtcspc as tcspc
 import numpy as np
 import pytest
+from libtcspc._numeric_traits import _collecting_referenced_traits
 
 
 def test_default_construction():
     name = tcspc.NumericTraits()._cpp_type_name()
-    assert name.startswith("tcspc::parameterized_numeric_traits<")
-    for slot in (
-        "abstime",
-        "channel",
-        "difftime",
-        "count",
-        "datapoint",
-        "bin_index",
-        "bin",
-    ):
-        assert f"tcspc::default_numeric_traits::{slot}_type" in name
-    # Documented order.
-    order = [
-        "tcspc::default_numeric_traits::abstime_type",
-        "tcspc::default_numeric_traits::channel_type",
-        "tcspc::default_numeric_traits::difftime_type",
-        "tcspc::default_numeric_traits::count_type",
-        "tcspc::default_numeric_traits::datapoint_type",
-        "tcspc::default_numeric_traits::bin_index_type",
-        "tcspc::default_numeric_traits::bin_type",
-    ]
-    positions = [name.index(s) for s in order]
-    assert positions == sorted(positions)
+    assert name == "tcspc::default_numeric_traits"
 
 
-def test_per_slot_override_scalar():
+def test_default_construction_does_not_register_struct():
+    with _collecting_referenced_traits() as registry:
+        tcspc.NumericTraits()._cpp_type_name()
+    assert registry == {}
+
+
+def test_override_returns_hashed_struct_name():
     name = tcspc.NumericTraits(channel_type=np.uint32)._cpp_type_name()
-    assert "std::uint32_t" in name
+    assert name.startswith("nt_")
+    # The hash prefix is 16 hex chars after "nt_".
+    assert len(name) == len("nt_") + 16
+
+
+def test_override_name_is_deterministic():
+    name1 = tcspc.NumericTraits(abstime_type=np.uint32)._cpp_type_name()
+    name2 = tcspc.NumericTraits(abstime_type=np.uint32)._cpp_type_name()
+    assert name1 == name2
+
+
+def test_different_overrides_yield_different_names():
+    name1 = tcspc.NumericTraits(abstime_type=np.uint32)._cpp_type_name()
+    name2 = tcspc.NumericTraits(abstime_type=np.uint64)._cpp_type_name()
+    assert name1 != name2
+
+
+def test_struct_definition_registered_on_use():
+    nt = tcspc.NumericTraits(abstime_type=np.uint32)
+    with _collecting_referenced_traits() as registry:
+        name = nt._cpp_type_name()
+    assert name in registry
+    definition = registry[name]
+    assert f"struct {name} : tcspc::default_numeric_traits {{" in definition
+    assert "using abstime_type = std::uint32_t;" in definition
+
+
+def test_struct_definition_registered_only_for_overridden_slots():
+    nt = tcspc.NumericTraits(channel_type=np.uint32)
+    with _collecting_referenced_traits() as registry:
+        name = nt._cpp_type_name()
+    definition = registry[name]
+    assert "using channel_type = std::uint32_t;" in definition
     for slot in (
-        "abstime",
-        "difftime",
-        "count",
-        "datapoint",
-        "bin_index",
-        "bin",
+        "abstime_type",
+        "difftime_type",
+        "count_type",
+        "datapoint_type",
+        "bin_index_type",
+        "bin_type",
     ):
-        assert f"tcspc::default_numeric_traits::{slot}_type" in name
-    assert "tcspc::default_numeric_traits::channel_type" not in name
+        assert f"using {slot} =" not in definition
 
 
-def test_per_slot_override_dtype_object():
-    name = tcspc.NumericTraits(abstime_type=np.dtype("int64"))._cpp_type_name()
-    assert "std::int64_t" in name
-    assert "tcspc::default_numeric_traits::abstime_type" not in name
+def test_override_dtype_object():
+    nt = tcspc.NumericTraits(abstime_type=np.dtype("int64"))
+    with _collecting_referenced_traits() as registry:
+        name = nt._cpp_type_name()
+    assert "using abstime_type = std::int64_t;" in registry[name]
 
 
-def test_per_slot_override_string():
-    name = tcspc.NumericTraits(count_type="uint16")._cpp_type_name()
-    assert "std::uint16_t" in name
-    assert "tcspc::default_numeric_traits::count_type" not in name
+def test_override_string():
+    nt = tcspc.NumericTraits(count_type="uint16")
+    with _collecting_referenced_traits() as registry:
+        name = nt._cpp_type_name()
+    assert "using count_type = std::uint16_t;" in registry[name]
 
 
 def test_difftime_accepts_signed_integer():
-    name = tcspc.NumericTraits(difftime_type=np.int32)._cpp_type_name()
-    assert "std::int32_t" in name
-    name = tcspc.NumericTraits(difftime_type=np.int64)._cpp_type_name()
-    assert "std::int64_t" in name
+    nt = tcspc.NumericTraits(difftime_type=np.int32)
+    with _collecting_referenced_traits() as registry:
+        name = nt._cpp_type_name()
+    assert "using difftime_type = std::int32_t;" in registry[name]
+
+    nt = tcspc.NumericTraits(difftime_type=np.int64)
+    with _collecting_referenced_traits() as registry:
+        name = nt._cpp_type_name()
+    assert "using difftime_type = std::int64_t;" in registry[name]
 
 
 def test_difftime_rejects_unsigned():
@@ -89,8 +112,10 @@ def test_difftime_rejects_bool():
 
 def test_bin_index_accepts_unsigned_integer():
     for t in (np.uint8, np.uint16, np.uint32, np.uint64):
-        name = tcspc.NumericTraits(bin_index_type=t)._cpp_type_name()
-        assert "tcspc::default_numeric_traits::bin_index_type" not in name
+        nt = tcspc.NumericTraits(bin_index_type=t)
+        with _collecting_referenced_traits() as registry:
+            name = nt._cpp_type_name()
+        assert "using bin_index_type =" in registry[name]
 
 
 def test_bin_index_rejects_signed():
@@ -114,10 +139,15 @@ def test_bin_index_rejects_bool():
 )
 def test_integer_slot_accepts_signed_and_unsigned(slot):
     key = f"{slot}_type"
-    name = tcspc.NumericTraits(**{key: np.int32})._cpp_type_name()
-    assert "std::int32_t" in name
-    name = tcspc.NumericTraits(**{key: np.uint32})._cpp_type_name()
-    assert "std::uint32_t" in name
+    nt = tcspc.NumericTraits(**{key: np.int32})
+    with _collecting_referenced_traits() as registry:
+        name = nt._cpp_type_name()
+    assert f"using {key} = std::int32_t;" in registry[name]
+
+    nt = tcspc.NumericTraits(**{key: np.uint32})
+    with _collecting_referenced_traits() as registry:
+        name = nt._cpp_type_name()
+    assert f"using {key} = std::uint32_t;" in registry[name]
 
 
 @pytest.mark.parametrize(

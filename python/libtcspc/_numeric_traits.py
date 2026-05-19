@@ -2,6 +2,11 @@
 # Copyright 2019-2026 Board of Regents of the University of Wisconsin System
 # SPDX-License-Identifier: MIT
 
+import contextlib
+import contextvars
+import hashlib
+import re
+from collections.abc import Iterable, Iterator
 from typing import Any, TypedDict
 
 import numpy as np
@@ -35,6 +40,38 @@ _SLOT_DESCRIPTION: dict[frozenset[str], str] = {
     frozenset({"i"}): "a signed integer",
     frozenset({"u"}): "an unsigned integer",
 }
+
+
+_referenced_traits: contextvars.ContextVar[dict[str, str] | None] = (
+    contextvars.ContextVar("_referenced_traits", default=None)
+)
+
+
+@contextlib.contextmanager
+def _collecting_referenced_traits() -> Iterator[dict[str, str]]:
+    registry: dict[str, str] = {}
+    token = _referenced_traits.set(registry)
+    try:
+        yield registry
+    finally:
+        _referenced_traits.reset(token)
+
+
+# Process-wide registry of all struct definitions ever produced. Keyed by the
+# content-addressed struct name, so duplicates collapse harmlessly. Used to
+# resolve `nt_<hash>` references in `_is_same_type` test compiles.
+_known_traits_definitions: dict[str, str] = {}
+
+_NT_NAME_PATTERN = re.compile(r"\bnt_[0-9a-f]{16}\b")
+
+
+def _struct_definitions_referenced_by(typenames: Iterable[str]) -> list[str]:
+    seen: dict[str, str] = {}
+    for typename in typenames:
+        for name in _NT_NAME_PATTERN.findall(typename):
+            if name in _known_traits_definitions and name not in seen:
+                seen[name] = _known_traits_definitions[name]
+    return list(seen.values())
 
 
 class NumericTraits:
@@ -81,20 +118,16 @@ class NumericTraits:
     --------
     :cpp:`tcspc::default_numeric_traits`
         The C++ default numeric traits.
-    :cpp:`tcspc::parameterized_numeric_traits`
-        The C++ template used to assemble custom numeric traits.
     """
 
     def __init__(self, **kwargs: Unpack[_NumericTraits]) -> None:
-        def typ(category: str) -> _CppTypeName:
+        overrides: dict[str, _CppTypeName] = {}
+        for category, allowed in _SLOT_RULES.items():
             key = f"{category}_type"
             if key not in kwargs:
-                return _CppTypeName(
-                    f"tcspc::default_numeric_traits::{category}_type"
-                )
+                continue
             value = kwargs[key]  # type: ignore[literal-required]
             cpp_type = _cpp_type_from_dtype(value)
-            allowed = _SLOT_RULES[category]
             kind = np.dtype(value).kind
             if kind not in allowed:
                 raise TypeError(
@@ -102,22 +135,32 @@ class NumericTraits:
                     f"{_SLOT_DESCRIPTION[allowed]} dtype, got "
                     f"{np.dtype(value)!s}"
                 )
-            return cpp_type
+            overrides[key] = cpp_type
 
-        tparams = ", ".join(
-            (
-                typ("abstime"),
-                typ("channel"),
-                typ("difftime"),
-                typ("count"),
-                typ("datapoint"),
-                typ("bin_index"),
-                typ("bin"),
+        if not overrides:
+            self._struct_name = _CppTypeName("tcspc::default_numeric_traits")
+            self._struct_definition: str | None = None
+        else:
+            canonical = ";".join(
+                f"{k}={v}" for k, v in sorted(overrides.items())
             )
-        )
-        self._type_set_class = _CppTypeName(
-            f"tcspc::parameterized_numeric_traits<{tparams}>"
-        )
+            digest = hashlib.sha256(canonical.encode()).hexdigest()[:16]
+            self._struct_name = _CppTypeName(f"nt_{digest}")
+            self._struct_definition = (
+                f"struct {self._struct_name} : tcspc::default_numeric_traits {{\n"
+                + "".join(
+                    f"    using {slot} = {typ};\n"
+                    for slot, typ in overrides.items()
+                )
+                + "};"
+            )
+            _known_traits_definitions.setdefault(
+                str(self._struct_name), self._struct_definition
+            )
 
     def _cpp_type_name(self) -> _CppTypeName:
-        return self._type_set_class
+        if self._struct_definition is not None:
+            registry = _referenced_traits.get()
+            if registry is not None:
+                registry[str(self._struct_name)] = self._struct_definition
+        return self._struct_name

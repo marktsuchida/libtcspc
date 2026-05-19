@@ -113,13 +113,25 @@ class _ModuleCodeFragment:
         )
 
 
+# Caching here is sound because any `nt_<hash>` name referenced through
+# `_struct_definitions_referenced_by` is content-addressed: the same name
+# always implies the same struct body.
 @functools.cache
 def _is_same_type_impl(t0: _CppTypeName, t1: _CppTypeName) -> bool:
+    from ._numeric_traits import _struct_definitions_referenced_by
+
+    defs = _struct_definitions_referenced_by((t0, t1))
+    prelude = (
+        "namespace {\n" + "\n".join(defs) + "\n} // namespace\n"
+        if defs
+        else ""
+    )
     return (
         _run_cpp_prog(f"""\
             #include "libtcspc/tcspc.hpp"
             #include <type_traits>
 
+            {prelude}
             int main() {{
                 constexpr bool result = std::is_same_v<{t0}, {t1}>;
                 return result ? 1 : 0;

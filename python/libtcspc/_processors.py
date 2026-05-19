@@ -1640,9 +1640,7 @@ class Delay(_TypePreservingRelayNode):
         gencontext: _CodeGenerationContext,
         downstream: _CppExpression,
     ) -> _CppExpression:
-        abstime_t = (
-            f"typename {self._numeric_traits._cpp_type_name()}::abstime_type"
-        )
+        abstime_t = f"{self._numeric_traits._cpp_type_name()}::abstime_type"
         if isinstance(self._delta, Param):
             value_expr = (
                 f"{gencontext.params_varname}.{self._delta._cpp_identifier()}"
@@ -1898,9 +1896,7 @@ class RecoverOrder(_TypePreservingRelayNode):
         gencontext: _CodeGenerationContext,
         downstream: _CppExpression,
     ) -> _CppExpression:
-        abstime_t = (
-            f"typename {self._numeric_traits._cpp_type_name()}::abstime_type"
-        )
+        abstime_t = f"{self._numeric_traits._cpp_type_name()}::abstime_type"
         if isinstance(self._time_window, Param):
             value_expr = f"{gencontext.params_varname}.{self._time_window._cpp_identifier()}"
         else:
@@ -1984,9 +1980,7 @@ class RegulateTimeReached(_TypePreservingRelayNode):
         gencontext: _CodeGenerationContext,
         downstream: _CppExpression,
     ) -> _CppExpression:
-        abstime_t = (
-            f"typename {self._numeric_traits._cpp_type_name()}::abstime_type"
-        )
+        abstime_t = f"{self._numeric_traits._cpp_type_name()}::abstime_type"
         if isinstance(self._interval, Param):
             interval_expr = f"{gencontext.params_varname}.{self._interval._cpp_identifier()}"
         else:

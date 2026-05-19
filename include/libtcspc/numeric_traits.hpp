@@ -69,36 +69,6 @@ struct default_numeric_traits {
 };
 
 /**
- * \brief Utility for naming numeric traits without additional definitions.
- *
- * \ingroup numeric-traits
- *
- * This is intended for use by code generators, such as the Python bindings.
- *
- * In normal C++ code, it is better to define numeric traits from scratch, or
- * by deriving from `tcspc::default_numeric_traits`. Use of this template
- * should be avoided because the template parameter ordering is error-prone.
- */
-template <typename Abstime = default_numeric_traits::abstime_type,
-          typename Channel = default_numeric_traits::channel_type,
-          typename Difftime = default_numeric_traits::difftime_type,
-          typename Count = default_numeric_traits::count_type,
-          typename Datapoint = default_numeric_traits::datapoint_type,
-          typename BinIndex = default_numeric_traits::bin_index_type,
-          typename Bin = default_numeric_traits::bin_type>
-struct parameterized_numeric_traits {
-    /** \cond hidden-from-docs */
-    using abstime_type = Abstime;
-    using channel_type = Channel;
-    using difftime_type = Difftime;
-    using count_type = Count;
-    using datapoint_type = Datapoint;
-    using bin_index_type = BinIndex;
-    using bin_type = Bin;
-    /** \endcond */
-};
-
-/**
  * \brief Concept that is satisfied when \p NT provides an integral
  * `abstime_type`.
  *

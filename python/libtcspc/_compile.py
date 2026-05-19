@@ -25,6 +25,7 @@ from ._cpp_utils import (
 )
 from ._events import EventType
 from ._graph import Graph
+from ._numeric_traits import _collecting_referenced_traits
 from ._param import Param
 
 
@@ -325,47 +326,57 @@ def _graph_module_code(
         (),
     )
 
-    genctx = _CodeGenerationContext(
-        _CppIdentifier("ctx"),
-        _CppIdentifier("params"),
-        _CppIdentifier("sinks"),
-    )
-    out_proc_names = tuple(
-        _CppExpression(f"output_{i}") for i in range(len(output_event_types))
-    )
-    graph_expr = graph._cpp_expression(genctx, out_proc_names)
-
     mod_var = _CppIdentifier("mod")
+
+    with _collecting_referenced_traits() as nt_registry:
+        genctx = _CodeGenerationContext(
+            _CppIdentifier("ctx"),
+            _CppIdentifier("params"),
+            _CppIdentifier("sinks"),
+        )
+        out_proc_names = tuple(
+            _CppExpression(f"output_{i}")
+            for i in range(len(output_event_types))
+        )
+        graph_expr = graph._cpp_expression(genctx, out_proc_names)
+
+        params = graph._parameters()
+        param_struct = _param_struct(
+            tuple((p._cpp_identifier(), cpp_type) for p, cpp_type in params),
+            mod_var,
+        )
+
+        context_code = _context_type(graph._accesses(), mod_var)
+
+        proc_code = _processor_creation(
+            graph_expr,
+            genctx,
+            out_proc_names,
+            input_event_types,
+            output_event_types,
+            mod_var,
+        )
+
+        accessor_types = set(typ for tag, typ in graph._accesses())
+        accessors = functools.reduce(
+            lambda f, g: f + g,
+            (typ.cpp_bindings(mod_var) for typ in accessor_types),
+            _ModuleCodeFragment((), (), (), ()),
+        )
 
     excs = _exception_types(mod_var)
 
-    params = graph._parameters()
-    param_struct = _param_struct(
-        tuple((p._cpp_identifier(), cpp_type) for p, cpp_type in params),
-        mod_var,
-    )
-
-    context_code = _context_type(graph._accesses(), mod_var)
-
-    proc_code = _processor_creation(
-        graph_expr,
-        genctx,
-        out_proc_names,
-        input_event_types,
-        output_event_types,
-        mod_var,
-    )
-
-    accessor_types = set(typ for tag, typ in graph._accesses())
-    accessors = functools.reduce(
-        lambda f, g: f + g,
-        (typ.cpp_bindings(mod_var) for typ in accessor_types),
-        _ModuleCodeFragment((), (), (), ()),
+    nt_struct_fragment = _ModuleCodeFragment(
+        (),
+        (),
+        tuple(_CppNamespaceScopeDefs(d) for d in nt_registry.values()),
+        (),
     )
 
     return _module_code(
         module_name,
         default_includes
+        + nt_struct_fragment
         + excs
         + param_struct
         + context_code
