@@ -233,10 +233,11 @@ namespace tcspc {
  * function, by convention, takes the downstream processor as the last
  * parameter and takes ownership of it (or copies it, if lvalue).
  *
- * All processors are movable but not necessarily copyable. Movability is
- * intended for graph construction: an upstream processor takes ownership
- * of its downstream by move. It is undefined behavior to move a processor
- * once `handle()` or `flush()` has been called on it.
+ * All processors are move-constructible but not necessarily copyable or
+ * move-assignable. Move-constructibility is intended for graph construction:
+ * an upstream processor takes ownership of its downstream by move. It is
+ * undefined behavior to move a processor once `handle()` or `flush()` has
+ * been called on it.
  *
  * All processors (except for sinks) have a downstream processor. This
  * downstream processor is moved into the next-upstream processor, so that an
@@ -613,8 +614,8 @@ namespace tcspc {
  * pull-style device APIs for live data acquisition. Input streams are for
  * reading stored data (files, pipes, in-memory buffers).
  *
- * An input stream is a movable (usually noncopyable) object with the following
- * member functions:
+ * An input stream is a move-constructible (usually noncopyable) object with
+ * the following member functions:
  * - `auto is_error() noexcept -> bool`:
  *   Return true if the stream is not available or the previous read operation
  *   resulted in an error (\e not including reaching EOF). Not influenced by
@@ -642,8 +643,8 @@ namespace tcspc {
  *
  * \brief Streams for use with `tcspc::write_binary_stream()`.
  *
- * An output stream is a movable (usually noncopyable) object with the
- * following member functions:
+ * An output stream is a move-constructible (usually noncopyable) object with
+ * the following member functions:
  * - `auto is_error() noexcept -> bool`:
  *   Return true if the stream is not available or the previous write operation
  *   resulted in an error. Not influenced by failure of `tell()`.
@@ -663,9 +664,10 @@ namespace tcspc {
  * byte-oriented sources of stored data. Acquisition readers are for live data
  * acquisition from TCSPC hardware via pull-style driver APIs.
  *
- * A reader is a movable object that defines the function call operator:
- * `auto operator()(std::span<T> buffer) -> std::optional<std::size_t>`, in
- * which `buffer` is the span into which data should be placed. The return
+ * A reader is a move-constructible (usually noncopyable) object that defines
+ * the function call operator:
+ * - `auto operator()(std::span<T> buffer) -> std::optional<std::size_t>`,
+ * in which `buffer` is the span into which data should be placed. The return
  * value is `std::nullopt` if the end of the acquired data has been reached;
  * otherwise it is the number of `T` elements actually read; this may be zero.
  * If there was an error, an exception should be thrown.

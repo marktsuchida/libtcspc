@@ -27,14 +27,15 @@ namespace tcspc {
  *
  * \ingroup timing-generators
  *
- * Determines whether \p T is movable and provides the member functions
- * `trigger()`, `peek()`, and `pop()` with the signatures and return types
- * documented at \ref timing-generators. The `abstime` type used for `peek()`
- * is `decltype(TriggerEvent::abstime)`.
+ * Determines whether \p T is move-constructible and provides the member
+ * functions `trigger()`, `peek()`, and `pop()` with the signatures and return
+ * types documented at \ref timing-generators. The `abstime` type used for
+ * `peek()` is `decltype(TriggerEvent::abstime)`.
  */
 template <typename T, typename TriggerEvent>
 concept timing_generator_for =
-    std::movable<T> && requires(T &g, T const &cg, TriggerEvent const &event) {
+    std::move_constructible<T> &&
+    requires(T &g, T const &cg, TriggerEvent const &event) {
         { g.trigger(event) } -> std::same_as<void>;
         {
             cg.peek()

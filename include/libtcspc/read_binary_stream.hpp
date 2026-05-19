@@ -46,21 +46,22 @@ namespace tcspc {
  *
  * \ingroup streams-input
  *
- * Determines whether \p T is movable and provides the noexcept member
- * functions `is_error()`, `is_eof()`, `is_good()`, `tell()`, `skip()`, and
- * `read()` with the signatures and return types documented at
+ * Determines whether \p T is move-constructible and provides the noexcept
+ * member functions `is_error()`, `is_eof()`, `is_good()`, `tell()`, `skip()`,
+ * and `read()` with the signatures and return types documented at
  * \ref streams-input.
  */
 template <typename T>
-concept input_stream = std::movable<T> && requires(T &s, std::uint64_t bytes,
-                                                   std::span<std::byte> buf) {
-    { s.is_error() } noexcept -> std::same_as<bool>;
-    { s.is_eof() } noexcept -> std::same_as<bool>;
-    { s.is_good() } noexcept -> std::same_as<bool>;
-    { s.tell() } noexcept -> std::same_as<std::optional<std::uint64_t>>;
-    { s.skip(bytes) } noexcept -> std::same_as<bool>;
-    { s.read(buf) } noexcept -> std::same_as<std::uint64_t>;
-};
+concept input_stream =
+    std::move_constructible<T> &&
+    requires(T &s, std::uint64_t bytes, std::span<std::byte> buf) {
+        { s.is_error() } noexcept -> std::same_as<bool>;
+        { s.is_eof() } noexcept -> std::same_as<bool>;
+        { s.is_good() } noexcept -> std::same_as<bool>;
+        { s.tell() } noexcept -> std::same_as<std::optional<std::uint64_t>>;
+        { s.skip(bytes) } noexcept -> std::same_as<bool>;
+        { s.read(buf) } noexcept -> std::same_as<std::uint64_t>;
+    };
 
 namespace internal {
 

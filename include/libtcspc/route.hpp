@@ -34,14 +34,15 @@ namespace tcspc {
  *
  * \ingroup routers
  *
- * Determines whether \p R is movable and provides `operator()(Event const &)
- * const` returning `std::size_t` for every `Event` in \p Events.
+ * Determines whether \p R is move-constructible and provides
+ * `operator()(Event const &) const` returning `std::size_t` for every `Event`
+ * in \p Events.
  */
 template <typename R, typename... Events>
-concept router_for =
-    std::movable<R> && (... && requires(R const &r, Events const &e) {
-        { r(e) } -> std::same_as<std::size_t>;
-    });
+concept router_for = std::move_constructible<R> &&
+                     (... && requires(R const &r, Events const &e) {
+                         { r(e) } -> std::same_as<std::size_t>;
+                     });
 
 namespace internal {
 

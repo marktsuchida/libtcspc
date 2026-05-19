@@ -38,12 +38,12 @@ namespace tcspc {
  *
  * \ingroup data-mappers
  *
- * Determines whether \p T is movable and provides `operator()(Event const &)
- * const` returning \p Datapoint.
+ * Determines whether \p T is move-constructible and provides
+ * `operator()(Event const &) const` returning \p Datapoint.
  */
 template <typename T, typename Event, typename Datapoint>
 concept data_mapper_for =
-    std::movable<T> && requires(T const &m, Event const &e) {
+    std::move_constructible<T> && requires(T const &m, Event const &e) {
         { m(e) } -> std::same_as<Datapoint>;
     };
 
@@ -54,18 +54,20 @@ concept data_mapper_for =
  *
  * \ingroup bin-mappers
  *
- * Determines whether \p T is movable and provides `operator()(Datapoint)`
- * returning `std::optional<BinIndex>`. The call is permitted to be
- * non-const (e.g., `tcspc::unique_bin_mapper` accumulates state).
+ * Determines whether \p T is move-constructible and provides
+ * `operator()(Datapoint)` returning `std::optional<BinIndex>`. The call is
+ * permitted to be non-const (e.g., `tcspc::unique_bin_mapper` accumulates
+ * state).
  *
  * The optional `n_bins()` member function described at \ref bin-mappers is
  * a convention on concrete bin-mapper classes and is not required by this
  * concept; `tcspc::map_to_bins` does not call it.
  */
 template <typename T, typename Datapoint, typename BinIndex>
-concept bin_mapper_for = std::movable<T> && requires(T &m, Datapoint d) {
-    { m(d) } -> std::same_as<std::optional<BinIndex>>;
-};
+concept bin_mapper_for =
+    std::move_constructible<T> && requires(T &m, Datapoint d) {
+        { m(d) } -> std::same_as<std::optional<BinIndex>>;
+    };
 
 namespace internal {
 

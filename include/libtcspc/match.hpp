@@ -24,13 +24,14 @@ namespace tcspc {
  *
  * \ingroup matchers
  *
- * Determines whether \p T is movable and provides `operator()(Event const &)
- * const` returning `bool`.
+ * Determines whether \p T is move-constructible and provides
+ * `operator()(Event const &) const` returning `bool`.
  */
 template <typename T, typename Event>
-concept matcher_for = std::movable<T> && requires(T const &m, Event const &e) {
-    { m(e) } -> std::same_as<bool>;
-};
+concept matcher_for =
+    std::move_constructible<T> && requires(T const &m, Event const &e) {
+        { m(e) } -> std::same_as<bool>;
+    };
 
 namespace internal {
 

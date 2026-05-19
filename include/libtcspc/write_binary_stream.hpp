@@ -41,13 +41,14 @@ namespace tcspc {
  *
  * \ingroup streams-output
  *
- * Determines whether \p T is movable and provides the noexcept member
- * functions `is_error()`, `tell()`, and `write()` with the signatures and
- * return types documented at \ref streams-output.
+ * Determines whether \p T is move-constructible and provides the noexcept
+ * member functions `is_error()`, `tell()`, and `write()` with the signatures
+ * and return types documented at \ref streams-output.
  */
 template <typename T>
 concept output_stream =
-    std::movable<T> && requires(T &s, std::span<std::byte const> buf) {
+    std::move_constructible<T> &&
+    requires(T &s, std::span<std::byte const> buf) {
         { s.is_error() } noexcept -> std::same_as<bool>;
         { s.tell() } noexcept -> std::same_as<std::optional<std::uint64_t>>;
         { s.write(buf) } noexcept -> std::same_as<void>;
