@@ -737,7 +737,7 @@ class decode_bh_spc {
     static_assert(std::in_range<typename NumericTraits::count_type>(4095) ||
                   not HasIntensityCounter);
 
-    using abstime_type = typename NumericTraits::abstime_type;
+    using abstime_type = NumericTraits::abstime_type;
 
     abstime_type abstime_base = 0; // Time of last overflow
 
@@ -787,8 +787,7 @@ class decode_bh_spc {
                     for_each_set_bit(bits, [&](int b) {
                         downstream.handle(marker_event<NumericTraits>{
                             abstime,
-                            static_cast<typename NumericTraits::channel_type>(
-                                b)});
+                            static_cast<NumericTraits::channel_type>(b)});
                     });
                 }
             } else {

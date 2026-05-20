@@ -34,16 +34,16 @@ class pair_all {
     static_assert(
         processor<Downstream, std::array<detection_event<NumericTraits>, 2>>);
 
-    typename NumericTraits::channel_type start_chan;
+    NumericTraits::channel_type start_chan;
     std::array<typename NumericTraits::channel_type, NStopChannels> stop_chans;
-    typename NumericTraits::abstime_type window_size;
+    NumericTraits::abstime_type window_size;
 
     // Buffer all starts within time window.
     internal::vector_queue<typename NumericTraits::abstime_type> starts;
 
     Downstream downstream;
 
-    void expel_old_starts(typename NumericTraits::abstime_type earliest_stop) {
+    void expel_old_starts(NumericTraits::abstime_type earliest_stop) {
         auto const cutoff = pairing_cutoff(earliest_stop, window_size);
         while (not starts.empty() && starts.front() < cutoff)
             starts.pop();
@@ -113,21 +113,21 @@ class pair_one {
     static_assert(
         processor<Downstream, std::array<detection_event<NumericTraits>, 2>>);
 
-    typename NumericTraits::channel_type start_chan;
+    NumericTraits::channel_type start_chan;
     std::array<typename NumericTraits::channel_type, NStopChannels> stop_chans;
-    typename NumericTraits::abstime_type window_size;
+    NumericTraits::abstime_type window_size;
 
     // Buffer all starts within time window, and mark stop channels that have
     // been matched.
     struct start_and_flags {
-        typename NumericTraits::abstime_type time;
+        NumericTraits::abstime_type time;
         std::bitset<NStopChannels> stopped;
     };
     internal::vector_queue<start_and_flags> starts;
 
     Downstream downstream;
 
-    void expel_old_starts(typename NumericTraits::abstime_type earliest_stop) {
+    void expel_old_starts(NumericTraits::abstime_type earliest_stop) {
         auto const cutoff = pairing_cutoff(earliest_stop, window_size);
         while (not starts.empty() &&
                (starts.front().time < cutoff || starts.front().stopped.all()))
@@ -201,16 +201,16 @@ class pair_all_between {
     static_assert(
         processor<Downstream, std::array<detection_event<NumericTraits>, 2>>);
 
-    typename NumericTraits::channel_type start_chan;
+    NumericTraits::channel_type start_chan;
     std::array<typename NumericTraits::channel_type, NStopChannels> stop_chans;
-    typename NumericTraits::abstime_type window_size;
+    NumericTraits::abstime_type window_size;
 
     // Buffer the most recent start within the time window.
     std::optional<typename NumericTraits::abstime_type> start;
 
     Downstream downstream;
 
-    void expel_old_start(typename NumericTraits::abstime_type earliest_stop) {
+    void expel_old_start(NumericTraits::abstime_type earliest_stop) {
         auto const cutoff = pairing_cutoff(earliest_stop, window_size);
         if (start.has_value() && *start < cutoff)
             start = std::nullopt;
@@ -281,21 +281,21 @@ class pair_one_between {
     static_assert(
         processor<Downstream, std::array<detection_event<NumericTraits>, 2>>);
 
-    typename NumericTraits::channel_type start_chan;
+    NumericTraits::channel_type start_chan;
     std::array<typename NumericTraits::channel_type, NStopChannels> stop_chans;
-    typename NumericTraits::abstime_type window_size;
+    NumericTraits::abstime_type window_size;
 
     // Buffer the most recent start within the time window, and mark stop
     // channels that have been matched.
     struct start_and_flags {
-        typename NumericTraits::abstime_type time;
+        NumericTraits::abstime_type time;
         std::bitset<NStopChannels> stopped;
     };
     std::optional<start_and_flags> start;
 
     Downstream downstream;
 
-    void expel_old_start(typename NumericTraits::abstime_type earliest_stop) {
+    void expel_old_start(NumericTraits::abstime_type earliest_stop) {
         auto const cutoff = pairing_cutoff(earliest_stop, window_size);
         if (start.has_value() &&
             (start->time < cutoff || start->stopped.all()))

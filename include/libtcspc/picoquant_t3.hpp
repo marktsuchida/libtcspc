@@ -416,7 +416,7 @@ class decode_pqt3 {
     static_assert(std::in_range<typename NumericTraits::channel_type>(63));
     static_assert(std::in_range<typename NumericTraits::difftime_type>(32767));
 
-    using abstime_type = typename NumericTraits::abstime_type;
+    using abstime_type = NumericTraits::abstime_type;
 
     abstime_type nsync_base = 0;
 

@@ -27,13 +27,12 @@ template <typename NumericTraits, bool RequireStrictlyIncreasing,
           typename Downstream>
     requires processor<Downstream, warning_event>
 class check_monotonic {
-    typename NumericTraits::abstime_type last_seen =
+    NumericTraits::abstime_type last_seen =
         std::numeric_limits<typename NumericTraits::abstime_type>::min();
 
     Downstream downstream;
 
-    LIBTCSPC_NOINLINE void
-    issue_warning(typename NumericTraits::abstime_type abstime) {
+    LIBTCSPC_NOINLINE void issue_warning(NumericTraits::abstime_type abstime) {
         std::ostringstream stream;
         stream << "non-monotonic abstime: " << last_seen << " followed by "
                << abstime;

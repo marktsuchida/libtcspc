@@ -42,7 +42,7 @@ class recover_order {
     // are copied into the buffer); checked per-call in handle() so that
     // move-only events fed as rvalues are accepted.
 
-    using abstime_type = typename NumericTraits::abstime_type;
+    using abstime_type = NumericTraits::abstime_type;
     abstime_type window_size;
 
     // We just use a sorted vector, because the intended use cases do not

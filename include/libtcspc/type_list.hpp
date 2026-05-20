@@ -164,7 +164,7 @@ struct type_list_singleton_element<type_list<T>> : std::type_identity<T> {};
  */
 template <typename TypeList>
 using type_list_singleton_element_t =
-    typename type_list_singleton_element<TypeList>::type;
+    type_list_singleton_element<TypeList>::type;
 
 /** @} <!-- group type-list-singleelem --> */
 
@@ -332,7 +332,7 @@ struct unique_type_list
  * \brief Helper type for `tcspc::unique_type_list`.
  */
 template <typename TypeList>
-using unique_type_list_t = typename unique_type_list<TypeList>::type;
+using unique_type_list_t = unique_type_list<TypeList>::type;
 
 /** @} <!-- group unique-type-list --> */
 
@@ -396,7 +396,7 @@ struct type_list_union
  * \brief Helper type for `tcspc::type_list_union`.
  */
 template <typename TL0, typename TL1>
-using type_list_union_t = typename type_list_union<TL0, TL1>::type;
+using type_list_union_t = type_list_union<TL0, TL1>::type;
 
 /** @} <!-- group type-list-union --> */
 
@@ -452,8 +452,7 @@ struct type_list_intersection
  * \brief Helper type for `tcspc::type_list_intersection`.
  */
 template <typename TL0, typename TL1>
-using type_list_intersection_t =
-    typename type_list_intersection<TL0, TL1>::type;
+using type_list_intersection_t = type_list_intersection<TL0, TL1>::type;
 
 /** @} <!-- group type-list-intersection --> */
 
@@ -510,8 +509,7 @@ struct type_list_set_difference
  * \brief Helper type for `tcspc::type_list_set_difference`.
  */
 template <typename TL0, typename TL1>
-using type_list_set_difference_t =
-    typename type_list_set_difference<TL0, TL1>::type;
+using type_list_set_difference_t = type_list_set_difference<TL0, TL1>::type;
 
 /** @} <!-- group type-list-set-difference --> */
 

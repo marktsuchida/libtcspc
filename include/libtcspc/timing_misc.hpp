@@ -35,7 +35,7 @@ struct periodic_sequence_model_event {
     /**
      * \brief Absolute time of this event, used as a reference point.
      */
-    typename NumericTraits::abstime_type abstime;
+    NumericTraits::abstime_type abstime;
 
     /**
      * \brief The estimated time of the first event, relative to `abstime`.
@@ -77,7 +77,7 @@ struct real_one_shot_timing_event {
     /**
      * \brief Absolute time of this event, used as a reference point.
      */
-    typename NumericTraits::abstime_type abstime;
+    NumericTraits::abstime_type abstime;
 
     /**
      * \brief The time delay relative to `abstime`.
@@ -111,7 +111,7 @@ struct real_linear_timing_event {
     /**
      * \brief Absolute time of this event, used as a reference point.
      */
-    typename NumericTraits::abstime_type abstime;
+    NumericTraits::abstime_type abstime;
 
     /**
      * \brief The time delay relative to `abstime`.
@@ -150,7 +150,7 @@ class retime_periodic_sequences {
     static_assert(
         processor<Downstream, periodic_sequence_model_event<NumericTraits>>);
 
-    using abstime_type = typename NumericTraits::abstime_type;
+    using abstime_type = NumericTraits::abstime_type;
 
     abstime_type max_shift;
 

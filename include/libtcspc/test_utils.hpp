@@ -1006,7 +1006,7 @@ template <int N> struct empty_test_event {
 template <int N, typename NumericTraits = default_numeric_traits>
 struct time_tagged_test_event {
     /** \brief Timestamp. */
-    typename NumericTraits::abstime_type abstime;
+    NumericTraits::abstime_type abstime;
 
     /** \brief Equality comparison operator. */
     friend auto operator==(time_tagged_test_event const &lhs,

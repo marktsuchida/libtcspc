@@ -90,7 +90,7 @@ template <typename ContainerEvent>
                             typename std::iterator_traits<
                                 decltype(std::declval<ContainerEvent>()
                                              .end())>::value_type>
-using unbatch_element_t = typename std::iterator_traits<
+using unbatch_element_t = std::iterator_traits<
     decltype(std::declval<ContainerEvent>().end())>::value_type;
 
 template <typename ContainerEvent, typename Downstream>

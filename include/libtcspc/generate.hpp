@@ -198,7 +198,7 @@ class null_timing_generator {
 template <typename NumericTraits = default_numeric_traits>
 class one_shot_timing_generator {
     std::optional<typename NumericTraits::abstime_type> next;
-    typename NumericTraits::abstime_type dly;
+    NumericTraits::abstime_type dly;
 
   public:
     /**
@@ -276,11 +276,11 @@ class dynamic_one_shot_timing_generator {
  */
 template <typename NumericTraits = default_numeric_traits>
 class linear_timing_generator {
-    typename NumericTraits::abstime_type next = 0;
+    NumericTraits::abstime_type next = 0;
     std::size_t remaining = 0;
 
-    typename NumericTraits::abstime_type dly;
-    typename NumericTraits::abstime_type intval;
+    NumericTraits::abstime_type dly;
+    NumericTraits::abstime_type intval;
     std::size_t ct;
 
   public:
@@ -339,9 +339,9 @@ class linear_timing_generator {
  */
 template <typename NumericTraits = default_numeric_traits>
 class dynamic_linear_timing_generator {
-    typename NumericTraits::abstime_type next = 0;
+    NumericTraits::abstime_type next = 0;
     std::size_t remaining = 0;
-    typename NumericTraits::abstime_type interval = 0;
+    NumericTraits::abstime_type interval = 0;
 
   public:
     /** \brief Implements timing generator requirement. */

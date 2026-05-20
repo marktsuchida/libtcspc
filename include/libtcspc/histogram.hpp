@@ -53,8 +53,8 @@ class histogram {
         overflow_policy == histogram_policy::saturate_on_overflow,
         saturate_on_internal_overflow, stop_on_internal_overflow>;
 
-    using bin_index_type = typename NumericTraits::bin_index_type;
-    using bin_type = typename NumericTraits::bin_type;
+    using bin_index_type = NumericTraits::bin_index_type;
+    using bin_type = NumericTraits::bin_type;
 
     std::shared_ptr<bucket_source<bin_type>> bsource;
     bucket<bin_type> hist_bucket;

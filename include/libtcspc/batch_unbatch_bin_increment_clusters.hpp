@@ -54,7 +54,7 @@ template <typename NumericTraits, typename Downstream>
     requires processor<Downstream,
                        bucket<typename NumericTraits::bin_index_type>>
 class batch_bin_increment_clusters {
-    using bin_index_type = typename NumericTraits::bin_index_type;
+    using bin_index_type = NumericTraits::bin_index_type;
 
     std::shared_ptr<bucket_source<bin_index_type>> bsource;
 
@@ -160,7 +160,7 @@ class batch_bin_increment_clusters {
 template <typename NumericTraits, typename Downstream>
     requires processor<Downstream, bin_increment_cluster_event<NumericTraits>>
 class unbatch_bin_increment_clusters {
-    using bin_index_type = typename NumericTraits::bin_index_type;
+    using bin_index_type = NumericTraits::bin_index_type;
 
     Downstream downstream;
 

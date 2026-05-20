@@ -41,7 +41,7 @@ namespace tcspc {
 template <typename NumericTraits = default_numeric_traits>
 struct time_reached_event {
     /** \brief The absolute time (a.k.a. macrotime) of this event. */
-    typename NumericTraits::abstime_type abstime;
+    NumericTraits::abstime_type abstime;
     static_assert(std::is_integral_v<decltype(abstime)>);
 
     /** \brief Equality comparison operator. */
@@ -77,7 +77,7 @@ struct time_reached_event {
 template <typename NumericTraits = default_numeric_traits>
 struct data_lost_event {
     /** \brief The absolute time (a.k.a. macrotime) of this event. */
-    typename NumericTraits::abstime_type abstime;
+    NumericTraits::abstime_type abstime;
     static_assert(std::is_integral_v<decltype(abstime)>);
 
     /** \brief Equality comparison operator. */
@@ -111,7 +111,7 @@ struct data_lost_event {
 template <typename NumericTraits = default_numeric_traits>
 struct begin_lost_interval_event {
     /** \brief The absolute time (a.k.a. macrotime) of this event. */
-    typename NumericTraits::abstime_type abstime;
+    NumericTraits::abstime_type abstime;
     static_assert(std::is_integral_v<decltype(abstime)>);
 
     /** \brief Equality comparison operator. */
@@ -137,7 +137,7 @@ struct begin_lost_interval_event {
 template <typename NumericTraits = default_numeric_traits>
 struct end_lost_interval_event {
     /** \brief The absolute time (a.k.a. macrotime) of this event. */
-    typename NumericTraits::abstime_type abstime;
+    NumericTraits::abstime_type abstime;
     static_assert(std::is_integral_v<decltype(abstime)>);
 
     /** \brief Equality comparison operator. */
@@ -167,17 +167,17 @@ struct end_lost_interval_event {
 template <typename NumericTraits = default_numeric_traits>
 struct lost_counts_event {
     /** \brief The absolute time (a.k.a. macrotime) of this event. */
-    typename NumericTraits::abstime_type abstime;
+    NumericTraits::abstime_type abstime;
     static_assert(std::is_integral_v<decltype(abstime)>);
 
     /** \brief The channel on which this event occurred. */
-    typename NumericTraits::channel_type channel;
+    NumericTraits::channel_type channel;
     static_assert(std::is_integral_v<decltype(channel)>);
 
     /**
      * \brief Number of counts that were detected but could not be time-tagged.
      */
-    typename NumericTraits::count_type count;
+    NumericTraits::count_type count;
     static_assert(std::is_integral_v<decltype(count)>);
 
     /** \brief Equality comparison operator. */
@@ -208,15 +208,15 @@ struct lost_counts_event {
 template <typename NumericTraits = default_numeric_traits>
 struct bulk_counts_event {
     /** \brief The absolute time (a.k.a. macrotime) of this event. */
-    typename NumericTraits::abstime_type abstime;
+    NumericTraits::abstime_type abstime;
     static_assert(std::is_integral_v<decltype(abstime)>);
 
     /** \brief The channel on which this event occurred. */
-    typename NumericTraits::channel_type channel;
+    NumericTraits::channel_type channel;
     static_assert(std::is_integral_v<decltype(channel)>);
 
     /** \brief Number of non-time-tagged counts detected. */
-    typename NumericTraits::count_type count;
+    NumericTraits::count_type count;
     static_assert(std::is_integral_v<decltype(count)>);
 
     /** \brief Equality comparison operator. */
@@ -243,11 +243,11 @@ struct bulk_counts_event {
 template <typename NumericTraits = default_numeric_traits>
 struct detection_event {
     /** \brief The absolute time (a.k.a. macrotime) of this event. */
-    typename NumericTraits::abstime_type abstime;
+    NumericTraits::abstime_type abstime;
     static_assert(std::is_integral_v<decltype(abstime)>);
 
     /** \brief The channel on which this event occurred. */
-    typename NumericTraits::channel_type channel;
+    NumericTraits::channel_type channel;
     static_assert(std::is_integral_v<decltype(channel)>);
 
     /** \brief Equality comparison operator. */
@@ -274,18 +274,18 @@ struct detection_event {
 template <typename NumericTraits = default_numeric_traits>
 struct time_correlated_detection_event {
     /** \brief The absolute time (a.k.a. macrotime) of this event. */
-    typename NumericTraits::abstime_type abstime;
+    NumericTraits::abstime_type abstime;
     static_assert(std::is_integral_v<decltype(abstime)>);
 
     /** \brief The channel on which this event occurred. */
-    typename NumericTraits::channel_type channel;
+    NumericTraits::channel_type channel;
     static_assert(std::is_integral_v<decltype(channel)>);
 
     /**
      * \brief Difference time (a.k.a. microtime, nanotime) associated with the
      * detected event.
      */
-    typename NumericTraits::difftime_type difftime;
+    NumericTraits::difftime_type difftime;
     static_assert(std::is_integral_v<decltype(difftime)>);
 
     /** \brief Equality comparison operator. */
@@ -329,11 +329,11 @@ struct time_correlated_detection_event {
 template <typename NumericTraits = default_numeric_traits>
 struct marker_event {
     /** \brief The absolute time (a.k.a. macrotime) of this event. */
-    typename NumericTraits::abstime_type abstime;
+    NumericTraits::abstime_type abstime;
     static_assert(std::is_integral_v<decltype(abstime)>);
 
     /** \brief The channel on which this event occurred. */
-    typename NumericTraits::channel_type channel;
+    NumericTraits::channel_type channel;
     static_assert(std::is_integral_v<decltype(channel)>);
 
     /** \brief Equality comparison operator. */

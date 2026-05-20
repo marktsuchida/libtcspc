@@ -122,8 +122,7 @@ template <typename EventList> class type_erased_processor {
     using abstract_processor = internal::abstract_processor<event_list>;
 
     template <typename Proc>
-    using virtual_processor =
-        typename internal::virtual_processor<Proc, event_list>;
+    using virtual_processor = internal::virtual_processor<Proc, event_list>;
 
     std::unique_ptr<abstract_processor> proc;
 

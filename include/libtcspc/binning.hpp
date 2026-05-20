@@ -165,8 +165,8 @@ class difftime_data_mapper {
   public:
     /** \brief Implements data mapper requirement. */
     template <typename Event>
-    auto operator()(Event const &event) const ->
-        typename NumericTraits::datapoint_type {
+    auto operator()(Event const &event) const
+        -> NumericTraits::datapoint_type {
         static_assert(
             internal::representable_in<decltype(event.difftime),
                                        typename NumericTraits::datapoint_type>,
@@ -189,8 +189,8 @@ class count_data_mapper {
   public:
     /** \brief Implements data mapper requirement. */
     template <typename Event>
-    auto operator()(Event const &event) const ->
-        typename NumericTraits::datapoint_type {
+    auto operator()(Event const &event) const
+        -> NumericTraits::datapoint_type {
         static_assert(
             internal::representable_in<decltype(event.count),
                                        typename NumericTraits::datapoint_type>,
@@ -213,8 +213,8 @@ class channel_data_mapper {
   public:
     /** \brief Implements data mapper requirement. */
     template <typename Event>
-    auto operator()(Event const &event) const ->
-        typename NumericTraits::datapoint_type {
+    auto operator()(Event const &event) const
+        -> NumericTraits::datapoint_type {
         static_assert(
             internal::representable_in<decltype(event.channel),
                                        typename NumericTraits::datapoint_type>,
@@ -357,10 +357,10 @@ struct power_of_2_bin_mapper {
     }
 
     /** \brief Implements bin mapper requirement. */
-    auto operator()(typename NumericTraits::datapoint_type datapoint) const
+    auto operator()(NumericTraits::datapoint_type datapoint) const
         -> std::optional<typename NumericTraits::bin_index_type> {
-        using datapoint_type = typename NumericTraits::datapoint_type;
-        using bin_index_type = typename NumericTraits::bin_index_type;
+        using datapoint_type = NumericTraits::datapoint_type;
+        using bin_index_type = NumericTraits::bin_index_type;
 
         static constexpr int shift = NDataBits - NHistoBits;
         static_assert(shift <= 8 * sizeof(datapoint_type)); // Ensured above.
@@ -394,9 +394,9 @@ struct power_of_2_bin_mapper {
  */
 template <typename NumericTraits = default_numeric_traits>
 class linear_bin_mapper {
-    typename NumericTraits::datapoint_type off;
-    typename NumericTraits::datapoint_type bwidth;
-    typename NumericTraits::bin_index_type max_index;
+    NumericTraits::datapoint_type off;
+    NumericTraits::datapoint_type bwidth;
+    NumericTraits::bin_index_type max_index;
     bool clamp;
 
     static_assert(with_datapoint_type<NumericTraits>);
@@ -449,9 +449,9 @@ class linear_bin_mapper {
     }
 
     /** \brief Implements bin mapper requirement. */
-    auto operator()(typename NumericTraits::datapoint_type datapoint) const
+    auto operator()(NumericTraits::datapoint_type datapoint) const
         -> std::optional<typename NumericTraits::bin_index_type> {
-        using bin_index_type = typename NumericTraits::bin_index_type;
+        using bin_index_type = NumericTraits::bin_index_type;
 
         if (bwidth < 0 ? datapoint > off : datapoint < off)
             return clamp ? std::make_optional(bin_index_type{0})
@@ -505,8 +505,8 @@ template <typename T> class unique_bin_mapper_access {
  */
 template <typename NumericTraits = default_numeric_traits>
 class unique_bin_mapper {
-    using datapoint_type = typename NumericTraits::datapoint_type;
-    using bin_index_type = typename NumericTraits::bin_index_type;
+    using datapoint_type = NumericTraits::datapoint_type;
+    using bin_index_type = NumericTraits::bin_index_type;
     bin_index_type max_index;
     std::vector<datapoint_type> values;
     access_tracker<unique_bin_mapper_access<datapoint_type>> trk;
@@ -543,7 +543,7 @@ class unique_bin_mapper {
     }
 
     /** \brief Implements bin mapper requirement. */
-    auto operator()(typename NumericTraits::datapoint_type datapoint)
+    auto operator()(NumericTraits::datapoint_type datapoint)
         -> std::optional<typename NumericTraits::bin_index_type> {
         auto it = std::find(values.begin(), values.end(), datapoint);
         if (it == values.end()) {

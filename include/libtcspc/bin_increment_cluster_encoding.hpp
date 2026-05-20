@@ -86,7 +86,7 @@ encode_bin_increment_cluster(Storage dest, std::span<BinIndex const> cluster)
         spn = spn.subspan(size_dest.size());
     } else {
         spn.front() = static_cast<BinIndex>(
-            static_cast<typename traits::encoded_size_type>(size));
+            static_cast<traits::encoded_size_type>(size));
         spn = spn.subspan(1);
     }
     assert(spn.size() == cluster.size());
@@ -107,24 +107,22 @@ template <typename BinIndex> class bin_increment_cluster_decoder {
     // iteration support. Dereferencing yields `std::span<BinIndex const>`
     // (including for empty clusters).
     class const_iterator {
-        typename std::span<BinIndex const>::iterator it;
+        std::span<BinIndex const>::iterator it;
 
         // Given a valid (not past-end) it, return the range of the encoded
         // cluster pointed to by *this.
         auto cluster_range() const -> std::pair<decltype(it), decltype(it)> {
-            bool const is_long_mode =
-                static_cast<typename traits::encoded_size_type>(*it) ==
-                traits::encoded_size_max;
+            bool const is_long_mode = static_cast<traits::encoded_size_type>(
+                                          *it) == traits::encoded_size_max;
             std::size_t const size_of_size =
                 is_long_mode ? 1 + traits::large_size_element_count : 1;
             std::size_t const cluster_size =
-                is_long_mode
-                    ? std::invoke([sit = std::next(it)] {
-                          std::size_t size{};
-                          std::memcpy(&size, &*sit, sizeof(size));
-                          return size;
-                      })
-                    : static_cast<typename traits::encoded_size_type>(*it);
+                is_long_mode ? std::invoke([sit = std::next(it)] {
+                    std::size_t size{};
+                    std::memcpy(&size, &*sit, sizeof(size));
+                    return size;
+                })
+                             : static_cast<traits::encoded_size_type>(*it);
             auto const start =
                 std::next(it, static_cast<std::ptrdiff_t>(size_of_size));
             auto const stop =

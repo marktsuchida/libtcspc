@@ -81,7 +81,7 @@ template <typename BinIndex> class bin_increment_cluster_journal {
     }
 
     using const_iterator =
-        typename bin_increment_cluster_decoder<bin_index_type>::const_iterator;
+        bin_increment_cluster_decoder<bin_index_type>::const_iterator;
 
     [[nodiscard]] auto begin() const noexcept -> const_iterator {
         auto const decoder =

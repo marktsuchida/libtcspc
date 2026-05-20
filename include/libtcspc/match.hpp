@@ -182,7 +182,7 @@ class never_matcher {
  */
 template <typename NumericTraits = default_numeric_traits>
 class channel_matcher {
-    typename NumericTraits::channel_type channel;
+    NumericTraits::channel_type channel;
 
   public:
     /**

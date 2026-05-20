@@ -444,7 +444,7 @@ class decode_pqt2 {
     static_assert(sizeof(typename NumericTraits::abstime_type) >= 4);
     static_assert(std::in_range<typename NumericTraits::channel_type>(63));
 
-    using abstime_type = typename NumericTraits::abstime_type;
+    using abstime_type = NumericTraits::abstime_type;
 
     abstime_type timetag_base = 0;
 

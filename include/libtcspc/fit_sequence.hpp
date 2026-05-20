@@ -105,7 +105,7 @@ template <typename Event, typename NumericTraits, typename Downstream>
     requires processor<Downstream,
                        periodic_sequence_model_event<NumericTraits>>
 class fit_periodic_sequences {
-    using abstime_type = typename NumericTraits::abstime_type;
+    using abstime_type = NumericTraits::abstime_type;
 
     std::size_t len; // At least 3
 

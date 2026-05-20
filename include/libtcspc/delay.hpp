@@ -21,7 +21,7 @@ namespace tcspc {
 namespace internal {
 
 template <typename NumericTraits, typename Downstream> class delay {
-    typename NumericTraits::abstime_type delta;
+    NumericTraits::abstime_type delta;
     Downstream downstream;
 
   public:
@@ -58,7 +58,7 @@ template <typename NumericTraits, typename Downstream> class delay {
 
 template <typename NumericTraits, typename Downstream> class rebase_abstime {
     bool initialized = false;
-    typename NumericTraits::abstime_type minus_delta{};
+    NumericTraits::abstime_type minus_delta{};
     Downstream downstream;
 
   public:

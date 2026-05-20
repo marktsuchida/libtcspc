@@ -166,7 +166,7 @@ class time_correlate_at_fraction {
             subtract_with_check(event[1].abstime, event[0].abstime);
         auto const abstime =
             event[0].abstime +
-            static_cast<typename NumericTraits::abstime_type>(
+            static_cast<NumericTraits::abstime_type>(
                 std::llround(static_cast<double>(difftime) * frac));
         auto const channel =
             UseStartChannel ? event[0].channel : event[1].channel;

@@ -172,30 +172,29 @@ template <typename T> class bucket {
     // bucket has read-only data, unlike a const span).
 
     /** \brief Element type. */
-    using element_type = typename std::span<T>::element_type;
+    using element_type = std::span<T>::element_type;
     /** \brief Value type. */
-    using value_type = typename std::span<T>::value_type;
+    using value_type = std::span<T>::value_type;
     /** \brief Size type. */
-    using size_type = typename std::span<T>::size_type;
+    using size_type = std::span<T>::size_type;
     /** \brief Difference type. */
-    using difference_type = typename std::span<T>::difference_type;
+    using difference_type = std::span<T>::difference_type;
     /** \brief Element pointer type. */
-    using pointer = typename std::span<T>::pointer;
+    using pointer = std::span<T>::pointer;
     /** \brief Element const pointer type. */
-    using const_pointer = typename std::span<T>::const_pointer;
+    using const_pointer = std::span<T>::const_pointer;
     /** \brief Element reference type. */
-    using reference = typename std::span<T>::reference;
+    using reference = std::span<T>::reference;
     /** \brief Element const reference type. */
-    using const_reference = typename std::span<T>::const_reference;
+    using const_reference = std::span<T>::const_reference;
     /** \brief Iterator type. */
-    using iterator = typename std::span<T>::iterator;
+    using iterator = std::span<T>::iterator;
     /** \brief Const iterator type. */
-    using const_iterator = typename std::span<T const>::iterator;
+    using const_iterator = std::span<T const>::iterator;
     /** \brief Reverse iterator type. */
-    using reverse_iterator = typename std::span<T>::reverse_iterator;
+    using reverse_iterator = std::span<T>::reverse_iterator;
     /** \brief Const reverse iterator type. */
-    using const_reverse_iterator =
-        typename std::span<T const>::reverse_iterator;
+    using const_reverse_iterator = std::span<T const>::reverse_iterator;
 
     /** \brief Return an iterator to the beginning. */
     [[nodiscard]] constexpr auto begin() noexcept -> iterator {

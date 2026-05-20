@@ -105,9 +105,8 @@ struct variant_or_single_event_impl<type_list<Event>>
  * \see \ref visit-variant-or-single-event
  */
 template <typename EventList>
-using variant_or_single_event =
-    typename internal::variant_or_single_event_impl<
-        unique_type_list_t<EventList>>::type;
+using variant_or_single_event = internal::variant_or_single_event_impl<
+    unique_type_list_t<EventList>>::type;
 
 /**
  * \defgroup visit-variant-or-single-event Visiting a variant-or-single event

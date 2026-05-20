@@ -26,7 +26,7 @@ namespace internal {
 template <typename NumericTraits, typename Downstream>
     requires processor<Downstream, time_reached_event<NumericTraits>>
 class regulate_time_reached {
-    using abstime_type = typename NumericTraits::abstime_type;
+    using abstime_type = NumericTraits::abstime_type;
 
     abstime_type interval_thresh;
     std::size_t count_thresh;

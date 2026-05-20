@@ -26,7 +26,7 @@ struct datapoint_event {
     /**
      * \brief The data type.
      */
-    using datapoint_type = typename NumericTraits::datapoint_type;
+    using datapoint_type = NumericTraits::datapoint_type;
 
     /**
      * \brief The datapoint value.
@@ -57,7 +57,7 @@ struct bin_increment_event {
     /**
      * \brief The histogram bin index to which the data value was mapped.
      */
-    typename NumericTraits::bin_index_type bin_index;
+    NumericTraits::bin_index_type bin_index;
 
     /** \brief Equality comparison operator. */
     friend constexpr auto operator==(bin_increment_event const &lhs,
