@@ -26,6 +26,11 @@ namespace internal {
 template <typename Event, typename Downstream>
     requires processor<Downstream, bucket<Event>>
 class batch {
+    static_assert(
+        std::is_default_constructible_v<Event>,
+        "batch requires Event to be default-constructible (buckets are "
+        "pre-filled with default-constructed events)");
+
     std::shared_ptr<bucket_source<Event>> bsource;
     std::size_t bsize;
 

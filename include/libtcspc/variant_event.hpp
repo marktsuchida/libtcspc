@@ -7,6 +7,7 @@
 #pragma once
 
 #include "common.hpp"
+#include "event.hpp"
 #include "type_list.hpp"
 
 #include <ostream>
@@ -46,7 +47,9 @@ namespace tcspc {
  * `tcspc::type_list<Es...>`.
  *
  * In addition to `std::variant` members, the stream insertion (`operator<<`)
- * is supported (for convenience during testing).
+ * is provided when every event type in `EventList` is ostream-insertable.
+ * `operator==` is inherited from `std::variant` and is available when every
+ * event type in `EventList` is equality-comparable.
  *
  * \tparam EventList A `tcspc::type_list` specialization containing the event
  * types that the variant event can hold (must not contain duplicates)
@@ -68,7 +71,9 @@ class variant_event<type_list<Events...>> : public std::variant<Events...> {
     using base_type::base_type;
 
     friend auto operator<<(std::ostream &stream, variant_event const &event)
-        -> std::ostream & {
+        -> std::ostream &
+        requires(internal::ostreamable<Events> && ...)
+    {
         return std::visit(
             [&](auto const &e) -> std::ostream & { return stream << e; },
             event);

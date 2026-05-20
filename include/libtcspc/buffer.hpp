@@ -16,6 +16,7 @@
 
 #include <algorithm>
 #include <chrono>
+#include <concepts>
 #include <condition_variable>
 #include <cstddef>
 #include <functional>
@@ -113,6 +114,10 @@ namespace internal {
 template <typename Event, bool LatencyLimited, typename Downstream>
     requires processor<Downstream, Event>
 class buffer {
+    static_assert(std::move_constructible<Event>,
+                  "buffer requires Event to be move-constructible (events are "
+                  "stored in an internal queue)");
+
     using clock_type = std::chrono::steady_clock;
     using queue_type = vector_queue<Event>;
 
@@ -336,7 +341,7 @@ class buffer {
  * \see `tcspc::process_in_batches()`
  * \see `tcspc::real_time_buffer()`
  *
- * \tparam Event the event type
+ * \tparam Event the event type (must be move-constructible)
  *
  * \tparam Downstream downstream processor type (usually deduced)
  *
@@ -390,7 +395,7 @@ auto buffer(arg::threshold<std::size_t> threshold,
  *
  * \see `tcspc::buffer()`
  *
- * \tparam Event the event type
+ * \tparam Event the event type (must be move-constructible)
  *
  * \tparam Rep tick count type of duration type of \p latency_limit (usually
  * deduced)

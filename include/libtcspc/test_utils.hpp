@@ -10,6 +10,7 @@
 #include "common.hpp"
 #include "context.hpp"
 #include "errors.hpp"
+#include "event.hpp"
 #include "introspect.hpp"
 #include "numeric_traits.hpp"
 #include "processor.hpp"
@@ -21,6 +22,7 @@
 #include <any>
 #include <array>
 #include <cassert>
+#include <concepts>
 #include <cstdint>
 #include <cstdio>
 #include <initializer_list>
@@ -636,6 +638,20 @@ template <typename EventList> class capture_output_checker {
 namespace internal {
 
 template <typename EventList> class capture_output {
+    static_assert(type_list_like<EventList>);
+    static_assert(
+        is_copy_constructible_list_v<EventList>,
+        "capture_output requires every event in EventList to be "
+        "copy-constructible (recorded events are copied for inspection)");
+    static_assert(is_equality_comparable_list_v<EventList>,
+                  "capture_output requires every event in EventList to be "
+                  "std::equality_comparable (used by check())");
+    static_assert(
+        is_ostreamable_list_v<EventList>,
+        "capture_output requires every event in EventList to provide "
+        "operator<< to std::ostream (used by events_as_string() and "
+        "Catch2 stringification)");
+
     vector_queue<recorded_event<EventList>> output;
     bool flushed = false;
     std::size_t error_in = std::numeric_limits<std::size_t>::max();
@@ -895,7 +911,9 @@ class feed_input {
  * through the wrapper `tcspc::capture_output_checker`) retrieved from the
  * `tcspc::context` from which \p tracker was obtained.
  *
- * \tparam EventList event set to accept
+ * \tparam EventList event set to accept; every event type must be
+ * copy-constructible, be `std::equality_comparable`, and provide `operator<<`
+ * to `std::ostream`
  *
  * \param tracker access tracker for later access to state
  *

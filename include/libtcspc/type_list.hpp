@@ -63,6 +63,42 @@ struct is_type_list_impl<type_list<Ts...>> : std::true_type {};
 template <typename T>
 concept type_list_like = internal::is_type_list_impl<T>::value;
 
+/** \cond implementation-detail */
+
+namespace internal {
+
+template <typename EventList>
+inline constexpr bool is_copy_constructible_list_v = false;
+
+template <typename... Es>
+inline constexpr bool is_copy_constructible_list_v<type_list<Es...>> =
+    (std::copy_constructible<Es> && ...);
+
+template <typename EventList>
+inline constexpr bool is_move_constructible_list_v = false;
+
+template <typename... Es>
+inline constexpr bool is_move_constructible_list_v<type_list<Es...>> =
+    (std::move_constructible<Es> && ...);
+
+template <typename EventList>
+inline constexpr bool is_move_assignable_list_v = false;
+
+template <typename... Es>
+inline constexpr bool is_move_assignable_list_v<type_list<Es...>> =
+    (std::is_move_assignable_v<Es> && ...);
+
+template <typename EventList>
+inline constexpr bool is_equality_comparable_list_v = false;
+
+template <typename... Es>
+inline constexpr bool is_equality_comparable_list_v<type_list<Es...>> =
+    (std::equality_comparable<Es> && ...);
+
+} // namespace internal
+
+/** \endcond */
+
 /**
  * \defgroup type-list-size Metafunction type_list_size
  * \ingroup type-list

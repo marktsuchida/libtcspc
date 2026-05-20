@@ -8,6 +8,7 @@
 
 #include "common.hpp"
 #include "errors.hpp"
+#include "event.hpp"
 #include "introspect.hpp"
 #include "processor.hpp"
 #include "type_list.hpp"
@@ -37,9 +38,13 @@ class stop {
         if constexpr (std::is_same_v<Exception, end_of_processing>)
             downstream.flush();
         std::ostringstream stream;
-        if (not message_prefix.empty())
-            stream << message_prefix << ": ";
-        stream << event;
+        if constexpr (internal::ostreamable<Event>) {
+            if (not message_prefix.empty())
+                stream << message_prefix << ": ";
+            stream << event;
+        } else {
+            stream << message_prefix;
+        }
         throw Exception(stream.str());
     }
 
@@ -82,6 +87,10 @@ class stop {
  *
  * \ingroup processors-stopping
  *
+ * If the triggering event type provides `operator<<` to `std::ostream`, the
+ * formatted event is appended to the exception message after \p
+ * message_prefix; otherwise the message consists of \p message_prefix only.
+ *
  * \see `tcspc::stop()`
  *
  * \tparam EventList event types that should cause stream to end
@@ -115,6 +124,10 @@ auto stop_with_error(std::string message_prefix, Downstream downstream) {
  * received.
  *
  * \ingroup processors-stopping
+ *
+ * If the triggering event type provides `operator<<` to `std::ostream`, the
+ * formatted event is appended to the exception message after \p
+ * message_prefix; otherwise the message consists of \p message_prefix only.
  *
  * \see `tcspc::stop_with_error()`
  *

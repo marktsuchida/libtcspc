@@ -28,7 +28,9 @@ namespace internal {
 template <typename Event, typename Downstream>
     requires processor<Downstream, bucket<Event>>
 class batch_from_bytes {
-    static_assert(std::is_trivial_v<Event>);
+    static_assert(std::is_trivial_v<Event>,
+                  "batch_from_bytes requires Event to be a trivial type "
+                  "(events are constructed by copying raw bytes)");
 
     std::shared_ptr<bucket_source<Event>> bsource;
 
@@ -91,7 +93,9 @@ class batch_from_bytes {
 template <typename Event, typename Downstream>
     requires processor<Downstream, Event>
 class unbatch_from_bytes {
-    static_assert(std::is_trivial_v<Event>);
+    static_assert(std::is_trivial_v<Event>,
+                  "unbatch_from_bytes requires Event to be a trivial type "
+                  "(events are constructed by copying raw bytes)");
 
     std::size_t bytes_buffered = 0; // < sizeof(buf)
     std::array<std::byte, sizeof(Event)> buf;

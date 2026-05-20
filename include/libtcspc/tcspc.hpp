@@ -99,15 +99,20 @@ namespace tcspc {
  * of simple types. Processors that operate on different event types do so by
  * static polymorphism, so event types do not need to derive from any class.
  *
- * Event types are normally movable and copyable. Movability is essential and
- * copyability is required by some processors and the unit testing facilities.
- *
- * Events provided by libtcspc also support equality comparison (`operator==`)
- * and stream insertion (`operator<<`). This is mostly to facilitate unit
- * testing of processors.
- *
  * Event types and templates are named with the suffix `_event`. There is no
- * formal concept for events.
+ * formal event concept: event types are normally move-constructible
+ * (essential, so that they can flow between processors, but
+ * `tcspc::never_event` is an exception) and often also copyable (required by
+ * some processors and the testing facilities).
+ *
+ * By convention, events provided by libtcspc additionally support
+ * `operator==` and `operator<<`, but those are required only by facilities
+ * that explicitly use them, notably `tcspc::capture_output()` (for unit
+ * testing).
+ *
+ * For simple events that carry small amounts of data, plain C++ structs are
+ * preferred. Events should have value semantics (as opposed to reference
+ * semantics) whenever it is reasonable.
  *
  * Events that carry large amounts of data (such as histograms and arrays
  * thereof) do so using the `tcspc::bucket` type in order to allow zero-copy

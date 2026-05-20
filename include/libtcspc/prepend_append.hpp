@@ -10,6 +10,7 @@
 #include "introspect.hpp"
 #include "processor.hpp"
 
+#include <concepts>
 #include <type_traits>
 
 namespace tcspc {
@@ -19,6 +20,10 @@ namespace internal {
 template <typename Event, typename Downstream>
     requires processor<Downstream, Event>
 class prepend {
+    static_assert(std::move_constructible<Event>,
+                  "prepend requires Event to be move-constructible (the event "
+                  "is stored and moved into the stream)");
+
     bool prepended = false;
     Downstream downstream;
 
@@ -53,6 +58,10 @@ class prepend {
 template <typename Event, typename Downstream>
     requires processor<Downstream, Event>
 class append {
+    static_assert(std::move_constructible<Event>,
+                  "append requires Event to be move-constructible (the event "
+                  "is stored and moved into the stream)");
+
     Downstream downstream;
 
     // Cold data after downstream:
@@ -93,7 +102,8 @@ class append {
  * All events are passed through. Before the first event is passed through, the
  * given \p event is emitted.
  *
- * \tparam Event type of event to prepend (usually deduced)
+ * \tparam Event type of event to prepend (usually deduced; must be
+ * move-constructible)
  *
  * \tparam Downstream downstream processor type (usually deduced)
  *
@@ -125,7 +135,8 @@ auto prepend(Event event, Downstream downstream) {
  * `tcspc::end_of_processing` being thrown by a _downstream_ processor, this
  * processor has no effect.
  *
- * \tparam Event type of event to append (usually deduced)
+ * \tparam Event type of event to append (usually deduced; must be
+ * move-constructible)
  *
  * \tparam Downstream downstream processor type (usually deduced)
  *

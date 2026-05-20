@@ -17,6 +17,7 @@
 #include "variant_event.hpp"
 
 #include <algorithm>
+#include <concepts>
 #include <limits>
 #include <stdexcept>
 #include <type_traits>
@@ -30,6 +31,17 @@ namespace internal {
 template <typename EventList, typename NumericTraits, typename Downstream>
     requires is_processor_of_list_v<Downstream, EventList>
 class recover_order {
+    static_assert(type_list_like<EventList>);
+    static_assert(is_move_constructible_list_v<EventList>,
+                  "recover_order requires every event in EventList to be "
+                  "move-constructible (events are buffered in a vector)");
+    static_assert(is_move_assignable_list_v<EventList>,
+                  "recover_order requires every event in EventList to be "
+                  "move-assignable (the buffer is kept sorted by shifting)");
+    // Copy-constructibility is required only for const-lvalue inputs (which
+    // are copied into the buffer); checked per-call in handle() so that
+    // move-only events fed as rvalues are accepted.
+
     using abstime_type = typename NumericTraits::abstime_type;
     abstime_type window_size;
 
@@ -65,6 +77,12 @@ class recover_order {
                                                  EventList>
     void handle(Event &&event) {
         static_assert(std::is_same_v<decltype(event.abstime), abstime_type>);
+        if constexpr (std::is_lvalue_reference_v<Event>) {
+            static_assert(
+                std::copy_constructible<std::remove_cvref_t<Event>>,
+                "recover_order copies const-lvalue inputs into its buffer; "
+                "pass the event as an rvalue or make it copy-constructible");
+        }
         if (event.abstime < last_emitted_time) {
             throw data_validation_error(
                 "recover_order encountered event outside of time window");
@@ -132,7 +150,10 @@ class recover_order {
  *
  * \ingroup processors-time-corr
  *
- * \tparam EventList events to sort
+ * \tparam EventList events to sort; every event type must be
+ * move-constructible and move-assignable (events are buffered and reordered in
+ * a vector). Const-lvalue inputs are additionally copied into the buffer, so a
+ * non-copy-constructible event type must be passed as an rvalue.
  *
  * \tparam NumericTraits numeric traits specifying `abstime_type`
  *

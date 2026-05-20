@@ -9,6 +9,7 @@
 #include "libtcspc/context.hpp"
 #include "libtcspc/core.hpp"
 #include "libtcspc/errors.hpp"
+#include "libtcspc/event.hpp"
 #include "libtcspc/processor.hpp"
 #include "libtcspc/test_utils.hpp"
 #include "libtcspc/type_list.hpp"
@@ -28,6 +29,16 @@ using e0 = empty_test_event<0>;
 using e1 = empty_test_event<1>;
 
 } // namespace
+
+namespace tests {
+
+struct silent_event {
+    int x = 0;
+    friend auto operator==(silent_event const &, silent_event const &)
+        -> bool = default;
+};
+
+} // namespace tests
 
 TEST_CASE("type constraints: stop") {
     STATIC_CHECK(
@@ -60,6 +71,21 @@ TEST_CASE("stop with error") {
         Catch::Matchers::ContainsSubstring("myerror") &&
             Catch::Matchers::ContainsSubstring("empty_test_event<0>"));
     REQUIRE(out.check_not_flushed());
+}
+
+TEST_CASE("stop with error: non-ostreamable event") {
+    using tests::silent_event;
+    STATIC_CHECK_FALSE(internal::ostreamable<silent_event>);
+
+    SECTION("with prefix") {
+        auto proc =
+            stop_with_error<type_list<silent_event>>("myerror", sink_all());
+        REQUIRE_THROWS_WITH(proc.handle(silent_event{}), "myerror");
+    }
+    SECTION("empty prefix") {
+        auto proc = stop_with_error<type_list<silent_event>>("", sink_all());
+        REQUIRE_THROWS_WITH(proc.handle(silent_event{}), "");
+    }
 }
 
 TEST_CASE("stop with no error") {

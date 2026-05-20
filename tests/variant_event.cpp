@@ -7,10 +7,12 @@
 #include "libtcspc/variant_event.hpp"
 
 #include "libtcspc/common.hpp"
+#include "libtcspc/event.hpp"
 #include "libtcspc/type_list.hpp"
 
 #include <catch2/catch_test_macros.hpp>
 
+#include <ostream>
 #include <sstream>
 #include <type_traits>
 #include <variant>
@@ -41,6 +43,47 @@ TEST_CASE("variant_event equality") {
     CHECK_FALSE(i0 != i1);
     CHECK_FALSE(i0 == id);
     CHECK(i0 != id);
+}
+
+namespace tests {
+
+struct ostreamable_e {
+    int x = 0;
+    friend auto operator==(ostreamable_e const &, ostreamable_e const &)
+        -> bool = default;
+    friend auto operator<<(std::ostream &s, ostreamable_e const & /*unused*/)
+        -> std::ostream & {
+        return s << "ostreamable_e";
+    }
+};
+
+struct silent_e {
+    int x = 0;
+    friend auto operator==(silent_e const &, silent_e const &)
+        -> bool = default;
+};
+
+struct non_default_constructible {
+    int x;
+    explicit non_default_constructible(int v) : x(v) {}
+};
+
+} // namespace tests
+
+TEST_CASE("variant_event conditional ostreamability") {
+    using tests::ostreamable_e;
+    using tests::silent_e;
+    STATIC_CHECK(
+        internal::ostreamable<variant_event<type_list<ostreamable_e>>>);
+
+    STATIC_CHECK_FALSE(internal::ostreamable<
+                       variant_event<type_list<ostreamable_e, silent_e>>>);
+}
+
+TEST_CASE("variant_event allows non-default-constructible element") {
+    using ve = variant_event<type_list<tests::non_default_constructible>>;
+    STATIC_CHECK(
+        std::is_constructible_v<ve, tests::non_default_constructible>);
 }
 
 TEST_CASE("variant_or_single_event") {

@@ -19,6 +19,65 @@ TEST_CASE("type_list_like") {
     STATIC_CHECK_FALSE(type_list_like<int>);
 }
 
+namespace tests {
+
+struct comparable {
+    int x = 0;
+    friend auto operator==(comparable const &, comparable const &)
+        -> bool = default;
+};
+
+struct move_only {
+    move_only() = default;
+    ~move_only() = default;
+    move_only(move_only const &) = delete;
+    auto operator=(move_only const &) -> move_only & = delete;
+    move_only(move_only &&) = default;
+    auto operator=(move_only &&) -> move_only & = default;
+};
+
+struct no_move_assign {
+    no_move_assign() = default;
+    ~no_move_assign() = default;
+    no_move_assign(no_move_assign const &) = default;
+    auto operator=(no_move_assign const &) -> no_move_assign & = delete;
+    no_move_assign(no_move_assign &&) = default;
+    auto operator=(no_move_assign &&) -> no_move_assign & = delete;
+};
+
+} // namespace tests
+
+TEST_CASE("type-list trait predicates") {
+    using internal::is_copy_constructible_list_v;
+    using internal::is_equality_comparable_list_v;
+    using internal::is_move_assignable_list_v;
+    using internal::is_move_constructible_list_v;
+    using tests::comparable;
+    using tests::move_only;
+    using tests::no_move_assign;
+
+    // Non-type_list arguments yield false.
+    STATIC_CHECK_FALSE(is_copy_constructible_list_v<int>);
+    STATIC_CHECK_FALSE(is_move_constructible_list_v<int>);
+
+    STATIC_CHECK(is_copy_constructible_list_v<type_list<>>);
+    STATIC_CHECK(is_copy_constructible_list_v<type_list<comparable, int>>);
+    STATIC_CHECK_FALSE(is_copy_constructible_list_v<type_list<move_only>>);
+    STATIC_CHECK_FALSE(
+        is_copy_constructible_list_v<type_list<comparable, move_only>>);
+
+    STATIC_CHECK(
+        is_move_constructible_list_v<type_list<comparable, move_only>>);
+
+    STATIC_CHECK(is_move_assignable_list_v<type_list<comparable, move_only>>);
+    STATIC_CHECK_FALSE(is_move_assignable_list_v<type_list<no_move_assign>>);
+
+    STATIC_CHECK(is_equality_comparable_list_v<type_list<comparable>>);
+    STATIC_CHECK_FALSE(is_equality_comparable_list_v<type_list<move_only>>);
+    STATIC_CHECK_FALSE(
+        is_equality_comparable_list_v<type_list<comparable, move_only>>);
+}
+
 TEST_CASE("type_list_size") {
     STATIC_CHECK(type_list_size_v<type_list<>> == 0);
     STATIC_CHECK(type_list_size_v<type_list<int>> == 1);

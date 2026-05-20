@@ -36,6 +36,15 @@ template <typename EventList, typename NumericTraits, typename Downstream>
     requires is_processor_of_list_v<Downstream, EventList>
 class merge_impl {
     static_assert(type_list_like<EventList>);
+    // merge copies events into its reorder buffer (the per-input handle()
+    // receives events by const reference, so even rvalues are copied). This is
+    // a deliberate simplicity choice: merge's use cases involve small,
+    // trivial, copyable events. A move-only merge, if ever needed, should be a
+    // separate processor.
+    static_assert(
+        is_copy_constructible_list_v<EventList>,
+        "merge requires every event in EventList to be copy-constructible "
+        "(events are copied into the reordering buffer)");
 
     // When events have equal abstime, those originating from input 0 are
     // emitted before those originating from input1. Within the same input, the
@@ -218,7 +227,9 @@ class merge_input {
  *
  * \see `tcspc::merge_n()`
  *
- * \tparam EventList the event set handled by the merge processor
+ * \tparam EventList the event set handled by the merge processor; every event
+ * type must be copy-constructible (events are copied into the reordering
+ * buffer)
  *
  * \tparam NumericTraits numeric traits specifying `abstime_type`
  *
@@ -277,7 +288,9 @@ auto merge(arg::max_buffered<std::size_t> max_buffered,
  *
  * \tparam N number of input streams
  *
- * \tparam EventList the event set handled by the merge processor
+ * \tparam EventList the event set handled by the merge processor; every event
+ * type must be copy-constructible (events are copied into the reordering
+ * buffer)
  *
  * \tparam NumericTraits numeric traits specifying \c abstime_type
  *
