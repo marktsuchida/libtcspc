@@ -145,6 +145,9 @@ TEST_CASE("processor_graph push_entry_point", "[processor_graph]") {
         [[nodiscard]] auto introspect_node() const -> processor_info {
             return processor_info(this, "test_proc");
         }
+        [[nodiscard]] auto introspect_graph() const -> processor_graph {
+            return processor_graph().push_entry_point(this);
+        }
     };
     auto g = processor_graph();
 
@@ -170,11 +173,35 @@ TEST_CASE("processor_graph push_entry_point", "[processor_graph]") {
     CHECK(g.is_entry_point(node1));
 }
 
+TEST_CASE("introspectable concept", "[introspectable]") {
+    struct good {
+        [[nodiscard]] auto introspect_node() const -> processor_info;
+        [[nodiscard]] auto introspect_graph() const -> processor_graph;
+    };
+    struct no_node {
+        [[nodiscard]] auto introspect_graph() const -> processor_graph;
+    };
+    struct no_graph {
+        [[nodiscard]] auto introspect_node() const -> processor_info;
+    };
+    struct wrong_return {
+        [[nodiscard]] auto introspect_node() const -> int;
+        [[nodiscard]] auto introspect_graph() const -> processor_graph;
+    };
+    STATIC_CHECK(introspectable<good>);
+    STATIC_CHECK_FALSE(introspectable<no_node>);
+    STATIC_CHECK_FALSE(introspectable<no_graph>);
+    STATIC_CHECK_FALSE(introspectable<wrong_return>);
+}
+
 TEST_CASE("processor_graph merge", "[processor_graph]") {
     struct test_proc {
         std::string name;
         [[nodiscard]] auto introspect_node() const -> processor_info {
             return processor_info(this, name);
+        }
+        [[nodiscard]] auto introspect_graph() const -> processor_graph {
+            return processor_graph().push_entry_point(this);
         }
     };
 

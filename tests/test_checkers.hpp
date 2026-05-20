@@ -6,6 +6,8 @@
 
 #pragma once
 
+#include "libtcspc/introspect.hpp"
+
 #include <catch2/catch_test_macros.hpp>
 
 #include <cstddef>
@@ -56,6 +58,7 @@ inline void check_type_name([[maybe_unused]] std::string type_name,
 
 template <typename Processor>
 inline auto check_introspect_node_info(Processor const &proc) {
+    STATIC_REQUIRE(introspectable<Processor>);
     auto const info = proc.introspect_node();
     CHECK(info.address() == std::size_t(&proc));
     internal::check_type_name(info.type_name(), info.name());

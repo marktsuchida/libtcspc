@@ -9,6 +9,7 @@
 #include <algorithm>
 #include <array>
 #include <charconv>
+#include <concepts>
 #include <cstdint>
 #include <cstdlib>
 #include <iterator>
@@ -178,6 +179,27 @@ class processor_node_id {
     }
 };
 
+class processor_graph; // forward declaration for introspectable
+
+/**
+ * \brief Concept that is satisfied when a processor supports introspection.
+ *
+ * \ingroup introspect
+ *
+ * Determines whether \p Proc implements the introspection interface that all
+ * processors are required to provide: `introspect_node()` returning
+ * `tcspc::processor_info` and `introspect_graph()` returning
+ * `tcspc::processor_graph`, both as `const`-qualified member functions.
+ *
+ * If either function exists but has a different return type, the concept is
+ * not satisfied.
+ */
+template <typename Proc>
+concept introspectable = requires(Proc const &p) {
+    { p.introspect_node() } -> std::same_as<processor_info>;
+    { p.introspect_graph() } -> std::same_as<processor_graph>;
+};
+
 /**
  * \brief Value type representing a directed acyclic graph of processors.
  *
@@ -226,6 +248,7 @@ class processor_graph {
      * \return a reference to this graph
      */
     template <typename Processor>
+        requires introspectable<Processor>
     auto push_entry_point(Processor const *processor) -> processor_graph & {
         if (entrypts.size() > 1) {
             throw std::logic_error(
