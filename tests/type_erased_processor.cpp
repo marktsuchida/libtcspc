@@ -132,6 +132,27 @@ TEST_CASE("introspect: type_erased_processor") {
     CHECK(g.node_info(sink_node).name() == "sink_all");
 }
 
+TEST_CASE(
+    "introspect: type_erased_processor with non-introspectable downstream") {
+    struct noninspect_proc {
+        void handle(e0 const & /*unused*/) {}
+        void flush() {}
+    };
+    static_assert(not introspectable<noninspect_proc>);
+
+    auto const tep = type_erased_processor<type_list<>>(noninspect_proc());
+    auto const info = check_introspect_node_info(tep);
+    auto const g = tep.introspect_graph();
+    CHECK(g.nodes().size() == 2);
+    CHECK(g.edges().size() == 1);
+    CHECK(g.entry_points().size() == 1);
+    auto const node = g.entry_points()[0];
+    CHECK(g.node_info(node) == info);
+    CHECK(g.node_info(node).name() == "type_erased_processor");
+    auto const virtual_node = g.edges()[0].second;
+    CHECK(g.node_info(virtual_node).name() == "virtual_processor_impl");
+}
+
 TEST_CASE("type_erased_processor move assignment") {
     // Create with stub downstream.
     type_erased_processor<type_list<e0>> tep;

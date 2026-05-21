@@ -76,7 +76,10 @@ class virtual_processor_impl<Interface, Proc, type_list<>> : public Interface {
     }
 
     [[nodiscard]] auto introspect_graph() const -> processor_graph final {
-        return proc.introspect_graph().push_entry_point(this);
+        if constexpr (introspectable<Proc>)
+            return proc.introspect_graph().push_entry_point(this);
+        else
+            return processor_graph().push_entry_point(this);
     }
 
     void flush() final { proc.flush(); }
@@ -112,6 +115,9 @@ using virtual_processor =
  * \ingroup processors-core
  *
  * \tparam EventList the event set handled by the processor
+ *
+ * If the downstream is not introspectable, the introspection graph is
+ * truncated at the type-erasure boundary (the downstream does not appear).
  *
  * \par Events handled
  * - Events in `EventList`: pass through with no action
