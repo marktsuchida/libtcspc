@@ -749,9 +749,9 @@ class WarningEvent(EventType):
     --------
     :cpp:`tcspc::warning_event`
         The underlying C++ event type.
-    Stop
+    :py:obj:`Stop`
         Convert warnings into a normal end-of-processing.
-    StopWithError
+    :py:obj:`StopWithError`
         Convert warnings into a terminating error.
     """
 

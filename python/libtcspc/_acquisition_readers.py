@@ -42,7 +42,7 @@ class NullReader(AcquisitionReader):
     --------
     :cpp:`tcspc::null_reader`
         The underlying C++ reader.
-    Acquire
+    :py:obj:`Acquire`
         Source processor that drives the reader.
     """
 
@@ -74,7 +74,7 @@ class StuckReader(AcquisitionReader):
     --------
     :cpp:`tcspc::stuck_reader`
         The underlying C++ reader.
-    AcquireAccess
+    :py:obj:`AcquireAccess`
         Runtime access object providing ``halt()``.
     """
 
@@ -95,9 +95,9 @@ class PyAcquisitionReader(ABC):
 
     See Also
     --------
-    Acquire
+    :py:obj:`Acquire`
         Source processor that drives the reader.
-    AcquireAccess
+    :py:obj:`AcquireAccess`
         Runtime access object providing ``halt()``.
     """
 

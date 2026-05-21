@@ -52,7 +52,7 @@ class NewDeleteBucketSource(BucketSource):
     --------
     :cpp:`tcspc::new_delete_bucket_source`
         The underlying C++ bucket source.
-    RecyclingBucketSource
+    :py:obj:`RecyclingBucketSource`
         Bucket source that reuses storage.
     """
 
@@ -106,7 +106,7 @@ class RecyclingBucketSource(BucketSource):
     --------
     :cpp:`tcspc::recycling_bucket_source`
         The underlying C++ bucket source.
-    NewDeleteBucketSource
+    :py:obj:`NewDeleteBucketSource`
         Bucket source without recycling.
     """
 

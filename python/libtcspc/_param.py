@@ -45,7 +45,7 @@ class Param(Generic[T]):
 
     See Also
     --------
-    ExecutionContext
+    :py:obj:`ExecutionContext`
         Binds `Param` placeholders to concrete values at run time.
     """
 

@@ -110,10 +110,10 @@ def read_events_from_binary_file(
 
     See Also
     --------
-    ReadBinaryStream
-    Unbatch
-    Stop
-    StopWithError
+    :py:obj:`ReadBinaryStream`
+    :py:obj:`Unbatch`
+    :py:obj:`Stop`
+    :py:obj:`StopWithError`
     """
     g = Graph()
     g.add_chain(
@@ -211,11 +211,11 @@ class Acquire(_RelayNode):
     --------
     :cpp:`tcspc::acquire`
         The underlying C++ factory function.
-    AcquisitionReader
+    :py:obj:`AcquisitionReader`
         Interface for built-in C++-side readers.
-    PyAcquisitionReader
+    :py:obj:`PyAcquisitionReader`
         Interface for Python-callable readers (used via `Param`).
-    AcquireAccess
+    :py:obj:`AcquireAccess`
         Runtime access object providing ``halt()``.
     """
 
@@ -427,9 +427,9 @@ class BatchFromBytes(_RelayNode):
     --------
     :cpp:`tcspc::batch_from_bytes`
         The underlying C++ factory function.
-    UnbatchFromBytes
+    :py:obj:`UnbatchFromBytes`
         The inverse: emit typed events one at a time from byte batches.
-    ViewAsBytes
+    :py:obj:`ViewAsBytes`
         View bucketed events as their in-memory bytes.
     """
 
@@ -711,7 +711,7 @@ class CountDownTo(_RelayNode):
     --------
     :cpp:`tcspc::count_down_to`
         The underlying C++ factory function.
-    CountUpTo
+    :py:obj:`CountUpTo`
         The counterpart that counts up to a threshold.
     """
 
@@ -832,7 +832,7 @@ class CountUpTo(_RelayNode):
     --------
     :cpp:`tcspc::count_up_to`
         The underlying C++ factory function.
-    CountDownTo
+    :py:obj:`CountDownTo`
         The counterpart that counts down to a threshold.
     """
 
@@ -1124,7 +1124,7 @@ class DecodeBHSPCWithIntensityCounter(_RelayNode):
     --------
     :cpp:`tcspc::decode_bh_spc_with_intensity_counter`
         The underlying C++ factory function.
-    DecodeBHSPC
+    :py:obj:`DecodeBHSPC`
         Decode standard Becker & Hickl SPC FIFO records.
     """
 
@@ -1620,7 +1620,7 @@ class Delay(_TypePreservingRelayNode):
     --------
     :cpp:`tcspc::delay`
         The underlying C++ factory function.
-    RebaseAbstime
+    :py:obj:`RebaseAbstime`
         Shift abstime so the first event is at zero.
     """
 
@@ -2159,9 +2159,9 @@ class Select(_RelayNode):
     --------
     :cpp:`tcspc::select`
         The underlying C++ factory function.
-    SelectAll
+    :py:obj:`SelectAll`
         Forward every event unchanged.
-    SelectExcept
+    :py:obj:`SelectExcept`
         Discard the listed types, passing others.
     """
 
@@ -2251,9 +2251,9 @@ class SelectExcept(_RelayNode):
     --------
     :cpp:`tcspc::select_except`
         The underlying C++ factory function.
-    Select
+    :py:obj:`Select`
         Pass only the listed types, dropping others.
-    SelectAll
+    :py:obj:`SelectAll`
         Forward every event unchanged.
     """
 
@@ -2561,7 +2561,7 @@ class UnbatchFromBytes(_RelayNode):
     --------
     :cpp:`tcspc::unbatch_from_bytes`
         The underlying C++ factory function.
-    BatchFromBytes
+    :py:obj:`BatchFromBytes`
         The inverse: copy batches of bytes into batches of typed events.
     """
 
@@ -2620,7 +2620,7 @@ class ViewAsBytes(_RelayNode):
     --------
     :cpp:`tcspc::view_as_bytes`
         The underlying C++ factory function.
-    BatchFromBytes
+    :py:obj:`BatchFromBytes`
         Copy batches of bytes into batches of typed events.
     """
 
@@ -2680,7 +2680,7 @@ class RebaseAbstime(_TypePreservingRelayNode):
     --------
     :cpp:`tcspc::rebase_abstime`
         The underlying C++ factory function.
-    Delay
+    :py:obj:`Delay`
         Offset event abstimes by a constant delta.
     """
 

@@ -26,7 +26,7 @@ class InputStream(_Parameterized):
 
     See Also
     --------
-    ReadBinaryStream
+    :py:obj:`ReadBinaryStream`
         Processor that consumes an `InputStream`.
     """
 
@@ -62,7 +62,7 @@ class BinaryFileInputStream(InputStream):
 
     See Also
     --------
-    ReadBinaryStream
+    :py:obj:`ReadBinaryStream`
         Processor that consumes this stream.
     :cpp:`tcspc::binary_file_input_stream`
         The underlying C++ input stream.
