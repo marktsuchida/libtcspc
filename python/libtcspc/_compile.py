@@ -179,6 +179,16 @@ def _output_processor(
             public:
                 explicit {typename}(std::shared_ptr<py_sink> downstream) :
                     downstream(std::move(downstream)) {{}}
+
+                [[nodiscard]] auto introspect_node() const
+                        -> tcspc::processor_info {{
+                    return tcspc::processor_info(this, "{typename}");
+                }}
+
+                [[nodiscard]] auto introspect_graph() const
+                        -> tcspc::processor_graph {{
+                    return tcspc::processor_graph().push_entry_point(this);
+                }}
             """
                 + "\n".join(
                     event_type._cpp_output_handlers(

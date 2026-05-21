@@ -15,6 +15,7 @@ Built-in processor nodes.
 
    libtcspc.Acquire
    libtcspc.Batch
+   libtcspc.Broadcast
    libtcspc.CheckMonotonic
    libtcspc.Count
    libtcspc.DecodeBHSPC

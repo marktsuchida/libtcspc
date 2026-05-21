@@ -1657,6 +1657,84 @@ class Delay(_TypePreservingRelayNode):
 
 
 @final
+class Broadcast(Node):
+    """Broadcasts every event to several downstream processors.
+
+    Each event received is forwarded to every connected downstream. Likewise,
+    end-of-input is propagated to every downstream.
+
+    Parameters
+    ----------
+    *event_types : EventType
+        The event types to broadcast. Every output must be connected to a
+        downstream that handles all of these types.
+    outputs : int or Sequence[str]
+        The output ports. An integer ``N`` creates ``N`` ports named
+        ``"output-0"`` through ``"output-(N-1)"``. A sequence of names creates
+        ports with those exact names. Must specify at least one output.
+
+    Notes
+    -----
+    Events handled:
+
+    - Events matching one of ``event_types``: broadcast to every downstream.
+    - Events not in ``event_types``: rejected at graph build time.
+    - End of input: broadcast to every downstream.
+
+    See Also
+    --------
+    :cpp:`tcspc::broadcast`
+        The underlying C++ factory function.
+    """
+
+    def __init__(
+        self, *event_types: EventType, outputs: int | Sequence[str]
+    ) -> None:
+        if isinstance(outputs, int):
+            if outputs < 1:
+                raise ValueError("Broadcast requires at least one output")
+            output_names: tuple[str, ...] = tuple(
+                f"output-{i}" for i in range(outputs)
+            )
+        else:
+            output_names = tuple(outputs)
+            if len(output_names) < 1:
+                raise ValueError("Broadcast requires at least one output")
+            if len(set(output_names)) != len(output_names):
+                raise ValueError("Broadcast output names must be unique")
+        super().__init__(output=output_names)
+        self._event_types = tuple(event_types)
+
+    @override
+    def _map_event_sets(
+        self, input_event_sets: Sequence[Collection[EventType]]
+    ) -> tuple[tuple[EventType, ...], ...]:
+        if len(input_event_sets) != 1:
+            raise ValueError(
+                f"wrong number of inputs (1 expected, {len(input_event_sets)} found)"
+            )
+        _check_events_subset_of(
+            input_event_sets[0], self._event_types, self.__class__.__name__
+        )
+        return tuple(self._event_types for _ in self.outputs())
+
+    @override
+    def _cpp_expression(
+        self,
+        gencontext: _CodeGenerationContext,
+        downstreams: Sequence[_CppExpression],
+    ) -> _CppExpression:
+        n = len(self.outputs())
+        if len(downstreams) != n:
+            raise ValueError(
+                f"expected {n} downstream(s); found {len(downstreams)}"
+            )
+        event_list = _make_type_list(self._event_types)
+        args = ", ".join(downstreams)
+        return _CppExpression(f"tcspc::broadcast<{event_list}>({args})")
+
+
+@final
 class SinkAll(Node):
     """Sink that discards every event it receives.
 
