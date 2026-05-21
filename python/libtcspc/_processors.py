@@ -428,7 +428,9 @@ class BatchFromBytes(_RelayNode):
     :cpp:`tcspc::batch_from_bytes`
         The underlying C++ factory function.
     UnbatchFromBytes
+        The inverse: emit typed events one at a time from byte batches.
     ViewAsBytes
+        View bucketed events as their in-memory bytes.
     """
 
     def __init__(
@@ -710,6 +712,7 @@ class CountDownTo(_RelayNode):
     :cpp:`tcspc::count_down_to`
         The underlying C++ factory function.
     CountUpTo
+        The counterpart that counts up to a threshold.
     """
 
     def __init__(
@@ -830,6 +833,7 @@ class CountUpTo(_RelayNode):
     :cpp:`tcspc::count_up_to`
         The underlying C++ factory function.
     CountDownTo
+        The counterpart that counts down to a threshold.
     """
 
     def __init__(
@@ -1121,6 +1125,7 @@ class DecodeBHSPCWithIntensityCounter(_RelayNode):
     :cpp:`tcspc::decode_bh_spc_with_intensity_counter`
         The underlying C++ factory function.
     DecodeBHSPC
+        Decode standard Becker & Hickl SPC FIFO records.
     """
 
     def __init__(self, numeric_traits: NumericTraits | None = None) -> None:
@@ -1616,6 +1621,7 @@ class Delay(_TypePreservingRelayNode):
     :cpp:`tcspc::delay`
         The underlying C++ factory function.
     RebaseAbstime
+        Shift abstime so the first event is at zero.
     """
 
     def __init__(
@@ -2154,7 +2160,9 @@ class Select(_RelayNode):
     :cpp:`tcspc::select`
         The underlying C++ factory function.
     SelectAll
+        Forward every event unchanged.
     SelectExcept
+        Discard the listed types, passing others.
     """
 
     def __init__(self, *event_types: EventType) -> None:
@@ -2244,7 +2252,9 @@ class SelectExcept(_RelayNode):
     :cpp:`tcspc::select_except`
         The underlying C++ factory function.
     Select
+        Pass only the listed types, dropping others.
     SelectAll
+        Forward every event unchanged.
     """
 
     def __init__(self, *event_types: EventType) -> None:
@@ -2552,6 +2562,7 @@ class UnbatchFromBytes(_RelayNode):
     :cpp:`tcspc::unbatch_from_bytes`
         The underlying C++ factory function.
     BatchFromBytes
+        The inverse: copy batches of bytes into batches of typed events.
     """
 
     def __init__(self, event_type: EventType) -> None:
@@ -2610,6 +2621,7 @@ class ViewAsBytes(_RelayNode):
     :cpp:`tcspc::view_as_bytes`
         The underlying C++ factory function.
     BatchFromBytes
+        Copy batches of bytes into batches of typed events.
     """
 
     def __init__(self, event_type: EventType) -> None:
@@ -2669,6 +2681,7 @@ class RebaseAbstime(_TypePreservingRelayNode):
     :cpp:`tcspc::rebase_abstime`
         The underlying C++ factory function.
     Delay
+        Offset event abstimes by a constant delta.
     """
 
     def __init__(self, numeric_traits: NumericTraits | None = None) -> None:
