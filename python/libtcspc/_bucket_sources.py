@@ -2,8 +2,9 @@
 # Copyright 2019-2026 Board of Regents of the University of Wisconsin System
 # SPDX-License-Identifier: MIT
 
-from abc import abstractmethod
+from abc import ABC, abstractmethod
 from collections.abc import Sequence
+from typing import Any
 
 from typing_extensions import override
 
@@ -158,4 +159,77 @@ class RecyclingBucketSource(BucketSource):
         )
         return _CppExpression(
             f"tcspc::recycling_bucket_source<{tmpl_args}>::create({max_count})"
+        )
+
+
+class PyBucketSource(ABC):
+    """
+    Bucket source implemented in Python and supplied as an argument upon
+    creation of the execution context.
+
+    A `PyBucketSource` provides the storage that backs the buckets emitted by
+    processors such as `Acquire`, `Batch`, `BatchFromBytes`, and
+    `ReadBinaryStream`. It is bound to a graph by passing a `Param` as the
+    ``buffer_provider`` argument of such a processor, and the concrete instance
+    is supplied to the `ExecutionContext` at execution time.
+
+    When a bucket whose storage came from a `PyBucketSource` flows unmodified
+    to a `PySink`, the sink receives a NumPy array that is a zero-copy view of
+    the buffer originally returned by `bucket_of_size`, trimmed to the bucket's
+    valid length. The buffer is kept alive for as long as the bucket (or the
+    sink's view of it) exists.
+
+    Shared views are not supported with a `PyBucketSource`, so it cannot be
+    used with processors that require a sharable bucket source.
+
+    See Also
+    --------
+    :py:obj:`BucketSource`
+        Built-in C++-side bucket sources.
+    """
+
+    @abstractmethod
+    def bucket_of_size(self, size: int) -> Any:
+        """
+        Return a buffer to back a bucket of at least ``size`` elements.
+
+        Parameters
+        ----------
+        size : int
+            The minimum number of elements the returned buffer must hold.
+
+        Returns
+        -------
+        Any
+            A buffer-protocol object (typically a NumPy array) of length at
+            least ``size`` whose dtype matches the element type of the buckets
+            requested by the processor. The bucket will use the first ``size``
+            elements as its storage.
+
+        Notes
+        -----
+        An implementation must not retain or reuse a buffer it has already
+        returned while the corresponding bucket may still be in flight;
+        doing so corrupts data still being processed.
+        """
+        ...
+
+
+class _PyBucketSource(BucketSource):
+    def __init__(self, object_type: EventType, param: Param) -> None:
+        self._object_type = object_type
+        self._param = param
+
+    @override
+    def _parameters(self) -> Sequence[tuple[Param, _CppTypeName]]:
+        return ((self._param, _CppTypeName("nanobind::object")),)
+
+    @override
+    def _cpp_expression(
+        self, gencontext: _CodeGenerationContext
+    ) -> _CppExpression:
+        t = self._object_type._cpp_type_name()
+        return _CppExpression(
+            f"std::make_shared<py_buffer_bucket_source<{t}>>("
+            f"{gencontext.params_varname}.{self._param._cpp_identifier()})"
         )

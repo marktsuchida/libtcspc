@@ -164,6 +164,64 @@ def _pysink() -> _ModuleCodeFragment:
     )
 
 
+def _py_bucket_source_support() -> _ModuleCodeFragment:
+    return _ModuleCodeFragment(
+        (),
+        ("cstddef", "memory", "span", "stdexcept", "utility"),
+        (
+            _CppNamespaceScopeDefs("""\
+            struct py_buffer_storage {
+                nanobind::object obj;
+                explicit py_buffer_storage(nanobind::object o)
+                    : obj(std::move(o)) {}
+                py_buffer_storage(py_buffer_storage &&) noexcept = default;
+                auto operator=(py_buffer_storage &&) noexcept
+                    -> py_buffer_storage & = default;
+                py_buffer_storage(py_buffer_storage const &) = delete;
+                auto operator=(py_buffer_storage const &)
+                    -> py_buffer_storage & = delete;
+                ~py_buffer_storage() {
+                    if (obj.is_valid()) {
+                        nanobind::gil_scoped_acquire held;
+                        obj.reset();
+                    }
+                }
+            };"""),
+            _CppNamespaceScopeDefs("""\
+            template <typename T>
+            class py_buffer_bucket_source final : public tcspc::bucket_source<T> {
+                nanobind::object source; // the PyBucketSource instance
+
+              public:
+                explicit py_buffer_bucket_source(nanobind::object src)
+                    : source(std::move(src)) {}
+
+                ~py_buffer_bucket_source() override {
+                    if (source.is_valid()) {
+                        nanobind::gil_scoped_acquire held;
+                        source.reset();
+                    }
+                }
+
+                auto bucket_of_size(std::size_t size) -> tcspc::bucket<T> override {
+                    nanobind::gil_scoped_acquire held;
+                    nanobind::object obj = source.attr("bucket_of_size")(size);
+                    auto arr = nanobind::cast<nanobind::ndarray<
+                        T, nanobind::ndim<1>, nanobind::c_contig,
+                        nanobind::device::cpu>>(obj);
+                    if (arr.size() < size)
+                        throw std::runtime_error(
+                            "PyBucketSource.bucket_of_size returned a buffer "
+                            "smaller than the requested size");
+                    auto const spn = std::span<T>(arr.data(), size);
+                    return tcspc::bucket<T>(spn, py_buffer_storage(std::move(obj)));
+                }
+            };"""),
+        ),
+        (),
+    )
+
+
 def _output_processor(
     typename: _CppTypeName, event_types: Iterable[EventType]
 ) -> _ModuleCodeFragment:
@@ -237,6 +295,7 @@ def _processor_creation(
 
     return (
         _pysink()
+        + _py_bucket_source_support()
         + _input_processor(input_proc_type, input_event_types)
         + output_processors
         + _ModuleCodeFragment(

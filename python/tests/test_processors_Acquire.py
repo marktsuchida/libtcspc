@@ -12,7 +12,7 @@ from libtcspc._acquisition_readers import (
     PyAcquisitionReader,
     StuckReader,
 )
-from libtcspc._bucket_sources import RecyclingBucketSource
+from libtcspc._bucket_sources import PyBucketSource, RecyclingBucketSource
 from libtcspc._codegen import _CodeGenerationContext
 from libtcspc._compile import CompiledGraph
 from libtcspc._cpp_utils import (
@@ -24,7 +24,7 @@ from libtcspc._cpp_utils import (
     _uint32_type,
 )
 from libtcspc._events import BucketEvent
-from libtcspc._execute import ExecutionContext
+from libtcspc._execute import ExecutionContext, PySink
 from libtcspc._param import Param
 from libtcspc._processors import Acquire, SinkAll
 from typing_extensions import override
@@ -197,3 +197,107 @@ def test_Acquire_buffer_provider_params_propagate():
     node = Acquire(IntEvent, NullReader(IntEvent), bp, None, AccessTag("acq"))
     params = node._parameters()
     assert (Param("mbc"), _size_type) in params
+
+
+class SequenceReader(PyAcquisitionReader):
+    """Reader that emits a fixed sequence of reads, then end of stream."""
+
+    def __init__(self, reads: list[list[int]]) -> None:
+        self._reads = [np.asarray(r, dtype=np.uint32) for r in reads]
+
+    @override
+    def __call__(self, buffer: np.ndarray):
+        if not self._reads:
+            return None
+        data = self._reads.pop(0)
+        buffer[: data.size] = data
+        return int(data.size)
+
+
+class MockBucketSource(PyBucketSource):
+    def __init__(self) -> None:
+        self.buffers: list[np.ndarray] = []
+
+    @override
+    def bucket_of_size(self, size: int):
+        b = np.empty(size, dtype=np.uint32)
+        self.buffers.append(b)
+        return b
+
+
+class RecordingSink(PySink):
+    def __init__(self) -> None:
+        self.received: list[np.ndarray] = []
+
+    @override
+    def handle(self, event) -> None:
+        self.received.append(event)
+
+    @override
+    def flush(self) -> None:
+        pass
+
+
+def _run_acquire_with_py_bucket_source(
+    reader: PyAcquisitionReader,
+    source: PyBucketSource,
+    sink: PySink,
+    batch_size: int,
+) -> None:
+    g = Graph()
+    g.add_node(
+        "acq",
+        Acquire(
+            _NamedEvent(_uint32_type),
+            Param("reader"),
+            Param("bs"),
+            batch_size,
+            AccessTag("acq"),
+        ),
+    )
+    cg = CompiledGraph(g)
+    ctx = ExecutionContext(cg, {"reader": reader, "bs": source}, (sink,))
+    ctx.flush()
+
+
+def test_Acquire_PyBucketSource_zero_copy_views():
+    source = MockBucketSource()
+    sink = RecordingSink()
+    # Second read is partial (length 2 < batch_size 4) to exercise trimming.
+    reader = SequenceReader([[10, 11, 12, 13], [20, 21]])
+    _run_acquire_with_py_bucket_source(reader, source, sink, batch_size=4)
+
+    assert len(sink.received) == 2
+    assert list(sink.received[0]) == [10, 11, 12, 13]
+    assert list(sink.received[1]) == [20, 21]
+
+    # Each delivered array is a zero-copy view of a buffer the source handed
+    # out (not a copy).
+    for arr in sink.received:
+        assert any(np.shares_memory(arr, b) for b in source.buffers)
+
+
+def test_Acquire_PyBucketSource_view_reflects_source_buffer_mutation():
+    source = MockBucketSource()
+    sink = RecordingSink()
+    reader = SequenceReader([[1, 2, 3, 4]])
+    _run_acquire_with_py_bucket_source(reader, source, sink, batch_size=4)
+
+    assert len(sink.received) == 1
+    received = sink.received[0]
+    backing = next(b for b in source.buffers if np.shares_memory(received, b))
+    backing[0] = 999
+    assert received[0] == 999
+
+
+def test_Acquire_PyBucketSource_too_small_buffer_raises():
+    class TooSmallBucketSource(PyBucketSource):
+        @override
+        def bucket_of_size(self, size: int):
+            return np.empty(max(size - 1, 0), dtype=np.uint32)
+
+    source = TooSmallBucketSource()
+    sink = RecordingSink()
+    reader = SequenceReader([[1, 2, 3, 4]])
+    with pytest.raises(RuntimeError):
+        _run_acquire_with_py_bucket_source(reader, source, sink, batch_size=4)

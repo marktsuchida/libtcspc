@@ -12,6 +12,7 @@ from ._acquisition_readers import (
 from ._bucket_sources import (
     BucketSource,
     NewDeleteBucketSource,
+    PyBucketSource,
     RecyclingBucketSource,
 )
 from ._compile import CompiledGraph
@@ -163,6 +164,7 @@ __all__ = [
     "PQT3PicoHarp300Event",
     "Param",
     "PyAcquisitionReader",
+    "PyBucketSource",
     "PySink",
     "ReadBinaryStream",
     "RebaseAbstime",

@@ -10,7 +10,12 @@ from typing_extensions import override
 from . import _access, _cpp_utils, _events, _streams
 from ._access import AccessTag, _AccessSpec
 from ._acquisition_readers import AcquisitionReader, PyAcquisitionReader
-from ._bucket_sources import BucketSource, RecyclingBucketSource
+from ._bucket_sources import (
+    BucketSource,
+    PyBucketSource,
+    RecyclingBucketSource,
+    _PyBucketSource,
+)
 from ._codegen import _CodeGenerationContext
 from ._cpp_utils import (
     _CppExpression,
@@ -61,8 +66,11 @@ def _make_type_list(event_types: Iterable[EventType]) -> _CppTypeName:
 
 
 def _bucket_source_or_default(
-    event_type: EventType, arg: BucketSource | None
+    event_type: EventType,
+    arg: BucketSource | Param[PyBucketSource] | None,
 ) -> BucketSource:
+    if isinstance(arg, Param):
+        return _PyBucketSource(event_type, arg)
     return arg if arg is not None else RecyclingBucketSource(event_type)
 
 
@@ -185,9 +193,11 @@ class Acquire(_RelayNode):
         to use a built-in C++-side reader, or wrap a Python callable in
         a runtime `Param` of type `PyAcquisitionReader` to bind it at
         execution time.
-    buffer_provider : BucketSource or None
+    buffer_provider : BucketSource or Param[PyBucketSource] or None
         Source of buckets used to hold each batch. If ``None``, a default
-        `RecyclingBucketSource` for ``event_type`` is used.
+        `RecyclingBucketSource` for ``event_type`` is used. A runtime
+        `Param` of type `PyBucketSource` binds a Python bucket source at
+        execution time.
     batch_size : int or Param[int] or None
         Number of elements requested per read. Smaller values reduce
         latency; larger values reduce per-read overhead. Defaults to
@@ -224,7 +234,7 @@ class Acquire(_RelayNode):
         self,
         event_type: EventType,
         reader: AcquisitionReader | Param[PyAcquisitionReader],
-        buffer_provider: BucketSource | None,
+        buffer_provider: BucketSource | Param[PyBucketSource] | None,
         batch_size: int | Param[int] | None,
         access_tag: _access.AccessTag,
     ) -> None:
@@ -327,9 +337,11 @@ class Batch(_RelayNode):
     event_type : EventType
         The event type to batch. The input event set must consist only of
         this type.
-    buffer_provider : BucketSource or None
+    buffer_provider : BucketSource or Param[PyBucketSource] or None
         Source of buckets used to hold each batch. If ``None``, a default
-        `RecyclingBucketSource` for ``event_type`` is used.
+        `RecyclingBucketSource` for ``event_type`` is used. A runtime
+        `Param` of type `PyBucketSource` binds a Python bucket source at
+        execution time.
     batch_size : int or Param[int] or None
         Number of events to collect in each bucket. Defaults to ``65536``.
 
@@ -352,7 +364,7 @@ class Batch(_RelayNode):
         self,
         event_type: EventType,
         *,
-        buffer_provider: BucketSource | None = None,
+        buffer_provider: BucketSource | Param[PyBucketSource] | None = None,
         batch_size: int | Param[int] | None = None,
     ) -> None:
         self._event_type = event_type
@@ -410,9 +422,11 @@ class BatchFromBytes(_RelayNode):
     event_type : EventType
         Element type of the output buckets. Must be a trivially-typed
         event.
-    buffer_provider : BucketSource or None
+    buffer_provider : BucketSource or Param[PyBucketSource] or None
         Source of buckets used to hold each output batch. If ``None``, a
-        default `RecyclingBucketSource` for ``event_type`` is used.
+        default `RecyclingBucketSource` for ``event_type`` is used. A runtime
+        `Param` of type `PyBucketSource` binds a Python bucket source at
+        execution time.
 
     Notes
     -----
@@ -438,7 +452,7 @@ class BatchFromBytes(_RelayNode):
         self,
         event_type: EventType,
         *,
-        buffer_provider: BucketSource | None = None,
+        buffer_provider: BucketSource | Param[PyBucketSource] | None = None,
     ) -> None:
         self._event_type = event_type
         self._byte_event_type = _events.BucketEvent(_events._ByteEvent())
@@ -2244,10 +2258,12 @@ class ReadBinaryStream(_RelayNode):
         Maximum number of bytes to read. ``None`` (the default) means
         read to end of stream. Should be a multiple of the size of
         ``event_type`` for clean truncation.
-    buffer_provider : BucketSource or None
+    buffer_provider : BucketSource or Param[PyBucketSource] or None
         Source of buckets used to hold each read. If ``None``, a default
         `RecyclingBucketSource` for ``event_type`` is used. Must be able
-        to circulate at least 2 buckets without blocking.
+        to circulate at least 2 buckets without blocking. A runtime
+        `Param` of type `PyBucketSource` binds a Python bucket source at
+        execution time.
     read_granularity_bytes : int or Param[int]
         Minimum read size in bytes. Defaults to ``65536``. Larger reads
         have less per-byte overhead but may pollute CPU caches; try
@@ -2275,7 +2291,7 @@ class ReadBinaryStream(_RelayNode):
         event_type: EventType,
         stream: _streams.InputStream,
         max_length: int | Param[int] | None = None,
-        buffer_provider: BucketSource | None = None,
+        buffer_provider: BucketSource | Param[PyBucketSource] | None = None,
         read_granularity_bytes: int | Param[int] = 65536,
     ):
         self._event_type = event_type

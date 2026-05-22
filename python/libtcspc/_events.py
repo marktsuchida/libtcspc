@@ -123,10 +123,9 @@ class BucketEvent(EventType):
     ) -> _CppClassScopeDefs:
         elem_cpp_type = self._element_type._cpp_type_name()
         # We take ownership of the bucket if we can; otherwise we make a copy;
-        # in all cases we emit a writable ndarray that owns the memory.
-        # TODO Once we support Python bucket sources, buckets from them should
-        # be handled specially to eliminate copying (and set read-only as
-        # appropriate).
+        # in all cases we emit a writable ndarray that owns the memory. Buckets
+        # backed by a Python buffer (py_buffer_storage) are emitted as a
+        # zero-copy view co-owning the original Python object.
         return _CppClassScopeDefs(f"""\
         void emit_span_copy(std::span<{elem_cpp_type} const> spn) {{
             using elem_type = {elem_cpp_type};
@@ -152,13 +151,25 @@ class BucketEvent(EventType):
 
         void handle(tcspc::bucket<{elem_cpp_type}> &&event) {{
             using elem_type = {elem_cpp_type};
-            using bkt_type = tcspc::bucket<elem_type>;
-            auto *bkt = new bkt_type(std::move(event));
-            nanobind::gil_scoped_acquire held;
-            auto deleter = nanobind::capsule(bkt,
-                [](void *p) noexcept {{ delete static_cast<bkt_type *>(p); }});
-            {pysink}->handle(nanobind::ndarray<elem_type, nanobind::numpy>(
-                bkt->data(), {{bkt->size()}}, deleter).cast());
+            if (event.check_storage_type<py_buffer_storage>()) {{
+                auto const n = event.size();
+                auto *const ptr = event.data();
+                auto storage =
+                    event.extract_storage<py_buffer_storage>();
+                nanobind::gil_scoped_acquire held;
+                nanobind::object owner = std::move(storage.obj);
+                {pysink}->handle(
+                    nanobind::ndarray<elem_type, nanobind::numpy>(
+                        ptr, {{n}}, owner).cast());
+            }} else {{
+                using bkt_type = tcspc::bucket<elem_type>;
+                auto *bkt = new bkt_type(std::move(event));
+                nanobind::gil_scoped_acquire held;
+                auto deleter = nanobind::capsule(bkt,
+                    [](void *p) noexcept {{ delete static_cast<bkt_type *>(p); }});
+                {pysink}->handle(nanobind::ndarray<elem_type, nanobind::numpy>(
+                    bkt->data(), {{bkt->size()}}, deleter).cast());
+            }}
         }}
         """)
 

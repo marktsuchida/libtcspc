@@ -30,6 +30,7 @@ to handle input to and output from the graph.
 
    libtcspc.PySink
    libtcspc.PyAcquisitionReader
+   libtcspc.PyBucketSource
 ```
 
 ## Runtime access

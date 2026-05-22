@@ -7,6 +7,7 @@ from _test_helpers import _NamedEvent
 from libtcspc._bucket_sources import (
     NewDeleteBucketSource,
     RecyclingBucketSource,
+    _PyBucketSource,
 )
 from libtcspc._codegen import _CodeGenerationContext
 from libtcspc._cpp_utils import (
@@ -70,3 +71,19 @@ def test_RecyclingBucketSource_max_bucket_count_negative_is_error():
 
     with pytest.raises(ValueError):
         RecyclingBucketSource(IntEvent, max_bucket_count=Param("mbc", -1))
+
+
+def test_PyBucketSource_parameters():
+    bs = _PyBucketSource(IntEvent, Param("bs"))
+    params = bs._parameters()
+    assert len(params) == 1
+    assert params[0] == (Param("bs"), _CppTypeName("nanobind::object"))
+
+
+def test_PyBucketSource_cpp_expression():
+    bs = _PyBucketSource(IntEvent, Param("bs"))
+    assert (
+        bs._cpp_expression(gencontext)
+        == f"std::make_shared<py_buffer_bucket_source<int>>("
+        f"params.{_identifier_from_string('bs')})"
+    )
