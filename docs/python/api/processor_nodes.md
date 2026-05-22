@@ -75,6 +75,20 @@ Processors for splitting the processing graph.
    libtcspc.Route
 ```
 
+## Merging processors
+
+Processors for combining several branches of the processing graph.
+
+```{eval-rst}
+.. autosummary::
+   :toctree: generated
+   :nosignatures:
+
+   libtcspc.Merge
+   libtcspc.MergeN
+   libtcspc.MergeNUnsorted
+```
+
 ## Input and output processors
 
 Processors for reading and writing data from/to file-like streams.

@@ -18,10 +18,13 @@ from ._node import Node
 from ._param import Param, _Parameterized
 
 
-@dataclass
+@dataclass(eq=False)
 class _Edge:
     # Edge connecting nodes in a Graph. This is a private type because it only
-    # has meaning in the internal context of a Graph.
+    # has meaning in the internal context of a Graph. Identity equality
+    # (eq=False) is required: parallel edges between the same producer and
+    # consumer have identical fields but are distinct connections, and codegen
+    # locates an edge's port via list.index().
     producer_id: int
     consumer_id: int
     event_set: tuple[EventType, ...]  # Updated when an upstream edge is added
