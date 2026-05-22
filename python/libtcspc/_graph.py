@@ -6,7 +6,7 @@ import itertools
 from collections.abc import Callable, Collection, Mapping, Sequence
 from copy import deepcopy
 from dataclasses import dataclass
-from typing import final
+from typing import Any, final
 
 from typing_extensions import override
 
@@ -597,6 +597,15 @@ class Graph:
 
         return params
 
+    def _param_encoders(self) -> dict[str, Callable[[Any], Any]]:
+        encoders: dict[str, Callable[[Any], Any]] = {}
+
+        def visit(node_name: str, node: _Parameterized):
+            encoders.update(node._param_encoders())
+
+        self.visit_nodes(visit)
+        return encoders
+
     def _accesses(self) -> Sequence[tuple[AccessTag, type[_AccessSpec]]]:
         accesses: list[tuple[AccessTag, type[_AccessSpec]]] = []
 
@@ -679,6 +688,10 @@ class Subgraph(Node):
     @override
     def _parameters(self) -> Sequence[tuple[Param, _CppTypeName]]:
         return self._graph._parameters()
+
+    @override
+    def _param_encoders(self) -> dict[str, Callable[[Any], Any]]:
+        return self._graph._param_encoders()
 
     @override
     def _accesses(self) -> Sequence[tuple[AccessTag, type[_AccessSpec]]]:

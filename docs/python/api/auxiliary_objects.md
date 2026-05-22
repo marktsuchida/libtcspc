@@ -85,6 +85,21 @@ data.
    libtcspc.RecyclingBucketSource
 ```
 
+## Routers
+
+Routers select the destination output port for events handled by the
+{py:class}`~libtcspc.Route` processor.
+
+```{eval-rst}
+.. autosummary::
+   :toctree: generated
+   :nosignatures:
+
+   libtcspc.Router
+   libtcspc.ChannelRouter
+   libtcspc.NullRouter
+```
+
 ## Input streams
 
 Inputs to source processor nodes such as

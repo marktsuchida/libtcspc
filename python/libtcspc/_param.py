@@ -3,9 +3,9 @@
 # SPDX-License-Identifier: MIT
 
 from abc import ABC
-from collections.abc import Sequence
+from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
-from typing import Generic, TypeVar
+from typing import Any, Generic, TypeVar
 
 from libtcspc._cpp_utils import (
     _CppIdentifier,
@@ -82,3 +82,21 @@ class _Parameterized(ABC):  # noqa: B024
             Parameters (name and optional default value) and their C++ types.
         """
         return ()
+
+    def _param_encoders(self) -> Mapping[str, Callable[[Any], Any]]:
+        """
+        Return functions that transform user-supplied parameter values before
+        they are bound to the generated ``Params`` struct.
+
+        The returned mapping is keyed by `Param` name (globally unique within a
+        graph). At execution time, a parameter present in the map has its value
+        passed through the function before being set on the struct field;
+        parameters absent from the map are bound unchanged.
+
+        Returns
+        -------
+        Mapping[str, Callable[[Any], Any]]
+            Map of `Param` name to value-encoding function. Default: empty (no
+            encoders).
+        """
+        return {}

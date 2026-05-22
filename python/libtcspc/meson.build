@@ -31,6 +31,7 @@ py_sources = files(
     '_numeric_traits.py',
     '_param.py',
     '_processors.py',
+    '_routers.py',
     '_streams.py',
     'py.typed',
     '_odext/__init__.py',

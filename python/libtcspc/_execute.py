@@ -70,16 +70,19 @@ def _build_execution(
     downstreams: Sequence[PySink] | None,
 ) -> tuple[Any, Any, Any, set[str]]:
     given_args = {} if arguments is None else arguments.copy()
+    encoders = compiled_graph._param_encoders
     args: dict[_CppIdentifier, Any] = {}
     for param in compiled_graph.parameters():
         if param.name in given_args:
-            args[param._cpp_identifier()] = given_args.pop(param.name)
+            raw = given_args.pop(param.name)
+        elif param.default_value is None:
+            raise ValueError(
+                f"No argument given for required parameter {param.name}"
+            )
         else:
-            if param.default_value is None:
-                raise ValueError(
-                    f"No argument given for required parameter {param.name}"
-                )
-            args[param._cpp_identifier()] = param.default_value
+            raw = param.default_value
+        enc = encoders.get(param.name)
+        args[param._cpp_identifier()] = enc(raw) if enc is not None else raw
     for name, _ in given_args.items():
         raise ValueError(f"Unknown argument: {name}")
 

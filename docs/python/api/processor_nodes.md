@@ -72,6 +72,7 @@ Processors for splitting the processing graph.
    :nosignatures:
 
    libtcspc.Broadcast
+   libtcspc.Route
 ```
 
 ## Input and output processors

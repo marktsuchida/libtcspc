@@ -5,7 +5,7 @@
 import functools
 import itertools
 import threading
-from collections.abc import Iterable, Sequence
+from collections.abc import Callable, Iterable, Mapping, Sequence
 from pathlib import Path
 from typing import Any
 
@@ -328,6 +328,7 @@ def _graph_module_code(
             "nanobind/stl/array.h",
             "nanobind/stl/function.h",
             "nanobind/stl/optional.h",
+            "nanobind/stl/pair.h",
             "nanobind/stl/shared_ptr.h",
             "nanobind/stl/string.h",
         ),
@@ -419,7 +420,12 @@ _build_lock = threading.Lock()
 
 def _compile_graph_module(
     graph: Graph, input_event_types: Sequence[EventType]
-) -> tuple[Any, tuple[Param, ...], tuple[AccessTag, ...]]:
+) -> tuple[
+    Any,
+    tuple[Param, ...],
+    Mapping[str, Callable[[Any], Any]],
+    tuple[AccessTag, ...],
+]:
     # Serialize builds, at least for now.
     with _build_lock:
         mod_name = f"libtcspc_graph_{next(_mod_ctr)}"
@@ -428,8 +434,9 @@ def _compile_graph_module(
         mod_path = _builder.build()
         mod = _importer.import_module(mod_name, mod_path, ok_to_move=True)
         params = tuple(param for param, typ in graph._parameters())
+        encoders = graph._param_encoders()
         accesses = tuple(tag for tag, typ in graph._accesses())
-        return mod, params, accesses
+        return mod, params, encoders, accesses
 
 
 class CompiledGraph:
@@ -450,9 +457,12 @@ class CompiledGraph:
     def __init__(
         self, graph: Graph, input_event_types: Sequence[EventType] = ()
     ) -> None:
-        self._mod, self._params, self._access_tags = _compile_graph_module(
-            graph, input_event_types
-        )
+        (
+            self._mod,
+            self._params,
+            self._param_encoders,
+            self._access_tags,
+        ) = _compile_graph_module(graph, input_event_types)
 
     def parameters(self) -> tuple[Param, ...]:
         return self._params

@@ -75,6 +75,7 @@ from ._processors import (
     RecoverOrder,
     RegulateTimeReached,
     RemoveTimeCorrelation,
+    Route,
     Select,
     SelectAll,
     SelectExcept,
@@ -87,6 +88,11 @@ from ._processors import (
     UnbatchFromBytes,
     ViewAsBytes,
     read_events_from_binary_file,
+)
+from ._routers import (
+    ChannelRouter,
+    NullRouter,
+    Router,
 )
 from ._streams import BinaryFileInputStream, InputStream
 from ._version import __version__ as __version__
@@ -108,6 +114,7 @@ __all__ = [
     "BucketEvent",
     "BucketSource",
     "BulkCountsEvent",
+    "ChannelRouter",
     "CheckAlternating",
     "CheckMonotonic",
     "CompiledGraph",
@@ -140,6 +147,7 @@ __all__ = [
     "NewDeleteBucketSource",
     "Node",
     "NullReader",
+    "NullRouter",
     "NumericTraits",
     "PQT2GenericEvent",
     "PQT2HydraHarpV1Event",
@@ -156,6 +164,8 @@ __all__ = [
     "RecyclingBucketSource",
     "RegulateTimeReached",
     "RemoveTimeCorrelation",
+    "Route",
+    "Router",
     "Select",
     "SelectAll",
     "SelectExcept",
