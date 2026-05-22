@@ -391,7 +391,7 @@ class Graph:
             return node.graph().node(split[1])
         return node
 
-    def visit_nodes(self, visitor: Callable[[str, Node], None]) -> None:
+    def _visit_nodes(self, visitor: Callable[[str, Node], None]) -> None:
         """
         Invoke ``visitor`` on every node in the graph.
 
@@ -579,7 +579,7 @@ class Graph:
         def visit(node_name: str, node: _Parameterized):
             params.extend(node._parameters())
 
-        self.visit_nodes(visit)
+        self._visit_nodes(visit)
 
         if len(params) > len(set(p.name for p, _ in params)):
             param_nodes: dict[str, list[str]] = {}
@@ -588,7 +588,7 @@ class Graph:
                 for param, _ in node._parameters():
                     param_nodes.setdefault(param.name, []).append(node_name)
 
-            self.visit_nodes(visit)
+            self._visit_nodes(visit)
 
             for param, node_names in (
                 (p, ns) for p, ns in param_nodes.items() if len(ns) > 1
@@ -606,7 +606,7 @@ class Graph:
         def visit(node_name: str, node: _Parameterized):
             encoders.update(node._param_encoders())
 
-        self.visit_nodes(visit)
+        self._visit_nodes(visit)
         return encoders
 
     def _accesses(self) -> Sequence[tuple[AccessTag, type[_AccessSpec]]]:
@@ -615,7 +615,7 @@ class Graph:
         def visit(node_name: str, node: _Accessible):
             accesses.extend(node._accesses())
 
-        self.visit_nodes(visit)
+        self._visit_nodes(visit)
 
         if len(accesses) > len(set(t for t, _ in accesses)):
             tag_nodes: dict[AccessTag, list[str]] = {}
@@ -624,7 +624,7 @@ class Graph:
                 for tag, _ in node._accesses():
                     tag_nodes.setdefault(tag, []).append(node_name)
 
-            self.visit_nodes(visit)
+            self._visit_nodes(visit)
 
             for tag, node_names in (
                 (t, ns) for t, ns in tag_nodes.items() if len(ns) > 1

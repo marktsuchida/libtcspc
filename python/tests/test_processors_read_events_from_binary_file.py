@@ -43,7 +43,7 @@ def test_stop_normally_on_error_True_uses_Stop():
         elif isinstance(node, StopWithError):
             found["stop_with_error"] = True
 
-    sg.graph().visit_nodes(visit)
+    sg.graph()._visit_nodes(visit)
     assert found["stop"]
     assert not found["stop_with_error"]
 
@@ -58,7 +58,7 @@ def test_stop_normally_on_error_False_uses_StopWithError():
         elif isinstance(node, StopWithError):
             found["stop_with_error"] = True
 
-    sg.graph().visit_nodes(visit)
+    sg.graph()._visit_nodes(visit)
     assert found["stop_with_error"]
     assert not found["stop"]
 
