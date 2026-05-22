@@ -186,6 +186,14 @@ def _py_bucket_source_support() -> _ModuleCodeFragment:
                         obj.reset();
                     }
                 }
+            };
+
+            // Copyable wrapper holding a shared_ptr to the (move-only,
+            // GIL-safe) py_buffer_storage. Copying it is an atomic refcount
+            // bump with no Python C-API access, so it is safe to copy with the
+            // GIL released (as shared_view_of does).
+            struct py_buffer_shared_storage {
+                std::shared_ptr<py_buffer_storage> ref;
             };"""),
             _CppNamespaceScopeDefs("""\
             template <typename T>
@@ -214,7 +222,21 @@ def _py_bucket_source_support() -> _ModuleCodeFragment:
                             "PyBucketSource.bucket_of_size returned a buffer "
                             "smaller than the requested size");
                     auto const spn = std::span<T>(arr.data(), size);
-                    return tcspc::bucket<T>(spn, py_buffer_storage(std::move(obj)));
+                    return tcspc::bucket<T>(spn, py_buffer_shared_storage{
+                        std::make_shared<py_buffer_storage>(std::move(obj))});
+                }
+
+                [[nodiscard]] auto supports_shared_views() const noexcept
+                    -> bool override {
+                    return true;
+                }
+
+                [[nodiscard]] auto shared_view_of(tcspc::bucket<T> const &bkt)
+                    -> tcspc::bucket<T const> override {
+                    auto storage =
+                        bkt.template storage<py_buffer_shared_storage>();
+                    return tcspc::bucket<T const>(std::span<T const>(bkt),
+                                                  std::move(storage));
                 }
             };"""),
         ),

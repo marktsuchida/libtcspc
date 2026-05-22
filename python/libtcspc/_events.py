@@ -124,8 +124,9 @@ class BucketEvent(EventType):
         elem_cpp_type = self._element_type._cpp_type_name()
         # We take ownership of the bucket if we can; otherwise we make a copy;
         # in all cases we emit a writable ndarray that owns the memory. Buckets
-        # backed by a Python buffer (py_buffer_storage) are emitted as a
-        # zero-copy view co-owning the original Python object.
+        # backed by a Python buffer (py_buffer_shared_storage) are emitted as a
+        # zero-copy view co-owning the original Python object; shared (const)
+        # views are emitted as a read-only zero-copy view.
         return _CppClassScopeDefs(f"""\
         void emit_span_copy(std::span<{elem_cpp_type} const> spn) {{
             using elem_type = {elem_cpp_type};
@@ -140,8 +141,21 @@ class BucketEvent(EventType):
         }}
 
         void handle(tcspc::bucket<{elem_cpp_type} const> const &event) {{
-            emit_span_copy(
-                std::span<{elem_cpp_type} const>(event.begin(), event.end()));
+            using elem_type = {elem_cpp_type};
+            if (event.check_storage_type<py_buffer_shared_storage>()) {{
+                auto const n = event.size();
+                auto const *ptr = event.data();
+                auto const &storage =
+                    event.storage<py_buffer_shared_storage>();
+                nanobind::gil_scoped_acquire held;
+                nanobind::object owner = storage.ref->obj;
+                {pysink}->handle(
+                    nanobind::ndarray<elem_type const, nanobind::numpy>(
+                        ptr, {{n}}, owner).cast());
+            }} else {{
+                emit_span_copy(
+                    std::span<elem_type const>(event.begin(), event.end()));
+            }}
         }}
 
         void handle(tcspc::bucket<{elem_cpp_type}> const &event) {{
@@ -151,13 +165,13 @@ class BucketEvent(EventType):
 
         void handle(tcspc::bucket<{elem_cpp_type}> &&event) {{
             using elem_type = {elem_cpp_type};
-            if (event.check_storage_type<py_buffer_storage>()) {{
+            if (event.check_storage_type<py_buffer_shared_storage>()) {{
                 auto const n = event.size();
                 auto *const ptr = event.data();
                 auto storage =
-                    event.extract_storage<py_buffer_storage>();
+                    event.extract_storage<py_buffer_shared_storage>();
                 nanobind::gil_scoped_acquire held;
-                nanobind::object owner = std::move(storage.obj);
+                nanobind::object owner = storage.ref->obj;
                 {pysink}->handle(
                     nanobind::ndarray<elem_type, nanobind::numpy>(
                         ptr, {{n}}, owner).cast());

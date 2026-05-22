@@ -87,3 +87,12 @@ def test_PyBucketSource_cpp_expression():
         == f"std::make_shared<py_buffer_bucket_source<int>>("
         f"params.{_identifier_from_string('bs')})"
     )
+
+
+def test_py_bucket_source_support_emits_sharable_overrides():
+    from libtcspc._compile import _py_bucket_source_support
+
+    src = "\n".join(_py_bucket_source_support().namespace_scope_defs)
+    assert "supports_shared_views()" in src
+    assert "return true;" in src
+    assert "shared_view_of(" in src

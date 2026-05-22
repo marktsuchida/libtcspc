@@ -179,8 +179,10 @@ class PyBucketSource(ABC):
     valid length. The buffer is kept alive for as long as the bucket (or the
     sink's view of it) exists.
 
-    Shared views are not supported with a `PyBucketSource`, so it cannot be
-    used with processors that require a sharable bucket source.
+    A `PyBucketSource` supports shared views and may be used with processors
+    that require a sharable bucket source. A read-only shared view delivered to
+    a `PySink` is likewise zero-copy: a read-only NumPy array co-owning the
+    same buffer.
 
     See Also
     --------
@@ -209,8 +211,9 @@ class PyBucketSource(ABC):
         Notes
         -----
         An implementation must not retain or reuse a buffer it has already
-        returned while the corresponding bucket may still be in flight;
-        doing so corrupts data still being processed.
+        returned while the corresponding bucket, or any shared view derived
+        from it, may still be in flight; doing so corrupts data still being
+        processed.
         """
         ...
 
