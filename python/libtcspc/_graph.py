@@ -168,8 +168,14 @@ class Graph:
         name: str | None,
         node: Node,
         *,
-        upstream: tuple[str, str] | str | None = None,
-        downstream: tuple[str, str] | str | None = None,
+        upstream: tuple[str, str]
+        | str
+        | Mapping[str, tuple[str, str] | str]
+        | None = None,
+        downstream: tuple[str, str]
+        | str
+        | Mapping[str, tuple[str, str] | str]
+        | None = None,
     ) -> str:
         """
         Add a node to the graph, optionally connecting it to an existing node.
@@ -183,16 +189,24 @@ class Graph:
             making the name unique.
         node : Node
             The node to add.
-        upstream : tuple[str, str] or str or None
+        upstream : tuple[str, str] or str or Mapping or None
             If given, connect ``upstream`` to the new node's ``"input"``
             port. A ``(node_name, port_name)`` tuple selects an explicit
             output port; a bare node name defaults to its ``"output"``
-            port.
-        downstream : tuple[str, str] or str or None
+            port. May also be a mapping from this node's **input** port
+            names to connection sources, connecting several inputs at
+            once; each value follows the same shorthand (bare name →
+            that node's ``"output"`` port, or an explicit
+            ``(name, port)`` tuple).
+        downstream : tuple[str, str] or str or Mapping or None
             If given, connect the new node's ``"output"`` port to
             ``downstream``. A ``(node_name, port_name)`` tuple selects
             an explicit input port; a bare node name defaults to its
-            ``"input"`` port.
+            ``"input"`` port. May also be a mapping from this node's
+            **output** port names to connection targets, connecting
+            several outputs at once; each value follows the same
+            shorthand (bare name → that node's ``"input"`` port, or an
+            explicit ``(name, port)`` tuple).
 
         Returns
         -------
@@ -206,6 +220,12 @@ class Graph:
             If ``name`` already exists in the graph, if a requested
             connection's port types do not match, or if a requested
             connection would introduce a cycle.
+
+        Notes
+        -----
+        If any requested connection fails, the node and all connections
+        made by the call are removed and the exception propagates,
+        leaving the graph unchanged.
         """
         if name is None:
             node_name = self._unique_node_name(type(node).__name__)
@@ -221,12 +241,61 @@ class Graph:
         self._input_edge_index[node_id] = [None] * len(node.inputs())
         self._output_edge_index[node_id] = [None] * len(node.outputs())
 
-        if upstream is not None:
-            self.connect(upstream, (node_name, "input"))
-        if downstream is not None:
-            self.connect((node_name, "output"), downstream)
+        upstream_conns: list[tuple[tuple[str, str] | str, str]]
+        if isinstance(upstream, Mapping):
+            upstream_conns = [
+                (src, in_port) for in_port, src in upstream.items()
+            ]
+        elif upstream is None:
+            upstream_conns = []
+        else:
+            upstream_conns = [(upstream, "input")]
+
+        downstream_conns: list[tuple[str, tuple[str, str] | str]]
+        if isinstance(downstream, Mapping):
+            downstream_conns = [
+                (out_port, dst) for out_port, dst in downstream.items()
+            ]
+        elif downstream is None:
+            downstream_conns = []
+        else:
+            downstream_conns = [("output", downstream)]
+
+        try:
+            for src, in_port in upstream_conns:
+                self.connect(src, (node_name, in_port))
+            for out_port, dst in downstream_conns:
+                self.connect((node_name, out_port), dst)
+        except:
+            self._remove_last_node()
+            raise
 
         return node_name
+
+    def _remove_last_node(self) -> None:
+        # Remove the most recently added node and any edges incident to it.
+        # Only the last node can be removed without shifting other node ids
+        # (which are indices into the append-only self._nodes).
+        node_id = len(self._nodes) - 1
+        for edge in self._input_edge_index[node_id]:
+            if edge is not None:
+                slots = self._output_edge_index[edge.producer_id]
+                for i, e in enumerate(slots):
+                    if e is edge:
+                        slots[i] = None
+                        break
+        for edge in self._output_edge_index[node_id]:
+            if edge is not None:
+                slots = self._input_edge_index[edge.consumer_id]
+                for i, e in enumerate(slots):
+                    if e is edge:
+                        slots[i] = None
+                        break
+        del self._input_edge_index[node_id]
+        del self._output_edge_index[node_id]
+        self._topo_sorted_node_ids.remove(node_id)
+        name, _ = self._nodes.pop()
+        del self._node_name_index[name]
 
     def connect(
         self, producer: tuple[str, str] | str, consumer: tuple[str, str] | str

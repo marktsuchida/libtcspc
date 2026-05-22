@@ -362,6 +362,123 @@ def test_add_chain_middle_sink_rejected(mocker):
         g.add_chain([n0, sink, n2])
 
 
+def test_add_node_upstream_dict(mocker):
+    g = Graph()
+    p0 = make_simple_node(mocker)
+    p1 = make_simple_node(mocker)
+    g.add_node("p0", p0)
+    g.add_node("p1", p1)
+
+    node = _TestNode(input=["in0", "in1"])
+    node._map_event_sets = mocker.MagicMock(return_value=((IntEvent,),))  # type: ignore
+    assert (
+        g.add_node(
+            "n",
+            node,
+            upstream={"in0": ("p0", "output"), "in1": "p1"},
+        )
+        == "n"
+    )
+    # Both input ports of "n" are connected (no longer open).
+    assert ("n", "in0") not in g.inputs()
+    assert ("n", "in1") not in g.inputs()
+    # Both producers' outputs are now connected.
+    assert ("p0", "output") not in g.outputs()
+    assert ("p1", "output") not in g.outputs()
+
+
+def test_add_node_downstream_dict(mocker):
+    g = Graph()
+    c0 = make_simple_node(mocker)
+    c1 = make_simple_node(mocker)
+    g.add_node("c0", c0)
+    g.add_node("c1", c1)
+
+    node = _TestNode(output=["out0", "out1"])
+    node._map_event_sets = mocker.MagicMock(  # type: ignore
+        return_value=((IntEvent,), (IntEvent,))
+    )
+    assert (
+        g.add_node("n", node, downstream={"out0": "c0", "out1": "c1"}) == "n"
+    )
+    # Both output ports of "n" are connected (no longer open).
+    assert ("n", "out0") not in g.outputs()
+    assert ("n", "out1") not in g.outputs()
+    # Both consumers' inputs are now connected.
+    assert ("c0", "input") not in g.inputs()
+    assert ("c1", "input") not in g.inputs()
+
+
+def test_add_node_both_dicts(mocker):
+    g = Graph()
+    p0 = make_simple_node(mocker)
+    p1 = make_simple_node(mocker)
+    c0 = make_simple_node(mocker)
+    c1 = make_simple_node(mocker)
+    for name, n in (("p0", p0), ("p1", p1), ("c0", c0), ("c1", c1)):
+        g.add_node(name, n)
+
+    node = _TestNode(input=["in0", "in1"], output=["out0", "out1"])
+    node._map_event_sets = mocker.MagicMock(  # type: ignore
+        return_value=((IntEvent,), (IntEvent,))
+    )
+    g.add_node(
+        "n",
+        node,
+        upstream={"in0": "p0", "in1": "p1"},
+        downstream={"out0": "c0", "out1": "c1"},
+    )
+    assert ("n", "in0") not in g.inputs()
+    assert ("n", "in1") not in g.inputs()
+    assert ("n", "out0") not in g.outputs()
+    assert ("n", "out1") not in g.outputs()
+    assert ("p0", "output") not in g.outputs()
+    assert ("p1", "output") not in g.outputs()
+    assert ("c0", "input") not in g.inputs()
+    assert ("c1", "input") not in g.inputs()
+
+
+def test_add_node_scalar_forms_still_work(mocker):
+    g = Graph()
+    n0 = make_simple_node(mocker)
+    g.add_node("n0", n0)
+    n1 = make_simple_node(mocker)
+    g.add_node("n1", n1, upstream="n0")
+    # n0's output is connected to n1's input via bare-name shorthand.
+    assert ("n0", "output") not in g.outputs()
+    assert ("n1", "input") not in g.inputs()
+
+    src = _TestNode(output=["out0"])
+    src._map_event_sets = mocker.MagicMock(return_value=((IntEvent,),))  # type: ignore
+    g.add_node("src", src)
+    n2 = make_simple_node(mocker)
+    g.add_node("n2", n2, upstream=("src", "out0"))
+    assert ("src", "out0") not in g.outputs()
+    assert ("n2", "input") not in g.inputs()
+
+
+def test_add_node_atomic_rollback(mocker):
+    g = Graph()
+    c0 = make_simple_node(mocker)
+    g.add_node("c0", c0)
+
+    node = _TestNode(output=["out0", "out1"])
+    node._map_event_sets = mocker.MagicMock(  # type: ignore
+        return_value=((IntEvent,), (IntEvent,))
+    )
+    with pytest.raises(ValueError):
+        # The second connection targets "c0"'s input, already consumed by the
+        # first, so it fails after the first edge was made.
+        g.add_node("n", node, downstream={"out0": "c0", "out1": "c0"})
+
+    # The node was not added.
+    with pytest.raises(KeyError):
+        g.node("n")
+    assert "n" not in [name for name, _ in g._nodes]
+    # The partially-made connection was rolled back: c0's input is free again.
+    assert ("c0", "input") in g.inputs()
+
+
 def test_empty_add_chain_connects_upstream_downstream(mocker):
     g = Graph()
     n0 = _TestNode()
