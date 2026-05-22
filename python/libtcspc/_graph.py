@@ -418,38 +418,48 @@ class Graph:
         -----
         If ``nodes`` is empty and both ``upstream`` and ``downstream``
         are given, ``upstream`` is connected directly to ``downstream``.
+
+        If any requested connection or node fails, all nodes and
+        connections made by the call are removed and the exception
+        propagates, leaving the graph unchanged.
         """
-        nodes_list = list(nodes)
-        last_index = len(nodes_list) - 1
-        for i, node in enumerate(nodes_list):
-            nm, n = node if isinstance(node, tuple) else (None, node)
-            n_in, n_out = len(n.inputs()), len(n.outputs())
-            is_last = i == last_index
-            if is_last:
-                if n_in != 1 or n_out > 1:
-                    raise ValueError(
-                        "Graph.add_chain() last node must have exactly one "
-                        "input and zero or one outputs; "
-                        f"got {n_in} input(s) and {n_out} output(s)"
-                    )
-                if n_out == 0 and downstream is not None:
-                    raise ValueError(
-                        "Graph.add_chain() last node has zero outputs; "
-                        "downstream= must not be given"
-                    )
-            else:
-                if n_in != 1 or n_out != 1:
-                    position = "first" if i == 0 else "middle"
-                    raise ValueError(
-                        f"Graph.add_chain() {position} node must have "
-                        "exactly one input and one output; "
-                        f"got {n_in} input(s) and {n_out} output(s)"
-                    )
-            upstream = self.add_node(nm, n, upstream=upstream)
-            if is_last and n_out == 0:
-                upstream = None
-        if upstream is not None and downstream is not None:
-            self.connect(upstream, downstream)
+        initial_node_count = len(self._nodes)
+        try:
+            nodes_list = list(nodes)
+            last_index = len(nodes_list) - 1
+            for i, node in enumerate(nodes_list):
+                nm, n = node if isinstance(node, tuple) else (None, node)
+                n_in, n_out = len(n.inputs()), len(n.outputs())
+                is_last = i == last_index
+                if is_last:
+                    if n_in != 1 or n_out > 1:
+                        raise ValueError(
+                            "Graph.add_chain() last node must have exactly "
+                            "one input and zero or one outputs; "
+                            f"got {n_in} input(s) and {n_out} output(s)"
+                        )
+                    if n_out == 0 and downstream is not None:
+                        raise ValueError(
+                            "Graph.add_chain() last node has zero outputs; "
+                            "downstream= must not be given"
+                        )
+                else:
+                    if n_in != 1 or n_out != 1:
+                        position = "first" if i == 0 else "middle"
+                        raise ValueError(
+                            f"Graph.add_chain() {position} node must have "
+                            "exactly one input and one output; "
+                            f"got {n_in} input(s) and {n_out} output(s)"
+                        )
+                upstream = self.add_node(nm, n, upstream=upstream)
+                if is_last and n_out == 0:
+                    upstream = None
+            if upstream is not None and downstream is not None:
+                self.connect(upstream, downstream)
+        except:
+            while len(self._nodes) > initial_node_count:
+                self._remove_last_node()
+            raise
 
     def node(self, name: str) -> Node:
         split = name.split("/", 1)

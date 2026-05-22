@@ -362,6 +362,67 @@ def test_add_chain_middle_sink_rejected(mocker):
         g.add_chain([n0, sink, n2])
 
 
+def test_add_chain_shape_validation_rolls_back(mocker):
+    g = Graph()
+    n0 = make_simple_node(mocker)
+    n1 = make_simple_node(mocker)
+    # The last node has the wrong input count; validation fires after "a" and
+    # "b" have already been added in the loop.
+    bad = _TestNode(input=["in0", "in1"])
+    with pytest.raises(ValueError):
+        g.add_chain([("a", n0), ("b", n1), ("bad", bad)])
+    # All chain nodes were rolled back; the graph is empty.
+    assert [name for name, _ in g._nodes] == []
+    with pytest.raises(KeyError):
+        g.node("a")
+    with pytest.raises(KeyError):
+        g.node("b")
+
+
+def test_add_chain_connection_failure_rolls_back(mocker):
+    g = Graph()
+    n0 = make_simple_node(mocker)
+    n1 = _TestNode()
+    # Connecting "a" -> "b" fails when "b"'s event-set mapping rejects its
+    # input, by which point "a" has already been added.
+    n1._map_event_sets = mocker.MagicMock(  # type: ignore
+        side_effect=ValueError("incompatible event set")
+    )
+    n2 = make_simple_node(mocker)
+    with pytest.raises(ValueError):
+        g.add_chain([("a", n0), ("b", n1), ("c", n2)])
+    # "b" was rolled back by add_node; "a" was rolled back by add_chain.
+    assert [name for name, _ in g._nodes] == []
+    with pytest.raises(KeyError):
+        g.node("a")
+    with pytest.raises(KeyError):
+        g.node("c")
+
+
+def test_add_chain_final_connect_failure_rolls_back(mocker):
+    g = Graph()
+    n0 = make_simple_node(mocker)
+    n1 = make_simple_node(mocker)
+    n2 = make_simple_node(mocker)
+    g.add_chain([("a", n0), ("b", n1), ("c", n2)])
+
+    d = make_simple_node(mocker)
+    e = make_simple_node(mocker)
+    with pytest.raises(ValueError):
+        # The trailing connect e -> a would form a cycle a->b->c->d->e->a.
+        g.add_chain([("d", d), ("e", e)], upstream="c", downstream="a")
+    # "d" and "e" were rolled back; the original chain is intact.
+    assert [name for name, _ in g._nodes] == ["a", "b", "c"]
+    with pytest.raises(KeyError):
+        g.node("d")
+    with pytest.raises(KeyError):
+        g.node("e")
+    # The connections attempted by the failed call were rolled back: "a"'s
+    # input and "c"'s output are open again.
+    assert ("a", "input") in g.inputs()
+    assert ("c", "output") in g.outputs()
+
+
 def test_add_node_upstream_dict(mocker):
     g = Graph()
     p0 = make_simple_node(mocker)
