@@ -127,6 +127,8 @@ Processors for acquiring data from hardware devices.
 
    libtcspc.Acquire
    libtcspc.AcquireFullBuckets
+   libtcspc.CopyToBuckets
+   libtcspc.CopyToFullBuckets
 ```
 
 ## Decoding processors
