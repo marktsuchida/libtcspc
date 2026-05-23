@@ -21,7 +21,6 @@
 #include <catch2/generators/catch_generators.hpp>
 
 #include <span>
-#include <utility>
 #include <vector>
 
 namespace tcspc {
@@ -33,39 +32,37 @@ using misc_event = empty_test_event<0>;
 } // namespace
 
 TEST_CASE("type constraints: copy_to_buckets") {
-    using proc_type =
-        decltype(copy_to_buckets<int>(new_delete_bucket_source<int>::create(),
-                                      sink_only<bucket<int>, misc_event>()));
+    using proc_type = decltype(copy_to_buckets<std::span<int const>>(
+        new_delete_bucket_source<int>::create(),
+        sink_only<bucket<int>, misc_event>()));
     STATIC_CHECK(processor<proc_type, std::span<int const>, misc_event>);
     STATIC_CHECK_FALSE(handler_for<proc_type, int>);
 
-    STATIC_CHECK(handler_for<proc_type, std::span<int>>);
-    STATIC_CHECK(handler_for<proc_type, bucket<int>>);
-    STATIC_CHECK(handler_for<proc_type, bucket<int const>>);
-    STATIC_CHECK(handler_for<proc_type, std::vector<int>>);
+    // Only the exact DataEvent type is data; a mutable span is a different
+    // type and is not handled by the downstream.
+    STATIC_CHECK_FALSE(handler_for<proc_type, std::span<int>>);
 }
 
 TEST_CASE("type constraints: copy_to_full_buckets") {
-    using proc_type = decltype(copy_to_full_buckets<int>(
+    using proc_type = decltype(copy_to_full_buckets<std::span<int const>>(
         sharable_new_delete_bucket_source<int>::create(),
         arg::batch_size<>{64}, sink_only<bucket<int const>, misc_event>(),
         sink_only<bucket<int>>()));
     STATIC_CHECK(processor<proc_type, std::span<int const>, misc_event>);
     STATIC_CHECK_FALSE(handler_for<proc_type, int>);
 
-    STATIC_CHECK(handler_for<proc_type, std::span<int>>);
-    STATIC_CHECK(handler_for<proc_type, bucket<int>>);
-    STATIC_CHECK(handler_for<proc_type, bucket<int const>>);
-    STATIC_CHECK(handler_for<proc_type, std::vector<int>>);
+    // Only the exact DataEvent type is data; a mutable span is a different
+    // type and is not handled by the downstream.
+    STATIC_CHECK_FALSE(handler_for<proc_type, std::span<int>>);
 }
 
 TEST_CASE("introspect: copy_to_buckets") {
-    check_introspect_simple_processor(copy_to_buckets<int>(
+    check_introspect_simple_processor(copy_to_buckets<std::span<int const>>(
         new_delete_bucket_source<int>::create(), sink_all()));
 }
 
 TEST_CASE("introspect: copy_to_full_buckets") {
-    auto const ctfb = copy_to_full_buckets<int>(
+    auto const ctfb = copy_to_full_buckets<std::span<int const>>(
         sharable_new_delete_bucket_source<int>::create(),
         arg::batch_size<>{64}, sink_all(), sink_all());
     auto const info = check_introspect_node_info(ctfb);
@@ -89,26 +86,25 @@ TEST_CASE("copy_to_buckets") {
         new_delete_bucket_source<int>::create(), 42);
     auto in = feed_input(
         valcat,
-        copy_to_buckets<int>(
+        copy_to_buckets<std::span<int const>, int>(
             bsource, capture_output<type_list<bucket<int>, misc_event>>(
                          ctx->tracker<capture_output_access>("out"))));
     in.require_output_checked(ctx, "out");
     auto out = capture_output_checker<type_list<bucket<int>, misc_event>>(
         valcat, ctx, "out");
 
-    SECTION("non-span event is passed through") {
+    SECTION("non-data event is passed through") {
         in.handle(misc_event{});
         CHECK(out.check(emitted_as::same_as_fed, misc_event{}));
     }
 
-    SECTION("span is copied, even if given as bucket handled by downstream") {
+    SECTION("span is copied") {
         CHECK(bsource->bucket_count() == 0);
-        auto input = test_bucket({42, 43, 44});
-        auto const *p_input = input.data();
-        in.handle(std::move(input));
+        auto const data = std::vector{42, 43, 44};
+        in.handle(std::span<int const>(data));
         auto const output = out.pop<bucket<int>>(emitted_as::always_rvalue);
         CHECK(output == test_bucket({42, 43, 44}));
-        CHECK(output.data() != p_input);
+        CHECK(output.data() != data.data());
         CHECK(bsource->bucket_count() == 1);
     }
 
@@ -122,7 +118,7 @@ TEST_CASE("copy_to_full_buckets") {
     auto bsource = test_bucket_source<int>::create(
         sharable_new_delete_bucket_source<int>::create(), 42);
     auto in = feed_input(
-        valcat, copy_to_full_buckets<int>(
+        valcat, copy_to_full_buckets<std::vector<int>, int>(
                     bsource, arg::batch_size<>{4},
                     capture_output<type_list<bucket<int const>, misc_event>>(
                         ctx->tracker<capture_output_access>("live")),
@@ -136,7 +132,7 @@ TEST_CASE("copy_to_full_buckets") {
     auto batch_out =
         capture_output_checker<type_list<bucket<int>>>(valcat, ctx, "batch");
 
-    SECTION("non-span event is passed through only to live downstream") {
+    SECTION("non-data event is passed through only to live downstream") {
         in.handle(misc_event{});
         CHECK(live_out.check(emitted_as::same_as_fed, misc_event{}));
         in.flush();
@@ -145,7 +141,7 @@ TEST_CASE("copy_to_full_buckets") {
     }
 
     SECTION("empty read emits nothing") {
-        in.handle(std::span<int>());
+        in.handle(std::vector<int>());
         in.flush();
         CHECK(live_out.check_flushed());
         CHECK(batch_out.check_flushed());
@@ -153,7 +149,7 @@ TEST_CASE("copy_to_full_buckets") {
     }
 
     SECTION("complete batch is emitted to both downstreams") {
-        in.handle(test_bucket({42, 43, 44, 45}));
+        in.handle(std::vector{42, 43, 44, 45});
         CHECK(live_out.check(test_bucket<int const>({42, 43, 44, 45})));
         CHECK(batch_out.check(test_bucket({42, 43, 44, 45})));
 
@@ -165,7 +161,7 @@ TEST_CASE("copy_to_full_buckets") {
         }
 
         SECTION("2-batch span") {
-            in.handle(test_bucket({46, 47, 48, 49, 50, 51, 52, 53}));
+            in.handle(std::vector{46, 47, 48, 49, 50, 51, 52, 53});
             CHECK(live_out.check(test_bucket<int const>({46, 47, 48, 49})));
             CHECK(live_out.check(test_bucket<int const>({50, 51, 52, 53})));
             CHECK(batch_out.check(test_bucket({46, 47, 48, 49})));
@@ -178,7 +174,7 @@ TEST_CASE("copy_to_full_buckets") {
     }
 
     SECTION("partial batch is emitted only to live downstream") {
-        in.handle(test_bucket({42, 43, 44}));
+        in.handle(std::vector{42, 43, 44});
         CHECK(live_out.check(test_bucket<int const>({42, 43, 44})));
 
         SECTION("end partial") {
@@ -190,7 +186,7 @@ TEST_CASE("copy_to_full_buckets") {
         }
 
         SECTION("batch completed exactly") {
-            in.handle(test_bucket({45}));
+            in.handle(std::vector{45});
             CHECK(live_out.check(emitted_as::always_rvalue,
                                  test_bucket<int const>({45})));
             CHECK(batch_out.check(emitted_as::always_rvalue,
@@ -202,7 +198,7 @@ TEST_CASE("copy_to_full_buckets") {
         }
 
         SECTION("2 batches spanned, both partial") {
-            in.handle(test_bucket({45, 46}));
+            in.handle(std::vector{45, 46});
             CHECK(live_out.check(emitted_as::always_rvalue,
                                  test_bucket<int const>({45})));
             CHECK(live_out.check(emitted_as::always_rvalue,
@@ -217,7 +213,7 @@ TEST_CASE("copy_to_full_buckets") {
         }
 
         SECTION("3 batches spanned") {
-            in.handle(test_bucket({45, 46, 47, 48, 49, 50}));
+            in.handle(std::vector{45, 46, 47, 48, 49, 50});
             CHECK(live_out.check(emitted_as::always_rvalue,
                                  test_bucket<int const>({45})));
             CHECK(live_out.check(emitted_as::always_rvalue,
@@ -236,9 +232,9 @@ TEST_CASE("copy_to_full_buckets") {
         }
     }
 
-    SECTION("live downstream throws on non-span event") {
+    SECTION("live downstream throws on passed-through event") {
         // Test with partial batch pending to ensure it is flushed.
-        in.handle(test_bucket({42, 43}));
+        in.handle(std::vector{42, 43});
         CHECK(live_out.check(emitted_as::always_rvalue,
                              test_bucket<int const>({42, 43})));
 
@@ -274,14 +270,14 @@ TEST_CASE("copy_to_full_buckets") {
         }
     }
 
-    SECTION("live downstream throws on bucket") {
-        in.handle(test_bucket({42, 43}));
+    SECTION("live downstream throws on data") {
+        in.handle(std::vector{42, 43});
         CHECK(live_out.check(emitted_as::always_rvalue,
                              test_bucket<int const>({42, 43})));
 
         SECTION("end of processing") {
             live_out.throw_end_processing_on_next();
-            CHECK_THROWS_AS(in.handle(test_bucket({44})), end_of_processing);
+            CHECK_THROWS_AS(in.handle(std::vector{44}), end_of_processing);
             CHECK(batch_out.check(emitted_as::always_rvalue,
                                   test_bucket({42, 43, 44})));
             CHECK(batch_out.check_flushed());
@@ -291,14 +287,13 @@ TEST_CASE("copy_to_full_buckets") {
             live_out.throw_end_processing_on_next();
             SECTION("end of processing") {
                 batch_out.throw_end_processing_on_flush();
-                CHECK_THROWS_AS(in.handle(test_bucket({44})),
-                                end_of_processing);
+                CHECK_THROWS_AS(in.handle(std::vector{44}), end_of_processing);
                 CHECK(batch_out.check(emitted_as::always_rvalue,
                                       test_bucket({42, 43, 44})));
             }
             SECTION("error") {
                 batch_out.throw_error_on_flush();
-                CHECK_THROWS_AS(in.handle(test_bucket({44})), test_error);
+                CHECK_THROWS_AS(in.handle(std::vector{44}), test_error);
                 CHECK(batch_out.check(emitted_as::always_rvalue,
                                       test_bucket({42, 43, 44})));
                 CHECK(batch_out.check_not_flushed());
@@ -307,13 +302,13 @@ TEST_CASE("copy_to_full_buckets") {
 
         SECTION("error") {
             live_out.throw_error_on_next();
-            CHECK_THROWS_AS(in.handle(test_bucket({44})), test_error);
+            CHECK_THROWS_AS(in.handle(std::vector{44}), test_error);
             CHECK(batch_out.check_not_flushed());
         }
     }
 
     SECTION("live downstream throws on flush") {
-        in.handle(test_bucket({42, 43}));
+        in.handle(std::vector{42, 43});
         CHECK(live_out.check(emitted_as::always_rvalue,
                              test_bucket<int const>({42, 43})));
 
@@ -352,7 +347,7 @@ TEST_CASE("copy_to_full_buckets") {
     SECTION("batch downstream throws on bucket") {
         SECTION("end of processing") {
             batch_out.throw_end_processing_on_next();
-            CHECK_THROWS_AS(in.handle(test_bucket({42, 43, 44, 45})),
+            CHECK_THROWS_AS(in.handle(std::vector{42, 43, 44, 45}),
                             end_of_processing);
             CHECK(live_out.check(emitted_as::always_rvalue,
                                  test_bucket<int const>({42, 43, 44, 45})));
@@ -363,7 +358,7 @@ TEST_CASE("copy_to_full_buckets") {
             batch_out.throw_end_processing_on_next();
             SECTION("end of processing") {
                 live_out.throw_end_processing_on_flush();
-                CHECK_THROWS_AS(in.handle(test_bucket({42, 43, 44, 45})),
+                CHECK_THROWS_AS(in.handle(std::vector{42, 43, 44, 45}),
                                 end_of_processing);
                 CHECK(
                     live_out.check(emitted_as::always_rvalue,
@@ -371,7 +366,7 @@ TEST_CASE("copy_to_full_buckets") {
             }
             SECTION("error") {
                 live_out.throw_error_on_flush();
-                CHECK_THROWS_AS(in.handle(test_bucket({42, 43, 44, 45})),
+                CHECK_THROWS_AS(in.handle(std::vector{42, 43, 44, 45}),
                                 test_error);
                 CHECK(
                     live_out.check(emitted_as::always_rvalue,
@@ -382,7 +377,7 @@ TEST_CASE("copy_to_full_buckets") {
 
         SECTION("error") {
             batch_out.throw_error_on_next();
-            CHECK_THROWS_AS(in.handle(test_bucket({42, 43, 44, 45})),
+            CHECK_THROWS_AS(in.handle(std::vector{42, 43, 44, 45}),
                             test_error);
             CHECK(live_out.check(emitted_as::always_rvalue,
                                  test_bucket<int const>({42, 43, 44, 45})));

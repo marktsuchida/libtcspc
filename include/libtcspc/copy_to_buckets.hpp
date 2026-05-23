@@ -15,6 +15,7 @@
 #include "processor.hpp"
 
 #include <algorithm>
+#include <concepts>
 #include <cstddef>
 #include <exception>
 #include <memory>
@@ -27,8 +28,9 @@ namespace tcspc {
 
 namespace internal {
 
-template <typename T, typename Downstream>
-    requires processor<Downstream, bucket<T>>
+template <typename DataEvent, typename T, typename Downstream>
+    requires std::is_constructible_v<std::span<T const>, DataEvent const &> &&
+             processor<Downstream, bucket<T>>
 class copy_to_buckets {
     std::shared_ptr<bucket_source<T>> bsource;
 
@@ -53,8 +55,7 @@ class copy_to_buckets {
     }
 
     template <typename Event>
-        requires std::is_constructible_v<std::span<T const>,
-                                         std::remove_cvref_t<Event>>
+        requires std::same_as<std::remove_cvref_t<Event>, DataEvent>
     void handle(Event &&event) {
         auto const event_span = std::span<T const>(event);
         auto b = bsource->bucket_of_size(event_span.size());
@@ -63,8 +64,7 @@ class copy_to_buckets {
     }
 
     template <typename Event>
-        requires(not std::is_constructible_v<std::span<T const>,
-                                             std::remove_cvref_t<Event>> and
+        requires(not std::same_as<std::remove_cvref_t<Event>, DataEvent> and
                  handler_for<Downstream, std::remove_cvref_t<Event>>)
     void handle(Event &&event) {
         downstream.handle(std::forward<Event>(event));
@@ -73,8 +73,10 @@ class copy_to_buckets {
     void flush() { downstream.flush(); }
 };
 
-template <typename T, typename LiveDownstream, typename BatchDownstream>
-    requires processor<LiveDownstream, bucket<T const>> &&
+template <typename DataEvent, typename T, typename LiveDownstream,
+          typename BatchDownstream>
+    requires std::is_constructible_v<std::span<T const>, DataEvent const &> &&
+             processor<LiveDownstream, bucket<T const>> &&
              processor<BatchDownstream, bucket<T>>
 class copy_to_full_buckets {
     std::shared_ptr<bucket_source<T>> bsource;
@@ -151,8 +153,7 @@ class copy_to_full_buckets {
     }
 
     template <typename Event>
-        requires std::is_constructible_v<std::span<T const>,
-                                         std::remove_cvref_t<Event>>
+        requires std::same_as<std::remove_cvref_t<Event>, DataEvent>
     void handle(Event &&event) {
         auto src = std::span<T const>(event);
         while (not src.empty()) {
@@ -175,8 +176,7 @@ class copy_to_full_buckets {
     }
 
     template <typename Event>
-        requires(not std::is_constructible_v<std::span<T const>,
-                                             std::remove_cvref_t<Event>> and
+        requires(not std::same_as<std::remove_cvref_t<Event>, DataEvent> and
                  handler_for<LiveDownstream, std::remove_cvref_t<Event>>)
     void handle(Event &&event) {
         try {
@@ -211,12 +211,15 @@ class copy_to_full_buckets {
  * which the driver API calls our callback with acquired data) as a data source
  * for libtcspc that can be buffered.
  *
- * The contents of events explicitly convertible to `std::span<T const>` are
- * copied to `bucket<T>` (of variable size) obtained from the given \p
- * buffer_provider.
+ * The contents of events of type \p DataEvent are copied to `bucket<T>` (of
+ * variable size) obtained from the given \p buffer_provider.
  *
- * Events other than those explicitly convertible to `std::span<T const>` are
- * passed through. This can be used to transmit out-of-band timing events.
+ * Events of all other types are passed through. This can be used to transmit
+ * out-of-band timing events.
+ *
+ * \tparam DataEvent the event type carrying the bulk data to copy into buckets
+ * (e.g. `std::span<T const>`); must be constructible-to-`std::span<T const>`.
+ * Only this exact type is treated as data.
  *
  * \tparam T the element type of the data (usually a byte or integer type)
  *
@@ -229,16 +232,15 @@ class copy_to_full_buckets {
  * \return processor
  *
  * \par Events handled
- * - Contiguous container or span of `T const`: copy to a `tcspc::bucket<T>` of
- *   matching size and emit
+ * - `DataEvent`: copy to a `tcspc::bucket<T>` of matching size and emit
  * - All other types: pass through without action
  * - Flush: pass through without action
  */
-template <typename T, typename Downstream>
+template <typename DataEvent, typename T, typename Downstream>
 auto copy_to_buckets(std::shared_ptr<bucket_source<T>> buffer_provider,
                      Downstream downstream) {
-    return internal::copy_to_buckets<T, Downstream>(std::move(buffer_provider),
-                                                    std::move(downstream));
+    return internal::copy_to_buckets<DataEvent, T, Downstream>(
+        std::move(buffer_provider), std::move(downstream));
 }
 
 /**
@@ -252,8 +254,8 @@ auto copy_to_buckets(std::shared_ptr<bucket_source<T>> buffer_provider,
  * which the driver API calls our callback with acquired data) as a data source
  * for libtcspc that can be buffered.
  *
- * The contents of events explicitly convertible to `std::span<T const>` are
- * copied to fixed-size buckets.
+ * The contents of events of type \p DataEvent are copied to fixed-size
+ * buckets.
  *
  * The processor attaches two downstream processors. The \p live_downstream
  * receives newly copied data as soon as it is available, but in the form of a
@@ -265,10 +267,13 @@ auto copy_to_buckets(std::shared_ptr<bucket_source<T>> buffer_provider,
  *
  * The two streams share the underlying bucket storage.
  *
- * Events other than those explicitly convertible to `std::span<T const>` are
- * passed through only to the \p live_downstream. Thus, their order relative to
- * the data batches is preserved. This can be used to transmit out-of-band
- * timing events.
+ * Events of all other types are passed through only to the \p live_downstream.
+ * Thus, their order relative to the data batches is preserved. This can be
+ * used to transmit out-of-band timing events.
+ *
+ * \tparam DataEvent the event type carrying the bulk data to copy into buckets
+ * (e.g. `std::span<T const>`); must be constructible-to-`std::span<T const>`.
+ * Only this exact type is treated as data.
  *
  * \tparam T the element type of the data (usually a byte or integer type)
  *
@@ -291,20 +296,22 @@ auto copy_to_buckets(std::shared_ptr<bucket_source<T>> buffer_provider,
  * \return processor
  *
  * \par Events handled
- * - Contiguous container or span of `T const`: copy into successive
- *   `tcspc::bucket<T>`s of size `batch_size`, emitting the copied portion to
- *   `live_downstream` as (rvalue) `tcspc::bucket<T const>` and any full
- *   buckets to `batch_downstream` as (rvalue) `tcspc::bucket<T>`.
+ * - `DataEvent`: copy into successive `tcspc::bucket<T>`s of size
+ * `batch_size`, emitting the copied portion to `live_downstream` as (rvalue)
+ *   `tcspc::bucket<T const>` and any full buckets to `batch_downstream` as
+ *   (rvalue) `tcspc::bucket<T>`.
  * - All other types: pass through without action
  * - Flush: emit any pending non-full bucket to `batch_downstream`; pass
  *   through
  */
-template <typename T, typename LiveDownstream, typename BatchDownstream>
+template <typename DataEvent, typename T, typename LiveDownstream,
+          typename BatchDownstream>
 auto copy_to_full_buckets(std::shared_ptr<bucket_source<T>> buffer_provider,
                           arg::batch_size<std::size_t> batch_size,
                           LiveDownstream live_downstream,
                           BatchDownstream batch_downstream) {
-    return internal::copy_to_full_buckets<T, LiveDownstream, BatchDownstream>(
+    return internal::copy_to_full_buckets<DataEvent, T, LiveDownstream,
+                                          BatchDownstream>(
         std::move(buffer_provider), batch_size, std::move(live_downstream),
         std::move(batch_downstream));
 }
