@@ -84,10 +84,17 @@ class BucketEvent(EventType):
     to a contiguous storage region. Moving a bucket transfers ownership
     of the storage; copying allocates and copies the data.
 
+    This (writable) event type cannot be used to feed bulk data into a graph
+    from Python, because sole ownership of a Python buffer cannot be
+    guaranteed. Use the read-only `ConstBucketEvent` as a graph input instead.
+
     See Also
     --------
     :cpp:`tcspc::bucket`
         The underlying C++ bucket type.
+    :py:obj:`ConstBucketEvent`
+        The read-only counterpart (``tcspc::bucket<T const>``); use this to
+        push data into a graph from Python.
     """
 
     def __init__(self, element_type: EventType) -> None:
@@ -98,24 +105,6 @@ class BucketEvent(EventType):
         return _CppTypeName(
             f"tcspc::bucket<{self._element_type._cpp_type_name()}>"
         )
-
-    @override
-    def _cpp_input_handler(
-        self, downstream: _CppIdentifier
-    ) -> _CppClassScopeDefs:
-        elem_cpp_type = self._element_type._cpp_type_name()
-        ndarray_type = _CppTypeName(
-            f"nanobind::ndarray<{elem_cpp_type} const, nanobind::device::cpu, nanobind::c_contig>"
-        )
-        return _CppClassScopeDefs(f"""\
-        void handle({ndarray_type} const &event) {{
-            // Emit bucket<T>, not bucket<T const>, but by const ref.
-            auto *const ptr = const_cast<{elem_cpp_type} *>(event.data());
-            auto const spn = std::span(ptr, event.size());
-            auto const bkt = tcspc::ad_hoc_bucket(spn);
-            {downstream}.handle(bkt);
-        }}
-        """)
 
     @override
     def _cpp_output_handlers(
@@ -208,6 +197,13 @@ class ConstBucketEvent(EventType):
     The corresponding C++ event is ``tcspc::bucket<T const>``, a movable handle
     to a contiguous storage region that is read-only and may be shared with its
     owner. This is a distinct type from `BucketEvent` (``tcspc::bucket<T>``).
+
+    This is the event type to use when feeding bulk data into a graph from
+    Python (for example, as the input to `CopyToBuckets` or
+    `CopyToFullBuckets`): a numpy array or other buffer-protocol object pushed
+    into a graph input declared as `ConstBucketEvent` is wrapped zero-copy as a
+    read-only bucket. Pushing data in as a `BucketEvent` (writable) is not
+    supported, because sole ownership of a Python buffer cannot be guaranteed.
 
     See Also
     --------

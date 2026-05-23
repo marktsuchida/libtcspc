@@ -163,16 +163,6 @@ def test_default_cpp_output_handlers_substrings():
     assert "nanobind::rv_policy::move" in code
 
 
-def test_BucketEvent_cpp_input_handler_uses_ad_hoc_bucket():
-    code = tcspc.BucketEvent(IntEvent)._cpp_input_handler(_CppIdentifier("ds"))
-    assert (
-        "nanobind::ndarray<int const, nanobind::device::cpu, nanobind::c_contig>"
-        in code
-    )
-    assert "tcspc::ad_hoc_bucket" in code
-    assert "ds.handle(bkt)" in code
-
-
 def test_BucketEvent_cpp_output_handlers_cover_three_overloads():
     code = tcspc.BucketEvent(IntEvent)._cpp_output_handlers(
         _CppIdentifier("sink")

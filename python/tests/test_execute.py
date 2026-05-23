@@ -11,7 +11,7 @@ from _test_helpers import _NamedEvent
 from libtcspc._access import AccessTag
 from libtcspc._compile import CompiledGraph
 from libtcspc._cpp_utils import _CppIdentifier, _CppTypeName, _uint8_type
-from libtcspc._events import BucketEvent
+from libtcspc._events import ConstBucketEvent
 from libtcspc._execute import EndOfProcessing, ExecutionContext, PySink
 from libtcspc._graph import Graph
 from libtcspc._param import Param
@@ -136,10 +136,11 @@ def test_execute_rejects_events_and_flush_when_expired():
 def test_execute_handles_buffer_events():
     g = Graph()
     g.add_node(
-        "a", SinkOnly(_NamedEvent(_CppTypeName("tcspc::bucket<tcspc::u8>")))
+        "a",
+        SinkOnly(_NamedEvent(_CppTypeName("tcspc::bucket<tcspc::u8 const>"))),
     )
     c = ExecutionContext(
-        CompiledGraph(g, [BucketEvent(_NamedEvent(_uint8_type))]), {}
+        CompiledGraph(g, [ConstBucketEvent(_NamedEvent(_uint8_type))]), {}
     )
     c.handle(b"")
     c.handle(b"abc")
