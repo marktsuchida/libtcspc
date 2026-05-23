@@ -23,6 +23,7 @@ are used to specify these types.
 
    libtcspc.EventType
    libtcspc.BucketEvent
+   libtcspc.ConstBucketEvent
    libtcspc.BHSPCEvent
    libtcspc.DataLostEvent
    libtcspc.MarkerEvent

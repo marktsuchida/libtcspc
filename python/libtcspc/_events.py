@@ -191,6 +191,102 @@ class BucketEvent(EventType):
         return self._element_type
 
 
+class ConstBucketEvent(EventType):
+    """Event carrying a read-only contiguous array of elements of another event type.
+
+    Emitted by sources that deliver real-time, read-only views of partial
+    buckets — for example, the ``live`` output of `AcquireFullBuckets`. The
+    view co-owns its backing storage and must not be modified.
+
+    Parameters
+    ----------
+    element_type : EventType
+        The event type of the elements stored in the bucket.
+
+    Notes
+    -----
+    The corresponding C++ event is ``tcspc::bucket<T const>``, a movable handle
+    to a contiguous storage region that is read-only and may be shared with its
+    owner. This is a distinct type from `BucketEvent` (``tcspc::bucket<T>``).
+
+    See Also
+    --------
+    :cpp:`tcspc::bucket`
+        The underlying C++ bucket type.
+    :py:obj:`BucketEvent`
+        The writable counterpart (``tcspc::bucket<T>``).
+    """
+
+    def __init__(self, element_type: EventType) -> None:
+        self._element_type = element_type
+
+    @override
+    def _cpp_type_name(self) -> _CppTypeName:
+        return _CppTypeName(
+            f"tcspc::bucket<{self._element_type._cpp_type_name()} const>"
+        )
+
+    @override
+    def _cpp_input_handler(
+        self, downstream: _CppIdentifier
+    ) -> _CppClassScopeDefs:
+        elem_cpp_type = self._element_type._cpp_type_name()
+        ndarray_type = _CppTypeName(
+            f"nanobind::ndarray<{elem_cpp_type} const, nanobind::device::cpu, nanobind::c_contig>"
+        )
+        return _CppClassScopeDefs(f"""\
+        void handle({ndarray_type} const &event) {{
+            auto const spn =
+                std::span<{elem_cpp_type} const>(event.data(), event.size());
+            {downstream}.handle(tcspc::ad_hoc_bucket(spn));
+        }}
+        """)
+
+    @override
+    def _cpp_output_handlers(
+        self, pysink: _CppIdentifier
+    ) -> _CppClassScopeDefs:
+        elem_cpp_type = self._element_type._cpp_type_name()
+        # A read-only (const) bucket is delivered as a read-only ndarray. A
+        # bucket backed by a Python buffer (py_buffer_shared_storage) is emitted
+        # as a zero-copy view co-owning the original Python object; otherwise a
+        # read-only copy is made.
+        return _CppClassScopeDefs(f"""\
+        void emit_span_copy(std::span<{elem_cpp_type} const> spn) {{
+            using elem_type = {elem_cpp_type};
+            auto *buf = new elem_type[spn.size()];
+            std::copy(spn.begin(), spn.end(), buf);
+            nanobind::gil_scoped_acquire held;
+            auto deleter = nanobind::capsule(buf,
+                [](void *p) noexcept {{ delete[] static_cast<elem_type *>(p); }});
+            {pysink}->handle(
+                nanobind::ndarray<elem_type const, nanobind::numpy>(
+                    buf, {{spn.size()}}, deleter).cast());
+        }}
+
+        void handle(tcspc::bucket<{elem_cpp_type} const> const &event) {{
+            using elem_type = {elem_cpp_type};
+            if (event.check_storage_type<py_buffer_shared_storage>()) {{
+                auto const n = event.size();
+                auto const *ptr = event.data();
+                auto const &storage =
+                    event.storage<py_buffer_shared_storage>();
+                nanobind::gil_scoped_acquire held;
+                nanobind::object owner = storage.ref->obj;
+                {pysink}->handle(
+                    nanobind::ndarray<elem_type const, nanobind::numpy>(
+                        ptr, {{n}}, owner).cast());
+            }} else {{
+                emit_span_copy(
+                    std::span<elem_type const>(event.begin(), event.end()));
+            }}
+        }}
+        """)
+
+    def element_event_type(self) -> EventType:
+        return self._element_type
+
+
 class _ByteEvent(EventType):
     """Internal placeholder for C++ ``std::byte``.
 

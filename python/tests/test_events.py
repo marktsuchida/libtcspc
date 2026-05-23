@@ -184,3 +184,53 @@ def test_BucketEvent_cpp_output_handlers_cover_three_overloads():
     assert "emit_span_copy(" in code
     assert "nanobind::capsule" in code
     assert "nanobind::gil_scoped_acquire" in code
+
+
+def test_ConstBucketEvent_cpp_type_name_wraps_element_as_const():
+    assert (
+        tcspc.ConstBucketEvent(IntEvent)._cpp_type_name()
+        == "tcspc::bucket<int const>"
+    )
+
+
+def test_ConstBucketEvent_cpp_type_name_nests():
+    assert (
+        tcspc.ConstBucketEvent(tcspc.BHSPCEvent())._cpp_type_name()
+        == "tcspc::bucket<tcspc::bh_spc_event const>"
+    )
+
+
+def test_ConstBucketEvent_element_event_type_returns_wrapped():
+    inner = tcspc.BHSPCEvent()
+    be = tcspc.ConstBucketEvent(inner)
+    assert be.element_event_type() is inner
+
+
+def test_ConstBucketEvent_is_distinct_from_BucketEvent():
+    assert tcspc.ConstBucketEvent(IntEvent) != tcspc.BucketEvent(IntEvent)
+    assert tcspc.ConstBucketEvent(IntEvent) == tcspc.ConstBucketEvent(IntEvent)
+
+
+def test_ConstBucketEvent_cpp_input_handler_uses_ad_hoc_bucket():
+    code = tcspc.ConstBucketEvent(IntEvent)._cpp_input_handler(
+        _CppIdentifier("ds")
+    )
+    assert (
+        "nanobind::ndarray<int const, nanobind::device::cpu, nanobind::c_contig>"
+        in code
+    )
+    assert "tcspc::ad_hoc_bucket" in code
+    assert "ds.handle(" in code
+
+
+def test_ConstBucketEvent_cpp_output_handlers_are_read_only():
+    code = tcspc.ConstBucketEvent(IntEvent)._cpp_output_handlers(
+        _CppIdentifier("sink")
+    )
+    assert "handle(tcspc::bucket<int const> const &event)" in code
+    assert "nanobind::ndarray<elem_type const, nanobind::numpy>" in code
+    assert "emit_span_copy(" in code
+    # Read-only delivery only: no writable ndarray and no rvalue overload.
+    assert "nanobind::ndarray<elem_type, nanobind::numpy>" not in code
+    assert "handle(tcspc::bucket<int> const &event)" not in code
+    assert "&&event" not in code

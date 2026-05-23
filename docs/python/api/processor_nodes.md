@@ -126,6 +126,7 @@ Processors for acquiring data from hardware devices.
    :nosignatures:
 
    libtcspc.Acquire
+   libtcspc.AcquireFullBuckets
 ```
 
 ## Decoding processors

@@ -23,6 +23,7 @@ from ._events import (
     BHSPCEvent,
     BucketEvent,
     BulkCountsEvent,
+    ConstBucketEvent,
     DataLostEvent,
     DetectionEvent,
     EndLostIntervalEvent,
@@ -51,6 +52,7 @@ from ._numeric_traits import NumericTraits
 from ._param import Param
 from ._processors import (
     Acquire,
+    AcquireFullBuckets,
     Batch,
     BatchFromBytes,
     Broadcast,
@@ -106,6 +108,7 @@ __all__ = [
     "AccessTag",
     "Acquire",
     "AcquireAccess",
+    "AcquireFullBuckets",
     "AcquisitionReader",
     "BHSPC600_256chEvent",
     "BHSPC600_4096chEvent",
@@ -122,6 +125,7 @@ __all__ = [
     "CheckAlternating",
     "CheckMonotonic",
     "CompiledGraph",
+    "ConstBucketEvent",
     "Count",
     "CountAccess",
     "CountDownTo",

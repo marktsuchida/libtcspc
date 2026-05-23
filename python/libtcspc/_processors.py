@@ -160,6 +160,49 @@ def read_events_from_binary_file(
     )
 
 
+def _acquisition_buffer_array_type(event_type: EventType) -> _CppTypeName:
+    return _CppTypeName(f"""\
+            nanobind::ndarray<
+                {event_type._cpp_type_name()},
+                nanobind::numpy, nanobind::device::cpu, nanobind::c_contig>""")
+
+
+def _acquisition_buffer_array_param_type(
+    event_type: EventType,
+) -> _CppTypeName:
+    return _CppTypeName(f"""\
+            decltype(std::declval<{_acquisition_buffer_array_type(event_type)}>()
+                .cast(nanobind::rv_policy::reference))""")
+
+
+def _acquisition_reader_param_type(event_type: EventType) -> _CppTypeName:
+    return _CppTypeName(
+        f"""\
+                        std::function<
+                            auto({_acquisition_buffer_array_param_type(event_type)})
+                            -> std::optional<std::size_t>>"""
+    )
+
+
+def _acquisition_reader_cpp_expression(
+    gencontext: _CodeGenerationContext,
+    reader: AcquisitionReader | Param[PyAcquisitionReader],
+    event_type: EventType,
+) -> _CppExpression:
+    if isinstance(reader, Param):
+        return _CppExpression(
+            f"""\
+                [reader={gencontext.params_varname}.{reader._cpp_identifier()}](
+                    std::span<{event_type._cpp_type_name()}> spn) {{
+                    nanobind::gil_scoped_acquire held;
+                    {_acquisition_buffer_array_type(event_type)} arr(spn.data(), {{spn.size()}});
+                    return reader(arr.cast(nanobind::rv_policy::reference));
+                }}
+                """
+        )
+    return reader._cpp_expression()
+
+
 # Note: Wrappers of C++ processors are ordered alphabetically without regard to
 # the C++ header in which they are defined.
 
@@ -257,17 +300,6 @@ class Acquire(_RelayNode):
         _check_events_subset_of(input_event_set, (), self.__class__.__name__)
         return (_events.BucketEvent(self._event_type),)
 
-    def _buffer_array_type(self) -> _CppTypeName:
-        return _CppTypeName(f"""\
-            nanobind::ndarray<
-                {self._event_type._cpp_type_name()},
-                nanobind::numpy, nanobind::device::cpu, nanobind::c_contig>""")
-
-    def _buffer_array_param_type(self) -> _CppTypeName:
-        return _CppTypeName(f"""\
-            decltype(std::declval<{self._buffer_array_type()}>()
-                .cast(nanobind::rv_policy::reference))""")
-
     @override
     def _parameters(self) -> Sequence[tuple[Param, _CppTypeName]]:
         params: list[tuple[Param, _CppTypeName]] = []
@@ -275,12 +307,7 @@ class Acquire(_RelayNode):
             params.append(
                 (
                     self._reader,
-                    _CppTypeName(
-                        f"""\
-                        std::function<
-                            auto({self._buffer_array_param_type()})
-                            -> std::optional<std::size_t>>"""
-                    ),
+                    _acquisition_reader_param_type(self._event_type),
                 )
             )
         if isinstance(self._batch_size, Param):
@@ -294,19 +321,8 @@ class Acquire(_RelayNode):
         gencontext: _CodeGenerationContext,
         downstream: _CppExpression,
     ) -> _CppExpression:
-        reader = (
-            _CppExpression(
-                f"""\
-                [reader={gencontext.params_varname}.{self._reader._cpp_identifier()}](
-                    std::span<{self._event_type._cpp_type_name()}> spn) {{
-                    nanobind::gil_scoped_acquire held;
-                    {self._buffer_array_type()} arr(spn.data(), {{spn.size()}});
-                    return reader(arr.cast(nanobind::rv_policy::reference));
-                }}
-                """
-            )
-            if isinstance(self._reader, Param)
-            else self._reader._cpp_expression()
+        reader = _acquisition_reader_cpp_expression(
+            gencontext, self._reader, self._event_type
         )
         batch_size = gencontext.size_t_expression(self._batch_size)
         return _CppExpression(
@@ -317,6 +333,162 @@ class Acquire(_RelayNode):
                 tcspc::arg::batch_size{{{batch_size}}},
                 {gencontext.tracker_expression(_CppTypeName("tcspc::acquire_access"), self._access_tag)},
                 {downstream}
+            )"""
+        )
+
+
+@final
+class AcquireFullBuckets(Node):
+    """Source processor that acquires data into fixed-size buckets while also delivering real-time read-only views.
+
+    Like `Acquire`, this plugs a pull-based data source into a libtcspc
+    processing graph: on each iteration the processor obtains an empty bucket
+    from the buffer provider, calls the reader to fill it, and collects the
+    data into fixed-size buckets. Unlike `Acquire`, it has two outputs:
+
+    - ``live``: a read-only `ConstBucketEvent` view of the data read on each
+      individual read, delivered immediately (typically used for live display).
+    - ``batch``: a full `BucketEvent` bucket emitted whenever ``batch_size``
+      elements have been collected, plus any partial final bucket on flush
+      (typically used for saving to disk).
+
+    The ``live`` views are zero-copy when the buffer provider supplies
+    shared-view-capable buckets, so they must not be modified.
+
+    The acquisition runs until the reader signals end of stream (by returning
+    ``None``), the reader raises an exception, or the acquisition is halted via
+    the `AcquireAccess` retrieved from the `ExecutionContext` using
+    ``access_tag``. Halting is asynchronous: the ``halt()`` call returns
+    immediately, but the acquisition may continue briefly. Wait for graph
+    execution to finish before tearing down resources used by the reader.
+
+    Parameters
+    ----------
+    event_type : EventType
+        Element type of the acquired data (typically a byte or integer type).
+        Each emitted bucket holds a contiguous array of this type.
+    reader : AcquisitionReader or Param[PyAcquisitionReader]
+        Object that fills supplied buffers with acquired data on each call.
+        Pass an `AcquisitionReader` instance (such as `NullReader`) to use a
+        built-in C++-side reader, or wrap a Python callable in a runtime `Param`
+        of type `PyAcquisitionReader` to bind it at execution time.
+    buffer_provider : BucketSource or Param[PyBucketSource] or None
+        Source of buckets used to hold each batch. If ``None``, a default
+        `RecyclingBucketSource` for ``event_type`` is used. A runtime `Param` of
+        type `PyBucketSource` binds a Python bucket source at execution time.
+        The buffer provider must support shared views unless the ``live`` output
+        is connected to a `SinkAll`.
+    batch_size : int or Param[int] or None
+        Number of elements collected in each full bucket. Smaller values reduce
+        latency; larger values reduce per-read overhead. Defaults to ``65536``.
+        Must be positive.
+    access_tag : AccessTag
+        Tag used to retrieve an `AcquireAccess` (which provides ``halt()``) from
+        the `ExecutionContext` at runtime.
+
+    Notes
+    -----
+    Events handled:
+
+    - This processor has no input events; it is a source.
+    - Emits `ConstBucketEvent` of ``event_type`` on the ``live`` output for each
+      non-empty read, and `BucketEvent` of ``event_type`` on the ``batch``
+      output whenever a full bucket is collected.
+    - End of input is initiated when the reader returns ``None``, whereupon both
+      downstreams are flushed (any partial bucket is emitted on ``batch``
+      first). If halted via `AcquireAccess` before end of stream, the
+      downstreams are **not** flushed and a halt exception is raised.
+
+    See Also
+    --------
+    :cpp:`tcspc::acquire_full_buckets`
+        The underlying C++ factory function.
+    :py:obj:`Acquire`
+        The single-output counterpart.
+    :py:obj:`AcquisitionReader`
+        Interface for built-in C++-side readers.
+    :py:obj:`PyAcquisitionReader`
+        Interface for Python-callable readers (used via `Param`).
+    :py:obj:`AcquireAccess`
+        Runtime access object providing ``halt()``.
+    """
+
+    def __init__(
+        self,
+        event_type: EventType,
+        reader: AcquisitionReader | Param[PyAcquisitionReader],
+        buffer_provider: BucketSource | Param[PyBucketSource] | None,
+        batch_size: int | Param[int] | None,
+        access_tag: _access.AccessTag,
+    ) -> None:
+        super().__init__(output=("live", "batch"))
+        self._event_type = event_type
+        self._reader = reader
+        self._bucket_source = _bucket_source_or_default(
+            event_type, buffer_provider
+        )
+        self._batch_size = batch_size if batch_size is not None else 65536
+        self._access_tag = access_tag
+
+    @override
+    def _accesses(self) -> Sequence[tuple[AccessTag, type[_AccessSpec]]]:
+        return ((self._access_tag, _access._AcquireAccessSpec),)
+
+    @override
+    def _map_event_sets(
+        self, input_event_sets: Sequence[Collection[EventType]]
+    ) -> tuple[tuple[EventType, ...], ...]:
+        if len(input_event_sets) != 1:
+            raise ValueError(
+                f"wrong number of inputs (1 expected, {len(input_event_sets)} found)"
+            )
+        _check_events_subset_of(
+            input_event_sets[0], (), self.__class__.__name__
+        )
+        return (
+            (_events.ConstBucketEvent(self._event_type),),
+            (_events.BucketEvent(self._event_type),),
+        )
+
+    @override
+    def _parameters(self) -> Sequence[tuple[Param, _CppTypeName]]:
+        params: list[tuple[Param, _CppTypeName]] = []
+        if isinstance(self._reader, Param):
+            params.append(
+                (
+                    self._reader,
+                    _acquisition_reader_param_type(self._event_type),
+                )
+            )
+        if isinstance(self._batch_size, Param):
+            params.append((self._batch_size, _size_type))
+        params.extend(self._bucket_source._parameters())
+        return params
+
+    @override
+    def _cpp_expression(
+        self,
+        gencontext: _CodeGenerationContext,
+        downstreams: Sequence[_CppExpression],
+    ) -> _CppExpression:
+        if len(downstreams) != 2:
+            raise ValueError(
+                f"expected 2 downstreams; found {len(downstreams)}"
+            )
+        live, batch = downstreams
+        reader = _acquisition_reader_cpp_expression(
+            gencontext, self._reader, self._event_type
+        )
+        batch_size = gencontext.size_t_expression(self._batch_size)
+        return _CppExpression(
+            f"""\
+            tcspc::acquire_full_buckets<{self._event_type._cpp_type_name()}>(
+                {reader},
+                {self._bucket_source._cpp_expression(gencontext)},
+                tcspc::arg::batch_size{{{batch_size}}},
+                {gencontext.tracker_expression(_CppTypeName("tcspc::acquire_access"), self._access_tag)},
+                {live},
+                {batch}
             )"""
         )
 
