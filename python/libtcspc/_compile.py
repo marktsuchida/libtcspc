@@ -102,6 +102,28 @@ def _param_struct(
     )
 
 
+def _event_wrappers(
+    input_event_types: Iterable[EventType],
+    output_event_sets: Iterable[Iterable[EventType]],
+    module_var: _CppIdentifier,
+) -> tuple[_ModuleCodeFragment, list[tuple[EventType, str]]]:
+    by_cpp: dict[str, EventType] = {}
+    for et in input_event_types:
+        if et._supports_value():
+            by_cpp.setdefault(str(et._cpp_type_name()), et)
+    for eset in output_event_sets:
+        for et in eset:
+            if et._supports_value():
+                by_cpp.setdefault(str(et._cpp_type_name()), et)
+    defs = tuple(
+        et._cpp_wrapper_class_def(module_var) for et in by_cpp.values()
+    )
+    correspondence = [
+        (et, str(et._cpp_wrapper_class_name())) for et in by_cpp.values()
+    ]
+    return _ModuleCodeFragment((), (), (), defs), correspondence
+
+
 # No-op wrapper to limit event types to the requested ones.
 def _input_processor(
     typename: _CppTypeName, event_types: Iterable[EventType]
@@ -441,6 +463,10 @@ def _graph_module_code(
 
         context_code = _context_type(graph._accesses(), mod_var)
 
+        wrappers, wrapper_correspondence = _event_wrappers(
+            input_event_types, output_event_types, mod_var
+        )
+
         proc_code = _processor_creation(
             graph_expr,
             genctx,
@@ -466,7 +492,7 @@ def _graph_module_code(
         (),
     )
 
-    return _module_code(
+    code = _module_code(
         module_name,
         default_includes
         + nt_struct_fragment
@@ -474,9 +500,11 @@ def _graph_module_code(
         + param_struct
         + context_code
         + proc_code
+        + wrappers
         + accessors,
         mod_var,
     )
+    return code, wrapper_correspondence
 
 
 @functools.cache
@@ -507,18 +535,24 @@ def _compile_graph_module(
     tuple[Param, ...],
     Mapping[str, Callable[[Any], Any]],
     tuple[AccessTag, ...],
+    list[tuple[EventType, Any]],
 ]:
     # Serialize builds, at least for now.
     with _build_lock:
         mod_name = f"libtcspc_graph_{next(_mod_ctr)}"
-        code = _graph_module_code(mod_name, graph, input_event_types)
+        code, wrapper_correspondence = _graph_module_code(
+            mod_name, graph, input_event_types
+        )
         _builder.set_code(code)
         mod_path = _builder.build()
         mod = _importer.import_module(mod_name, mod_path, ok_to_move=True)
         params = tuple(param for param, typ in graph._parameters())
         encoders = graph._param_encoders()
         accesses = tuple(tag for tag, typ in graph._accesses())
-        return mod, params, encoders, accesses
+        wrappers = [
+            (et, getattr(mod, name)) for et, name in wrapper_correspondence
+        ]
+        return mod, params, encoders, accesses, wrappers
 
 
 class CompiledGraph:
@@ -544,7 +578,21 @@ class CompiledGraph:
             self._params,
             self._param_encoders,
             self._access_tags,
+            wrappers,
         ) = _compile_graph_module(graph, input_event_types)
+
+        # Map wrapper pyclass -> (EventType, field names), used to convert a
+        # delivered wrapper value to an EventInstance on output.
+        self._eventtype_by_wrapper: dict[type, tuple[EventType, list[str]]] = {
+            pyclass: (et, [n for n, _ in et._fields()])
+            for et, pyclass in wrappers
+        }
+        # Map C++ type-name string -> (wrapper pyclass, field names), used to
+        # convert an EventInstance to a wrapper value on input.
+        self._wrapper_by_cpp: dict[str, tuple[type, list[str]]] = {
+            str(et._cpp_type_name()): (pyclass, [n for n, _ in et._fields()])
+            for et, pyclass in wrappers
+        }
 
     def parameters(self) -> tuple[Param, ...]:
         return self._params

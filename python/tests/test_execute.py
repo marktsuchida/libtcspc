@@ -11,11 +11,12 @@ from _test_helpers import _NamedEvent
 from libtcspc._access import AccessTag
 from libtcspc._compile import CompiledGraph
 from libtcspc._cpp_utils import _CppIdentifier, _CppTypeName, _uint8_type
-from libtcspc._events import ConstBucketEvent
+from libtcspc._events import ConstBucketEvent, DetectionEvent, EventInstance
 from libtcspc._execute import EndOfProcessing, ExecutionContext, PySink
 from libtcspc._graph import Graph
 from libtcspc._param import Param
 from libtcspc._processors import (
+    Append,
     Batch,
     Count,
     SinkAll,
@@ -184,6 +185,32 @@ class MockSink(PySink):
     @override
     def flush(self) -> None:
         self._log.append("flush()")
+
+
+@final
+class CollectingSink(PySink):
+    def __init__(self) -> None:
+        self.events: list = []
+        self.flushed = False
+
+    @override
+    def handle(self, event) -> None:
+        self.events.append(event)
+
+    @override
+    def flush(self) -> None:
+        self.flushed = True
+
+
+def test_execute_emit_event_value_as_event_instance():
+    g = Graph()
+    g.add_node("a", Append(DetectionEvent().value(abstime=7, channel=2)))
+    cg = CompiledGraph(g)
+    sink = CollectingSink()
+    ec = ExecutionContext(cg, None, (sink,))
+    ec.flush()
+    assert sink.events == [DetectionEvent().value(abstime=7, channel=2)]
+    assert isinstance(sink.events[0], EventInstance)
 
 
 def test_execute_pass_through_integers():

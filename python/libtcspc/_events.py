@@ -11,8 +11,10 @@ from . import _cpp_utils
 from ._cpp_utils import (
     _CppClassScopeDefs,
     _CppExpression,
+    _CppFunctionScopeDefs,
     _CppIdentifier,
     _CppTypeName,
+    _identifier_from_string,
 )
 from ._numeric_traits import NumericTraits
 
@@ -50,14 +52,50 @@ class EventType(ABC):
         }}
         """)
 
+    def _supports_value(self) -> bool:
+        try:
+            self._fields()
+        except TypeError:
+            return False
+        return True
+
     def _cpp_output_handlers(
         self, pysink: _CppIdentifier
     ) -> _CppClassScopeDefs:
-        raise TypeError(
-            f"event type {type(self).__name__} ({self._cpp_type_name()}) "
-            "is not supported for delivery to a Python sink. Convert the data "
-            "to a supported event type first (for example, batch or extract "
-            "it into a bucket, which is delivered as a NumPy array)."
+        if not self._supports_value():
+            raise TypeError(
+                f"event type {type(self).__name__} ({self._cpp_type_name()}) "
+                "is not supported for delivery to a Python sink. Convert the "
+                "data to a supported event type first (for example, batch or "
+                "extract it into a bucket, which is delivered as a NumPy "
+                "array)."
+            )
+        cpp = self._cpp_type_name()
+        return _CppClassScopeDefs(f"""\
+        void handle({cpp} const &event) {{
+            nanobind::gil_scoped_acquire held;
+            {pysink}->handle(nanobind::cast(event));
+        }}
+        """)
+
+    def _cpp_wrapper_class_name(self) -> _CppIdentifier:
+        return _CppIdentifier(
+            f"event_wrapper__{_identifier_from_string(self._cpp_type_name())}"
+        )
+
+    def _cpp_wrapper_class_def(
+        self, module_var: _CppIdentifier
+    ) -> _CppFunctionScopeDefs:
+        cpp = self._cpp_type_name()
+        name = self._cpp_wrapper_class_name()
+        defs = "".join(
+            f'\n    .def_rw("{fname}", &{cpp}::{fname})'
+            for fname, _ftype in self._fields()
+        )
+        return _CppFunctionScopeDefs(
+            f'nanobind::class_<{cpp}>({module_var}, "{name}", '
+            f"nanobind::is_final())\n    .def(nanobind::init<>())"
+            f"{defs};\n"
         )
 
     def _fields(self) -> list[tuple[str, _CppTypeName]]:

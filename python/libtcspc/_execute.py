@@ -12,6 +12,7 @@ from typing_extensions import override
 from ._access import AccessTag
 from ._compile import CompiledGraph
 from ._cpp_utils import _CppIdentifier
+from ._events import EventInstance
 
 
 class PySink(ABC):
@@ -92,6 +93,8 @@ def _build_execution(
     for cpp_identifier, value in args.items():
         setattr(arg_struct, cpp_identifier, value)
 
+    wrapper_to_event = compiled_graph._eventtype_by_wrapper
+
     # Bridge from our common PySink to the compiled module's PySink:
     @final
     class PySinkAdapter(compiled_graph._mod.PySink):  # type: ignore
@@ -101,6 +104,12 @@ def _build_execution(
 
         @override
         def handle(self, event):
+            conv = wrapper_to_event.get(type(event))
+            if conv is not None:
+                event_type, field_names = conv
+                event = EventInstance(
+                    event_type, {n: getattr(event, n) for n in field_names}
+                )
             self._sink.handle(event)
 
         @override

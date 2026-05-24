@@ -13,6 +13,7 @@ from libtcspc._cpp_utils import (
     _uint32_type,
     _uint64_type,
 )
+from libtcspc._events import DetectionEvent
 from libtcspc._execute import ExecutionContext
 from libtcspc._graph import Graph, Subgraph
 from libtcspc._param import Param
@@ -122,6 +123,13 @@ def test_compile_rejects_unsupported_output_event_type():
     g.add_node("r", SelectAll())
     with pytest.raises(TypeError, match="int"):
         CompiledGraph(g, (IntEvent,))
+
+
+def test_compile_registers_wrapper_for_value_event_output():
+    g = Graph()
+    g.add_node("r", SelectAll())
+    cg = CompiledGraph(g, (DetectionEvent(),))
+    assert hasattr(cg._mod, DetectionEvent()._cpp_wrapper_class_name())
 
 
 def test_compile_string_parameter():

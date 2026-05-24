@@ -378,3 +378,30 @@ def test_event_instance_eq_against_non_instance_is_false():
 def test_event_instance_repr():
     inst = tcspc.DetectionEvent().value(abstime=42, channel=1)
     assert repr(inst) == "DetectionEvent(...).value(abstime=42, channel=1)"
+
+
+def test_supports_value():
+    assert tcspc.DetectionEvent()._supports_value()
+    assert not tcspc.WarningEvent()._supports_value()
+    assert not tcspc.BucketEvent(IntEvent)._supports_value()
+
+
+def test_value_supporting_cpp_output_handlers_emit_wrapper_cast():
+    code = tcspc.DetectionEvent()._cpp_output_handlers(_CppIdentifier("sink"))
+    assert (
+        "handle(tcspc::detection_event<tcspc::default_numeric_traits> "
+        "const &event)" in code
+    )
+    assert "nanobind::gil_scoped_acquire" in code
+    assert "sink->handle(nanobind::cast(event))" in code
+
+
+def test_cpp_wrapper_class_def_substrings():
+    code = tcspc.DetectionEvent()._cpp_wrapper_class_def(_CppIdentifier("mod"))
+    assert (
+        "nanobind::class_<tcspc::detection_event"
+        "<tcspc::default_numeric_traits>>" in code
+    )
+    assert ".def(nanobind::init<>())" in code
+    assert '.def_rw("abstime"' in code
+    assert '.def_rw("channel"' in code
