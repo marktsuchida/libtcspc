@@ -11,10 +11,11 @@ from .._codegen import _CodeGenerationContext
 from .._cpp_utils import (
     _CppExpression,
 )
-from .._events import EventType
+from .._events import EventInstance, EventType
 from .._node import Node, _RelayNode
 from ._common import (
     _check_events_subset_of,
+    _with_event_added,
 )
 
 
@@ -85,3 +86,112 @@ class SourceNothing(_RelayNode):
         downstream: _CppExpression,
     ) -> _CppExpression:
         return _CppExpression(f"tcspc::source_nothing({downstream})")
+
+
+@final
+class Prepend(_RelayNode):
+    """Pass-through processor that inserts an event at the start of the stream.
+
+    All events are passed through unchanged. Before the first event is passed
+    through, the given ``event`` is emitted once.
+
+    Parameters
+    ----------
+    event : EventInstance
+        The concrete event value to emit before the first passed-through
+        event. Construct it via :py:meth:`EventType.value`, for example
+        ``DetectionEvent().value(abstime=0, channel=0)``.
+
+    Notes
+    -----
+    Events handled:
+
+    - All event types: pass through. Before the first one, ``event`` is
+      emitted.
+    - End of input: pass through.
+
+    Only an `EventInstance` (a concrete value) may be inserted; runtime-supplied
+    event values (`Param`) are not yet supported.
+
+    See Also
+    --------
+    :cpp:`tcspc::prepend`
+        The underlying C++ factory function.
+    :py:obj:`Append`
+        Insert an event at the end of the stream instead.
+    """
+
+    def __init__(self, event: EventInstance) -> None:
+        self._event = event
+
+    @override
+    def _relay_map_event_set(
+        self, input_event_set: Collection[EventType]
+    ) -> tuple[EventType, ...]:
+        return _with_event_added(input_event_set, self._event._event_type)
+
+    @override
+    def _relay_cpp_expression(
+        self,
+        gencontext: _CodeGenerationContext,
+        downstream: _CppExpression,
+    ) -> _CppExpression:
+        return _CppExpression(
+            f"tcspc::prepend({self._event._cpp_expression()}, {downstream})"
+        )
+
+
+@final
+class Append(_RelayNode):
+    """Pass-through processor that inserts an event at the end of the stream.
+
+    All events are passed through unchanged. Upon flush, the given ``event`` is
+    emitted before the flush is propagated.
+
+    Parameters
+    ----------
+    event : EventInstance
+        The concrete event value to emit at flush. Construct it via
+        :py:meth:`EventType.value`, for example
+        ``DetectionEvent().value(abstime=0, channel=0)``.
+
+    Notes
+    -----
+    Events handled:
+
+    - All event types: pass through.
+    - End of input: emit ``event``, then pass through the flush.
+
+    The event is only appended on a normal flush; if processing is ended by a
+    *downstream* processor raising end-of-processing, this processor has no
+    effect.
+
+    Only an `EventInstance` (a concrete value) may be inserted; runtime-supplied
+    event values (`Param`) are not yet supported.
+
+    See Also
+    --------
+    :cpp:`tcspc::append`
+        The underlying C++ factory function.
+    :py:obj:`Prepend`
+        Insert an event at the start of the stream instead.
+    """
+
+    def __init__(self, event: EventInstance) -> None:
+        self._event = event
+
+    @override
+    def _relay_map_event_set(
+        self, input_event_set: Collection[EventType]
+    ) -> tuple[EventType, ...]:
+        return _with_event_added(input_event_set, self._event._event_type)
+
+    @override
+    def _relay_cpp_expression(
+        self,
+        gencontext: _CodeGenerationContext,
+        downstream: _CppExpression,
+    ) -> _CppExpression:
+        return _CppExpression(
+            f"tcspc::append({self._event._cpp_expression()}, {downstream})"
+        )

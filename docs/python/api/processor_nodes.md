@@ -19,6 +19,8 @@ Basic and generic processors.
 
    libtcspc.SinkAll
    libtcspc.SourceNothing
+   libtcspc.Prepend
+   libtcspc.Append
 ```
 
 ## Filtering processors

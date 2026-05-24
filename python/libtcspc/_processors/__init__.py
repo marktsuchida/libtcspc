@@ -17,7 +17,7 @@ from ._batching import (
 from ._binning import ClusterBinIncrements, MapToBins, MapToDatapoints
 from ._branching import Broadcast, Route
 from ._buffering import ProcessInBatches
-from ._core import SinkAll, SourceNothing
+from ._core import Append, Prepend, SinkAll, SourceNothing
 from ._decoding import (
     DecodeBHSPC,
     DecodeBHSPC600_256ch,
@@ -69,6 +69,7 @@ __all__ = [
     "Acquire",
     "AcquireFullBuckets",
     "AddCountToPeriodicSequences",
+    "Append",
     "Batch",
     "BatchBinIncrementClusters",
     "BatchFromBytes",
@@ -111,6 +112,7 @@ __all__ = [
     "PairAllBetween",
     "PairOne",
     "PairOneBetween",
+    "Prepend",
     "ProcessInBatches",
     "ReadBinaryStream",
     "RebaseAbstime",
