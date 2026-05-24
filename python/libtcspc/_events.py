@@ -51,19 +51,12 @@ class EventType(ABC):
     def _cpp_output_handlers(
         self, pysink: _CppIdentifier
     ) -> _CppClassScopeDefs:
-        return _CppClassScopeDefs(f"""\
-        void handle({self._cpp_type_name()} const &event) {{
-            nanobind::gil_scoped_acquire held;
-            {pysink}->handle(
-                nanobind::cast(event, nanobind::rv_policy::copy));
-        }}
-
-        void handle({self._cpp_type_name()} &&event) {{
-            nanobind::gil_scoped_acquire held;
-            {pysink}->handle(
-                nanobind::cast(std::move(event), nanobind::rv_policy::move));
-        }}
-        """)
+        raise TypeError(
+            f"event type {type(self).__name__} ({self._cpp_type_name()}) "
+            "is not supported for delivery to a Python sink. Convert the data "
+            "to a supported event type first (for example, batch or extract "
+            "it into a bucket, which is delivered as a NumPy array)."
+        )
 
 
 class BucketEvent(EventType):

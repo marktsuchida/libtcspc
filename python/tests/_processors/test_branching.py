@@ -9,10 +9,11 @@ from _test_helpers import _NamedEvent
 from libtcspc._codegen import _CodeGenerationContext
 from libtcspc._compile import CompiledGraph
 from libtcspc._cpp_utils import _CppExpression, _CppIdentifier, _CppTypeName
+from libtcspc._events import BucketEvent
 from libtcspc._execute import ExecutionContext, PySink
 from libtcspc._graph import Graph
 from libtcspc._param import Param
-from libtcspc._processors import Broadcast, Route
+from libtcspc._processors import Batch, Broadcast, Route
 from libtcspc._routers import ChannelRouter, NullRouter
 from typing_extensions import override
 
@@ -101,8 +102,11 @@ def test_Broadcast_codegen_rejects_wrong_number_of_downstreams():
 
 def test_Broadcast_end_to_end_delivers_to_all_outputs():
     int_event = _NamedEvent(_CppTypeName("int"))
+    bucket_event = BucketEvent(int_event)
     g = Graph()
-    g.add_node("bc", Broadcast(int_event, outputs=2))
+    # Batch each int into a 1-element bucket, which is deliverable to a sink.
+    g.add_node("b", Batch(int_event, batch_size=1))
+    g.add_node("bc", Broadcast(bucket_event, outputs=2), upstream="b")
     # Both of bc's output ports are unconnected, so they become the graph's
     # two output ports -> two sinks.
     cg = CompiledGraph(g, (int_event,))
@@ -111,11 +115,11 @@ def test_Broadcast_end_to_end_delivers_to_all_outputs():
     log1: list[str] = []
     c = ExecutionContext(cg, None, (MockSink(log0), MockSink(log1)))
     c.handle(42)
-    assert log0 == ["handle(42)"]
-    assert log1 == ["handle(42)"]
+    assert log0 == ["handle([42])"]
+    assert log1 == ["handle([42])"]
     c.flush()
-    assert log0 == ["handle(42)", "flush()"]
-    assert log1 == ["handle(42)", "flush()"]
+    assert log0 == ["handle([42])", "flush()"]
+    assert log1 == ["handle([42])", "flush()"]
 
 
 def test_Route_port_naming_int_form():
@@ -222,14 +226,18 @@ def test_Route_codegen_rejects_wrong_number_of_downstreams():
 def test_Route_end_to_end_broadcasts_to_all_outputs():
     # With no routed event types, every event is broadcast to all downstreams.
     int_event = _NamedEvent(_CppTypeName("int"))
+    bucket_event = BucketEvent(int_event)
     g = Graph()
+    # Batch each int into a 1-element bucket, which is deliverable to a sink.
+    g.add_node("b", Batch(int_event, batch_size=1))
     g.add_node(
         "rt",
         Route(
-            broadcast_event_types=(int_event,),
+            broadcast_event_types=(bucket_event,),
             router=NullRouter(),
             outputs=2,
         ),
+        upstream="b",
     )
     cg = CompiledGraph(g, (int_event,))
 
@@ -237,11 +245,11 @@ def test_Route_end_to_end_broadcasts_to_all_outputs():
     log1: list[str] = []
     c = ExecutionContext(cg, None, (MockSink(log0), MockSink(log1)))
     c.handle(42)
-    assert log0 == ["handle(42)"]
-    assert log1 == ["handle(42)"]
+    assert log0 == ["handle([42])"]
+    assert log1 == ["handle([42])"]
     c.flush()
-    assert log0 == ["handle(42)", "flush()"]
-    assert log1 == ["handle(42)", "flush()"]
+    assert log0 == ["handle([42])", "flush()"]
+    assert log1 == ["handle([42])", "flush()"]
 
 
 def _channel_routing_graph(router: ChannelRouter) -> Graph:

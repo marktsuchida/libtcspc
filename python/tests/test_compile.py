@@ -20,6 +20,7 @@ from libtcspc._processors import (
     Batch,
     Count,
     ReadBinaryStream,
+    SelectAll,
     SinkAll,
     SinkOnly,
     SourceNothing,
@@ -114,6 +115,13 @@ def test_compile_fails_for_unhandle_events():
     g.add_node("s", SinkOnly(_NamedEvent(_uint32_type)))
     with pytest.raises(ValueError):
         CompiledGraph(g, [_NamedEvent(_string_type)])
+
+
+def test_compile_rejects_unsupported_output_event_type():
+    g = Graph()
+    g.add_node("r", SelectAll())
+    with pytest.raises(TypeError, match="int"):
+        CompiledGraph(g, (IntEvent,))
 
 
 def test_compile_string_parameter():

@@ -18,7 +18,6 @@ from libtcspc._param import Param
 from libtcspc._processors import (
     Batch,
     Count,
-    SelectAll,
     SinkAll,
     SinkOnly,
     Stop,
@@ -189,16 +188,16 @@ class MockSink(PySink):
 
 def test_execute_pass_through_integers():
     g = Graph()
-    g.add_node("r", SelectAll())
+    g.add_node("b", Batch(_NamedEvent(_CppTypeName("int")), batch_size=1))
     cg = CompiledGraph(g, (_NamedEvent(_CppTypeName("int")),))
 
     log: list[str] = []
     sink = MockSink(log)
     c = ExecutionContext(cg, None, (sink,))
     c.handle(42)
-    assert log == ["handle(42)"]
+    assert log == ["handle([42])"]
     c.flush()
-    assert log == ["handle(42)", "flush()"]
+    assert log == ["handle([42])", "flush()"]
 
 
 def test_execute_emit_bucket():
@@ -217,7 +216,7 @@ def test_execute_emit_bucket():
 
 def test_execute_sink_exception_propagates():
     g = Graph()
-    g.add_node("r", SelectAll())
+    g.add_node("b", Batch(_NamedEvent(_CppTypeName("int")), batch_size=1))
     cg = CompiledGraph(g, (_NamedEvent(_CppTypeName("int")),))
 
     @final

@@ -28,9 +28,11 @@ class PySink(ABC):
         Parameters
         ----------
         event
-            The event object. The Python type depends on the event type
-            declared on the corresponding graph output: a wrapped event
-            for most types, or a NumPy array for `BucketEvent`.
+            The event object. The event type declared on the graph's output
+            edge must be one that is explicitly supported for delivery to
+            Python; graphs whose output carries an unsupported event type are
+            rejected when the graph is compiled. For example, bucket events are
+            delivered as NumPy arrays.
 
         Notes
         -----

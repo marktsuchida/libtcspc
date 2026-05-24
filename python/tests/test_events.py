@@ -173,14 +173,9 @@ def test_default_cpp_input_handler_substrings():
     assert "ds.handle(event)" in code
 
 
-def test_default_cpp_output_handlers_substrings():
-    code = tcspc.WarningEvent()._cpp_output_handlers(_CppIdentifier("sink"))
-    assert "void handle(tcspc::warning_event const &event)" in code
-    assert "void handle(tcspc::warning_event &&event)" in code
-    assert "nanobind::gil_scoped_acquire" in code
-    assert code.count("sink->handle(") == 2
-    assert "nanobind::rv_policy::copy" in code
-    assert "nanobind::rv_policy::move" in code
+def test_default_cpp_output_handlers_raise():
+    with pytest.raises(TypeError, match="tcspc::warning_event"):
+        tcspc.WarningEvent()._cpp_output_handlers(_CppIdentifier("sink"))
 
 
 def test_BucketEvent_cpp_output_handlers_cover_three_overloads():
