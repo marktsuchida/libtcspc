@@ -267,3 +267,114 @@ def test_bin_increment_cluster_event_is_not_extractable():
     assert not hasattr(
         tcspc.BinIncrementClusterEvent(), "_data_bucket_element_event_type"
     )
+
+
+FIELDS_EXPECTED = [
+    (tcspc.BeginLostIntervalEvent, ["abstime"]),
+    (tcspc.DataLostEvent, ["abstime"]),
+    (tcspc.DetectionEvent, ["abstime", "channel"]),
+    (tcspc.EndLostIntervalEvent, ["abstime"]),
+    (tcspc.MarkerEvent, ["abstime", "channel"]),
+    (tcspc.TimeCorrelatedDetectionEvent, ["abstime", "channel", "difftime"]),
+    (tcspc.TimeReachedEvent, ["abstime"]),
+]
+
+
+@pytest.mark.parametrize(("cls", "names"), FIELDS_EXPECTED)
+def test_fields_returns_expected_schema(cls, names):
+    schema = cls()._fields()
+    assert [n for n, _ in schema] == names
+    prefix = "tcspc::default_numeric_traits::"
+    for name, ctype in schema:
+        assert ctype == f"{prefix}{name}_type"
+
+
+def test_fields_unsupported_type_raises():
+    with pytest.raises(TypeError, match="does not support"):
+        tcspc.BucketEvent(IntEvent)._fields()
+    with pytest.raises(TypeError, match="does not support"):
+        tcspc.WarningEvent()._fields()
+
+
+def test_value_happy_path():
+    inst = tcspc.DetectionEvent().value(abstime=42, channel=1)
+    assert isinstance(inst, tcspc.EventInstance)
+    assert inst._fields == {"abstime": 42, "channel": 1}
+
+
+def test_value_orders_fields_by_schema_not_kwargs():
+    inst = tcspc.DetectionEvent().value(channel=1, abstime=42)
+    assert list(inst._fields) == ["abstime", "channel"]
+
+
+def test_value_missing_field_raises():
+    with pytest.raises(TypeError, match="missing"):
+        tcspc.DetectionEvent().value(abstime=42)
+
+
+def test_value_unexpected_field_raises():
+    with pytest.raises(TypeError, match="unexpected"):
+        tcspc.DetectionEvent().value(abstime=42, channel=1, bogus=0)
+
+
+def test_value_non_int_value_raises():
+    with pytest.raises(TypeError, match="must be an int"):
+        tcspc.DetectionEvent().value(abstime=42, channel=1.5)  # type: ignore[arg-type]
+
+
+def test_value_bool_value_raises():
+    with pytest.raises(TypeError, match="must be an int"):
+        tcspc.DetectionEvent().value(abstime=42, channel=True)
+
+
+def test_value_unsupported_type_raises():
+    with pytest.raises(TypeError, match="does not support"):
+        tcspc.WarningEvent().value()
+
+
+def test_cpp_expression_default_traits():
+    inst = tcspc.DetectionEvent().value(abstime=42, channel=1)
+    assert inst._cpp_expression() == (
+        "tcspc::detection_event<tcspc::default_numeric_traits>{"
+        ".abstime = static_cast<tcspc::default_numeric_traits::abstime_type>(42), "
+        ".channel = static_cast<tcspc::default_numeric_traits::channel_type>(1)}"
+    )
+
+
+def test_cpp_expression_substitutes_numeric_traits_member_types():
+    nt = tcspc.NumericTraits(abstime_type=np.uint64)
+    inst = tcspc.DetectionEvent(nt).value(abstime=42, channel=1)
+    expr = inst._cpp_expression()
+    nt_name = tcspc.DetectionEvent(nt)._cpp_type_name()
+    assert expr.startswith(f"{nt_name}{{")
+    assert ".abstime = static_cast<" in expr
+    assert "::abstime_type>(42)" in expr
+    assert ".channel = static_cast<" in expr
+    assert "::channel_type>(1)" in expr
+
+
+def test_event_instance_eq_same_is_equal():
+    a = tcspc.DetectionEvent().value(abstime=42, channel=1)
+    b = tcspc.DetectionEvent().value(abstime=42, channel=1)
+    assert a == b
+
+
+def test_event_instance_eq_different_fields_differ():
+    a = tcspc.DetectionEvent().value(abstime=42, channel=1)
+    b = tcspc.DetectionEvent().value(abstime=42, channel=2)
+    assert a != b
+
+
+def test_event_instance_eq_different_types_differ():
+    a = tcspc.DetectionEvent().value(abstime=42, channel=1)
+    b = tcspc.MarkerEvent().value(abstime=42, channel=1)
+    assert a != b
+
+
+def test_event_instance_eq_against_non_instance_is_false():
+    assert tcspc.DetectionEvent().value(abstime=42, channel=1) != object()
+
+
+def test_event_instance_repr():
+    inst = tcspc.DetectionEvent().value(abstime=42, channel=1)
+    assert repr(inst) == "DetectionEvent(...).value(abstime=42, channel=1)"

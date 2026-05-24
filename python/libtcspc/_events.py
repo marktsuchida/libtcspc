@@ -3,12 +3,14 @@
 # SPDX-License-Identifier: MIT
 
 from abc import ABC, abstractmethod
+from collections.abc import Mapping
 
 from typing_extensions import override
 
 from . import _cpp_utils
 from ._cpp_utils import (
     _CppClassScopeDefs,
+    _CppExpression,
     _CppIdentifier,
     _CppTypeName,
 )
@@ -57,6 +59,104 @@ class EventType(ABC):
             "to a supported event type first (for example, batch or extract "
             "it into a bucket, which is delivered as a NumPy array)."
         )
+
+    def _fields(self) -> list[tuple[str, _CppTypeName]]:
+        """Field (name, C++ member type) schema for constructing event values.
+
+        Event types that support value construction override this. The default
+        raises, marking the type as non-constructible from Python.
+        """
+        raise TypeError(
+            f"event type {type(self).__name__} ({self._cpp_type_name()}) "
+            "does not support constructing event values"
+        )
+
+    def value(self, **fields: int) -> "EventInstance":
+        """Construct a concrete event value of this type.
+
+        Parameters
+        ----------
+        **fields : int
+            The value of each field of the event (see the event type's
+            ``Notes``). All fields must be given, as concrete integers.
+
+        Returns
+        -------
+        EventInstance
+            The concrete event value, carrying this `EventType`.
+        """
+        return EventInstance(self, fields)
+
+
+class EventInstance:
+    """A concrete event value: an `EventType` plus its field values.
+
+    Unlike an `EventType` (which is only a type tag), an `EventInstance`
+    represents an actual event value with concrete field contents. Construct
+    one via :py:meth:`EventType.value`, for example
+    ``DetectionEvent(nt).value(abstime=42, channel=1)``.
+
+    Used as the event to insert by `Prepend` and `Append`. Field values are
+    concrete integers baked into the generated C++ as an aggregate
+    initializer; runtime-supplied event values (`Param`) are not yet
+    supported.
+
+    See Also
+    --------
+    :py:meth:`EventType.value`
+        The factory used to construct an `EventInstance`.
+    """
+
+    def __init__(
+        self, event_type: EventType, fields: Mapping[str, int]
+    ) -> None:
+        schema = event_type._fields()  # Raises TypeError if unsupported.
+        names = [n for n, _ in schema]
+        missing = [n for n in names if n not in fields]
+        extra = [k for k in fields if k not in names]
+        if missing or extra:
+            problems = []
+            if missing:
+                problems.append(f"missing field(s) {missing}")
+            if extra:
+                problems.append(f"unexpected field(s) {extra}")
+            raise TypeError(
+                f"{type(event_type).__name__}.value(): "
+                f"{'; '.join(problems)} (expected {names})"
+            )
+        for n in names:
+            v = fields[n]
+            if isinstance(v, bool) or not isinstance(v, int):
+                raise TypeError(
+                    f"{type(event_type).__name__}.value(): field {n!r} must "
+                    f"be an int, not {type(v).__name__}"
+                )
+        self._event_type = event_type
+        self._fields = {n: int(fields[n]) for n in names}
+
+    def _cpp_expression(self) -> _CppExpression:
+        ctype = self._event_type._cpp_type_name()
+        parts = [
+            f".{name} = static_cast<{ftype}>({self._fields[name]})"
+            for name, ftype in self._event_type._fields()
+        ]
+        return _CppExpression(f"{ctype}{{{', '.join(parts)}}}")
+
+    def __eq__(self, other: object) -> bool:
+        return (
+            isinstance(other, EventInstance)
+            and self._event_type == other._event_type
+            and self._fields == other._fields
+        )
+
+    def __hash__(self) -> int:
+        return hash(
+            (self._event_type._cpp_type_name(), tuple(self._fields.items()))
+        )
+
+    def __repr__(self) -> str:
+        args = ", ".join(f"{n}={v}" for n, v in self._fields.items())
+        return f"{type(self._event_type).__name__}(...).value({args})"
 
 
 class BucketEvent(EventType):
@@ -346,6 +446,11 @@ class BeginLostIntervalEvent(EventType):
         return _CppTypeName(
             f"tcspc::begin_lost_interval_event<{self._numeric_traits._cpp_type_name()}>"
         )
+
+    @override
+    def _fields(self) -> list[tuple[str, _CppTypeName]]:
+        nt = self._numeric_traits._cpp_type_name()
+        return [("abstime", _CppTypeName(f"{nt}::abstime_type"))]
 
 
 class BHSPC600_256chEvent(EventType):
@@ -640,6 +745,11 @@ class DataLostEvent(EventType):
             f"tcspc::data_lost_event<{self._numeric_traits._cpp_type_name()}>"
         )
 
+    @override
+    def _fields(self) -> list[tuple[str, _CppTypeName]]:
+        nt = self._numeric_traits._cpp_type_name()
+        return [("abstime", _CppTypeName(f"{nt}::abstime_type"))]
+
 
 class DatapointEvent(EventType):
     """Event representing a scalar datapoint mapped from another event.
@@ -710,6 +820,14 @@ class DetectionEvent(EventType):
             f"tcspc::detection_event<{self._numeric_traits._cpp_type_name()}>"
         )
 
+    @override
+    def _fields(self) -> list[tuple[str, _CppTypeName]]:
+        nt = self._numeric_traits._cpp_type_name()
+        return [
+            ("abstime", _CppTypeName(f"{nt}::abstime_type")),
+            ("channel", _CppTypeName(f"{nt}::channel_type")),
+        ]
+
 
 class DetectionPairEvent(EventType):
     """Event representing a pair of detections (a start and a stop).
@@ -779,6 +897,11 @@ class EndLostIntervalEvent(EventType):
         return _CppTypeName(
             f"tcspc::end_lost_interval_event<{self._numeric_traits._cpp_type_name()}>"
         )
+
+    @override
+    def _fields(self) -> list[tuple[str, _CppTypeName]]:
+        nt = self._numeric_traits._cpp_type_name()
+        return [("abstime", _CppTypeName(f"{nt}::abstime_type"))]
 
 
 class HistogramArrayEvent(EventType):
@@ -973,6 +1096,14 @@ class MarkerEvent(EventType):
         return _CppTypeName(
             f"tcspc::marker_event<{self._numeric_traits._cpp_type_name()}>"
         )
+
+    @override
+    def _fields(self) -> list[tuple[str, _CppTypeName]]:
+        nt = self._numeric_traits._cpp_type_name()
+        return [
+            ("abstime", _CppTypeName(f"{nt}::abstime_type")),
+            ("channel", _CppTypeName(f"{nt}::channel_type")),
+        ]
 
 
 class PeriodicSequenceModelEvent(EventType):
@@ -1267,6 +1398,15 @@ class TimeCorrelatedDetectionEvent(EventType):
             f"tcspc::time_correlated_detection_event<{self._numeric_traits._cpp_type_name()}>"
         )
 
+    @override
+    def _fields(self) -> list[tuple[str, _CppTypeName]]:
+        nt = self._numeric_traits._cpp_type_name()
+        return [
+            ("abstime", _CppTypeName(f"{nt}::abstime_type")),
+            ("channel", _CppTypeName(f"{nt}::channel_type")),
+            ("difftime", _CppTypeName(f"{nt}::difftime_type")),
+        ]
+
 
 class TimeReachedEvent(EventType):
     """Keep-alive event indicating that the data source has reached a given time.
@@ -1304,6 +1444,11 @@ class TimeReachedEvent(EventType):
         return _CppTypeName(
             f"tcspc::time_reached_event<{self._numeric_traits._cpp_type_name()}>"
         )
+
+    @override
+    def _fields(self) -> list[tuple[str, _CppTypeName]]:
+        nt = self._numeric_traits._cpp_type_name()
+        return [("abstime", _CppTypeName(f"{nt}::abstime_type"))]
 
 
 class WarningEvent(EventType):
