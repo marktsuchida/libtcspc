@@ -117,6 +117,26 @@ class _CountAccessSpec(_AccessSpec):
         return "CountAccess"
 
 
+class _UniqueBinMapperAccessSpec(_AccessSpec):
+    @override
+    @classmethod
+    def _cpp_type_name(cls) -> _CppTypeName:
+        return _CppTypeName(
+            "tcspc::unique_bin_mapper_access<"
+            "tcspc::default_numeric_traits::datapoint_type>"
+        )
+
+    @override
+    @classmethod
+    def cpp_methods(cls) -> Sequence[_CppIdentifier]:
+        return (_CppIdentifier("values"),)
+
+    @override
+    @classmethod
+    def py_class_name(cls) -> str:
+        return "UniqueBinMapperAccess"
+
+
 class Access(Protocol):
     """
     Base protocol for run-time access objects.
@@ -149,5 +169,21 @@ class CountAccess(Access, Protocol):
         -------
         int
             The number of events counted so far.
+        """
+        ...
+
+
+class UniqueBinMapperAccess(Access, Protocol):
+    """Run-time access object for a ``UniqueBinMapper`` bin mapper."""
+
+    def values(self) -> list[int]:
+        """
+        Return the datapoint values assigned to bin indices.
+
+        Returns
+        -------
+        list[int]
+            The datapoint value assigned to each bin index, in bin-index
+            order.
         """
         ...

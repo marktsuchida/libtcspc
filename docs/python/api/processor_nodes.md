@@ -30,9 +30,11 @@ Processors for filtering events.
    :toctree: generated
    :nosignatures:
 
+   libtcspc.Gate
    libtcspc.Select
    libtcspc.SelectAll
    libtcspc.SelectExcept
+   libtcspc.SelectNone
 ```
 
 ## Batching and unbatching processors
@@ -46,7 +48,21 @@ batches.
    :nosignatures:
 
    libtcspc.Batch
+   libtcspc.BatchBinIncrementClusters
    libtcspc.Unbatch
+   libtcspc.UnbatchBinIncrementClusters
+```
+
+## Buffering processors
+
+Processors that buffer events to decouple upstream and downstream processing.
+
+```{eval-rst}
+.. autosummary::
+   :toctree: generated
+   :nosignatures:
+
+   libtcspc.ProcessInBatches
 ```
 
 ## Stopping processors
@@ -98,6 +114,7 @@ Processors for reading and writing data from/to file-like streams.
    :toctree: generated
    :nosignatures:
 
+   libtcspc.ExtractBucket
    libtcspc.ReadBinaryStream
    libtcspc.read_events_from_binary_file
 ```
@@ -204,6 +221,25 @@ Processors for transforming timing signal events.
 
    libtcspc.CountDownTo
    libtcspc.CountUpTo
+   libtcspc.Generate
+   libtcspc.Match
+   libtcspc.MatchAndConsume
+```
+
+## Timing signal modeling processors
+
+Processors for fitting and synthesizing periodic timing sequences.
+
+```{eval-rst}
+.. autosummary::
+   :toctree: generated
+   :nosignatures:
+
+   libtcspc.AddCountToPeriodicSequences
+   libtcspc.ConvertSequencesToStartStop
+   libtcspc.ExtrapolatePeriodicSequences
+   libtcspc.FitPeriodicSequences
+   libtcspc.RetimePeriodicSequences
 ```
 
 ## Time correlation processors
@@ -217,6 +253,52 @@ Processors for time correlation.
 
    libtcspc.RecoverOrder
    libtcspc.RemoveTimeCorrelation
+   libtcspc.TimeCorrelateAtFraction
+   libtcspc.TimeCorrelateAtMidpoint
+   libtcspc.TimeCorrelateAtStart
+   libtcspc.TimeCorrelateAtStop
+```
+
+## Pairing processors
+
+Processors for pairing detection events.
+
+```{eval-rst}
+.. autosummary::
+   :toctree: generated
+   :nosignatures:
+
+   libtcspc.PairAll
+   libtcspc.PairAllBetween
+   libtcspc.PairOne
+   libtcspc.PairOneBetween
+```
+
+## Binning processors
+
+Processors for mapping events to datapoints and histogram bins.
+
+```{eval-rst}
+.. autosummary::
+   :toctree: generated
+   :nosignatures:
+
+   libtcspc.ClusterBinIncrements
+   libtcspc.MapToBins
+   libtcspc.MapToDatapoints
+```
+
+## Histogramming processors
+
+Processors for accumulating histograms.
+
+```{eval-rst}
+.. autosummary::
+   :toctree: generated
+   :nosignatures:
+
+   libtcspc.Histogram
+   libtcspc.ScanHistograms
 ```
 
 ## Validation processors

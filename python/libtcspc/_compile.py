@@ -412,6 +412,7 @@ def _graph_module_code(
             "nanobind/stl/pair.h",
             "nanobind/stl/shared_ptr.h",
             "nanobind/stl/string.h",
+            "nanobind/stl/vector.h",
         ),
         (),
         (),

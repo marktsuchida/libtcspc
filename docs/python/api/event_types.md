@@ -25,8 +25,20 @@ are used to specify these types.
    libtcspc.BucketEvent
    libtcspc.ConstBucketEvent
    libtcspc.BHSPCEvent
+   libtcspc.BinIncrementClusterEvent
+   libtcspc.BinIncrementEvent
+   libtcspc.ConcludingHistogramArrayEvent
+   libtcspc.ConcludingHistogramEvent
    libtcspc.DataLostEvent
+   libtcspc.DatapointEvent
+   libtcspc.DetectionPairEvent
+   libtcspc.HistogramArrayEvent
+   libtcspc.HistogramArrayProgressEvent
+   libtcspc.HistogramEvent
    libtcspc.MarkerEvent
+   libtcspc.PeriodicSequenceModelEvent
+   libtcspc.RealLinearTimingEvent
+   libtcspc.RealOneShotTimingEvent
    libtcspc.TimeCorrelatedDetectionEvent
    libtcspc.TimeReachedEvent
    libtcspc.WarningEvent

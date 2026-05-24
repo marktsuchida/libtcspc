@@ -296,6 +296,25 @@ class _ByteEvent(EventType):
         return _CppTypeName("std::byte")
 
 
+class _TraitsMemberEvent(EventType):
+    """Internal placeholder for a `NumericTraits` member type.
+
+    Used as the element type of `BucketEvent` for scalar bucket payloads
+    whose element type is a numeric-traits member (for example
+    ``bin_index_type`` or ``bin_type``). Not exposed in the public API.
+    """
+
+    def __init__(self, numeric_traits: NumericTraits, member: str) -> None:
+        self._numeric_traits = numeric_traits
+        self._member = member
+
+    @override
+    def _cpp_type_name(self) -> _CppTypeName:
+        return _CppTypeName(
+            f"{self._numeric_traits._cpp_type_name()}::{self._member}"
+        )
+
+
 # Note: C++ event wrappers are ordered alphabetically without regard to the C++
 # header in which they are defined.
 
@@ -403,6 +422,77 @@ class BHSPCEvent(EventType):
         return _CppTypeName("tcspc::bh_spc_event")
 
 
+class BinIncrementClusterEvent(EventType):
+    """Event carrying a cluster of histogram bin increments.
+
+    Emitted by `ClusterBinIncrements` and `UnbatchBinIncrementClusters`,
+    and consumed by `ScanHistograms` and `BatchBinIncrementClusters`. It
+    carries a bucket of bin indices.
+
+    Parameters
+    ----------
+    numeric_traits : NumericTraits or None
+        Set of integer types parameterising the C++ event. ``None`` (the
+        default) uses `NumericTraits` defaults.
+
+    Notes
+    -----
+    The corresponding C++ event has the field ``bin_indices``, a
+    ``tcspc::bucket`` of ``bin_index_type``.
+
+    See Also
+    --------
+    :cpp:`tcspc::bin_increment_cluster_event`
+        The underlying C++ event type.
+    """
+
+    def __init__(self, numeric_traits: NumericTraits | None = None) -> None:
+        self._numeric_traits = (
+            numeric_traits if numeric_traits is not None else NumericTraits()
+        )
+
+    @override
+    def _cpp_type_name(self) -> _CppTypeName:
+        return _CppTypeName(
+            f"tcspc::bin_increment_cluster_event<{self._numeric_traits._cpp_type_name()}>"
+        )
+
+
+class BinIncrementEvent(EventType):
+    """Event representing a single increment of a histogram bin.
+
+    Emitted by `MapToBins` and consumed by `Histogram` and
+    `ClusterBinIncrements`.
+
+    Parameters
+    ----------
+    numeric_traits : NumericTraits or None
+        Set of integer types parameterising the C++ event. ``None`` (the
+        default) uses `NumericTraits` defaults.
+
+    Notes
+    -----
+    The corresponding C++ event has the field ``bin_index`` (of
+    ``bin_index_type``).
+
+    See Also
+    --------
+    :cpp:`tcspc::bin_increment_event`
+        The underlying C++ event type.
+    """
+
+    def __init__(self, numeric_traits: NumericTraits | None = None) -> None:
+        self._numeric_traits = (
+            numeric_traits if numeric_traits is not None else NumericTraits()
+        )
+
+    @override
+    def _cpp_type_name(self) -> _CppTypeName:
+        return _CppTypeName(
+            f"tcspc::bin_increment_event<{self._numeric_traits._cpp_type_name()}>"
+        )
+
+
 class BulkCountsEvent(EventType):
     """Event representing detection counts from a non-time-tagging counter.
 
@@ -437,6 +527,86 @@ class BulkCountsEvent(EventType):
         return _CppTypeName(
             f"tcspc::bulk_counts_event<{self._numeric_traits._cpp_type_name()}>"
         )
+
+
+class ConcludingHistogramArrayEvent(EventType):
+    """Event carrying the final accumulated histogram array of a round.
+
+    Emitted by `ScanHistograms` (when concluding events are enabled) once
+    per round, before each reset.
+
+    Parameters
+    ----------
+    numeric_traits : NumericTraits or None
+        Set of integer types parameterising the C++ event. ``None`` (the
+        default) uses `NumericTraits` defaults.
+
+    Notes
+    -----
+    The corresponding C++ event has the field ``data_bucket``, a
+    ``tcspc::bucket`` of ``bin_type``.
+
+    See Also
+    --------
+    :cpp:`tcspc::concluding_histogram_array_event`
+        The underlying C++ event type.
+    :py:obj:`ExtractBucket`
+        Extract the carried bucket as a NumPy array.
+    """
+
+    def __init__(self, numeric_traits: NumericTraits | None = None) -> None:
+        self._numeric_traits = (
+            numeric_traits if numeric_traits is not None else NumericTraits()
+        )
+
+    @override
+    def _cpp_type_name(self) -> _CppTypeName:
+        return _CppTypeName(
+            f"tcspc::concluding_histogram_array_event<{self._numeric_traits._cpp_type_name()}>"
+        )
+
+    def _data_bucket_element_event_type(self) -> EventType:
+        return _TraitsMemberEvent(self._numeric_traits, "bin_type")
+
+
+class ConcludingHistogramEvent(EventType):
+    """Event carrying the final accumulated histogram of a round.
+
+    Emitted by `Histogram` (when concluding events are enabled) upon each
+    reset.
+
+    Parameters
+    ----------
+    numeric_traits : NumericTraits or None
+        Set of integer types parameterising the C++ event. ``None`` (the
+        default) uses `NumericTraits` defaults.
+
+    Notes
+    -----
+    The corresponding C++ event has the field ``data_bucket``, a
+    ``tcspc::bucket`` of ``bin_type``.
+
+    See Also
+    --------
+    :cpp:`tcspc::concluding_histogram_event`
+        The underlying C++ event type.
+    :py:obj:`ExtractBucket`
+        Extract the carried bucket as a NumPy array.
+    """
+
+    def __init__(self, numeric_traits: NumericTraits | None = None) -> None:
+        self._numeric_traits = (
+            numeric_traits if numeric_traits is not None else NumericTraits()
+        )
+
+    @override
+    def _cpp_type_name(self) -> _CppTypeName:
+        return _CppTypeName(
+            f"tcspc::concluding_histogram_event<{self._numeric_traits._cpp_type_name()}>"
+        )
+
+    def _data_bucket_element_event_type(self) -> EventType:
+        return _TraitsMemberEvent(self._numeric_traits, "bin_type")
 
 
 class DataLostEvent(EventType):
@@ -478,6 +648,40 @@ class DataLostEvent(EventType):
         )
 
 
+class DatapointEvent(EventType):
+    """Event representing a scalar datapoint mapped from another event.
+
+    Emitted by `MapToDatapoints` and consumed by `MapToBins`.
+
+    Parameters
+    ----------
+    numeric_traits : NumericTraits or None
+        Set of integer types parameterising the C++ event. ``None`` (the
+        default) uses `NumericTraits` defaults.
+
+    Notes
+    -----
+    The corresponding C++ event has the field ``value`` (of
+    ``datapoint_type``).
+
+    See Also
+    --------
+    :cpp:`tcspc::datapoint_event`
+        The underlying C++ event type.
+    """
+
+    def __init__(self, numeric_traits: NumericTraits | None = None) -> None:
+        self._numeric_traits = (
+            numeric_traits if numeric_traits is not None else NumericTraits()
+        )
+
+    @override
+    def _cpp_type_name(self) -> _CppTypeName:
+        return _CppTypeName(
+            f"tcspc::datapoint_event<{self._numeric_traits._cpp_type_name()}>"
+        )
+
+
 class DetectionEvent(EventType):
     """Event representing a detected count without time correlation.
 
@@ -514,6 +718,43 @@ class DetectionEvent(EventType):
         )
 
 
+class DetectionPairEvent(EventType):
+    """Event representing a pair of detections (a start and a stop).
+
+    Emitted by the `PairAll`, `PairOne`, `PairAllBetween`, and
+    `PairOneBetween` processors, and consumed by the `TimeCorrelateAtStart`,
+    `TimeCorrelateAtStop`, `TimeCorrelateAtMidpoint`, and
+    `TimeCorrelateAtFraction` processors.
+
+    Parameters
+    ----------
+    numeric_traits : NumericTraits or None
+        Set of integer types parameterising the C++ event. ``None`` (the
+        default) uses `NumericTraits` defaults.
+
+    Notes
+    -----
+    The corresponding C++ event is ``std::array<tcspc::detection_event, 2>``;
+    element 0 is the start detection and element 1 is the stop detection.
+
+    See Also
+    --------
+    :cpp:`tcspc::detection_event`
+        The element type of the pair.
+    """
+
+    def __init__(self, numeric_traits: NumericTraits | None = None) -> None:
+        self._numeric_traits = (
+            numeric_traits if numeric_traits is not None else NumericTraits()
+        )
+
+    @override
+    def _cpp_type_name(self) -> _CppTypeName:
+        return _CppTypeName(
+            f"std::array<tcspc::detection_event<{self._numeric_traits._cpp_type_name()}>, 2>"
+        )
+
+
 class EndLostIntervalEvent(EventType):
     """Event marking the end of an interval in which counts were lost.
 
@@ -545,6 +786,125 @@ class EndLostIntervalEvent(EventType):
         return _CppTypeName(
             f"tcspc::end_lost_interval_event<{self._numeric_traits._cpp_type_name()}>"
         )
+
+
+class HistogramArrayEvent(EventType):
+    """Event carrying a histogram array at the end of a completed scan.
+
+    Emitted by `ScanHistograms` upon completion of each scan.
+
+    Parameters
+    ----------
+    numeric_traits : NumericTraits or None
+        Set of integer types parameterising the C++ event. ``None`` (the
+        default) uses `NumericTraits` defaults.
+
+    Notes
+    -----
+    The corresponding C++ event has the field ``data_bucket``, a
+    ``tcspc::bucket`` of ``bin_type``.
+
+    See Also
+    --------
+    :cpp:`tcspc::histogram_array_event`
+        The underlying C++ event type.
+    :py:obj:`ExtractBucket`
+        Extract the carried bucket as a NumPy array.
+    """
+
+    def __init__(self, numeric_traits: NumericTraits | None = None) -> None:
+        self._numeric_traits = (
+            numeric_traits if numeric_traits is not None else NumericTraits()
+        )
+
+    @override
+    def _cpp_type_name(self) -> _CppTypeName:
+        return _CppTypeName(
+            f"tcspc::histogram_array_event<{self._numeric_traits._cpp_type_name()}>"
+        )
+
+    def _data_bucket_element_event_type(self) -> EventType:
+        return _TraitsMemberEvent(self._numeric_traits, "bin_type")
+
+
+class HistogramArrayProgressEvent(EventType):
+    """Event reporting progress while accumulating a histogram array.
+
+    Emitted by `ScanHistograms` on each bin-increment cluster, carrying a
+    view of the entire histogram array updated so far.
+
+    Parameters
+    ----------
+    numeric_traits : NumericTraits or None
+        Set of integer types parameterising the C++ event. ``None`` (the
+        default) uses `NumericTraits` defaults.
+
+    Notes
+    -----
+    The corresponding C++ event has the fields ``valid_size`` and
+    ``data_bucket`` (a ``tcspc::bucket`` of ``bin_type``).
+
+    See Also
+    --------
+    :cpp:`tcspc::histogram_array_progress_event`
+        The underlying C++ event type.
+    :py:obj:`ExtractBucket`
+        Extract the carried bucket as a NumPy array.
+    """
+
+    def __init__(self, numeric_traits: NumericTraits | None = None) -> None:
+        self._numeric_traits = (
+            numeric_traits if numeric_traits is not None else NumericTraits()
+        )
+
+    @override
+    def _cpp_type_name(self) -> _CppTypeName:
+        return _CppTypeName(
+            f"tcspc::histogram_array_progress_event<{self._numeric_traits._cpp_type_name()}>"
+        )
+
+    def _data_bucket_element_event_type(self) -> EventType:
+        return _TraitsMemberEvent(self._numeric_traits, "bin_type")
+
+
+class HistogramEvent(EventType):
+    """Event carrying a snapshot of a histogram after a bin increment.
+
+    Emitted by `Histogram` on each incoming bin increment, carrying a view
+    of the current histogram.
+
+    Parameters
+    ----------
+    numeric_traits : NumericTraits or None
+        Set of integer types parameterising the C++ event. ``None`` (the
+        default) uses `NumericTraits` defaults.
+
+    Notes
+    -----
+    The corresponding C++ event has the field ``data_bucket``, a
+    ``tcspc::bucket`` of ``bin_type``.
+
+    See Also
+    --------
+    :cpp:`tcspc::histogram_event`
+        The underlying C++ event type.
+    :py:obj:`ExtractBucket`
+        Extract the carried bucket as a NumPy array.
+    """
+
+    def __init__(self, numeric_traits: NumericTraits | None = None) -> None:
+        self._numeric_traits = (
+            numeric_traits if numeric_traits is not None else NumericTraits()
+        )
+
+    @override
+    def _cpp_type_name(self) -> _CppTypeName:
+        return _CppTypeName(
+            f"tcspc::histogram_event<{self._numeric_traits._cpp_type_name()}>"
+        )
+
+    def _data_bucket_element_event_type(self) -> EventType:
+        return _TraitsMemberEvent(self._numeric_traits, "bin_type")
 
 
 class LostCountsEvent(EventType):
@@ -619,6 +979,42 @@ class MarkerEvent(EventType):
     def _cpp_type_name(self) -> _CppTypeName:
         return _CppTypeName(
             f"tcspc::marker_event<{self._numeric_traits._cpp_type_name()}>"
+        )
+
+
+class PeriodicSequenceModelEvent(EventType):
+    """Event describing a fitted periodic sequence of timing events.
+
+    Emitted by `FitPeriodicSequences` and consumed and re-emitted by
+    `RetimePeriodicSequences`; also consumed by
+    `ExtrapolatePeriodicSequences` and `AddCountToPeriodicSequences`.
+
+    Parameters
+    ----------
+    numeric_traits : NumericTraits or None
+        Set of integer types parameterising the C++ event. ``None`` (the
+        default) uses `NumericTraits` defaults.
+
+    Notes
+    -----
+    The corresponding C++ event has the fields ``abstime``, ``delay``, and
+    ``interval``.
+
+    See Also
+    --------
+    :cpp:`tcspc::periodic_sequence_model_event`
+        The underlying C++ event type.
+    """
+
+    def __init__(self, numeric_traits: NumericTraits | None = None) -> None:
+        self._numeric_traits = (
+            numeric_traits if numeric_traits is not None else NumericTraits()
+        )
+
+    @override
+    def _cpp_type_name(self) -> _CppTypeName:
+        return _CppTypeName(
+            f"tcspc::periodic_sequence_model_event<{self._numeric_traits._cpp_type_name()}>"
         )
 
 
@@ -748,6 +1144,75 @@ class PQT3PicoHarp300Event(EventType):
     @override
     def _cpp_type_name(self) -> _CppTypeName:
         return _CppTypeName("tcspc::pqt3_picoharp300_event")
+
+
+class RealLinearTimingEvent(EventType):
+    """Event describing a linear (repeating) sequence of timings.
+
+    Emitted by `AddCountToPeriodicSequences`. Can be used as the trigger
+    pattern for `Generate` with a dynamic linear timing generator.
+
+    Parameters
+    ----------
+    numeric_traits : NumericTraits or None
+        Set of integer types parameterising the C++ event. ``None`` (the
+        default) uses `NumericTraits` defaults.
+
+    Notes
+    -----
+    The corresponding C++ event has the fields ``abstime``, ``delay``,
+    ``interval``, and ``count``.
+
+    See Also
+    --------
+    :cpp:`tcspc::real_linear_timing_event`
+        The underlying C++ event type.
+    """
+
+    def __init__(self, numeric_traits: NumericTraits | None = None) -> None:
+        self._numeric_traits = (
+            numeric_traits if numeric_traits is not None else NumericTraits()
+        )
+
+    @override
+    def _cpp_type_name(self) -> _CppTypeName:
+        return _CppTypeName(
+            f"tcspc::real_linear_timing_event<{self._numeric_traits._cpp_type_name()}>"
+        )
+
+
+class RealOneShotTimingEvent(EventType):
+    """Event describing a single (one-shot) delayed timing.
+
+    Emitted by `ExtrapolatePeriodicSequences`. Can be used as the trigger
+    pattern for `Generate` with a dynamic one-shot timing generator.
+
+    Parameters
+    ----------
+    numeric_traits : NumericTraits or None
+        Set of integer types parameterising the C++ event. ``None`` (the
+        default) uses `NumericTraits` defaults.
+
+    Notes
+    -----
+    The corresponding C++ event has the fields ``abstime`` and ``delay``.
+
+    See Also
+    --------
+    :cpp:`tcspc::real_one_shot_timing_event`
+        The underlying C++ event type.
+    """
+
+    def __init__(self, numeric_traits: NumericTraits | None = None) -> None:
+        self._numeric_traits = (
+            numeric_traits if numeric_traits is not None else NumericTraits()
+        )
+
+    @override
+    def _cpp_type_name(self) -> _CppTypeName:
+        return _CppTypeName(
+            f"tcspc::real_one_shot_timing_event<{self._numeric_traits._cpp_type_name()}>"
+        )
 
 
 class SwabianTagEvent(EventType):

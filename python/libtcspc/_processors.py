@@ -10,6 +10,7 @@ from typing_extensions import override
 from . import _access, _cpp_utils, _events, _streams
 from ._access import AccessTag, _AccessSpec
 from ._acquisition_readers import AcquisitionReader, PyAcquisitionReader
+from ._bin_mappers import BinMapper
 from ._bucket_sources import (
     BucketSource,
     PyBucketSource,
@@ -25,12 +26,15 @@ from ._cpp_utils import (
     _string_type,
     _uint64_type,
 )
+from ._data_mappers import DataMapper
 from ._events import BucketEvent, EventType, WarningEvent
 from ._graph import Graph, Subgraph
+from ._matchers import Matcher
 from ._node import Node, _RelayNode, _TypePreservingRelayNode
 from ._numeric_traits import NumericTraits
 from ._param import Param
 from ._routers import Router
+from ._timing_generators import TimingGenerator
 
 
 def _check_events_subset_of(
@@ -205,6 +209,69 @@ def _acquisition_reader_cpp_expression(
 
 # Note: Wrappers of C++ processors are ordered alphabetically without regard to
 # the C++ header in which they are defined.
+
+
+def _with_event_added(
+    input_events: Iterable[EventType], event: EventType
+) -> tuple[EventType, ...]:
+    events = tuple(input_events)
+    if _cpp_utils._contains_type(
+        (t._cpp_type_name() for t in events), event._cpp_type_name()
+    ):
+        return events
+    return (*events, event)
+
+
+def _double_expr(
+    gencontext: _CodeGenerationContext, v: float | Param[float]
+) -> str:
+    if isinstance(v, Param):
+        return f"{gencontext.params_varname}.{v._cpp_identifier()}"
+    return repr(float(v))
+
+
+def _cast_int_expr(
+    gencontext: _CodeGenerationContext,
+    v: int | Param[int],
+    cpp_type: str,
+) -> str:
+    if isinstance(v, Param):
+        inner = f"{gencontext.params_varname}.{v._cpp_identifier()}"
+    else:
+        inner = str(v)
+    return f"static_cast<{cpp_type}>({inner})"
+
+
+_OVERFLOW_POLICIES = {
+    "error": "tcspc::histogram_policy::error_on_overflow",
+    "stop": "tcspc::histogram_policy::stop_on_overflow",
+    "saturate": "tcspc::histogram_policy::saturate_on_overflow",
+    "reset": "tcspc::histogram_policy::reset_on_overflow",
+}
+
+
+def _histogram_policy_expression(
+    overflow: str,
+    *,
+    emit_concluding: bool = False,
+    reset_after_scan: bool = False,
+    clear_every_scan: bool = False,
+    no_clear_new_bucket: bool = False,
+) -> str:
+    if overflow not in _OVERFLOW_POLICIES:
+        raise ValueError(
+            f"overflow must be one of {sorted(_OVERFLOW_POLICIES)}"
+        )
+    parts = [_OVERFLOW_POLICIES[overflow]]
+    if emit_concluding:
+        parts.append("tcspc::histogram_policy::emit_concluding_events")
+    if reset_after_scan:
+        parts.append("tcspc::histogram_policy::reset_after_scan")
+    if clear_every_scan:
+        parts.append("tcspc::histogram_policy::clear_every_scan")
+    if no_clear_new_bucket:
+        parts.append("tcspc::histogram_policy::no_clear_new_bucket")
+    return "(" + " | ".join(parts) + ")"
 
 
 @final
@@ -494,6 +561,67 @@ class AcquireFullBuckets(Node):
 
 
 @final
+class AddCountToPeriodicSequences(_RelayNode):
+    """Processor that converts periodic sequence model events to linear timing events.
+
+    Converts each `PeriodicSequenceModelEvent` to a `RealLinearTimingEvent`
+    with the given count. Other events pass through.
+
+    Parameters
+    ----------
+    count : int or Param[int]
+        Number of ticks in the generated linear timing.
+    numeric_traits : NumericTraits or None
+        Numeric traits for the emitted event. Defaults to ``NumericTraits()``.
+
+    See Also
+    --------
+    :cpp:`tcspc::add_count_to_periodic_sequences`
+        The underlying C++ factory function.
+    """
+
+    def __init__(
+        self,
+        count: int | Param[int],
+        numeric_traits: NumericTraits | None = None,
+    ) -> None:
+        self._count = count
+        self._numeric_traits = (
+            numeric_traits if numeric_traits is not None else NumericTraits()
+        )
+
+    @override
+    def _parameters(self) -> Sequence[tuple[Param, _CppTypeName]]:
+        if isinstance(self._count, Param):
+            return ((self._count, _size_type),)
+        return ()
+
+    @override
+    def _relay_map_event_set(
+        self, input_event_set: Collection[EventType]
+    ) -> tuple[EventType, ...]:
+        model = _events.PeriodicSequenceModelEvent(self._numeric_traits)
+        linear = _events.RealLinearTimingEvent(self._numeric_traits)
+        out = _remove_events_from_set(input_event_set, (model,))
+        return _with_event_added(out, linear)
+
+    @override
+    def _relay_cpp_expression(
+        self,
+        gencontext: _CodeGenerationContext,
+        downstream: _CppExpression,
+    ) -> _CppExpression:
+        count = gencontext.size_t_expression(self._count)
+        return _CppExpression(
+            f"""\
+            tcspc::add_count_to_periodic_sequences<{self._numeric_traits._cpp_type_name()}>(
+                tcspc::arg::count<std::size_t>{{{count}}},
+                {downstream}
+            )"""
+        )
+
+
+@final
 class Batch(_RelayNode):
     """Processor that groups events into fixed-size buckets.
 
@@ -580,6 +708,102 @@ class Batch(_RelayNode):
 
 
 @final
+class BatchBinIncrementClusters(_RelayNode):
+    """Processor that collects bin increment clusters into encoded batches.
+
+    An optimized analogue of `Batch` for `BinIncrementClusterEvent`. Each
+    completed batch is emitted as a `BucketEvent` of bin indices. Must be paired
+    with `UnbatchBinIncrementClusters` downstream to recover the clusters.
+
+    Parameters
+    ----------
+    bucket_size : int or Param[int]
+        Size (in elements) of each storage bucket.
+    batch_size : int or Param[int]
+        Number of clusters per batch.
+    buffer_provider : BucketSource or Param[PyBucketSource] or None
+        Source of buckets. If ``None``, a default `RecyclingBucketSource` is
+        used.
+    numeric_traits : NumericTraits or None
+        Numeric traits specifying ``bin_index_type``. Defaults to
+        ``NumericTraits()``.
+
+    Notes
+    -----
+    Events handled:
+
+    - `BinIncrementClusterEvent`: encoded into a batch; emitted when full.
+    - All other event types: pass through unchanged.
+    - End of input: emit any partial batch, then pass through.
+
+    See Also
+    --------
+    :cpp:`tcspc::batch_bin_increment_clusters`
+        The underlying C++ factory function.
+    """
+
+    def __init__(
+        self,
+        bucket_size: int | Param[int],
+        batch_size: int | Param[int],
+        *,
+        buffer_provider: BucketSource | Param[PyBucketSource] | None = None,
+        numeric_traits: NumericTraits | None = None,
+    ) -> None:
+        self._bucket_size = bucket_size
+        self._batch_size = batch_size
+        self._numeric_traits = (
+            numeric_traits if numeric_traits is not None else NumericTraits()
+        )
+        self._index_element = _events._TraitsMemberEvent(
+            self._numeric_traits, "bin_index_type"
+        )
+        self._bucket_source = _bucket_source_or_default(
+            self._index_element, buffer_provider
+        )
+
+    @override
+    def _parameters(self) -> Sequence[tuple[Param, _CppTypeName]]:
+        params: list[tuple[Param, _CppTypeName]] = []
+        if isinstance(self._bucket_size, Param):
+            params.append((self._bucket_size, _size_type))
+        if isinstance(self._batch_size, Param):
+            params.append((self._batch_size, _size_type))
+        params.extend(self._bucket_source._parameters())
+        return params
+
+    @override
+    def _param_encoders(self) -> Mapping[str, Callable[[Any], Any]]:
+        return self._bucket_source._param_encoders()
+
+    @override
+    def _relay_map_event_set(
+        self, input_event_set: Collection[EventType]
+    ) -> tuple[EventType, ...]:
+        cluster = _events.BinIncrementClusterEvent(self._numeric_traits)
+        out = _remove_events_from_set(input_event_set, (cluster,))
+        return _with_event_added(out, BucketEvent(self._index_element))
+
+    @override
+    def _relay_cpp_expression(
+        self,
+        gencontext: _CodeGenerationContext,
+        downstream: _CppExpression,
+    ) -> _CppExpression:
+        bucket_size = gencontext.size_t_expression(self._bucket_size)
+        batch_size = gencontext.size_t_expression(self._batch_size)
+        return _CppExpression(
+            f"""\
+            tcspc::batch_bin_increment_clusters<{self._numeric_traits._cpp_type_name()}>(
+                {self._bucket_source._cpp_expression(gencontext)},
+                tcspc::arg::bucket_size<std::size_t>{{{bucket_size}}},
+                tcspc::arg::batch_size<std::size_t>{{{batch_size}}},
+                {downstream}
+            )"""
+        )
+
+
+@final
 class BatchFromBytes(_RelayNode):
     """Processor that copies batches of bytes into batches of typed events.
 
@@ -660,6 +884,84 @@ class BatchFromBytes(_RelayNode):
                 {downstream}
             )"""
         )
+
+
+@final
+class Broadcast(Node):
+    """Broadcasts every event to several downstream processors.
+
+    Each event received is forwarded to every connected downstream. Likewise,
+    end-of-input is propagated to every downstream.
+
+    Parameters
+    ----------
+    *event_types : EventType
+        The event types to broadcast. Every output must be connected to a
+        downstream that handles all of these types.
+    outputs : int or Sequence[str]
+        The output ports. An integer ``N`` creates ``N`` ports named
+        ``"output-0"`` through ``"output-(N-1)"``. A sequence of names creates
+        ports with those exact names. Must specify at least one output.
+
+    Notes
+    -----
+    Events handled:
+
+    - Events matching one of ``event_types``: broadcast to every downstream.
+    - Events not in ``event_types``: rejected at graph build time.
+    - End of input: broadcast to every downstream.
+
+    See Also
+    --------
+    :cpp:`tcspc::broadcast`
+        The underlying C++ factory function.
+    """
+
+    def __init__(
+        self, *event_types: EventType, outputs: int | Sequence[str]
+    ) -> None:
+        if isinstance(outputs, int):
+            if outputs < 1:
+                raise ValueError("Broadcast requires at least one output")
+            output_names: tuple[str, ...] = tuple(
+                f"output-{i}" for i in range(outputs)
+            )
+        else:
+            output_names = tuple(outputs)
+            if len(output_names) < 1:
+                raise ValueError("Broadcast requires at least one output")
+            if len(set(output_names)) != len(output_names):
+                raise ValueError("Broadcast output names must be unique")
+        super().__init__(output=output_names)
+        self._event_types = tuple(event_types)
+
+    @override
+    def _map_event_sets(
+        self, input_event_sets: Sequence[Collection[EventType]]
+    ) -> tuple[tuple[EventType, ...], ...]:
+        if len(input_event_sets) != 1:
+            raise ValueError(
+                f"wrong number of inputs (1 expected, {len(input_event_sets)} found)"
+            )
+        _check_events_subset_of(
+            input_event_sets[0], self._event_types, self.__class__.__name__
+        )
+        return tuple(self._event_types for _ in self.outputs())
+
+    @override
+    def _cpp_expression(
+        self,
+        gencontext: _CodeGenerationContext,
+        downstreams: Sequence[_CppExpression],
+    ) -> _CppExpression:
+        n = len(self.outputs())
+        if len(downstreams) != n:
+            raise ValueError(
+                f"expected {n} downstream(s); found {len(downstreams)}"
+            )
+        event_list = _make_type_list(self._event_types)
+        args = ", ".join(downstreams)
+        return _CppExpression(f"tcspc::broadcast<{event_list}>({args})")
 
 
 @final
@@ -790,6 +1092,154 @@ class CheckMonotonic(_RelayNode):
         return _CppExpression(
             f"""\
             tcspc::check_monotonic<{self._numeric_traits._cpp_type_name()}>(
+                {downstream}
+            )"""
+        )
+
+
+@final
+class ClusterBinIncrements(_RelayNode):
+    """Processor that collects bin increments between start and stop events into clusters.
+
+    Bin increments received while within a cluster (after a ``start_event_type``
+    and before a ``stop_event_type``) are collected; each completed cluster is
+    emitted as a `BinIncrementClusterEvent`.
+
+    Parameters
+    ----------
+    start_event_type : EventType
+        Event type that starts a cluster.
+    stop_event_type : EventType
+        Event type that ends a cluster.
+    numeric_traits : NumericTraits or None
+        Numeric traits for the events. Defaults to ``NumericTraits()``.
+
+    Notes
+    -----
+    Events handled:
+
+    - ``start_event_type``: begin a new cluster (consumed).
+    - ``stop_event_type``: emit the current cluster as a
+      `BinIncrementClusterEvent` (consumed).
+    - `BinIncrementEvent`: recorded into the current cluster (consumed).
+    - All other event types: pass through unchanged.
+    - End of input: pass through.
+
+    See Also
+    --------
+    :cpp:`tcspc::cluster_bin_increments`
+        The underlying C++ factory function.
+    """
+
+    def __init__(
+        self,
+        start_event_type: EventType,
+        stop_event_type: EventType,
+        numeric_traits: NumericTraits | None = None,
+    ) -> None:
+        self._start = start_event_type
+        self._stop = stop_event_type
+        self._numeric_traits = (
+            numeric_traits if numeric_traits is not None else NumericTraits()
+        )
+
+    @override
+    def _relay_map_event_set(
+        self, input_event_set: Collection[EventType]
+    ) -> tuple[EventType, ...]:
+        bi = _events.BinIncrementEvent(self._numeric_traits)
+        cluster = _events.BinIncrementClusterEvent(self._numeric_traits)
+        out = _remove_events_from_set(
+            input_event_set, (bi, self._start, self._stop)
+        )
+        return _with_event_added(out, cluster)
+
+    @override
+    def _relay_cpp_expression(
+        self,
+        gencontext: _CodeGenerationContext,
+        downstream: _CppExpression,
+    ) -> _CppExpression:
+        return _CppExpression(
+            f"""\
+            tcspc::cluster_bin_increments<
+                {self._start._cpp_type_name()},
+                {self._stop._cpp_type_name()},
+                {self._numeric_traits._cpp_type_name()}
+            >(
+                {downstream}
+            )"""
+        )
+
+
+@final
+class ConvertSequencesToStartStop(_RelayNode):
+    """Processor that converts tick sequences to gapless start-stop event pairs.
+
+    Every ``count + 1`` ``tick_event_type`` events are replaced by a series of
+    ``start_event_type`` and ``stop_event_type`` events bracketing each tick
+    interval. Other events pass through.
+
+    Parameters
+    ----------
+    tick_event_type : EventType
+        The tick event type (consumed). Must have an ``abstime`` field.
+    start_event_type : EventType
+        The emitted start event type. Must be brace-initializable and have an
+        ``abstime`` field.
+    stop_event_type : EventType
+        The emitted stop event type. Must be brace-initializable and have an
+        ``abstime`` field.
+    count : int or Param[int]
+        Number of intervals per sequence.
+
+    See Also
+    --------
+    :cpp:`tcspc::convert_sequences_to_start_stop`
+        The underlying C++ factory function.
+    """
+
+    def __init__(
+        self,
+        tick_event_type: EventType,
+        start_event_type: EventType,
+        stop_event_type: EventType,
+        count: int | Param[int],
+    ) -> None:
+        self._tick = tick_event_type
+        self._start = start_event_type
+        self._stop = stop_event_type
+        self._count = count
+
+    @override
+    def _parameters(self) -> Sequence[tuple[Param, _CppTypeName]]:
+        if isinstance(self._count, Param):
+            return ((self._count, _size_type),)
+        return ()
+
+    @override
+    def _relay_map_event_set(
+        self, input_event_set: Collection[EventType]
+    ) -> tuple[EventType, ...]:
+        out = _remove_events_from_set(input_event_set, (self._tick,))
+        out = _with_event_added(out, self._start)
+        return _with_event_added(out, self._stop)
+
+    @override
+    def _relay_cpp_expression(
+        self,
+        gencontext: _CodeGenerationContext,
+        downstream: _CppExpression,
+    ) -> _CppExpression:
+        count = gencontext.size_t_expression(self._count)
+        return _CppExpression(
+            f"""\
+            tcspc::convert_sequences_to_start_stop<
+                {self._tick._cpp_type_name()},
+                {self._start._cpp_type_name()},
+                {self._stop._cpp_type_name()}
+            >(
+                tcspc::arg::count<std::size_t>{{{count}}},
                 {downstream}
             )"""
         )
@@ -2071,196 +2521,755 @@ class Delay(_TypePreservingRelayNode):
 
 
 @final
-class Broadcast(Node):
-    """Broadcasts every event to several downstream processors.
+class ExtractBucket(_RelayNode):
+    """Processor that extracts the bucket carried by a bucket-carrying event.
 
-    Each event received is forwarded to every connected downstream. Likewise,
-    end-of-input is propagated to every downstream.
+    Pulls the ``data_bucket`` field out of each ``event_type`` and emits it as
+    a `BucketEvent`. This is the way to obtain the result of `Histogram` or
+    `ScanHistograms` (whose output events cannot be sent to a Python sink
+    directly) as a NumPy array.
 
     Parameters
     ----------
-    *event_types : EventType
-        The event types to broadcast. Every output must be connected to a
-        downstream that handles all of these types.
-    outputs : int or Sequence[str]
-        The output ports. An integer ``N`` creates ``N`` ports named
-        ``"output-0"`` through ``"output-(N-1)"``. A sequence of names creates
-        ports with those exact names. Must specify at least one output.
+    event_type : EventType
+        The bucket-carrying event type to extract from. The input event set
+        must consist only of this type, which must carry a ``data_bucket``.
 
     Notes
     -----
     Events handled:
 
-    - Events matching one of ``event_types``: broadcast to every downstream.
-    - Events not in ``event_types``: rejected at graph build time.
-    - End of input: broadcast to every downstream.
+    - Events matching ``event_type``: emit the carried bucket as a
+      `BucketEvent`.
+    - All other event types: rejected at graph build time.
+    - End of input: pass through.
 
     See Also
     --------
-    :cpp:`tcspc::broadcast`
+    :cpp:`tcspc::extract_bucket`
         The underlying C++ factory function.
     """
 
-    def __init__(
-        self, *event_types: EventType, outputs: int | Sequence[str]
-    ) -> None:
-        if isinstance(outputs, int):
-            if outputs < 1:
-                raise ValueError("Broadcast requires at least one output")
-            output_names: tuple[str, ...] = tuple(
-                f"output-{i}" for i in range(outputs)
-            )
-        else:
-            output_names = tuple(outputs)
-            if len(output_names) < 1:
-                raise ValueError("Broadcast requires at least one output")
-            if len(set(output_names)) != len(output_names):
-                raise ValueError("Broadcast output names must be unique")
-        super().__init__(output=output_names)
-        self._event_types = tuple(event_types)
-
-    @override
-    def _map_event_sets(
-        self, input_event_sets: Sequence[Collection[EventType]]
-    ) -> tuple[tuple[EventType, ...], ...]:
-        if len(input_event_sets) != 1:
+    def __init__(self, event_type: EventType) -> None:
+        if not hasattr(event_type, "_data_bucket_element_event_type"):
             raise ValueError(
-                f"wrong number of inputs (1 expected, {len(input_event_sets)} found)"
+                f"{event_type} does not carry an extractable bucket"
             )
-        _check_events_subset_of(
-            input_event_sets[0], self._event_types, self.__class__.__name__
-        )
-        return tuple(self._event_types for _ in self.outputs())
+        self._event_type = event_type
 
     @override
-    def _cpp_expression(
+    def _relay_map_event_set(
+        self, input_event_set: Collection[EventType]
+    ) -> tuple[EventType, ...]:
+        _check_events_subset_of(
+            input_event_set, (self._event_type,), self.__class__.__name__
+        )
+        element = self._event_type._data_bucket_element_event_type()  # type: ignore[attr-defined]
+        return (BucketEvent(element),)
+
+    @override
+    def _relay_cpp_expression(
         self,
         gencontext: _CodeGenerationContext,
-        downstreams: Sequence[_CppExpression],
+        downstream: _CppExpression,
     ) -> _CppExpression:
-        n = len(self.outputs())
-        if len(downstreams) != n:
-            raise ValueError(
-                f"expected {n} downstream(s); found {len(downstreams)}"
-            )
-        event_list = _make_type_list(self._event_types)
-        args = ", ".join(downstreams)
-        return _CppExpression(f"tcspc::broadcast<{event_list}>({args})")
+        return _CppExpression(
+            f"""\
+            tcspc::extract_bucket<{self._event_type._cpp_type_name()}>(
+                {downstream}
+            )"""
+        )
 
 
 @final
-class Route(Node):
-    """Routes events to one of several downstreams via a `Router`, broadcasting the rest.
+class ExtrapolatePeriodicSequences(_RelayNode):
+    """Processor that extrapolates a periodic sequence to a one-shot timing event.
 
-    Each *routed* event is delivered to the single downstream selected by the
-    router (or discarded if the router selects no output). Each *broadcast*
-    event is delivered to every downstream. End-of-input is propagated to every
-    downstream.
+    Converts each `PeriodicSequenceModelEvent` to a `RealOneShotTimingEvent`
+    extrapolated to the given tick index. Other events pass through.
 
     Parameters
     ----------
-    *routed_event_types : EventType
-        The event types to route. The router selects which output each such
-        event is sent to.
-    broadcast_event_types : Sequence[EventType], keyword-only
-        The event types to broadcast to every downstream. Must not overlap with
-        the routed event types. Default: empty.
-    router : Router, keyword-only
-        The router that maps each routed event to an output-port index.
-    outputs : int or Sequence[str], keyword-only
-        The output ports. An integer ``N`` creates ``N`` ports named
-        ``"output-0"`` through ``"output-(N-1)"``. A sequence of names creates
-        ports with those exact names. Must specify at least one output.
+    tick_index : int or Param[int]
+        Tick index to extrapolate to.
+    numeric_traits : NumericTraits or None
+        Numeric traits for the emitted event. Defaults to ``NumericTraits()``.
+
+    See Also
+    --------
+    :cpp:`tcspc::extrapolate_periodic_sequences`
+        The underlying C++ factory function.
+    """
+
+    def __init__(
+        self,
+        tick_index: int | Param[int],
+        numeric_traits: NumericTraits | None = None,
+    ) -> None:
+        self._tick_index = tick_index
+        self._numeric_traits = (
+            numeric_traits if numeric_traits is not None else NumericTraits()
+        )
+
+    @override
+    def _parameters(self) -> Sequence[tuple[Param, _CppTypeName]]:
+        if isinstance(self._tick_index, Param):
+            return ((self._tick_index, _size_type),)
+        return ()
+
+    @override
+    def _relay_map_event_set(
+        self, input_event_set: Collection[EventType]
+    ) -> tuple[EventType, ...]:
+        model = _events.PeriodicSequenceModelEvent(self._numeric_traits)
+        one_shot = _events.RealOneShotTimingEvent(self._numeric_traits)
+        out = _remove_events_from_set(input_event_set, (model,))
+        return _with_event_added(out, one_shot)
+
+    @override
+    def _relay_cpp_expression(
+        self,
+        gencontext: _CodeGenerationContext,
+        downstream: _CppExpression,
+    ) -> _CppExpression:
+        tick_index = gencontext.size_t_expression(self._tick_index)
+        return _CppExpression(
+            f"""\
+            tcspc::extrapolate_periodic_sequences<{self._numeric_traits._cpp_type_name()}>(
+                tcspc::arg::tick_index<std::size_t>{{{tick_index}}},
+                {downstream}
+            )"""
+        )
+
+
+@final
+class FitPeriodicSequences(_RelayNode):
+    """Processor that fits fixed-length periodic sequences and estimates timing.
+
+    Every ``length`` events of ``event_type`` are fit to a periodic model; a
+    `PeriodicSequenceModelEvent` is emitted with the estimated start time and
+    interval. Other events pass through.
+
+    Parameters
+    ----------
+    event_type : EventType
+        The event type to accumulate and fit. Must have an ``abstime`` field.
+    length : int or Param[int]
+        Number of events per sequence (at least 3).
+    min_interval : float or Param[float]
+        Minimum acceptable estimated interval.
+    max_interval : float or Param[float]
+        Maximum acceptable estimated interval.
+    max_mse : float or Param[float]
+        Maximum acceptable mean squared error of the fit.
+    numeric_traits : NumericTraits or None
+        Numeric traits for the emitted event. Defaults to ``NumericTraits()``.
+
+    See Also
+    --------
+    :cpp:`tcspc::fit_periodic_sequences`
+        The underlying C++ factory function.
+    """
+
+    def __init__(
+        self,
+        event_type: EventType,
+        length: int | Param[int],
+        min_interval: float | Param[float],
+        max_interval: float | Param[float],
+        max_mse: float | Param[float],
+        numeric_traits: NumericTraits | None = None,
+    ) -> None:
+        self._event_type = event_type
+        self._length = length
+        self._min_interval = min_interval
+        self._max_interval = max_interval
+        self._max_mse = max_mse
+        self._numeric_traits = (
+            numeric_traits if numeric_traits is not None else NumericTraits()
+        )
+
+    @override
+    def _parameters(self) -> Sequence[tuple[Param, _CppTypeName]]:
+        params: list[tuple[Param, _CppTypeName]] = []
+        if isinstance(self._length, Param):
+            params.append((self._length, _size_type))
+        for v in (self._min_interval, self._max_interval, self._max_mse):
+            if isinstance(v, Param):
+                params.append((v, _CppTypeName("double")))
+        return params
+
+    @override
+    def _relay_map_event_set(
+        self, input_event_set: Collection[EventType]
+    ) -> tuple[EventType, ...]:
+        model = _events.PeriodicSequenceModelEvent(self._numeric_traits)
+        out = _remove_events_from_set(input_event_set, (self._event_type,))
+        return _with_event_added(out, model)
+
+    @override
+    def _relay_cpp_expression(
+        self,
+        gencontext: _CodeGenerationContext,
+        downstream: _CppExpression,
+    ) -> _CppExpression:
+        length = gencontext.size_t_expression(self._length)
+        return _CppExpression(
+            f"""\
+            tcspc::fit_periodic_sequences<
+                {self._event_type._cpp_type_name()}, {self._numeric_traits._cpp_type_name()}
+            >(
+                tcspc::arg::length<std::size_t>{{{length}}},
+                tcspc::arg::min_interval<double>{{{_double_expr(gencontext, self._min_interval)}}},
+                tcspc::arg::max_interval<double>{{{_double_expr(gencontext, self._max_interval)}}},
+                tcspc::arg::max_mse<double>{{{_double_expr(gencontext, self._max_mse)}}},
+                {downstream}
+            )"""
+        )
+
+
+@final
+class Gate(_TypePreservingRelayNode):
+    """Pass-through processor that gates events depending on open/close state.
+
+    Maintains a boolean gate. When an ``open_event_type`` is received the gate
+    opens; when a ``close_event_type`` is received it closes. Events of the
+    gated types are passed through only while the gate is open; all other
+    events (including the open and close events) always pass through.
+
+    Parameters
+    ----------
+    *gated_event_types : EventType
+        Event types to gate.
+    open_event_type : EventType, keyword-only
+        Event type that opens the gate.
+    close_event_type : EventType, keyword-only
+        Event type that closes the gate.
+    initially_open : bool or Param[bool], keyword-only
+        Initial state of the gate. Default ``False``.
 
     Notes
     -----
     Events handled:
 
-    - Events matching one of ``routed_event_types``: routed to one downstream.
-    - Events matching one of ``broadcast_event_types``: broadcast to every
-      downstream.
-    - Other events: rejected at graph build time.
-    - End of input: broadcast to every downstream.
+    - Events in ``gated_event_types``: passed through only while open.
+    - ``open_event_type`` / ``close_event_type``: open/close the gate and pass
+      through.
+    - All other event types: pass through unchanged.
+    - End of input: pass through.
 
     See Also
     --------
-    :cpp:`tcspc::route`
+    :cpp:`tcspc::gate`
         The underlying C++ factory function.
-    :py:obj:`Broadcast`
-        Sends every event to every downstream.
     """
 
     def __init__(
         self,
-        *routed_event_types: EventType,
-        broadcast_event_types: Sequence[EventType] = (),
-        router: Router,
-        outputs: int | Sequence[str],
+        *gated_event_types: EventType,
+        open_event_type: EventType,
+        close_event_type: EventType,
+        initially_open: bool | Param[bool] = False,
     ) -> None:
-        if isinstance(outputs, int):
-            if outputs < 1:
-                raise ValueError("Route requires at least one output")
-            output_names: tuple[str, ...] = tuple(
-                f"output-{i}" for i in range(outputs)
-            )
-        else:
-            output_names = tuple(outputs)
-            if len(output_names) < 1:
-                raise ValueError("Route requires at least one output")
-            if len(set(output_names)) != len(output_names):
-                raise ValueError("Route output names must be unique")
-        super().__init__(output=output_names)
-        self._routed = tuple(routed_event_types)
-        self._broadcast = tuple(broadcast_event_types)
-        self._router = router
-
-        for b in self._broadcast:
-            if _cpp_utils._contains_type(
-                (r._cpp_type_name() for r in self._routed),
-                b._cpp_type_name(),
-            ):
-                raise ValueError(
-                    f"event type {b} must not be both routed and broadcast"
-                )
-
-    @override
-    def _map_event_sets(
-        self, input_event_sets: Sequence[Collection[EventType]]
-    ) -> tuple[tuple[EventType, ...], ...]:
-        if len(input_event_sets) != 1:
-            raise ValueError(
-                f"wrong number of inputs (1 expected, {len(input_event_sets)} found)"
-            )
-        allowed = self._routed + self._broadcast
-        _check_events_subset_of(
-            input_event_sets[0], allowed, self.__class__.__name__
-        )
-        return tuple(allowed for _ in self.outputs())
+        self._gated = tuple(gated_event_types)
+        self._open = open_event_type
+        self._close = close_event_type
+        self._initially_open = initially_open
 
     @override
     def _parameters(self) -> Sequence[tuple[Param, _CppTypeName]]:
-        return self._router._parameters()
+        if isinstance(self._initially_open, Param):
+            return ((self._initially_open, _CppTypeName("bool")),)
+        return ()
+
+    @override
+    def _relay_cpp_expression(
+        self,
+        gencontext: _CodeGenerationContext,
+        downstream: _CppExpression,
+    ) -> _CppExpression:
+        gated_list = _make_type_list(self._gated)
+        if isinstance(self._initially_open, Param):
+            value = f"{gencontext.params_varname}.{self._initially_open._cpp_identifier()}"
+        else:
+            value = "true" if self._initially_open else "false"
+        return _CppExpression(
+            f"""\
+            tcspc::gate<
+                {gated_list},
+                {self._open._cpp_type_name()},
+                {self._close._cpp_type_name()}
+            >(
+                tcspc::arg::initially_open{{static_cast<bool>({value})}},
+                {downstream}
+            )"""
+        )
+
+
+@final
+class Generate(_RelayNode):
+    """Processor that generates timing events in response to a trigger.
+
+    Each ``trigger_event_type`` starts generation of a pattern of
+    ``output_event_type`` events according to the timing generator. All input
+    events pass through; generated events are interleaved by abstime.
+
+    Parameters
+    ----------
+    trigger_event_type : EventType
+        The event type that triggers generation.
+    output_event_type : EventType
+        The event type generated. Must have an ``abstime`` field.
+    generator : TimingGenerator
+        The timing generator producing the pattern.
+
+    Notes
+    -----
+    Events handled:
+
+    - ``trigger_event_type``: start generating a pattern; pass through.
+    - All other event types: pass through; generated events interleaved.
+    - End of input: pass through (remaining timings not generated).
+
+    See Also
+    --------
+    :cpp:`tcspc::generate`
+        The underlying C++ factory function.
+    """
+
+    def __init__(
+        self,
+        trigger_event_type: EventType,
+        output_event_type: EventType,
+        generator: TimingGenerator,
+    ) -> None:
+        self._trigger = trigger_event_type
+        self._output = output_event_type
+        self._generator = generator
+
+    @override
+    def _parameters(self) -> Sequence[tuple[Param, _CppTypeName]]:
+        return self._generator._parameters()
 
     @override
     def _param_encoders(self) -> Mapping[str, Callable[[Any], Any]]:
-        return self._router._param_encoders()
+        return self._generator._param_encoders()
 
     @override
-    def _cpp_expression(
+    def _relay_map_event_set(
+        self, input_event_set: Collection[EventType]
+    ) -> tuple[EventType, ...]:
+        return _with_event_added(input_event_set, self._output)
+
+    @override
+    def _relay_cpp_expression(
         self,
         gencontext: _CodeGenerationContext,
-        downstreams: Sequence[_CppExpression],
+        downstream: _CppExpression,
     ) -> _CppExpression:
-        n = len(self.outputs())
-        if len(downstreams) != n:
+        generator = self._generator._cpp_expression(gencontext)
+        return _CppExpression(
+            f"""\
+            tcspc::generate<
+                {self._trigger._cpp_type_name()},
+                {self._output._cpp_type_name()}
+            >(
+                {generator},
+                {downstream}
+            )"""
+        )
+
+
+@final
+class Histogram(_RelayNode):
+    """Processor that accumulates a histogram from bin increment events.
+
+    Each `BinIncrementEvent` increments the corresponding bin; a `HistogramEvent`
+    carrying a view of the current histogram is emitted on each increment. A
+    round of accumulation ends on a ``reset_event_type``; if concluding events
+    are enabled, a `ConcludingHistogramEvent` is emitted on each reset.
+
+    Parameters
+    ----------
+    num_bins : int or Param[int]
+        Number of bins in the histogram.
+    max_per_bin : int or Param[int]
+        Maximum count per bin before the overflow policy applies.
+    reset_event_type : EventType or None
+        Event type that resets (starts a new round). ``None`` (the default)
+        means no reset event.
+    buffer_provider : BucketSource or Param[PyBucketSource] or None
+        Source of buckets holding the histogram. If ``None``, a default
+        `RecyclingBucketSource` is used.
+    overflow : str
+        Overflow behavior: ``"error"`` (default), ``"stop"``, ``"saturate"``,
+        or ``"reset"``.
+    emit_concluding : bool
+        If ``True``, emit a `ConcludingHistogramEvent` on each reset. Default
+        ``False``.
+    numeric_traits : NumericTraits or None
+        Numeric traits specifying ``bin_index_type`` and ``bin_type``. Defaults
+        to ``NumericTraits()``.
+
+    Notes
+    -----
+    The histogram-carrying output events cannot be sent to a Python sink; insert
+    `ExtractBucket` to obtain the histogram as a NumPy array.
+
+    See Also
+    --------
+    :cpp:`tcspc::histogram`
+        The underlying C++ factory function.
+    :py:obj:`ExtractBucket`
+        Extract the histogram bucket as a NumPy array.
+    """
+
+    def __init__(
+        self,
+        num_bins: int | Param[int],
+        max_per_bin: int | Param[int],
+        reset_event_type: EventType | None = None,
+        *,
+        buffer_provider: BucketSource | Param[PyBucketSource] | None = None,
+        overflow: str = "error",
+        emit_concluding: bool = False,
+        numeric_traits: NumericTraits | None = None,
+    ) -> None:
+        if overflow not in _OVERFLOW_POLICIES:
             raise ValueError(
-                f"expected {n} downstream(s); found {len(downstreams)}"
+                f"overflow must be one of {sorted(_OVERFLOW_POLICIES)}"
             )
-        routed = _make_type_list(self._routed)
-        broadcast = _make_type_list(self._broadcast)
-        router_expr = self._router._cpp_expression(gencontext)
-        args = ", ".join([router_expr, *downstreams])
-        return _CppExpression(f"tcspc::route<{routed}, {broadcast}>({args})")
+        self._num_bins = num_bins
+        self._max_per_bin = max_per_bin
+        self._reset_event_type = reset_event_type
+        self._overflow = overflow
+        self._emit_concluding = emit_concluding
+        self._numeric_traits = (
+            numeric_traits if numeric_traits is not None else NumericTraits()
+        )
+        self._bin_element = _events._TraitsMemberEvent(
+            self._numeric_traits, "bin_type"
+        )
+        self._bucket_source = _bucket_source_or_default(
+            self._bin_element, buffer_provider
+        )
+
+    @override
+    def _parameters(self) -> Sequence[tuple[Param, _CppTypeName]]:
+        nt = self._numeric_traits._cpp_type_name()
+        params: list[tuple[Param, _CppTypeName]] = []
+        if isinstance(self._num_bins, Param):
+            params.append((self._num_bins, _size_type))
+        if isinstance(self._max_per_bin, Param):
+            params.append((self._max_per_bin, _CppTypeName(f"{nt}::bin_type")))
+        params.extend(self._bucket_source._parameters())
+        return params
+
+    @override
+    def _param_encoders(self) -> Mapping[str, Callable[[Any], Any]]:
+        return self._bucket_source._param_encoders()
+
+    @override
+    def _relay_map_event_set(
+        self, input_event_set: Collection[EventType]
+    ) -> tuple[EventType, ...]:
+        bi = _events.BinIncrementEvent(self._numeric_traits)
+        out = _remove_events_from_set(input_event_set, (bi,))
+        out = _with_event_added(
+            out, _events.HistogramEvent(self._numeric_traits)
+        )
+        if self._emit_concluding:
+            out = _with_event_added(
+                out, _events.ConcludingHistogramEvent(self._numeric_traits)
+            )
+        if self._overflow == "saturate":
+            out = _with_event_added(out, WarningEvent())
+        return out
+
+    @override
+    def _relay_cpp_expression(
+        self,
+        gencontext: _CodeGenerationContext,
+        downstream: _CppExpression,
+    ) -> _CppExpression:
+        nt = self._numeric_traits._cpp_type_name()
+        bt = f"{nt}::bin_type"
+        policy = _histogram_policy_expression(
+            self._overflow, emit_concluding=self._emit_concluding
+        )
+        reset = (
+            self._reset_event_type._cpp_type_name()
+            if self._reset_event_type is not None
+            else "tcspc::never_event"
+        )
+        num_bins = gencontext.size_t_expression(self._num_bins)
+        max_per_bin = _cast_int_expr(gencontext, self._max_per_bin, bt)
+        return _CppExpression(
+            f"""\
+            tcspc::histogram<{policy}, {reset}, {nt}>(
+                tcspc::arg::num_bins<std::size_t>{{{num_bins}}},
+                tcspc::arg::max_per_bin<{bt}>{{{max_per_bin}}},
+                {self._bucket_source._cpp_expression(gencontext)},
+                {downstream}
+            )"""
+        )
+
+
+@final
+class MapToBins(_RelayNode):
+    """Processor that maps datapoint events to bin increment events.
+
+    Each `DatapointEvent` is mapped to a `BinIncrementEvent` by the bin mapper
+    (or discarded if the bin mapper rejects it); other events pass through.
+
+    Parameters
+    ----------
+    bin_mapper : BinMapper
+        The bin mapper mapping datapoints to bin indices.
+    numeric_traits : NumericTraits or None
+        Numeric traits for the events. Defaults to ``NumericTraits()``.
+
+    Notes
+    -----
+    Events handled:
+
+    - `DatapointEvent`: emit a `BinIncrementEvent` (unless discarded).
+    - All other event types: pass through unchanged.
+    - End of input: pass through.
+
+    See Also
+    --------
+    :cpp:`tcspc::map_to_bins`
+        The underlying C++ factory function.
+    """
+
+    def __init__(
+        self,
+        bin_mapper: BinMapper,
+        numeric_traits: NumericTraits | None = None,
+    ) -> None:
+        self._bin_mapper = bin_mapper
+        self._numeric_traits = (
+            numeric_traits if numeric_traits is not None else NumericTraits()
+        )
+
+    @override
+    def _accesses(self) -> Sequence[tuple[AccessTag, type[_AccessSpec]]]:
+        return self._bin_mapper._accesses()
+
+    @override
+    def _parameters(self) -> Sequence[tuple[Param, _CppTypeName]]:
+        return self._bin_mapper._parameters()
+
+    @override
+    def _param_encoders(self) -> Mapping[str, Callable[[Any], Any]]:
+        return self._bin_mapper._param_encoders()
+
+    @override
+    def _relay_map_event_set(
+        self, input_event_set: Collection[EventType]
+    ) -> tuple[EventType, ...]:
+        dp = _events.DatapointEvent(self._numeric_traits)
+        bi = _events.BinIncrementEvent(self._numeric_traits)
+        out = _remove_events_from_set(input_event_set, (dp,))
+        return _with_event_added(out, bi)
+
+    @override
+    def _relay_cpp_expression(
+        self,
+        gencontext: _CodeGenerationContext,
+        downstream: _CppExpression,
+    ) -> _CppExpression:
+        bin_mapper = self._bin_mapper._cpp_expression(gencontext)
+        return _CppExpression(
+            f"""\
+            tcspc::map_to_bins<{self._numeric_traits._cpp_type_name()}>(
+                {bin_mapper},
+                {downstream}
+            )"""
+        )
+
+
+@final
+class MapToDatapoints(_RelayNode):
+    """Processor that maps events to datapoint events using a data mapper.
+
+    Each event of ``event_type`` is mapped to a `DatapointEvent` by the data
+    mapper; other events pass through.
+
+    Parameters
+    ----------
+    event_type : EventType
+        The event type to map.
+    data_mapper : DataMapper
+        The data mapper extracting the datapoint value.
+    numeric_traits : NumericTraits or None
+        Numeric traits for the emitted `DatapointEvent`. Defaults to
+        ``NumericTraits()``.
+
+    Notes
+    -----
+    Events handled:
+
+    - Events matching ``event_type``: emit a `DatapointEvent`.
+    - All other event types: pass through unchanged.
+    - End of input: pass through.
+
+    See Also
+    --------
+    :cpp:`tcspc::map_to_datapoints`
+        The underlying C++ factory function.
+    """
+
+    def __init__(
+        self,
+        event_type: EventType,
+        data_mapper: DataMapper,
+        numeric_traits: NumericTraits | None = None,
+    ) -> None:
+        self._event_type = event_type
+        self._data_mapper = data_mapper
+        self._numeric_traits = (
+            numeric_traits if numeric_traits is not None else NumericTraits()
+        )
+
+    @override
+    def _parameters(self) -> Sequence[tuple[Param, _CppTypeName]]:
+        return self._data_mapper._parameters()
+
+    @override
+    def _param_encoders(self) -> Mapping[str, Callable[[Any], Any]]:
+        return self._data_mapper._param_encoders()
+
+    @override
+    def _relay_map_event_set(
+        self, input_event_set: Collection[EventType]
+    ) -> tuple[EventType, ...]:
+        dp = _events.DatapointEvent(self._numeric_traits)
+        out = _remove_events_from_set(input_event_set, (self._event_type,))
+        return _with_event_added(out, dp)
+
+    @override
+    def _relay_cpp_expression(
+        self,
+        gencontext: _CodeGenerationContext,
+        downstream: _CppExpression,
+    ) -> _CppExpression:
+        mapper = self._data_mapper._cpp_expression(gencontext)
+        return _CppExpression(
+            f"""\
+            tcspc::map_to_datapoints<
+                {self._event_type._cpp_type_name()}, {self._numeric_traits._cpp_type_name()}
+            >(
+                {mapper},
+                {downstream}
+            )"""
+        )
+
+
+class _Match(_RelayNode):
+    """Common base for the match relay nodes."""
+
+    _factory = ""
+
+    def __init__(
+        self,
+        event_type: EventType,
+        out_event_type: EventType,
+        matcher: Matcher,
+    ) -> None:
+        self._event_type = event_type
+        self._out_event_type = out_event_type
+        self._matcher = matcher
+
+    @override
+    def _parameters(self) -> Sequence[tuple[Param, _CppTypeName]]:
+        return self._matcher._parameters()
+
+    @override
+    def _param_encoders(self) -> Mapping[str, Callable[[Any], Any]]:
+        return self._matcher._param_encoders()
+
+    @override
+    def _relay_map_event_set(
+        self, input_event_set: Collection[EventType]
+    ) -> tuple[EventType, ...]:
+        return _with_event_added(input_event_set, self._out_event_type)
+
+    @override
+    def _relay_cpp_expression(
+        self,
+        gencontext: _CodeGenerationContext,
+        downstream: _CppExpression,
+    ) -> _CppExpression:
+        matcher = self._matcher._cpp_expression(gencontext)
+        return _CppExpression(
+            f"""\
+            tcspc::{self._factory}<
+                {self._event_type._cpp_type_name()},
+                {self._out_event_type._cpp_type_name()}
+            >(
+                {matcher},
+                {downstream}
+            )"""
+        )
+
+
+@final
+class Match(_Match):
+    """Processor that emits an output event for each matched event, passing all through.
+
+    For each event of ``event_type`` that the matcher matches, an
+    ``out_event_type`` (constructed with the matched event's ``abstime``) is
+    emitted. All input events, matched or not, pass through.
+
+    Parameters
+    ----------
+    event_type : EventType
+        The event type tested by the matcher.
+    out_event_type : EventType
+        The event type emitted on a match. Must be constructible from an
+        ``abstime``.
+    matcher : Matcher
+        The matcher deciding which events match.
+
+    See Also
+    --------
+    :cpp:`tcspc::match`
+        The underlying C++ factory function.
+    :py:obj:`MatchAndConsume`
+        Like `Match`, but matched events are not passed through.
+    """
+
+    _factory = "match"
+
+
+@final
+class MatchAndConsume(_Match):
+    """Processor that emits an output event for each matched event, consuming matches.
+
+    Like `Match`, but matched events are not passed through (consumed); only
+    unmatched events of ``event_type`` and other events pass through.
+
+    Parameters
+    ----------
+    event_type : EventType
+        The event type tested by the matcher.
+    out_event_type : EventType
+        The event type emitted on a match. Must be constructible from an
+        ``abstime``.
+    matcher : Matcher
+        The matcher deciding which events match.
+
+    See Also
+    --------
+    :cpp:`tcspc::match_and_consume`
+        The underlying C++ factory function.
+    :py:obj:`Match`
+        Like `MatchAndConsume`, but matched events are also passed through.
+    """
+
+    _factory = "match_and_consume"
 
 
 def _input_port_names(
@@ -2557,65 +3566,45 @@ class MergeNUnsorted(Node):
         )
 
 
-@final
-class SinkAll(Node):
-    """Sink that discards every event it receives.
+class _Pair(_RelayNode):
+    """Common base for the pairing relay nodes."""
 
-    Notes
-    -----
-    Events handled:
+    _factory = ""
 
-    - All event types: ignored.
-    - End of input: ignored.
-
-    See Also
-    --------
-    :cpp:`tcspc::sink_all`
-        The underlying C++ factory function.
-    """
-
-    def __init__(self) -> None:
-        super().__init__(output=())
-
-    @override
-    def _map_event_sets(
-        self, input_event_sets: Sequence[Collection[EventType]]
-    ) -> tuple[tuple[EventType, ...], ...]:
-        return ()
-
-    @override
-    def _cpp_expression(
+    def __init__(
         self,
-        gencontext: _CodeGenerationContext,
-        downstreams: Sequence[_CppExpression],
-    ) -> _CppExpression:
-        return _CppExpression("tcspc::sink_all()")
+        start_channel: int | Param[int],
+        stop_channels: Sequence[int],
+        time_window: int | Param[int],
+        numeric_traits: NumericTraits | None = None,
+    ) -> None:
+        self._start_channel = start_channel
+        self._stop_channels = tuple(stop_channels)
+        self._time_window = time_window
+        self._numeric_traits = (
+            numeric_traits if numeric_traits is not None else NumericTraits()
+        )
 
-
-@final
-class SourceNothing(_RelayNode):
-    """Source processor that emits no events.
-
-    Notes
-    -----
-    Events handled:
-
-    - This processor has no input events; it is a source.
-    - Emits no events.
-    - End of input: pass through (flushes the downstream once).
-
-    See Also
-    --------
-    :cpp:`tcspc::source_nothing`
-        The underlying C++ factory function.
-    """
+    @override
+    def _parameters(self) -> Sequence[tuple[Param, _CppTypeName]]:
+        nt = self._numeric_traits._cpp_type_name()
+        params: list[tuple[Param, _CppTypeName]] = []
+        if isinstance(self._start_channel, Param):
+            params.append(
+                (self._start_channel, _CppTypeName(f"{nt}::channel_type"))
+            )
+        if isinstance(self._time_window, Param):
+            params.append(
+                (self._time_window, _CppTypeName(f"{nt}::abstime_type"))
+            )
+        return params
 
     @override
     def _relay_map_event_set(
         self, input_event_set: Collection[EventType]
     ) -> tuple[EventType, ...]:
-        _check_events_subset_of(input_event_set, (), self.__class__.__name__)
-        return ()
+        pair = _events.DetectionPairEvent(self._numeric_traits)
+        return _with_event_added(input_event_set, pair)
 
     @override
     def _relay_cpp_expression(
@@ -2623,7 +3612,202 @@ class SourceNothing(_RelayNode):
         gencontext: _CodeGenerationContext,
         downstream: _CppExpression,
     ) -> _CppExpression:
-        return _CppExpression(f"tcspc::source_nothing({downstream})")
+        nt = self._numeric_traits._cpp_type_name()
+        ct = f"{nt}::channel_type"
+        at = f"{nt}::abstime_type"
+        n = len(self._stop_channels)
+        start = _cast_int_expr(gencontext, self._start_channel, ct)
+        window = _cast_int_expr(gencontext, self._time_window, at)
+        stop_arr = (
+            f"std::array<{ct}, {n}>{{{{"
+            + ", ".join(f"static_cast<{ct}>({c})" for c in self._stop_channels)
+            + "}}"
+        )
+        return _CppExpression(
+            f"""\
+            tcspc::{self._factory}<{n}, {nt}>(
+                tcspc::arg::start_channel<{ct}>{{{start}}},
+                {stop_arr},
+                tcspc::arg::time_window<{at}>{{{window}}},
+                {downstream}
+            )"""
+        )
+
+
+@final
+class PairAll(_Pair):
+    """Processor that pairs each start detection with all stops within a window.
+
+    Each detection on a stop channel is paired with every buffered start
+    detection (on ``start_channel``) within ``time_window``, emitting a
+    `DetectionPairEvent` for each. Detection events also pass through.
+
+    Parameters
+    ----------
+    start_channel : int or Param[int]
+        Channel of the start detections.
+    stop_channels : Sequence[int]
+        Channels of the stop detections.
+    time_window : int or Param[int]
+        Maximum abstime difference for a pair (must be non-negative).
+    numeric_traits : NumericTraits or None
+        Numeric traits for the events. Defaults to ``NumericTraits()``.
+
+    See Also
+    --------
+    :cpp:`tcspc::pair_all`
+        The underlying C++ factory function.
+    """
+
+    _factory = "pair_all"
+
+
+@final
+class PairAllBetween(_Pair):
+    """Processor that pairs starts with all stops occurring before the next start.
+
+    Like `PairAll`, but only stop detections occurring before the next start
+    detection are considered.
+
+    Parameters
+    ----------
+    start_channel : int or Param[int]
+        Channel of the start detections.
+    stop_channels : Sequence[int]
+        Channels of the stop detections.
+    time_window : int or Param[int]
+        Maximum abstime difference for a pair (must be non-negative).
+    numeric_traits : NumericTraits or None
+        Numeric traits for the events. Defaults to ``NumericTraits()``.
+
+    See Also
+    --------
+    :cpp:`tcspc::pair_all_between`
+        The underlying C++ factory function.
+    """
+
+    _factory = "pair_all_between"
+
+
+@final
+class PairOne(_Pair):
+    """Processor that pairs each start with at most one stop per stop channel.
+
+    Like `PairAll`, but each buffered start is paired with at most one
+    detection per stop channel.
+
+    Parameters
+    ----------
+    start_channel : int or Param[int]
+        Channel of the start detections.
+    stop_channels : Sequence[int]
+        Channels of the stop detections.
+    time_window : int or Param[int]
+        Maximum abstime difference for a pair (must be non-negative).
+    numeric_traits : NumericTraits or None
+        Numeric traits for the events. Defaults to ``NumericTraits()``.
+
+    See Also
+    --------
+    :cpp:`tcspc::pair_one`
+        The underlying C++ factory function.
+    """
+
+    _factory = "pair_one"
+
+
+@final
+class PairOneBetween(_Pair):
+    """Processor that pairs starts with one stop per channel before the next start.
+
+    Like `PairOne`, but only stop detections occurring before the next start
+    detection are considered.
+
+    Parameters
+    ----------
+    start_channel : int or Param[int]
+        Channel of the start detections.
+    stop_channels : Sequence[int]
+        Channels of the stop detections.
+    time_window : int or Param[int]
+        Maximum abstime difference for a pair (must be non-negative).
+    numeric_traits : NumericTraits or None
+        Numeric traits for the events. Defaults to ``NumericTraits()``.
+
+    See Also
+    --------
+    :cpp:`tcspc::pair_one_between`
+        The underlying C++ factory function.
+    """
+
+    _factory = "pair_one_between"
+
+
+@final
+class ProcessInBatches(_RelayNode):
+    """Processor that buffers a single event type into fixed-size batches and re-emits it.
+
+    Collects every ``batch_size`` events of ``event_type`` into a bucket and
+    then re-emits them individually downstream. This is useful for decoupling
+    upstream and downstream processing, but introduces latency.
+
+    Parameters
+    ----------
+    event_type : EventType
+        The event type to buffer. The input event set must consist only of
+        this type.
+    batch_size : int or Param[int]
+        Number of events to collect in each batch.
+
+    Notes
+    -----
+    Events handled:
+
+    - Events matching ``event_type``: buffered and re-emitted unchanged.
+    - All other event types: rejected at graph build time.
+    - End of input: emit any buffered events, then pass through.
+
+    See Also
+    --------
+    :cpp:`tcspc::process_in_batches`
+        The underlying C++ factory function.
+    """
+
+    def __init__(
+        self, event_type: EventType, batch_size: int | Param[int]
+    ) -> None:
+        self._event_type = event_type
+        self._batch_size = batch_size
+
+    @override
+    def _parameters(self) -> Sequence[tuple[Param, _CppTypeName]]:
+        if isinstance(self._batch_size, Param):
+            return ((self._batch_size, _size_type),)
+        return ()
+
+    @override
+    def _relay_map_event_set(
+        self, input_event_set: Collection[EventType]
+    ) -> tuple[EventType, ...]:
+        _check_events_subset_of(
+            input_event_set, (self._event_type,), self.__class__.__name__
+        )
+        return (self._event_type,)
+
+    @override
+    def _relay_cpp_expression(
+        self,
+        gencontext: _CodeGenerationContext,
+        downstream: _CppExpression,
+    ) -> _CppExpression:
+        batch_size = gencontext.size_t_expression(self._batch_size)
+        return _CppExpression(
+            f"""\
+            tcspc::process_in_batches<{self._event_type._cpp_type_name()}>(
+                tcspc::arg::batch_size<std::size_t>{{{batch_size}}},
+                {downstream}
+            )"""
+        )
 
 
 @final
@@ -2732,6 +3916,56 @@ class ReadBinaryStream(_RelayNode):
                 tcspc::arg::max_length<tcspc::u64>{{{maxlen}}},
                 {self._bucket_source._cpp_expression(gencontext)},
                 tcspc::arg::granularity<std::size_t>{{{granularity}}},
+                {downstream}
+            )"""
+        )
+
+
+@final
+class RebaseAbstime(_TypePreservingRelayNode):
+    """Pass-through processor that shifts abstime so the first event is at zero.
+
+    Subtracts the abstime of the first event seen from every event's
+    abstime, so that downstream processing sees an abstime starting at
+    zero. Wrap-around is handled correctly even if ``abstime_type`` is
+    a signed integer type.
+
+    Parameters
+    ----------
+    numeric_traits : NumericTraits or None
+        Numeric traits specifying ``abstime_type``. Defaults to
+        ``NumericTraits()``.
+
+    Notes
+    -----
+    Events handled:
+
+    - All event types with an ``abstime`` field: pass through with
+      ``abstime`` made relative to the first event.
+    - End of input: pass through.
+
+    See Also
+    --------
+    :cpp:`tcspc::rebase_abstime`
+        The underlying C++ factory function.
+    :py:obj:`Delay`
+        Offset event abstimes by a constant delta.
+    """
+
+    def __init__(self, numeric_traits: NumericTraits | None = None) -> None:
+        self._numeric_traits = (
+            numeric_traits if numeric_traits is not None else NumericTraits()
+        )
+
+    @override
+    def _relay_cpp_expression(
+        self,
+        gencontext: _CodeGenerationContext,
+        downstream: _CppExpression,
+    ) -> _CppExpression:
+        return _CppExpression(
+            f"""\
+            tcspc::rebase_abstime<{self._numeric_traits._cpp_type_name()}>(
                 {downstream}
             )"""
         )
@@ -2957,6 +4191,350 @@ class RemoveTimeCorrelation(_RelayNode):
 
 
 @final
+class RetimePeriodicSequences(_RelayNode):
+    """Processor that normalizes the abstime of periodic sequence model events.
+
+    Adjusts the ``abstime`` and ``delay`` of each `PeriodicSequenceModelEvent`
+    so the abstime precedes the modeled tick sequence, without altering the
+    sequence. Only `PeriodicSequenceModelEvent` is accepted.
+
+    Parameters
+    ----------
+    max_time_shift : int or Param[int]
+        Maximum allowed abstime shift (non-negative); exceeding it is an error.
+    numeric_traits : NumericTraits or None
+        Numeric traits specifying ``abstime_type``. Defaults to
+        ``NumericTraits()``.
+
+    See Also
+    --------
+    :cpp:`tcspc::retime_periodic_sequences`
+        The underlying C++ factory function.
+    """
+
+    def __init__(
+        self,
+        max_time_shift: int | Param[int],
+        numeric_traits: NumericTraits | None = None,
+    ) -> None:
+        self._max_time_shift = max_time_shift
+        self._numeric_traits = (
+            numeric_traits if numeric_traits is not None else NumericTraits()
+        )
+
+    @override
+    def _parameters(self) -> Sequence[tuple[Param, _CppTypeName]]:
+        if isinstance(self._max_time_shift, Param):
+            at = _CppTypeName(
+                f"{self._numeric_traits._cpp_type_name()}::abstime_type"
+            )
+            return ((self._max_time_shift, at),)
+        return ()
+
+    @override
+    def _relay_map_event_set(
+        self, input_event_set: Collection[EventType]
+    ) -> tuple[EventType, ...]:
+        model = _events.PeriodicSequenceModelEvent(self._numeric_traits)
+        _check_events_subset_of(
+            input_event_set, (model,), self.__class__.__name__
+        )
+        return (model,)
+
+    @override
+    def _relay_cpp_expression(
+        self,
+        gencontext: _CodeGenerationContext,
+        downstream: _CppExpression,
+    ) -> _CppExpression:
+        nt = self._numeric_traits._cpp_type_name()
+        at = f"{nt}::abstime_type"
+        value = _cast_int_expr(gencontext, self._max_time_shift, at)
+        return _CppExpression(
+            f"""\
+            tcspc::retime_periodic_sequences<{nt}>(
+                tcspc::arg::max_time_shift<{at}>{{{value}}},
+                {downstream}
+            )"""
+        )
+
+
+@final
+class Route(Node):
+    """Routes events to one of several downstreams via a `Router`, broadcasting the rest.
+
+    Each *routed* event is delivered to the single downstream selected by the
+    router (or discarded if the router selects no output). Each *broadcast*
+    event is delivered to every downstream. End-of-input is propagated to every
+    downstream.
+
+    Parameters
+    ----------
+    *routed_event_types : EventType
+        The event types to route. The router selects which output each such
+        event is sent to.
+    broadcast_event_types : Sequence[EventType], keyword-only
+        The event types to broadcast to every downstream. Must not overlap with
+        the routed event types. Default: empty.
+    router : Router, keyword-only
+        The router that maps each routed event to an output-port index.
+    outputs : int or Sequence[str], keyword-only
+        The output ports. An integer ``N`` creates ``N`` ports named
+        ``"output-0"`` through ``"output-(N-1)"``. A sequence of names creates
+        ports with those exact names. Must specify at least one output.
+
+    Notes
+    -----
+    Events handled:
+
+    - Events matching one of ``routed_event_types``: routed to one downstream.
+    - Events matching one of ``broadcast_event_types``: broadcast to every
+      downstream.
+    - Other events: rejected at graph build time.
+    - End of input: broadcast to every downstream.
+
+    See Also
+    --------
+    :cpp:`tcspc::route`
+        The underlying C++ factory function.
+    :py:obj:`Broadcast`
+        Sends every event to every downstream.
+    """
+
+    def __init__(
+        self,
+        *routed_event_types: EventType,
+        broadcast_event_types: Sequence[EventType] = (),
+        router: Router,
+        outputs: int | Sequence[str],
+    ) -> None:
+        if isinstance(outputs, int):
+            if outputs < 1:
+                raise ValueError("Route requires at least one output")
+            output_names: tuple[str, ...] = tuple(
+                f"output-{i}" for i in range(outputs)
+            )
+        else:
+            output_names = tuple(outputs)
+            if len(output_names) < 1:
+                raise ValueError("Route requires at least one output")
+            if len(set(output_names)) != len(output_names):
+                raise ValueError("Route output names must be unique")
+        super().__init__(output=output_names)
+        self._routed = tuple(routed_event_types)
+        self._broadcast = tuple(broadcast_event_types)
+        self._router = router
+
+        for b in self._broadcast:
+            if _cpp_utils._contains_type(
+                (r._cpp_type_name() for r in self._routed),
+                b._cpp_type_name(),
+            ):
+                raise ValueError(
+                    f"event type {b} must not be both routed and broadcast"
+                )
+
+    @override
+    def _map_event_sets(
+        self, input_event_sets: Sequence[Collection[EventType]]
+    ) -> tuple[tuple[EventType, ...], ...]:
+        if len(input_event_sets) != 1:
+            raise ValueError(
+                f"wrong number of inputs (1 expected, {len(input_event_sets)} found)"
+            )
+        allowed = self._routed + self._broadcast
+        _check_events_subset_of(
+            input_event_sets[0], allowed, self.__class__.__name__
+        )
+        return tuple(allowed for _ in self.outputs())
+
+    @override
+    def _parameters(self) -> Sequence[tuple[Param, _CppTypeName]]:
+        return self._router._parameters()
+
+    @override
+    def _param_encoders(self) -> Mapping[str, Callable[[Any], Any]]:
+        return self._router._param_encoders()
+
+    @override
+    def _cpp_expression(
+        self,
+        gencontext: _CodeGenerationContext,
+        downstreams: Sequence[_CppExpression],
+    ) -> _CppExpression:
+        n = len(self.outputs())
+        if len(downstreams) != n:
+            raise ValueError(
+                f"expected {n} downstream(s); found {len(downstreams)}"
+            )
+        routed = _make_type_list(self._routed)
+        broadcast = _make_type_list(self._broadcast)
+        router_expr = self._router._cpp_expression(gencontext)
+        args = ", ".join([router_expr, *downstreams])
+        return _CppExpression(f"tcspc::route<{routed}, {broadcast}>({args})")
+
+
+@final
+class ScanHistograms(_RelayNode):
+    """Processor that accumulates an array of histograms over a scan.
+
+    Each `BinIncrementClusterEvent` updates the next element of the histogram
+    array; a `HistogramArrayProgressEvent` is emitted per cluster, and a
+    `HistogramArrayEvent` upon completion of each scan. A round ends on a
+    ``reset_event_type``; if concluding events are enabled, a
+    `ConcludingHistogramArrayEvent` is emitted on each reset.
+
+    Parameters
+    ----------
+    num_elements : int or Param[int]
+        Number of histograms (elements) in the array.
+    num_bins : int or Param[int]
+        Number of bins per element.
+    max_per_bin : int or Param[int]
+        Maximum count per bin before the overflow policy applies.
+    reset_event_type : EventType or None
+        Event type that resets (starts a new round). ``None`` (the default)
+        means no reset event.
+    buffer_provider : BucketSource or Param[PyBucketSource] or None
+        Source of buckets holding the histogram array. If ``None``, a default
+        `RecyclingBucketSource` is used.
+    overflow : str
+        Overflow behavior: ``"error"`` (default), ``"stop"``, ``"saturate"``,
+        or ``"reset"``.
+    emit_concluding : bool
+        If ``True``, emit a `ConcludingHistogramArrayEvent` on each reset.
+        Default ``False``.
+    reset_after_scan : bool
+        If ``True``, reset after each completed scan. Default ``False``.
+    clear_every_scan : bool
+        If ``True``, clear the array at the start of each scan. Default
+        ``False``.
+    numeric_traits : NumericTraits or None
+        Numeric traits specifying ``bin_index_type`` and ``bin_type``. Defaults
+        to ``NumericTraits()``.
+
+    Notes
+    -----
+    The histogram-carrying output events cannot be sent to a Python sink; insert
+    `ExtractBucket` to obtain the histogram array as a NumPy array.
+
+    See Also
+    --------
+    :cpp:`tcspc::scan_histograms`
+        The underlying C++ factory function.
+    :py:obj:`ExtractBucket`
+        Extract a histogram-array bucket as a NumPy array.
+    """
+
+    def __init__(
+        self,
+        num_elements: int | Param[int],
+        num_bins: int | Param[int],
+        max_per_bin: int | Param[int],
+        reset_event_type: EventType | None = None,
+        *,
+        buffer_provider: BucketSource | Param[PyBucketSource] | None = None,
+        overflow: str = "error",
+        emit_concluding: bool = False,
+        reset_after_scan: bool = False,
+        clear_every_scan: bool = False,
+        numeric_traits: NumericTraits | None = None,
+    ) -> None:
+        if overflow not in _OVERFLOW_POLICIES:
+            raise ValueError(
+                f"overflow must be one of {sorted(_OVERFLOW_POLICIES)}"
+            )
+        self._num_elements = num_elements
+        self._num_bins = num_bins
+        self._max_per_bin = max_per_bin
+        self._reset_event_type = reset_event_type
+        self._overflow = overflow
+        self._emit_concluding = emit_concluding
+        self._reset_after_scan = reset_after_scan
+        self._clear_every_scan = clear_every_scan
+        self._numeric_traits = (
+            numeric_traits if numeric_traits is not None else NumericTraits()
+        )
+        self._bin_element = _events._TraitsMemberEvent(
+            self._numeric_traits, "bin_type"
+        )
+        self._bucket_source = _bucket_source_or_default(
+            self._bin_element, buffer_provider
+        )
+
+    @override
+    def _parameters(self) -> Sequence[tuple[Param, _CppTypeName]]:
+        nt = self._numeric_traits._cpp_type_name()
+        params: list[tuple[Param, _CppTypeName]] = []
+        if isinstance(self._num_elements, Param):
+            params.append((self._num_elements, _size_type))
+        if isinstance(self._num_bins, Param):
+            params.append((self._num_bins, _size_type))
+        if isinstance(self._max_per_bin, Param):
+            params.append((self._max_per_bin, _CppTypeName(f"{nt}::bin_type")))
+        params.extend(self._bucket_source._parameters())
+        return params
+
+    @override
+    def _param_encoders(self) -> Mapping[str, Callable[[Any], Any]]:
+        return self._bucket_source._param_encoders()
+
+    @override
+    def _relay_map_event_set(
+        self, input_event_set: Collection[EventType]
+    ) -> tuple[EventType, ...]:
+        cluster = _events.BinIncrementClusterEvent(self._numeric_traits)
+        out = _remove_events_from_set(input_event_set, (cluster,))
+        out = _with_event_added(
+            out, _events.HistogramArrayProgressEvent(self._numeric_traits)
+        )
+        out = _with_event_added(
+            out, _events.HistogramArrayEvent(self._numeric_traits)
+        )
+        if self._emit_concluding:
+            out = _with_event_added(
+                out,
+                _events.ConcludingHistogramArrayEvent(self._numeric_traits),
+            )
+        if self._overflow == "saturate":
+            out = _with_event_added(out, WarningEvent())
+        return out
+
+    @override
+    def _relay_cpp_expression(
+        self,
+        gencontext: _CodeGenerationContext,
+        downstream: _CppExpression,
+    ) -> _CppExpression:
+        nt = self._numeric_traits._cpp_type_name()
+        bt = f"{nt}::bin_type"
+        policy = _histogram_policy_expression(
+            self._overflow,
+            emit_concluding=self._emit_concluding,
+            reset_after_scan=self._reset_after_scan,
+            clear_every_scan=self._clear_every_scan,
+        )
+        reset = (
+            self._reset_event_type._cpp_type_name()
+            if self._reset_event_type is not None
+            else "tcspc::never_event"
+        )
+        num_elements = gencontext.size_t_expression(self._num_elements)
+        num_bins = gencontext.size_t_expression(self._num_bins)
+        max_per_bin = _cast_int_expr(gencontext, self._max_per_bin, bt)
+        return _CppExpression(
+            f"""\
+            tcspc::scan_histograms<{policy}, {reset}, {nt}>(
+                tcspc::arg::num_elements<std::size_t>{{{num_elements}}},
+                tcspc::arg::num_bins<std::size_t>{{{num_bins}}},
+                tcspc::arg::max_per_bin<{bt}>{{{max_per_bin}}},
+                {self._bucket_source._cpp_expression(gencontext)},
+                {downstream}
+            )"""
+        )
+
+
+@final
 class Select(_RelayNode):
     """Processor that passes only events of the listed types, dropping others.
 
@@ -3102,6 +4680,78 @@ class SelectExcept(_RelayNode):
 
 
 @final
+class SelectNone(_RelayNode):
+    """Processor that discards every event.
+
+    Notes
+    -----
+    Events handled:
+
+    - All event types: discarded.
+    - End of input: pass through.
+
+    See Also
+    --------
+    :cpp:`tcspc::select_none`
+        The underlying C++ factory function.
+    :py:obj:`Select`
+        Pass only the listed event types.
+    """
+
+    def __init__(self) -> None:
+        pass
+
+    @override
+    def _relay_map_event_set(
+        self, input_event_set: Collection[EventType]
+    ) -> tuple[EventType, ...]:
+        return ()
+
+    @override
+    def _relay_cpp_expression(
+        self,
+        gencontext: _CodeGenerationContext,
+        downstream: _CppExpression,
+    ) -> _CppExpression:
+        return _CppExpression(f"tcspc::select_none({downstream})")
+
+
+@final
+class SinkAll(Node):
+    """Sink that discards every event it receives.
+
+    Notes
+    -----
+    Events handled:
+
+    - All event types: ignored.
+    - End of input: ignored.
+
+    See Also
+    --------
+    :cpp:`tcspc::sink_all`
+        The underlying C++ factory function.
+    """
+
+    def __init__(self) -> None:
+        super().__init__(output=())
+
+    @override
+    def _map_event_sets(
+        self, input_event_sets: Sequence[Collection[EventType]]
+    ) -> tuple[tuple[EventType, ...], ...]:
+        return ()
+
+    @override
+    def _cpp_expression(
+        self,
+        gencontext: _CodeGenerationContext,
+        downstreams: Sequence[_CppExpression],
+    ) -> _CppExpression:
+        return _CppExpression("tcspc::sink_all()")
+
+
+@final
 class SinkOnly(Node):
     """Sink that accepts and discards a fixed set of event types.
 
@@ -3154,6 +4804,40 @@ class SinkOnly(Node):
     ) -> _CppExpression:
         evts = ", ".join(t._cpp_type_name() for t in self._event_types)
         return _CppExpression(f"tcspc::sink_only<{evts}>()")
+
+
+@final
+class SourceNothing(_RelayNode):
+    """Source processor that emits no events.
+
+    Notes
+    -----
+    Events handled:
+
+    - This processor has no input events; it is a source.
+    - Emits no events.
+    - End of input: pass through (flushes the downstream once).
+
+    See Also
+    --------
+    :cpp:`tcspc::source_nothing`
+        The underlying C++ factory function.
+    """
+
+    @override
+    def _relay_map_event_set(
+        self, input_event_set: Collection[EventType]
+    ) -> tuple[EventType, ...]:
+        _check_events_subset_of(input_event_set, (), self.__class__.__name__)
+        return ()
+
+    @override
+    def _relay_cpp_expression(
+        self,
+        gencontext: _CodeGenerationContext,
+        downstream: _CppExpression,
+    ) -> _CppExpression:
+        return _CppExpression(f"tcspc::source_nothing({downstream})")
 
 
 @final
@@ -3296,6 +4980,198 @@ class StopWithError(_RelayNode):
         )
 
 
+class _TimeCorrelate(_RelayNode):
+    """Common base for the time-correlation relay nodes."""
+
+    def __init__(self, numeric_traits: NumericTraits | None = None) -> None:
+        self._numeric_traits = (
+            numeric_traits if numeric_traits is not None else NumericTraits()
+        )
+
+    @override
+    def _relay_map_event_set(
+        self, input_event_set: Collection[EventType]
+    ) -> tuple[EventType, ...]:
+        pair = _events.DetectionPairEvent(self._numeric_traits)
+        tcd = _events.TimeCorrelatedDetectionEvent(self._numeric_traits)
+        out = _remove_events_from_set(input_event_set, (pair,))
+        return _with_event_added(out, tcd)
+
+
+@final
+class TimeCorrelateAtFraction(_TimeCorrelate):
+    """Processor that time-correlates detection pairs at a fractional position.
+
+    The emitted ``abstime`` is interpolated between the start and stop
+    detections at the given ``fraction``; the ``channel`` is taken from the
+    stop detection by default, or the start detection if ``use_start_channel``
+    is true.
+
+    Parameters
+    ----------
+    fraction : float or Param[float]
+        Position between the start (0.0) and stop (1.0) detections.
+    use_start_channel : bool
+        If ``True``, use the start detection's channel. Default ``False``.
+    numeric_traits : NumericTraits or None
+        Numeric traits for the emitted events. Defaults to ``NumericTraits()``.
+
+    See Also
+    --------
+    :cpp:`tcspc::time_correlate_at_fraction`
+        The underlying C++ factory function.
+    """
+
+    def __init__(
+        self,
+        fraction: float | Param[float],
+        use_start_channel: bool = False,
+        numeric_traits: NumericTraits | None = None,
+    ) -> None:
+        super().__init__(numeric_traits)
+        self._fraction = fraction
+        self._use_start_channel = use_start_channel
+
+    @override
+    def _parameters(self) -> Sequence[tuple[Param, _CppTypeName]]:
+        if isinstance(self._fraction, Param):
+            return ((self._fraction, _CppTypeName("double")),)
+        return ()
+
+    @override
+    def _relay_cpp_expression(
+        self,
+        gencontext: _CodeGenerationContext,
+        downstream: _CppExpression,
+    ) -> _CppExpression:
+        usc = "true" if self._use_start_channel else "false"
+        frac = _double_expr(gencontext, self._fraction)
+        return _CppExpression(
+            f"""\
+            tcspc::time_correlate_at_fraction<{self._numeric_traits._cpp_type_name()}, {usc}>(
+                tcspc::arg::fraction<double>{{{frac}}},
+                {downstream}
+            )"""
+        )
+
+
+@final
+class TimeCorrelateAtMidpoint(_TimeCorrelate):
+    """Processor that time-correlates detection pairs using the midpoint time.
+
+    The emitted ``abstime`` is the midpoint between the start and stop
+    detections; the ``channel`` is taken from the stop detection by default,
+    or the start detection if ``use_start_channel`` is true.
+
+    Parameters
+    ----------
+    use_start_channel : bool
+        If ``True``, use the start detection's channel. Default ``False``.
+    numeric_traits : NumericTraits or None
+        Numeric traits for the emitted events. Defaults to ``NumericTraits()``.
+
+    See Also
+    --------
+    :cpp:`tcspc::time_correlate_at_midpoint`
+        The underlying C++ factory function.
+    """
+
+    def __init__(
+        self,
+        use_start_channel: bool = False,
+        numeric_traits: NumericTraits | None = None,
+    ) -> None:
+        super().__init__(numeric_traits)
+        self._use_start_channel = use_start_channel
+
+    @override
+    def _relay_cpp_expression(
+        self,
+        gencontext: _CodeGenerationContext,
+        downstream: _CppExpression,
+    ) -> _CppExpression:
+        usc = "true" if self._use_start_channel else "false"
+        return _CppExpression(
+            f"""\
+            tcspc::time_correlate_at_midpoint<{self._numeric_traits._cpp_type_name()}, {usc}>(
+                {downstream}
+            )"""
+        )
+
+
+@final
+class TimeCorrelateAtStart(_TimeCorrelate):
+    """Processor that time-correlates detection pairs using the start time and channel.
+
+    Converts each `DetectionPairEvent` into a `TimeCorrelatedDetectionEvent`
+    whose ``abstime`` and ``channel`` are taken from the start (first)
+    detection and whose ``difftime`` is the interval to the stop detection.
+
+    Parameters
+    ----------
+    numeric_traits : NumericTraits or None
+        Numeric traits for the emitted events. Defaults to ``NumericTraits()``.
+
+    Notes
+    -----
+    Events handled:
+
+    - `DetectionPairEvent`: emit a `TimeCorrelatedDetectionEvent`.
+    - All other event types: pass through unchanged.
+    - End of input: pass through.
+
+    See Also
+    --------
+    :cpp:`tcspc::time_correlate_at_start`
+        The underlying C++ factory function.
+    """
+
+    @override
+    def _relay_cpp_expression(
+        self,
+        gencontext: _CodeGenerationContext,
+        downstream: _CppExpression,
+    ) -> _CppExpression:
+        return _CppExpression(
+            f"""\
+            tcspc::time_correlate_at_start<{self._numeric_traits._cpp_type_name()}>(
+                {downstream}
+            )"""
+        )
+
+
+@final
+class TimeCorrelateAtStop(_TimeCorrelate):
+    """Processor that time-correlates detection pairs using the stop time and channel.
+
+    Like `TimeCorrelateAtStart`, but the emitted ``abstime`` and ``channel``
+    are taken from the stop (second) detection.
+
+    Parameters
+    ----------
+    numeric_traits : NumericTraits or None
+        Numeric traits for the emitted events. Defaults to ``NumericTraits()``.
+
+    See Also
+    --------
+    :cpp:`tcspc::time_correlate_at_stop`
+        The underlying C++ factory function.
+    """
+
+    @override
+    def _relay_cpp_expression(
+        self,
+        gencontext: _CodeGenerationContext,
+        downstream: _CppExpression,
+    ) -> _CppExpression:
+        return _CppExpression(
+            f"""\
+            tcspc::time_correlate_at_stop<{self._numeric_traits._cpp_type_name()}>(
+                {downstream}
+            )"""
+        )
+
+
 @final
 class Unbatch(_RelayNode):
     """Processor that emits the elements of bucketed batches one at a time.
@@ -3346,6 +5222,66 @@ class Unbatch(_RelayNode):
         return _CppExpression(
             f"""\
             tcspc::unbatch<{self._event_type._cpp_type_name()}>(
+                {downstream}
+            )"""
+        )
+
+
+@final
+class UnbatchBinIncrementClusters(_RelayNode):
+    """Processor that recovers bin increment clusters from encoded batches.
+
+    The inverse of `BatchBinIncrementClusters`. Each `BucketEvent` of encoded
+    bin indices is decoded into individual `BinIncrementClusterEvent`\\ s.
+
+    Parameters
+    ----------
+    numeric_traits : NumericTraits or None
+        Numeric traits specifying ``bin_index_type``. Defaults to
+        ``NumericTraits()``.
+
+    Notes
+    -----
+    Events handled:
+
+    - `BucketEvent` / `ConstBucketEvent` of bin indices: decoded into
+      `BinIncrementClusterEvent`\\ s.
+    - All other event types: pass through unchanged.
+    - End of input: pass through.
+
+    See Also
+    --------
+    :cpp:`tcspc::unbatch_bin_increment_clusters`
+        The underlying C++ factory function.
+    """
+
+    def __init__(self, numeric_traits: NumericTraits | None = None) -> None:
+        self._numeric_traits = (
+            numeric_traits if numeric_traits is not None else NumericTraits()
+        )
+        self._index_element = _events._TraitsMemberEvent(
+            self._numeric_traits, "bin_index_type"
+        )
+
+    @override
+    def _relay_map_event_set(
+        self, input_event_set: Collection[EventType]
+    ) -> tuple[EventType, ...]:
+        mutable = BucketEvent(self._index_element)
+        const = _events.ConstBucketEvent(self._index_element)
+        cluster = _events.BinIncrementClusterEvent(self._numeric_traits)
+        out = _remove_events_from_set(input_event_set, (mutable, const))
+        return _with_event_added(out, cluster)
+
+    @override
+    def _relay_cpp_expression(
+        self,
+        gencontext: _CodeGenerationContext,
+        downstream: _CppExpression,
+    ) -> _CppExpression:
+        return _CppExpression(
+            f"""\
+            tcspc::unbatch_bin_increment_clusters<{self._numeric_traits._cpp_type_name()}>(
                 {downstream}
             )"""
         )
@@ -3467,56 +5403,6 @@ class ViewAsBytes(_RelayNode):
         return _CppExpression(
             f"""\
             tcspc::view_as_bytes(
-                {downstream}
-            )"""
-        )
-
-
-@final
-class RebaseAbstime(_TypePreservingRelayNode):
-    """Pass-through processor that shifts abstime so the first event is at zero.
-
-    Subtracts the abstime of the first event seen from every event's
-    abstime, so that downstream processing sees an abstime starting at
-    zero. Wrap-around is handled correctly even if ``abstime_type`` is
-    a signed integer type.
-
-    Parameters
-    ----------
-    numeric_traits : NumericTraits or None
-        Numeric traits specifying ``abstime_type``. Defaults to
-        ``NumericTraits()``.
-
-    Notes
-    -----
-    Events handled:
-
-    - All event types with an ``abstime`` field: pass through with
-      ``abstime`` made relative to the first event.
-    - End of input: pass through.
-
-    See Also
-    --------
-    :cpp:`tcspc::rebase_abstime`
-        The underlying C++ factory function.
-    :py:obj:`Delay`
-        Offset event abstimes by a constant delta.
-    """
-
-    def __init__(self, numeric_traits: NumericTraits | None = None) -> None:
-        self._numeric_traits = (
-            numeric_traits if numeric_traits is not None else NumericTraits()
-        )
-
-    @override
-    def _relay_cpp_expression(
-        self,
-        gencontext: _CodeGenerationContext,
-        downstream: _CppExpression,
-    ) -> _CppExpression:
-        return _CppExpression(
-            f"""\
-            tcspc::rebase_abstime<{self._numeric_traits._cpp_type_name()}>(
                 {downstream}
             )"""
         )

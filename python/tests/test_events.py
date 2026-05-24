@@ -12,12 +12,32 @@ IntEvent = _NamedEvent(_CppTypeName("int"))
 
 PARAMETERIZED_EVENTS = [
     (tcspc.BeginLostIntervalEvent, "tcspc::begin_lost_interval_event<"),
+    (tcspc.BinIncrementClusterEvent, "tcspc::bin_increment_cluster_event<"),
+    (tcspc.BinIncrementEvent, "tcspc::bin_increment_event<"),
     (tcspc.BulkCountsEvent, "tcspc::bulk_counts_event<"),
+    (
+        tcspc.ConcludingHistogramArrayEvent,
+        "tcspc::concluding_histogram_array_event<",
+    ),
+    (tcspc.ConcludingHistogramEvent, "tcspc::concluding_histogram_event<"),
     (tcspc.DataLostEvent, "tcspc::data_lost_event<"),
+    (tcspc.DatapointEvent, "tcspc::datapoint_event<"),
     (tcspc.DetectionEvent, "tcspc::detection_event<"),
     (tcspc.EndLostIntervalEvent, "tcspc::end_lost_interval_event<"),
+    (tcspc.HistogramArrayEvent, "tcspc::histogram_array_event<"),
+    (
+        tcspc.HistogramArrayProgressEvent,
+        "tcspc::histogram_array_progress_event<",
+    ),
+    (tcspc.HistogramEvent, "tcspc::histogram_event<"),
     (tcspc.LostCountsEvent, "tcspc::lost_counts_event<"),
     (tcspc.MarkerEvent, "tcspc::marker_event<"),
+    (
+        tcspc.PeriodicSequenceModelEvent,
+        "tcspc::periodic_sequence_model_event<",
+    ),
+    (tcspc.RealLinearTimingEvent, "tcspc::real_linear_timing_event<"),
+    (tcspc.RealOneShotTimingEvent, "tcspc::real_one_shot_timing_event<"),
     (
         tcspc.TimeCorrelatedDetectionEvent,
         "tcspc::time_correlated_detection_event<",
@@ -224,3 +244,31 @@ def test_ConstBucketEvent_cpp_output_handlers_are_read_only():
     assert "nanobind::ndarray<elem_type, nanobind::numpy>" not in code
     assert "handle(tcspc::bucket<int> const &event)" not in code
     assert "&&event" not in code
+
+
+def test_DetectionPairEvent_cpp_type_name():
+    name = tcspc.DetectionPairEvent()._cpp_type_name()
+    assert name == (
+        "std::array<tcspc::detection_event<tcspc::default_numeric_traits>, 2>"
+    )
+
+
+EXTRACTABLE_EVENTS = [
+    tcspc.HistogramEvent,
+    tcspc.ConcludingHistogramEvent,
+    tcspc.HistogramArrayEvent,
+    tcspc.HistogramArrayProgressEvent,
+    tcspc.ConcludingHistogramArrayEvent,
+]
+
+
+@pytest.mark.parametrize("cls", EXTRACTABLE_EVENTS)
+def test_extractable_event_element_is_bin_type(cls):
+    elem = cls()._data_bucket_element_event_type()
+    assert elem._cpp_type_name() == "tcspc::default_numeric_traits::bin_type"
+
+
+def test_bin_increment_cluster_event_is_not_extractable():
+    assert not hasattr(
+        tcspc.BinIncrementClusterEvent(), "_data_bucket_element_event_type"
+    )

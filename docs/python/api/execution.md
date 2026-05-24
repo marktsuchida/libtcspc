@@ -49,4 +49,5 @@ The access object has a run-time-generated type but implements one of the
    libtcspc.Access
    libtcspc.AcquireAccess
    libtcspc.CountAccess
+   libtcspc.UniqueBinMapperAccess
 ```

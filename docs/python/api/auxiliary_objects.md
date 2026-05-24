@@ -100,6 +100,72 @@ Routers select the destination output port for events handled by the
    libtcspc.NullRouter
 ```
 
+## Matchers
+
+Matchers decide which events are matched by the {py:class}`~libtcspc.Match` and
+{py:class}`~libtcspc.MatchAndConsume` processors.
+
+```{eval-rst}
+.. autosummary::
+   :toctree: generated
+   :nosignatures:
+
+   libtcspc.Matcher
+   libtcspc.AlwaysMatcher
+   libtcspc.NeverMatcher
+   libtcspc.ChannelMatcher
+```
+
+## Timing generators
+
+Timing generators produce patterns of timing events for the
+{py:class}`~libtcspc.Generate` processor.
+
+```{eval-rst}
+.. autosummary::
+   :toctree: generated
+   :nosignatures:
+
+   libtcspc.TimingGenerator
+   libtcspc.NullTimingGenerator
+   libtcspc.OneShotTimingGenerator
+   libtcspc.DynamicOneShotTimingGenerator
+   libtcspc.LinearTimingGenerator
+   libtcspc.DynamicLinearTimingGenerator
+```
+
+## Data mappers
+
+Data mappers extract a datapoint value from events for the
+{py:class}`~libtcspc.MapToDatapoints` processor.
+
+```{eval-rst}
+.. autosummary::
+   :toctree: generated
+   :nosignatures:
+
+   libtcspc.DataMapper
+   libtcspc.DifftimeDataMapper
+   libtcspc.CountDataMapper
+   libtcspc.ChannelDataMapper
+```
+
+## Bin mappers
+
+Bin mappers map datapoint values to histogram bin indices for the
+{py:class}`~libtcspc.MapToBins` processor.
+
+```{eval-rst}
+.. autosummary::
+   :toctree: generated
+   :nosignatures:
+
+   libtcspc.BinMapper
+   libtcspc.PowerOf2BinMapper
+   libtcspc.LinearBinMapper
+   libtcspc.UniqueBinMapper
+```
+
 ## Input streams
 
 Inputs to source processor nodes such as
