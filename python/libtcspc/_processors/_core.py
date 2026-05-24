@@ -1,0 +1,87 @@
+# This file is part of libtcspc
+# Copyright 2019-2026 Board of Regents of the University of Wisconsin System
+# SPDX-License-Identifier: MIT
+
+from collections.abc import Collection, Sequence
+from typing import final
+
+from typing_extensions import override
+
+from .._codegen import _CodeGenerationContext
+from .._cpp_utils import (
+    _CppExpression,
+)
+from .._events import EventType
+from .._node import Node, _RelayNode
+from ._common import (
+    _check_events_subset_of,
+)
+
+
+@final
+class SinkAll(Node):
+    """Sink that discards every event it receives.
+
+    Notes
+    -----
+    Events handled:
+
+    - All event types: ignored.
+    - End of input: ignored.
+
+    See Also
+    --------
+    :cpp:`tcspc::sink_all`
+        The underlying C++ factory function.
+    """
+
+    def __init__(self) -> None:
+        super().__init__(output=())
+
+    @override
+    def _map_event_sets(
+        self, input_event_sets: Sequence[Collection[EventType]]
+    ) -> tuple[tuple[EventType, ...], ...]:
+        return ()
+
+    @override
+    def _cpp_expression(
+        self,
+        gencontext: _CodeGenerationContext,
+        downstreams: Sequence[_CppExpression],
+    ) -> _CppExpression:
+        return _CppExpression("tcspc::sink_all()")
+
+
+@final
+class SourceNothing(_RelayNode):
+    """Source processor that emits no events.
+
+    Notes
+    -----
+    Events handled:
+
+    - This processor has no input events; it is a source.
+    - Emits no events.
+    - End of input: pass through (flushes the downstream once).
+
+    See Also
+    --------
+    :cpp:`tcspc::source_nothing`
+        The underlying C++ factory function.
+    """
+
+    @override
+    def _relay_map_event_set(
+        self, input_event_set: Collection[EventType]
+    ) -> tuple[EventType, ...]:
+        _check_events_subset_of(input_event_set, (), self.__class__.__name__)
+        return ()
+
+    @override
+    def _relay_cpp_expression(
+        self,
+        gencontext: _CodeGenerationContext,
+        downstream: _CppExpression,
+    ) -> _CppExpression:
+        return _CppExpression(f"tcspc::source_nothing({downstream})")
