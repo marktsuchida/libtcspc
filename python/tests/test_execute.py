@@ -11,7 +11,12 @@ from _test_helpers import _NamedEvent
 from libtcspc._access import AccessTag
 from libtcspc._compile import CompiledGraph
 from libtcspc._cpp_utils import _CppIdentifier, _CppTypeName, _uint8_type
-from libtcspc._events import ConstBucketEvent, DetectionEvent, EventInstance
+from libtcspc._events import (
+    ConstBucketEvent,
+    DetectionEvent,
+    EventInstance,
+    MarkerEvent,
+)
 from libtcspc._execute import EndOfProcessing, ExecutionContext, PySink
 from libtcspc._graph import Graph
 from libtcspc._param import Param
@@ -19,6 +24,7 @@ from libtcspc._processors import (
     Append,
     Batch,
     Count,
+    SelectAll,
     SinkAll,
     SinkOnly,
     Stop,
@@ -211,6 +217,48 @@ def test_execute_emit_event_value_as_event_instance():
     ec.flush()
     assert sink.events == [DetectionEvent().value(abstime=7, channel=2)]
     assert isinstance(sink.events[0], EventInstance)
+
+
+def test_execute_event_value_round_trips_through_passthrough_graph():
+    g = Graph()
+    g.add_node("a", SelectAll())
+    cg = CompiledGraph(g, (DetectionEvent(),))
+    sink = CollectingSink()
+    ec = ExecutionContext(cg, None, (sink,))
+    sent = DetectionEvent().value(abstime=42, channel=1)
+    ec.handle(sent)
+    assert sink.events == [sent]
+    assert isinstance(sink.events[0], EventInstance)
+    assert sink.events[0] == sent
+
+
+def test_execute_event_value_round_trip_preserves_field_values():
+    g = Graph()
+    g.add_node("a", SelectAll())
+    cg = CompiledGraph(g, (DetectionEvent(),))
+    sink = CollectingSink()
+    ec = ExecutionContext(cg, None, (sink,))
+    ec.handle(DetectionEvent().value(abstime=12345, channel=7))
+    out = sink.events[0]
+    assert out._fields == {"abstime": 12345, "channel": 7}
+
+
+def test_execute_rejects_event_value_of_unaccepted_type():
+    g = Graph()
+    g.add_node("a", SelectAll())
+    cg = CompiledGraph(g, (DetectionEvent(),))
+    ec = ExecutionContext(cg, None, (CollectingSink(),))
+    with pytest.raises(TypeError, match="MarkerEvent"):
+        ec.handle(MarkerEvent().value(abstime=1, channel=2))
+
+
+def test_execute_rejects_event_value_of_output_only_type():
+    g = Graph()
+    g.add_node("a", Append(MarkerEvent().value(abstime=1, channel=2)))
+    cg = CompiledGraph(g, (DetectionEvent(),))
+    ec = ExecutionContext(cg, None, (CollectingSink(),))
+    with pytest.raises(TypeError, match="MarkerEvent"):
+        ec.handle(MarkerEvent().value(abstime=1, channel=2))
 
 
 def test_execute_pass_through_integers():

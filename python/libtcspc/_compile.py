@@ -589,9 +589,15 @@ class CompiledGraph:
         }
         # Map C++ type-name string -> (wrapper pyclass, field names), used to
         # convert an EventInstance to a wrapper value on input.
+        input_value_cpp_names = {
+            str(et._cpp_type_name())
+            for et in input_event_types
+            if et._supports_value()
+        }
         self._wrapper_by_cpp: dict[str, tuple[type, list[str]]] = {
             str(et._cpp_type_name()): (pyclass, [n for n, _ in et._fields()])
             for et, pyclass in wrappers
+            if str(et._cpp_type_name()) in input_value_cpp_names
         }
 
     def parameters(self) -> tuple[Param, ...]:

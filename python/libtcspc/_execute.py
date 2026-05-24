@@ -71,7 +71,7 @@ def _build_execution(
     compiled_graph: CompiledGraph,
     arguments: dict[str, Any] | None,
     downstreams: Sequence[PySink] | None,
-) -> tuple[Any, Any, Any, set[str]]:
+) -> tuple[Any, Any, Any, set[str], dict[str, tuple[type, list[str]]]]:
     given_args = {} if arguments is None else arguments.copy()
     encoders = compiled_graph._param_encoders
     args: dict[_CppIdentifier, Any] = {}
@@ -127,7 +127,13 @@ def _build_execution(
     )
     accesses = set(tag.tag for tag in compiled_graph._accesses())
 
-    return compiled_graph._mod, context, processor, accesses
+    return (
+        compiled_graph._mod,
+        context,
+        processor,
+        accesses,
+        compiled_graph._wrapper_by_cpp,
+    )
 
 
 class ExecutionContext:
@@ -152,9 +158,13 @@ class ExecutionContext:
         arguments: dict[str, Any] | None = None,
         downstreams: Sequence[PySink] | None = None,
     ) -> None:
-        self._mod, self._ctx, self._proc, self._accesses = _build_execution(
-            compiled_graph, arguments, downstreams
-        )
+        (
+            self._mod,
+            self._ctx,
+            self._proc,
+            self._accesses,
+            self._input_wrappers,
+        ) = _build_execution(compiled_graph, arguments, downstreams)
         self._end_of_life_reason: str | None = None
 
     def access(self, tag: AccessTag) -> Any:
@@ -204,6 +214,19 @@ class ExecutionContext:
         EndOfProcessing
             If the processor detected the end of the stream (of interest).
         """
+        if isinstance(event, EventInstance):
+            cpp = str(event._event_type._cpp_type_name())
+            conv = self._input_wrappers.get(cpp)
+            if conv is None:
+                raise TypeError(
+                    f"event type {type(event._event_type).__name__} is not an "
+                    "accepted input event type for this graph"
+                )
+            pyclass, field_names = conv
+            wrapper = pyclass()
+            for n in field_names:
+                setattr(wrapper, n, event._fields[n])
+            event = wrapper
         with self._manage_processor_end_of_life():
             self._proc.handle(event)
 
