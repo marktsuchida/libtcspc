@@ -2,8 +2,12 @@
 # Copyright 2019-2026 Board of Regents of the University of Wisconsin System
 # SPDX-License-Identifier: MIT
 
+import contextlib
+import contextvars
+import hashlib
+import re
 from abc import ABC, abstractmethod
-from collections.abc import Mapping
+from collections.abc import Iterable, Iterator, Mapping
 
 from typing_extensions import override
 
@@ -18,6 +22,39 @@ from ._cpp_utils import (
 )
 from ._numeric_traits import NumericTraits
 
+_referenced_events: contextvars.ContextVar[dict[str, str] | None] = (
+    contextvars.ContextVar("_referenced_events", default=None)
+)
+
+
+@contextlib.contextmanager
+def _collecting_referenced_events() -> Iterator[dict[str, str]]:
+    registry: dict[str, str] = {}
+    token = _referenced_events.set(registry)
+    try:
+        yield registry
+    finally:
+        _referenced_events.reset(token)
+
+
+# Process-wide registry of every custom event struct definition ever produced.
+# Keyed by the content-addressed struct name, so duplicates collapse harmlessly
+# (like `_known_traits_definitions`). Used to resolve custom event names in
+# `_is_same_type` test compiles.
+_known_event_definitions: dict[str, str] = {}
+
+_CPP_IDENTIFIER_PATTERN = re.compile(r"[A-Za-z_][A-Za-z0-9_]*")
+_EVENT_NAME_PATTERN = re.compile(r"\bce_[A-Za-z0-9_]*_[0-9a-f]{16}\b")
+
+
+def _event_definitions_referenced_by(typenames: Iterable[str]) -> list[str]:
+    seen: dict[str, str] = {}
+    for typename in typenames:
+        for name in _EVENT_NAME_PATTERN.findall(typename):
+            if name in _known_event_definitions and name not in seen:
+                seen[name] = _known_event_definitions[name]
+    return list(seen.values())
+
 
 class EventType(ABC):
     """Opaque marker for the type of events carried on a graph edge.
@@ -29,7 +66,8 @@ class EventType(ABC):
     to determine the C++ types flowing on each graph edge.
 
     ``EventType`` itself is abstract; instantiate one of its concrete
-    subclasses. User-defined event types are not supported.
+    subclasses. To declare a simple marker event of your own, use
+    `CustomEvent`.
     """
 
     @abstractmethod
@@ -195,6 +233,129 @@ class EventInstance:
     def __repr__(self) -> str:
         args = ", ".join(f"{n}={v}" for n, v in self._fields.items())
         return f"{type(self._event_type).__name__}(...).value({args})"
+
+
+class CustomEvent(EventType):
+    """A user-defined event type.
+
+    Use this to declare a simple event type of your own, for use as a timing
+    marker or other signal in a processing graph (for example, pixel/line/frame
+    clock edges or control signals such as histogram reset).
+
+    Only two shapes are supported: an *empty* event (no fields), and a
+    *timestamped* event carrying a single ``abstime`` field (selected with
+    ``abstime=True``). The latter is compatible with the processors that drive
+    or match on timing markers (for example, `Generate`, `CheckAlternating`,
+    `ClusterBinIncrements`, `Route`, and `Match`).
+
+    Parameters
+    ----------
+    name : str
+        A name for the event. Must be a valid C++ identifier. It is what the
+        struct's ``operator<<`` prints. Re-declaring the same ``name`` with a
+        different shape or ``traits`` yields a *distinct* event type rather than
+        an error; declaring it identically yields an equivalent type.
+    abstime : bool, optional
+        If ``True``, the event carries a single ``abstime`` field; if ``False``
+        (the default), the event is empty.
+    traits : NumericTraits or None, optional
+        The numeric traits determining the type of the ``abstime`` field.
+        Required if (and only if) ``abstime`` is ``True``.
+
+    Notes
+    -----
+    The emitted C++ struct provides a defaulted ``operator==`` and an
+    ``operator<<`` that prints the event name (and, for the timestamped form,
+    the ``abstime`` value).
+
+    Examples
+    --------
+    >>> reset = CustomEvent("reset_event")
+    >>> nt = NumericTraits()
+    >>> pixel_start = CustomEvent("pixel_start_event", abstime=True, traits=nt)
+    >>> pixel_start.value(abstime=0)  # doctest: +SKIP
+    """
+
+    def __init__(
+        self,
+        name: str,
+        *,
+        abstime: bool = False,
+        traits: NumericTraits | None = None,
+    ) -> None:
+        if not _CPP_IDENTIFIER_PATTERN.fullmatch(name):
+            raise ValueError(
+                f"CustomEvent name {name!r} is not a valid C++ identifier"
+            )
+        if abstime and traits is None:
+            raise TypeError(
+                "CustomEvent: traits is required when abstime=True"
+            )
+        if not abstime and traits is not None:
+            raise TypeError(
+                "CustomEvent: traits must not be given when abstime=False"
+            )
+        self._readable_name = name
+        self._abstime = abstime
+        self._traits = traits
+
+        # Content-address the struct name so that distinct shapes/traits sharing
+        # a readable name become distinct C++ types (and identical declarations
+        # collapse). The owned `ce_` prefix mirrors NumericTraits' `nt_<hash>`
+        # and lets the reference scanner anchor on both ends.
+        traits_id = "" if traits is None else traits._cpp_type_name()
+        canonical = f"{name}|abstime={abstime}|traits={traits_id}"
+        digest = hashlib.sha256(canonical.encode()).hexdigest()[:16]
+        struct_name = f"ce_{name}_{digest}"
+        self._struct_name = _CppTypeName(struct_name)
+
+        if abstime:
+            self._definition = (
+                f"struct {struct_name} {{\n"
+                f"    {traits_id}::abstime_type abstime;\n"
+                f"    friend auto operator==({struct_name} const &lhs, "
+                f"{struct_name} const &rhs) -> bool = default;\n"
+                f"    friend auto operator<<(std::ostream &s, "
+                f"{struct_name} const &e) -> std::ostream & {{\n"
+                f'        return s << "{name}{{abstime=" << e.abstime << "}}";\n'
+                f"    }}\n"
+                f"}};"
+            )
+        else:
+            self._definition = (
+                f"struct {struct_name} {{\n"
+                f"    friend auto operator==({struct_name} const &, "
+                f"{struct_name} const &) -> bool = default;\n"
+                f"    friend auto operator<<(std::ostream &s, "
+                f"{struct_name} const &) -> std::ostream & {{\n"
+                f'        return s << "{name}";\n'
+                f"    }}\n"
+                f"}};"
+            )
+
+        _known_event_definitions.setdefault(struct_name, self._definition)
+
+    @override
+    def _cpp_type_name(self) -> _CppTypeName:
+        registry = _referenced_events.get()
+        if registry is not None:
+            registry[str(self._struct_name)] = self._definition
+        if self._traits is not None:
+            # Ensure the trait struct is collected too: the event's abstime
+            # member type references it.
+            self._traits._cpp_type_name()
+        return self._struct_name
+
+    def __repr__(self) -> str:
+        return f"<CustomEvent({self._readable_name})>"
+
+    @override
+    def _fields(self) -> list[tuple[str, _CppTypeName]]:
+        if not self._abstime:
+            return []
+        assert self._traits is not None
+        nt = self._traits._cpp_type_name()
+        return [("abstime", _CppTypeName(f"{nt}::abstime_type"))]
 
 
 class BucketEvent(EventType):

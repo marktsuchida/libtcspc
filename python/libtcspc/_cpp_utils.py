@@ -114,13 +114,20 @@ class _ModuleCodeFragment:
 
 
 # Caching here is sound because any `nt_<hash>` name referenced through
-# `_struct_definitions_referenced_by` is content-addressed: the same name
-# always implies the same struct body.
+# `_struct_definitions_referenced_by` and any `<name>_<hash>` custom event name
+# referenced through `_event_definitions_referenced_by` are content-addressed:
+# the same name always implies the same struct body within a process.
 @functools.cache
 def _is_same_type_impl(t0: _CppTypeName, t1: _CppTypeName) -> bool:
+    from ._events import _event_definitions_referenced_by
     from ._numeric_traits import _struct_definitions_referenced_by
 
-    defs = _struct_definitions_referenced_by((t0, t1))
+    # An abstime custom event's definition references an `nt_<hash>` trait
+    # struct, so resolve traits from the event definitions too, and emit traits
+    # before events.
+    event_defs = _event_definitions_referenced_by((t0, t1))
+    trait_defs = _struct_definitions_referenced_by((t0, t1, *event_defs))
+    defs = trait_defs + event_defs
     prelude = (
         "namespace {\n" + "\n".join(defs) + "\n} // namespace\n"
         if defs

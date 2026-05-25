@@ -2,6 +2,8 @@
 # Copyright 2019-2026 Board of Regents of the University of Wisconsin System
 # SPDX-License-Identifier: MIT
 
+import re
+
 import libtcspc as tcspc
 import numpy as np
 import pytest
@@ -405,3 +407,179 @@ def test_cpp_wrapper_class_def_substrings():
     assert ".def(nanobind::init<>())" in code
     assert '.def_rw("abstime"' in code
     assert '.def_rw("channel"' in code
+
+
+def test_CustomEvent_empty_cpp_type_name():
+    name = tcspc.CustomEvent("ce_empty_name")._cpp_type_name()
+    assert re.fullmatch(r"ce_ce_empty_name_[0-9a-f]{16}", name)
+
+
+def test_CustomEvent_abstime_cpp_type_name():
+    ev = tcspc.CustomEvent(
+        "ce_abstime_name", abstime=True, traits=tcspc.NumericTraits()
+    )
+    assert re.fullmatch(
+        r"ce_ce_abstime_name_[0-9a-f]{16}", ev._cpp_type_name()
+    )
+
+
+def test_CustomEvent_empty_fields_is_empty():
+    assert tcspc.CustomEvent("ce_empty_fields")._fields() == []
+
+
+def test_CustomEvent_abstime_fields():
+    ev = tcspc.CustomEvent(
+        "ce_abstime_fields", abstime=True, traits=tcspc.NumericTraits()
+    )
+    assert ev._fields() == [
+        ("abstime", "tcspc::default_numeric_traits::abstime_type")
+    ]
+
+
+def test_CustomEvent_abstime_fields_use_supplied_traits():
+    nt = tcspc.NumericTraits(abstime_type=np.uint64)
+    ev = tcspc.CustomEvent("ce_abstime_traits", abstime=True, traits=nt)
+    ((_, ctype),) = ev._fields()
+    assert ctype == f"{nt._cpp_type_name()}::abstime_type"
+
+
+def test_CustomEvent_traits_required_when_abstime():
+    with pytest.raises(TypeError, match="traits is required"):
+        tcspc.CustomEvent("ce_needs_traits", abstime=True)
+
+
+def test_CustomEvent_traits_forbidden_when_not_abstime():
+    with pytest.raises(TypeError, match="must not be given"):
+        tcspc.CustomEvent("ce_extra_traits", traits=tcspc.NumericTraits())
+
+
+@pytest.mark.parametrize(
+    "name", ["", "1bad", "has space", "has-dash", "ns::name", "a.b"]
+)
+def test_CustomEvent_invalid_identifier_raises(name):
+    with pytest.raises(ValueError, match="not a valid C\\+\\+ identifier"):
+        tcspc.CustomEvent(name)
+
+
+def test_CustomEvent_same_name_same_shape_equal():
+    a = tcspc.CustomEvent("ce_same_shape")
+    b = tcspc.CustomEvent("ce_same_shape")
+    assert a == b
+    assert a._cpp_type_name() == b._cpp_type_name()
+
+
+def test_CustomEvent_distinct_names_not_equal():
+    assert tcspc.CustomEvent("ce_distinct_a") != tcspc.CustomEvent(
+        "ce_distinct_b"
+    )
+
+
+def test_CustomEvent_same_name_different_shape_distinct():
+    empty = tcspc.CustomEvent("ce_same_name_diff_shape")
+    abst = tcspc.CustomEvent(
+        "ce_same_name_diff_shape", abstime=True, traits=tcspc.NumericTraits()
+    )
+    assert empty._cpp_type_name() != abst._cpp_type_name()
+    assert empty != abst
+
+
+def test_CustomEvent_cpp_type_name_is_deterministic():
+    a = tcspc.CustomEvent(
+        "ce_determ", abstime=True, traits=tcspc.NumericTraits()
+    )
+    b = tcspc.CustomEvent(
+        "ce_determ", abstime=True, traits=tcspc.NumericTraits()
+    )
+    assert a._cpp_type_name() == b._cpp_type_name()
+
+
+def test_CustomEvent_equivalent_traits_collapse():
+    a = tcspc.CustomEvent(
+        "ce_equiv_traits",
+        abstime=True,
+        traits=tcspc.NumericTraits(abstime_type=np.uint64),
+    )
+    b = tcspc.CustomEvent(
+        "ce_equiv_traits",
+        abstime=True,
+        traits=tcspc.NumericTraits(abstime_type="uint64"),
+    )
+    assert a._cpp_type_name() == b._cpp_type_name()
+    assert a == b
+
+
+def test_CustomEvent_repeated_identical_definition_ok():
+    nt = tcspc.NumericTraits()
+    tcspc.CustomEvent("ce_repeat", abstime=True, traits=nt)
+    tcspc.CustomEvent("ce_repeat", abstime=True, traits=nt)
+
+
+def test_CustomEvent_same_name_different_traits_distinct():
+    # Different custom traits give distinct types; comparing them exercises the
+    # `_is_same_type` test-compile (which must pull in the referenced trait
+    # struct definitions).
+    a = tcspc.CustomEvent(
+        "ce_diff_traits",
+        abstime=True,
+        traits=tcspc.NumericTraits(abstime_type=np.uint64),
+    )
+    b = tcspc.CustomEvent(
+        "ce_diff_traits",
+        abstime=True,
+        traits=tcspc.NumericTraits(abstime_type=np.uint32),
+    )
+    assert a._cpp_type_name() != b._cpp_type_name()
+    assert a != b
+
+
+def test_CustomEvent_supports_value():
+    assert tcspc.CustomEvent("ce_supports_empty")._supports_value()
+    assert tcspc.CustomEvent(
+        "ce_supports_abstime", abstime=True, traits=tcspc.NumericTraits()
+    )._supports_value()
+
+
+def test_CustomEvent_empty_value_cpp_expression():
+    ev = tcspc.CustomEvent("ce_value_empty")
+    assert ev.value()._cpp_expression() == f"{ev._cpp_type_name()}{{}}"
+
+
+def test_CustomEvent_abstime_value_cpp_expression():
+    ev = tcspc.CustomEvent(
+        "ce_value_abstime", abstime=True, traits=tcspc.NumericTraits()
+    )
+    expr = ev.value(abstime=7)._cpp_expression()
+    assert expr == (
+        f"{ev._cpp_type_name()}{{.abstime = "
+        "static_cast<tcspc::default_numeric_traits::abstime_type>(7)}"
+    )
+
+
+def test_CustomEvent_empty_definition_substrings():
+    ev = tcspc.CustomEvent("ce_def_empty")
+    cpp = ev._cpp_type_name()
+    assert f"struct {cpp} {{" in ev._definition
+    assert (
+        f"operator==({cpp} const &, {cpp} const &) -> bool = default;"
+        in ev._definition
+    )
+    # operator<< prints the bare readable name, not the hashed type name.
+    assert 's << "ce_def_empty"' in ev._definition
+
+
+def test_CustomEvent_abstime_definition_substrings():
+    ev = tcspc.CustomEvent(
+        "ce_def_abstime", abstime=True, traits=tcspc.NumericTraits()
+    )
+    cpp = ev._cpp_type_name()
+    assert f"struct {cpp} {{" in ev._definition
+    assert "tcspc::default_numeric_traits::abstime_type abstime;" in (
+        ev._definition
+    )
+    assert 's << "ce_def_abstime{abstime=" << e.abstime << "}"' in (
+        ev._definition
+    )
+
+
+def test_CustomEvent_repr():
+    assert repr(tcspc.CustomEvent("ce_repr")) == "<CustomEvent(ce_repr)>"

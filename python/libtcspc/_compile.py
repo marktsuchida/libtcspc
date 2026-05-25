@@ -23,7 +23,7 @@ from ._cpp_utils import (
     _ModuleCodeFragment,
     _quote_string,
 )
-from ._events import EventType
+from ._events import EventType, _collecting_referenced_events
 from ._graph import Graph
 from ._numeric_traits import _collecting_referenced_traits
 from ._param import Param
@@ -443,7 +443,10 @@ def _graph_module_code(
 
     mod_var = _CppIdentifier("mod")
 
-    with _collecting_referenced_traits() as nt_registry:
+    with (
+        _collecting_referenced_traits() as nt_registry,
+        _collecting_referenced_events() as event_registry,
+    ):
         genctx = _CodeGenerationContext(
             _CppIdentifier("ctx"),
             _CppIdentifier("params"),
@@ -492,10 +495,20 @@ def _graph_module_code(
         (),
     )
 
+    # Must follow nt_struct_fragment: an abstime event's member type references
+    # the trait struct.
+    custom_event_struct_fragment = _ModuleCodeFragment(
+        (),
+        (),
+        tuple(_CppNamespaceScopeDefs(d) for d in event_registry.values()),
+        (),
+    )
+
     code = _module_code(
         module_name,
         default_includes
         + nt_struct_fragment
+        + custom_event_struct_fragment
         + excs
         + param_struct
         + context_code

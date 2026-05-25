@@ -13,17 +13,20 @@ from libtcspc._compile import CompiledGraph
 from libtcspc._cpp_utils import _CppIdentifier, _CppTypeName, _uint8_type
 from libtcspc._events import (
     ConstBucketEvent,
+    CustomEvent,
     DetectionEvent,
     EventInstance,
     MarkerEvent,
 )
 from libtcspc._execute import EndOfProcessing, ExecutionContext, PySink
 from libtcspc._graph import Graph
+from libtcspc._numeric_traits import NumericTraits
 from libtcspc._param import Param
 from libtcspc._processors import (
     Append,
     Batch,
     Count,
+    Prepend,
     SelectAll,
     SinkAll,
     SinkOnly,
@@ -259,6 +262,82 @@ def test_execute_rejects_event_value_of_output_only_type():
     ec = ExecutionContext(cg, None, (CollectingSink(),))
     with pytest.raises(TypeError, match="MarkerEvent"):
         ec.handle(MarkerEvent().value(abstime=1, channel=2))
+
+
+def test_execute_custom_empty_event_round_trips():
+    reset = CustomEvent("ce_exec_empty_roundtrip")
+    g = Graph()
+    g.add_node("a", SelectAll())
+    cg = CompiledGraph(g, (reset,))
+    sink = CollectingSink()
+    ec = ExecutionContext(cg, None, (sink,))
+    sent = reset.value()
+    ec.handle(sent)
+    assert sink.events == [sent]
+    assert isinstance(sink.events[0], EventInstance)
+
+
+def test_execute_custom_abstime_event_round_trips():
+    px = CustomEvent(
+        "ce_exec_abstime_roundtrip", abstime=True, traits=NumericTraits()
+    )
+    g = Graph()
+    g.add_node("a", SelectAll())
+    cg = CompiledGraph(g, (px,))
+    sink = CollectingSink()
+    ec = ExecutionContext(cg, None, (sink,))
+    sent = px.value(abstime=12345)
+    ec.handle(sent)
+    assert sink.events == [sent]
+    assert sink.events[0]._fields == {"abstime": 12345}
+
+
+def test_execute_prepend_custom_empty_event():
+    reset = CustomEvent("ce_exec_prepend")
+    g = Graph()
+    g.add_node("a", Prepend(reset.value()))
+    cg = CompiledGraph(g, (reset,))
+    sink = CollectingSink()
+    ec = ExecutionContext(cg, None, (sink,))
+    ec.handle(reset.value())
+    ec.flush()
+    assert sink.events == [reset.value(), reset.value()]
+
+
+def test_execute_append_custom_abstime_event():
+    nt = NumericTraits()
+    marker = CustomEvent("ce_exec_append", abstime=True, traits=nt)
+    g = Graph()
+    g.add_node("a", Append(marker.value(abstime=99)))
+    cg = CompiledGraph(g)
+    sink = CollectingSink()
+    ec = ExecutionContext(cg, None, (sink,))
+    ec.flush()
+    assert sink.events == [marker.value(abstime=99)]
+
+
+def test_execute_same_name_custom_events_distinct_shapes_coexist():
+    # Two CustomEvents sharing a name but differing in shape must coexist in one
+    # process (content-addressed types; no conflict guard) and each round-trips.
+    empty = CustomEvent("ce_coexist")
+    abst = CustomEvent("ce_coexist", abstime=True, traits=NumericTraits())
+    assert empty != abst
+
+    g1 = Graph()
+    g1.add_node("a", SelectAll())
+    ec1 = ExecutionContext(
+        CompiledGraph(g1, (empty,)), None, (sink1 := CollectingSink(),)
+    )
+    ec1.handle(empty.value())
+    assert sink1.events == [empty.value()]
+
+    g2 = Graph()
+    g2.add_node("a", SelectAll())
+    ec2 = ExecutionContext(
+        CompiledGraph(g2, (abst,)), None, (sink2 := CollectingSink(),)
+    )
+    ec2.handle(abst.value(abstime=5))
+    assert sink2.events == [abst.value(abstime=5)]
 
 
 def test_execute_pass_through_integers():
