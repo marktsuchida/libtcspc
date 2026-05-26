@@ -61,7 +61,11 @@ def test_MapToBins_codegen():
 def test_MapToBins_forwards_unique_accesses():
     tag = AccessTag("u")
     node = tcspc.MapToBins(tcspc.UniqueBinMapper(tag, 100))
-    assert node._accesses() == ((tag, _UniqueBinMapperAccessSpec),)
+    accesses = node._accesses()
+    assert len(accesses) == 1
+    ((got_tag, spec),) = accesses
+    assert got_tag == tag
+    assert isinstance(spec, _UniqueBinMapperAccessSpec)
 
 
 def test_MapToBins_no_accesses_for_plain_mapper():

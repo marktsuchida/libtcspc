@@ -31,7 +31,7 @@ class BinMapper(_Parameterized):
         self, gencontext: _CodeGenerationContext
     ) -> _CppExpression: ...
 
-    def _accesses(self) -> Sequence[tuple[AccessTag, type[_AccessSpec]]]:
+    def _accesses(self) -> Sequence[tuple[AccessTag, _AccessSpec]]:
         return ()
 
 
@@ -198,8 +198,8 @@ class UniqueBinMapper(BinMapper):
         self._numeric_traits = numeric_traits or NumericTraits()
 
     @override
-    def _accesses(self) -> Sequence[tuple[AccessTag, type[_AccessSpec]]]:
-        return ((self._access_tag, _UniqueBinMapperAccessSpec),)
+    def _accesses(self) -> Sequence[tuple[AccessTag, _AccessSpec]]:
+        return ((self._access_tag, _UniqueBinMapperAccessSpec()),)
 
     @override
     def _parameters(self) -> Sequence[tuple[Param, _CppTypeName]]:
@@ -221,7 +221,7 @@ class UniqueBinMapper(BinMapper):
         else:
             value = str(self._max_bin_index)
         tracker = gencontext.tracker_expression(
-            _UniqueBinMapperAccessSpec._cpp_type_name(), self._access_tag
+            _UniqueBinMapperAccessSpec()._cpp_type_name(), self._access_tag
         )
         return _CppExpression(
             f"tcspc::unique_bin_mapper<{nt}>({tracker}, "

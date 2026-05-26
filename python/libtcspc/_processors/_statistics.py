@@ -58,8 +58,8 @@ class Count(_TypePreservingRelayNode):
     @override
     def _accesses(
         self,
-    ) -> Sequence[tuple[AccessTag, type[_AccessSpec]]]:
-        return ((self._access_tag, _access._CountAccessSpec),)
+    ) -> Sequence[tuple[AccessTag, _AccessSpec]]:
+        return ((self._access_tag, _access._CountAccessSpec()),)
 
     @override
     def _relay_cpp_expression(

@@ -186,7 +186,11 @@ def test_Acquire_output_event_set_is_bucket_of_event_type():
 
 def test_Acquire_accesses_wires_acquire_access_spec():
     node = _acquire(tag="acq")
-    assert node._accesses() == ((AccessTag("acq"), _AcquireAccessSpec),)
+    accesses = node._accesses()
+    assert len(accesses) == 1
+    ((got_tag, spec),) = accesses
+    assert got_tag == AccessTag("acq")
+    assert isinstance(spec, _AcquireAccessSpec)
 
 
 def test_Acquire_parameters_default():
@@ -359,7 +363,11 @@ def test_AcquireFullBuckets_output_event_sets():
 
 def test_AcquireFullBuckets_accesses_wires_acquire_access_spec():
     node = _acquire_full_buckets(tag="acq")
-    assert node._accesses() == ((AccessTag("acq"), _AcquireAccessSpec),)
+    accesses = node._accesses()
+    assert len(accesses) == 1
+    ((got_tag, spec),) = accesses
+    assert got_tag == AccessTag("acq")
+    assert isinstance(spec, _AcquireAccessSpec)
 
 
 def test_AcquireFullBuckets_parameters_with_param_reader():

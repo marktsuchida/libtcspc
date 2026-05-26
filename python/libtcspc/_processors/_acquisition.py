@@ -156,8 +156,8 @@ class Acquire(_RelayNode):
         self._access_tag = access_tag
 
     @override
-    def _accesses(self) -> Sequence[tuple[AccessTag, type[_AccessSpec]]]:
-        return ((self._access_tag, _access._AcquireAccessSpec),)
+    def _accesses(self) -> Sequence[tuple[AccessTag, _AccessSpec]]:
+        return ((self._access_tag, _access._AcquireAccessSpec()),)
 
     @override
     def _relay_map_event_set(
@@ -297,8 +297,8 @@ class AcquireFullBuckets(Node):
         self._access_tag = access_tag
 
     @override
-    def _accesses(self) -> Sequence[tuple[AccessTag, type[_AccessSpec]]]:
-        return ((self._access_tag, _access._AcquireAccessSpec),)
+    def _accesses(self) -> Sequence[tuple[AccessTag, _AccessSpec]]:
+        return ((self._access_tag, _access._AcquireAccessSpec()),)
 
     @override
     def _map_event_sets(

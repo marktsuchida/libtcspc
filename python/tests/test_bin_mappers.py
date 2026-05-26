@@ -52,7 +52,11 @@ def test_LinearBinMapper_param():
 def test_UniqueBinMapper_accesses():
     tag = AccessTag("u")
     bm = UniqueBinMapper(tag, 100)
-    assert bm._accesses() == ((tag, _UniqueBinMapperAccessSpec),)
+    accesses = bm._accesses()
+    assert len(accesses) == 1
+    ((got_tag, spec),) = accesses
+    assert got_tag == tag
+    assert isinstance(spec, _UniqueBinMapperAccessSpec)
 
 
 def test_UniqueBinMapper_codegen():
@@ -74,10 +78,9 @@ def test_UniqueBinMapper_param():
 
 
 def test_UniqueBinMapperAccessSpec_methods():
-    assert "values" in _UniqueBinMapperAccessSpec.cpp_methods()
-    assert (
-        _UniqueBinMapperAccessSpec.py_class_name() == "UniqueBinMapperAccess"
-    )
+    spec = _UniqueBinMapperAccessSpec()
+    assert "values" in spec.cpp_methods()
+    assert spec.py_class_name() == "UniqueBinMapperAccess"
 
 
 def test_no_params_when_literal():

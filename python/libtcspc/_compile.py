@@ -43,7 +43,7 @@ def _exception_types(module_var: _CppIdentifier) -> _ModuleCodeFragment:
 
 
 def _context_type(
-    accesses: Sequence[tuple[AccessTag, type[_AccessSpec]]],
+    accesses: Sequence[tuple[AccessTag, _AccessSpec]],
     module_var: _CppIdentifier,
 ) -> _ModuleCodeFragment:
     # We add specific bindings of access() for each access tag so that Python
@@ -61,9 +61,9 @@ def _context_type(
                     f"""
                 .def({_quote_string(tag._context_method_name())},
                         +[](tcspc::context &self, processor_type *proc) {{
-                    return self.access<{typ._cpp_type_name()}>("{tag.tag}");
+                    return self.access<{spec._cpp_type_name()}>("{tag.tag}");
                 }}, nanobind::keep_alive<0, 2>())"""
-                    for tag, typ in accesses
+                    for tag, spec in accesses
                 )
                 + ";"
             ),
@@ -479,10 +479,13 @@ def _graph_module_code(
             mod_var,
         )
 
-        accessor_types = set(typ for tag, typ in graph._accesses())
+        accessor_specs = {
+            str(spec._cpp_type_name()): spec
+            for _tag, spec in graph._accesses()
+        }
         accessors = functools.reduce(
             lambda f, g: f + g,
-            (typ.cpp_bindings(mod_var) for typ in accessor_types),
+            (spec.cpp_bindings(mod_var) for spec in accessor_specs.values()),
             _ModuleCodeFragment((), (), (), ()),
         )
 

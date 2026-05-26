@@ -140,7 +140,7 @@ class MapToBins(_RelayNode):
         )
 
     @override
-    def _accesses(self) -> Sequence[tuple[AccessTag, type[_AccessSpec]]]:
+    def _accesses(self) -> Sequence[tuple[AccessTag, _AccessSpec]]:
         return self._bin_mapper._accesses()
 
     @override

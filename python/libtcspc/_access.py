@@ -19,31 +19,30 @@ from ._cpp_utils import (
 
 
 class _AccessSpec(ABC):
-    @classmethod
     @abstractmethod
-    def _cpp_type_name(cls) -> _CppTypeName: ...
+    def _cpp_type_name(self) -> _CppTypeName: ...
 
-    @classmethod
     @abstractmethod
-    def cpp_methods(cls) -> Sequence[_CppIdentifier]: ...
+    def cpp_methods(self) -> Sequence[_CppIdentifier]: ...
 
-    @classmethod
     @abstractmethod
-    def py_class_name(cls) -> str: ...
+    def py_class_name(self) -> str: ...
 
-    @classmethod
-    def cpp_bindings(cls, module_var: _CppIdentifier) -> _ModuleCodeFragment:
-        py_class_name = cls.py_class_name()
+    def wraps_event_value(self) -> bool:
+        return False
+
+    def cpp_bindings(self, module_var: _CppIdentifier) -> _ModuleCodeFragment:
+        py_class_name = self.py_class_name()
         return _ModuleCodeFragment(
             (),
             (),
             (),
             (
                 _CppFunctionScopeDefs(
-                    f'nanobind::class_<{cls._cpp_type_name()}>({module_var}, "{py_class_name}", nanobind::is_final())'
+                    f'nanobind::class_<{self._cpp_type_name()}>({module_var}, "{py_class_name}", nanobind::is_final())'
                     + "".join(
-                        f'\n    .def("{meth}", &{cls._cpp_type_name()}::{meth})'
-                        for meth in cls.cpp_methods()
+                        f'\n    .def("{meth}", &{self._cpp_type_name()}::{meth})'
+                        for meth in self.cpp_methods()
                     )
                     + ";"
                 ),
@@ -79,61 +78,52 @@ class _Accessible(ABC):  # noqa: B024
     (``Node``) or their auxiliary objects.
     """
 
-    def _accesses(self) -> Sequence[tuple[AccessTag, type[_AccessSpec]]]:
+    def _accesses(self) -> Sequence[tuple[AccessTag, "_AccessSpec"]]:
         return ()
 
 
 class _AcquireAccessSpec(_AccessSpec):
     @override
-    @classmethod
-    def _cpp_type_name(cls) -> _CppTypeName:
+    def _cpp_type_name(self) -> _CppTypeName:
         return _CppTypeName("tcspc::acquire_access")
 
     @override
-    @classmethod
-    def cpp_methods(cls) -> Sequence[_CppIdentifier]:
+    def cpp_methods(self) -> Sequence[_CppIdentifier]:
         return (_CppIdentifier("halt"),)
 
     @override
-    @classmethod
-    def py_class_name(cls) -> str:
+    def py_class_name(self) -> str:
         return "AcquireAccess"
 
 
 class _CountAccessSpec(_AccessSpec):
     @override
-    @classmethod
-    def _cpp_type_name(cls) -> _CppTypeName:
+    def _cpp_type_name(self) -> _CppTypeName:
         return _CppTypeName("tcspc::count_access")
 
     @override
-    @classmethod
-    def cpp_methods(cls) -> Sequence[_CppIdentifier]:
+    def cpp_methods(self) -> Sequence[_CppIdentifier]:
         return (_CppIdentifier("count"),)
 
     @override
-    @classmethod
-    def py_class_name(cls) -> str:
+    def py_class_name(self) -> str:
         return "CountAccess"
 
 
 class _UniqueBinMapperAccessSpec(_AccessSpec):
     @override
-    @classmethod
-    def _cpp_type_name(cls) -> _CppTypeName:
+    def _cpp_type_name(self) -> _CppTypeName:
         return _CppTypeName(
             "tcspc::unique_bin_mapper_access<"
             "tcspc::default_numeric_traits::datapoint_type>"
         )
 
     @override
-    @classmethod
-    def cpp_methods(cls) -> Sequence[_CppIdentifier]:
+    def cpp_methods(self) -> Sequence[_CppIdentifier]:
         return (_CppIdentifier("values"),)
 
     @override
-    @classmethod
-    def py_class_name(cls) -> str:
+    def py_class_name(self) -> str:
         return "UniqueBinMapperAccess"
 
 

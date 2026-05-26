@@ -39,7 +39,11 @@ def test_Count_event_set_is_preserved():
 def test_Count_accesses_wires_count_access_spec():
     tag = AccessTag("c")
     node = Count(IntEvent, tag)
-    assert node._accesses() == ((tag, _CountAccessSpec),)
+    accesses = node._accesses()
+    assert len(accesses) == 1
+    ((got_tag, spec),) = accesses
+    assert got_tag == tag
+    assert isinstance(spec, _CountAccessSpec)
 
 
 def test_Count_codegen_calls_tcspc_count():

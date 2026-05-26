@@ -51,10 +51,7 @@ def test_AccessTag_context_method_name_distinct_for_distinct_tags():
 
 
 def test_UniqueBinMapperAccessSpec():
-    assert (
-        _UniqueBinMapperAccessSpec.py_class_name() == "UniqueBinMapperAccess"
-    )
-    assert "values" in _UniqueBinMapperAccessSpec.cpp_methods()
-    assert "unique_bin_mapper_access" in (
-        _UniqueBinMapperAccessSpec._cpp_type_name()
-    )
+    spec = _UniqueBinMapperAccessSpec()
+    assert spec.py_class_name() == "UniqueBinMapperAccess"
+    assert "values" in spec.cpp_methods()
+    assert "unique_bin_mapper_access" in (spec._cpp_type_name())

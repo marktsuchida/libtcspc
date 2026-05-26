@@ -688,8 +688,8 @@ class Graph:
         self._visit_nodes(visit)
         return encoders
 
-    def _accesses(self) -> Sequence[tuple[AccessTag, type[_AccessSpec]]]:
-        accesses: list[tuple[AccessTag, type[_AccessSpec]]] = []
+    def _accesses(self) -> Sequence[tuple[AccessTag, _AccessSpec]]:
+        accesses: list[tuple[AccessTag, _AccessSpec]] = []
 
         def visit(node_name: str, node: _Accessible):
             accesses.extend(node._accesses())
@@ -776,7 +776,7 @@ class Subgraph(Node):
         return self._graph._param_encoders()
 
     @override
-    def _accesses(self) -> Sequence[tuple[AccessTag, type[_AccessSpec]]]:
+    def _accesses(self) -> Sequence[tuple[AccessTag, _AccessSpec]]:
         return self._graph._accesses()
 
     @override
