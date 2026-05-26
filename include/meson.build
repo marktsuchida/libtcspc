@@ -47,6 +47,7 @@ public_cpp_headers = files(
     'libtcspc/processor.hpp',
     'libtcspc/read_binary_stream.hpp',
     'libtcspc/read_integers.hpp',
+    'libtcspc/record_abstime_range.hpp',
     'libtcspc/recover_order.hpp',
     'libtcspc/regulate_time_reached.hpp',
     'libtcspc/route.hpp',

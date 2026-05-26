@@ -47,6 +47,7 @@ test_libtcspc_srcs = [
     'processor.cpp',
     'read_binary_stream.cpp',
     'read_integers.cpp',
+    'record_abstime_range.cpp',
     'recover_order.cpp',
     'regulate_time_reached.cpp',
     'route.cpp',

@@ -51,6 +51,7 @@
 #include "processor.hpp"
 #include "read_binary_stream.hpp"
 #include "read_integers.hpp"
+#include "record_abstime_range.hpp"
 #include "recover_order.hpp"
 #include "regulate_time_reached.hpp"
 #include "route.hpp"
