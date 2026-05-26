@@ -177,5 +177,21 @@ Inputs to source processor nodes such as
    :nosignatures:
 
    libtcspc.InputStream
+   libtcspc.NullInputStream
    libtcspc.BinaryFileInputStream
+```
+
+## Output streams
+
+Outputs to sink processor nodes such as
+{py:class}`~libtcspc.WriteBinaryStream`.
+
+```{eval-rst}
+.. autosummary::
+   :toctree: generated
+   :nosignatures:
+
+   libtcspc.OutputStream
+   libtcspc.NullOutputStream
+   libtcspc.BinaryFileOutputStream
 ```

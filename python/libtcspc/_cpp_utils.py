@@ -49,6 +49,7 @@ _int64_type = _CppTypeName("std::int64_t")
 _float32_type = _CppTypeName("float")
 _float64_type = _CppTypeName("double")
 _string_type = _CppTypeName("std::string")
+_bool_type = _CppTypeName("bool")
 
 
 _INT_BY_SIZE = {

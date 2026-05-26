@@ -118,7 +118,9 @@ Processors for reading and writing data from/to file-like streams.
 
    libtcspc.ExtractBucket
    libtcspc.ReadBinaryStream
+   libtcspc.WriteBinaryStream
    libtcspc.read_events_from_binary_file
+   libtcspc.write_events_to_binary_file
 ```
 
 ### Binary stream processors

@@ -46,6 +46,13 @@ class _CodeGenerationContext:
             )
         return _cpp_utils._quote_string(p)
 
+    def bool_expression(self, p: Param[bool] | bool) -> _CppExpression:
+        if isinstance(p, Param):
+            return _CppExpression(
+                f"{self.params_varname}.{p._cpp_identifier()}"
+            )
+        return _CppExpression("true" if p else "false")
+
     def tracker_expression(
         self, access_type: _CppTypeName, access_tag: AccessTag
     ) -> _CppExpression:

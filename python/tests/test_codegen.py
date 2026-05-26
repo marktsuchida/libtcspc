@@ -65,6 +65,15 @@ def test_string_expression_param_overrides_quoting():
     assert gencontext.string_expression(Param('"x"')) == "params.z_Q22xQ22"
 
 
+def test_bool_expression_literal():
+    assert gencontext.bool_expression(True) == "true"
+    assert gencontext.bool_expression(False) == "false"
+
+
+def test_bool_expression_param():
+    assert gencontext.bool_expression(Param("flag")) == "params.z_flag"
+
+
 def test_context_varnames_used():
     ctx = _CodeGenerationContext(
         _CppIdentifier("ctx"),

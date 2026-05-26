@@ -39,7 +39,9 @@ from ._input_output import (
     ReadBinaryStream,
     UnbatchFromBytes,
     ViewAsBytes,
+    WriteBinaryStream,
     read_events_from_binary_file,
+    write_events_to_binary_file,
 )
 from ._merging import Merge, MergeN, MergeNUnsorted
 from ._pairing import PairAll, PairAllBetween, PairOne, PairOneBetween
@@ -139,5 +141,7 @@ __all__ = [
     "UnbatchBinIncrementClusters",
     "UnbatchFromBytes",
     "ViewAsBytes",
+    "WriteBinaryStream",
     "read_events_from_binary_file",
+    "write_events_to_binary_file",
 ]

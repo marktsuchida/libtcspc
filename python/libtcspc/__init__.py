@@ -162,14 +162,23 @@ from ._processors import (
     UnbatchBinIncrementClusters,
     UnbatchFromBytes,
     ViewAsBytes,
+    WriteBinaryStream,
     read_events_from_binary_file,
+    write_events_to_binary_file,
 )
 from ._routers import (
     ChannelRouter,
     NullRouter,
     Router,
 )
-from ._streams import BinaryFileInputStream, InputStream
+from ._streams import (
+    BinaryFileInputStream,
+    BinaryFileOutputStream,
+    InputStream,
+    NullInputStream,
+    NullOutputStream,
+    OutputStream,
+)
 from ._timing_generators import (
     DynamicLinearTimingGenerator,
     DynamicOneShotTimingGenerator,
@@ -201,6 +210,7 @@ __all__ = [
     "BinIncrementEvent",
     "BinMapper",
     "BinaryFileInputStream",
+    "BinaryFileOutputStream",
     "Broadcast",
     "BucketEvent",
     "BucketSource",
@@ -275,11 +285,14 @@ __all__ = [
     "NeverMatcher",
     "NewDeleteBucketSource",
     "Node",
+    "NullInputStream",
+    "NullOutputStream",
     "NullReader",
     "NullRouter",
     "NullTimingGenerator",
     "NumericTraits",
     "OneShotTimingGenerator",
+    "OutputStream",
     "PQT2GenericEvent",
     "PQT2HydraHarpV1Event",
     "PQT2PicoHarp300Event",
@@ -336,5 +349,7 @@ __all__ = [
     "UniqueBinMapperAccess",
     "ViewAsBytes",
     "WarningEvent",
+    "WriteBinaryStream",
     "read_events_from_binary_file",
+    "write_events_to_binary_file",
 ]

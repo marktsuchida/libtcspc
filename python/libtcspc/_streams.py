@@ -10,6 +10,7 @@ from typing_extensions import override
 
 from ._codegen import _CodeGenerationContext
 from ._cpp_utils import (
+    _bool_type,
     _CppExpression,
     _CppTypeName,
     _string_type,
@@ -34,6 +35,28 @@ class InputStream(_Parameterized):
     def _cpp_expression(
         self, gencontext: _CodeGenerationContext
     ) -> _CppExpression: ...
+
+
+@final
+class NullInputStream(InputStream):
+    """Binary input stream that contains no data.
+
+    Reading always behaves as if the end of the stream has been reached
+    immediately.
+
+    See Also
+    --------
+    :py:obj:`ReadBinaryStream`
+        Processor that consumes this stream.
+    :cpp:`tcspc::null_input_stream`
+        The underlying C++ input stream.
+    """
+
+    @override
+    def _cpp_expression(
+        self, gencontext: _CodeGenerationContext
+    ) -> _CppExpression:
+        return _CppExpression("tcspc::null_input_stream()")
 
 
 @final
@@ -103,5 +126,106 @@ class BinaryFileInputStream(InputStream):
             tcspc::binary_file_input_stream(
                 {gencontext.string_expression(self._filename)},
                 tcspc::arg::start_offset<tcspc::u64>{{{start_offset}}}
+            )"""
+        )
+
+
+class OutputStream(_Parameterized):
+    """Base class for binary output streams used by `WriteBinaryStream`.
+
+    Subclasses select between different byte-sink backends, such as a file
+    on disk or a discarding sink.
+
+    See Also
+    --------
+    :py:obj:`WriteBinaryStream`
+        Processor that consumes an `OutputStream`.
+    """
+
+    @abstractmethod
+    def _cpp_expression(
+        self, gencontext: _CodeGenerationContext
+    ) -> _CppExpression: ...
+
+
+@final
+class NullOutputStream(OutputStream):
+    """Binary output stream that discards all data written to it.
+
+    See Also
+    --------
+    :py:obj:`WriteBinaryStream`
+        Processor that consumes this stream.
+    :cpp:`tcspc::null_output_stream`
+        The underlying C++ output stream.
+    """
+
+    @override
+    def _cpp_expression(
+        self, gencontext: _CodeGenerationContext
+    ) -> _CppExpression:
+        return _CppExpression("tcspc::null_output_stream()")
+
+
+@final
+class BinaryFileOutputStream(OutputStream):
+    """Binary output stream that writes to a file on disk.
+
+    Parameters
+    ----------
+    filename : str or Param[str]
+        Path to the file to write.
+    truncate : bool or Param[bool], keyword-only
+        If true, truncate the file if it already exists. Default ``False``.
+    append : bool or Param[bool], keyword-only
+        If true, append to the file if it already exists. Default ``False``.
+
+    Notes
+    -----
+    The file is opened with unbuffered I/O. Failure to open the file is
+    reported when the upstream `WriteBinaryStream` performs its first write.
+
+    See Also
+    --------
+    :py:obj:`WriteBinaryStream`
+        Processor that consumes this stream.
+    :cpp:`tcspc::binary_file_output_stream`
+        The underlying C++ output stream.
+    """
+
+    def __init__(
+        self,
+        filename: str | Param[str],
+        *,
+        truncate: bool | Param[bool] = False,
+        append: bool | Param[bool] = False,
+    ) -> None:
+        self._filename = filename
+        self._truncate = truncate
+        self._append = append
+
+    @override
+    def _parameters(self) -> Sequence[tuple[Param, _CppTypeName]]:
+        params: list[tuple[Param, _CppTypeName]] = []
+        if isinstance(self._filename, Param):
+            params.append((self._filename, _string_type))
+        if isinstance(self._truncate, Param):
+            params.append((self._truncate, _bool_type))
+        if isinstance(self._append, Param):
+            params.append((self._append, _bool_type))
+        return params
+
+    @override
+    def _cpp_expression(
+        self, gencontext: _CodeGenerationContext
+    ) -> _CppExpression:
+        truncate = gencontext.bool_expression(self._truncate)
+        append = gencontext.bool_expression(self._append)
+        return _CppExpression(
+            f"""\
+            tcspc::binary_file_output_stream(
+                {gencontext.string_expression(self._filename)},
+                tcspc::arg::truncate<bool>{{{truncate}}},
+                tcspc::arg::append<bool>{{{append}}}
             )"""
         )

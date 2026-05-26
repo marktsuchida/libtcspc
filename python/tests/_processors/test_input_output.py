@@ -27,9 +27,11 @@ from libtcspc._processors import (
     StopWithError,
     UnbatchFromBytes,
     ViewAsBytes,
+    WriteBinaryStream,
     read_events_from_binary_file,
+    write_events_to_binary_file,
 )
-from libtcspc._streams import BinaryFileInputStream
+from libtcspc._streams import BinaryFileInputStream, BinaryFileOutputStream
 
 IntEvent = _NamedEvent(_CppTypeName("int"))
 OtherEvent = _NamedEvent(_CppTypeName("long"))
@@ -235,6 +237,98 @@ def test_ViewAsBytes_codegen():
     code = node._cpp_expression(gencontext, [_CppExpression("DOWN")])
     assert "tcspc::view_as_bytes(" in code
     assert "DOWN" in code
+
+
+# WriteBinaryStream
+
+
+def _write(
+    write_granularity_bytes: int | Param[int] = 65536,
+    buffer_provider=None,
+    stream: BinaryFileOutputStream | None = None,
+) -> WriteBinaryStream:
+    return WriteBinaryStream(
+        stream if stream is not None else BinaryFileOutputStream("some_file"),
+        buffer_provider,
+        write_granularity_bytes,
+    )
+
+
+def test_WriteBinaryStream_is_a_sink():
+    node = _write()
+    assert node.outputs() == ()
+    assert node._map_event_sets([(BucketEvent(_ByteEvent()),)]) == ()
+
+
+def test_WriteBinaryStream_rejects_non_byte_input():
+    node = _write()
+    with pytest.raises(ValueError):
+        node._map_event_sets([(BucketEvent(IntEvent),)])
+    with pytest.raises(ValueError):
+        node._map_event_sets([(IntEvent,)])
+
+
+def test_WriteBinaryStream_codegen():
+    node = _write()
+    code = node._cpp_expression(gencontext, [])
+    assert "tcspc::write_binary_stream(" in code
+    assert "tcspc::arg::granularity<std::size_t>{" in code
+    assert "recycling_bucket_source<std::byte," in code
+    assert "DOWN" not in code
+
+
+def test_WriteBinaryStream_granularity_param():
+    node = _write(write_granularity_bytes=Param("g"))
+    params = node._parameters()
+    assert (Param("g"), _size_type) in params
+    code = node._cpp_expression(gencontext, [])
+    assert f"params.{_identifier_from_string('g')}" in code
+
+
+def test_WriteBinaryStream_propagates_stream_parameters():
+    node = _write(stream=BinaryFileOutputStream(Param("fname")))
+    params = node._parameters()
+    assert (Param("fname"), _string_type) in params
+
+
+def test_WriteBinaryStream_buffer_provider_params_propagate():
+    bp = RecyclingBucketSource(_ByteEvent(), max_bucket_count=Param("mbc"))
+    node = _write(buffer_provider=bp)
+    params = node._parameters()
+    assert (Param("mbc"), _size_type) in params
+
+
+# write_events_to_binary_file
+
+
+def _write_subgraph(**kwargs) -> Subgraph:
+    sg = write_events_to_binary_file(IntEvent, "f.bin", **kwargs)
+    assert isinstance(sg, Subgraph)
+    return sg
+
+
+def test_write_returns_subgraph_with_input_and_no_outputs():
+    sg = _write_subgraph()
+    assert sg.inputs() == ("input",)
+    assert sg.outputs() == ()
+
+
+def test_write_subgraph_input_accepts_event_type():
+    sg = _write_subgraph()
+    assert sg._map_event_sets([(IntEvent,)]) == ()
+
+
+def test_write_params_propagate_through_to_parameters():
+    sg = write_events_to_binary_file(
+        IntEvent,
+        Param("f"),
+        truncate=Param("tr"),
+        batch_size=Param("bs"),
+    )
+    names = [p.name for p, _ in sg._parameters()]
+    assert "f" in names
+    assert "tr" in names
+    assert "bs" in names
 
 
 # read_events_from_binary_file

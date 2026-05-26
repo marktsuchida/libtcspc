@@ -24,7 +24,7 @@ from .._events import BucketEvent, EventType, WarningEvent
 from .._graph import Graph, Subgraph
 from .._node import Node, _RelayNode
 from .._param import Param
-from ._batching import Unbatch
+from ._batching import Batch, Unbatch
 from ._common import (
     _bucket_source_or_default,
     _check_events_subset_of,
@@ -144,6 +144,9 @@ class ReadBinaryStream(_RelayNode):
     --------
     :cpp:`tcspc::read_binary_stream`
         The underlying C++ factory function.
+    :py:obj:`read_events_from_binary_file`
+        Higher-level convenience that reads a binary file and emits individual
+        events (rather than byte buckets).
     """
 
     def __init__(
@@ -408,6 +411,107 @@ class ViewAsBytes(_RelayNode):
         )
 
 
+@final
+class WriteBinaryStream(Node):
+    """Sink processor that writes raw bytes to a binary output stream.
+
+    Input is a `BucketEvent` of bytes; the contained bytes are written to
+    the output stream. To write typed events, precede this processor with
+    `ViewAsBytes` (and usually `Batch`) to convert bucketed events to their
+    in-memory bytes. This processor is a sink: it has no outputs.
+
+    Parameters
+    ----------
+    stream : OutputStream
+        The output stream to write to (for example a
+        `BinaryFileOutputStream`).
+    buffer_provider : BucketSource or Param[PyBucketSource] or None
+        Source of byte buckets used to coalesce writes. If ``None``, a
+        default `RecyclingBucketSource` for bytes is used. A runtime
+        `Param` of type `PyBucketSource` binds a Python bucket source at
+        execution time.
+    write_granularity_bytes : int or Param[int]
+        Minimum write size in bytes. Defaults to ``65536``. Larger writes
+        have less per-byte overhead but may pollute CPU caches; try
+        different powers of two and measure.
+
+    Notes
+    -----
+    Events handled:
+
+    - `BucketEvent` of byte event type: write its bytes to the stream.
+    - All other event types: rejected at graph build time.
+    - End of input: flush the stream. Raises an exception (corresponding
+      to C++ ``input_output_error``) on a stream write error.
+
+    See Also
+    --------
+    :cpp:`tcspc::write_binary_stream`
+        The underlying C++ factory function.
+    :py:obj:`ViewAsBytes`
+        View bucketed events as their in-memory bytes to feed this sink.
+    :py:obj:`ReadBinaryStream`
+        The inverse: read events from a binary input stream.
+    :py:obj:`write_events_to_binary_file`
+        Higher-level convenience that accepts individual events and writes them
+        to a binary file (batching and byte conversion handled internally).
+    """
+
+    def __init__(
+        self,
+        stream: _streams.OutputStream,
+        buffer_provider: BucketSource | Param[PyBucketSource] | None = None,
+        write_granularity_bytes: int | Param[int] = 65536,
+    ) -> None:
+        super().__init__(output=())
+        self._stream = stream
+        self._byte_event_type = _events.BucketEvent(_events._ByteEvent())
+        self._bucket_source = _bucket_source_or_default(
+            _events._ByteEvent(), buffer_provider
+        )
+        self._granularity = write_granularity_bytes
+
+    @override
+    def _map_event_sets(
+        self, input_event_sets: Sequence[Collection[EventType]]
+    ) -> tuple[tuple[EventType, ...], ...]:
+        if len(input_event_sets) != 1:
+            raise ValueError(
+                f"wrong number of inputs (1 expected, {len(input_event_sets)} found)"
+            )
+        _check_events_subset_of(
+            input_event_sets[0],
+            (self._byte_event_type,),
+            self.__class__.__name__,
+        )
+        return ()
+
+    @override
+    def _parameters(self) -> Sequence[tuple[Param, _CppTypeName]]:
+        params: list[tuple[Param, _CppTypeName]] = []
+        if isinstance(self._granularity, Param):
+            params.append((self._granularity, _size_type))
+        params.extend(self._stream._parameters())
+        params.extend(self._bucket_source._parameters())
+        return params
+
+    @override
+    def _cpp_expression(
+        self,
+        gencontext: _CodeGenerationContext,
+        downstreams: Sequence[_CppExpression],
+    ) -> _CppExpression:
+        granularity = gencontext.size_t_expression(self._granularity)
+        return _CppExpression(
+            f"""\
+            tcspc::write_binary_stream(
+                {self._stream._cpp_expression(gencontext)},
+                {self._bucket_source._cpp_expression(gencontext)},
+                tcspc::arg::granularity<std::size_t>{{{granularity}}}
+            )"""
+        )
+
+
 def read_events_from_binary_file(
     event_type: EventType,
     filename: str | Param[str],
@@ -492,3 +596,66 @@ def read_events_from_binary_file(
         input_map={"input": ("reader", "input")},
         output_map={"output": ("unbatcher", "output")},
     )
+
+
+def write_events_to_binary_file(
+    event_type: EventType,
+    filename: str | Param[str],
+    *,
+    truncate: bool | Param[bool] = False,
+    append: bool | Param[bool] = False,
+    batch_size: int | Param[int] | None = None,
+    write_granularity_bytes: int | Param[int] = 65536,
+) -> Node:
+    """Build a subgraph that writes events to a binary file.
+
+    This is a thin convenience composed of `Batch`, `ViewAsBytes`, and
+    `WriteBinaryStream` writing to a `BinaryFileOutputStream`. The resulting
+    subgraph has one input named ``"input"`` that accepts individual events of
+    ``event_type`` and no outputs (it is a sink).
+
+    Parameters
+    ----------
+    event_type : EventType
+        Element type to write to the file. Must be a trivially-typed event.
+    filename : str or Param[str]
+        Path to the output file. May be supplied as a runtime `Param`.
+    truncate : bool or Param[bool]
+        If true, truncate the file if it already exists. Defaults to
+        ``False``.
+    append : bool or Param[bool]
+        If true, append to the file if it already exists. Defaults to
+        ``False``.
+    batch_size : int or Param[int] or None
+        Number of events per batch. ``None`` (the default) uses the `Batch`
+        default.
+    write_granularity_bytes : int or Param[int]
+        Write chunk size in bytes. Defaults to ``65536``. Larger writes have
+        less overhead but may pollute CPU caches.
+
+    Returns
+    -------
+    Subgraph
+        A subgraph with input ``"input"`` and no outputs that writes events of
+        ``event_type`` to the file.
+
+    See Also
+    --------
+    :py:obj:`WriteBinaryStream`
+    :py:obj:`Batch`
+    :py:obj:`ViewAsBytes`
+    """
+    g = Graph()
+    g.add_chain(
+        [
+            ("batcher", Batch(event_type, batch_size=batch_size)),
+            ViewAsBytes(event_type),
+            WriteBinaryStream(
+                _streams.BinaryFileOutputStream(
+                    filename, truncate=truncate, append=append
+                ),
+                write_granularity_bytes=write_granularity_bytes,
+            ),
+        ]
+    )
+    return Subgraph(g, input_map={"input": ("batcher", "input")})

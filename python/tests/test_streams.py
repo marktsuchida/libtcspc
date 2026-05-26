@@ -5,17 +5,29 @@
 import pytest
 from libtcspc._codegen import _CodeGenerationContext
 from libtcspc._cpp_utils import (
+    _bool_type,
     _CppIdentifier,
     _identifier_from_string,
     _string_type,
     _uint64_type,
 )
 from libtcspc._param import Param
-from libtcspc._streams import BinaryFileInputStream
+from libtcspc._streams import (
+    BinaryFileInputStream,
+    BinaryFileOutputStream,
+    NullInputStream,
+    NullOutputStream,
+)
 
 gencontext = _CodeGenerationContext(
     _CppIdentifier("ctx"), _CppIdentifier("params"), _CppIdentifier("sinks")
 )
+
+
+def test_NullInputStream_codegen():
+    nis = NullInputStream()
+    assert len(nis._parameters()) == 0
+    assert "tcspc::null_input_stream()" in nis._cpp_expression(gencontext)
 
 
 def test_BinaryFileInputStream_default():
@@ -58,3 +70,49 @@ def test_BinaryFileInputStream_start_offset_negative_is_error():
 
     with pytest.raises(ValueError):
         BinaryFileInputStream("some_file", start_offset=Param("stoff", -1))
+
+
+def test_NullOutputStream_codegen():
+    nos = NullOutputStream()
+    assert len(nos._parameters()) == 0
+    assert "tcspc::null_output_stream()" in nos._cpp_expression(gencontext)
+
+
+def test_BinaryFileOutputStream_default():
+    bfos = BinaryFileOutputStream("some_file")
+    assert len(bfos._parameters()) == 0
+    code = bfos._cpp_expression(gencontext)
+    assert "tcspc::binary_file_output_stream" in code
+    assert '"some_file"' in code
+    assert "tcspc::arg::truncate<bool>{false}" in code
+    assert "tcspc::arg::append<bool>{false}" in code
+
+
+def test_BinaryFileOutputStream_filename_param():
+    bfos = BinaryFileOutputStream(Param("fname"))
+    assert len(bfos._parameters()) == 1
+    assert bfos._parameters()[0] == (Param("fname"), _string_type)
+    assert (
+        f"params.{_identifier_from_string('fname')}"
+        in bfos._cpp_expression(gencontext)
+    )
+
+
+def test_BinaryFileOutputStream_truncate_append_literals():
+    bfos = BinaryFileOutputStream("some_file", truncate=True, append=True)
+    assert len(bfos._parameters()) == 0
+    code = bfos._cpp_expression(gencontext)
+    assert "tcspc::arg::truncate<bool>{true}" in code
+    assert "tcspc::arg::append<bool>{true}" in code
+
+
+def test_BinaryFileOutputStream_truncate_append_params():
+    bfos = BinaryFileOutputStream(
+        "some_file", truncate=Param("tr"), append=Param("ap")
+    )
+    params = bfos._parameters()
+    assert (Param("tr"), _bool_type) in params
+    assert (Param("ap"), _bool_type) in params
+    code = bfos._cpp_expression(gencontext)
+    assert f"params.{_identifier_from_string('tr')}" in code
+    assert f"params.{_identifier_from_string('ap')}" in code
