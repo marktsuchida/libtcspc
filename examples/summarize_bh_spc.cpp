@@ -6,7 +6,7 @@
 
 #include "libtcspc/tcspc.hpp"
 
-#include <array>
+#include <cstddef>
 #include <cstdio>
 #include <cstdlib>
 #include <exception>
@@ -19,12 +19,10 @@
 namespace {
 
 struct numtraits : tcspc::default_numeric_traits {
-    // BH channels are never negative; use of unsigned type simplifies checks
-    // in summarize_and_print().
+    // BH channels are never negative.
     using channel_type = tcspc::u32;
 };
 
-using channel_type = numtraits::channel_type;
 using abstime_type = numtraits::abstime_type;
 
 void print_out(char const *str) {
@@ -37,39 +35,16 @@ void print_err(char const *str) {
         std::terminate();
 }
 
-// Custom sink that counts events in all channels, and prints the results at
-// the end of the stream.
-class summarize_and_print {
-    std::array<tcspc::u64, 16> photon_counts{};
-    std::array<tcspc::u64, 4> marker_counts{};
-    abstime_type last_abstime = std::numeric_limits<abstime_type>::min();
-
-  public:
-    void
-    handle(tcspc::time_correlated_detection_event<numtraits> const &event) {
-        ++photon_counts.at(event.channel);
-        last_abstime = event.abstime;
-    }
-
-    void handle(tcspc::marker_event<numtraits> const &event) {
-        ++marker_counts.at(event.channel);
-        last_abstime = event.abstime;
-    }
-
-    void handle(tcspc::time_reached_event<numtraits> const &event) {
-        last_abstime = event.abstime;
-    }
-
-    void flush() {
-        std::ostringstream stream;
-        stream << "Relative time of last event: \t" << last_abstime << '\n';
-        for (std::size_t i = 0; i < photon_counts.size(); ++i)
-            stream << "route " << i << ": \t" << photon_counts.at(i) << '\n';
-        for (std::size_t i = 0; i < marker_counts.size(); ++i)
-            stream << "mark " << i << ": \t" << marker_counts.at(i) << '\n';
-        print_out(stream.str().c_str());
-    }
+// Numeric traits for the summary histograms: a wide bin type so counts cannot
+// overflow, and a datapoint type wide enough to hold the channel without
+// narrowing.
+struct summary_traits : numtraits {
+    using datapoint_type = tcspc::u32;
+    using bin_type = tcspc::u64;
 };
+
+// Trivial event used to inject a reset (to conclude the histograms) on flush.
+struct reset_event {};
 
 auto summarize(std::string const &filename) -> bool {
     using namespace tcspc;
@@ -90,18 +65,86 @@ auto summarize(std::string const &filename) -> bool {
     decode_bh_spc<numtraits>( // Decode device events into generic TCSPC events.
     check_monotonic<numtraits>( // Ensure the abstime is non-decreasing.
     stop<type_list<warning_event, data_lost_event<numtraits>>>("error in data",
-    summarize_and_print())))))));
+    // Track the last abstime (max == last, given monotonicity).
+    record_abstime_range<numtraits>(
+        ctx->tracker<record_abstime_range_access<abstime_type>>("times"),
+    // The two event types use separate channel spaces, so histogram each in its
+    // own branch; each branch's map_to_datapoints converts only its own type.
+    broadcast<type_list<time_correlated_detection_event<numtraits>,
+                        marker_event<numtraits>,
+                        time_reached_event<numtraits>>>(
+        // Count photons per route (0..15).
+        map_to_datapoints<time_correlated_detection_event<numtraits>,
+                          summary_traits>(
+            channel_data_mapper<summary_traits>{},
+        map_to_bins<summary_traits>(linear_bin_mapper<summary_traits>(
+            arg::offset<summary_traits::datapoint_type>{0},
+            arg::bin_width<summary_traits::datapoint_type>{1},
+            arg::max_bin_index<summary_traits::bin_index_type>{15}),
+        append(reset_event{},
+        histogram<histogram_policy::emit_concluding_events, reset_event,
+                  summary_traits>(
+            arg::num_bins{std::size_t{16}},
+            arg::max_per_bin<u64>{std::numeric_limits<u64>::max()},
+            recycling_bucket_source<summary_traits::bin_type>::create(),
+        record_last<concluding_histogram_event<summary_traits>>(
+            ctx->tracker<record_last_access<
+                concluding_histogram_event<summary_traits>>>("photons"),
+        sink_all()))))),
+        // Count markers per channel (0..3).
+        map_to_datapoints<marker_event<numtraits>, summary_traits>(
+            channel_data_mapper<summary_traits>{},
+        map_to_bins<summary_traits>(linear_bin_mapper<summary_traits>(
+            arg::offset<summary_traits::datapoint_type>{0},
+            arg::bin_width<summary_traits::datapoint_type>{1},
+            arg::max_bin_index<summary_traits::bin_index_type>{3}),
+        append(reset_event{},
+        histogram<histogram_policy::emit_concluding_events, reset_event,
+                  summary_traits>(
+            arg::num_bins{std::size_t{4}},
+            arg::max_per_bin<u64>{std::numeric_limits<u64>::max()},
+            recycling_bucket_source<summary_traits::bin_type>::create(),
+        record_last<concluding_histogram_event<summary_traits>>(
+            ctx->tracker<record_last_access<
+                concluding_histogram_event<summary_traits>>>("markers"),
+        sink_all()))))))))))))));
     // clang-format on
+
+    auto const print_summary = [&] {
+        auto range =
+            ctx->access<record_abstime_range_access<abstime_type>>("times");
+        auto const photons = ctx->access<record_last_access<
+            concluding_histogram_event<summary_traits>>>("photons")
+                                 .get();
+        auto const markers = ctx->access<record_last_access<
+            concluding_histogram_event<summary_traits>>>("markers")
+                                 .get();
+
+        std::ostringstream stream;
+        stream << "Relative time of last event: \t"
+               << range.max().value_or(
+                      std::numeric_limits<abstime_type>::min())
+               << '\n';
+        for (std::size_t i = 0; i < 16; ++i)
+            stream << "route " << i << ": \t"
+                   << (photons ? photons->data_bucket[i] : 0) << '\n';
+        for (std::size_t i = 0; i < 4; ++i)
+            stream << "mark " << i << ": \t"
+                   << (markers ? markers->data_bucket[i] : 0) << '\n';
+        print_out(stream.str().c_str());
+    };
 
     try {
         proc.flush(); // Run it all.
+        print_summary();
     } catch (end_of_processing const &exc) {
-        // Explicit stop; counts were printed on flush.
+        // Explicit stop; the histograms were concluded by the stop's flush.
+        print_summary();
         print_err(exc.what());
         print_err("\n");
         print_err("The above results are up to the error\n");
     } catch (std::exception const &exc) {
-        // Other error; counts were not printed.
+        // Other error; results are incomplete and not printed.
         print_err(exc.what());
         print_err("\n");
         return false;
