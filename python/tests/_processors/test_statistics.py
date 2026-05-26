@@ -15,10 +15,16 @@ from libtcspc._cpp_utils import (
     _CppTypeName,
     _uint32_type,
 )
-from libtcspc._events import BucketEvent
+from libtcspc._events import BucketEvent, DetectionEvent
 from libtcspc._execute import ExecutionContext
+from libtcspc._numeric_traits import NumericTraits
 from libtcspc._param import Param
-from libtcspc._processors import Acquire, Count, SinkAll
+from libtcspc._processors import (
+    Acquire,
+    Count,
+    RecordAbstimeRange,
+    SinkAll,
+)
 from typing_extensions import override
 
 IntEvent = _NamedEvent(_CppTypeName("int"))
@@ -89,3 +95,49 @@ def test_Count_access_returns_running_count():
     ctx = ExecutionContext(cg, {"reader": _NBucketReader(3)})
     ctx.flush()
     assert ctx.access(cnt_tag).count() == 3
+
+
+def test_RecordAbstimeRange_codegen_calls_tcspc_record_abstime_range():
+    node = RecordAbstimeRange(AccessTag("r"))
+    code = node._cpp_expression(gencontext, [_CppExpression("DOWN")])
+    assert (
+        "tcspc::record_abstime_range<tcspc::default_numeric_traits>(" in code
+    )
+    assert "DOWN" in code
+    assert (
+        "ctx->tracker<tcspc::record_abstime_range_access<"
+        'tcspc::default_numeric_traits::abstime_type>>("r")' in code
+    )
+
+
+def test_RecordAbstimeRange_access_returns_min_and_max():
+    tag = AccessTag("r")
+    det = DetectionEvent()
+    g = Graph()
+    g.add_node("rec", RecordAbstimeRange(tag))
+    g.add_node("sink", SinkAll(), upstream="rec")
+    cg = CompiledGraph(g, (det,))
+    ctx = ExecutionContext(cg)
+    assert ctx.access(tag).min() is None
+    assert ctx.access(tag).max() is None
+    ctx.handle(det.value(abstime=10, channel=0))
+    ctx.handle(det.value(abstime=5, channel=0))
+    ctx.handle(det.value(abstime=20, channel=0))
+    assert ctx.access(tag).min() == 5
+    assert ctx.access(tag).max() == 20
+    ctx.flush()
+
+
+def test_RecordAbstimeRange_with_custom_numeric_traits():
+    tag = AccessTag("r")
+    nt = NumericTraits(abstime_type="int32")
+    det = DetectionEvent(nt)
+    g = Graph()
+    g.add_node("rec", RecordAbstimeRange(tag, nt))
+    g.add_node("sink", SinkAll(), upstream="rec")
+    cg = CompiledGraph(g, (det,))
+    ctx = ExecutionContext(cg)
+    ctx.handle(det.value(abstime=7, channel=1))
+    assert ctx.access(tag).min() == 7
+    assert ctx.access(tag).max() == 7
+    ctx.flush()

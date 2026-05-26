@@ -328,6 +328,7 @@ Processors for collecting statistics.
    :nosignatures:
 
    libtcspc.Count
+   libtcspc.RecordAbstimeRange
 ```
 
 ## Testing processors

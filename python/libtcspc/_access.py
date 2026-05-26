@@ -16,6 +16,7 @@ from ._cpp_utils import (
     _identifier_from_string,
     _ModuleCodeFragment,
 )
+from ._numeric_traits import NumericTraits
 
 
 class _AccessSpec(ABC):
@@ -127,6 +128,28 @@ class _UniqueBinMapperAccessSpec(_AccessSpec):
         return "UniqueBinMapperAccess"
 
 
+class _RecordAbstimeRangeAccessSpec(_AccessSpec):
+    def __init__(self, numeric_traits: NumericTraits) -> None:
+        self._numeric_traits = numeric_traits
+
+    @override
+    def _cpp_type_name(self) -> _CppTypeName:
+        nt = self._numeric_traits._cpp_type_name()
+        return _CppTypeName(
+            f"tcspc::record_abstime_range_access<{nt}::abstime_type>"
+        )
+
+    @override
+    def cpp_methods(self) -> Sequence[_CppIdentifier]:
+        return (_CppIdentifier("min"), _CppIdentifier("max"))
+
+    @override
+    def py_class_name(self) -> str:
+        return "RecordAbstimeRangeAccess__" + _identifier_from_string(
+            str(self._cpp_type_name())
+        )
+
+
 class Access(Protocol):
     """
     Base protocol for run-time access objects.
@@ -175,5 +198,33 @@ class UniqueBinMapperAccess(Access, Protocol):
         list[int]
             The datapoint value assigned to each bin index, in bin-index
             order.
+        """
+        ...
+
+
+class RecordAbstimeRangeAccess(Access, Protocol):
+    """Run-time access object for a ``RecordAbstimeRange`` processor."""
+
+    def min(self) -> int | None:
+        """
+        Return the minimum abstime observed so far.
+
+        Returns
+        -------
+        int or None
+            The smallest ``abstime`` of any abstime-stamped event observed,
+            or ``None`` if no such event has been observed yet.
+        """
+        ...
+
+    def max(self) -> int | None:
+        """
+        Return the maximum abstime observed so far.
+
+        Returns
+        -------
+        int or None
+            The largest ``abstime`` of any abstime-stamped event observed,
+            or ``None`` if no such event has been observed yet.
         """
         ...

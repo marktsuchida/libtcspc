@@ -16,6 +16,7 @@ from .._cpp_utils import (
 )
 from .._events import EventType
 from .._node import _TypePreservingRelayNode
+from .._numeric_traits import NumericTraits
 
 
 @final
@@ -71,6 +72,80 @@ class Count(_TypePreservingRelayNode):
             f"""\
             tcspc::count<{self._event_type._cpp_type_name()}>(
                 {gencontext.tracker_expression(_CppTypeName("tcspc::count_access"), self._access_tag)},
+                {downstream}
+            )"""
+        )
+
+
+@final
+class RecordAbstimeRange(_TypePreservingRelayNode):
+    """Processor that records the range of ``abstime`` observed.
+
+    The minimum and maximum ``abstime`` of all abstime-stamped events seen
+    so far can be retrieved at any time during execution via the
+    `RecordAbstimeRangeAccess` retrieved from the `ExecutionContext` using
+    ``access_tag``.
+
+    Parameters
+    ----------
+    access_tag : AccessTag
+        Tag used to retrieve a `RecordAbstimeRangeAccess` from the
+        `ExecutionContext` at runtime.
+    numeric_traits : NumericTraits or None
+        The numeric traits whose ``abstime_type`` must match the ``abstime``
+        field type of the abstime-stamped events passing through. ``None``
+        (the default) uses `NumericTraits` defaults.
+
+    Notes
+    -----
+    Events handled:
+
+    - Events with an ``abstime`` field: update the running minimum and
+      maximum, then pass through.
+    - All other event types: pass through unchanged.
+    - End of input: pass through.
+
+    See Also
+    --------
+    :cpp:`tcspc::record_abstime_range`
+        The underlying C++ factory function.
+    """
+
+    def __init__(
+        self,
+        access_tag: AccessTag,
+        numeric_traits: NumericTraits | None = None,
+    ) -> None:
+        self._access_tag = access_tag
+        self._numeric_traits = (
+            numeric_traits if numeric_traits is not None else NumericTraits()
+        )
+
+    @override
+    def _accesses(
+        self,
+    ) -> Sequence[tuple[AccessTag, _AccessSpec]]:
+        return (
+            (
+                self._access_tag,
+                _access._RecordAbstimeRangeAccessSpec(self._numeric_traits),
+            ),
+        )
+
+    @override
+    def _relay_cpp_expression(
+        self,
+        gencontext: _CodeGenerationContext,
+        downstream: _CppExpression,
+    ) -> _CppExpression:
+        nt = self._numeric_traits._cpp_type_name()
+        access_type = _CppTypeName(
+            f"tcspc::record_abstime_range_access<{nt}::abstime_type>"
+        )
+        return _CppExpression(
+            f"""\
+            tcspc::record_abstime_range<{nt}>(
+                {gencontext.tracker_expression(access_type, self._access_tag)},
                 {downstream}
             )"""
         )
