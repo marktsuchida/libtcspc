@@ -77,7 +77,7 @@ TEST_CASE("time correlate at start") {
     auto ctx = context::create();
     auto in = feed_input(
         valcat, time_correlate_at_start<>(capture_output<tc_out_events>(
-                    ctx->tracker<capture_output_access>("out"))));
+                    ctx->tracker<capture_output_accessor>("out"))));
     in.require_output_checked(ctx, "out");
     auto out = capture_output_checker<tc_out_events>(valcat, ctx, "out");
 
@@ -92,7 +92,7 @@ TEST_CASE("time correlate at stop") {
     auto ctx = context::create();
     auto in = feed_input(
         valcat, time_correlate_at_stop<>(capture_output<tc_out_events>(
-                    ctx->tracker<capture_output_access>("out"))));
+                    ctx->tracker<capture_output_accessor>("out"))));
     in.require_output_checked(ctx, "out");
     auto out = capture_output_checker<tc_out_events>(valcat, ctx, "out");
 
@@ -109,7 +109,7 @@ TEST_CASE("time correlate at midpoint") {
     SECTION("use stop channel") {
         auto in = feed_input(
             valcat, time_correlate_at_midpoint<>(capture_output<tc_out_events>(
-                        ctx->tracker<capture_output_access>("out"))));
+                        ctx->tracker<capture_output_accessor>("out"))));
         in.require_output_checked(ctx, "out");
         auto out = capture_output_checker<tc_out_events>(valcat, ctx, "out");
 
@@ -123,7 +123,7 @@ TEST_CASE("time correlate at midpoint") {
         auto in = feed_input(
             valcat, time_correlate_at_midpoint<default_numeric_traits, true>(
                         capture_output<tc_out_events>(
-                            ctx->tracker<capture_output_access>("out"))));
+                            ctx->tracker<capture_output_accessor>("out"))));
         in.require_output_checked(ctx, "out");
         auto out = capture_output_checker<tc_out_events>(valcat, ctx, "out");
 
@@ -143,7 +143,7 @@ TEST_CASE("time correlate at fraction") {
             valcat, time_correlate_at_fraction<>(
                         arg::fraction{1.0 / 3.0},
                         capture_output<tc_out_events>(
-                            ctx->tracker<capture_output_access>("out"))));
+                            ctx->tracker<capture_output_accessor>("out"))));
         in.require_output_checked(ctx, "out");
         auto out = capture_output_checker<tc_out_events>(valcat, ctx, "out");
 
@@ -158,7 +158,7 @@ TEST_CASE("time correlate at fraction") {
             valcat, time_correlate_at_fraction<default_numeric_traits, true>(
                         arg::fraction{1.0 / 3.0},
                         capture_output<tc_out_events>(
-                            ctx->tracker<capture_output_access>("out"))));
+                            ctx->tracker<capture_output_accessor>("out"))));
         in.require_output_checked(ctx, "out");
         auto out = capture_output_checker<tc_out_events>(valcat, ctx, "out");
 
@@ -175,7 +175,7 @@ TEST_CASE("remove time correlation") {
     auto in = feed_input(
         valcat,
         remove_time_correlation<>(capture_output<type_list<detection_event<>>>(
-            ctx->tracker<capture_output_access>("out"))));
+            ctx->tracker<capture_output_accessor>("out"))));
     in.require_output_checked(ctx, "out");
     auto out = capture_output_checker<type_list<detection_event<>>>(
         valcat, ctx, "out");

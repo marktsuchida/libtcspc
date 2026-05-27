@@ -4,7 +4,7 @@
 
 import libtcspc as tcspc
 from _test_helpers import _NamedEvent
-from libtcspc._access import AccessTag, _UniqueBinMapperAccessSpec
+from libtcspc._access import AccessTag, _UniqueBinMapperAccessorSpec
 from libtcspc._codegen import _CodeGenerationContext
 from libtcspc._cpp_utils import _CppExpression, _CppIdentifier, _CppTypeName
 
@@ -65,7 +65,7 @@ def test_MapToBins_forwards_unique_accesses():
     assert len(accesses) == 1
     ((got_tag, spec),) = accesses
     assert got_tag == tag
-    assert isinstance(spec, _UniqueBinMapperAccessSpec)
+    assert isinstance(spec, _UniqueBinMapperAccessorSpec)
 
 
 def test_MapToBins_no_accesses_for_plain_mapper():

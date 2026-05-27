@@ -442,7 +442,7 @@ TEST_CASE("decode pqt2 picoharp300") {
     auto ctx = context::create();
     auto in =
         feed_input(valcat, decode_pqt2_picoharp300(capture_output<out_events>(
-                               ctx->tracker<capture_output_access>("out"))));
+                               ctx->tracker<capture_output_accessor>("out"))));
     in.require_output_checked(ctx, "out");
     auto out = capture_output_checker<out_events>(valcat, ctx, "out");
 
@@ -476,7 +476,7 @@ TEST_CASE("decode pqt2 hydraharpv1") {
     auto ctx = context::create();
     auto in =
         feed_input(valcat, decode_pqt2_hydraharpv1(capture_output<out_events>(
-                               ctx->tracker<capture_output_access>("out"))));
+                               ctx->tracker<capture_output_accessor>("out"))));
     in.require_output_checked(ctx, "out");
     auto out = capture_output_checker<out_events>(valcat, ctx, "out");
 
@@ -514,7 +514,7 @@ TEST_CASE("decode pqt2 generic") {
     auto ctx = context::create();
     auto in =
         feed_input(valcat, decode_pqt2_generic(capture_output<out_events>(
-                               ctx->tracker<capture_output_access>("out"))));
+                               ctx->tracker<capture_output_accessor>("out"))));
     in.require_output_checked(ctx, "out");
     auto out = capture_output_checker<out_events>(valcat, ctx, "out");
 

@@ -110,7 +110,7 @@ TEMPLATE_TEST_CASE_SIG(
         valcat, histogram<P, reset_event>(
                     arg::num_bins<>{2}, arg::max_per_bin<u16>{65535}, bsource,
                     capture_output<all_output_events>(
-                        ctx->tracker<capture_output_access>("out"))));
+                        ctx->tracker<capture_output_accessor>("out"))));
     in.require_output_checked(ctx, "out");
     auto out = capture_output_checker<all_output_events>(valcat, ctx, "out");
 
@@ -157,7 +157,7 @@ TEMPLATE_TEST_CASE_SIG("histogram reset by event", "", ((hp P), P),
         valcat, histogram<P, reset_event>(
                     arg::num_bins<>{2}, arg::max_per_bin<u16>{65535}, bsource,
                     capture_output<all_output_events>(
-                        ctx->tracker<capture_output_access>("out"))));
+                        ctx->tracker<capture_output_accessor>("out"))));
     in.require_output_checked(ctx, "out");
     auto out = capture_output_checker<all_output_events>(valcat, ctx, "out");
 
@@ -225,7 +225,7 @@ TEMPLATE_TEST_CASE_SIG("histogram error_on_overflow", "", ((hp P), P),
         valcat, histogram<P, reset_event>(
                     arg::num_bins<>{2}, arg::max_per_bin<u16>{3}, bsource,
                     capture_output<all_output_events>(
-                        ctx->tracker<capture_output_access>("out"))));
+                        ctx->tracker<capture_output_accessor>("out"))));
     in.require_output_checked(ctx, "out");
     auto out = capture_output_checker<all_output_events>(valcat, ctx, "out");
 
@@ -258,7 +258,7 @@ TEMPLATE_TEST_CASE_SIG("histogram stop_on_overflow", "", ((hp P), P),
         valcat, histogram<P, reset_event>(
                     arg::num_bins<>{2}, arg::max_per_bin<u16>{3}, bsource,
                     capture_output<all_output_events>(
-                        ctx->tracker<capture_output_access>("out"))));
+                        ctx->tracker<capture_output_accessor>("out"))));
     in.require_output_checked(ctx, "out");
     auto out = capture_output_checker<all_output_events>(valcat, ctx, "out");
 
@@ -297,7 +297,7 @@ TEMPLATE_TEST_CASE_SIG("histogram saturate_on_overflow", "", ((hp P), P),
         valcat, histogram<P, reset_event>(
                     arg::num_bins<>{2}, arg::max_per_bin<u16>{3}, bsource,
                     capture_output<all_output_events>(
-                        ctx->tracker<capture_output_access>("out"))));
+                        ctx->tracker<capture_output_accessor>("out"))));
     in.require_output_checked(ctx, "out");
     auto out = capture_output_checker<all_output_events>(valcat, ctx, "out");
 
@@ -374,7 +374,7 @@ TEMPLATE_TEST_CASE_SIG("histogram reset_on_overflow", "", ((hp P), P),
         valcat, histogram<P, reset_event>(
                     arg::num_bins<>{2}, arg::max_per_bin<u16>{3}, bsource,
                     capture_output<all_output_events>(
-                        ctx->tracker<capture_output_access>("out"))));
+                        ctx->tracker<capture_output_accessor>("out"))));
     in.require_output_checked(ctx, "out");
     auto out = capture_output_checker<all_output_events>(valcat, ctx, "out");
 
@@ -419,7 +419,7 @@ TEMPLATE_TEST_CASE_SIG("histogram reset_on_overflow with max_per_bin = 0", "",
         valcat, histogram<P, reset_event>(
                     arg::num_bins<>{2}, arg::max_per_bin<u16>{0}, bsource,
                     capture_output<all_output_events>(
-                        ctx->tracker<capture_output_access>("out"))));
+                        ctx->tracker<capture_output_accessor>("out"))));
     in.require_output_checked(ctx, "out");
     auto out = capture_output_checker<all_output_events>(valcat, ctx, "out");
 

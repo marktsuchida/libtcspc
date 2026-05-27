@@ -6,7 +6,7 @@ import numpy as np
 import pytest
 from _test_helpers import _NamedEvent
 from libtcspc import Graph
-from libtcspc._access import AccessTag, _CountAccessSpec
+from libtcspc._access import AccessTag, _CountAccessorSpec
 from libtcspc._acquisition_readers import PyAcquisitionReader
 from libtcspc._codegen import _CodeGenerationContext
 from libtcspc._compile import CompiledGraph
@@ -50,14 +50,14 @@ def test_Count_event_set_is_preserved():
     )
 
 
-def test_Count_accesses_wires_count_access_spec():
+def test_Count_accesses_wires_count_accessor_spec():
     tag = AccessTag("c")
     node = Count(IntEvent, tag)
     accesses = node._accesses()
     assert len(accesses) == 1
     ((got_tag, spec),) = accesses
     assert got_tag == tag
-    assert isinstance(spec, _CountAccessSpec)
+    assert isinstance(spec, _CountAccessorSpec)
 
 
 def test_Count_codegen_calls_tcspc_count():
@@ -70,7 +70,7 @@ def test_Count_codegen_calls_tcspc_count():
 def test_Count_codegen_tracker():
     node = Count(IntEvent, AccessTag("c"))
     code = node._cpp_expression(gencontext, [_CppExpression("DOWN")])
-    assert 'ctx->tracker<tcspc::count_access>("c")' in code
+    assert 'ctx->tracker<tcspc::count_accessor>("c")' in code
 
 
 class _NBucketReader(PyAcquisitionReader):
@@ -113,7 +113,7 @@ def test_RecordAbstimeRange_codegen_calls_tcspc_record_abstime_range():
     )
     assert "DOWN" in code
     assert (
-        "ctx->tracker<tcspc::record_abstime_range_access<"
+        "ctx->tracker<tcspc::record_abstime_range_accessor<"
         'tcspc::default_numeric_traits::abstime_type>>("r")' in code
     )
 
@@ -163,7 +163,7 @@ def test_RecordLast_codegen_calls_tcspc_record_last():
     assert f"tcspc::record_last<{det._cpp_type_name()}>(" in code
     assert "DOWN" in code
     assert (
-        f'ctx->tracker<tcspc::record_last_access<{det._cpp_type_name()}>>("r")'
+        f'ctx->tracker<tcspc::record_last_accessor<{det._cpp_type_name()}>>("r")'
         in code
     )
 

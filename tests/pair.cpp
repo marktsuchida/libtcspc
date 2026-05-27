@@ -88,7 +88,7 @@ TEST_CASE("pair all") {
                  std::array<default_numeric_traits::channel_type, 1>{1},
                  arg::time_window<i64>{2},
                  capture_output<out_events>(
-                     ctx->tracker<capture_output_access>("out"))));
+                     ctx->tracker<capture_output_accessor>("out"))));
     in.require_output_checked(ctx, "out");
     auto out = capture_output_checker<out_events>(valcat, ctx, "out");
 
@@ -164,7 +164,7 @@ TEST_CASE("pair all with self") {
                  std::array<default_numeric_traits::channel_type, 1>{0},
                  arg::time_window<i64>{2},
                  capture_output<out_events>(
-                     ctx->tracker<capture_output_access>("out"))));
+                     ctx->tracker<capture_output_accessor>("out"))));
     in.require_output_checked(ctx, "out");
     auto out = capture_output_checker<out_events>(valcat, ctx, "out");
 
@@ -198,7 +198,7 @@ TEST_CASE("pair one") {
                  std::array<default_numeric_traits::channel_type, 1>{1},
                  arg::time_window<i64>{2},
                  capture_output<out_events>(
-                     ctx->tracker<capture_output_access>("out"))));
+                     ctx->tracker<capture_output_accessor>("out"))));
     in.require_output_checked(ctx, "out");
     auto out = capture_output_checker<out_events>(valcat, ctx, "out");
 
@@ -268,7 +268,7 @@ TEST_CASE("pair one with self") {
                  std::array<default_numeric_traits::channel_type, 1>{0},
                  arg::time_window<i64>{2},
                  capture_output<out_events>(
-                     ctx->tracker<capture_output_access>("out"))));
+                     ctx->tracker<capture_output_accessor>("out"))));
     in.require_output_checked(ctx, "out");
     auto out = capture_output_checker<out_events>(valcat, ctx, "out");
 
@@ -300,7 +300,7 @@ TEST_CASE("pair all between") {
                     std::array<default_numeric_traits::channel_type, 1>{1},
                     arg::time_window<i64>{2},
                     capture_output<out_events>(
-                        ctx->tracker<capture_output_access>("out"))));
+                        ctx->tracker<capture_output_accessor>("out"))));
     in.require_output_checked(ctx, "out");
     auto out = capture_output_checker<out_events>(valcat, ctx, "out");
 
@@ -372,7 +372,7 @@ TEST_CASE("pair all between with self") {
                     std::array<default_numeric_traits::channel_type, 1>{0},
                     arg::time_window<i64>{2},
                     capture_output<out_events>(
-                        ctx->tracker<capture_output_access>("out"))));
+                        ctx->tracker<capture_output_accessor>("out"))));
     in.require_output_checked(ctx, "out");
     auto out = capture_output_checker<out_events>(valcat, ctx, "out");
 
@@ -404,7 +404,7 @@ TEST_CASE("pair one between") {
                     std::array<default_numeric_traits::channel_type, 1>{1},
                     arg::time_window<i64>{2},
                     capture_output<out_events>(
-                        ctx->tracker<capture_output_access>("out"))));
+                        ctx->tracker<capture_output_accessor>("out"))));
     in.require_output_checked(ctx, "out");
     auto out = capture_output_checker<out_events>(valcat, ctx, "out");
 
@@ -474,7 +474,7 @@ TEST_CASE("pair one between with self") {
                     std::array<default_numeric_traits::channel_type, 1>{0},
                     arg::time_window<i64>{2},
                     capture_output<out_events>(
-                        ctx->tracker<capture_output_access>("out"))));
+                        ctx->tracker<capture_output_accessor>("out"))));
     in.require_output_checked(ctx, "out");
     auto out = capture_output_checker<out_events>(valcat, ctx, "out");
 

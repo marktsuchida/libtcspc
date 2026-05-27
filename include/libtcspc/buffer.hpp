@@ -44,19 +44,19 @@ inline constexpr std::size_t destructive_interference_size = 64;
 } // namespace internal
 
 /**
- * \brief Access for `tcspc::buffer()` and `tcspc::real_time_buffer()`
+ * \brief Accessor for `tcspc::buffer()` and `tcspc::real_time_buffer()`
  * processors.
  *
- * \ingroup context-access
+ * \ingroup accessors
  */
-class buffer_access {
+class buffer_accessor {
     std::function<void()> halt_fn;
     std::function<void()> pump_fn;
 
   public:
     /** \private */
     template <typename HaltFunc, typename PumpFunc>
-    explicit buffer_access(HaltFunc halt_func, PumpFunc pump_func)
+    explicit buffer_accessor(HaltFunc halt_func, PumpFunc pump_func)
         : halt_fn(halt_func), pump_fn(pump_func) {}
 
     /**
@@ -157,7 +157,7 @@ class buffer {
 
     // Cold data after downstream.
     bool pumped = false;
-    access_tracker<buffer_access> trk;
+    access_tracker<buffer_accessor> trk;
 
     void halt() noexcept {
         {
@@ -223,7 +223,7 @@ class buffer {
     template <typename Rep, typename Period>
     explicit buffer(arg::threshold<std::size_t> threshold,
                     std::chrono::duration<Rep, Period> latency_limit,
-                    access_tracker<buffer_access> &&tracker,
+                    access_tracker<buffer_accessor> &&tracker,
                     Downstream downstream)
         : threshold(threshold.value >= 0 ? threshold.value : 1),
           max_latency(
@@ -235,16 +235,16 @@ class buffer {
                 "buffer latency limit must not be greater than 24 h");
         }
 
-        trk.register_access_factory([](auto &tracker) {
+        trk.register_accessor_factory([](auto &tracker) {
             auto *self = LIBTCSPC_OBJECT_FROM_TRACKER(buffer, trk, tracker);
-            return buffer_access([self] { self->halt(); },
-                                 [self] { self->pump(); });
+            return buffer_accessor([self] { self->halt(); },
+                                   [self] { self->pump(); });
         });
     }
 
     // NOLINTBEGIN(cppcoreguidelines-pro-type-member-init)
     explicit buffer(arg::threshold<std::size_t> threshold,
-                    access_tracker<buffer_access> &&tracker,
+                    access_tracker<buffer_accessor> &&tracker,
                     Downstream downstream)
         : buffer(threshold, std::chrono::hours(24), std::move(tracker),
                  std::move(downstream)) {}
@@ -334,7 +334,7 @@ class buffer {
  * (including during an explicit flush), because such an exception may have
  * been thrown upstream of the buffer without its knowledge.
  *
- * Pumping and halting is done through a `tcspc::buffer_access` object
+ * Pumping and halting is done through a `tcspc::buffer_accessor` object
  * retrieved from the `tcspc::context` from which \p tracker was
  * obtained.
  *
@@ -364,7 +364,7 @@ class buffer {
  */
 template <typename Event, typename Downstream>
 auto buffer(arg::threshold<std::size_t> threshold,
-            access_tracker<buffer_access> &&tracker, Downstream downstream) {
+            access_tracker<buffer_accessor> &&tracker, Downstream downstream) {
     return internal::buffer<Event, false, Downstream>(
         threshold, std::move(tracker), std::move(downstream));
 }
@@ -389,7 +389,7 @@ auto buffer(arg::threshold<std::size_t> threshold,
  * (including during an explicit flush), because such an exception may have
  * been thrown upstream of the buffer without its knowledge.
  *
- * Pumping and halting is done through a `tcspc::buffer_access` object
+ * Pumping and halting is done through a `tcspc::buffer_accessor` object
  * retrieved from the `tcspc::context` from which \p tracker was
  * obtained.
  *
@@ -428,7 +428,7 @@ auto buffer(arg::threshold<std::size_t> threshold,
 template <typename Event, typename Rep, typename Period, typename Downstream>
 auto real_time_buffer(arg::threshold<std::size_t> threshold,
                       std::chrono::duration<Rep, Period> latency_limit,
-                      access_tracker<buffer_access> &&tracker,
+                      access_tracker<buffer_accessor> &&tracker,
                       Downstream downstream) {
     return internal::buffer<Event, true, Downstream>(
         threshold, latency_limit, std::move(tracker), std::move(downstream));

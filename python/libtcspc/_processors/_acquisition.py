@@ -8,7 +8,7 @@ from typing import final
 from typing_extensions import override
 
 from .. import _access, _events
-from .._access import AccessTag, _AccessSpec
+from .._access import AccessTag, _AccessorSpec
 from .._acquisition_readers import AcquisitionReader, PyAcquisitionReader
 from .._bucket_sources import (
     BucketSource,
@@ -85,7 +85,7 @@ class Acquire(_RelayNode):
 
     The acquisition runs until the reader signals end of stream (by
     returning ``None``), the reader raises an exception, or the
-    acquisition is halted via the `AcquireAccess` retrieved from the
+    acquisition is halted via the `AcquireAccessor` retrieved from the
     `ExecutionContext` using ``access_tag``. Halting is asynchronous: the
     ``halt()`` call returns immediately, but the acquisition may continue
     briefly. Wait for graph execution to finish before tearing down
@@ -112,7 +112,7 @@ class Acquire(_RelayNode):
         latency; larger values reduce per-read overhead. Defaults to
         ``65536``. Must be positive.
     access_tag : AccessTag
-        Tag used to retrieve an `AcquireAccess` (which provides ``halt()``)
+        Tag used to retrieve an `AcquireAccessor` (which provides ``halt()``)
         from the `ExecutionContext` at runtime.
 
     Notes
@@ -123,7 +123,7 @@ class Acquire(_RelayNode):
     - Emits `BucketEvent` of ``event_type`` whenever a non-empty read
       completes.
     - End of input is initiated when the reader returns ``None``,
-      whereupon the downstream is flushed. If halted via `AcquireAccess`
+      whereupon the downstream is flushed. If halted via `AcquireAccessor`
       before end of stream, the downstream is **not** flushed and a halt
       exception is raised.
 
@@ -135,8 +135,8 @@ class Acquire(_RelayNode):
         Interface for built-in C++-side readers.
     :py:obj:`PyAcquisitionReader`
         Interface for Python-callable readers (used via `Param`).
-    :py:obj:`AcquireAccess`
-        Runtime access object providing ``halt()``.
+    :py:obj:`AcquireAccessor`
+        Runtime accessor providing ``halt()``.
     """
 
     def __init__(
@@ -156,8 +156,8 @@ class Acquire(_RelayNode):
         self._access_tag = access_tag
 
     @override
-    def _accesses(self) -> Sequence[tuple[AccessTag, _AccessSpec]]:
-        return ((self._access_tag, _access._AcquireAccessSpec()),)
+    def _accesses(self) -> Sequence[tuple[AccessTag, _AccessorSpec]]:
+        return ((self._access_tag, _access._AcquireAccessorSpec()),)
 
     @override
     def _relay_map_event_set(
@@ -197,7 +197,7 @@ class Acquire(_RelayNode):
                 {reader},
                 {self._bucket_source._cpp_expression(gencontext)},
                 tcspc::arg::batch_size{{{batch_size}}},
-                {gencontext.tracker_expression(_CppTypeName("tcspc::acquire_access"), self._access_tag)},
+                {gencontext.tracker_expression(_CppTypeName("tcspc::acquire_accessor"), self._access_tag)},
                 {downstream}
             )"""
         )
@@ -223,7 +223,7 @@ class AcquireFullBuckets(Node):
 
     The acquisition runs until the reader signals end of stream (by returning
     ``None``), the reader raises an exception, or the acquisition is halted via
-    the `AcquireAccess` retrieved from the `ExecutionContext` using
+    the `AcquireAccessor` retrieved from the `ExecutionContext` using
     ``access_tag``. Halting is asynchronous: the ``halt()`` call returns
     immediately, but the acquisition may continue briefly. Wait for graph
     execution to finish before tearing down resources used by the reader.
@@ -249,7 +249,7 @@ class AcquireFullBuckets(Node):
         latency; larger values reduce per-read overhead. Defaults to ``65536``.
         Must be positive.
     access_tag : AccessTag
-        Tag used to retrieve an `AcquireAccess` (which provides ``halt()``) from
+        Tag used to retrieve an `AcquireAccessor` (which provides ``halt()``) from
         the `ExecutionContext` at runtime.
 
     Notes
@@ -262,7 +262,7 @@ class AcquireFullBuckets(Node):
       output whenever a full bucket is collected.
     - End of input is initiated when the reader returns ``None``, whereupon both
       downstreams are flushed (any partial bucket is emitted on ``batch``
-      first). If halted via `AcquireAccess` before end of stream, the
+      first). If halted via `AcquireAccessor` before end of stream, the
       downstreams are **not** flushed and a halt exception is raised.
 
     See Also
@@ -275,8 +275,8 @@ class AcquireFullBuckets(Node):
         Interface for built-in C++-side readers.
     :py:obj:`PyAcquisitionReader`
         Interface for Python-callable readers (used via `Param`).
-    :py:obj:`AcquireAccess`
-        Runtime access object providing ``halt()``.
+    :py:obj:`AcquireAccessor`
+        Runtime accessor providing ``halt()``.
     """
 
     def __init__(
@@ -297,8 +297,8 @@ class AcquireFullBuckets(Node):
         self._access_tag = access_tag
 
     @override
-    def _accesses(self) -> Sequence[tuple[AccessTag, _AccessSpec]]:
-        return ((self._access_tag, _access._AcquireAccessSpec()),)
+    def _accesses(self) -> Sequence[tuple[AccessTag, _AccessorSpec]]:
+        return ((self._access_tag, _access._AcquireAccessorSpec()),)
 
     @override
     def _map_event_sets(
@@ -352,7 +352,7 @@ class AcquireFullBuckets(Node):
                 {reader},
                 {self._bucket_source._cpp_expression(gencontext)},
                 tcspc::arg::batch_size{{{batch_size}}},
-                {gencontext.tracker_expression(_CppTypeName("tcspc::acquire_access"), self._access_tag)},
+                {gencontext.tracker_expression(_CppTypeName("tcspc::acquire_accessor"), self._access_tag)},
                 {live},
                 {batch}
             )"""

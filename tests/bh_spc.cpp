@@ -721,7 +721,7 @@ TEST_CASE("decode bh spc") {
     auto ctx = context::create();
     auto in =
         feed_input(valcat, decode_bh_spc(capture_output<out_events>(
-                               ctx->tracker<capture_output_access>("out"))));
+                               ctx->tracker<capture_output_accessor>("out"))));
     in.require_output_checked(ctx, "out");
     auto out = capture_output_checker<out_events>(valcat, ctx, "out");
 
@@ -841,7 +841,7 @@ TEST_CASE("decode bh spc with fast intensity counter",
     auto in = feed_input(
         valcat,
         decode_bh_spc_with_intensity_counter(capture_output<out_events>(
-            ctx->tracker<capture_output_access>("out"))));
+            ctx->tracker<capture_output_accessor>("out"))));
     in.require_output_checked(ctx, "out");
     auto out = capture_output_checker<out_events>(valcat, ctx, "out");
 
@@ -898,7 +898,7 @@ TEST_CASE("decode bh spc600 256ch") {
     auto ctx = context::create();
     auto in =
         feed_input(valcat, decode_bh_spc600_256ch(capture_output<out_events>(
-                               ctx->tracker<capture_output_access>("out"))));
+                               ctx->tracker<capture_output_accessor>("out"))));
     in.require_output_checked(ctx, "out");
     auto out = capture_output_checker<out_events>(valcat, ctx, "out");
 
@@ -983,7 +983,7 @@ TEST_CASE("decode bh spc600 4096ch") {
     auto ctx = context::create();
     auto in =
         feed_input(valcat, decode_bh_spc600_4096ch(capture_output<out_events>(
-                               ctx->tracker<capture_output_access>("out"))));
+                               ctx->tracker<capture_output_accessor>("out"))));
     in.require_output_checked(ctx, "out");
     auto out = capture_output_checker<out_events>(valcat, ctx, "out");
 

@@ -25,7 +25,7 @@ TEST_CASE("type constraints: capture_output") {
     using e0 = empty_test_event<0>;
     using e1 = empty_test_event<1>;
     using proc_type = decltype(capture_output<type_list<e0, e1>>(
-        context::create()->tracker<capture_output_access>("out")));
+        context::create()->tracker<capture_output_accessor>("out")));
     STATIC_CHECK(processor<proc_type, e0, e1>);
     STATIC_CHECK_FALSE(handler_for<proc_type, int>);
 }
@@ -54,9 +54,9 @@ TEST_CASE("type constraints: sink_only") {
 TEST_CASE("introspect: test_utils") {
     auto ctx = context::create();
     check_introspect_simple_sink(capture_output<type_list<>>(
-        ctx->tracker<capture_output_access>("out0")));
+        ctx->tracker<capture_output_accessor>("out0")));
     check_introspect_simple_sink(capture_output<type_list<int>>(
-        ctx->tracker<capture_output_access>("out1")));
+        ctx->tracker<capture_output_accessor>("out1")));
     check_introspect_simple_processor(
         feed_input(feed_as::const_lvalue, sink_all()));
     check_introspect_simple_sink(sink_only<>());
@@ -74,7 +74,7 @@ TEST_CASE("Short-circuited with no events") {
     auto ctx = context::create();
     auto in =
         feed_input(valcat, capture_output<type_list<>>(
-                               ctx->tracker<capture_output_access>("out")));
+                               ctx->tracker<capture_output_accessor>("out")));
     in.require_output_checked(ctx, "out");
     auto out = capture_output_checker<type_list<>>(valcat, ctx, "out");
 
@@ -91,7 +91,7 @@ TEST_CASE("Short-circuited with event set") {
     auto ctx = context::create();
     auto in =
         feed_input(valcat, capture_output<type_list<e0, e1>>(
-                               ctx->tracker<capture_output_access>("out")));
+                               ctx->tracker<capture_output_accessor>("out")));
     in.require_output_checked(ctx, "out");
     auto out = capture_output_checker<type_list<e0, e1>>(valcat, ctx, "out");
 

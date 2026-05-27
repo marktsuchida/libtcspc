@@ -88,7 +88,7 @@ TEST_CASE("copy_to_buckets") {
         valcat,
         copy_to_buckets<std::span<int const>, int>(
             bsource, capture_output<type_list<bucket<int>, misc_event>>(
-                         ctx->tracker<capture_output_access>("out"))));
+                         ctx->tracker<capture_output_accessor>("out"))));
     in.require_output_checked(ctx, "out");
     auto out = capture_output_checker<type_list<bucket<int>, misc_event>>(
         valcat, ctx, "out");
@@ -121,9 +121,9 @@ TEST_CASE("copy_to_full_buckets") {
         valcat, copy_to_full_buckets<std::vector<int>, int>(
                     bsource, arg::batch_size<>{4},
                     capture_output<type_list<bucket<int const>, misc_event>>(
-                        ctx->tracker<capture_output_access>("live")),
+                        ctx->tracker<capture_output_accessor>("live")),
                     capture_output<type_list<bucket<int>>>(
-                        ctx->tracker<capture_output_access>("batch"))));
+                        ctx->tracker<capture_output_accessor>("batch"))));
     in.require_output_checked(ctx, "live");
     in.require_output_checked(ctx, "batch");
     auto live_out =

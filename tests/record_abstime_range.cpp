@@ -31,7 +31,7 @@ using out_events = type_list<tick_event, misc_event>;
 
 TEST_CASE("type constraints: record_abstime_range") {
     using proc_type = decltype(record_abstime_range(
-        context::create()->tracker<record_abstime_range_access<i64>>("r"),
+        context::create()->tracker<record_abstime_range_accessor<i64>>("r"),
         sink_only<tick_event, misc_event>()));
     STATIC_CHECK(processor<proc_type, tick_event, misc_event>);
     STATIC_CHECK_FALSE(processor<proc_type, int>);
@@ -40,7 +40,7 @@ TEST_CASE("type constraints: record_abstime_range") {
 TEST_CASE("introspect: record_abstime_range") {
     auto ctx = context::create();
     check_introspect_simple_processor(record_abstime_range(
-        ctx->tracker<record_abstime_range_access<i64>>("t"), sink_all()));
+        ctx->tracker<record_abstime_range_accessor<i64>>("t"), sink_all()));
 }
 
 TEST_CASE("record abstime range") {
@@ -48,35 +48,35 @@ TEST_CASE("record abstime range") {
     auto ctx = context::create();
     auto in = feed_input(
         valcat, record_abstime_range(
-                    ctx->tracker<record_abstime_range_access<i64>>("range"),
+                    ctx->tracker<record_abstime_range_accessor<i64>>("range"),
                     capture_output<out_events>(
-                        ctx->tracker<capture_output_access>("out"))));
+                        ctx->tracker<capture_output_accessor>("out"))));
     in.require_output_checked(ctx, "out");
     auto out = capture_output_checker<out_events>(valcat, ctx, "out");
-    auto access = ctx->access<record_abstime_range_access<i64>>("range");
+    auto range_acc = ctx->access<record_abstime_range_accessor<i64>>("range");
 
-    CHECK(access.min() == std::nullopt);
-    CHECK(access.max() == std::nullopt);
+    CHECK(range_acc.min() == std::nullopt);
+    CHECK(range_acc.max() == std::nullopt);
 
     in.handle(tick_event{10});
     REQUIRE(out.check(emitted_as::same_as_fed, tick_event{10}));
-    CHECK(access.min() == 10);
-    CHECK(access.max() == 10);
+    CHECK(range_acc.min() == 10);
+    CHECK(range_acc.max() == 10);
 
     in.handle(tick_event{5});
     REQUIRE(out.check(emitted_as::same_as_fed, tick_event{5}));
-    CHECK(access.min() == 5);
-    CHECK(access.max() == 10);
+    CHECK(range_acc.min() == 5);
+    CHECK(range_acc.max() == 10);
 
     in.handle(tick_event{20});
     REQUIRE(out.check(emitted_as::same_as_fed, tick_event{20}));
-    CHECK(access.min() == 5);
-    CHECK(access.max() == 20);
+    CHECK(range_acc.min() == 5);
+    CHECK(range_acc.max() == 20);
 
     in.handle(misc_event{});
     REQUIRE(out.check(emitted_as::same_as_fed, misc_event{}));
-    CHECK(access.min() == 5);
-    CHECK(access.max() == 20);
+    CHECK(range_acc.min() == 5);
+    CHECK(range_acc.max() == 20);
 
     in.flush();
     REQUIRE(out.check_flushed());

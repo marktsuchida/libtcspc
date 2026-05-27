@@ -12,7 +12,7 @@ from typing import Any
 import nanobind  # type: ignore
 
 from . import _include, _odext
-from ._access import AccessTag, _AccessSpec
+from ._access import AccessTag, _AccessorSpec
 from ._codegen import _CodeGenerationContext
 from ._cpp_utils import (
     _CppExpression,
@@ -43,7 +43,7 @@ def _exception_types(module_var: _CppIdentifier) -> _ModuleCodeFragment:
 
 
 def _context_type(
-    accesses: Sequence[tuple[AccessTag, _AccessSpec]],
+    accesses: Sequence[tuple[AccessTag, _AccessorSpec]],
     module_var: _CppIdentifier,
 ) -> _ModuleCodeFragment:
     # We add specific bindings of access() for each access tag so that Python
@@ -558,7 +558,7 @@ def _compile_graph_module(
     tuple[Param, ...],
     Mapping[str, Callable[[Any], Any]],
     tuple[AccessTag, ...],
-    Mapping[str, _AccessSpec],
+    Mapping[str, _AccessorSpec],
     list[tuple[EventType, Any]],
 ]:
     # Serialize builds, at least for now.
@@ -573,11 +573,11 @@ def _compile_graph_module(
         params = tuple(param for param, typ in graph._parameters())
         encoders = graph._param_encoders()
         accesses = tuple(tag for tag, spec in graph._accesses())
-        access_specs = {tag.tag: spec for tag, spec in graph._accesses()}
+        accessor_specs = {tag.tag: spec for tag, spec in graph._accesses()}
         wrappers = [
             (et, getattr(mod, name)) for et, name in wrapper_correspondence
         ]
-        return mod, params, encoders, accesses, access_specs, wrappers
+        return mod, params, encoders, accesses, accessor_specs, wrappers
 
 
 class CompiledGraph:
@@ -603,7 +603,7 @@ class CompiledGraph:
             self._params,
             self._param_encoders,
             self._access_tags,
-            self._access_specs,
+            self._accessor_specs,
             wrappers,
         ) = _compile_graph_module(graph, input_event_types)
 

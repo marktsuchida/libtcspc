@@ -163,7 +163,7 @@ auto make_histo_proc(settings const &settings,
                 arg::num_bins{std::size_t(settings.max_bin_index) + 1},
                 arg::max_per_bin<u16>{65535}, bsource,
                 count<histogram_array_event<>>(
-                    ctx->tracker<count_access>("frame_counter"),
+                    ctx->tracker<count_accessor>("frame_counter"),
                     select<type_list<concluding_histogram_array_event<>>>(
                         extract_bucket<concluding_histogram_array_event<>>(
                             view_as_bytes(std::move(writer)))))));
@@ -175,7 +175,7 @@ auto make_histo_proc(settings const &settings,
             arg::max_per_bin<u16>{65535}, bsource,
             select<type_list<histogram_array_event<>>>(
                 count<histogram_array_event<>>(
-                    ctx->tracker<count_access>("frame_counter"),
+                    ctx->tracker<count_accessor>("frame_counter"),
                     extract_bucket<histogram_array_event<>>(
                         view_as_bytes(std::move(writer))))));
     }
@@ -204,7 +204,7 @@ auto make_processor(settings const &settings,
             arg::max_bin_index{settings.max_bin_index}),
     cluster_bin_increments<pixel_start_event, pixel_stop_event>(
     count<bin_increment_cluster_event<>>(
-        ctx->tracker<count_access>("pixel_counter"),
+        ctx->tracker<count_accessor>("pixel_counter"),
     make_histo_proc<Cumulative>(settings, ctx))))));
 
     auto [sync_merge, cfd_merge] =
@@ -252,7 +252,7 @@ auto make_processor(settings const &settings,
         arg::granularity<>{65536},
     stop_with_error<type_list<warning_event>>("error reading input",
     unbatch<bucket<swabian_tag_event>>(
-    count<swabian_tag_event>(ctx->tracker<count_access>("record_counter"),
+    count<swabian_tag_event>(ctx->tracker<count_accessor>("record_counter"),
     decode_swabian_tags(
     stop_with_error<type_list<
         warning_event,
@@ -283,11 +283,11 @@ void print_stats(settings const &settings,
     auto const pixels_per_frame =
         settings.pixels_per_line * settings.lines_per_frame;
     auto const records =
-        ctx->access<tcspc::count_access>("record_counter").count();
+        ctx->access<tcspc::count_accessor>("record_counter").count();
     auto const pixels =
-        ctx->access<tcspc::count_access>("pixel_counter").count();
+        ctx->access<tcspc::count_accessor>("pixel_counter").count();
     auto const frames =
-        ctx->access<tcspc::count_access>("frame_counter").count();
+        ctx->access<tcspc::count_accessor>("frame_counter").count();
     std::ostringstream stream;
     stream << "records decoded: " << records << '\n';
     stream << "pixels finished: " << pixels << '\n';

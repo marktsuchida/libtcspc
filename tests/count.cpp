@@ -52,7 +52,7 @@ TEST_CASE("type constraints: count_up_to") {
 
 TEST_CASE("type constraints: count") {
     using proc_type = decltype(count<tick_event>(
-        context::create()->tracker<count_access>("c"),
+        context::create()->tracker<count_accessor>("c"),
         sink_only<tick_event, misc_event>()));
     STATIC_CHECK(processor<proc_type, tick_event, misc_event>);
     STATIC_CHECK_FALSE(processor<proc_type, int>);
@@ -69,7 +69,7 @@ TEST_CASE("introspect: count") {
             arg::initial_count<u64>{2}, sink_all()));
     auto ctx = context::create();
     check_introspect_simple_processor(
-        count<tick_event>(ctx->tracker<count_access>("t"), sink_all()));
+        count<tick_event>(ctx->tracker<count_accessor>("t"), sink_all()));
 }
 
 TEST_CASE("Count up to") {
@@ -84,7 +84,7 @@ TEST_CASE("Count up to") {
                     arg::threshold<u64>{0}, arg::limit<u64>{1},
                     arg::initial_count<u64>{0},
                     capture_output<out_events>(
-                        ctx->tracker<capture_output_access>("out"))));
+                        ctx->tracker<capture_output_accessor>("out"))));
             in.require_output_checked(ctx, "out");
             auto out = capture_output_checker<out_events>(valcat, ctx, "out");
 
@@ -107,11 +107,12 @@ TEST_CASE("Count up to") {
 
         SECTION("Emit after") {
             auto in = feed_input(
-                valcat, count_up_to<tick_event, fire_event, reset_event, true>(
-                            arg::threshold<u64>{0}, arg::limit<u64>{1},
-                            arg::initial_count<u64>{0},
-                            capture_output<out_events>(
-                                ctx->tracker<capture_output_access>("out"))));
+                valcat,
+                count_up_to<tick_event, fire_event, reset_event, true>(
+                    arg::threshold<u64>{0}, arg::limit<u64>{1},
+                    arg::initial_count<u64>{0},
+                    capture_output<out_events>(
+                        ctx->tracker<capture_output_accessor>("out"))));
             in.require_output_checked(ctx, "out");
             auto out = capture_output_checker<out_events>(valcat, ctx, "out");
 
@@ -132,7 +133,7 @@ TEST_CASE("Count up to") {
                     arg::threshold<u64>{1}, arg::limit<u64>{1},
                     arg::initial_count<u64>{0},
                     capture_output<out_events>(
-                        ctx->tracker<capture_output_access>("out"))));
+                        ctx->tracker<capture_output_accessor>("out"))));
             in.require_output_checked(ctx, "out");
             auto out = capture_output_checker<out_events>(valcat, ctx, "out");
 
@@ -146,11 +147,12 @@ TEST_CASE("Count up to") {
 
         SECTION("Emit after") {
             auto in = feed_input(
-                valcat, count_up_to<tick_event, fire_event, reset_event, true>(
-                            arg::threshold<u64>{1}, arg::limit<u64>{1},
-                            arg::initial_count<u64>{0},
-                            capture_output<out_events>(
-                                ctx->tracker<capture_output_access>("out"))));
+                valcat,
+                count_up_to<tick_event, fire_event, reset_event, true>(
+                    arg::threshold<u64>{1}, arg::limit<u64>{1},
+                    arg::initial_count<u64>{0},
+                    capture_output<out_events>(
+                        ctx->tracker<capture_output_accessor>("out"))));
             in.require_output_checked(ctx, "out");
             auto out = capture_output_checker<out_events>(valcat, ctx, "out");
 
@@ -173,7 +175,7 @@ TEST_CASE("Count up to") {
                     arg::threshold<u64>{1}, arg::limit<u64>{2},
                     arg::initial_count<u64>{0},
                     capture_output<out_events>(
-                        ctx->tracker<capture_output_access>("out"))));
+                        ctx->tracker<capture_output_accessor>("out"))));
             in.require_output_checked(ctx, "out");
             auto out = capture_output_checker<out_events>(valcat, ctx, "out");
 
@@ -197,11 +199,12 @@ TEST_CASE("Count up to") {
 
         SECTION("Emit after") {
             auto in = feed_input(
-                valcat, count_up_to<tick_event, fire_event, reset_event, true>(
-                            arg::threshold<u64>{1}, arg::limit<u64>{2},
-                            arg::initial_count<u64>{0},
-                            capture_output<out_events>(
-                                ctx->tracker<capture_output_access>("out"))));
+                valcat,
+                count_up_to<tick_event, fire_event, reset_event, true>(
+                    arg::threshold<u64>{1}, arg::limit<u64>{2},
+                    arg::initial_count<u64>{0},
+                    capture_output<out_events>(
+                        ctx->tracker<capture_output_accessor>("out"))));
             in.require_output_checked(ctx, "out");
             auto out = capture_output_checker<out_events>(valcat, ctx, "out");
 
@@ -234,7 +237,7 @@ TEST_CASE("Count down to") {
                     arg::threshold<u64>{1}, arg::limit<u64>{0},
                     arg::initial_count<u64>{2},
                     capture_output<out_events>(
-                        ctx->tracker<capture_output_access>("out"))));
+                        ctx->tracker<capture_output_accessor>("out"))));
     in.require_output_checked(ctx, "out");
     auto out = capture_output_checker<out_events>(valcat, ctx, "out");
 
@@ -257,12 +260,12 @@ TEST_CASE("event counter") {
     auto ctx = context::create();
     auto in = feed_input(
         valcat,
-        count<tick_event>(ctx->tracker<count_access>("counter"),
+        count<tick_event>(ctx->tracker<count_accessor>("counter"),
                           capture_output<out_events>(
-                              ctx->tracker<capture_output_access>("out"))));
+                              ctx->tracker<capture_output_accessor>("out"))));
     in.require_output_checked(ctx, "out");
     auto out = capture_output_checker<out_events>(valcat, ctx, "out");
-    auto counter = ctx->access<count_access>("counter");
+    auto counter = ctx->access<count_accessor>("counter");
 
     CHECK(counter.count() == 0);
     in.handle(tick_event{});

@@ -61,13 +61,13 @@ auto summarize(std::string const &filename) -> bool {
         arg::granularity<>{65536},
     stop<type_list<warning_event>>("error reading input",
     unbatch<bucket<bh_spc_event>>( // Get individual device events.
-    count<bh_spc_event>(ctx->tracker<count_access>("counter"), // Count.
+    count<bh_spc_event>(ctx->tracker<count_accessor>("counter"), // Count.
     decode_bh_spc<numtraits>( // Decode device events into generic TCSPC events.
     check_monotonic<numtraits>( // Ensure the abstime is non-decreasing.
     stop<type_list<warning_event, data_lost_event<numtraits>>>("error in data",
     // Track the last abstime (max == last, given monotonicity).
     record_abstime_range<numtraits>(
-        ctx->tracker<record_abstime_range_access<abstime_type>>("times"),
+        ctx->tracker<record_abstime_range_accessor<abstime_type>>("times"),
     // The two event types use separate channel spaces, so histogram each in its
     // own branch; each branch's map_to_datapoints converts only its own type.
     broadcast<type_list<time_correlated_detection_event<numtraits>,
@@ -88,7 +88,7 @@ auto summarize(std::string const &filename) -> bool {
             arg::max_per_bin<u64>{std::numeric_limits<u64>::max()},
             recycling_bucket_source<summary_traits::bin_type>::create(),
         record_last<concluding_histogram_event<summary_traits>>(
-            ctx->tracker<record_last_access<
+            ctx->tracker<record_last_accessor<
                 concluding_histogram_event<summary_traits>>>("photons"),
         sink_all()))))),
         // Count markers per channel (0..3).
@@ -105,18 +105,18 @@ auto summarize(std::string const &filename) -> bool {
             arg::max_per_bin<u64>{std::numeric_limits<u64>::max()},
             recycling_bucket_source<summary_traits::bin_type>::create(),
         record_last<concluding_histogram_event<summary_traits>>(
-            ctx->tracker<record_last_access<
+            ctx->tracker<record_last_accessor<
                 concluding_histogram_event<summary_traits>>>("markers"),
         sink_all()))))))))))))));
     // clang-format on
 
     auto const print_summary = [&] {
         auto range =
-            ctx->access<record_abstime_range_access<abstime_type>>("times");
-        auto const photons = ctx->access<record_last_access<
+            ctx->access<record_abstime_range_accessor<abstime_type>>("times");
+        auto const photons = ctx->access<record_last_accessor<
             concluding_histogram_event<summary_traits>>>("photons")
                                  .get();
-        auto const markers = ctx->access<record_last_access<
+        auto const markers = ctx->access<record_last_accessor<
             concluding_histogram_event<summary_traits>>>("markers")
                                  .get();
 
@@ -149,7 +149,7 @@ auto summarize(std::string const &filename) -> bool {
         print_err("\n");
         return false;
     }
-    print_err((std::to_string(ctx->access<count_access>("counter").count()) +
+    print_err((std::to_string(ctx->access<count_accessor>("counter").count()) +
                " records decoded\n")
                   .c_str());
     return true;

@@ -45,11 +45,11 @@ TEST_CASE("introspect: recover_order") {
 TEST_CASE("recover order") {
     auto const valcat = GENERATE(feed_as::const_lvalue, feed_as::rvalue);
     auto ctx = context::create();
-    auto in = feed_input(valcat,
-                         recover_order<type_list<e0>>(
-                             arg::time_window<i64>{3},
-                             capture_output<type_list<e0>>(
-                                 ctx->tracker<capture_output_access>("out"))));
+    auto in = feed_input(
+        valcat, recover_order<type_list<e0>>(
+                    arg::time_window<i64>{3},
+                    capture_output<type_list<e0>>(
+                        ctx->tracker<capture_output_accessor>("out"))));
     in.require_output_checked(ctx, "out");
     auto out = capture_output_checker<type_list<e0>>(valcat, ctx, "out");
 
@@ -94,11 +94,11 @@ TEST_CASE("recover order") {
 TEST_CASE("recover order, empty time window") {
     auto const valcat = GENERATE(feed_as::const_lvalue, feed_as::rvalue);
     auto ctx = context::create();
-    auto in = feed_input(valcat,
-                         recover_order<type_list<e0>>(
-                             arg::time_window<i64>{0},
-                             capture_output<type_list<e0>>(
-                                 ctx->tracker<capture_output_access>("out"))));
+    auto in = feed_input(
+        valcat, recover_order<type_list<e0>>(
+                    arg::time_window<i64>{0},
+                    capture_output<type_list<e0>>(
+                        ctx->tracker<capture_output_accessor>("out"))));
     in.require_output_checked(ctx, "out");
     auto out = capture_output_checker<type_list<e0>>(valcat, ctx, "out");
 
@@ -149,11 +149,11 @@ TEST_CASE("recover order, empty time window") {
 TEST_CASE("recover order, multiple event types") {
     auto const valcat = GENERATE(feed_as::const_lvalue, feed_as::rvalue);
     auto ctx = context::create();
-    auto in = feed_input(valcat,
-                         recover_order<type_list<e0, e1>>(
-                             arg::time_window<i64>{3},
-                             capture_output<type_list<e0, e1>>(
-                                 ctx->tracker<capture_output_access>("out"))));
+    auto in = feed_input(
+        valcat, recover_order<type_list<e0, e1>>(
+                    arg::time_window<i64>{3},
+                    capture_output<type_list<e0, e1>>(
+                        ctx->tracker<capture_output_accessor>("out"))));
     in.require_output_checked(ctx, "out");
     auto out = capture_output_checker<type_list<e0, e1>>(valcat, ctx, "out");
 

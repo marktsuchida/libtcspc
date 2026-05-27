@@ -103,12 +103,12 @@ TEMPLATE_TEST_CASE_SIG(
     auto ctx = context::create();
     auto bsource = test_bucket_source<u16>::create(
         new_delete_bucket_source<u16>::create(), 42);
-    auto in = feed_input(valcat,
-                         scan_histograms<P, reset_event>(
-                             arg::num_elements<>{2}, arg::num_bins<>{2},
-                             arg::max_per_bin<u16>{65535}, bsource,
-                             capture_output<all_output_events>(
-                                 ctx->tracker<capture_output_access>("out"))));
+    auto in = feed_input(
+        valcat, scan_histograms<P, reset_event>(
+                    arg::num_elements<>{2}, arg::num_bins<>{2},
+                    arg::max_per_bin<u16>{65535}, bsource,
+                    capture_output<all_output_events>(
+                        ctx->tracker<capture_output_accessor>("out"))));
     in.require_output_checked(ctx, "out");
     auto out = capture_output_checker<all_output_events>(valcat, ctx, "out");
 
@@ -180,12 +180,12 @@ TEMPLATE_TEST_CASE_SIG(
     auto ctx = context::create();
     auto bsource = test_bucket_source<u16>::create(
         new_delete_bucket_source<u16>::create(), 42);
-    auto in = feed_input(valcat,
-                         scan_histograms<P, reset_event>(
-                             arg::num_elements<>{1}, arg::num_bins<>{1},
-                             arg::max_per_bin<u16>{65535}, bsource,
-                             capture_output<all_output_events>(
-                                 ctx->tracker<capture_output_access>("out"))));
+    auto in = feed_input(
+        valcat, scan_histograms<P, reset_event>(
+                    arg::num_elements<>{1}, arg::num_bins<>{1},
+                    arg::max_per_bin<u16>{65535}, bsource,
+                    capture_output<all_output_events>(
+                        ctx->tracker<capture_output_accessor>("out"))));
     in.require_output_checked(ctx, "out");
     auto out = capture_output_checker<all_output_events>(valcat, ctx, "out");
 
@@ -225,7 +225,7 @@ TEMPLATE_TEST_CASE_SIG(
                     arg::num_elements<>{2}, arg::num_bins<>{2},
                     arg::max_per_bin<u16>{65535}, bsource,
                     capture_output<all_output_events>(
-                        ctx->tracker<capture_output_access>("out"))));
+                        ctx->tracker<capture_output_accessor>("out"))));
     in.require_output_checked(ctx, "out");
     auto out = capture_output_checker<all_output_events>(valcat, ctx, "out");
 
@@ -289,7 +289,7 @@ TEMPLATE_TEST_CASE_SIG(
                     arg::num_elements<>{2}, arg::num_bins<>{2},
                     arg::max_per_bin<u16>{65535}, bsource,
                     capture_output<all_output_events>(
-                        ctx->tracker<capture_output_access>("out"))));
+                        ctx->tracker<capture_output_accessor>("out"))));
     in.require_output_checked(ctx, "out");
     auto out = capture_output_checker<all_output_events>(valcat, ctx, "out");
 
@@ -341,7 +341,7 @@ TEMPLATE_TEST_CASE_SIG(
                     arg::num_elements<>{2}, arg::num_bins<>{2},
                     arg::max_per_bin<u16>{65535}, bsource,
                     capture_output<all_output_events>(
-                        ctx->tracker<capture_output_access>("out"))));
+                        ctx->tracker<capture_output_accessor>("out"))));
     in.require_output_checked(ctx, "out");
     auto out = capture_output_checker<all_output_events>(valcat, ctx, "out");
 
@@ -389,12 +389,12 @@ TEMPLATE_TEST_CASE_SIG(
     auto ctx = context::create();
     auto bsource = test_bucket_source<u16>::create(
         new_delete_bucket_source<u16>::create(), 42);
-    auto in = feed_input(valcat,
-                         scan_histograms<P, reset_event>(
-                             arg::num_elements<>{2}, arg::num_bins<>{2},
-                             arg::max_per_bin<u16>{65535}, bsource,
-                             capture_output<all_output_events>(
-                                 ctx->tracker<capture_output_access>("out"))));
+    auto in = feed_input(
+        valcat, scan_histograms<P, reset_event>(
+                    arg::num_elements<>{2}, arg::num_bins<>{2},
+                    arg::max_per_bin<u16>{65535}, bsource,
+                    capture_output<all_output_events>(
+                        ctx->tracker<capture_output_accessor>("out"))));
     in.require_output_checked(ctx, "out");
     auto out = capture_output_checker<all_output_events>(valcat, ctx, "out");
 
@@ -533,12 +533,12 @@ TEMPLATE_TEST_CASE_SIG("scan_histograms error_on_overflow", "", ((hp P), P),
     auto ctx = context::create();
     auto bsource = test_bucket_source<u16>::create(
         new_delete_bucket_source<u16>::create(), 42);
-    auto in = feed_input(valcat,
-                         scan_histograms<P, reset_event>(
-                             arg::num_elements<>{2}, arg::num_bins<>{2},
-                             arg::max_per_bin<u16>{3}, bsource,
-                             capture_output<all_output_events>(
-                                 ctx->tracker<capture_output_access>("out"))));
+    auto in = feed_input(
+        valcat, scan_histograms<P, reset_event>(
+                    arg::num_elements<>{2}, arg::num_bins<>{2},
+                    arg::max_per_bin<u16>{3}, bsource,
+                    capture_output<all_output_events>(
+                        ctx->tracker<capture_output_accessor>("out"))));
     in.require_output_checked(ctx, "out");
     auto out = capture_output_checker<all_output_events>(valcat, ctx, "out");
 
@@ -570,12 +570,12 @@ TEMPLATE_TEST_CASE_SIG("scan_histograms stop_on_overflow", "", ((hp P), P),
     auto ctx = context::create();
     auto bsource = test_bucket_source<u16>::create(
         new_delete_bucket_source<u16>::create(), 42);
-    auto in = feed_input(valcat,
-                         scan_histograms<P, reset_event>(
-                             arg::num_elements<>{2}, arg::num_bins<>{2},
-                             arg::max_per_bin<u16>{3}, bsource,
-                             capture_output<all_output_events>(
-                                 ctx->tracker<capture_output_access>("out"))));
+    auto in = feed_input(
+        valcat, scan_histograms<P, reset_event>(
+                    arg::num_elements<>{2}, arg::num_bins<>{2},
+                    arg::max_per_bin<u16>{3}, bsource,
+                    capture_output<all_output_events>(
+                        ctx->tracker<capture_output_accessor>("out"))));
     in.require_output_checked(ctx, "out");
     auto out = capture_output_checker<all_output_events>(valcat, ctx, "out");
 
@@ -628,7 +628,7 @@ TEST_CASE("scan_histograms saturate_on_overflow") {
                     arg::num_elements<>{2}, arg::num_bins<>{2},
                     arg::max_per_bin<u16>{3}, bsource,
                     capture_output<all_output_events>(
-                        ctx->tracker<capture_output_access>("out"))));
+                        ctx->tracker<capture_output_accessor>("out"))));
     in.require_output_checked(ctx, "out");
     auto out = capture_output_checker<all_output_events>(valcat, ctx, "out");
 
@@ -694,12 +694,12 @@ TEMPLATE_TEST_CASE_SIG("scan_histograms reset_on_overflow", "", ((hp P), P),
     auto ctx = context::create();
     auto bsource = test_bucket_source<u16>::create(
         new_delete_bucket_source<u16>::create(), 42);
-    auto in = feed_input(valcat,
-                         scan_histograms<P, reset_event>(
-                             arg::num_elements<>{2}, arg::num_bins<>{2},
-                             arg::max_per_bin<u16>{3}, bsource,
-                             capture_output<all_output_events>(
-                                 ctx->tracker<capture_output_access>("out"))));
+    auto in = feed_input(
+        valcat, scan_histograms<P, reset_event>(
+                    arg::num_elements<>{2}, arg::num_bins<>{2},
+                    arg::max_per_bin<u16>{3}, bsource,
+                    capture_output<all_output_events>(
+                        ctx->tracker<capture_output_accessor>("out"))));
     in.require_output_checked(ctx, "out");
     auto out = capture_output_checker<all_output_events>(valcat, ctx, "out");
 
@@ -801,12 +801,12 @@ TEMPLATE_TEST_CASE_SIG(
     auto ctx = context::create();
     auto bsource = test_bucket_source<u16>::create(
         new_delete_bucket_source<u16>::create(), 42);
-    auto in = feed_input(valcat,
-                         scan_histograms<P, reset_event>(
-                             arg::num_elements<>{1}, arg::num_bins<>{1},
-                             arg::max_per_bin<u16>{0}, bsource,
-                             capture_output<all_output_events>(
-                                 ctx->tracker<capture_output_access>("out"))));
+    auto in = feed_input(
+        valcat, scan_histograms<P, reset_event>(
+                    arg::num_elements<>{1}, arg::num_bins<>{1},
+                    arg::max_per_bin<u16>{0}, bsource,
+                    capture_output<all_output_events>(
+                        ctx->tracker<capture_output_accessor>("out"))));
     in.require_output_checked(ctx, "out");
     auto out = capture_output_checker<all_output_events>(valcat, ctx, "out");
 

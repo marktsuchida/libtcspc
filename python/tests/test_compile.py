@@ -68,7 +68,7 @@ def test_compile_node_access():
     assert cg._accesses()[0] == AccessTag("counter")
 
 
-def test_compile_two_tags_same_access_type():
+def test_compile_two_tags_same_accessor_type():
     g = Graph()
     g.add_node("c1", Count(IntEvent, AccessTag("a")))
     g.add_node("c2", Count(IntEvent, AccessTag("b")), upstream="c1")

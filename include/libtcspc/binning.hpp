@@ -467,17 +467,17 @@ class linear_bin_mapper {
 };
 
 /**
- * \brief Access for `tcspc::unique_bin_mapper` data.
+ * \brief Accessor for `tcspc::unique_bin_mapper` data.
  *
- * \ingroup context-access
+ * \ingroup accessors
  */
-template <typename T> class unique_bin_mapper_access {
+template <typename T> class unique_bin_mapper_accessor {
     std::function<std::vector<T>()> values_fn;
 
   public:
     /** \private */
     template <typename Func>
-    explicit unique_bin_mapper_access(Func values_func)
+    explicit unique_bin_mapper_accessor(Func values_func)
         : values_fn(values_func) {}
 
     /**
@@ -509,7 +509,7 @@ class unique_bin_mapper {
     using bin_index_type = NumericTraits::bin_index_type;
     bin_index_type max_index;
     std::vector<datapoint_type> values;
-    access_tracker<unique_bin_mapper_access<datapoint_type>> trk;
+    access_tracker<unique_bin_mapper_accessor<datapoint_type>> trk;
 
   public:
     /**
@@ -521,7 +521,7 @@ class unique_bin_mapper {
      */
     explicit unique_bin_mapper(
         access_tracker<
-            unique_bin_mapper_access<typename NumericTraits::datapoint_type>>
+            unique_bin_mapper_accessor<typename NumericTraits::datapoint_type>>
             &&tracker,
         arg::max_bin_index<typename NumericTraits::bin_index_type>
             max_bin_index)
@@ -529,10 +529,10 @@ class unique_bin_mapper {
         if (max_index < 0)
             throw std::invalid_argument(
                 "unique_bin_mapper max_bin_index must not be negative");
-        trk.register_access_factory([](auto &tracker) {
+        trk.register_accessor_factory([](auto &tracker) {
             auto *self =
                 LIBTCSPC_OBJECT_FROM_TRACKER(unique_bin_mapper, trk, tracker);
-            return unique_bin_mapper_access<datapoint_type>(
+            return unique_bin_mapper_accessor<datapoint_type>(
                 [self] { return self->values; });
         });
     }

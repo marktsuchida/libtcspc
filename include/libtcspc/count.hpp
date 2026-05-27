@@ -219,17 +219,17 @@ auto count_down_to(arg::threshold<u64> threshold, arg::limit<u64> limit,
 }
 
 /**
- * \brief Access for `tcspc::count()` processor data.
+ * \brief Accessor for `tcspc::count()` processor data.
  *
- * \ingroup context-access
+ * \ingroup accessors
  */
-class count_access {
+class count_accessor {
     std::function<u64()> count_fn;
 
   public:
     /** \private */
     template <typename Func>
-    explicit count_access(Func count_func) : count_fn(count_func) {}
+    explicit count_accessor(Func count_func) : count_fn(count_func) {}
 
     /**
      * \brief Return the count value of the associated processor.
@@ -247,15 +247,15 @@ class count {
     Downstream downstream;
 
     // Cold data after downstream.
-    access_tracker<count_access> trk;
+    access_tracker<count_accessor> trk;
 
   public:
-    explicit count(access_tracker<count_access> &&tracker,
+    explicit count(access_tracker<count_accessor> &&tracker,
                    Downstream downstream)
         : downstream(std::move(downstream)), trk(std::move(tracker)) {
-        trk.register_access_factory([](auto &tracker) {
+        trk.register_accessor_factory([](auto &tracker) {
             auto *self = LIBTCSPC_OBJECT_FROM_TRACKER(count, trk, tracker);
-            return count_access([self] { return self->ct; });
+            return count_accessor([self] { return self->ct; });
         });
     }
 
@@ -285,7 +285,7 @@ class count {
  *
  * \ingroup processors-stats
  *
- * The count can be retrieved through a `tcspc::count_access` retrieved from
+ * The count can be retrieved through a `tcspc::count_accessor` retrieved from
  * the `tcspc::context` from which \p tracker was obtained.
  *
  * Note that the count is incremented \e before the events of type \p Event are
@@ -309,7 +309,7 @@ class count {
  * - Flush: pass through with no action
  */
 template <typename Event, typename Downstream>
-auto count(access_tracker<count_access> &&tracker, Downstream downstream) {
+auto count(access_tracker<count_accessor> &&tracker, Downstream downstream) {
     return internal::count<Event, Downstream>(std::move(tracker),
                                               std::move(downstream));
 }

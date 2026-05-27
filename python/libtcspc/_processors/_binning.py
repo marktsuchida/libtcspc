@@ -8,7 +8,7 @@ from typing import Any, final
 from typing_extensions import override
 
 from .. import _events
-from .._access import AccessTag, _AccessSpec
+from .._access import AccessTag, _AccessorSpec
 from .._bin_mappers import BinMapper
 from .._codegen import _CodeGenerationContext
 from .._cpp_utils import (
@@ -140,7 +140,7 @@ class MapToBins(_RelayNode):
         )
 
     @override
-    def _accesses(self) -> Sequence[tuple[AccessTag, _AccessSpec]]:
+    def _accesses(self) -> Sequence[tuple[AccessTag, _AccessorSpec]]:
         return self._bin_mapper._accesses()
 
     @override

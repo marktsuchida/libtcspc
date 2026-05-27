@@ -830,7 +830,7 @@ namespace tcspc {
  *    require a `tcspc::access_tracker`; obtain trackers from the context
  *    (specifying a uniquely identifying name).
  * -# The processors and other objects, having been moved into the graph, are
- *    not directly accessible. However, corresponding _access_ objects can be
+ *    not directly accessible. However, corresponding _accessors_ can be
  *    obtained from the context by name.
  *
  * From the viewpoint of the object that provides access through the context,
@@ -839,25 +839,26 @@ namespace tcspc {
  * -# On construction, the object receives a `tcspc::access_tracker` (a
  *    movable but noncopyable object) and stores it in a data member.
  * -# Also during construction, the object calls the tracker's
- *    `tcspc::access_tracker::register_access_factory()` member function,
- *    passing the _access factory_, which is a function (usually a lambda)
+ *    `tcspc::access_tracker::register_accessor_factory()` member function,
+ *    passing the _accessor factory_, which is a function (usually a lambda)
  *    taking a reference to the tracker and returning an _accessor_.
  * -# The tracker stored in the member variable tracks the object as it is
  *    moved or destroyed, updating the associated context's mapping from name
  *    to tracker address.
- * -# When user code retrieves an accessor from the context, the access factory
- *    is called with a reference to the (potentially moved) tracker. The access
- *    factory usually converts this to a reference (address) to the object, and
- *    returns an accessor object holding a reference to the object.
+ * -# When user code retrieves an accessor from the context, the accessor
+ *    factory is called with a reference to the (potentially moved) tracker.
+ *    The accessor factory usually converts this to a reference (address) to
+ *    the object, and returns an accessor object holding a reference to the
+ *    object.
  *
- * The macro #LIBTCSPC_OBJECT_FROM_TRACKER() can be used by access factories
+ * The macro #LIBTCSPC_OBJECT_FROM_TRACKER() can be used by accessor factories
  * to obtain the address of an object holding a tracker in a data member.
  *
  * @{
  */
 
 /**
- * \defgroup context-access Accessor types
+ * \defgroup accessors Accessor types
  *
  * \brief Objects providing access via context.
  */

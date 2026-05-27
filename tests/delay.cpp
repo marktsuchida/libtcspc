@@ -59,7 +59,7 @@ TEST_CASE("Delay") {
         auto in = feed_input(
             valcat, delay(arg::delta<i64>{0},
                           capture_output<out_events>(
-                              ctx->tracker<capture_output_access>("out"))));
+                              ctx->tracker<capture_output_accessor>("out"))));
         in.require_output_checked(ctx, "out");
         auto out = capture_output_checker<out_events>(valcat, ctx, "out");
 
@@ -73,7 +73,7 @@ TEST_CASE("Delay") {
         auto in = feed_input(
             valcat, delay(arg::delta<i64>{1},
                           capture_output<out_events>(
-                              ctx->tracker<capture_output_access>("out"))));
+                              ctx->tracker<capture_output_accessor>("out"))));
         in.require_output_checked(ctx, "out");
         auto out = capture_output_checker<out_events>(valcat, ctx, "out");
 
@@ -89,7 +89,7 @@ TEST_CASE("Delay") {
         auto in = feed_input(
             valcat, delay(arg::delta<i64>{-1},
                           capture_output<out_events>(
-                              ctx->tracker<capture_output_access>("out"))));
+                              ctx->tracker<capture_output_accessor>("out"))));
         in.require_output_checked(ctx, "out");
         auto out = capture_output_checker<out_events>(valcat, ctx, "out");
 
@@ -107,7 +107,7 @@ TEST_CASE("zero-base abstime") {
     auto ctx = context::create();
     auto in =
         feed_input(valcat, rebase_abstime(capture_output<out_events>(
-                               ctx->tracker<capture_output_access>("out"))));
+                               ctx->tracker<capture_output_accessor>("out"))));
     in.require_output_checked(ctx, "out");
     auto out = capture_output_checker<out_events>(valcat, ctx, "out");
 

@@ -117,7 +117,7 @@ auto make_histo_proc(settings const &settings,
                                   settings.lines_per_frame},
                 arg::num_bins<>{256}, arg::max_per_bin<u16>{65535}, bsource,
                 count<histogram_array_event<>>(
-                    ctx->tracker<count_access>("frame_counter"),
+                    ctx->tracker<count_accessor>("frame_counter"),
                     select<type_list<concluding_histogram_array_event<>>>(
                         extract_bucket<concluding_histogram_array_event<>>(
                             view_as_bytes(std::move(writer)))))));
@@ -128,7 +128,7 @@ auto make_histo_proc(settings const &settings,
             arg::num_bins<>{256}, arg::max_per_bin<u16>{65535}, bsource,
             select<type_list<histogram_array_event<>>>(
                 count<histogram_array_event<>>(
-                    ctx->tracker<count_access>("frame_counter"),
+                    ctx->tracker<count_accessor>("frame_counter"),
                     extract_bucket<histogram_array_event<>>(
                         view_as_bytes(std::move(writer))))));
     }
@@ -149,7 +149,7 @@ auto make_processor(settings const &settings,
         arg::granularity<>{65536},
     stop_with_error<type_list<warning_event>>("error reading input",
     unbatch<bucket<bh_spc_event>>(
-    count<bh_spc_event>(ctx->tracker<count_access>("record_counter"),
+    count<bh_spc_event>(ctx->tracker<count_accessor>("record_counter"),
     decode_bh_spc(
     check_monotonic(
     stop_with_error<type_list<warning_event, data_lost_event<>>>(
@@ -174,7 +174,7 @@ auto make_processor(settings const &settings,
     check_alternating<pixel_start_event, pixel_stop_event>(
     stop_with_error<type_list<warning_event, data_lost_event<>>>(
         "pixel time is such that pixel stop occurs after next pixel start",
-    count<pixel_stop_event>(ctx->tracker<count_access>("pixel_counter"),
+    count<pixel_stop_event>(ctx->tracker<count_accessor>("pixel_counter"),
     route_homogeneous<type_list<time_correlated_detection_event<>>>(
         // Use single-downstream router to select by channel.
         channel_router(
@@ -192,11 +192,11 @@ void print_stats(settings const &settings,
     auto const pixels_per_frame =
         settings.pixels_per_line * settings.lines_per_frame;
     auto const records =
-        ctx->access<tcspc::count_access>("record_counter").count();
+        ctx->access<tcspc::count_accessor>("record_counter").count();
     auto const pixels =
-        ctx->access<tcspc::count_access>("pixel_counter").count();
+        ctx->access<tcspc::count_accessor>("pixel_counter").count();
     auto const frames =
-        ctx->access<tcspc::count_access>("frame_counter").count();
+        ctx->access<tcspc::count_accessor>("frame_counter").count();
     std::ostringstream stream;
     stream << "records decoded: " << records << '\n';
     stream << "pixels finished: " << pixels << '\n';

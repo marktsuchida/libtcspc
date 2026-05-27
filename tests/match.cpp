@@ -87,11 +87,11 @@ TEST_CASE("introspect: match") {
 TEST_CASE("Match and consume") {
     auto const valcat = GENERATE(feed_as::const_lvalue, feed_as::rvalue);
     auto ctx = context::create();
-    auto in = feed_input(valcat,
-                         match_and_consume<marker_event<>, output_event>(
-                             channel_matcher(arg::channel{0}),
-                             capture_output<out_events>(
-                                 ctx->tracker<capture_output_access>("out"))));
+    auto in = feed_input(
+        valcat, match_and_consume<marker_event<>, output_event>(
+                    channel_matcher(arg::channel{0}),
+                    capture_output<out_events>(
+                        ctx->tracker<capture_output_accessor>("out"))));
     in.require_output_checked(ctx, "out");
     auto out = capture_output_checker<out_events>(valcat, ctx, "out");
 
@@ -108,11 +108,11 @@ TEST_CASE("Match and consume") {
 TEST_CASE("Match") {
     auto const valcat = GENERATE(feed_as::const_lvalue, feed_as::rvalue);
     auto ctx = context::create();
-    auto in = feed_input(valcat,
-                         match<marker_event<>, output_event>(
-                             channel_matcher(arg::channel{0}),
-                             capture_output<out_events>(
-                                 ctx->tracker<capture_output_access>("out"))));
+    auto in = feed_input(
+        valcat, match<marker_event<>, output_event>(
+                    channel_matcher(arg::channel{0}),
+                    capture_output<out_events>(
+                        ctx->tracker<capture_output_accessor>("out"))));
     in.require_output_checked(ctx, "out");
     auto out = capture_output_checker<out_events>(valcat, ctx, "out");
 

@@ -6,7 +6,7 @@ import numpy as np
 import pytest
 from _test_helpers import _NamedEvent
 from libtcspc import Graph
-from libtcspc._access import AccessTag, _AcquireAccessSpec
+from libtcspc._access import AccessTag, _AcquireAccessorSpec
 from libtcspc._acquisition_readers import (
     NullReader,
     PyAcquisitionReader,
@@ -184,13 +184,13 @@ def test_Acquire_output_event_set_is_bucket_of_event_type():
     assert node._map_event_sets([()]) == ((BucketEvent(IntEvent),),)
 
 
-def test_Acquire_accesses_wires_acquire_access_spec():
+def test_Acquire_accesses_wires_acquire_accessor_spec():
     node = _acquire(tag="acq")
     accesses = node._accesses()
     assert len(accesses) == 1
     ((got_tag, spec),) = accesses
     assert got_tag == AccessTag("acq")
-    assert isinstance(spec, _AcquireAccessSpec)
+    assert isinstance(spec, _AcquireAccessorSpec)
 
 
 def test_Acquire_parameters_default():
@@ -238,7 +238,7 @@ def test_Acquire_codegen_includes_batch_size_arg():
 def test_Acquire_codegen_tracker():
     node = _acquire(tag="the-tag")
     code = node._cpp_expression(gencontext, [_CppExpression("DOWN")])
-    assert 'ctx->tracker<tcspc::acquire_access>("the-tag")' in code
+    assert 'ctx->tracker<tcspc::acquire_accessor>("the-tag")' in code
 
 
 def test_Acquire_buffer_provider_params_propagate():
@@ -361,13 +361,13 @@ def test_AcquireFullBuckets_output_event_sets():
     )
 
 
-def test_AcquireFullBuckets_accesses_wires_acquire_access_spec():
+def test_AcquireFullBuckets_accesses_wires_acquire_accessor_spec():
     node = _acquire_full_buckets(tag="acq")
     accesses = node._accesses()
     assert len(accesses) == 1
     ((got_tag, spec),) = accesses
     assert got_tag == AccessTag("acq")
-    assert isinstance(spec, _AcquireAccessSpec)
+    assert isinstance(spec, _AcquireAccessorSpec)
 
 
 def test_AcquireFullBuckets_parameters_with_param_reader():

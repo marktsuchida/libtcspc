@@ -71,7 +71,7 @@ TEST_CASE("batch") {
         valcat, batch<int>(new_delete_bucket_source<int>::create(),
                            arg::batch_size<>{3},
                            capture_output<type_list<bucket<int>>>(
-                               ctx->tracker<capture_output_access>("out"))));
+                               ctx->tracker<capture_output_accessor>("out"))));
     in.require_output_checked(ctx, "out");
     auto out =
         capture_output_checker<type_list<bucket<int>>>(valcat, ctx, "out");
@@ -115,7 +115,7 @@ TEST_CASE("unbatch") {
     auto ctx = context::create();
     auto in = feed_input(
         valcat, unbatch<std::vector<int>>(capture_output<type_list<int>>(
-                    ctx->tracker<capture_output_access>("out"))));
+                    ctx->tracker<capture_output_accessor>("out"))));
     in.require_output_checked(ctx, "out");
     auto out = capture_output_checker<type_list<int>>(valcat, ctx, "out");
 
@@ -136,7 +136,7 @@ TEST_CASE("unbatch const") {
     auto ctx = context::create();
     auto in = feed_input(
         valcat, unbatch<std::span<int const>>(capture_output<type_list<int>>(
-                    ctx->tracker<capture_output_access>("out"))));
+                    ctx->tracker<capture_output_accessor>("out"))));
     in.require_output_checked(ctx, "out");
     auto out = capture_output_checker<type_list<int>>(valcat, ctx, "out");
 
@@ -155,11 +155,11 @@ TEST_CASE("unbatch const") {
 TEST_CASE("process_in_batches") {
     auto const valcat = GENERATE(feed_as::const_lvalue, feed_as::rvalue);
     auto ctx = context::create();
-    auto in = feed_input(valcat,
-                         process_in_batches<int>(
-                             arg::batch_size<>{3},
-                             capture_output<type_list<int>>(
-                                 ctx->tracker<capture_output_access>("out"))));
+    auto in = feed_input(
+        valcat, process_in_batches<int>(
+                    arg::batch_size<>{3},
+                    capture_output<type_list<int>>(
+                        ctx->tracker<capture_output_accessor>("out"))));
     in.require_output_checked(ctx, "out");
     auto out = capture_output_checker<type_list<int>>(valcat, ctx, "out");
 

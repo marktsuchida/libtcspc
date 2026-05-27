@@ -130,10 +130,10 @@ TEST_CASE("Merge") {
     auto ctx = context::create();
 
     SECTION("asymmetric tests") {
-        auto [mi0, mi1] =
-            merge<all_events>(arg::max_buffered<>{1024},
-                              capture_output<all_events>(
-                                  ctx->tracker<capture_output_access>("out")));
+        auto [mi0, mi1] = merge<all_events>(
+            arg::max_buffered<>{1024},
+            capture_output<all_events>(
+                ctx->tracker<capture_output_accessor>("out")));
         auto in0 = feed_input(valcat, std::move(mi0));
         in0.require_output_checked(ctx, "out");
         auto in1 = feed_input(valcat, std::move(mi1));
@@ -169,10 +169,10 @@ TEST_CASE("Merge") {
     }
 
     SECTION("symmetric tests") {
-        auto [mi0, mi1] =
-            merge<all_events>(arg::max_buffered<>{1024},
-                              capture_output<all_events>(
-                                  ctx->tracker<capture_output_access>("out")));
+        auto [mi0, mi1] = merge<all_events>(
+            arg::max_buffered<>{1024},
+            capture_output<all_events>(
+                ctx->tracker<capture_output_accessor>("out")));
         auto temi0 = type_erased_processor<all_events>(std::move(mi0));
         auto temi1 = type_erased_processor<all_events>(std::move(mi1));
         int const x = GENERATE(0, 1);
@@ -267,9 +267,10 @@ TEST_CASE("merge single event type") {
     auto const valcat = GENERATE(feed_as::const_lvalue, feed_as::rvalue);
     using one_event = type_list<e0>;
     auto ctx = context::create();
-    auto [min0, min1] = merge<one_event>(
-        arg::max_buffered<>{1024},
-        capture_output<one_event>(ctx->tracker<capture_output_access>("out")));
+    auto [min0, min1] =
+        merge<one_event>(arg::max_buffered<>{1024},
+                         capture_output<one_event>(
+                             ctx->tracker<capture_output_accessor>("out")));
     auto in0 = feed_input(valcat, std::move(min0));
     in0.require_output_checked(ctx, "out");
     auto in1 = feed_input(valcat, std::move(min1));
@@ -304,7 +305,7 @@ TEST_CASE("merge N streams") {
         auto tup = merge_n<0, all_events>(
             arg::max_buffered<>{1024},
             capture_output<all_events>(
-                ctx->tracker<capture_output_access>("out")));
+                ctx->tracker<capture_output_accessor>("out")));
         STATIC_CHECK(std::tuple_size_v<decltype(tup)> == 0);
         // NOLINTEND(clang-analyzer-deadcode.DeadStores)
     }
@@ -314,11 +315,11 @@ TEST_CASE("merge N streams") {
         auto [m0] = merge_n<1, all_events>(
             arg::max_buffered<>{1024},
             capture_output<all_events>(
-                ctx->tracker<capture_output_access>("out")));
-        STATIC_CHECK(
-            std::is_same_v<decltype(m0),
-                           decltype(capture_output<all_events>(
-                               ctx->tracker<capture_output_access>("out")))>);
+                ctx->tracker<capture_output_accessor>("out")));
+        STATIC_CHECK(std::is_same_v<decltype(m0),
+                                    decltype(capture_output<all_events>(
+                                        ctx->tracker<capture_output_accessor>(
+                                            "out")))>);
         auto in = feed_input(valcat, std::move(m0));
         in.require_output_checked(ctx, "out");
         auto out = capture_output_checker<all_events>(valcat, ctx, "out");
@@ -333,19 +334,19 @@ TEST_CASE("merge N streams") {
         auto [m0, m1] = merge_n<2, all_events>(
             arg::max_buffered<>{1024},
             capture_output<all_events>(
-                ctx->tracker<capture_output_access>("out2")));
+                ctx->tracker<capture_output_accessor>("out2")));
         auto [n0, n1, n2] = merge_n<3, all_events>(
             arg::max_buffered<>{1024},
             capture_output<all_events>(
-                ctx->tracker<capture_output_access>("out3")));
+                ctx->tracker<capture_output_accessor>("out3")));
         auto [o0, o1, o2, o3] = merge_n<4, all_events>(
             arg::max_buffered<>{1024},
             capture_output<all_events>(
-                ctx->tracker<capture_output_access>("out4")));
+                ctx->tracker<capture_output_accessor>("out4")));
         auto [p0, p1, p2, p3, p4] = merge_n<5, all_events>(
             arg::max_buffered<>{1024},
             capture_output<all_events>(
-                ctx->tracker<capture_output_access>("out5")));
+                ctx->tracker<capture_output_accessor>("out5")));
     }
 }
 
@@ -353,7 +354,7 @@ TEST_CASE("merge unsorted") {
     auto const valcat = GENERATE(feed_as::const_lvalue, feed_as::rvalue);
     auto ctx = context::create();
     auto [min0, min1] = merge_n_unsorted(capture_output<all_events>(
-        ctx->tracker<capture_output_access>("out")));
+        ctx->tracker<capture_output_accessor>("out")));
     auto in0 = feed_input(valcat, std::move(min0));
     auto in1 = feed_input(valcat, std::move(min1));
     in0.require_output_checked(ctx, "out");

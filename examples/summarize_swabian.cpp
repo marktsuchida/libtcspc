@@ -58,7 +58,7 @@ auto summarize(std::string const &filename) -> bool {
         arg::granularity<>{65536},
     stop<type_list<warning_event>>("error reading input",
     unbatch<bucket<swabian_tag_event>>( // Get individual device events.
-    count<swabian_tag_event>(ctx->tracker<count_access>("counter"), // Count.
+    count<swabian_tag_event>(ctx->tracker<count_accessor>("counter"), // Count.
     decode_swabian_tags(
         // Decode device events into generic TCSPC events.
     check_monotonic( // Ensure the abstime is non-decreasing.
@@ -68,12 +68,12 @@ auto summarize(std::string const &filename) -> bool {
                    lost_counts_event<>>>("error",
     // Track first/last abstime (min == first, max == last, given monotonicity).
     record_abstime_range(
-        ctx->tracker<record_abstime_range_access<abstime_type>>("times"),
+        ctx->tracker<record_abstime_range_accessor<abstime_type>>("times"),
     // Count detection events per channel by histogramming the channel number.
     map_to_datapoints<detection_event<>, summary_traits>(
         channel_data_mapper<summary_traits>{},
     map_to_bins<summary_traits>(unique_bin_mapper<summary_traits>(
-        ctx->tracker<unique_bin_mapper_access<summary_traits::datapoint_type>>(
+        ctx->tracker<unique_bin_mapper_accessor<summary_traits::datapoint_type>>(
             "channels"),
         arg::max_bin_index<u16>{max_bin_index}),
     append(reset_event{}, // Conclude the histogram on flush.
@@ -83,24 +83,24 @@ auto summarize(std::string const &filename) -> bool {
         arg::max_per_bin<u64>{std::numeric_limits<u64>::max()},
         recycling_bucket_source<summary_traits::bin_type>::create(),
     record_last<concluding_histogram_event<summary_traits>>(
-        ctx->tracker<record_last_access<
+        ctx->tracker<record_last_accessor<
             concluding_histogram_event<summary_traits>>>("hist"),
     sink_all())))))))))))));
     // clang-format on
 
     auto const print_summary = [&] {
         auto range =
-            ctx->access<record_abstime_range_access<abstime_type>>("times");
+            ctx->access<record_abstime_range_accessor<abstime_type>>("times");
         std::ostringstream stream;
         if (auto const first = range.min(); not first) {
             stream << "No events" << '\n';
         } else {
             stream << "Time of first event: \t" << *first << '\n';
             stream << "Time of last event: \t" << *range.max() << '\n';
-            auto const channels = ctx->access<unique_bin_mapper_access<
+            auto const channels = ctx->access<unique_bin_mapper_accessor<
                 summary_traits::datapoint_type>>("channels")
                                       .values();
-            auto const result = ctx->access<record_last_access<
+            auto const result = ctx->access<record_last_accessor<
                 concluding_histogram_event<summary_traits>>>("hist")
                                     .get();
             std::vector<std::pair<summary_traits::datapoint_type, u64>> counts;
@@ -132,7 +132,7 @@ auto summarize(std::string const &filename) -> bool {
         print_err("\n");
         return false;
     }
-    print_err((std::to_string(ctx->access<count_access>("counter").count()) +
+    print_err((std::to_string(ctx->access<count_accessor>("counter").count()) +
                " records decoded\n")
                   .c_str());
     return true;

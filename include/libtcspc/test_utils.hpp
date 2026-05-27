@@ -227,10 +227,10 @@ auto operator<<(std::ostream &stream, recorded_event<EventList> const &pair)
     return stream << pair.second << ' ' << pair.first;
 }
 
-// Polymorphic function set for type-erasing capture_output_access.
-class capture_output_access_impl_base {
+// Polymorphic function set for type-erasing capture_output_accessor.
+class capture_output_accessor_impl_base {
   public:
-    virtual ~capture_output_access_impl_base() = default;
+    virtual ~capture_output_accessor_impl_base() = default;
     // Returned std::any contains std::vector<recorded_event<EventList>>.
     [[nodiscard]] virtual auto peek_events() const -> std::any = 0;
     virtual void pop_event() = 0;
@@ -243,16 +243,16 @@ class capture_output_access_impl_base {
 } // namespace internal
 
 /**
- * \brief Access for `tcspc::capture_output()` processors.
+ * \brief Accessor for `tcspc::capture_output()` processors.
  *
  * \note It is recommended to wrap this object in
  * `tcspc::capture_output_checker`, which provides a similar interface but
  * simplifies calling `check()` and `pop()`.
  *
- * \ingroup context-access
+ * \ingroup accessors
  */
-class capture_output_access {
-    std::unique_ptr<internal::capture_output_access_impl_base> impl;
+class capture_output_accessor {
+    std::unique_ptr<internal::capture_output_accessor_impl_base> impl;
 
     template <typename EventList>
     auto peek_events() const
@@ -263,8 +263,8 @@ class capture_output_access {
 
   public:
     /** \private */
-    explicit capture_output_access(
-        std::unique_ptr<internal::capture_output_access_impl_base>
+    explicit capture_output_accessor(
+        std::unique_ptr<internal::capture_output_accessor_impl_base>
             implementation)
         : impl(std::move(implementation)) {}
 
@@ -479,27 +479,27 @@ class capture_output_access {
 };
 
 /**
- * \brief Event-set-specific wrapper for `tcspc::capture_output_access`.
+ * \brief Event-set-specific wrapper for `tcspc::capture_output_accessor`.
  *
- * \ingroup context-access
+ * \ingroup accessors
  *
- * This class has almost the same interface as `tcspc::capture_output_access`
+ * This class has almost the same interface as `tcspc::capture_output_accessor`
  * but is parameterized on \p EventList so does not require specifying the
  * event set when calling `check()` or `pop()`.
  */
 template <typename EventList> class capture_output_checker {
-    capture_output_access acc;
+    capture_output_accessor acc;
 
     feed_as feeder_valcat;
 
   public:
     /**
-     * \brief Construct from a `tcspc::capture_output_access`, with the
+     * \brief Construct from a `tcspc::capture_output_accessor`, with the
      * feeder's value category.
      */
     explicit capture_output_checker(feed_as feeder_value_category,
-                                    capture_output_access access)
-        : acc(std::move(access)), feeder_valcat(feeder_value_category) {}
+                                    capture_output_accessor accessor)
+        : acc(std::move(accessor)), feeder_valcat(feeder_value_category) {}
 
     /**
      * \brief Construct from a context, tracker name of
@@ -511,7 +511,7 @@ template <typename EventList> class capture_output_checker {
                                     std::string const &name)
         : capture_output_checker(
               feeder_value_category,
-              context->access<capture_output_access>(name)) {}
+              context->access<capture_output_accessor>(name)) {}
 
     /**
      * \brief Retrieve the next recorded output event, disregarding value
@@ -659,12 +659,12 @@ template <typename EventList> class capture_output {
     bool error_on_flush = false;
     bool end_on_flush = false;
 
-    access_tracker<capture_output_access> trk;
+    access_tracker<capture_output_accessor> trk;
 
-    struct access_impl : capture_output_access_impl_base {
+    struct accessor_impl : capture_output_accessor_impl_base {
         capture_output *self;
 
-        explicit access_impl(capture_output *self) : self(self) {}
+        explicit accessor_impl(capture_output *self) : self(self) {}
 
         [[nodiscard]] auto peek_events() const -> std::any final {
             return self->peek();
@@ -713,12 +713,13 @@ template <typename EventList> class capture_output {
     }
 
   public:
-    explicit capture_output(access_tracker<capture_output_access> &&tracker)
+    explicit capture_output(access_tracker<capture_output_accessor> &&tracker)
         : trk(std::move(tracker)) {
-        trk.register_access_factory([](auto &tracker) {
+        trk.register_accessor_factory([](auto &tracker) {
             auto *self =
                 LIBTCSPC_OBJECT_FROM_TRACKER(capture_output, trk, tracker);
-            return capture_output_access(std::make_unique<access_impl>(self));
+            return capture_output_accessor(
+                std::make_unique<accessor_impl>(self));
         });
     }
 
@@ -772,12 +773,12 @@ template <> class capture_output<type_list<>> {
     bool flushed = false;
     bool error_on_flush = false;
     bool end_on_flush = false;
-    access_tracker<capture_output_access> trk;
+    access_tracker<capture_output_accessor> trk;
 
-    struct access_impl : capture_output_access_impl_base {
+    struct accessor_impl : capture_output_accessor_impl_base {
         capture_output *self;
 
-        explicit access_impl(capture_output *self) : self(self) {}
+        explicit accessor_impl(capture_output *self) : self(self) {}
 
         [[noreturn]] static void not_allowed() {
             throw std::logic_error(
@@ -811,12 +812,13 @@ template <> class capture_output<type_list<>> {
     }
 
   public:
-    explicit capture_output(access_tracker<capture_output_access> &&tracker)
+    explicit capture_output(access_tracker<capture_output_accessor> &&tracker)
         : trk(std::move(tracker)) {
-        trk.register_access_factory([](auto &tracker) {
+        trk.register_accessor_factory([](auto &tracker) {
             auto *self =
                 LIBTCSPC_OBJECT_FROM_TRACKER(capture_output, trk, tracker);
-            return capture_output_access(std::make_unique<access_impl>(self));
+            return capture_output_accessor(
+                std::make_unique<accessor_impl>(self));
         });
     }
 
@@ -852,7 +854,7 @@ class feed_input {
             throw std::logic_error(
                 "feed_input has no registered capture_output to check");
         for (auto &[context, name] : outputs_to_check)
-            context->template access<capture_output_access>(name)
+            context->template access<capture_output_accessor>(name)
                 .check_ready_for_input(input);
     }
 
@@ -873,7 +875,7 @@ class feed_input {
 
     void require_output_checked(std::shared_ptr<context> context,
                                 std::string name) {
-        context->access<capture_output_access>(name); // Fail early.
+        context->access<capture_output_accessor>(name); // Fail early.
         outputs_to_check.emplace_back(std::move(context), std::move(name));
     }
 
@@ -907,7 +909,7 @@ class feed_input {
  * \ingroup processors-testing
  *
  * In order to access the recorded output or arrange to simulate errors and
- * end-of-processing, use a `tcspc::capture_output_access` (usually accessed
+ * end-of-processing, use a `tcspc::capture_output_accessor` (usually accessed
  * through the wrapper `tcspc::capture_output_checker`) retrieved from the
  * `tcspc::context` from which \p tracker was obtained.
  *
@@ -929,7 +931,7 @@ class feed_input {
  *   otherwise record for later analysis
  */
 template <typename EventList>
-auto capture_output(access_tracker<capture_output_access> &&tracker) {
+auto capture_output(access_tracker<capture_output_accessor> &&tracker) {
     return internal::capture_output<EventList>(std::move(tracker));
 }
 

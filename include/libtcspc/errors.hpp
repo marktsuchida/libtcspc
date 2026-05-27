@@ -51,7 +51,7 @@ class end_of_processing final : public std::exception {
  *
  * \ingroup exceptions
  *
- * \see `tcspc::buffer_access::pump()`
+ * \see `tcspc::buffer_accessor::pump()`
  */
 class source_halted final : public std::exception {
   public:
@@ -66,7 +66,7 @@ class source_halted final : public std::exception {
  *
  * \ingroup exceptions
  *
- * \see `tcspc::acquire_access::halt()`
+ * \see `tcspc::acquire_accessor::halt()`
  */
 class acquisition_halted final : public std::exception {
   public:

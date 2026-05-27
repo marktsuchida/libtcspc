@@ -35,21 +35,21 @@ to handle input to and output from the graph.
 
 ## Runtime access
 
-Access objects expose live state from processors in running graphs. Use an
+Accessor objects expose live state from processors in running graphs. Use an
 {py:class}`~libtcspc.AccessTag` declared at graph-definition time to look up
-the corresponding access object from {py:class}`~libtcspc.ExecutionContext`.
-The access object has a run-time-generated type but implements one of the
-{py:class}`~libtcspc.Access` protocols.
+the corresponding accessor from {py:class}`~libtcspc.ExecutionContext`. The
+accessor has a run-time-generated type but implements one of the
+{py:class}`~libtcspc.Accessor` protocols.
 
 ```{eval-rst}
 .. autosummary::
    :toctree: generated
    :nosignatures:
 
-   libtcspc.Access
-   libtcspc.AcquireAccess
-   libtcspc.CountAccess
-   libtcspc.RecordAbstimeRangeAccess
-   libtcspc.RecordLastAccess
-   libtcspc.UniqueBinMapperAccess
+   libtcspc.Accessor
+   libtcspc.AcquireAccessor
+   libtcspc.CountAccessor
+   libtcspc.RecordAbstimeRangeAccessor
+   libtcspc.RecordLastAccessor
+   libtcspc.UniqueBinMapperAccessor
 ```

@@ -95,7 +95,7 @@ TEST_CASE("read file") {
             stop_with_error<type_list<warning_event>>(
                 "read error",
                 capture_output<type_list<bucket<std::uint64_t>>>(
-                    ctx->tracker<capture_output_access>("out"))));
+                    ctx->tracker<capture_output_accessor>("out"))));
         auto out = capture_output_checker<type_list<bucket<std::uint64_t>>>(
             ignore_value_category, ctx, "out");
         src.flush();
@@ -117,7 +117,7 @@ TEST_CASE("read file") {
             stop_with_error<type_list<warning_event>>(
                 "read error",
                 capture_output<type_list<bucket<std::uint64_t>>>(
-                    ctx->tracker<capture_output_access>("out"))));
+                    ctx->tracker<capture_output_accessor>("out"))));
         auto out = capture_output_checker<type_list<bucket<std::uint64_t>>>(
             ignore_value_category, ctx, "out");
         src.flush();
@@ -139,7 +139,7 @@ TEST_CASE("read file") {
             stop_with_error<type_list<warning_event>>(
                 "read error",
                 capture_output<type_list<bucket<std::uint64_t>>>(
-                    ctx->tracker<capture_output_access>("out"))));
+                    ctx->tracker<capture_output_accessor>("out"))));
         auto out = capture_output_checker<type_list<bucket<std::uint64_t>>>(
             ignore_value_category, ctx, "out");
         REQUIRE_THROWS_WITH(src.flush(),
@@ -161,7 +161,7 @@ TEST_CASE("read file") {
             stop_with_error<type_list<warning_event>>(
                 "read error",
                 capture_output<type_list<bucket<std::uint64_t>>>(
-                    ctx->tracker<capture_output_access>("out"))));
+                    ctx->tracker<capture_output_accessor>("out"))));
         auto out = capture_output_checker<type_list<bucket<std::uint64_t>>>(
             ignore_value_category, ctx, "out");
         src.flush();
@@ -189,7 +189,7 @@ TEST_CASE("read existing istream, known length") {
         arg::granularity<>{16},
         stop_with_error<type_list<warning_event>>(
             "read error", capture_output<type_list<bucket<std::uint64_t>>>(
-                              ctx->tracker<capture_output_access>("out"))));
+                              ctx->tracker<capture_output_accessor>("out"))));
     auto out = capture_output_checker<type_list<bucket<std::uint64_t>>>(
         ignore_value_category, ctx, "out");
     src.flush();
@@ -215,7 +215,7 @@ TEST_CASE("read existing istream, to end") {
         arg::granularity<>{16},
         stop_with_error<type_list<warning_event>>(
             "read error", capture_output<type_list<bucket<std::uint64_t>>>(
-                              ctx->tracker<capture_output_access>("out"))));
+                              ctx->tracker<capture_output_accessor>("out"))));
     auto out = capture_output_checker<type_list<bucket<std::uint64_t>>>(
         ignore_value_category, ctx, "out");
     src.flush();
@@ -238,7 +238,7 @@ TEST_CASE("read existing istream, empty") {
         arg::granularity<>{16},
         stop_with_error<type_list<warning_event>>(
             "read error", capture_output<type_list<bucket<std::uint64_t>>>(
-                              ctx->tracker<capture_output_access>("out"))));
+                              ctx->tracker<capture_output_accessor>("out"))));
     auto out = capture_output_checker<type_list<bucket<std::uint64_t>>>(
         ignore_value_category, ctx, "out");
     src.flush();

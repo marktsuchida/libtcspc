@@ -7,7 +7,7 @@ from collections.abc import Sequence
 
 from typing_extensions import override
 
-from ._access import AccessTag, _AccessSpec, _UniqueBinMapperAccessSpec
+from ._access import AccessTag, _AccessorSpec, _UniqueBinMapperAccessorSpec
 from ._codegen import _CodeGenerationContext
 from ._cpp_utils import _CppExpression, _CppTypeName
 from ._numeric_traits import NumericTraits
@@ -31,7 +31,7 @@ class BinMapper(_Parameterized):
         self, gencontext: _CodeGenerationContext
     ) -> _CppExpression: ...
 
-    def _accesses(self) -> Sequence[tuple[AccessTag, _AccessSpec]]:
+    def _accesses(self) -> Sequence[tuple[AccessTag, _AccessorSpec]]:
         return ()
 
 
@@ -166,13 +166,13 @@ class UniqueBinMapper(BinMapper):
     Each datapoint value encountered is assigned the next available bin index,
     so that distinct values map to distinct bins. The mapping (the datapoint
     value assigned to each bin index) can be retrieved at run time via the
-    `UniqueBinMapperAccess` obtained from the `ExecutionContext` using
+    `UniqueBinMapperAccessor` obtained from the `ExecutionContext` using
     ``access_tag``.
 
     Parameters
     ----------
     access_tag : AccessTag
-        Tag used to retrieve a `UniqueBinMapperAccess` from the
+        Tag used to retrieve a `UniqueBinMapperAccessor` from the
         `ExecutionContext` at run time.
     max_bin_index : int or Param[int]
         Largest allowed bin index (datapoints beyond this are discarded).
@@ -198,8 +198,8 @@ class UniqueBinMapper(BinMapper):
         self._numeric_traits = numeric_traits or NumericTraits()
 
     @override
-    def _accesses(self) -> Sequence[tuple[AccessTag, _AccessSpec]]:
-        return ((self._access_tag, _UniqueBinMapperAccessSpec()),)
+    def _accesses(self) -> Sequence[tuple[AccessTag, _AccessorSpec]]:
+        return ((self._access_tag, _UniqueBinMapperAccessorSpec()),)
 
     @override
     def _parameters(self) -> Sequence[tuple[Param, _CppTypeName]]:
@@ -221,7 +221,7 @@ class UniqueBinMapper(BinMapper):
         else:
             value = str(self._max_bin_index)
         tracker = gencontext.tracker_expression(
-            _UniqueBinMapperAccessSpec()._cpp_type_name(), self._access_tag
+            _UniqueBinMapperAccessorSpec()._cpp_type_name(), self._access_tag
         )
         return _CppExpression(
             f"tcspc::unique_bin_mapper<{nt}>({tracker}, "

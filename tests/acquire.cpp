@@ -42,7 +42,7 @@ TEST_CASE("type constraints: acquire") {
     auto ctx = context::create();
     using proc_type = decltype(acquire<int>(
         null_reader<int>(), new_delete_bucket_source<int>::create(),
-        arg::batch_size<>{64}, ctx->tracker<acquire_access>("acq"),
+        arg::batch_size<>{64}, ctx->tracker<acquire_accessor>("acq"),
         sink_only<bucket<int>>()));
     STATIC_CHECK(processor<proc_type>);
     STATIC_CHECK_FALSE(handler_for<proc_type, int>);
@@ -52,7 +52,7 @@ TEST_CASE("type constraints: acquire_full_buckets") {
     auto ctx = context::create();
     using proc_type = decltype(acquire_full_buckets<int>(
         null_reader<int>(), sharable_new_delete_bucket_source<int>::create(),
-        arg::batch_size<>{64}, ctx->tracker<acquire_access>("acq"),
+        arg::batch_size<>{64}, ctx->tracker<acquire_accessor>("acq"),
         sink_only<bucket<int const>>(), sink_only<bucket<int>>()));
     STATIC_CHECK(processor<proc_type>);
     STATIC_CHECK_FALSE(handler_for<proc_type, int>);
@@ -62,7 +62,7 @@ TEST_CASE("introspect: acquire") {
     auto ctx = context::create();
     check_introspect_simple_processor(acquire<int>(
         null_reader<int>(), new_delete_bucket_source<int>::create(),
-        arg::batch_size<>{64}, ctx->tracker<acquire_access>("acq"),
+        arg::batch_size<>{64}, ctx->tracker<acquire_accessor>("acq"),
         sink_all()));
 }
 
@@ -70,8 +70,8 @@ TEST_CASE("introspect: acquire_full_buckets") {
     auto ctx = context::create();
     auto const afb = acquire_full_buckets<int>(
         null_reader<int>(), sharable_new_delete_bucket_source<int>::create(),
-        arg::batch_size<>{64}, ctx->tracker<acquire_access>("acq"), sink_all(),
-        sink_all());
+        arg::batch_size<>{64}, ctx->tracker<acquire_accessor>("acq"),
+        sink_all(), sink_all());
     auto const info = check_introspect_node_info(afb);
     auto const g = afb.introspect_graph();
     CHECK(g.nodes().size() == 3);
@@ -167,12 +167,12 @@ TEST_CASE("acquire") {
     auto reader = mock_int_reader();
     auto acq = acquire<int>(
         ref_reader(reader), new_delete_bucket_source<int>::create(),
-        arg::batch_size<>{4}, ctx->tracker<acquire_access>("acq"),
+        arg::batch_size<>{4}, ctx->tracker<acquire_accessor>("acq"),
         capture_output<type_list<bucket<int>>>(
-            ctx->tracker<capture_output_access>("out")));
+            ctx->tracker<capture_output_accessor>("out")));
     auto out = capture_output_checker<type_list<bucket<int>>>(
         ignore_value_category, ctx, "out");
-    auto acq_acc = ctx->access<acquire_access>("acq");
+    auto acq_acc = ctx->access<acquire_accessor>("acq");
 
     using trompeloeil::_;
 
@@ -274,16 +274,16 @@ TEST_CASE("acquire_full_buckets") {
     auto reader = mock_int_reader();
     auto acq = acquire_full_buckets<int>(
         ref_reader(reader), sharable_new_delete_bucket_source<int>::create(),
-        arg::batch_size<>{4}, ctx->tracker<acquire_access>("acq"),
+        arg::batch_size<>{4}, ctx->tracker<acquire_accessor>("acq"),
         capture_output<type_list<bucket<int const>>>(
-            ctx->tracker<capture_output_access>("live")),
+            ctx->tracker<capture_output_accessor>("live")),
         capture_output<type_list<bucket<int>>>(
-            ctx->tracker<capture_output_access>("batch")));
+            ctx->tracker<capture_output_accessor>("batch")));
     auto live_out = capture_output_checker<type_list<bucket<int const>>>(
         ignore_value_category, ctx, "live");
     auto batch_out = capture_output_checker<type_list<bucket<int>>>(
         ignore_value_category, ctx, "batch");
-    auto acq_acc = ctx->access<acquire_access>("acq");
+    auto acq_acc = ctx->access<acquire_accessor>("acq");
 
     using trompeloeil::_;
 

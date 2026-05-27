@@ -3,13 +3,13 @@
 # SPDX-License-Identifier: MIT
 
 from ._access import (
-    Access,
+    Accessor,
     AccessTag,
-    AcquireAccess,
-    CountAccess,
-    RecordAbstimeRangeAccess,
-    RecordLastAccess,
-    UniqueBinMapperAccess,
+    AcquireAccessor,
+    CountAccessor,
+    RecordAbstimeRangeAccessor,
+    RecordLastAccessor,
+    UniqueBinMapperAccessor,
 )
 from ._acquisition_readers import (
     AcquisitionReader,
@@ -194,10 +194,10 @@ from ._timing_generators import (
 from ._version import __version__ as __version__
 
 __all__ = [
-    "Access",
+    "Accessor",
     "AccessTag",
     "Acquire",
-    "AcquireAccess",
+    "AcquireAccessor",
     "AcquireFullBuckets",
     "AcquisitionReader",
     "AddCountToPeriodicSequences",
@@ -233,7 +233,7 @@ __all__ = [
     "CopyToBuckets",
     "CopyToFullBuckets",
     "Count",
-    "CountAccess",
+    "CountAccessor",
     "CountDataMapper",
     "CountDownTo",
     "CountUpTo",
@@ -320,9 +320,9 @@ __all__ = [
     "RealOneShotTimingEvent",
     "RebaseAbstime",
     "RecordAbstimeRange",
-    "RecordAbstimeRangeAccess",
+    "RecordAbstimeRangeAccessor",
     "RecordLast",
-    "RecordLastAccess",
+    "RecordLastAccessor",
     "RecoverOrder",
     "RecyclingBucketSource",
     "RegulateTimeReached",
@@ -354,7 +354,7 @@ __all__ = [
     "UnbatchBinIncrementClusters",
     "UnbatchFromBytes",
     "UniqueBinMapper",
-    "UniqueBinMapperAccess",
+    "UniqueBinMapperAccessor",
     "ViewAsBytes",
     "WarningEvent",
     "WriteBinaryStream",

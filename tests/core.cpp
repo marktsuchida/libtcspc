@@ -42,8 +42,8 @@ TEST_CASE("sink_all") {
 TEST_CASE("source_nothing") {
     auto ctx = context::create();
     auto src = source_nothing(capture_output<type_list<>>(
-        ctx->tracker<capture_output_access>("out")));
-    auto out = ctx->access<capture_output_access>("out");
+        ctx->tracker<capture_output_accessor>("out")));
+    auto out = ctx->access<capture_output_accessor>("out");
     src.flush();
     REQUIRE(out.check_flushed());
 }

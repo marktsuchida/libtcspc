@@ -99,13 +99,13 @@ auto scan_for_channels(std::string const &input_filename)
         channel_data_mapper<numtraits>(),
     map_to_bins<numtraits>(
         unique_bin_mapper<numtraits>(
-            ctx->tracker<unique_bin_mapper_access<channel_type>>("channels"),
+            ctx->tracker<unique_bin_mapper_accessor<channel_type>>("channels"),
             arg::max_bin_index<u64>{26}
         ),
     sink_all())))))));
     // clang-format on
     chan_proc.flush();
-    return ctx->access<unique_bin_mapper_access<channel_type>>("channels")
+    return ctx->access<unique_bin_mapper_accessor<channel_type>>("channels")
         .values();
 }
 

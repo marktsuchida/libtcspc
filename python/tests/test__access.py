@@ -5,7 +5,7 @@
 import dataclasses
 
 import pytest
-from libtcspc._access import AccessTag, _UniqueBinMapperAccessSpec
+from libtcspc._access import AccessTag, _UniqueBinMapperAccessorSpec
 
 
 def test_AccessTag_equality_and_hash():
@@ -50,8 +50,8 @@ def test_AccessTag_context_method_name_distinct_for_distinct_tags():
     )
 
 
-def test_UniqueBinMapperAccessSpec():
-    spec = _UniqueBinMapperAccessSpec()
-    assert spec.py_class_name() == "UniqueBinMapperAccess"
+def test_UniqueBinMapperAccessorSpec():
+    spec = _UniqueBinMapperAccessorSpec()
+    assert spec.py_class_name() == "UniqueBinMapperAccessor"
     assert "values" in spec.cpp_methods()
-    assert "unique_bin_mapper_access" in (spec._cpp_type_name())
+    assert "unique_bin_mapper_accessor" in (spec._cpp_type_name())

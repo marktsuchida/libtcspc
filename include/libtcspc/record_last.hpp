@@ -18,17 +18,17 @@
 namespace tcspc {
 
 /**
- * \brief Access for `tcspc::record_last()` processor data.
+ * \brief Accessor for `tcspc::record_last()` processor data.
  *
- * \ingroup context-access
+ * \ingroup accessors
  */
-template <typename Event> class record_last_access {
+template <typename Event> class record_last_accessor {
     std::function<std::optional<Event>()> get_fn;
 
   public:
     /** \private */
     template <typename F>
-    explicit record_last_access(F get_func) : get_fn(get_func) {}
+    explicit record_last_accessor(F get_func) : get_fn(get_func) {}
 
     /** \brief Return the last event observed, or empty if none was. */
     auto get() -> std::optional<Event> { return get_fn(); }
@@ -42,16 +42,16 @@ template <typename Event, typename Downstream> class record_last {
     Downstream downstream;
 
     // Cold data after downstream.
-    access_tracker<record_last_access<Event>> trk;
+    access_tracker<record_last_accessor<Event>> trk;
 
   public:
-    explicit record_last(access_tracker<record_last_access<Event>> &&tracker,
+    explicit record_last(access_tracker<record_last_accessor<Event>> &&tracker,
                          Downstream downstream)
         : downstream(std::move(downstream)), trk(std::move(tracker)) {
-        trk.register_access_factory([](auto &tracker) {
+        trk.register_accessor_factory([](auto &tracker) {
             auto *self =
                 LIBTCSPC_OBJECT_FROM_TRACKER(record_last, trk, tracker);
-            return record_last_access<Event>([self] { return self->last; });
+            return record_last_accessor<Event>([self] { return self->last; });
         });
     }
 
@@ -84,12 +84,12 @@ template <typename Event, typename Downstream> class record_last {
  * The processor passes through all events. It retains a copy of the last event
  * of type \p Event that passed through.
  *
- * The retained event can be retrieved through a `tcspc::record_last_access`
+ * The retained event can be retrieved through a `tcspc::record_last_accessor`
  * obtained from the `tcspc::context` from which \p tracker was obtained. It is
  * empty (`std::nullopt`) until an event of type \p Event has been observed.
  *
  * Because the processor stores a copy of every event of the requested type
- * that passes through (and retrieval via the access also returns a copy), it
+ * that passes through (and retrieval via the accessor also returns a copy), it
  * is best suited to events that are cheap to copy and that occur infrequently
  * — most naturally a single result event such as a
  * `tcspc::concluding_histogram_event`.
@@ -110,7 +110,7 @@ template <typename Event, typename Downstream> class record_last {
  * - Flush: pass through with no action
  */
 template <typename Event, typename Downstream>
-auto record_last(access_tracker<record_last_access<Event>> &&tracker,
+auto record_last(access_tracker<record_last_accessor<Event>> &&tracker,
                  Downstream downstream) {
     return internal::record_last<Event, Downstream>(std::move(tracker),
                                                     std::move(downstream));

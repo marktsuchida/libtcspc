@@ -146,11 +146,11 @@ TEST_CASE("Route") {
                         std::pair{-32768, 2},
                     }),
                     capture_output<out_events>(
-                        ctx->tracker<capture_output_access>("out0")),
+                        ctx->tracker<capture_output_accessor>("out0")),
                     capture_output<out_events>(
-                        ctx->tracker<capture_output_access>("out1")),
+                        ctx->tracker<capture_output_accessor>("out1")),
                     capture_output<out_events>(
-                        ctx->tracker<capture_output_access>("out2"))));
+                        ctx->tracker<capture_output_accessor>("out2"))));
     in.require_output_checked(ctx, "out0");
     in.require_output_checked(ctx, "out1");
     in.require_output_checked(ctx, "out2");
@@ -215,7 +215,7 @@ TEST_CASE("Route with heterogeneous downstreams") {
         valcat, route<type_list<e0>, type_list<>>(
                     [](e0 const & /* event */) { return std::size_t(0); },
                     capture_output<type_list<e0>>(
-                        ctx->tracker<capture_output_access>("out0")),
+                        ctx->tracker<capture_output_accessor>("out0")),
                     sink_all()));
     in.require_output_checked(ctx, "out0");
     auto out0 = capture_output_checker<type_list<e0>>(valcat, ctx, "out0");
@@ -232,11 +232,11 @@ TEST_CASE("Broadcast") {
     auto in = feed_input(
         valcat, broadcast<type_list<e0>>(
                     capture_output<type_list<e0>>(
-                        ctx->tracker<capture_output_access>("out0")),
+                        ctx->tracker<capture_output_accessor>("out0")),
                     capture_output<type_list<e0>>(
-                        ctx->tracker<capture_output_access>("out1")),
+                        ctx->tracker<capture_output_accessor>("out1")),
                     capture_output<type_list<e0>>(
-                        ctx->tracker<capture_output_access>("out2"))));
+                        ctx->tracker<capture_output_accessor>("out2"))));
     in.require_output_checked(ctx, "out0");
     in.require_output_checked(ctx, "out1");
     in.require_output_checked(ctx, "out2");

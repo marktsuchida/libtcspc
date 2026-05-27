@@ -8,7 +8,7 @@ from typing import final
 from typing_extensions import override
 
 from .. import _access
-from .._access import AccessTag, _AccessSpec
+from .._access import AccessTag, _AccessorSpec
 from .._codegen import _CodeGenerationContext
 from .._cpp_utils import (
     _CppExpression,
@@ -24,7 +24,7 @@ class Count(_TypePreservingRelayNode):
     """Processor that counts events of a given type, passing every event through.
 
     The running count can be retrieved at any time during execution via
-    the `CountAccess` retrieved from the `ExecutionContext` using
+    the `CountAccessor` retrieved from the `ExecutionContext` using
     ``access_tag``. The counter is incremented before each matching
     event is forwarded, so an observer reading the count immediately
     after the Nth matching event sees the value N.
@@ -35,7 +35,7 @@ class Count(_TypePreservingRelayNode):
         The event type whose occurrences are counted. Other event types
         are forwarded but not counted.
     access_tag : AccessTag
-        Tag used to retrieve a `CountAccess` from the `ExecutionContext`
+        Tag used to retrieve a `CountAccessor` from the `ExecutionContext`
         at runtime.
 
     Notes
@@ -59,8 +59,8 @@ class Count(_TypePreservingRelayNode):
     @override
     def _accesses(
         self,
-    ) -> Sequence[tuple[AccessTag, _AccessSpec]]:
-        return ((self._access_tag, _access._CountAccessSpec()),)
+    ) -> Sequence[tuple[AccessTag, _AccessorSpec]]:
+        return ((self._access_tag, _access._CountAccessorSpec()),)
 
     @override
     def _relay_cpp_expression(
@@ -71,7 +71,7 @@ class Count(_TypePreservingRelayNode):
         return _CppExpression(
             f"""\
             tcspc::count<{self._event_type._cpp_type_name()}>(
-                {gencontext.tracker_expression(_CppTypeName("tcspc::count_access"), self._access_tag)},
+                {gencontext.tracker_expression(_CppTypeName("tcspc::count_accessor"), self._access_tag)},
                 {downstream}
             )"""
         )
@@ -83,13 +83,13 @@ class RecordAbstimeRange(_TypePreservingRelayNode):
 
     The minimum and maximum ``abstime`` of all abstime-stamped events seen
     so far can be retrieved at any time during execution via the
-    `RecordAbstimeRangeAccess` retrieved from the `ExecutionContext` using
+    `RecordAbstimeRangeAccessor` retrieved from the `ExecutionContext` using
     ``access_tag``.
 
     Parameters
     ----------
     access_tag : AccessTag
-        Tag used to retrieve a `RecordAbstimeRangeAccess` from the
+        Tag used to retrieve a `RecordAbstimeRangeAccessor` from the
         `ExecutionContext` at runtime.
     numeric_traits : NumericTraits or None
         The numeric traits whose ``abstime_type`` must match the ``abstime``
@@ -124,11 +124,11 @@ class RecordAbstimeRange(_TypePreservingRelayNode):
     @override
     def _accesses(
         self,
-    ) -> Sequence[tuple[AccessTag, _AccessSpec]]:
+    ) -> Sequence[tuple[AccessTag, _AccessorSpec]]:
         return (
             (
                 self._access_tag,
-                _access._RecordAbstimeRangeAccessSpec(self._numeric_traits),
+                _access._RecordAbstimeRangeAccessorSpec(self._numeric_traits),
             ),
         )
 
@@ -139,13 +139,13 @@ class RecordAbstimeRange(_TypePreservingRelayNode):
         downstream: _CppExpression,
     ) -> _CppExpression:
         nt = self._numeric_traits._cpp_type_name()
-        access_type = _CppTypeName(
-            f"tcspc::record_abstime_range_access<{nt}::abstime_type>"
+        accessor_type = _CppTypeName(
+            f"tcspc::record_abstime_range_accessor<{nt}::abstime_type>"
         )
         return _CppExpression(
             f"""\
             tcspc::record_abstime_range<{nt}>(
-                {gencontext.tracker_expression(access_type, self._access_tag)},
+                {gencontext.tracker_expression(accessor_type, self._access_tag)},
                 {downstream}
             )"""
         )
@@ -156,7 +156,7 @@ class RecordLast(_TypePreservingRelayNode):
     """Processor that remembers the last event of a given type.
 
     A copy of the last event of type ``event_type`` that passed through can
-    be retrieved at any time during execution via the `RecordLastAccess`
+    be retrieved at any time during execution via the `RecordLastAccessor`
     retrieved from the `ExecutionContext` using ``access_tag``. It is
     ``None`` until an event of that type has been observed.
 
@@ -167,7 +167,7 @@ class RecordLast(_TypePreservingRelayNode):
         value conversion (so that the recorded event can be delivered to
         Python as an `EventInstance`).
     access_tag : AccessTag
-        Tag used to retrieve a `RecordLastAccess` from the
+        Tag used to retrieve a `RecordLastAccessor` from the
         `ExecutionContext` at runtime.
 
     Notes
@@ -202,11 +202,11 @@ class RecordLast(_TypePreservingRelayNode):
     @override
     def _accesses(
         self,
-    ) -> Sequence[tuple[AccessTag, _AccessSpec]]:
+    ) -> Sequence[tuple[AccessTag, _AccessorSpec]]:
         return (
             (
                 self._access_tag,
-                _access._RecordLastAccessSpec(self._event_type),
+                _access._RecordLastAccessorSpec(self._event_type),
             ),
         )
 
@@ -217,11 +217,13 @@ class RecordLast(_TypePreservingRelayNode):
         downstream: _CppExpression,
     ) -> _CppExpression:
         event_cpp = self._event_type._cpp_type_name()
-        access_type = _CppTypeName(f"tcspc::record_last_access<{event_cpp}>")
+        accessor_type = _CppTypeName(
+            f"tcspc::record_last_accessor<{event_cpp}>"
+        )
         return _CppExpression(
             f"""\
             tcspc::record_last<{event_cpp}>(
-                {gencontext.tracker_expression(access_type, self._access_tag)},
+                {gencontext.tracker_expression(accessor_type, self._access_tag)},
                 {downstream}
             )"""
         )

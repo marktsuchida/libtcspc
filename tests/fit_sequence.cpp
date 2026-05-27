@@ -88,7 +88,7 @@ TEST_CASE("fit periodic sequences") {
                     arg::length<std::size_t>{4}, arg::min_interval{1.0},
                     arg::max_interval{2.0}, arg::max_mse{2.5},
                     capture_output<type_list<periodic_sequence_model_event<>>>(
-                        ctx->tracker<capture_output_access>("out"))));
+                        ctx->tracker<capture_output_accessor>("out"))));
     in.require_output_checked(ctx, "out");
     auto out =
         capture_output_checker<type_list<periodic_sequence_model_event<>>>(

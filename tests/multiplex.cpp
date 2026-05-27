@@ -60,7 +60,7 @@ TEST_CASE("multiplex") {
     auto ctx = context::create();
     auto in = feed_input(
         valcat, multiplex<type_list<e0, e1>>(capture_output<out_events>(
-                    ctx->tracker<capture_output_access>("out"))));
+                    ctx->tracker<capture_output_accessor>("out"))));
     in.require_output_checked(ctx, "out");
     auto out = capture_output_checker<out_events>(valcat, ctx, "out");
 
@@ -78,7 +78,7 @@ TEST_CASE("demultiplex") {
     auto ctx = context::create();
     auto in =
         feed_input(valcat, demultiplex(capture_output<out_events>(
-                               ctx->tracker<capture_output_access>("out"))));
+                               ctx->tracker<capture_output_accessor>("out"))));
     in.require_output_checked(ctx, "out");
     auto out = capture_output_checker<out_events>(valcat, ctx, "out");
 

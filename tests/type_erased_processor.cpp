@@ -174,7 +174,7 @@ TEST_CASE("type_erased_processor preserves value category") {
     auto in = feed_input(
         valcat,
         type_erased_processor<type_list<e0>>(capture_output<type_list<e0>>(
-            ctx->tracker<capture_output_access>("out"))));
+            ctx->tracker<capture_output_accessor>("out"))));
     in.require_output_checked(ctx, "out");
     auto out = capture_output_checker<type_list<e0>>(valcat, ctx, "out");
 

@@ -93,7 +93,7 @@ def test_tracker_expression_uses_context_varname():
     )
     assert (
         ctx.tracker_expression(
-            _CppTypeName("tcspc::count_access"), AccessTag("foo")
+            _CppTypeName("tcspc::count_accessor"), AccessTag("foo")
         )
-        == 'my_ctx->tracker<tcspc::count_access>("foo")'
+        == 'my_ctx->tracker<tcspc::count_accessor>("foo")'
     )

@@ -62,7 +62,7 @@ class StuckReader(AcquisitionReader):
 
     Used to exercise cancellation paths. When this reader is in use,
     the only way to terminate the surrounding `Acquire` is to call
-    ``halt()`` on its `AcquireAccess`.
+    ``halt()`` on its `AcquireAccessor`.
 
     Parameters
     ----------
@@ -74,8 +74,8 @@ class StuckReader(AcquisitionReader):
     --------
     :cpp:`tcspc::stuck_reader`
         The underlying C++ reader.
-    :py:obj:`AcquireAccess`
-        Runtime access object providing ``halt()``.
+    :py:obj:`AcquireAccessor`
+        Runtime accessor providing ``halt()``.
     """
 
     def __init__(self, event_type: EventType) -> None:
@@ -97,8 +97,8 @@ class PyAcquisitionReader(ABC):
     --------
     :py:obj:`Acquire`
         Source processor that drives the reader.
-    :py:obj:`AcquireAccess`
-        Runtime access object providing ``halt()``.
+    :py:obj:`AcquireAccessor`
+        Runtime accessor providing ``halt()``.
     """
 
     @abstractmethod

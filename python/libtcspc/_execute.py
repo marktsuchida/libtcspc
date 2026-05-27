@@ -9,7 +9,7 @@ from typing import Any, final
 
 from typing_extensions import override
 
-from ._access import AccessTag, _AccessSpec
+from ._access import AccessTag, _AccessorSpec
 from ._compile import CompiledGraph
 from ._cpp_utils import _CppIdentifier
 from ._events import EventInstance, EventType
@@ -69,11 +69,11 @@ def _wrapper_to_event_instance(
 
 
 @final
-class _RecordLastAccess:
-    # Wraps the raw nanobind record_last_access so that get() yields an
+class _RecordLastAccessor:
+    # Wraps the raw nanobind record_last_accessor so that get() yields an
     # EventInstance (or None) instead of the generated wrapper class. Reuses
     # the same wrapper -> (EventType, field names) map as the sink path. The
-    # raw access also keeps the processor alive, so retaining it here is
+    # raw accessor also keeps the processor alive, so retaining it here is
     # sufficient.
     def __init__(
         self, raw: Any, wrappers: dict[type, tuple[EventType, list[str]]]
@@ -110,7 +110,7 @@ def _build_execution(
     set[str],
     dict[str, tuple[type, list[str]]],
     dict[type, tuple[EventType, list[str]]],
-    Mapping[str, _AccessSpec],
+    Mapping[str, _AccessorSpec],
 ]:
     given_args = {} if arguments is None else arguments.copy()
     encoders = compiled_graph._param_encoders
@@ -170,7 +170,7 @@ def _build_execution(
         accesses,
         compiled_graph._wrapper_by_cpp,
         compiled_graph._eventtype_by_wrapper,
-        compiled_graph._access_specs,
+        compiled_graph._accessor_specs,
     )
 
 
@@ -203,7 +203,7 @@ class ExecutionContext:
             self._accesses,
             self._input_wrappers,
             self._output_wrappers,
-            self._access_specs,
+            self._accessor_specs,
         ) = _build_execution(compiled_graph, arguments, downstreams)
         self._end_of_life_reason: str | None = None
 
@@ -218,16 +218,16 @@ class ExecutionContext:
 
         Returns
         -------
-        Access
-            The access object for the requested tag. The concrete protocol
-            (e.g., `AcquireAccess`, `CountAccess`) depends on the node type
+        Accessor
+            The accessor for the requested tag. The concrete protocol
+            (e.g., `AcquireAccessor`, `CountAccessor`) depends on the node type
             that was tagged.
         """
         if tag.tag not in self._accesses:
             raise ValueError(f"no such access tag: {tag.tag}")
         raw = getattr(self._ctx, tag._context_method_name())(self._proc)
-        if self._access_specs[tag.tag].wraps_event_value():
-            return _RecordLastAccess(raw, self._output_wrappers)
+        if self._accessor_specs[tag.tag].wraps_event_value():
+            return _RecordLastAccessor(raw, self._output_wrappers)
         return raw
 
     @contextmanager

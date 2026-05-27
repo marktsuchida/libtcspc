@@ -2,7 +2,7 @@
 # Copyright 2019-2026 Board of Regents of the University of Wisconsin System
 # SPDX-License-Identifier: MIT
 
-from libtcspc._access import AccessTag, _UniqueBinMapperAccessSpec
+from libtcspc._access import AccessTag, _UniqueBinMapperAccessorSpec
 from libtcspc._bin_mappers import (
     LinearBinMapper,
     PowerOf2BinMapper,
@@ -56,14 +56,14 @@ def test_UniqueBinMapper_accesses():
     assert len(accesses) == 1
     ((got_tag, spec),) = accesses
     assert got_tag == tag
-    assert isinstance(spec, _UniqueBinMapperAccessSpec)
+    assert isinstance(spec, _UniqueBinMapperAccessorSpec)
 
 
 def test_UniqueBinMapper_codegen():
     code = UniqueBinMapper(AccessTag("u"), 100)._cpp_expression(gencontext)
     assert "tcspc::unique_bin_mapper<tcspc::default_numeric_traits>(" in code
     assert (
-        "ctx->tracker<tcspc::unique_bin_mapper_access<"
+        "ctx->tracker<tcspc::unique_bin_mapper_accessor<"
         'tcspc::default_numeric_traits::datapoint_type>>("u")' in code
     )
     assert "tcspc::arg::max_bin_index<" in code
@@ -77,10 +77,10 @@ def test_UniqueBinMapper_param():
     assert "params.z_m" in bm._cpp_expression(gencontext)
 
 
-def test_UniqueBinMapperAccessSpec_methods():
-    spec = _UniqueBinMapperAccessSpec()
+def test_UniqueBinMapperAccessorSpec_methods():
+    spec = _UniqueBinMapperAccessorSpec()
     assert "values" in spec.cpp_methods()
-    assert spec.py_class_name() == "UniqueBinMapperAccess"
+    assert spec.py_class_name() == "UniqueBinMapperAccessor"
 
 
 def test_no_params_when_literal():

@@ -51,11 +51,11 @@ TEST_CASE("Gate events") {
     auto const valcat = GENERATE(feed_as::const_lvalue, feed_as::rvalue);
     bool const initially_open = GENERATE(false, true);
     auto ctx = context::create();
-    auto in = feed_input(valcat,
-                         gate<type_list<gated_event>, open_event, close_event>(
-                             arg::initially_open{initially_open},
-                             capture_output<out_events>(
-                                 ctx->tracker<capture_output_access>("out"))));
+    auto in = feed_input(
+        valcat, gate<type_list<gated_event>, open_event, close_event>(
+                    arg::initially_open{initially_open},
+                    capture_output<out_events>(
+                        ctx->tracker<capture_output_accessor>("out"))));
     in.require_output_checked(ctx, "out");
     auto out = capture_output_checker<out_events>(valcat, ctx, "out");
 

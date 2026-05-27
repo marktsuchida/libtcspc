@@ -57,7 +57,7 @@ TEST_CASE("regulate time reached by abstime") {
             arg::interval_threshold<i64>{10},
             arg::count_threshold{std::numeric_limits<std::size_t>::max()},
             capture_output<events>(
-                ctx->tracker<capture_output_access>("out"))));
+                ctx->tracker<capture_output_accessor>("out"))));
     in.require_output_checked(ctx, "out");
     auto out = capture_output_checker<events>(valcat, ctx, "out");
 
@@ -129,7 +129,7 @@ TEST_CASE("regulate time reached by count") {
             arg::interval_threshold{std::numeric_limits<abstime_type>::max()},
             arg::count_threshold<std::size_t>{2},
             capture_output<events>(
-                ctx->tracker<capture_output_access>("out"))));
+                ctx->tracker<capture_output_accessor>("out"))));
     in.require_output_checked(ctx, "out");
     auto out = capture_output_checker<events>(valcat, ctx, "out");
 
@@ -200,7 +200,7 @@ TEST_CASE("regulate time reached, zero count threshold",
             arg::interval_threshold{std::numeric_limits<abstime_type>::max()},
             arg::count_threshold<std::size_t>{0},
             capture_output<events>(
-                ctx->tracker<capture_output_access>("out"))));
+                ctx->tracker<capture_output_accessor>("out"))));
     in.require_output_checked(ctx, "out");
     auto out = capture_output_checker<events>(valcat, ctx, "out");
 

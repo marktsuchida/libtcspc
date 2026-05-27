@@ -47,7 +47,7 @@ class _FakeCompiledGraph:
         self._param_encoders = encoders
         self._eventtype_by_wrapper: dict[type, Any] = {}
         self._wrapper_by_cpp: dict[str, Any] = {}
-        self._access_specs: dict[str, Any] = {}
+        self._accessor_specs: dict[str, Any] = {}
 
     def parameters(self) -> tuple[Param, ...]:
         return self._params

@@ -60,7 +60,7 @@ TEST_CASE("stop with error") {
         valcat,
         stop_with_error<type_list<e0>>(
             "myerror", capture_output<type_list<e1>>(
-                           ctx->tracker<capture_output_access>("out"))));
+                           ctx->tracker<capture_output_accessor>("out"))));
     in.require_output_checked(ctx, "out");
     auto out = capture_output_checker<type_list<e1>>(valcat, ctx, "out");
 
@@ -92,10 +92,10 @@ TEST_CASE("stop with no error") {
     auto const valcat = GENERATE(feed_as::const_lvalue, feed_as::rvalue);
     auto ctx = context::create();
     auto in = feed_input(
-        valcat,
-        stop<type_list<e0>>("end of stream",
-                            capture_output<type_list<e1>>(
-                                ctx->tracker<capture_output_access>("out"))));
+        valcat, stop<type_list<e0>>(
+                    "end of stream",
+                    capture_output<type_list<e1>>(
+                        ctx->tracker<capture_output_accessor>("out"))));
     in.require_output_checked(ctx, "out");
     auto out = capture_output_checker<type_list<e1>>(valcat, ctx, "out");
 

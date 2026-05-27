@@ -50,7 +50,7 @@ TEST_CASE("select") {
     auto ctx = context::create();
     auto in =
         feed_input(valcat, select<type_list<e0>>(capture_output<out_events>(
-                               ctx->tracker<capture_output_access>("out"))));
+                               ctx->tracker<capture_output_accessor>("out"))));
     in.require_output_checked(ctx, "out");
     auto out = capture_output_checker<out_events>(valcat, ctx, "out");
 
@@ -66,7 +66,7 @@ TEST_CASE("select_except") {
     auto ctx = context::create();
     auto in = feed_input(
         valcat, select_except<type_list<e0>>(capture_output<out_events>(
-                    ctx->tracker<capture_output_access>("out"))));
+                    ctx->tracker<capture_output_accessor>("out"))));
     in.require_output_checked(ctx, "out");
     auto out = capture_output_checker<out_events>(valcat, ctx, "out");
 
@@ -82,7 +82,7 @@ TEST_CASE("select_none") {
     auto ctx = context::create();
     auto in =
         feed_input(valcat, select_none(capture_output<out_events>(
-                               ctx->tracker<capture_output_access>("out"))));
+                               ctx->tracker<capture_output_accessor>("out"))));
     in.require_output_checked(ctx, "out");
     auto out = capture_output_checker<out_events>(valcat, ctx, "out");
 
@@ -97,7 +97,7 @@ TEST_CASE("select_all") {
     auto ctx = context::create();
     auto in =
         feed_input(valcat, select_all(capture_output<out_events>(
-                               ctx->tracker<capture_output_access>("out"))));
+                               ctx->tracker<capture_output_accessor>("out"))));
     in.require_output_checked(ctx, "out");
     auto out = capture_output_checker<out_events>(valcat, ctx, "out");
 

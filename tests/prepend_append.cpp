@@ -43,7 +43,7 @@ TEST_CASE("prepend") {
     auto in = feed_input(
         valcat,
         prepend<int>(42, capture_output<type_list<int, double>>(
-                             ctx->tracker<capture_output_access>("out"))));
+                             ctx->tracker<capture_output_accessor>("out"))));
     in.require_output_checked(ctx, "out");
     auto out =
         capture_output_checker<type_list<int, double>>(valcat, ctx, "out");
@@ -63,7 +63,7 @@ TEST_CASE("append") {
     auto in = feed_input(
         valcat,
         append<int>(42, capture_output<type_list<int, double>>(
-                            ctx->tracker<capture_output_access>("out"))));
+                            ctx->tracker<capture_output_accessor>("out"))));
     in.require_output_checked(ctx, "out");
     auto out =
         capture_output_checker<type_list<int, double>>(valcat, ctx, "out");

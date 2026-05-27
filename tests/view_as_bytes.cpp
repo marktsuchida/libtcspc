@@ -48,7 +48,7 @@ TEST_CASE("view as bytes") {
     auto ctx = context::create();
     auto in =
         feed_input(valcat, view_as_bytes(capture_output<out_events>(
-                               ctx->tracker<capture_output_access>("out"))));
+                               ctx->tracker<capture_output_accessor>("out"))));
     in.require_output_checked(ctx, "out");
     auto out = capture_output_checker<out_events>(valcat, ctx, "out");
 
@@ -66,7 +66,7 @@ TEST_CASE("view as bytes, bucket input") {
     auto ctx = context::create();
     auto in =
         feed_input(valcat, view_as_bytes(capture_output<out_events>(
-                               ctx->tracker<capture_output_access>("out"))));
+                               ctx->tracker<capture_output_accessor>("out"))));
     in.require_output_checked(ctx, "out");
     auto out = capture_output_checker<out_events>(valcat, ctx, "out");
 

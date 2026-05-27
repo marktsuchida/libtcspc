@@ -344,10 +344,10 @@ TEST_CASE("introspect: extract_bucket") {
 TEST_CASE("extract_bucket preserves value category") {
     auto const valcat = GENERATE(feed_as::const_lvalue, feed_as::rvalue);
     auto ctx = context::create();
-    auto in = feed_input(valcat,
-                         extract_bucket<evt_with_bucket<int>>(
-                             capture_output<type_list<bucket<int>>>(
-                                 ctx->tracker<capture_output_access>("out"))));
+    auto in = feed_input(
+        valcat, extract_bucket<evt_with_bucket<int>>(
+                    capture_output<type_list<bucket<int>>>(
+                        ctx->tracker<capture_output_accessor>("out"))));
     in.require_output_checked(ctx, "out");
     auto out =
         capture_output_checker<type_list<bucket<int>>>(valcat, ctx, "out");

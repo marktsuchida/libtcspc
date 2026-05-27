@@ -54,11 +54,11 @@ TEST_CASE("introspect: batch_from_bytes, unbatch_from_bytes") {
 TEST_CASE("batch_from_bytes") {
     auto const valcat = GENERATE(feed_as::const_lvalue, feed_as::rvalue);
     auto ctx = context::create();
-    auto in = feed_input(valcat,
-                         batch_from_bytes<int>(
-                             new_delete_bucket_source<int>::create(),
-                             capture_output<type_list<bucket<int>>>(
-                                 ctx->tracker<capture_output_access>("out"))));
+    auto in = feed_input(
+        valcat, batch_from_bytes<int>(
+                    new_delete_bucket_source<int>::create(),
+                    capture_output<type_list<bucket<int>>>(
+                        ctx->tracker<capture_output_accessor>("out"))));
     in.require_output_checked(ctx, "out");
     auto out =
         capture_output_checker<type_list<bucket<int>>>(valcat, ctx, "out");
@@ -111,7 +111,7 @@ TEST_CASE("unbatch_from_bytes") {
     auto ctx = context::create();
     auto in = feed_input(
         valcat, unbatch_from_bytes<int>(capture_output<type_list<int>>(
-                    ctx->tracker<capture_output_access>("out"))));
+                    ctx->tracker<capture_output_accessor>("out"))));
     in.require_output_checked(ctx, "out");
     auto out = capture_output_checker<type_list<int>>(valcat, ctx, "out");
 

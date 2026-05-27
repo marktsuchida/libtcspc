@@ -52,7 +52,7 @@ TEST_CASE("check monotonic") {
     auto ctx = context::create();
     auto in =
         feed_input(valcat, check_monotonic(capture_output<out_events>(
-                               ctx->tracker<capture_output_access>("out"))));
+                               ctx->tracker<capture_output_accessor>("out"))));
     in.require_output_checked(ctx, "out");
     auto out = capture_output_checker<out_events>(valcat, ctx, "out");
 
@@ -79,7 +79,7 @@ TEST_CASE("check alternating") {
     auto ctx = context::create();
     auto in = feed_input(valcat,
                          check_alternating<e0, e1>(capture_output<out_events>(
-                             ctx->tracker<capture_output_access>("out"))));
+                             ctx->tracker<capture_output_accessor>("out"))));
     in.require_output_checked(ctx, "out");
     auto out = capture_output_checker<out_events>(valcat, ctx, "out");
 

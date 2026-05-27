@@ -107,11 +107,11 @@ TEST_CASE("introspect: generate") {
 TEST_CASE("Generate null timing") {
     auto const valcat = GENERATE(feed_as::const_lvalue, feed_as::rvalue);
     auto ctx = context::create();
-    auto in = feed_input(valcat,
-                         generate<trigger_event, output_event>(
-                             null_timing_generator(),
-                             capture_output<out_events>(
-                                 ctx->tracker<capture_output_access>("out"))));
+    auto in = feed_input(
+        valcat, generate<trigger_event, output_event>(
+                    null_timing_generator(),
+                    capture_output<out_events>(
+                        ctx->tracker<capture_output_accessor>("out"))));
     in.require_output_checked(ctx, "out");
     auto out = capture_output_checker<out_events>(valcat, ctx, "out");
 
@@ -128,11 +128,11 @@ TEST_CASE("Generate one-shot timing",
     auto const valcat = GENERATE(feed_as::const_lvalue, feed_as::rvalue);
     default_numeric_traits::abstime_type const delay = GENERATE(0, 1, 2);
     auto ctx = context::create();
-    auto in = feed_input(valcat,
-                         generate<trigger_event, output_event>(
-                             one_shot_timing_generator(arg::delay{delay}),
-                             capture_output<out_events>(
-                                 ctx->tracker<capture_output_access>("out"))));
+    auto in = feed_input(
+        valcat, generate<trigger_event, output_event>(
+                    one_shot_timing_generator(arg::delay{delay}),
+                    capture_output<out_events>(
+                        ctx->tracker<capture_output_accessor>("out"))));
     in.require_output_checked(ctx, "out");
     auto out = capture_output_checker<out_events>(valcat, ctx, "out");
 
@@ -211,7 +211,7 @@ TEST_CASE("Generate linear timing") {
                                                 arg::interval{interval},
                                                 arg::count<std::size_t>{0}),
                         capture_output<out_events>(
-                            ctx->tracker<capture_output_access>("out"))));
+                            ctx->tracker<capture_output_accessor>("out"))));
         in.require_output_checked(ctx, "out");
         auto out = capture_output_checker<out_events>(valcat, ctx, "out");
 
@@ -230,7 +230,7 @@ TEST_CASE("Generate linear timing") {
                                                 arg::interval{interval},
                                                 arg::count<std::size_t>{1}),
                         capture_output<out_events>(
-                            ctx->tracker<capture_output_access>("out"))));
+                            ctx->tracker<capture_output_accessor>("out"))));
         in.require_output_checked(ctx, "out");
         auto out = capture_output_checker<out_events>(valcat, ctx, "out");
 
@@ -268,7 +268,7 @@ TEST_CASE("Generate linear timing") {
                                                 arg::interval{interval},
                                                 arg::count<std::size_t>{2}),
                         capture_output<out_events>(
-                            ctx->tracker<capture_output_access>("out"))));
+                            ctx->tracker<capture_output_accessor>("out"))));
         in.require_output_checked(ctx, "out");
         auto out = capture_output_checker<out_events>(valcat, ctx, "out");
 
@@ -302,7 +302,7 @@ TEST_CASE("Generate linear timing") {
                                                 arg::interval{interval},
                                                 arg::count<std::size_t>{2}),
                         capture_output<out_events>(
-                            ctx->tracker<capture_output_access>("out"))));
+                            ctx->tracker<capture_output_accessor>("out"))));
         in.require_output_checked(ctx, "out");
         auto out = capture_output_checker<out_events>(valcat, ctx, "out");
 

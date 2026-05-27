@@ -35,7 +35,7 @@ TEST_CASE("type constraints: buffer") {
     struct e0 {};
     auto ctx = context::create();
     using proc_type = decltype(buffer<e0>(arg::threshold<std::size_t>{1},
-                                          ctx->tracker<buffer_access>("buf"),
+                                          ctx->tracker<buffer_accessor>("buf"),
                                           sink_only<e0>()));
     STATIC_CHECK(processor<proc_type, e0>);
     STATIC_CHECK_FALSE(handler_for<proc_type, int>);
@@ -46,7 +46,7 @@ TEST_CASE("type constraints: real_time_buffer") {
     auto ctx = context::create();
     using proc_type = decltype(real_time_buffer<e0>(
         arg::threshold<std::size_t>{1}, std::chrono::milliseconds(10),
-        ctx->tracker<buffer_access>("buf"), sink_only<e0>()));
+        ctx->tracker<buffer_accessor>("buf"), sink_only<e0>()));
     STATIC_CHECK(processor<proc_type, e0>);
     STATIC_CHECK_FALSE(handler_for<proc_type, int>);
 }
@@ -55,10 +55,10 @@ TEST_CASE("introspect: buffer") {
     auto ctx = context::create();
     check_introspect_simple_processor(
         buffer<int>(arg::threshold<std::size_t>{1},
-                    ctx->tracker<buffer_access>("buf"), sink_all()));
+                    ctx->tracker<buffer_accessor>("buf"), sink_all()));
     check_introspect_simple_processor(real_time_buffer<int>(
         arg::threshold<std::size_t>{1}, std::chrono::seconds(1),
-        ctx->tracker<buffer_access>("rtbuf"), sink_all()));
+        ctx->tracker<buffer_accessor>("rtbuf"), sink_all()));
 }
 
 // We use Trompeloeil rather than feed_input/capture_output for fine-grain
@@ -90,9 +90,9 @@ template <typename Downstream> class ref_proc {
 
 TEST_CASE("buffer moves out rvalue events") {
     auto ctx = context::create();
-    auto buf = buffer<std::unique_ptr<int>>(arg::threshold<std::size_t>{3},
-                                            ctx->tracker<buffer_access>("buf"),
-                                            sink_all());
+    auto buf = buffer<std::unique_ptr<int>>(
+        arg::threshold<std::size_t>{3}, ctx->tracker<buffer_accessor>("buf"),
+        sink_all());
     auto event = std::make_unique<int>(42);
     buf.handle(std::move(event));
     CHECK_FALSE(event);
@@ -101,9 +101,10 @@ TEST_CASE("buffer moves out rvalue events") {
 TEST_CASE("buffer empty stream") {
     auto ctx = context::create();
     auto out = mock_downstream();
-    auto buf = buffer<int>(arg::threshold<std::size_t>{3},
-                           ctx->tracker<buffer_access>("buf"), ref_proc(out));
-    auto buf_acc = ctx->access<buffer_access>("buf");
+    auto buf =
+        buffer<int>(arg::threshold<std::size_t>{3},
+                    ctx->tracker<buffer_accessor>("buf"), ref_proc(out));
+    auto buf_acc = ctx->access<buffer_accessor>("buf");
 
     SECTION("pump in thread") {
         std::latch thread_start_latch(1);
@@ -128,9 +129,10 @@ TEST_CASE("buffer empty stream") {
 TEST_CASE("buffer stream ended downstream") {
     auto ctx = context::create();
     auto out = mock_downstream();
-    auto buf = buffer<int>(arg::threshold<std::size_t>{1},
-                           ctx->tracker<buffer_access>("buf"), ref_proc(out));
-    auto buf_acc = ctx->access<buffer_access>("buf");
+    auto buf =
+        buffer<int>(arg::threshold<std::size_t>{1},
+                    ctx->tracker<buffer_accessor>("buf"), ref_proc(out));
+    auto buf_acc = ctx->access<buffer_accessor>("buf");
 
     SECTION("pump in thread") {
         bool threw = false;
@@ -161,9 +163,10 @@ TEST_CASE("buffer stream ended downstream") {
 TEST_CASE("buffer stream error downstream") {
     auto ctx = context::create();
     auto out = mock_downstream();
-    auto buf = buffer<int>(arg::threshold<std::size_t>{1},
-                           ctx->tracker<buffer_access>("buf"), ref_proc(out));
-    auto buf_acc = ctx->access<buffer_access>("buf");
+    auto buf =
+        buffer<int>(arg::threshold<std::size_t>{1},
+                    ctx->tracker<buffer_accessor>("buf"), ref_proc(out));
+    auto buf_acc = ctx->access<buffer_accessor>("buf");
 
     SECTION("pump in thread") {
         bool threw = false;
@@ -194,9 +197,10 @@ TEST_CASE("buffer stream error downstream") {
 TEST_CASE("buffer stream halted") {
     auto ctx = context::create();
     auto out = mock_downstream();
-    auto buf = buffer<int>(arg::threshold<std::size_t>{1},
-                           ctx->tracker<buffer_access>("buf"), ref_proc(out));
-    auto buf_acc = ctx->access<buffer_access>("buf");
+    auto buf =
+        buffer<int>(arg::threshold<std::size_t>{1},
+                    ctx->tracker<buffer_accessor>("buf"), ref_proc(out));
+    auto buf_acc = ctx->access<buffer_accessor>("buf");
 
     SECTION("pump in thread") {
         bool threw = false;
@@ -227,9 +231,10 @@ TEST_CASE("buffer stream halted") {
 TEST_CASE("buffer does not emit events before threshold") {
     auto ctx = context::create();
     auto out = mock_downstream();
-    auto buf = buffer<int>(arg::threshold<std::size_t>{3},
-                           ctx->tracker<buffer_access>("buf"), ref_proc(out));
-    auto buf_acc = ctx->access<buffer_access>("buf");
+    auto buf =
+        buffer<int>(arg::threshold<std::size_t>{3},
+                    ctx->tracker<buffer_accessor>("buf"), ref_proc(out));
+    auto buf_acc = ctx->access<buffer_accessor>("buf");
 
     SECTION("pump in thread") {
         bool threw = false;
@@ -263,9 +268,10 @@ TEST_CASE("buffer does not emit events before threshold") {
 TEST_CASE("buffer flushes stored events") {
     auto ctx = context::create();
     auto out = mock_downstream();
-    auto buf = buffer<int>(arg::threshold<std::size_t>{3},
-                           ctx->tracker<buffer_access>("buf"), ref_proc(out));
-    auto buf_acc = ctx->access<buffer_access>("buf");
+    auto buf =
+        buffer<int>(arg::threshold<std::size_t>{3},
+                    ctx->tracker<buffer_accessor>("buf"), ref_proc(out));
+    auto buf_acc = ctx->access<buffer_accessor>("buf");
 
     SECTION("pump in thread") {
         std::latch thread_start_latch(1);
@@ -299,9 +305,10 @@ TEST_CASE("buffer flushes stored events") {
 TEST_CASE("buffer emits stored events on reaching threshold") {
     auto ctx = context::create();
     auto out = mock_downstream();
-    auto buf = buffer<int>(arg::threshold<std::size_t>{3},
-                           ctx->tracker<buffer_access>("buf"), ref_proc(out));
-    auto buf_acc = ctx->access<buffer_access>("buf");
+    auto buf =
+        buffer<int>(arg::threshold<std::size_t>{3},
+                    ctx->tracker<buffer_accessor>("buf"), ref_proc(out));
+    auto buf_acc = ctx->access<buffer_accessor>("buf");
 
     SECTION("pump in thread") {
         std::latch thread_start_latch(1);
@@ -358,9 +365,10 @@ TEMPLATE_TEST_CASE("buffer input throws after downstream stopped", "",
                    end_of_processing, std::runtime_error) {
     auto ctx = context::create();
     auto out = mock_downstream();
-    auto buf = buffer<int>(arg::threshold<std::size_t>{1},
-                           ctx->tracker<buffer_access>("buf"), ref_proc(out));
-    auto buf_acc = ctx->access<buffer_access>("buf");
+    auto buf =
+        buffer<int>(arg::threshold<std::size_t>{1},
+                    ctx->tracker<buffer_accessor>("buf"), ref_proc(out));
+    auto buf_acc = ctx->access<buffer_accessor>("buf");
 
     SECTION("pump in thread") {
         bool threw = false;
@@ -396,8 +404,8 @@ TEST_CASE(
     auto out = mock_downstream();
     auto buf = real_time_buffer<int>(
         arg::threshold<std::size_t>{3}, std::chrono::hours(1),
-        ctx->tracker<buffer_access>("buf"), ref_proc(out));
-    auto buf_acc = ctx->access<buffer_access>("buf");
+        ctx->tracker<buffer_accessor>("buf"), ref_proc(out));
+    auto buf_acc = ctx->access<buffer_accessor>("buf");
 
     SECTION("pump in thread") {
         bool threw = false;
@@ -433,9 +441,9 @@ TEST_CASE("real_time_buffer emits event before threshold after latency") {
     auto out = mock_downstream();
     auto const latency = std::chrono::microseconds(100);
     auto buf = real_time_buffer<int>(arg::threshold<std::size_t>{2}, latency,
-                                     ctx->tracker<buffer_access>("buf"),
+                                     ctx->tracker<buffer_accessor>("buf"),
                                      ref_proc(out));
-    auto buf_acc = ctx->access<buffer_access>("buf");
+    auto buf_acc = ctx->access<buffer_accessor>("buf");
 
     SECTION("pump in thread") {
         std::latch thread_start_latch(1);

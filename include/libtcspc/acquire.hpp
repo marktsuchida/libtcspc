@@ -45,17 +45,17 @@ concept acquisition_reader =
     };
 
 /**
- * \brief Access for acquire processors.
+ * \brief Accessor for acquire processors.
  *
- * \ingroup context-access
+ * \ingroup accessors
  */
-class acquire_access {
+class acquire_accessor {
     std::function<void()> halt_fn;
 
   public:
     /** \private */
     template <typename Func>
-    explicit acquire_access(Func halt_func) : halt_fn(halt_func) {}
+    explicit acquire_accessor(Func halt_func) : halt_fn(halt_func) {}
 
     /**
      * \brief Halt the acquisition: stop reading further data.
@@ -97,7 +97,7 @@ class acquire {
     Downstream downstream;
 
     // Cold data after downstream.
-    access_tracker<acquire_access> trk;
+    access_tracker<acquire_accessor> trk;
 
     void halt() {
         {
@@ -111,7 +111,7 @@ class acquire {
     explicit acquire(Reader reader,
                      std::shared_ptr<bucket_source<T>> buffer_provider,
                      arg::batch_size<std::size_t> batch_size,
-                     access_tracker<acquire_access> tracker,
+                     access_tracker<acquire_accessor> tracker,
                      Downstream downstream)
         : reader(std::move(reader)), bsource(std::move(buffer_provider)),
           bsize(batch_size.value), downstream(std::move(downstream)),
@@ -122,9 +122,9 @@ class acquire {
         if (bsize == 0)
             throw std::invalid_argument("acquire batch size must be positive");
 
-        trk.register_access_factory([](auto &tracker) {
+        trk.register_accessor_factory([](auto &tracker) {
             auto *self = LIBTCSPC_OBJECT_FROM_TRACKER(acquire, trk, tracker);
-            return acquire_access([self] { self->halt(); });
+            return acquire_accessor([self] { self->halt(); });
         });
     }
 
@@ -202,7 +202,7 @@ class acquire_full_buckets {
     BatchDownstream batch_downstream;
 
     // Cold data after downstream.
-    access_tracker<acquire_access> trk;
+    access_tracker<acquire_accessor> trk;
 
     void halt() {
         {
@@ -257,8 +257,8 @@ class acquire_full_buckets {
     explicit acquire_full_buckets(
         Reader reader, std::shared_ptr<bucket_source<T>> buffer_provider,
         arg::batch_size<std::size_t> batch_size,
-        access_tracker<acquire_access> tracker, LiveDownstream live_downstream,
-        BatchDownstream batch_downstream)
+        access_tracker<acquire_accessor> tracker,
+        LiveDownstream live_downstream, BatchDownstream batch_downstream)
         : reader(std::move(reader)), bsource(std::move(buffer_provider)),
           bsize(batch_size.value), live_downstream(std::move(live_downstream)),
           batch_downstream(std::move(batch_downstream)),
@@ -275,10 +275,10 @@ class acquire_full_buckets {
             throw std::invalid_argument(
                 "acquire_full_buckets batch size must be positive");
 
-        trk.register_access_factory([](auto &tracker) {
+        trk.register_accessor_factory([](auto &tracker) {
             auto *self = LIBTCSPC_OBJECT_FROM_TRACKER(acquire_full_buckets,
                                                       trk, tracker);
-            return acquire_access([self] { self->halt(); });
+            return acquire_accessor([self] { self->halt(); });
         });
     }
 
@@ -386,7 +386,7 @@ class acquire_full_buckets {
 template <typename T, typename Reader, typename Downstream>
 auto acquire(Reader reader, std::shared_ptr<bucket_source<T>> buffer_provider,
              arg::batch_size<std::size_t> batch_size,
-             access_tracker<acquire_access> tracker, Downstream downstream) {
+             access_tracker<acquire_accessor> tracker, Downstream downstream) {
     return internal::acquire<T, Reader, Downstream>(
         std::move(reader), std::move(buffer_provider), batch_size,
         std::move(tracker), std::move(downstream));
@@ -453,7 +453,7 @@ template <typename T, typename Reader, typename LiveDownstream,
 auto acquire_full_buckets(Reader reader,
                           std::shared_ptr<bucket_source<T>> buffer_provider,
                           arg::batch_size<std::size_t> batch_size,
-                          access_tracker<acquire_access> tracker,
+                          access_tracker<acquire_accessor> tracker,
                           LiveDownstream live_downstream,
                           BatchDownstream batch_downstream) {
     return internal::acquire_full_buckets<T, Reader, LiveDownstream,

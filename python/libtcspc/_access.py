@@ -22,7 +22,7 @@ if TYPE_CHECKING:
     from ._events import EventInstance, EventType
 
 
-class _AccessSpec(ABC):
+class _AccessorSpec(ABC):
     @abstractmethod
     def _cpp_type_name(self) -> _CppTypeName: ...
 
@@ -82,14 +82,14 @@ class _Accessible(ABC):  # noqa: B024
     (``Node``) or their auxiliary objects.
     """
 
-    def _accesses(self) -> Sequence[tuple[AccessTag, "_AccessSpec"]]:
+    def _accesses(self) -> Sequence[tuple[AccessTag, "_AccessorSpec"]]:
         return ()
 
 
-class _AcquireAccessSpec(_AccessSpec):
+class _AcquireAccessorSpec(_AccessorSpec):
     @override
     def _cpp_type_name(self) -> _CppTypeName:
-        return _CppTypeName("tcspc::acquire_access")
+        return _CppTypeName("tcspc::acquire_accessor")
 
     @override
     def cpp_methods(self) -> Sequence[_CppIdentifier]:
@@ -97,13 +97,13 @@ class _AcquireAccessSpec(_AccessSpec):
 
     @override
     def py_class_name(self) -> str:
-        return "AcquireAccess"
+        return "AcquireAccessor"
 
 
-class _CountAccessSpec(_AccessSpec):
+class _CountAccessorSpec(_AccessorSpec):
     @override
     def _cpp_type_name(self) -> _CppTypeName:
-        return _CppTypeName("tcspc::count_access")
+        return _CppTypeName("tcspc::count_accessor")
 
     @override
     def cpp_methods(self) -> Sequence[_CppIdentifier]:
@@ -111,14 +111,14 @@ class _CountAccessSpec(_AccessSpec):
 
     @override
     def py_class_name(self) -> str:
-        return "CountAccess"
+        return "CountAccessor"
 
 
-class _UniqueBinMapperAccessSpec(_AccessSpec):
+class _UniqueBinMapperAccessorSpec(_AccessorSpec):
     @override
     def _cpp_type_name(self) -> _CppTypeName:
         return _CppTypeName(
-            "tcspc::unique_bin_mapper_access<"
+            "tcspc::unique_bin_mapper_accessor<"
             "tcspc::default_numeric_traits::datapoint_type>"
         )
 
@@ -128,10 +128,10 @@ class _UniqueBinMapperAccessSpec(_AccessSpec):
 
     @override
     def py_class_name(self) -> str:
-        return "UniqueBinMapperAccess"
+        return "UniqueBinMapperAccessor"
 
 
-class _RecordAbstimeRangeAccessSpec(_AccessSpec):
+class _RecordAbstimeRangeAccessorSpec(_AccessorSpec):
     def __init__(self, numeric_traits: NumericTraits) -> None:
         self._numeric_traits = numeric_traits
 
@@ -139,7 +139,7 @@ class _RecordAbstimeRangeAccessSpec(_AccessSpec):
     def _cpp_type_name(self) -> _CppTypeName:
         nt = self._numeric_traits._cpp_type_name()
         return _CppTypeName(
-            f"tcspc::record_abstime_range_access<{nt}::abstime_type>"
+            f"tcspc::record_abstime_range_accessor<{nt}::abstime_type>"
         )
 
     @override
@@ -148,19 +148,19 @@ class _RecordAbstimeRangeAccessSpec(_AccessSpec):
 
     @override
     def py_class_name(self) -> str:
-        return "RecordAbstimeRangeAccess__" + _identifier_from_string(
+        return "RecordAbstimeRangeAccessor__" + _identifier_from_string(
             str(self._cpp_type_name())
         )
 
 
-class _RecordLastAccessSpec(_AccessSpec):
+class _RecordLastAccessorSpec(_AccessorSpec):
     def __init__(self, event_type: "EventType") -> None:
         self._event_type = event_type
 
     @override
     def _cpp_type_name(self) -> _CppTypeName:
         return _CppTypeName(
-            f"tcspc::record_last_access<{self._event_type._cpp_type_name()}>"
+            f"tcspc::record_last_accessor<{self._event_type._cpp_type_name()}>"
         )
 
     @override
@@ -169,7 +169,7 @@ class _RecordLastAccessSpec(_AccessSpec):
 
     @override
     def py_class_name(self) -> str:
-        return "RecordLastAccess__" + _identifier_from_string(
+        return "RecordLastAccessor__" + _identifier_from_string(
             str(self._event_type._cpp_type_name())
         )
 
@@ -178,19 +178,19 @@ class _RecordLastAccessSpec(_AccessSpec):
         return True
 
 
-class Access(Protocol):
+class Accessor(Protocol):
     """
-    Base protocol for run-time access objects.
+    Base protocol for run-time accessors.
 
-    Concrete access protocols (such as `AcquireAccess` or `CountAccess`)
+    Concrete accessor protocols (such as `AcquireAccessor` or `CountAccessor`)
     derive from this. The protocol itself has no methods; it serves as a
-    common type for any access object returned by
+    common type for any accessor returned by
     `ExecutionContext.access`.
     """
 
 
-class AcquireAccess(Access, Protocol):
-    """Run-time access object for an ``Acquire`` processor."""
+class AcquireAccessor(Accessor, Protocol):
+    """Run-time accessor for an ``Acquire`` processor."""
 
     def halt(self) -> None:
         """
@@ -199,8 +199,8 @@ class AcquireAccess(Access, Protocol):
         ...
 
 
-class CountAccess(Access, Protocol):
-    """Run-time access object for a ``Count`` processor."""
+class CountAccessor(Accessor, Protocol):
+    """Run-time accessor for a ``Count`` processor."""
 
     def count(self) -> int:
         """
@@ -214,8 +214,8 @@ class CountAccess(Access, Protocol):
         ...
 
 
-class UniqueBinMapperAccess(Access, Protocol):
-    """Run-time access object for a ``UniqueBinMapper`` bin mapper."""
+class UniqueBinMapperAccessor(Accessor, Protocol):
+    """Run-time accessor for a ``UniqueBinMapper`` bin mapper."""
 
     def values(self) -> list[int]:
         """
@@ -230,8 +230,8 @@ class UniqueBinMapperAccess(Access, Protocol):
         ...
 
 
-class RecordAbstimeRangeAccess(Access, Protocol):
-    """Run-time access object for a ``RecordAbstimeRange`` processor."""
+class RecordAbstimeRangeAccessor(Accessor, Protocol):
+    """Run-time accessor for a ``RecordAbstimeRange`` processor."""
 
     def min(self) -> int | None:
         """
@@ -258,8 +258,8 @@ class RecordAbstimeRangeAccess(Access, Protocol):
         ...
 
 
-class RecordLastAccess(Access, Protocol):
-    """Run-time access object for a ``RecordLast`` processor."""
+class RecordLastAccessor(Accessor, Protocol):
+    """Run-time accessor for a ``RecordLast`` processor."""
 
     def get(self) -> "EventInstance | None":
         """

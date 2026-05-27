@@ -30,16 +30,16 @@ class context;
  * which the tracker was created.
  *
  * An object stores the tracker instance as a data member and also registers an
- * access factory in its constructor. This allows code to later access the
+ * accessor factory in its constructor. This allows code to later access the
  * object state, even after the tracked object has been embedded in an outer
  * object (as with a processor incorporated into a processing graph).
  *
- * \tparam Access type of access interface for the tracked object
+ * \tparam Accessor type of accessor for the tracked object
  */
-template <typename Access> class access_tracker {
+template <typename Accessor> class access_tracker {
     std::shared_ptr<context> ctx; // Null iff 'empty' state.
     std::string name;
-    std::function<Access(access_tracker &)> access_factory;
+    std::function<Accessor(access_tracker &)> accessor_factory;
 
     friend class context;
 
@@ -70,20 +70,20 @@ template <typename Access> class access_tracker {
     /** \endcond */
 
     /**
-     * \brief Register an access factory with this tracker's context.
+     * \brief Register an accessor factory with this tracker's context.
      *
      * This is usually called in the tracked object's constructor to arrange
-     * for later access to the object via its corresponding access type.
+     * for later access to the object via its corresponding accessor type.
      *
      * \tparam F factory function type
      *
      * \param factory function taking reference to this tracker and returning
-     * the access object of type \p Access
+     * the accessor of type \p Accessor
      */
-    template <typename F> void register_access_factory(F factory) {
+    template <typename F> void register_accessor_factory(F factory) {
         assert(ctx);
-        assert(not access_factory);
-        access_factory = std::move(factory);
+        assert(not accessor_factory);
+        accessor_factory = std::move(factory);
     }
 };
 
@@ -106,25 +106,25 @@ template <typename Access> class access_tracker {
  * within a given context (and may not be reused even after destroying the
  * corresponding tracker).
  *
- * Actual access to object state is through an _access_ object whose type
+ * Actual access to object state is through an _accessor_ whose type
  * is defined by the object and whose instances can be obtained from the
  * context by name.
  */
 class context : public std::enable_shared_from_this<context> {
     // Map keys are names identifying the tracked object and values are pointer
-    // to access_tracker<Access> for some Access. Values are kept up to date
-    // when a tracker is moved or destroyed. If the tracked object has been
-    // destroyed, the entry remains and the value is an empty std::any()).
+    // to access_tracker<Accessor> for some Accessor. Values are kept up to
+    // date when a tracker is moved or destroyed. If the tracked object has
+    // been destroyed, the entry remains and the value is an empty std::any()).
     // Reuse of name is not allowed.
     std::unordered_map<std::string, std::any> trackers;
 
-    template <typename Access> friend class access_tracker;
+    template <typename Accessor> friend class access_tracker;
 
-    template <typename Access>
+    template <typename Accessor>
     void update_tracker_address(std::string const &name,
-                                access_tracker<Access> *ptr) {
+                                access_tracker<Accessor> *ptr) {
         // Enforce no type change in std::any; just update the value directly.
-        *std::any_cast<access_tracker<Access> *>(&trackers.at(name)) = ptr;
+        *std::any_cast<access_tracker<Accessor> *>(&trackers.at(name)) = ptr;
     }
 
     context() = default;
@@ -149,39 +149,41 @@ class context : public std::enable_shared_from_this<context> {
     /**
      * \brief Obtain a tracker for an object with the given name.
      *
-     * \tparam Access the object's access type
+     * \tparam Accessor the object's accessor type
      *
      * \param name name to assign to the tracked object
      *
      * \return tracker to be stored in the object
      */
-    template <typename Access>
-    auto tracker(std::string name) -> access_tracker<Access> {
+    template <typename Accessor>
+    auto tracker(std::string name) -> access_tracker<Accessor> {
         if (trackers.count(name) != 0) {
             throw std::logic_error(
                 "cannot create tracker for existing name: " + name);
         }
-        auto ret = access_tracker<Access>(shared_from_this(), std::move(name));
+        auto ret =
+            access_tracker<Accessor>(shared_from_this(), std::move(name));
         trackers.insert({ret.name, std::any(&ret)});
         return ret;
     }
 
     /**
-     * \brief Obtain an access for the named object.
+     * \brief Obtain an accessor for the named object.
      *
-     * \attention The returned access object becomes invalid if the object to
-     * which it refers is moved or destroyed. Do not store access instances.
+     * \attention The returned accessor becomes invalid if the object to
+     * which it refers is moved or destroyed. Do not store accessor instances.
      *
-     * \tparam Access the access type
+     * \tparam Accessor the accessor type
      *
      * \param name the name identifying the tracked object
      */
-    template <typename Access> auto access(std::string const &name) -> Access {
+    template <typename Accessor>
+    auto access(std::string const &name) -> Accessor {
         auto tracker_ptr =
-            std::any_cast<access_tracker<Access> *>(trackers.at(name));
+            std::any_cast<access_tracker<Accessor> *>(trackers.at(name));
         if (tracker_ptr == nullptr)
             throw std::logic_error("cannot access destroyed object: " + name);
-        return tracker_ptr->access_factory(*tracker_ptr);
+        return tracker_ptr->accessor_factory(*tracker_ptr);
     }
 };
 
@@ -190,28 +192,28 @@ class context : public std::enable_shared_from_this<context> {
 // Move/destroy for access_tracker, defined out-of-line because they require
 // the definition of context.
 
-template <typename Access>
-access_tracker<Access>::access_tracker(access_tracker &&other) noexcept
+template <typename Accessor>
+access_tracker<Accessor>::access_tracker(access_tracker &&other) noexcept
     : ctx(std::move(other.ctx)), name(std::move(other.name)),
-      access_factory(std::move(other.access_factory)) {
+      accessor_factory(std::move(other.accessor_factory)) {
     if (ctx)
         ctx->update_tracker_address(name, this);
 }
 
-template <typename Access>
-auto access_tracker<Access>::operator=(access_tracker &&rhs) noexcept
+template <typename Accessor>
+auto access_tracker<Accessor>::operator=(access_tracker &&rhs) noexcept
     -> access_tracker & {
     ctx = std::move(rhs.ctx);
     name = std::move(rhs.name);
-    access_factory = std::move(rhs.access_factory);
+    accessor_factory = std::move(rhs.accessor_factory);
     if (ctx)
         ctx->update_tracker_address(name, this);
     return *this;
 }
 
-template <typename Access> access_tracker<Access>::~access_tracker() {
+template <typename Accessor> access_tracker<Accessor>::~access_tracker() {
     if (ctx)
-        ctx->update_tracker_address<Access>(name, nullptr);
+        ctx->update_tracker_address<Accessor>(name, nullptr);
 }
 
 /** \endcond */
@@ -236,8 +238,8 @@ template <typename Access> access_tracker<Access>::~access_tracker() {
  *
  * \ingroup context
  *
- * This can be used in the implementation of an access factory (see
- * `tcspc::access_tracker::register_access_factory()`).
+ * This can be used in the implementation of an accessor factory (see
+ * `tcspc::access_tracker::register_accessor_factory()`).
  *
  * \hideinitializer
  *

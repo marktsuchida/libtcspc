@@ -20,18 +20,18 @@
 namespace tcspc {
 
 /**
- * \brief Access for `tcspc::record_abstime_range()` processor data.
+ * \brief Accessor for `tcspc::record_abstime_range()` processor data.
  *
- * \ingroup context-access
+ * \ingroup accessors
  */
-template <typename Abstime> class record_abstime_range_access {
+template <typename Abstime> class record_abstime_range_accessor {
     std::function<std::optional<Abstime>()> min_fn;
     std::function<std::optional<Abstime>()> max_fn;
 
   public:
     /** \private */
     template <typename FMin, typename FMax>
-    explicit record_abstime_range_access(FMin min_func, FMax max_func)
+    explicit record_abstime_range_accessor(FMin min_func, FMax max_func)
         : min_fn(min_func), max_fn(max_func) {}
 
     /**
@@ -59,17 +59,17 @@ class record_abstime_range {
     Downstream downstream;
 
     // Cold data after downstream.
-    access_tracker<record_abstime_range_access<abstime_type>> trk;
+    access_tracker<record_abstime_range_accessor<abstime_type>> trk;
 
   public:
     explicit record_abstime_range(
-        access_tracker<record_abstime_range_access<abstime_type>> &&tracker,
+        access_tracker<record_abstime_range_accessor<abstime_type>> &&tracker,
         Downstream downstream)
         : downstream(std::move(downstream)), trk(std::move(tracker)) {
-        trk.register_access_factory([](auto &tracker) {
+        trk.register_accessor_factory([](auto &tracker) {
             auto *self = LIBTCSPC_OBJECT_FROM_TRACKER(record_abstime_range,
                                                       trk, tracker);
-            return record_abstime_range_access<abstime_type>(
+            return record_abstime_range_accessor<abstime_type>(
                 [self] { return self->mn; }, [self] { return self->mx; });
         });
     }
@@ -111,7 +111,7 @@ class record_abstime_range {
  * event's `abstime` field type must match `NumericTraits::abstime_type`.
  *
  * The minimum and maximum can be retrieved through a
- * `tcspc::record_abstime_range_access` retrieved from the `tcspc::context`
+ * `tcspc::record_abstime_range_accessor` retrieved from the `tcspc::context`
  * from which \p tracker was obtained. Each is empty (`std::nullopt`) until an
  * abstime-stamped event has been observed.
  *
@@ -131,7 +131,7 @@ class record_abstime_range {
  * - Flush: pass through with no action
  */
 template <typename NumericTraits = default_numeric_traits, typename Downstream>
-auto record_abstime_range(access_tracker<record_abstime_range_access<
+auto record_abstime_range(access_tracker<record_abstime_range_accessor<
                               typename NumericTraits::abstime_type>> &&tracker,
                           Downstream downstream) {
     return internal::record_abstime_range<NumericTraits, Downstream>(
