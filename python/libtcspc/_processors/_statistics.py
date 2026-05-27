@@ -149,3 +149,79 @@ class RecordAbstimeRange(_TypePreservingRelayNode):
                 {downstream}
             )"""
         )
+
+
+@final
+class RecordLast(_TypePreservingRelayNode):
+    """Processor that remembers the last event of a given type.
+
+    A copy of the last event of type ``event_type`` that passed through can
+    be retrieved at any time during execution via the `RecordLastAccess`
+    retrieved from the `ExecutionContext` using ``access_tag``. It is
+    ``None`` until an event of that type has been observed.
+
+    Parameters
+    ----------
+    event_type : EventType
+        The event type to remember. Must be an event type that supports
+        value conversion (so that the recorded event can be delivered to
+        Python as an `EventInstance`).
+    access_tag : AccessTag
+        Tag used to retrieve a `RecordLastAccess` from the
+        `ExecutionContext` at runtime.
+
+    Notes
+    -----
+    Events handled:
+
+    - Events matching ``event_type``: retain a copy, then pass through.
+    - All other event types: pass through unchanged.
+    - End of input: pass through.
+
+    See Also
+    --------
+    :cpp:`tcspc::record_last`
+        The underlying C++ factory function.
+    """
+
+    def __init__(self, event_type: EventType, access_tag: AccessTag) -> None:
+        if not event_type._supports_value():
+            raise TypeError(
+                f"event type {type(event_type).__name__} "
+                f"({event_type._cpp_type_name()}) is not supported by "
+                "RecordLast because its value cannot be retrieved from "
+                "Python (it does not define convertible fields)."
+            )
+        self._event_type = event_type
+        self._access_tag = access_tag
+
+    @override
+    def _value_event_types(self) -> Sequence[EventType]:
+        return (self._event_type,)
+
+    @override
+    def _accesses(
+        self,
+    ) -> Sequence[tuple[AccessTag, _AccessSpec]]:
+        return (
+            (
+                self._access_tag,
+                _access._RecordLastAccessSpec(self._event_type),
+            ),
+        )
+
+    @override
+    def _relay_cpp_expression(
+        self,
+        gencontext: _CodeGenerationContext,
+        downstream: _CppExpression,
+    ) -> _CppExpression:
+        event_cpp = self._event_type._cpp_type_name()
+        access_type = _CppTypeName(f"tcspc::record_last_access<{event_cpp}>")
+        return _CppExpression(
+            f"""\
+            tcspc::record_last<{event_cpp}>(
+                {gencontext.tracker_expression(access_type, self._access_tag)},
+                {downstream}
+            )"""
+        )

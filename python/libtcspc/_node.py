@@ -40,6 +40,10 @@ class Node(_Accessible, _Parameterized):
     _inputs: tuple[str, ...] = ("input",)  # Default: single input
     _outputs: tuple[str, ...] = ("output",)  # Default: single output
 
+    def _value_event_types(self) -> Sequence[EventType]:
+        """Event types needing a value wrapper for access-based retrieval."""
+        return ()
+
     def __init__(
         self,
         *,

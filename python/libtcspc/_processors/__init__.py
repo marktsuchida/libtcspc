@@ -45,7 +45,7 @@ from ._input_output import (
 )
 from ._merging import Merge, MergeN, MergeNUnsorted
 from ._pairing import PairAll, PairAllBetween, PairOne, PairOneBetween
-from ._statistics import Count, RecordAbstimeRange
+from ._statistics import Count, RecordAbstimeRange, RecordLast
 from ._stopping import Stop, StopWithError
 from ._testing import SinkOnly
 from ._time_correlation import (
@@ -119,6 +119,7 @@ __all__ = [
     "ReadBinaryStream",
     "RebaseAbstime",
     "RecordAbstimeRange",
+    "RecordLast",
     "RecoverOrder",
     "RegulateTimeReached",
     "RemoveTimeCorrelation",

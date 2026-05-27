@@ -5,7 +5,7 @@
 from abc import ABC, abstractmethod
 from collections.abc import Sequence
 from dataclasses import dataclass
-from typing import Protocol
+from typing import TYPE_CHECKING, Protocol
 
 from typing_extensions import override
 
@@ -17,6 +17,9 @@ from ._cpp_utils import (
     _ModuleCodeFragment,
 )
 from ._numeric_traits import NumericTraits
+
+if TYPE_CHECKING:
+    from ._events import EventInstance, EventType
 
 
 class _AccessSpec(ABC):
@@ -150,6 +153,31 @@ class _RecordAbstimeRangeAccessSpec(_AccessSpec):
         )
 
 
+class _RecordLastAccessSpec(_AccessSpec):
+    def __init__(self, event_type: "EventType") -> None:
+        self._event_type = event_type
+
+    @override
+    def _cpp_type_name(self) -> _CppTypeName:
+        return _CppTypeName(
+            f"tcspc::record_last_access<{self._event_type._cpp_type_name()}>"
+        )
+
+    @override
+    def cpp_methods(self) -> Sequence[_CppIdentifier]:
+        return (_CppIdentifier("get"),)
+
+    @override
+    def py_class_name(self) -> str:
+        return "RecordLastAccess__" + _identifier_from_string(
+            str(self._event_type._cpp_type_name())
+        )
+
+    @override
+    def wraps_event_value(self) -> bool:
+        return True
+
+
 class Access(Protocol):
     """
     Base protocol for run-time access objects.
@@ -226,5 +254,21 @@ class RecordAbstimeRangeAccess(Access, Protocol):
         int or None
             The largest ``abstime`` of any abstime-stamped event observed,
             or ``None`` if no such event has been observed yet.
+        """
+        ...
+
+
+class RecordLastAccess(Access, Protocol):
+    """Run-time access object for a ``RecordLast`` processor."""
+
+    def get(self) -> "EventInstance | None":
+        """
+        Return the last recorded event.
+
+        Returns
+        -------
+        EventInstance or None
+            A copy of the last event of the recorded type that passed
+            through, or ``None`` if no such event has been observed yet.
         """
         ...

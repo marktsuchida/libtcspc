@@ -715,6 +715,15 @@ class Graph:
 
         return accesses
 
+    def _value_event_types(self) -> Sequence[EventType]:
+        types: list[EventType] = []
+
+        def visit(node_name: str, node: Node):
+            types.extend(node._value_event_types())
+
+        self._visit_nodes(visit)
+        return types
+
 
 @final
 class Subgraph(Node):
@@ -778,6 +787,10 @@ class Subgraph(Node):
     @override
     def _accesses(self) -> Sequence[tuple[AccessTag, _AccessSpec]]:
         return self._graph._accesses()
+
+    @override
+    def _value_event_types(self) -> Sequence[EventType]:
+        return self._graph._value_event_types()
 
     @override
     def _cpp_expression(

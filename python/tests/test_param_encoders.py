@@ -47,6 +47,7 @@ class _FakeCompiledGraph:
         self._param_encoders = encoders
         self._eventtype_by_wrapper: dict[type, Any] = {}
         self._wrapper_by_cpp: dict[str, Any] = {}
+        self._access_specs: dict[str, Any] = {}
 
     def parameters(self) -> tuple[Param, ...]:
         return self._params
@@ -61,7 +62,7 @@ def test_encoder_applied_to_given_argument():
         (p,),
         {"ci": lambda m: [(int(c), int(i)) for c, i in dict(m).items()]},
     )
-    _, _, params, _, _ = _build_execution(
+    _, _, params, _, _, _, _ = _build_execution(
         cast(CompiledGraph, cg), {"ci": {0: 1, 5: 0}}, None
     )
     assert getattr(params, p._cpp_identifier()) == [(0, 1), (5, 0)]
@@ -73,14 +74,16 @@ def test_encoder_applied_to_default_value():
         (p,),
         {"ci": lambda m: [(int(c), int(i)) for c, i in dict(m).items()]},
     )
-    _, _, params, _, _ = _build_execution(cast(CompiledGraph, cg), None, None)
+    _, _, params, _, _, _, _ = _build_execution(
+        cast(CompiledGraph, cg), None, None
+    )
     assert getattr(params, p._cpp_identifier()) == [(0, 1)]
 
 
 def test_value_passed_through_when_no_encoder():
     p: Param = Param("n")
     cg = _FakeCompiledGraph((p,), {})
-    _, _, params, _, _ = _build_execution(
+    _, _, params, _, _, _, _ = _build_execution(
         cast(CompiledGraph, cg), {"n": 42}, None
     )
     assert getattr(params, p._cpp_identifier()) == 42

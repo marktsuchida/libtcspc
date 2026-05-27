@@ -329,6 +329,7 @@ Processors for collecting statistics.
 
    libtcspc.Count
    libtcspc.RecordAbstimeRange
+   libtcspc.RecordLast
 ```
 
 ## Testing processors

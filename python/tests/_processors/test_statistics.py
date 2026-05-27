@@ -3,6 +3,7 @@
 # SPDX-License-Identifier: MIT
 
 import numpy as np
+import pytest
 from _test_helpers import _NamedEvent
 from libtcspc import Graph
 from libtcspc._access import AccessTag, _CountAccessSpec
@@ -15,7 +16,11 @@ from libtcspc._cpp_utils import (
     _CppTypeName,
     _uint32_type,
 )
-from libtcspc._events import BucketEvent, DetectionEvent
+from libtcspc._events import (
+    BucketEvent,
+    DetectionEvent,
+    TimeCorrelatedDetectionEvent,
+)
 from libtcspc._execute import ExecutionContext
 from libtcspc._numeric_traits import NumericTraits
 from libtcspc._param import Param
@@ -23,6 +28,9 @@ from libtcspc._processors import (
     Acquire,
     Count,
     RecordAbstimeRange,
+    RecordLast,
+    RemoveTimeCorrelation,
+    SelectNone,
     SinkAll,
 )
 from typing_extensions import override
@@ -140,4 +148,57 @@ def test_RecordAbstimeRange_with_custom_numeric_traits():
     ctx.handle(det.value(abstime=7, channel=1))
     assert ctx.access(tag).min() == 7
     assert ctx.access(tag).max() == 7
+    ctx.flush()
+
+
+def test_RecordLast_rejects_non_value_event_type():
+    with pytest.raises(TypeError):
+        RecordLast(_NamedEvent(_CppTypeName("int")), AccessTag("r"))
+
+
+def test_RecordLast_codegen_calls_tcspc_record_last():
+    det = DetectionEvent()
+    node = RecordLast(det, AccessTag("r"))
+    code = node._cpp_expression(gencontext, [_CppExpression("DOWN")])
+    assert f"tcspc::record_last<{det._cpp_type_name()}>(" in code
+    assert "DOWN" in code
+    assert (
+        f'ctx->tracker<tcspc::record_last_access<{det._cpp_type_name()}>>("r")'
+        in code
+    )
+
+
+def test_RecordLast_access_returns_last_event():
+    tag = AccessTag("r")
+    det = DetectionEvent()
+    g = Graph()
+    g.add_node("rec", RecordLast(det, tag))
+    g.add_node("sink", SinkAll(), upstream="rec")
+    cg = CompiledGraph(g, (det,))
+    ctx = ExecutionContext(cg)
+    assert ctx.access(tag).get() is None
+    ctx.handle(det.value(abstime=10, channel=2))
+    assert ctx.access(tag).get() == det.value(abstime=10, channel=2)
+    ctx.handle(det.value(abstime=20, channel=3))
+    assert ctx.access(tag).get() == det.value(abstime=20, channel=3)
+    ctx.flush()
+
+
+def test_RecordLast_records_internal_only_event_type():
+    # The recorded type appears only on an internal edge (it is neither the
+    # graph input nor reaches any sink), so its value wrapper must be
+    # generated via the _value_event_types hook.
+    tag = AccessTag("r")
+    tcde = TimeCorrelatedDetectionEvent()
+    det = DetectionEvent()
+    g = Graph()
+    g.add_node("rm", RemoveTimeCorrelation())
+    g.add_node("rec", RecordLast(det, tag), upstream="rm")
+    g.add_node("sel", SelectNone(), upstream="rec")
+    g.add_node("sink", SinkAll(), upstream="sel")
+    cg = CompiledGraph(g, (tcde,))
+    ctx = ExecutionContext(cg)
+    assert ctx.access(tag).get() is None
+    ctx.handle(tcde.value(abstime=42, channel=2, difftime=7))
+    assert ctx.access(tag).get() == det.value(abstime=42, channel=2)
     ctx.flush()

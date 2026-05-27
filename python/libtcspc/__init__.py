@@ -8,6 +8,7 @@ from ._access import (
     AcquireAccess,
     CountAccess,
     RecordAbstimeRangeAccess,
+    RecordLastAccess,
     UniqueBinMapperAccess,
 )
 from ._acquisition_readers import (
@@ -141,6 +142,7 @@ from ._processors import (
     ReadBinaryStream,
     RebaseAbstime,
     RecordAbstimeRange,
+    RecordLast,
     RecoverOrder,
     RegulateTimeReached,
     RemoveTimeCorrelation,
@@ -319,6 +321,8 @@ __all__ = [
     "RebaseAbstime",
     "RecordAbstimeRange",
     "RecordAbstimeRangeAccess",
+    "RecordLast",
+    "RecordLastAccess",
     "RecoverOrder",
     "RecyclingBucketSource",
     "RegulateTimeReached",

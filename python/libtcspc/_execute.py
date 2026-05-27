@@ -3,16 +3,16 @@
 # SPDX-License-Identifier: MIT
 
 from abc import ABC, abstractmethod
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from contextlib import contextmanager
 from typing import Any, final
 
 from typing_extensions import override
 
-from ._access import AccessTag
+from ._access import AccessTag, _AccessSpec
 from ._compile import CompiledGraph
 from ._cpp_utils import _CppIdentifier
-from ._events import EventInstance
+from ._events import EventInstance, EventType
 
 
 class PySink(ABC):
@@ -56,6 +56,38 @@ class PySink(ABC):
         ...
 
 
+def _wrapper_to_event_instance(
+    wrapper: Any, wrappers: dict[type, tuple[EventType, list[str]]]
+) -> EventInstance:
+    # Convert a generated event-wrapper instance delivered by the compiled
+    # module into an EventInstance, using the wrapper -> (EventType, field
+    # names) correspondence. The wrapper's type must be present in 'wrappers'.
+    event_type, field_names = wrappers[type(wrapper)]
+    return EventInstance(
+        event_type, {n: getattr(wrapper, n) for n in field_names}
+    )
+
+
+@final
+class _RecordLastAccess:
+    # Wraps the raw nanobind record_last_access so that get() yields an
+    # EventInstance (or None) instead of the generated wrapper class. Reuses
+    # the same wrapper -> (EventType, field names) map as the sink path. The
+    # raw access also keeps the processor alive, so retaining it here is
+    # sufficient.
+    def __init__(
+        self, raw: Any, wrappers: dict[type, tuple[EventType, list[str]]]
+    ) -> None:
+        self._raw = raw
+        self._wrappers = wrappers
+
+    def get(self) -> EventInstance | None:
+        w = self._raw.get()
+        if w is None:
+            return None
+        return _wrapper_to_event_instance(w, self._wrappers)
+
+
 class EndOfProcessing(Exception):
     """
     Exception raised when processing finished without error, but for a reason
@@ -71,7 +103,15 @@ def _build_execution(
     compiled_graph: CompiledGraph,
     arguments: dict[str, Any] | None,
     downstreams: Sequence[PySink] | None,
-) -> tuple[Any, Any, Any, set[str], dict[str, tuple[type, list[str]]]]:
+) -> tuple[
+    Any,
+    Any,
+    Any,
+    set[str],
+    dict[str, tuple[type, list[str]]],
+    dict[type, tuple[EventType, list[str]]],
+    Mapping[str, _AccessSpec],
+]:
     given_args = {} if arguments is None else arguments.copy()
     encoders = compiled_graph._param_encoders
     args: dict[_CppIdentifier, Any] = {}
@@ -104,12 +144,8 @@ def _build_execution(
 
         @override
         def handle(self, event):
-            conv = wrapper_to_event.get(type(event))
-            if conv is not None:
-                event_type, field_names = conv
-                event = EventInstance(
-                    event_type, {n: getattr(event, n) for n in field_names}
-                )
+            if type(event) in wrapper_to_event:
+                event = _wrapper_to_event_instance(event, wrapper_to_event)
             self._sink.handle(event)
 
         @override
@@ -133,6 +169,8 @@ def _build_execution(
         processor,
         accesses,
         compiled_graph._wrapper_by_cpp,
+        compiled_graph._eventtype_by_wrapper,
+        compiled_graph._access_specs,
     )
 
 
@@ -164,6 +202,8 @@ class ExecutionContext:
             self._proc,
             self._accesses,
             self._input_wrappers,
+            self._output_wrappers,
+            self._access_specs,
         ) = _build_execution(compiled_graph, arguments, downstreams)
         self._end_of_life_reason: str | None = None
 
@@ -185,7 +225,10 @@ class ExecutionContext:
         """
         if tag.tag not in self._accesses:
             raise ValueError(f"no such access tag: {tag.tag}")
-        return getattr(self._ctx, tag._context_method_name())(self._proc)
+        raw = getattr(self._ctx, tag._context_method_name())(self._proc)
+        if self._access_specs[tag.tag].wraps_event_value():
+            return _RecordLastAccess(raw, self._output_wrappers)
+        return raw
 
     @contextmanager
     def _manage_processor_end_of_life(self):

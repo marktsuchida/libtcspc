@@ -105,6 +105,7 @@ def _param_struct(
 def _event_wrappers(
     input_event_types: Iterable[EventType],
     output_event_sets: Iterable[Iterable[EventType]],
+    extra_value_event_types: Iterable[EventType],
     module_var: _CppIdentifier,
 ) -> tuple[_ModuleCodeFragment, list[tuple[EventType, str]]]:
     by_cpp: dict[str, EventType] = {}
@@ -115,6 +116,9 @@ def _event_wrappers(
         for et in eset:
             if et._supports_value():
                 by_cpp.setdefault(str(et._cpp_type_name()), et)
+    for et in extra_value_event_types:
+        if et._supports_value():
+            by_cpp.setdefault(str(et._cpp_type_name()), et)
     defs = tuple(
         et._cpp_wrapper_class_def(module_var) for et in by_cpp.values()
     )
@@ -467,7 +471,10 @@ def _graph_module_code(
         context_code = _context_type(graph._accesses(), mod_var)
 
         wrappers, wrapper_correspondence = _event_wrappers(
-            input_event_types, output_event_types, mod_var
+            input_event_types,
+            output_event_types,
+            graph._value_event_types(),
+            mod_var,
         )
 
         proc_code = _processor_creation(
@@ -551,6 +558,7 @@ def _compile_graph_module(
     tuple[Param, ...],
     Mapping[str, Callable[[Any], Any]],
     tuple[AccessTag, ...],
+    Mapping[str, _AccessSpec],
     list[tuple[EventType, Any]],
 ]:
     # Serialize builds, at least for now.
@@ -564,11 +572,12 @@ def _compile_graph_module(
         mod = _importer.import_module(mod_name, mod_path, ok_to_move=True)
         params = tuple(param for param, typ in graph._parameters())
         encoders = graph._param_encoders()
-        accesses = tuple(tag for tag, typ in graph._accesses())
+        accesses = tuple(tag for tag, spec in graph._accesses())
+        access_specs = {tag.tag: spec for tag, spec in graph._accesses()}
         wrappers = [
             (et, getattr(mod, name)) for et, name in wrapper_correspondence
         ]
-        return mod, params, encoders, accesses, wrappers
+        return mod, params, encoders, accesses, access_specs, wrappers
 
 
 class CompiledGraph:
@@ -594,6 +603,7 @@ class CompiledGraph:
             self._params,
             self._param_encoders,
             self._access_tags,
+            self._access_specs,
             wrappers,
         ) = _compile_graph_module(graph, input_event_types)
 
