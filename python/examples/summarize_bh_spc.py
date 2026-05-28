@@ -2,6 +2,7 @@
 # Copyright 2019-2026 Board of Regents of the University of Wisconsin System
 # SPDX-License-Identifier: MIT
 
+import argparse
 import sys
 from typing import Any
 
@@ -69,8 +70,7 @@ def histogram_branch(
     ]
 
 
-def summarize(filename: str) -> int:
-    print("Creating processing graph...", file=sys.stderr)
+def build_graph() -> tcspc.Graph:
     g = tcspc.Graph()
     g.add_chain(
         [
@@ -114,6 +114,12 @@ def summarize(filename: str) -> int:
         histogram_branch(tcspc.MarkerEvent(numtraits), 4, 3),
         upstream=("bcast", "output-1"),
     )
+    return g
+
+
+def summarize(filename: str) -> int:
+    print("Creating processing graph...", file=sys.stderr)
+    g = build_graph()
 
     ret = 0
     print("Compiling processing graph...", file=sys.stderr)
@@ -154,10 +160,24 @@ def summarize(filename: str) -> int:
 
 
 def main() -> int:
-    if len(sys.argv) != 2:
-        print("A single argument (the filename) is required", file=sys.stderr)
+    p = argparse.ArgumentParser()
+    p.add_argument(
+        "--dump-graph",
+        action="store_true",
+        help="emit the processing graph to standard output in Graphviz dot "
+        "format and exit; does not process input",
+    )
+    p.add_argument("filename", nargs="?", default=None)
+    args = p.parse_args()
+
+    if args.dump_graph:
+        print(build_graph().to_graphviz())
+        return 0
+
+    if args.filename is None:
+        print("filename is required", file=sys.stderr)
         return 2
-    return summarize(sys.argv[1])
+    return summarize(args.filename)
 
 
 if __name__ == "__main__":

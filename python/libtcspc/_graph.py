@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: MIT
 
 import itertools
-from collections.abc import Callable, Collection, Mapping, Sequence
+from collections.abc import Callable, Collection, Iterable, Mapping, Sequence
 from copy import deepcopy
 from dataclasses import dataclass
 from typing import Any, final
@@ -487,6 +487,59 @@ class Graph:
         for name, node in self._nodes:
             visitor(name, node)
 
+    def to_graphviz(self, *, flatten: bool = False) -> str:
+        """
+        Return a Graphviz DOT representation of the graph for visualization.
+
+        The output is intended for debugging and visualization only. **The
+        exact format is not stable** and should not be consumed
+        programmatically.
+
+        Nodes correspond 1:1 to the Python `Node` objects in the graph;
+        any expansion that occurs during C++ code generation is not
+        reflected. Partially-built graphs (unconnected ports, etc.) are
+        supported — no validation is performed.
+
+        Parameters
+        ----------
+        flatten : bool, optional
+            If ``False`` (the default), each `Subgraph` is rendered as a
+            Graphviz ``cluster_…`` subgraph surrounding its inner nodes.
+            If ``True``, `Subgraph` boundaries are not drawn and inner
+            nodes appear directly in their containing graph.
+
+        Returns
+        -------
+        str
+            A complete ``digraph { ... }`` block in Graphviz DOT format.
+        """
+        from ._graphviz import to_graphviz as _to_graphviz
+
+        return _to_graphviz(self, flatten=flatten)
+
+    def _iter_nodes(self) -> Iterable[tuple[str, Node]]:
+        for node_id in self._topo_sorted_node_ids:
+            yield self._nodes[node_id]
+
+    def _iter_edges(self) -> Iterable[tuple[str, str, str, str]]:
+        for node_id in self._topo_sorted_node_ids:
+            prod_name, prod_node = self._nodes[node_id]
+            prod_ports = prod_node.outputs()
+            for i, edge in enumerate(self._output_edge_index[node_id]):
+                if edge is None:
+                    continue
+                cons_name, cons_node = self._nodes[edge.consumer_id]
+                cons_port_index = self._input_edge_index[
+                    edge.consumer_id
+                ].index(edge)
+                cons_ports = cons_node.inputs()
+                yield (
+                    prod_name,
+                    prod_ports[i],
+                    cons_name,
+                    cons_ports[cons_port_index],
+                )
+
     def _inputs(self) -> tuple[tuple[int, int], ...]:
         result: list[tuple[int, int]] = []
         for node_id in range(len(self._nodes)):
@@ -769,6 +822,14 @@ class Subgraph(Node):
 
     def graph(self) -> Graph:
         return self._graph
+
+    def _input_target(self, port: str) -> tuple[str, str]:
+        i = self.inputs().index(port)
+        return self._graph.inputs()[i]
+
+    def _output_source(self, port: str) -> tuple[str, str]:
+        i = self.outputs().index(port)
+        return self._graph.outputs()[i]
 
     @override
     def _map_event_sets(

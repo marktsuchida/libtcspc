@@ -182,7 +182,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     p.add_argument(
         "--pixel-time",
         type=_positive_int,
-        required=True,
+        default=None,
         help="pixel time in macrotime units",
     )
     p.add_argument(
@@ -207,8 +207,14 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         action="store_true",
         help="overwrite output_file if it exists",
     )
-    p.add_argument("input_file")
-    p.add_argument("output_file")
+    p.add_argument(
+        "--dump-graph",
+        action="store_true",
+        help="do not process input; instead emit the processing graph to "
+        "standard output in Graphviz dot format",
+    )
+    p.add_argument("input_file", nargs="?", default=None)
+    p.add_argument("output_file", nargs="?", default=None)
     return p.parse_args(argv)
 
 
@@ -222,6 +228,22 @@ def _unlink_if_empty(path: str) -> None:
 
 
 def run(args: argparse.Namespace) -> int:
+    if not args.dump_graph and (
+        args.pixel_time is None
+        or args.input_file is None
+        or args.output_file is None
+    ):
+        print(
+            "--pixel-time, input_file, and output_file are required",
+            file=sys.stderr,
+        )
+        return 2
+
+    if args.dump_graph:
+        g = build_graph(args.channel, args.width, args.height, args.sum)
+        print(g.to_graphviz())
+        return 0
+
     print("Creating processing graph...", file=sys.stderr)
     g = build_graph(args.channel, args.width, args.height, args.sum)
 

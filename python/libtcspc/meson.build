@@ -28,6 +28,7 @@ py_sources = files(
     '_events.py',
     '_execute.py',
     '_graph.py',
+    '_graphviz.py',
     '_include.py',
     '_matchers.py',
     '_node.py',
