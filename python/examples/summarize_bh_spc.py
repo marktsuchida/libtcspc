@@ -3,20 +3,74 @@
 # SPDX-License-Identifier: MIT
 
 import sys
+from typing import Any
 
 import libtcspc as tcspc
 import numpy as np
 
 RECORD_COUNT_TAG = tcspc.AccessTag("count-records")
-PHOTON_COUNT_TAG = tcspc.AccessTag("count-phot")
-MARK_COUNT_TAG = tcspc.AccessTag("count-mark")
+TIMES_TAG = tcspc.AccessTag("times")
+
+# BH SPC has no negative channel or marker numbers.
+numtraits = tcspc.NumericTraits(channel_type=np.uint32)
+
+# Numeric traits for the summary histograms: a wide bin type so counts cannot
+# overflow, and a datapoint type wide enough to hold the channel.
+summary_traits = tcspc.NumericTraits(
+    channel_type=np.uint32, datapoint_type=np.uint32, bin_type=np.uint64
+)
+
+# Trivial event used to inject a reset (to conclude the histograms) on flush.
+reset = tcspc.CustomEvent("reset_event")
+
+
+class _LastBucketSink(tcspc.PySink):
+    # Stores a copy of the last bucket received as a NumPy array. Buckets are
+    # delivered as a zero-copy view, so the copy is required to keep the data
+    # past the handle() call.
+    def __init__(self) -> None:
+        self.last: np.ndarray | None = None
+
+    def handle(self, event: Any) -> None:
+        self.last = np.copy(event)
+
+    def flush(self) -> None:
+        pass
+
+
+def histogram_branch(
+    event_type: tcspc.EventType, num_bins: int, max_bin_index: int
+) -> list[tcspc.Node]:
+    # One broadcast branch: map the event's channel to a datapoint, bin it
+    # one-to-one, and accumulate a histogram concluded on flush (via the
+    # appended reset). The concluded bins are extracted as a NumPy bucket.
+    return [
+        tcspc.MapToDatapoints(
+            event_type,
+            tcspc.ChannelDataMapper(summary_traits),
+            summary_traits,
+        ),
+        tcspc.MapToBins(
+            tcspc.LinearBinMapper(
+                0, 1, max_bin_index, numeric_traits=summary_traits
+            ),
+            summary_traits,
+        ),
+        tcspc.Append(reset.value()),
+        tcspc.Histogram(
+            num_bins,
+            2**64 - 1,
+            reset,
+            emit_concluding=True,
+            numeric_traits=summary_traits,
+        ),
+        tcspc.Select(tcspc.ConcludingHistogramEvent(summary_traits)),
+        tcspc.ExtractBucket(tcspc.ConcludingHistogramEvent(summary_traits)),
+    ]
 
 
 def summarize(filename: str) -> int:
-    print("Creating processing graph...")
-    # BH SPC has no negative channel or marker numbers.
-    numtraits = tcspc.NumericTraits(channel_type=np.uint32)
-
+    print("Creating processing graph...", file=sys.stderr)
     g = tcspc.Graph()
     g.add_chain(
         [
@@ -33,21 +87,42 @@ def summarize(filename: str) -> int:
                 (tcspc.WarningEvent(), tcspc.DataLostEvent(numtraits)),
                 "error in data",
             ),
-            tcspc.Count(
-                tcspc.TimeCorrelatedDetectionEvent(numtraits),
-                PHOTON_COUNT_TAG,
-            ),
-            tcspc.Count(tcspc.MarkerEvent(numtraits), MARK_COUNT_TAG),
-            # Simplified for now compared to the C++ example (no per-channel
-            # counts and time range).
-            tcspc.SinkAll(),
+            ("times", tcspc.RecordAbstimeRange(TIMES_TAG, numtraits)),
         ]
+    )
+    # Broadcast has two outputs, so it cannot be the last node of add_chain.
+    g.add_node(
+        "bcast",
+        tcspc.Broadcast(
+            tcspc.TimeCorrelatedDetectionEvent(numtraits),
+            tcspc.MarkerEvent(numtraits),
+            tcspc.TimeReachedEvent(numtraits),
+            outputs=2,
+        ),
+        upstream="times",
+    )
+    # The two unconnected branch outputs become the graph's output ports and
+    # map positionally to the downstreams tuple, in the order added: photons
+    # first, then markers.
+    g.add_chain(
+        histogram_branch(
+            tcspc.TimeCorrelatedDetectionEvent(numtraits), 16, 15
+        ),
+        upstream=("bcast", "output-0"),
+    )
+    g.add_chain(
+        histogram_branch(tcspc.MarkerEvent(numtraits), 4, 3),
+        upstream=("bcast", "output-1"),
     )
 
     ret = 0
     print("Compiling processing graph...", file=sys.stderr)
     cg = tcspc.CompiledGraph(g)
-    ctx = tcspc.ExecutionContext(cg, {"filename": filename})
+    photon_sink, marker_sink = _LastBucketSink(), _LastBucketSink()
+    ctx = tcspc.ExecutionContext(
+        cg, {"filename": filename}, (photon_sink, marker_sink)
+    )
+
     print("Processing...", file=sys.stderr)
     try:
         ctx.flush()
@@ -59,9 +134,22 @@ def summarize(filename: str) -> int:
         print(e, file=sys.stderr)
         return 2
 
-    print(f"Total record count = {ctx.access(RECORD_COUNT_TAG).count(): 9}")
-    print(f"Photon count =       {ctx.access(PHOTON_COUNT_TAG).count(): 9}")
-    print(f"Marker count =       {ctx.access(MARK_COUNT_TAG).count(): 9}")
+    last_time = ctx.access(TIMES_TAG).max()
+    print(
+        f"Relative time of last event: \t"
+        f"{last_time if last_time is not None else '(none)'}"
+    )
+    for i in range(16):
+        count = photon_sink.last[i] if photon_sink.last is not None else 0
+        print(f"route {i}: \t{count}")
+    for i in range(4):
+        count = marker_sink.last[i] if marker_sink.last is not None else 0
+        print(f"mark {i}: \t{count}")
+
+    print(
+        f"{ctx.access(RECORD_COUNT_TAG).count()} records decoded",
+        file=sys.stderr,
+    )
     return ret
 
 
