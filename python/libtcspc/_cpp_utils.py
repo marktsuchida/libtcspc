@@ -122,7 +122,7 @@ class _ModuleCodeFragment:
 # referenced through `_event_definitions_referenced_by` are content-addressed:
 # the same name always implies the same struct body within a process.
 @functools.cache
-def _is_same_type_impl(t0: _CppTypeName, t1: _CppTypeName) -> bool:
+def _same_type_by_compile_impl(t0: _CppTypeName, t1: _CppTypeName) -> bool:
     from ._events import _event_definitions_referenced_by
     from ._numeric_traits import _struct_definitions_referenced_by
 
@@ -152,17 +152,13 @@ def _is_same_type_impl(t0: _CppTypeName, t1: _CppTypeName) -> bool:
     )
 
 
-def _is_same_type(t0: _CppTypeName, t1: _CppTypeName) -> bool:
+def _same_type_by_compile(t0: _CppTypeName, t1: _CppTypeName) -> bool:
     if t0 == t1:
         return True
     # Always use ascending lexicographical order to minimize duplicate checks.
     if t0 > t1:
         t0, t1 = t1, t0
-    return _is_same_type_impl(t0, t1)
-
-
-def _contains_type(s: Iterable[_CppTypeName], t: _CppTypeName) -> bool:
-    return any(_is_same_type(t, t1) for t1 in s)
+    return _same_type_by_compile_impl(t0, t1)
 
 
 @dataclass(frozen=True)
@@ -173,11 +169,11 @@ class _TypeIdentity:
     object's ``_cpp_type_name()``); it is the ground-truth string handed to the
     compile-based fallback.
 
-    `ctor` records what we *positively know* about the outermost spelling: when
-    it is set, the type is written ``ctor<args...>`` (or just ``ctor`` for a
-    leaf) where ``ctor`` is a declared **non-alias** class/class-template — such
-    constructors are injective and cannot collapse into one another, so the
-    constructor and (recursively) the args fully determine the type. When `ctor`
+    `head` records what we *positively know* about the outermost spelling: when
+    it is set, the type is written ``head<args...>`` (or just ``head`` for a
+    leaf) where ``head`` is a declared **non-alias** class/class-template — such
+    type constructors are injective and cannot collapse into one another, so the
+    head and (recursively) the args fully determine the type. When `head`
     is ``None`` the type is *opaque*: we know nothing structural about it
     (member aliases, alias templates, bare scalars) and must defer to the
     compiler.
@@ -187,14 +183,14 @@ class _TypeIdentity:
     """
 
     cpp_name: _CppTypeName
-    ctor: str | None
+    head: str | None
     args: tuple["_TypeIdentity | str", ...]
 
 
-def _nominal(ctor: str, *args: "_TypeIdentity | str") -> "_TypeIdentity":
+def _nominal(head: str, *args: "_TypeIdentity | str") -> "_TypeIdentity":
     """Build a `_TypeIdentity` for a declared non-alias class (template).
 
-    The full canonical name is reconstructed from `ctor` and the args' own
+    The full canonical name is reconstructed from `head` and the args' own
     canonical spellings, so it stays in lockstep with the emitter's
     ``_cpp_type_name()``.
     """
@@ -202,44 +198,47 @@ def _nominal(ctor: str, *args: "_TypeIdentity | str") -> "_TypeIdentity":
         arg_names = ", ".join(
             a.cpp_name if isinstance(a, _TypeIdentity) else a for a in args
         )
-        cpp_name = _CppTypeName(f"{ctor}<{arg_names}>")
+        cpp_name = _CppTypeName(f"{head}<{arg_names}>")
     else:
-        cpp_name = _CppTypeName(ctor)
-    return _TypeIdentity(cpp_name=cpp_name, ctor=ctor, args=args)
+        cpp_name = _CppTypeName(head)
+    return _TypeIdentity(cpp_name=cpp_name, head=head, args=args)
 
 
-# Synthetic constructor token for a const-qualified type. It is injective
+# Synthetic head token for a const-qualified type. It is injective
 # (``X const`` == ``Y const`` iff ``X`` == ``Y``) and, not being a real C++ type
-# spelling, never collides with an actual class-template constructor.
-_CONST_CTOR = "const-qualified"
+# spelling, never collides with an actual class-template head.
+_CONST_HEAD = "const-qualified"
 
 
 def _const(inner: "_TypeIdentity") -> "_TypeIdentity":
     """Build a `_TypeIdentity` for ``inner const``."""
     return _TypeIdentity(
         cpp_name=_CppTypeName(f"{inner.cpp_name} const"),
-        ctor=_CONST_CTOR,
+        head=_CONST_HEAD,
         args=(inner,),
     )
 
 
-def _same_structural(a: "_TypeIdentity", b: "_TypeIdentity") -> bool | None:
-    """Decide type equality structurally, or ``None`` if a compile is needed.
+def _same_type_structural(
+    a: "_TypeIdentity", b: "_TypeIdentity"
+) -> bool | None:
+    """Decide type equality structurally; ``None`` means undecided — defer to
+    the compiler.
 
     Returns a definite ``True``/``False`` only when justified by declared
-    non-alias constructors (which never collapse and are injective); anything
-    not positively known routes to the compiler (``None``).
+    non-alias type constructors (which never collapse and are injective);
+    anything not positively known routes to the compiler (``None``).
     """
     if a.cpp_name == b.cpp_name:
         return True
-    if a.ctor is not None and b.ctor is not None:
-        if a.ctor != b.ctor:
+    if a.head is not None and b.head is not None:
+        if a.head != b.head:
             return False
         if len(a.args) != len(b.args):  # default-arg safety; never in codegen
             return None
         for x, y in zip(a.args, b.args, strict=False):
             if isinstance(x, _TypeIdentity) and isinstance(y, _TypeIdentity):
-                r = _same_structural(x, y)
+                r = _same_type_structural(x, y)
                 if r is None:  # opaque nested arg -> defer whole comparison
                     return None
                 if r is False:
@@ -254,8 +253,10 @@ def _same_structural(a: "_TypeIdentity", b: "_TypeIdentity") -> bool | None:
 
 
 def _same_type(a: "_TypeIdentity", b: "_TypeIdentity") -> bool:
-    r = _same_structural(a, b)
-    return r if r is not None else _is_same_type(a.cpp_name, b.cpp_name)
+    r = _same_type_structural(a, b)
+    return (
+        r if r is not None else _same_type_by_compile(a.cpp_name, b.cpp_name)
+    )
 
 
 def _contains_event_type(

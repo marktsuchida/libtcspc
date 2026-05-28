@@ -43,7 +43,7 @@ def _collecting_referenced_events() -> Iterator[dict[str, str]]:
 # Process-wide registry of every custom event struct definition ever produced.
 # Keyed by the content-addressed struct name, so duplicates collapse harmlessly
 # (like `_known_traits_definitions`). Used to resolve custom event names in
-# `_is_same_type` test compiles.
+# `_same_type_by_compile` test compiles.
 _known_event_definitions: dict[str, str] = {}
 
 _CPP_IDENTIFIER_PATTERN = re.compile(r"[A-Za-z_][A-Za-z0-9_]*")
@@ -79,12 +79,12 @@ class EventType(ABC):
     def _type_identity(self) -> _TypeIdentity:
         """Structural identity used for fast type comparison.
 
-        The default is *opaque* (``ctor=None``): comparisons fall back to the
+        The default is *opaque* (``head=None``): comparisons fall back to the
         compile-based ground truth. Subclasses that emit a canonically spelled
         non-alias class (template) override this to enable no-compile
         comparison.
         """
-        return _TypeIdentity(self._cpp_type_name(), ctor=None, args=())
+        return _TypeIdentity(self._cpp_type_name(), head=None, args=())
 
     def __repr__(self) -> str:
         return f"<{type(self).__name__}({self._cpp_type_name()})>"

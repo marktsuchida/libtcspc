@@ -20,7 +20,7 @@ from collections.abc import Callable
 
 import numpy as np
 from libtcspc import _events as E
-from libtcspc._cpp_utils import _run_cpp_prog, _same_structural
+from libtcspc._cpp_utils import _run_cpp_prog, _same_type_structural
 from libtcspc._events import _event_definitions_referenced_by
 from libtcspc._numeric_traits import (
     NumericTraits,
@@ -114,7 +114,7 @@ def test_structural_predictions_match_compiler():
     for (i, a), (j, b) in itertools.combinations_with_replacement(
         enumerate(ids), 2
     ):
-        r = _same_structural(a, b)
+        r = _same_type_structural(a, b)
         if r is None:  # opaque pair: handled by the compiler in normal use
             continue
         predicted = "true" if r else "false"

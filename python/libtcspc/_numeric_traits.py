@@ -59,7 +59,7 @@ def _collecting_referenced_traits() -> Iterator[dict[str, str]]:
 
 # Process-wide registry of all struct definitions ever produced. Keyed by the
 # content-addressed struct name, so duplicates collapse harmlessly. Used to
-# resolve `nt_<hash>` references in `_is_same_type` test compiles.
+# resolve `nt_<hash>` references in `_same_type_by_compile` test compiles.
 _known_traits_definitions: dict[str, str] = {}
 
 _NT_NAME_PATTERN = re.compile(r"\bnt_[0-9a-f]{16}\b")
@@ -169,5 +169,5 @@ class NumericTraits:
         # A leaf: distinct struct names (`nt_<hash>` / the default) are distinct
         # C++ types even with identical members, so name equality is sound.
         return _TypeIdentity(
-            self._struct_name, ctor=self._struct_name, args=()
+            self._struct_name, head=self._struct_name, args=()
         )
