@@ -515,9 +515,8 @@ def test_CustomEvent_repeated_identical_definition_ok():
 
 
 def test_CustomEvent_same_name_different_traits_distinct():
-    # Different custom traits give distinct types; comparing them exercises the
-    # `_is_same_type` test-compile (which must pull in the referenced trait
-    # struct definitions).
+    # Different custom traits give distinct content-addressed struct names, so
+    # the events are distinct types.
     a = tcspc.CustomEvent(
         "ce_diff_traits",
         abstime=True,

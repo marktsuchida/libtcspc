@@ -24,22 +24,20 @@ def _check_events_subset_of(
     allowed_events: Iterable[EventType],
     processor: str,
 ) -> None:
+    allowed = tuple(allowed_events)
     for t in input_events:
-        if not _cpp_utils._contains_type(
-            (u._cpp_type_name() for u in allowed_events), t._cpp_type_name()
-        ):
+        if not _cpp_utils._contains_event_type(allowed, t):
             raise ValueError(f"input type {t} not accepted by {processor}")
 
 
 def _remove_events_from_set(
     input_events: Iterable[EventType], events_to_remove: Iterable[EventType]
 ) -> tuple[EventType, ...]:
+    to_remove = tuple(events_to_remove)
     return tuple(
         t
         for t in input_events
-        if not _cpp_utils._contains_type(
-            (u._cpp_type_name() for u in events_to_remove), t._cpp_type_name()
-        )
+        if not _cpp_utils._contains_event_type(to_remove, t)
     )
 
 
@@ -64,9 +62,7 @@ def _with_event_added(
     input_events: Iterable[EventType], event: EventType
 ) -> tuple[EventType, ...]:
     events = tuple(input_events)
-    if _cpp_utils._contains_type(
-        (t._cpp_type_name() for t in events), event._cpp_type_name()
-    ):
+    if _cpp_utils._contains_event_type(events, event):
         return events
     return (*events, event)
 

@@ -90,8 +90,8 @@ class EventType(ABC):
         return f"<{type(self).__name__}({self._cpp_type_name()})>"
 
     def __eq__(self, other: object) -> bool:
-        return isinstance(other, EventType) and _cpp_utils._is_same_type(
-            self._cpp_type_name(), other._cpp_type_name()
+        return isinstance(other, EventType) and _cpp_utils._same_type(
+            self._type_identity(), other._type_identity()
         )
 
     def _cpp_input_handler(

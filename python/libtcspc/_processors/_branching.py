@@ -168,10 +168,7 @@ class Route(Node):
         self._router = router
 
         for b in self._broadcast:
-            if _cpp_utils._contains_type(
-                (r._cpp_type_name() for r in self._routed),
-                b._cpp_type_name(),
-            ):
+            if _cpp_utils._contains_event_type(self._routed, b):
                 raise ValueError(
                     f"event type {b} must not be both routed and broadcast"
                 )

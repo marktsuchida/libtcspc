@@ -138,10 +138,7 @@ class Select(_RelayNode):
         return tuple(
             t
             for t in input_event_set
-            if _cpp_utils._contains_type(
-                (u._cpp_type_name() for u in self._event_types),
-                t._cpp_type_name(),
-            )
+            if _cpp_utils._contains_event_type(self._event_types, t)
         )
 
     @override

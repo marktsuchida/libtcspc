@@ -156,10 +156,7 @@ class CountDownTo(_RelayNode):
         self, input_event_set: Collection[EventType]
     ) -> tuple[EventType, ...]:
         out = list(input_event_set)
-        if not _cpp_utils._contains_type(
-            (t._cpp_type_name() for t in out),
-            self._fire_event_type._cpp_type_name(),
-        ):
+        if not _cpp_utils._contains_event_type(out, self._fire_event_type):
             out.append(self._fire_event_type)
         return tuple(out)
 
@@ -277,10 +274,7 @@ class CountUpTo(_RelayNode):
         self, input_event_set: Collection[EventType]
     ) -> tuple[EventType, ...]:
         out = list(input_event_set)
-        if not _cpp_utils._contains_type(
-            (t._cpp_type_name() for t in out),
-            self._fire_event_type._cpp_type_name(),
-        ):
+        if not _cpp_utils._contains_event_type(out, self._fire_event_type):
             out.append(self._fire_event_type)
         return tuple(out)
 

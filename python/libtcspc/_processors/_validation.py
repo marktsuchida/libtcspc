@@ -60,10 +60,7 @@ class CheckAlternating(_RelayNode):
     def _relay_map_event_set(
         self, input_event_set: Collection[EventType]
     ) -> tuple[EventType, ...]:
-        if _cpp_utils._contains_type(
-            (t._cpp_type_name() for t in input_event_set),
-            WarningEvent()._cpp_type_name(),
-        ):
+        if _cpp_utils._contains_event_type(input_event_set, WarningEvent()):
             return tuple(input_event_set)
         return (*input_event_set, WarningEvent())
 
@@ -129,10 +126,7 @@ class CheckMonotonic(_RelayNode):
     def _relay_map_event_set(
         self, input_event_set: Collection[EventType]
     ) -> tuple[EventType, ...]:
-        if _cpp_utils._contains_type(
-            (t._cpp_type_name() for t in input_event_set),
-            WarningEvent()._cpp_type_name(),
-        ):
+        if _cpp_utils._contains_event_type(input_event_set, WarningEvent()):
             return tuple(input_event_set)
         return (*input_event_set, WarningEvent())
 
