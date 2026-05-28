@@ -13,6 +13,9 @@ from typing_extensions import Self
 
 from . import _include, _odext
 
+if typing.TYPE_CHECKING:
+    from ._events import EventType
+
 _builder = _odext.Builder(
     binary_type="executable",
     cpp_std="c++20",
@@ -160,6 +163,106 @@ def _is_same_type(t0: _CppTypeName, t1: _CppTypeName) -> bool:
 
 def _contains_type(s: Iterable[_CppTypeName], t: _CppTypeName) -> bool:
     return any(_is_same_type(t, t1) for t1 in s)
+
+
+@dataclass(frozen=True)
+class _TypeIdentity:
+    """Structural descriptor of a C++ type, used to decide type equality.
+
+    `cpp_name` is the full canonical type name (always equal to the emitting
+    object's ``_cpp_type_name()``); it is the ground-truth string handed to the
+    compile-based fallback.
+
+    `ctor` records what we *positively know* about the outermost spelling: when
+    it is set, the type is written ``ctor<args...>`` (or just ``ctor`` for a
+    leaf) where ``ctor`` is a declared **non-alias** class/class-template — such
+    constructors are injective and cannot collapse into one another, so the
+    constructor and (recursively) the args fully determine the type. When `ctor`
+    is ``None`` the type is *opaque*: we know nothing structural about it
+    (member aliases, alias templates, bare scalars) and must defer to the
+    compiler.
+
+    `args` are the template arguments: `_TypeIdentity` for type arguments and
+    plain ``str`` for canonical non-type literals (for example ``"2"``).
+    """
+
+    cpp_name: _CppTypeName
+    ctor: str | None
+    args: tuple["_TypeIdentity | str", ...]
+
+
+def _nominal(ctor: str, *args: "_TypeIdentity | str") -> "_TypeIdentity":
+    """Build a `_TypeIdentity` for a declared non-alias class (template).
+
+    The full canonical name is reconstructed from `ctor` and the args' own
+    canonical spellings, so it stays in lockstep with the emitter's
+    ``_cpp_type_name()``.
+    """
+    if args:
+        arg_names = ", ".join(
+            a.cpp_name if isinstance(a, _TypeIdentity) else a for a in args
+        )
+        cpp_name = _CppTypeName(f"{ctor}<{arg_names}>")
+    else:
+        cpp_name = _CppTypeName(ctor)
+    return _TypeIdentity(cpp_name=cpp_name, ctor=ctor, args=args)
+
+
+# Synthetic constructor token for a const-qualified type. It is injective
+# (``X const`` == ``Y const`` iff ``X`` == ``Y``) and, not being a real C++ type
+# spelling, never collides with an actual class-template constructor.
+_CONST_CTOR = "const-qualified"
+
+
+def _const(inner: "_TypeIdentity") -> "_TypeIdentity":
+    """Build a `_TypeIdentity` for ``inner const``."""
+    return _TypeIdentity(
+        cpp_name=_CppTypeName(f"{inner.cpp_name} const"),
+        ctor=_CONST_CTOR,
+        args=(inner,),
+    )
+
+
+def _same_structural(a: "_TypeIdentity", b: "_TypeIdentity") -> bool | None:
+    """Decide type equality structurally, or ``None`` if a compile is needed.
+
+    Returns a definite ``True``/``False`` only when justified by declared
+    non-alias constructors (which never collapse and are injective); anything
+    not positively known routes to the compiler (``None``).
+    """
+    if a.cpp_name == b.cpp_name:
+        return True
+    if a.ctor is not None and b.ctor is not None:
+        if a.ctor != b.ctor:
+            return False
+        if len(a.args) != len(b.args):  # default-arg safety; never in codegen
+            return None
+        for x, y in zip(a.args, b.args, strict=False):
+            if isinstance(x, _TypeIdentity) and isinstance(y, _TypeIdentity):
+                r = _same_structural(x, y)
+                if r is None:  # opaque nested arg -> defer whole comparison
+                    return None
+                if r is False:
+                    return False
+            elif isinstance(x, str) and isinstance(y, str):
+                if x != y:  # canonical non-type literal mismatch
+                    return False
+            else:
+                return None  # mixed kinds: defer
+        return True
+    return None
+
+
+def _same_type(a: "_TypeIdentity", b: "_TypeIdentity") -> bool:
+    r = _same_structural(a, b)
+    return r if r is not None else _is_same_type(a.cpp_name, b.cpp_name)
+
+
+def _contains_event_type(
+    events: "Iterable[EventType]", target: "EventType"
+) -> bool:
+    target_id = target._type_identity()
+    return any(_same_type(t._type_identity(), target_id) for t in events)
 
 
 def _quote_string(s: str) -> _CppExpression:

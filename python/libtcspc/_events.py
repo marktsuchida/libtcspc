@@ -13,12 +13,15 @@ from typing_extensions import override
 
 from . import _cpp_utils
 from ._cpp_utils import (
+    _const,
     _CppClassScopeDefs,
     _CppExpression,
     _CppFunctionScopeDefs,
     _CppIdentifier,
     _CppTypeName,
     _identifier_from_string,
+    _nominal,
+    _TypeIdentity,
 )
 from ._numeric_traits import NumericTraits
 
@@ -72,6 +75,16 @@ class EventType(ABC):
 
     @abstractmethod
     def _cpp_type_name(self) -> _CppTypeName: ...
+
+    def _type_identity(self) -> _TypeIdentity:
+        """Structural identity used for fast type comparison.
+
+        The default is *opaque* (``ctor=None``): comparisons fall back to the
+        compile-based ground truth. Subclasses that emit a canonically spelled
+        non-alias class (template) override this to enable no-compile
+        comparison.
+        """
+        return _TypeIdentity(self._cpp_type_name(), ctor=None, args=())
 
     def __repr__(self) -> str:
         return f"<{type(self).__name__}({self._cpp_type_name()})>"
@@ -346,6 +359,11 @@ class CustomEvent(EventType):
             self._traits._cpp_type_name()
         return self._struct_name
 
+    @override
+    def _type_identity(self) -> _TypeIdentity:
+        # Content-addressed leaf struct: distinct names are distinct types.
+        return _nominal(self._struct_name)
+
     def __repr__(self) -> str:
         return f"<CustomEvent({self._readable_name})>"
 
@@ -397,6 +415,10 @@ class BucketEvent(EventType):
         return _CppTypeName(
             f"tcspc::bucket<{self._element_type._cpp_type_name()}>"
         )
+
+    @override
+    def _type_identity(self) -> _TypeIdentity:
+        return _nominal("tcspc::bucket", self._element_type._type_identity())
 
     @override
     def _cpp_output_handlers(
@@ -515,6 +537,12 @@ class ConstBucketEvent(EventType):
         )
 
     @override
+    def _type_identity(self) -> _TypeIdentity:
+        return _nominal(
+            "tcspc::bucket", _const(self._element_type._type_identity())
+        )
+
+    @override
     def _cpp_input_handler(
         self, downstream: _CppIdentifier
     ) -> _CppClassScopeDefs:
@@ -587,6 +615,10 @@ class _ByteEvent(EventType):
     def _cpp_type_name(self) -> _CppTypeName:
         return _CppTypeName("std::byte")
 
+    @override
+    def _type_identity(self) -> _TypeIdentity:
+        return _nominal("std::byte")
+
 
 class _TraitsMemberEvent(EventType):
     """Internal placeholder for a `NumericTraits` member type.
@@ -647,6 +679,13 @@ class BeginLostIntervalEvent(EventType):
         )
 
     @override
+    def _type_identity(self) -> _TypeIdentity:
+        return _nominal(
+            "tcspc::begin_lost_interval_event",
+            self._numeric_traits._type_identity(),
+        )
+
+    @override
     def _fields(self) -> list[tuple[str, _CppTypeName]]:
         nt = self._numeric_traits._cpp_type_name()
         return [("abstime", _CppTypeName(f"{nt}::abstime_type"))]
@@ -672,6 +711,10 @@ class BHSPC600_256chEvent(EventType):
     def _cpp_type_name(self) -> _CppTypeName:
         return _CppTypeName("tcspc::bh_spc600_256ch_event")
 
+    @override
+    def _type_identity(self) -> _TypeIdentity:
+        return _nominal("tcspc::bh_spc600_256ch_event")
+
 
 class BHSPC600_4096chEvent(EventType):
     """Raw 48-bit FIFO record from Becker & Hickl SPC-600/630 in 4096-channel mode.
@@ -692,6 +735,10 @@ class BHSPC600_4096chEvent(EventType):
     @override
     def _cpp_type_name(self) -> _CppTypeName:
         return _CppTypeName("tcspc::bh_spc600_4096ch_event")
+
+    @override
+    def _type_identity(self) -> _TypeIdentity:
+        return _nominal("tcspc::bh_spc600_4096ch_event")
 
 
 class BHSPCEvent(EventType):
@@ -717,6 +764,10 @@ class BHSPCEvent(EventType):
     @override
     def _cpp_type_name(self) -> _CppTypeName:
         return _CppTypeName("tcspc::bh_spc_event")
+
+    @override
+    def _type_identity(self) -> _TypeIdentity:
+        return _nominal("tcspc::bh_spc_event")
 
 
 class BinIncrementClusterEvent(EventType):
@@ -754,6 +805,13 @@ class BinIncrementClusterEvent(EventType):
             f"tcspc::bin_increment_cluster_event<{self._numeric_traits._cpp_type_name()}>"
         )
 
+    @override
+    def _type_identity(self) -> _TypeIdentity:
+        return _nominal(
+            "tcspc::bin_increment_cluster_event",
+            self._numeric_traits._type_identity(),
+        )
+
 
 class BinIncrementEvent(EventType):
     """Event representing a single increment of a histogram bin.
@@ -787,6 +845,13 @@ class BinIncrementEvent(EventType):
     def _cpp_type_name(self) -> _CppTypeName:
         return _CppTypeName(
             f"tcspc::bin_increment_event<{self._numeric_traits._cpp_type_name()}>"
+        )
+
+    @override
+    def _type_identity(self) -> _TypeIdentity:
+        return _nominal(
+            "tcspc::bin_increment_event",
+            self._numeric_traits._type_identity(),
         )
 
 
@@ -825,6 +890,13 @@ class BulkCountsEvent(EventType):
             f"tcspc::bulk_counts_event<{self._numeric_traits._cpp_type_name()}>"
         )
 
+    @override
+    def _type_identity(self) -> _TypeIdentity:
+        return _nominal(
+            "tcspc::bulk_counts_event",
+            self._numeric_traits._type_identity(),
+        )
+
 
 class ConcludingHistogramArrayEvent(EventType):
     """Event carrying the final accumulated histogram array of a round.
@@ -860,6 +932,13 @@ class ConcludingHistogramArrayEvent(EventType):
     def _cpp_type_name(self) -> _CppTypeName:
         return _CppTypeName(
             f"tcspc::concluding_histogram_array_event<{self._numeric_traits._cpp_type_name()}>"
+        )
+
+    @override
+    def _type_identity(self) -> _TypeIdentity:
+        return _nominal(
+            "tcspc::concluding_histogram_array_event",
+            self._numeric_traits._type_identity(),
         )
 
     def _data_bucket_element_event_type(self) -> EventType:
@@ -900,6 +979,13 @@ class ConcludingHistogramEvent(EventType):
     def _cpp_type_name(self) -> _CppTypeName:
         return _CppTypeName(
             f"tcspc::concluding_histogram_event<{self._numeric_traits._cpp_type_name()}>"
+        )
+
+    @override
+    def _type_identity(self) -> _TypeIdentity:
+        return _nominal(
+            "tcspc::concluding_histogram_event",
+            self._numeric_traits._type_identity(),
         )
 
     def _data_bucket_element_event_type(self) -> EventType:
@@ -945,6 +1031,13 @@ class DataLostEvent(EventType):
         )
 
     @override
+    def _type_identity(self) -> _TypeIdentity:
+        return _nominal(
+            "tcspc::data_lost_event",
+            self._numeric_traits._type_identity(),
+        )
+
+    @override
     def _fields(self) -> list[tuple[str, _CppTypeName]]:
         nt = self._numeric_traits._cpp_type_name()
         return [("abstime", _CppTypeName(f"{nt}::abstime_type"))]
@@ -983,6 +1076,13 @@ class DatapointEvent(EventType):
             f"tcspc::datapoint_event<{self._numeric_traits._cpp_type_name()}>"
         )
 
+    @override
+    def _type_identity(self) -> _TypeIdentity:
+        return _nominal(
+            "tcspc::datapoint_event",
+            self._numeric_traits._type_identity(),
+        )
+
 
 class DetectionEvent(EventType):
     """Event representing a detected count without time correlation.
@@ -1017,6 +1117,13 @@ class DetectionEvent(EventType):
     def _cpp_type_name(self) -> _CppTypeName:
         return _CppTypeName(
             f"tcspc::detection_event<{self._numeric_traits._cpp_type_name()}>"
+        )
+
+    @override
+    def _type_identity(self) -> _TypeIdentity:
+        return _nominal(
+            "tcspc::detection_event",
+            self._numeric_traits._type_identity(),
         )
 
     @override
@@ -1064,6 +1171,17 @@ class DetectionPairEvent(EventType):
             f"std::array<tcspc::detection_event<{self._numeric_traits._cpp_type_name()}>, 2>"
         )
 
+    @override
+    def _type_identity(self) -> _TypeIdentity:
+        return _nominal(
+            "std::array",
+            _nominal(
+                "tcspc::detection_event",
+                self._numeric_traits._type_identity(),
+            ),
+            "2",
+        )
+
 
 class EndLostIntervalEvent(EventType):
     """Event marking the end of an interval in which counts were lost.
@@ -1095,6 +1213,13 @@ class EndLostIntervalEvent(EventType):
     def _cpp_type_name(self) -> _CppTypeName:
         return _CppTypeName(
             f"tcspc::end_lost_interval_event<{self._numeric_traits._cpp_type_name()}>"
+        )
+
+    @override
+    def _type_identity(self) -> _TypeIdentity:
+        return _nominal(
+            "tcspc::end_lost_interval_event",
+            self._numeric_traits._type_identity(),
         )
 
     @override
@@ -1138,6 +1263,13 @@ class HistogramArrayEvent(EventType):
             f"tcspc::histogram_array_event<{self._numeric_traits._cpp_type_name()}>"
         )
 
+    @override
+    def _type_identity(self) -> _TypeIdentity:
+        return _nominal(
+            "tcspc::histogram_array_event",
+            self._numeric_traits._type_identity(),
+        )
+
     def _data_bucket_element_event_type(self) -> EventType:
         return _TraitsMemberEvent(self._numeric_traits, "bin_type")
 
@@ -1176,6 +1308,13 @@ class HistogramArrayProgressEvent(EventType):
     def _cpp_type_name(self) -> _CppTypeName:
         return _CppTypeName(
             f"tcspc::histogram_array_progress_event<{self._numeric_traits._cpp_type_name()}>"
+        )
+
+    @override
+    def _type_identity(self) -> _TypeIdentity:
+        return _nominal(
+            "tcspc::histogram_array_progress_event",
+            self._numeric_traits._type_identity(),
         )
 
     def _data_bucket_element_event_type(self) -> EventType:
@@ -1218,6 +1357,13 @@ class HistogramEvent(EventType):
             f"tcspc::histogram_event<{self._numeric_traits._cpp_type_name()}>"
         )
 
+    @override
+    def _type_identity(self) -> _TypeIdentity:
+        return _nominal(
+            "tcspc::histogram_event",
+            self._numeric_traits._type_identity(),
+        )
+
     def _data_bucket_element_event_type(self) -> EventType:
         return _TraitsMemberEvent(self._numeric_traits, "bin_type")
 
@@ -1254,6 +1400,13 @@ class LostCountsEvent(EventType):
     def _cpp_type_name(self) -> _CppTypeName:
         return _CppTypeName(
             f"tcspc::lost_counts_event<{self._numeric_traits._cpp_type_name()}>"
+        )
+
+    @override
+    def _type_identity(self) -> _TypeIdentity:
+        return _nominal(
+            "tcspc::lost_counts_event",
+            self._numeric_traits._type_identity(),
         )
 
 
@@ -1294,6 +1447,13 @@ class MarkerEvent(EventType):
     def _cpp_type_name(self) -> _CppTypeName:
         return _CppTypeName(
             f"tcspc::marker_event<{self._numeric_traits._cpp_type_name()}>"
+        )
+
+    @override
+    def _type_identity(self) -> _TypeIdentity:
+        return _nominal(
+            "tcspc::marker_event",
+            self._numeric_traits._type_identity(),
         )
 
     @override
@@ -1340,6 +1500,13 @@ class PeriodicSequenceModelEvent(EventType):
             f"tcspc::periodic_sequence_model_event<{self._numeric_traits._cpp_type_name()}>"
         )
 
+    @override
+    def _type_identity(self) -> _TypeIdentity:
+        return _nominal(
+            "tcspc::periodic_sequence_model_event",
+            self._numeric_traits._type_identity(),
+        )
+
 
 class PQT2GenericEvent(EventType):
     """Raw 32-bit FIFO record for PicoQuant T2 (Generic) format.
@@ -1362,6 +1529,10 @@ class PQT2GenericEvent(EventType):
     def _cpp_type_name(self) -> _CppTypeName:
         return _CppTypeName("tcspc::pqt2_generic_event")
 
+    @override
+    def _type_identity(self) -> _TypeIdentity:
+        return _nominal("tcspc::pqt2_generic_event")
+
 
 class PQT2HydraHarpV1Event(EventType):
     """Raw 32-bit FIFO record for PicoQuant HydraHarp V1 T2 format.
@@ -1383,6 +1554,10 @@ class PQT2HydraHarpV1Event(EventType):
     def _cpp_type_name(self) -> _CppTypeName:
         return _CppTypeName("tcspc::pqt2_hydraharpv1_event")
 
+    @override
+    def _type_identity(self) -> _TypeIdentity:
+        return _nominal("tcspc::pqt2_hydraharpv1_event")
+
 
 class PQT2PicoHarp300Event(EventType):
     """Raw 32-bit FIFO record for PicoQuant PicoHarp 300 T2 format.
@@ -1403,6 +1578,10 @@ class PQT2PicoHarp300Event(EventType):
     @override
     def _cpp_type_name(self) -> _CppTypeName:
         return _CppTypeName("tcspc::pqt2_picoharp300_event")
+
+    @override
+    def _type_identity(self) -> _TypeIdentity:
+        return _nominal("tcspc::pqt2_picoharp300_event")
 
 
 class PQT3GenericEvent(EventType):
@@ -1426,6 +1605,10 @@ class PQT3GenericEvent(EventType):
     def _cpp_type_name(self) -> _CppTypeName:
         return _CppTypeName("tcspc::pqt3_generic_event")
 
+    @override
+    def _type_identity(self) -> _TypeIdentity:
+        return _nominal("tcspc::pqt3_generic_event")
+
 
 class PQT3HydraHarpV1Event(EventType):
     """Raw 32-bit FIFO record for PicoQuant HydraHarp V1 T3 format.
@@ -1447,6 +1630,10 @@ class PQT3HydraHarpV1Event(EventType):
     def _cpp_type_name(self) -> _CppTypeName:
         return _CppTypeName("tcspc::pqt3_hydraharpv1_event")
 
+    @override
+    def _type_identity(self) -> _TypeIdentity:
+        return _nominal("tcspc::pqt3_hydraharpv1_event")
+
 
 class PQT3PicoHarp300Event(EventType):
     """Raw 32-bit FIFO record for PicoQuant PicoHarp 300 T3 format.
@@ -1467,6 +1654,10 @@ class PQT3PicoHarp300Event(EventType):
     @override
     def _cpp_type_name(self) -> _CppTypeName:
         return _CppTypeName("tcspc::pqt3_picoharp300_event")
+
+    @override
+    def _type_identity(self) -> _TypeIdentity:
+        return _nominal("tcspc::pqt3_picoharp300_event")
 
 
 class RealLinearTimingEvent(EventType):
@@ -1503,6 +1694,13 @@ class RealLinearTimingEvent(EventType):
             f"tcspc::real_linear_timing_event<{self._numeric_traits._cpp_type_name()}>"
         )
 
+    @override
+    def _type_identity(self) -> _TypeIdentity:
+        return _nominal(
+            "tcspc::real_linear_timing_event",
+            self._numeric_traits._type_identity(),
+        )
+
 
 class RealOneShotTimingEvent(EventType):
     """Event describing a single (one-shot) delayed timing.
@@ -1537,6 +1735,13 @@ class RealOneShotTimingEvent(EventType):
             f"tcspc::real_one_shot_timing_event<{self._numeric_traits._cpp_type_name()}>"
         )
 
+    @override
+    def _type_identity(self) -> _TypeIdentity:
+        return _nominal(
+            "tcspc::real_one_shot_timing_event",
+            self._numeric_traits._type_identity(),
+        )
+
 
 class SwabianTagEvent(EventType):
     """Raw 16-byte tag record from a Swabian Time Tagger.
@@ -1559,6 +1764,10 @@ class SwabianTagEvent(EventType):
     @override
     def _cpp_type_name(self) -> _CppTypeName:
         return _CppTypeName("tcspc::swabian_tag_event")
+
+    @override
+    def _type_identity(self) -> _TypeIdentity:
+        return _nominal("tcspc::swabian_tag_event")
 
 
 class TimeCorrelatedDetectionEvent(EventType):
@@ -1595,6 +1804,13 @@ class TimeCorrelatedDetectionEvent(EventType):
     def _cpp_type_name(self) -> _CppTypeName:
         return _CppTypeName(
             f"tcspc::time_correlated_detection_event<{self._numeric_traits._cpp_type_name()}>"
+        )
+
+    @override
+    def _type_identity(self) -> _TypeIdentity:
+        return _nominal(
+            "tcspc::time_correlated_detection_event",
+            self._numeric_traits._type_identity(),
         )
 
     @override
@@ -1645,6 +1861,13 @@ class TimeReachedEvent(EventType):
         )
 
     @override
+    def _type_identity(self) -> _TypeIdentity:
+        return _nominal(
+            "tcspc::time_reached_event",
+            self._numeric_traits._type_identity(),
+        )
+
+    @override
     def _fields(self) -> list[tuple[str, _CppTypeName]]:
         nt = self._numeric_traits._cpp_type_name()
         return [("abstime", _CppTypeName(f"{nt}::abstime_type"))]
@@ -1677,3 +1900,7 @@ class WarningEvent(EventType):
     @override
     def _cpp_type_name(self) -> _CppTypeName:
         return _CppTypeName("tcspc::warning_event")
+
+    @override
+    def _type_identity(self) -> _TypeIdentity:
+        return _nominal("tcspc::warning_event")

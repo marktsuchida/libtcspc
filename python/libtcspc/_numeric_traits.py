@@ -12,7 +12,7 @@ from typing import Any, TypedDict
 import numpy as np
 from typing_extensions import Unpack
 
-from ._cpp_utils import _cpp_type_from_dtype, _CppTypeName
+from ._cpp_utils import _cpp_type_from_dtype, _CppTypeName, _TypeIdentity
 
 
 class _NumericTraits(TypedDict, total=False):
@@ -164,3 +164,10 @@ class NumericTraits:
             if registry is not None:
                 registry[str(self._struct_name)] = self._struct_definition
         return self._struct_name
+
+    def _type_identity(self) -> _TypeIdentity:
+        # A leaf: distinct struct names (`nt_<hash>` / the default) are distinct
+        # C++ types even with identical members, so name equality is sound.
+        return _TypeIdentity(
+            self._struct_name, ctor=self._struct_name, args=()
+        )
