@@ -167,11 +167,32 @@ def main() -> int:
         help="emit the processing graph to standard output in Graphviz dot "
         "format and exit; does not process input",
     )
+    p.add_argument(
+        "--dump-cpp-graph",
+        action="store_true",
+        help="emit the compiled C++ processor graph to standard output in "
+        "Graphviz dot format and exit; requires a real input file (the file is "
+        "opened at processor construction time but never read)",
+    )
     p.add_argument("filename", nargs="?", default=None)
     args = p.parse_args()
 
     if args.dump_graph:
         print(build_graph().to_graphviz())
+        return 0
+
+    if args.dump_cpp_graph:
+        if args.filename is None:
+            print("filename is required", file=sys.stderr)
+            return 2
+        g = build_graph()
+        cg = tcspc.CompiledGraph(g)
+        ctx = tcspc.ExecutionContext(
+            cg,
+            {"filename": args.filename},
+            (_LastBucketSink(), _LastBucketSink()),
+        )
+        print(ctx.cpp_to_graphviz())
         return 0
 
     if args.filename is None:

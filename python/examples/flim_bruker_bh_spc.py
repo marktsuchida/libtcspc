@@ -17,6 +17,7 @@ An incomplete frame at the end of the input is discarded.
 """
 
 import argparse
+import io
 import os
 import sys
 from typing import Any
@@ -213,6 +214,15 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         help="do not process input; instead emit the processing graph to "
         "standard output in Graphviz dot format",
     )
+    p.add_argument(
+        "--dump-cpp-graph",
+        action="store_true",
+        help="do not process input; instead compile the graph, instantiate the "
+        "processor, and emit the compiled C++ processor graph to standard "
+        "output in Graphviz dot format. Requires a real input file (it is "
+        "opened at processor construction time but never read); the output "
+        "file is not opened",
+    )
     p.add_argument("input_file", nargs="?", default=None)
     p.add_argument("output_file", nargs="?", default=None)
     return p.parse_args(argv)
@@ -228,10 +238,14 @@ def _unlink_if_empty(path: str) -> None:
 
 
 def run(args: argparse.Namespace) -> int:
-    if not args.dump_graph and (
-        args.pixel_time is None
-        or args.input_file is None
-        or args.output_file is None
+    if (
+        not args.dump_graph
+        and not args.dump_cpp_graph
+        and (
+            args.pixel_time is None
+            or args.input_file is None
+            or args.output_file is None
+        )
     ):
         print(
             "--pixel-time, input_file, and output_file are required",
@@ -242,6 +256,27 @@ def run(args: argparse.Namespace) -> int:
     if args.dump_graph:
         g = build_graph(args.channel, args.width, args.height, args.sum)
         print(g.to_graphviz())
+        return 0
+
+    if args.dump_cpp_graph:
+        if (
+            args.pixel_time is None
+            or args.input_file is None
+            or args.output_file is None
+        ):
+            print(
+                "--pixel-time, input_file, and output_file are required",
+                file=sys.stderr,
+            )
+            return 2
+        g = build_graph(args.channel, args.width, args.height, args.sum)
+        cg = tcspc.CompiledGraph(g)
+        dump_ctx = tcspc.ExecutionContext(
+            cg,
+            {"filename": args.input_file, "pixel_time": args.pixel_time},
+            (_BinFileSink(io.BytesIO()),),
+        )
+        print(dump_ctx.cpp_to_graphviz())
         return 0
 
     print("Creating processing graph...", file=sys.stderr)

@@ -45,6 +45,33 @@ def test_execute_graph_with_single_input():
     c.flush()
 
 
+def test_execute_cpp_to_graphviz_returns_dot_for_compiled_graph():
+    g = Graph()
+    g.add_node("a", SinkAll())
+    ec = ExecutionContext(CompiledGraph(g, (IntEvent,)), {})
+    dot = ec.cpp_to_graphviz()
+    assert dot.startswith("digraph G")
+    assert dot.rstrip().endswith("}")
+    assert "->" in dot
+    assert "input_processor" in dot
+
+
+def test_execute_cpp_to_graphviz_callable_before_handle():
+    g = Graph()
+    g.add_node("a", SinkAll())
+    ec = ExecutionContext(CompiledGraph(g, (IntEvent,)), {})
+    assert "digraph G" in ec.cpp_to_graphviz()
+
+
+def test_execute_cpp_to_graphviz_callable_after_flush():
+    g = Graph()
+    g.add_node("a", SinkAll())
+    ec = ExecutionContext(CompiledGraph(g, (IntEvent,)), {})
+    ec.handle(123)
+    ec.flush()
+    assert "digraph G" in ec.cpp_to_graphviz()
+
+
 def test_execute_node_access():
     g = Graph()
     g.add_node("c", Count(IntEvent, AccessTag("counter")))

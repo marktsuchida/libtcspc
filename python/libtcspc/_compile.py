@@ -144,6 +144,16 @@ def _input_processor(
             public:
                 explicit {typename}(Downstream downstream)
                     : downstream(std::move(downstream)) {{}}
+
+                [[nodiscard]] auto introspect_node() const
+                        -> tcspc::processor_info {{
+                    return tcspc::processor_info(this, "{typename}");
+                }}
+
+                [[nodiscard]] auto introspect_graph() const
+                        -> tcspc::processor_graph {{
+                    return downstream.introspect_graph().push_entry_point(this);
+                }}
             """
                 + "\n".join(
                     event_type._cpp_input_handler(_CppIdentifier("downstream"))
@@ -376,7 +386,10 @@ def _processor_creation(
                         if len(input_event_types) > 0
                         else ""
                     )
-                    + '\n    .def("flush", &processor_type::flush, nanobind::call_guard<nanobind::gil_scoped_release>());\n'
+                    + '\n    .def("flush", &processor_type::flush, nanobind::call_guard<nanobind::gil_scoped_release>())'
+                    + '\n    .def("_graphviz", [](processor_type const &self) {'
+                    + "\n        return tcspc::graphviz_from_processor_graph(self.introspect_graph());"
+                    + "\n    }, nanobind::call_guard<nanobind::gil_scoped_release>());\n"
                 ),
                 _CppFunctionScopeDefs(
                     f'{module_var}.def("create_processor", &create_processor);'

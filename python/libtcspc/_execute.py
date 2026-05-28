@@ -230,6 +230,32 @@ class ExecutionContext:
             return _RecordLastAccessor(raw, self._output_wrappers)
         return raw
 
+    def cpp_to_graphviz(self) -> str:
+        """
+        Return a Graphviz dot representation of the compiled C++ processor graph.
+
+        Unlike `Graph.to_graphviz`, which describes the Python-side graph before
+        compilation, this method introspects the actual C++ processor graph that
+        was instantiated by code generation. Convenience helpers (such as
+        `read_events_from_binary_file`) and `Subgraph` nodes are fully expanded.
+
+        The output is intended for debugging and visualization only. **The exact
+        format is not stable** and should not be consumed programmatically.
+
+        Returns
+        -------
+        str
+            A complete ``digraph G { ... }`` block in Graphviz DOT format.
+
+        Notes
+        -----
+        Safe to call at any point during the context's lifetime: before
+        `handle()`, between calls, or after `flush()` / `EndOfProcessing`. The
+        method does not interact with the processor's end-of-life state
+        (consistent with `access()`).
+        """
+        return self._proc._graphviz()
+
     @contextmanager
     def _manage_processor_end_of_life(self):
         if self._end_of_life_reason:
