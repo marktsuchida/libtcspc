@@ -22,6 +22,7 @@ from ._cpp_utils import (
     _CppTypeName,
     _identifier_from_string,
     _nominal,
+    _quote_string,
     _TypeIdentity,
 )
 from ._numeric_traits import NumericTraits
@@ -58,6 +59,14 @@ def _event_definitions_referenced_by(typenames: Iterable[str]) -> list[str]:
             if name in _known_event_definitions and name not in seen:
                 seen[name] = _known_event_definitions[name]
     return list(seen.values())
+
+
+def _field_py_kind(cpp_type: _CppTypeName) -> type:
+    if cpp_type in ("double", "float"):
+        return float
+    if cpp_type == "std::string":
+        return str
+    return int  # NumericTraits member types and std::size_t are integral
 
 
 class EventType(ABC):
@@ -161,14 +170,15 @@ class EventType(ABC):
             "does not support constructing event values"
         )
 
-    def value(self, **fields: int) -> "EventInstance":
+    def value(self, **fields: int | float | str) -> "EventInstance":
         """Construct a concrete event value of this type.
 
         Parameters
         ----------
-        **fields : int
+        **fields : int or float or str
             The value of each field of the event (see the event type's
-            ``Notes``). All fields must be given, as concrete integers.
+            ``Notes``). All fields must be given, as concrete ints, floats, or
+            strings matching the type of each field.
 
         Returns
         -------
@@ -198,7 +208,7 @@ class EventInstance:
     """
 
     def __init__(
-        self, event_type: EventType, fields: Mapping[str, int]
+        self, event_type: EventType, fields: Mapping[str, int | float | str]
     ) -> None:
         schema = event_type._fields()  # Raises TypeError if unsupported.
         names = [n for n, _ in schema]
@@ -214,22 +224,47 @@ class EventInstance:
                 f"{type(event_type).__name__}.value(): "
                 f"{'; '.join(problems)} (expected {names})"
             )
-        for n in names:
+        stored: dict[str, int | float | str] = {}
+        for n, ctype in schema:
             v = fields[n]
-            if isinstance(v, bool) or not isinstance(v, int):
-                raise TypeError(
-                    f"{type(event_type).__name__}.value(): field {n!r} must "
-                    f"be an int, not {type(v).__name__}"
-                )
+            kind = _field_py_kind(ctype)
+            if kind is int:
+                if isinstance(v, bool) or not isinstance(v, int):
+                    raise TypeError(
+                        f"{type(event_type).__name__}.value(): field {n!r} "
+                        f"must be an int, not {type(v).__name__}"
+                    )
+                stored[n] = int(v)
+            elif kind is float:
+                if isinstance(v, bool) or not isinstance(v, (int, float)):
+                    raise TypeError(
+                        f"{type(event_type).__name__}.value(): field {n!r} "
+                        f"must be a float, not {type(v).__name__}"
+                    )
+                stored[n] = float(v)
+            else:  # str
+                if not isinstance(v, str):
+                    raise TypeError(
+                        f"{type(event_type).__name__}.value(): field {n!r} "
+                        f"must be a str, not {type(v).__name__}"
+                    )
+                stored[n] = v
         self._event_type = event_type
-        self._fields = {n: int(fields[n]) for n in names}
+        self._fields = stored
 
     def _cpp_expression(self) -> _CppExpression:
         ctype = self._event_type._cpp_type_name()
-        parts = [
-            f".{name} = static_cast<{ftype}>({self._fields[name]})"
-            for name, ftype in self._event_type._fields()
-        ]
+        parts = []
+        for name, ftype in self._event_type._fields():
+            v = self._fields[name]
+            kind = _field_py_kind(ftype)
+            if kind is str:
+                assert isinstance(v, str)
+                parts.append(f".{name} = {ftype}{{{_quote_string(v)}}}")
+            elif kind is float:
+                parts.append(f".{name} = static_cast<{ftype}>({v!r})")
+            else:
+                parts.append(f".{name} = static_cast<{ftype}>({v})")
         return _CppExpression(f"{ctype}{{{', '.join(parts)}}}")
 
     def __eq__(self, other: object) -> bool:
@@ -910,6 +945,11 @@ class BinIncrementEvent(EventType):
             self._numeric_traits._type_identity(),
         )
 
+    @override
+    def _fields(self) -> list[tuple[str, _CppTypeName]]:
+        nt = self._numeric_traits._cpp_type_name()
+        return [("bin_index", _CppTypeName(f"{nt}::bin_index_type"))]
+
 
 class BulkCountsEvent(EventType):
     """Event representing detection counts from a non-time-tagging counter.
@@ -952,6 +992,15 @@ class BulkCountsEvent(EventType):
             "tcspc::bulk_counts_event",
             self._numeric_traits._type_identity(),
         )
+
+    @override
+    def _fields(self) -> list[tuple[str, _CppTypeName]]:
+        nt = self._numeric_traits._cpp_type_name()
+        return [
+            ("abstime", _CppTypeName(f"{nt}::abstime_type")),
+            ("channel", _CppTypeName(f"{nt}::channel_type")),
+            ("count", _CppTypeName(f"{nt}::count_type")),
+        ]
 
 
 class ConcludingHistogramArrayEvent(EventType):
@@ -1138,6 +1187,11 @@ class DatapointEvent(EventType):
             "tcspc::datapoint_event",
             self._numeric_traits._type_identity(),
         )
+
+    @override
+    def _fields(self) -> list[tuple[str, _CppTypeName]]:
+        nt = self._numeric_traits._cpp_type_name()
+        return [("value", _CppTypeName(f"{nt}::datapoint_type"))]
 
 
 class DetectionEvent(EventType):
@@ -1465,6 +1519,15 @@ class LostCountsEvent(EventType):
             self._numeric_traits._type_identity(),
         )
 
+    @override
+    def _fields(self) -> list[tuple[str, _CppTypeName]]:
+        nt = self._numeric_traits._cpp_type_name()
+        return [
+            ("abstime", _CppTypeName(f"{nt}::abstime_type")),
+            ("channel", _CppTypeName(f"{nt}::channel_type")),
+            ("count", _CppTypeName(f"{nt}::count_type")),
+        ]
+
 
 class MarkerEvent(EventType):
     """Event representing a timing marker or external trigger.
@@ -1562,6 +1625,15 @@ class PeriodicSequenceModelEvent(EventType):
             "tcspc::periodic_sequence_model_event",
             self._numeric_traits._type_identity(),
         )
+
+    @override
+    def _fields(self) -> list[tuple[str, _CppTypeName]]:
+        nt = self._numeric_traits._cpp_type_name()
+        return [
+            ("abstime", _CppTypeName(f"{nt}::abstime_type")),
+            ("delay", _CppTypeName("double")),
+            ("interval", _CppTypeName("double")),
+        ]
 
 
 class PQT2GenericEvent(EventType):
@@ -1757,6 +1829,16 @@ class RealLinearTimingEvent(EventType):
             self._numeric_traits._type_identity(),
         )
 
+    @override
+    def _fields(self) -> list[tuple[str, _CppTypeName]]:
+        nt = self._numeric_traits._cpp_type_name()
+        return [
+            ("abstime", _CppTypeName(f"{nt}::abstime_type")),
+            ("delay", _CppTypeName("double")),
+            ("interval", _CppTypeName("double")),
+            ("count", _CppTypeName("std::size_t")),
+        ]
+
 
 class RealOneShotTimingEvent(EventType):
     """Event describing a single (one-shot) delayed timing.
@@ -1797,6 +1879,14 @@ class RealOneShotTimingEvent(EventType):
             "tcspc::real_one_shot_timing_event",
             self._numeric_traits._type_identity(),
         )
+
+    @override
+    def _fields(self) -> list[tuple[str, _CppTypeName]]:
+        nt = self._numeric_traits._cpp_type_name()
+        return [
+            ("abstime", _CppTypeName(f"{nt}::abstime_type")),
+            ("delay", _CppTypeName("double")),
+        ]
 
 
 class SwabianTagEvent(EventType):
@@ -1960,3 +2050,7 @@ class WarningEvent(EventType):
     @override
     def _type_identity(self) -> _TypeIdentity:
         return _nominal("tcspc::warning_event")
+
+    @override
+    def _fields(self) -> list[tuple[str, _CppTypeName]]:
+        return [("message", _CppTypeName("std::string"))]

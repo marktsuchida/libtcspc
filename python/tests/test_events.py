@@ -176,8 +176,8 @@ def test_default_cpp_input_handler_substrings():
 
 
 def test_default_cpp_output_handlers_raise():
-    with pytest.raises(TypeError, match="tcspc::warning_event"):
-        tcspc.WarningEvent()._cpp_output_handlers(_CppIdentifier("sink"))
+    with pytest.raises(TypeError, match="tcspc::bh_spc_event"):
+        tcspc.BHSPCEvent()._cpp_output_handlers(_CppIdentifier("sink"))
 
 
 def test_BucketEvent_cpp_output_handlers_cover_three_overloads():
@@ -317,9 +317,12 @@ def test_bin_increment_cluster_event_is_not_extractable():
 
 FIELDS_EXPECTED = [
     (tcspc.BeginLostIntervalEvent, ["abstime"]),
+    (tcspc.BinIncrementEvent, ["bin_index"]),
+    (tcspc.BulkCountsEvent, ["abstime", "channel", "count"]),
     (tcspc.DataLostEvent, ["abstime"]),
     (tcspc.DetectionEvent, ["abstime", "channel"]),
     (tcspc.EndLostIntervalEvent, ["abstime"]),
+    (tcspc.LostCountsEvent, ["abstime", "channel", "count"]),
     (tcspc.MarkerEvent, ["abstime", "channel"]),
     (tcspc.TimeCorrelatedDetectionEvent, ["abstime", "channel", "difftime"]),
     (tcspc.TimeReachedEvent, ["abstime"]),
@@ -335,11 +338,47 @@ def test_fields_returns_expected_schema(cls, names):
         assert ctype == f"{prefix}{name}_type"
 
 
+FIELDS_EXPECTED_EXPLICIT = [
+    (
+        tcspc.DatapointEvent,
+        [("value", "tcspc::default_numeric_traits::datapoint_type")],
+    ),
+    (
+        tcspc.PeriodicSequenceModelEvent,
+        [
+            ("abstime", "tcspc::default_numeric_traits::abstime_type"),
+            ("delay", "double"),
+            ("interval", "double"),
+        ],
+    ),
+    (
+        tcspc.RealLinearTimingEvent,
+        [
+            ("abstime", "tcspc::default_numeric_traits::abstime_type"),
+            ("delay", "double"),
+            ("interval", "double"),
+            ("count", "std::size_t"),
+        ],
+    ),
+    (
+        tcspc.RealOneShotTimingEvent,
+        [
+            ("abstime", "tcspc::default_numeric_traits::abstime_type"),
+            ("delay", "double"),
+        ],
+    ),
+    (tcspc.WarningEvent, [("message", "std::string")]),
+]
+
+
+@pytest.mark.parametrize(("cls", "schema"), FIELDS_EXPECTED_EXPLICIT)
+def test_fields_returns_expected_explicit_schema(cls, schema):
+    assert cls()._fields() == schema
+
+
 def test_fields_unsupported_type_raises():
     with pytest.raises(TypeError, match="does not support"):
         tcspc.BucketEvent(IntEvent)._fields()
-    with pytest.raises(TypeError, match="does not support"):
-        tcspc.WarningEvent()._fields()
 
 
 def test_value_happy_path():
@@ -373,9 +412,48 @@ def test_value_bool_value_raises():
         tcspc.DetectionEvent().value(abstime=42, channel=True)
 
 
+def test_value_float_field_happy_path():
+    inst = tcspc.RealOneShotTimingEvent().value(abstime=1, delay=2.5)
+    assert inst._fields == {"abstime": 1, "delay": 2.5}
+    assert "static_cast<double>(2.5)" in inst._cpp_expression()
+
+
+def test_value_float_field_accepts_int():
+    inst = tcspc.RealOneShotTimingEvent().value(abstime=1, delay=2)
+    assert inst._fields == {"abstime": 1, "delay": 2.0}
+    assert "static_cast<double>(2.0)" in inst._cpp_expression()
+
+
+def test_value_float_field_rejects_str():
+    with pytest.raises(TypeError, match="must be a float"):
+        tcspc.RealOneShotTimingEvent().value(abstime=1, delay="x")  # type: ignore[arg-type]
+
+
+def test_value_float_field_rejects_bool():
+    with pytest.raises(TypeError, match="must be a float"):
+        tcspc.RealOneShotTimingEvent().value(abstime=1, delay=True)
+
+
+def test_value_str_field_happy_path():
+    inst = tcspc.WarningEvent().value(message="hi")
+    assert inst._fields == {"message": "hi"}
+    assert 'std::string{"hi"}' in inst._cpp_expression()
+
+
+def test_value_str_field_escapes_special_chars():
+    inst = tcspc.WarningEvent().value(message='a"b\\c\nd')
+    expr = inst._cpp_expression()
+    assert 'std::string{"a\\"b\\\\c\\nd"}' in expr
+
+
+def test_value_str_field_rejects_int():
+    with pytest.raises(TypeError, match="must be a str"):
+        tcspc.WarningEvent().value(message=1)  # type: ignore[arg-type]
+
+
 def test_value_unsupported_type_raises():
     with pytest.raises(TypeError, match="does not support"):
-        tcspc.WarningEvent().value()
+        tcspc.BucketEvent(IntEvent).value()
 
 
 def test_cpp_expression_default_traits():
@@ -428,7 +506,7 @@ def test_event_instance_repr():
 
 def test_supports_value():
     assert tcspc.DetectionEvent()._supports_value()
-    assert not tcspc.WarningEvent()._supports_value()
+    assert tcspc.WarningEvent()._supports_value()
     assert not tcspc.BucketEvent(IntEvent)._supports_value()
 
 

@@ -17,6 +17,8 @@ from libtcspc._events import (
     DetectionEvent,
     EventInstance,
     MarkerEvent,
+    RealOneShotTimingEvent,
+    WarningEvent,
 )
 from libtcspc._execute import EndOfProcessing, ExecutionContext, PySink
 from libtcspc._graph import Graph
@@ -271,6 +273,32 @@ def test_execute_event_value_round_trip_preserves_field_values():
     ec.handle(DetectionEvent().value(abstime=12345, channel=7))
     out = sink.events[0]
     assert out._fields == {"abstime": 12345, "channel": 7}
+
+
+def test_execute_double_field_event_round_trips_through_passthrough_graph():
+    g = Graph()
+    g.add_node("a", SelectAll())
+    cg = CompiledGraph(g, (RealOneShotTimingEvent(),))
+    sink = CollectingSink()
+    ec = ExecutionContext(cg, None, (sink,))
+    sent = RealOneShotTimingEvent().value(abstime=42, delay=2.5)
+    ec.handle(sent)
+    assert sink.events == [sent]
+    assert isinstance(sink.events[0], EventInstance)
+    assert sink.events[0]._fields == {"abstime": 42, "delay": 2.5}
+
+
+def test_execute_string_field_event_round_trips_through_passthrough_graph():
+    g = Graph()
+    g.add_node("a", SelectAll())
+    cg = CompiledGraph(g, (WarningEvent(),))
+    sink = CollectingSink()
+    ec = ExecutionContext(cg, None, (sink,))
+    sent = WarningEvent().value(message="something happened")
+    ec.handle(sent)
+    assert sink.events == [sent]
+    assert isinstance(sink.events[0], EventInstance)
+    assert sink.events[0]._fields == {"message": "something happened"}
 
 
 def test_execute_rejects_event_value_of_unaccepted_type():
