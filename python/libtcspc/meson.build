@@ -47,6 +47,7 @@ py_sources = files(
     '_processors/_histogramming.py',
     '_processors/_input_output.py',
     '_processors/_merging.py',
+    '_processors/_mux.py',
     '_processors/_pairing.py',
     '_processors/_statistics.py',
     '_processors/_stopping.py',

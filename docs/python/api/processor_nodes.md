@@ -55,6 +55,19 @@ batches.
    libtcspc.UnbatchBinIncrementClusters
 ```
 
+## Multiplexing and demultiplexing processors
+
+Processors that combine events of different types into a variant type and back.
+
+```{eval-rst}
+.. autosummary::
+   :toctree: generated
+   :nosignatures:
+
+   libtcspc.Multiplex
+   libtcspc.Demultiplex
+```
+
 ## Buffering processors
 
 Processors that buffer events to decouple upstream and downstream processing.

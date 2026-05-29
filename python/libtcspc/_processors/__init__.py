@@ -44,6 +44,7 @@ from ._input_output import (
     write_events_to_binary_file,
 )
 from ._merging import Merge, MergeN, MergeNUnsorted
+from ._mux import Demultiplex, Multiplex
 from ._pairing import PairAll, PairAllBetween, PairOne, PairOneBetween
 from ._statistics import Count, RecordAbstimeRange, RecordLast
 from ._stopping import Stop, StopWithError
@@ -97,6 +98,7 @@ __all__ = [
     "DecodePQT3PicoHarp300",
     "DecodeSwabianTags",
     "Delay",
+    "Demultiplex",
     "ExtractBucket",
     "ExtrapolatePeriodicSequences",
     "FitPeriodicSequences",
@@ -110,6 +112,7 @@ __all__ = [
     "Merge",
     "MergeN",
     "MergeNUnsorted",
+    "Multiplex",
     "PairAll",
     "PairAllBetween",
     "PairOne",
