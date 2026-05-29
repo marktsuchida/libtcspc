@@ -92,6 +92,9 @@ def _representative_events() -> list[E.EventType]:
         E.ConstBucketEvent(E._ByteEvent()),
         E.ConstBucketEvent(E.DetectionEvent(nt)),
         E.ConstBucketEvent(E.DetectionEvent(nt2)),
+        E.VariantEvent(E.DetectionEvent(nt)),
+        E.VariantEvent(E.DetectionEvent(nt), E.MarkerEvent(nt)),
+        E.VariantEvent(E.MarkerEvent(nt), E.DetectionEvent(nt)),
         # Opaque element types (numeric-traits members); these exercise the
         # deferred (compile) path and only yield a definite prediction against
         # an identically spelled counterpart.

@@ -73,6 +73,7 @@ from ._events import (
     SwabianTagEvent,
     TimeCorrelatedDetectionEvent,
     TimeReachedEvent,
+    VariantEvent,
     WarningEvent,
 )
 from ._execute import (
@@ -355,6 +356,7 @@ __all__ = [
     "UnbatchFromBytes",
     "UniqueBinMapper",
     "UniqueBinMapperAccessor",
+    "VariantEvent",
     "ViewAsBytes",
     "WarningEvent",
     "WriteBinaryStream",

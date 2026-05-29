@@ -243,6 +243,50 @@ def test_ConstBucketEvent_cpp_output_handlers_are_read_only():
     assert "&&event" not in code
 
 
+def test_VariantEvent_cpp_type_name():
+    ev = tcspc.VariantEvent(tcspc.BHSPCEvent(), tcspc.WarningEvent())
+    assert ev._cpp_type_name() == (
+        "tcspc::variant_event<tcspc::type_list<"
+        "tcspc::bh_spc_event, tcspc::warning_event>>"
+    )
+
+
+def test_VariantEvent_single_member_cpp_type_name():
+    assert (
+        tcspc.VariantEvent(tcspc.BHSPCEvent())._cpp_type_name()
+        == "tcspc::variant_event<tcspc::type_list<tcspc::bh_spc_event>>"
+    )
+
+
+def test_VariantEvent_requires_at_least_one_member():
+    with pytest.raises(ValueError, match="at least one"):
+        tcspc.VariantEvent()
+
+
+def test_VariantEvent_eq_same_members_same_order():
+    assert tcspc.VariantEvent(
+        tcspc.BHSPCEvent(), tcspc.WarningEvent()
+    ) == tcspc.VariantEvent(tcspc.BHSPCEvent(), tcspc.WarningEvent())
+
+
+def test_VariantEvent_eq_order_is_significant():
+    assert tcspc.VariantEvent(
+        tcspc.BHSPCEvent(), tcspc.WarningEvent()
+    ) != tcspc.VariantEvent(tcspc.WarningEvent(), tcspc.BHSPCEvent())
+
+
+def test_VariantEvent_does_not_support_value():
+    with pytest.raises(TypeError, match="does not support"):
+        tcspc.VariantEvent(tcspc.BHSPCEvent()).value()
+
+
+def test_VariantEvent_not_deliverable_to_python_sink():
+    with pytest.raises(TypeError, match="not supported for delivery"):
+        tcspc.VariantEvent(tcspc.BHSPCEvent())._cpp_output_handlers(
+            _CppIdentifier("sink")
+        )
+
+
 def test_DetectionPairEvent_cpp_type_name():
     name = tcspc.DetectionPairEvent()._cpp_type_name()
     assert name == (

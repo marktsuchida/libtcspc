@@ -29,6 +29,7 @@ are used to specify these types.
    libtcspc.BucketEvent
    libtcspc.ConstBucketEvent
    libtcspc.CustomEvent
+   libtcspc.VariantEvent
    libtcspc.BHSPCEvent
    libtcspc.BinIncrementClusterEvent
    libtcspc.BinIncrementEvent

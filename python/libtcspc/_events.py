@@ -8,6 +8,7 @@ import hashlib
 import re
 from abc import ABC, abstractmethod
 from collections.abc import Iterable, Iterator, Mapping
+from typing import final
 
 from typing_extensions import override
 
@@ -601,6 +602,61 @@ class ConstBucketEvent(EventType):
 
     def element_event_type(self) -> EventType:
         return self._element_type
+
+
+@final
+class VariantEvent(EventType):
+    """Event holding one of several event types, as a variant (tagged union).
+
+    This is an advanced event type, used to carry events of more than one type
+    through a stage that handles only a single type — most importantly to
+    buffer a heterogeneous stream. `Multiplex` wraps the listed event types
+    into a `VariantEvent`; `Demultiplex` unwraps them again.
+
+    Parameters
+    ----------
+    *event_types : EventType
+        The member event types of the variant. At least one is required. The
+        order is *significant*: it is part of the type, and `Multiplex` and
+        `Demultiplex` preserve it.
+
+    Notes
+    -----
+    The corresponding C++ event is
+    ``tcspc::variant_event<tcspc::type_list<...>>``.
+
+    A `VariantEvent` is a type tag only: it cannot be constructed as a value
+    (no :py:meth:`~EventType.value`) and cannot be delivered to a Python sink.
+    To inspect the carried events from Python, restore the individual event
+    types with `Demultiplex` first.
+
+    See Also
+    --------
+    :cpp:`tcspc::variant_event`
+        The underlying C++ event type.
+    :py:obj:`Multiplex`
+        Wrap the listed event types into a `VariantEvent`.
+    :py:obj:`Demultiplex`
+        Restore the individual event types from a `VariantEvent`.
+    """
+
+    def __init__(self, *event_types: EventType) -> None:
+        if not event_types:
+            raise ValueError("VariantEvent requires at least one event type")
+        self._event_types = tuple(event_types)
+
+    @override
+    def _cpp_type_name(self) -> _CppTypeName:
+        inner = ", ".join(t._cpp_type_name() for t in self._event_types)
+        return _CppTypeName(f"tcspc::variant_event<tcspc::type_list<{inner}>>")
+
+    @override
+    def _type_identity(self) -> _TypeIdentity:
+        type_list_id = _nominal(
+            "tcspc::type_list",
+            *(t._type_identity() for t in self._event_types),
+        )
+        return _nominal("tcspc::variant_event", type_list_id)
 
 
 class _ByteEvent(EventType):
