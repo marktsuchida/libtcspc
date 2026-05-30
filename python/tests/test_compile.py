@@ -5,7 +5,7 @@
 import pytest
 from _test_helpers import _NamedEvent
 from libtcspc._access import AccessTag
-from libtcspc._compile import CompiledGraph
+from libtcspc._compile import CompiledGraph, _graph_module_code
 from libtcspc._cpp_utils import (
     _CppTypeName,
     _size_type,
@@ -196,3 +196,35 @@ def test_compile_param_count_zero():
     g.add_node("sink", SinkAll())
     cg = CompiledGraph(g)
     assert cg.parameters() == ()
+
+
+def _broadcast_merge_graph(*, buffer_one_branch: bool):
+    import libtcspc as tcspc
+    from libtcspc._processors import Broadcast, Buffer, Merge
+
+    e = tcspc.TimeCorrelatedDetectionEvent(tcspc.NumericTraits())
+    g = Graph()
+    g.add_node("bc", Broadcast(e, outputs=2))
+    g.add_node("mrg", Merge(e))
+    if buffer_one_branch:
+        g.add_node(
+            "buf", Buffer(e, 10, AccessTag("b")), upstream=("bc", "output-0")
+        )
+        g.connect(("buf", "output"), ("mrg", "input-0"))
+    else:
+        g.connect(("bc", "output-0"), ("mrg", "input-0"))
+    g.connect(("bc", "output-1"), ("mrg", "input-1"))
+    g.add_node("snk", SinkAll(), upstream="mrg")
+    return g, e
+
+
+def test_compile_cross_thread_merge_rejected():
+    g, e = _broadcast_merge_graph(buffer_one_branch=True)
+    with pytest.raises(ValueError, match="mrg"):
+        _graph_module_code("mod", g, (e,))
+
+
+def test_compile_same_thread_merge_accepted():
+    g, e = _broadcast_merge_graph(buffer_one_branch=False)
+    # Code generation succeeds (reaches past the thread-safety check).
+    _graph_module_code("mod", g, (e,))

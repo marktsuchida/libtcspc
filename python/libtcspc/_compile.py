@@ -443,6 +443,8 @@ def _graph_module_code(
 
     output_event_types = graph._map_event_sets((input_event_types,))
 
+    graph._check_thread_safety()
+
     default_includes = _ModuleCodeFragment(
         (
             "libtcspc/tcspc.hpp",

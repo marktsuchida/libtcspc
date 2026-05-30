@@ -67,6 +67,11 @@ class Merge(Node):
     or `Broadcast` that fans out a single external input); a merge cannot serve
     as the executable graph's external input.
 
+    Both inputs must be driven on the same thread (the underlying C++ ``merge``
+    shares unsynchronized state across its input ports). This is enforced when
+    the graph is compiled: a merge fed from two threads — for example with a
+    `Buffer` on only one branch — is rejected.
+
     Events handled:
 
     - Events matching one of ``event_types``: buffered and emitted in
@@ -169,6 +174,11 @@ class MergeN(Node):
     that fans out a single external input); a merge cannot serve as the
     executable graph's external input.
 
+    All inputs must be driven on the same thread (the underlying C++
+    ``merge_n`` shares unsynchronized state across its input ports). This is
+    enforced when the graph is compiled: a merge fed from two threads — for
+    example with a `Buffer` on only one branch — is rejected.
+
     Events handled:
 
     - Events matching one of ``event_types``: buffered and emitted in
@@ -265,6 +275,11 @@ class MergeNUnsorted(Node):
     All inputs must be fed internally (for example by a `Route` or `Broadcast`
     that fans out a single external input); a merge cannot serve as the
     executable graph's external input.
+
+    All inputs must be driven on the same thread (the underlying C++
+    ``merge_n_unsorted`` shares unsynchronized state across its input ports).
+    This is enforced when the graph is compiled: a merge fed from two threads —
+    for example with a `Buffer` on only one branch — is rejected.
 
     Events handled:
 

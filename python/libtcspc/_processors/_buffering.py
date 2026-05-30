@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: MIT
 
 from collections.abc import Collection, Sequence
-from typing import final
+from typing import TYPE_CHECKING, final
 
 from typing_extensions import override
 
@@ -21,6 +21,9 @@ from .._param import Param
 from ._common import (
     _check_events_subset_of,
 )
+
+if TYPE_CHECKING:
+    from .._graph import _ThreadColoring, _ThreadGroup
 
 _buffer_accessor_type = _CppTypeName("tcspc::buffer_accessor")
 
@@ -168,6 +171,16 @@ class Buffer(_RelayNode):
         return (self._event_type,)
 
     @override
+    def _map_thread_groups(
+        self,
+        input_groups: Sequence["_ThreadGroup"],
+        coloring: "_ThreadColoring",
+    ) -> tuple["_ThreadGroup", ...]:
+        # Events are re-emitted on the pump thread, a different thread than the
+        # producer; mint a fresh group regardless of the input group.
+        return (coloring.mint(),)
+
+    @override
     def _relay_cpp_expression(
         self,
         gencontext: _CodeGenerationContext,
@@ -266,6 +279,16 @@ class RealTimeBuffer(_RelayNode):
             input_event_set, (self._event_type,), self.__class__.__name__
         )
         return (self._event_type,)
+
+    @override
+    def _map_thread_groups(
+        self,
+        input_groups: Sequence["_ThreadGroup"],
+        coloring: "_ThreadColoring",
+    ) -> tuple["_ThreadGroup", ...]:
+        # Events are re-emitted on the pump thread, a different thread than the
+        # producer; mint a fresh group regardless of the input group.
+        return (coloring.mint(),)
 
     def _latency_expression(
         self, gencontext: _CodeGenerationContext

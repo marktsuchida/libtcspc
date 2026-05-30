@@ -353,3 +353,36 @@ def test_MergeNUnsorted_diamond_compiles_and_runs_end_to_end():
     g = _merge_unsorted_diamond_graph()
     cg = CompiledGraph(g, (tcspc.BHSPCEvent(),))
     ExecutionContext(cg).flush()
+
+
+def _merge_broadcast_graph(*, buffer_one_branch: bool):
+    import libtcspc as tcspc
+    from libtcspc._access import AccessTag
+
+    e = tcspc.TimeCorrelatedDetectionEvent(tcspc.NumericTraits())
+    g = Graph()
+    g.add_node("bc", tcspc.Broadcast(e, outputs=2))
+    g.add_node("mrg", Merge(e))
+    if buffer_one_branch:
+        g.add_node(
+            "buf",
+            tcspc.Buffer(e, 10, AccessTag("b")),
+            upstream=("bc", "output-0"),
+        )
+        g.connect(("buf", "output"), ("mrg", "input-0"))
+    else:
+        g.connect(("bc", "output-0"), ("mrg", "input-0"))
+    g.connect(("bc", "output-1"), ("mrg", "input-1"))
+    g.add_node("snk", tcspc.SinkAll(), upstream="mrg")
+    return g
+
+
+def test_Merge_same_thread_inputs_pass_thread_check():
+    g = _merge_broadcast_graph(buffer_one_branch=False)
+    g._check_thread_safety()  # No raise.
+
+
+def test_Merge_cross_thread_inputs_rejected():
+    g = _merge_broadcast_graph(buffer_one_branch=True)
+    with pytest.raises(ValueError, match="mrg"):
+        g._check_thread_safety()

@@ -119,6 +119,63 @@ def _update_edge_event_sets(
                 edge.event_set = event_set
 
 
+@dataclass(frozen=True)
+class _ThreadGroup:
+    # Opaque token identifying a thread on which events flow. Ports carrying
+    # equal tokens are driven by the same thread. Compared by value; minted by
+    # _ThreadColoring with a monotonic id unique within one propagation pass.
+    # The id is for distinctness and ordering only and is not otherwise
+    # meaningful.
+    _id: int
+
+
+class _ThreadColoring:
+    # Context object for thread-group propagation, analogous to
+    # _CodeGenerationContext for code generation. It mints opaque thread-group
+    # tokens, tracks the current node path (for qualified names in messages and
+    # recorded keys), and reports join conflicts (raising in strict mode).
+
+    def __init__(self, *, strict: bool, record: bool = False) -> None:
+        self._strict = strict
+        self._counter = itertools.count()
+        self._path: list[str] = []
+        self.port_groups: (
+            dict[tuple[tuple[str, ...], str, str], _ThreadGroup] | None
+        ) = {} if record else None
+        self.conflicts: list[tuple[str, tuple[str, ...]]] = []
+
+    @property
+    def recording(self) -> bool:
+        return self.port_groups is not None
+
+    def mint(self) -> _ThreadGroup:
+        return _ThreadGroup(next(self._counter))
+
+    def enter(self, name: str) -> None:
+        self._path.append(name)
+
+    def leave(self) -> None:
+        self._path.pop()
+
+    def record_port(self, name: str, port: str, group: _ThreadGroup) -> None:
+        assert self.port_groups is not None
+        self.port_groups[(tuple(self._path), name, port)] = group
+
+    def report_conflict(
+        self, node: Node, bad_port_indices: Sequence[int]
+    ) -> None:
+        qual_name = "/".join(self._path)
+        bad_ports = tuple(node.inputs()[i] for i in bad_port_indices)
+        if self._strict:
+            ports = ", ".join(bad_ports)
+            raise ValueError(
+                f"node {qual_name!r} requires all its inputs to be driven on "
+                f"the same thread, but input ports {ports} are driven on "
+                "different threads"
+            )
+        self.conflicts.append((qual_name, bad_ports))
+
+
 class Graph:
     """
     Processing graph.
@@ -631,6 +688,73 @@ class Graph:
 
         return tuple(edge.event_set for edge in output_pseudo_edges)
 
+    def _propagate_thread_groups(
+        self,
+        input_groups: Sequence["_ThreadGroup"],
+        coloring: "_ThreadColoring",
+    ) -> tuple["_ThreadGroup", ...]:
+        # Propagate thread groups through the graph in topological order,
+        # mirroring _map_event_sets. 'input_groups' seeds the external input
+        # ports (in self._inputs() order); the return value is the groups on
+        # the external output ports (in self._outputs() order).
+
+        seeded: dict[tuple[int, int], _ThreadGroup] = {}
+        for (node_id, input_index), group in zip(
+            self._inputs(), input_groups, strict=True
+        ):
+            seeded[(node_id, input_index)] = group
+
+        edge_groups: dict[_Edge, _ThreadGroup] = {}
+        out_group_by_port: dict[tuple[int, int], _ThreadGroup] = {}
+
+        for node_id in self._topo_sorted_node_ids:
+            name, node = self._nodes[node_id]
+            in_groups = [
+                (edge_groups[e] if e is not None else seeded[(node_id, i)])
+                for i, e in enumerate(self._input_edge_index[node_id])
+            ]
+
+            coloring.enter(name)
+            out_groups = node._map_thread_groups(in_groups, coloring)
+            coloring.leave()
+
+            if coloring.recording and not isinstance(node, Subgraph):
+                for i, group in enumerate(out_groups):
+                    coloring.record_port(name, node.outputs()[i], group)
+
+            for i, (edge, group) in enumerate(
+                zip(self._output_edge_index[node_id], out_groups, strict=True)
+            ):
+                out_group_by_port[(node_id, i)] = group
+                if edge is not None:
+                    edge_groups[edge] = group
+
+        return tuple(
+            out_group_by_port[node_output] for node_output in self._outputs()
+        )
+
+    def _check_thread_safety(self) -> None:
+        # Verify that no node joins inputs driven on different threads. Must be
+        # called on a complete (single external input) graph; raises ValueError
+        # on the first conflict.
+        coloring = _ThreadColoring(strict=True)
+        self._propagate_thread_groups((coloring.mint(),), coloring)
+
+    def _thread_group_port_map(
+        self,
+    ) -> tuple[
+        dict[tuple[tuple[str, ...], str, str], _ThreadGroup],
+        list[tuple[str, tuple[str, ...]]],
+    ]:
+        # Compute, for visualization, the thread group on every leaf output
+        # port plus any join conflicts. Tolerates incomplete graphs by seeding
+        # each external input with a distinct group and not raising.
+        coloring = _ThreadColoring(strict=False, record=True)
+        seeds = [coloring.mint() for _ in self._inputs()]
+        self._propagate_thread_groups(seeds, coloring)
+        assert coloring.port_groups is not None
+        return coloring.port_groups, coloring.conflicts
+
     def _cpp_expression(
         self,
         gencontext: _CodeGenerationContext,
@@ -836,6 +960,14 @@ class Subgraph(Node):
         self, input_event_sets: Sequence[Collection[EventType]]
     ) -> tuple[tuple[EventType, ...], ...]:
         return self._graph._map_event_sets(input_event_sets)
+
+    @override
+    def _map_thread_groups(
+        self,
+        input_groups: Sequence["_ThreadGroup"],
+        coloring: "_ThreadColoring",
+    ) -> tuple["_ThreadGroup", ...]:
+        return self._graph._propagate_thread_groups(input_groups, coloring)
 
     @override
     def _parameters(self) -> Sequence[tuple[Param, _CppTypeName]]:

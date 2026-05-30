@@ -4,7 +4,7 @@
 
 from abc import abstractmethod
 from collections.abc import Collection, Sequence
-from typing import final
+from typing import TYPE_CHECKING, final
 
 from typing_extensions import override
 
@@ -13,6 +13,9 @@ from ._codegen import _CodeGenerationContext
 from ._cpp_utils import _CppExpression
 from ._events import EventType
 from ._param import _Parameterized
+
+if TYPE_CHECKING:
+    from ._graph import _ThreadColoring, _ThreadGroup
 
 
 class Node(_Accessible, _Parameterized):
@@ -116,6 +119,45 @@ class Node(_Accessible, _Parameterized):
             this node.
         """
         ...
+
+    def _map_thread_groups(
+        self,
+        input_groups: Sequence["_ThreadGroup"],
+        coloring: "_ThreadColoring",
+    ) -> tuple["_ThreadGroup", ...]:
+        """
+        Return the thread group emitted on each output port.
+
+        A thread group is an opaque token identifying the thread on which
+        events flow; ports carrying the same group are driven by the same
+        thread. This method maps the groups arriving on the input ports to the
+        groups emitted on the output ports, mirroring `_map_event_sets`.
+
+        The default implementation is *safe-by-default join*: every input port
+        must carry the same group, and that group is emitted on all output
+        ports. If the inputs disagree, the conflict is reported via `coloring`
+        (which raises in strict mode). A node that legitimately tolerates
+        events arriving on multiple threads opts out by overriding this method
+        to skip the conflict report; a node that emits on a different thread
+        than it receives (such as a buffer) overrides it to mint a fresh group.
+
+        Parameters
+        ----------
+        input_groups
+            For each input port, the thread group of the upstream producer.
+        coloring
+            Context object providing `mint` (fresh group) and `report_conflict`.
+
+        Returns
+        -------
+        tuple[int, ...]
+            For each output port, the emitted thread group.
+        """
+        rep = input_groups[0]  # Every node has at least one input port.
+        bad = tuple(i for i, g in enumerate(input_groups) if g != rep)
+        if bad:
+            coloring.report_conflict(self, bad)
+        return tuple(rep for _ in self.outputs())
 
     @abstractmethod
     def _cpp_expression(

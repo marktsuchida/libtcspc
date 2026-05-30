@@ -8,6 +8,7 @@ from _test_helpers import _NamedEvent
 from libtcspc._access import AccessTag, _BufferAccessorSpec
 from libtcspc._codegen import _CodeGenerationContext
 from libtcspc._cpp_utils import _CppExpression, _CppIdentifier, _CppTypeName
+from libtcspc._graph import Graph
 from libtcspc._param import Param
 
 IntEvent = _NamedEvent(_CppTypeName("int"))
@@ -119,3 +120,49 @@ def test_RealTimeBuffer_both_params():
         IntEvent, Param("n"), Param("latency"), AccessTag("buf")
     )
     assert len(node._parameters()) == 2
+
+
+def test_ProcessInBatches_preserves_thread_group():
+    g = Graph()
+    g.add_chain(
+        [
+            ("a", tcspc.ProcessInBatches(IntEvent, 10)),
+            ("b", tcspc.ProcessInBatches(IntEvent, 10)),
+        ]
+    )
+    port_groups, conflicts = g._thread_group_port_map()
+    assert not conflicts
+    assert port_groups[((), "a", "output")] == port_groups[((), "b", "output")]
+
+
+def test_Buffer_emits_new_thread_group():
+    g = Graph()
+    g.add_chain(
+        [
+            ("up", tcspc.ProcessInBatches(IntEvent, 10)),
+            ("buf", tcspc.Buffer(IntEvent, 10, AccessTag("buf"))),
+        ]
+    )
+    port_groups, conflicts = g._thread_group_port_map()
+    assert not conflicts
+    assert (
+        port_groups[((), "up", "output")] != port_groups[((), "buf", "output")]
+    )
+
+
+def test_RealTimeBuffer_emits_new_thread_group():
+    g = Graph()
+    g.add_chain(
+        [
+            ("up", tcspc.ProcessInBatches(IntEvent, 10)),
+            (
+                "buf",
+                tcspc.RealTimeBuffer(IntEvent, 10, 1000, AccessTag("buf")),
+            ),
+        ]
+    )
+    port_groups, conflicts = g._thread_group_port_map()
+    assert not conflicts
+    assert (
+        port_groups[((), "up", "output")] != port_groups[((), "buf", "output")]
+    )
