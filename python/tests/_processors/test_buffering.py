@@ -5,6 +5,7 @@
 import libtcspc as tcspc
 import pytest
 from _test_helpers import _NamedEvent
+from libtcspc._access import AccessTag, _BufferAccessorSpec
 from libtcspc._codegen import _CodeGenerationContext
 from libtcspc._cpp_utils import _CppExpression, _CppIdentifier, _CppTypeName
 from libtcspc._param import Param
@@ -41,3 +42,80 @@ def test_ProcessInBatches_param():
     node = tcspc.ProcessInBatches(IntEvent, Param("n"))
     assert len(node._parameters()) == 1
     assert "params.z_n" in node._cpp_expression(gencontext, DOWN)
+
+
+def test_Buffer_event_set_preserved():
+    node = tcspc.Buffer(IntEvent, 100, AccessTag("buf"))
+    assert node._map_event_sets([(IntEvent,)]) == ((IntEvent,),)
+
+
+def test_Buffer_rejects_other_events():
+    node = tcspc.Buffer(IntEvent, 100, AccessTag("buf"))
+    with pytest.raises(ValueError):
+        node._map_event_sets([(IntEvent, OtherEvent)])
+
+
+def test_Buffer_accesses_buffer_accessor():
+    node = tcspc.Buffer(IntEvent, 100, AccessTag("buf"))
+    accesses = node._accesses()
+    assert len(accesses) == 1
+    tag, spec = accesses[0]
+    assert tag == AccessTag("buf")
+    assert isinstance(spec, _BufferAccessorSpec)
+
+
+def test_Buffer_codegen():
+    node = tcspc.Buffer(IntEvent, 100, AccessTag("buf"))
+    code = node._cpp_expression(gencontext, DOWN)
+    assert "tcspc::buffer<int>(" in code
+    assert "tcspc::arg::threshold<std::size_t>" in code
+    assert 'ctx->tracker<tcspc::buffer_accessor>("buf")' in code
+    assert "DOWN" in code
+
+
+def test_Buffer_param():
+    node = tcspc.Buffer(IntEvent, Param("n"), AccessTag("buf"))
+    assert len(node._parameters()) == 1
+    assert "params.z_n" in node._cpp_expression(gencontext, DOWN)
+
+
+def test_RealTimeBuffer_event_set_preserved():
+    node = tcspc.RealTimeBuffer(IntEvent, 100, 1000, AccessTag("buf"))
+    assert node._map_event_sets([(IntEvent,)]) == ((IntEvent,),)
+
+
+def test_RealTimeBuffer_rejects_other_events():
+    node = tcspc.RealTimeBuffer(IntEvent, 100, 1000, AccessTag("buf"))
+    with pytest.raises(ValueError):
+        node._map_event_sets([(IntEvent, OtherEvent)])
+
+
+def test_RealTimeBuffer_rejects_negative_latency():
+    with pytest.raises(ValueError):
+        tcspc.RealTimeBuffer(IntEvent, 100, -1, AccessTag("buf"))
+
+
+def test_RealTimeBuffer_codegen():
+    node = tcspc.RealTimeBuffer(IntEvent, 100, 5000, AccessTag("buf"))
+    code = node._cpp_expression(gencontext, DOWN)
+    assert "tcspc::real_time_buffer<int>(" in code
+    assert "tcspc::arg::threshold<std::size_t>" in code
+    assert "std::chrono::nanoseconds{5000}" in code
+    assert 'ctx->tracker<tcspc::buffer_accessor>("buf")' in code
+    assert "DOWN" in code
+
+
+def test_RealTimeBuffer_latency_param():
+    node = tcspc.RealTimeBuffer(
+        IntEvent, 100, Param("latency"), AccessTag("buf")
+    )
+    assert len(node._parameters()) == 1
+    code = node._cpp_expression(gencontext, DOWN)
+    assert "std::chrono::nanoseconds{params.z_latency}" in code
+
+
+def test_RealTimeBuffer_both_params():
+    node = tcspc.RealTimeBuffer(
+        IntEvent, Param("n"), Param("latency"), AccessTag("buf")
+    )
+    assert len(node._parameters()) == 2

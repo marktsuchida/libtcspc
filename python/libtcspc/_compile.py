@@ -38,6 +38,9 @@ def _exception_types(module_var: _CppIdentifier) -> _ModuleCodeFragment:
             _CppFunctionScopeDefs(
                 f'nanobind::exception<tcspc::end_of_processing>({module_var}, "EndOfProcessing");\n'
             ),
+            _CppFunctionScopeDefs(
+                f'nanobind::exception<tcspc::source_halted>({module_var}, "SourceHalted");\n'
+            ),
         ),
     )
 

@@ -16,6 +16,7 @@ defined in Python, and access live state from a running graph.
 
    libtcspc.ExecutionContext
    libtcspc.EndOfProcessing
+   libtcspc.SourceHalted
 ```
 
 ## Run-time Python components
@@ -48,6 +49,7 @@ accessor has a run-time-generated type but implements one of the
 
    libtcspc.Accessor
    libtcspc.AcquireAccessor
+   libtcspc.BufferAccessor
    libtcspc.CountAccessor
    libtcspc.RecordAbstimeRangeAccessor
    libtcspc.RecordLastAccessor

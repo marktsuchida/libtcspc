@@ -4,6 +4,8 @@
 
 import array
 import gc
+import threading
+import time
 from typing import final
 
 import pytest
@@ -20,15 +22,22 @@ from libtcspc._events import (
     RealOneShotTimingEvent,
     WarningEvent,
 )
-from libtcspc._execute import EndOfProcessing, ExecutionContext, PySink
+from libtcspc._execute import (
+    EndOfProcessing,
+    ExecutionContext,
+    PySink,
+    SourceHalted,
+)
 from libtcspc._graph import Graph
 from libtcspc._numeric_traits import NumericTraits
 from libtcspc._param import Param
 from libtcspc._processors import (
     Append,
     Batch,
+    Buffer,
     Count,
     Prepend,
+    RealTimeBuffer,
     SelectAll,
     SinkAll,
     SinkOnly,
@@ -570,3 +579,141 @@ def test_execute_two_params_independent():
     with pytest.raises(EndOfProcessing) as exc_info:
         c.handle(42)
     assert "default-1" in exc_info.value.args[0]
+
+
+def test_execute_Buffer_pumps_all_events_in_order():
+    g = Graph()
+    g.add_node("b", Buffer(DetectionEvent(), 1, AccessTag("buf")))
+    sink = CollectingSink()
+    ec = ExecutionContext(CompiledGraph(g, (DetectionEvent(),)), None, (sink,))
+    buf = ec.access(AccessTag("buf"))
+
+    errors: list = []
+
+    def pump():
+        try:
+            buf.pump()
+        except (EndOfProcessing, SourceHalted):
+            pass
+        except BaseException as e:  # noqa: BLE001
+            errors.append(e)
+
+    t = threading.Thread(target=pump)
+    t.start()
+    sent = [DetectionEvent().value(abstime=i, channel=0) for i in range(20)]
+    for e in sent:
+        ec.handle(e)
+    ec.flush()
+    t.join()
+
+    assert not errors
+    assert sink.events == sent
+    assert sink.flushed
+
+
+def test_execute_Buffer_halt_before_flush_raises_SourceHalted():
+    g = Graph()
+    g.add_node("b", Buffer(DetectionEvent(), 1, AccessTag("buf")))
+    sink = CollectingSink()
+    ec = ExecutionContext(CompiledGraph(g, (DetectionEvent(),)), None, (sink,))
+    buf = ec.access(AccessTag("buf"))
+
+    outcome: list = []
+
+    def pump():
+        try:
+            buf.pump()
+            outcome.append(("returned", None))
+        except SourceHalted as e:
+            outcome.append(("source_halted", e))
+        except BaseException as e:  # noqa: BLE001
+            outcome.append(("other", e))
+
+    t = threading.Thread(target=pump)
+    t.start()
+    buf.halt()
+    t.join()
+
+    assert outcome == [("source_halted", outcome[0][1])]
+    assert not sink.flushed
+
+
+def test_execute_Buffer_downstream_error_surfaces_on_both_threads():
+    @final
+    class RaisingSink(PySink):
+        @override
+        def handle(self, event) -> None:
+            raise RuntimeError("boom")
+
+        @override
+        def flush(self) -> None:
+            pass
+
+    g = Graph()
+    g.add_node("b", Buffer(DetectionEvent(), 1, AccessTag("buf")))
+    ec = ExecutionContext(
+        CompiledGraph(g, (DetectionEvent(),)), None, (RaisingSink(),)
+    )
+    buf = ec.access(AccessTag("buf"))
+
+    pump_error: list = []
+
+    def pump():
+        try:
+            buf.pump()
+        except BaseException as e:  # noqa: BLE001
+            pump_error.append(e)
+
+    t = threading.Thread(target=pump)
+    t.start()
+
+    # The downstream sink raises while pumping; the buffer records the
+    # termination and the producer's next handle()/flush() raises
+    # EndOfProcessing.
+    with pytest.raises(EndOfProcessing):
+        for i in range(1000):
+            ec.handle(DetectionEvent().value(abstime=i, channel=0))
+            time.sleep(0.001)
+
+    t.join()
+    assert len(pump_error) == 1
+    assert isinstance(pump_error[0], RuntimeError)
+
+
+def test_execute_RealTimeBuffer_emits_after_latency():
+    g = Graph()
+    # Large threshold so emission can only be triggered by the latency limit.
+    g.add_node(
+        "b",
+        RealTimeBuffer(
+            DetectionEvent(), 1_000_000, 20_000_000, AccessTag("buf")
+        ),
+    )
+    sink = CollectingSink()
+    ec = ExecutionContext(CompiledGraph(g, (DetectionEvent(),)), None, (sink,))
+    buf = ec.access(AccessTag("buf"))
+
+    errors: list = []
+
+    def pump():
+        try:
+            buf.pump()
+        except (EndOfProcessing, SourceHalted):
+            pass
+        except BaseException as e:  # noqa: BLE001
+            errors.append(e)
+
+    t = threading.Thread(target=pump)
+    t.start()
+    sent = DetectionEvent().value(abstime=1, channel=0)
+    ec.handle(sent)
+
+    deadline = time.monotonic() + 10.0
+    while not sink.events and time.monotonic() < deadline:
+        time.sleep(0.01)
+
+    assert sink.events == [sent]
+
+    ec.flush()
+    t.join()
+    assert not errors

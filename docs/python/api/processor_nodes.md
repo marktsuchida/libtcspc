@@ -78,6 +78,8 @@ Processors that buffer events to decouple upstream and downstream processing.
    :nosignatures:
 
    libtcspc.ProcessInBatches
+   libtcspc.Buffer
+   libtcspc.RealTimeBuffer
 ```
 
 ## Stopping processors

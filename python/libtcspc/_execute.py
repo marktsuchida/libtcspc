@@ -9,7 +9,7 @@ from typing import Any, final
 
 from typing_extensions import override
 
-from ._access import AccessTag, _AccessorSpec
+from ._access import AccessTag, _AccessorSpec, _BufferAccessorSpec
 from ._compile import CompiledGraph
 from ._cpp_utils import _CppIdentifier
 from ._events import EventInstance, EventType
@@ -97,6 +97,42 @@ class EndOfProcessing(Exception):
     """
 
     pass
+
+
+class SourceHalted(Exception):
+    """
+    Exception raised by `BufferAccessor.pump` when the buffer was halted.
+
+    A pump thread observes this (instead of returning normally) when
+    `BufferAccessor.halt` was called before the buffer's producer half was
+    flushed -- that is, when the source stopped without flushing. It indicates
+    a clean (non-error) early termination of the consumer half.
+    """
+
+    pass
+
+
+@final
+class _BufferAccessor:
+    # Wraps the raw nanobind buffer_accessor so that pump() raises the
+    # importable, module-independent EndOfProcessing / SourceHalted (each
+    # compiled module defines its own nanobind exception types, since each uses
+    # a distinct NB_DOMAIN). halt() needs no translation. The raw accessor
+    # keeps the processor alive, so retaining it here is sufficient.
+    def __init__(self, raw: Any, mod: Any) -> None:
+        self._raw = raw
+        self._mod = mod
+
+    def pump(self) -> None:
+        try:
+            self._raw.pump()
+        except self._mod.EndOfProcessing as e:
+            raise EndOfProcessing(*e.args) from e
+        except self._mod.SourceHalted as e:
+            raise SourceHalted(*e.args) from e
+
+    def halt(self) -> None:
+        self._raw.halt()
 
 
 def _build_execution(
@@ -226,8 +262,11 @@ class ExecutionContext:
         if tag.tag not in self._accesses:
             raise ValueError(f"no such access tag: {tag.tag}")
         raw = getattr(self._ctx, tag._context_method_name())(self._proc)
-        if self._accessor_specs[tag.tag].wraps_event_value():
+        spec = self._accessor_specs[tag.tag]
+        if spec.wraps_event_value():
             return _RecordLastAccessor(raw, self._output_wrappers)
+        if isinstance(spec, _BufferAccessorSpec):
+            return _BufferAccessor(raw, self._mod)
         return raw
 
     def cpp_to_graphviz(self) -> str:

@@ -16,7 +16,7 @@ from ._batching import (
 )
 from ._binning import ClusterBinIncrements, MapToBins, MapToDatapoints
 from ._branching import Broadcast, Route
-from ._buffering import ProcessInBatches
+from ._buffering import Buffer, ProcessInBatches, RealTimeBuffer
 from ._core import Append, Prepend, SinkAll, SourceNothing
 from ._decoding import (
     DecodeBHSPC,
@@ -77,6 +77,7 @@ __all__ = [
     "BatchBinIncrementClusters",
     "BatchFromBytes",
     "Broadcast",
+    "Buffer",
     "CheckAlternating",
     "CheckMonotonic",
     "ClusterBinIncrements",
@@ -120,6 +121,7 @@ __all__ = [
     "Prepend",
     "ProcessInBatches",
     "ReadBinaryStream",
+    "RealTimeBuffer",
     "RebaseAbstime",
     "RecordAbstimeRange",
     "RecordLast",

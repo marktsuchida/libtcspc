@@ -36,6 +36,12 @@ class _AccessorSpec(ABC):
         return False
 
     def cpp_bindings(self, module_var: _CppIdentifier) -> _ModuleCodeFragment:
+        # The GIL is released around every accessor method. This is required
+        # for the blocking buffer_accessor::pump() (which must not hold the GIL
+        # while it waits and emits downstream into Python sinks); it is safe and
+        # harmless for the other accessors because none of them call back into
+        # Python during the C++ call (nanobind converts the return value after
+        # the call guard exits, with the GIL re-held).
         py_class_name = self.py_class_name()
         return _ModuleCodeFragment(
             (),
@@ -45,7 +51,8 @@ class _AccessorSpec(ABC):
                 _CppFunctionScopeDefs(
                     f'nanobind::class_<{self._cpp_type_name()}>({module_var}, "{py_class_name}", nanobind::is_final())'
                     + "".join(
-                        f'\n    .def("{meth}", &{self._cpp_type_name()}::{meth})'
+                        f'\n    .def("{meth}", &{self._cpp_type_name()}::{meth}, '
+                        "nanobind::call_guard<nanobind::gil_scoped_release>())"
                         for meth in self.cpp_methods()
                     )
                     + ";"
@@ -178,6 +185,20 @@ class _RecordLastAccessorSpec(_AccessorSpec):
         return True
 
 
+class _BufferAccessorSpec(_AccessorSpec):
+    @override
+    def _cpp_type_name(self) -> _CppTypeName:
+        return _CppTypeName("tcspc::buffer_accessor")
+
+    @override
+    def cpp_methods(self) -> Sequence[_CppIdentifier]:
+        return (_CppIdentifier("pump"), _CppIdentifier("halt"))
+
+    @override
+    def py_class_name(self) -> str:
+        return "BufferAccessor"
+
+
 class Accessor(Protocol):
     """
     Base protocol for run-time accessors.
@@ -270,5 +291,65 @@ class RecordLastAccessor(Accessor, Protocol):
         EventInstance or None
             A copy of the last event of the recorded type that passed
             through, or ``None`` if no such event has been observed yet.
+        """
+        ...
+
+
+class BufferAccessor(Accessor, Protocol):
+    """Run-time accessor for a ``Buffer`` or ``RealTimeBuffer`` processor.
+
+    A buffer splits the processing graph into a *producer half* (the
+    processors upstream of the buffer, driven by `ExecutionContext.handle` /
+    `ExecutionContext.flush`) and a *consumer half* (the processors downstream
+    of the buffer). Events enqueued by the producer are drained and emitted on
+    a separate *pump thread* that the application must run by calling `pump`.
+
+    Because of this, `ExecutionContext.flush` returns as soon as the producer
+    half is flushed; it does *not* wait for the consumer half to drain.
+    Processing is complete only when the pump thread (the `pump` call) has
+    returned. The application is responsible for spawning and joining the pump
+    thread, for catching the exception that `pump` may raise, and for keeping
+    the `ExecutionContext` alive until the pump thread has finished (the
+    accessor holds a raw pointer into the processor).
+    """
+
+    def pump(self) -> None:
+        """
+        Drain buffered events and emit them downstream on the calling thread.
+
+        This call **blocks** and must be made on a thread other than the one
+        calling `ExecutionContext.handle` / `ExecutionContext.flush`. The GIL
+        is released while it blocks and drains.
+
+        Returns
+        -------
+        None
+            Returns normally when the producer half flushes and the queue
+            drains.
+
+        Raises
+        ------
+        SourceHalted
+            If `halt` was called before the buffer received a flush from its
+            producer half.
+        EndOfProcessing
+            If a downstream sink terminated processing.
+        Exception
+            Any other exception raised by a downstream processor (e.g. a sink
+            raising an error). After such a downstream termination, the
+            producer thread's next `ExecutionContext.handle` /
+            `ExecutionContext.flush` raises `EndOfProcessing`.
+        """
+        ...
+
+    def halt(self) -> None:
+        """
+        Signal that the producer stopped without flushing.
+
+        Causes a blocked or subsequent `pump` to raise `SourceHalted` rather
+        than returning normally. Must be called if the source stops (e.g. on
+        cancellation or a producer-side error) without flushing the producer
+        half, so that the pump thread does not block forever. It is a harmless
+        no-op if the buffer has already flushed or otherwise terminated.
         """
         ...
