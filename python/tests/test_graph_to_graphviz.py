@@ -2,8 +2,21 @@
 # Copyright 2019-2026 Board of Regents of the University of Wisconsin System
 # SPDX-License-Identifier: MIT
 
-from _test_helpers import _TestNode, _TestRelayNode
+import re
+
+import libtcspc as tcspc
+from _test_helpers import _NamedEvent, _TestNode, _TestRelayNode
+from libtcspc._access import AccessTag
+from libtcspc._cpp_utils import _CppTypeName
 from libtcspc._graph import Graph, Subgraph
+
+IntEvent = _NamedEvent(_CppTypeName("int"))
+
+
+def _edge_colors(dot: str) -> set[str]:
+    # Palette colors are emitted quoted (color="blue"); the conflict marker is
+    # emitted unquoted (color=red), so this returns only thread-group colors.
+    return set(re.findall(r'color="([a-z]+)"', dot))
 
 
 def test_empty_graph():
@@ -170,3 +183,53 @@ def test_subgraph_no_external_markers_inside_cluster():
     # are reached via the cluster boundary edges.
     assert dot.count("shape=point") == 2
     assert 'xlabel="sg:' in dot
+
+
+def test_thread_groups_color_edges_uniformly_without_buffer():
+    g = Graph()
+    g.add_chain(
+        [
+            ("a", tcspc.ProcessInBatches(IntEvent, 10)),
+            ("b", tcspc.ProcessInBatches(IntEvent, 10)),
+        ]
+    )
+    dot = g.to_graphviz()
+    # All edges are on one thread: exactly one thread-group color is used.
+    assert len(_edge_colors(dot)) == 1
+    assert "color=red" not in dot
+
+
+def test_buffer_boundary_changes_edge_color():
+    g = Graph()
+    g.add_chain(
+        [
+            ("up", tcspc.ProcessInBatches(IntEvent, 10)),
+            ("buf", tcspc.Buffer(IntEvent, 10, AccessTag("b"))),
+            ("down", tcspc.ProcessInBatches(IntEvent, 10)),
+        ]
+    )
+    dot = g.to_graphviz()
+    assert 'color="' in dot
+    # The producer and pump threads get distinct colors.
+    assert len(_edge_colors(dot)) >= 2
+    assert "color=red" not in dot
+
+
+def test_mis_threaded_merge_marks_conflict():
+    g = Graph()
+    g.add_node("bc", tcspc.Broadcast(IntEvent, outputs=2))
+    g.add_node("mrg", tcspc.Merge(IntEvent))
+    g.add_node(
+        "buf",
+        tcspc.Buffer(IntEvent, 10, AccessTag("b")),
+        upstream=("bc", "output-0"),
+    )
+    g.connect(("buf", "output"), ("mrg", "input-0"))
+    g.connect(("bc", "output-1"), ("mrg", "input-1"))
+    g.add_node("snk", tcspc.SinkAll(), upstream="mrg")
+    dot = g.to_graphviz()
+    # The merge node box is marked red, and it is the Merge node.
+    conflict_line = next(ln for ln in dot.splitlines() if "color=red" in ln)
+    assert "Merge" in conflict_line
+    # The two incoming branches carry different thread-group colors.
+    assert len(_edge_colors(dot)) >= 2

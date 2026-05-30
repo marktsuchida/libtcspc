@@ -557,6 +557,15 @@ class Graph:
         reflected. Partially-built graphs (unconnected ports, etc.) are
         supported — no validation is performed.
 
+        Edges are colored by thread region: all edges driven on the same
+        thread share one color, and a `Buffer` or `RealTimeBuffer` boundary
+        introduces a new color for the events it re-emits on its pump thread
+        (so the producer and consumer halves are visually distinct). A node
+        whose inputs illegally arrive on different threads — for example a
+        `Merge` fed through a buffer on only one branch — is outlined in red.
+        Like the rest of the output, the specific colors and this scheme may
+        change without notice in future versions.
+
         Parameters
         ----------
         flatten : bool, optional
@@ -719,6 +728,12 @@ class Graph:
             coloring.leave()
 
             if coloring.recording and not isinstance(node, Subgraph):
+                # Record both input and output leaf ports so the graphviz
+                # renderer can color edges and external-port markers on either
+                # side. (Subgraph ports are recorded by the recursive call on
+                # its inner leaf nodes.)
+                for i, group in enumerate(in_groups):
+                    coloring.record_port(name, node.inputs()[i], group)
                 for i, group in enumerate(out_groups):
                     coloring.record_port(name, node.outputs()[i], group)
 

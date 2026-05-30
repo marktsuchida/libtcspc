@@ -4,11 +4,44 @@
 
 import itertools
 
-from ._graph import Graph, Subgraph
+from ._graph import Graph, Subgraph, _ThreadGroup
 from ._node import Node
+
+# Graphviz X11 color names used to distinguish thread groups, cycled if there
+# are more groups than colors. Red is deliberately excluded; it marks nodes
+# with a thread-affinity conflict.
+_THREAD_PALETTE = (
+    "blue",
+    "darkgreen",
+    "purple",
+    "orange",
+    "brown",
+    "deeppink",
+    "teal",
+    "darkgoldenrod",
+)
 
 
 def to_graphviz(graph: Graph, *, flatten: bool) -> str:
+    port_groups, conflicts = graph._thread_group_port_map()
+    conflict_node_names = {qual_name for qual_name, _ in conflicts}
+
+    # Assign a stable color to each thread group, in first-appearance order
+    # over the (deterministic) recording walk.
+    group_colors: dict[_ThreadGroup, str] = {}
+    for group in port_groups.values():
+        if group not in group_colors:
+            group_colors[group] = _THREAD_PALETTE[
+                len(group_colors) % len(_THREAD_PALETTE)
+            ]
+
+    def port_color(
+        path_name: tuple[tuple[str, ...], str], port: str
+    ) -> str | None:
+        path, name = path_name
+        group = port_groups.get((path, name, port))
+        return group_colors[group] if group is not None else None
+
     counter = itertools.count()
     id_map: dict[tuple[tuple[str, ...], str], str] = {}
     nodes_by_path: dict[tuple[tuple[str, ...], str], Node] = {}
@@ -47,10 +80,13 @@ def to_graphviz(graph: Graph, *, flatten: bool) -> str:
     lines: list[str] = ["digraph {"]
 
     def emit_node_line(
-        dot_id: str, name: str, node: Node, indent: str
+        dot_id: str, name: str, node: Node, qual_name: str, indent: str
     ) -> None:
         cls = type(node).__name__
-        lines.append(f'{indent}{dot_id} [shape=box, label="{cls}\\n{name}"];')
+        attrs = f'shape=box, label="{cls}\\n{name}"'
+        if qual_name in conflict_node_names:
+            attrs += ", color=red, penwidth=2"
+        lines.append(f"{indent}{dot_id} [{attrs}];")
 
     def emit_edge(
         pid: str,
@@ -59,6 +95,7 @@ def to_graphviz(graph: Graph, *, flatten: bool) -> str:
         cport: str,
         pnode: Node,
         cnode: Node,
+        color: str | None,
         indent: str,
     ) -> None:
         attrs: list[str] = []
@@ -66,6 +103,9 @@ def to_graphviz(graph: Graph, *, flatten: bool) -> str:
             attrs.append(f'taillabel="{pport}"')
         if len(cnode.inputs()) > 1:
             attrs.append(f'headlabel="{cport}"')
+        if color is not None:
+            attrs.append(f'color="{color}"')
+            attrs.append("penwidth=2")
         attr_str = f" [{', '.join(attrs)}]" if attrs else ""
         lines.append(f"{indent}{pid} -> {cid}{attr_str};")
 
@@ -81,7 +121,8 @@ def to_graphviz(graph: Graph, *, flatten: bool) -> str:
                     walk(node.graph(), path + (name,), indent + "  ")
                     lines.append(f"{indent}}}")
             else:
-                emit_node_line(dot_id, name, node, indent)
+                qual_name = "/".join(path + (name,))
+                emit_node_line(dot_id, name, node, qual_name, indent)
 
         for prod_name, prod_port, cons_name, cons_port in g._iter_edges():
             prod = resolve_producer(path, prod_name, prod_port)
@@ -96,7 +137,8 @@ def to_graphviz(graph: Graph, *, flatten: bool) -> str:
                 continue
             pnode = nodes_by_path[ppath_name]
             cnode = nodes_by_path[cpath_name]
-            emit_edge(pid, cid, pport, cport, pnode, cnode, indent)
+            color = port_color(ppath_name, pport)
+            emit_edge(pid, cid, pport, cport, pnode, cnode, color, indent)
 
     walk(graph, (), "  ")
 
@@ -114,6 +156,10 @@ def to_graphviz(graph: Graph, *, flatten: bool) -> str:
         attrs: list[str] = []
         if len(cnode.inputs()) > 1:
             attrs.append(f'headlabel="{cport}"')
+        color = port_color(cpath_name, cport)
+        if color is not None:
+            attrs.append(f'color="{color}"')
+            attrs.append("penwidth=2")
         attr_str = f" [{', '.join(attrs)}]" if attrs else ""
         lines.append(f"  {marker_id} -> {cid}{attr_str};")
 
@@ -131,6 +177,10 @@ def to_graphviz(graph: Graph, *, flatten: bool) -> str:
         attrs = []
         if len(pnode.outputs()) > 1:
             attrs.append(f'taillabel="{pport}"')
+        color = port_color(ppath_name, pport)
+        if color is not None:
+            attrs.append(f'color="{color}"')
+            attrs.append("penwidth=2")
         attr_str = f" [{', '.join(attrs)}]" if attrs else ""
         lines.append(f"  {pid} -> {marker_id}{attr_str};")
 
