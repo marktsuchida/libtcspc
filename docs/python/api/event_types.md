@@ -19,6 +19,11 @@ Some event types (those carrying timestamp and related data) are parameterized
 by the exact numeric types used. {py:class}`~libtcspc.NumericTraits` objects
 are used to specify these types.
 
+## Generic and core event types
+
+Base, value, and container event types, and generic events used throughout the
+library.
+
 ```{eval-rst}
 .. autosummary::
    :toctree: generated
@@ -26,26 +31,132 @@ are used to specify these types.
 
    libtcspc.EventType
    libtcspc.EventInstance
+   libtcspc.CustomEvent
    libtcspc.BucketEvent
    libtcspc.ConstBucketEvent
-   libtcspc.CustomEvent
    libtcspc.VariantEvent
+   libtcspc.WarningEvent
+```
+
+## Device event types
+
+Event types representing the raw records produced by specific TCSPC hardware.
+
+### Becker & Hickl device event types
+
+Raw event records from Becker & Hickl devices.
+
+```{eval-rst}
+.. autosummary::
+   :toctree: generated
+   :nosignatures:
+
    libtcspc.BHSPCEvent
-   libtcspc.BinIncrementClusterEvent
-   libtcspc.BinIncrementEvent
-   libtcspc.ConcludingHistogramArrayEvent
-   libtcspc.ConcludingHistogramEvent
-   libtcspc.DataLostEvent
-   libtcspc.DatapointEvent
+   libtcspc.BHSPC600_256chEvent
+   libtcspc.BHSPC600_4096chEvent
+```
+
+### PicoQuant device event types
+
+Raw event records from PicoQuant devices.
+
+```{eval-rst}
+.. autosummary::
+   :toctree: generated
+   :nosignatures:
+
+   libtcspc.PQT2PicoHarp300Event
+   libtcspc.PQT2HydraHarpV1Event
+   libtcspc.PQT2GenericEvent
+   libtcspc.PQT3PicoHarp300Event
+   libtcspc.PQT3HydraHarpV1Event
+   libtcspc.PQT3GenericEvent
+```
+
+### Swabian device event types
+
+Raw event records from Swabian Instruments devices.
+
+```{eval-rst}
+.. autosummary::
+   :toctree: generated
+   :nosignatures:
+
+   libtcspc.SwabianTagEvent
+```
+
+## Time tag and TCSPC event types
+
+Decoded time tag and TCSPC event types used throughout processing.
+
+```{eval-rst}
+.. autosummary::
+   :toctree: generated
+   :nosignatures:
+
+   libtcspc.TimeReachedEvent
+   libtcspc.BulkCountsEvent
+   libtcspc.DetectionEvent
+   libtcspc.TimeCorrelatedDetectionEvent
+   libtcspc.MarkerEvent
    libtcspc.DetectionPairEvent
+```
+
+### Lost data event types
+
+Event types signaling lost or dropped data.
+
+```{eval-rst}
+.. autosummary::
+   :toctree: generated
+   :nosignatures:
+
+   libtcspc.DataLostEvent
+   libtcspc.BeginLostIntervalEvent
+   libtcspc.EndLostIntervalEvent
+   libtcspc.LostCountsEvent
+```
+
+## Timing modeling event types
+
+Event types describing modeled timing sequences.
+
+```{eval-rst}
+.. autosummary::
+   :toctree: generated
+   :nosignatures:
+
+   libtcspc.PeriodicSequenceModelEvent
+   libtcspc.RealOneShotTimingEvent
+   libtcspc.RealLinearTimingEvent
+```
+
+## Binning event types
+
+Event types used in datapoint and bin-increment processing.
+
+```{eval-rst}
+.. autosummary::
+   :toctree: generated
+   :nosignatures:
+
+   libtcspc.DatapointEvent
+   libtcspc.BinIncrementEvent
+   libtcspc.BinIncrementClusterEvent
+```
+
+## Histogram event types
+
+Event types carrying histograms and histogram arrays.
+
+```{eval-rst}
+.. autosummary::
+   :toctree: generated
+   :nosignatures:
+
+   libtcspc.HistogramEvent
+   libtcspc.ConcludingHistogramEvent
    libtcspc.HistogramArrayEvent
    libtcspc.HistogramArrayProgressEvent
-   libtcspc.HistogramEvent
-   libtcspc.MarkerEvent
-   libtcspc.PeriodicSequenceModelEvent
-   libtcspc.RealLinearTimingEvent
-   libtcspc.RealOneShotTimingEvent
-   libtcspc.TimeCorrelatedDetectionEvent
-   libtcspc.TimeReachedEvent
-   libtcspc.WarningEvent
+   libtcspc.ConcludingHistogramArrayEvent
 ```
