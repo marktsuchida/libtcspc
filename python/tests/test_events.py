@@ -281,7 +281,9 @@ def test_VariantEvent_does_not_support_value():
 
 
 def test_VariantEvent_not_deliverable_to_python_sink():
-    with pytest.raises(TypeError, match="not supported for delivery"):
+    with pytest.raises(
+        TypeError, match="cannot be delivered to a Python sink"
+    ):
         tcspc.VariantEvent(tcspc.BHSPCEvent())._cpp_output_handlers(
             _CppIdentifier("sink")
         )
@@ -502,6 +504,36 @@ def test_event_instance_eq_against_non_instance_is_false():
 def test_event_instance_repr():
     inst = tcspc.DetectionEvent().value(abstime=42, channel=1)
     assert repr(inst) == "DetectionEvent(...).value(abstime=42, channel=1)"
+
+
+def test_event_instance_getattr_int_fields():
+    inst = tcspc.DetectionEvent().value(abstime=42, channel=1)
+    assert inst.abstime == 42
+    assert inst.channel == 1
+
+
+def test_event_instance_getattr_float_field():
+    inst = tcspc.RealOneShotTimingEvent().value(abstime=1, delay=2.5)
+    assert inst.abstime == 1
+    assert inst.delay == 2.5
+
+
+def test_event_instance_getattr_str_field():
+    inst = tcspc.WarningEvent().value(message="hi")
+    assert inst.message == "hi"
+
+
+def test_event_instance_getattr_unknown_field_raises():
+    inst = tcspc.DetectionEvent().value(abstime=42, channel=1)
+    with pytest.raises(AttributeError):
+        _ = inst.nonesuch
+
+
+def test_event_instance_dir_includes_fields():
+    inst = tcspc.DetectionEvent().value(abstime=42, channel=1)
+    names = dir(inst)
+    assert "abstime" in names
+    assert "channel" in names
 
 
 def test_supports_value():

@@ -126,10 +126,7 @@ class EventType(ABC):
         if not self._supports_value():
             raise TypeError(
                 f"event type {type(self).__name__} ({self._cpp_type_name()}) "
-                "is not supported for delivery to a Python sink. Convert the "
-                "data to a supported event type first (for example, batch or "
-                "extract it into a bucket, which is delivered as a NumPy "
-                "array)."
+                "cannot be delivered to a Python sink."
             )
         cpp = self._cpp_type_name()
         return _CppClassScopeDefs(f"""\
@@ -196,10 +193,11 @@ class EventInstance:
     one via :py:meth:`EventType.value`, for example
     ``DetectionEvent(nt).value(abstime=42, channel=1)``.
 
-    Used as the event to insert by `Prepend` and `Append`. Field values are
-    concrete integers baked into the generated C++ as an aggregate
-    initializer; runtime-supplied event values (`Param`) are not yet
-    supported.
+    Used as the event inserted by `Prepend`/`Append`, as input to
+    `ExecutionContext.handle`, and as the value delivered to a `PySink`. Field
+    values are concrete ints, floats, or strings; read them as attributes
+    (for example, ``event.abstime``). Runtime-supplied event values (`Param`)
+    are not yet supported.
 
     See Also
     --------
@@ -251,6 +249,25 @@ class EventInstance:
                 stored[n] = v
         self._event_type = event_type
         self._fields = stored
+
+    def __getattr__(self, name: str) -> int | float | str:
+        # __getattr__ is only called when normal lookup fails, so it never
+        # shadows real attributes/methods. Guard against recursion when
+        # _fields is not yet set (e.g. during unpickling or copy probing).
+        try:
+            fields = object.__getattribute__(self, "_fields")
+        except AttributeError:
+            raise AttributeError(name) from None
+        try:
+            return fields[name]
+        except KeyError:
+            raise AttributeError(
+                f"{type(self).__name__!r} object (event type "
+                f"{type(self._event_type).__name__}) has no field {name!r}"
+            ) from None
+
+    def __dir__(self) -> list[str]:
+        return [*super().__dir__(), *self._fields]
 
     def _cpp_expression(self) -> _CppExpression:
         ctype = self._event_type._cpp_type_name()
