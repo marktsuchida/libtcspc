@@ -9,6 +9,7 @@ import numpy as np
 import pytest
 from _test_helpers import _NamedEvent
 from libtcspc._cpp_utils import _CppIdentifier, _CppTypeName
+from libtcspc._events import _ScalarField
 
 IntEvent = _NamedEvent(_CppTypeName("int"))
 
@@ -334,42 +335,60 @@ FIELDS_EXPECTED = [
 @pytest.mark.parametrize(("cls", "names"), FIELDS_EXPECTED)
 def test_fields_returns_expected_schema(cls, names):
     schema = cls()._fields()
-    assert [n for n, _ in schema] == names
+    assert [f.name for f in schema] == names
     prefix = "tcspc::default_numeric_traits::"
-    for name, ctype in schema:
-        assert ctype == f"{prefix}{name}_type"
+    for f in schema:
+        assert isinstance(f, _ScalarField)
+        assert f.cpp_type == f"{prefix}{f.name}_type"
 
 
 FIELDS_EXPECTED_EXPLICIT = [
     (
         tcspc.DatapointEvent,
-        [("value", "tcspc::default_numeric_traits::datapoint_type")],
+        [
+            _ScalarField(
+                "value",
+                _CppTypeName("tcspc::default_numeric_traits::datapoint_type"),
+            )
+        ],
     ),
     (
         tcspc.PeriodicSequenceModelEvent,
         [
-            ("abstime", "tcspc::default_numeric_traits::abstime_type"),
-            ("delay", "double"),
-            ("interval", "double"),
+            _ScalarField(
+                "abstime",
+                _CppTypeName("tcspc::default_numeric_traits::abstime_type"),
+            ),
+            _ScalarField("delay", _CppTypeName("double")),
+            _ScalarField("interval", _CppTypeName("double")),
         ],
     ),
     (
         tcspc.RealLinearTimingEvent,
         [
-            ("abstime", "tcspc::default_numeric_traits::abstime_type"),
-            ("delay", "double"),
-            ("interval", "double"),
-            ("count", "std::size_t"),
+            _ScalarField(
+                "abstime",
+                _CppTypeName("tcspc::default_numeric_traits::abstime_type"),
+            ),
+            _ScalarField("delay", _CppTypeName("double")),
+            _ScalarField("interval", _CppTypeName("double")),
+            _ScalarField("count", _CppTypeName("std::size_t")),
         ],
     ),
     (
         tcspc.RealOneShotTimingEvent,
         [
-            ("abstime", "tcspc::default_numeric_traits::abstime_type"),
-            ("delay", "double"),
+            _ScalarField(
+                "abstime",
+                _CppTypeName("tcspc::default_numeric_traits::abstime_type"),
+            ),
+            _ScalarField("delay", _CppTypeName("double")),
         ],
     ),
-    (tcspc.WarningEvent, [("message", "std::string")]),
+    (
+        tcspc.WarningEvent,
+        [_ScalarField("message", _CppTypeName("std::string"))],
+    ),
 ]
 
 
@@ -586,15 +605,19 @@ def test_CustomEvent_abstime_fields():
         "ce_abstime_fields", abstime=True, traits=tcspc.NumericTraits()
     )
     assert ev._fields() == [
-        ("abstime", "tcspc::default_numeric_traits::abstime_type")
+        _ScalarField(
+            "abstime",
+            _CppTypeName("tcspc::default_numeric_traits::abstime_type"),
+        )
     ]
 
 
 def test_CustomEvent_abstime_fields_use_supplied_traits():
     nt = tcspc.NumericTraits(abstime_type=np.uint64)
     ev = tcspc.CustomEvent("ce_abstime_traits", abstime=True, traits=nt)
-    ((_, ctype),) = ev._fields()
-    assert ctype == f"{nt._cpp_type_name()}::abstime_type"
+    (f,) = ev._fields()
+    assert isinstance(f, _ScalarField)
+    assert f.cpp_type == f"{nt._cpp_type_name()}::abstime_type"
 
 
 def test_CustomEvent_traits_required_when_abstime():

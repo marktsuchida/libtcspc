@@ -4,12 +4,14 @@
 
 import contextlib
 import contextvars
+import dataclasses
 import hashlib
 import re
 from abc import ABC, abstractmethod
 from collections.abc import Iterable, Iterator, Mapping
 from typing import final
 
+import numpy as np
 from typing_extensions import override
 
 from . import _cpp_utils
@@ -67,6 +69,25 @@ def _field_py_kind(cpp_type: _CppTypeName) -> type:
     if cpp_type == "std::string":
         return str
     return int  # NumericTraits member types and std::size_t are integral
+
+
+@dataclasses.dataclass(frozen=True)
+class _ScalarField:
+    name: str
+    cpp_type: _CppTypeName
+
+    def py_kind(self) -> type:  # int, float, or str
+        return _field_py_kind(self.cpp_type)
+
+
+@dataclasses.dataclass(frozen=True)
+class _BucketField:
+    name: str
+    element_cpp_type: _CppTypeName
+    dtype: np.dtype
+
+
+_Field = _ScalarField | _BucketField
 
 
 class EventType(ABC):
@@ -147,8 +168,8 @@ class EventType(ABC):
         cpp = self._cpp_type_name()
         name = self._cpp_wrapper_class_name()
         defs = "".join(
-            f'\n    .def_rw("{fname}", &{cpp}::{fname})'
-            for fname, _ftype in self._fields()
+            f'\n    .def_rw("{f.name}", &{cpp}::{f.name})'
+            for f in self._fields()
         )
         return _CppFunctionScopeDefs(
             f'nanobind::class_<{cpp}>({module_var}, "{name}", '
@@ -156,8 +177,8 @@ class EventType(ABC):
             f"{defs};\n"
         )
 
-    def _fields(self) -> list[tuple[str, _CppTypeName]]:
-        """Field (name, C++ member type) schema for constructing event values.
+    def _fields(self) -> list[_Field]:
+        """Field descriptor schema for constructing event values.
 
         Event types that support value construction override this. The default
         raises, marking the type as non-constructible from Python.
@@ -209,7 +230,7 @@ class EventInstance:
         self, event_type: EventType, fields: Mapping[str, int | float | str]
     ) -> None:
         schema = event_type._fields()  # Raises TypeError if unsupported.
-        names = [n for n, _ in schema]
+        names = [f.name for f in schema]
         missing = [n for n in names if n not in fields]
         extra = [k for k in fields if k not in names]
         if missing or extra:
@@ -223,9 +244,11 @@ class EventInstance:
                 f"{'; '.join(problems)} (expected {names})"
             )
         stored: dict[str, int | float | str] = {}
-        for n, ctype in schema:
+        for f in schema:
+            assert isinstance(f, _ScalarField)
+            n = f.name
             v = fields[n]
-            kind = _field_py_kind(ctype)
+            kind = f.py_kind()
             if kind is int:
                 if isinstance(v, bool) or not isinstance(v, int):
                     raise TypeError(
@@ -272,16 +295,18 @@ class EventInstance:
     def _cpp_expression(self) -> _CppExpression:
         ctype = self._event_type._cpp_type_name()
         parts = []
-        for name, ftype in self._event_type._fields():
-            v = self._fields[name]
-            kind = _field_py_kind(ftype)
+        for f in self._event_type._fields():
+            assert isinstance(f, _ScalarField)
+            v = self._fields[f.name]
+            ftype = f.cpp_type
+            kind = f.py_kind()
             if kind is str:
                 assert isinstance(v, str)
-                parts.append(f".{name} = {ftype}{{{_quote_string(v)}}}")
+                parts.append(f".{f.name} = {ftype}{{{_quote_string(v)}}}")
             elif kind is float:
-                parts.append(f".{name} = static_cast<{ftype}>({v!r})")
+                parts.append(f".{f.name} = static_cast<{ftype}>({v!r})")
             else:
-                parts.append(f".{name} = static_cast<{ftype}>({v})")
+                parts.append(f".{f.name} = static_cast<{ftype}>({v})")
         return _CppExpression(f"{ctype}{{{', '.join(parts)}}}")
 
     def __eq__(self, other: object) -> bool:
@@ -421,12 +446,12 @@ class CustomEvent(EventType):
         return f"<CustomEvent({self._readable_name})>"
 
     @override
-    def _fields(self) -> list[tuple[str, _CppTypeName]]:
+    def _fields(self) -> list[_Field]:
         if not self._abstime:
             return []
         assert self._traits is not None
         nt = self._traits._cpp_type_name()
-        return [("abstime", _CppTypeName(f"{nt}::abstime_type"))]
+        return [_ScalarField("abstime", _CppTypeName(f"{nt}::abstime_type"))]
 
 
 class BucketEvent(EventType):
@@ -794,9 +819,9 @@ class BeginLostIntervalEvent(EventType):
         )
 
     @override
-    def _fields(self) -> list[tuple[str, _CppTypeName]]:
+    def _fields(self) -> list[_Field]:
         nt = self._numeric_traits._cpp_type_name()
-        return [("abstime", _CppTypeName(f"{nt}::abstime_type"))]
+        return [_ScalarField("abstime", _CppTypeName(f"{nt}::abstime_type"))]
 
 
 class BHSPC600_256chEvent(EventType):
@@ -963,9 +988,11 @@ class BinIncrementEvent(EventType):
         )
 
     @override
-    def _fields(self) -> list[tuple[str, _CppTypeName]]:
+    def _fields(self) -> list[_Field]:
         nt = self._numeric_traits._cpp_type_name()
-        return [("bin_index", _CppTypeName(f"{nt}::bin_index_type"))]
+        return [
+            _ScalarField("bin_index", _CppTypeName(f"{nt}::bin_index_type"))
+        ]
 
 
 class BulkCountsEvent(EventType):
@@ -1011,12 +1038,12 @@ class BulkCountsEvent(EventType):
         )
 
     @override
-    def _fields(self) -> list[tuple[str, _CppTypeName]]:
+    def _fields(self) -> list[_Field]:
         nt = self._numeric_traits._cpp_type_name()
         return [
-            ("abstime", _CppTypeName(f"{nt}::abstime_type")),
-            ("channel", _CppTypeName(f"{nt}::channel_type")),
-            ("count", _CppTypeName(f"{nt}::count_type")),
+            _ScalarField("abstime", _CppTypeName(f"{nt}::abstime_type")),
+            _ScalarField("channel", _CppTypeName(f"{nt}::channel_type")),
+            _ScalarField("count", _CppTypeName(f"{nt}::count_type")),
         ]
 
 
@@ -1160,9 +1187,9 @@ class DataLostEvent(EventType):
         )
 
     @override
-    def _fields(self) -> list[tuple[str, _CppTypeName]]:
+    def _fields(self) -> list[_Field]:
         nt = self._numeric_traits._cpp_type_name()
-        return [("abstime", _CppTypeName(f"{nt}::abstime_type"))]
+        return [_ScalarField("abstime", _CppTypeName(f"{nt}::abstime_type"))]
 
 
 class DatapointEvent(EventType):
@@ -1206,9 +1233,9 @@ class DatapointEvent(EventType):
         )
 
     @override
-    def _fields(self) -> list[tuple[str, _CppTypeName]]:
+    def _fields(self) -> list[_Field]:
         nt = self._numeric_traits._cpp_type_name()
-        return [("value", _CppTypeName(f"{nt}::datapoint_type"))]
+        return [_ScalarField("value", _CppTypeName(f"{nt}::datapoint_type"))]
 
 
 class DetectionEvent(EventType):
@@ -1254,11 +1281,11 @@ class DetectionEvent(EventType):
         )
 
     @override
-    def _fields(self) -> list[tuple[str, _CppTypeName]]:
+    def _fields(self) -> list[_Field]:
         nt = self._numeric_traits._cpp_type_name()
         return [
-            ("abstime", _CppTypeName(f"{nt}::abstime_type")),
-            ("channel", _CppTypeName(f"{nt}::channel_type")),
+            _ScalarField("abstime", _CppTypeName(f"{nt}::abstime_type")),
+            _ScalarField("channel", _CppTypeName(f"{nt}::channel_type")),
         ]
 
 
@@ -1350,9 +1377,9 @@ class EndLostIntervalEvent(EventType):
         )
 
     @override
-    def _fields(self) -> list[tuple[str, _CppTypeName]]:
+    def _fields(self) -> list[_Field]:
         nt = self._numeric_traits._cpp_type_name()
-        return [("abstime", _CppTypeName(f"{nt}::abstime_type"))]
+        return [_ScalarField("abstime", _CppTypeName(f"{nt}::abstime_type"))]
 
 
 class HistogramArrayEvent(EventType):
@@ -1537,12 +1564,12 @@ class LostCountsEvent(EventType):
         )
 
     @override
-    def _fields(self) -> list[tuple[str, _CppTypeName]]:
+    def _fields(self) -> list[_Field]:
         nt = self._numeric_traits._cpp_type_name()
         return [
-            ("abstime", _CppTypeName(f"{nt}::abstime_type")),
-            ("channel", _CppTypeName(f"{nt}::channel_type")),
-            ("count", _CppTypeName(f"{nt}::count_type")),
+            _ScalarField("abstime", _CppTypeName(f"{nt}::abstime_type")),
+            _ScalarField("channel", _CppTypeName(f"{nt}::channel_type")),
+            _ScalarField("count", _CppTypeName(f"{nt}::count_type")),
         ]
 
 
@@ -1593,11 +1620,11 @@ class MarkerEvent(EventType):
         )
 
     @override
-    def _fields(self) -> list[tuple[str, _CppTypeName]]:
+    def _fields(self) -> list[_Field]:
         nt = self._numeric_traits._cpp_type_name()
         return [
-            ("abstime", _CppTypeName(f"{nt}::abstime_type")),
-            ("channel", _CppTypeName(f"{nt}::channel_type")),
+            _ScalarField("abstime", _CppTypeName(f"{nt}::abstime_type")),
+            _ScalarField("channel", _CppTypeName(f"{nt}::channel_type")),
         ]
 
 
@@ -1644,12 +1671,12 @@ class PeriodicSequenceModelEvent(EventType):
         )
 
     @override
-    def _fields(self) -> list[tuple[str, _CppTypeName]]:
+    def _fields(self) -> list[_Field]:
         nt = self._numeric_traits._cpp_type_name()
         return [
-            ("abstime", _CppTypeName(f"{nt}::abstime_type")),
-            ("delay", _CppTypeName("double")),
-            ("interval", _CppTypeName("double")),
+            _ScalarField("abstime", _CppTypeName(f"{nt}::abstime_type")),
+            _ScalarField("delay", _CppTypeName("double")),
+            _ScalarField("interval", _CppTypeName("double")),
         ]
 
 
@@ -1847,13 +1874,13 @@ class RealLinearTimingEvent(EventType):
         )
 
     @override
-    def _fields(self) -> list[tuple[str, _CppTypeName]]:
+    def _fields(self) -> list[_Field]:
         nt = self._numeric_traits._cpp_type_name()
         return [
-            ("abstime", _CppTypeName(f"{nt}::abstime_type")),
-            ("delay", _CppTypeName("double")),
-            ("interval", _CppTypeName("double")),
-            ("count", _CppTypeName("std::size_t")),
+            _ScalarField("abstime", _CppTypeName(f"{nt}::abstime_type")),
+            _ScalarField("delay", _CppTypeName("double")),
+            _ScalarField("interval", _CppTypeName("double")),
+            _ScalarField("count", _CppTypeName("std::size_t")),
         ]
 
 
@@ -1898,11 +1925,11 @@ class RealOneShotTimingEvent(EventType):
         )
 
     @override
-    def _fields(self) -> list[tuple[str, _CppTypeName]]:
+    def _fields(self) -> list[_Field]:
         nt = self._numeric_traits._cpp_type_name()
         return [
-            ("abstime", _CppTypeName(f"{nt}::abstime_type")),
-            ("delay", _CppTypeName("double")),
+            _ScalarField("abstime", _CppTypeName(f"{nt}::abstime_type")),
+            _ScalarField("delay", _CppTypeName("double")),
         ]
 
 
@@ -1977,12 +2004,12 @@ class TimeCorrelatedDetectionEvent(EventType):
         )
 
     @override
-    def _fields(self) -> list[tuple[str, _CppTypeName]]:
+    def _fields(self) -> list[_Field]:
         nt = self._numeric_traits._cpp_type_name()
         return [
-            ("abstime", _CppTypeName(f"{nt}::abstime_type")),
-            ("channel", _CppTypeName(f"{nt}::channel_type")),
-            ("difftime", _CppTypeName(f"{nt}::difftime_type")),
+            _ScalarField("abstime", _CppTypeName(f"{nt}::abstime_type")),
+            _ScalarField("channel", _CppTypeName(f"{nt}::channel_type")),
+            _ScalarField("difftime", _CppTypeName(f"{nt}::difftime_type")),
         ]
 
 
@@ -2031,9 +2058,9 @@ class TimeReachedEvent(EventType):
         )
 
     @override
-    def _fields(self) -> list[tuple[str, _CppTypeName]]:
+    def _fields(self) -> list[_Field]:
         nt = self._numeric_traits._cpp_type_name()
-        return [("abstime", _CppTypeName(f"{nt}::abstime_type"))]
+        return [_ScalarField("abstime", _CppTypeName(f"{nt}::abstime_type"))]
 
 
 class WarningEvent(EventType):
@@ -2069,5 +2096,5 @@ class WarningEvent(EventType):
         return _nominal("tcspc::warning_event")
 
     @override
-    def _fields(self) -> list[tuple[str, _CppTypeName]]:
-        return [("message", _CppTypeName("std::string"))]
+    def _fields(self) -> list[_Field]:
+        return [_ScalarField("message", _CppTypeName("std::string"))]

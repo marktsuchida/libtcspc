@@ -628,7 +628,7 @@ class CompiledGraph:
         # Map wrapper pyclass -> (EventType, field names), used to convert a
         # delivered wrapper value to an EventInstance on output.
         self._eventtype_by_wrapper: dict[type, tuple[EventType, list[str]]] = {
-            pyclass: (et, [n for n, _ in et._fields()])
+            pyclass: (et, [f.name for f in et._fields()])
             for et, pyclass in wrappers
         }
         # Map C++ type-name string -> (wrapper pyclass, field names), used to
@@ -639,7 +639,10 @@ class CompiledGraph:
             if et._supports_value()
         }
         self._wrapper_by_cpp: dict[str, tuple[type, list[str]]] = {
-            str(et._cpp_type_name()): (pyclass, [n for n, _ in et._fields()])
+            str(et._cpp_type_name()): (
+                pyclass,
+                [f.name for f in et._fields()],
+            )
             for et, pyclass in wrappers
             if str(et._cpp_type_name()) in input_value_cpp_names
         }
