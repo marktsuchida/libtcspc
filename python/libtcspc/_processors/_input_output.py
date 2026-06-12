@@ -37,9 +37,11 @@ class ExtractBucket(_RelayNode):
     """Processor that extracts the bucket carried by a bucket-carrying event.
 
     Pulls the ``data_bucket`` field out of each ``event_type`` and emits it as
-    a `BucketEvent`. This is the way to obtain the result of `Histogram` or
-    `ScanHistograms` (whose output events cannot be sent to a Python sink
-    directly) as a NumPy array.
+    a `BucketEvent`. Use this to obtain the result of `Histogram` or
+    `ScanHistograms` as a bare NumPy array. Alternatively, bucket-carrying
+    events can be sent to a Python sink directly, where they are delivered as
+    `EventInstance` values; prefer `ExtractBucket` when only the array (not
+    the event wrapper) is of interest.
 
     Parameters
     ----------

@@ -178,6 +178,9 @@ class RecordLast(_TypePreservingRelayNode):
     - All other event types: pass through unchanged.
     - End of input: pass through.
 
+    Bucket-carrying event types (such as `HistogramEvent`) are supported;
+    recording deep-copies the event, including its bucket data.
+
     See Also
     --------
     :cpp:`tcspc::record_last`

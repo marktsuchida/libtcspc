@@ -32,8 +32,11 @@ class PySink(ABC):
             The event object. The event type declared on the graph's output
             edge must be one that is explicitly supported for delivery to
             Python; graphs whose output carries an unsupported event type are
-            rejected when the graph is compiled. For example, bucket events are
-            delivered as NumPy arrays.
+            rejected when the graph is compiled. Bare bucket events
+            (`BucketEvent`, `ConstBucketEvent`) are delivered as NumPy
+            arrays; events with fields, including bucket-carrying events such
+            as `HistogramEvent`, are delivered as `EventInstance` values
+            whose bucket fields read as read-only NumPy arrays.
 
         Notes
         -----
@@ -62,8 +65,9 @@ def _wrapper_to_event_instance(
     # Convert a generated event-wrapper instance delivered by the compiled
     # module into an EventInstance, using the wrapper -> (EventType, field
     # names) correspondence. The wrapper's type must be present in 'wrappers'.
+    # The trusted path is required to preserve zero-copy array delivery.
     event_type, field_names = wrappers[type(wrapper)]
-    return EventInstance(
+    return EventInstance._from_wrapper(
         event_type, {n: getattr(wrapper, n) for n in field_names}
     )
 

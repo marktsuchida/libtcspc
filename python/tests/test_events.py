@@ -9,7 +9,7 @@ import numpy as np
 import pytest
 from _test_helpers import _NamedEvent
 from libtcspc._cpp_utils import _CppIdentifier, _CppTypeName
-from libtcspc._events import _ScalarField
+from libtcspc._events import _BucketField, _ScalarField
 
 IntEvent = _NamedEvent(_CppTypeName("int"))
 
@@ -759,3 +759,190 @@ def test_CustomEvent_abstime_definition_substrings():
 
 def test_CustomEvent_repr():
     assert repr(tcspc.CustomEvent("ce_repr")) == "<CustomEvent(ce_repr)>"
+
+
+BUCKET_FIELD_EVENTS = [
+    (tcspc.HistogramEvent, "data_bucket", "bin_type"),
+    (tcspc.ConcludingHistogramEvent, "data_bucket", "bin_type"),
+    (tcspc.HistogramArrayEvent, "data_bucket", "bin_type"),
+    (tcspc.ConcludingHistogramArrayEvent, "data_bucket", "bin_type"),
+    (tcspc.HistogramArrayProgressEvent, "data_bucket", "bin_type"),
+    (tcspc.BinIncrementClusterEvent, "bin_indices", "bin_index_type"),
+]
+
+
+@pytest.mark.parametrize(("cls", "fname", "member"), BUCKET_FIELD_EVENTS)
+def test_bucket_field_schema_default_traits(cls, fname, member):
+    f = cls()._fields()[-1]
+    assert isinstance(f, _BucketField)
+    assert f.name == fname
+    assert f.element_cpp_type == f"tcspc::default_numeric_traits::{member}"
+    assert f.dtype == np.dtype(np.uint16)
+
+
+def test_progress_event_schema_has_valid_size_first():
+    schema = tcspc.HistogramArrayProgressEvent()._fields()
+    assert [f.name for f in schema] == ["valid_size", "data_bucket"]
+    assert schema[0] == _ScalarField("valid_size", _CppTypeName("std::size_t"))
+
+
+def test_bucket_field_schema_propagates_numeric_traits():
+    nt = tcspc.NumericTraits(bin_type=np.uint32)
+    (f,) = tcspc.HistogramEvent(nt)._fields()
+    assert isinstance(f, _BucketField)
+    assert f.element_cpp_type == f"{nt._cpp_type_name()}::bin_type"
+    assert f.dtype == np.dtype(np.uint32)
+
+
+def test_bin_increment_cluster_schema_propagates_numeric_traits():
+    nt = tcspc.NumericTraits(bin_index_type=np.uint32)
+    (f,) = tcspc.BinIncrementClusterEvent(nt)._fields()
+    assert isinstance(f, _BucketField)
+    assert f.element_cpp_type == f"{nt._cpp_type_name()}::bin_index_type"
+    assert f.dtype == np.dtype(np.uint32)
+
+
+@pytest.mark.parametrize(("cls", "fname", "member"), BUCKET_FIELD_EVENTS)
+def test_bucket_field_event_supports_value(cls, fname, member):
+    assert cls()._supports_value()
+    assert cls()._has_bucket_fields()
+
+
+def test_has_bucket_fields_false_for_scalar_and_unsupported_events():
+    assert not tcspc.DetectionEvent()._has_bucket_fields()
+    assert not tcspc.BucketEvent(IntEvent)._has_bucket_fields()
+
+
+def test_value_bucket_field_from_list():
+    inst = tcspc.BinIncrementClusterEvent().value(bin_indices=[1, 2, 3])
+    arr = inst.bin_indices
+    assert isinstance(arr, np.ndarray)
+    assert arr.dtype == np.dtype(np.uint16)
+    assert arr.flags.writeable is False
+    assert list(arr) == [1, 2, 3]
+
+
+def test_value_bucket_field_from_exact_dtype_ndarray_stores_copy():
+    src = np.array([1, 2, 3], dtype=np.uint16)
+    inst = tcspc.BinIncrementClusterEvent().value(bin_indices=src)
+    src[0] = 99
+    arr = inst.bin_indices
+    assert isinstance(arr, np.ndarray)
+    assert list(arr) == [1, 2, 3]
+    assert arr.flags.writeable is False
+
+
+def test_value_bucket_field_safe_cast_ndarray():
+    src = np.array([1, 2, 3], dtype=np.uint8)
+    inst = tcspc.BinIncrementClusterEvent().value(bin_indices=src)
+    arr = inst.bin_indices
+    assert isinstance(arr, np.ndarray)
+    assert arr.dtype == np.dtype(np.uint16)
+
+
+def test_value_bucket_field_unsafe_cast_ndarray_raises():
+    src = np.array([1, 2, 3], dtype=np.int32)
+    with pytest.raises(TypeError, match="safely cast"):
+        tcspc.BinIncrementClusterEvent().value(bin_indices=src)
+
+
+def test_value_bucket_field_out_of_range_list_raises():
+    with pytest.raises(TypeError, match="bin_indices"):
+        tcspc.BinIncrementClusterEvent().value(bin_indices=[70000])
+
+
+def test_value_bucket_field_rejects_2d():
+    with pytest.raises(TypeError, match="1-dimensional"):
+        tcspc.BinIncrementClusterEvent().value(
+            bin_indices=np.zeros((2, 2), dtype=np.uint16)
+        )
+
+
+def test_value_bucket_field_rejects_scalar():
+    with pytest.raises(TypeError, match="1-dimensional"):
+        tcspc.BinIncrementClusterEvent().value(bin_indices=3)
+
+
+def test_value_bucket_field_empty_list_ok():
+    inst = tcspc.BinIncrementClusterEvent().value(bin_indices=[])
+    arr = inst.bin_indices
+    assert isinstance(arr, np.ndarray)
+    assert arr.size == 0
+    assert arr.dtype == np.dtype(np.uint16)
+
+
+def test_value_mixed_scalar_and_bucket_fields():
+    inst = tcspc.HistogramArrayProgressEvent().value(
+        valid_size=3, data_bucket=[1, 2, 3, 4]
+    )
+    assert inst.valid_size == 3
+    arr = inst.data_bucket
+    assert isinstance(arr, np.ndarray)
+    assert list(arr) == [1, 2, 3, 4]
+
+
+def test_event_instance_eq_bucket_fields():
+    a = tcspc.BinIncrementClusterEvent().value(bin_indices=[1, 2, 3])
+    b = tcspc.BinIncrementClusterEvent().value(bin_indices=[1, 2, 3])
+    c = tcspc.BinIncrementClusterEvent().value(bin_indices=[1, 2, 4])
+    assert a == b
+    assert a != c
+    assert a != object()
+
+
+def test_event_instance_hash_raises_for_bucket_fields():
+    inst = tcspc.BinIncrementClusterEvent().value(bin_indices=[1])
+    with pytest.raises(TypeError, match="unhashable"):
+        hash(inst)
+
+
+def test_event_instance_hash_works_for_scalar_fields():
+    hash(tcspc.DetectionEvent().value(abstime=1, channel=2))
+
+
+def test_event_instance_repr_with_bucket_field_smoke():
+    r = repr(tcspc.BinIncrementClusterEvent().value(bin_indices=[1, 2]))
+    assert "BinIncrementClusterEvent" in r
+    assert "bin_indices" in r
+
+
+def test_bucket_field_event_instance_cpp_expression_raises():
+    inst = tcspc.BinIncrementClusterEvent().value(bin_indices=[1])
+    with pytest.raises(TypeError, match="Prepend or Append"):
+        inst._cpp_expression()
+
+
+def test_bucket_field_wrapper_class_def_substrings():
+    code = tcspc.BinIncrementClusterEvent()._cpp_wrapper_class_def(
+        _CppIdentifier("mod")
+    )
+    assert '.def_prop_rw("bin_indices"' in code
+    assert "nanobind::handle_t<" in code
+    assert "tcspc::new_delete_bucket_source<" in code
+    assert "std::copy_n(" in code
+
+
+def test_mixed_field_wrapper_class_def_substrings():
+    code = tcspc.HistogramArrayProgressEvent()._cpp_wrapper_class_def(
+        _CppIdentifier("mod")
+    )
+    assert '.def_rw("valid_size"' in code
+    assert '.def_prop_rw("data_bucket"' in code
+
+
+def test_bucket_field_cpp_output_handlers_substrings():
+    cpp = tcspc.HistogramEvent()._cpp_type_name()
+    code = tcspc.HistogramEvent()._cpp_output_handlers(_CppIdentifier("sink"))
+    assert f"void handle({cpp} const &event)" in code
+    assert f"void handle({cpp} &&event)" in code
+    assert "share_or_copy_bucket(event.data_bucket)" in code
+    assert "nanobind::cast(std::move(" in code
+
+
+def test_mixed_field_cpp_output_handlers_initialize_in_schema_order():
+    code = tcspc.HistogramArrayProgressEvent()._cpp_output_handlers(
+        _CppIdentifier("sink")
+    )
+    assert ".valid_size = event.valid_size," in code
+    assert ".data_bucket = share_or_copy_bucket(event.data_bucket)," in code
+    assert code.index(".valid_size") < code.index(".data_bucket")

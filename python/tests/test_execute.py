@@ -8,16 +8,19 @@ import threading
 import time
 from typing import final
 
+import numpy as np
 import pytest
 from _test_helpers import _NamedEvent
 from libtcspc._access import AccessTag
 from libtcspc._compile import CompiledGraph
 from libtcspc._cpp_utils import _CppIdentifier, _CppTypeName, _uint8_type
 from libtcspc._events import (
+    BinIncrementClusterEvent,
     ConstBucketEvent,
     CustomEvent,
     DetectionEvent,
     EventInstance,
+    HistogramArrayProgressEvent,
     MarkerEvent,
     RealOneShotTimingEvent,
     WarningEvent,
@@ -308,6 +311,60 @@ def test_execute_string_field_event_round_trips_through_passthrough_graph():
     assert sink.events == [sent]
     assert isinstance(sink.events[0], EventInstance)
     assert sink.events[0]._fields == {"message": "something happened"}
+
+
+def test_execute_bucket_event_value_round_trips_through_passthrough_graph():
+    g = Graph()
+    g.add_node("a", SelectAll())
+    cg = CompiledGraph(g, (BinIncrementClusterEvent(),))
+    sink = CollectingSink()
+    ec = ExecutionContext(cg, None, (sink,))
+    sent = BinIncrementClusterEvent().value(bin_indices=[1, 2, 3])
+    ec.handle(sent)
+    assert len(sink.events) == 1
+    out = sink.events[0]
+    assert isinstance(out, EventInstance)
+    assert out == sent
+    arr = out.bin_indices
+    assert isinstance(arr, np.ndarray)
+    assert arr.dtype == np.dtype(np.uint16)
+    assert arr.flags.writeable is False
+
+
+def test_execute_mixed_scalar_bucket_event_round_trips():
+    g = Graph()
+    g.add_node("a", SelectAll())
+    cg = CompiledGraph(g, (HistogramArrayProgressEvent(),))
+    sink = CollectingSink()
+    ec = ExecutionContext(cg, None, (sink,))
+    sent = HistogramArrayProgressEvent().value(
+        valid_size=3, data_bucket=[5, 6, 7, 8]
+    )
+    ec.handle(sent)
+    out = sink.events[0]
+    assert isinstance(out, EventInstance)
+    assert out == sent
+    assert out.valid_size == 3
+    arr = out.data_bucket
+    assert isinstance(arr, np.ndarray)
+    assert list(arr) == [5, 6, 7, 8]
+
+
+def test_execute_empty_bucket_event_round_trips():
+    g = Graph()
+    g.add_node("a", SelectAll())
+    cg = CompiledGraph(g, (BinIncrementClusterEvent(),))
+    sink = CollectingSink()
+    ec = ExecutionContext(cg, None, (sink,))
+    sent = BinIncrementClusterEvent().value(bin_indices=[])
+    ec.handle(sent)
+    out = sink.events[0]
+    assert isinstance(out, EventInstance)
+    assert out == sent
+    arr = out.bin_indices
+    assert isinstance(arr, np.ndarray)
+    assert arr.size == 0
+    assert arr.dtype == np.dtype(np.uint16)
 
 
 def test_execute_rejects_event_value_of_unaccepted_type():

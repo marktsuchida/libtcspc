@@ -83,6 +83,11 @@ def test_Prepend_codegen():
     assert "DOWN" in code
 
 
+def test_Prepend_rejects_bucket_carrying_event():
+    with pytest.raises(TypeError, match="ExecutionContext.handle"):
+        Prepend(tcspc.BinIncrementClusterEvent().value(bin_indices=[1, 2]))
+
+
 def test_Append_event_set_adds_inserted_event():
     node = Append(tcspc.DetectionEvent().value(abstime=0, channel=0))
     out = node._relay_map_event_set((IntEvent,))
@@ -96,6 +101,11 @@ def test_Append_event_set_from_empty_input():
     out = node._relay_map_event_set(())
     cpp = [e._cpp_type_name() for e in out]
     assert cpp == [tcspc.DetectionEvent()._cpp_type_name()]
+
+
+def test_Append_rejects_bucket_carrying_event():
+    with pytest.raises(TypeError, match="ExecutionContext.handle"):
+        Append(tcspc.HistogramEvent().value(data_bucket=[1, 2, 3]))
 
 
 def test_Append_codegen():

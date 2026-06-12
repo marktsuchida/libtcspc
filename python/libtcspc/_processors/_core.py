@@ -122,6 +122,12 @@ class Prepend(_RelayNode):
     """
 
     def __init__(self, event: EventInstance) -> None:
+        if event._event_type._has_bucket_fields():
+            raise TypeError(
+                f"{type(self).__name__} does not support bucket-carrying "
+                f"events ({type(event._event_type).__name__}); send the "
+                "event at run time using ExecutionContext.handle() instead"
+            )
         self._event = event
 
     @override
@@ -178,6 +184,12 @@ class Append(_RelayNode):
     """
 
     def __init__(self, event: EventInstance) -> None:
+        if event._event_type._has_bucket_fields():
+            raise TypeError(
+                f"{type(self).__name__} does not support bucket-carrying "
+                f"events ({type(event._event_type).__name__}); send the "
+                "event at run time using ExecutionContext.handle() instead"
+            )
         self._event = event
 
     @override

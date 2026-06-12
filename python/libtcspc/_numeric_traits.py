@@ -41,6 +41,17 @@ _SLOT_DESCRIPTION: dict[frozenset[str], str] = {
     frozenset({"u"}): "an unsigned integer",
 }
 
+# Must mirror tcspc::default_numeric_traits (C++).
+_DEFAULT_DTYPES: dict[str, np.dtype] = {
+    "abstime_type": np.dtype(np.int64),
+    "channel_type": np.dtype(np.int32),
+    "difftime_type": np.dtype(np.int32),
+    "count_type": np.dtype(np.uint32),
+    "datapoint_type": np.dtype(np.int32),
+    "bin_index_type": np.dtype(np.uint16),
+    "bin_type": np.dtype(np.uint16),
+}
+
 
 _referenced_traits: contextvars.ContextVar[dict[str, str] | None] = (
     contextvars.ContextVar("_referenced_traits", default=None)
@@ -122,6 +133,7 @@ class NumericTraits:
 
     def __init__(self, **kwargs: Unpack[_NumericTraits]) -> None:
         overrides: dict[str, _CppTypeName] = {}
+        dtype_overrides: dict[str, np.dtype] = {}
         for category, allowed in _SLOT_RULES.items():
             key = f"{category}_type"
             if key not in kwargs:
@@ -136,6 +148,8 @@ class NumericTraits:
                     f"{np.dtype(value)!s}"
                 )
             overrides[key] = cpp_type
+            dtype_overrides[key] = np.dtype(value)
+        self._dtypes = _DEFAULT_DTYPES | dtype_overrides
 
         if not overrides:
             self._struct_name = _CppTypeName("tcspc::default_numeric_traits")
@@ -157,6 +171,9 @@ class NumericTraits:
             _known_traits_definitions.setdefault(
                 str(self._struct_name), self._struct_definition
             )
+
+    def _member_dtype(self, member: str) -> np.dtype:
+        return self._dtypes[member]
 
     def _cpp_type_name(self) -> _CppTypeName:
         if self._struct_definition is not None:

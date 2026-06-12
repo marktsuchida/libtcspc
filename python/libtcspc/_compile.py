@@ -128,7 +128,7 @@ def _event_wrappers(
     correspondence = [
         (et, str(et._cpp_wrapper_class_name())) for et in by_cpp.values()
     ]
-    return _ModuleCodeFragment((), (), (), defs), correspondence
+    return _ModuleCodeFragment((), ("algorithm",), (), defs), correspondence
 
 
 # No-op wrapper to limit event types to the requested ones.
@@ -278,6 +278,26 @@ def _py_bucket_source_support() -> _ModuleCodeFragment:
                                                   std::move(storage));
                 }
             };"""),
+            _CppNamespaceScopeDefs("""\
+            // Prepare a bucket for transfer to Python: share
+            // Python-buffer-backed storage (zero-copy; exposed read-only),
+            // otherwise deep-copy. Copying py_buffer_shared_storage is a
+            // GIL-free shared_ptr refcount bump, so this is safe to call with
+            // the GIL released. The const_cast is sound because exposure to
+            // Python is read-only.
+            template <typename T>
+            auto share_or_copy_bucket(tcspc::bucket<T> const &bkt)
+                -> tcspc::bucket<T> {
+                if (bkt.template check_storage_type<
+                        py_buffer_shared_storage>()) {
+                    auto storage =
+                        bkt.template storage<py_buffer_shared_storage>();
+                    auto const spn = std::span<T>(
+                        const_cast<T *>(bkt.data()), bkt.size());
+                    return tcspc::bucket<T>(spn, std::move(storage));
+                }
+                return bkt;
+            }"""),
         ),
         (),
     )
@@ -384,10 +404,14 @@ def _processor_creation(
             (
                 _CppFunctionScopeDefs(
                     f'nanobind::class_<processor_type>({module_var}, "Processor", nanobind::is_final())'
-                    + (
-                        '\n    .def("handle", &processor_type::handle, nanobind::call_guard<nanobind::gil_scoped_release>())'
-                        if len(input_event_types) > 0
-                        else ""
+                    # handle() is an overload set when there are multiple
+                    # input event types, so bind each overload explicitly.
+                    + "".join(
+                        '\n    .def("handle", nanobind::overload_cast<'
+                        f"{et._cpp_input_handler_param_type()} const &>"
+                        "(&processor_type::handle), "
+                        "nanobind::call_guard<nanobind::gil_scoped_release>())"
+                        for et in input_event_types
                     )
                     + '\n    .def("flush", &processor_type::flush, nanobind::call_guard<nanobind::gil_scoped_release>())'
                     + '\n    .def("_graphviz", [](processor_type const &self) {'

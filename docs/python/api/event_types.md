@@ -12,8 +12,14 @@ graph at run time.
 Instances of these classes describe the event *type*; they are not themselves
 instances of the run-time events. An {py:class}`~libtcspc.EventInstance`, built
 via {py:meth}`EventType.value() <libtcspc.EventType.value>`, *is* a concrete
-event value; it is used to insert events into a stream with
-{py:class}`~libtcspc.Prepend` and {py:class}`~libtcspc.Append`.
+event value. Event values can be sent into a running graph with
+{py:meth}`ExecutionContext.handle() <libtcspc.ExecutionContext.handle>`, are
+the form in which graph output is delivered to a {py:class}`~libtcspc.PySink`,
+and can be inserted into a stream at compile time with
+{py:class}`~libtcspc.Prepend` and {py:class}`~libtcspc.Append`. Bucket-carrying
+event types (such as {py:class}`~libtcspc.HistogramEvent`) support all of these
+except {py:class}`~libtcspc.Prepend` and {py:class}`~libtcspc.Append`; their
+bucket fields are read as read-only NumPy arrays.
 
 Some event types (those carrying timestamp and related data) are parameterized
 by the exact numeric types used. {py:class}`~libtcspc.NumericTraits` objects

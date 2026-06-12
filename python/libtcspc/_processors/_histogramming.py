@@ -94,15 +94,17 @@ class Histogram(_RelayNode):
 
     Notes
     -----
-    The histogram-carrying output events cannot be sent to a Python sink; insert
-    `ExtractBucket` to obtain the histogram as a NumPy array.
+    The histogram-carrying output events can be sent directly to a Python
+    sink, where they are delivered as `EventInstance` values whose
+    ``data_bucket`` attribute reads as a read-only NumPy array. Alternatively,
+    insert `ExtractBucket` to obtain just the histogram as a bare NumPy array.
 
     See Also
     --------
     :cpp:`tcspc::histogram`
         The underlying C++ factory function.
     :py:obj:`ExtractBucket`
-        Extract the histogram bucket as a NumPy array.
+        Extract the histogram bucket as a bare NumPy array.
     """
 
     def __init__(
@@ -237,15 +239,18 @@ class ScanHistograms(_RelayNode):
 
     Notes
     -----
-    The histogram-carrying output events cannot be sent to a Python sink; insert
-    `ExtractBucket` to obtain the histogram array as a NumPy array.
+    The histogram-carrying output events can be sent directly to a Python
+    sink, where they are delivered as `EventInstance` values whose
+    ``data_bucket`` attribute reads as a read-only NumPy array. Alternatively,
+    insert `ExtractBucket` to obtain just the histogram array as a bare NumPy
+    array.
 
     See Also
     --------
     :cpp:`tcspc::scan_histograms`
         The underlying C++ factory function.
     :py:obj:`ExtractBucket`
-        Extract a histogram-array bucket as a NumPy array.
+        Extract a histogram-array bucket as a bare NumPy array.
     """
 
     def __init__(
