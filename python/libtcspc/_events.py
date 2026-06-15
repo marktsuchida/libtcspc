@@ -72,6 +72,9 @@ def _field_py_kind(cpp_type: _CppTypeName) -> type:
     return int  # NumericTraits member types and std::size_t are integral
 
 
+_FieldValue: TypeAlias = int | float | str | np.ndarray
+
+
 @dataclasses.dataclass(frozen=True)
 class _ScalarField:
     name: str
@@ -80,6 +83,46 @@ class _ScalarField:
     def py_kind(self) -> type:  # int, float, or str
         return _field_py_kind(self.cpp_type)
 
+    def coerce(
+        self, value: int | float | str | npt.ArrayLike, owner: str
+    ) -> _FieldValue:
+        kind = self.py_kind()
+        if kind is int:
+            if isinstance(value, bool) or not isinstance(value, int):
+                raise TypeError(
+                    f"{owner}: field {self.name!r} "
+                    f"must be an int, not {type(value).__name__}"
+                )
+            return int(value)
+        if kind is float:
+            if isinstance(value, bool) or not isinstance(value, (int, float)):
+                raise TypeError(
+                    f"{owner}: field {self.name!r} "
+                    f"must be a float, not {type(value).__name__}"
+                )
+            return float(value)
+        if not isinstance(value, str):
+            raise TypeError(
+                f"{owner}: field {self.name!r} "
+                f"must be a str, not {type(value).__name__}"
+            )
+        return value
+
+    def wrapper_binding(self, event_cpp: _CppTypeName) -> str:
+        return f'\n    .def_rw("{self.name}", &{event_cpp}::{self.name})'
+
+    def output_init_expr(self) -> str:
+        return f"event.{self.name}"
+
+    def cpp_initializer(self, value: _FieldValue) -> str:
+        kind = self.py_kind()
+        if kind is str:
+            assert isinstance(value, str)
+            return f".{self.name} = {self.cpp_type}{{{_quote_string(value)}}}"
+        if kind is float:
+            return f".{self.name} = static_cast<{self.cpp_type}>({value!r})"
+        return f".{self.name} = static_cast<{self.cpp_type}>({value})"
+
 
 @dataclasses.dataclass(frozen=True)
 class _BucketField:
@@ -87,10 +130,82 @@ class _BucketField:
     element_cpp_type: _CppTypeName
     dtype: np.dtype
 
+    def coerce(
+        self, value: int | float | str | npt.ArrayLike, owner: str
+    ) -> _FieldValue:
+        if isinstance(value, np.ndarray):
+            if value.dtype != self.dtype and not np.can_cast(
+                value.dtype, self.dtype, casting="safe"
+            ):
+                raise TypeError(
+                    f"{owner}: field {self.name!r} given dtype "
+                    f"{value.dtype} cannot be safely cast to {self.dtype}"
+                )
+            arr = value.astype(self.dtype)  # Always copies.
+        else:
+            try:
+                arr = np.array(value, dtype=self.dtype)
+            except (TypeError, ValueError, OverflowError) as e:
+                raise TypeError(
+                    f"{owner}: field {self.name!r} must be convertible to "
+                    f"a NumPy array of dtype {self.dtype} ({e})"
+                ) from e
+        if arr.ndim != 1:
+            raise TypeError(
+                f"{owner}: field {self.name!r} "
+                f"must be 1-dimensional, got {arr.ndim} dimension(s)"
+            )
+        arr.setflags(write=False)
+        return arr
+
+    def wrapper_binding(self, event_cpp: _CppTypeName) -> str:
+        # The getter is a read-only zero-copy view of the bucket held by the
+        # wrapper (the wrapper Python object is the ndarray owner). The setter
+        # copies into newly owned storage (value semantics). The dummy pointer
+        # substituted for a default-constructed (empty) bucket's nullptr
+        # data() is never dereferenced (the array has 0 elements).
+        elem = self.element_cpp_type
+        return f"""
+    .def_prop_rw("{self.name}",
+        [](nanobind::handle_t<{event_cpp}> self_py) {{
+            auto &self = nanobind::cast<{event_cpp} &>(self_py);
+            auto const *ptr = self.{self.name}.data();
+            if (ptr == nullptr)
+                ptr = reinterpret_cast<{elem} const *>(&self);
+            return nanobind::ndarray<{elem} const, nanobind::numpy>(
+                ptr, {{self.{self.name}.size()}}, self_py).cast();
+        }},
+        []({event_cpp} &self,
+           nanobind::ndarray<{elem} const, nanobind::ndim<1>,
+                             nanobind::c_contig,
+                             nanobind::device::cpu> const &arr) {{
+            auto bkt = tcspc::new_delete_bucket_source<{elem}>::create()
+                           ->bucket_of_size(arr.size());
+            std::copy_n(arr.data(), arr.size(), bkt.begin());
+            self.{self.name} = std::move(bkt);
+        }})"""
+
+    def output_init_expr(self) -> str:
+        return f"share_or_copy_bucket(event.{self.name})"
+
+    def cpp_initializer(self, value: _FieldValue) -> str:
+        # Unreachable: callers reject bucket-carrying event types up front
+        # (see EventInstance._cpp_expression); defined so the union type
+        # checks.
+        raise TypeError(
+            f"bucket field {self.name!r} cannot be embedded in compiled code"
+        )
+
 
 _Field: TypeAlias = _ScalarField | _BucketField
 
-_FieldValue: TypeAlias = int | float | str | np.ndarray
+
+def _field_values_equal(v: _FieldValue, w: _FieldValue) -> bool:
+    if isinstance(v, np.ndarray) and isinstance(w, np.ndarray):
+        return bool(v.dtype == w.dtype and np.array_equal(v, w))
+    if isinstance(v, np.ndarray) or isinstance(w, np.ndarray):
+        return False
+    return bool(v == w)
 
 
 class EventType(ABC):
@@ -144,29 +259,22 @@ class EventType(ABC):
         return self._cpp_type_name()
 
     def _supports_value(self) -> bool:
-        try:
-            self._fields()
-        except TypeError:
-            return False
-        return True
+        return self._field_schema() is not None
 
     def _has_bucket_fields(self) -> bool:
-        try:
-            schema = self._fields()
-        except TypeError:
-            return False
-        return any(isinstance(f, _BucketField) for f in schema)
+        schema = self._field_schema()
+        return any(isinstance(f, _BucketField) for f in schema or ())
 
     def _cpp_output_handlers(
         self, pysink: _CppIdentifier
     ) -> _CppClassScopeDefs:
-        if not self._supports_value():
+        schema = self._field_schema()
+        if schema is None:
             raise TypeError(
                 f"event type {type(self).__name__} ({self._cpp_type_name()}) "
                 "cannot be delivered to a Python sink."
             )
         cpp = self._cpp_type_name()
-        schema = self._fields()
         if not any(isinstance(f, _BucketField) for f in schema):
             return _CppClassScopeDefs(f"""\
             void handle({cpp} const &event) {{
@@ -178,12 +286,7 @@ class EventType(ABC):
         # storage (zero-copy) or deep-copy, before acquiring the GIL; an
         # rvalue event moves into the wrapper wholesale, preserving storage.
         inits = "".join(
-            f"\n                .{f.name} = "
-            + (
-                f"share_or_copy_bucket(event.{f.name}),"
-                if isinstance(f, _BucketField)
-                else f"event.{f.name},"
-            )
+            f"\n                .{f.name} = {f.output_init_expr()},"
             for f in schema
         )
         return _CppClassScopeDefs(f"""\
@@ -211,10 +314,7 @@ class EventType(ABC):
         cpp = self._cpp_type_name()
         name = self._cpp_wrapper_class_name()
         defs = "".join(
-            self._cpp_wrapper_bucket_field_def(f)
-            if isinstance(f, _BucketField)
-            else f'\n    .def_rw("{f.name}", &{cpp}::{f.name})'
-            for f in self._fields()
+            f.wrapper_binding(cpp) for f in self._field_schema() or ()
         )
         return _CppFunctionScopeDefs(
             f'nanobind::class_<{cpp}>({module_var}, "{name}", '
@@ -222,44 +322,13 @@ class EventType(ABC):
             f"{defs};\n"
         )
 
-    def _cpp_wrapper_bucket_field_def(self, field: "_BucketField") -> str:
-        # The getter is a read-only zero-copy view of the bucket held by the
-        # wrapper (the wrapper Python object is the ndarray owner). The setter
-        # copies into newly owned storage (value semantics). The dummy pointer
-        # substituted for a default-constructed (empty) bucket's nullptr
-        # data() is never dereferenced (the array has 0 elements).
-        cpp = self._cpp_type_name()
-        elem = field.element_cpp_type
-        return f"""
-    .def_prop_rw("{field.name}",
-        [](nanobind::handle_t<{cpp}> self_py) {{
-            auto &self = nanobind::cast<{cpp} &>(self_py);
-            auto const *ptr = self.{field.name}.data();
-            if (ptr == nullptr)
-                ptr = reinterpret_cast<{elem} const *>(&self);
-            return nanobind::ndarray<{elem} const, nanobind::numpy>(
-                ptr, {{self.{field.name}.size()}}, self_py).cast();
-        }},
-        []({cpp} &self,
-           nanobind::ndarray<{elem} const, nanobind::ndim<1>,
-                             nanobind::c_contig,
-                             nanobind::device::cpu> const &arr) {{
-            auto bkt = tcspc::new_delete_bucket_source<{elem}>::create()
-                           ->bucket_of_size(arr.size());
-            std::copy_n(arr.data(), arr.size(), bkt.begin());
-            self.{field.name} = std::move(bkt);
-        }})"""
-
-    def _fields(self) -> list[_Field]:
+    def _field_schema(self) -> list[_Field] | None:
         """Field descriptor schema for constructing event values.
 
         Event types that support value construction override this. The default
-        raises, marking the type as non-constructible from Python.
+        returns ``None``, marking the type as non-constructible from Python.
         """
-        raise TypeError(
-            f"event type {type(self).__name__} ({self._cpp_type_name()}) "
-            "does not support constructing event values"
-        )
+        return None
 
     def value(
         self, **fields: int | float | str | npt.ArrayLike
@@ -316,7 +385,13 @@ class EventInstance:
         event_type: EventType,
         fields: Mapping[str, int | float | str | npt.ArrayLike],
     ) -> None:
-        schema = event_type._fields()  # Raises TypeError if unsupported.
+        schema = event_type._field_schema()
+        if schema is None:
+            raise TypeError(
+                f"event type {type(event_type).__name__} "
+                f"({event_type._cpp_type_name()}) does not support "
+                "constructing event values"
+            )
         names = [f.name for f in schema]
         missing = [n for n in names if n not in fields]
         extra = [k for k in fields if k not in names]
@@ -330,62 +405,11 @@ class EventInstance:
                 f"{type(event_type).__name__}.value(): "
                 f"{'; '.join(problems)} (expected {names})"
             )
-        stored: dict[str, _FieldValue] = {}
-        for f in schema:
-            n = f.name
-            v = fields[n]
-            if isinstance(f, _BucketField):
-                if isinstance(v, np.ndarray):
-                    if v.dtype != f.dtype and not np.can_cast(
-                        v.dtype, f.dtype, casting="safe"
-                    ):
-                        raise TypeError(
-                            f"{type(event_type).__name__}.value(): field "
-                            f"{n!r} given dtype {v.dtype} cannot be safely "
-                            f"cast to {f.dtype}"
-                        )
-                    arr = v.astype(f.dtype)  # Always copies.
-                else:
-                    try:
-                        arr = np.array(v, dtype=f.dtype)
-                    except (TypeError, ValueError, OverflowError) as e:
-                        raise TypeError(
-                            f"{type(event_type).__name__}.value(): field "
-                            f"{n!r} must be convertible to a NumPy array of "
-                            f"dtype {f.dtype} ({e})"
-                        ) from e
-                if arr.ndim != 1:
-                    raise TypeError(
-                        f"{type(event_type).__name__}.value(): field {n!r} "
-                        f"must be 1-dimensional, got {arr.ndim} dimension(s)"
-                    )
-                arr.setflags(write=False)
-                stored[n] = arr
-                continue
-            kind = f.py_kind()
-            if kind is int:
-                if isinstance(v, bool) or not isinstance(v, int):
-                    raise TypeError(
-                        f"{type(event_type).__name__}.value(): field {n!r} "
-                        f"must be an int, not {type(v).__name__}"
-                    )
-                stored[n] = int(v)
-            elif kind is float:
-                if isinstance(v, bool) or not isinstance(v, (int, float)):
-                    raise TypeError(
-                        f"{type(event_type).__name__}.value(): field {n!r} "
-                        f"must be a float, not {type(v).__name__}"
-                    )
-                stored[n] = float(v)
-            else:  # str
-                if not isinstance(v, str):
-                    raise TypeError(
-                        f"{type(event_type).__name__}.value(): field {n!r} "
-                        f"must be a str, not {type(v).__name__}"
-                    )
-                stored[n] = v
+        owner = f"{type(event_type).__name__}.value()"
         self._event_type = event_type
-        self._fields = stored
+        self._fields = {
+            f.name: f.coerce(fields[f.name], owner) for f in schema
+        }
 
     @classmethod
     def _from_wrapper(
@@ -427,19 +451,10 @@ class EventInstance:
                 "run time using ExecutionContext.handle() instead"
             )
         ctype = self._event_type._cpp_type_name()
-        parts = []
-        for f in self._event_type._fields():
-            assert isinstance(f, _ScalarField)
-            v = self._fields[f.name]
-            ftype = f.cpp_type
-            kind = f.py_kind()
-            if kind is str:
-                assert isinstance(v, str)
-                parts.append(f".{f.name} = {ftype}{{{_quote_string(v)}}}")
-            elif kind is float:
-                parts.append(f".{f.name} = static_cast<{ftype}>({v!r})")
-            else:
-                parts.append(f".{f.name} = static_cast<{ftype}>({v})")
+        parts = [
+            f.cpp_initializer(self._fields[f.name])
+            for f in self._event_type._field_schema() or ()
+        ]
         return _CppExpression(f"{ctype}{{{', '.join(parts)}}}")
 
     def __eq__(self, other: object) -> bool:
@@ -449,21 +464,13 @@ class EventInstance:
             or self._fields.keys() != other._fields.keys()
         ):
             return False
-        for n, v in self._fields.items():
-            w = other._fields[n]
-            if isinstance(v, np.ndarray) or isinstance(w, np.ndarray):
-                if not (
-                    isinstance(v, np.ndarray) and isinstance(w, np.ndarray)
-                ):
-                    return False
-                if v.dtype != w.dtype or not np.array_equal(v, w):
-                    return False
-            elif v != w:
-                return False
-        return True
+        return all(
+            _field_values_equal(v, other._fields[n])
+            for n, v in self._fields.items()
+        )
 
     def __hash__(self) -> int:
-        if any(isinstance(v, np.ndarray) for v in self._fields.values()):
+        if self._event_type._has_bucket_fields():
             raise TypeError(
                 f"unhashable: {type(self._event_type).__name__} value with "
                 "array (bucket) fields"
@@ -597,7 +604,7 @@ class CustomEvent(EventType):
         return f"<CustomEvent({self._readable_name})>"
 
     @override
-    def _fields(self) -> list[_Field]:
+    def _field_schema(self) -> list[_Field]:
         if not self._abstime:
             return []
         assert self._traits is not None
@@ -974,7 +981,7 @@ class BeginLostIntervalEvent(EventType):
         )
 
     @override
-    def _fields(self) -> list[_Field]:
+    def _field_schema(self) -> list[_Field]:
         nt = self._numeric_traits._cpp_type_name()
         return [_ScalarField("abstime", _CppTypeName(f"{nt}::abstime_type"))]
 
@@ -1107,7 +1114,7 @@ class BinIncrementClusterEvent(EventType):
         )
 
     @override
-    def _fields(self) -> list[_Field]:
+    def _field_schema(self) -> list[_Field]:
         nt = self._numeric_traits._cpp_type_name()
         return [
             _BucketField(
@@ -1160,7 +1167,7 @@ class BinIncrementEvent(EventType):
         )
 
     @override
-    def _fields(self) -> list[_Field]:
+    def _field_schema(self) -> list[_Field]:
         nt = self._numeric_traits._cpp_type_name()
         return [
             _ScalarField("bin_index", _CppTypeName(f"{nt}::bin_index_type"))
@@ -1210,7 +1217,7 @@ class BulkCountsEvent(EventType):
         )
 
     @override
-    def _fields(self) -> list[_Field]:
+    def _field_schema(self) -> list[_Field]:
         nt = self._numeric_traits._cpp_type_name()
         return [
             _ScalarField("abstime", _CppTypeName(f"{nt}::abstime_type")),
@@ -1270,7 +1277,7 @@ class ConcludingHistogramArrayEvent(EventType):
         )
 
     @override
-    def _fields(self) -> list[_Field]:
+    def _field_schema(self) -> list[_Field]:
         nt = self._numeric_traits._cpp_type_name()
         return [
             _BucketField(
@@ -1335,7 +1342,7 @@ class ConcludingHistogramEvent(EventType):
         )
 
     @override
-    def _fields(self) -> list[_Field]:
+    def _field_schema(self) -> list[_Field]:
         nt = self._numeric_traits._cpp_type_name()
         return [
             _BucketField(
@@ -1395,7 +1402,7 @@ class DataLostEvent(EventType):
         )
 
     @override
-    def _fields(self) -> list[_Field]:
+    def _field_schema(self) -> list[_Field]:
         nt = self._numeric_traits._cpp_type_name()
         return [_ScalarField("abstime", _CppTypeName(f"{nt}::abstime_type"))]
 
@@ -1441,7 +1448,7 @@ class DatapointEvent(EventType):
         )
 
     @override
-    def _fields(self) -> list[_Field]:
+    def _field_schema(self) -> list[_Field]:
         nt = self._numeric_traits._cpp_type_name()
         return [_ScalarField("value", _CppTypeName(f"{nt}::datapoint_type"))]
 
@@ -1489,7 +1496,7 @@ class DetectionEvent(EventType):
         )
 
     @override
-    def _fields(self) -> list[_Field]:
+    def _field_schema(self) -> list[_Field]:
         nt = self._numeric_traits._cpp_type_name()
         return [
             _ScalarField("abstime", _CppTypeName(f"{nt}::abstime_type")),
@@ -1585,7 +1592,7 @@ class EndLostIntervalEvent(EventType):
         )
 
     @override
-    def _fields(self) -> list[_Field]:
+    def _field_schema(self) -> list[_Field]:
         nt = self._numeric_traits._cpp_type_name()
         return [_ScalarField("abstime", _CppTypeName(f"{nt}::abstime_type"))]
 
@@ -1640,7 +1647,7 @@ class HistogramArrayEvent(EventType):
         )
 
     @override
-    def _fields(self) -> list[_Field]:
+    def _field_schema(self) -> list[_Field]:
         nt = self._numeric_traits._cpp_type_name()
         return [
             _BucketField(
@@ -1705,7 +1712,7 @@ class HistogramArrayProgressEvent(EventType):
         )
 
     @override
-    def _fields(self) -> list[_Field]:
+    def _field_schema(self) -> list[_Field]:
         # Order must match the C++ member declaration order (the generated
         # output handler uses designated initializers).
         nt = self._numeric_traits._cpp_type_name()
@@ -1773,7 +1780,7 @@ class HistogramEvent(EventType):
         )
 
     @override
-    def _fields(self) -> list[_Field]:
+    def _field_schema(self) -> list[_Field]:
         nt = self._numeric_traits._cpp_type_name()
         return [
             _BucketField(
@@ -1829,7 +1836,7 @@ class LostCountsEvent(EventType):
         )
 
     @override
-    def _fields(self) -> list[_Field]:
+    def _field_schema(self) -> list[_Field]:
         nt = self._numeric_traits._cpp_type_name()
         return [
             _ScalarField("abstime", _CppTypeName(f"{nt}::abstime_type")),
@@ -1885,7 +1892,7 @@ class MarkerEvent(EventType):
         )
 
     @override
-    def _fields(self) -> list[_Field]:
+    def _field_schema(self) -> list[_Field]:
         nt = self._numeric_traits._cpp_type_name()
         return [
             _ScalarField("abstime", _CppTypeName(f"{nt}::abstime_type")),
@@ -1936,7 +1943,7 @@ class PeriodicSequenceModelEvent(EventType):
         )
 
     @override
-    def _fields(self) -> list[_Field]:
+    def _field_schema(self) -> list[_Field]:
         nt = self._numeric_traits._cpp_type_name()
         return [
             _ScalarField("abstime", _CppTypeName(f"{nt}::abstime_type")),
@@ -2139,7 +2146,7 @@ class RealLinearTimingEvent(EventType):
         )
 
     @override
-    def _fields(self) -> list[_Field]:
+    def _field_schema(self) -> list[_Field]:
         nt = self._numeric_traits._cpp_type_name()
         return [
             _ScalarField("abstime", _CppTypeName(f"{nt}::abstime_type")),
@@ -2190,7 +2197,7 @@ class RealOneShotTimingEvent(EventType):
         )
 
     @override
-    def _fields(self) -> list[_Field]:
+    def _field_schema(self) -> list[_Field]:
         nt = self._numeric_traits._cpp_type_name()
         return [
             _ScalarField("abstime", _CppTypeName(f"{nt}::abstime_type")),
@@ -2269,7 +2276,7 @@ class TimeCorrelatedDetectionEvent(EventType):
         )
 
     @override
-    def _fields(self) -> list[_Field]:
+    def _field_schema(self) -> list[_Field]:
         nt = self._numeric_traits._cpp_type_name()
         return [
             _ScalarField("abstime", _CppTypeName(f"{nt}::abstime_type")),
@@ -2323,7 +2330,7 @@ class TimeReachedEvent(EventType):
         )
 
     @override
-    def _fields(self) -> list[_Field]:
+    def _field_schema(self) -> list[_Field]:
         nt = self._numeric_traits._cpp_type_name()
         return [_ScalarField("abstime", _CppTypeName(f"{nt}::abstime_type"))]
 
@@ -2361,5 +2368,5 @@ class WarningEvent(EventType):
         return _nominal("tcspc::warning_event")
 
     @override
-    def _fields(self) -> list[_Field]:
+    def _field_schema(self) -> list[_Field]:
         return [_ScalarField("message", _CppTypeName("std::string"))]

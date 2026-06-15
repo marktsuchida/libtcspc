@@ -334,7 +334,7 @@ FIELDS_EXPECTED = [
 
 @pytest.mark.parametrize(("cls", "names"), FIELDS_EXPECTED)
 def test_fields_returns_expected_schema(cls, names):
-    schema = cls()._fields()
+    schema = cls()._field_schema()
     assert [f.name for f in schema] == names
     prefix = "tcspc::default_numeric_traits::"
     for f in schema:
@@ -394,12 +394,11 @@ FIELDS_EXPECTED_EXPLICIT = [
 
 @pytest.mark.parametrize(("cls", "schema"), FIELDS_EXPECTED_EXPLICIT)
 def test_fields_returns_expected_explicit_schema(cls, schema):
-    assert cls()._fields() == schema
+    assert cls()._field_schema() == schema
 
 
-def test_fields_unsupported_type_raises():
-    with pytest.raises(TypeError, match="does not support"):
-        tcspc.BucketEvent(IntEvent)._fields()
+def test_field_schema_unsupported_type_is_none():
+    assert tcspc.BucketEvent(IntEvent)._field_schema() is None
 
 
 def test_value_happy_path():
@@ -597,14 +596,14 @@ def test_CustomEvent_abstime_cpp_type_name():
 
 
 def test_CustomEvent_empty_fields_is_empty():
-    assert tcspc.CustomEvent("ce_empty_fields")._fields() == []
+    assert tcspc.CustomEvent("ce_empty_fields")._field_schema() == []
 
 
 def test_CustomEvent_abstime_fields():
     ev = tcspc.CustomEvent(
         "ce_abstime_fields", abstime=True, traits=tcspc.NumericTraits()
     )
-    assert ev._fields() == [
+    assert ev._field_schema() == [
         _ScalarField(
             "abstime",
             _CppTypeName("tcspc::default_numeric_traits::abstime_type"),
@@ -615,7 +614,7 @@ def test_CustomEvent_abstime_fields():
 def test_CustomEvent_abstime_fields_use_supplied_traits():
     nt = tcspc.NumericTraits(abstime_type=np.uint64)
     ev = tcspc.CustomEvent("ce_abstime_traits", abstime=True, traits=nt)
-    (f,) = ev._fields()
+    (f,) = ev._field_schema()
     assert isinstance(f, _ScalarField)
     assert f.cpp_type == f"{nt._cpp_type_name()}::abstime_type"
 
@@ -773,7 +772,7 @@ BUCKET_FIELD_EVENTS = [
 
 @pytest.mark.parametrize(("cls", "fname", "member"), BUCKET_FIELD_EVENTS)
 def test_bucket_field_schema_default_traits(cls, fname, member):
-    f = cls()._fields()[-1]
+    f = cls()._field_schema()[-1]
     assert isinstance(f, _BucketField)
     assert f.name == fname
     assert f.element_cpp_type == f"tcspc::default_numeric_traits::{member}"
@@ -781,14 +780,14 @@ def test_bucket_field_schema_default_traits(cls, fname, member):
 
 
 def test_progress_event_schema_has_valid_size_first():
-    schema = tcspc.HistogramArrayProgressEvent()._fields()
+    schema = tcspc.HistogramArrayProgressEvent()._field_schema()
     assert [f.name for f in schema] == ["valid_size", "data_bucket"]
     assert schema[0] == _ScalarField("valid_size", _CppTypeName("std::size_t"))
 
 
 def test_bucket_field_schema_propagates_numeric_traits():
     nt = tcspc.NumericTraits(bin_type=np.uint32)
-    (f,) = tcspc.HistogramEvent(nt)._fields()
+    (f,) = tcspc.HistogramEvent(nt)._field_schema()
     assert isinstance(f, _BucketField)
     assert f.element_cpp_type == f"{nt._cpp_type_name()}::bin_type"
     assert f.dtype == np.dtype(np.uint32)
@@ -796,7 +795,7 @@ def test_bucket_field_schema_propagates_numeric_traits():
 
 def test_bin_increment_cluster_schema_propagates_numeric_traits():
     nt = tcspc.NumericTraits(bin_index_type=np.uint32)
-    (f,) = tcspc.BinIncrementClusterEvent(nt)._fields()
+    (f,) = tcspc.BinIncrementClusterEvent(nt)._field_schema()
     assert isinstance(f, _BucketField)
     assert f.element_cpp_type == f"{nt._cpp_type_name()}::bin_index_type"
     assert f.dtype == np.dtype(np.uint32)
