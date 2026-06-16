@@ -74,7 +74,7 @@ def _field_py_kind(cpp_type: _CppTypeName) -> type:
 
 
 _FieldValue: TypeAlias = (
-    int | float | str | np.ndarray | tuple["EventInstance", ...]
+    bytes | int | float | str | np.ndarray | tuple["EventInstance", ...]
 )
 
 
@@ -126,6 +126,7 @@ class _ScalarField:
             return f".{self.name} = {self.cpp_type}{{{_quote_string(value)}}}"
         if kind is float:
             return f".{self.name} = static_cast<{self.cpp_type}>({value!r})"
+        assert isinstance(value, int)
         return f".{self.name} = static_cast<{self.cpp_type}>({value})"
 
 
@@ -285,7 +286,68 @@ class _ArrayField:
         return ", ".join(e._cpp_expression() for e in value)
 
 
-_Field: TypeAlias = _ScalarField | _BucketField | _ArrayField
+@dataclasses.dataclass(frozen=True)
+class _RawBytesField:
+    name: str
+    size: int  # exact record byte count, for eager validation
+
+    def coerce(
+        self,
+        value: int | float | str | npt.ArrayLike | Sequence["EventInstance"],
+        owner: str,
+    ) -> _FieldValue:
+        # Reject int/str explicitly: bytes(int) would silently fabricate
+        # `int` zero bytes; bytes(str) is a TypeError but give a clear message.
+        if isinstance(value, (int, str)):
+            raise TypeError(
+                f"{owner}: field {self.name!r} must be bytes-like of "
+                f"{self.size} byte(s), not {type(value).__name__}"
+            )
+        try:
+            b = bytes(value)  # type: ignore[arg-type]
+        except (TypeError, ValueError) as e:
+            raise TypeError(
+                f"{owner}: field {self.name!r} must be bytes-like ({e})"
+            ) from e
+        if len(b) != self.size:
+            raise TypeError(
+                f"{owner}: field {self.name!r} must be exactly "
+                f"{self.size} byte(s), got {len(b)}"
+            )
+        return b
+
+    def wrapper_binding(self, event_cpp: _CppTypeName) -> str:
+        # Getter returns a copy as Python bytes; setter validates length and
+        # copies in. `self.bytes.size()` is the authoritative record size.
+        return f"""
+    .def_prop_rw("{self.name}",
+        []({event_cpp} const &self) {{
+            return nanobind::bytes(
+                reinterpret_cast<char const *>(self.{self.name}.data()),
+                self.{self.name}.size());
+        }},
+        []({event_cpp} &self, nanobind::bytes const &b) {{
+            if (b.size() != self.{self.name}.size())
+                throw std::invalid_argument(
+                    "{self.name}: wrong number of bytes for this event type");
+            std::copy_n(reinterpret_cast<std::byte const *>(b.c_str()),
+                        self.{self.name}.size(), self.{self.name}.begin());
+        }})"""
+
+    def output_init_expr(self) -> str:
+        # Unreachable: raw-bytes events have no bucket fields, so the simple
+        # nanobind::cast(event) output path is used (mirror _ArrayField).
+        raise TypeError(
+            f"raw-bytes field {self.name!r} does not use the bucket output path"
+        )
+
+    def cpp_initializer(self, value: _FieldValue) -> str:
+        assert isinstance(value, bytes)
+        elems = ", ".join(f"std::byte{{0x{byte:02x}}}" for byte in value)
+        return f".{self.name} = {{{{{elems}}}}}"
+
+
+_Field: TypeAlias = _ScalarField | _BucketField | _ArrayField | _RawBytesField
 
 
 def _field_values_equal(v: _FieldValue, w: _FieldValue) -> bool:
@@ -633,8 +695,22 @@ class EventInstance:
         )
 
     def __repr__(self) -> str:
-        args = ", ".join(f"{n}={v}" for n, v in self._fields.items())
+        # str(bytes) renders the raw-bytes field as b'...', which is intended.
+        args = ", ".join(
+            f"{n}={v}"  # type: ignore[str-bytes-safe]
+            for n, v in self._fields.items()
+        )
         return f"{type(self._event_type).__name__}(...).value({args})"
+
+
+class _RawDeviceEventType(EventType):
+    """Base for raw vendor device events: a single fixed-size byte record."""
+
+    _record_byte_count: int  # set by each concrete subclass
+
+    @override
+    def _field_schema(self) -> list[_Field]:
+        return [_RawBytesField("bytes", self._record_byte_count)]
 
 
 class CustomEvent(EventType):
@@ -1278,7 +1354,7 @@ class BeginLostIntervalEvent(EventType):
         return [_ScalarField("abstime", _CppTypeName(f"{nt}::abstime_type"))]
 
 
-class BHSPC600_256chEvent(EventType):
+class BHSPC600_256chEvent(_RawDeviceEventType):
     """Raw 32-bit FIFO record from Becker & Hickl SPC-600/630 in 256-channel mode.
 
     Typically appears upstream of `DecodeBHSPC600_256ch`.
@@ -1286,13 +1362,18 @@ class BHSPC600_256chEvent(EventType):
     Notes
     -----
     The corresponding C++ event has a single field
-    ``std::array<std::byte, 4> bytes`` holding the raw record.
+    ``std::array<std::byte, 4> bytes`` holding the raw record. Construct an
+    instance from raw bytes
+    (``BHSPC600_256chEvent().value(bytes=b"....")``) and read them back as
+    ``inst.bytes`` (a 4-byte ``bytes`` object).
 
     See Also
     --------
     :cpp:`tcspc::bh_spc600_256ch_event`
         The underlying C++ event type.
     """
+
+    _record_byte_count = 4
 
     @override
     def _cpp_type_name(self) -> _CppTypeName:
@@ -1303,7 +1384,7 @@ class BHSPC600_256chEvent(EventType):
         return _nominal("tcspc::bh_spc600_256ch_event")
 
 
-class BHSPC600_4096chEvent(EventType):
+class BHSPC600_4096chEvent(_RawDeviceEventType):
     """Raw 48-bit FIFO record from Becker & Hickl SPC-600/630 in 4096-channel mode.
 
     Typically appears upstream of `DecodeBHSPC600_4096ch`.
@@ -1311,13 +1392,18 @@ class BHSPC600_4096chEvent(EventType):
     Notes
     -----
     The corresponding C++ event has a single field
-    ``std::array<std::byte, 6> bytes`` holding the raw record.
+    ``std::array<std::byte, 6> bytes`` holding the raw record. Construct an
+    instance from raw bytes
+    (``BHSPC600_4096chEvent().value(bytes=b"......")``) and read them back as
+    ``inst.bytes`` (a 6-byte ``bytes`` object).
 
     See Also
     --------
     :cpp:`tcspc::bh_spc600_4096ch_event`
         The underlying C++ event type.
     """
+
+    _record_byte_count = 6
 
     @override
     def _cpp_type_name(self) -> _CppTypeName:
@@ -1328,7 +1414,7 @@ class BHSPC600_4096chEvent(EventType):
         return _nominal("tcspc::bh_spc600_4096ch_event")
 
 
-class BHSPCEvent(EventType):
+class BHSPCEvent(_RawDeviceEventType):
     """Raw 32-bit FIFO record from Becker & Hickl SPC hardware.
 
     Represents one record as produced by the SPC FIFO mode (does not cover
@@ -1340,13 +1426,17 @@ class BHSPCEvent(EventType):
     Notes
     -----
     The corresponding C++ event has a single field
-    ``std::array<std::byte, 4> bytes`` holding the raw record.
+    ``std::array<std::byte, 4> bytes`` holding the raw record. Construct an
+    instance from raw bytes (``BHSPCEvent().value(bytes=b"....")``) and read
+    them back as ``inst.bytes`` (a 4-byte ``bytes`` object).
 
     See Also
     --------
     :cpp:`tcspc::bh_spc_event`
         The underlying C++ event type.
     """
+
+    _record_byte_count = 4
 
     @override
     def _cpp_type_name(self) -> _CppTypeName:
@@ -2283,7 +2373,7 @@ class PeriodicSequenceModelEvent(EventType):
         ]
 
 
-class PQT2GenericEvent(EventType):
+class PQT2GenericEvent(_RawDeviceEventType):
     """Raw 32-bit FIFO record for PicoQuant T2 (Generic) format.
 
     Format used by HydraHarp V2, MultiHarp, TimeHarp 260, and PicoHarp
@@ -2292,13 +2382,17 @@ class PQT2GenericEvent(EventType):
     Notes
     -----
     The corresponding C++ event has a single field
-    ``std::array<std::byte, 4> bytes`` holding the raw record.
+    ``std::array<std::byte, 4> bytes`` holding the raw record. Construct an
+    instance from raw bytes (``PQT2GenericEvent().value(bytes=b"....")``) and
+    read them back as ``inst.bytes`` (a 4-byte ``bytes`` object).
 
     See Also
     --------
     :cpp:`tcspc::pqt2_generic_event`
         The underlying C++ event type.
     """
+
+    _record_byte_count = 4
 
     @override
     def _cpp_type_name(self) -> _CppTypeName:
@@ -2309,7 +2403,7 @@ class PQT2GenericEvent(EventType):
         return _nominal("tcspc::pqt2_generic_event")
 
 
-class PQT2HydraHarpV1Event(EventType):
+class PQT2HydraHarpV1Event(_RawDeviceEventType):
     """Raw 32-bit FIFO record for PicoQuant HydraHarp V1 T2 format.
 
     Typically appears upstream of `DecodePQT2HydraHarpV1`.
@@ -2317,13 +2411,17 @@ class PQT2HydraHarpV1Event(EventType):
     Notes
     -----
     The corresponding C++ event has a single field
-    ``std::array<std::byte, 4> bytes`` holding the raw record.
+    ``std::array<std::byte, 4> bytes`` holding the raw record. Construct an
+    instance from raw bytes (``PQT2HydraHarpV1Event().value(bytes=b"....")``)
+    and read them back as ``inst.bytes`` (a 4-byte ``bytes`` object).
 
     See Also
     --------
     :cpp:`tcspc::pqt2_hydraharpv1_event`
         The underlying C++ event type.
     """
+
+    _record_byte_count = 4
 
     @override
     def _cpp_type_name(self) -> _CppTypeName:
@@ -2334,7 +2432,7 @@ class PQT2HydraHarpV1Event(EventType):
         return _nominal("tcspc::pqt2_hydraharpv1_event")
 
 
-class PQT2PicoHarp300Event(EventType):
+class PQT2PicoHarp300Event(_RawDeviceEventType):
     """Raw 32-bit FIFO record for PicoQuant PicoHarp 300 T2 format.
 
     Typically appears upstream of `DecodePQT2PicoHarp300`.
@@ -2342,13 +2440,17 @@ class PQT2PicoHarp300Event(EventType):
     Notes
     -----
     The corresponding C++ event has a single field
-    ``std::array<std::byte, 4> bytes`` holding the raw record.
+    ``std::array<std::byte, 4> bytes`` holding the raw record. Construct an
+    instance from raw bytes (``PQT2PicoHarp300Event().value(bytes=b"....")``)
+    and read them back as ``inst.bytes`` (a 4-byte ``bytes`` object).
 
     See Also
     --------
     :cpp:`tcspc::pqt2_picoharp300_event`
         The underlying C++ event type.
     """
+
+    _record_byte_count = 4
 
     @override
     def _cpp_type_name(self) -> _CppTypeName:
@@ -2359,7 +2461,7 @@ class PQT2PicoHarp300Event(EventType):
         return _nominal("tcspc::pqt2_picoharp300_event")
 
 
-class PQT3GenericEvent(EventType):
+class PQT3GenericEvent(_RawDeviceEventType):
     """Raw 32-bit FIFO record for PicoQuant T3 (Generic) format.
 
     Format used by HydraHarp V2, MultiHarp, TimeHarp 260, and PicoHarp
@@ -2368,13 +2470,17 @@ class PQT3GenericEvent(EventType):
     Notes
     -----
     The corresponding C++ event has a single field
-    ``std::array<std::byte, 4> bytes`` holding the raw record.
+    ``std::array<std::byte, 4> bytes`` holding the raw record. Construct an
+    instance from raw bytes (``PQT3GenericEvent().value(bytes=b"....")``) and
+    read them back as ``inst.bytes`` (a 4-byte ``bytes`` object).
 
     See Also
     --------
     :cpp:`tcspc::pqt3_generic_event`
         The underlying C++ event type.
     """
+
+    _record_byte_count = 4
 
     @override
     def _cpp_type_name(self) -> _CppTypeName:
@@ -2385,7 +2491,7 @@ class PQT3GenericEvent(EventType):
         return _nominal("tcspc::pqt3_generic_event")
 
 
-class PQT3HydraHarpV1Event(EventType):
+class PQT3HydraHarpV1Event(_RawDeviceEventType):
     """Raw 32-bit FIFO record for PicoQuant HydraHarp V1 T3 format.
 
     Typically appears upstream of `DecodePQT3HydraHarpV1`.
@@ -2393,13 +2499,17 @@ class PQT3HydraHarpV1Event(EventType):
     Notes
     -----
     The corresponding C++ event has a single field
-    ``std::array<std::byte, 4> bytes`` holding the raw record.
+    ``std::array<std::byte, 4> bytes`` holding the raw record. Construct an
+    instance from raw bytes (``PQT3HydraHarpV1Event().value(bytes=b"....")``)
+    and read them back as ``inst.bytes`` (a 4-byte ``bytes`` object).
 
     See Also
     --------
     :cpp:`tcspc::pqt3_hydraharpv1_event`
         The underlying C++ event type.
     """
+
+    _record_byte_count = 4
 
     @override
     def _cpp_type_name(self) -> _CppTypeName:
@@ -2410,7 +2520,7 @@ class PQT3HydraHarpV1Event(EventType):
         return _nominal("tcspc::pqt3_hydraharpv1_event")
 
 
-class PQT3PicoHarp300Event(EventType):
+class PQT3PicoHarp300Event(_RawDeviceEventType):
     """Raw 32-bit FIFO record for PicoQuant PicoHarp 300 T3 format.
 
     Typically appears upstream of `DecodePQT3PicoHarp300`.
@@ -2418,13 +2528,17 @@ class PQT3PicoHarp300Event(EventType):
     Notes
     -----
     The corresponding C++ event has a single field
-    ``std::array<std::byte, 4> bytes`` holding the raw record.
+    ``std::array<std::byte, 4> bytes`` holding the raw record. Construct an
+    instance from raw bytes (``PQT3PicoHarp300Event().value(bytes=b"....")``)
+    and read them back as ``inst.bytes`` (a 4-byte ``bytes`` object).
 
     See Also
     --------
     :cpp:`tcspc::pqt3_picoharp300_event`
         The underlying C++ event type.
     """
+
+    _record_byte_count = 4
 
     @override
     def _cpp_type_name(self) -> _CppTypeName:
@@ -2536,7 +2650,7 @@ class RealOneShotTimingEvent(EventType):
         ]
 
 
-class SwabianTagEvent(EventType):
+class SwabianTagEvent(_RawDeviceEventType):
     """Raw 16-byte tag record from a Swabian Time Tagger.
 
     Has the same memory layout as the ``Tag`` struct in the Swabian
@@ -2546,13 +2660,17 @@ class SwabianTagEvent(EventType):
     Notes
     -----
     The corresponding C++ event has a single field
-    ``std::array<std::byte, 16> bytes`` holding the raw record.
+    ``std::array<std::byte, 16> bytes`` holding the raw record. Construct an
+    instance from raw bytes (a 16-byte ``SwabianTagEvent().value(bytes=...)``)
+    and read them back as ``inst.bytes`` (a 16-byte ``bytes`` object).
 
     See Also
     --------
     :cpp:`tcspc::swabian_tag_event`
         The underlying C++ event type.
     """
+
+    _record_byte_count = 16
 
     @override
     def _cpp_type_name(self) -> _CppTypeName:

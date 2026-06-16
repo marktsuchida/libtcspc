@@ -15,6 +15,7 @@ from libtcspc._access import AccessTag
 from libtcspc._compile import CompiledGraph
 from libtcspc._cpp_utils import _CppIdentifier, _CppTypeName, _uint8_type
 from libtcspc._events import (
+    BHSPCEvent,
     BinIncrementClusterEvent,
     ConstBucketEvent,
     CustomEvent,
@@ -24,6 +25,8 @@ from libtcspc._events import (
     HistogramArrayProgressEvent,
     MarkerEvent,
     RealOneShotTimingEvent,
+    SwabianTagEvent,
+    TimeCorrelatedDetectionEvent,
     WarningEvent,
 )
 from libtcspc._execute import (
@@ -40,6 +43,7 @@ from libtcspc._processors import (
     Batch,
     Buffer,
     Count,
+    DecodeBHSPC,
     PairOne,
     Prepend,
     RealTimeBuffer,
@@ -854,3 +858,101 @@ def test_execute_RealTimeBuffer_emits_after_latency():
     ec.flush()
     t.join()
     assert not errors
+
+
+def test_execute_raw_device_event_round_trips_through_passthrough_graph():
+    g = Graph()
+    g.add_node("a", SelectAll())
+    cg = CompiledGraph(g, (BHSPCEvent(),))
+    sink = CollectingSink()
+    ec = ExecutionContext(cg, None, (sink,))
+    sent = BHSPCEvent().value(bytes=b"\x12\x34\x56\x78")
+    ec.handle(sent)
+    assert sink.events == [sent]
+    out = sink.events[0]
+    assert isinstance(out, EventInstance)
+    assert out.bytes == b"\x12\x34\x56\x78"
+    assert isinstance(out.bytes, bytes)
+
+
+def test_execute_raw_device_event_16byte_round_trips():
+    g = Graph()
+    g.add_node("a", SelectAll())
+    cg = CompiledGraph(g, (SwabianTagEvent(),))
+    sink = CollectingSink()
+    ec = ExecutionContext(cg, None, (sink,))
+    raw = bytes(range(16))
+    ec.handle(SwabianTagEvent().value(bytes=raw))
+    assert sink.events[0].bytes == raw
+
+
+def test_execute_emit_raw_device_event_value_via_append():
+    g = Graph()
+    g.add_node("a", Append(BHSPCEvent().value(bytes=b"\x12\x34\x56\x78")))
+    cg = CompiledGraph(g)
+    sink = CollectingSink()
+    ec = ExecutionContext(cg, None, (sink,))
+    ec.flush()
+    assert sink.events == [BHSPCEvent().value(bytes=b"\x12\x34\x56\x78")]
+    assert sink.events[0].bytes == b"\x12\x34\x56\x78"
+
+
+def test_execute_emit_raw_device_event_value_via_prepend():
+    g = Graph()
+    g.add_node("a", Prepend(BHSPCEvent().value(bytes=b"\xde\xad\xbe\xef")))
+    cg = CompiledGraph(g, (BHSPCEvent(),))
+    sink = CollectingSink()
+    ec = ExecutionContext(cg, None, (sink,))
+    ec.handle(BHSPCEvent().value(bytes=b"\x01\x02\x03\x04"))
+    ec.flush()
+    assert sink.events == [
+        BHSPCEvent().value(bytes=b"\xde\xad\xbe\xef"),
+        BHSPCEvent().value(bytes=b"\x01\x02\x03\x04"),
+    ]
+
+
+def test_execute_raw_device_event_decoded_by_decode_processor():
+    # An all-zero BH SPC record decodes to a single valid photon at
+    # abstime=0, channel=0, difftime=0.
+    g = Graph()
+    g.add_node("decode", DecodeBHSPC())
+    cg = CompiledGraph(g, (BHSPCEvent(),))
+    sink = CollectingSink()
+    ec = ExecutionContext(cg, None, (sink,))
+    ec.handle(BHSPCEvent().value(bytes=b"\x00\x00\x00\x00"))
+    ec.flush()
+    detections = [
+        e
+        for e in sink.events
+        if isinstance(e, EventInstance)
+        and type(e._event_type) is TimeCorrelatedDetectionEvent
+    ]
+    assert len(detections) == 1
+    assert detections[0]._fields == {
+        "abstime": 0,
+        "channel": 0,
+        "difftime": 0,
+    }
+
+
+def test_execute_raw_device_event_decoded_nontrivial_record():
+    # macrotime=0x123, routing=5, adc=0x456 (see bh_spc.hpp bit layout).
+    g = Graph()
+    g.add_node("decode", DecodeBHSPC())
+    cg = CompiledGraph(g, (BHSPCEvent(),))
+    sink = CollectingSink()
+    ec = ExecutionContext(cg, None, (sink,))
+    ec.handle(BHSPCEvent().value(bytes=b"\x23\x51\x56\x04"))
+    ec.flush()
+    detections = [
+        e
+        for e in sink.events
+        if isinstance(e, EventInstance)
+        and type(e._event_type) is TimeCorrelatedDetectionEvent
+    ]
+    assert len(detections) == 1
+    assert detections[0]._fields == {
+        "abstime": 0x123,
+        "channel": 5,
+        "difftime": 0x456,
+    }

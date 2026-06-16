@@ -9,7 +9,12 @@ import numpy as np
 import pytest
 from _test_helpers import _NamedEvent
 from libtcspc._cpp_utils import _CppIdentifier, _CppTypeName
-from libtcspc._events import _ArrayField, _BucketField, _ScalarField
+from libtcspc._events import (
+    _ArrayField,
+    _BucketField,
+    _RawBytesField,
+    _ScalarField,
+)
 
 IntEvent = _NamedEvent(_CppTypeName("int"))
 
@@ -177,8 +182,10 @@ def test_default_cpp_input_handler_substrings():
 
 
 def test_default_cpp_output_handlers_raise():
-    with pytest.raises(TypeError, match="tcspc::bh_spc_event"):
-        tcspc.BHSPCEvent()._cpp_output_handlers(_CppIdentifier("sink"))
+    with pytest.raises(TypeError, match="tcspc::variant_event"):
+        tcspc.VariantEvent(tcspc.DetectionEvent())._cpp_output_handlers(
+            _CppIdentifier("sink")
+        )
 
 
 def test_BucketEvent_cpp_output_handlers_cover_three_overloads():
@@ -1066,4 +1073,94 @@ def test_DetectionPairEvent_value_cpp_expression():
         f"{elem}{{"
         ".abstime = static_cast<tcspc::default_numeric_traits::abstime_type>(10), "
         ".channel = static_cast<tcspc::default_numeric_traits::channel_type>(1)}}"
+    )
+
+
+RAW_DEVICE_EVENTS = [
+    (tcspc.BHSPCEvent, 4),
+    (tcspc.BHSPC600_256chEvent, 4),
+    (tcspc.BHSPC600_4096chEvent, 6),
+    (tcspc.PQT2PicoHarp300Event, 4),
+    (tcspc.PQT2HydraHarpV1Event, 4),
+    (tcspc.PQT2GenericEvent, 4),
+    (tcspc.PQT3PicoHarp300Event, 4),
+    (tcspc.PQT3HydraHarpV1Event, 4),
+    (tcspc.PQT3GenericEvent, 4),
+    (tcspc.SwabianTagEvent, 16),
+]
+
+
+@pytest.mark.parametrize(("cls", "size"), RAW_DEVICE_EVENTS)
+def test_raw_device_event_field_schema(cls, size):
+    assert cls()._field_schema() == [_RawBytesField("bytes", size)]
+
+
+@pytest.mark.parametrize(("cls", "size"), RAW_DEVICE_EVENTS)
+def test_raw_device_event_value_from_bytes(cls, size):
+    raw = bytes(range(size))
+    inst = cls().value(bytes=raw)
+    assert isinstance(inst, tcspc.EventInstance)
+    assert inst.bytes == raw
+    assert isinstance(inst.bytes, bytes)
+
+
+@pytest.mark.parametrize(("cls", "size"), RAW_DEVICE_EVENTS)
+def test_raw_device_event_value_from_bytearray(cls, size):
+    inst = cls().value(bytes=bytearray(range(size)))
+    assert inst.bytes == bytes(range(size))
+    assert isinstance(inst.bytes, bytes)
+
+
+@pytest.mark.parametrize(("cls", "size"), RAW_DEVICE_EVENTS)
+def test_raw_device_event_value_from_memoryview(cls, size):
+    inst = cls().value(bytes=memoryview(bytes(range(size))))
+    assert inst.bytes == bytes(range(size))
+    assert isinstance(inst.bytes, bytes)
+
+
+@pytest.mark.parametrize(("cls", "size"), RAW_DEVICE_EVENTS)
+def test_raw_device_event_value_too_short_raises(cls, size):
+    with pytest.raises(TypeError, match="exactly"):
+        cls().value(bytes=bytes(size - 1))
+
+
+@pytest.mark.parametrize(("cls", "size"), RAW_DEVICE_EVENTS)
+def test_raw_device_event_value_too_long_raises(cls, size):
+    with pytest.raises(TypeError, match="exactly"):
+        cls().value(bytes=bytes(size + 1))
+
+
+@pytest.mark.parametrize(("cls", "size"), RAW_DEVICE_EVENTS)
+def test_raw_device_event_value_rejects_int(cls, size):
+    with pytest.raises(TypeError, match="bytes-like"):
+        cls().value(bytes=size)  # type: ignore[arg-type]
+
+
+@pytest.mark.parametrize(("cls", "size"), RAW_DEVICE_EVENTS)
+def test_raw_device_event_value_rejects_str(cls, size):
+    with pytest.raises(TypeError, match="bytes-like"):
+        cls().value(bytes="x" * size)  # type: ignore[arg-type]
+
+
+def test_raw_device_event_value_eq_and_hash():
+    a = tcspc.BHSPCEvent().value(bytes=b"\x01\x02\x03\x04")
+    b = tcspc.BHSPCEvent().value(bytes=b"\x01\x02\x03\x04")
+    assert a == b
+    assert hash(a) == hash(b)
+
+    c = tcspc.BHSPCEvent().value(bytes=b"\x01\x02\x03\x05")
+    assert a != c
+
+
+def test_raw_device_event_value_repr():
+    inst = tcspc.BHSPCEvent().value(bytes=b"\x01\x02\x03\x04")
+    assert "bytes=b'\\x01\\x02\\x03\\x04'" in repr(inst)
+
+
+def test_raw_device_event_value_cpp_expression():
+    inst = tcspc.BHSPCEvent().value(bytes=b"\x12\x34\x56\x78")
+    assert inst._cpp_expression() == (
+        "tcspc::bh_spc_event{.bytes = {{"
+        "std::byte{0x12}, std::byte{0x34}, "
+        "std::byte{0x56}, std::byte{0x78}}}}"
     )
