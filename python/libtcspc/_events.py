@@ -78,6 +78,41 @@ _FieldValue: TypeAlias = (
 )
 
 
+# Field descriptors. Each of the four classes below describes one field of an
+# event type. An EventType._field_schema() returns a list[_Field]; the
+# descriptors drive value coercion, the generated nanobind wrapper bindings,
+# and the generated C++ source.
+#
+# These four concrete classes are the only members of the _Field union (defined
+# just below them). The union -- not a Protocol or ABC -- is what ties them
+# together: mypy structurally requires any method called on a _Field value to
+# exist on all four members, and consumers narrow against the concrete classes
+# with isinstance (e.g. _has_bucket_fields, _cpp_output_handlers,
+# _sole_array_field).
+#
+# Every descriptor provides this shared interface:
+#
+#   name: str
+#       The field name; used as the EventInstance attribute name, the
+#       EventType.value() keyword argument, and the C++ struct member name.
+#   coerce(value, owner) -> _FieldValue
+#       Validate and normalize a user-supplied field value. owner is a
+#       human-readable label used in error messages.
+#   wrapper_binding(event_cpp) -> str
+#       Emit the C++ that binds this field as a property on the nanobind
+#       wrapper class_ for the event whose C++ type is event_cpp.
+#   output_init_expr() -> str
+#       Emit the C++ expression that initializes this field when copying an
+#       event for delivery to a Python sink. Only used on the bucket-output
+#       path; _ArrayField and _RawBytesField raise (unreachable), since those
+#       events use the simple nanobind::cast(event) path.
+#   cpp_initializer(value) -> str
+#       Emit the C++ designated-initializer fragment that embeds a concrete
+#       value into generated source. _BucketField raises (unreachable):
+#       bucket-carrying events cannot be embedded in compiled code.
+#
+# _ScalarField.py_kind() is specific to that class, not part of the shared
+# interface.
 @dataclasses.dataclass(frozen=True)
 class _ScalarField:
     name: str
