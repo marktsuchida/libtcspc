@@ -21,6 +21,23 @@ event types (such as {py:class}`~libtcspc.HistogramEvent`) support all of these
 except {py:class}`~libtcspc.Prepend` and {py:class}`~libtcspc.Append`; their
 bucket fields are read as read-only NumPy arrays.
 
+Constructing and inspecting individual event values from Python is intended for
+debugging and learning only and is extremely slow; production graphs process
+events in compiled C++ and exchange bulk data via buckets. The efficient
+production path across the Python/C++ boundary is bulk transfer through
+buckets: {py:class}`~libtcspc.ConstBucketEvent` pushes a NumPy array into a
+graph as input, {py:class}`~libtcspc.BucketEvent` delivers a bucket as a NumPy
+array out to a {py:class}`~libtcspc.PySink`, and bucket-carrying events (such
+as {py:class}`~libtcspc.HistogramEvent`) likewise deliver their carried bucket
+as a NumPy array at a sink.
+
+Bulk data can also enter and leave a graph through non-event mechanisms that
+keep the transfer inside compiled code — for example the
+{py:class}`~libtcspc.Acquire` processor, which pulls data into buckets from an
+acquisition reader, and the binary stream processors
+{py:class}`~libtcspc.ReadBinaryStream` and
+{py:class}`~libtcspc.WriteBinaryStream`.
+
 Some event types (those carrying timestamp and related data) are parameterized
 by the exact numeric types used. {py:class}`~libtcspc.NumericTraits` objects
 are used to specify these types.

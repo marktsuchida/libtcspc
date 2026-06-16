@@ -561,6 +561,11 @@ class EventInstance:
     :py:meth:`ExecutionContext.handle` to send them at run time) and are not
     hashable.
 
+    Constructing and inspecting individual event values from Python is
+    intended for debugging and learning only and is extremely slow;
+    production graphs process events in compiled C++ and exchange bulk
+    data via buckets.
+
     See Also
     --------
     :py:meth:`EventType.value`
@@ -745,6 +750,11 @@ class CustomEvent(EventType):
     The emitted C++ struct provides a defaulted ``operator==`` and an
     ``operator<<`` that prints the event name (and, for the timestamped form,
     the ``abstime`` value).
+
+    Constructing and inspecting individual event values from Python is
+    intended for debugging and learning only and is extremely slow;
+    production graphs process events in compiled C++ and exchange bulk
+    data via buckets.
 
     Examples
     --------
@@ -1161,6 +1171,11 @@ class ArrayEventType(EventType):
     type: an array of scalar-only elements is embeddable and hashable; an array
     of bucket-carrying elements is neither.
 
+    Constructing and inspecting individual event values from Python is
+    intended for debugging and learning only and is extremely slow;
+    production graphs process events in compiled C++ and exchange bulk
+    data via buckets.
+
     See Also
     --------
     :py:obj:`DetectionPairEvent`
@@ -1324,6 +1339,15 @@ class BeginLostIntervalEvent(EventType):
     -----
     The corresponding C++ event has the field ``abstime``.
 
+    A value is constructed by giving all fields, e.g.
+    ``BeginLostIntervalEvent(nt).value(abstime=42)``; read them back as
+    attributes (``inst.abstime``).
+
+    Constructing and inspecting individual event values from Python is
+    intended for debugging and learning only and is extremely slow;
+    production graphs process events in compiled C++ and exchange bulk
+    data via buckets.
+
     See Also
     --------
     :cpp:`tcspc::begin_lost_interval_event`
@@ -1367,6 +1391,11 @@ class BHSPC600_256chEvent(_RawDeviceEventType):
     (``BHSPC600_256chEvent().value(bytes=b"....")``) and read them back as
     ``inst.bytes`` (a 4-byte ``bytes`` object).
 
+    Constructing and inspecting individual event values from Python is
+    intended for debugging and learning only and is extremely slow;
+    production graphs process events in compiled C++ and exchange bulk
+    data via buckets.
+
     See Also
     --------
     :cpp:`tcspc::bh_spc600_256ch_event`
@@ -1396,6 +1425,11 @@ class BHSPC600_4096chEvent(_RawDeviceEventType):
     instance from raw bytes
     (``BHSPC600_4096chEvent().value(bytes=b"......")``) and read them back as
     ``inst.bytes`` (a 6-byte ``bytes`` object).
+
+    Constructing and inspecting individual event values from Python is
+    intended for debugging and learning only and is extremely slow;
+    production graphs process events in compiled C++ and exchange bulk
+    data via buckets.
 
     See Also
     --------
@@ -1429,6 +1463,11 @@ class BHSPCEvent(_RawDeviceEventType):
     ``std::array<std::byte, 4> bytes`` holding the raw record. Construct an
     instance from raw bytes (``BHSPCEvent().value(bytes=b"....")``) and read
     them back as ``inst.bytes`` (a 4-byte ``bytes`` object).
+
+    Constructing and inspecting individual event values from Python is
+    intended for debugging and learning only and is extremely slow;
+    production graphs process events in compiled C++ and exchange bulk
+    data via buckets.
 
     See Also
     --------
@@ -1470,6 +1509,11 @@ class BinIncrementClusterEvent(EventType):
     constructed via :py:meth:`~EventType.value` (the bucket field accepts a
     1-D array-like). Not supported by `Prepend`/`Append`; use
     :py:meth:`ExecutionContext.handle` to send a value at run time.
+
+    Even though this event carries a bucket, individual clusters are small
+    and numerous, so constructing or inspecting them from Python is
+    intended for debugging and learning only and is extremely slow. In
+    production these clusters stay within the compiled graph.
 
     See Also
     --------
@@ -1524,6 +1568,15 @@ class BinIncrementEvent(EventType):
     The corresponding C++ event has the field ``bin_index`` (of
     ``bin_index_type``).
 
+    A value is constructed by giving all fields, e.g.
+    ``BinIncrementEvent(nt).value(bin_index=3)``; read them back as
+    attributes (``inst.bin_index``).
+
+    Constructing and inspecting individual event values from Python is
+    intended for debugging and learning only and is extremely slow;
+    production graphs process events in compiled C++ and exchange bulk
+    data via buckets.
+
     See Also
     --------
     :cpp:`tcspc::bin_increment_event`
@@ -1573,6 +1626,15 @@ class BulkCountsEvent(EventType):
     -----
     The corresponding C++ event has fields ``abstime``, ``channel``, and
     ``count``.
+
+    A value is constructed by giving all fields, e.g.
+    ``BulkCountsEvent(nt).value(abstime=42, channel=1, count=10)``; read
+    them back as attributes (``inst.abstime``).
+
+    Constructing and inspecting individual event values from Python is
+    intended for debugging and learning only and is extremely slow;
+    production graphs process events in compiled C++ and exchange bulk
+    data via buckets.
 
     See Also
     --------
@@ -1630,6 +1692,12 @@ class ConcludingHistogramArrayEvent(EventType):
     constructed via :py:meth:`~EventType.value` (the bucket field accepts a
     1-D array-like). Not supported by `Prepend`/`Append`; use
     :py:meth:`ExecutionContext.handle` to send a value at run time.
+
+    Receiving these events at a Python sink and reading the carried
+    bucket as a NumPy array is an efficient bulk transfer intended for
+    production use. Constructing an individual instance by hand via
+    ``value()``, on the other hand, is intended for debugging and
+    learning only.
 
     See Also
     --------
@@ -1696,6 +1764,12 @@ class ConcludingHistogramEvent(EventType):
     1-D array-like). Not supported by `Prepend`/`Append`; use
     :py:meth:`ExecutionContext.handle` to send a value at run time.
 
+    Receiving these events at a Python sink and reading the carried
+    bucket as a NumPy array is an efficient bulk transfer intended for
+    production use. Constructing an individual instance by hand via
+    ``value()``, on the other hand, is intended for debugging and
+    learning only.
+
     See Also
     --------
     :cpp:`tcspc::concluding_histogram_event`
@@ -1759,6 +1833,15 @@ class DataLostEvent(EventType):
     occurrences; cancelling the stream in response to data loss is the
     responsibility of a downstream processor.
 
+    A value is constructed by giving all fields, e.g.
+    ``DataLostEvent(nt).value(abstime=42)``; read them back as attributes
+    (``inst.abstime``).
+
+    Constructing and inspecting individual event values from Python is
+    intended for debugging and learning only and is extremely slow;
+    production graphs process events in compiled C++ and exchange bulk
+    data via buckets.
+
     See Also
     --------
     :cpp:`tcspc::data_lost_event`
@@ -1804,6 +1887,15 @@ class DatapointEvent(EventType):
     -----
     The corresponding C++ event has the field ``value`` (of
     ``datapoint_type``).
+
+    A value is constructed by giving all fields, e.g.
+    ``DatapointEvent(nt).value(value=42)``; read them back as attributes
+    (``inst.value``).
+
+    Constructing and inspecting individual event values from Python is
+    intended for debugging and learning only and is extremely slow;
+    production graphs process events in compiled C++ and exchange bulk
+    data via buckets.
 
     See Also
     --------
@@ -1852,6 +1944,15 @@ class DetectionEvent(EventType):
     Notes
     -----
     The corresponding C++ event has fields ``abstime`` and ``channel``.
+
+    A value is constructed by giving all fields, e.g.
+    ``DetectionEvent(nt).value(abstime=42, channel=1)``; read them back as
+    attributes (``inst.abstime``).
+
+    Constructing and inspecting individual event values from Python is
+    intended for debugging and learning only and is extremely slow;
+    production graphs process events in compiled C++ and exchange bulk
+    data via buckets.
 
     See Also
     --------
@@ -1915,6 +2016,11 @@ class DetectionPairEvent(EventType):
     two `DetectionEvent` `EventInstance` values; an `EventInstance` of this type
     also supports ``len(...)`` and indexing. Values are embeddable in compiled
     code (usable with `Prepend`/`Append`) and hashable.
+
+    Constructing and inspecting individual event values from Python is
+    intended for debugging and learning only and is extremely slow;
+    production graphs process events in compiled C++ and exchange bulk
+    data via buckets.
 
     See Also
     --------
@@ -1988,6 +2094,15 @@ class EndLostIntervalEvent(EventType):
     -----
     The corresponding C++ event has the field ``abstime``.
 
+    A value is constructed by giving all fields, e.g.
+    ``EndLostIntervalEvent(nt).value(abstime=42)``; read them back as
+    attributes (``inst.abstime``).
+
+    Constructing and inspecting individual event values from Python is
+    intended for debugging and learning only and is extremely slow;
+    production graphs process events in compiled C++ and exchange bulk
+    data via buckets.
+
     See Also
     --------
     :cpp:`tcspc::end_lost_interval_event`
@@ -2039,6 +2154,12 @@ class HistogramArrayEvent(EventType):
     constructed via :py:meth:`~EventType.value` (the bucket field accepts a
     1-D array-like). Not supported by `Prepend`/`Append`; use
     :py:meth:`ExecutionContext.handle` to send a value at run time.
+
+    Receiving these events at a Python sink and reading the carried
+    bucket as a NumPy array is an efficient bulk transfer intended for
+    production use. Constructing an individual instance by hand via
+    ``value()``, on the other hand, is intended for debugging and
+    learning only.
 
     See Also
     --------
@@ -2104,6 +2225,12 @@ class HistogramArrayProgressEvent(EventType):
     constructed via :py:meth:`~EventType.value` (the bucket field accepts a
     1-D array-like). Not supported by `Prepend`/`Append`; use
     :py:meth:`ExecutionContext.handle` to send a value at run time.
+
+    Receiving these events at a Python sink and reading the carried
+    bucket as a NumPy array is an efficient bulk transfer intended for
+    production use. Constructing an individual instance by hand via
+    ``value()``, on the other hand, is intended for debugging and
+    learning only.
 
     See Also
     --------
@@ -2173,6 +2300,12 @@ class HistogramEvent(EventType):
     1-D array-like). Not supported by `Prepend`/`Append`; use
     :py:meth:`ExecutionContext.handle` to send a value at run time.
 
+    Receiving these events at a Python sink and reading the carried
+    bucket as a NumPy array is an efficient bulk transfer intended for
+    production use. Constructing an individual instance by hand via
+    ``value()``, on the other hand, is intended for debugging and
+    learning only.
+
     See Also
     --------
     :cpp:`tcspc::histogram_event`
@@ -2232,6 +2365,15 @@ class LostCountsEvent(EventType):
     The corresponding C++ event has fields ``abstime``, ``channel``, and
     ``count``.
 
+    A value is constructed by giving all fields, e.g.
+    ``LostCountsEvent(nt).value(abstime=42, channel=1, count=10)``; read
+    them back as attributes (``inst.abstime``).
+
+    Constructing and inspecting individual event values from Python is
+    intended for debugging and learning only and is extremely slow;
+    production graphs process events in compiled C++ and exchange bulk
+    data via buckets.
+
     See Also
     --------
     :cpp:`tcspc::lost_counts_event`
@@ -2288,6 +2430,15 @@ class MarkerEvent(EventType):
     numbering may or may not share a namespace with detection channels,
     depending on the device.
 
+    A value is constructed by giving all fields, e.g.
+    ``MarkerEvent(nt).value(abstime=42, channel=1)``; read them back as
+    attributes (``inst.abstime``).
+
+    Constructing and inspecting individual event values from Python is
+    intended for debugging and learning only and is extremely slow;
+    production graphs process events in compiled C++ and exchange bulk
+    data via buckets.
+
     See Also
     --------
     :cpp:`tcspc::marker_event`
@@ -2339,6 +2490,15 @@ class PeriodicSequenceModelEvent(EventType):
     The corresponding C++ event has the fields ``abstime``, ``delay``, and
     ``interval``.
 
+    A value is constructed by giving all fields, e.g.
+    ``PeriodicSequenceModelEvent(nt).value(abstime=42, delay=1.0,
+    interval=2.0)``; read them back as attributes (``inst.abstime``).
+
+    Constructing and inspecting individual event values from Python is
+    intended for debugging and learning only and is extremely slow;
+    production graphs process events in compiled C++ and exchange bulk
+    data via buckets.
+
     See Also
     --------
     :cpp:`tcspc::periodic_sequence_model_event`
@@ -2386,6 +2546,11 @@ class PQT2GenericEvent(_RawDeviceEventType):
     instance from raw bytes (``PQT2GenericEvent().value(bytes=b"....")``) and
     read them back as ``inst.bytes`` (a 4-byte ``bytes`` object).
 
+    Constructing and inspecting individual event values from Python is
+    intended for debugging and learning only and is extremely slow;
+    production graphs process events in compiled C++ and exchange bulk
+    data via buckets.
+
     See Also
     --------
     :cpp:`tcspc::pqt2_generic_event`
@@ -2415,6 +2580,11 @@ class PQT2HydraHarpV1Event(_RawDeviceEventType):
     instance from raw bytes (``PQT2HydraHarpV1Event().value(bytes=b"....")``)
     and read them back as ``inst.bytes`` (a 4-byte ``bytes`` object).
 
+    Constructing and inspecting individual event values from Python is
+    intended for debugging and learning only and is extremely slow;
+    production graphs process events in compiled C++ and exchange bulk
+    data via buckets.
+
     See Also
     --------
     :cpp:`tcspc::pqt2_hydraharpv1_event`
@@ -2443,6 +2613,11 @@ class PQT2PicoHarp300Event(_RawDeviceEventType):
     ``std::array<std::byte, 4> bytes`` holding the raw record. Construct an
     instance from raw bytes (``PQT2PicoHarp300Event().value(bytes=b"....")``)
     and read them back as ``inst.bytes`` (a 4-byte ``bytes`` object).
+
+    Constructing and inspecting individual event values from Python is
+    intended for debugging and learning only and is extremely slow;
+    production graphs process events in compiled C++ and exchange bulk
+    data via buckets.
 
     See Also
     --------
@@ -2474,6 +2649,11 @@ class PQT3GenericEvent(_RawDeviceEventType):
     instance from raw bytes (``PQT3GenericEvent().value(bytes=b"....")``) and
     read them back as ``inst.bytes`` (a 4-byte ``bytes`` object).
 
+    Constructing and inspecting individual event values from Python is
+    intended for debugging and learning only and is extremely slow;
+    production graphs process events in compiled C++ and exchange bulk
+    data via buckets.
+
     See Also
     --------
     :cpp:`tcspc::pqt3_generic_event`
@@ -2503,6 +2683,11 @@ class PQT3HydraHarpV1Event(_RawDeviceEventType):
     instance from raw bytes (``PQT3HydraHarpV1Event().value(bytes=b"....")``)
     and read them back as ``inst.bytes`` (a 4-byte ``bytes`` object).
 
+    Constructing and inspecting individual event values from Python is
+    intended for debugging and learning only and is extremely slow;
+    production graphs process events in compiled C++ and exchange bulk
+    data via buckets.
+
     See Also
     --------
     :cpp:`tcspc::pqt3_hydraharpv1_event`
@@ -2531,6 +2716,11 @@ class PQT3PicoHarp300Event(_RawDeviceEventType):
     ``std::array<std::byte, 4> bytes`` holding the raw record. Construct an
     instance from raw bytes (``PQT3PicoHarp300Event().value(bytes=b"....")``)
     and read them back as ``inst.bytes`` (a 4-byte ``bytes`` object).
+
+    Constructing and inspecting individual event values from Python is
+    intended for debugging and learning only and is extremely slow;
+    production graphs process events in compiled C++ and exchange bulk
+    data via buckets.
 
     See Also
     --------
@@ -2565,6 +2755,15 @@ class RealLinearTimingEvent(EventType):
     -----
     The corresponding C++ event has the fields ``abstime``, ``delay``,
     ``interval``, and ``count``.
+
+    A value is constructed by giving all fields, e.g.
+    ``RealLinearTimingEvent(nt).value(abstime=42, delay=1.0, interval=2.0,
+    count=10)``; read them back as attributes (``inst.abstime``).
+
+    Constructing and inspecting individual event values from Python is
+    intended for debugging and learning only and is extremely slow;
+    production graphs process events in compiled C++ and exchange bulk
+    data via buckets.
 
     See Also
     --------
@@ -2617,6 +2816,15 @@ class RealOneShotTimingEvent(EventType):
     -----
     The corresponding C++ event has the fields ``abstime`` and ``delay``.
 
+    A value is constructed by giving all fields, e.g.
+    ``RealOneShotTimingEvent(nt).value(abstime=42, delay=1.0)``; read them
+    back as attributes (``inst.abstime``).
+
+    Constructing and inspecting individual event values from Python is
+    intended for debugging and learning only and is extremely slow;
+    production graphs process events in compiled C++ and exchange bulk
+    data via buckets.
+
     See Also
     --------
     :cpp:`tcspc::real_one_shot_timing_event`
@@ -2664,6 +2872,11 @@ class SwabianTagEvent(_RawDeviceEventType):
     instance from raw bytes (a 16-byte ``SwabianTagEvent().value(bytes=...)``)
     and read them back as ``inst.bytes`` (a 16-byte ``bytes`` object).
 
+    Constructing and inspecting individual event values from Python is
+    intended for debugging and learning only and is extremely slow;
+    production graphs process events in compiled C++ and exchange bulk
+    data via buckets.
+
     See Also
     --------
     :cpp:`tcspc::swabian_tag_event`
@@ -2699,6 +2912,15 @@ class TimeCorrelatedDetectionEvent(EventType):
     -----
     The corresponding C++ event has fields ``abstime``, ``channel``, and
     ``difftime``.
+
+    A value is constructed by giving all fields, e.g.
+    ``TimeCorrelatedDetectionEvent(nt).value(abstime=42, channel=1,
+    difftime=5)``; read them back as attributes (``inst.abstime``).
+
+    Constructing and inspecting individual event values from Python is
+    intended for debugging and learning only and is extremely slow;
+    production graphs process events in compiled C++ and exchange bulk
+    data via buckets.
 
     See Also
     --------
@@ -2754,6 +2976,15 @@ class TimeReachedEvent(EventType):
     frequency of these events can be tuned on the C++ side with
     ``tcspc::regulate_time_reached()``.
 
+    A value is constructed by giving all fields, e.g.
+    ``TimeReachedEvent(nt).value(abstime=42)``; read them back as
+    attributes (``inst.abstime``).
+
+    Constructing and inspecting individual event values from Python is
+    intended for debugging and learning only and is extremely slow;
+    production graphs process events in compiled C++ and exchange bulk
+    data via buckets.
+
     See Also
     --------
     :cpp:`tcspc::time_reached_event`
@@ -2797,6 +3028,15 @@ class WarningEvent(EventType):
     warnings should also pass any received warning events through, so
     multiple warning-emitting processors can be chained ahead of a
     single handler such as `Stop` or `StopWithError`.
+
+    A value is constructed by giving all fields, e.g.
+    ``WarningEvent().value(message="out of order")``; read them back as
+    attributes (``inst.message``).
+
+    Constructing and inspecting individual event values from Python is
+    intended for debugging and learning only and is extremely slow;
+    production graphs process events in compiled C++ and exchange bulk
+    data via buckets.
 
     See Also
     --------
