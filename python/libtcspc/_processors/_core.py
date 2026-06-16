@@ -106,11 +106,6 @@ def _resolve_inserted_event(
                 "Param because its value cannot be constructed from Python "
                 "(it does not define convertible fields)"
             )
-        if event_type._cpp_wrapper_struct_def() is not None:
-            raise TypeError(
-                f"array event values ({type(event_type).__name__}) are not "
-                "yet supported as a Param"
-            )
         default = event.default_value
         if default is not None and (
             not isinstance(default, EventInstance)
@@ -175,9 +170,8 @@ class Prepend(_RelayNode):
       emitted.
     - End of input: pass through.
 
-    When ``event`` is a `Param`, the event type must have plain (scalar,
-    raw-bytes, or bucket) fields; array events are not yet supported as a
-    `Param`.
+    When ``event`` is a `Param`, scalar, raw-bytes, bucket, and array event
+    types are all supported.
 
     See Also
     --------
@@ -206,7 +200,12 @@ class Prepend(_RelayNode):
     @override
     def _parameters(self) -> Sequence[tuple[Param, _CppTypeName]]:
         if isinstance(self._event, Param):
-            return ((self._event, self._event_type._cpp_type_name()),)
+            return (
+                (
+                    self._event,
+                    self._event_type._cpp_input_handler_param_type(),
+                ),
+            )
         return ()
 
     @override
@@ -234,6 +233,8 @@ class Prepend(_RelayNode):
             arg = (
                 f"{gencontext.params_varname}.{self._event._cpp_identifier()}"
             )
+            if self._event_type._cpp_wrapper_struct_def() is not None:
+                arg = f"{arg}.value"
         else:
             arg = self._event._cpp_expression()
         return _CppExpression(f"tcspc::prepend({arg}, {downstream})")
@@ -270,9 +271,8 @@ class Append(_RelayNode):
     *downstream* processor raising end-of-processing, this processor has no
     effect.
 
-    When ``event`` is a `Param`, the event type must have plain (scalar,
-    raw-bytes, or bucket) fields; array events are not yet supported as a
-    `Param`.
+    When ``event`` is a `Param`, scalar, raw-bytes, bucket, and array event
+    types are all supported.
 
     See Also
     --------
@@ -301,7 +301,12 @@ class Append(_RelayNode):
     @override
     def _parameters(self) -> Sequence[tuple[Param, _CppTypeName]]:
         if isinstance(self._event, Param):
-            return ((self._event, self._event_type._cpp_type_name()),)
+            return (
+                (
+                    self._event,
+                    self._event_type._cpp_input_handler_param_type(),
+                ),
+            )
         return ()
 
     @override
@@ -329,6 +334,8 @@ class Append(_RelayNode):
             arg = (
                 f"{gencontext.params_varname}.{self._event._cpp_identifier()}"
             )
+            if self._event_type._cpp_wrapper_struct_def() is not None:
+                arg = f"{arg}.value"
         else:
             arg = self._event._cpp_expression()
         return _CppExpression(f"tcspc::append({arg}, {downstream})")

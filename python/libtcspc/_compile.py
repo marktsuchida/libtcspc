@@ -602,11 +602,12 @@ def _graph_module_code(
         + nt_struct_fragment
         + custom_event_struct_fragment
         + excs
-        + param_struct
         + context_code
-        # wrappers must precede proc_code: the input/output processors in
-        # proc_code reference array-event wrapper structs defined here.
+        # wrappers must precede param_struct and proc_code: the params struct
+        # references array-event wrapper structs for array-event params, and
+        # the input/output processors in proc_code reference them too.
         + wrappers
+        + param_struct
         + proc_code
         + accessors,
         mod_var,

@@ -595,8 +595,8 @@ class EventInstance:
     values are concrete ints, floats, strings, or (for bucket fields)
     read-only NumPy arrays; read them as attributes (for example,
     ``event.abstime``). `Prepend`/`Append` can also insert an event value
-    bound at run time via a `Param` (for scalar, raw-bytes, or bucket-field
-    event types; array events are not yet supported on that path).
+    bound at run time via a `Param` (for scalar, raw-bytes, bucket-field, and
+    array event types).
 
     Instances of bucket-carrying event types (such as `HistogramEvent`) are
     not hashable.
@@ -2051,7 +2051,8 @@ class DetectionPairEvent(EventType):
     When delivered to a Python sink (or read back), ``elements`` is a tuple of
     two `DetectionEvent` `EventInstance` values; an `EventInstance` of this type
     also supports ``len(...)`` and indexing. Values are embeddable in compiled
-    code (usable with `Prepend`/`Append`) and hashable.
+    code (usable with `Prepend`/`Append`, including run-time binding via a
+    `Param`) and hashable.
 
     Constructing and inspecting individual event values from Python is
     intended for debugging and learning only and is extremely slow;

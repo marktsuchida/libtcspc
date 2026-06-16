@@ -108,9 +108,21 @@ def test_Prepend_param_accepts_bucket_event_type():
     assert "h" in node._param_encoders()
 
 
-def test_Prepend_param_rejects_array_event_type():
-    with pytest.raises(TypeError, match="not yet supported"):
-        Prepend(Param("evt"), event_type=tcspc.DetectionPairEvent())
+def test_Prepend_param_accepts_array_event_type():
+    node = Prepend(Param("p"), event_type=tcspc.DetectionPairEvent())
+    params = node._parameters()
+    assert len(params) == 1
+    assert params[0][0].name == "p"
+    assert (
+        params[0][1]
+        == tcspc.DetectionPairEvent()._cpp_input_handler_param_type()
+    )
+    assert node._value_event_types() == (tcspc.DetectionPairEvent(),)
+    assert "p" in node._param_encoders()
+    code = node._cpp_expression(gencontext, [_CppExpression("DOWN")])
+    assert code.startswith("tcspc::prepend(")
+    assert "params.z_p.value" in code
+    assert "DOWN" in code
 
 
 def test_Prepend_concrete_rejects_mismatched_event_type():
@@ -198,9 +210,21 @@ def test_Append_param_accepts_bucket_event_type():
     assert "h" in node._param_encoders()
 
 
-def test_Append_param_rejects_array_event_type():
-    with pytest.raises(TypeError, match="not yet supported"):
-        Append(Param("evt"), event_type=tcspc.DetectionPairEvent())
+def test_Append_param_accepts_array_event_type():
+    node = Append(Param("p"), event_type=tcspc.DetectionPairEvent())
+    params = node._parameters()
+    assert len(params) == 1
+    assert params[0][0].name == "p"
+    assert (
+        params[0][1]
+        == tcspc.DetectionPairEvent()._cpp_input_handler_param_type()
+    )
+    assert node._value_event_types() == (tcspc.DetectionPairEvent(),)
+    assert "p" in node._param_encoders()
+    code = node._cpp_expression(gencontext, [_CppExpression("DOWN")])
+    assert code.startswith("tcspc::append(")
+    assert "params.z_p.value" in code
+    assert "DOWN" in code
 
 
 def test_Append_concrete_rejects_mismatched_event_type():

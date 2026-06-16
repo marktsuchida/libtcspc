@@ -494,6 +494,57 @@ def test_execute_append_param_binds_bucket_event_at_flush():
     assert list(arr) == [1, 2, 3, 4]
 
 
+def test_execute_prepend_param_binds_array_event_at_runtime():
+    g = Graph()
+    g.add_node("a", Prepend(Param("p"), event_type=DetectionPairEvent()))
+    cg = CompiledGraph(g, (DetectionEvent(),))
+    sink = CollectingSink()
+    start = DetectionEvent().value(abstime=3, channel=0)
+    stop = DetectionEvent().value(abstime=9, channel=1)
+    ec = ExecutionContext(
+        cg, {"p": DetectionPairEvent().value(elements=[start, stop])}, (sink,)
+    )
+    ec.handle(DetectionEvent().value(abstime=1, channel=2))
+    ec.flush()
+    assert len(sink.events) == 2
+    pair = sink.events[0]
+    assert isinstance(pair, EventInstance)
+    assert pair.elements == (start, stop)
+    assert sink.events[1] == DetectionEvent().value(abstime=1, channel=2)
+
+
+def test_execute_append_param_binds_array_event_at_flush():
+    g = Graph()
+    g.add_node("a", Append(Param("p"), event_type=DetectionPairEvent()))
+    cg = CompiledGraph(g)
+    sink = CollectingSink()
+    start = DetectionEvent().value(abstime=4, channel=0)
+    stop = DetectionEvent().value(abstime=8, channel=1)
+    ec = ExecutionContext(
+        cg, {"p": DetectionPairEvent().value(elements=[start, stop])}, (sink,)
+    )
+    ec.flush()
+    assert len(sink.events) == 1
+    pair = sink.events[0]
+    assert isinstance(pair, EventInstance)
+    assert pair.elements == (start, stop)
+
+
+def test_execute_detection_pair_embedded_via_prepend():
+    start = DetectionEvent().value(abstime=1, channel=0)
+    stop = DetectionEvent().value(abstime=2, channel=1)
+    pair = DetectionPairEvent().value(elements=[start, stop])
+    g = Graph()
+    g.add_node("a", Prepend(pair))
+    cg = CompiledGraph(g, (DetectionPairEvent(),))
+    sink = CollectingSink()
+    ec = ExecutionContext(cg, None, (sink,))
+    ec.handle(DetectionPairEvent().value(elements=[start, stop]))
+    ec.flush()
+    assert sink.events[0] == pair
+    assert sink.events[0].elements == (start, stop)
+
+
 def test_execute_prepend_bakes_in_bucket_event_end_to_end():
     g = Graph()
     g.add_node("a", Prepend(HistogramEvent().value(data_bucket=[10, 20, 30])))
