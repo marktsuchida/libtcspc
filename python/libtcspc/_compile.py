@@ -323,6 +323,25 @@ def _py_bucket_source_support() -> _ModuleCodeFragment:
     )
 
 
+def _make_owning_bucket_support() -> _ModuleCodeFragment:
+    return _ModuleCodeFragment(
+        (),
+        ("algorithm", "initializer_list"),
+        (
+            _CppNamespaceScopeDefs("""\
+            template <typename T>
+            auto make_owning_bucket(std::initializer_list<T> values)
+                -> tcspc::bucket<T> {
+                auto bkt = tcspc::new_delete_bucket_source<T>::create()
+                               ->bucket_of_size(values.size());
+                std::copy(values.begin(), values.end(), bkt.begin());
+                return bkt;
+            }"""),
+        ),
+        (),
+    )
+
+
 def _output_processor(
     typename: _CppTypeName, event_types: Iterable[EventType]
 ) -> _ModuleCodeFragment:
@@ -397,6 +416,7 @@ def _processor_creation(
     return (
         _pysink()
         + _py_bucket_source_support()
+        + _make_owning_bucket_support()
         + _input_processor(input_proc_type, input_event_types)
         + output_processors
         + _ModuleCodeFragment(

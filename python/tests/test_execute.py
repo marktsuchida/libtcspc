@@ -494,6 +494,37 @@ def test_execute_append_param_binds_bucket_event_at_flush():
     assert list(arr) == [1, 2, 3, 4]
 
 
+def test_execute_prepend_bakes_in_bucket_event_end_to_end():
+    g = Graph()
+    g.add_node("a", Prepend(HistogramEvent().value(data_bucket=[10, 20, 30])))
+    cg = CompiledGraph(g, (HistogramEvent(),))
+    sink = CollectingSink()
+    ec = ExecutionContext(cg, None, (sink,))
+    ec.handle(HistogramEvent().value(data_bucket=[1, 1]))
+    ec.flush()
+    assert len(sink.events) == 2
+    out = sink.events[0]
+    assert isinstance(out, EventInstance)
+    arr = out.data_bucket
+    assert isinstance(arr, np.ndarray)
+    assert list(arr) == [10, 20, 30]
+
+
+def test_execute_append_bakes_in_bucket_event_end_to_end():
+    g = Graph()
+    g.add_node("a", Append(HistogramEvent().value(data_bucket=[1, 2, 3, 4])))
+    cg = CompiledGraph(g)
+    sink = CollectingSink()
+    ec = ExecutionContext(cg, None, (sink,))
+    ec.flush()
+    assert len(sink.events) == 1
+    out = sink.events[0]
+    assert isinstance(out, EventInstance)
+    arr = out.data_bucket
+    assert isinstance(arr, np.ndarray)
+    assert list(arr) == [1, 2, 3, 4]
+
+
 def test_execute_string_field_event_round_trips_through_passthrough_graph():
     g = Graph()
     g.add_node("a", SelectAll())

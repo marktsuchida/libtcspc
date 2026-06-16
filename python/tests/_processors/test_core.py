@@ -84,9 +84,13 @@ def test_Prepend_codegen():
     assert "DOWN" in code
 
 
-def test_Prepend_rejects_bucket_carrying_event():
-    with pytest.raises(TypeError, match="ExecutionContext.handle"):
-        Prepend(tcspc.BinIncrementClusterEvent().value(bin_indices=[1, 2]))
+def test_Prepend_bakes_in_bucket_carrying_event():
+    node = Prepend(tcspc.HistogramEvent().value(data_bucket=[10, 20, 30]))
+    code = node._cpp_expression(gencontext, [_CppExpression("DOWN")])
+    assert code.startswith("tcspc::prepend(")
+    assert "make_owning_bucket<" in code
+    assert "{" in code and "}" in code
+    assert "DOWN" in code
 
 
 def test_Prepend_param_requires_event_type():
@@ -162,9 +166,13 @@ def test_Append_event_set_from_empty_input():
     assert cpp == [tcspc.DetectionEvent()._cpp_type_name()]
 
 
-def test_Append_rejects_bucket_carrying_event():
-    with pytest.raises(TypeError, match="ExecutionContext.handle"):
-        Append(tcspc.HistogramEvent().value(data_bucket=[1, 2, 3]))
+def test_Append_bakes_in_bucket_carrying_event():
+    node = Append(tcspc.HistogramEvent().value(data_bucket=[1, 2, 3]))
+    code = node._cpp_expression(gencontext, [_CppExpression("DOWN")])
+    assert code.startswith("tcspc::append(")
+    assert "make_owning_bucket<" in code
+    assert "{" in code and "}" in code
+    assert "DOWN" in code
 
 
 def test_Append_codegen():

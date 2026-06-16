@@ -108,8 +108,9 @@ _FieldValue: TypeAlias = (
 #       events use the simple nanobind::cast(event) path.
 #   cpp_initializer(value) -> str
 #       Emit the C++ designated-initializer fragment that embeds a concrete
-#       value into generated source. _BucketField raises (unreachable):
-#       bucket-carrying events cannot be embedded in compiled code.
+#       value into generated source. _BucketField emits a make_owning_bucket<T>
+#       helper call (the helper is defined unconditionally in the generated
+#       module; see _compile._make_owning_bucket_support).
 #
 # _ScalarField.py_kind() is specific to that class, not part of the shared
 # interface.
@@ -232,11 +233,16 @@ class _BucketField:
         return f"share_or_copy_bucket(event.{self.name})"
 
     def cpp_initializer(self, value: _FieldValue) -> str:
-        # Unreachable: callers reject bucket-carrying event types up front
-        # (see EventInstance._cpp_expression); defined so the union type
-        # checks.
-        raise TypeError(
-            f"bucket field {self.name!r} cannot be embedded in compiled code"
+        assert isinstance(value, np.ndarray)
+
+        def _format_element(v: object) -> str:
+            scalar = v.item() if isinstance(v, np.generic) else v
+            return f"static_cast<{self.element_cpp_type}>({scalar!r})"
+
+        elems = ", ".join(_format_element(v) for v in value)
+        return (
+            f".{self.name} = "
+            f"make_owning_bucket<{self.element_cpp_type}>({{{elems}}})"
         )
 
 
@@ -589,13 +595,11 @@ class EventInstance:
     values are concrete ints, floats, strings, or (for bucket fields)
     read-only NumPy arrays; read them as attributes (for example,
     ``event.abstime``). `Prepend`/`Append` can also insert an event value
-    bound at run time via a `Param` (for scalar/raw-bytes-field event types;
-    array and bucket-carrying events are not yet supported on that path).
+    bound at run time via a `Param` (for scalar, raw-bytes, or bucket-field
+    event types; array events are not yet supported on that path).
 
-    Instances of bucket-carrying event types (such as `HistogramEvent`)
-    cannot be inserted with `Prepend`/`Append` (use
-    :py:meth:`ExecutionContext.handle` to send them at run time) and are not
-    hashable.
+    Instances of bucket-carrying event types (such as `HistogramEvent`) are
+    not hashable.
 
     Constructing and inspecting individual event values from Python is
     intended for debugging and learning only and is extremely slow;
@@ -699,13 +703,6 @@ class EventInstance:
         return value[index]
 
     def _cpp_expression(self) -> _CppExpression:
-        if self._event_type._has_bucket_fields():
-            raise TypeError(
-                f"{type(self._event_type).__name__} value carries a bucket "
-                "field, so it cannot be embedded in compiled code (and is "
-                "therefore not supported by Prepend or Append); send it at "
-                "run time using ExecutionContext.handle() instead"
-            )
         ctype = self._event_type._cpp_type_name()
         parts = [
             f.cpp_initializer(self._fields[f.name])
@@ -1543,8 +1540,9 @@ class BinIncrementClusterEvent(EventType):
     Can be delivered directly to a Python sink as an `EventInstance` whose
     ``bin_indices`` attribute reads as a read-only NumPy array, and
     constructed via :py:meth:`~EventType.value` (the bucket field accepts a
-    1-D array-like). Not supported by `Prepend`/`Append`; use
-    :py:meth:`ExecutionContext.handle` to send a value at run time.
+    1-D array-like). A concrete value can be baked into the generated code
+    with `Prepend`/`Append`, or sent at run time via
+    :py:meth:`ExecutionContext.handle`.
 
     Even though this event carries a bucket, individual clusters are small
     and numerous, so constructing or inspecting them from Python is
@@ -1726,8 +1724,9 @@ class ConcludingHistogramArrayEvent(EventType):
     Can be delivered directly to a Python sink as an `EventInstance` whose
     ``data_bucket`` attribute reads as a read-only NumPy array, and
     constructed via :py:meth:`~EventType.value` (the bucket field accepts a
-    1-D array-like). Not supported by `Prepend`/`Append`; use
-    :py:meth:`ExecutionContext.handle` to send a value at run time.
+    1-D array-like). A concrete value can be baked into the generated code
+    with `Prepend`/`Append`, or sent at run time via
+    :py:meth:`ExecutionContext.handle`.
 
     Receiving these events at a Python sink and reading the carried
     bucket as a NumPy array is an efficient bulk transfer intended for
@@ -1797,8 +1796,9 @@ class ConcludingHistogramEvent(EventType):
     Can be delivered directly to a Python sink as an `EventInstance` whose
     ``data_bucket`` attribute reads as a read-only NumPy array, and
     constructed via :py:meth:`~EventType.value` (the bucket field accepts a
-    1-D array-like). Not supported by `Prepend`/`Append`; use
-    :py:meth:`ExecutionContext.handle` to send a value at run time.
+    1-D array-like). A concrete value can be baked into the generated code
+    with `Prepend`/`Append`, or sent at run time via
+    :py:meth:`ExecutionContext.handle`.
 
     Receiving these events at a Python sink and reading the carried
     bucket as a NumPy array is an efficient bulk transfer intended for
@@ -2188,8 +2188,9 @@ class HistogramArrayEvent(EventType):
     Can be delivered directly to a Python sink as an `EventInstance` whose
     ``data_bucket`` attribute reads as a read-only NumPy array, and
     constructed via :py:meth:`~EventType.value` (the bucket field accepts a
-    1-D array-like). Not supported by `Prepend`/`Append`; use
-    :py:meth:`ExecutionContext.handle` to send a value at run time.
+    1-D array-like). A concrete value can be baked into the generated code
+    with `Prepend`/`Append`, or sent at run time via
+    :py:meth:`ExecutionContext.handle`.
 
     Receiving these events at a Python sink and reading the carried
     bucket as a NumPy array is an efficient bulk transfer intended for
@@ -2259,8 +2260,9 @@ class HistogramArrayProgressEvent(EventType):
     Can be delivered directly to a Python sink as an `EventInstance` whose
     ``data_bucket`` attribute reads as a read-only NumPy array, and
     constructed via :py:meth:`~EventType.value` (the bucket field accepts a
-    1-D array-like). Not supported by `Prepend`/`Append`; use
-    :py:meth:`ExecutionContext.handle` to send a value at run time.
+    1-D array-like). A concrete value can be baked into the generated code
+    with `Prepend`/`Append`, or sent at run time via
+    :py:meth:`ExecutionContext.handle`.
 
     Receiving these events at a Python sink and reading the carried
     bucket as a NumPy array is an efficient bulk transfer intended for
@@ -2333,8 +2335,9 @@ class HistogramEvent(EventType):
     Can be delivered directly to a Python sink as an `EventInstance` whose
     ``data_bucket`` attribute reads as a read-only NumPy array, and
     constructed via :py:meth:`~EventType.value` (the bucket field accepts a
-    1-D array-like). Not supported by `Prepend`/`Append`; use
-    :py:meth:`ExecutionContext.handle` to send a value at run time.
+    1-D array-like). A concrete value can be baked into the generated code
+    with `Prepend`/`Append`, or sent at run time via
+    :py:meth:`ExecutionContext.handle`.
 
     Receiving these events at a Python sink and reading the carried
     bucket as a NumPy array is an efficient bulk transfer intended for

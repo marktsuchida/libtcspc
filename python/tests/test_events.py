@@ -912,10 +912,20 @@ def test_event_instance_repr_with_bucket_field_smoke():
     assert "bin_indices" in r
 
 
-def test_bucket_field_event_instance_cpp_expression_raises():
-    inst = tcspc.BinIncrementClusterEvent().value(bin_indices=[1])
-    with pytest.raises(TypeError, match="Prepend or Append"):
-        inst._cpp_expression()
+def test_bucket_field_event_instance_cpp_expression_uses_owning_bucket():
+    inst = tcspc.BinIncrementClusterEvent().value(bin_indices=[1, 2])
+    expr = inst._cpp_expression()
+    assert ".bin_indices = make_owning_bucket<" in expr
+    assert "static_cast<" in expr
+    assert "(1)" in expr
+    assert "(2)" in expr
+
+
+def test_empty_bucket_field_event_instance_cpp_expression():
+    inst = tcspc.BinIncrementClusterEvent().value(bin_indices=[])
+    expr = inst._cpp_expression()
+    assert "make_owning_bucket<" in expr
+    assert "{}" in expr
 
 
 def test_bucket_field_wrapper_class_def_substrings():
