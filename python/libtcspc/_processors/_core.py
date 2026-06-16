@@ -106,13 +106,6 @@ def _resolve_inserted_event(
                 "Param because its value cannot be constructed from Python "
                 "(it does not define convertible fields)"
             )
-        if event_type._has_bucket_fields():
-            raise TypeError(
-                f"{type(event_type).__name__} value carries a bucket field, "
-                "so it cannot be embedded in compiled code (and is therefore "
-                "not supported by Prepend or Append); send it at run time "
-                "using ExecutionContext.handle() instead"
-            )
         if event_type._cpp_wrapper_struct_def() is not None:
             raise TypeError(
                 f"array event values ({type(event_type).__name__}) are not "
@@ -182,9 +175,9 @@ class Prepend(_RelayNode):
       emitted.
     - End of input: pass through.
 
-    When ``event`` is a `Param`, the event type must have plain (scalar or
-    raw-bytes) fields; array events and bucket-carrying events are not yet
-    supported as a `Param`.
+    When ``event`` is a `Param`, the event type must have plain (scalar,
+    raw-bytes, or bucket) fields; array events are not yet supported as a
+    `Param`.
 
     See Also
     --------
@@ -277,9 +270,9 @@ class Append(_RelayNode):
     *downstream* processor raising end-of-processing, this processor has no
     effect.
 
-    When ``event`` is a `Param`, the event type must have plain (scalar or
-    raw-bytes) fields; array events and bucket-carrying events are not yet
-    supported as a `Param`.
+    When ``event`` is a `Param`, the event type must have plain (scalar,
+    raw-bytes, or bucket) fields; array events are not yet supported as a
+    `Param`.
 
     See Also
     --------

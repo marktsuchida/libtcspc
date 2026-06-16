@@ -23,6 +23,7 @@ from libtcspc._events import (
     DetectionPairEvent,
     EventInstance,
     HistogramArrayProgressEvent,
+    HistogramEvent,
     MarkerEvent,
     RealOneShotTimingEvent,
     SwabianTagEvent,
@@ -453,6 +454,44 @@ def test_execute_append_param_event_with_custom_numeric_traits():
     ec.flush()
     assert sink.events == [ev.value(abstime=12345)]
     assert sink.events[0]._fields == {"abstime": 12345}
+
+
+def test_execute_prepend_param_binds_bucket_event_at_runtime():
+    g = Graph()
+    g.add_node("a", Prepend(Param("h"), event_type=HistogramEvent()))
+    cg = CompiledGraph(g, (HistogramEvent(),))
+    sink = CollectingSink()
+    ec = ExecutionContext(
+        cg, {"h": HistogramEvent().value(data_bucket=[10, 20, 30])}, (sink,)
+    )
+    ec.handle(HistogramEvent().value(data_bucket=[1, 1]))
+    ec.flush()
+    assert len(sink.events) == 2
+    out = sink.events[0]
+    assert isinstance(out, EventInstance)
+    arr = out.data_bucket
+    assert isinstance(arr, np.ndarray)
+    assert list(arr) == [10, 20, 30]
+    arr1 = sink.events[1].data_bucket
+    assert isinstance(arr1, np.ndarray)
+    assert list(arr1) == [1, 1]
+
+
+def test_execute_append_param_binds_bucket_event_at_flush():
+    g = Graph()
+    g.add_node("a", Append(Param("h"), event_type=HistogramEvent()))
+    cg = CompiledGraph(g)
+    sink = CollectingSink()
+    ec = ExecutionContext(
+        cg, {"h": HistogramEvent().value(data_bucket=[1, 2, 3, 4])}, (sink,)
+    )
+    ec.flush()
+    assert len(sink.events) == 1
+    out = sink.events[0]
+    assert isinstance(out, EventInstance)
+    arr = out.data_bucket
+    assert isinstance(arr, np.ndarray)
+    assert list(arr) == [1, 2, 3, 4]
 
 
 def test_execute_string_field_event_round_trips_through_passthrough_graph():

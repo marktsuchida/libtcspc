@@ -94,9 +94,14 @@ def test_Prepend_param_requires_event_type():
         Prepend(Param("evt"))
 
 
-def test_Prepend_param_rejects_bucket_event_type():
-    with pytest.raises(TypeError, match="bucket"):
-        Prepend(Param("evt"), event_type=tcspc.HistogramEvent())
+def test_Prepend_param_accepts_bucket_event_type():
+    node = Prepend(Param("h"), event_type=tcspc.HistogramEvent())
+    params = node._parameters()
+    assert len(params) == 1
+    assert params[0][0].name == "h"
+    assert params[0][1] == tcspc.HistogramEvent()._cpp_type_name()
+    assert node._value_event_types() == (tcspc.HistogramEvent(),)
+    assert "h" in node._param_encoders()
 
 
 def test_Prepend_param_rejects_array_event_type():
@@ -175,9 +180,14 @@ def test_Append_param_requires_event_type():
         Append(Param("evt"))
 
 
-def test_Append_param_rejects_bucket_event_type():
-    with pytest.raises(TypeError, match="bucket"):
-        Append(Param("evt"), event_type=tcspc.HistogramEvent())
+def test_Append_param_accepts_bucket_event_type():
+    node = Append(Param("h"), event_type=tcspc.HistogramEvent())
+    params = node._parameters()
+    assert len(params) == 1
+    assert params[0][0].name == "h"
+    assert params[0][1] == tcspc.HistogramEvent()._cpp_type_name()
+    assert node._value_event_types() == (tcspc.HistogramEvent(),)
+    assert "h" in node._param_encoders()
 
 
 def test_Append_param_rejects_array_event_type():
