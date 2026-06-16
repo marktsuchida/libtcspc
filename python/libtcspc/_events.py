@@ -588,8 +588,9 @@ class EventInstance:
     `ExecutionContext.handle`, and as the value delivered to a `PySink`. Field
     values are concrete ints, floats, strings, or (for bucket fields)
     read-only NumPy arrays; read them as attributes (for example,
-    ``event.abstime``). Runtime-supplied event values (`Param`) are not yet
-    supported.
+    ``event.abstime``). `Prepend`/`Append` can also insert an event value
+    bound at run time via a `Param` (for scalar/raw-bytes-field event types;
+    array and bucket-carrying events are not yet supported on that path).
 
     Instances of bucket-carrying event types (such as `HistogramEvent`)
     cannot be inserted with `Prepend`/`Append` (use

@@ -384,6 +384,77 @@ def test_execute_detection_pair_embedded_via_append():
     assert sink.events[0].elements == (start, stop)
 
 
+def test_execute_prepend_param_binds_event_at_runtime():
+    g = Graph()
+    g.add_node("a", Prepend(Param("evt"), event_type=DetectionEvent()))
+    cg = CompiledGraph(g, (DetectionEvent(),))
+    sink = CollectingSink()
+    ec = ExecutionContext(
+        cg, {"evt": DetectionEvent().value(abstime=99, channel=7)}, (sink,)
+    )
+    ec.handle(DetectionEvent().value(abstime=1, channel=2))
+    ec.flush()
+    assert sink.events == [
+        DetectionEvent().value(abstime=99, channel=7),
+        DetectionEvent().value(abstime=1, channel=2),
+    ]
+
+
+def test_execute_append_param_binds_event_at_flush():
+    g = Graph()
+    g.add_node("a", Append(Param("evt"), event_type=DetectionEvent()))
+    cg = CompiledGraph(g)
+    sink = CollectingSink()
+    ec = ExecutionContext(
+        cg, {"evt": DetectionEvent().value(abstime=55, channel=3)}, (sink,)
+    )
+    ec.flush()
+    assert sink.events == [DetectionEvent().value(abstime=55, channel=3)]
+
+
+def test_execute_append_param_uses_default_value():
+    g = Graph()
+    g.add_node(
+        "a",
+        Append(
+            Param("evt", DetectionEvent().value(abstime=8, channel=1)),
+            event_type=DetectionEvent(),
+        ),
+    )
+    cg = CompiledGraph(g)
+    sink = CollectingSink()
+    ec = ExecutionContext(cg, None, (sink,))
+    ec.flush()
+    assert sink.events == [DetectionEvent().value(abstime=8, channel=1)]
+
+
+def test_execute_append_param_rejects_wrong_type_argument():
+    g = Graph()
+    g.add_node("a", Append(Param("evt"), event_type=DetectionEvent()))
+    cg = CompiledGraph(g)
+    with pytest.raises(TypeError):
+        ExecutionContext(
+            cg,
+            {"evt": MarkerEvent().value(abstime=1, channel=2)},
+            (CollectingSink(),),
+        )
+
+
+def test_execute_append_param_event_with_custom_numeric_traits():
+    # The event type carries non-default numeric traits; the trait struct must
+    # be registered in the generated source on the Param path too.
+    nt = NumericTraits(abstime_type=np.uint64)
+    ev = CustomEvent("ce_append_param_traits", abstime=True, traits=nt)
+    g = Graph()
+    g.add_node("a", Append(Param("evt"), event_type=ev))
+    cg = CompiledGraph(g)
+    sink = CollectingSink()
+    ec = ExecutionContext(cg, {"evt": ev.value(abstime=12345)}, (sink,))
+    ec.flush()
+    assert sink.events == [ev.value(abstime=12345)]
+    assert sink.events[0]._fields == {"abstime": 12345}
+
+
 def test_execute_string_field_event_round_trips_through_passthrough_graph():
     g = Graph()
     g.add_node("a", SelectAll())

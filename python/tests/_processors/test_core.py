@@ -11,6 +11,7 @@ from libtcspc._compile import CompiledGraph
 from libtcspc._cpp_utils import _CppExpression, _CppIdentifier, _CppTypeName
 from libtcspc._execute import ExecutionContext
 from libtcspc._graph import Graph
+from libtcspc._param import Param
 from libtcspc._processors import Append, Count, Prepend, SinkAll, SourceNothing
 
 IntEvent = _NamedEvent(_CppTypeName("int"))
@@ -88,6 +89,59 @@ def test_Prepend_rejects_bucket_carrying_event():
         Prepend(tcspc.BinIncrementClusterEvent().value(bin_indices=[1, 2]))
 
 
+def test_Prepend_param_requires_event_type():
+    with pytest.raises(ValueError, match="event_type is required"):
+        Prepend(Param("evt"))
+
+
+def test_Prepend_param_rejects_bucket_event_type():
+    with pytest.raises(TypeError, match="bucket"):
+        Prepend(Param("evt"), event_type=tcspc.HistogramEvent())
+
+
+def test_Prepend_param_rejects_array_event_type():
+    with pytest.raises(TypeError, match="not yet supported"):
+        Prepend(Param("evt"), event_type=tcspc.DetectionPairEvent())
+
+
+def test_Prepend_concrete_rejects_mismatched_event_type():
+    with pytest.raises(ValueError, match="event_type does not match"):
+        Prepend(
+            tcspc.DetectionEvent().value(abstime=0, channel=0),
+            event_type=tcspc.MarkerEvent(),
+        )
+
+
+def test_Prepend_concrete_accepts_matching_event_type():
+    Prepend(
+        tcspc.DetectionEvent().value(abstime=0, channel=0),
+        event_type=tcspc.DetectionEvent(),
+    )
+
+
+def test_Prepend_param_codegen_references_params_struct():
+    node = Prepend(Param("evt"), event_type=tcspc.DetectionEvent())
+    code = node._cpp_expression(gencontext, [_CppExpression("DOWN")])
+    assert code.startswith("tcspc::prepend(")
+    assert "params.z_evt" in code
+    assert "DOWN" in code
+
+
+def test_Prepend_param_declares_parameter():
+    node = Prepend(Param("evt"), event_type=tcspc.DetectionEvent())
+    params = node._parameters()
+    assert len(params) == 1
+    assert params[0][0].name == "evt"
+
+
+def test_Prepend_param_default_value_must_match_type():
+    with pytest.raises(ValueError, match="default_value"):
+        Prepend(
+            Param("evt", tcspc.MarkerEvent().value(abstime=0, channel=0)),
+            event_type=tcspc.DetectionEvent(),
+        )
+
+
 def test_Append_event_set_adds_inserted_event():
     node = Append(tcspc.DetectionEvent().value(abstime=0, channel=0))
     out = node._relay_map_event_set((IntEvent,))
@@ -113,6 +167,37 @@ def test_Append_codegen():
     code = node._cpp_expression(gencontext, [_CppExpression("DOWN")])
     assert code.startswith("tcspc::append(")
     assert ".abstime = static_cast<" in code
+    assert "DOWN" in code
+
+
+def test_Append_param_requires_event_type():
+    with pytest.raises(ValueError, match="event_type is required"):
+        Append(Param("evt"))
+
+
+def test_Append_param_rejects_bucket_event_type():
+    with pytest.raises(TypeError, match="bucket"):
+        Append(Param("evt"), event_type=tcspc.HistogramEvent())
+
+
+def test_Append_param_rejects_array_event_type():
+    with pytest.raises(TypeError, match="not yet supported"):
+        Append(Param("evt"), event_type=tcspc.DetectionPairEvent())
+
+
+def test_Append_concrete_rejects_mismatched_event_type():
+    with pytest.raises(ValueError, match="event_type does not match"):
+        Append(
+            tcspc.DetectionEvent().value(abstime=0, channel=0),
+            event_type=tcspc.MarkerEvent(),
+        )
+
+
+def test_Append_param_codegen_references_params_struct():
+    node = Append(Param("evt"), event_type=tcspc.DetectionEvent())
+    code = node._cpp_expression(gencontext, [_CppExpression("DOWN")])
+    assert code.startswith("tcspc::append(")
+    assert "params.z_evt" in code
     assert "DOWN" in code
 
 

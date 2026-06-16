@@ -201,7 +201,12 @@ def _build_execution(
         else:
             raw = param.default_value
         enc = encoders.get(param.name)
-        args[param._cpp_identifier()] = enc(raw) if enc is not None else raw
+        value = enc(raw) if enc is not None else raw
+        if isinstance(value, EventInstance):
+            value = _event_instance_to_wrapper(
+                value, compiled_graph._wrapper_by_cpp
+            )
+        args[param._cpp_identifier()] = value
     for name, _ in given_args.items():
         raise ValueError(f"Unknown argument: {name}")
 

@@ -697,6 +697,11 @@ class CompiledGraph:
 
         for et in input_event_types:
             add_input_deps(et)
+        # Event values bound to a parameter at run time (e.g. Prepend/Append
+        # with a Param event) are converted EventInstance -> wrapper on the
+        # input side, so their wrappers must be available here too.
+        for et in graph._value_event_types():
+            add_input_deps(et)
         self._wrapper_by_cpp: dict[str, tuple[type, list[_Field]]] = {
             str(et._cpp_type_name()): (pyclass, et._field_schema() or [])
             for et, pyclass in wrappers
