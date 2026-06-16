@@ -9,7 +9,7 @@ import numpy as np
 import pytest
 from _test_helpers import _NamedEvent
 from libtcspc._cpp_utils import _CppIdentifier, _CppTypeName
-from libtcspc._events import _BucketField, _ScalarField
+from libtcspc._events import _ArrayField, _BucketField, _ScalarField
 
 IntEvent = _NamedEvent(_CppTypeName("int"))
 
@@ -945,3 +945,125 @@ def test_mixed_field_cpp_output_handlers_initialize_in_schema_order():
     assert ".valid_size = event.valid_size," in code
     assert ".data_bucket = share_or_copy_bucket(event.data_bucket)," in code
     assert code.index(".valid_size") < code.index(".data_bucket")
+
+
+# --- ArrayEventType / DetectionPairEvent (fixed-size array events) ---
+
+
+def test_DetectionPairEvent_field_schema_is_single_array_field():
+    schema = tcspc.DetectionPairEvent()._field_schema()
+    assert len(schema) == 1
+    f = schema[0]
+    assert isinstance(f, _ArrayField)
+    assert f.name == "elements"
+    assert f.count == 2
+    assert f.element_type == tcspc.DetectionEvent()
+
+
+def test_ArrayEventType_cpp_type_name():
+    et = tcspc.ArrayEventType(tcspc.DetectionEvent(), 3)
+    assert et._cpp_type_name() == (
+        "std::array<tcspc::detection_event<tcspc::default_numeric_traits>, 3>"
+    )
+
+
+def test_ArrayEventType_rejects_zero_count():
+    with pytest.raises(ValueError):
+        tcspc.ArrayEventType(tcspc.DetectionEvent(), 0)
+
+
+def test_ArrayEventType_rejects_non_value_element():
+    with pytest.raises(ValueError):
+        tcspc.ArrayEventType(tcspc.BucketEvent(IntEvent), 2)
+
+
+def test_ArrayEventType_supports_value():
+    assert tcspc.ArrayEventType(tcspc.DetectionEvent(), 2)._supports_value()
+    assert tcspc.DetectionPairEvent()._supports_value()
+
+
+def test_ArrayEventType_eq_depends_on_element_and_count():
+    a = tcspc.ArrayEventType(tcspc.DetectionEvent(), 2)
+    b = tcspc.ArrayEventType(tcspc.DetectionEvent(), 2)
+    c = tcspc.ArrayEventType(tcspc.DetectionEvent(), 3)
+    d = tcspc.ArrayEventType(tcspc.MarkerEvent(), 2)
+    assert a == b
+    assert a != c
+    assert a != d
+
+
+def test_DetectionPairEvent_eq_ArrayEventType():
+    assert tcspc.DetectionPairEvent() == tcspc.ArrayEventType(
+        tcspc.DetectionEvent(), 2
+    )
+
+
+def test_value_dependency_event_types():
+    assert tcspc.DetectionPairEvent()._value_dependency_event_types() == [
+        tcspc.DetectionEvent()
+    ]
+    assert tcspc.DetectionEvent()._value_dependency_event_types() == []
+
+
+def _pair_value():
+    start = tcspc.DetectionEvent().value(abstime=0, channel=0)
+    stop = tcspc.DetectionEvent().value(abstime=10, channel=1)
+    return (
+        tcspc.DetectionPairEvent().value(elements=[start, stop]),
+        start,
+        stop,
+    )
+
+
+def test_DetectionPairEvent_value_happy_path():
+    pair, start, stop = _pair_value()
+    assert pair.elements == (start, stop)
+    assert len(pair) == 2
+    assert pair[0] == start
+    assert pair[1] == stop
+
+
+def test_DetectionPairEvent_value_wrong_length_raises():
+    start = tcspc.DetectionEvent().value(abstime=0, channel=0)
+    with pytest.raises(TypeError, match="exactly 2"):
+        tcspc.DetectionPairEvent().value(elements=[start])
+
+
+def test_DetectionPairEvent_value_non_event_instance_raises():
+    start = tcspc.DetectionEvent().value(abstime=0, channel=0)
+    with pytest.raises(TypeError, match="EventInstance"):
+        tcspc.DetectionPairEvent().value(elements=[start, 42])  # type: ignore[arg-type]
+
+
+def test_DetectionPairEvent_value_wrong_element_type_raises():
+    start = tcspc.DetectionEvent().value(abstime=0, channel=0)
+    wrong = tcspc.MarkerEvent().value(abstime=10, channel=1)
+    with pytest.raises(TypeError, match="event type"):
+        tcspc.DetectionPairEvent().value(elements=[start, wrong])
+
+
+def test_DetectionPairEvent_value_eq_and_hash():
+    a, _, _ = _pair_value()
+    b, _, _ = _pair_value()
+    assert a == b
+    assert hash(a) == hash(b)
+
+    other_start = tcspc.DetectionEvent().value(abstime=5, channel=0)
+    other_stop = tcspc.DetectionEvent().value(abstime=10, channel=1)
+    c = tcspc.DetectionPairEvent().value(elements=[other_start, other_stop])
+    assert a != c
+
+
+def test_DetectionPairEvent_value_cpp_expression():
+    pair, _, _ = _pair_value()
+    expr = pair._cpp_expression()
+    elem = "tcspc::detection_event<tcspc::default_numeric_traits>"
+    assert expr == (
+        f"std::array<{elem}, 2>{{"
+        f"{elem}{{"
+        ".abstime = static_cast<tcspc::default_numeric_traits::abstime_type>(0), "
+        ".channel = static_cast<tcspc::default_numeric_traits::channel_type>(0)}, "
+        f"{elem}{{"
+        ".abstime = static_cast<tcspc::default_numeric_traits::abstime_type>(10), "
+        ".channel = static_cast<tcspc::default_numeric_traits::channel_type>(1)}}"
+    )

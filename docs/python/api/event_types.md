@@ -41,6 +41,7 @@ library.
    libtcspc.BucketEvent
    libtcspc.ConstBucketEvent
    libtcspc.VariantEvent
+   libtcspc.ArrayEventType
    libtcspc.WarningEvent
 ```
 

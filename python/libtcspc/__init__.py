@@ -38,6 +38,7 @@ from ._data_mappers import (
     DifftimeDataMapper,
 )
 from ._events import (
+    ArrayEventType,
     BeginLostIntervalEvent,
     BHSPC600_256chEvent,
     BHSPC600_4096chEvent,
@@ -210,6 +211,7 @@ __all__ = [
     "AddCountToPeriodicSequences",
     "AlwaysMatcher",
     "Append",
+    "ArrayEventType",
     "BHSPC600_256chEvent",
     "BHSPC600_4096chEvent",
     "BHSPCEvent",

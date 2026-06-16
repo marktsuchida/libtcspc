@@ -19,6 +19,7 @@ from libtcspc._events import (
     ConstBucketEvent,
     CustomEvent,
     DetectionEvent,
+    DetectionPairEvent,
     EventInstance,
     HistogramArrayProgressEvent,
     MarkerEvent,
@@ -39,12 +40,14 @@ from libtcspc._processors import (
     Batch,
     Buffer,
     Count,
+    PairOne,
     Prepend,
     RealTimeBuffer,
     SelectAll,
     SinkAll,
     SinkOnly,
     Stop,
+    TimeCorrelateAtStart,
 )
 from typing_extensions import override
 
@@ -298,6 +301,83 @@ def test_execute_double_field_event_round_trips_through_passthrough_graph():
     assert sink.events == [sent]
     assert isinstance(sink.events[0], EventInstance)
     assert sink.events[0]._fields == {"abstime": 42, "delay": 2.5}
+
+
+def test_execute_detection_pair_round_trips_through_passthrough_graph():
+    g = Graph()
+    g.add_node("a", SelectAll())
+    cg = CompiledGraph(g, (DetectionPairEvent(),))
+    sink = CollectingSink()
+    ec = ExecutionContext(cg, None, (sink,))
+    start = DetectionEvent().value(abstime=0, channel=0)
+    stop = DetectionEvent().value(abstime=10, channel=1)
+    sent = DetectionPairEvent().value(elements=[start, stop])
+    ec.handle(sent)
+    assert len(sink.events) == 1
+    out = sink.events[0]
+    assert isinstance(out, EventInstance)
+    assert out == sent
+    assert out.elements == (start, stop)
+    assert len(out) == 2
+    assert out[0] == start
+    assert out[1] == stop
+    assert isinstance(out[0], EventInstance)
+
+
+def test_execute_detection_pair_emitted_by_pairing_processor():
+    g = Graph()
+    g.add_node(
+        "p",
+        PairOne(start_channel=0, stop_channels=[1], time_window=100),
+    )
+    cg = CompiledGraph(g, (DetectionEvent(),))
+    sink = CollectingSink()
+    ec = ExecutionContext(cg, None, (sink,))
+    ec.handle(DetectionEvent().value(abstime=0, channel=0))  # start
+    ec.handle(DetectionEvent().value(abstime=5, channel=1))  # stop -> pair
+    ec.flush()
+    pairs = [
+        e
+        for e in sink.events
+        if isinstance(e, EventInstance)
+        and type(e._event_type) is DetectionPairEvent
+    ]
+    assert len(pairs) == 1
+    assert pairs[0].elements == (
+        DetectionEvent().value(abstime=0, channel=0),
+        DetectionEvent().value(abstime=5, channel=1),
+    )
+
+
+def test_execute_detection_pair_consumed_by_time_correlation_processor():
+    g = Graph()
+    g.add_node("tc", TimeCorrelateAtStart())
+    cg = CompiledGraph(g, (DetectionPairEvent(),))
+    sink = CollectingSink()
+    ec = ExecutionContext(cg, None, (sink,))
+    start = DetectionEvent().value(abstime=3, channel=0)
+    stop = DetectionEvent().value(abstime=9, channel=1)
+    ec.handle(DetectionPairEvent().value(elements=[start, stop]))
+    ec.flush()
+    assert len(sink.events) == 1
+    tcd = sink.events[0]
+    assert tcd.abstime == 3
+    assert tcd.channel == 0
+    assert tcd.difftime == 6
+
+
+def test_execute_detection_pair_embedded_via_append():
+    start = DetectionEvent().value(abstime=1, channel=0)
+    stop = DetectionEvent().value(abstime=2, channel=1)
+    pair = DetectionPairEvent().value(elements=[start, stop])
+    g = Graph()
+    g.add_node("a", Append(pair))
+    cg = CompiledGraph(g)
+    sink = CollectingSink()
+    ec = ExecutionContext(cg, None, (sink,))
+    ec.flush()
+    assert sink.events == [pair]
+    assert sink.events[0].elements == (start, stop)
 
 
 def test_execute_string_field_event_round_trips_through_passthrough_graph():

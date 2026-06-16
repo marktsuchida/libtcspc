@@ -8,7 +8,7 @@ import dataclasses
 import hashlib
 import re
 from abc import ABC, abstractmethod
-from collections.abc import Iterable, Iterator, Mapping
+from collections.abc import Iterable, Iterator, Mapping, Sequence
 from typing import TypeAlias, final
 
 import numpy as np
@@ -22,6 +22,7 @@ from ._cpp_utils import (
     _CppExpression,
     _CppFunctionScopeDefs,
     _CppIdentifier,
+    _CppNamespaceScopeDefs,
     _CppTypeName,
     _identifier_from_string,
     _nominal,
@@ -72,7 +73,9 @@ def _field_py_kind(cpp_type: _CppTypeName) -> type:
     return int  # NumericTraits member types and std::size_t are integral
 
 
-_FieldValue: TypeAlias = int | float | str | np.ndarray
+_FieldValue: TypeAlias = (
+    int | float | str | np.ndarray | tuple["EventInstance", ...]
+)
 
 
 @dataclasses.dataclass(frozen=True)
@@ -84,7 +87,9 @@ class _ScalarField:
         return _field_py_kind(self.cpp_type)
 
     def coerce(
-        self, value: int | float | str | npt.ArrayLike, owner: str
+        self,
+        value: int | float | str | npt.ArrayLike | Sequence["EventInstance"],
+        owner: str,
     ) -> _FieldValue:
         kind = self.py_kind()
         if kind is int:
@@ -131,7 +136,9 @@ class _BucketField:
     dtype: np.dtype
 
     def coerce(
-        self, value: int | float | str | npt.ArrayLike, owner: str
+        self,
+        value: int | float | str | npt.ArrayLike | Sequence["EventInstance"],
+        owner: str,
     ) -> _FieldValue:
         if isinstance(value, np.ndarray):
             if value.dtype != self.dtype and not np.can_cast(
@@ -197,13 +204,100 @@ class _BucketField:
         )
 
 
-_Field: TypeAlias = _ScalarField | _BucketField
+@dataclasses.dataclass(frozen=True)
+class _ArrayField:
+    name: str
+    element_type: "EventType"
+    count: int
+
+    def coerce(
+        self,
+        value: int | float | str | npt.ArrayLike | Sequence["EventInstance"],
+        owner: str,
+    ) -> _FieldValue:
+        try:
+            items = list(value)  # type: ignore[arg-type]
+        except TypeError:
+            raise TypeError(
+                f"{owner}: field {self.name!r} must be a sequence of "
+                f"{self.count} EventInstance(s), "
+                f"not {type(value).__name__}"
+            ) from None
+        if len(items) != self.count:
+            raise TypeError(
+                f"{owner}: field {self.name!r} must have exactly "
+                f"{self.count} element(s), got {len(items)}"
+            )
+        result: list[EventInstance] = []
+        for i, item in enumerate(items):
+            if not isinstance(item, EventInstance):
+                raise TypeError(
+                    f"{owner}: field {self.name!r} element {i} must be an "
+                    f"EventInstance, not {type(item).__name__}"
+                )
+            if item._event_type != self.element_type:
+                raise TypeError(
+                    f"{owner}: field {self.name!r} element {i} has event type "
+                    f"{type(item._event_type).__name__}, expected "
+                    f"{type(self.element_type).__name__}"
+                )
+            result.append(item)
+        return tuple(result)
+
+    def wrapper_binding(self, event_cpp: _CppTypeName) -> str:
+        # `event_cpp` is the array-wrapper struct (see
+        # ArrayEventType._cpp_wrapper_struct_def), which holds the std::array in
+        # a member named `value`. Expose `elements` as a settable property: the
+        # getter returns a list of copies of the element wrappers; the setter
+        # assigns a sequence of exactly `count` element wrappers.
+        elem = self.element_type._cpp_type_name()
+        return f"""
+    .def_prop_rw("{self.name}",
+        []({event_cpp} const &self) {{
+            nanobind::list lst;
+            for (auto const &e : self.value)
+                lst.append(nanobind::cast(e, nanobind::rv_policy::copy));
+            return lst;
+        }},
+        []({event_cpp} &self, nanobind::sequence seq) {{
+            std::size_t i = 0;
+            for (auto h : seq) {{
+                if (i >= self.value.size())
+                    throw std::out_of_range(
+                        "{self.name}: expected {self.count} element(s)");
+                self.value[i++] = nanobind::cast<{elem}>(h);
+            }}
+            if (i != self.value.size())
+                throw std::out_of_range(
+                    "{self.name}: expected {self.count} element(s)");
+        }})"""
+
+    def output_init_expr(self) -> str:
+        # Unreachable: array events have no bucket fields, so the simple
+        # nanobind::cast(event) output path is used (see
+        # EventType._cpp_output_handlers).
+        raise TypeError(
+            f"array field {self.name!r} does not use the bucket output path"
+        )
+
+    def cpp_initializer(self, value: _FieldValue) -> str:
+        assert isinstance(value, tuple)
+        return ", ".join(e._cpp_expression() for e in value)
+
+
+_Field: TypeAlias = _ScalarField | _BucketField | _ArrayField
 
 
 def _field_values_equal(v: _FieldValue, w: _FieldValue) -> bool:
     if isinstance(v, np.ndarray) and isinstance(w, np.ndarray):
         return bool(v.dtype == w.dtype and np.array_equal(v, w))
     if isinstance(v, np.ndarray) or isinstance(w, np.ndarray):
+        return False
+    if isinstance(v, tuple) and isinstance(w, tuple):
+        return len(v) == len(w) and all(
+            a == b for a, b in zip(v, w, strict=False)
+        )
+    if isinstance(v, tuple) or isinstance(w, tuple):
         return False
     return bool(v == w)
 
@@ -262,8 +356,24 @@ class EventType(ABC):
         return self._field_schema() is not None
 
     def _has_bucket_fields(self) -> bool:
-        schema = self._field_schema()
-        return any(isinstance(f, _BucketField) for f in schema or ())
+        for f in self._field_schema() or ():
+            if isinstance(f, _BucketField):
+                return True
+            if (
+                isinstance(f, _ArrayField)
+                and f.element_type._has_bucket_fields()
+            ):
+                return True
+        return False
+
+    def _value_dependency_event_types(self) -> list["EventType"]:
+        """Event types whose value wrappers this type's wrapper depends on.
+
+        An array event's wrapper exposes its elements as wrappers of the
+        element type, so the element type must also be bound. The default is
+        empty.
+        """
+        return []
 
     def _cpp_output_handlers(
         self, pysink: _CppIdentifier
@@ -303,6 +413,16 @@ class EventType(ABC):
         }}
         """)
 
+    def _cpp_wrapper_struct_def(self) -> _CppNamespaceScopeDefs | None:
+        """Namespace-scope C++ struct backing the Python value wrapper.
+
+        The default is ``None``: the wrapper binds the event's C++ type
+        directly. Event types whose C++ type cannot be bound as a nanobind
+        ``class_`` (for example ``std::array``, which has an STL type caster)
+        override this to provide a distinct backing struct.
+        """
+        return None
+
     def _cpp_wrapper_class_name(self) -> _CppIdentifier:
         return _CppIdentifier(
             f"event_wrapper__{_identifier_from_string(self._cpp_type_name())}"
@@ -331,7 +451,12 @@ class EventType(ABC):
         return None
 
     def value(
-        self, **fields: int | float | str | npt.ArrayLike
+        self,
+        **fields: int
+        | float
+        | str
+        | npt.ArrayLike
+        | Sequence["EventInstance"],
     ) -> "EventInstance":
         """Construct a concrete event value of this type.
 
@@ -383,7 +508,9 @@ class EventInstance:
     def __init__(
         self,
         event_type: EventType,
-        fields: Mapping[str, int | float | str | npt.ArrayLike],
+        fields: Mapping[
+            str, int | float | str | npt.ArrayLike | Sequence["EventInstance"]
+        ],
     ) -> None:
         schema = event_type._field_schema()
         if schema is None:
@@ -441,6 +568,32 @@ class EventInstance:
 
     def __dir__(self) -> list[str]:
         return [*super().__dir__(), *self._fields]
+
+    def _sole_array_field(self) -> "_ArrayField | None":
+        schema = self._event_type._field_schema() or ()
+        if len(schema) == 1 and isinstance(schema[0], _ArrayField):
+            return schema[0]
+        return None
+
+    def __len__(self) -> int:
+        f = self._sole_array_field()
+        if f is None:
+            raise TypeError(
+                f"{type(self._event_type).__name__} value has no length"
+            )
+        value = self._fields[f.name]
+        assert isinstance(value, tuple)
+        return len(value)
+
+    def __getitem__(self, index: int) -> "EventInstance":
+        f = self._sole_array_field()
+        if f is None:
+            raise TypeError(
+                f"{type(self._event_type).__name__} value is not subscriptable"
+            )
+        value = self._fields[f.name]
+        assert isinstance(value, tuple)
+        return value[index]
 
     def _cpp_expression(self) -> _CppExpression:
         if self._event_type._has_bucket_fields():
@@ -896,6 +1049,145 @@ class VariantEvent(EventType):
             *(t._type_identity() for t in self._event_types),
         )
         return _nominal("tcspc::variant_event", type_list_id)
+
+
+class ArrayEventType(EventType):
+    """Event holding a fixed-size array of elements of another event type.
+
+    The corresponding C++ event is ``std::array<T, N>``, where ``T`` is the
+    element type and ``N`` is the (compile-time) element count. Use this for
+    events that group a fixed number of structured elements, such as a pair of
+    detections (`DetectionPairEvent`), or for future N-fold correlation.
+
+    Parameters
+    ----------
+    element_type : EventType
+        The event type of the array elements. It must support value
+        construction (see :py:meth:`EventType.value`).
+    count : int
+        The number of elements in the array. Must be at least 1.
+
+    Notes
+    -----
+    A value of this type is constructed with the single field ``elements``,
+    given as a sequence of exactly ``count`` `EventInstance` values of
+    ``element_type``::
+
+        ArrayEventType(DetectionEvent(nt), 2).value(elements=[start, stop])
+
+    When delivered to a Python sink (or read back), ``elements`` is a tuple of
+    `EventInstance` values of ``element_type``. For convenience, an
+    `EventInstance` of this type also supports ``len(...)`` and indexing
+    (``inst[i]``), which return the elements directly.
+
+    Whether values can be embedded in compiled code (and used with
+    `Prepend`/`Append`) and whether they are hashable follow from the element
+    type: an array of scalar-only elements is embeddable and hashable; an array
+    of bucket-carrying elements is neither.
+
+    See Also
+    --------
+    :py:obj:`DetectionPairEvent`
+        A specialization for a pair of detections.
+    """
+
+    def __init__(self, element_type: EventType, count: int) -> None:
+        if count < 1:
+            raise ValueError("ArrayEventType count must be at least 1")
+        if not element_type._supports_value():
+            raise ValueError(
+                "ArrayEventType element_type must support value construction"
+            )
+        self._element = element_type
+        self._count = count
+
+    @override
+    def _cpp_type_name(self) -> _CppTypeName:
+        return _CppTypeName(
+            f"std::array<{self._element._cpp_type_name()}, {self._count}>"
+        )
+
+    @override
+    def _type_identity(self) -> _TypeIdentity:
+        return _nominal(
+            "std::array", self._element._type_identity(), str(self._count)
+        )
+
+    @override
+    def _field_schema(self) -> list[_Field]:
+        return [_ArrayField("elements", self._element, self._count)]
+
+    @override
+    def _value_dependency_event_types(self) -> list[EventType]:
+        return [self._element]
+
+    # An array event's C++ type is a std::array, which cannot be bound directly
+    # as a nanobind class_: <nanobind/stl/array.h> (included unconditionally,
+    # and needed elsewhere -- e.g. the sinks parameter) provides a
+    # type_caster<std::array<...>> partial specialization that takes precedence
+    # over any class_ registration. So nanobind::cast() of a std::array yields
+    # a Python list (each element cast in turn), not an instance of our wrapper
+    # class, which would defeat the type-based dispatch used to map a delivered
+    # wrapper back to its EventType. We therefore bind a distinct backing
+    # struct that simply holds the std::array in a member named `value`; the
+    # wrapper class binds this struct, and the input/output handlers convert
+    # between it and the bare std::array that flows through the graph.
+
+    def _wrapper_struct_name(self) -> _CppTypeName:
+        return _CppTypeName(
+            "array_event_wrapper__"
+            + _identifier_from_string(self._cpp_type_name())
+        )
+
+    @override
+    def _cpp_wrapper_struct_def(self) -> _CppNamespaceScopeDefs:
+        return _CppNamespaceScopeDefs(
+            f"struct {self._wrapper_struct_name()} {{\n"
+            f"    {self._cpp_type_name()} value;\n"
+            f"}};"
+        )
+
+    @override
+    def _cpp_wrapper_class_def(
+        self, module_var: _CppIdentifier
+    ) -> _CppFunctionScopeDefs:
+        wrapper = self._wrapper_struct_name()
+        name = self._cpp_wrapper_class_name()
+        defs = "".join(
+            f.wrapper_binding(wrapper) for f in self._field_schema()
+        )
+        return _CppFunctionScopeDefs(
+            f'nanobind::class_<{wrapper}>({module_var}, "{name}", '
+            f"nanobind::is_final())\n    .def(nanobind::init<>())"
+            f"{defs};\n"
+        )
+
+    @override
+    def _cpp_output_handlers(
+        self, pysink: _CppIdentifier
+    ) -> _CppClassScopeDefs:
+        cpp = self._cpp_type_name()
+        wrapper = self._wrapper_struct_name()
+        return _CppClassScopeDefs(f"""\
+        void handle({cpp} const &event) {{
+            nanobind::gil_scoped_acquire held;
+            {pysink}->handle(nanobind::cast({wrapper}{{event}}));
+        }}
+        """)
+
+    @override
+    def _cpp_input_handler(
+        self, downstream: _CppIdentifier
+    ) -> _CppClassScopeDefs:
+        return _CppClassScopeDefs(f"""\
+        void handle({self._wrapper_struct_name()} const &event) {{
+            {downstream}.handle(event.value);
+        }}
+        """)
+
+    @override
+    def _cpp_input_handler_param_type(self) -> _CppTypeName:
+        return self._wrapper_struct_name()
 
 
 class _ByteEvent(EventType):
@@ -1523,33 +1815,72 @@ class DetectionPairEvent(EventType):
     The corresponding C++ event is ``std::array<tcspc::detection_event, 2>``;
     element 0 is the start detection and element 1 is the stop detection.
 
+    A value is constructed with the single field ``elements``, given as a
+    sequence of exactly two `DetectionEvent` `EventInstance` values (the start
+    and the stop)::
+
+        DetectionPairEvent(nt).value(elements=[start, stop])
+
+    When delivered to a Python sink (or read back), ``elements`` is a tuple of
+    two `DetectionEvent` `EventInstance` values; an `EventInstance` of this type
+    also supports ``len(...)`` and indexing. Values are embeddable in compiled
+    code (usable with `Prepend`/`Append`) and hashable.
+
     See Also
     --------
-    :cpp:`tcspc::detection_event`
+    :py:obj:`DetectionEvent`
         The element type of the pair.
+    :py:obj:`ArrayEventType`
+        The generic fixed-size-array event type this specializes.
     """
 
     def __init__(self, numeric_traits: NumericTraits | None = None) -> None:
         self._numeric_traits = (
             numeric_traits if numeric_traits is not None else NumericTraits()
         )
+        self._array = ArrayEventType(DetectionEvent(self._numeric_traits), 2)
 
     @override
     def _cpp_type_name(self) -> _CppTypeName:
-        return _CppTypeName(
-            f"std::array<tcspc::detection_event<{self._numeric_traits._cpp_type_name()}>, 2>"
-        )
+        return self._array._cpp_type_name()
 
     @override
     def _type_identity(self) -> _TypeIdentity:
-        return _nominal(
-            "std::array",
-            _nominal(
-                "tcspc::detection_event",
-                self._numeric_traits._type_identity(),
-            ),
-            "2",
-        )
+        return self._array._type_identity()
+
+    @override
+    def _field_schema(self) -> list[_Field]:
+        return self._array._field_schema()
+
+    @override
+    def _value_dependency_event_types(self) -> list[EventType]:
+        return self._array._value_dependency_event_types()
+
+    @override
+    def _cpp_wrapper_struct_def(self) -> _CppNamespaceScopeDefs | None:
+        return self._array._cpp_wrapper_struct_def()
+
+    @override
+    def _cpp_wrapper_class_def(
+        self, module_var: _CppIdentifier
+    ) -> _CppFunctionScopeDefs:
+        return self._array._cpp_wrapper_class_def(module_var)
+
+    @override
+    def _cpp_output_handlers(
+        self, pysink: _CppIdentifier
+    ) -> _CppClassScopeDefs:
+        return self._array._cpp_output_handlers(pysink)
+
+    @override
+    def _cpp_input_handler(
+        self, downstream: _CppIdentifier
+    ) -> _CppClassScopeDefs:
+        return self._array._cpp_input_handler(downstream)
+
+    @override
+    def _cpp_input_handler_param_type(self) -> _CppTypeName:
+        return self._array._cpp_input_handler_param_type()
 
 
 class EndLostIntervalEvent(EventType):

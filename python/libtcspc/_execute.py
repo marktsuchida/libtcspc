@@ -12,7 +12,7 @@ from typing_extensions import override
 from ._access import AccessTag, _AccessorSpec, _BufferAccessorSpec
 from ._compile import CompiledGraph
 from ._cpp_utils import _CppIdentifier
-from ._events import EventInstance, EventType
+from ._events import EventInstance, EventType, _ArrayField, _Field
 
 
 class PySink(ABC):
@@ -60,16 +60,52 @@ class PySink(ABC):
 
 
 def _wrapper_to_event_instance(
-    wrapper: Any, wrappers: dict[type, tuple[EventType, list[str]]]
+    wrapper: Any, wrappers: dict[type, tuple[EventType, list[_Field]]]
 ) -> EventInstance:
     # Convert a generated event-wrapper instance delivered by the compiled
     # module into an EventInstance, using the wrapper -> (EventType, field
-    # names) correspondence. The wrapper's type must be present in 'wrappers'.
+    # schema) correspondence. The wrapper's type must be present in 'wrappers'.
     # The trusted path is required to preserve zero-copy array delivery.
-    event_type, field_names = wrappers[type(wrapper)]
-    return EventInstance._from_wrapper(
-        event_type, {n: getattr(wrapper, n) for n in field_names}
-    )
+    # Array-event fields recurse: each element wrapper is itself converted.
+    event_type, schema = wrappers[type(wrapper)]
+    fields: dict[str, Any] = {}
+    for f in schema:
+        raw = getattr(wrapper, f.name)
+        if isinstance(f, _ArrayField):
+            fields[f.name] = tuple(
+                _wrapper_to_event_instance(e, wrappers) for e in raw
+            )
+        else:
+            fields[f.name] = raw
+    return EventInstance._from_wrapper(event_type, fields)
+
+
+def _event_instance_to_wrapper(
+    inst: EventInstance, wrapper_by_cpp: dict[str, tuple[type, list[_Field]]]
+) -> Any:
+    # Build a generated event-wrapper instance from an EventInstance, using the
+    # C++ type-name -> (wrapper pyclass, field schema) correspondence.
+    # Array-event fields recurse: each element EventInstance becomes an element
+    # wrapper. The event type (and, for arrays, the element types) must be
+    # present in 'wrapper_by_cpp'.
+    cpp = str(inst._event_type._cpp_type_name())
+    pyclass, schema = wrapper_by_cpp[cpp]
+    wrapper = pyclass()
+    for f in schema:
+        field_value = inst._fields[f.name]
+        if isinstance(f, _ArrayField):
+            assert isinstance(field_value, tuple)
+            setattr(
+                wrapper,
+                f.name,
+                [
+                    _event_instance_to_wrapper(e, wrapper_by_cpp)
+                    for e in field_value
+                ],
+            )
+        else:
+            setattr(wrapper, f.name, field_value)
+    return wrapper
 
 
 @final
@@ -80,7 +116,7 @@ class _RecordLastAccessor:
     # raw accessor also keeps the processor alive, so retaining it here is
     # sufficient.
     def __init__(
-        self, raw: Any, wrappers: dict[type, tuple[EventType, list[str]]]
+        self, raw: Any, wrappers: dict[type, tuple[EventType, list[_Field]]]
     ) -> None:
         self._raw = raw
         self._wrappers = wrappers
@@ -148,8 +184,8 @@ def _build_execution(
     Any,
     Any,
     set[str],
-    dict[str, tuple[type, list[str]]],
-    dict[type, tuple[EventType, list[str]]],
+    dict[str, tuple[type, list[_Field]]],
+    dict[type, tuple[EventType, list[_Field]]],
     Mapping[str, _AccessorSpec],
 ]:
     given_args = {} if arguments is None else arguments.copy()
@@ -328,17 +364,12 @@ class ExecutionContext:
         """
         if isinstance(event, EventInstance):
             cpp = str(event._event_type._cpp_type_name())
-            conv = self._input_wrappers.get(cpp)
-            if conv is None:
+            if cpp not in self._input_wrappers:
                 raise TypeError(
                     f"event type {type(event._event_type).__name__} is not an "
                     "accepted input event type for this graph"
                 )
-            pyclass, field_names = conv
-            wrapper = pyclass()
-            for n in field_names:
-                setattr(wrapper, n, event._fields[n])
-            event = wrapper
+            event = _event_instance_to_wrapper(event, self._input_wrappers)
         with self._manage_processor_end_of_life():
             self._proc.handle(event)
 

@@ -23,7 +23,7 @@ from ._cpp_utils import (
     _ModuleCodeFragment,
     _quote_string,
 )
-from ._events import EventType, _collecting_referenced_events
+from ._events import EventType, _collecting_referenced_events, _Field
 from ._graph import Graph
 from ._numeric_traits import _collecting_referenced_traits
 from ._param import Param
@@ -112,23 +112,43 @@ def _event_wrappers(
     module_var: _CppIdentifier,
 ) -> tuple[_ModuleCodeFragment, list[tuple[EventType, str]]]:
     by_cpp: dict[str, EventType] = {}
+
+    def collect(et: EventType) -> None:
+        if not et._supports_value():
+            return
+        key = str(et._cpp_type_name())
+        if key in by_cpp:
+            return
+        by_cpp[key] = et
+        # An array event's wrapper exposes its elements as wrappers of the
+        # element type, so element wrappers must be bound too.
+        for dep in et._value_dependency_event_types():
+            collect(dep)
+
     for et in input_event_types:
-        if et._supports_value():
-            by_cpp.setdefault(str(et._cpp_type_name()), et)
+        collect(et)
     for eset in output_event_sets:
         for et in eset:
-            if et._supports_value():
-                by_cpp.setdefault(str(et._cpp_type_name()), et)
+            collect(et)
     for et in extra_value_event_types:
-        if et._supports_value():
-            by_cpp.setdefault(str(et._cpp_type_name()), et)
-    defs = tuple(
+        collect(et)
+    struct_defs = tuple(
+        d
+        for et in by_cpp.values()
+        if (d := et._cpp_wrapper_struct_def()) is not None
+    )
+    class_defs = tuple(
         et._cpp_wrapper_class_def(module_var) for et in by_cpp.values()
     )
     correspondence = [
         (et, str(et._cpp_wrapper_class_name())) for et in by_cpp.values()
     ]
-    return _ModuleCodeFragment((), ("algorithm",), (), defs), correspondence
+    return (
+        _ModuleCodeFragment(
+            (), ("algorithm", "array", "stdexcept"), struct_defs, class_defs
+        ),
+        correspondence,
+    )
 
 
 # No-op wrapper to limit event types to the requested ones.
@@ -564,8 +584,10 @@ def _graph_module_code(
         + excs
         + param_struct
         + context_code
-        + proc_code
+        # wrappers must precede proc_code: the input/output processors in
+        # proc_code reference array-event wrapper structs defined here.
         + wrappers
+        + proc_code
         + accessors,
         mod_var,
     )
@@ -649,24 +671,34 @@ class CompiledGraph:
             wrappers,
         ) = _compile_graph_module(graph, input_event_types)
 
-        # Map wrapper pyclass -> (EventType, field names), used to convert a
-        # delivered wrapper value to an EventInstance on output.
-        self._eventtype_by_wrapper: dict[type, tuple[EventType, list[str]]] = {
-            pyclass: (et, [f.name for f in et._field_schema() or ()])
-            for et, pyclass in wrappers
+        # Map wrapper pyclass -> (EventType, field schema), used to convert a
+        # delivered wrapper value to an EventInstance on output. The schema lets
+        # the conversion recurse through array-event elements.
+        self._eventtype_by_wrapper: dict[
+            type, tuple[EventType, list[_Field]]
+        ] = {
+            pyclass: (et, et._field_schema() or []) for et, pyclass in wrappers
         }
-        # Map C++ type-name string -> (wrapper pyclass, field names), used to
-        # convert an EventInstance to a wrapper value on input.
-        input_value_cpp_names = {
-            str(et._cpp_type_name())
-            for et in input_event_types
-            if et._supports_value()
-        }
-        self._wrapper_by_cpp: dict[str, tuple[type, list[str]]] = {
-            str(et._cpp_type_name()): (
-                pyclass,
-                [f.name for f in et._field_schema() or ()],
-            )
+        # Map C++ type-name string -> (wrapper pyclass, field schema), used to
+        # convert an EventInstance to a wrapper value on input. Includes the
+        # element types that input array events depend on (their wrappers are
+        # built when converting array elements).
+        input_value_cpp_names: set[str] = set()
+
+        def add_input_deps(et: EventType) -> None:
+            if not et._supports_value():
+                return
+            name = str(et._cpp_type_name())
+            if name in input_value_cpp_names:
+                return
+            input_value_cpp_names.add(name)
+            for dep in et._value_dependency_event_types():
+                add_input_deps(dep)
+
+        for et in input_event_types:
+            add_input_deps(et)
+        self._wrapper_by_cpp: dict[str, tuple[type, list[_Field]]] = {
+            str(et._cpp_type_name()): (pyclass, et._field_schema() or [])
             for et, pyclass in wrappers
             if str(et._cpp_type_name()) in input_value_cpp_names
         }
