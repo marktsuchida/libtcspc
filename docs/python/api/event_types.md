@@ -16,10 +16,7 @@ event value. Event values can be sent into a running graph with
 {py:meth}`ExecutionContext.handle() <libtcspc.ExecutionContext.handle>`, are
 the form in which graph output is delivered to a {py:class}`~libtcspc.PySink`,
 and can be inserted into a stream at compile time with
-{py:class}`~libtcspc.Prepend` and {py:class}`~libtcspc.Append`. Bucket-carrying
-event types (such as {py:class}`~libtcspc.HistogramEvent`) support all of these
-except {py:class}`~libtcspc.Prepend` and {py:class}`~libtcspc.Append`; their
-bucket fields are read as read-only NumPy arrays.
+{py:class}`~libtcspc.Prepend` and {py:class}`~libtcspc.Append`.
 
 Constructing and inspecting individual event values from Python is intended for
 debugging and learning only and is extremely slow; production graphs process

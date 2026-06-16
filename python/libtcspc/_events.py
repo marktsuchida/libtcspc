@@ -595,8 +595,7 @@ class EventInstance:
     values are concrete ints, floats, strings, or (for bucket fields)
     read-only NumPy arrays; read them as attributes (for example,
     ``event.abstime``). `Prepend`/`Append` can also insert an event value
-    bound at run time via a `Param` (for scalar, raw-bytes, bucket-field, and
-    array event types).
+    bound at run time via a `Param`.
 
     Instances of bucket-carrying event types (such as `HistogramEvent`) are
     not hashable.
@@ -1540,9 +1539,7 @@ class BinIncrementClusterEvent(EventType):
     Can be delivered directly to a Python sink as an `EventInstance` whose
     ``bin_indices`` attribute reads as a read-only NumPy array, and
     constructed via :py:meth:`~EventType.value` (the bucket field accepts a
-    1-D array-like). A concrete value can be baked into the generated code
-    with `Prepend`/`Append`, or sent at run time via
-    :py:meth:`ExecutionContext.handle`.
+    1-D array-like).
 
     Even though this event carries a bucket, individual clusters are small
     and numerous, so constructing or inspecting them from Python is
@@ -1724,9 +1721,7 @@ class ConcludingHistogramArrayEvent(EventType):
     Can be delivered directly to a Python sink as an `EventInstance` whose
     ``data_bucket`` attribute reads as a read-only NumPy array, and
     constructed via :py:meth:`~EventType.value` (the bucket field accepts a
-    1-D array-like). A concrete value can be baked into the generated code
-    with `Prepend`/`Append`, or sent at run time via
-    :py:meth:`ExecutionContext.handle`.
+    1-D array-like).
 
     Receiving these events at a Python sink and reading the carried
     bucket as a NumPy array is an efficient bulk transfer intended for
@@ -1796,9 +1791,7 @@ class ConcludingHistogramEvent(EventType):
     Can be delivered directly to a Python sink as an `EventInstance` whose
     ``data_bucket`` attribute reads as a read-only NumPy array, and
     constructed via :py:meth:`~EventType.value` (the bucket field accepts a
-    1-D array-like). A concrete value can be baked into the generated code
-    with `Prepend`/`Append`, or sent at run time via
-    :py:meth:`ExecutionContext.handle`.
+    1-D array-like).
 
     Receiving these events at a Python sink and reading the carried
     bucket as a NumPy array is an efficient bulk transfer intended for
@@ -2050,9 +2043,7 @@ class DetectionPairEvent(EventType):
 
     When delivered to a Python sink (or read back), ``elements`` is a tuple of
     two `DetectionEvent` `EventInstance` values; an `EventInstance` of this type
-    also supports ``len(...)`` and indexing. Values are embeddable in compiled
-    code (usable with `Prepend`/`Append`, including run-time binding via a
-    `Param`) and hashable.
+    also supports ``len(...)`` and indexing.
 
     Constructing and inspecting individual event values from Python is
     intended for debugging and learning only and is extremely slow;
@@ -2189,9 +2180,7 @@ class HistogramArrayEvent(EventType):
     Can be delivered directly to a Python sink as an `EventInstance` whose
     ``data_bucket`` attribute reads as a read-only NumPy array, and
     constructed via :py:meth:`~EventType.value` (the bucket field accepts a
-    1-D array-like). A concrete value can be baked into the generated code
-    with `Prepend`/`Append`, or sent at run time via
-    :py:meth:`ExecutionContext.handle`.
+    1-D array-like).
 
     Receiving these events at a Python sink and reading the carried
     bucket as a NumPy array is an efficient bulk transfer intended for
@@ -2261,9 +2250,7 @@ class HistogramArrayProgressEvent(EventType):
     Can be delivered directly to a Python sink as an `EventInstance` whose
     ``data_bucket`` attribute reads as a read-only NumPy array, and
     constructed via :py:meth:`~EventType.value` (the bucket field accepts a
-    1-D array-like). A concrete value can be baked into the generated code
-    with `Prepend`/`Append`, or sent at run time via
-    :py:meth:`ExecutionContext.handle`.
+    1-D array-like).
 
     Receiving these events at a Python sink and reading the carried
     bucket as a NumPy array is an efficient bulk transfer intended for
@@ -2336,9 +2323,7 @@ class HistogramEvent(EventType):
     Can be delivered directly to a Python sink as an `EventInstance` whose
     ``data_bucket`` attribute reads as a read-only NumPy array, and
     constructed via :py:meth:`~EventType.value` (the bucket field accepts a
-    1-D array-like). A concrete value can be baked into the generated code
-    with `Prepend`/`Append`, or sent at run time via
-    :py:meth:`ExecutionContext.handle`.
+    1-D array-like).
 
     Receiving these events at a Python sink and reading the carried
     bucket as a NumPy array is an efficient bulk transfer intended for

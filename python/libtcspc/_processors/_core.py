@@ -118,9 +118,9 @@ def _resolve_inserted_event(
         return event, event_type
     if event_type is not None and event_type != event._event_type:
         raise ValueError("event_type does not match the type of the event")
-    # Eagerly reject events that cannot be embedded in compiled code
-    # (e.g. bucket-carrying); discard the result -- codegen must re-run
-    # _cpp_expression() inside the reference-collecting contexts.
+    # Eagerly reject events that cannot be embedded in compiled code; discard
+    # the result -- codegen must re-run _cpp_expression() inside the
+    # reference-collecting contexts.
     event._cpp_expression()
     return event, event._event_type
 
