@@ -50,6 +50,8 @@ class Count(_TypePreservingRelayNode):
     --------
     :cpp:`tcspc::count`
         The underlying C++ factory function.
+    :py:obj:`CountAccessor`
+        Runtime accessor providing ``count()``.
     """
 
     def __init__(self, event_type: EventType, access_tag: AccessTag) -> None:
@@ -109,6 +111,8 @@ class RecordAbstimeRange(_TypePreservingRelayNode):
     --------
     :cpp:`tcspc::record_abstime_range`
         The underlying C++ factory function.
+    :py:obj:`RecordAbstimeRangeAccessor`
+        Runtime accessor providing ``min()`` and ``max()``.
     """
 
     def __init__(
@@ -185,6 +189,8 @@ class RecordLast(_TypePreservingRelayNode):
     --------
     :cpp:`tcspc::record_last`
         The underlying C++ factory function.
+    :py:obj:`RecordLastAccessor`
+        Runtime accessor providing ``get()``.
     """
 
     def __init__(self, event_type: EventType, access_tag: AccessTag) -> None:

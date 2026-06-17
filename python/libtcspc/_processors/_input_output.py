@@ -560,9 +560,13 @@ def read_events_from_binary_file(
     See Also
     --------
     :py:obj:`ReadBinaryStream`
+        Lower-level processor that reads byte buckets from an input stream.
     :py:obj:`Unbatch`
+        Splits event batches into individual events.
     :py:obj:`Stop`
+        Ends the stream normally on a `WarningEvent`.
     :py:obj:`StopWithError`
+        Ends the stream with an error on a `WarningEvent`.
     """
     g = Graph()
     g.add_chain(
@@ -644,8 +648,11 @@ def write_events_to_binary_file(
     See Also
     --------
     :py:obj:`WriteBinaryStream`
+        Lower-level processor that writes byte buckets to an output stream.
     :py:obj:`Batch`
+        Groups individual events into batches.
     :py:obj:`ViewAsBytes`
+        Views bucketed events as their in-memory bytes.
     """
     g = Graph()
     g.add_chain(

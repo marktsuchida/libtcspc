@@ -139,6 +139,8 @@ class Buffer(_RelayNode):
     --------
     :cpp:`tcspc::buffer`
         The underlying C++ factory function.
+    :py:obj:`BufferAccessor`
+        Runtime accessor providing ``pump()`` and ``halt()``.
     """
 
     def __init__(
@@ -242,6 +244,8 @@ class RealTimeBuffer(_RelayNode):
     --------
     :cpp:`tcspc::real_time_buffer`
         The underlying C++ factory function.
+    :py:obj:`BufferAccessor`
+        Runtime accessor providing ``pump()`` and ``halt()``.
     """
 
     def __init__(

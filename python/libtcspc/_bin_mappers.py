@@ -185,6 +185,8 @@ class UniqueBinMapper(BinMapper):
     --------
     :cpp:`tcspc::unique_bin_mapper`
         The underlying C++ bin mapper.
+    :py:obj:`UniqueBinMapperAccessor`
+        Runtime accessor providing ``values()``.
     """
 
     def __init__(

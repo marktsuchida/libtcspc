@@ -46,10 +46,10 @@ class NullInputStream(InputStream):
 
     See Also
     --------
-    :py:obj:`ReadBinaryStream`
-        Processor that consumes this stream.
     :cpp:`tcspc::null_input_stream`
         The underlying C++ input stream.
+    :py:obj:`ReadBinaryStream`
+        Processor that consumes this stream.
     """
 
     @override
@@ -85,10 +85,10 @@ class BinaryFileInputStream(InputStream):
 
     See Also
     --------
-    :py:obj:`ReadBinaryStream`
-        Processor that consumes this stream.
     :cpp:`tcspc::binary_file_input_stream`
         The underlying C++ input stream.
+    :py:obj:`ReadBinaryStream`
+        Processor that consumes this stream.
     """
 
     def __init__(
@@ -154,10 +154,10 @@ class NullOutputStream(OutputStream):
 
     See Also
     --------
-    :py:obj:`WriteBinaryStream`
-        Processor that consumes this stream.
     :cpp:`tcspc::null_output_stream`
         The underlying C++ output stream.
+    :py:obj:`WriteBinaryStream`
+        Processor that consumes this stream.
     """
 
     @override
@@ -187,10 +187,10 @@ class BinaryFileOutputStream(OutputStream):
 
     See Also
     --------
-    :py:obj:`WriteBinaryStream`
-        Processor that consumes this stream.
     :cpp:`tcspc::binary_file_output_stream`
         The underlying C++ output stream.
+    :py:obj:`WriteBinaryStream`
+        Processor that consumes this stream.
     """
 
     def __init__(

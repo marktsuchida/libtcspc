@@ -20,8 +20,11 @@ class Matcher(_Parameterized):
 
     See Also
     --------
-    :cpp:`tcspc::match`
-        A processor that uses a matcher.
+    :py:obj:`Match`
+        Processor that emits an event for each match, passing all events
+        through.
+    :py:obj:`MatchAndConsume`
+        Like `Match`, but matched events are consumed.
     """
 
     @abstractmethod

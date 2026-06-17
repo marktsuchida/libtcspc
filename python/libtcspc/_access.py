@@ -211,7 +211,15 @@ class Accessor(Protocol):
 
 
 class AcquireAccessor(Accessor, Protocol):
-    """Run-time accessor for an ``Acquire`` processor."""
+    """Run-time accessor for an ``Acquire`` processor.
+
+    See Also
+    --------
+    :cpp:`tcspc::acquire_accessor`
+        The underlying C++ accessor.
+    :py:obj:`Acquire`
+        The processor accessed.
+    """
 
     def halt(self) -> None:
         """
@@ -221,7 +229,15 @@ class AcquireAccessor(Accessor, Protocol):
 
 
 class CountAccessor(Accessor, Protocol):
-    """Run-time accessor for a ``Count`` processor."""
+    """Run-time accessor for a ``Count`` processor.
+
+    See Also
+    --------
+    :cpp:`tcspc::count_accessor`
+        The underlying C++ accessor.
+    :py:obj:`Count`
+        The processor accessed.
+    """
 
     def count(self) -> int:
         """
@@ -236,7 +252,15 @@ class CountAccessor(Accessor, Protocol):
 
 
 class UniqueBinMapperAccessor(Accessor, Protocol):
-    """Run-time accessor for a ``UniqueBinMapper`` bin mapper."""
+    """Run-time accessor for a ``UniqueBinMapper`` bin mapper.
+
+    See Also
+    --------
+    :cpp:`tcspc::unique_bin_mapper_accessor`
+        The underlying C++ accessor.
+    :py:obj:`UniqueBinMapper`
+        The bin mapper accessed.
+    """
 
     def values(self) -> list[int]:
         """
@@ -252,7 +276,15 @@ class UniqueBinMapperAccessor(Accessor, Protocol):
 
 
 class RecordAbstimeRangeAccessor(Accessor, Protocol):
-    """Run-time accessor for a ``RecordAbstimeRange`` processor."""
+    """Run-time accessor for a ``RecordAbstimeRange`` processor.
+
+    See Also
+    --------
+    :cpp:`tcspc::record_abstime_range_accessor`
+        The underlying C++ accessor.
+    :py:obj:`RecordAbstimeRange`
+        The processor accessed.
+    """
 
     def min(self) -> int | None:
         """
@@ -280,7 +312,15 @@ class RecordAbstimeRangeAccessor(Accessor, Protocol):
 
 
 class RecordLastAccessor(Accessor, Protocol):
-    """Run-time accessor for a ``RecordLast`` processor."""
+    """Run-time accessor for a ``RecordLast`` processor.
+
+    See Also
+    --------
+    :cpp:`tcspc::record_last_accessor`
+        The underlying C++ accessor.
+    :py:obj:`RecordLast`
+        The processor accessed.
+    """
 
     def get(self) -> "EventInstance | None":
         """
@@ -311,6 +351,15 @@ class BufferAccessor(Accessor, Protocol):
     thread, for catching the exception that `pump` may raise, and for keeping
     the `ExecutionContext` alive until the pump thread has finished (the
     accessor holds a raw pointer into the processor).
+
+    See Also
+    --------
+    :cpp:`tcspc::buffer_accessor`
+        The underlying C++ accessor.
+    :py:obj:`Buffer`
+        The processor accessed.
+    :py:obj:`RealTimeBuffer`
+        The processor accessed.
     """
 
     def pump(self) -> None:
