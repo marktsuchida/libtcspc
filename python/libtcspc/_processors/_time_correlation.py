@@ -199,6 +199,14 @@ class TimeCorrelateAtFraction(_TimeCorrelate):
     numeric_traits : NumericTraits or None
         Numeric traits for the emitted events. Defaults to ``NumericTraits()``.
 
+    Notes
+    -----
+    Events handled:
+
+    - `DetectionPairEvent`: emit a `TimeCorrelatedDetectionEvent`.
+    - All other event types: pass through unchanged.
+    - End of input: pass through.
+
     See Also
     --------
     :cpp:`tcspc::time_correlate_at_fraction`
@@ -252,6 +260,14 @@ class TimeCorrelateAtMidpoint(_TimeCorrelate):
         If ``True``, use the start detection's channel. Default ``False``.
     numeric_traits : NumericTraits or None
         Numeric traits for the emitted events. Defaults to ``NumericTraits()``.
+
+    Notes
+    -----
+    Events handled:
+
+    - `DetectionPairEvent`: emit a `TimeCorrelatedDetectionEvent`.
+    - All other event types: pass through unchanged.
+    - End of input: pass through.
 
     See Also
     --------
@@ -334,6 +350,14 @@ class TimeCorrelateAtStop(_TimeCorrelate):
     ----------
     numeric_traits : NumericTraits or None
         Numeric traits for the emitted events. Defaults to ``NumericTraits()``.
+
+    Notes
+    -----
+    Events handled:
+
+    - `DetectionPairEvent`: emit a `TimeCorrelatedDetectionEvent`.
+    - All other event types: pass through unchanged.
+    - End of input: pass through.
 
     See Also
     --------

@@ -396,6 +396,15 @@ class Match(_Match):
     matcher : Matcher
         The matcher deciding which events match.
 
+    Notes
+    -----
+    Events handled:
+
+    - ``event_type`` matched by the matcher: emit an ``out_event_type``
+      constructed from the matched event's ``abstime``.
+    - All input events: pass through unchanged (matched or not).
+    - End of input: pass through.
+
     See Also
     --------
     :cpp:`tcspc::match`
@@ -423,6 +432,17 @@ class MatchAndConsume(_Match):
         ``abstime``.
     matcher : Matcher
         The matcher deciding which events match.
+
+    Notes
+    -----
+    Events handled:
+
+    - ``event_type`` matched by the matcher: emit an ``out_event_type``
+      constructed from the matched event's ``abstime``; the matched event is
+      consumed (not passed through).
+    - All other input events (including unmatched ``event_type``): pass
+      through unchanged.
+    - End of input: pass through.
 
     See Also
     --------

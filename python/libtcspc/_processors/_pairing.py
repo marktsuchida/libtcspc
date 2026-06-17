@@ -110,6 +110,16 @@ class PairAll(_Pair):
     numeric_traits : NumericTraits or None
         Numeric traits for the events. Defaults to ``NumericTraits()``.
 
+    Notes
+    -----
+    Events handled:
+
+    - Detection events: paired as described above, emitting a
+      `DetectionPairEvent` for each resulting pair.
+    - All input events: pass through unchanged.
+    - End of input: pass through; unpaired buffered start detections are
+      discarded.
+
     See Also
     --------
     :cpp:`tcspc::pair_all`
@@ -136,6 +146,16 @@ class PairAllBetween(_Pair):
         Maximum abstime difference for a pair (must be non-negative).
     numeric_traits : NumericTraits or None
         Numeric traits for the events. Defaults to ``NumericTraits()``.
+
+    Notes
+    -----
+    Events handled:
+
+    - Detection events: paired as described above, emitting a
+      `DetectionPairEvent` for each resulting pair.
+    - All input events: pass through unchanged.
+    - End of input: pass through; unpaired buffered start detections are
+      discarded.
 
     See Also
     --------
@@ -164,6 +184,16 @@ class PairOne(_Pair):
     numeric_traits : NumericTraits or None
         Numeric traits for the events. Defaults to ``NumericTraits()``.
 
+    Notes
+    -----
+    Events handled:
+
+    - Detection events: paired as described above, emitting a
+      `DetectionPairEvent` for each resulting pair.
+    - All input events: pass through unchanged.
+    - End of input: pass through; unpaired buffered start detections are
+      discarded.
+
     See Also
     --------
     :cpp:`tcspc::pair_one`
@@ -190,6 +220,16 @@ class PairOneBetween(_Pair):
         Maximum abstime difference for a pair (must be non-negative).
     numeric_traits : NumericTraits or None
         Numeric traits for the events. Defaults to ``NumericTraits()``.
+
+    Notes
+    -----
+    Events handled:
+
+    - Detection events: paired as described above, emitting a
+      `DetectionPairEvent` for each resulting pair.
+    - All input events: pass through unchanged.
+    - End of input: pass through; unpaired buffered start detections are
+      discarded.
 
     See Also
     --------

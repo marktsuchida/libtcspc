@@ -41,6 +41,15 @@ class AddCountToPeriodicSequences(_RelayNode):
     numeric_traits : NumericTraits or None
         Numeric traits for the emitted event. Defaults to ``NumericTraits()``.
 
+    Notes
+    -----
+    Events handled:
+
+    - `PeriodicSequenceModelEvent`: emit a `RealLinearTimingEvent` with the
+      given count.
+    - All other event types: pass through unchanged.
+    - End of input: pass through.
+
     See Also
     --------
     :cpp:`tcspc::add_count_to_periodic_sequences`
@@ -109,6 +118,17 @@ class ConvertSequencesToStartStop(_RelayNode):
     count : int or Param[int]
         Number of intervals per sequence.
 
+    Notes
+    -----
+    Events handled:
+
+    - ``tick_event_type``: every ``count + 1`` ticks are replaced by a series
+      of ``start_event_type`` and ``stop_event_type`` events bracketing each
+      tick interval.
+    - All other event types: pass through unchanged.
+    - End of input: pass through; an incomplete (partial) sequence is
+      discarded.
+
     See Also
     --------
     :cpp:`tcspc::convert_sequences_to_start_stop`
@@ -174,6 +194,15 @@ class ExtrapolatePeriodicSequences(_RelayNode):
         Tick index to extrapolate to.
     numeric_traits : NumericTraits or None
         Numeric traits for the emitted event. Defaults to ``NumericTraits()``.
+
+    Notes
+    -----
+    Events handled:
+
+    - `PeriodicSequenceModelEvent`: emit a `RealOneShotTimingEvent`
+      extrapolated to ``tick_index``.
+    - All other event types: pass through unchanged.
+    - End of input: pass through.
 
     See Also
     --------
@@ -244,6 +273,16 @@ class FitPeriodicSequences(_RelayNode):
         Maximum acceptable mean squared error of the fit.
     numeric_traits : NumericTraits or None
         Numeric traits for the emitted event. Defaults to ``NumericTraits()``.
+
+    Notes
+    -----
+    Events handled:
+
+    - ``event_type``: accumulated; every ``length`` events emit a
+      `PeriodicSequenceModelEvent` with the fitted timing.
+    - All other event types: pass through unchanged.
+    - End of input: pass through; a partial accumulation (fewer than
+      ``length`` events) is discarded.
 
     See Also
     --------
@@ -323,6 +362,15 @@ class RetimePeriodicSequences(_RelayNode):
     numeric_traits : NumericTraits or None
         Numeric traits specifying ``abstime_type``. Defaults to
         ``NumericTraits()``.
+
+    Notes
+    -----
+    Events handled:
+
+    - `PeriodicSequenceModelEvent`: emit a `PeriodicSequenceModelEvent` with
+      adjusted ``abstime`` and ``delay``. This is the only accepted input
+      event type.
+    - End of input: pass through.
 
     See Also
     --------

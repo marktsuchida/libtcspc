@@ -94,6 +94,19 @@ class Histogram(_RelayNode):
 
     Notes
     -----
+    Events handled:
+
+    - `BinIncrementEvent`: increment the corresponding bin and emit a
+      `HistogramEvent` carrying a view of the current histogram.
+    - ``reset_event_type`` (if given): end the current round and start a new
+      one; if ``emit_concluding`` is set, a `ConcludingHistogramEvent` is
+      emitted first.
+    - All other event types: pass through unchanged.
+    - On bin overflow: handled per ``overflow`` (when ``"saturate"``, a
+      `WarningEvent` is emitted).
+    - End of input: pass through; the current histogram is not emitted as a
+      concluding event.
+
     The histogram-carrying output events can be sent directly to a Python
     sink, where they are delivered as `EventInstance` values whose
     ``data_bucket`` attribute reads as a read-only NumPy array. Alternatively,
@@ -239,6 +252,20 @@ class ScanHistograms(_RelayNode):
 
     Notes
     -----
+    Events handled:
+
+    - `BinIncrementClusterEvent`: update the next element of the histogram
+      array and emit a `HistogramArrayProgressEvent`; emit a
+      `HistogramArrayEvent` when a scan completes.
+    - ``reset_event_type`` (if given): end the current round and start a new
+      one; if ``emit_concluding`` is set, a `ConcludingHistogramArrayEvent`
+      is emitted first.
+    - All other event types: pass through unchanged.
+    - On bin overflow: handled per ``overflow`` (when ``"saturate"``, a
+      `WarningEvent` is emitted).
+    - End of input: pass through; an incomplete scan is not emitted as a
+      concluding event.
+
     The histogram-carrying output events can be sent directly to a Python
     sink, where they are delivered as `EventInstance` values whose
     ``data_bucket`` attribute reads as a read-only NumPy array. Alternatively,
