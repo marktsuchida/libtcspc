@@ -5,7 +5,12 @@
 name: CI
 
 on:
-  push: # All branches during early development.
+  push:
+    branches:
+      - main
+    tags:
+      - "v*"
+  pull_request:
 
 jobs:
   lint:
