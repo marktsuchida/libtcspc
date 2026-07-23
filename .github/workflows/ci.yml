@@ -5,14 +5,19 @@
 name: CI
 
 on:
-  push: # All branches during early development.
+  push:
+    branches:
+      - main
+    tags:
+      - "v*"
+  pull_request:
 
 jobs:
   lint:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
-      - uses: actions/setup-python@v6
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
         with:
           python-version: '3.12'
           cache: pip
@@ -72,17 +77,18 @@ jobs:
       ASAN_OPTIONS: ${{ matrix.asan_opts }}
       CCACHE_DIR: ${{ github.workspace }}/.ccache-cache
     steps:
-      - uses: actions/checkout@v6
-      - uses: actions/setup-python@v6
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
         with:
           python-version: '3.10'
           cache: pip
       - name: Install tools
         run: python -m pip install --upgrade pip meson ninja
-      - uses: ilammy/msvc-dev-cmd@v1
+      - uses: compnerd/gha-setup-vsdevenv@452f99effa381b81c025ccfbdccaca509bff1b29 # v7
+
 
       - name: Cache ccache cache
-        uses: actions/cache@v5
+        uses: actions/cache@v6
         with:
           # Currently there is no way to update the cache when hit
           # (https://github.com/actions/toolkit/issues/505). Instead, use
@@ -209,10 +215,10 @@ jobs:
     env:
       CXX: clang++
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           path: libtcspc
-      - uses: actions/setup-python@v6
+      - uses: actions/setup-python@v7
         with:
           python-version: '3.10'
           cache: pip
@@ -222,7 +228,7 @@ jobs:
       - run: clang-tidy --version
 
       - name: Install ctcache
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           repository: matus-chochlik/ctcache
           # Significant bugs have been fixed since the last release (1.1.0).
@@ -255,7 +261,7 @@ jobs:
           echo ${{ github.workspace }}/ctcache >>$GITHUB_PATH
 
       - name: Cache ctcache cache
-        uses: actions/cache@v5
+        uses: actions/cache@v6
         with:
           # Currently there is no way to update the cache when hit
           # (https://github.com/actions/toolkit/issues/505). Instead, use
@@ -299,9 +305,9 @@ jobs:
       - run: uname -m
         if: ${{ ! startsWith(matrix.runner, 'windows-') }}
 
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: fjwillemsen/setup-nox2@v3.0.0
-      - uses: ilammy/msvc-dev-cmd@v1
+      - uses: compnerd/gha-setup-vsdevenv@452f99effa381b81c025ccfbdccaca509bff1b29 # v7
 
       - run: nox -p ${{ matrix.py_versions }}
 
@@ -310,8 +316,8 @@ jobs:
     env:
       DOXYGEN_VERSION: '1.16.1'
     steps:
-      - uses: actions/checkout@v6
-      - uses: actions/setup-python@v6
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
         with:
           python-version: '3.13'
           cache: pip
