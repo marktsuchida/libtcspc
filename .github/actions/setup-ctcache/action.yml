@@ -1,0 +1,95 @@
+# This file is part of libtcspc
+# Copyright 2019-2026 Board of Regents of the University of Wisconsin System
+# SPDX-License-Identifier: MIT
+
+name: Set up ctcache
+description: >
+  Install and configure ctcache (clang-tidy-cache), persisting the cache with
+  actions/cache. Adds the ctcache wrapper to PATH (so 'clang-tidy' resolves to
+  the caching wrapper in subsequent steps) and exports CTCACHE_DIR. Uses the
+  .ctcache/ directory in the workspace for its files.
+
+inputs:
+  ctcache-ref:
+    description: Git ref of matus-chochlik/ctcache to install
+    required: false
+    # The last release (1.2.0, Sep 2025) predates important cache-correctness
+    # fixes, so pin a commit from main.
+    default: 0c7fee26e09ae8a393ed7d56164102da118ab23a  # Apr 29 2026
+  clang-tidy:
+    description: Name of (or path to) the clang-tidy executable to wrap
+    required: false
+    default: clang-tidy
+  clang-tidy-opts:
+    description: Options that the wrapper passes to clang-tidy
+    required: false
+    default: --quiet --use-color
+  cache-key-prefix:
+    description: Prefix for the actions/cache key
+    required: false
+    default: ctcache
+
+runs:
+  using: composite
+  steps:
+    - name: Install ctcache
+      uses: actions/checkout@v7
+      with:
+        repository: matus-chochlik/ctcache
+        ref: ${{ inputs.ctcache-ref }}
+        path: .ctcache/dist
+
+    - name: Configure ctcache
+      shell: bash
+      run: |
+        clang_tidy=$(command -v '${{ inputs.clang-tidy }}')
+
+        # ctcache hashes each invocation's args, source, includes, and
+        # clang-tidy --dump-config output, so cache entries self-invalidate on
+        # config changes. This file only serves to start a fresh cache when
+        # clang-tidy or ctcache itself changes, since stale entries are never
+        # pruned.
+        keyfile=.ctcache/cache-key-input
+        "$clang_tidy" --version >"$keyfile"
+        echo '${{ inputs.ctcache-ref }}' >>"$keyfile"
+
+        cfgdir=$HOME/.config/ctcache
+        mkdir -p "$cfgdir"
+        echo "CTCACHE_CLANG_TIDY=$clang_tidy" >"$cfgdir/ctcache.conf"
+        echo 'CTCACHE_CLANG_TIDY_OPTS=(${{ inputs.clang-tidy-opts }})' \
+          >>"$cfgdir/ctcache.conf"
+        # Warning: only the above 2 variables work when set in ctcache.conf;
+        # they are settings for the wrapper script 'clang-tidy'. Settings for
+        # 'clang-tidy-cache' itself require 'export' if set in ctcache.conf.
+
+        # Upstream no longer ships clang-tidy-cache as a script (it is a pip
+        # entry point); provide it for direct invocation such as stats queries.
+        cat >.ctcache/dist/clang-tidy-cache <<'EOF'
+        #!/bin/bash
+        exec python3 "$(dirname "$(realpath "$0")")/src/ctcache/clang_tidy_cache.py" "$@"
+        EOF
+        chmod +x .ctcache/dist/clang-tidy-cache
+
+        mkdir -p .ctcache/cache
+        echo "CTCACHE_DIR=$GITHUB_WORKSPACE/.ctcache/cache" >>"$GITHUB_ENV"
+        # Put the wrapper script on PATH, now that we are done with querying
+        # the unwrapped clang-tidy.
+        echo "$GITHUB_WORKSPACE/.ctcache/dist" >>"$GITHUB_PATH"
+
+    - name: Cache ctcache cache
+      uses: actions/cache@v6
+      with:
+        # Currently there is no way to update the cache when hit
+        # (https://github.com/actions/toolkit/issues/505). Instead, use
+        # unique keys and restore from most recent. Never match if the
+        # clang-tidy version or ctcache ref has changed. We do not bother to
+        # prune the cache after running, because clang-tidy output is small.
+        key: ${{ inputs.cache-key-prefix }}-${{ hashFiles('.ctcache/cache-key-input') }}-${{ github.sha }}
+        restore-keys: ${{ inputs.cache-key-prefix }}-${{ hashFiles('.ctcache/cache-key-input') }}-
+        path: .ctcache/cache
+
+    - name: Zero ctcache statistics
+      shell: bash
+      # Stats live in the cache dir, so the restored cache carries the
+      # previous run's counters.
+      run: clang-tidy-cache --zero-stats
