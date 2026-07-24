@@ -13,8 +13,9 @@ inputs:
   ctcache-ref:
     description: Git ref of matus-chochlik/ctcache to install
     required: false
-    # Significant bugs have been fixed since the last release (1.1.0).
-    default: debfea68152c5221d8f409cbef85dc5d0f98071d  # Apr 30 2024
+    # The last release (1.2.0, Sep 2025) predates important cache-correctness
+    # fixes, so pin a commit from main.
+    default: 0c7fee26e09ae8a393ed7d56164102da118ab23a  # Apr 29 2026
   clang-tidy:
     description: Name of (or path to) the clang-tidy executable to wrap
     required: false
@@ -23,12 +24,6 @@ inputs:
     description: Options that the wrapper passes to clang-tidy
     required: false
     default: --quiet --use-color
-  config-dirs:
-    description: >
-      Space-separated directories to scan recursively for .clang-tidy files,
-      which are folded into the cache key
-    required: false
-    default: .
   cache-key-prefix:
     description: Prefix for the actions/cache key
     required: false
@@ -49,21 +44,14 @@ runs:
       run: |
         clang_tidy=$(command -v '${{ inputs.clang-tidy }}')
 
-        # ctcache does not currently add the clang-tidy config to the hash,
-        # so we need to invalidate the cache if the version or config changed.
-        # Ideally we would use clang-tidy --dump-config, but that depends on
-        # the input file. Since this is for bulk cache validity checking,
-        # instead simply aggregate all the .clang-tidy files in the tree, in
-        # deterministic order.
-        conf=.ctcache/clang-tidy-conf
-        "$clang_tidy" --version >"$conf"
-        find ${{ inputs.config-dirs }} -name .clang-tidy \
-            -not -path '*/.ctcache/*' |
-          LC_ALL=C sort |
-          while read -r f; do
-            echo "$f" >>"$conf"
-            cat "$f" >>"$conf"
-          done
+        # ctcache hashes each invocation's args, source, includes, and
+        # clang-tidy --dump-config output, so cache entries self-invalidate on
+        # config changes. This file only serves to start a fresh cache when
+        # clang-tidy or ctcache itself changes, since stale entries are never
+        # pruned.
+        keyfile=.ctcache/cache-key-input
+        "$clang_tidy" --version >"$keyfile"
+        echo '${{ inputs.ctcache-ref }}' >>"$keyfile"
 
         cfgdir=$HOME/.config/ctcache
         mkdir -p "$cfgdir"
@@ -73,6 +61,14 @@ runs:
         # Warning: only the above 2 variables work when set in ctcache.conf;
         # they are settings for the wrapper script 'clang-tidy'. Settings for
         # 'clang-tidy-cache' itself require 'export' if set in ctcache.conf.
+
+        # Upstream no longer ships clang-tidy-cache as a script (it is a pip
+        # entry point); provide it for direct invocation such as stats queries.
+        cat >.ctcache/dist/clang-tidy-cache <<'EOF'
+        #!/bin/bash
+        exec python3 "$(dirname "$(realpath "$0")")/src/ctcache/clang_tidy_cache.py" "$@"
+        EOF
+        chmod +x .ctcache/dist/clang-tidy-cache
 
         mkdir -p .ctcache/cache
         echo "CTCACHE_DIR=$GITHUB_WORKSPACE/.ctcache/cache" >>"$GITHUB_ENV"
@@ -86,10 +82,10 @@ runs:
         # Currently there is no way to update the cache when hit
         # (https://github.com/actions/toolkit/issues/505). Instead, use
         # unique keys and restore from most recent. Never match if the
-        # clang-tidy version or config has changed. We do not bother to prune
-        # the cache after running, because clang-tidy output is small.
-        key: ${{ inputs.cache-key-prefix }}-${{ hashFiles('.ctcache/clang-tidy-conf') }}-${{ github.sha }}
-        restore-keys: ${{ inputs.cache-key-prefix }}-${{ hashFiles('.ctcache/clang-tidy-conf') }}-
+        # clang-tidy version or ctcache ref has changed. We do not bother to
+        # prune the cache after running, because clang-tidy output is small.
+        key: ${{ inputs.cache-key-prefix }}-${{ hashFiles('.ctcache/cache-key-input') }}-${{ github.sha }}
+        restore-keys: ${{ inputs.cache-key-prefix }}-${{ hashFiles('.ctcache/cache-key-input') }}-
         path: .ctcache/cache
 
     - name: Zero ctcache statistics
