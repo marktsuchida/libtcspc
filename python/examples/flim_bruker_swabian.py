@@ -1,3 +1,7 @@
+# This file is part of libtcspc
+# Copyright 2019-2026 Board of Regents of the University of Wisconsin System
+# SPDX-License-Identifier: MIT
+
 """
 This program computes FLIM histograms from raw Swabian tag dumps (16-byte
 binary records; not to be confused with Swabian .ttbin files). In addition to
@@ -30,6 +34,7 @@ error upon detection of a decreasing timestamp in the input.
 """
 
 import argparse
+import io
 import os
 import sys
 from typing import Any
@@ -44,6 +49,8 @@ numtraits = tcspc.NumericTraits()
 
 
 class _BinFileSink(tcspc.PySink):
+    """Writes binary data to a file."""
+
     def __init__(self, file: Any) -> None:
         self._file = file
 
@@ -55,60 +62,28 @@ class _BinFileSink(tcspc.PySink):
         pass
 
 
-def _histogram_terminus(
-    settings: argparse.Namespace,
-    reset: tcspc.CustomEvent
-) -> tcspc.Subgraph:
-    g = tcspc.Graph()
-    if settings.sum:
-        g.add_chain(
-            nodes=(
-                tcspc.Append(reset.value()),
-                tcspc.ScanHistograms(
-                    num_elements=settings.width * settings.height,
-                    num_bins=256,
-                    max_per_bin=65535,
-                    reset_event_type=reset,
-                    emit_concluding=True,
-                    numeric_traits=numtraits,
-                ),
-                tcspc.Count(tcspc.HistogramArrayEvent(numtraits), FRAME_COUNT_TAG),
-                tcspc.Select(tcspc.ConcludingHistogramArrayEvent(numtraits)),
-                tcspc.ExtractBucket(tcspc.ConcludingHistogramArrayEvent(numtraits)),
-            )
-        )
+pixel_start = tcspc.CustomEvent(
+    "pixel_start_event", abstime=True, traits=numtraits
+)
+pixel_stop = tcspc.CustomEvent(
+    "pixel_stop_event", abstime=True, traits=numtraits
+)
 
-    else:
-        g.add_chain( 
-            nodes=(
-                tcspc.ScanHistograms(
-                    num_elements=settings.width * settings.height,
-                    num_bins=256,
-                    max_per_bin=65535,
-                    clear_every_scan=True,
-                    numeric_traits=numtraits,
-                ),
-                tcspc.Select(tcspc.HistogramArrayEvent(numtraits)),
-                tcspc.Count(tcspc.HistogramArrayEvent(numtraits), FRAME_COUNT_TAG),
-                tcspc.ExtractBucket(tcspc.HistogramArrayEvent(numtraits)),
-            )
-        )
-
-
-    return tcspc.Subgraph(
-        g,
-        input_map={"input": g.inputs()[0]},
-        output_map={"output": g.outputs()[0]},
-    )
 
 def build_graph(args: argparse.Namespace) -> tcspc.Graph:
-    pixel_start = tcspc.CustomEvent(
-        "pixel_start_event", abstime=True, traits=numtraits
+    g = tcspc.Graph()
+    g.add_chain(
+        nodes=(
+            _source_events(),
+            _process_events(args),
+            _generate_histograms(args, pixel_stop),
+        )
     )
-    pixel_stop = tcspc.CustomEvent(
-        "pixel_stop_event", abstime=True, traits=numtraits
-    )
+    return g
 
+
+def _source_events() -> tcspc.Subgraph:
+    """Subgraph responsible for reading and preprocessing input data."""
     g = tcspc.Graph()
     g.add_chain(
         nodes=(
@@ -117,8 +92,7 @@ def build_graph(args: argparse.Namespace) -> tcspc.Graph:
                 tcspc.Param("filename"),
             ),
             tcspc.StopWithError(
-                (tcspc.WarningEvent(),),
-                "error reading input"
+                (tcspc.WarningEvent(),), "error reading input data from file"
             ),
             tcspc.Count(tcspc.SwabianTagEvent(), RECORD_COUNT_TAG),
             tcspc.DecodeSwabianTags(numtraits),
@@ -129,23 +103,40 @@ def build_graph(args: argparse.Namespace) -> tcspc.Graph:
                     tcspc.EndLostIntervalEvent(),
                     tcspc.LostCountsEvent(),
                 ),
-                "error in input data"
+                "error decoding input data",
             ),
             tcspc.CheckMonotonic(numtraits),
             tcspc.Stop((tcspc.WarningEvent(),), "processing stopped"),
-            (
-                "regulate",
-                tcspc.RegulateTimeReached(
-                    interval_threshold=1 << 30,
-                    count_threshold=1 << 18,
-                )
-            ),
         )
     )
+    return tcspc.Subgraph(
+        g,
+        input_map={},
+        output_map={"output": g.outputs()[0]},
+    )
 
+
+def _process_events(args: argparse.Namespace) -> tcspc.Subgraph:
+    """Processes the decoded Swabian tag events into histogram bin increments..
+
+    Note that sync events, photon events, and pixel marker events must all be processed differently.
+    This function creates a processing chain for each, including the nodes to route each event to its
+    appropriate processing chain, and the nodes to merge the processed events back together.
+
+    It concludes with a
+    """
+    g = tcspc.Graph()
     g.add_node(
-        "route",
-        tcspc.Route(
+        name="regulated-source",
+        node=tcspc.RegulateTimeReached(
+            interval_threshold=1 << 30,
+            count_threshold=1 << 18,
+        ),
+    )
+    g.add_node(
+        name="route",
+        upstream="regulated-source",
+        node=tcspc.Route(
             tcspc.DetectionEvent(numtraits),
             broadcast_event_types=(tcspc.TimeReachedEvent(numtraits),),
             router=tcspc.ChannelRouter(
@@ -158,49 +149,71 @@ def build_graph(args: argparse.Namespace) -> tcspc.Graph:
             ),
             outputs=3,
         ),
-        upstream="regulate"
     )
 
-    g.add_node(
-        name="merge-2",
-        node=tcspc.Merge(
-            tcspc.TimeCorrelatedDetectionEvent(numtraits),
-            pixel_start,
-            pixel_stop,
-            tcspc.TimeReachedEvent(numtraits)
-        )
-    )
-
-
+    # Process sync channel
     g.add_chain(
-        upstream="merge-2",
+        upstream=("route", "output-0"),
+        nodes=(("sync_processed", tcspc.Delay(args.sync_delay)),),
+    )
+    # Process photon channel
+    g.add_chain(
+        upstream=("route", "output-1"),
         nodes=(
-            tcspc.MapToDatapoints(
-                tcspc.TimeCorrelatedDetectionEvent(numtraits),
-                tcspc.DifftimeDataMapper(numtraits),
-                numtraits,
+            tcspc.PairOneBetween(
+                start_channel=args.photon_channels[0],
+                stop_channels=(args.photon_channels[1],),
+                time_window=args.max_photon_pulse_width,
+                numeric_traits=numtraits,
             ),
-            tcspc.MapToBins(
-                tcspc.LinearBinMapper(
-                    offset=0,
-                    bin_width=1,
-                    max_bin_index=255, 
-                )
+            tcspc.Select(
+                tcspc.DetectionPairEvent(numtraits),
+                tcspc.TimeReachedEvent(numtraits),
             ),
-            tcspc.ClusterBinIncrements(
-                start_event_type=pixel_start,
-                stop_event_type=pixel_stop,
+            tcspc.TimeCorrelateAtMidpoint(numeric_traits=numtraits),
+            tcspc.RemoveTimeCorrelation(numeric_traits=numtraits),
+            (
+                "photon_processed",
+                tcspc.RecoverOrder(time_window=args.max_photon_pulse_width),
             ),
-            tcspc.Count(tcspc.BinIncrementClusterEvent(numtraits), PIXEL_COUNT_TAG),
-            _histogram_terminus(args, pixel_stop),
-        )
+        ),
+    )
+    # Process pixel marker channel
+    g.add_chain(
+        upstream=("route", "output-2"),
+        nodes=(
+            tcspc.Match(
+                tcspc.DetectionEvent(numtraits),
+                pixel_start,
+                matcher=tcspc.AlwaysMatcher(),
+            ),
+            tcspc.Select(pixel_start, tcspc.TimeReachedEvent(numtraits)),
+            tcspc.Generate(
+                trigger_event_type=pixel_start,
+                output_event_type=pixel_stop,
+                generator=tcspc.OneShotTimingGenerator(delay=args.pixel_time),
+            ),
+            tcspc.CheckAlternating(pixel_start, pixel_stop),
+            (
+                "pixels_processed",
+                tcspc.StopWithError(
+                    (tcspc.WarningEvent(),),
+                    "Pixel time is such that pixel stop occurs after next pixel start.",
+                ),
+            ),
+        ),
     )
 
+    # Merge
     g.add_node(
+        upstream={
+            "input-0": "sync_processed",
+            "input-1": "photon_processed",
+        },
         name="merge-1",
         node=tcspc.Merge(
             tcspc.DetectionEvent(numtraits),
-            tcspc.TimeReachedEvent(numtraits)
+            tcspc.TimeReachedEvent(numtraits),
         ),
     )
     g.add_chain(
@@ -212,56 +225,112 @@ def build_graph(args: argparse.Namespace) -> tcspc.Graph:
                 time_window=args.max_diff_time,
                 numeric_traits=numtraits,
             ),
-            tcspc.Select(tcspc.DetectionPairEvent(numtraits), tcspc.TimeReachedEvent(numtraits)),
-            tcspc.TimeCorrelateAtStop(numeric_traits=numtraits),
-        ),
-        downstream=("merge-2", "input-0"),
-    )
-    
-    g.add_chain(
-        upstream=("route", "output-0"),
-        nodes=(tcspc.Delay(args.sync_delay),),
-        downstream=("merge-1", "input-0"),
-    )
-
-    g.add_chain(
-        upstream=("route", "output-1"),
-        nodes=(
-            tcspc.PairOneBetween(
-                start_channel=args.photon_channels[0],
-                stop_channels=(args.photon_channels[1],),
-                time_window=args.max_photon_pulse_width,
-                numeric_traits=numtraits,
+            tcspc.Select(
+                tcspc.DetectionPairEvent(numtraits),
+                tcspc.TimeReachedEvent(numtraits),
             ),
-            tcspc.Select(tcspc.DetectionPairEvent(numtraits), tcspc.TimeReachedEvent(numtraits)),
-            tcspc.TimeCorrelateAtMidpoint(numeric_traits=numtraits),
-            tcspc.RemoveTimeCorrelation(numeric_traits=numtraits),
-            tcspc.RecoverOrder(time_window=args.max_photon_pulse_width)
-        ),
-        downstream=("merge-1", "input-1"),
-    )
-
-
-    g.add_chain(
-        upstream=("route", "output-2"),
-        nodes=(
-            tcspc.Match(tcspc.DetectionEvent(numtraits), pixel_start, matcher=tcspc.AlwaysMatcher()),
-            tcspc.Select(pixel_start, tcspc.TimeReachedEvent(numtraits)),
-            tcspc.Generate(
-                trigger_event_type=pixel_start, 
-                output_event_type=pixel_stop,
-                generator=tcspc.OneShotTimingGenerator(delay=args.pixel_time)
-            ),
-            tcspc.CheckAlternating(pixel_start, pixel_stop),
-            tcspc.StopWithError(
-                (tcspc.WarningEvent(),),
-                "Pixel time is such that pixel stop occurs after next pixel start."
+            (
+                "merge1-processed",
+                tcspc.TimeCorrelateAtStop(numeric_traits=numtraits),
             ),
         ),
-        downstream=("merge-2", "input-1")
+    )
+    g.add_node(
+        upstream={
+            "input-0": "merge1-processed",
+            "input-1": "pixels_processed",
+        },
+        name="merge-2",
+        node=tcspc.Merge(
+            tcspc.TimeCorrelatedDetectionEvent(numtraits),
+            pixel_start,
+            pixel_stop,
+            tcspc.TimeReachedEvent(numtraits),
+        ),
     )
 
-    return g
+    return tcspc.Subgraph(
+        g,
+        input_map={"input": g.inputs()[0]},
+        output_map={"output": g.outputs()[0]},
+    )
+
+
+def _generate_histograms(
+    settings: argparse.Namespace, reset: tcspc.CustomEvent
+) -> tcspc.Subgraph:
+    """Subgraph responsible for generating histograms from time-correlated detection events."""
+    g = tcspc.Graph()
+    # Convert time-correlated detection events into histogram bin increments
+    nodes = [
+        tcspc.MapToDatapoints(
+            tcspc.TimeCorrelatedDetectionEvent(numtraits),
+            tcspc.DifftimeDataMapper(numtraits),
+            numtraits,
+        ),
+        tcspc.MapToBins(
+            tcspc.LinearBinMapper(
+                offset=0,
+                bin_width=1,
+                max_bin_index=255,
+            )
+        ),
+        tcspc.ClusterBinIncrements(
+            start_event_type=pixel_start,
+            stop_event_type=pixel_stop,
+        ),
+        tcspc.Count(
+            tcspc.BinIncrementClusterEvent(numtraits), PIXEL_COUNT_TAG
+        ),
+    ]
+
+    if settings.sum:
+        # Accumulate bin increments into histograms over all frames.
+        nodes.extend(
+            [
+                tcspc.Append(reset.value()),
+                tcspc.ScanHistograms(
+                    num_elements=settings.width * settings.height,
+                    num_bins=256,
+                    max_per_bin=65535,
+                    reset_event_type=reset,
+                    emit_concluding=True,
+                    numeric_traits=numtraits,
+                ),
+                tcspc.Count(
+                    tcspc.HistogramArrayEvent(numtraits), FRAME_COUNT_TAG
+                ),
+                tcspc.Select(tcspc.ConcludingHistogramArrayEvent(numtraits)),
+                tcspc.ExtractBucket(
+                    tcspc.ConcludingHistogramArrayEvent(numtraits)
+                ),
+            ]
+        )
+    else:
+        # Accumulate bin increments into per-frame histograms
+        nodes.extend(
+            [
+                tcspc.ScanHistograms(
+                    num_elements=settings.width * settings.height,
+                    num_bins=256,
+                    max_per_bin=65535,
+                    clear_every_scan=True,
+                    numeric_traits=numtraits,
+                ),
+                tcspc.Select(tcspc.HistogramArrayEvent(numtraits)),
+                tcspc.Count(
+                    tcspc.HistogramArrayEvent(numtraits), FRAME_COUNT_TAG
+                ),
+                tcspc.ExtractBucket(tcspc.HistogramArrayEvent(numtraits)),
+            ]
+        )
+
+    g.add_chain(nodes=nodes)
+    return tcspc.Subgraph(
+        g,
+        input_map={"input": g.inputs()[0]},
+        output_map={"output": g.outputs()[0]},
+    )
 
 
 def _positive_int(s: str) -> int:
@@ -270,12 +339,16 @@ def _positive_int(s: str) -> int:
         raise argparse.ArgumentTypeError("must be a positive integer")
     return v
 
+
 def _tuple(s: str) -> tuple[int, int]:
     try:
         a, b = s.split(",")
         return int(a), int(b)
     except Exception as e:
-        raise argparse.ArgumentTypeError("must be a tuple of two integers") from e
+        raise argparse.ArgumentTypeError(
+            "must be a tuple of two integers"
+        ) from e
+
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     p = argparse.ArgumentParser(
@@ -286,20 +359,20 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         "--sync-channel",
         type=int,
         required=True,
-        help="Specify the channel containing the laser sync signal."
+        help="Specify the channel containing the laser sync signal.",
     )
     p.add_argument(
         "--pixel-marker-channel",
         type=int,
         required=True,
-        help="Specify the channel containing the pixel marker."
+        help="Specify the channel containing the pixel marker.",
     )
     p.add_argument(
         "--photon-channels",
         type=_tuple,
         required=True,
         help="Specify the channel containing the leading and trailing edges "
-        "of photon pulses."
+        "of photon pulses.",
     )
     p.add_argument(
         "--sync-delay",
@@ -307,7 +380,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         default=0,
         help="Specify how much to delay the the laser sync signal (in picoseconds) "
         "relative to the other signals. Negative values are allowed (and are "
-        "typical)."
+        "typical).",
     )
     p.add_argument(
         "--max-photon-pulse-width",
@@ -395,31 +468,31 @@ def run(args: argparse.Namespace) -> int:
         )
         return 2
 
-    # if args.dump_graph:
-    #     g = build_graph(args.channel, args.width, args.height, args.sum)
-    #     print(g.to_graphviz())
-    #     return 0
+    if args.dump_graph:
+        g = build_graph(args)
+        print(g.to_graphviz())
+        return 0
 
-    # if args.dump_cpp_graph:
-    #     if (
-    #         args.pixel_time is None
-    #         or args.input_file is None
-    #         or args.output_file is None
-    #     ):
-    #         print(
-    #             "--pixel-time, input_file, and output_file are required",
-    #             file=sys.stderr,
-    #         )
-    #         return 2
-    #     g = build_graph(args.channel, args.width, args.height, args.sum)
-    #     cg = tcspc.CompiledGraph(g)
-    #     dump_ctx = tcspc.ExecutionContext(
-    #         cg,
-    #         {"filename": args.input_file, "pixel_time": args.pixel_time},
-    #         (_BinFileSink(io.BytesIO()),),
-    #     )
-    #     print(dump_ctx.cpp_to_graphviz())
-    #     return 0
+    if args.dump_cpp_graph:
+        if (
+            args.pixel_time is None
+            or args.input_file is None
+            or args.output_file is None
+        ):
+            print(
+                "--pixel-time, input_file, and output_file are required",
+                file=sys.stderr,
+            )
+            return 2
+        g = build_graph(args)
+        cg = tcspc.CompiledGraph(g)
+        dump_ctx = tcspc.ExecutionContext(
+            cg,
+            {"filename": args.input_file, "pixel_time": args.pixel_time},
+            (_BinFileSink(io.BytesIO()),),
+        )
+        print(dump_ctx.cpp_to_graphviz())
+        return 0
 
     print("Creating processing graph...", file=sys.stderr)
     g = build_graph(args)
