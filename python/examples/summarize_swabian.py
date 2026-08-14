@@ -66,7 +66,9 @@ def build_graph() -> tcspc.Graph:
                 emit_concluding=True,
                 numeric_traits=summary_traits,
             ),
-            tcspc.RecordLast(tcspc.ConcludingHistogramEvent(summary_traits), HIST_TAG),
+            tcspc.RecordLast(
+                tcspc.ConcludingHistogramEvent(summary_traits), HIST_TAG
+            ),
             tcspc.SinkAll(),
         ]
     )
