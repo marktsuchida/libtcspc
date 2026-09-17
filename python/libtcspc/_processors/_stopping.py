@@ -34,7 +34,7 @@ class Stop(_RelayNode):
 
     Parameters
     ----------
-    event_types : Iterable[EventType]
+    event_types : EventType or Iterable[EventType]
         Event types that trigger normal termination.
     message_prefix : str or Param[str]
         String prepended to the `EndOfProcessing` exception's message,
@@ -57,10 +57,10 @@ class Stop(_RelayNode):
 
     def __init__(
         self,
-        event_types: Iterable[EventType],
+        event_types: EventType | Iterable[EventType],
         message_prefix: str | Param[str],
     ) -> None:
-        self._event_types = list(event_types)
+        self._event_types = [event_types] if isinstance(event_types, EventType) else list(event_types)
         self._msg_prefix = message_prefix
 
     @override
@@ -104,7 +104,7 @@ class StopWithError(_RelayNode):
 
     Parameters
     ----------
-    event_types : Iterable[EventType]
+    event_types : EventType or Iterable[EventType]
         Event types that trigger error termination.
     message_prefix : str or Param[str]
         String prepended to the raised exception's message, typically
@@ -127,10 +127,10 @@ class StopWithError(_RelayNode):
 
     def __init__(
         self,
-        event_types: Iterable[EventType],
+        event_types: EventType | Iterable[EventType],
         message_prefix: str | Param[str],
     ) -> None:
-        self._event_types = list(event_types)
+        self._event_types = [event_types] if isinstance(event_types, EventType) else list(event_types)
         self._msg_prefix = message_prefix
 
     @override

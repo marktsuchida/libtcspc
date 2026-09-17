@@ -37,6 +37,15 @@ gencontext = _CodeGenerationContext(
 )
 
 
+def test_Stop_single_event_type():
+    node_from_single_event = Stop(IntEvent, "my prefix")
+    node_from_iterable = Stop((IntEvent,), "my prefix")
+    assert node_from_single_event._event_types == node_from_iterable._event_types
+    assert node_from_single_event._cpp_expression(
+        gencontext, [_CppExpression("DOWN")]
+    ) == node_from_iterable._cpp_expression(gencontext, [_CppExpression("DOWN")])
+
+
 def test_Stop_removes_configured_event_from_output_set():
     node = Stop((IntEvent,), "msg")
     assert node._map_event_sets([(IntEvent, OtherEvent)]) == ((OtherEvent,),)
@@ -96,6 +105,15 @@ def test_Stop_raises_EndOfProcessing_on_event(tmp_path: Path) -> None:
     ctx = ExecutionContext(cg)
     with pytest.raises(EndOfProcessing):
         ctx.flush()
+
+
+def test_StopWithError_single_event_type():
+    node_from_single_event = StopWithError(IntEvent, "my prefix")
+    node_from_iterable = StopWithError((IntEvent,), "my prefix")
+    assert node_from_single_event._event_types == node_from_iterable._event_types
+    assert node_from_single_event._cpp_expression(
+        gencontext, [_CppExpression("DOWN")]
+    ) == node_from_iterable._cpp_expression(gencontext, [_CppExpression("DOWN")])
 
 
 def test_StopWithError_removes_configured_event_from_output_set():
