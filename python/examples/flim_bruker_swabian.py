@@ -122,8 +122,6 @@ def _process_events(args: argparse.Namespace) -> tcspc.Subgraph:
     Note that sync events, photon events, and pixel marker events must all be processed differently.
     This function creates a processing chain for each, including the nodes to route each event to its
     appropriate processing chain, and the nodes to merge the processed events back together.
-
-    It concludes with a
     """
     g = tcspc.Graph()
     g.add_node(
