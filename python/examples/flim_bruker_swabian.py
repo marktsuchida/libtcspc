@@ -103,7 +103,7 @@ def _source_events() -> tcspc.Subgraph:
                     tcspc.EndLostIntervalEvent(),
                     tcspc.LostCountsEvent(),
                 ),
-                "error decoding input data",
+                "error in input data",
             ),
             tcspc.CheckMonotonic(numtraits),
             tcspc.Stop((tcspc.WarningEvent(),), "processing stopped"),
