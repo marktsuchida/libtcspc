@@ -281,8 +281,8 @@ def _generate_histograms(
         tcspc.MapToBins(
             tcspc.LinearBinMapper(
                 offset=0,
-                bin_width=1,
-                max_bin_index=255,
+                bin_width=settings.bin_width,
+                max_bin_index=settings.bin_count - 1,
             )
         ),
         tcspc.ClusterBinIncrements(
@@ -301,7 +301,7 @@ def _generate_histograms(
                 tcspc.Append(reset.value()),
                 tcspc.ScanHistograms(
                     num_elements=settings.width * settings.height,
-                    num_bins=256,
+                    num_bins=settings.bin_count,
                     max_per_bin=65535,
                     reset_event_type=reset,
                     emit_concluding=True,
@@ -322,7 +322,7 @@ def _generate_histograms(
             [
                 tcspc.ScanHistograms(
                     num_elements=settings.width * settings.height,
-                    num_bins=256,
+                    num_bins=settings.bin_count,
                     max_per_bin=65535,
                     clear_every_scan=True,
                     numeric_traits=numtraits,
@@ -422,6 +422,18 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         type=_positive_int,
         required=True,
         help="Set lines per frame.",
+    )
+    p.add_argument(
+        "--bin-width",
+        type=_positive_int,
+        default=1,
+        help="Set histogram bin width (in picoseconds).",
+    )
+    p.add_argument(
+        "--bin-count",
+        type=_positive_int,
+        required=True,
+        help="Set the number of histogram bins.",
     )
     p.add_argument(
         "--sum",
