@@ -123,12 +123,22 @@ def _process_events(args: argparse.Namespace) -> tcspc.Subgraph:
     This function creates a processing chain for each, including the nodes to route each event to its
     appropriate processing chain, and the nodes to merge the processed events back together.
     """
+
+    # NB We pump TimeReachedEvents at regular intervals. Each is broadcast
+    # through the Route node and are used by the Merge nodes to flush buffers.
+    # The count_threshold for issuing TimeReachedEvents is chosen as 1/4 of the
+    # Merge buffer size to guarantee against buffer overflows.
+    merge_buffer_size = 1 << 20
+    regulate_count_threshold = (
+        merge_buffer_size >> 2
+    )  # 1/4 of merge buffer size
+
     g = tcspc.Graph()
     g.add_node(
         name="regulated-source",
         node=tcspc.RegulateTimeReached(
-            interval_threshold=1 << 30,
-            count_threshold=1 << 18,
+            interval_threshold=1 << 30,  # About 1 ms
+            count_threshold=regulate_count_threshold,
         ),
     )
     g.add_node(
@@ -212,6 +222,7 @@ def _process_events(args: argparse.Namespace) -> tcspc.Subgraph:
         node=tcspc.Merge(
             tcspc.DetectionEvent(numtraits),
             tcspc.TimeReachedEvent(numtraits),
+            max_buffered=merge_buffer_size,
         ),
     )
     g.add_chain(
@@ -244,6 +255,7 @@ def _process_events(args: argparse.Namespace) -> tcspc.Subgraph:
             pixel_start,
             pixel_stop,
             tcspc.TimeReachedEvent(numtraits),
+            max_buffered=merge_buffer_size,
         ),
     )
 
