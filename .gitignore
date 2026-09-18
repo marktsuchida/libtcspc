@@ -12,3 +12,9 @@ __pycache__/
 
 # Sphinx
 docs/python/api/generated/
+
+# uv
+uv.lock
+
+# VS Code
+.vscode/
