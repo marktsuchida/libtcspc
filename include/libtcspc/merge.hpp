@@ -74,18 +74,27 @@ class merge_impl {
         pending_on_1 = (InputChannel == 1);
     }
 
-    // Emit pending while predicate is true.
-    // Pred: bool(abstime_type const &)
-    template <typename Pred> void emit_pending(Pred predicate) {
-        auto emit_if_true = [&](auto const &e) {
-            bool p = predicate(e.abstime);
+    // Emit pending events older than cutoff (or not newer, if Inclusive).
+    template <bool Inclusive>
+    void emit_pending_until(typename NumericTraits::abstime_type cutoff) {
+        auto emit_if_before_cutoff = [&](auto const &e) {
+            bool const p =
+                Inclusive ? e.abstime <= cutoff : e.abstime < cutoff;
             if (p)
                 downstream.handle(e);
             return p;
         };
-        while (!pending.empty() &&
-               visit_variant_or_single_event(emit_if_true, pending.front()))
+        while (!pending.empty() && visit_variant_or_single_event(
+                                       emit_if_before_cutoff, pending.front()))
             pending.pop();
+    }
+
+    void emit_all_pending() {
+        auto emit = [&](auto const &e) { downstream.handle(e); };
+        while (!pending.empty()) {
+            visit_variant_or_single_event(emit, pending.front());
+            pending.pop();
+        }
     }
 
   public:
@@ -118,12 +127,9 @@ class merge_impl {
         try {
             if (is_pending_on_other<InputChannel>()) {
                 // Emit any older events pending on the other input.
-                auto cutoff = event.abstime;
                 // Emit events from input 0 before events from input 1 when
                 // they have equal abstime.
-                if constexpr (InputChannel == 0)
-                    --cutoff;
-                emit_pending([=](auto t) { return t <= cutoff; });
+                emit_pending_until<InputChannel == 1>(event.abstime);
 
                 // If events still pending on the other input, they are newer
                 // (or not older), so we can emit the current event first.
@@ -158,12 +164,12 @@ class merge_impl {
             // Since the other input was flushed, events on this input have not
             // been buffered. But there may still be events pending on the
             // other input.
-            emit_pending([](auto /* t */) { return true; });
+            emit_all_pending();
             downstream.flush();
         } else if (is_pending_on_other<InputChannel>()) {
             // Since this input won't have any more events, no need to buffer
             // the other any more.
-            emit_pending([](auto /* t */) { return true; });
+            emit_all_pending();
         }
     }
 };

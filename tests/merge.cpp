@@ -9,6 +9,7 @@
 #include "libtcspc/arg_wrappers.hpp"
 #include "libtcspc/context.hpp"
 #include "libtcspc/core.hpp"
+#include "libtcspc/int_types.hpp"
 #include "libtcspc/introspect.hpp"
 #include "libtcspc/processor.hpp"
 #include "libtcspc/test_utils.hpp"
@@ -295,6 +296,59 @@ TEST_CASE("merge single event type") {
     in1.flush();
     REQUIRE(out.check(e0{46}));
     REQUIRE(out.check_flushed());
+}
+
+TEST_CASE("merge equal abstime at minimum of abstime_type") {
+    auto const valcat = GENERATE(feed_as::const_lvalue, feed_as::rvalue);
+    auto ctx = context::create();
+
+    SECTION("unsigned abstime") {
+        struct types {
+            using abstime_type = u64;
+        };
+        using ue0 = time_tagged_test_event<0, types>;
+        using ue1 = time_tagged_test_event<1, types>;
+        using out_events = type_list<ue0, ue1>;
+        auto [min0, min1] = merge<out_events, types>(
+            arg::max_buffered<>{1024},
+            capture_output<out_events>(
+                ctx->tracker<capture_output_accessor>("out")));
+        auto in0 = feed_input(valcat, std::move(min0));
+        in0.require_output_checked(ctx, "out");
+        auto in1 = feed_input(valcat, std::move(min1));
+        in1.require_output_checked(ctx, "out");
+        auto out = capture_output_checker<out_events>(valcat, ctx, "out");
+
+        in1.handle(ue1{0});
+        in0.handle(ue0{0});
+        REQUIRE(out.check(ue0{0}));
+        in0.flush();
+        REQUIRE(out.check(ue1{0}));
+        in1.flush();
+        REQUIRE(out.check_flushed());
+    }
+
+    SECTION("signed abstime") {
+        auto const tmin = std::numeric_limits<i64>::min();
+        using out_events = type_list<e0, e1>;
+        auto [min0, min1] = merge<out_events>(
+            arg::max_buffered<>{1024},
+            capture_output<out_events>(
+                ctx->tracker<capture_output_accessor>("out")));
+        auto in0 = feed_input(valcat, std::move(min0));
+        in0.require_output_checked(ctx, "out");
+        auto in1 = feed_input(valcat, std::move(min1));
+        in1.require_output_checked(ctx, "out");
+        auto out = capture_output_checker<out_events>(valcat, ctx, "out");
+
+        in1.handle(e1{tmin});
+        in0.handle(e0{tmin});
+        REQUIRE(out.check(e0{tmin}));
+        in0.flush();
+        REQUIRE(out.check(e1{tmin}));
+        in1.flush();
+        REQUIRE(out.check_flushed());
+    }
 }
 
 TEST_CASE("merge N streams") {
