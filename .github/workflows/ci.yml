@@ -213,6 +213,11 @@ jobs:
       - uses: actions/checkout@v7
       - uses: astral-sh/setup-uv@v10.3.0
       - uses: compnerd/gha-setup-vsdevenv@452f99effa381b81c025ccfbdccaca509bff1b29 # v7
+      - name: Remove GNU link.exe (Windows)
+        if: runner.os == 'Windows'
+        shell: bash
+        # Git Bash's coreutils link.exe would shadow MSVC's link.exe.
+        run: rm /usr/bin/link.exe
 
       - name: Run tests
         shell: bash
