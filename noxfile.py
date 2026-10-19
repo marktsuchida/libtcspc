@@ -9,5 +9,6 @@ nox.options.sessions = ["test"]
 
 @nox.session(python=["3.10", "3.11", "3.12", "3.13"])
 def test(session):
-    session.install(".[testing]")
+    pyproject = nox.project.load_toml("pyproject.toml")
+    session.install(".", *nox.project.dependency_groups(pyproject, "testing"))
     session.run("pytest")
