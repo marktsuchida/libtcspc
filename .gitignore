@@ -8,6 +8,8 @@
 # Python
 /build/
 /dist/
+/.venv/
+/uv.lock
 __pycache__/
 
 # Sphinx

@@ -33,10 +33,13 @@ add the `include/` directory to your project's include path.
 To build the unit tests and example programs, use Meson:
 
 ```sh
-pip install meson ninja
+uv tool install meson
+uv tool install ninja
 meson setup builddir
 meson test -C builddir
 ```
+
+(Or use `pip install meson ninja` instead of `uv tool install`.)
 
 ## Performance
 
