@@ -5,7 +5,7 @@
 [project]
 name = "libtcspc"
 dynamic = ["version"]
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 dependencies = [
     "meson",
     "nanobind != 2.5.0", # https://github.com/wjakob/nanobind/pull/928

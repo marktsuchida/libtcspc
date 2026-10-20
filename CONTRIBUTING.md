@@ -6,7 +6,9 @@ SPDX-License-Identifier: MIT
 
 # C++ coding guidelines
 
-Code should pass the pre-commit hook (including formatting by clang-format).
+Code should pass the pre-commit hooks (including formatting by clang-format),
+run with [prek](https://github.com/j178/prek) (`prek install` to set up the git
+hook).
 
 Code should have no build warnings (on supported platform-compiler
 combinations) and no warnings from clang-tidy.
@@ -27,6 +29,10 @@ types should be documented with Doxygen comments (follow existing practice).
 Public API symbols should carry
 [NumPy-style](https://numpydoc.readthedocs.io/en/latest/format.html#docstring-standard)
 docstrings; these are rendered into the Sphinx site under `docs/python/`. Build
-the Python docs locally with `ninja -C <builddir> docs/python` after installing
-the optional `docs` dependency group (`pip install -e .[docs]`) and configuring
-with `-Dpython_docs=enabled`.
+the Python docs locally with
+`uv run --group docs meson setup <builddir> -Dpython_docs=enabled` followed by
+`uv run --group docs ninja -C <builddir> docs/python`.
+
+Run the Python tests with `uv run --group testing pytest`. To test with a
+specific Python version, use
+`uv run --isolated --python 3.12 --group testing pytest`.

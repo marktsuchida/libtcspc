@@ -17,11 +17,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
-      - uses: actions/setup-python@v7
+      - uses: j178/prek-action@v3.0.1
         with:
-          python-version: '3.12'
-          cache: pip
-      - uses: pre-commit/action@v3.0.1
+          extra-args: --all-files
 
   cpp-test:
     strategy:
@@ -77,13 +75,21 @@ jobs:
       ASAN_OPTIONS: ${{ matrix.asan_opts }}
     steps:
       - uses: actions/checkout@v7
-      - uses: actions/setup-python@v7
-        with:
-          python-version: '3.10'
-          cache: pip
+      - uses: astral-sh/setup-uv@v10.3.0
       - name: Install tools
-        run: python -m pip install --upgrade pip meson ninja
+        shell: bash
+        run: |
+          uv tool install meson
+          uv tool install ninja
+          uv tool dir --bin >>"$GITHUB_PATH"
       - uses: compnerd/gha-setup-vsdevenv@452f99effa381b81c025ccfbdccaca509bff1b29 # v7
+      - name: Remove Strawberry Perl from PATH (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        # Strawberry Perl's ccache, doxygen, etc. would shadow the ones we want.
+        run: |
+          $p = ($env:PATH -split ';' | Where-Object { $_ -notlike 'C:\Strawberry\*' }) -join ';'
+          "PATH=$p" | Out-File -FilePath $env:GITHUB_ENV -Append
       - name: Set up ccache
         uses: hendrikmuhs/ccache-action@v1.2
         with:
@@ -171,12 +177,12 @@ jobs:
       CXX: clang++
     steps:
       - uses: actions/checkout@v7
-      - uses: actions/setup-python@v7
-        with:
-          python-version: '3.10'
-          cache: pip
+      - uses: astral-sh/setup-uv@v10.3.0
       - name: Install tools
-        run: python -m pip install --upgrade pip meson ninja
+        run: |
+          uv tool install meson
+          uv tool install ninja
+          uv tool dir --bin >>"$GITHUB_PATH"
 
       - run: clang-tidy --version
 
@@ -200,26 +206,45 @@ jobs:
           - ubuntu-latest
           - windows-latest
           - macos-latest
+        python:
+          - '3.11'
+          - '3.15'
+        # Test oldest and newest everywhere; each middle version on one platform.
         include:
-          # Only test with Python versions available on the runners.
           - runner: ubuntu-latest
-            py_versions: 3.10 3.11 3.12 3.13
+            python: '3.12'
           - runner: windows-latest
-            py_versions: 3.10 3.11 3.12 3.13
+            python: '3.13'
           - runner: macos-latest
-            py_versions: 3.11 3.12 3.13
+            python: '3.14'
 
-    name: py-test-${{ matrix.runner }}
+    name: py-test-${{ matrix.runner }}-py${{ matrix.python }}
     runs-on: ${{ matrix.runner }}
     steps:
       - run: uname -m
         if: ${{ ! startsWith(matrix.runner, 'windows-') }}
 
       - uses: actions/checkout@v7
-      - uses: fjwillemsen/setup-nox2@v3.0.0
+      - uses: astral-sh/setup-uv@v10.3.0
       - uses: compnerd/gha-setup-vsdevenv@452f99effa381b81c025ccfbdccaca509bff1b29 # v7
+      - name: Remove GNU link.exe (Windows)
+        if: runner.os == 'Windows'
+        shell: bash
+        # Git Bash's coreutils link.exe would shadow MSVC's link.exe.
+        run: rm /usr/bin/link.exe
+      - name: Remove Strawberry Perl from PATH (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        # Strawberry Perl's tools would shadow the ones we want.
+        run: |
+          $p = ($env:PATH -split ';' | Where-Object { $_ -notlike 'C:\Strawberry\*' }) -join ';'
+          "PATH=$p" | Out-File -FilePath $env:GITHUB_ENV -Append
 
-      - run: nox -p ${{ matrix.py_versions }}
+      - name: Run tests
+        shell: bash
+        run: |
+          uv run --isolated --no-editable --python "${{ matrix.python }}" \
+            --group testing pytest
 
   docs:
     runs-on: ubuntu-24.04
@@ -227,19 +252,17 @@ jobs:
       DOXYGEN_VERSION: '1.16.1'
     steps:
       - uses: actions/checkout@v7
-      - uses: actions/setup-python@v7
+      - uses: astral-sh/setup-uv@v10.3.0
         with:
           python-version: '3.13'
-          cache: pip
-      - name: Install tools
-        run: python -m pip install --upgrade pip meson ninja
+          activate-environment: true
       - name: Install Doxygen
         run: |
           curl -LO https://www.doxygen.nl/files/doxygen-${DOXYGEN_VERSION}.linux.bin.tar.gz
           tar xf doxygen-${DOXYGEN_VERSION}.linux.bin.tar.gz
           echo $PWD/doxygen-${DOXYGEN_VERSION}/bin >>$GITHUB_PATH
       - name: Install Python doc dependencies
-        run: pip install .[docs]
+        run: uv sync --no-editable --group docs
       - name: Configure
         run: >
           meson setup builddir -Dtests=disabled -Dexamples=disabled

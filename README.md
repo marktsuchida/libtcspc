@@ -18,7 +18,7 @@ acquired or replayed from disk.
 The **C++** library requires C++20. Recent versions of GCC, Clang, or MSVC
 should work.
 
-The **Python** library (under development) requires Python 3.10 or later and a
+The **Python** library (under development) requires Python 3.11 or later and a
 C++ build environment (at run time, since C++ code is dynamically generated and
 compiled).
 
@@ -33,10 +33,13 @@ add the `include/` directory to your project's include path.
 To build the unit tests and example programs, use Meson:
 
 ```sh
-pip install meson ninja
+uv tool install meson
+uv tool install ninja
 meson setup builddir
 meson test -C builddir
 ```
+
+(Or use `pip install meson ninja` instead of `uv tool install`.)
 
 ## Performance
 

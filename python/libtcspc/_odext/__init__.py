@@ -31,9 +31,7 @@ import tempfile
 import time
 from collections.abc import Iterable, Mapping
 from pathlib import Path
-from typing import Any, Literal
-
-from typing_extensions import Self
+from typing import Any, Literal, Self
 
 from . import _async
 
