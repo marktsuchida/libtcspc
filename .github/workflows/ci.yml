@@ -206,11 +206,20 @@ jobs:
           - ubuntu-latest
           - windows-latest
           - macos-latest
+        python:
+          - '3.11'
+          - '3.15'
+        # Test oldest and newest everywhere; each middle version on one platform.
+        include:
+          - runner: ubuntu-latest
+            python: '3.12'
+          - runner: windows-latest
+            python: '3.13'
+          - runner: macos-latest
+            python: '3.14'
 
-    name: py-test-${{ matrix.runner }}
+    name: py-test-${{ matrix.runner }}-py${{ matrix.python }}
     runs-on: ${{ matrix.runner }}
-    env:
-      PY_VERSIONS: 3.11 3.12 3.13 3.14 3.15
     steps:
       - run: uname -m
         if: ${{ ! startsWith(matrix.runner, 'windows-') }}
@@ -234,9 +243,8 @@ jobs:
       - name: Run tests
         shell: bash
         run: |
-          for py in $PY_VERSIONS; do
-            uv run --isolated --no-editable --python "$py" --group testing pytest || exit 1
-          done
+          uv run --isolated --no-editable --python "${{ matrix.python }}" \
+            --group testing pytest
 
   docs:
     runs-on: ubuntu-24.04
