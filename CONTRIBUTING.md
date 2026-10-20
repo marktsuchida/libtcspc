@@ -6,7 +6,9 @@ SPDX-License-Identifier: MIT
 
 # C++ coding guidelines
 
-Code should pass the pre-commit hook (including formatting by clang-format).
+Code should pass the pre-commit hooks (including formatting by clang-format),
+run with [prek](https://github.com/j178/prek) (`prek install` to set up the git
+hook).
 
 Code should have no build warnings (on supported platform-compiler
 combinations) and no warnings from clang-tidy.

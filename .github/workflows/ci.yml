@@ -17,11 +17,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
-      - uses: actions/setup-python@v7
+      - uses: j178/prek-action@v3.0.1
         with:
-          python-version: '3.12'
-          cache: pip
-      - uses: pre-commit/action@v3.0.1
+          extra-args: --all-files
 
   cpp-test:
     strategy:
