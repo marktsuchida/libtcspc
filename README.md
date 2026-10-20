@@ -18,7 +18,7 @@ acquired or replayed from disk.
 The **C++** library requires C++20. Recent versions of GCC, Clang, or MSVC
 should work.
 
-The **Python** library (under development) requires Python 3.10 or later and a
+The **Python** library (under development) requires Python 3.11 or later and a
 C++ build environment (at run time, since C++ code is dynamically generated and
 compiled).
 

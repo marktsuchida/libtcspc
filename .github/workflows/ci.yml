@@ -205,7 +205,7 @@ jobs:
     name: py-test-${{ matrix.runner }}
     runs-on: ${{ matrix.runner }}
     env:
-      PY_VERSIONS: 3.10 3.11 3.12 3.13
+      PY_VERSIONS: 3.11 3.12 3.13 3.14 3.15
     steps:
       - run: uname -m
         if: ${{ ! startsWith(matrix.runner, 'windows-') }}

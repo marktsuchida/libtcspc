@@ -7,9 +7,9 @@ import subprocess
 import typing
 from collections.abc import Iterable
 from dataclasses import dataclass
+from typing import Self
 
 import numpy as np
-from typing_extensions import Self
 
 from . import _include, _odext
 
