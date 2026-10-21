@@ -49,6 +49,22 @@ def _quote_meson_path(p: str) -> str:
     return _quote_meson_str(p)
 
 
+def _pch_mode() -> bool | None:
+    # None means auto: use PCH unless a compiler cache is detected.
+    var = "LIBTCSPC_PY_USE_PCH"
+    value = os.environ.get(var, "")
+    if value == "":
+        return None
+    if value == "1":
+        return True
+    if value == "0":
+        return False
+    logging.warning(
+        f"Ignoring invalid value for {var}: {value!r} (expected '0' or '1')"
+    )
+    return None
+
+
 @functools.cache
 def _meson_exe():
     meson_exe = shutil.which("meson")
@@ -179,7 +195,7 @@ class Builder:
             os.mkdir(self._proj_path / "pch")
             with open(self._proj_path / "pch/pch.hpp", "w") as f:
                 f.write(pch_text)
-            cpp_pch = "cpp_pch: 'pch/pch.hpp',"
+            cpp_pch = "cpp_pch: pch_files,"
         else:
             cpp_pch = ""
 
@@ -192,6 +208,31 @@ class Builder:
                     )
                 """
             )
+            if cpp_pch:
+                match _pch_mode():
+                    case None:
+                        # PCH makes compiles uncacheable by ccache/sccache. A
+                        # cache masquerading as the compiler (e.g., named cl
+                        # or gcc) is not detected; set LIBTCSPC_PY_USE_PCH=0.
+                        f.write(
+                            """fs = import('fs')
+                            cxx_launcher = fs.stem(
+                                meson.get_compiler('cpp').cmd_array()[0]
+                            ).to_lower()
+                            use_pch = cxx_launcher not in ['ccache', 'sccache']
+                            """
+                        )
+                    case True:
+                        f.write("use_pch = true\n")
+                    case False:
+                        f.write("use_pch = false\n")
+                f.write(
+                    """pch_files = []
+                    if use_pch
+                        pch_files = ['pch/pch.hpp']
+                    endif
+                    """
+                )
             if extra_source_files:
                 f.write(f"extra_sources = files({rendered_extra_sources})\n")
             if self._binary_type == "extension_module":
