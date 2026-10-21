@@ -81,6 +81,43 @@ def test_compile_two_tags_same_accessor_type():
     assert ec.access(AccessTag("b")).count() == 1
 
 
+def _counting_graph(n_counters: int) -> Graph:
+    g = Graph()
+    upstream: str | None = None
+    for i in range(n_counters):
+        g.add_node(
+            f"c{i}", Count(IntEvent, AccessTag(f"t{i}")), upstream=upstream
+        )
+        upstream = f"c{i}"
+    g.add_node("s", SinkAll(), upstream=upstream)
+    return g
+
+
+def test_graph_module_code_is_reproducible():
+    code1, _ = _graph_module_code("m", _counting_graph(1), (IntEvent,))
+    code2, _ = _graph_module_code("m", _counting_graph(1), (IntEvent,))
+    assert code1 == code2
+
+
+def test_compile_identical_graphs_share_module():
+    cg1 = CompiledGraph(_counting_graph(1), (IntEvent,))
+    cg2 = CompiledGraph(_counting_graph(1), (IntEvent,))
+    assert cg1._mod is cg2._mod
+    ec1 = ExecutionContext(cg1, {})
+    ec2 = ExecutionContext(cg2, {})
+    ec1.handle(1)
+    ec1.handle(1)
+    ec2.handle(1)
+    assert ec1.access(AccessTag("t0")).count() == 2
+    assert ec2.access(AccessTag("t0")).count() == 1
+
+
+def test_compile_different_graphs_use_different_modules():
+    cg1 = CompiledGraph(_counting_graph(1), (IntEvent,))
+    cg2 = CompiledGraph(_counting_graph(2), (IntEvent,))
+    assert cg1._mod is not cg2._mod
+
+
 def test_compile_subgraph_access_propagates():
     inner = Graph()
     inner.add_node("c", Count(IntEvent, AccessTag("inner_tag")))
