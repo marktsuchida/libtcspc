@@ -253,7 +253,7 @@ jobs:
       - name: Run tests
         shell: bash
         run: |
-          uv run --isolated --no-editable --python "${{ matrix.python }}" \
+          uv run --no-editable --python "${{ matrix.python }}" \
             --group testing pytest
 
       - name: Show ccache statistics
