@@ -370,7 +370,7 @@ class Builder:
         )
         if returncode != 0:
             raise RuntimeError(f"Build failed: {stdout}")
-        self._staged = self._BUILT
+        self._stage = self._BUILT
         self._stats["build"] = time.perf_counter() - start
         return self._target_path
 
