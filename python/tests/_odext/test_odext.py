@@ -3,8 +3,11 @@
 # SPDX-License-Identifier: MIT
 
 import logging
+import platform
+import shutil
 import subprocess
 import sys
+from pathlib import Path
 
 import pytest
 from libtcspc import _odext
@@ -65,6 +68,39 @@ def test_executable_build():
         result = subprocess.run(str(exe), stdout=subprocess.PIPE)
     assert result.returncode == 0
     assert result.stdout.decode().rstrip() == "hello"
+
+
+def test_ninja_exe_default(monkeypatch):
+    monkeypatch.delenv("NINJA", raising=False)
+    expected = shutil.which("ninja")
+    assert expected is not None
+    assert _odext._ninja_exe() == Path(expected)
+
+
+def test_ninja_exe_honors_NINJA_env(monkeypatch):
+    ninja = shutil.which("ninja")
+    assert ninja is not None
+    monkeypatch.setenv("NINJA", ninja)
+    assert _odext._ninja_exe() == Path(ninja)
+
+
+def test_ninja_exe_invalid_NINJA_env_raises(monkeypatch):
+    monkeypatch.setenv("NINJA", "no-such-ninja-exe")
+    with pytest.raises(RuntimeError, match="NINJA"):
+        _odext._ninja_exe()
+
+
+@pytest.mark.skipif(
+    platform.system() != "Windows", reason="VS environment is Windows-only"
+)
+def test_build_env_has_vs_environment():
+    with _odext.Builder(
+        binary_type="executable", code_text=hello_code
+    ) as builder:
+        builder.configure()
+        assert "INCLUDE" in builder._build_env
+        assert "LIB" in builder._build_env
+        assert "MESON_DEVENV" not in builder._build_env
 
 
 @pytest.mark.parametrize(

@@ -27,6 +27,7 @@ import os
 import platform
 import shutil
 import subprocess
+import sys
 import tempfile
 import time
 from collections.abc import Iterable, Mapping
@@ -73,6 +74,20 @@ def _meson_exe():
     return Path(meson_exe)
 
 
+def _ninja_exe() -> Path:
+    if ninja := os.environ.get("NINJA"):
+        exe = shutil.which(ninja)
+        if not exe:
+            raise RuntimeError(
+                f"Cannot find the ninja executable given by NINJA: {ninja}"
+            )
+        return Path(exe)
+    exe = shutil.which("ninja")
+    if not exe:
+        raise RuntimeError("Cannot find the ninja executable")
+    return Path(exe)
+
+
 # Run a subprocess, allowing clean cancellation (see unit test).
 async def _run_subprocess_nostdin(
     program: Path,
@@ -105,6 +120,12 @@ async def _run_meson(
     *args: str, cwd: Path, env: Mapping[str, str]
 ) -> tuple[int, str, str]:
     return await _run_subprocess_nostdin(_meson_exe(), *args, cwd=cwd, env=env)
+
+
+async def _run_ninja(
+    *args: str, cwd: Path, env: Mapping[str, str]
+) -> tuple[int, str, str]:
+    return await _run_subprocess_nostdin(_ninja_exe(), *args, cwd=cwd, env=env)
 
 
 class Builder:
@@ -326,6 +347,46 @@ class Builder:
         else:
             raise RuntimeError("Cannot find the build target in meson-info")
 
+    async def _async_capture_build_env(self) -> None:
+        if platform.system() != "Windows":
+            self._build_env = self._config_env
+            return
+
+        # `meson compile` would re-activate the VS environment on every call
+        # (slow), so capture it once and run ninja directly.
+        env_file = self._proj_path / "build-env.json"
+        script = (
+            "import json, os, sys; "
+            "json.dump(dict(os.environ), open(sys.argv[1], 'w', encoding='utf-8'))"
+        )
+        returncode, stdout, stderr = await _run_meson(
+            "devenv",
+            "-C",
+            "builddir",
+            sys.executable,
+            "-I",
+            "-c",
+            script,
+            str(env_file),
+            cwd=self._proj_path,
+            env=self._config_env,
+        )
+        if returncode != 0:
+            raise RuntimeError(
+                "Capturing build environment failed:\n"
+                + f"Stdout: {stdout}\n"
+                + f"Stderr: {stderr}"
+            )
+
+        def read_env() -> dict[str, str]:
+            with open(env_file, encoding="utf-8") as f:
+                return json.load(f)
+
+        env = await asyncio.get_running_loop().run_in_executor(None, read_env)
+        env.pop("MESON_DEVENV", None)
+        env.pop("MESON_PROJECT_NAME", None)
+        self._build_env = env
+
     async def async_configure(self) -> None:
         start = time.perf_counter()
         assert self._stage == self._CODE_WRITTEN  # Configure only once.
@@ -351,6 +412,7 @@ class Builder:
         self._target_path = await asyncio.get_running_loop().run_in_executor(
             None, self._get_target_path
         )
+        await self._async_capture_build_env()
         self._stage = self._CONFIGURED
         self._stats["configure"] = time.perf_counter() - start
 
@@ -363,13 +425,13 @@ class Builder:
             await self.async_configure()
 
         start = time.perf_counter()
-        returncode, stdout, stderr = await _run_meson(
-            "compile",
-            cwd=self._proj_path / "builddir",
-            env=self._config_env,
+        returncode, stdout, stderr = await _run_ninja(
+            cwd=self._proj_path / "builddir", env=self._build_env
         )
         if returncode != 0:
-            raise RuntimeError(f"Build failed: {stdout}")
+            raise RuntimeError(
+                f"Build failed:\nStdout: {stdout}\nStderr: {stderr}"
+            )
         self._stage = self._BUILT
         self._stats["build"] = time.perf_counter() - start
         return self._target_path
