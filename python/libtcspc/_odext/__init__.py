@@ -139,6 +139,16 @@ class Builder:
         if cxx:
             self._config_env["CXX"] = cxx
 
+        # With MSVC, ccache hashes the object file directory (by default),
+        # which is our random temporary directory, so nothing would ever hit.
+        # The cost of disabling this is that cached objects may embed a stale
+        # source path (only affects debug info and diagnostics).
+        if platform.system() == "Windows" and not (
+            "CCACHE_HASHDIR" in self._config_env
+            or "CCACHE_NOHASHDIR" in self._config_env
+        ):
+            self._config_env["CCACHE_NOHASHDIR"] = "1"
+
         self._write_project(
             cpp_std=cpp_std,
             include_dirs=(str(i) for i in include_dirs),
