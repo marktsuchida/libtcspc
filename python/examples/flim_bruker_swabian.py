@@ -554,6 +554,8 @@ def run(args: argparse.Namespace) -> int:
                 print(f"Stopped because: {e}", file=sys.stderr)
     except Exception as e:
         print(e, file=sys.stderr)
+        _unlink_if_empty(args.output_file)
+        return 2
 
     _unlink_if_empty(args.output_file)
     assert ctx is not None
