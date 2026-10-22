@@ -239,12 +239,26 @@ jobs:
         run: |
           $p = ($env:PATH -split ';' | Where-Object { $_ -notlike 'C:\Strawberry\*' }) -join ';'
           "PATH=$p" | Out-File -FilePath $env:GITHUB_ENV -Append
+      - name: Set up ccache
+        uses: hendrikmuhs/ccache-action@v1.2
+        with:
+          # Python version matters: extension modules use its headers.
+          key: py-${{ matrix.runner }}-py${{ matrix.python }}
+          evict-old-files: job
+          max-size: 500M
+      - name: Enable ccache depend mode (Windows)
+        if: runner.os == 'Windows'
+        run: ccache --set-config=depend_mode=true
 
       - name: Run tests
         shell: bash
         run: |
-          uv run --isolated --no-editable --python "${{ matrix.python }}" \
+          uv run --no-editable --python "${{ matrix.python }}" \
             --group testing pytest
+
+      - name: Show ccache statistics
+        if: always()
+        run: ccache -s -v
 
   docs:
     runs-on: ubuntu-24.04

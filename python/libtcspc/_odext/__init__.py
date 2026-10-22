@@ -27,6 +27,7 @@ import os
 import platform
 import shutil
 import subprocess
+import sys
 import tempfile
 import time
 from collections.abc import Iterable, Mapping
@@ -49,12 +50,42 @@ def _quote_meson_path(p: str) -> str:
     return _quote_meson_str(p)
 
 
+def _pch_mode() -> bool | None:
+    # None means auto: use PCH unless a compiler cache is detected.
+    var = "LIBTCSPC_PY_USE_PCH"
+    value = os.environ.get(var, "")
+    if value == "":
+        return None
+    if value == "1":
+        return True
+    if value == "0":
+        return False
+    logging.warning(
+        f"Ignoring invalid value for {var}: {value!r} (expected '0' or '1')"
+    )
+    return None
+
+
 @functools.cache
 def _meson_exe():
     meson_exe = shutil.which("meson")
     if not meson_exe:
         raise RuntimeError("Cannot find the meson executable")
     return Path(meson_exe)
+
+
+def _ninja_exe() -> Path:
+    if ninja := os.environ.get("NINJA"):
+        exe = shutil.which(ninja)
+        if not exe:
+            raise RuntimeError(
+                f"Cannot find the ninja executable given by NINJA: {ninja}"
+            )
+        return Path(exe)
+    exe = shutil.which("ninja")
+    if not exe:
+        raise RuntimeError("Cannot find the ninja executable")
+    return Path(exe)
 
 
 # Run a subprocess, allowing clean cancellation (see unit test).
@@ -91,6 +122,12 @@ async def _run_meson(
     return await _run_subprocess_nostdin(_meson_exe(), *args, cwd=cwd, env=env)
 
 
+async def _run_ninja(
+    *args: str, cwd: Path, env: Mapping[str, str]
+) -> tuple[int, str, str]:
+    return await _run_subprocess_nostdin(_ninja_exe(), *args, cwd=cwd, env=env)
+
+
 class Builder:
     _DISCARDED, _CREATED, _CODE_WRITTEN, _CONFIGURED, _BUILT = range(5)
 
@@ -122,6 +159,16 @@ class Builder:
         self._config_env = dict(os.environ)
         if cxx:
             self._config_env["CXX"] = cxx
+
+        # With MSVC, ccache hashes the object file directory (by default),
+        # which is our random temporary directory, so nothing would ever hit.
+        # The cost of disabling this is that cached objects may embed a stale
+        # source path (only affects debug info and diagnostics).
+        if platform.system() == "Windows" and not (
+            "CCACHE_HASHDIR" in self._config_env
+            or "CCACHE_NOHASHDIR" in self._config_env
+        ):
+            self._config_env["CCACHE_NOHASHDIR"] = "1"
 
         self._write_project(
             cpp_std=cpp_std,
@@ -179,7 +226,7 @@ class Builder:
             os.mkdir(self._proj_path / "pch")
             with open(self._proj_path / "pch/pch.hpp", "w") as f:
                 f.write(pch_text)
-            cpp_pch = "cpp_pch: 'pch/pch.hpp',"
+            cpp_pch = "cpp_pch: pch_files,"
         else:
             cpp_pch = ""
 
@@ -192,6 +239,31 @@ class Builder:
                     )
                 """
             )
+            if cpp_pch:
+                match _pch_mode():
+                    case None:
+                        # PCH makes compiles uncacheable by ccache/sccache. A
+                        # cache masquerading as the compiler (e.g., named cl
+                        # or gcc) is not detected; set LIBTCSPC_PY_USE_PCH=0.
+                        f.write(
+                            """fs = import('fs')
+                            cxx_launcher = fs.stem(
+                                meson.get_compiler('cpp').cmd_array()[0]
+                            ).to_lower()
+                            use_pch = cxx_launcher not in ['ccache', 'sccache']
+                            """
+                        )
+                    case True:
+                        f.write("use_pch = true\n")
+                    case False:
+                        f.write("use_pch = false\n")
+                f.write(
+                    """pch_files = []
+                    if use_pch
+                        pch_files = ['pch/pch.hpp']
+                    endif
+                    """
+                )
             if extra_source_files:
                 f.write(f"extra_sources = files({rendered_extra_sources})\n")
             if self._binary_type == "extension_module":
@@ -275,6 +347,46 @@ class Builder:
         else:
             raise RuntimeError("Cannot find the build target in meson-info")
 
+    async def _async_capture_build_env(self) -> None:
+        if platform.system() != "Windows":
+            self._build_env = self._config_env
+            return
+
+        # `meson compile` would re-activate the VS environment on every call
+        # (slow), so capture it once and run ninja directly.
+        env_file = self._proj_path / "build-env.json"
+        script = (
+            "import json, os, sys; "
+            "json.dump(dict(os.environ), open(sys.argv[1], 'w', encoding='utf-8'))"
+        )
+        returncode, stdout, stderr = await _run_meson(
+            "devenv",
+            "-C",
+            "builddir",
+            sys.executable,
+            "-I",
+            "-c",
+            script,
+            str(env_file),
+            cwd=self._proj_path,
+            env=self._config_env,
+        )
+        if returncode != 0:
+            raise RuntimeError(
+                "Capturing build environment failed:\n"
+                + f"Stdout: {stdout}\n"
+                + f"Stderr: {stderr}"
+            )
+
+        def read_env() -> dict[str, str]:
+            with open(env_file, encoding="utf-8") as f:
+                return json.load(f)
+
+        env = await asyncio.get_running_loop().run_in_executor(None, read_env)
+        env.pop("MESON_DEVENV", None)
+        env.pop("MESON_PROJECT_NAME", None)
+        self._build_env = env
+
     async def async_configure(self) -> None:
         start = time.perf_counter()
         assert self._stage == self._CODE_WRITTEN  # Configure only once.
@@ -300,6 +412,7 @@ class Builder:
         self._target_path = await asyncio.get_running_loop().run_in_executor(
             None, self._get_target_path
         )
+        await self._async_capture_build_env()
         self._stage = self._CONFIGURED
         self._stats["configure"] = time.perf_counter() - start
 
@@ -312,14 +425,14 @@ class Builder:
             await self.async_configure()
 
         start = time.perf_counter()
-        returncode, stdout, stderr = await _run_meson(
-            "compile",
-            cwd=self._proj_path / "builddir",
-            env=self._config_env,
+        returncode, stdout, stderr = await _run_ninja(
+            cwd=self._proj_path / "builddir", env=self._build_env
         )
         if returncode != 0:
-            raise RuntimeError(f"Build failed: {stdout}")
-        self._staged = self._BUILT
+            raise RuntimeError(
+                f"Build failed:\nStdout: {stdout}\nStderr: {stderr}"
+            )
+        self._stage = self._BUILT
         self._stats["build"] = time.perf_counter() - start
         return self._target_path
 

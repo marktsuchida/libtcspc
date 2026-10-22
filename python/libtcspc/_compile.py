@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: MIT
 
 import functools
-import itertools
+import hashlib
 import threading
 from collections.abc import Callable, Iterable, Mapping, Sequence
 from pathlib import Path
@@ -632,8 +632,9 @@ _builder = _odext.Builder(
     # Do not include nanobind in pch, because we need to vary NB_DOMAIN.
 )
 _importer = _odext.ExtensionImporter()
-_mod_ctr = itertools.count()
 _build_lock = threading.Lock()
+_MODULE_NAME_PLACEHOLDER = "@libtcspc_module_name@"
+_modules_by_name: dict[str, Any] = {}
 
 
 def _compile_graph_module(
@@ -648,13 +649,19 @@ def _compile_graph_module(
 ]:
     # Serialize builds, at least for now.
     with _build_lock:
-        mod_name = f"libtcspc_graph_{next(_mod_ctr)}"
         code, wrapper_correspondence = _graph_module_code(
-            mod_name, graph, input_event_types
+            _MODULE_NAME_PLACEHOLDER, graph, input_event_types
         )
-        _builder.set_code(code)
-        mod_path = _builder.build()
-        mod = _importer.import_module(mod_name, mod_path, ok_to_move=True)
+        # Name by content so that identical graphs produce identical source
+        # (for compiler caches) and can share the module.
+        code_hash = hashlib.sha256(code.encode()).hexdigest()[:16]
+        mod_name = f"libtcspc_graph_{code_hash}"
+        mod = _modules_by_name.get(mod_name)
+        if mod is None:
+            _builder.set_code(code.replace(_MODULE_NAME_PLACEHOLDER, mod_name))
+            mod_path = _builder.build()
+            mod = _importer.import_module(mod_name, mod_path, ok_to_move=True)
+            _modules_by_name[mod_name] = mod
         params = tuple(param for param, typ in graph._parameters())
         encoders = graph._param_encoders()
         accesses = tuple(tag for tag, spec in graph._accesses())
