@@ -511,7 +511,7 @@ def run(args: argparse.Namespace) -> int:
         cg = tcspc.CompiledGraph(g)
         dump_ctx = tcspc.ExecutionContext(
             cg,
-            {"filename": args.input_file, "pixel_time": args.pixel_time},
+            {"filename": args.input_file},
             (_BinFileSink(io.BytesIO()),),
         )
         print(dump_ctx.cpp_to_graphviz())
