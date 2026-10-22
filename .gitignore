@@ -4,6 +4,7 @@
 
 *~
 .*.sw?
+.vscode/
 
 # Python
 /build/
@@ -17,6 +18,3 @@ docs/python/api/generated/
 
 # uv
 uv.lock
-
-# VS Code
-.vscode/
