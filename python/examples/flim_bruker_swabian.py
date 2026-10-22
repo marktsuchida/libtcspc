@@ -92,10 +92,6 @@ def _source_events() -> tcspc.Subgraph:
                 tcspc.SwabianTagEvent(),
                 tcspc.Param("filename"),
             ),
-            tcspc.StopWithError(
-                tcspc.WarningEvent(),
-                message_prefix="error reading input data from file",
-            ),
             tcspc.Count(tcspc.SwabianTagEvent(), RECORD_COUNT_TAG),
             tcspc.DecodeSwabianTags(numtraits),
             tcspc.StopWithError(
