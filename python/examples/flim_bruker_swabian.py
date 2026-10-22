@@ -478,14 +478,10 @@ def run(args: argparse.Namespace) -> int:
     if (
         not args.dump_graph
         and not args.dump_cpp_graph
-        and (
-            args.pixel_time is None
-            or args.input_file is None
-            or args.output_file is None
-        )
+        and (args.input_file is None or args.output_file is None)
     ):
         print(
-            "--pixel-time, input_file, and output_file are required",
+            "--input_file and --output_file are required to process",
             file=sys.stderr,
         )
         return 2
@@ -496,13 +492,9 @@ def run(args: argparse.Namespace) -> int:
         return 0
 
     if args.dump_cpp_graph:
-        if (
-            args.pixel_time is None
-            or args.input_file is None
-            or args.output_file is None
-        ):
+        if args.input_file is None or args.output_file is None:
             print(
-                "--pixel-time, input_file, and output_file are required",
+                "--input_file and --output_file are required to dump the graph",
                 file=sys.stderr,
             )
             return 2
