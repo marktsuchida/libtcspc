@@ -134,12 +134,14 @@ def test_compile_registers_wrapper_for_value_event_output():
 
 def test_compile_string_parameter():
     g = Graph()
-    g.add_node("a", Stop((), "a_default"))
+    g.add_node("a", Stop(message_prefix="a_default"))
     assert len(g._parameters()) == 0
-    g.add_node("b", Stop((), Param("b_msg")), upstream="a")
+    g.add_node("b", Stop(message_prefix=Param("b_msg")), upstream="a")
     assert len(g._parameters()) == 1
     assert g._parameters()[0] == (Param("b_msg"), _string_type)
-    g.add_node("c", Stop((), Param("c_msg", "c_default")), upstream="b")
+    g.add_node(
+        "c", Stop(message_prefix=Param("c_msg", "c_default")), upstream="b"
+    )
     g.add_node("sink", SinkAll(), upstream="c")
     cg = CompiledGraph(g)
     assert len(cg.parameters()) == 2
@@ -184,8 +186,8 @@ def test_compile_multiple_params_same_node():
 
 def test_compile_mixes_concrete_and_param():
     g = Graph()
-    g.add_node("a", Stop((), "concrete-prefix"))
-    g.add_node("b", Stop((), Param("only_param")), upstream="a")
+    g.add_node("a", Stop(message_prefix="concrete-prefix"))
+    g.add_node("b", Stop(message_prefix=Param("only_param")), upstream="a")
     g.add_node("sink", SinkAll(), upstream="b")
     cg = CompiledGraph(g)
     assert cg.parameters() == (Param("only_param"),)

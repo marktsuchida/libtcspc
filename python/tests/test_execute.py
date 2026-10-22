@@ -135,7 +135,7 @@ def test_execute_access_after_flush_returns_final_state():
 def test_execute_access_after_end_of_processing_returns_final_state():
     g = Graph()
     g.add_node("c", Count(IntEvent, AccessTag("counter")))
-    g.add_node("s", Stop((IntEvent,), "stopped"), upstream="c")
+    g.add_node("s", Stop(IntEvent, message_prefix="stopped"), upstream="c")
     g.add_node("n", SinkAll(), upstream="s")
     ec = ExecutionContext(CompiledGraph(g, (IntEvent,)), {})
     with pytest.raises(EndOfProcessing):
@@ -210,7 +210,7 @@ def test_execute_handles_buffer_events():
 
 def test_execute_require_parameter_with_no_default():
     g = Graph()
-    g.add_node("a", Stop((), Param("a_msg")))
+    g.add_node("a", Stop(message_prefix=Param("a_msg")))
     g.add_node("s", SinkAll(), upstream="a")
     cg = CompiledGraph(g)
     ExecutionContext(cg, {_CppIdentifier("a_msg"): "hello"})
@@ -788,7 +788,7 @@ def test_execute_sink_exception_propagates():
 
 def _stop_graph_with_param(param: Param[str]) -> Graph:
     g = Graph()
-    g.add_node("a", Stop((IntEvent,), param))
+    g.add_node("a", Stop(IntEvent, message_prefix=param))
     g.add_node("s", SinkAll(), upstream="a")
     return g
 
@@ -802,9 +802,13 @@ def test_execute_uses_default_when_arguments_dict_omits_key():
     # Mix of supplied and unsupplied (defaulted) params — verify only the
     # missing-key path falls back while the supplied one is honored.
     g = Graph()
-    g.add_node("a", Stop((IntEvent,), Param("supplied", "default-1")))
     g.add_node(
-        "b", Stop((IntEvent,), Param("defaulted", "default-2")), upstream="a"
+        "a", Stop(IntEvent, message_prefix=Param("supplied", "default-1"))
+    )
+    g.add_node(
+        "b",
+        Stop(IntEvent, message_prefix=Param("defaulted", "default-2")),
+        upstream="a",
     )
     g.add_node("s", SinkAll(), upstream="b")
     cg = CompiledGraph(g, (IntEvent,))
@@ -896,8 +900,12 @@ def test_execute_argument_key_uses_param_name_not_identifier():
 
 def test_execute_two_params_independent():
     g = Graph()
-    g.add_node("a", Stop((IntEvent,), Param("p1", "default-1")))
-    g.add_node("b", Stop((IntEvent,), Param("p2", "default-2")), upstream="a")
+    g.add_node("a", Stop(IntEvent, message_prefix=Param("p1", "default-1")))
+    g.add_node(
+        "b",
+        Stop(IntEvent, message_prefix=Param("p2", "default-2")),
+        upstream="a",
+    )
     g.add_node("s", SinkAll(), upstream="b")
     cg = CompiledGraph(g, (IntEvent,))
 

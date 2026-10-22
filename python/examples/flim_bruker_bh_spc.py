@@ -104,8 +104,9 @@ def build_graph(
             tcspc.DecodeBHSPC(numtraits),
             tcspc.CheckMonotonic(numtraits),
             tcspc.StopWithError(
-                (tcspc.WarningEvent(), tcspc.DataLostEvent(numtraits)),
-                "error in input data",
+                tcspc.WarningEvent(),
+                tcspc.DataLostEvent(numtraits),
+                message_prefix="error in input data",
             ),
             tcspc.Match(
                 tcspc.MarkerEvent(numtraits),
@@ -123,8 +124,9 @@ def build_graph(
             tcspc.SelectExcept(tcspc.TimeReachedEvent(numtraits)),
             tcspc.CheckAlternating(pixel_start, pixel_stop),
             tcspc.StopWithError(
-                (tcspc.WarningEvent(), tcspc.DataLostEvent(numtraits)),
-                "pixel time is such that pixel stop occurs after next pixel start",
+                tcspc.WarningEvent(),
+                tcspc.DataLostEvent(numtraits),
+                message_prefix="pixel time is such that pixel stop occurs after next pixel start",
             ),
             ("count_pixels", tcspc.Count(pixel_stop, PIXEL_COUNT_TAG)),
         ]

@@ -37,34 +37,25 @@ gencontext = _CodeGenerationContext(
 )
 
 
-def test_Stop_single_event_type():
-    node_from_single_event = Stop(IntEvent, "my prefix")
-    node_from_iterable = Stop((IntEvent,), "my prefix")
-    assert node_from_single_event._event_types == node_from_iterable._event_types
-    assert node_from_single_event._cpp_expression(
-        gencontext, [_CppExpression("DOWN")]
-    ) == node_from_iterable._cpp_expression(gencontext, [_CppExpression("DOWN")])
-
-
 def test_Stop_removes_configured_event_from_output_set():
-    node = Stop((IntEvent,), "msg")
+    node = Stop(IntEvent, message_prefix="msg")
     assert node._map_event_sets([(IntEvent, OtherEvent)]) == ((OtherEvent,),)
 
 
 def test_Stop_keeps_other_events():
-    node = Stop((IntEvent,), "msg")
+    node = Stop(IntEvent, message_prefix="msg")
     assert node._map_event_sets([(OtherEvent,)]) == ((OtherEvent,),)
 
 
 def test_Stop_message_prefix_str():
-    node = Stop((IntEvent,), "my prefix")
+    node = Stop(IntEvent, message_prefix="my prefix")
     assert len(node._parameters()) == 0
     code = node._cpp_expression(gencontext, [_CppExpression("DOWN")])
     assert '"my prefix"' in code
 
 
 def test_Stop_message_prefix_param():
-    node = Stop((IntEvent,), Param("msg"))
+    node = Stop(IntEvent, message_prefix=Param("msg"))
     params = node._parameters()
     assert len(params) == 1
     assert params[0] == (Param("msg"), _string_type)
@@ -73,7 +64,7 @@ def test_Stop_message_prefix_param():
 
 
 def test_Stop_codegen_calls_tcspc_stop():
-    node = Stop((IntEvent, OtherEvent), "msg")
+    node = Stop(IntEvent, OtherEvent, message_prefix="msg")
     code = node._cpp_expression(gencontext, [_CppExpression("DOWN")])
     assert "tcspc::stop<" in code
     assert "tcspc::type_list<int, long>" in code
@@ -95,7 +86,7 @@ def test_Stop_raises_EndOfProcessing_on_event(tmp_path: Path) -> None:
                 "reader",
                 ReadBinaryStream(elem_type, BinaryFileInputStream(str(path))),
             ),
-            Stop((WarningEvent(),), "halt"),
+            Stop(WarningEvent(), message_prefix="halt"),
             Unbatch(BucketEvent(elem_type)),
         ]
     )
@@ -107,34 +98,25 @@ def test_Stop_raises_EndOfProcessing_on_event(tmp_path: Path) -> None:
         ctx.flush()
 
 
-def test_StopWithError_single_event_type():
-    node_from_single_event = StopWithError(IntEvent, "my prefix")
-    node_from_iterable = StopWithError((IntEvent,), "my prefix")
-    assert node_from_single_event._event_types == node_from_iterable._event_types
-    assert node_from_single_event._cpp_expression(
-        gencontext, [_CppExpression("DOWN")]
-    ) == node_from_iterable._cpp_expression(gencontext, [_CppExpression("DOWN")])
-
-
 def test_StopWithError_removes_configured_event_from_output_set():
-    node = StopWithError((IntEvent,), "msg")
+    node = StopWithError(IntEvent, message_prefix="msg")
     assert node._map_event_sets([(IntEvent, OtherEvent)]) == ((OtherEvent,),)
 
 
 def test_StopWithError_keeps_other_events():
-    node = StopWithError((IntEvent,), "msg")
+    node = StopWithError(IntEvent, message_prefix="msg")
     assert node._map_event_sets([(OtherEvent,)]) == ((OtherEvent,),)
 
 
 def test_StopWithError_message_prefix_str():
-    node = StopWithError((IntEvent,), "my prefix")
+    node = StopWithError(IntEvent, message_prefix="my prefix")
     assert len(node._parameters()) == 0
     code = node._cpp_expression(gencontext, [_CppExpression("DOWN")])
     assert '"my prefix"' in code
 
 
 def test_StopWithError_message_prefix_param():
-    node = StopWithError((IntEvent,), Param("msg"))
+    node = StopWithError(IntEvent, message_prefix=Param("msg"))
     params = node._parameters()
     assert len(params) == 1
     assert params[0] == (Param("msg"), _string_type)
@@ -143,7 +125,7 @@ def test_StopWithError_message_prefix_param():
 
 
 def test_StopWithError_codegen_calls_tcspc_stop_with_error():
-    node = StopWithError((IntEvent, OtherEvent), "msg")
+    node = StopWithError(IntEvent, OtherEvent, message_prefix="msg")
     code = node._cpp_expression(gencontext, [_CppExpression("DOWN")])
     assert "tcspc::stop_with_error<" in code
     assert "tcspc::type_list<int, long>" in code
@@ -165,7 +147,7 @@ def test_StopWithError_raises_RuntimeError_on_event(tmp_path: Path) -> None:
                 "reader",
                 ReadBinaryStream(elem_type, BinaryFileInputStream(str(path))),
             ),
-            StopWithError((WarningEvent(),), "halt"),
+            StopWithError(WarningEvent(), message_prefix="halt"),
             Unbatch(BucketEvent(elem_type)),
         ]
     )

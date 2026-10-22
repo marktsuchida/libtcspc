@@ -2,7 +2,7 @@
 # Copyright 2019-2026 Board of Regents of the University of Wisconsin System
 # SPDX-License-Identifier: MIT
 
-from collections.abc import Collection, Iterable, Sequence
+from collections.abc import Collection, Sequence
 from typing import final
 
 from typing_extensions import override
@@ -34,9 +34,9 @@ class Stop(_RelayNode):
 
     Parameters
     ----------
-    event_types : EventType or Iterable[EventType]
+    *event_types : EventType
         Event types that trigger normal termination.
-    message_prefix : str or Param[str]
+    message_prefix : str or Param[str], keyword-only
         String prepended to the `EndOfProcessing` exception's message,
         typically describing the source of the termination.
 
@@ -57,10 +57,10 @@ class Stop(_RelayNode):
 
     def __init__(
         self,
-        event_types: EventType | Iterable[EventType],
+        *event_types: EventType,
         message_prefix: str | Param[str],
     ) -> None:
-        self._event_types = [event_types] if isinstance(event_types, EventType) else list(event_types)
+        self._event_types = tuple(event_types)
         self._msg_prefix = message_prefix
 
     @override
@@ -104,9 +104,9 @@ class StopWithError(_RelayNode):
 
     Parameters
     ----------
-    event_types : EventType or Iterable[EventType]
+    *event_types : EventType
         Event types that trigger error termination.
-    message_prefix : str or Param[str]
+    message_prefix : str or Param[str], keyword-only
         String prepended to the raised exception's message, typically
         describing the source of the error condition.
 
@@ -127,10 +127,10 @@ class StopWithError(_RelayNode):
 
     def __init__(
         self,
-        event_types: EventType | Iterable[EventType],
+        *event_types: EventType,
         message_prefix: str | Param[str],
     ) -> None:
-        self._event_types = [event_types] if isinstance(event_types, EventType) else list(event_types)
+        self._event_types = tuple(event_types)
         self._msg_prefix = message_prefix
 
     @override
