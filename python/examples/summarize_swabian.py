@@ -38,13 +38,11 @@ def build_graph() -> tcspc.Graph:
             tcspc.DecodeSwabianTags(numtraits),
             tcspc.CheckMonotonic(numtraits),
             tcspc.Stop(
-                (
-                    tcspc.WarningEvent(),
-                    tcspc.BeginLostIntervalEvent(numtraits),
-                    tcspc.EndLostIntervalEvent(numtraits),
-                    tcspc.LostCountsEvent(numtraits),
-                ),
-                "error",
+                tcspc.WarningEvent(),
+                tcspc.BeginLostIntervalEvent(numtraits),
+                tcspc.EndLostIntervalEvent(numtraits),
+                tcspc.LostCountsEvent(numtraits),
+                message_prefix="error",
             ),
             tcspc.RecordAbstimeRange(TIMES_TAG, numtraits),
             tcspc.MapToDatapoints(

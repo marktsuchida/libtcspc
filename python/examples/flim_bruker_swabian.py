@@ -92,21 +92,22 @@ def _source_events() -> tcspc.Subgraph:
                 tcspc.Param("filename"),
             ),
             tcspc.StopWithError(
-                (tcspc.WarningEvent(),), "error reading input data from file"
+                tcspc.WarningEvent(),
+                message_prefix="error reading input data from file",
             ),
             tcspc.Count(tcspc.SwabianTagEvent(), RECORD_COUNT_TAG),
             tcspc.DecodeSwabianTags(numtraits),
             tcspc.StopWithError(
-                (
-                    tcspc.WarningEvent(),
-                    tcspc.BeginLostIntervalEvent(),
-                    tcspc.EndLostIntervalEvent(),
-                    tcspc.LostCountsEvent(),
-                ),
-                "error in input data",
+                tcspc.WarningEvent(),
+                tcspc.BeginLostIntervalEvent(),
+                tcspc.EndLostIntervalEvent(),
+                tcspc.LostCountsEvent(),
+                message_prefix="error in input data",
             ),
             tcspc.CheckMonotonic(numtraits),
-            tcspc.Stop((tcspc.WarningEvent(),), "processing stopped"),
+            tcspc.Stop(
+                tcspc.WarningEvent(), message_prefix="processing stopped"
+            ),
         )
     )
     return tcspc.Subgraph(
@@ -205,8 +206,8 @@ def _process_events(args: argparse.Namespace) -> tcspc.Subgraph:
             (
                 "pixels_processed",
                 tcspc.StopWithError(
-                    (tcspc.WarningEvent(),),
-                    "Pixel time is such that pixel stop occurs after next pixel start.",
+                    tcspc.WarningEvent(),
+                    message_prefix="Pixel time is such that pixel stop occurs after next pixel start.",
                 ),
             ),
         ),
