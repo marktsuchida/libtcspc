@@ -584,11 +584,10 @@ def read_events_from_binary_file(
                 ),
             ),
             (
-                Stop((WarningEvent(),), "error reading input")
+                Stop(WarningEvent(), message_prefix="error reading input")
                 if stop_normally_on_error
                 else StopWithError(
-                    (WarningEvent(),),
-                    "error reading input",
+                    WarningEvent(), message_prefix="error reading input"
                 )
             ),
             (

@@ -84,8 +84,9 @@ def build_graph() -> tcspc.Graph:
             tcspc.DecodeBHSPC(numtraits),
             tcspc.CheckMonotonic(numtraits),
             tcspc.Stop(
-                (tcspc.WarningEvent(), tcspc.DataLostEvent(numtraits)),
-                "error in data",
+                tcspc.WarningEvent(),
+                tcspc.DataLostEvent(numtraits),
+                message_prefix="error in data",
             ),
             ("times", tcspc.RecordAbstimeRange(TIMES_TAG, numtraits)),
         ]
