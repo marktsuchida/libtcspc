@@ -68,6 +68,7 @@ pixel_start = tcspc.CustomEvent(
 pixel_stop = tcspc.CustomEvent(
     "pixel_stop_event", abstime=True, traits=numtraits
 )
+reset = tcspc.CustomEvent("reset_event")
 
 
 def build_graph(args: argparse.Namespace) -> tcspc.Graph:
@@ -76,7 +77,7 @@ def build_graph(args: argparse.Namespace) -> tcspc.Graph:
         nodes=(
             _source_events(),
             _process_events(args),
-            _generate_histograms(args, pixel_stop),
+            _generate_histograms(args),
         )
     )
     return g
@@ -267,9 +268,7 @@ def _process_events(args: argparse.Namespace) -> tcspc.Subgraph:
     )
 
 
-def _generate_histograms(
-    settings: argparse.Namespace, reset: tcspc.CustomEvent
-) -> tcspc.Subgraph:
+def _generate_histograms(settings: argparse.Namespace) -> tcspc.Subgraph:
     """Subgraph responsible for generating histograms from time-correlated detection events."""
     g = tcspc.Graph()
     # Convert time-correlated detection events into histogram bin increments
