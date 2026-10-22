@@ -115,7 +115,7 @@ def _source_events() -> tcspc.Subgraph:
 
 
 def _process_events(args: argparse.Namespace) -> tcspc.Subgraph:
-    """Processes the decoded Swabian tag events into histogram bin increments..
+    """Processes the decoded Swabian tag events into histogram bin increments.
 
     Note that sync events, photon events, and pixel marker events must all be processed differently.
     This function creates a processing chain for each, including the nodes to route each event to its
@@ -204,7 +204,7 @@ def _process_events(args: argparse.Namespace) -> tcspc.Subgraph:
                 "pixels_processed",
                 tcspc.StopWithError(
                     tcspc.WarningEvent(),
-                    message_prefix="Pixel time is such that pixel stop occurs after next pixel start.",
+                    message_prefix="pixel time is such that pixel stop occurs after next pixel start",
                 ),
             ),
         ),
@@ -384,7 +384,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         "--sync-delay",
         type=int,
         default=0,
-        help="Specify how much to delay the the laser sync signal (in picoseconds) "
+        help="Specify how much to delay the laser sync signal (in picoseconds) "
         "relative to the other signals. Negative values are allowed (and are "
         "typical).",
     )
