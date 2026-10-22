@@ -427,13 +427,13 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     p.add_argument(
         "--bin-width",
         type=_positive_int,
-        default=1,
+        default=50,
         help="Set histogram bin width (in picoseconds).",
     )
     p.add_argument(
         "--bin-count",
         type=_positive_int,
-        required=True,
+        default=256,
         help="Set the number of histogram bins.",
     )
     p.add_argument(
