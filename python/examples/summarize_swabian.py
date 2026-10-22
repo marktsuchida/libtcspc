@@ -74,8 +74,10 @@ def build_graph() -> tcspc.Graph:
 
 
 def summarize(filename: str) -> int:
-    print("Compiling processing graph...", file=sys.stderr)
+    print("Creating processing graph...", file=sys.stderr)
     g = build_graph()
+
+    print("Compiling processing graph...", file=sys.stderr)
     cg = tcspc.CompiledGraph(g)
     ctx = tcspc.ExecutionContext(cg, {"filename": filename})
 
@@ -98,6 +100,7 @@ def summarize(filename: str) -> int:
         for chnum, chcnt in counts:
             print(f"{chnum}: \t{chcnt}")
 
+    print("Processing...", file=sys.stderr)
     try:
         ctx.flush()
         print_summary()
