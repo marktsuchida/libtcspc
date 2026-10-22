@@ -387,7 +387,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     )
     p.add_argument(
         "--sync-delay",
-        type=_positive_int,
+        type=int,
         default=0,
         help="Specify how much to delay the the laser sync signal (in picoseconds) "
         "relative to the other signals. Negative values are allowed (and are "
