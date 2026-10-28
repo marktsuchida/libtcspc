@@ -16,6 +16,7 @@
 #include "libtcspc/type_list.hpp"
 #include "test_checkers.hpp"
 
+#include <catch2/catch_template_test_macros.hpp>
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/generators/catch_generators.hpp>
 
@@ -23,6 +24,7 @@
 #include <cstddef>
 #include <memory>
 #include <stdexcept>
+#include <string>
 #include <type_traits>
 #include <utility>
 
@@ -67,90 +69,183 @@ TEST_CASE("router_for concept") {
     STATIC_CHECK_FALSE(router_for<nonmovable_router, tc_event>);
 }
 
-TEST_CASE("route_homogeneous constructed two ways have same type") {
-    STATIC_CHECK(std::is_same_v<decltype(route_homogeneous<type_list<>>(
+namespace {
+
+using e2 = empty_test_event<2>;
+
+template <typename RoutedEventList, typename BroadcastEventList,
+          typename... Downstreams>
+concept route_constructible_from = requires(Downstreams... ds) {
+    route<RoutedEventList, BroadcastEventList>(null_router(),
+                                               std::move(ds)...);
+};
+
+template <typename BroadcastEventList, typename... Downstreams>
+concept broadcast_constructible_from = requires(Downstreams... ds) {
+    broadcast<BroadcastEventList>(std::move(ds)...);
+};
+
+// Wrapping one downstream makes its type differ from the others, selecting the
+// heterogeneous implementation without changing behavior.
+template <typename Heterogeneous, typename EventList, typename Downstream>
+auto maybe_type_erase(Downstream downstream) {
+    if constexpr (Heterogeneous::value)
+        return type_erased_processor<EventList>(std::move(downstream));
+    else
+        return downstream;
+}
+
+} // namespace
+
+TEST_CASE("route constructed two ways have same type") {
+    STATIC_CHECK(std::is_same_v<decltype(route<type_list<>>(
                                     null_router(), sink_all(), sink_all())),
-                                decltype(route_homogeneous<type_list<>>(
+                                decltype(route<type_list<>>(
                                     null_router(),
                                     std::array{sink_all(), sink_all()}))>);
-    // So we need not further test the std::array case.
+    STATIC_CHECK(std::is_same_v<decltype(broadcast<type_list<e0>>(sink_all(),
+                                                                  sink_all())),
+                                decltype(broadcast<type_list<e0>>(
+                                    std::array{sink_all(), sink_all()}))>);
+    STATIC_CHECK(std::is_same_v<decltype(broadcast<type_list<e0>>(sink_all(),
+                                                                  sink_all())),
+                                decltype(route<type_list<>, type_list<e0>>(
+                                    null_router(), sink_all(), sink_all()))>);
 }
 
-TEST_CASE("route and broadcast construct correct type") {
+TEST_CASE("route selects implementation by downstream types") {
+    using sink_all_t = decltype(sink_all());
+    using sink_e0_t = decltype(sink_only<e0>());
+
+    STATIC_CHECK(std::is_same_v<
+                 decltype(route<type_list<e0>>(null_router(), sink_all(),
+                                               sink_all())),
+                 internal::route_homogeneous<type_list<e0>, type_list<>,
+                                             null_router, 2, sink_all_t>>);
     STATIC_CHECK(
-        std::is_same_v<decltype(broadcast_homogeneous(sink_all(), sink_all())),
-                       decltype(route_homogeneous<type_list<>>(
-                           null_router(), sink_all(), sink_all()))>);
+        std::is_same_v<decltype(route<type_list<e0>>(null_router(), sink_all(),
+                                                     sink_only<e0>())),
+                       internal::route_heterogeneous<type_list<e0>,
+                                                     type_list<>, null_router,
+                                                     sink_all_t, sink_e0_t>>);
 
-    STATIC_CHECK(std::is_same_v<
-                 decltype(route<type_list<e0>, type_list<e1>>(
-                     null_router(), sink_all(), sink_all())),
-                 decltype(route_homogeneous<type_list<e0>>(
-                     null_router(),
-                     type_erased_processor<type_list<e0, e1>>(sink_all()),
-                     type_erased_processor<type_list<e0, e1>>(sink_all())))>);
-
-    STATIC_CHECK(std::is_same_v<
-                 decltype(broadcast<type_list<e0>>(sink_all(), sink_all())),
-                 decltype(route_homogeneous<type_list<>>(
-                     null_router(),
-                     type_erased_processor<type_list<e0>>(sink_all()),
-                     type_erased_processor<type_list<e0>>(sink_all())))>);
-    // So we only need to further test route_homogeneous.
+    using erased_t = type_erased_processor<type_list<e0>>;
+    STATIC_CHECK(
+        std::is_same_v<decltype(route<type_list<e0>>(
+                           null_router(), erased_t(sink_all()),
+                           erased_t(sink_only<e0>()))),
+                       internal::route_homogeneous<type_list<e0>, type_list<>,
+                                                   null_router, 2, erased_t>>);
 }
 
-TEST_CASE("type constraints: route_homogeneous") {
+TEST_CASE("type constraints: route") {
+    using homogeneous = decltype(route<type_list<e0>, type_list<e1>>(
+        null_router(), sink_all(), sink_all()));
+    using heterogeneous = decltype(route<type_list<e0>, type_list<e1>>(
+        null_router(), sink_all(), sink_only<e0, e1>()));
+
     SECTION("handles flush") {
-        STATIC_CHECK(flushable<decltype(route_homogeneous<type_list<>>(
-                         null_router(), sink_only<>()))>);
+        STATIC_CHECK(flushable<homogeneous>);
+        STATIC_CHECK(flushable<heterogeneous>);
     }
 
-    // We cannot distinguish between routed and broadcast events in SFINAE
-    // context.
-    SECTION("handles any event handled by downstream") {
-        STATIC_CHECK(handler_for<decltype(route_homogeneous<type_list<>>(
-                                     null_router(), sink_only<e0>())),
-                                 e0>);
-        STATIC_CHECK(handler_for<decltype(route_homogeneous<type_list<e0>>(
-                                     null_router(), sink_only<e0>())),
-                                 e0>);
+    SECTION("handles routed and broadcast events") {
+        STATIC_CHECK(handler_for<homogeneous, e0, e1>);
+        STATIC_CHECK(handler_for<heterogeneous, e0, e1>);
+    }
+
+    SECTION("does not handle unlisted events") {
+        STATIC_CHECK_FALSE(handler_for<homogeneous, e2>);
+        STATIC_CHECK_FALSE(handler_for<heterogeneous, e2>);
+    }
+
+    SECTION("requires downstreams to handle listed events") {
+        using sink_all_t = decltype(sink_all());
+        using sink_e0_t = decltype(sink_only<e0>());
+        using sink_e1_t = decltype(sink_only<e1>());
+
+        STATIC_CHECK(route_constructible_from<type_list<e0>, type_list<>,
+                                              sink_e0_t, sink_e0_t>);
+        STATIC_CHECK(route_constructible_from<type_list<e0>, type_list<>,
+                                              sink_all_t, sink_e0_t>);
+        STATIC_CHECK(route_constructible_from<type_list<e0>, type_list<>,
+                                              std::array<sink_e0_t, 2>>);
+
+        STATIC_CHECK_FALSE(route_constructible_from<type_list<e0>, type_list<>,
+                                                    sink_e1_t, sink_e1_t>);
+        STATIC_CHECK_FALSE(route_constructible_from<type_list<e0>, type_list<>,
+                                                    sink_all_t, sink_e1_t>);
+        STATIC_CHECK_FALSE(route_constructible_from<type_list<e0>, type_list<>,
+                                                    std::array<sink_e1_t, 2>>);
+        STATIC_CHECK_FALSE(
+            route_constructible_from<type_list<e0>, type_list<e1>, sink_e0_t,
+                                     sink_e0_t>);
+        STATIC_CHECK_FALSE(
+            route_constructible_from<type_list<e0>, type_list<e1>, sink_all_t,
+                                     sink_e0_t>);
+
+        STATIC_CHECK(
+            broadcast_constructible_from<type_list<e0>, sink_e0_t, sink_e0_t>);
+        STATIC_CHECK(broadcast_constructible_from<type_list<e0>, sink_all_t,
+                                                  sink_e0_t>);
+        STATIC_CHECK_FALSE(
+            broadcast_constructible_from<type_list<e0>, sink_e1_t, sink_e1_t>);
+        STATIC_CHECK_FALSE(
+            broadcast_constructible_from<type_list<e0>, sink_all_t,
+                                         sink_e1_t>);
+        STATIC_CHECK_FALSE(
+            broadcast_constructible_from<type_list<e0>,
+                                         std::array<sink_e1_t, 2>>);
     }
 }
 
 TEST_CASE("introspect: route") {
-    auto const rh2 =
-        route_homogeneous<type_list<>>(null_router(), sink_all(), sink_all());
-    auto const info = check_introspect_node_info(rh2);
-    auto const g = rh2.introspect_graph();
-    CHECK(g.nodes().size() == 3);
-    CHECK(g.entry_points().size() == 1);
-    auto const node = g.entry_points()[0];
-    CHECK(g.node_info(node) == info);
-    auto const edges = g.edges();
-    CHECK(edges.size() == 2);
-    CHECK(edges[0].first == node);
-    CHECK(edges[1].first == node);
-    CHECK(g.node_info(edges[0].second).name() == "sink_all");
-    CHECK(g.node_info(edges[1].second).name() == "sink_all");
+    auto const check_graph = [](auto const &proc,
+                                std::string const &expected_name) {
+        auto const info = check_introspect_node_info(proc);
+        CHECK(info.name() == expected_name);
+        auto const g = proc.introspect_graph();
+        CHECK(g.nodes().size() == 3);
+        CHECK(g.entry_points().size() == 1);
+        auto const node = g.entry_points()[0];
+        CHECK(g.node_info(node) == info);
+        auto const edges = g.edges();
+        REQUIRE(edges.size() == 2);
+        CHECK(edges[0].first == node);
+        CHECK(edges[1].first == node);
+        CHECK(edges[0].second != edges[1].second);
+    };
+
+    SECTION("homogeneous") {
+        check_graph(route<type_list<>>(null_router(), sink_all(), sink_all()),
+                    "route_homogeneous");
+    }
+
+    SECTION("heterogeneous") {
+        check_graph(
+            route<type_list<>>(null_router(), sink_all(), sink_only<>()),
+            "route_heterogeneous");
+    }
 }
 
-TEST_CASE("Route") {
+TEMPLATE_TEST_CASE("Route", "", std::false_type, std::true_type) {
     using out_events = type_list<tc_event, marker_event<>>;
     auto const valcat = GENERATE(feed_as::const_lvalue, feed_as::rvalue);
     auto ctx = context::create();
     auto in = feed_input(
-        valcat, route<type_list<tc_event>, type_list<marker_event<>>>(
-                    channel_router(std::array{
-                        std::pair{5, 0},
-                        std::pair{-3, 1},
-                        std::pair{-32768, 2},
-                    }),
-                    capture_output<out_events>(
-                        ctx->tracker<capture_output_accessor>("out0")),
-                    capture_output<out_events>(
-                        ctx->tracker<capture_output_accessor>("out1")),
-                    capture_output<out_events>(
-                        ctx->tracker<capture_output_accessor>("out2"))));
+        valcat,
+        route<type_list<tc_event>, type_list<marker_event<>>>(
+            channel_router(std::array{
+                std::pair{5, 0},
+                std::pair{-3, 1},
+                std::pair{-32768, 2},
+            }),
+            maybe_type_erase<TestType, out_events>(capture_output<out_events>(
+                ctx->tracker<capture_output_accessor>("out0"))),
+            capture_output<out_events>(
+                ctx->tracker<capture_output_accessor>("out1")),
+            capture_output<out_events>(
+                ctx->tracker<capture_output_accessor>("out2"))));
     in.require_output_checked(ctx, "out0");
     in.require_output_checked(ctx, "out1");
     in.require_output_checked(ctx, "out2");
@@ -226,13 +321,14 @@ TEST_CASE("Route with heterogeneous downstreams") {
     REQUIRE(out0.check_flushed());
 }
 
-TEST_CASE("Broadcast") {
+TEMPLATE_TEST_CASE("Broadcast", "", std::false_type, std::true_type) {
     auto const valcat = GENERATE(feed_as::const_lvalue, feed_as::rvalue);
     auto ctx = context::create();
     auto in = feed_input(
         valcat, broadcast<type_list<e0>>(
-                    capture_output<type_list<e0>>(
-                        ctx->tracker<capture_output_accessor>("out0")),
+                    maybe_type_erase<TestType, type_list<e0>>(
+                        capture_output<type_list<e0>>(
+                            ctx->tracker<capture_output_accessor>("out0"))),
                     capture_output<type_list<e0>>(
                         ctx->tracker<capture_output_accessor>("out1")),
                     capture_output<type_list<e0>>(

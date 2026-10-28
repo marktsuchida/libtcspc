@@ -175,7 +175,8 @@ auto make_processor(settings const &settings,
     stop_with_error<type_list<warning_event, data_lost_event<>>>(
         "pixel time is such that pixel stop occurs after next pixel start",
     count<pixel_stop_event>(ctx->tracker<count_accessor>("pixel_counter"),
-    route_homogeneous<type_list<time_correlated_detection_event<>>>(
+    route<type_list<time_correlated_detection_event<>>,
+          type_list<pixel_start_event, pixel_stop_event>>(
         // Use single-downstream router to select by channel.
         channel_router(
             std::array{std::pair{settings.channel, std::size_t(0)}}),

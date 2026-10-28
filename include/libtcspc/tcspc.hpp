@@ -595,8 +595,7 @@ namespace tcspc {
 /**
  * \defgroup routers Routers
  *
- * \brief Routers for use with `tcspc::route()` and
- * `tcspc::route_homogeneous()`.
+ * \brief Routers for use with `tcspc::route()`.
  *
  * These objects define the member `auto operator()(Event const &event) const
  * -> std::size_t`, where `Event const &` must be implicitly convertible from
